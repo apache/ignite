@@ -15,22 +15,23 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.tests.utils;
-
-import org.apache.ignite.cache.store.cassandra.datasource.Credentials;
+package org.apache.ignite.cache.store.cassandra.datasource;
 
 /**
- * Implementation of {@link org.apache.ignite.cache.store.cassandra.datasource.Credentials}
- * providing regular user/password to establish Cassandra session.
+ * Provides credentials for Cassandra (instead of specifying user/password directly in Spring context XML).
  */
-public class CassandraRegularCredentials implements Credentials {
-    /** {@inheritDoc} */
-    @Override public String getUser() {
-        return CassandraHelper.getRegularUser();
-    }
+public interface Credentials {
+    /**
+     * Returns user name
+     *
+     * @return user name
+     */
+    public String getUser();
 
-    /** {@inheritDoc} */
-    @Override public String getPassword() {
-        return CassandraHelper.getRegularPassword();
-    }
+    /**
+     * Returns password
+     *
+     * @return password
+     */
+    public String getPassword();
 }

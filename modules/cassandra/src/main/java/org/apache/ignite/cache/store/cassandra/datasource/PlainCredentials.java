@@ -15,22 +15,36 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.tests.utils;
-
-import org.apache.ignite.cache.store.cassandra.datasource.Credentials;
+package org.apache.ignite.cache.store.cassandra.datasource;
 
 /**
- * Implementation of {@link org.apache.ignite.cache.store.cassandra.datasource.Credentials}
- * providing regular user/password to establish Cassandra session.
+ * Simple implementation of {@link Credentials} which just uses its constructor to hold user/password values.
  */
-public class CassandraRegularCredentials implements Credentials {
+public class PlainCredentials implements Credentials {
+    /** User name. */
+    private String user;
+
+    /** User password. */
+    private String pwd;
+
+    /**
+     * Creates credentials object.
+     *
+     * @param user User name.
+     * @param pwd User password.
+     */
+    public PlainCredentials(String user, String pwd) {
+        this.user = user;
+        this.pwd = pwd;
+    }
+
     /** {@inheritDoc} */
     @Override public String getUser() {
-        return CassandraHelper.getRegularUser();
+        return user;
     }
 
     /** {@inheritDoc} */
     @Override public String getPassword() {
-        return CassandraHelper.getRegularPassword();
+        return pwd;
     }
 }

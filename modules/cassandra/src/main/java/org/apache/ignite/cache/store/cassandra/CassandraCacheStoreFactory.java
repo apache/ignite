@@ -19,8 +19,8 @@ package org.apache.ignite.cache.store.cassandra;
 
 import javax.cache.configuration.Factory;
 import org.apache.ignite.IgniteException;
-import org.apache.ignite.cache.store.cassandra.utils.datasource.DataSource;
-import org.apache.ignite.cache.store.cassandra.utils.persistence.KeyValuePersistenceSettings;
+import org.apache.ignite.cache.store.cassandra.datasource.DataSource;
+import org.apache.ignite.cache.store.cassandra.persistence.KeyValuePersistenceSettings;
 import org.apache.ignite.internal.IgniteComponentType;
 import org.apache.ignite.internal.util.spring.IgniteSpringHelper;
 import org.apache.ignite.resources.SpringApplicationContextResource;
@@ -49,7 +49,7 @@ public class CassandraCacheStoreFactory<K, V> implements Factory<CassandraCacheS
     private transient DataSource dataSrc;
 
     /** Persistence settings. */
-    private transient KeyValuePersistenceSettings persistenceSettings;
+    private KeyValuePersistenceSettings persistenceSettings;
 
     /** Max workers thread count. These threads are responsible for load cache. */
     private int maxPoolSize = Runtime.getRuntime().availableProcessors();

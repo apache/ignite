@@ -12,7 +12,7 @@
 
     <bean id="contactPoints" class="org.apache.ignite.tests.utils.CassandraHelper" factory-method="getContactPointsArray"/>
 
-    <bean id="cassandraAdminDataSource" class="org.apache.ignite.cache.store.cassandra.utils.datasource.DataSource">
+    <bean id="cassandraAdminDataSource" class="org.apache.ignite.cache.store.cassandra.datasource.DataSource">
         <property name="credentials" ref="cassandraAdminCredentials"/>
         <property name="contactPoints" ref="contactPoints"/>
         <property name="readConsistency" value="ONE"/>
@@ -20,7 +20,7 @@
         <property name="loadBalancingPolicy" ref="loadBalancingPolicy"/>
     </bean>
 
-    <bean id="cassandraRegularDataSource" class="org.apache.ignite.cache.store.cassandra.utils.datasource.DataSource">
+    <bean id="cassandraRegularDataSource" class="org.apache.ignite.cache.store.cassandra.datasource.DataSource">
         <property name="credentials" ref="cassandraRegularCredentials"/>
         <property name="contactPoints" ref="contactPoints"/>
         <property name="readConsistency" value="ONE"/>

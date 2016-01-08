@@ -20,8 +20,8 @@ package org.apache.ignite.tests.utils;
 import java.lang.reflect.Field;
 import org.apache.ignite.cache.store.CacheStore;
 import org.apache.ignite.cache.store.cassandra.CassandraCacheStore;
-import org.apache.ignite.cache.store.cassandra.utils.datasource.DataSource;
-import org.apache.ignite.cache.store.cassandra.utils.persistence.KeyValuePersistenceSettings;
+import org.apache.ignite.cache.store.cassandra.datasource.DataSource;
+import org.apache.ignite.cache.store.cassandra.persistence.KeyValuePersistenceSettings;
 import org.apache.ignite.logger.log4j.Log4JLogger;
 import org.apache.log4j.Logger;
 import org.springframework.core.io.Resource;
@@ -46,8 +46,8 @@ public class CacheStoreHelper {
                 Runtime.getRuntime().availableProcessors());
 
         try {
-            Field sesField = CassandraCacheStore.class.getDeclaredField("storeSession");
-            Field logField = CassandraCacheStore.class.getDeclaredField("logger");
+            Field sesField = CassandraCacheStore.class.getDeclaredField("storeSes");
+            Field logField = CassandraCacheStore.class.getDeclaredField("log");
 
             sesField.setAccessible(true);
             logField.setAccessible(true);

@@ -13,7 +13,7 @@
         <value>cassandra-node-2.abc.com</value>
     </util:list>
 
-    <bean id="cassandraAdminDataSource" class="org.apache.ignite.cache.store.cassandra.utils.datasource.DataSource">
+    <bean id="cassandraAdminDataSource" class="org.apache.ignite.cache.store.cassandra.datasource.DataSource">
         <property name="user" value="cassandra"/>
         <property name="password" value="cassandra"/>
         <property name="contactPoints" ref="contactPoints"/>
@@ -22,7 +22,7 @@
         <property name="loadBalancingPolicy" ref="loadBalancingPolicy"/>
     </bean>
 
-    <bean id="cache1_persistence_settings" class="org.apache.ignite.cache.store.cassandra.utils.persistence.KeyValuePersistenceSettings">
+    <bean id="cache1_persistence_settings" class="org.apache.ignite.cache.store.cassandra.persistence.KeyValuePersistenceSettings">
         <constructor-arg type="java.lang.String">
             <value><![CDATA[
 <persistence keyspace="test1" table="primitive_test1">

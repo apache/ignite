@@ -15,22 +15,29 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.tests.utils;
+package org.apache.ignite.cache.store.cassandra.serializer;
 
-import org.apache.ignite.cache.store.cassandra.datasource.Credentials;
+import java.io.Serializable;
+import java.nio.ByteBuffer;
 
 /**
- * Implementation of {@link org.apache.ignite.cache.store.cassandra.datasource.Credentials}
- * providing regular user/password to establish Cassandra session.
+ * Interface which should be implemented by all serializers responsible
+ * for writing/loading data to/from Cassandra in binary (BLOB) format.
  */
-public class CassandraRegularCredentials implements Credentials {
-    /** {@inheritDoc} */
-    @Override public String getUser() {
-        return CassandraHelper.getRegularUser();
-    }
+public interface Serializer extends Serializable {
+    /**
+     * Serializes object into byte buffer.
+     *
+     * @param obj Object to serialize.
+     * @return Byte buffer with binary data.
+     */
+    public ByteBuffer serialize(Object obj);
 
-    /** {@inheritDoc} */
-    @Override public String getPassword() {
-        return CassandraHelper.getRegularPassword();
-    }
+    /**
+     * Deserializes object from byte buffer.
+     *
+     * @param buf Byte buffer.
+     * @return Deserialized object.
+     */
+    public Object deserialize(ByteBuffer buf);
 }

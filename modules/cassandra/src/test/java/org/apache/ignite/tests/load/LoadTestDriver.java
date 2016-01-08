@@ -22,7 +22,7 @@ import java.util.LinkedList;
 import java.util.List;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.cache.store.CacheStore;
-import org.apache.ignite.cache.store.cassandra.utils.common.SystemHelper;
+import org.apache.ignite.cache.store.cassandra.common.SystemHelper;
 import org.apache.ignite.tests.utils.TestsHelper;
 import org.apache.log4j.Logger;
 

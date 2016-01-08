@@ -15,22 +15,32 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.tests.utils;
+package org.apache.ignite.cache.store.cassandra.common;
 
-import org.apache.ignite.cache.store.cassandra.datasource.Credentials;
+import java.net.InetAddress;
+import java.net.UnknownHostException;
 
 /**
- * Implementation of {@link org.apache.ignite.cache.store.cassandra.datasource.Credentials}
- * providing regular user/password to establish Cassandra session.
+ * Helper class providing system information about the host (ip, hostname, os and etc.)
  */
-public class CassandraRegularCredentials implements Credentials {
-    /** {@inheritDoc} */
-    @Override public String getUser() {
-        return CassandraHelper.getRegularUser();
-    }
+public class SystemHelper {
+    /** System line separator. */
+    public static final String LINE_SEPARATOR = System.getProperty("line.separator");
 
-    /** {@inheritDoc} */
-    @Override public String getPassword() {
-        return CassandraHelper.getRegularPassword();
+    /** Host name. */
+    public static final String HOST_NAME;
+
+    /** Host IP address */
+    public static final String HOST_IP;
+
+    static {
+        try {
+            InetAddress addr = InetAddress.getLocalHost();
+            HOST_NAME = addr.getHostName();
+            HOST_IP = addr.getHostAddress();
+        }
+        catch (UnknownHostException e) {
+            throw new IllegalStateException("Failed to get host/ip of current computer", e);
+        }
     }
 }

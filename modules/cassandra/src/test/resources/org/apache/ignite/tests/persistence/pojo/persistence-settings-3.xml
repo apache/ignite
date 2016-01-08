@@ -48,9 +48,9 @@ Attributes:
                 Provides ability to utilize Cassandra secondary indexes for object fields.
       3) serializer [optional] - specifies serializer class for BLOB strategy. Shouldn't be used for PRIMITIVE and
         POJO strategies. Available implementations:
-            a) org.apache.ignite.cache.store.cassandra.utils.serializer.JavaSerializer - uses standard Java
+            a) org.apache.ignite.cache.store.cassandra.serializer.JavaSerializer - uses standard Java
                 serialization framework
-            b) org.apache.ignite.cache.store.cassandra.utils.serializer.KryoSerializer - uses Kryo
+            b) org.apache.ignite.cache.store.cassandra.serializer.KryoSerializer - uses Kryo
                 serialization framework
       4) column     [optional] - specifies column name for PRIMITIVE and BLOB strategies where to store key value.
         If not specified column having 'key' name will be used. Shouldn't be used for POJO strategy.
@@ -120,16 +120,16 @@ Attributes:
                 Provides ability to utilize Cassandra secondary indexes for object fields.
       3) serializer [optional] - specifies serializer class for BLOB strategy. Shouldn't be used for PRIMITIVE and
         POJO strategies. Available implementations:
-            a) org.apache.ignite.cache.store.cassandra.utils.serializer.JavaSerializer - uses standard Java
+            a) org.apache.ignite.cache.store.cassandra.serializer.JavaSerializer - uses standard Java
                 serialization framework
-            b) org.apache.ignite.cache.store.cassandra.utils.serializer.KryoSerializer - uses Kryo
+            b) org.apache.ignite.cache.store.cassandra.serializer.KryoSerializer - uses Kryo
                 serialization framework
       4) column     [optional] - specifies column name for PRIMITIVE and BLOB strategies where to store value.
         If not specified column having 'value' name will be used. Shouldn't be used for POJO strategy.
     -->
     <valuePersistence class="org.apache.ignite.tests.pojos.Person"
                       strategy="POJO"
-                      serializer="org.apache.ignite.cache.store.cassandra.utils.serializer.KryoSerializer">
+                      serializer="org.apache.ignite.cache.store.cassandra.serializer.KryoSerializer">
         <!--
          Mapping from POJO field to Cassandra table column.
 
