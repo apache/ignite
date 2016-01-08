@@ -26,7 +26,7 @@ import java.util.Map;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.store.CacheStore;
-import org.apache.ignite.cache.store.cassandra.utils.common.SystemHelper;
+import org.apache.ignite.cache.store.cassandra.common.SystemHelper;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.processors.cache.CacheEntryImpl;
 import org.apache.ignite.tests.utils.TestsHelper;
