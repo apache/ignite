@@ -49,7 +49,7 @@ public class CassandraCacheStoreFactory<K, V> implements Factory<CassandraCacheS
     private transient DataSource dataSrc;
 
     /** Persistence settings. */
-    private transient KeyValuePersistenceSettings persistenceSettings;
+    private KeyValuePersistenceSettings persistenceSettings;
 
     /** Max workers thread count. These threads are responsible for load cache. */
     private int maxPoolSize = Runtime.getRuntime().availableProcessors();

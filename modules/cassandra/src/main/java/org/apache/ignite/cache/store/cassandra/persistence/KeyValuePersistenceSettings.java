@@ -22,6 +22,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.StringReader;
+import java.io.Serializable;
 import java.util.LinkedList;
 import java.util.List;
 import javax.xml.parsers.DocumentBuilder;
@@ -39,7 +40,7 @@ import org.xml.sax.InputSource;
 /**
  * Stores persistence settings for Ignite cache key and value
  */
-public class KeyValuePersistenceSettings {
+public class KeyValuePersistenceSettings implements Serializable {
     /**
      * Default Cassandra keyspace options which should be used to create new keyspace.
      *

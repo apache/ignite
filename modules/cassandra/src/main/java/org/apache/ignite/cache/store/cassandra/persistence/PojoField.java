@@ -20,6 +20,8 @@ package org.apache.ignite.cache.store.cassandra.persistence;
 import com.datastax.driver.core.DataType;
 import com.datastax.driver.core.Row;
 import java.beans.PropertyDescriptor;
+import java.io.Serializable;
+
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.cache.store.cassandra.common.PropertyMappingHelper;
@@ -30,7 +32,7 @@ import org.w3c.dom.Element;
  * Descriptor for particular field in a POJO object, specifying how this field
  * should be written to or loaded from Cassandra.
  */
-public abstract class PojoField {
+public abstract class PojoField implements Serializable {
     /** Name attribute of XML element describing Pojo field. */
     private static final String NAME_ATTR = "name";
 
@@ -40,6 +42,9 @@ public abstract class PojoField {
     /** Field name. */
     private String name;
 
+    /** Java class to which the field belongs. */
+    private Class javaCls;
+
     /** Field column name in Cassandra table. */
     private String col;
 
@@ -47,7 +52,7 @@ public abstract class PojoField {
     private String colDDL;
 
     /** Field property descriptor. */
-    private PropertyDescriptor desc;
+    private transient PropertyDescriptor desc;
 
     /**
      * Creates instance of {@link PojoField} based on it's description in XML element.
@@ -123,7 +128,7 @@ public abstract class PojoField {
      */
     public Object getValueFromObject(Object obj, Serializer serializer) {
         try {
-            Object val = desc.getReadMethod().invoke(obj);
+            Object val = propDesc().getReadMethod().invoke(obj);
 
             if (val == null)
                 return null;
@@ -141,7 +146,7 @@ public abstract class PojoField {
             return serializer.serialize(val);
         }
         catch (Throwable e) {
-            throw new IgniteException("Failed to get value of the field '" + desc.getName() + "' from the instance " +
+            throw new IgniteException("Failed to get value of the field '" + name + "' from the instance " +
                 " of '" + obj.getClass().toString() + "' class", e);
         }
     }
@@ -154,13 +159,13 @@ public abstract class PojoField {
      * @param serializer {@link org.apache.ignite.cache.store.cassandra.serializer.Serializer} to use.
      */
     public void setValueFromRow(Row row, Object obj, Serializer serializer) {
-        Object val = PropertyMappingHelper.getCassandraColumnValue(row, col, desc.getPropertyType(), serializer);
+        Object val = PropertyMappingHelper.getCassandraColumnValue(row, col, propDesc().getPropertyType(), serializer);
 
         try {
-            desc.getWriteMethod().invoke(obj, val);
+            propDesc().getWriteMethod().invoke(obj, val);
         }
         catch (Throwable e) {
-            throw new IgniteException("Failed to set value of the field '" + desc.getName() + "' of the instance " +
+            throw new IgniteException("Failed to set value of the field '" + name + "' of the instance " +
                 " of '" + obj.getClass().toString() + "' class", e);
         }
     }
@@ -199,7 +204,17 @@ public abstract class PojoField {
         DataType.Name cassandraType = PropertyMappingHelper.getCassandraType(desc.getPropertyType());
         cassandraType = cassandraType == null ? DataType.Name.BLOB : cassandraType;
 
+        this.javaCls = desc.getReadMethod().getDeclaringClass();
         this.desc = desc;
         this.colDDL = col + " " + cassandraType.toString();
+    }
+
+    /**
+     * Returns property descriptor of the POJO field
+     *
+     * @return Property descriptor
+     */
+    private PropertyDescriptor propDesc() {
+        return desc != null ? desc : (desc = PropertyMappingHelper.getPojoPropertyDescriptor(javaCls, name));
     }
 }

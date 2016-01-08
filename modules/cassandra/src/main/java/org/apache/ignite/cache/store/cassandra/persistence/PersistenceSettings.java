@@ -19,6 +19,7 @@ package org.apache.ignite.cache.store.cassandra.persistence;
 
 import com.datastax.driver.core.DataType;
 import java.beans.PropertyDescriptor;
+import java.io.Serializable;
 import java.nio.ByteBuffer;
 import java.util.List;
 import org.apache.ignite.IgniteException;
@@ -31,7 +32,7 @@ import org.w3c.dom.Element;
  * Stores persistence settings, which describes how particular key/value
  * from Ignite cache should be stored in Cassandra.
  */
-public abstract class PersistenceSettings {
+public abstract class PersistenceSettings implements Serializable {
     /** Xml attribute specifying persistence strategy. */
     private static final String STRATEGY_ATTR = "strategy";
 
