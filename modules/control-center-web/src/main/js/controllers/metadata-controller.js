@@ -27,6 +27,10 @@ consoleModule.controller('metadataController', function ($filter, $http, $timeou
 
             $scope.ui.packageName = $commonUtils.toJavaPackageName($scope.$root.user.email.replace('@', '.').split('.')
                 .reverse().join('.') + '.model');
+            $scope.ui.builtinKeys = true;
+            $scope.ui.usePrimitives = true;
+            $scope.ui.generateCaches = true;
+            $scope.ui.generatedCachesClusters = [];
 
             $scope.joinTip = $common.joinTip;
             $scope.getModel = $common.getModel;
@@ -121,7 +125,8 @@ consoleModule.controller('metadataController', function ($filter, $http, $timeou
 
             var INFO_CONNECT_TO_DB = 'Configure connection to database';
             var INFO_SELECT_SCHEMAS = 'Select schemas to load tables from';
-            var INFO_SELECT_TABLES = 'Select tables to import as cache type metadata';
+            var INFO_SELECT_TABLES = 'Select tables to load as cache type metadata';
+            var INFO_SELECT_OPTIONS = 'Select load metadata options';
             var LOADING_JDBC_DRIVERS = {text: 'Loading JDBC drivers...'};
             var LOADING_SCHEMAS = {text: 'Loading schemas...'};
             var LOADING_TABLES = {text: 'Loading tables...'};
@@ -440,6 +445,9 @@ consoleModule.controller('metadataController', function ($filter, $http, $timeou
                 });
             };
 
+            /**
+             * Load list of database schemas.
+             */
             function _loadSchemas() {
                 $loading.start('loadingMetadataFromDb');
 
@@ -475,7 +483,10 @@ consoleModule.controller('metadataController', function ($filter, $http, $timeou
                     });
             }
 
-            function _loadMetadata() {
+            /**
+             * Load list of database tables.
+             */
+            function _loadTables() {
                 $loading.start('loadingMetadataFromDb');
 
                 $scope.loadMeta.allTablesSelected = false;
@@ -502,7 +513,6 @@ consoleModule.controller('metadataController', function ($filter, $http, $timeou
 
                         $scope.loadMeta.tables = tables;
                         $scope.loadMeta.action = 'tables';
-                        $scope.loadMeta.button = 'Save';
                     })
                     .error(function (errMsg) {
                         $common.showError(errMsg);
@@ -513,6 +523,15 @@ consoleModule.controller('metadataController', function ($filter, $http, $timeou
 
                         $loading.finish('loadingMetadataFromDb');
                     });
+            }
+
+            /**
+             * Show page with load metadata options.
+             */
+            function _selectOptions() {
+                $scope.loadMeta.action = 'options';
+                $scope.loadMeta.button = 'Save';
+                $scope.loadMeta.info = INFO_SELECT_OPTIONS;
             }
 
             function toJavaClassName(name) {
@@ -554,7 +573,11 @@ consoleModule.controller('metadataController', function ($filter, $http, $timeou
                             var lastItem;
                             var newItems = [];
 
-                            _.forEach(savedBatch, function (savedItem) {
+                            _.forEach(savedBatch.generatedCaches, function (generatedCache) {
+                                $scope.caches.push(generatedCache);
+                            });
+
+                            _.forEach(savedBatch.savedMetas, function (savedItem) {
                                 var idx = _.findIndex($scope.metadatas, function (meta) {
                                     return meta._id === savedItem._id;
                                 });
@@ -617,11 +640,12 @@ consoleModule.controller('metadataController', function ($filter, $http, $timeou
 
                 function dbField(name, jdbcType, nullable) {
                     return {
+                        jdbcType: jdbcType,
                         databaseFieldName: name,
                         databaseFieldType: jdbcType.dbName,
                         javaFieldName: toJavaName(name),
                         javaFieldType: nullable ? jdbcType.javaType :
-                            (jdbcType.primitiveType ? jdbcType.primitiveType : jdbcType.javaType)
+                            ($scope.ui.usePrimitives && jdbcType.primitiveType ? jdbcType.primitiveType : jdbcType.javaType)
                     };
                 }
 
@@ -639,7 +663,8 @@ consoleModule.controller('metadataController', function ($filter, $http, $timeou
                         if (dup)
                             dupCnt++;
 
-                        var valType = $commonUtils.toJavaPackageName($scope.ui.packageName) + '.' + toJavaClassName(tableName);
+                        var typeName = toJavaClassName(tableName);
+                        var valType = $commonUtils.toJavaPackageName($scope.ui.packageName) + '.' + typeName;
 
                         var _containKey = false;
 
@@ -695,6 +720,8 @@ consoleModule.controller('metadataController', function ($filter, $http, $timeou
                         var dupSfx = (dup ? '_' + dupCnt : '');
 
                         meta.keyType = valType + 'Key' + dupSfx;
+
+                        meta.keyType = valType + 'Key' + dupSfx;
                         meta.valueType = valType + dupSfx;
                         meta.databaseSchema = table.schema;
                         meta.databaseTable = tableName;
@@ -702,6 +729,19 @@ consoleModule.controller('metadataController', function ($filter, $http, $timeou
                         meta.indexes = indexes;
                         meta.keyFields = keyFields;
                         meta.valueFields = valFields;
+
+                        // Use Java built-in type for key.
+                        if ($scope.ui.builtinKeys && meta.keyFields.length === 1) {
+                            meta.keyType = meta.keyFields[0].jdbcType.javaType;
+                            meta.keyFields = [];
+                        }
+
+                        // Prepare caches for generation.
+                        if ($scope.ui.generateCaches)
+                            meta.newCache = {
+                                name: typeName,
+                                clusters: $scope.ui.generatedCachesClusters
+                            };
 
                         batch.push(meta);
                         tables.push(tableName);
@@ -749,9 +789,14 @@ consoleModule.controller('metadataController', function ($filter, $http, $timeou
                 if (!$scope.nextAvailable())
                     return;
 
-                $scope.loadMeta.action === 'connect' && _loadSchemas();
-                $scope.loadMeta.action === 'schemas' && _loadMetadata();
-                $scope.loadMeta.action === 'tables' && _saveMetadata();
+                if ($scope.loadMeta.action === 'connect')
+                    _loadSchemas();
+                else if ($scope.loadMeta.action === 'schemas')
+                    _loadTables();
+                else if ($scope.loadMeta.action === 'tables')
+                    _selectOptions();
+                else if ($scope.loadMeta.action === 'options')
+                    _saveMetadata();
             };
 
             $scope.nextTooltipText = function () {
@@ -768,15 +813,19 @@ consoleModule.controller('metadataController', function ($filter, $http, $timeou
             };
 
             $scope.loadMetadataPrev = function () {
-                if  ($scope.loadMeta.action === 'tables' && $scope.loadMeta.schemas.length > 0) {
+                $scope.loadMeta.button = 'Next';
+
+                if  ($scope.loadMeta.action === 'options') {
+                    $scope.loadMeta.action = 'tables';
+                    $scope.loadMeta.info = INFO_SELECT_TABLES;
+                }
+                else if  ($scope.loadMeta.action === 'tables' && $scope.loadMeta.schemas.length > 0) {
                     $scope.loadMeta.action = 'schemas';
-                    $scope.loadMeta.button = 'Next';
                     $scope.loadMeta.info = INFO_SELECT_SCHEMAS;
                     $scope.loadMeta.loadingOptions = LOADING_TABLES;
                 }
                 else {
                     $scope.loadMeta.action = 'connect';
-                    $scope.loadMeta.button = 'Next';
                     $scope.loadMeta.info = INFO_CONNECT_TO_DB;
                     $scope.loadMeta.loadingOptions = LOADING_SCHEMAS;
                 }
@@ -797,8 +846,12 @@ consoleModule.controller('metadataController', function ($filter, $http, $timeou
             $http.post('/api/v1/configuration/metadata/list')
                 .success(function (data) {
                     $scope.spaces = data.spaces;
+                    $scope.clusters = data.clusters;
                     $scope.caches = data.caches;
                     $scope.metadatas = data.metadatas;
+
+                    if (_.size($scope.clusters) > 0)
+                        $scope.ui.generatedCachesClusters.push($scope.clusters[0].value);
 
                     // Load page descriptor.
                     $http.get('/models/metadata.json')

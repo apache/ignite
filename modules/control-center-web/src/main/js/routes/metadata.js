@@ -36,27 +36,35 @@ router.post('/list', function (req, res) {
                 return value._id;
             });
 
-            // Get all caches for spaces.
-            db.Cache.find({space: {$in: space_ids}}).sort('name').exec(function (err, caches) {
+            // Get all clusters for spaces.
+            db.Cluster.find({space: {$in: space_ids}}, '_id name').sort('name').exec(function (err, clusters) {
                 if (db.processed(err, res)) {
-                    // Get all metadata for spaces.
-                    db.CacheTypeMetadata.find({space: {$in: space_ids}}).sort('valueType').exec(function (err, metadatas) {
+                    // Get all caches for spaces.
+                    db.Cache.find({space: {$in: space_ids}}).sort('name').exec(function (err, caches) {
                         if (db.processed(err, res)) {
-                            // Remove deleted caches.
-                            _.forEach(metadatas, function (meta) {
-                                meta.caches = _.filter(meta.caches, function (cacheId) {
-                                    return _.findIndex(caches, function (cache) {
-                                            return cache._id.equals(cacheId);
-                                        }) >= 0;
-                                });
-                            });
+                            // Get all metadata for spaces.
+                            db.CacheTypeMetadata.find({space: {$in: space_ids}}).sort('valueType').exec(function (err, metadatas) {
+                                if (db.processed(err, res)) {
+                                    // Remove deleted caches.
+                                    _.forEach(metadatas, function (meta) {
+                                        meta.caches = _.filter(meta.caches, function (cacheId) {
+                                            return _.findIndex(caches, function (cache) {
+                                                    return cache._id.equals(cacheId);
+                                                }) >= 0;
+                                        });
+                                    });
 
-                            res.json({
-                                spaces: spaces,
-                                caches: caches.map(function (cache) {
-                                    return {value: cache._id, label: cache.name};
-                                }),
-                                metadatas: metadatas
+                                    res.json({
+                                        spaces: spaces,
+                                        clusters: clusters.map(function (cluster) {
+                                            return {value: cluster._id, label: cluster.name};
+                                        }),
+                                        caches: caches.map(function (cache) {
+                                            return {value: cache._id, label: cache.name};
+                                        }),
+                                        metadatas: metadatas
+                                    });
+                                }
                             });
                         }
                     });
@@ -66,66 +74,110 @@ router.post('/list', function (req, res) {
     });
 });
 
-function _save(metas, res) {
-    var savedMetas = [];
+function _saveMeta(meta, savedMetas, callback) {
+    var metaId = meta._id;
+    var caches = meta.caches;
 
-    if (metas && metas.length > 0)
-        async.forEachOf(metas, function(meta, idx, callback) {
-            var metaId = meta._id;
-            var caches = meta.caches;
-
-            if (metaId)
-                db.CacheTypeMetadata.update({_id: meta._id}, meta, {upsert: true}, function (err) {
+    if (metaId)
+        db.CacheTypeMetadata.update({_id: meta._id}, meta, {upsert: true}, function (err) {
+            if (err)
+                callback(err);
+            else
+                db.Cache.update({_id: {$in: caches}}, {$addToSet: {metadatas: metaId}}, {multi: true}, function (err) {
                     if (err)
                         callback(err);
                     else
-                        db.Cache.update({_id: {$in: caches}}, {$addToSet: {metadatas: metaId}}, {multi: true}, function (err) {
-                            if (err)
-                                callback(err);
-                            else
-                                db.Cache.update({_id: {$nin: caches}}, {$pull: {metadatas: metaId}}, {multi: true}, function (err) {
-                                    if (err)
-                                        callback(err);
-                                    else {
-                                        savedMetas.push(meta);
-
-                                        callback();
-                                    }
-                                });
-                        });
-                });
-            else {
-                db.CacheTypeMetadata.findOne({space: meta.space, valueType: meta.valueType}, function (err, metadata) {
-                    if (err)
-                        callback(err);
-                    else
-                        if (metadata)
-                            return callback('Cache type metadata with value type: "' + metadata.valueType + '" already exist.');
-
-                        (new db.CacheTypeMetadata(meta)).save(function (err, metadata) {
+                        db.Cache.update({_id: {$nin: caches}}, {$pull: {metadatas: metaId}}, {multi: true}, function (err) {
                             if (err)
                                 callback(err);
                             else {
-                                metaId = metadata._id;
+                                savedMetas.push(meta);
 
-                                db.Cache.update({_id: {$in: caches}}, {$addToSet: {metadatas: metaId}}, {multi: true}, function (err) {
-                                    if (err)
-                                        callback(err);
-                                    else {
-                                        savedMetas.push(metadata);
-
-                                        callback();
-                                    }
-                                });
+                                callback();
                             }
                         });
+                });
+        });
+    else
+        db.CacheTypeMetadata.findOne({space: meta.space, valueType: meta.valueType}, function (err, metadata) {
+            if (err)
+                callback(err);
+            else
+            if (metadata)
+                return callback('Cache type metadata with value type: "' + metadata.valueType + '" already exist.');
+
+            (new db.CacheTypeMetadata(meta)).save(function (err, metadata) {
+                if (err)
+                    callback(err);
+                else {
+                    metaId = metadata._id;
+
+                    db.Cache.update({_id: {$in: caches}}, {$addToSet: {metadatas: metaId}}, {multi: true}, function (err) {
+                        if (err)
+                            callback(err);
+                        else {
+                            savedMetas.push(metadata);
+
+                            callback();
+                        }
                     });
                 }
+            });
+        });
+}
+
+function _save(metas, res) {
+    var savedMetas = [];
+    var generatedCaches = [];
+
+    if (metas && metas.length > 0)
+        async.forEachOf(metas, function(meta, idx, callback) {
+            if (meta.newCache) {
+                db.Cache.findOne({space: meta.space, name: meta.newCache.name}, function (err, cache) {
+                    if (db.processed(err, res))
+                        if (cache) // Cache already exists, just save metadata.
+                            _saveMeta(meta, savedMetas, callback);
+                        else {
+                            // If cache not found, then create it and associate with metadata.
+                            (new db.Cache({
+                                space: meta.space,
+                                name: meta.newCache.name,
+                                clusters: meta.newCache.clusters,
+                                cacheMode: 'PARTITIONED',
+                                atomicityMode: 'ATOMIC',
+                                cacheStoreFactory: {
+                                    kind: 'CacheJdbcPojoStoreFactory',
+                                    CacheJdbcPojoStoreFactory: {
+                                        dataSourceBean: 'dataSource',
+                                        dialect: 'H2'
+                                    }
+                                },
+                                readThrough: true,
+                                writeThrough: true
+                            })).save(function (err, cache) {
+                                var cacheId = cache._id;
+
+                                if (db.processed(err, res)) {
+                                    db.Cluster.update({_id: {$in: cache.clusters}}, {$addToSet: {caches: cacheId}}, {multi: true}, function (err) {
+                                        if (db.processed(err, res)) {
+                                            meta.caches = [cacheId];
+                                            generatedCaches.push({ value: cacheId, label: cache.name });
+
+                                            _saveMeta(meta, savedMetas, callback);
+                                        }
+                                    });
+                                }
+                            });
+                        }
+                });
+            }
+            else
+                _saveMeta(meta, savedMetas, callback);
         }, function (err) {
             if (err)
                 res.status(500).send(err);
             else
-                res.send(savedMetas);
+                res.send({ savedMetas: savedMetas, generatedCaches: generatedCaches });
         });
     else
         res.status(500).send('Nothing to save!');

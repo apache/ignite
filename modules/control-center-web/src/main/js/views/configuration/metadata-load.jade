@@ -27,10 +27,10 @@ mixin chk(mdl, change, tip)
                 h4.modal-title Load metadata from database
             .metadata-content(ng-show='loadMeta.action == "drivers"')
             .metadata-content(ng-show='loadMeta.action == "connect"')
-                form.form-horizontal(name='loadForm' novalidate)
+                form.form-horizontal(name='connectForm' novalidate)
                     .settings-row(ng-repeat='field in metadataDb')
                         +form-row-custom(['col-xs-4 col-sm-3 col-md-3'], ['col-xs-8 col-sm-9 col-md-9'], 'preset')
-                div(ng-show='preset.drvIdx < 1')
+                div(ng-show='preset.drvIdx < 1' style='margin-top: 6px')
                     label Demo description:
                     ul
                         li In-memory H2 database server will be started inside agent
@@ -66,10 +66,6 @@ mixin chk(mdl, change, tip)
                                                     td
                                                         label {{::schema.name}}
             .metadata-content(ng-show='loadMeta.action == "tables"' style='margin-bottom: 50px')
-                .metadata-package-name
-                    label.required Package:
-                    span
-                        input.form-control(id='metadataLoadPackage' type="text" ng-model='ui.packageName' placeholder='Package for POJOs generation' bs-tooltip='' data-title='Package that will be used for POJOs generation' data-placement='top' data-trigger='hover')
                 table.table.metadata(st-table='loadMeta.displayedTables' st-safe-src='loadMeta.tables')
                     thead
                         tr
@@ -86,7 +82,7 @@ mixin chk(mdl, change, tip)
                     tbody
                         tr
                             td(colspan='3')
-                                .scrollable-y(style='height: 146px')
+                                .scrollable-y(style='height: 184px')
                                     table.table-modal-striped(id='metadataTableData')
                                         tbody
                                             tr(ng-repeat='table in loadMeta.displayedTables')
@@ -96,6 +92,40 @@ mixin chk(mdl, change, tip)
                                                     label {{::table.schema}}
                                                 td
                                                     label {{::table.tbl}}
+            .metadata-content(ng-show='loadMeta.action == "options"' style='margin-bottom: 152px')
+                form.form-horizontal(name='optionsForm' novalidate)
+                    .settings-row
+                        .col-xs-3.col-sm-2.col-md-2.required
+                            label.required Package:
+                        .col-xs-9.col-sm-10.col-md-10
+                            i.tipField.fa.fa-question-circle(bs-tooltip='' data-title='Package that will be used for POJOs generation')
+                            .input-tip
+                                input.form-control(id='metadataPackageName' type="text" ng-model='ui.packageName' placeholder='Package for POJOs generation')
+                    .settings-row
+                        .checkbox
+                            label
+                                input(id='metadataBuiltinKeys' type='checkbox' ng-model='ui.builtinKeys')
+                                | Use Java built-in types for keys
+                                i.tipLabel.fa.fa-question-circle(bs-tooltip='' data-title='Use Java built-in types like "Integer", "Long", "String" instead of POJO generation in case when table primary key contains only one field')
+                    .settings-row
+                        .checkbox
+                            label
+                                input(id='metadataUsePrimitives' type='checkbox' ng-model='ui.usePrimitives')
+                                | Use primitive types for NON NULL table columns
+                                i.tipLabel.fa.fa-question-circle(bs-tooltip='' data-title='Use primitive types like "int", "long", "double" for POJOs fields generation in case of NOT NULL columns')
+                    .settings-row
+                        .checkbox
+                            label
+                                input(id='metadataGenerateCaches' type='checkbox' ng-model='ui.generateCaches')
+                                | Generate cache for each loaded table
+                            i.tipLabel.fa.fa-question-circle(bs-tooltip='' data-title='Separate cache will be generated for each loaded table')
+                    .settings-row
+                        .col-xs-3.col-sm-2.col-md-2.required
+                            label Clusters:
+                        .col-xs-9.col-sm-10.col-md-10
+                            i.tipField.fa.fa-question-circle(bs-tooltip='' data-title='Choose clusters that will be associated with generated caches')
+                            .input-tip
+                                button.select-toggle.form-control(id='metadataGeneratedCachesCluster' bs-select ng-model='ui.generatedCachesClusters' ng-disabled='!ui.generateCaches' ng-class='{placeholder: !(ui.generatedCachesClusters && ui.generatedCachesClusters.length > 0)}' data-container='false' data-multiple='1' placeholder='Choose clusters for generated caches' bs-options='item.value as item.label for item in clusters')
             .modal-footer
                 label.labelField {{loadMeta.info}}
                 button.btn.btn-primary(ng-show='loadMeta.action != "connect"' ng-click='loadMetadataPrev()') Prev

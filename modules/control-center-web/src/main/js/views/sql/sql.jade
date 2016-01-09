@@ -31,7 +31,7 @@ mixin chart-settings(mdl)
         .col-xs-4
             .chart-settings-link(ng-show='paragraph.chart && paragraph.chartColumns.length > 0')
                 a(title='Click to show chart settings dialog' ng-click='$event.stopPropagation()' bs-popover data-template-url='/sql/chart-settings.html' data-placement='bottom' data-auto-close='1' data-trigger='click')
-                    i.fa.fa-chevron-circle-down
+                    i.fa.fa-chevron-circle-right
                     | Chart settings
                 div(ng-show='paragraphTimeSpanVisible(paragraph)')
                     label Show
@@ -84,7 +84,7 @@ mixin chart-settings(mdl)
                             .panel-heading(id='{{paragraph.id}}' bs-collapse-toggle)
                                 .row
                                     .col-sm-6(ng-hide='paragraph.edit')
-                                        i.tipLabel.fa(ng-class='paragraphExpanded(paragraph) ? "fa-chevron-circle-up" : "fa-chevron-circle-down"')
+                                        i.tipLabel.fa(ng-class='paragraphExpanded(paragraph) ? "fa-chevron-circle-down" : "fa-chevron-circle-right"')
                                         label {{paragraph.name}}
 
                                         .btn-group(ng-hide='notebook.paragraphs.length > 1')
@@ -95,7 +95,7 @@ mixin chart-settings(mdl)
                                             +btn-toolbar('fa-remove', 'removeParagraph(paragraph)', 'Remove query')
 
                                     .col-sm-6(ng-show='paragraph.edit')
-                                        i.tipLabel.fa(style='float: left;' ng-class='paragraphExpanded(paragraph) ? "fa-chevron-circle-up" : "fa-chevron-circle-down"')
+                                        i.tipLabel.fa(style='float: left;' ng-class='paragraphExpanded(paragraph) ? "fa-chevron-circle-down" : "fa-chevron-circle-right"')
                                         i.tipLabel.fa.fa-floppy-o(style='float: right;' ng-show='paragraph.editName' ng-click='renameParagraph(paragraph, paragraph.editName); $event.stopPropagation();' bs-tooltip data-title='Save query name' data-trigger='hover')
                                         .input-tip
                                             input.form-control(id='paragraph-name-{{paragraph.id}}' ng-model='paragraph.editName' required ng-click='$event.stopPropagation();' on-enter='renameParagraph(paragraph, paragraph.editName)' on-escape='paragraph.edit = false')

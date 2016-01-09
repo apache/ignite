@@ -50,7 +50,9 @@ export default ['$scope', 'IgniteUiAceOnLoad', function($scope, onLoad) {
         const classes = ctrl.classes = [];
 
         _.forEach(ctrl.metadatas, (meta) => {
-            classes.push(meta.keyType);
+            if (meta.keyType)
+                classes.push(meta.keyType);
+
             classes.push(meta.valueType);
         });
     };

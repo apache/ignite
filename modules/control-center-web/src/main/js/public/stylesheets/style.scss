@@ -662,7 +662,7 @@ button.form-control {
         float: right;
     }
 
-    .fa-chevron-circle-up, .fa-chevron-circle-down {
+    .fa-chevron-circle-right, .fa-chevron-circle-down {
         font-size: $font-size-base;
         color: inherit;
         float: left;
@@ -830,26 +830,6 @@ button.form-control {
     }
 }
 
-.metadata-package-name {
-    margin: 10px 0;
-    overflow: hidden;
-
-    label {
-        line-height: $input-height;
-        float: left;
-    }
-
-    input {
-        width: 100%
-    }
-
-    span {
-        display: block;
-        overflow: hidden;
-        padding-left: 10px;
-    }
-}
-
 .metadata-content {
     margin: 15px 30px;
 }
@@ -960,9 +940,8 @@ button.form-control {
 }
 
 .panel-details {
-    margin-top: 10px;
-
-    padding: 10px;
+    margin-top: 5px;
+    padding: 5px;
 
     border-radius: 5px;
     border: thin dotted $ignite-border-color;
@@ -1159,6 +1138,7 @@ label {
 
 .form-horizontal .checkbox {
     padding-top: 0;
+    min-height: 0;
 }
 
 .input-tip {
@@ -1229,27 +1209,9 @@ label {
     margin-right: 5px;
 }
 
-.fa-chevron-circle-up {
-    color: $brand-primary;
-    margin-right: 5px;
-}
-
-.fa-chevron-circle-left {
-    color: $brand-primary;
-    margin-right: 5px;
-
-    font-size: 15px;
-
-    line-height: $line-height-base;
-}
-
 .fa-chevron-circle-right {
     color: $brand-primary;
     margin-right: 5px;
-
-    font-size: 15px;
-
-    line-height: $line-height-base;
 }
 
 .fa-question-circle {
@@ -1707,7 +1669,6 @@ button.select-toggle {
 }
 
 button.select-toggle::after {
-    vertical-align: middle;
     content: "";
     border-top: 0.3em solid;
     border-right: 0.3em solid transparent;
@@ -1715,6 +1676,7 @@ button.select-toggle::after {
     position: absolute;
     right: 5px;
     top: 50%;
+    vertical-align: middle;
 }
 
 // Prevent scroll bars from being hidden for OS X.

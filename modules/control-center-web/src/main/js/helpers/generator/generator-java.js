@@ -1083,7 +1083,9 @@ $generatorJava.cacheStore = function (cache, metadatas, cacheVarName, res) {
                 $generatorJava.cacheStoreDataSource(storeFactory, res);
 
                 res.line('setDataSource(dataSource);');
-                res.line('');
+
+                res.needEmptyLine = true;
+
                 res.line('return super.create();');
                 res.endBlock('}');
                 res.endBlock('};');

@@ -35,8 +35,8 @@ mixin lbl(txt)
                             input.form-control(id='profile-email' type='email' ng-model='profileUser.email' placeholder='you@domain.com' required)
                     .details-row
                         .advanced-options
-                            i.fa.fa-chevron-circle-up(ng-show='profileUser.showToken' ng-click='profileUser.showToken = ! profileUser.showToken')
-                            i.fa.fa-chevron-circle-down(ng-show='!profileUser.showToken' ng-click='profileUser.showToken = ! profileUser.showToken')
+                            i.fa.fa-chevron-circle-down(ng-show='profileUser.showToken' ng-click='profileUser.showToken = ! profileUser.showToken')
+                            i.fa.fa-chevron-circle-right(ng-show='!profileUser.showToken' ng-click='profileUser.showToken = ! profileUser.showToken')
                             a(ng-click='profileUser.showToken = ! profileUser.showToken') {{profileUser.showToken ? 'Hide security token...' : 'Show security token...'}}
                     .details-row(ng-show='profileUser.showToken')
                         +lbl('Security token:')
@@ -46,8 +46,8 @@ mixin lbl(txt)
                         i.tipLabel.fa.fa-question-circle(ng-if=lines bs-tooltip='' data-title='The security token is used for authorization of web agent')
                     .details-row
                         .advanced-options
-                            i.fa.fa-chevron-circle-up(ng-show='profileUser.changePassword' ng-click='profileUser.changePassword = ! profileUser.changePassword')
-                            i.fa.fa-chevron-circle-down(ng-show='!profileUser.changePassword' ng-click='profileUser.changePassword = ! profileUser.changePassword')
+                            i.fa.fa-chevron-circle-down(ng-show='profileUser.changePassword' ng-click='profileUser.changePassword = ! profileUser.changePassword')
+                            i.fa.fa-chevron-circle-right(ng-show='!profileUser.changePassword' ng-click='profileUser.changePassword = ! profileUser.changePassword')
                             a(ng-click='profileUser.changePassword = ! profileUser.changePassword') {{profileUser.changePassword ? 'Cancel password changing...' : 'Change password...'}}
                     div(ng-if='profileUser.changePassword')
                         .details-row

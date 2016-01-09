@@ -32,8 +32,8 @@
                         b README.txt
                         | &nbsp;for more information
                 .modal-advanced-options
-                    i.fa.fa-chevron-circle-up(ng-show='agentLoad.showToken' ng-click='agentLoad.showToken = ! agentLoad.showToken')
-                    i.fa.fa-chevron-circle-down(ng-show='!agentLoad.showToken' ng-click='agentLoad.showToken = ! agentLoad.showToken')
+                    i.fa.fa-chevron-circle-down(ng-show='agentLoad.showToken' ng-click='agentLoad.showToken = ! agentLoad.showToken')
+                    i.fa.fa-chevron-circle-right(ng-show='!agentLoad.showToken' ng-click='agentLoad.showToken = ! agentLoad.showToken')
                     a(ng-click='agentLoad.showToken = ! agentLoad.showToken') {{agentLoad.showToken ? 'Hide security token...' : 'Show security token...'}}
                 .details-row(ng-show='agentLoad.showToken')
                     label.labelField Security token: {{user.token}}

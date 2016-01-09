@@ -388,7 +388,7 @@ consoleModule.controller('cachesController', [
                                 }
                             }, true);
 
-                            $scope.$watchCollection('backupItem.metadatas', function (val, old) {
+                            $scope.$watchCollection('backupItem.metadatas', function (val) {
                                 if ($scope.selectedItemWatchGuard)
                                     $scope.selectedItemWatchGuard = false;
                                 else {
@@ -508,7 +508,7 @@ consoleModule.controller('cachesController', [
                     if (item.cacheStoreFactory.kind === 'CacheJdbcPojoStoreFactory') {
                         if ($common.isEmptyString(item.cacheStoreFactory.CacheJdbcPojoStoreFactory.dataSourceBean))
                             return showPopoverMessage($scope.panels, 'store', 'dataSourceBean',
-                                'Data source bean should not be empty');
+                                'Data source bean name should not be empty');
 
                         if (!item.cacheStoreFactory.CacheJdbcPojoStoreFactory.dialect)
                             return showPopoverMessage($scope.panels, 'store', 'dialect',
@@ -522,7 +522,7 @@ consoleModule.controller('cachesController', [
 
                         if ($common.isEmptyString(item.cacheStoreFactory.CacheJdbcBlobStoreFactory.dataSourceBean))
                             return showPopoverMessage($scope.panels, 'store', 'dataSourceBean',
-                                'Data source bean should not be empty');
+                                'Data source bean name should not be empty');
                     }
                 }
 
