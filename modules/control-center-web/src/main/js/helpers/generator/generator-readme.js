@@ -34,22 +34,21 @@ $generatorReadme.readme = function (res) {
     res.needEmptyLine = true;
 
     res.line('Project structure:');
-    res.line('    /config - this folder will contain client and server XML configurations.');
+    res.line('    /config - this folder contains client and server XML configurations.');
     res.line('    /jdbc-drivers - this folder should contains proprietary JDBC drivers.');
-    res.line('    /src - this folder will contain generated java code.');
-    res.line('    /src/main/java/config - this folder will contain generated java classes with cluster configuration from code.');
-    res.line('    /src/main/java/startup - this folder will contain generated java classes with server and client nodes startup code.');
+    res.line('    /src - this folder contains generated java code.');
+    res.line('    /src/main/java/config - this folder contains generated java classes with cluster configuration from code.');
+    res.line('    /src/main/java/startup - this folder contains generated java classes with server and client nodes startup code.');
     res.line('    /src/main/java/[model] - this folder will be named as package name for your POJO classes and contain generated POJO files.');
-    res.line('    /src/main/resources - this folder will contain generated secret.properties file with security sensitive information.');
+    res.line('    /src/main/resources - this folder contains generated secret.properties file with security sensitive information.');
     res.line('    Dockerfile - sample docker file.');
     res.line('    pom.xml - generated Maven project description, could be used to open generated project in IDE or build with Maven.');
     res.line('    README.txt - this file.');
 
     res.needEmptyLine = true;
 
-    res.line('Ignite ships with CacheJdbcPojoStore, which is out-of-the-box JDBC');
-    res.line('implementation of the IgniteCacheStore interface, and automatically');
-    res.line('handles all the write-through and read-through logic.');
+    res.line('Ignite ships with CacheJdbcPojoStore, which is out-of-the-box JDBC implementation of the IgniteCacheStore ');
+    res.line('interface, and automatically handles all the write-through and read-through logic.');
 
     res.needEmptyLine = true;
 
