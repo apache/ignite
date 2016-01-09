@@ -412,12 +412,10 @@ public class GridReduceQueryExecutor {
     ) {
         String space = cctx.name();
 
-        Collection<ClusterNode> nodes = dataNodes(space, topVer);
+        Set<ClusterNode> nodes = new HashSet<>(dataNodes(space, topVer));
 
         if (F.isEmpty(nodes))
             throw new CacheException("Failed to find data nodes for cache: " + space);
-
-        nodes = nodes.size() > 4 ? new HashSet<>(nodes) : new ArrayList<>(nodes);
 
         if (!F.isEmpty(extraSpaces)) {
             for (String extraSpace : extraSpaces) {
@@ -482,7 +480,7 @@ public class GridReduceQueryExecutor {
         if (!F.isEmpty(m)) {
             for (Map.Entry<IgniteProductVersion,Collection<ClusterNode>> entry : m.entrySet()) {
                 if (entry.getKey().compareTo(DISTRIBUTED_JOIN_SINCE) >= 0)
-                    break;
+                        break;
 
                 for (ClusterNode node : entry.getValue()) {
                     if (!node.isClient() && !node.isDaemon())
