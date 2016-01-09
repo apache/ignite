@@ -21,7 +21,7 @@ export default [
     '$scope', '$http', '$common', '$loading', '$table', '$filter', 'ConfigurationSummaryResource',
     function($scope, $http, $common, $loading, $table, $filter, Resource) {
         const ctrl = this;
-        const igniteVersion = '1.5.0-b1';
+        const igniteVersion = '1.5.0.final';
 
         $loading.start('loading');
 
