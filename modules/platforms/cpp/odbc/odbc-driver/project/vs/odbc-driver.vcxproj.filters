@@ -103,6 +103,9 @@
     <ClCompile Include="..\..\os\win\src\system\socket_client.cpp">
       <Filter>Code\system</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\src\decimal.cpp">
+      <Filter>Code</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="module.def">
@@ -200,6 +203,9 @@
     </ClInclude>
     <ClInclude Include="..\..\include\ignite\odbc\system\socket_client.h">
       <Filter>Code\system</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\ignite\odbc\decimal.h">
+      <Filter>Code</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

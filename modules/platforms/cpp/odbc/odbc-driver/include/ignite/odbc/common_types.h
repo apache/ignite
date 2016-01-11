@@ -44,6 +44,9 @@ namespace ignite
 
         /**
          * Convert internal Ignite type into ODBC SQL return code.
+         *
+         * @param result Internal result type.
+         * @return ODBC result type.
          */
         int SqlResultToReturnCode(SqlResult result);
 
@@ -110,28 +113,72 @@ namespace ignite
             SQL_STATE_HYT01_CONNECTIOIN_TIMEOUT
         };
 
+        /**
+         * Diagnostic field type.
+         */
         enum DiagnosticField
         {
+            /** Header record field: Count of rows in the cursor. */
             IGNITE_SQL_DIAG_HEADER_CURSOR_ROW_COUNT,
+
+            /**
+             * Header record field: String that describes the SQL statement
+             * that the underlying function executed.
+             */
             IGNITE_SQL_DIAG_HEADER_DYNAMIC_FUNCTION,
+
+            /**
+             * Header record field: Numeric code that describes the SQL
+             * statement that was executed by the underlying function.
+             */
             IGNITE_SQL_DIAG_HEADER_DYNAMIC_FUNCTION_CODE,
+
+            /** Header record field: Number of status records. */
             IGNITE_SQL_DIAG_HEADER_NUMBER,
+
+            /** Header record field: Last operation return code. */
             IGNITE_SQL_DIAG_HEADER_RETURNCODE,
+
+            /** Header record field: Row count. */
             IGNITE_SQL_DIAG_HEADER_ROW_COUNT,
 
+            /** Status record field: Class origin. */
             IGNITE_SQL_DIAG_STATUS_CLASS_ORIGIN,
+
+            /** Status record field: Column number. */
             IGNITE_SQL_DIAG_STATUS_COLUMN_NUMBER,
+
+            /** Status record field: Connection name. */
             IGNITE_SQL_DIAG_STATUS_CONNECTION_NAME,
+
+            /** Status record field: Message text. */
             IGNITE_SQL_DIAG_STATUS_MESSAGE_TEXT,
+
+            /** Status record field: Native result code. */
             IGNITE_SQL_DIAG_STATUS_NATIVE,
+
+            /** Status record field: Row number. */
             IGNITE_SQL_DIAG_STATUS_ROW_NUMBER,
+
+            /** Status record field: Server name. */
             IGNITE_SQL_DIAG_STATUS_SERVER_NAME,
+
+            /** Status record field: SQLSTATE. */
             IGNITE_SQL_DIAG_STATUS_SQLSTATE,
+
+            /** Status record field: Subclass origin. */
             IGNITE_SQL_DIAG_STATUS_SUBCLASS_ORIGIN,
 
+            /** Field type is unknown to the driver. */
             IGNITE_SQL_DIAG_UNKNOWN
         };
 
+        /**
+         * Convert ODBC field type to internal DiagnosticField type value.
+         *
+         * @param field ODBC field type.
+         * @return Internal DiagnosticField type value.
+         */
         DiagnosticField DiagnosticFieldToInternal(int16_t field);
     }
 }
