@@ -87,6 +87,7 @@ import static org.apache.ignite.events.EventType.EVT_NODE_JOINED;
 import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
 import static org.apache.ignite.internal.GridTopic.TOPIC_COMM_USER;
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.AFFINITY_POOL;
+import static org.apache.ignite.internal.managers.communication.GridIoPolicy.IDX_POOL;
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.IGFS_POOL;
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.MANAGEMENT_POOL;
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.MARSH_CACHE_POOL;
@@ -146,6 +147,9 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
 
     /** IGFS pool. */
     private ExecutorService igfsPool;
+
+    /** Index pool. */
+    private ExecutorService idxPool;
 
     /** Discovery listener. */
     private GridLocalEventListener discoLsnr;
@@ -253,6 +257,13 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
             1,
             0,
             new LinkedBlockingQueue<Runnable>());
+
+        if (IgniteComponentType.INDEXING.inClassPath()) {
+            int cpus = Runtime.getRuntime().availableProcessors();
+
+            idxPool = new IgniteThreadPoolExecutor("idx", ctx.gridName(),
+                cpus, cpus * 2, 3000L, new LinkedBlockingQueue<Runnable>(1000));
+        }
 
         getSpi().setListener(commLsnr = new CommunicationListener<Serializable>() {
             @Override public void onMessage(UUID nodeId, Serializable msg, IgniteRunnable msgC) {
@@ -700,6 +711,11 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
                 assert igfsPool != null : "IGFS pool is not configured.";
 
                 return igfsPool;
+
+            case IDX_POOL:
+                assert idxPool != null : "Indexing pool is not configured.";
+
+                return idxPool;
 
             default: {
                 assert plc >= 0 : "Negative policy: " + plc;

@@ -41,6 +41,7 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.GridTopic;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
+import org.apache.ignite.internal.managers.communication.GridIoPolicy;
 import org.apache.ignite.internal.managers.communication.GridMessageListener;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2IndexRangeRequest;
@@ -237,7 +238,8 @@ public class GridH2TreeIndex extends GridH2IndexBase implements Comparator<GridS
      * @param msg Message.
      */
     private void send(Collection<ClusterNode> nodes, Message msg) {
-        if (!getTable().rowDescriptor().indexing().send(msgTopic, nodes, msg, null, locNodeHandler))
+        if (!getTable().rowDescriptor().indexing().send(msgTopic, nodes, msg, null, locNodeHandler,
+            GridIoPolicy.IDX_POOL, false))
             throw new GridH2RetryException("Failed to send message to nodes: " + nodes + ".");
     }
 
@@ -1410,6 +1412,8 @@ public class GridH2TreeIndex extends GridH2IndexBase implements Comparator<GridS
         private GridH2IndexRangeResponse awaitForResponse() {
             assert remainingRanges > 0;
 
+            final long start = U.currentTimeMillis();
+
             for (int attempt = 0;; attempt++) {
                 if (qctx.isCleared())
                     throw new GridH2RetryException("Query is cancelled.");
@@ -1451,6 +1455,9 @@ public class GridH2TreeIndex extends GridH2IndexBase implements Comparator<GridS
                         case STATUS_NOT_FOUND:
                             if (req == null || req.bounds() == null) // We have already received the first response.
                                 throw new GridH2RetryException("Failure on remote node.");
+
+                            if (U.currentTimeMillis() - start > 30_000)
+                                throw new GridH2RetryException("Timeout.");
 
                             try {
                                 U.sleep(20 * attempt);

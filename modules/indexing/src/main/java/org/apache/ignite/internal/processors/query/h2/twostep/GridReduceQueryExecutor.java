@@ -627,8 +627,9 @@ public class GridReduceQueryExecutor {
                             .partitions(convert(partsMap))
                             .queries(mapQrys)
                             .flags(distributedJoins ? GridH2QueryRequest.FLAG_DISTRIBUTED_JOINS : 0),
-                    oldStyle && partsMap != null ? new ExplicitPartitionsSpecializer(partsMap) : null))
-                {
+                    oldStyle && partsMap != null ? new ExplicitPartitionsSpecializer(partsMap) : null,
+                    distributedJoins)
+                ) {
                     awaitAllReplies(r, nodes);
 
                     Object state = r.state.get();
@@ -710,7 +711,7 @@ public class GridReduceQueryExecutor {
                 }
 
                 if (retry) {
-                    send(nodes, new GridQueryCancelRequest(qryReqId), null);
+                    send(nodes, new GridQueryCancelRequest(qryReqId), null, false);
 
                     if (Thread.currentThread().isInterrupted())
                         throw new IgniteInterruptedCheckedException("Query was interrupted.");
@@ -725,7 +726,7 @@ public class GridReduceQueryExecutor {
                         super.close();
 
                         if (distributedJoins || !allIndexesFetched(r.idxs))
-                            send(finalNodes, new GridQueryCancelRequest(qryReqId), null);
+                            send(finalNodes, new GridQueryCancelRequest(qryReqId), null, false);
                     }
                 };
             }
@@ -1121,17 +1122,19 @@ public class GridReduceQueryExecutor {
      * @param nodes Nodes.
      * @param msg Message.
      * @param specialize Optional closure to specialize message for each node.
+     * @param runLocParallel Run local handler in parallel thread.
      * @return {@code true} If all messages sent successfully.
      */
     private boolean send(
         Collection<ClusterNode> nodes,
         Message msg,
-        @Nullable IgniteBiClosure<ClusterNode, Message, Message> specialize
+        @Nullable IgniteBiClosure<ClusterNode, Message, Message> specialize,
+        boolean runLocParallel
     ) {
         if (log.isDebugEnabled())
             log.debug("Sending: [msg=" + msg + ", nodes=" + nodes + ", specialize=" + specialize + "]");
 
-        return h2.send(GridTopic.TOPIC_QUERY, nodes, msg, specialize, locNodeHandler);
+        return h2.send(GridTopic.TOPIC_QUERY, nodes, msg, specialize, locNodeHandler, QUERY_POOL, runLocParallel);
     }
 
     /**
