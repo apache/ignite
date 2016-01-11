@@ -344,22 +344,22 @@ public class PlatformCompute extends PlatformAbstractTarget {
 
         /** {@inheritDoc} */
         @Override public Object get() throws IgniteCheckedException {
-            return toBinary(fut.get());
+            return convertResult(fut.get());
         }
 
         /** {@inheritDoc} */
         @Override public Object get(long timeout) throws IgniteCheckedException {
-            return toBinary(fut.get(timeout));
+            return convertResult(fut.get(timeout));
         }
 
         /** {@inheritDoc} */
         @Override public Object get(long timeout, TimeUnit unit) throws IgniteCheckedException {
-            return toBinary(fut.get(timeout, unit));
+            return convertResult(fut.get(timeout, unit));
         }
 
         /** {@inheritDoc} */
         @Override public Object getUninterruptibly() throws IgniteCheckedException {
-            return toBinary(fut.get());
+            return convertResult(fut.get());
         }
 
         /** {@inheritDoc} */
@@ -422,6 +422,16 @@ public class PlatformCompute extends PlatformAbstractTarget {
             catch (Throwable e) {
                 return null;
             }
+        }
+
+        /**
+         * Converts future result.
+         *
+         * @param obj Object to convert.
+         * @return Result.
+         */
+        protected Object convertResult(Object obj) {
+            return toBinary(obj);
         }
     }
 }
