@@ -329,7 +329,7 @@ public class PlatformCompute extends PlatformAbstractTarget {
     /**
      * Wraps ComputeTaskFuture as IgniteInternalFuture.
      */
-    private class ComputeTaskFutureInternal implements IgniteInternalFuture {
+    protected class ComputeTaskFutureInternal implements IgniteInternalFuture {
         /** */
         private final ComputeTaskFuture fut;
 
@@ -338,7 +338,7 @@ public class PlatformCompute extends PlatformAbstractTarget {
          *
          * @param fut Future to wrap.
          */
-        private ComputeTaskFutureInternal(ComputeTaskFuture fut) {
+        public ComputeTaskFutureInternal(ComputeTaskFuture fut) {
             this.fut = fut;
         }
 
