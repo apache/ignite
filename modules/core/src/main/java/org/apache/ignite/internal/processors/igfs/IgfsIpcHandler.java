@@ -36,7 +36,7 @@ import org.apache.ignite.internal.igfs.common.IgfsIpcCommand;
 import org.apache.ignite.internal.igfs.common.IgfsMessage;
 import org.apache.ignite.internal.igfs.common.IgfsPathControlRequest;
 import org.apache.ignite.internal.igfs.common.IgfsStreamControlRequest;
-import org.apache.ignite.internal.processors.closure.GridClosurePolicy;
+import org.apache.ignite.internal.managers.communication.GridIoPolicy;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.lang.GridPlainCallable;
 import org.apache.ignite.internal.util.typedef.F;
@@ -143,7 +143,7 @@ class IgfsIpcHandler implements IgfsServerHandler {
                             // No need to pass data input for non-write-block commands.
                             return execute(ses, cmd, msg, null);
                         }
-                    }, GridClosurePolicy.IGFS_POOL);
+                    }, GridIoPolicy.IGFS_POOL);
                 }
             }
 
