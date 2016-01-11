@@ -17,12 +17,9 @@
 
 package org.apache.ignite.internal.processors.platform.compute;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
-import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteCompute;
+import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.compute.ComputeTaskFuture;
 import org.apache.ignite.internal.IgniteComputeImpl;
 import org.apache.ignite.internal.IgniteInternalFuture;
@@ -31,11 +28,16 @@ import org.apache.ignite.internal.binary.BinaryRawReaderEx;
 import org.apache.ignite.internal.binary.BinaryRawWriterEx;
 import org.apache.ignite.internal.processors.platform.PlatformAbstractTarget;
 import org.apache.ignite.internal.processors.platform.PlatformContext;
-import org.apache.ignite.internal.processors.platform.utils.*;
-import org.apache.ignite.internal.util.typedef.C1;
-import org.apache.ignite.lang.IgniteFuture;
+import org.apache.ignite.internal.processors.platform.utils.PlatformFutureUtils;
+import org.apache.ignite.internal.processors.platform.utils.PlatformListenable;
+import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgniteInClosure;
-import org.apache.ignite.binary.BinaryObject;
+
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
+import java.util.UUID;
+import java.util.concurrent.TimeUnit;
 
 import static org.apache.ignite.internal.processors.task.GridTaskThreadContextKey.TC_SUBGRID;
 
@@ -273,17 +275,7 @@ public class PlatformCompute extends PlatformAbstractTarget {
         Object res = compute0.execute(taskName, arg);
 
         if (async) {
-            // TODO: Broken cancellation here
-            //ComputeTaskFuture f = compute0.future();
-            //f.
-
-            curFut.set(compute0.future().chain(new C1<IgniteFuture, Object>() {
-                private static final long serialVersionUID = 0L;
-
-                @Override public Object apply(IgniteFuture fut) {
-                    return toBinary(fut.get());
-                }
-            }));
+            curFut.set(new ComputeTaskFutureInternal(compute0.future()));
 
             return null;
         }
@@ -331,5 +323,65 @@ public class PlatformCompute extends PlatformAbstractTarget {
     protected IgniteCompute computeForTask(Collection<UUID> nodeIds) {
         return nodeIds == null ? compute :
             platformCtx.kernalContext().grid().compute(compute.clusterGroup().forNodeIds(nodeIds));
+    }
+
+    private class ComputeTaskFutureInternal implements IgniteInternalFuture {
+        private final ComputeTaskFuture fut;
+
+        private ComputeTaskFutureInternal(ComputeTaskFuture fut) {
+            this.fut = fut;
+        }
+
+        @Override public Object get() throws IgniteCheckedException {
+            return toBinary(fut.get());
+        }
+
+        @Override public Object get(long timeout) throws IgniteCheckedException {
+            return toBinary(fut.get(timeout));
+        }
+
+        @Override public Object get(long timeout, TimeUnit unit) throws IgniteCheckedException {
+            return toBinary(fut.get(timeout, unit));
+        }
+
+        @Override public Object getUninterruptibly() throws IgniteCheckedException {
+            return toBinary(fut.get());
+        }
+
+        @Override public boolean cancel() throws IgniteCheckedException {
+            return fut.cancel();
+        }
+
+        @Override public boolean isDone() {
+            return fut.isDone();
+        }
+
+        @Override public boolean isCancelled() {
+            return fut.isCancelled();
+        }
+
+        @Override public long startTime() {
+            return fut.startTime();
+        }
+
+        @Override public long duration() {
+            return fut.duration();
+        }
+
+        @Override public void listen(IgniteInClosure lsnr) {
+            fut.listen(lsnr);
+        }
+
+        @Override public IgniteInternalFuture chain(IgniteClosure doneCb) {
+            return null;
+        }
+
+        @Override public Throwable error() {
+            return null;
+        }
+
+        @Override public Object result() {
+            return fut.get();
+        }
     }
 }
