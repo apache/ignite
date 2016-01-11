@@ -56,9 +56,7 @@ namespace Apache.Ignite.Core.Tests.Compute
 
             Assert.IsTrue(task.IsCanceled);
 
-            Console.WriteLine("Cancelled: " + Thread.CurrentThread.ManagedThreadId);
-
-            Assert.Greater(Job.CancelCount, 0);
+            Assert.IsTrue(TestUtils.WaitForCondition(() => Job.CancelCount > 0, 5000));
         }
 
         [Test]
@@ -71,15 +69,13 @@ namespace Apache.Ignite.Core.Tests.Compute
         {
             public IDictionary<IComputeJob<int>, IClusterNode> Map(IList<IClusterNode> subgrid, object arg)
             {
-                Console.WriteLine("Map: " + Thread.CurrentThread.ManagedThreadId);
-                return Enumerable.Range(1, 10)
+                return Enumerable.Range(1, 100)
                     .SelectMany(x => subgrid)
                     .ToDictionary(x => (IComputeJob<int>)new Job(), x => x);
             }
 
             public ComputeJobResultPolicy OnResult(IComputeJobResult<int> res, IList<IComputeJobResult<int>> rcvd)
             {
-                Console.WriteLine("Result: " + Thread.CurrentThread.ManagedThreadId);
                 return ComputeJobResultPolicy.Wait;
             }
 
@@ -92,19 +88,16 @@ namespace Apache.Ignite.Core.Tests.Compute
         [Serializable]
         private class Job : IComputeJob<int>
         {
-            private static int _cancelCount = 0;
+            private static int _cancelCount;
 
             public static int CancelCount
             {
                 get { return Thread.VolatileRead(ref _cancelCount); }
-                set { Thread.VolatileWrite(ref _cancelCount, value); }
             }
 
             public int Execute()
             {
-                Console.WriteLine("BeforeExecute: " + Thread.CurrentThread.ManagedThreadId);
-                Thread.Sleep(2000);
-                Console.WriteLine("Execute: " + Thread.CurrentThread.ManagedThreadId);
+                Thread.Sleep(50);
                 return 1;
             }
 
