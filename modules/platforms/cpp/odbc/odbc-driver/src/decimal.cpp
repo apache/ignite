@@ -28,7 +28,7 @@ namespace ignite
     {
     }
 
-    Decimal::Decimal(int32_t scale, const int8_t * mag, int32_t len) :
+    Decimal::Decimal(int32_t scale, const int8_t* mag, int32_t len) :
         scale(scale), len(len), magnitude(0)
     {
         magnitude = new int8_t[len];
@@ -36,7 +36,7 @@ namespace ignite
         memcpy(magnitude, mag, len);
     }
 
-    Decimal::Decimal(const Decimal & other) :
+    Decimal::Decimal(const Decimal& other) :
         scale(other.scale), len(other.len), magnitude(0)
     {
         magnitude = new int8_t[len];
@@ -69,12 +69,12 @@ namespace ignite
         return scale;
     }
 
-    const int8_t * Decimal::GetMagnitude() const
+    const int8_t* Decimal::GetMagnitude() const
     {
         return magnitude;
     }
 
-    void swap(Decimal & first, Decimal & second)
+    void swap(Decimal& first, Decimal& second)
     {
         using std::swap;
 

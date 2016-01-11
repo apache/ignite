@@ -153,6 +153,7 @@
     <ClCompile Include="..\..\..\odbc-driver\src\config\configuration.cpp" />
     <ClCompile Include="..\..\..\odbc-driver\src\config\connection_info.cpp" />
     <ClCompile Include="..\..\..\odbc-driver\src\cursor.cpp" />
+    <ClCompile Include="..\..\..\odbc-driver\src\decimal.cpp" />
     <ClCompile Include="..\..\..\odbc-driver\src\result_page.cpp" />
     <ClCompile Include="..\..\..\odbc-driver\src\row.cpp" />
     <ClCompile Include="..\..\..\odbc-driver\src\utility.cpp" />

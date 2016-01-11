@@ -61,6 +61,9 @@
     <ClCompile Include="..\..\..\odbc-driver\src\app\application_data_buffer.cpp">
       <Filter>Externals</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\..\odbc-driver\src\decimal.cpp">
+      <Filter>Externals</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\include\teamcity_messages.h">

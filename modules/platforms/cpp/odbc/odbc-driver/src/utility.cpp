@@ -75,9 +75,9 @@ namespace ignite
 
             mag.resize(len);
 
-            reader.ReadInt8Array(mag.data(), mag.size());
+            reader.ReadInt8Array(mag.data(), static_cast<int32_t>(mag.size()));
 
-            Decimal res(scale, mag.data(), mag.size());
+            Decimal res(scale, mag.data(), static_cast<int32_t>(mag.size()));
 
             swap(decimal, res);
         }
