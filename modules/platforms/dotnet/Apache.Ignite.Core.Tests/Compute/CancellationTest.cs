@@ -30,7 +30,7 @@ namespace Apache.Ignite.Core.Tests.Compute
     /// </summary>
     public class CancellationTest : IgniteTestBase
     {
-        // TODO: 
+        // TODO: all API methods
         // Java task
         // C# task
         // Closures
@@ -44,11 +44,20 @@ namespace Apache.Ignite.Core.Tests.Compute
         [Test]
         public void TestTask()
         {
-            Console.WriteLine("Test: " + Thread.CurrentThread.ManagedThreadId);
+            TestTask((c, t) => c.ExecuteAsync(new Task(), t));
+            TestTask((c, t) => c.ExecuteAsync(new Task(), 1, t));
+            TestTask((c, t) => c.ExecuteAsync<int, IList<IComputeJobResult<int>>>(typeof(Task), t));
+            TestTask((c, t) => c.ExecuteAsync<object, int, IList<IComputeJobResult<int>>>(typeof(Task), 1, t));
+        }
+
+        private void TestTask(Func<ICompute, CancellationToken, System.Threading.Tasks.Task> runner)
+        {
+            Job.CancelCount = 0;
+
             var compute = Compute;
 
             var cts = new CancellationTokenSource();
-            var task = compute.ExecuteAsync(new Task(), cts.Token);
+            var task = runner(compute, cts.Token);
 
             Assert.IsFalse(task.IsCanceled);
 
@@ -93,6 +102,7 @@ namespace Apache.Ignite.Core.Tests.Compute
             public static int CancelCount
             {
                 get { return Thread.VolatileRead(ref _cancelCount); }
+                set { Thread.VolatileWrite(ref _cancelCount, value); }
             }
 
             public int Execute()
