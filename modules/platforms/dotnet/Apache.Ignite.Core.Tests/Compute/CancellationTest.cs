@@ -75,7 +75,7 @@ namespace Apache.Ignite.Core.Tests.Compute
         {
             using (var cts = new CancellationTokenSource())
             {
-                var task = Compute.ExecuteJavaTaskAsync<object>(ComputeApiTest.BroadcastTask, 100, cts.Token);
+                var task = Compute.ExecuteJavaTaskAsync<object>(ComputeApiTest.BroadcastTask, null, cts.Token);
 
                 Assert.IsFalse(task.IsCanceled);
 

@@ -41,14 +41,8 @@ public class PlatformComputeBroadcastTask extends ComputeTaskAdapter<Object, Col
     @Nullable @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, @Nullable Object arg) {
         Map<ComputeJob, ClusterNode> jobs = new HashMap<>();
 
-        int jobMultiplier = 1;
-
-        if (arg instanceof Integer)
-            jobMultiplier = (Integer)arg;
-
-        for (int i = 0; i < jobMultiplier; i++)
-            for (ClusterNode node : subgrid)
-                jobs.put(new BroadcastJob(), node);
+        for (ClusterNode node : subgrid)
+            jobs.put(new BroadcastJob(), node);
 
         return jobs;
     }
