@@ -22,6 +22,7 @@ import angular from 'angular';
 import pdfMake from 'pdfmake';
 
 import 'angular-ui-router';
+import 'angular-ui-router-title';
 import 'angular-strap';
 import 'angular-ui-ace';
 import 'angular-tree-control';
@@ -94,6 +95,7 @@ import hasPojo from './filters/hasPojo/hasPojo.filter';
 angular
 .module('ignite-console', [
     'ui.router',
+    'ui.router.title',
     // Base modules.
     'ignite-console.Auth',
     'ignite-console.User',

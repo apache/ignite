@@ -26,6 +26,11 @@ angular
     $stateProvider
     .state('settings.admin', {
         url: '/admin',
-        templateUrl: '/settings/admin.html'
+        templateUrl: '/settings/admin.html',
+        resolve: {
+            $title: () => {
+                return 'List of registered users';
+            }
+        }
     });
 }]);

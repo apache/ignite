@@ -32,18 +32,19 @@ System.config({
     "angular-ui-ace": "github:angular-ui/ui-ace@0.2.3",
     "angular-ui-grid": "github:angular-ui/bower-ui-grid@3.0.7",
     "angular-ui-router": "github:angular-ui/ui-router@0.2.15",
+    "angular-ui-router-title": "github:nonplus/angular-ui-router-title@0.0.4",
     "babel": "npm:babel-core@5.8.34",
     "babel-runtime": "npm:babel-runtime@5.8.34",
     "blob": "github:eligrey/Blob.js@master",
     "bootstrap": "github:twbs/bootstrap@3.3.6",
     "bootstrap-carousel": "github:twbs/bootstrap@3.3.6",
-    "clean-css": "npm:clean-css@3.4.8",
+    "clean-css": "npm:clean-css@3.4.9",
     "core-js": "npm:core-js@1.2.6",
     "css": "github:systemjs/plugin-css@0.1.20",
     "file-saver": "github:eligrey/FileSaver.js@master",
     "font-awesome": "npm:font-awesome@4.5.0",
     "jade": "github:johnsoftek/plugin-jade@0.5.1",
-    "jquery": "github:components/jquery@2.1.4",
+    "jquery": "github:components/jquery@2.2.0",
     "json": "github:systemjs/plugin-json@0.1.0",
     "jszip": "github:Stuk/jszip@2.5.0",
     "lodash": "npm:lodash@3.10.1",
@@ -72,7 +73,7 @@ System.config({
       "angular": "github:angular/bower-angular@1.4.8"
     },
     "github:angular/bower-angular@1.4.8": {
-      "jquery": "github:components/jquery@2.1.4"
+      "jquery": "github:components/jquery@2.2.0"
     },
     "github:darthwade/angular-loading@0.1.4": {
       "spinjs": "github:fgnass/spin.js@2.3.2"
@@ -87,7 +88,7 @@ System.config({
       "assert": "npm:assert@1.3.0"
     },
     "github:jspm/nodelibs-buffer@0.1.0": {
-      "buffer": "npm:buffer@3.5.5"
+      "buffer": "npm:buffer@3.6.0"
     },
     "github:jspm/nodelibs-events@0.1.1": {
       "events": "npm:events@1.0.2"
@@ -140,13 +141,13 @@ System.config({
       "css": "github:systemjs/plugin-css@0.1.20"
     },
     "github:twbs/bootstrap@3.3.6": {
-      "jquery": "github:components/jquery@2.1.4"
+      "jquery": "github:components/jquery@2.2.0"
     },
     "github:wix/angular-tree-control@0.2.23": {
       "angular": "github:angular/bower-angular@1.4.8"
     },
     "npm:acorn-globals@1.0.9": {
-      "acorn": "npm:acorn@2.6.4"
+      "acorn": "npm:acorn@2.7.0"
     },
     "npm:acorn@1.2.2": {
       "fs": "github:jspm/nodelibs-fs@0.1.2",
@@ -154,7 +155,7 @@ System.config({
       "process": "github:jspm/nodelibs-process@0.1.2",
       "stream": "github:jspm/nodelibs-stream@0.1.0"
     },
-    "npm:acorn@2.6.4": {
+    "npm:acorn@2.7.0": {
       "fs": "github:jspm/nodelibs-fs@0.1.2",
       "path": "github:jspm/nodelibs-path@0.1.0",
       "process": "github:jspm/nodelibs-process@0.1.2",
@@ -183,7 +184,7 @@ System.config({
     "npm:babel-runtime@5.8.34": {
       "process": "github:jspm/nodelibs-process@0.1.2"
     },
-    "npm:buffer@3.5.5": {
+    "npm:buffer@3.6.0": {
       "base64-js": "npm:base64-js@0.0.8",
       "child_process": "github:jspm/nodelibs-child_process@0.1.0",
       "fs": "github:jspm/nodelibs-fs@0.1.2",
@@ -195,7 +196,7 @@ System.config({
       "align-text": "npm:align-text@0.1.3",
       "lazy-cache": "npm:lazy-cache@0.2.7"
     },
-    "npm:clean-css@3.4.8": {
+    "npm:clean-css@3.4.9": {
       "buffer": "github:jspm/nodelibs-buffer@0.1.0",
       "commander": "npm:commander@2.8.1",
       "fs": "github:jspm/nodelibs-fs@0.1.2",
@@ -228,7 +229,7 @@ System.config({
       "process": "github:jspm/nodelibs-process@0.1.2"
     },
     "npm:constantinople@3.0.2": {
-      "acorn": "npm:acorn@2.6.4"
+      "acorn": "npm:acorn@2.7.0"
     },
     "npm:core-js@1.2.6": {
       "fs": "github:jspm/nodelibs-fs@0.1.2",
@@ -246,6 +247,9 @@ System.config({
       "fs": "github:jspm/nodelibs-fs@0.1.2",
       "process": "github:jspm/nodelibs-process@0.1.2"
     },
+    "npm:decamelize@1.1.2": {
+      "escape-string-regexp": "npm:escape-string-regexp@1.0.4"
+    },
     "npm:font-awesome@4.5.0": {
       "css": "github:systemjs/plugin-css@0.1.20"
     },
@@ -258,13 +262,13 @@ System.config({
     "npm:inherits@2.0.1": {
       "util": "github:jspm/nodelibs-util@0.1.0"
     },
-    "npm:is-buffer@1.1.0": {
+    "npm:is-buffer@1.1.1": {
       "buffer": "github:jspm/nodelibs-buffer@0.1.0"
     },
     "npm:jade@1.11.0": {
       "buffer": "github:jspm/nodelibs-buffer@0.1.0",
       "character-parser": "npm:character-parser@1.2.1",
-      "clean-css": "npm:clean-css@3.4.8",
+      "clean-css": "npm:clean-css@3.4.9",
       "commander": "npm:commander@2.6.0",
       "constantinople": "npm:constantinople@3.0.2",
       "jstransformer": "npm:jstransformer@0.0.2",
@@ -285,7 +289,7 @@ System.config({
     },
     "npm:kind-of@2.0.1": {
       "buffer": "github:jspm/nodelibs-buffer@0.1.0",
-      "is-buffer": "npm:is-buffer@1.1.0"
+      "is-buffer": "npm:is-buffer@1.1.1"
     },
     "npm:lazy-cache@0.2.7": {
       "process": "github:jspm/nodelibs-process@0.1.2"
@@ -419,7 +423,7 @@ System.config({
       "assert": "github:jspm/nodelibs-assert@0.1.0",
       "camelcase": "npm:camelcase@1.2.1",
       "cliui": "npm:cliui@2.1.0",
-      "decamelize": "npm:decamelize@1.1.1",
+      "decamelize": "npm:decamelize@1.1.2",
       "fs": "github:jspm/nodelibs-fs@0.1.2",
       "path": "github:jspm/nodelibs-path@0.1.0",
       "process": "github:jspm/nodelibs-process@0.1.2",

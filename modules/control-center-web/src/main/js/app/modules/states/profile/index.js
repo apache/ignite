@@ -26,6 +26,11 @@ angular
     $stateProvider
     .state('settings.profile', {
         url: '/profile',
-        templateUrl: '/settings/profile.html'
+        templateUrl: '/settings/profile.html',
+        resolve: {
+            $title: () => {
+                return 'User profile';
+            }
+        }
     });
 }]);

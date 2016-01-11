@@ -29,6 +29,11 @@ angular
         templateUrl: '/sql/sql.html',
         data: {
             loading: 'Loading notebook screen...'
+        },
+        resolve: {
+            $title: () => {
+                return 'SQL notebook';
+            }
         }
     });
 }]);
