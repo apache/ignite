@@ -56,6 +56,8 @@ namespace Apache.Ignite.Core.Tests.Compute
 
             Assert.IsTrue(task.IsCanceled);
 
+            Console.WriteLine("Cancelled: " + Thread.CurrentThread.ManagedThreadId);
+
             Assert.Greater(Job.CancelCount, 0);
         }
 
@@ -100,6 +102,7 @@ namespace Apache.Ignite.Core.Tests.Compute
 
             public int Execute()
             {
+                Console.WriteLine("BeforeExecute: " + Thread.CurrentThread.ManagedThreadId);
                 Thread.Sleep(2000);
                 Console.WriteLine("Execute: " + Thread.CurrentThread.ManagedThreadId);
                 return 1;
