@@ -470,8 +470,9 @@ consoleModule.controller('cachesController', [
                     atomicityMode: 'ATOMIC',
                     readFromBackup: true,
                     copyOnRead: true,
-                    clusters: id && _.find($scope.clusters, {value: id}) ? [id] :
-                        (!$common.isEmptyArray($scope.clusters) ? [$scope.clusters[0].value] : []),
+                    clusters: id && _.find($scope.clusters, {value: id})
+                        ? [id]
+                        : _.map($scope.clusters, function(cluster) { return cluster.value; }),
                     metadatas: id && _.find($scope.metadatas, {value: id}) ? [id] : [],
                     get label() { return angular.bind(this, _cacheLbl)(); }
                 };
