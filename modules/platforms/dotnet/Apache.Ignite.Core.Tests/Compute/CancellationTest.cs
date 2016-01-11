@@ -67,15 +67,15 @@ namespace Apache.Ignite.Core.Tests.Compute
         [Test]
         public void TestClosures()
         {
-            TestTask((c, t) => c.BroadcastAsync(new ComputeAction(), t));
-            TestTask((c, t) => c.AffinityRunAsync(null, 0, new ComputeAction(), t));
-            TestTask((c, t) => c.RunAsync(new ComputeAction(), t));
-            TestTask((c, t) => c.RunAsync(Enumerable.Range(1, 10).Select(x => new ComputeAction()), t));
-            TestTask((c, t) => c.CallAsync(new ComputeFunc(), t));
-            TestTask((c, t) => c.AffinityCallAsync(null, 0, new ComputeFunc(), t));
-            TestTask((c, t) => c.ApplyAsync(new ComputeBiFunc(), 10, t));
-            TestTask((c, t) => c.ApplyAsync(new ComputeBiFunc(), Enumerable.Range(1, 10), t));
-            TestTask((c, t) => c.ApplyAsync(new ComputeBiFunc(), Enumerable.Range(1, 10), new ComputeReducer(), t));
+            TestClosure((c, t) => c.BroadcastAsync(new ComputeAction(), t));
+            TestClosure((c, t) => c.AffinityRunAsync(null, 0, new ComputeAction(), t));
+            TestClosure((c, t) => c.RunAsync(new ComputeAction(), t));
+            TestClosure((c, t) => c.RunAsync(Enumerable.Range(1, 10).Select(x => new ComputeAction()), t));
+            TestClosure((c, t) => c.CallAsync(new ComputeFunc(), t));
+            TestClosure((c, t) => c.AffinityCallAsync(null, 0, new ComputeFunc(), t));
+            TestClosure((c, t) => c.ApplyAsync(new ComputeBiFunc(), 10, t));
+            TestClosure((c, t) => c.ApplyAsync(new ComputeBiFunc(), Enumerable.Range(1, 10), t));
+            TestClosure((c, t) => c.ApplyAsync(new ComputeBiFunc(), Enumerable.Range(1, 10), new ComputeReducer(), t));
         }
 
         private void TestTask(Func<ICompute, CancellationToken, System.Threading.Tasks.Task> runner)
