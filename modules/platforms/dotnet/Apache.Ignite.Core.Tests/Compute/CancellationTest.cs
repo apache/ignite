@@ -30,9 +30,6 @@ namespace Apache.Ignite.Core.Tests.Compute
     /// </summary>
     public class CancellationTest : IgniteTestBase
     {
-        // TODO: all API methods
-        // Closures
-
         public CancellationTest() 
             : base("config\\compute\\compute-grid1.xml", "config\\compute\\compute-grid2.xml")
         {
@@ -78,6 +75,7 @@ namespace Apache.Ignite.Core.Tests.Compute
             TestTask((c, t) => c.AffinityCallAsync(null, 0, new ComputeFunc(), t));
             TestTask((c, t) => c.ApplyAsync(new ComputeBiFunc(), 10, t));
             TestTask((c, t) => c.ApplyAsync(new ComputeBiFunc(), Enumerable.Range(1, 10), t));
+            TestTask((c, t) => c.ApplyAsync(new ComputeBiFunc(), Enumerable.Range(1, 10), new ComputeReducer(), t));
         }
 
         private void TestTask(Func<ICompute, CancellationToken, System.Threading.Tasks.Task> runner)
@@ -156,6 +154,19 @@ namespace Apache.Ignite.Core.Tests.Compute
             public int Invoke(int arg)
             {
                 return arg;
+            }
+        }
+
+        private class ComputeReducer : IComputeReducer<int, int>
+        {
+            public bool Collect(int res)
+            {
+                return true;
+            }
+
+            public int Reduce()
+            {
+                return 0;
             }
         }
     }
