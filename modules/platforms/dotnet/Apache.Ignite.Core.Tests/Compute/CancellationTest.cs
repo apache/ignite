@@ -48,29 +48,6 @@ namespace Apache.Ignite.Core.Tests.Compute
             TestTask((c, t) => c.ExecuteAsync<object, int, IList<IComputeJobResult<int>>>(typeof(Task), 1, t));
         }
 
-        private void TestTask(Func<ICompute, CancellationToken, System.Threading.Tasks.Task> runner)
-        {
-            Job.CancelCount = 0;
-
-            var compute = Compute;
-
-            using (var cts = new CancellationTokenSource())
-            {
-                var task = runner(compute, cts.Token);
-
-                Assert.IsFalse(task.IsCanceled);
-
-                cts.Cancel();
-
-                Assert.IsTrue(task.IsCanceled);
-
-                Assert.IsTrue(TestUtils.WaitForCondition(() => Job.CancelCount > 0, 5000));
-
-                // Pass cancelled token
-                Assert.IsTrue(runner(compute, cts.Token).IsCanceled);
-            }
-        }
-
         [Test]
         public void TestJavaTask()
         {
@@ -87,6 +64,45 @@ namespace Apache.Ignite.Core.Tests.Compute
                 // Pass cancelled token
                 Assert.IsTrue(
                     Compute.ExecuteJavaTaskAsync<object>(ComputeApiTest.BroadcastTask, null, cts.Token).IsCanceled);
+            }
+        }
+
+        [Test]
+        public void TestClosures()
+        {
+            TestTask((c, t) => c.BroadcastAsync(new ComputeAction(), t));
+            TestTask((c, t) => c.AffinityRunAsync(null, 0, new ComputeAction(), t));
+            TestTask((c, t) => c.RunAsync(new ComputeAction(), t));
+            TestTask((c, t) => c.RunAsync(Enumerable.Range(1, 10).Select(x => new ComputeAction()), t));
+            TestTask((c, t) => c.CallAsync(new ComputeFunc(), t));
+            TestTask((c, t) => c.AffinityCallAsync(null, 0, new ComputeFunc(), t));
+            TestTask((c, t) => c.ApplyAsync(new ComputeBiFunc(), 10, t));
+            TestTask((c, t) => c.ApplyAsync(new ComputeBiFunc(), Enumerable.Range(1, 10), t));
+        }
+
+        private void TestTask(Func<ICompute, CancellationToken, System.Threading.Tasks.Task> runner)
+        {
+            Job.CancelCount = 0;
+
+            TestClosure(runner);
+
+            Assert.IsTrue(TestUtils.WaitForCondition(() => Job.CancelCount > 0, 5000));
+        }
+
+        private void TestClosure(Func<ICompute, CancellationToken, System.Threading.Tasks.Task> runner)
+        {
+            using (var cts = new CancellationTokenSource())
+            {
+                var task = runner(Compute, cts.Token);
+
+                Assert.IsFalse(task.IsCanceled);
+
+                cts.Cancel();
+
+                Assert.IsTrue(task.IsCanceled);
+
+                // Pass cancelled token
+                Assert.IsTrue(runner(Compute, cts.Token).IsCanceled);
             }
         }
 
@@ -131,6 +147,15 @@ namespace Apache.Ignite.Core.Tests.Compute
             public void Cancel()
             {
                 Interlocked.Increment(ref _cancelCount);
+            }
+        }
+
+        [Serializable]
+        private class ComputeBiFunc : IComputeFunc<int, int>
+        {
+            public int Invoke(int arg)
+            {
+                return arg;
             }
         }
     }
