@@ -272,6 +272,7 @@ public class PlatformCompute extends PlatformAbstractTarget {
         Object res = compute0.execute(taskName, arg);
 
         if (async) {
+            // TODO: Broken cancellation here
             curFut.set(compute0.future().chain(new C1<IgniteFuture, Object>() {
                 private static final long serialVersionUID = 0L;
 

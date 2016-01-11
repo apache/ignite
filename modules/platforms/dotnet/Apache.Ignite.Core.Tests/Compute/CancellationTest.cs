@@ -81,7 +81,7 @@ namespace Apache.Ignite.Core.Tests.Compute
 
                 cts.Cancel();
 
-                Assert.IsTrue(task.IsCanceled);
+                Assert.IsTrue(TestUtils.WaitForCondition(() => task.IsCanceled, 15000));
             }
         }
 
