@@ -374,7 +374,7 @@ public class PlatformCompute extends PlatformAbstractTarget {
                 private static final long serialVersionUID = 0L;
 
                 @Override public void apply(IgniteFuture fut0) {
-                    lsnr.apply(fut0);
+                    lsnr.apply(ComputeTaskFutureInternal.this);
                 }
             });
         }
