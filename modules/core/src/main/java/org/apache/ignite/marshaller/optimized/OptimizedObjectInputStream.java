@@ -45,7 +45,6 @@ import org.apache.ignite.internal.util.io.GridDataInput;
 import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.marshaller.MarshallerContext;
-import sun.misc.Unsafe;
 
 import static org.apache.ignite.marshaller.optimized.OptimizedMarshallerUtils.ARRAY_LIST;
 import static org.apache.ignite.marshaller.optimized.OptimizedMarshallerUtils.BOOLEAN;
@@ -98,9 +97,6 @@ import static org.apache.ignite.marshaller.optimized.OptimizedMarshallerUtils.se
  * Optimized object input stream.
  */
 class OptimizedObjectInputStream extends ObjectInputStream {
-    /** Unsafe. */
-    private static final Unsafe UNSAFE = GridUnsafe.unsafe();
-
     /** Dummy object for HashSet. */
     private static final Object DUMMY = new Object();
 
@@ -544,7 +540,7 @@ class OptimizedObjectInputStream extends ObjectInputStream {
         Object obj;
 
         try {
-            obj = UNSAFE.allocateInstance(cls);
+            obj = GridUnsafe.allocateInstance(cls);
         }
         catch (InstantiationException e) {
             throw new IOException(e);
@@ -642,7 +638,7 @@ class OptimizedObjectInputStream extends ObjectInputStream {
     @SuppressWarnings("unchecked")
     HashSet<?> readHashSet(long mapFieldOff) throws ClassNotFoundException, IOException {
         try {
-            HashSet<Object> set = (HashSet<Object>)UNSAFE.allocateInstance(HashSet.class);
+            HashSet<Object> set = (HashSet<Object>)GridUnsafe.allocateInstance(HashSet.class);
 
             handles.assign(set);
 
@@ -714,7 +710,7 @@ class OptimizedObjectInputStream extends ObjectInputStream {
     @SuppressWarnings("unchecked")
     LinkedHashSet<?> readLinkedHashSet(long mapFieldOff) throws ClassNotFoundException, IOException {
         try {
-            LinkedHashSet<Object> set = (LinkedHashSet<Object>)UNSAFE.allocateInstance(LinkedHashSet.class);
+            LinkedHashSet<Object> set = (LinkedHashSet<Object>)GridUnsafe.allocateInstance(LinkedHashSet.class);
 
             handles.assign(set);
 

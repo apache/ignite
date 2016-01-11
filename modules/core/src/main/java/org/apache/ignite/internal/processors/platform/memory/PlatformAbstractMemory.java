@@ -17,13 +17,15 @@
 
 package org.apache.ignite.internal.processors.platform.memory;
 
+import org.apache.ignite.internal.util.GridUnsafe;
+
 /**
  * Interop memory chunk abstraction.
  */
 public abstract class PlatformAbstractMemory implements PlatformMemory {
     /** Stream factory. */
-    private static final StreamFactory STREAM_FACTORY = PlatformMemoryUtils.LITTLE_ENDIAN ?
-        new LittleEndianStreamFactory() : new BigEndianStreamFactory();
+    private static final StreamFactory STREAM_FACTORY = GridUnsafe.BIG_ENDIAN ?
+        new BigEndianStreamFactory() : new LittleEndianStreamFactory();
 
     /** Cross-platform memory pointer. */
     protected long memPtr;
