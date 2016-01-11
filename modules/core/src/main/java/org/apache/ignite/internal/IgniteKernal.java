@@ -83,6 +83,8 @@ import org.apache.ignite.configuration.CollectionConfiguration;
 import org.apache.ignite.configuration.ConnectorConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
+import org.apache.ignite.internal.binary.BinaryEnumCache;
+import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.cluster.ClusterGroupAdapter;
 import org.apache.ignite.internal.cluster.IgniteClusterEx;
 import org.apache.ignite.internal.managers.GridManager;
@@ -96,8 +98,6 @@ import org.apache.ignite.internal.managers.failover.GridFailoverManager;
 import org.apache.ignite.internal.managers.indexing.GridIndexingManager;
 import org.apache.ignite.internal.managers.loadbalancer.GridLoadBalancerManager;
 import org.apache.ignite.internal.managers.swapspace.GridSwapSpaceManager;
-import org.apache.ignite.internal.binary.BinaryEnumCache;
-import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.processors.GridProcessor;
 import org.apache.ignite.internal.processors.affinity.GridAffinityProcessor;
 import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
@@ -745,9 +745,6 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
         // Run background network diagnostics.
         GridDiagnostic.runBackgroundCheck(gridName, execSvc, log);
 
-        boolean notifyEnabled = IgniteSystemProperties.getBoolean(IGNITE_UPDATE_NOTIFIER,
-            Boolean.parseBoolean(IgniteProperties.get("ignite.update.notifier.enabled.by.default")));
-
         // Ack 3-rd party licenses location.
         if (log.isInfoEnabled() && cfg.getIgniteHome() != null)
             log.info("3-rd party licenses can be found at: " + cfg.getIgniteHome() + File.separatorChar + "libs" +
@@ -788,7 +785,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
 
             startProcessor(new ClusterProcessor(ctx));
 
-            fillNodeAttributes(notifyEnabled);
+            fillNodeAttributes();
 
             U.onGridStart();
 
@@ -819,24 +816,6 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
             addHelper(IGFS_HELPER.create(F.isEmpty(cfg.getFileSystemConfiguration())));
 
             startProcessor(new IgnitePluginProcessor(ctx, cfg, plugins));
-
-            verChecker = null;
-
-            if (notifyEnabled) {
-                try {
-                    verChecker = new GridUpdateNotifier(gridName, VER_STR, gw, ctx.plugins().allProviders(), false);
-
-                    updateNtfTimer = new Timer("ignite-update-notifier-timer", true);
-
-                    // Setup periodic version check.
-                    updateNtfTimer.scheduleAtFixedRate(new UpdateNotifierTimerTask(this, execSvc, verChecker),
-                        0, PERIODIC_VER_CHECK_DELAY);
-                }
-                catch (IgniteCheckedException e) {
-                    if (log.isDebugEnabled())
-                        log.debug("Failed to create GridUpdateNotifier: " + e);
-                }
-            }
 
             // Off-heap processor has no dependencies.
             startProcessor(new GridOffHeapProcessor(ctx));
@@ -1113,6 +1092,31 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
 
         if (!isDaemon())
             ctx.discovery().ackTopology();
+
+        Boolean ntfEnabled = IgniteSystemProperties.getBoolean(IGNITE_UPDATE_NOTIFIER,
+            Boolean.parseBoolean(IgniteProperties.get("ignite.update.notifier.enabled.by.default")));
+
+        Boolean prevVal = (Boolean)ctx.cache().utilityCache().
+            getAndPutIfAbsent("ignite.update.notifier.enabled.for.cluster", ntfEnabled);
+
+        if (prevVal != null)
+            ntfEnabled = prevVal;
+
+        if (ntfEnabled) {
+            try {
+                verChecker = new GridUpdateNotifier(gridName, VER_STR, gw, ctx.plugins().allProviders(), false);
+
+                updateNtfTimer = new Timer("ignite-update-notifier-timer", true);
+
+                // Setup periodic version check.
+                updateNtfTimer.scheduleAtFixedRate(new UpdateNotifierTimerTask(this, execSvc, verChecker),
+                    0, PERIODIC_VER_CHECK_DELAY);
+            }
+            catch (IgniteCheckedException e) {
+                if (log.isDebugEnabled())
+                    log.debug("Failed to create GridUpdateNotifier: " + e);
+            }
+        }
     }
 
     /**
@@ -1201,11 +1205,10 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
     /**
      * Creates attributes map and fills it in.
      *
-     * @param notifyEnabled Update notifier flag.
      * @throws IgniteCheckedException thrown if was unable to set up attribute.
      */
     @SuppressWarnings({"SuspiciousMethodCalls", "unchecked", "TypeMayBeWeakened"})
-    private void fillNodeAttributes(boolean notifyEnabled) throws IgniteCheckedException {
+    private void fillNodeAttributes() throws IgniteCheckedException {
         final String[] incProps = cfg.getIncludeProperties();
 
         try {
@@ -1242,8 +1245,6 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
                     ctx.addNodeAttribute(key, e.getValue());
                 }
             }
-
-            ctx.addNodeAttribute(IgniteNodeAttributes.ATTR_UPDATE_NOTIFIER_ENABLED, notifyEnabled);
 
             if (log.isDebugEnabled())
                 log.debug("Added system properties to node attributes.");
