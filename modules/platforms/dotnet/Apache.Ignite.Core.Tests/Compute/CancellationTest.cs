@@ -90,6 +90,7 @@ namespace Apache.Ignite.Core.Tests.Compute
 
             public IList<IComputeJobResult<int>> Reduce(IList<IComputeJobResult<int>> results)
             {
+                Assert.Fail("Reduce should not be called on a cancelled task.");
                 return results;
             }
         }
