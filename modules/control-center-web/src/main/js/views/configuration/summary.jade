@@ -121,9 +121,9 @@ mixin ignite-form-field-tooltip(message)
                                         ) Show settings
 
                                 .details-row
-                                    .col-sm-12.panel-details(ng-if='ctrl.__form.expanded && #{nearCfg}.nearEvictionPolicy.kind')
+                                    .panel-details.col-xs-12.col-sm-12.col-md-6(ng-if='ctrl.__form.expanded && #{nearCfg}.nearEvictionPolicy.kind')
                                         .details-row
-                                            ignite-form-field.col-xs-12.col-sm-12.col-md-6(data-label='Batch size')
+                                            ignite-form-field(data-label='Batch size')
                                                 +ignite-form-field-tooltip("Number of entries to remove on shrink")
                                                 ignite-form-field-input-number(
                                                     data-name='batchSize'
@@ -131,7 +131,7 @@ mixin ignite-form-field-tooltip(message)
                                                     data-placeholder='1'
                                                 )           
                                         .details-row
-                                            ignite-form-field.col-xs-12.col-sm-12.col-md-6(data-label='Max memory size')
+                                            ignite-form-field(data-label='Max memory size')
                                                 +ignite-form-field-tooltip("Maximum allowed cache size in bytes")
                                                 ignite-form-field-input-number(
                                                     data-name='maxMemorySize'
@@ -139,7 +139,7 @@ mixin ignite-form-field-tooltip(message)
                                                     data-placeholder='0'
                                                 )
                                         .details-row
-                                            ignite-form-field.col-xs-12.col-sm-12.col-md-6(data-label='Max size')
+                                            ignite-form-field(data-label='Max size')
                                                 +ignite-form-field-tooltip("Maximum allowed size of cache before entry will start getting evicted")
                                                 ignite-form-field-input-number(
                                                     data-name='maxSize'

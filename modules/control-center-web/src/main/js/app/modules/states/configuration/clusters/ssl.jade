@@ -97,7 +97,7 @@ form.panel.panel-default(bs-collapse ng-model='panel' name='sslConfiguration')
                         ignite-form-group-add
                             | Add new trust manager.
                         .group-content-empty(ng-if='!(#{model}.trustManagers.length)')
-                            |  Not defined
+                            | Not defined
                         .group-content(ng-if='#{model}.trustManagers.length')
                             ignite-form-field(ng-repeat='model in #{model}.trustManagers track by $index' type='internal')
                                 a.labelFormField  {{ $index+1 }}) {{ model }}
@@ -107,33 +107,39 @@ form.panel.panel-default(bs-collapse ng-model='panel' name='sslConfiguration')
                                 )
                         .group-content(
                             ng-form='form' 
-                            ng-submit='#{model}.trustManagers.push("test")'
                         )
                             ignite-form-field(type='internal')
-                                i.tipField.fa.fa-floppy-o(
-                                    ng-show='field'
-                                    ng-click='form.$valid && #{model}.trustManagers.push(field)'
-                                    bs-tooltip 
-                                    data-title='Click icon or press [Enter] to save item' 
-                                )
                                 ignite-form-field-input-text(
                                     data-name='field'
                                     data-ng-model='field'
                                     data-placeholder='Enter fully qualified class name'
                                     data-java-keywords='true'
                                     data-java-package-specified='true'
+                                    data-ng-required='true'
                                     on-enter='form.$valid && #{model}.trustManagers.push(field)'
                                 )
+                                    i.fa.fa-floppy-o(
+                                        ng-show='form.$valid'
+                                        ng-click='form.$valid && #{model}.trustManagers.push(field)'
+                                        bs-tooltip 
+                                        data-title='Click icon or press [Enter] to save item' 
+                                    )
                                     i.fa.fa-exclamation-triangle.form-control-feedback(
-                                        ng-show='form.field.$error.javaKeywords'
+                                        ng-show='!form.$pristine && form.field.$error.javaKeywords'
                                         bs-tooltip
                                         data-title='Trust manager could not contains reserved java keyword: ""!'
                                     )
 
                                     i.fa.fa-exclamation-triangle.form-control-feedback(
-                                        ng-show='form.field.$error.javaPackageSpecified'
+                                        ng-show='!form.$pristine && form.field.$error.javaPackageSpecified'
                                         bs-tooltip
                                         data-title='Trust manager does not have package specified!'
+                                    )
+
+                                    i.fa.fa-exclamation-triangle.form-control-feedback(
+                                        ng-show='!form.$pristine && form.field.$error.required'
+                                        bs-tooltip
+                                        data-title='Trust manager could not be empty!'
                                     )
 
                 //- data-ng-model-options='{ updateOn: "blur"}'

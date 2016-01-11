@@ -16,12 +16,14 @@
  */
 
 import template from './text.jade!';
+import './text.css!';
 
 export default ['igniteFormFieldInputText', ['IgniteFormGUID', (guid) => {
     const link = (scope, el, attrs, [form, label]) => {
         const {id, name} = scope;
         const field = form[name];
 
+        scope.form = form;
         scope.field = field;
         label.for = scope.id = id || guid();
         label.required = scope.required || false;
