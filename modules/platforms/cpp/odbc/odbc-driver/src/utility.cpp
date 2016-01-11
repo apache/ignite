@@ -15,6 +15,8 @@
  * limitations under the License.
  */
 
+#include <cassert>
+
 #include "ignite/odbc/utility.h"
 #include "ignite/odbc/system/odbc_constants.h"
 
@@ -57,6 +59,27 @@ namespace ignite
         void WriteString(ignite::impl::binary::BinaryWriterImpl& writer, const std::string & str)
         {
             writer.WriteString(str.data(), static_cast<int32_t>(str.size()));
+        }
+
+        void ReadDecimal(ignite::impl::binary::BinaryReaderImpl& reader, Decimal& decimal)
+        {
+            int8_t hdr = reader.ReadInt8();
+
+            assert(hdr == ignite::impl::binary::IGNITE_TYPE_DECIMAL);
+
+            int32_t scale = reader.ReadInt32();
+
+            int32_t len = reader.ReadInt32();
+
+            std::vector<int8_t> mag;
+
+            mag.resize(len);
+
+            reader.ReadInt8Array(mag.data(), mag.size());
+
+            Decimal res(scale, mag.data(), mag.size());
+
+            swap(decimal, res);
         }
 
         std::string SqlStringToString(const unsigned char* sqlStr, int32_t sqlStrLen)

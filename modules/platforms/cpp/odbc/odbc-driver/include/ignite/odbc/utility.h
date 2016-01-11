@@ -32,6 +32,8 @@
 #include "ignite/impl/binary/binary_reader_impl.h"
 #include "ignite/impl/binary/binary_writer_impl.h"
 
+#include "ignite/odbc/decimal.h"
+
 #ifdef ODBC_DEBUG
 
 extern FILE* log_file;
@@ -146,6 +148,14 @@ namespace ignite
          * @param str String.
          */
         void WriteString(ignite::impl::binary::BinaryWriterImpl& writer, const std::string& str);
+
+        /**
+         * Read decimal value using reader.
+         *
+         * @param reader Reader.
+         * @param decimal Decimal value.
+         */
+        void ReadDecimal(ignite::impl::binary::BinaryReaderImpl& reader, Decimal& decimal);
 
         /**
          * Convert SQL string buffer to std::string.
