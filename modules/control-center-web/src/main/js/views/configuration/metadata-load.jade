@@ -26,22 +26,17 @@ mixin chk(mdl, change, tip)
                 button.close(ng-click='$hide()' aria-hidden='true') &times;
                 h4.modal-title Load metadata from database
             .metadata-content(ng-show='loadMeta.action == "drivers"')
-            .metadata-content(ng-show='loadMeta.action == "connect"')
+            .metadata-content(ng-show='loadMeta.action == "connect" && loadMeta.demo')
+                label Demo description:
+                ul
+                    li In-memory H2 database server will be started inside agent
+                    li Database will be populated with sample tables
+                    li You could test loading metadata using this demo database
+                    li Click "Next" to continue
+            .metadata-content(ng-show='loadMeta.action == "connect" && !loadMeta.demo')
                 form.form-horizontal(name='connectForm' novalidate)
                     .settings-row(ng-repeat='field in metadataDb')
-                        +form-row-custom(['col-xs-4 col-sm-3 col-md-3'], ['col-xs-8 col-sm-9 col-md-9'], 'preset')
-                div(ng-show='preset.drvIdx < 1' style='margin-top: 6px')
-                    label Demo description:
-                    ul
-                        li In-memory H2 database server will be started inside agent
-                        li Database will be populated with sample tables
-                        li You could test loading metadata using this sample database
-                div(ng-show='preset.drvIdx > 0')
-                    label To load metadata:
-                    ul
-                        li Configure connection to database
-                        li Select schemas
-                        li Select tables
+                        +form-row-custom(['col-xs-4 col-sm-3 col-md-3'], ['col-xs-8 col-sm-9 col-md-9'], 'selectedPreset')
             .metadata-content(ng-show='loadMeta.action == "schemas"' style='margin-bottom: 50px')
                 table.table.metadata(st-table='loadMeta.displayedSchemas' st-safe-src='loadMeta.schemas')
                     thead

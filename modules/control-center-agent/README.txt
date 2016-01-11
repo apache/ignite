@@ -20,10 +20,10 @@ Demo of Ignite Web Agent:
        In this mode an in-memory H2 database will started.
        How to evaluate:
          1.1) Go to Ignite Web Console "Metadata" screen.
-         1.2) Select "Load from database".
-         1.3) Choose in Driver JAR combobox "Demo database for load metadata".
-         1.4) Click "Next" button. You should see list of available schemas.
-         1.5) Click "Next" button. You should see list of available tables.
+         1.2) Click "Load from demo database".
+         1.3) Click "Next" button. You should see list of available schemas.
+         1.4) Click "Next" button. You should see list of available tables.
+         1.5) Click "Next" button. You should see metadata load options.
          1.6) Select some of them and click "Save".
 
     2) Demo for SQL.
