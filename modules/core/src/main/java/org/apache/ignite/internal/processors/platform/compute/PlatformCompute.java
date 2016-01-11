@@ -326,49 +326,68 @@ public class PlatformCompute extends PlatformAbstractTarget {
             platformCtx.kernalContext().grid().compute(compute.clusterGroup().forNodeIds(nodeIds));
     }
 
+    /**
+     * Wraps ComputeTaskFuture as IgniteInternalFuture.
+     */
     private class ComputeTaskFutureInternal implements IgniteInternalFuture {
+        /** */
         private final ComputeTaskFuture fut;
 
+        /**
+         * Ctor.
+         *
+         * @param fut Future to wrap.
+         */
         private ComputeTaskFutureInternal(ComputeTaskFuture fut) {
             this.fut = fut;
         }
 
+        /** {@inheritDoc} */
         @Override public Object get() throws IgniteCheckedException {
             return toBinary(fut.get());
         }
 
+        /** {@inheritDoc} */
         @Override public Object get(long timeout) throws IgniteCheckedException {
             return toBinary(fut.get(timeout));
         }
 
+        /** {@inheritDoc} */
         @Override public Object get(long timeout, TimeUnit unit) throws IgniteCheckedException {
             return toBinary(fut.get(timeout, unit));
         }
 
+        /** {@inheritDoc} */
         @Override public Object getUninterruptibly() throws IgniteCheckedException {
             return toBinary(fut.get());
         }
 
+        /** {@inheritDoc} */
         @Override public boolean cancel() throws IgniteCheckedException {
             return fut.cancel();
         }
 
+        /** {@inheritDoc} */
         @Override public boolean isDone() {
             return fut.isDone();
         }
 
+        /** {@inheritDoc} */
         @Override public boolean isCancelled() {
             return fut.isCancelled();
         }
 
+        /** {@inheritDoc} */
         @Override public long startTime() {
             return fut.startTime();
         }
 
+        /** {@inheritDoc} */
         @Override public long duration() {
             return fut.duration();
         }
 
+        /** {@inheritDoc} */
         @Override public void listen(final IgniteInClosure lsnr) {
             fut.listen(new IgniteInClosure<IgniteFuture>() {
                 private static final long serialVersionUID = 0L;
@@ -379,16 +398,30 @@ public class PlatformCompute extends PlatformAbstractTarget {
             });
         }
 
+        /** {@inheritDoc} */
         @Override public IgniteInternalFuture chain(IgniteClosure doneCb) {
-            return null;
+            return null; // not supported
         }
 
+        /** {@inheritDoc} */
         @Override public Throwable error() {
-            return null;
+            try {
+                fut.get();
+                return null;
+            }
+            catch (Throwable e) {
+                return e;
+            }
         }
 
+        /** {@inheritDoc} */
         @Override public Object result() {
-            return fut.get();
+            try {
+                return fut.get();
+            }
+            catch (Throwable e) {
+                return null;
+            }
         }
     }
 }
