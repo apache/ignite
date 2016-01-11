@@ -577,7 +577,7 @@ public final class GridNearGetFuture<K, V> extends CacheDistributedGetFutureAdap
                     LinkedHashMap<KeyCacheObject, Boolean> keys = mapped.get(affNode);
 
                     if (keys != null && keys.containsKey(key)) {
-                        if (remapCnt.incrementAndGet() > MAX_REMAP_CNT) {
+                        if (REMAP_CNT_UPD.incrementAndGet(this) > MAX_REMAP_CNT) {
                             onDone(new ClusterTopologyCheckedException("Failed to remap key to a new node after " +
                                 MAX_REMAP_CNT + " attempts (key got remapped to the same node) " +
                                 "[key=" + key + ", node=" + U.toShortString(affNode) + ", mappings=" + mapped + ']'));

@@ -29,8 +29,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicReference;
+import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
+import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import javax.cache.Cache;
 import javax.cache.CacheException;
 import javax.cache.expiry.Duration;
@@ -115,16 +115,24 @@ import static org.apache.ignite.transactions.TransactionState.UNKNOWN;
 /**
  * Transaction adapter for cache transactions.
  */
-public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
-    implements IgniteTxLocalEx {
+public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements IgniteTxLocalEx {
     /** */
     private static final long serialVersionUID = 0L;
+
+    /** Commit error updater. */
+    protected static final AtomicReferenceFieldUpdater<IgniteTxLocalAdapter, Throwable> COMMIT_ERR_UPD =
+        AtomicReferenceFieldUpdater.newUpdater(IgniteTxLocalAdapter.class, Throwable.class, "commitErr");
+
+    /** Done flag updater. */
+    protected static final AtomicIntegerFieldUpdater<IgniteTxLocalAdapter> DONE_FLAG_UPD =
+        AtomicIntegerFieldUpdater.newUpdater(IgniteTxLocalAdapter.class, "doneFlag");
 
     /** Minimal version encountered (either explicit lock or XID of this transaction). */
     protected GridCacheVersion minVer;
 
     /** Flag indicating with TM commit happened. */
-    protected AtomicBoolean doneFlag = new AtomicBoolean(false);
+    @SuppressWarnings("UnusedDeclaration")
+    protected volatile int doneFlag;
 
     /** Committed versions, relative to base. */
     private Collection<GridCacheVersion> committedVers = Collections.emptyList();
@@ -139,7 +147,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
     private boolean sndTransformedVals;
 
     /** Commit error. */
-    protected AtomicReference<Throwable> commitErr = new AtomicReference<>();
+    protected volatile Throwable commitErr;
 
     /** Need return value. */
     protected boolean needRetVal;
@@ -248,12 +256,12 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
 
     /** {@inheritDoc} */
     @Override public Throwable commitError() {
-        return commitErr.get();
+        return commitErr;
     }
 
     /** {@inheritDoc} */
     @Override public void commitError(Throwable e) {
-        commitErr.compareAndSet(null, e);
+        COMMIT_ERR_UPD.compareAndSet(this, null, e);
     }
 
     /** {@inheritDoc} */
@@ -1164,7 +1172,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
 
                             U.error(log, "Heuristic transaction failure.", err);
 
-                            commitErr.compareAndSet(null, err);
+                            COMMIT_ERR_UPD.compareAndSet(this, null, err);
 
                             state(UNKNOWN);
 
@@ -1194,7 +1202,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
 
         // Do not unlock transaction entries if one-phase commit.
         if (!onePhaseCommit()) {
-            if (doneFlag.compareAndSet(false, true)) {
+            if (DONE_FLAG_UPD.compareAndSet(this, 0, 1)) {
                 // Unlock all locks.
                 cctx.tm().commitTx(this);
 
@@ -1215,7 +1223,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
     public void tmFinish(boolean commit) {
         assert onePhaseCommit();
 
-        if (doneFlag.compareAndSet(false, true)) {
+        if (DONE_FLAG_UPD.compareAndSet(this, 0, 1)) {
             // Unlock all locks.
             if (commit)
                 cctx.tm().commitTx(this);
@@ -1272,8 +1280,8 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
         if (state != ROLLING_BACK && state != ROLLED_BACK) {
             setRollbackOnly();
 
-            throw new IgniteCheckedException("Invalid transaction state for rollback [state=" + state + ", tx=" + this + ']',
-                commitErr.get());
+            throw new IgniteCheckedException("Invalid transaction state for rollback [state=" + state +
+                ", tx=" + this + ']', commitErr);
         }
 
         if (near()) {
@@ -1283,7 +1291,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
                 evictNearEntry(e, false);
         }
 
-        if (doneFlag.compareAndSet(false, true)) {
+        if (DONE_FLAG_UPD.compareAndSet(this, 0, 1)) {
             try {
                 cctx.tm().rollbackTx(this);
 
@@ -1302,7 +1310,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
                 }
             }
             catch (Error | IgniteCheckedException | RuntimeException e) {
-                U.addLastCause(e, commitErr.get(), log);
+                U.addLastCause(e, commitErr, log);
 
                 throw e;
             }

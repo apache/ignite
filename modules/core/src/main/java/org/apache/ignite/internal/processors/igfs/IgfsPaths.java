@@ -17,17 +17,21 @@
 
 package org.apache.ignite.internal.processors.igfs;
 
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.Externalizable;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
+
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.igfs.IgfsMode;
 import org.apache.ignite.igfs.IgfsPath;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.marshaller.jdk.JdkMarshaller;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -37,8 +41,8 @@ public class IgfsPaths implements Externalizable {
     /** */
     private static final long serialVersionUID = 0L;
 
-    /** Additional secondary file system properties. */
-    private Map<String, String> props;
+    /** */
+    private byte[] payloadBytes;
 
     /** Default IGFS mode. */
     private IgfsMode dfltMode;
@@ -56,22 +60,25 @@ public class IgfsPaths implements Externalizable {
     /**
      * Constructor.
      *
-     * @param props Additional secondary file system properties.
+     * @param payload Payload.
      * @param dfltMode Default IGFS mode.
      * @param pathModes Path modes.
+     * @throws IgniteCheckedException If failed.
      */
-    public IgfsPaths(Map<String, String> props, IgfsMode dfltMode, @Nullable List<T2<IgfsPath,
-        IgfsMode>> pathModes) {
-        this.props = props;
+    public IgfsPaths(Object payload, IgfsMode dfltMode, @Nullable List<T2<IgfsPath, IgfsMode>> pathModes)
+        throws IgniteCheckedException {
         this.dfltMode = dfltMode;
         this.pathModes = pathModes;
-    }
 
-    /**
-     * @return Secondary file system properties.
-     */
-    public Map<String, String> properties() {
-        return props;
+        if (payload == null)
+            payloadBytes = null;
+        else {
+            ByteArrayOutputStream out = new ByteArrayOutputStream();
+
+            new JdkMarshaller().marshal(payload, out);
+
+            payloadBytes = out.toByteArray();
+        }
     }
 
     /**
@@ -88,9 +95,25 @@ public class IgfsPaths implements Externalizable {
         return pathModes;
     }
 
+    /**
+     * @return Payload.
+     *
+     * @throws IgniteCheckedException If failed to deserialize the payload.
+     */
+    @Nullable public Object getPayload(ClassLoader clsLdr) throws IgniteCheckedException {
+        if (payloadBytes == null)
+            return null;
+        else {
+            ByteArrayInputStream in = new ByteArrayInputStream(payloadBytes);
+
+            return new JdkMarshaller().unmarshal(in, clsLdr);
+        }
+    }
+
     /** {@inheritDoc} */
     @Override public void writeExternal(ObjectOutput out) throws IOException {
-        U.writeStringMap(out, props);
+        U.writeByteArray(out, payloadBytes);
+
         U.writeEnum(out, dfltMode);
 
         if (pathModes != null) {
@@ -98,7 +121,10 @@ public class IgfsPaths implements Externalizable {
             out.writeInt(pathModes.size());
 
             for (T2<IgfsPath, IgfsMode> pathMode : pathModes) {
+                assert pathMode.getKey() != null;
+
                 pathMode.getKey().writeExternal(out);
+
                 U.writeEnum(out, pathMode.getValue());
             }
         }
@@ -108,7 +134,8 @@ public class IgfsPaths implements Externalizable {
 
     /** {@inheritDoc} */
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-        props = U.readStringMap(in);
+        payloadBytes = U.readByteArray(in);
+
         dfltMode = IgfsMode.fromOrdinal(in.readByte());
 
         if (in.readBoolean()) {
@@ -118,11 +145,10 @@ public class IgfsPaths implements Externalizable {
 
             for (int i = 0; i < size; i++) {
                 IgfsPath path = new IgfsPath();
+
                 path.readExternal(in);
 
-                T2<IgfsPath, IgfsMode> entry = new T2<>(path, IgfsMode.fromOrdinal(in.readByte()));
-
-                pathModes.add(entry);
+                pathModes.add(new T2<>(path, IgfsMode.fromOrdinal(in.readByte())));
             }
         }
     }

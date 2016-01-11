@@ -25,7 +25,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
-import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
+
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
@@ -87,6 +88,10 @@ public class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
     /** */
     private static final long serialVersionUID = 0L;
 
+    /** Commit allowed field updater. */
+    private static final AtomicIntegerFieldUpdater<GridDistributedTxRemoteAdapter> COMMIT_ALLOWED_UPD =
+        AtomicIntegerFieldUpdater.newUpdater(GridDistributedTxRemoteAdapter.class, "commitAllowed");
+
     /** Explicit versions. */
     @GridToStringInclude
     private List<GridCacheVersion> explicitVers;
@@ -96,8 +101,9 @@ public class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
     private boolean started;
 
     /** {@code True} only if all write entries are locked by this transaction. */
+    @SuppressWarnings("UnusedDeclaration")
     @GridToStringInclude
-    private AtomicBoolean commitAllowed = new AtomicBoolean(false);
+    private volatile int commitAllowed;
 
     /** */
     @GridToStringInclude
@@ -440,7 +446,7 @@ public class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
             }
 
             // Only one thread gets to commit.
-            if (commitAllowed.compareAndSet(false, true)) {
+            if (COMMIT_ALLOWED_UPD.compareAndSet(this, 0, 1)) {
                 IgniteCheckedException err = null;
 
                 Map<IgniteTxKey, IgniteTxEntry> writeMap = txState.writeMap();
