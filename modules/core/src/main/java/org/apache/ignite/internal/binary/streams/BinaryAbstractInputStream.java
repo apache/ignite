@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.binary.streams;
 
 import org.apache.ignite.binary.BinaryObjectException;
+import org.apache.ignite.internal.util.GridUnsafe;
 
 /**
  * Binary abstract input stream.
@@ -40,7 +41,7 @@ public abstract class BinaryAbstractInputStream extends BinaryAbstractStream
 
         byte[] res = new byte[cnt];
 
-        copyAndShift(res, BYTE_ARR_OFF, cnt);
+        copyAndShift(res, GridUnsafe.BYTE_ARR_OFF, cnt);
 
         return res;
     }
@@ -56,7 +57,7 @@ public abstract class BinaryAbstractInputStream extends BinaryAbstractStream
 
         boolean[] res = new boolean[cnt];
 
-        copyAndShift(res, BOOLEAN_ARR_OFF, cnt);
+        copyAndShift(res, GridUnsafe.BOOLEAN_ARR_OFF, cnt);
 
         return res;
     }
@@ -83,7 +84,7 @@ public abstract class BinaryAbstractInputStream extends BinaryAbstractStream
 
         short[] res = new short[cnt];
 
-        copyAndShift(res, SHORT_ARR_OFF, len);
+        copyAndShift(res, GridUnsafe.SHORT_ARR_OFF, len);
 
         if (!LITTLE_ENDIAN) {
             for (int i = 0; i < res.length; i++)
@@ -115,7 +116,7 @@ public abstract class BinaryAbstractInputStream extends BinaryAbstractStream
 
         char[] res = new char[cnt];
 
-        copyAndShift(res, CHAR_ARR_OFF, len);
+        copyAndShift(res, GridUnsafe.CHAR_ARR_OFF, len);
 
         if (!LITTLE_ENDIAN) {
             for (int i = 0; i < res.length; i++)
@@ -147,7 +148,7 @@ public abstract class BinaryAbstractInputStream extends BinaryAbstractStream
 
         int[] res = new int[cnt];
 
-        copyAndShift(res, INT_ARR_OFF, len);
+        copyAndShift(res, GridUnsafe.INT_ARR_OFF, len);
 
         if (!LITTLE_ENDIAN) {
             for (int i = 0; i < res.length; i++)
@@ -201,7 +202,7 @@ public abstract class BinaryAbstractInputStream extends BinaryAbstractStream
         float[] res = new float[cnt];
 
         if (LITTLE_ENDIAN)
-            copyAndShift(res, FLOAT_ARR_OFF, len);
+            copyAndShift(res, GridUnsafe.FLOAT_ARR_OFF, len);
         else {
             for (int i = 0; i < res.length; i++) {
                 int x = readIntFast();
@@ -237,7 +238,7 @@ public abstract class BinaryAbstractInputStream extends BinaryAbstractStream
 
         long[] res = new long[cnt];
 
-        copyAndShift(res, LONG_ARR_OFF, len);
+        copyAndShift(res, GridUnsafe.LONG_ARR_OFF, len);
 
         if (!LITTLE_ENDIAN) {
             for (int i = 0; i < res.length; i++)
@@ -261,7 +262,7 @@ public abstract class BinaryAbstractInputStream extends BinaryAbstractStream
         double[] res = new double[cnt];
 
         if (LITTLE_ENDIAN)
-            copyAndShift(res, DOUBLE_ARR_OFF, len);
+            copyAndShift(res, GridUnsafe.DOUBLE_ARR_OFF, len);
         else {
             for (int i = 0; i < res.length; i++) {
                 long x = readLongFast();
@@ -280,7 +281,7 @@ public abstract class BinaryAbstractInputStream extends BinaryAbstractStream
         if (len > remaining())
             len = remaining();
 
-        copyAndShift(arr, BYTE_ARR_OFF + off, len);
+        copyAndShift(arr, GridUnsafe.BYTE_ARR_OFF + off, len);
 
         return len;
     }

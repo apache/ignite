@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.binary;
 
 import java.math.BigDecimal;
+import java.nio.ByteOrder;
 import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -43,19 +44,12 @@ import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import sun.misc.Unsafe;
 
 /**
  * Binary builder test.
  */
 @SuppressWarnings("ResultOfMethodCallIgnored")
 public class BinaryObjectBuilderSelfTest extends GridCommonAbstractTest {
-    /** */
-    private static final Unsafe UNSAFE = GridUnsafe.unsafe();
-
-    /** */
-    protected static final long BYTE_ARR_OFF = UNSAFE.arrayBaseOffset(byte[].class);
-
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
@@ -738,16 +732,21 @@ public class BinaryObjectBuilderSelfTest extends GridCommonAbstractTest {
 
         byte[] arr = ((CacheObjectBinaryProcessorImpl)(grid(0)).context().cacheObjects()).marshal(po);
 
-        long ptr = UNSAFE.allocateMemory(arr.length + 5);
+        long ptr = GridUnsafe.allocateMemory(arr.length + 5);
 
         try {
             long ptr0 = ptr;
 
-            UNSAFE.putBoolean(null, ptr0++, false);
+            GridUnsafe.putBoolean(null, ptr0++, false);
 
-            UNSAFE.putInt(ptr0, arr.length);
+            int len = arr.length;
 
-            UNSAFE.copyMemory(arr, BYTE_ARR_OFF, null, ptr0 + 4, arr.length);
+            if (ByteOrder.nativeOrder() == ByteOrder.BIG_ENDIAN)
+                len = Integer.reverseBytes(len);
+
+            GridUnsafe.putInt(ptr0, len);
+
+            GridUnsafe.copyMemory(arr, GridUnsafe.BYTE_ARR_OFF, null, ptr0 + 4, arr.length);
 
             BinaryObject offheapObj = (BinaryObject)
                 ((CacheObjectBinaryProcessorImpl)(grid(0)).context().cacheObjects()).unmarshal(ptr, false);
@@ -773,7 +772,7 @@ public class BinaryObjectBuilderSelfTest extends GridCommonAbstractTest {
             assertEquals(offheapObj, po);
         }
         finally {
-            UNSAFE.freeMemory(ptr);
+            GridUnsafe.freeMemory(ptr);
         }
     }
 

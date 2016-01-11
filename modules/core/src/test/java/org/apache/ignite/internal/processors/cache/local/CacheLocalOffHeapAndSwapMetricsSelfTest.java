@@ -41,7 +41,7 @@ public class CacheLocalOffHeapAndSwapMetricsSelfTest extends GridCommonAbstractT
     private static final int MAX_SIZE = 100;
 
     /** Entry size. */
-    private static final int ENTRY_SIZE = 86; // Calculated as allocated size divided on entries count.
+    private static final int ENTRY_SIZE = 96; // Calculated as allocated size divided on entries count.
 
     /** Offheap max count. */
     private static final int OFFHEAP_MAX_CNT = KEYS_CNT / 2;

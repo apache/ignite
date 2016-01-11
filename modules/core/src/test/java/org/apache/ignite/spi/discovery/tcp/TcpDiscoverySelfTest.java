@@ -1100,7 +1100,7 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
         // On Windows and Mac machines two nodes can reside on the same port
         // (if one node has localHost="127.0.0.1" and another has localHost="0.0.0.0").
         // So two nodes do not even discover each other.
-        if (U.isWindows() || U.isMacOs())
+        if (U.isWindows() || U.isMacOs() || U.isSolaris())
             return;
 
         try {

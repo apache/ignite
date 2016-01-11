@@ -19,18 +19,11 @@ package org.apache.ignite.internal.binary;
 
 import org.apache.ignite.internal.util.GridUnsafe;
 import org.eclipse.jetty.util.ConcurrentHashSet;
-import sun.misc.Unsafe;
 
 /**
  * Compact offsets tests for offheap binary objects.
  */
 public class BinaryFooterOffsetsOffheapSelfTest extends BinaryFooterOffsetsAbstractSelfTest {
-    /** Unsafe instance. */
-    private static final Unsafe UNSAFE = GridUnsafe.unsafe();
-
-    /** Byte array offset for unsafe mechanics. */
-    protected static final long BYTE_ARR_OFF = UNSAFE.arrayBaseOffset(byte[].class);
-
     /** Allocated unsafe pointer. */
     private final ConcurrentHashSet<Long> ptrs = new ConcurrentHashSet<>();
 
@@ -40,7 +33,7 @@ public class BinaryFooterOffsetsOffheapSelfTest extends BinaryFooterOffsetsAbstr
 
         // Cleanup allocated objects.
         for (Long ptr : ptrs)
-            UNSAFE.freeMemory(ptr);
+            GridUnsafe.freeMemory(ptr);
 
         ptrs.clear();
     }
@@ -49,11 +42,11 @@ public class BinaryFooterOffsetsOffheapSelfTest extends BinaryFooterOffsetsAbstr
     @Override protected BinaryObjectExImpl toBinary(BinaryMarshaller marsh, Object obj) throws Exception {
         byte[] arr = marsh.marshal(obj);
 
-        long ptr = UNSAFE.allocateMemory(arr.length);
+        long ptr = GridUnsafe.allocateMemory(arr.length);
 
         ptrs.add(ptr);
 
-        UNSAFE.copyMemory(arr, BYTE_ARR_OFF, null, ptr, arr.length);
+        GridUnsafe.copyMemory(arr, GridUnsafe.BYTE_ARR_OFF, null, ptr, arr.length);
 
         return new BinaryObjectOffheapImpl(ctx, ptr, 0, arr.length);
     }

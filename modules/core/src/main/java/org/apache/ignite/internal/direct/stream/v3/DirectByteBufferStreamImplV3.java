@@ -15,21 +15,21 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.direct.stream.v1;
+package org.apache.ignite.internal.direct.stream.v3;
 
 import java.lang.reflect.Array;
 import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import java.util.ArrayList;
 import java.util.BitSet;
 import java.util.Collection;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
-import java.util.NoSuchElementException;
+import java.util.RandomAccess;
 import java.util.UUID;
 import org.apache.ignite.internal.direct.stream.DirectByteBufferStream;
 import org.apache.ignite.internal.util.GridUnsafe;
-import org.apache.ignite.internal.util.tostring.GridToStringExclude;
-import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.plugin.extensions.communication.Message;
@@ -40,9 +40,12 @@ import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 import sun.nio.ch.DirectBuffer;
 
 /**
- * Direct marshalling I/O stream (version 1).
+ * Direct marshalling I/O stream (version 3).
  */
-public class DirectByteBufferStreamImplV1 implements DirectByteBufferStream {
+public class DirectByteBufferStreamImplV3 implements DirectByteBufferStream {
+    /** Whether little endian is set. */
+    private static final boolean BIG_ENDIAN = ByteOrder.nativeOrder() == ByteOrder.BIG_ENDIAN;
+
     /** */
     private static final byte[] BYTE_ARR_EMPTY = new byte[0];
 
@@ -191,7 +194,6 @@ public class DirectByteBufferStreamImplV1 implements DirectByteBufferStream {
     private static final Object NULL = new Object();
 
     /** */
-    @GridToStringExclude
     private final MessageFactory msgFactory;
 
     /** */
@@ -228,7 +230,7 @@ public class DirectByteBufferStreamImplV1 implements DirectByteBufferStream {
     private Iterator<?> it;
 
     /** */
-    private Iterator<?> arrIt;
+    private int arrPos = -1;
 
     /** */
     private Object arrCur = NULL;
@@ -258,12 +260,30 @@ public class DirectByteBufferStreamImplV1 implements DirectByteBufferStream {
     private Map<Object, Object> map;
 
     /** */
+    private long prim;
+
+    /** */
+    private int primShift;
+
+    /** */
+    private int uuidState;
+
+    /** */
+    private long uuidMost;
+
+    /** */
+    private long uuidLeast;
+
+    /** */
+    private long uuidLocId;
+
+    /** */
     private boolean lastFinished;
 
     /**
      * @param msgFactory Message factory.
      */
-    public DirectByteBufferStreamImplV1(MessageFactory msgFactory) {
+    public DirectByteBufferStreamImplV3(MessageFactory msgFactory) {
         this.msgFactory = msgFactory;
     }
 
@@ -309,6 +329,9 @@ public class DirectByteBufferStreamImplV1 implements DirectByteBufferStream {
         if (lastFinished) {
             int pos = buf.position();
 
+            if (BIG_ENDIAN)
+                val = Short.reverseBytes(val);
+
             GridUnsafe.putShortAligned(heapArr, baseOff + pos, val);
 
             buf.position(pos + 2);
@@ -317,40 +340,69 @@ public class DirectByteBufferStreamImplV1 implements DirectByteBufferStream {
 
     /** {@inheritDoc} */
     @Override public void writeInt(int val) {
-        lastFinished = buf.remaining() >= 4;
+        lastFinished = buf.remaining() >= 5;
 
         if (lastFinished) {
+            if (val == Integer.MAX_VALUE)
+                val = Integer.MIN_VALUE;
+            else
+                val++;
+
             int pos = buf.position();
 
-            GridUnsafe.putIntAligned(heapArr, baseOff + pos, val);
+            while ((val & 0xFFFF_FF80) != 0) {
+                byte b = (byte)(val | 0x80);
 
-            buf.position(pos + 4);
+                GridUnsafe.putByte(heapArr, baseOff + pos++, b);
+
+                val >>>= 7;
+            }
+
+            GridUnsafe.putByte(heapArr, baseOff + pos++, (byte)val);
+
+            buf.position(pos);
         }
     }
 
     /** {@inheritDoc} */
     @Override public void writeLong(long val) {
-        lastFinished = buf.remaining() >= 8;
+        lastFinished = buf.remaining() >= 10;
 
         if (lastFinished) {
+            if (val == Long.MAX_VALUE)
+                val = Long.MIN_VALUE;
+            else
+                val++;
+
             int pos = buf.position();
 
-            GridUnsafe.putLongAligned(heapArr, baseOff + pos, val);
+            while ((val & 0xFFFF_FFFF_FFFF_FF80L) != 0) {
+                byte b = (byte)(val | 0x80);
 
-            buf.position(pos + 8);
+                GridUnsafe.putByte(heapArr, baseOff + pos++, b);
+
+                val >>>= 7;
+            }
+
+            GridUnsafe.putByte(heapArr, baseOff + pos++, (byte)val);
+
+            buf.position(pos);
         }
     }
 
-    /**
-     * @param val Value.
-     */
+    /** {@inheritDoc} */
     @Override public void writeFloat(float val) {
         lastFinished = buf.remaining() >= 4;
 
         if (lastFinished) {
             int pos = buf.position();
 
-            GridUnsafe.putFloatAligned(heapArr, baseOff + pos, val);
+            int v = Float.floatToIntBits(val);
+
+            if (BIG_ENDIAN)
+                v = Integer.reverseBytes(v);
+
+            GridUnsafe.putIntAligned(heapArr, baseOff + pos, v);
 
             buf.position(pos + 4);
         }
@@ -363,7 +415,12 @@ public class DirectByteBufferStreamImplV1 implements DirectByteBufferStream {
         if (lastFinished) {
             int pos = buf.position();
 
-            GridUnsafe.putDoubleAligned(heapArr, baseOff + pos, val);
+            long v = Double.doubleToLongBits(val);
+
+            if (BIG_ENDIAN)
+                v = Long.reverseBytes(v);
+
+            GridUnsafe.putLongAligned(heapArr, baseOff + pos, v);
 
             buf.position(pos + 8);
         }
@@ -375,6 +432,9 @@ public class DirectByteBufferStreamImplV1 implements DirectByteBufferStream {
 
         if (lastFinished) {
             int pos = buf.position();
+
+            if (BIG_ENDIAN)
+                val = Character.reverseBytes(val);
 
             GridUnsafe.putCharAligned(heapArr, baseOff + pos, val);
 
@@ -479,12 +539,68 @@ public class DirectByteBufferStreamImplV1 implements DirectByteBufferStream {
 
     /** {@inheritDoc} */
     @Override public void writeUuid(UUID val) {
-        writeByteArray(val != null ? U.uuidToBytes(val) : null);
+        switch (uuidState) {
+            case 0:
+                writeBoolean(val == null);
+
+                if (!lastFinished || val == null)
+                    return;
+
+                uuidState++;
+
+            case 1:
+                writeLong(val.getMostSignificantBits());
+
+                if (!lastFinished)
+                    return;
+
+                uuidState++;
+
+            case 2:
+                writeLong(val.getLeastSignificantBits());
+
+                if (!lastFinished)
+                    return;
+
+                uuidState = 0;
+        }
     }
 
     /** {@inheritDoc} */
     @Override public void writeIgniteUuid(IgniteUuid val) {
-        writeByteArray(val != null ? U.igniteUuidToBytes(val) : null);
+        switch (uuidState) {
+            case 0:
+                writeBoolean(val == null);
+
+                if (!lastFinished || val == null)
+                    return;
+
+                uuidState++;
+
+            case 1:
+                writeLong(val.globalId().getMostSignificantBits());
+
+                if (!lastFinished)
+                    return;
+
+                uuidState++;
+
+            case 2:
+                writeLong(val.globalId().getLeastSignificantBits());
+
+                if (!lastFinished)
+                    return;
+
+                uuidState++;
+
+            case 3:
+                writeLong(val.localId());
+
+                if (!lastFinished)
+                    return;
+
+                uuidState = 0;
+        }
     }
 
     /** {@inheritDoc} */
@@ -508,20 +624,23 @@ public class DirectByteBufferStreamImplV1 implements DirectByteBufferStream {
     }
 
     /** {@inheritDoc} */
-    @Override public <T> void writeObjectArray(T[] arr, MessageCollectionItemType itemType, MessageWriter writer) {
+    @Override public <T> void writeObjectArray(T[] arr, MessageCollectionItemType itemType,
+        MessageWriter writer) {
         if (arr != null) {
-            if (arrIt == null) {
-                writeInt(arr.length);
+            int len = arr.length;
+
+            if (arrPos == -1) {
+                writeInt(len);
 
                 if (!lastFinished)
                     return;
 
-                arrIt = arrayIterator(arr);
+                arrPos = 0;
             }
 
-            while (arrIt.hasNext() || arrCur != NULL) {
+            while (arrPos < len || arrCur != NULL) {
                 if (arrCur == NULL)
-                    arrCur = arrIt.next();
+                    arrCur = arr[arrPos++];
 
                 write(itemType, arrCur, writer);
 
@@ -531,7 +650,7 @@ public class DirectByteBufferStreamImplV1 implements DirectByteBufferStream {
                 arrCur = NULL;
             }
 
-            arrIt = null;
+            arrPos = -1;
         }
         else
             writeInt(-1);
@@ -541,31 +660,69 @@ public class DirectByteBufferStreamImplV1 implements DirectByteBufferStream {
     @Override public <T> void writeCollection(Collection<T> col, MessageCollectionItemType itemType,
         MessageWriter writer) {
         if (col != null) {
-            if (it == null) {
-                writeInt(col.size());
+            if (col instanceof List && col instanceof RandomAccess)
+                writeRandomAccessList((List<T>)col, itemType, writer);
+            else {
+                if (it == null) {
+                    writeInt(col.size());
 
-                if (!lastFinished)
-                    return;
+                    if (!lastFinished)
+                        return;
 
-                it = col.iterator();
+                    it = col.iterator();
+                }
+
+                while (it.hasNext() || cur != NULL) {
+                    if (cur == NULL)
+                        cur = it.next();
+
+                    write(itemType, cur, writer);
+
+                    if (!lastFinished)
+                        return;
+
+                    cur = NULL;
+                }
+
+                it = null;
             }
-
-            while (it.hasNext() || cur != NULL) {
-                if (cur == NULL)
-                    cur = it.next();
-
-                write(itemType, cur, writer);
-
-                if (!lastFinished)
-                    return;
-
-                cur = NULL;
-            }
-
-            it = null;
         }
         else
             writeInt(-1);
+    }
+
+    /**
+     * @param list List.
+     * @param itemType Component type.
+     * @param writer Writer.
+     */
+    private <T> void writeRandomAccessList(List<T> list, MessageCollectionItemType itemType, MessageWriter writer) {
+        assert list instanceof RandomAccess;
+
+        int size = list.size();
+
+        if (arrPos == -1) {
+            writeInt(size);
+
+            if (!lastFinished)
+                return;
+
+            arrPos = 0;
+        }
+
+        while (arrPos < size || arrCur != NULL) {
+            if (arrCur == NULL)
+                arrCur = list.get(arrPos++);
+
+            write(itemType, arrCur, writer);
+
+            if (!lastFinished)
+                return;
+
+            arrCur = NULL;
+        }
+
+        arrPos = -1;
     }
 
     /** {@inheritDoc} */
@@ -638,7 +795,12 @@ public class DirectByteBufferStreamImplV1 implements DirectByteBufferStream {
 
             buf.position(pos + 2);
 
-            return GridUnsafe.getShortAligned(heapArr, baseOff + pos);
+            short val = GridUnsafe.getShortAligned(heapArr, baseOff + pos);
+
+            if (BIG_ENDIAN)
+                val = Short.reverseBytes(val);
+
+            return val;
         }
         else
             return 0;
@@ -646,32 +808,76 @@ public class DirectByteBufferStreamImplV1 implements DirectByteBufferStream {
 
     /** {@inheritDoc} */
     @Override public int readInt() {
-        lastFinished = buf.remaining() >= 4;
+        lastFinished = false;
 
-        if (lastFinished) {
+        int val = 0;
+
+        while (buf.hasRemaining()) {
             int pos = buf.position();
 
-            buf.position(pos + 4);
+            byte b = GridUnsafe.getByte(heapArr, baseOff + pos);
 
-            return GridUnsafe.getIntAligned(heapArr, baseOff + pos);
+            buf.position(pos + 1);
+
+            prim |= ((long)b & 0x7F) << (7 * primShift);
+
+            if ((b & 0x80) == 0) {
+                lastFinished = true;
+
+                val = (int)prim;
+
+                if (val == Integer.MIN_VALUE)
+                    val = Integer.MAX_VALUE;
+                else
+                    val--;
+
+                prim = 0;
+                primShift = 0;
+
+                break;
+            }
+            else
+                primShift++;
         }
-        else
-            return 0;
+
+        return val;
     }
 
     /** {@inheritDoc} */
     @Override public long readLong() {
-        lastFinished = buf.remaining() >= 8;
+        lastFinished = false;
 
-        if (lastFinished) {
+        long val = 0;
+
+        while (buf.hasRemaining()) {
             int pos = buf.position();
 
-            buf.position(pos + 8);
+            byte b = GridUnsafe.getByte(heapArr, baseOff + pos);
 
-            return GridUnsafe.getLongAligned(heapArr, baseOff + pos);
+            buf.position(pos + 1);
+
+            prim |= ((long)b & 0x7F) << (7 * primShift);
+
+            if ((b & 0x80) == 0) {
+                lastFinished = true;
+
+                val = prim;
+
+                if (val == Long.MIN_VALUE)
+                    val = Long.MAX_VALUE;
+                else
+                    val--;
+
+                prim = 0;
+                primShift = 0;
+
+                break;
+            }
+            else
+                primShift++;
         }
-        else
-            return 0;
+
+        return val;
     }
 
     /** {@inheritDoc} */
@@ -683,7 +889,12 @@ public class DirectByteBufferStreamImplV1 implements DirectByteBufferStream {
 
             buf.position(pos + 4);
 
-            return GridUnsafe.getFloatAligned(heapArr, baseOff + pos);
+            int val = GridUnsafe.getIntAligned(heapArr, baseOff + pos);
+
+            if (BIG_ENDIAN)
+                val = Integer.reverseBytes(val);
+
+            return Float.intBitsToFloat(val);
         }
         else
             return 0;
@@ -698,7 +909,12 @@ public class DirectByteBufferStreamImplV1 implements DirectByteBufferStream {
 
             buf.position(pos + 8);
 
-            return GridUnsafe.getDoubleAligned(heapArr, baseOff + pos);
+            long val = GridUnsafe.getLongAligned(heapArr, baseOff + pos);
+
+            if (BIG_ENDIAN)
+                val = Long.reverseBytes(val);
+
+            return Double.longBitsToDouble(val);
         }
         else
             return 0;
@@ -713,7 +929,12 @@ public class DirectByteBufferStreamImplV1 implements DirectByteBufferStream {
 
             buf.position(pos + 2);
 
-            return GridUnsafe.getCharAligned(heapArr, baseOff + pos);
+            char val = GridUnsafe.getCharAligned(heapArr, baseOff + pos);
+
+            if (BIG_ENDIAN)
+                val = Character.reverseBytes(val);
+
+            return val;
         }
         else
             return 0;
@@ -790,16 +1011,83 @@ public class DirectByteBufferStreamImplV1 implements DirectByteBufferStream {
 
     /** {@inheritDoc} */
     @Override public UUID readUuid() {
-        byte[] arr = readByteArray();
+        switch (uuidState) {
+            case 0:
+                boolean isNull = readBoolean();
 
-        return arr != null ? U.bytesToUuid(arr, 0) : null;
+                if (!lastFinished || isNull)
+                    return null;
+
+                uuidState++;
+
+            case 1:
+                uuidMost = readLong();
+
+                if (!lastFinished)
+                    return null;
+
+                uuidState++;
+
+            case 2:
+                uuidLeast = readLong();
+
+                if (!lastFinished)
+                    return null;
+
+                uuidState = 0;
+        }
+
+        UUID val = new UUID(uuidMost, uuidLeast);
+
+        uuidMost = 0;
+        uuidLeast = 0;
+
+        return val;
     }
 
     /** {@inheritDoc} */
     @Override public IgniteUuid readIgniteUuid() {
-        byte[] arr = readByteArray();
+        switch (uuidState) {
+            case 0:
+                boolean isNull = readBoolean();
 
-        return arr != null ? U.bytesToIgniteUuid(arr, 0) : null;
+                if (!lastFinished || isNull)
+                    return null;
+
+                uuidState++;
+
+            case 1:
+                uuidMost = readLong();
+
+                if (!lastFinished)
+                    return null;
+
+                uuidState++;
+
+            case 2:
+                uuidLeast = readLong();
+
+                if (!lastFinished)
+                    return null;
+
+                uuidState++;
+
+            case 3:
+                uuidLocId = readLong();
+
+                if (!lastFinished)
+                    return null;
+
+                uuidState = 0;
+        }
+
+        IgniteUuid val = new IgniteUuid(new UUID(uuidMost, uuidLeast), uuidLocId);
+
+        uuidMost = 0;
+        uuidLeast = 0;
+        uuidLocId = 0;
+
+        return val;
     }
 
     /** {@inheritDoc} */
@@ -983,7 +1271,7 @@ public class DirectByteBufferStreamImplV1 implements DirectByteBufferStream {
      * @param off Offset.
      * @param len Length.
      * @param bytes Length in bytes.
-     * @return Whether array was fully written
+     * @return Whether array was fully written.
      */
     private boolean writeArray(Object arr, long off, int len, int bytes) {
         assert arr != null;
@@ -994,10 +1282,10 @@ public class DirectByteBufferStreamImplV1 implements DirectByteBufferStream {
         assert bytes >= arrOff;
 
         if (arrOff == -1) {
-            if (buf.remaining() < 4)
-                return false;
-
             writeInt(len);
+
+            if (!lastFinished)
+                return false;
 
             arrOff = 0;
         }
@@ -1007,24 +1295,24 @@ public class DirectByteBufferStreamImplV1 implements DirectByteBufferStream {
         int remaining = buf.remaining();
 
         if (toWrite <= remaining) {
-            GridUnsafe.copyMemory(arr, off + arrOff, heapArr, baseOff + pos, toWrite);
+            if (toWrite > 0) {
+                GridUnsafe.copyMemory(arr, off + arrOff, heapArr, baseOff + pos, toWrite);
 
-            pos += toWrite;
-
-            buf.position(pos);
+                buf.position(pos + toWrite);
+            }
 
             arrOff = -1;
 
             return true;
         }
         else {
-            GridUnsafe.copyMemory(arr, off + arrOff, heapArr, baseOff + pos, remaining);
+            if (remaining > 0) {
+                GridUnsafe.copyMemory(arr, off + arrOff, heapArr, baseOff + pos, remaining);
 
-            pos += remaining;
+                buf.position(pos + remaining);
 
-            buf.position(pos);
-
-            arrOff += remaining;
+                arrOff += remaining;
+            }
 
             return false;
         }
@@ -1041,13 +1329,10 @@ public class DirectByteBufferStreamImplV1 implements DirectByteBufferStream {
         assert creator != null;
 
         if (tmpArr == null) {
-            if (buf.remaining() < 4) {
-                lastFinished = false;
-
-                return null;
-            }
-
             int len = readInt();
+
+            if (!lastFinished)
+                return null;
 
             switch (len) {
                 case -1:
@@ -1295,36 +1580,6 @@ public class DirectByteBufferStreamImplV1 implements DirectByteBufferStream {
             default:
                 throw new IllegalArgumentException("Unknown type: " + type);
         }
-    }
-
-    /**
-     * @param arr Array.
-     * @return Array iterator.
-     */
-    private Iterator<?> arrayIterator(final Object[] arr) {
-        return new Iterator<Object>() {
-            private int idx;
-
-            @Override public boolean hasNext() {
-                return idx < arr.length;
-            }
-
-            @Override public Object next() {
-                if (!hasNext())
-                    throw new NoSuchElementException();
-
-                return arr[idx++];
-            }
-
-            @Override public void remove() {
-                throw new UnsupportedOperationException();
-            }
-        };
-    }
-
-    /** {@inheritDoc} */
-    public String toString() {
-        return S.toString(DirectByteBufferStreamImplV1.class, this);
     }
 
     /**

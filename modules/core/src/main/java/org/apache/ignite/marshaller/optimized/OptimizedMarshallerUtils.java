@@ -34,15 +34,11 @@ import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.marshaller.MarshallerContext;
 import org.apache.ignite.marshaller.jdk.JdkMarshaller;
-import sun.misc.Unsafe;
 
 /**
  * Miscellaneous utility methods to facilitate {@link OptimizedMarshaller}.
  */
 class OptimizedMarshallerUtils {
-    /** */
-    private static final Unsafe UNSAFE = GridUnsafe.unsafe();
-
     /** */
     static final long HASH_SET_MAP_OFF;
 
@@ -158,12 +154,12 @@ class OptimizedMarshallerUtils {
         long mapOff;
 
         try {
-            mapOff = UNSAFE.objectFieldOffset(HashSet.class.getDeclaredField("map"));
+            mapOff = GridUnsafe.objectFieldOffset(HashSet.class.getDeclaredField("map"));
         }
         catch (NoSuchFieldException e) {
             try {
                 // Workaround for legacy IBM JRE.
-                mapOff = UNSAFE.objectFieldOffset(HashSet.class.getDeclaredField("backingMap"));
+                mapOff = GridUnsafe.objectFieldOffset(HashSet.class.getDeclaredField("backingMap"));
             }
             catch (NoSuchFieldException e2) {
                 throw new IgniteException("Initialization failure.", e2);
@@ -358,7 +354,7 @@ class OptimizedMarshallerUtils {
      * @return Byte value.
      */
     static byte getByte(Object obj, long off) {
-        return UNSAFE.getByte(obj, off);
+        return GridUnsafe.getByte(obj, off);
     }
 
     /**
@@ -369,7 +365,7 @@ class OptimizedMarshallerUtils {
      * @param val Value.
      */
     static void setByte(Object obj, long off, byte val) {
-        UNSAFE.putByte(obj, off, val);
+        GridUnsafe.putByte(obj, off, val);
     }
 
     /**
@@ -380,7 +376,7 @@ class OptimizedMarshallerUtils {
      * @return Short value.
      */
     static short getShort(Object obj, long off) {
-        return UNSAFE.getShort(obj, off);
+        return GridUnsafe.getShort(obj, off);
     }
 
     /**
@@ -391,7 +387,7 @@ class OptimizedMarshallerUtils {
      * @param val Value.
      */
     static void setShort(Object obj, long off, short val) {
-        UNSAFE.putShort(obj, off, val);
+        GridUnsafe.putShort(obj, off, val);
     }
 
     /**
@@ -402,7 +398,7 @@ class OptimizedMarshallerUtils {
      * @return Integer value.
      */
     static int getInt(Object obj, long off) {
-        return UNSAFE.getInt(obj, off);
+        return GridUnsafe.getInt(obj, off);
     }
 
     /**
@@ -413,7 +409,7 @@ class OptimizedMarshallerUtils {
      * @param val Value.
      */
     static void setInt(Object obj, long off, int val) {
-        UNSAFE.putInt(obj, off, val);
+        GridUnsafe.putInt(obj, off, val);
     }
 
     /**
@@ -424,7 +420,7 @@ class OptimizedMarshallerUtils {
      * @return Long value.
      */
     static long getLong(Object obj, long off) {
-        return UNSAFE.getLong(obj, off);
+        return GridUnsafe.getLong(obj, off);
     }
 
     /**
@@ -435,7 +431,7 @@ class OptimizedMarshallerUtils {
      * @param val Value.
      */
     static void setLong(Object obj, long off, long val) {
-        UNSAFE.putLong(obj, off, val);
+        GridUnsafe.putLong(obj, off, val);
     }
 
     /**
@@ -446,7 +442,7 @@ class OptimizedMarshallerUtils {
      * @return Float value.
      */
     static float getFloat(Object obj, long off) {
-        return UNSAFE.getFloat(obj, off);
+        return GridUnsafe.getFloat(obj, off);
     }
 
     /**
@@ -457,7 +453,7 @@ class OptimizedMarshallerUtils {
      * @param val Value.
      */
     static void setFloat(Object obj, long off, float val) {
-        UNSAFE.putFloat(obj, off, val);
+        GridUnsafe.putFloat(obj, off, val);
     }
 
     /**
@@ -468,7 +464,7 @@ class OptimizedMarshallerUtils {
      * @return Double value.
      */
     static double getDouble(Object obj, long off) {
-        return UNSAFE.getDouble(obj, off);
+        return GridUnsafe.getDouble(obj, off);
     }
 
     /**
@@ -479,7 +475,7 @@ class OptimizedMarshallerUtils {
      * @param val Value.
      */
     static void setDouble(Object obj, long off, double val) {
-        UNSAFE.putDouble(obj, off, val);
+        GridUnsafe.putDouble(obj, off, val);
     }
 
     /**
@@ -490,7 +486,7 @@ class OptimizedMarshallerUtils {
      * @return Char value.
      */
     static char getChar(Object obj, long off) {
-        return UNSAFE.getChar(obj, off);
+        return GridUnsafe.getChar(obj, off);
     }
 
     /**
@@ -501,7 +497,7 @@ class OptimizedMarshallerUtils {
      * @param val Value.
      */
     static void setChar(Object obj, long off, char val) {
-        UNSAFE.putChar(obj, off, val);
+        GridUnsafe.putChar(obj, off, val);
     }
 
     /**
@@ -512,7 +508,7 @@ class OptimizedMarshallerUtils {
      * @return Boolean value.
      */
     static boolean getBoolean(Object obj, long off) {
-        return UNSAFE.getBoolean(obj, off);
+        return GridUnsafe.getBoolean(obj, off);
     }
 
     /**
@@ -523,7 +519,7 @@ class OptimizedMarshallerUtils {
      * @param val Value.
      */
     static void setBoolean(Object obj, long off, boolean val) {
-        UNSAFE.putBoolean(obj, off, val);
+        GridUnsafe.putBoolean(obj, off, val);
     }
 
     /**
@@ -534,7 +530,7 @@ class OptimizedMarshallerUtils {
      * @return Value.
      */
     static Object getObject(Object obj, long off) {
-        return UNSAFE.getObject(obj, off);
+        return GridUnsafe.getObject(obj, off);
     }
 
     /**
@@ -545,6 +541,6 @@ class OptimizedMarshallerUtils {
      * @param val Value.
      */
     static void setObject(Object obj, long off, Object val) {
-        UNSAFE.putObject(obj, off, val);
+        GridUnsafe.putObject(obj, off, val);
     }
 }

@@ -17,6 +17,8 @@
 
 package org.apache.ignite.internal.binary.streams;
 
+import org.apache.ignite.internal.util.GridUnsafe;
+
 /**
  * Base binary output stream.
  */
@@ -36,7 +38,7 @@ public abstract class BinaryAbstractOutputStream extends BinaryAbstractStream
     @Override public void writeByteArray(byte[] val) {
         ensureCapacity(pos + val.length);
 
-        copyAndShift(val, BYTE_ARR_OFF, val.length);
+        copyAndShift(val, GridUnsafe.BYTE_ARR_OFF, val.length);
     }
 
     /** {@inheritDoc} */
@@ -48,7 +50,7 @@ public abstract class BinaryAbstractOutputStream extends BinaryAbstractStream
     @Override public void writeBooleanArray(boolean[] val) {
         ensureCapacity(pos + val.length);
 
-        copyAndShift(val, BOOLEAN_ARR_OFF, val.length);
+        copyAndShift(val, GridUnsafe.BOOLEAN_ARR_OFF, val.length);
     }
 
     /** {@inheritDoc} */
@@ -70,12 +72,13 @@ public abstract class BinaryAbstractOutputStream extends BinaryAbstractStream
         ensureCapacity(pos + cnt);
 
         if (LITTLE_ENDIAN)
-            copyAndShift(val, SHORT_ARR_OFF, cnt);
+            copyAndShift(val, GridUnsafe.SHORT_ARR_OFF, cnt);
         else {
-            for (short item : val)
+            for (short item : val) {
                 writeShortFast(Short.reverseBytes(item));
 
-            shift(cnt);
+                shift(2);
+            }
         }
     }
 
@@ -98,12 +101,13 @@ public abstract class BinaryAbstractOutputStream extends BinaryAbstractStream
         ensureCapacity(pos + cnt);
 
         if (LITTLE_ENDIAN)
-            copyAndShift(val, CHAR_ARR_OFF, cnt);
+            copyAndShift(val, GridUnsafe.CHAR_ARR_OFF, cnt);
         else {
-            for (char item : val)
+            for (char item : val) {
                 writeCharFast(Character.reverseBytes(item));
 
-            shift(cnt);
+                shift(2);
+            }
         }
     }
 
@@ -140,12 +144,13 @@ public abstract class BinaryAbstractOutputStream extends BinaryAbstractStream
         ensureCapacity(pos + cnt);
 
         if (LITTLE_ENDIAN)
-            copyAndShift(val, INT_ARR_OFF, cnt);
+            copyAndShift(val, GridUnsafe.INT_ARR_OFF, cnt);
         else {
-            for (int item : val)
+            for (int item : val) {
                 writeIntFast(Integer.reverseBytes(item));
 
-            shift(cnt);
+                shift(4);
+            }
         }
     }
 
@@ -161,7 +166,7 @@ public abstract class BinaryAbstractOutputStream extends BinaryAbstractStream
         ensureCapacity(pos + cnt);
 
         if (LITTLE_ENDIAN)
-            copyAndShift(val, FLOAT_ARR_OFF, cnt);
+            copyAndShift(val, GridUnsafe.FLOAT_ARR_OFF, cnt);
         else {
             for (float item : val) {
                 writeIntFast(Integer.reverseBytes(Float.floatToIntBits(item)));
@@ -190,12 +195,13 @@ public abstract class BinaryAbstractOutputStream extends BinaryAbstractStream
         ensureCapacity(pos + cnt);
 
         if (LITTLE_ENDIAN)
-            copyAndShift(val, LONG_ARR_OFF, cnt);
+            copyAndShift(val, GridUnsafe.LONG_ARR_OFF, cnt);
         else {
-            for (long item : val)
+            for (long item : val) {
                 writeLongFast(Long.reverseBytes(item));
 
-            shift(cnt);
+                shift(8);
+            }
         }
     }
 
@@ -211,7 +217,7 @@ public abstract class BinaryAbstractOutputStream extends BinaryAbstractStream
         ensureCapacity(pos + cnt);
 
         if (LITTLE_ENDIAN)
-            copyAndShift(val, DOUBLE_ARR_OFF, cnt);
+            copyAndShift(val, GridUnsafe.DOUBLE_ARR_OFF, cnt);
         else {
             for (double item : val) {
                 writeLongFast(Long.reverseBytes(Double.doubleToLongBits(item)));
@@ -225,7 +231,7 @@ public abstract class BinaryAbstractOutputStream extends BinaryAbstractStream
     @Override public void write(byte[] arr, int off, int len) {
         ensureCapacity(pos + len);
 
-        copyAndShift(arr, BYTE_ARR_OFF + off, len);
+        copyAndShift(arr, GridUnsafe.BYTE_ARR_OFF + off, len);
     }
 
     /** {@inheritDoc} */

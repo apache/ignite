@@ -17,6 +17,8 @@
 
 package org.apache.ignite.internal.binary.streams;
 
+import org.apache.ignite.internal.util.GridUnsafe;
+
 /**
  * Binary off-heap input stream.
  */
@@ -70,7 +72,7 @@ public class BinaryOffheapInputStream extends BinaryAbstractInputStream {
     @Override public byte[] arrayCopy() {
         byte[] res = new byte[len];
 
-        UNSAFE.copyMemory(null, ptr, res, BYTE_ARR_OFF, res.length);
+        GridUnsafe.copyMemory(null, ptr, res, GridUnsafe.BYTE_ARR_OFF, res.length);
 
         return res;
     }
@@ -82,44 +84,44 @@ public class BinaryOffheapInputStream extends BinaryAbstractInputStream {
 
     /** {@inheritDoc} */
     @Override protected byte readByteAndShift() {
-        return UNSAFE.getByte(ptr + pos++);
+        return GridUnsafe.getByte(ptr + pos++);
     }
 
     /** {@inheritDoc} */
     @Override protected void copyAndShift(Object target, long off, int len) {
-        UNSAFE.copyMemory(null, ptr + pos, target, off, len);
+        GridUnsafe.copyMemory(null, ptr + pos, target, off, len);
 
         shift(len);
     }
 
     /** {@inheritDoc} */
     @Override protected short readShortFast() {
-        return UNSAFE.getShort(ptr + pos);
+        return GridUnsafe.getShort(ptr + pos);
     }
 
     /** {@inheritDoc} */
     @Override protected char readCharFast() {
-        return UNSAFE.getChar(ptr + pos);
+        return GridUnsafe.getChar(ptr + pos);
     }
 
     /** {@inheritDoc} */
     @Override protected int readIntFast() {
-        return UNSAFE.getInt(ptr + pos);
+        return GridUnsafe.getInt(ptr + pos);
     }
 
     /** {@inheritDoc} */
     @Override protected long readLongFast() {
-        return UNSAFE.getLong(ptr + pos);
+        return GridUnsafe.getLong(ptr + pos);
     }
 
     /** {@inheritDoc} */
     @Override protected byte readBytePositioned0(int pos) {
-        return UNSAFE.getByte(ptr + pos);
+        return GridUnsafe.getByte(ptr + pos);
     }
 
     /** {@inheritDoc} */
     @Override protected short readShortPositioned0(int pos) {
-        short res = UNSAFE.getShort(ptr + pos);
+        short res = GridUnsafe.getShort(ptr + pos);
 
         if (!LITTLE_ENDIAN)
             res = Short.reverseBytes(res);
@@ -129,7 +131,7 @@ public class BinaryOffheapInputStream extends BinaryAbstractInputStream {
 
     /** {@inheritDoc} */
     @Override protected int readIntPositioned0(int pos) {
-        int res = UNSAFE.getInt(ptr + pos);
+        int res = GridUnsafe.getInt(ptr + pos);
 
         if (!LITTLE_ENDIAN)
             res = Integer.reverseBytes(res);

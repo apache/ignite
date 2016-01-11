@@ -111,7 +111,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
     public static final String DIRECT_PROTO_VER_ATTR = "comm.direct.proto.ver";
 
     /** Direct protocol version. */
-    public static final byte DIRECT_PROTO_VER = 2;
+    public static final byte DIRECT_PROTO_VER = 3;
 
     /** Listeners by topic. */
     private final ConcurrentMap<Object, GridMessageListener> lsnrMap = new ConcurrentHashMap8<>();
