@@ -70,6 +70,7 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteNodeAttributes;
 import org.apache.ignite.internal.IgniteTransactionsEx;
 import org.apache.ignite.internal.managers.discovery.CustomEventListener;
+import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.datastructures.CacheDataStructuresManager;
@@ -96,6 +97,7 @@ import org.apache.ignite.internal.processors.cache.version.GridCacheVersionManag
 import org.apache.ignite.internal.processors.plugin.CachePluginManager;
 import org.apache.ignite.internal.processors.query.GridQueryProcessor;
 import org.apache.ignite.internal.util.F0;
+import org.apache.ignite.internal.util.future.GridCompoundFuture;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
@@ -112,7 +114,6 @@ import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.lifecycle.LifecycleAware;
 import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.marshaller.jdk.JdkMarshaller;
-import org.apache.ignite.internal.portable.BinaryMarshaller;
 import org.apache.ignite.spi.IgniteNodeValidationResult;
 import org.jetbrains.annotations.Nullable;
 
@@ -955,10 +956,12 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override public void onReconnected(boolean clusterRestarted) throws IgniteCheckedException {
+    @Override public IgniteInternalFuture<?> onReconnected(boolean clusterRestarted) throws IgniteCheckedException {
         List<GridCacheAdapter> reconnected = new ArrayList<>(caches.size());
 
-        for (GridCacheAdapter cache : caches.values()) {
+        GridCompoundFuture<?, ?> stopFut = null;
+
+        for (final GridCacheAdapter cache : caches.values()) {
             String name = cache.name();
 
             boolean stopped;
@@ -985,8 +988,17 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                 caches.remove(maskNull(cache.name()));
                 jCacheProxies.remove(maskNull(cache.name()));
 
-                onKernalStop(cache, true);
-                stopCache(cache, true);
+                IgniteInternalFuture<?> fut = ctx.closure().runLocalSafe(new Runnable() {
+                    @Override public void run() {
+                        onKernalStop(cache, true);
+                        stopCache(cache, true);
+                    }
+                });
+
+                if (stopFut == null)
+                    stopFut = new GridCompoundFuture<>();
+
+                stopFut.add((IgniteInternalFuture)fut);
             }
             else {
                 cache.onReconnected();
@@ -1008,6 +1020,11 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             cache.context().gate().reconnected(false);
 
         cachesOnDisconnect = null;
+
+        if (stopFut != null)
+            stopFut.markInitialized();
+
+        return stopFut;
     }
 
     /**
@@ -1024,9 +1041,9 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         CacheConfiguration cfg = cacheCtx.config();
 
         // Intentionally compare Boolean references using '!=' below to check if the flag has been explicitly set.
-        if (cfg.isKeepBinaryInStore() && cfg.isKeepBinaryInStore() != CacheConfiguration.DFLT_KEEP_BINARY_IN_STORE
+        if (cfg.isStoreKeepBinary() && cfg.isStoreKeepBinary() != CacheConfiguration.DFLT_STORE_KEEP_BINARY
             && !(ctx.config().getMarshaller() instanceof BinaryMarshaller))
-            U.warn(log, "CacheConfiguration.isKeepBinaryInStore() configuration property will be ignored because " +
+            U.warn(log, "CacheConfiguration.isStoreKeepBinary() configuration property will be ignored because " +
                 "BinaryMarshaller is not used");
 
         // Start managers.
@@ -1200,6 +1217,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      * @param pluginMgr Cache plugin manager.
      * @param cacheType Cache type.
      * @param cacheObjCtx Cache object context.
+     * @param updatesAllowed Updates allowed flag.
      * @return Cache context.
      * @throws IgniteCheckedException If failed to create cache.
      */
@@ -1943,7 +1961,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                             if (req.initiatingNodeId() == null)
                                 desc.staticallyConfigured(true);
 
-                            desc.receivedOnDiscovery(true);
+                            if (joiningNodeId.equals(ctx.localNodeId()))
+                                desc.receivedOnDiscovery(true);
 
                             DynamicCacheDescriptor old = registeredCaches.put(maskNull(req.cacheName()), desc);
 
@@ -3035,6 +3054,23 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     }
 
     /**
+     * @param cacheId Cache ID.
+     * @return Cache descriptor.
+     */
+    @Nullable public DynamicCacheDescriptor cacheDescriptor(int cacheId) {
+        for (DynamicCacheDescriptor cacheDesc : registeredCaches.values()) {
+            CacheConfiguration ccfg = cacheDesc.cacheConfiguration();
+
+            assert ccfg != null : cacheDesc;
+
+            if (CU.cacheId(ccfg.getName()) == cacheId)
+                return cacheDesc;
+        }
+
+        return null;
+    }
+
+    /**
      * @param cacheCfg Cache configuration template.
      * @throws IgniteCheckedException If failed.
      */
@@ -3308,16 +3344,14 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      * @throws IgniteException If transaction exist.
      */
     private void checkEmptyTransactions() throws IgniteException {
-        if (transactions().tx() != null)
-            throw new IgniteException("Cannot start/stop cache within transaction.");
-
-        if (sharedCtx.mvcc().lastExplicitLockTopologyVersion(Thread.currentThread().getId()) != null)
-            throw new IgniteException("Cannot start/stop cache within lock.");
+        if (transactions().tx() != null || sharedCtx.lockedTopologyVersion(null) != null)
+            throw new IgniteException("Cannot start/stop cache within lock or transaction.");
     }
 
     /**
      * @param val Object to check.
      * @throws IgniteCheckedException If validation failed.
+     * @return Configuration copy.
      */
     private CacheConfiguration cloneCheckSerializable(CacheConfiguration val) throws IgniteCheckedException {
         if (val == null)

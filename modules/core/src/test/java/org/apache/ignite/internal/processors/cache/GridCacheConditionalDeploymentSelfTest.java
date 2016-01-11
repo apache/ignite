@@ -18,11 +18,11 @@
 package org.apache.ignite.internal.processors.cache;
 
 import org.apache.ignite.Ignite;
-import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.managers.communication.GridIoMessageFactory;
+import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.typedef.CO;
 import org.apache.ignite.plugin.extensions.communication.Message;
@@ -139,19 +139,23 @@ public class GridCacheConditionalDeploymentSelfTest extends GridCommonAbstractTe
     public void testAddedDeploymentInfo2() throws Exception {
         GridCacheContext ctx = cacheContext();
 
-        assertTrue(ctx.deploymentEnabled());
+        if (grid(0).configuration().getMarshaller() instanceof BinaryMarshaller)
+            assertFalse(ctx.deploymentEnabled());
+        else {
+            assertTrue(ctx.deploymentEnabled());
 
-        GridCacheIoManager ioMgr = cacheIoManager();
+            GridCacheIoManager ioMgr = cacheIoManager();
 
-        TestMessage msg = new TestMessage();
+            TestMessage msg = new TestMessage();
 
-        assertNull(msg.deployInfo());
+            assertNull(msg.deployInfo());
 
-        msg.addDepInfo = false;
+            msg.addDepInfo = false;
 
-        IgniteUtils.invoke(GridCacheIoManager.class, ioMgr, "onSend", msg, grid(1).cluster().localNode().id());
+            IgniteUtils.invoke(GridCacheIoManager.class, ioMgr, "onSend", msg, grid(1).cluster().localNode().id());
 
-        assertNull(msg.deployInfo());
+            assertNull(msg.deployInfo());
+        }
     }
 
     protected GridCacheContext cacheContext() {

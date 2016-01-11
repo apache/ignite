@@ -69,7 +69,6 @@ namespace Apache.Ignite.Core.Impl.Binary
             {typeof (Guid?), BinaryUtils.TypeGuid},
             {typeof (ArrayList), BinaryUtils.TypeCollection},
             {typeof (Hashtable), BinaryUtils.TypeDictionary},
-            {typeof (DictionaryEntry), BinaryUtils.TypeMapEntry},
             {typeof (bool[]), BinaryUtils.TypeArrayBool},
             {typeof (byte[]), BinaryUtils.TypeArrayByte},
             {typeof (sbyte[]), BinaryUtils.TypeArrayByte},
@@ -162,11 +161,8 @@ namespace Apache.Ignite.Core.Impl.Binary
 
             // 13. Arbitrary dictionary.
             ReadHandlers[BinaryUtils.TypeDictionary] = new BinarySystemReader(ReadDictionary);
-
-            // 15. Map entry.
-            ReadHandlers[BinaryUtils.TypeMapEntry] = new BinarySystemReader(ReadMapEntry);
             
-            // 16. Enum.
+            // 14. Enum.
             ReadHandlers[BinaryUtils.TypeArrayEnum] = new BinarySystemReader(ReadEnumArray);
         }
 
@@ -218,8 +214,7 @@ namespace Apache.Ignite.Core.Impl.Binary
                 return WriteArrayList;
             if (type == typeof(Hashtable))
                 return WriteHashtable;
-            if (type == typeof(DictionaryEntry))
-                return WriteMapEntry;
+
             if (type.IsArray)
             {
                 // We know how to write any array type.
@@ -612,16 +607,6 @@ namespace Apache.Ignite.Core.Impl.Binary
         }
 
         /**
-         * <summary>Write map entry.</summary>
-         */
-        private static void WriteMapEntry(BinaryWriter ctx, object obj)
-        {
-            ctx.Stream.WriteByte(BinaryUtils.TypeMapEntry);
-
-            BinaryUtils.WriteMapEntry(ctx, (DictionaryEntry)obj);
-        }
-
-        /**
          * <summary>Write binary object.</summary>
          */
         private static void WriteBinary(BinaryWriter ctx, object obj)
@@ -695,21 +680,6 @@ namespace Apache.Ignite.Core.Impl.Binary
         {
             return BinaryUtils.ReadDictionary(ctx, null);
         }
-
-        /**
-         * <summary>Read map entry.</summary>
-         */
-        private static object ReadMapEntry(BinaryReader ctx, Type type)
-        {
-            return BinaryUtils.ReadMapEntry(ctx);
-        }
-
-        /**
-         * <summary>Add element to array list.</summary>
-         * <param name="col">Array list.</param>
-         * <param name="elem">Element.</param>
-         */
-
 
         /**
          * <summary>Read delegate.</summary>

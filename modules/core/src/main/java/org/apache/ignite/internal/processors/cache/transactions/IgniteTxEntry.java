@@ -22,7 +22,7 @@ import java.nio.ByteBuffer;
 import java.util.Collection;
 import java.util.LinkedList;
 import java.util.UUID;
-import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import javax.cache.expiry.ExpiryPolicy;
 import javax.cache.processor.EntryProcessor;
 import org.apache.ignite.IgniteCheckedException;
@@ -72,6 +72,10 @@ public class IgniteTxEntry implements GridPeerDeployAware, Message {
 
     /** Dummy version for any existing entry read in SERIALIZABLE transaction. */
     public static final GridCacheVersion SER_READ_NOT_EMPTY_VER = new GridCacheVersion(0, 0, 0, 1);
+
+    /** Prepared flag updater. */
+    private static final AtomicIntegerFieldUpdater<IgniteTxEntry> PREPARED_UPD =
+        AtomicIntegerFieldUpdater.newUpdater(IgniteTxEntry.class, "prepared");
 
     /** Owning transaction. */
     @GridToStringExclude
@@ -149,9 +153,9 @@ public class IgniteTxEntry implements GridPeerDeployAware, Message {
     private GridCacheContext<?, ?> ctx;
 
     /** Prepared flag to prevent multiple candidate add. */
-    @SuppressWarnings({"TransientFieldNotInitialized"})
+    @SuppressWarnings("UnusedDeclaration")
     @GridDirectTransient
-    private AtomicBoolean prepared = new AtomicBoolean();
+    private transient volatile int prepared;
 
     /** Lock flag for collocated cache. */
     @GridDirectTransient
@@ -441,7 +445,7 @@ public class IgniteTxEntry implements GridPeerDeployAware, Message {
      * @return True if entry was marked prepared by this call.
      */
     boolean markPrepared() {
-        return prepared.compareAndSet(false, true);
+        return PREPARED_UPD.compareAndSet(this, 0, 1);
     }
 
     /**

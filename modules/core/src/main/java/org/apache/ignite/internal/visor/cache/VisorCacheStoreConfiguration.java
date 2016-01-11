@@ -65,6 +65,9 @@ public class VisorCacheStoreConfiguration implements Serializable {
     /** Number of threads that will perform cache flushing. */
     private int flushThreadCnt;
 
+    /** Keep binary in store flag. */
+    private boolean storeKeepBinary;
+
     /**
      * @param ignite Ignite instance.
      * @param ccfg Cache configuration.
@@ -81,6 +84,7 @@ public class VisorCacheStoreConfiguration implements Serializable {
 
         cfg.store = compactClass(store);
         cfg.storeFactory = compactClass(ccfg.getCacheStoreFactory());
+        cfg.storeKeepBinary = ccfg.isStoreKeepBinary();
 
         cfg.readThrough = ccfg.isReadThrough();
         cfg.writeThrough = ccfg.isWriteThrough();
@@ -120,6 +124,13 @@ public class VisorCacheStoreConfiguration implements Serializable {
      */
     public String storeFactory() {
         return storeFactory;
+    }
+
+    /**
+     * @return Keep binary in store flag.
+     */
+    public boolean storeKeepBinary() {
+        return storeKeepBinary;
     }
 
     /**

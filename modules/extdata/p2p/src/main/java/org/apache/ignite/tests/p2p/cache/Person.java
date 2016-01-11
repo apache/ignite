@@ -18,13 +18,34 @@
 package org.apache.ignite.tests.p2p.cache;
 
 import java.io.Serializable;
+import org.apache.ignite.cache.query.annotations.QuerySqlField;
 
 /**
  *
  */
 public class Person implements Serializable {
     /** */
+    @QuerySqlField
     private String name;
+
+    /** */
+    @QuerySqlField(index = true)
+    private int id;
+
+    /** */
+    @QuerySqlField
+    private String lastName;
+
+    /** */
+    @QuerySqlField
+    private double salary;
+
+    /**
+     *
+     */
+    public Person() {
+        // No-op.
+    }
 
     /**
      * @param name Name.
@@ -38,5 +59,61 @@ public class Person implements Serializable {
      */
     public String name() {
         return name;
+    }
+
+    /**
+     * @return Name.
+     */
+    public String getName() {
+        return name;
+    }
+
+    /**
+     * @param name Name.
+     */
+    public void setName(String name) {
+        this.name = name;
+    }
+
+    /**
+     * @return ID.
+     */
+    public int getId() {
+        return id;
+    }
+
+    /**
+     * @param id ID.
+     */
+    public void setId(int id) {
+        this.id = id;
+    }
+
+    /**
+     * @return Last name.
+     */
+    public String getLastName() {
+        return lastName;
+    }
+
+    /**
+     * @param lastName Last name.
+     */
+    public void setLastName(String lastName) {
+        this.lastName = lastName;
+    }
+
+    /**
+     * @return Salary.
+     */
+    public double getSalary() {
+        return salary;
+    }
+
+    /**
+     * @param salary Salary.
+     */
+    public void setSalary(double salary) {
+        this.salary = salary;
     }
 }

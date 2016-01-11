@@ -183,7 +183,7 @@ public class HadoopMapReduceTest extends HadoopAbstractWordCountTest {
 
             Job job = Job.getInstance(jobConf);
 
-            HadoopWordCount2.setTasksClasses(job, useNewMapper, useNewCombiner, useNewReducer);
+            HadoopWordCount2.setTasksClasses(job, useNewMapper, useNewCombiner, useNewReducer, compressOutputSnappy());
 
             job.setOutputKeyClass(Text.class);
             job.setOutputValueClass(IntWritable.class);
@@ -207,15 +207,26 @@ public class HadoopMapReduceTest extends HadoopAbstractWordCountTest {
 
             checkOwner(new IgfsPath(outFile));
 
+            String actual = readAndSortFile(outFile, job.getConfiguration());
+
             assertEquals("Use new mapper: " + useNewMapper + ", new combiner: " + useNewCombiner + ", new reducer: " +
                 useNewReducer,
                 "blue\t" + blue + "\n" +
                 "green\t" + green + "\n" +
                 "red\t" + red + "\n" +
                 "yellow\t" + yellow + "\n",
-                readAndSortFile(outFile)
+                actual
             );
         }
+    }
+
+    /**
+     * Gets if to compress output data with Snappy.
+     *
+     * @return If to compress output data with Snappy.
+     */
+    protected boolean compressOutputSnappy() {
+        return false;
     }
 
     /**

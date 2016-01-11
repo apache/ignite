@@ -37,7 +37,7 @@ public class GridUpdateNotifierSelfTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected long getTestTimeout() {
-        return 30 * 1000;
+        return 120 * 1000;
     }
 
     /** {@inheritDoc} */

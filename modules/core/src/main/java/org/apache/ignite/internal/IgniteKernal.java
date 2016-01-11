@@ -96,8 +96,8 @@ import org.apache.ignite.internal.managers.failover.GridFailoverManager;
 import org.apache.ignite.internal.managers.indexing.GridIndexingManager;
 import org.apache.ignite.internal.managers.loadbalancer.GridLoadBalancerManager;
 import org.apache.ignite.internal.managers.swapspace.GridSwapSpaceManager;
-import org.apache.ignite.internal.portable.BinaryEnumCache;
-import org.apache.ignite.internal.portable.BinaryMarshaller;
+import org.apache.ignite.internal.binary.BinaryEnumCache;
+import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.processors.GridProcessor;
 import org.apache.ignite.internal.processors.affinity.GridAffinityProcessor;
 import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
@@ -106,7 +106,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheProcessor;
 import org.apache.ignite.internal.processors.cache.GridCacheUtilityKey;
 import org.apache.ignite.internal.processors.cache.IgniteCacheProxy;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
-import org.apache.ignite.internal.processors.cache.portable.CacheObjectBinaryProcessorImpl;
+import org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl;
 import org.apache.ignite.internal.processors.cacheobject.IgniteCacheObjectProcessor;
 import org.apache.ignite.internal.processors.clock.GridClockSyncProcessor;
 import org.apache.ignite.internal.processors.closure.GridClosureProcessor;
@@ -136,6 +136,7 @@ import org.apache.ignite.internal.processors.session.GridTaskSessionProcessor;
 import org.apache.ignite.internal.processors.task.GridTaskProcessor;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutProcessor;
 import org.apache.ignite.internal.util.GridTimerTask;
+import org.apache.ignite.internal.util.future.GridCompoundFuture;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.future.IgniteFutureImpl;
@@ -744,7 +745,8 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
         // Run background network diagnostics.
         GridDiagnostic.runBackgroundCheck(gridName, execSvc, log);
 
-        boolean notifyEnabled = IgniteSystemProperties.getBoolean(IGNITE_UPDATE_NOTIFIER, true);
+        boolean notifyEnabled = IgniteSystemProperties.getBoolean(IGNITE_UPDATE_NOTIFIER,
+            Boolean.parseBoolean(IgniteProperties.get("ignite.update.notifier.enabled.by.default")));
 
         // Ack 3-rd party licenses location.
         if (log.isInfoEnabled() && cfg.getIgniteHome() != null)
@@ -786,7 +788,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
 
             startProcessor(new ClusterProcessor(ctx));
 
-            fillNodeAttributes();
+            fillNodeAttributes(notifyEnabled);
 
             U.onGridStart();
 
@@ -1199,10 +1201,11 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
     /**
      * Creates attributes map and fills it in.
      *
+     * @param notifyEnabled Update notifier flag.
      * @throws IgniteCheckedException thrown if was unable to set up attribute.
      */
     @SuppressWarnings({"SuspiciousMethodCalls", "unchecked", "TypeMayBeWeakened"})
-    private void fillNodeAttributes() throws IgniteCheckedException {
+    private void fillNodeAttributes(boolean notifyEnabled) throws IgniteCheckedException {
         final String[] incProps = cfg.getIncludeProperties();
 
         try {
@@ -1239,6 +1242,8 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
                     ctx.addNodeAttribute(key, e.getValue());
                 }
             }
+
+            ctx.addNodeAttribute(IgniteNodeAttributes.ATTR_UPDATE_NOTIFIER_ENABLED, notifyEnabled);
 
             if (log.isDebugEnabled())
                 log.debug("Added system properties to node attributes.");
@@ -3083,16 +3088,27 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
     /**
      * @param clusterRestarted {@code True} if all cluster nodes restarted while client was disconnected.
      */
+    @SuppressWarnings("unchecked")
     public void onReconnected(final boolean clusterRestarted) {
         Throwable err = null;
 
         try {
             ctx.disconnected(false);
 
-            for (GridComponent comp : ctx.components())
-                comp.onReconnected(clusterRestarted);
+            GridCompoundFuture<?, ?> reconnectFut = new GridCompoundFuture<>();
 
-            ctx.cache().context().exchange().reconnectExchangeFuture().listen(new CI1<IgniteInternalFuture<?>>() {
+            for (GridComponent comp : ctx.components()) {
+                IgniteInternalFuture<?> fut = comp.onReconnected(clusterRestarted);
+
+                if (fut != null)
+                    reconnectFut.add((IgniteInternalFuture)fut);
+            }
+
+            reconnectFut.add((IgniteInternalFuture)ctx.cache().context().exchange().reconnectExchangeFuture());
+
+            reconnectFut.markInitialized();
+
+            reconnectFut.listen(new CI1<IgniteInternalFuture<?>>() {
                 @Override public void apply(IgniteInternalFuture<?> fut) {
                     try {
                         fut.get();
@@ -3215,7 +3231,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
      */
     protected Object readResolve() throws ObjectStreamException {
         try {
-            return IgnitionEx.gridx(gridName);
+            return IgnitionEx.localIgnite();
         }
         catch (IllegalStateException e) {
             throw U.withCause(new InvalidObjectException(e.getMessage()), e);
@@ -3232,20 +3248,33 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
 
     /** {@inheritDoc} */
     public void dumpDebugInfo() {
-        boolean client = ctx.clientNode();
+        try {
+            GridKernalContextImpl ctx = this.ctx;
 
-        ClusterNode locNode = ctx.discovery().localNode();
+            GridDiscoveryManager discoMrg = ctx != null ? ctx.discovery() : null;
 
-        UUID routerId = locNode instanceof TcpDiscoveryNode ? ((TcpDiscoveryNode)locNode).clientRouterNodeId() : null;
+            ClusterNode locNode = discoMrg != null ? discoMrg.localNode() : null;
 
-        U.warn(log, "Dumping debug info for node [id=" + locNode.id() +
-            ", name=" + ctx.gridName() +
-            ", order=" + locNode.order() +
-            ", topVer=" + ctx.discovery().topologyVersion() +
-            ", client=" + client +
-            (client && routerId != null ? ", routerId=" + routerId : "") + ']');
+            if (ctx != null && discoMrg != null && locNode != null) {
+                boolean client = ctx.clientNode();
 
-        ctx.cache().context().exchange().dumpDebugInfo();
+                UUID routerId = locNode instanceof TcpDiscoveryNode ? ((TcpDiscoveryNode)locNode).clientRouterNodeId() : null;
+
+                U.warn(log, "Dumping debug info for node [id=" + locNode.id() +
+                    ", name=" + ctx.gridName() +
+                    ", order=" + locNode.order() +
+                    ", topVer=" + discoMrg.topologyVersion() +
+                    ", client=" + client +
+                    (client && routerId != null ? ", routerId=" + routerId : "") + ']');
+
+                ctx.cache().context().exchange().dumpDebugInfo();
+            }
+            else
+                U.warn(log, "Dumping debug info for node, context is not initialized [name=" + gridName + ']');
+        }
+        catch (Exception e) {
+            U.error(log, "Failed to dump debug info for node: " + e, e);
+        }
     }
 
     /** {@inheritDoc} */

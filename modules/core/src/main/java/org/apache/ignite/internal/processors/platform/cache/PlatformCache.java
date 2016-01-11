@@ -28,8 +28,8 @@ import org.apache.ignite.cache.query.ScanQuery;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.SqlQuery;
 import org.apache.ignite.cache.query.TextQuery;
-import org.apache.ignite.internal.portable.BinaryRawReaderEx;
-import org.apache.ignite.internal.portable.BinaryRawWriterEx;
+import org.apache.ignite.internal.binary.BinaryRawReaderEx;
+import org.apache.ignite.internal.binary.BinaryRawWriterEx;
 import org.apache.ignite.internal.processors.cache.CacheOperationContext;
 import org.apache.ignite.internal.processors.cache.CachePartialUpdateCheckedException;
 import org.apache.ignite.internal.processors.cache.IgniteCacheProxy;
@@ -180,7 +180,7 @@ public class PlatformCache extends PlatformAbstractTarget {
     private final IgniteCacheProxy cache;
 
     /** Whether this cache is created with "keepBinary" flag on the other side. */
-    private final boolean keepPortable;
+    private final boolean keepBinary;
 
     /** */
     private static final GetAllWriter WRITER_GET_ALL = new GetAllWriter();
@@ -202,13 +202,13 @@ public class PlatformCache extends PlatformAbstractTarget {
      *
      * @param platformCtx Context.
      * @param cache Underlying cache.
-     * @param keepPortable Keep portable flag.
+     * @param keepBinary Keep binary flag.
      */
-    public PlatformCache(PlatformContext platformCtx, IgniteCache cache, boolean keepPortable) {
+    public PlatformCache(PlatformContext platformCtx, IgniteCache cache, boolean keepBinary) {
         super(platformCtx);
 
         this.cache = (IgniteCacheProxy)cache;
-        this.keepPortable = keepPortable;
+        this.keepBinary = keepBinary;
     }
 
     /**
@@ -220,16 +220,16 @@ public class PlatformCache extends PlatformAbstractTarget {
         if (cache.delegate().skipStore())
             return this;
 
-        return new PlatformCache(platformCtx, cache.withSkipStore(), keepPortable);
+        return new PlatformCache(platformCtx, cache.withSkipStore(), keepBinary);
     }
 
     /**
-     * Gets cache with "keep portable" flag.
+     * Gets cache with "keep binary" flag.
      *
-     * @return Cache with "keep portable" flag set.
+     * @return Cache with "keep binary" flag set.
      */
-    public PlatformCache withKeepPortable() {
-        if (keepPortable)
+    public PlatformCache withKeepBinary() {
+        if (keepBinary)
             return this;
 
         return new PlatformCache(platformCtx, cache.withKeepBinary(), true);
@@ -246,7 +246,7 @@ public class PlatformCache extends PlatformAbstractTarget {
     public PlatformCache withExpiryPolicy(final long create, final long update, final long access) {
         IgniteCache cache0 = cache.withExpiryPolicy(new InteropExpiryPolicy(create, update, access));
 
-        return new PlatformCache(platformCtx, cache0, keepPortable);
+        return new PlatformCache(platformCtx, cache0, keepBinary);
     }
 
     /**
@@ -258,7 +258,7 @@ public class PlatformCache extends PlatformAbstractTarget {
         if (cache.isAsync())
             return this;
 
-        return new PlatformCache(platformCtx, (IgniteCache)cache.withAsync(), keepPortable);
+        return new PlatformCache(platformCtx, (IgniteCache)cache.withAsync(), keepBinary);
     }
 
     /**
@@ -272,7 +272,7 @@ public class PlatformCache extends PlatformAbstractTarget {
         if (opCtx != null && opCtx.noRetries())
             return this;
 
-        return new PlatformCache(platformCtx, cache.withNoRetries(), keepPortable);
+        return new PlatformCache(platformCtx, cache.withNoRetries(), keepBinary);
     }
 
     /** {@inheritDoc} */
@@ -623,10 +623,10 @@ public class PlatformCache extends PlatformAbstractTarget {
     @Override public Exception convertException(Exception e) {
         if (e instanceof CachePartialUpdateException)
             return new PlatformCachePartialUpdateException((CachePartialUpdateCheckedException)e.getCause(),
-                platformCtx, keepPortable);
+                platformCtx, keepBinary);
 
         if (e instanceof CachePartialUpdateCheckedException)
-            return new PlatformCachePartialUpdateException((CachePartialUpdateCheckedException)e, platformCtx, keepPortable);
+            return new PlatformCachePartialUpdateException((CachePartialUpdateCheckedException)e, platformCtx, keepBinary);
 
         if (e.getCause() instanceof EntryProcessorException)
             return (EntryProcessorException) e.getCause();

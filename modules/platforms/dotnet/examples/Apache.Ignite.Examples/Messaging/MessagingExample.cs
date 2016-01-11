@@ -26,10 +26,10 @@ namespace Apache.Ignite.Examples.Messaging
     /// <summary>
     /// Example demonstrating Ignite messaging. Should be run with standalone Apache Ignite.NET node.
     /// <para />
-    /// 1) Run %IGNITE_HOME%/platforms/dotnet/Apache.Ignite/bin/${Platform]/${Configuration}/Apache.Ignite.exe:
+    /// 1) Build the project Apache.Ignite.ExamplesDll (select it -> right-click -> Build).
+    ///    Apache.Ignite.ExamplesDll.dll must appear in %IGNITE_HOME%/platforms/dotnet/examples/Apache.Ignite.ExamplesDll/bin/${Platform]/${Configuration} folder;
+    /// 2) Run %IGNITE_HOME%/platforms/dotnet/bin/Apache.Ignite.exe:
     /// Apache.Ignite.exe -IgniteHome="%IGNITE_HOME%" -springConfigUrl=platforms\dotnet\examples\config\example-compute.xml -assembly=[path_to_Apache.Ignite.ExamplesDll.dll]
-    /// 2) Build the project Apache.Ignite.ExamplesDll (select it -> right-click -> Build).
-    ///    Apache.Ignite.ExamplesDll.dll must appear in %IGNITE_HOME%/platforms/dotnet/examples/Apache.Ignite.ExamplesDll/bin/${Platform]/${Configuration} folder.
     /// 3) Set this class as startup object (Apache.Ignite.Examples project -> right-click -> Properties ->
     ///     Application -> Startup object);
     /// 4) Start example (F5 or Ctrl+F5).

@@ -151,13 +151,15 @@ public class GridDhtAtomicUpdateRequest extends GridCacheMessage implements Grid
     @GridDirectTransient
     private boolean onRes;
 
+    /** */
     @GridDirectTransient
     private List<Integer> partIds;
 
+    /** */
     @GridDirectTransient
-    private List<CacheObject> localPrevVals;
+    private List<CacheObject> locPrevVals;
 
-    /** Keep portable flag. */
+    /** Keep binary flag. */
     private boolean keepBinary;
 
     /**
@@ -213,7 +215,7 @@ public class GridDhtAtomicUpdateRequest extends GridCacheMessage implements Grid
 
         keys = new ArrayList<>();
         partIds = new ArrayList<>();
-        localPrevVals = new ArrayList<>();
+        locPrevVals = new ArrayList<>();
 
         if (forceTransformBackups) {
             entryProcessors = new ArrayList<>();
@@ -254,7 +256,7 @@ public class GridDhtAtomicUpdateRequest extends GridCacheMessage implements Grid
 
         partIds.add(partId);
 
-        localPrevVals.add(prevVal);
+        locPrevVals.add(prevVal);
 
         if (forceTransformBackups) {
             assert entryProcessor != null;
@@ -486,7 +488,7 @@ public class GridDhtAtomicUpdateRequest extends GridCacheMessage implements Grid
     }
 
     /**
-     * @return Keep portable flag.
+     * @return Keep binary flag.
      */
     public boolean keepBinary() {
         return keepBinary;
@@ -519,7 +521,7 @@ public class GridDhtAtomicUpdateRequest extends GridCacheMessage implements Grid
      * @return Value.
      */
     @Nullable public CacheObject localPreviousValue(int idx) {
-        return localPrevVals.get(idx);
+        return locPrevVals.get(idx);
     }
 
     /**

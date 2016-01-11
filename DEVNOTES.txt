@@ -12,6 +12,14 @@ With LGPL dependencies:
 With LGPL dependencies and Scala 2.10:
   mvn clean package -DskipTests -Prelease,lgpl -Dignite.edition=fabric-lgpl -Dscala-2.10
 
+With Apache Ignite.NET:
+  Build Apache Ignite.NET as described at modules/platforms/dotnet/DEVNOTES.txt.
+
+  Then build Ignite Fabric with Apache Ignite.NET:
+  mvn clean package -DskipTests -DclientDocs
+
+  Note that 'doxygen' should be installed before running this command.
+
 Look for apache-ignite-fabric-<version>-bin.zip in ./target/bin directory.
 
 NOTE: JDK version should be 1.7.0-* or >= 1.8.0-u40.
@@ -29,6 +37,9 @@ assembly will also include integration module for Apache Spark.
 
 NOTE: JDK version should be 1.7.0-* or >= 1.8.0-u40.
 
+Ignite C++ Build Instructions
+======================================
+  Instructions can be found at modules/platforms/cpp/DEVNOTES.txt.
 
 Ignite Release Instructions
 ===========================

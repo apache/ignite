@@ -22,6 +22,7 @@ import javax.cache.Cache;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.Ignition;
+import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.affinity.AffinityKey;
 import org.apache.ignite.cache.query.QueryCursor;
@@ -88,6 +89,7 @@ public class CacheQueryExample {
             personCacheCfg.setCacheMode(CacheMode.PARTITIONED); // Default.
             personCacheCfg.setIndexedTypes(AffinityKey.class, Person.class);
 
+            // Auto-close cache at the end of the example.
             try (
                 IgniteCache<Long, Organization> orgCache = ignite.getOrCreateCache(orgCacheCfg);
                 IgniteCache<AffinityKey<Long>, Person> personCache = ignite.getOrCreateCache(personCacheCfg)
@@ -117,6 +119,11 @@ public class CacheQueryExample {
                 // Example for SQL-based fields queries that uses joins.
                 sqlFieldsQueryWithJoin();
             }
+            finally {
+                // Distributed cache could be removed from cluster only by #destroyCache() call.
+                ignite.destroyCache(PERSON_CACHE);
+                ignite.destroyCache(ORG_CACHE);
+            }
 
             print("Cache query example finished.");
         }
@@ -126,12 +133,12 @@ public class CacheQueryExample {
      * Example for scan query based on a predicate.
      */
     private static void scanQuery() {
-        IgniteCache<AffinityKey<Long>, Person> cache = Ignition.ignite().cache(PERSON_CACHE);
+        IgniteCache<BinaryObject, BinaryObject> cache = Ignition.ignite().cache(PERSON_CACHE).withKeepBinary();
 
-        ScanQuery<AffinityKey<Long>, Person> scan = new ScanQuery<>(
-            new IgniteBiPredicate<AffinityKey<Long>, Person>() {
-                @Override public boolean apply(AffinityKey<Long> key, Person person) {
-                    return person.salary <= 1000;
+        ScanQuery<BinaryObject, BinaryObject> scan = new ScanQuery<>(
+            new IgniteBiPredicate<BinaryObject, BinaryObject>() {
+                @Override public boolean apply(BinaryObject key, BinaryObject person) {
+                    return person.<Double>field("salary") <= 1000;
                 }
             }
         );
@@ -265,14 +272,20 @@ public class CacheQueryExample {
     private static void initialize() {
         IgniteCache<Long, Organization> orgCache = Ignition.ignite().cache(ORG_CACHE);
 
+        // Clear cache before running the example.
+        orgCache.clear();
+
         // Organizations.
         Organization org1 = new Organization("ApacheIgnite");
         Organization org2 = new Organization("Other");
 
-        orgCache.put(org1.id, org1);
-        orgCache.put(org2.id, org2);
+        orgCache.put(org1.id(), org1);
+        orgCache.put(org2.id(), org2);
 
         IgniteCache<AffinityKey<Long>, Person> personCache = Ignition.ignite().cache(PERSON_CACHE);
+
+        // Clear cache before running the example.
+        personCache.clear();
 
         // People.
         Person p1 = new Person(org1, "John", "Doe", 2000, "John Doe has Master Degree.");

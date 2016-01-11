@@ -84,20 +84,28 @@ public class TcpDiscoveryMulticastIpFinderSelfTest
             ipFinder3.setLocalAddress(locAddr);
 
             ipFinder1.initializeLocalAddresses(Collections.singleton(new InetSocketAddress("host1", 1001)));
-            ipFinder2.initializeLocalAddresses(Collections.singleton(new InetSocketAddress("host2", 1002)));
-            ipFinder3.initializeLocalAddresses(Collections.singleton(new InetSocketAddress("host3", 1003)));
 
             Collection<InetSocketAddress> addrs1 = ipFinder1.getRegisteredAddresses();
+
+            ipFinder2.initializeLocalAddresses(Collections.singleton(new InetSocketAddress("host2", 1002)));
+
             Collection<InetSocketAddress> addrs2 = ipFinder2.getRegisteredAddresses();
+
+            ipFinder3.initializeLocalAddresses(Collections.singleton(new InetSocketAddress("host3", 1003)));
+
             Collection<InetSocketAddress> addrs3 = ipFinder3.getRegisteredAddresses();
 
             info("Addrs1: " + addrs1);
             info("Addrs2: " + addrs2);
             info("Addrs2: " + addrs3);
 
-            assertEquals(1, ipFinder1.getRegisteredAddresses().size());
-            assertEquals(2, ipFinder2.getRegisteredAddresses().size());
-            assertEquals(3, ipFinder3.getRegisteredAddresses().size());
+            assertEquals(1, addrs1.size());
+            assertEquals(2, addrs2.size());
+            assertTrue("Unexpected number of addresses: " + addrs3, addrs3.size() == 2 || addrs3.size() == 3);
+
+            checkRequestAddresses(ipFinder1, 3);
+            checkRequestAddresses(ipFinder2, 3);
+            checkRequestAddresses(ipFinder3, 3);
         }
         finally {
             if (ipFinder1 != null)
@@ -109,5 +117,18 @@ public class TcpDiscoveryMulticastIpFinderSelfTest
             if (ipFinder3 != null)
                 ipFinder3.close();
         }
+    }
+
+    /**
+     * @param ipFinder IP finder.
+     * @param exp Expected number of addresses.
+     */
+    private void checkRequestAddresses(TcpDiscoveryMulticastIpFinder ipFinder, int exp) {
+        for (int i = 0; i < 10; i++) {
+            if (ipFinder.getRegisteredAddresses().size() == exp)
+                return;
+        }
+
+        assertEquals(exp, ipFinder.getRegisteredAddresses().size());
     }
 }

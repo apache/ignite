@@ -620,7 +620,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
                 nioSrvr.resend(ses);
 
                 if (sndRes)
-                    nioSrvr.sendSystem(ses, new RecoveryLastReceivedMessage(recovery.receivedCount()));
+                    nioSrvr.sendSystem(ses, new RecoveryLastReceivedMessage(recovery.received()));
 
                 recovery.connected();
 
@@ -714,7 +714,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
                             }
                         };
 
-                        nioSrvr.sendSystem(ses, new RecoveryLastReceivedMessage(recoveryDesc.receivedCount()), lsnr);
+                        nioSrvr.sendSystem(ses, new RecoveryLastReceivedMessage(recoveryDesc.received()), lsnr);
                     }
                     else {
                         try {
@@ -1510,7 +1510,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
 
         nioSrvr.start();
 
-        commWorker = new CommunicationWorker();
+        commWorker = new CommunicationWorker(gridName);
 
         commWorker.start();
 
@@ -2587,16 +2587,16 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
                     else
                         ch.write(ByteBuffer.wrap(U.IGNITE_HEADER));
 
-                    ClusterNode localNode = getLocalNode();
+                    ClusterNode locNode = getLocalNode();
 
-                    if (localNode == null)
+                    if (locNode == null)
                         throw new IgniteCheckedException("Local node has not been started or " +
                             "fully initialized [isStopping=" + getSpiContext().isStopping() + ']');
 
                     if (recovery != null) {
-                        HandshakeMessage msg = new HandshakeMessage(localNode.id(),
+                        HandshakeMessage msg = new HandshakeMessage(locNode.id(),
                             recovery.incrementConnectCount(),
-                            recovery.receivedCount());
+                            recovery.received());
 
                         if (log.isDebugEnabled())
                             log.debug("Write handshake message [rmtNode=" + rmtNodeId + ", msg=" + msg + ']');
@@ -3024,9 +3024,9 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
         private final BlockingQueue<GridNioRecoveryDescriptor> q = new LinkedBlockingQueue<>();
 
         /**
-         *
+         * @param gridName Grid name.
          */
-        private CommunicationWorker() {
+        private CommunicationWorker(String gridName) {
             super(gridName, "tcp-comm-worker", log);
         }
 

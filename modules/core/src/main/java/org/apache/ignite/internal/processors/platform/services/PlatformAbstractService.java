@@ -23,8 +23,8 @@ import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.internal.portable.BinaryRawReaderEx;
-import org.apache.ignite.internal.portable.BinaryRawWriterEx;
+import org.apache.ignite.internal.binary.BinaryRawReaderEx;
+import org.apache.ignite.internal.binary.BinaryRawWriterEx;
 import org.apache.ignite.internal.processors.platform.PlatformContext;
 import org.apache.ignite.internal.processors.platform.memory.PlatformInputStream;
 import org.apache.ignite.internal.processors.platform.memory.PlatformMemory;
@@ -41,11 +41,11 @@ public abstract class PlatformAbstractService implements PlatformService, Extern
     /** */
     private static final long serialVersionUID = 0L;
 
-    /** .Net portable service. */
+    /** .Net binary service. */
     protected Object svc;
 
-    /** Whether to keep objects portable on server if possible. */
-    protected boolean srvKeepPortable;
+    /** Whether to keep objects binary on server if possible. */
+    protected boolean srvKeepBinary;
 
     /** Pointer to deployed service. */
     protected transient long ptr;
@@ -65,15 +65,15 @@ public abstract class PlatformAbstractService implements PlatformService, Extern
      *
      * @param svc Service.
      * @param ctx Context.
-     * @param srvKeepPortable Whether to keep objects portable on server if possible.
+     * @param srvKeepBinary Whether to keep objects binary on server if possible.
      */
-    public PlatformAbstractService(Object svc, PlatformContext ctx, boolean srvKeepPortable) {
+    public PlatformAbstractService(Object svc, PlatformContext ctx, boolean srvKeepBinary) {
         assert svc != null;
         assert ctx != null;
 
         this.svc = svc;
         this.platformCtx = ctx;
-        this.srvKeepPortable = srvKeepPortable;
+        this.srvKeepBinary = srvKeepBinary;
     }
 
     /** {@inheritDoc} */
@@ -86,7 +86,7 @@ public abstract class PlatformAbstractService implements PlatformService, Extern
 
             BinaryRawWriterEx writer = platformCtx.writer(out);
 
-            writer.writeBoolean(srvKeepPortable);
+            writer.writeBoolean(srvKeepBinary);
             writer.writeObject(svc);
 
             writeServiceContext(ctx, writer);
@@ -110,7 +110,7 @@ public abstract class PlatformAbstractService implements PlatformService, Extern
 
             BinaryRawWriterEx writer = platformCtx.writer(out);
 
-            writer.writeBoolean(srvKeepPortable);
+            writer.writeBoolean(srvKeepBinary);
 
             writeServiceContext(ctx, writer);
 
@@ -133,7 +133,7 @@ public abstract class PlatformAbstractService implements PlatformService, Extern
 
             BinaryRawWriterEx writer = platformCtx.writer(out);
 
-            writer.writeBoolean(srvKeepPortable);
+            writer.writeBoolean(srvKeepBinary);
 
             writeServiceContext(ctx, writer);
 
@@ -168,7 +168,7 @@ public abstract class PlatformAbstractService implements PlatformService, Extern
     }
 
     /** {@inheritDoc} */
-    @Override public Object invokeMethod(String mthdName, boolean srvKeepPortable, Object[] args)
+    @Override public Object invokeMethod(String mthdName, boolean srvKeepBinary, Object[] args)
         throws IgniteCheckedException {
         assert ptr != 0;
         assert platformCtx != null;
@@ -177,7 +177,7 @@ public abstract class PlatformAbstractService implements PlatformService, Extern
             PlatformOutputStream out = outMem.output();
             BinaryRawWriterEx writer = platformCtx.writer(out);
 
-            writer.writeBoolean(srvKeepPortable);
+            writer.writeBoolean(srvKeepBinary);
             writer.writeString(mthdName);
 
             if (args == null)
@@ -219,12 +219,12 @@ public abstract class PlatformAbstractService implements PlatformService, Extern
     /** {@inheritDoc} */
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
         svc = in.readObject();
-        srvKeepPortable = in.readBoolean();
+        srvKeepBinary = in.readBoolean();
     }
 
     /** {@inheritDoc} */
     @Override public void writeExternal(ObjectOutput out) throws IOException {
         out.writeObject(svc);
-        out.writeBoolean(srvKeepPortable);
+        out.writeBoolean(srvKeepBinary);
     }
 }

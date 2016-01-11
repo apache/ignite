@@ -116,7 +116,7 @@ public class GridDhtAffinityAssignmentResponse extends GridCacheMessage {
         if (affAssignmentBytes != null) {
             affAssignment = ctx.marshaller().unmarshal(affAssignmentBytes, ldr);
 
-            // TODO IGNITE-10: setting 'local' for nodes not needed when IGNITE-10 is implemented.
+            // TODO IGNITE-2110: setting 'local' for nodes not needed when IGNITE-2110 is implemented.
             int assignments = affAssignment.size();
 
             for (int n = 0; n < assignments; n++) {

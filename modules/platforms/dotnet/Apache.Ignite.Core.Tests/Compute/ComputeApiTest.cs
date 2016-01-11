@@ -1005,6 +1005,25 @@ namespace Apache.Ignite.Core.Tests.Compute
         }
 
         /// <summary>
+        /// Tests single action run.
+        /// </summary>
+        [Test]
+        public void TestRunActionAsyncCancel()
+        {
+            using (var cts = new CancellationTokenSource())
+            {
+                // Cancel while executing
+                var task = _grid1.GetCompute().RunAsync(new ComputeAction(), cts.Token);
+                cts.Cancel();
+                Assert.IsTrue(task.IsCanceled);
+
+                // Use cancelled token
+                task = _grid1.GetCompute().RunAsync(new ComputeAction(), cts.Token);
+                Assert.IsTrue(task.IsCanceled);
+            }
+        }
+
+        /// <summary>
         /// Tests multiple actions run.
         /// </summary>
         [Test]
@@ -1274,6 +1293,7 @@ namespace Apache.Ignite.Core.Tests.Compute
 
         public void Invoke()
         {
+            Thread.Sleep(10);
             Interlocked.Increment(ref InvokeCount);
             LastNodeId = _grid.GetCluster().GetLocalNode().Id;
         }

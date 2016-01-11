@@ -25,11 +25,12 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteCompute;
 import org.apache.ignite.internal.IgniteComputeImpl;
 import org.apache.ignite.internal.IgniteInternalFuture;
-import org.apache.ignite.internal.portable.BinaryObjectImpl;
-import org.apache.ignite.internal.portable.BinaryRawReaderEx;
-import org.apache.ignite.internal.portable.BinaryRawWriterEx;
+import org.apache.ignite.internal.binary.BinaryObjectImpl;
+import org.apache.ignite.internal.binary.BinaryRawReaderEx;
+import org.apache.ignite.internal.binary.BinaryRawWriterEx;
 import org.apache.ignite.internal.processors.platform.PlatformAbstractTarget;
 import org.apache.ignite.internal.processors.platform.PlatformContext;
+import org.apache.ignite.internal.processors.platform.utils.*;
 import org.apache.ignite.internal.util.typedef.C1;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteInClosure;
@@ -75,36 +76,31 @@ public class PlatformCompute extends PlatformAbstractTarget {
     }
 
     /** {@inheritDoc} */
-    @Override protected long processInStreamOutLong(int type, BinaryRawReaderEx reader) throws IgniteCheckedException {
+    @Override protected Object processInStreamOutObject(int type, BinaryRawReaderEx reader)
+        throws IgniteCheckedException {
         switch (type) {
             case OP_UNICAST:
-                processClosures(reader.readLong(), reader, false, false);
-
-                return TRUE;
+                return processClosures(reader.readLong(), reader, false, false);
 
             case OP_BROADCAST:
-                processClosures(reader.readLong(), reader, true, false);
-
-                return TRUE;
+                return processClosures(reader.readLong(), reader, true, false);
 
             case OP_AFFINITY:
-                processClosures(reader.readLong(), reader, false, true);
-
-                return TRUE;
+                return processClosures(reader.readLong(), reader, false, true);
 
             default:
-                return super.processInStreamOutLong(type, reader);
+                return super.processInStreamOutObject(type, reader);
         }
     }
 
     /**
      * Process closure execution request.
-     *
-     * @param taskPtr Task pointer.
+     *  @param taskPtr Task pointer.
      * @param reader Reader.
      * @param broadcast broadcast flag.
      */
-    private void processClosures(long taskPtr, BinaryRawReaderEx reader, boolean broadcast, boolean affinity) {
+    private PlatformListenable processClosures(long taskPtr, BinaryRawReaderEx reader, boolean broadcast,
+        boolean affinity) {
         PlatformAbstractTask task;
 
         int size = reader.readInt();
@@ -155,7 +151,7 @@ public class PlatformCompute extends PlatformAbstractTarget {
 
         platformCtx.kernalContext().task().setThreadContext(TC_SUBGRID, compute.clusterGroup().nodes());
 
-        executeNative0(task);
+        return executeNative0(task);
     }
 
     /**
@@ -194,10 +190,10 @@ public class PlatformCompute extends PlatformAbstractTarget {
      * @param taskPtr Pointer to the task.
      * @param topVer Topology version.
      */
-    public void executeNative(long taskPtr, long topVer) {
+    public PlatformListenable executeNative(long taskPtr, long topVer) {
         final PlatformFullTask task = new PlatformFullTask(platformCtx, compute, taskPtr, topVer);
 
-        executeNative0(task);
+        return executeNative0(task);
     }
 
     /**
@@ -231,7 +227,7 @@ public class PlatformCompute extends PlatformAbstractTarget {
      *
      * @param task Task.
      */
-    private void executeNative0(final PlatformAbstractTask task) {
+    private PlatformListenable executeNative0(final PlatformAbstractTask task) {
         IgniteInternalFuture fut = compute.executeAsync(task, null);
 
         fut.listen(new IgniteInClosure<IgniteInternalFuture>() {
@@ -248,6 +244,8 @@ public class PlatformCompute extends PlatformAbstractTarget {
                 }
             }
         });
+
+        return PlatformFutureUtils.getListenable(fut);
     }
 
     /**
@@ -258,7 +256,7 @@ public class PlatformCompute extends PlatformAbstractTarget {
      */
     protected Object executeJavaTask(BinaryRawReaderEx reader, boolean async) {
         String taskName = reader.readString();
-        boolean keepPortable = reader.readBoolean();
+        boolean keepBinary = reader.readBoolean();
         Object arg = reader.readObjectDetached();
 
         Collection<UUID> nodeIds = readNodeIds(reader);
@@ -268,7 +266,7 @@ public class PlatformCompute extends PlatformAbstractTarget {
         if (async)
             compute0 = compute0.withAsync();
 
-        if (!keepPortable && arg instanceof BinaryObjectImpl)
+        if (!keepBinary && arg instanceof BinaryObjectImpl)
             arg = ((BinaryObject)arg).deserialize();
 
         Object res = compute0.execute(taskName, arg);
@@ -278,23 +276,23 @@ public class PlatformCompute extends PlatformAbstractTarget {
                 private static final long serialVersionUID = 0L;
 
                 @Override public Object apply(IgniteFuture fut) {
-                    return toPortable(fut.get());
+                    return toBinary(fut.get());
                 }
             }));
 
             return null;
         }
         else
-            return toPortable(res);
+            return toBinary(res);
     }
 
     /**
-     * Convert object to portable form.
+     * Convert object to binary form.
      *
      * @param src Source object.
      * @return Result.
      */
-    private Object toPortable(Object src) {
+    private Object toBinary(Object src) {
         return platformCtx.kernalContext().grid().binary().toBinary(src);
     }
 

@@ -19,10 +19,11 @@ package org.apache.ignite.session;
 
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.internal.portable.BinaryCachingMetadataHandler;
-import org.apache.ignite.internal.portable.BinaryMarshaller;
-import org.apache.ignite.internal.portable.PortableContext;
+import org.apache.ignite.internal.binary.BinaryCachingMetadataHandler;
+import org.apache.ignite.internal.binary.BinaryMarshaller;
+import org.apache.ignite.internal.binary.BinaryContext;
 import org.apache.ignite.internal.util.IgniteUtils;
+import org.apache.ignite.logger.NullLogger;
 import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.marshaller.MarshallerContextTestImpl;
 import org.apache.ignite.spi.checkpoint.cache.CacheCheckpointSpi;
@@ -96,13 +97,13 @@ public class GridSessionCheckpointSelfTest extends GridSessionCheckpointAbstract
         cfg.setCheckpointSpi(spi);
 
         if (cfg.getMarshaller() instanceof BinaryMarshaller) {
-            PortableContext ctx = new PortableContext(BinaryCachingMetadataHandler.create(), cfg);
+            BinaryContext ctx = new BinaryContext(BinaryCachingMetadataHandler.create(), cfg, new NullLogger());
 
             Marshaller marsh = cfg.getMarshaller();
 
             marsh.setContext(new MarshallerContextTestImpl(null));
 
-            IgniteUtils.invoke(BinaryMarshaller.class, marsh, "setPortableContext", ctx, cfg);
+            IgniteUtils.invoke(BinaryMarshaller.class, marsh, "setBinaryContext", ctx, cfg);
         }
 
         GridSessionCheckpointSelfTest.spi = spi;
