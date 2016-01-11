@@ -43,6 +43,7 @@ export default [
 
         $scope.projectStructureOptions = {
             nodeChildren: 'children',
+            dirSelectable: false,
             injectClasses: {
                 iExpanded: 'fa fa-folder-open-o',
                 iCollapsed: 'fa fa-folder-o'
