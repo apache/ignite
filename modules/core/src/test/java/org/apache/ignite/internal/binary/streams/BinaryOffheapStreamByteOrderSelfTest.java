@@ -18,29 +18,14 @@
 package org.apache.ignite.internal.binary.streams;
 
 /**
- * Binary abstract stream.
+ * Binary offheap input/output stream byte order sanity tests.
  */
-public abstract class BinaryAbstractStream implements BinaryStream {
-    /** Byte: zero. */
-    protected static final byte BYTE_ZERO = 0;
-
-    /** Byte: one. */
-    protected static final byte BYTE_ONE = 1;
-
-    /** Position. */
-    protected int pos;
-
+public class BinaryOffheapStreamByteOrderSelfTest extends AbstractBinaryStreamByteOrderSelfTest {
     /** {@inheritDoc} */
-    @Override public int position() {
-        return pos;
-    }
+    @Override protected void init() {
+        int cap = ARR_LEN * 8;
 
-    /**
-     * Shift position.
-     *
-     * @param cnt Byte count.
-     */
-    protected void shift(int cnt) {
-        pos += cnt;
+        out = new BinaryOffheapOutputStream(cap);
+        in = new BinaryOffheapInputStream(((BinaryOffheapOutputStream)out).pointer(), cap);
     }
 }
