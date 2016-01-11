@@ -73,6 +73,7 @@ public class PlatformComputeBroadcastTask extends ComputeTaskAdapter<Object, Col
             catch (InterruptedException ignored) {
                 // No-op.
             }
+
             return ignite.cluster().localNode().id();
         }
     }
