@@ -56,22 +56,33 @@ namespace Apache.Ignite.Core.Tests.Compute
 
             var compute = Compute;
 
-            var cts = new CancellationTokenSource();
-            var task = runner(compute, cts.Token);
+            using (var cts = new CancellationTokenSource())
+            {
+                var task = runner(compute, cts.Token);
 
-            Assert.IsFalse(task.IsCanceled);
+                Assert.IsFalse(task.IsCanceled);
 
-            cts.Cancel();
+                cts.Cancel();
 
-            Assert.IsTrue(task.IsCanceled);
+                Assert.IsTrue(task.IsCanceled);
 
-            Assert.IsTrue(TestUtils.WaitForCondition(() => Job.CancelCount > 0, 5000));
+                Assert.IsTrue(TestUtils.WaitForCondition(() => Job.CancelCount > 0, 5000));
+            }
         }
 
         [Test]
         public void TestJavaTask()
         {
-            // TODO
+            using (var cts = new CancellationTokenSource())
+            {
+                var task = Compute.ExecuteJavaTaskAsync<object>(ComputeApiTest.BroadcastTask, null, cts.Token);
+
+                Assert.IsFalse(task.IsCanceled);
+
+                cts.Cancel();
+
+                Assert.IsTrue(task.IsCanceled);
+            }
         }
 
         private class Task : IComputeTask<int, IList<IComputeJobResult<int>>>

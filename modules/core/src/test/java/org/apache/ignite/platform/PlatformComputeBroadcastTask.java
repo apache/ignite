@@ -41,8 +41,14 @@ public class PlatformComputeBroadcastTask extends ComputeTaskAdapter<Object, Col
     @Nullable @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, @Nullable Object arg) {
         Map<ComputeJob, ClusterNode> jobs = new HashMap<>();
 
-        for (ClusterNode node : subgrid)
-            jobs.put(new BroadcastJob(), node);
+        int jobMultiplier = 1;
+
+        if (arg instanceof Integer)
+            jobMultiplier = (Integer)arg;
+
+        for (int i = 0; i < jobMultiplier; i++)
+            for (ClusterNode node : subgrid)
+                jobs.put(new BroadcastJob(), node);
 
         return jobs;
     }
@@ -67,6 +73,12 @@ public class PlatformComputeBroadcastTask extends ComputeTaskAdapter<Object, Col
 
         /** {@inheritDoc} */
         @Nullable @Override public Object execute() {
+            try {
+                Thread.sleep(50); // Short sleep for cancellation tests.
+            }
+            catch (InterruptedException ignored) {
+                // No-op.
+            }
             return ignite.cluster().localNode().id();
         }
     }
