@@ -31,6 +31,7 @@ import org.apache.ignite.internal.processors.platform.PlatformContext;
 import org.apache.ignite.internal.processors.platform.utils.PlatformFutureUtils;
 import org.apache.ignite.internal.processors.platform.utils.PlatformListenable;
 import org.apache.ignite.lang.IgniteClosure;
+import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteInClosure;
 
 import java.util.ArrayList;
@@ -368,8 +369,14 @@ public class PlatformCompute extends PlatformAbstractTarget {
             return fut.duration();
         }
 
-        @Override public void listen(IgniteInClosure lsnr) {
-            fut.listen(lsnr);
+        @Override public void listen(final IgniteInClosure lsnr) {
+            fut.listen(new IgniteInClosure<IgniteFuture>() {
+                private static final long serialVersionUID = 0L;
+
+                @Override public void apply(IgniteFuture fut0) {
+                    lsnr.apply(fut0.get());
+                }
+            });
         }
 
         @Override public IgniteInternalFuture chain(IgniteClosure doneCb) {
