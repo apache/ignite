@@ -45,7 +45,7 @@ router.get('/download/zip', function (req, res) {
     var JSZip = require('jszip');
     var config = require('../helpers/configuration-loader.js');
 
-    var agentFld = 'ignite-web-agent-1.5.0.final-SNAPSHOT';
+    var agentFld = 'ignite-web-agent-1.5.0.final';
     var agentZip = agentFld + '.zip';
 
     // Read a zip file.
