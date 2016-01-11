@@ -23,6 +23,7 @@ import java.util.List;
 import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteCompute;
+import org.apache.ignite.compute.ComputeTaskFuture;
 import org.apache.ignite.internal.IgniteComputeImpl;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.binary.BinaryObjectImpl;
@@ -62,7 +63,7 @@ public class PlatformCompute extends PlatformAbstractTarget {
     private final IgniteComputeImpl compute;
 
     /** Future for previous asynchronous operation. */
-    protected ThreadLocal<IgniteFuture<?>> curFut = new ThreadLocal<>();
+    protected ThreadLocal<IgniteInternalFuture> curFut = new ThreadLocal<>();
     /**
      * Constructor.
      *
@@ -213,8 +214,8 @@ public class PlatformCompute extends PlatformAbstractTarget {
     }
 
     /** <inheritDoc /> */
-    @Override protected IgniteFuture currentFuture() throws IgniteCheckedException {
-        IgniteFuture<?> fut = curFut.get();
+    @Override protected IgniteInternalFuture currentFuture() throws IgniteCheckedException {
+        IgniteInternalFuture fut = curFut.get();
 
         if (fut == null)
             throw new IllegalStateException("Asynchronous operation not started.");
@@ -273,6 +274,9 @@ public class PlatformCompute extends PlatformAbstractTarget {
 
         if (async) {
             // TODO: Broken cancellation here
+            //ComputeTaskFuture f = compute0.future();
+            //f.
+
             curFut.set(compute0.future().chain(new C1<IgniteFuture, Object>() {
                 private static final long serialVersionUID = 0L;
 

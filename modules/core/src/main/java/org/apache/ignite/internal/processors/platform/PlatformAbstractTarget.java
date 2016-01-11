@@ -194,13 +194,13 @@ public abstract class PlatformAbstractTarget implements PlatformTarget {
 
     /** {@inheritDoc} */
     @Override public PlatformListenable listenFutureAndGet(final long futId, int typ) throws Exception {
-        return PlatformFutureUtils.listen(platformCtx, currentFutureWrapped(), futId, typ, null, this);
+        return PlatformFutureUtils.listen(platformCtx, currentFuture(), futId, typ, null, this);
     }
 
     /** {@inheritDoc} */
     @Override public PlatformListenable listenFutureForOperationAndGet(final long futId, int typ, int opId)
             throws Exception {
-        return PlatformFutureUtils.listen(platformCtx, currentFutureWrapped(), futId, typ, futureWriter(opId), this);
+        return PlatformFutureUtils.listen(platformCtx, currentFuture(), futId, typ, futureWriter(opId), this);
     }
 
     /**
@@ -210,11 +210,11 @@ public abstract class PlatformAbstractTarget implements PlatformTarget {
      * @throws IgniteCheckedException If failed.
      */
     @SuppressWarnings({"ThrowableResultOfMethodCallIgnored", "unchecked"})
-    protected IgniteInternalFuture currentFutureWrapped() throws IgniteCheckedException {
+    /*protected IgniteInternalFuture currentFutureWrapped() throws IgniteCheckedException {
         IgniteFutureImpl fut = (IgniteFutureImpl)currentFuture();
 
         return fut.internalFuture();
-    }
+    }*/
 
     /**
      * When overridden in a derived class, gets future for the current operation.
@@ -222,8 +222,8 @@ public abstract class PlatformAbstractTarget implements PlatformTarget {
      * @return current future.
      * @throws IgniteCheckedException
      */
-    protected IgniteFuture currentFuture() throws IgniteCheckedException {
-        throw new IgniteCheckedException("Future listening is not supported in " + this.getClass());
+    protected IgniteInternalFuture currentFuture() throws IgniteCheckedException {
+        throw new IgniteCheckedException("Future listening is not supported in " + getClass());
     }
 
     /**
