@@ -154,6 +154,8 @@ namespace ignite
                             out->scale = 0;
                             out->sign = value > 0 ? 1 : 0;
 
+                            memset(out->val, 0, SQL_MAX_NUMERIC_LEN);
+
                             // TODO: implement propper conversation to numeric type.
                             int64_t intVal = static_cast<int64_t>(std::abs(value));
 
@@ -541,6 +543,7 @@ namespace ignite
                         break;
                     }
 
+                    case IGNITE_ODBC_C_TYPE_NUMERIC:
                     case IGNITE_ODBC_C_TYPE_DOUBLE:
                     {
                         std::stringstream converter;
@@ -698,6 +701,29 @@ namespace ignite
                     case IGNITE_ODBC_C_TYPE_DOUBLE:
                     {
                         res = static_cast<T>(*reinterpret_cast<const double*>(GetData()));
+                        break;
+                    }
+
+                    case IGNITE_ODBC_C_TYPE_NUMERIC:
+                    {
+                        const SQL_NUMERIC_STRUCT* numeric =
+                            reinterpret_cast<const SQL_NUMERIC_STRUCT*>(GetData());
+
+                        int64_t resInt;
+
+                        // TODO: implement propper conversation from numeric type.
+                        memcpy(&resInt, numeric->val, std::min<int>(SQL_MAX_NUMERIC_LEN, sizeof(resInt)));
+
+                        if (numeric->sign)
+                            resInt *= -1;
+
+                        double resDouble = static_cast<double>(resInt);
+
+                        for (SQLSCHAR scale = numeric->scale; scale > 0; --scale)
+                            resDouble /= 10.0;
+
+                        res = static_cast<T>(resDouble);
+
                         break;
                     }
 

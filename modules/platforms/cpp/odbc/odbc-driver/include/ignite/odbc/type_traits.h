@@ -55,49 +55,49 @@ namespace ignite
                 /** Alias for the SQL_C_USHORT type. */
                 IGNITE_ODBC_C_TYPE_UNSIGNED_SHORT,
 
-                /** Alias for the SQL_C_WCHAR type. */
+                /** Alias for the SQL_C_SLONG type. */
                 IGNITE_ODBC_C_TYPE_SIGNED_LONG,
 
-                /** Alias for the SQL_C_WCHAR type. */
+                /** Alias for the SQL_C_ULONG type. */
                 IGNITE_ODBC_C_TYPE_UNSIGNED_LONG,
 
-                /** Alias for the SQL_C_WCHAR type. */
+                /** Alias for the SQL_C_FLOAT type. */
                 IGNITE_ODBC_C_TYPE_FLOAT,
 
-                /** Alias for the SQL_C_WCHAR type. */
+                /** Alias for the SQL_C_DOUBLE type. */
                 IGNITE_ODBC_C_TYPE_DOUBLE,
 
-                /** Alias for the SQL_C_WCHAR type. */
+                /** Alias for the SQL_C_BIT type. */
                 IGNITE_ODBC_C_TYPE_BIT,
 
-                /** Alias for the SQL_C_WCHAR type. */
+                /** Alias for the SQL_C_STINYINT type. */
                 IGNITE_ODBC_C_TYPE_SIGNED_TINYINT,
 
-                /** Alias for the SQL_C_WCHAR type. */
+                /** Alias for the SQL_C_UTINYINT type. */
                 IGNITE_ODBC_C_TYPE_UNSIGNED_TINYINT,
 
-                /** Alias for the SQL_C_WCHAR type. */
+                /** Alias for the SQL_C_SBIGINT type. */
                 IGNITE_ODBC_C_TYPE_SIGNED_BIGINT,
 
-                /** Alias for the SQL_C_WCHAR type. */
+                /** Alias for the SQL_C_UBIGINT type. */
                 IGNITE_ODBC_C_TYPE_UNSIGNED_BIGINT,
 
-                /** Alias for the SQL_C_WCHAR type. */
+                /** Alias for the SQL_C_BINARY type. */
                 IGNITE_ODBC_C_TYPE_BINARY,
 
-                /** Alias for the SQL_C_WCHAR type. */
+                /** Alias for the SQL_C_TDATE type. */
                 IGNITE_ODBC_C_TYPE_TDATE,
 
-                /** Alias for the SQL_C_WCHAR type. */
+                /** Alias for the SQL_C_TTIME type. */
                 IGNITE_ODBC_C_TYPE_TTIME,
 
-                /** Alias for the SQL_C_WCHAR type. */
+                /** Alias for the SQL_C_TTIMESTAMP type. */
                 IGNITE_ODBC_C_TYPE_TTIMESTAMP,
 
-                /** Alias for the SQL_C_WCHAR type. */
+                /** Alias for the SQL_C_NUMERIC type. */
                 IGNITE_ODBC_C_TYPE_NUMERIC,
 
-                /** Alias for the SQL_C_WCHAR type. */
+                /** Alias for the SQL_C_GUID type. */
                 IGNITE_ODBC_C_TYPE_GUID,
 
                 /** Alias for the SQL_DEFAULT. */
