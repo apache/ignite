@@ -31,8 +31,6 @@ namespace Apache.Ignite.Core.Tests.Compute
     public class CancellationTest : IgniteTestBase
     {
         // TODO: all API methods
-        // Java task
-        // C# task
         // Closures
 
         public CancellationTest() 
@@ -67,6 +65,9 @@ namespace Apache.Ignite.Core.Tests.Compute
                 Assert.IsTrue(task.IsCanceled);
 
                 Assert.IsTrue(TestUtils.WaitForCondition(() => Job.CancelCount > 0, 5000));
+
+                // Pass cancelled token
+                Assert.IsTrue(runner(compute, cts.Token).IsCanceled);
             }
         }
 
@@ -81,7 +82,11 @@ namespace Apache.Ignite.Core.Tests.Compute
 
                 cts.Cancel();
 
-                Assert.IsTrue(TestUtils.WaitForCondition(() => task.IsCanceled, 15000));
+                Assert.IsTrue(task.IsCanceled);
+
+                // Pass cancelled token
+                Assert.IsTrue(
+                    Compute.ExecuteJavaTaskAsync<object>(ComputeApiTest.BroadcastTask, null, cts.Token).IsCanceled);
             }
         }
 
