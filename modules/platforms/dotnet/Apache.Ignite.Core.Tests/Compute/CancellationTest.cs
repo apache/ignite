@@ -74,8 +74,8 @@ namespace Apache.Ignite.Core.Tests.Compute
             TestClosure((c, t) => c.CallAsync(new ComputeFunc(), t));
             TestClosure((c, t) => c.AffinityCallAsync(null, 0, new ComputeFunc(), t));
             TestClosure((c, t) => c.ApplyAsync(new ComputeBiFunc(), 10, t));
-            TestClosure((c, t) => c.ApplyAsync(new ComputeBiFunc(), Enumerable.Range(1, 10), t));
-            TestClosure((c, t) => c.ApplyAsync(new ComputeBiFunc(), Enumerable.Range(1, 10), new ComputeReducer(), t));
+            TestClosure((c, t) => c.ApplyAsync(new ComputeBiFunc(), Enumerable.Range(1, 100), t));
+            TestClosure((c, t) => c.ApplyAsync(new ComputeBiFunc(), Enumerable.Range(1, 100), new ComputeReducer(), t));
         }
 
         private void TestTask(Func<ICompute, CancellationToken, System.Threading.Tasks.Task> runner)
@@ -153,6 +153,7 @@ namespace Apache.Ignite.Core.Tests.Compute
         {
             public int Invoke(int arg)
             {
+                Thread.Sleep(50);
                 return arg;
             }
         }
