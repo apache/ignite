@@ -524,9 +524,7 @@ public class GridReduceQueryExecutor {
 
             final String space = cctx.name();
 
-            List<GridCacheSqlQuery> mapQrys = qry.mapQueries();
-
-            final QueryRun r = new QueryRun(h2.connectionForSpace(space), mapQrys.size(), qry.pageSize());
+            final QueryRun r = new QueryRun(h2.connectionForSpace(space), qry.mapQueries().size(), qry.pageSize());
 
             AffinityTopologyVersion topVer = h2.readyTopologyVersion();
 
@@ -562,16 +560,18 @@ public class GridReduceQueryExecutor {
                 nodes = Collections.singleton(F.rand(nodes));
             }
 
-            final boolean skipMergeTbl = qry.skipMergeTable() && !qry.explain();
+            int tblIdx = 0;
 
-            for (int i = 0; i < mapQrys.size(); i++) {
+            final boolean skipMergeTbl = !qry.explain() && qry.skipMergeTable();
+
+            for (GridCacheSqlQuery mapQry : qry.mapQueries()) {
                 GridMergeIndex idx;
 
                 if (!skipMergeTbl) {
                     GridMergeTable tbl;
 
                     try {
-                        tbl = createMergeTable(r.conn, mapQrys.get(i), qry.explain());
+                        tbl = createMergeTable(r.conn, mapQry, qry.explain());
                     }
                     catch (IgniteCheckedException e) {
                         throw new IgniteException(e);
@@ -579,7 +579,7 @@ public class GridReduceQueryExecutor {
 
                     idx = tbl.getScanIndex(null);
 
-                    fakeTable(r.conn, i).innerTable(tbl);
+                    fakeTable(r.conn, tblIdx++).innerTable(tbl);
                 }
                 else
                     idx = GridMergeIndexUnsorted.createDummy();
@@ -589,7 +589,7 @@ public class GridReduceQueryExecutor {
                 r.idxs.add(idx);
             }
 
-            r.latch = new CountDownLatch(mapQrys.size() * nodes.size());
+            r.latch = new CountDownLatch(r.idxs.size() * nodes.size());
 
             runs.put(qryReqId, r);
 
@@ -599,6 +599,8 @@ public class GridReduceQueryExecutor {
                         new IgniteClientDisconnectedException(ctx.cluster().clientReconnectFuture(),
                             "Client node disconnected."));
                 }
+
+                List<GridCacheSqlQuery> mapQrys = qry.mapQueries();
 
                 if (qry.explain()) {
                     mapQrys = new ArrayList<>(qry.mapQueries().size());
@@ -659,11 +661,11 @@ public class GridReduceQueryExecutor {
 
                 if (!retry) {
                     if (skipMergeTbl) {
+                        List<List<?>> res = new ArrayList<>();
+
                         assert r.idxs.size() == 1 : r.idxs;
 
                         GridMergeIndex idx = r.idxs.get(0);
-
-                        List<List<?>> res = new ArrayList<>((int)idx.getRowCountApproximation());
 
                         Cursor cur = idx.findInStream(null, null);
 
@@ -753,7 +755,7 @@ public class GridReduceQueryExecutor {
                     U.warn(log, "Query run was already removed: " + qryReqId);
 
                 if (!skipMergeTbl) {
-                    for (int i = 0; i < mapQrys.size(); i++)
+                    for (int i = 0, mapQrys = qry.mapQueries().size(); i < mapQrys; i++)
                         fakeTable(null, i).innerTable(null); // Drop all merge tables.
                 }
             }
