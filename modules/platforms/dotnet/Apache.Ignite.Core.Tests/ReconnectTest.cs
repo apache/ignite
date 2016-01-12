@@ -42,7 +42,7 @@ namespace Apache.Ignite.Core.Tests
 
             using (var ignite = Ignition.Start(cfg))
             {
-                Assert.IsTrue(ignite.WaitTopology(2, 30000));
+                Assert.IsTrue(ignite.GetCluster().ClientReconnectTask.IsCompleted);
 
                 var cache = ignite.GetCache<int, int>(null);
 
@@ -59,8 +59,6 @@ namespace Apache.Ignite.Core.Tests
 
                 Assert.AreEqual(1, cache[1]);
             }
-
-            // TODO: Compute, services, etc..
         }
 
         private static IgniteProcess StartServerProcess(IgniteConfiguration cfg)
