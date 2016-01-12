@@ -785,7 +785,10 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
 
             startProcessor(new ClusterProcessor(ctx));
 
-            fillNodeAttributes();
+            boolean notifyEnabled = IgniteSystemProperties.getBoolean(IGNITE_UPDATE_NOTIFIER,
+                Boolean.parseBoolean(IgniteProperties.get("ignite.update.notifier.enabled.by.default")));
+
+            fillNodeAttributes(notifyEnabled);
 
             U.onGridStart();
 
@@ -932,6 +935,30 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
 
             // Lifecycle bean notifications.
             notifyLifecycleBeans(AFTER_NODE_START);
+
+            // Start update notifier.
+            Boolean clusterNotifyEnabled = (Boolean)ctx.cache().utilityCache().
+                getAndPutIfAbsent("ignite.update.notifier.enabled.for.cluster", notifyEnabled);
+
+            log.info("Update notifier is "
+                + ((clusterNotifyEnabled != null ? clusterNotifyEnabled : notifyEnabled) ? "on" : "off")
+                + " [locUpdNtfEnabled=" + notifyEnabled + ", clusterUpdNtfEnabled=" + clusterNotifyEnabled + "]");
+
+            if (clusterNotifyEnabled != null ? clusterNotifyEnabled : notifyEnabled) {
+                try {
+                    verChecker = new GridUpdateNotifier(gridName, VER_STR, gw, ctx.plugins().allProviders(), false);
+
+                    updateNtfTimer = new Timer("ignite-update-notifier-timer", true);
+
+                    // Setup periodic version check.
+                    updateNtfTimer.scheduleAtFixedRate(new UpdateNotifierTimerTask(this, execSvc, verChecker),
+                        0, PERIODIC_VER_CHECK_DELAY);
+                }
+                catch (IgniteCheckedException e) {
+                    if (log.isDebugEnabled())
+                        log.debug("Failed to create GridUpdateNotifier: " + e);
+                }
+            }
         }
         catch (Throwable e) {
             IgniteSpiVersionCheckException verCheckErr = X.cause(e, IgniteSpiVersionCheckException.class);
@@ -1092,31 +1119,6 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
 
         if (!isDaemon())
             ctx.discovery().ackTopology();
-
-        Boolean ntfEnabled = IgniteSystemProperties.getBoolean(IGNITE_UPDATE_NOTIFIER,
-            Boolean.parseBoolean(IgniteProperties.get("ignite.update.notifier.enabled.by.default")));
-
-        Boolean prevVal = (Boolean)ctx.cache().utilityCache().
-            getAndPutIfAbsent("ignite.update.notifier.enabled.for.cluster", ntfEnabled);
-
-        if (prevVal != null)
-            ntfEnabled = prevVal;
-
-        if (ntfEnabled) {
-            try {
-                verChecker = new GridUpdateNotifier(gridName, VER_STR, gw, ctx.plugins().allProviders(), false);
-
-                updateNtfTimer = new Timer("ignite-update-notifier-timer", true);
-
-                // Setup periodic version check.
-                updateNtfTimer.scheduleAtFixedRate(new UpdateNotifierTimerTask(this, execSvc, verChecker),
-                    0, PERIODIC_VER_CHECK_DELAY);
-            }
-            catch (IgniteCheckedException e) {
-                if (log.isDebugEnabled())
-                    log.debug("Failed to create GridUpdateNotifier: " + e);
-            }
-        }
     }
 
     /**
@@ -1205,10 +1207,11 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
     /**
      * Creates attributes map and fills it in.
      *
+     * @param notifyEnabled Update notifier flag.
      * @throws IgniteCheckedException thrown if was unable to set up attribute.
      */
     @SuppressWarnings({"SuspiciousMethodCalls", "unchecked", "TypeMayBeWeakened"})
-    private void fillNodeAttributes() throws IgniteCheckedException {
+    private void fillNodeAttributes(boolean notifyEnabled) throws IgniteCheckedException {
         final String[] incProps = cfg.getIncludeProperties();
 
         try {
@@ -1245,6 +1248,8 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
                     ctx.addNodeAttribute(key, e.getValue());
                 }
             }
+
+            ctx.addNodeAttribute(IgniteNodeAttributes.ATTR_UPDATE_NOTIFIER_ENABLED, notifyEnabled);
 
             if (log.isDebugEnabled())
                 log.debug("Added system properties to node attributes.");

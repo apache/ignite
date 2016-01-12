@@ -18,8 +18,6 @@
 package org.apache.ignite.internal;
 
 import org.apache.ignite.IgniteSystemProperties;
-import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
@@ -28,11 +26,6 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 public class IgniteUpdateNotifierPerClusterSettingSelfTest extends GridCommonAbstractTest {
     /** */
     private String backup;
-
-    /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        return super.getConfiguration(gridName);
-    }
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
@@ -44,12 +37,6 @@ public class IgniteUpdateNotifierPerClusterSettingSelfTest extends GridCommonAbs
         System.setProperty(IgniteSystemProperties.IGNITE_UPDATE_NOTIFIER, backup);
 
         stopAllGrids();
-
-        assert GridTestUtils.waitForCondition(new GridAbsPredicate() {
-            @Override public boolean apply() {
-                return threadCount("ignite-update-notifier-timer") == 0;
-            }
-        }, 5 * 60000);
     }
 
     /**
@@ -58,28 +45,22 @@ public class IgniteUpdateNotifierPerClusterSettingSelfTest extends GridCommonAbs
     public void testNotifierEnabledForCluster() throws Exception {
         System.setProperty(IgniteSystemProperties.IGNITE_UPDATE_NOTIFIER, String.valueOf(true));
 
-        startGrid(0);
+        IgniteEx grid1 = startGrid(0);
 
-        assertEquals(1, threadCount("ignite-update-notifier-timer"));
+        assertNotNull(GridTestUtils.getFieldValue(grid1, IgniteKernal.class, "updateNtfTimer"));
 
         System.setProperty(IgniteSystemProperties.IGNITE_UPDATE_NOTIFIER, String.valueOf(false));
 
-        startGrid(1);
+        IgniteEx grid2 = startGrid(1);
 
-        assertEquals(2, threadCount("ignite-update-notifier-timer"));
+        assertNotNull(GridTestUtils.getFieldValue(grid2, IgniteKernal.class, "updateNtfTimer"));
 
         // Failover.
         stopGrid(0); // Kill oldest.
 
-        assert GridTestUtils.waitForCondition(new GridAbsPredicate() {
-            @Override public boolean apply() {
-                return threadCount("ignite-update-notifier-timer") == 1;
-            }
-        }, 5 * 60000);
+        IgniteEx grid3 = startGrid(2);
 
-        startGrid(2);
-
-        assertEquals(2, threadCount("ignite-update-notifier-timer"));
+        assertNotNull(GridTestUtils.getFieldValue(grid3, IgniteKernal.class, "updateNtfTimer"));
     }
 
     /**
@@ -88,36 +69,21 @@ public class IgniteUpdateNotifierPerClusterSettingSelfTest extends GridCommonAbs
     public void testNotifierDisabledForCluster() throws Exception {
         System.setProperty(IgniteSystemProperties.IGNITE_UPDATE_NOTIFIER, String.valueOf(false));
 
-        startGrid(0);
+        IgniteEx grid1 = startGrid(0);
 
-        assertEquals(0, threadCount("ignite-update-notifier-timer"));
+        assertNull(GridTestUtils.getFieldValue(grid1, IgniteKernal.class, "updateNtfTimer"));
 
         System.setProperty(IgniteSystemProperties.IGNITE_UPDATE_NOTIFIER, String.valueOf(true));
 
-        startGrid(1);
+        IgniteEx grid2 = startGrid(1);
 
-        assertEquals(0, threadCount("ignite-update-notifier-timer"));
+        assertNull(GridTestUtils.getFieldValue(grid2, IgniteKernal.class, "updateNtfTimer"));
 
         // Failover.
         stopGrid(0); // Kill oldest.
 
-        startGrid(2);
+        IgniteEx grid3 = startGrid(2);
 
-        assertEquals(0, threadCount("ignite-update-notifier-timer"));
-    }
-
-    /**
-     * @param name Thread name.
-     * @return Count of thread with the name.
-     */
-    private int threadCount(String name) {
-        int cnt = 0;
-
-        for (Thread t : Thread.getAllStackTraces().keySet()) {
-            if (name.equals(t.getName()))
-                cnt++;
-        }
-
-        return cnt;
+        assertNull(GridTestUtils.getFieldValue(grid3, IgniteKernal.class, "updateNtfTimer"));
     }
 }
