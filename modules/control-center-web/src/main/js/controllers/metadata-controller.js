@@ -229,8 +229,6 @@ consoleModule.controller('metadataController', function ($filter, $http, $timeou
             }
         }
 
-        $scope.ui.selectedJdbcDriverJar = {};
-
         $scope.$watch('ui.selectedJdbcDriverJar', function (val) {
             if (val)
                 $scope.updateSelectedPreset(val);
@@ -843,8 +841,9 @@ consoleModule.controller('metadataController', function ($filter, $http, $timeou
                 $scope.caches = data.caches;
                 $scope.metadatas = data.metadatas;
 
-                if (_.size($scope.clusters) > 0)
-                    $scope.ui.generatedCachesClusters.push($scope.clusters[0].value);
+                _.forEach($scope.clusters, function (cluster) {
+                    $scope.ui.generatedCachesClusters.push(cluster.value);
+                });
 
                 // Load page descriptor.
                 $http.get('/models/metadata.json')
