@@ -27,17 +27,25 @@ namespace Apache.Ignite.Core.Tests
     /// </summary>
     public static class ProcessExtensions
     {
+        /** */
         private const int ThreadAccessSuspendResume = 0x2;
 
+        /** */
         [DllImport("kernel32.dll")]
         private static extern IntPtr OpenThread(int dwDesiredAccess, bool bInheritHandle, uint dwThreadId);
 
+        /** */
         [DllImport("kernel32.dll")]
         private static extern uint SuspendThread(IntPtr hThread);
 
+        /** */
         [DllImport("kernel32.dll")]
         private static extern int ResumeThread(IntPtr hThread);
 
+        /// <summary>
+        /// Suspends the specified process.
+        /// </summary>
+        /// <param name="process">The process.</param>
         public static void Suspend(this System.Diagnostics.Process process)
         {
             foreach (var thread in process.Threads.Cast<ProcessThread>())
@@ -50,6 +58,10 @@ namespace Apache.Ignite.Core.Tests
                 SuspendThread(pOpenThread);
             }
         }
+        /// <summary>
+        /// Resumes the specified process.
+        /// </summary>
+        /// <param name="process">The process.</param>
         public static void Resume(this System.Diagnostics.Process process)
         {
             foreach (var thread in process.Threads.Cast<ProcessThread>())
