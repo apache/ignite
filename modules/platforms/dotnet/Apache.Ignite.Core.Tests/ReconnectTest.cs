@@ -17,6 +17,7 @@
 
 namespace Apache.Ignite.Core.Tests
 {
+    using Apache.Ignite.Core.Tests.Compute;
     using Apache.Ignite.Core.Tests.Process;
     using NUnit.Framework;
 
@@ -49,8 +50,11 @@ namespace Apache.Ignite.Core.Tests
 
                 proc.Kill();
 
+                // This throws reconnectException
                 Assert.AreEqual(1, cache[1]);
             }
+
+            // TODO: Compute, services, etc..
         }
 
         [TestFixtureTearDown]
