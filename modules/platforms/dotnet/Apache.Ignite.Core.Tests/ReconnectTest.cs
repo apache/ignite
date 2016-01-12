@@ -49,6 +49,7 @@ namespace Apache.Ignite.Core.Tests
 
                 cache[1] = 1;
 
+                // Suspend external process to cause disconnect
                 proc.Suspend();
 
                 var ex = Assert.Throws<CacheException>(() => cache.Get(1));
@@ -59,7 +60,7 @@ namespace Apache.Ignite.Core.Tests
 
                 Assert.AreEqual(ignite.GetCluster().ClientReconnectTask, clientReconnectTask);
 
-                // Reconnect
+                // Resume process to reconnect
                 proc.Resume();
 
                 clientReconnectTask.Wait();
