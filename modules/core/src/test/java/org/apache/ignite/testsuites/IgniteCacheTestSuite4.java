@@ -58,6 +58,7 @@ import org.apache.ignite.internal.processors.cache.IgniteCacheConfigurationDefau
 import org.apache.ignite.internal.processors.cache.IgniteCacheConfigurationTemplateTest;
 import org.apache.ignite.internal.processors.cache.IgniteCacheDynamicStopSelfTest;
 import org.apache.ignite.internal.processors.cache.IgniteCacheInvokeReadThroughTest;
+import org.apache.ignite.internal.processors.cache.IgniteCacheLoadRebalanceEvictionSelfTest;
 import org.apache.ignite.internal.processors.cache.IgniteCacheTxCopyOnReadDisabledTest;
 import org.apache.ignite.internal.processors.cache.IgniteCacheTxLocalPeekModesTest;
 import org.apache.ignite.internal.processors.cache.IgniteCacheTxLocalStoreValueTest;
@@ -288,6 +289,7 @@ public class IgniteCacheTestSuite4 extends TestSuite {
         suite.addTestSuite(IgniteCacheSingleGetMessageTest.class);
 
         suite.addTestSuite(IgniteCacheGetCustomCollectionsSelfTest.class);
+        suite.addTestSuite(IgniteCacheLoadRebalanceEvictionSelfTest.class);
 
         return suite;
     }
