@@ -67,6 +67,8 @@ namespace Apache.Ignite.Core.Impl
             // Generic Ignite exceptions.
             EXS["org.apache.ignite.IgniteException"] = m => new IgniteException(m);
             EXS["org.apache.ignite.IgniteCheckedException"] = m => new IgniteException(m);
+            EXS["org.apache.ignite.IgniteClientDisconnectedException"] = m => new ClientDisconnectedException(m);
+            EXS["org.apache.ignite.internal.IgniteClientDisconnectedCheckedException"] = m => new ClientDisconnectedException(m);
 
             // Cluster exceptions.
             EXS["org.apache.ignite.cluster.ClusterGroupEmptyException"] = m => new ClusterGroupEmptyException(m);

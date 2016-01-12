@@ -15,12 +15,11 @@
  * limitations under the License.
  */
 
-namespace Apache.Ignite.Core.Cluster
+namespace Apache.Ignite.Core.Common
 {
     using System;
     using System.Runtime.Serialization;
     using System.Threading.Tasks;
-    using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Impl.Common;
 
     /// <summary>
