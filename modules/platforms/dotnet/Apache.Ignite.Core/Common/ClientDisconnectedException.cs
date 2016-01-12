@@ -20,7 +20,6 @@ namespace Apache.Ignite.Core.Common
     using System;
     using System.Runtime.Serialization;
     using System.Threading.Tasks;
-    using Apache.Ignite.Core.Impl.Common;
 
     /// <summary>
     /// Indicates that client-mode local node has been disconnected from the cluster.
@@ -67,8 +66,6 @@ namespace Apache.Ignite.Core.Common
         /// <param name="clientReconnectTask">The client reconnect task.</param>
         public ClientDisconnectedException(string message, Exception cause, Task<bool> clientReconnectTask) : base(message, cause)
         {
-            IgniteArgumentCheck.NotNull(clientReconnectTask, "clientReconnectTask");
-
             _clientReconnectTask = clientReconnectTask;
         }
 
