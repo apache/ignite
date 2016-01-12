@@ -23,9 +23,14 @@
 
         ng-model='ngModel'
         ng-required='{{ required }}'
+        ng-blur='ngBlur'
 
         data-java-keywords='{{ javaKeywords }}'
+        data-java-identifier='{{ javaIdentifier }}'
         data-java-package-specified='{{ javaPackageSpecified }}'
+        data-java-build-in-class='{{ javaBuildInClass }}'
+
+        data-ignite-form-field-input-autofocus='{{ autofocus }}'
     )
 
     span(ng-transclude='')

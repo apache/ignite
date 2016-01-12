@@ -29,6 +29,10 @@ import igniteFormGroupAdd from './group/add.directive';
 // Validators.
 import javaKeywords from './validator/java-keywords.directive';
 import javaPackageSpecified from './validator/java-package-specified.directive';
+import javaBuildInClass from './validator/java-build-in-class.directive';
+import javaIdentifier from './validator/java-identifier.directive';
+// Helpers.
+import igniteFormFieldInputAutofocus from './field/input/autofocus.directive';
 
 angular
 .module('ignite-console.Form', [
@@ -44,9 +48,14 @@ angular
 .directive(...igniteFormGroup)
 .directive(...igniteFormGroupTooltip)
 .directive(...igniteFormGroupAdd)
-// Validators
+// Validators.
 .directive(...javaKeywords)
 .directive(...javaPackageSpecified)
+.directive(...javaBuildInClass)
+.directive(...javaIdentifier)
+// Helpers.
+.directive(...igniteFormFieldInputAutofocus)
+// Generator of globally unique identifier.
 .factory('IgniteFormGUID', [() => {
     let guid = 0;
 

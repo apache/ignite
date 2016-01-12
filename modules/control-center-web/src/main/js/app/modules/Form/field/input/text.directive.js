@@ -36,12 +36,16 @@ export default ['igniteFormFieldInputText', ['IgniteFormGUID', (guid) => {
             name: '@',
             placeholder: '@',
             required: '=ngRequired',
-            ngModel: '=',
 
-            javaClass: '=',
+            ngModel: '=',
+            ngBlur: '&',
+
             javaKeywords: '=',
             javaIdentifier: '=',
-            javaPackageSpecified: '='
+            javaPackageSpecified: '=',
+            javaBuildInClass: '=',
+
+            autofocus: '=igniteFormFieldInputAutofocus'
         },
         link,
         template,

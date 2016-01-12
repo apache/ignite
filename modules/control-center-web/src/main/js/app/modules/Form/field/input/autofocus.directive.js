@@ -15,29 +15,13 @@
  * limitations under the License.
  */
 
-import template from './field.jade!';
-import './field.css!';
-
-export default ['igniteFormField', [() => {
-    const controller = [function() {
-        const ctrl = this;
-
-        ctrl.type = ctrl.type || 'external';
-    }];
+export default ['igniteFormFieldInputAutofocus', [() => {
+    const link = (scope, el) => {
+        el.focus();
+    };
 
     return {
-        restrict: 'E',
-        scope: {},
-        bindToController: {
-            for: '@',
-            label: '@',
-            type: '@'
-        },
-        template,
-        controller,
-        controllerAs: 'field',
-        replace: true,
-        transclude: true,
-        require: '^form'
+        restrict: 'A',
+        link
     };
 }]];
