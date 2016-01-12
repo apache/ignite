@@ -70,13 +70,11 @@ namespace ignite
                 const std::string sch("");
                 const std::string tbl("");
 
-                const std::string varcharType("java.lang.String");
-
-                columnsMeta.push_back(ColumnMeta(sch, tbl, "TABLE_CAT",   varcharType, IGNITE_TYPE_STRING));
-                columnsMeta.push_back(ColumnMeta(sch, tbl, "TABLE_SCHEM", varcharType, IGNITE_TYPE_STRING));
-                columnsMeta.push_back(ColumnMeta(sch, tbl, "TABLE_NAME",  varcharType, IGNITE_TYPE_STRING));
-                columnsMeta.push_back(ColumnMeta(sch, tbl, "TABLE_TYPE",  varcharType, IGNITE_TYPE_STRING));
-                columnsMeta.push_back(ColumnMeta(sch, tbl, "REMARKS",     varcharType, IGNITE_TYPE_STRING));
+                columnsMeta.push_back(ColumnMeta(sch, tbl, "TABLE_CAT",   SqlTypeName::varcharType, IGNITE_TYPE_STRING));
+                columnsMeta.push_back(ColumnMeta(sch, tbl, "TABLE_SCHEM", SqlTypeName::varcharType, IGNITE_TYPE_STRING));
+                columnsMeta.push_back(ColumnMeta(sch, tbl, "TABLE_NAME",  SqlTypeName::varcharType, IGNITE_TYPE_STRING));
+                columnsMeta.push_back(ColumnMeta(sch, tbl, "TABLE_TYPE",  SqlTypeName::varcharType, IGNITE_TYPE_STRING));
+                columnsMeta.push_back(ColumnMeta(sch, tbl, "REMARKS",     SqlTypeName::varcharType, IGNITE_TYPE_STRING));
             }
 
             TableMetadataQuery::~TableMetadataQuery()

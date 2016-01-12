@@ -17,6 +17,8 @@
 
 #include <cassert>
 
+#include <ignite/impl/binary/binary_utils.h>
+
 #include "ignite/odbc/utility.h"
 #include "ignite/odbc/system/odbc_constants.h"
 
@@ -75,7 +77,7 @@ namespace ignite
 
             mag.resize(len);
 
-            reader.ReadInt8Array(mag.data(), static_cast<int32_t>(mag.size()));
+            impl::binary::BinaryUtils::ReadInt8Array(reader.GetStream(), mag.data(), static_cast<int32_t>(mag.size()));
 
             Decimal res(scale, mag.data(), static_cast<int32_t>(mag.size()));
 

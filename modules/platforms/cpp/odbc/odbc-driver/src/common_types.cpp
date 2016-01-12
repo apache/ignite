@@ -22,6 +22,12 @@ namespace ignite
 {
     namespace odbc
     {
+        const std::string SqlTypeName::varcharType("VARCHAR");
+
+        const std::string SqlTypeName::smallintType("SMALLINT");
+
+        const std::string SqlTypeName::integerType("INTEGER");
+
         int SqlResultToReturnCode(SqlResult result)
         {
             switch (result)

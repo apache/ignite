@@ -20,10 +20,28 @@
 
 #include <stdint.h>
 
+#include <string>
+
 namespace ignite
 {
     namespace odbc
     {
+        /**
+         * SQL type name constants.
+         */
+        class SqlTypeName
+        {
+        public:
+            /** VARCHAR SQL type name constant. */
+            static const std::string varcharType;
+
+            /** SMALLINT SQL type name constant. */
+            static const std::string smallintType;
+
+            /** INTEGER SQL type name constant. */
+            static const std::string integerType;
+        };
+
         /**
          * SQL result.
          */

@@ -213,7 +213,7 @@ namespace ignite
 
                     utility::ReadDecimal(reader, res);
 
-                    //dataBuf.putDecimal(res);
+                    dataBuf.PutDecimal(res);
 
                     break;
                 }
@@ -296,6 +296,7 @@ namespace ignite
                 case IGNITE_TYPE_UUID:
                 {
                     Guid guid = reader.ReadGuid();
+
                     break;
                 }
 
