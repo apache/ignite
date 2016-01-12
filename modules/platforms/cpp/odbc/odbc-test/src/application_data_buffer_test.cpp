@@ -22,10 +22,12 @@
 #include <boost/test/unit_test.hpp>
 
 #include <ignite/guid.h>
+#include <ignite/odbc/decimal.h>
 #include <ignite/odbc/app/application_data_buffer.h>
 
 #define FLOAT_PRECISION 0.0000001f
 
+using namespace ignite;
 using namespace ignite::odbc::app;
 using namespace ignite::odbc::type_traits;
 
@@ -242,6 +244,89 @@ BOOST_AUTO_TEST_CASE(TestPutFloatToShort)
 
     appBuf.PutFloat(-42.99f);
     BOOST_REQUIRE(numBuf == -42);
+}
+
+BOOST_AUTO_TEST_CASE(TestPutDecimalToDouble)
+{
+    double numBuf;
+    int64_t reslen;
+
+    ApplicationDataBuffer appBuf(IGNITE_ODBC_C_TYPE_DOUBLE, &numBuf, sizeof(numBuf), &reslen, 0);
+
+    Decimal decimal;
+
+    BOOST_REQUIRE_CLOSE_FRACTION(static_cast<double>(decimal), 0.0, FLOAT_PRECISION);
+
+    appBuf.PutDecimal(decimal);
+    BOOST_REQUIRE_CLOSE_FRACTION(numBuf, 0.0, FLOAT_PRECISION);
+
+    int8_t mag1[] = { 1, 0 };
+
+    decimal = Decimal(0, mag1, sizeof(mag1));
+
+    appBuf.PutDecimal(decimal);
+    BOOST_REQUIRE_CLOSE_FRACTION(numBuf, 256.0, FLOAT_PRECISION);
+
+    int8_t mag2[] = { 2, 23 };
+
+    decimal = Decimal(1 | 0x80000000, mag2, sizeof(mag2));
+
+    appBuf.PutDecimal(decimal);
+    BOOST_REQUIRE_CLOSE_FRACTION(numBuf, -53.5, FLOAT_PRECISION);
+}
+
+BOOST_AUTO_TEST_CASE(TestPutDecimalToLong)
+{
+    long numBuf;
+    int64_t reslen;
+
+    ApplicationDataBuffer appBuf(IGNITE_ODBC_C_TYPE_SIGNED_LONG, &numBuf, sizeof(numBuf), &reslen, 0);
+
+    Decimal decimal;
+
+    appBuf.PutDecimal(decimal);
+    BOOST_REQUIRE(numBuf == 0);
+
+    int8_t mag1[] = { 1, 0 };
+
+    decimal = Decimal(0, mag1, sizeof(mag1));
+
+    appBuf.PutDecimal(decimal);
+    BOOST_REQUIRE(numBuf == 256);
+
+    int8_t mag2[] = { 2, 23 };
+
+    decimal = Decimal(1 | 0x80000000, mag2, sizeof(mag2));
+
+    appBuf.PutDecimal(decimal);
+    BOOST_REQUIRE(numBuf == -53);
+}
+
+BOOST_AUTO_TEST_CASE(TestPutDecimalToString)
+{
+    char strBuf[64];
+    int64_t reslen;
+
+    ApplicationDataBuffer appBuf(IGNITE_ODBC_C_TYPE_CHAR, &strBuf, sizeof(strBuf), &reslen, 0);
+
+    Decimal decimal;
+
+    appBuf.PutDecimal(decimal);
+    BOOST_REQUIRE(std::string(strBuf, reslen) == "0");
+
+    int8_t mag1[] = { 1, 0 };
+
+    decimal = Decimal(0, mag1, sizeof(mag1));
+
+    appBuf.PutDecimal(decimal);
+    BOOST_REQUIRE(std::string(strBuf, reslen) == "256");
+
+    int8_t mag2[] = { 2, 23 };
+
+    decimal = Decimal(1 | 0x80000000, mag2, sizeof(mag2));
+
+    appBuf.PutDecimal(decimal);
+    BOOST_REQUIRE(std::string(strBuf, reslen) == "-53.5");
 }
 
 BOOST_AUTO_TEST_CASE(TestGetStringFromLong)

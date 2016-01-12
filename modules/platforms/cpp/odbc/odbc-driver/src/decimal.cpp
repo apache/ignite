@@ -61,7 +61,7 @@ namespace ignite
 
     Decimal::operator double() const
     {
-        double res = 1;
+        double res = 0;
 
         int32_t localScale = GetScale();
         
