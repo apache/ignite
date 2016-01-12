@@ -93,7 +93,7 @@ public class HadoopV2Context extends JobContextImpl implements MapContext, Reduc
             HadoopInputSplit split = ctx.taskInfo().inputSplit();
 
             if (split == null)
-                return null;
+                throw new IllegalStateException("Failed to get input split.");
 
             if (split instanceof HadoopFileBlock) {
                 HadoopFileBlock fileBlock = (HadoopFileBlock)split;
@@ -103,7 +103,8 @@ public class HadoopV2Context extends JobContextImpl implements MapContext, Reduc
             else
                 try {
                     inputSplit = (InputSplit) ((HadoopV2TaskContext)ctx).getNativeSplit(split);
-                } catch (IgniteCheckedException e) {
+                }
+                catch (IgniteCheckedException e) {
                     throw new IllegalStateException(e);
                 }
         }
