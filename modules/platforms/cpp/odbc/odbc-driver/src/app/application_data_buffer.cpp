@@ -446,9 +446,9 @@ namespace ignite
                         for (size_t i = 0; i < len; ++i)
                         {
                             converter << std::hex
-                                << std::setfill('0')
-                                << std::setw(2)
-                                << (unsigned)dataBytes[i];
+                                      << std::setfill('0')
+                                      << std::setw(2)
+                                      << static_cast<unsigned>(dataBytes[i]);
                         }
 
                         PutStrToStrBuffer<char>(converter.str());
@@ -467,7 +467,7 @@ namespace ignite
                             converter << std::hex
                                       << std::setfill<wchar_t>('0')
                                       << std::setw(2)
-                                      << (unsigned)dataBytes[i];
+                                      << static_cast<unsigned>(dataBytes[i]);
                         }
 
                         PutStrToStrBuffer<wchar_t>(converter.str());
@@ -487,6 +487,66 @@ namespace ignite
             {
                 if (GetResLen())
                     *GetResLen() = SQL_NULL_DATA;
+            }
+
+            void ApplicationDataBuffer::PutDecimal(const Decimal& value)
+            {
+                using namespace type_traits;
+                switch (type)
+                {
+                    case IGNITE_ODBC_C_TYPE_SIGNED_TINYINT:
+                    case IGNITE_ODBC_C_TYPE_BIT:
+                    case IGNITE_ODBC_C_TYPE_UNSIGNED_TINYINT:
+                    case IGNITE_ODBC_C_TYPE_SIGNED_SHORT:
+                    case IGNITE_ODBC_C_TYPE_UNSIGNED_SHORT:
+                    case IGNITE_ODBC_C_TYPE_SIGNED_LONG:
+                    case IGNITE_ODBC_C_TYPE_UNSIGNED_LONG:
+                    case IGNITE_ODBC_C_TYPE_SIGNED_BIGINT:
+                    case IGNITE_ODBC_C_TYPE_UNSIGNED_BIGINT:
+                    case IGNITE_ODBC_C_TYPE_FLOAT:
+                    case IGNITE_ODBC_C_TYPE_DOUBLE:
+                    case IGNITE_ODBC_C_TYPE_CHAR:
+                    case IGNITE_ODBC_C_TYPE_WCHAR:
+                    {
+                        PutNum<double>(static_cast<double>(value));
+
+                        break;
+                    }
+
+                    case IGNITE_ODBC_C_TYPE_NUMERIC:
+                    {
+                        if (GetData())
+                        {
+                            SQL_NUMERIC_STRUCT* numeric =
+                                reinterpret_cast<SQL_NUMERIC_STRUCT*>(GetData());
+
+                            numeric->sign = value.IsNegative() ? 1 : 0;
+                            numeric->precision = 0;
+                            numeric->scale = value.GetScale();
+                            memcpy(numeric->val, value.GetMagnitude(), std::min<size_t>(SQL_MAX_NUMERIC_LEN, value.GetLength()));
+                        }
+
+                        break;
+                    }
+
+                    case IGNITE_ODBC_C_TYPE_DEFAULT:
+                    {
+                        if (GetData())
+                            memcpy(GetData(), &value, std::min<size_t>(buflen, sizeof(value)));
+
+                        if (GetResLen())
+                            *GetResLen() = sizeof(value);
+
+                        break;
+                    }
+
+                    case IGNITE_ODBC_C_TYPE_BINARY:
+                    default:
+                    {
+                        if (GetResLen())
+                            *GetResLen() = SQL_NO_TOTAL;
+                    }
+                }
             }
 
             std::string ApplicationDataBuffer::GetString(size_t maxLen) const

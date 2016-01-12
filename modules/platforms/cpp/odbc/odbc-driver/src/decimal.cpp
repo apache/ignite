@@ -22,10 +22,10 @@
 
 namespace ignite
 {
-
     Decimal::Decimal() : 
         scale(0), len(0), magnitude(0)
     {
+        // No-op.
     }
 
     Decimal::Decimal(int32_t scale, const int8_t* mag, int32_t len) :
@@ -59,9 +59,40 @@ namespace ignite
         return *this;
     }
 
+    Decimal::operator double() const
+    {
+        double res = 1;
+
+        int32_t localScale = GetScale();
+        
+        for (size_t i = 0; i < len; ++i)
+        {
+            res = (res * 256) + magnitude[i];
+
+            while (localScale && res > 10.0)
+            {
+                res /= 10.0;
+
+                --localScale;
+            }
+        }
+
+        return res * GetSign();
+    }
+
     int32_t Decimal::GetScale() const
     {
-        return scale;
+        return scale & 0x7FFFFFFF;
+    }
+
+    int32_t Decimal::GetSign() const
+    {
+        return IsNegative() ? -1 : 1;
+    }
+
+    bool Decimal::IsNegative() const
+    {
+        return (scale & 0x80000000) != 0;
     }
 
     int32_t Decimal::GetLength() const
@@ -83,3 +114,4 @@ namespace ignite
         std::swap(first.magnitude, second.magnitude);
     }
 }
+

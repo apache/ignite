@@ -24,6 +24,7 @@
 
 #include <ignite/guid.h>
 
+#include "ignite/odbc/decimal.h"
 #include "ignite/odbc/type_traits.h"
 
 namespace ignite
@@ -152,6 +153,13 @@ namespace ignite
                  * Put NULL.
                  */
                 void PutNull();
+
+                /**
+                 * Put decimal value to buffer.
+                 *
+                 * @param value Value to put.
+                 */
+                void PutDecimal(const Decimal& value);
 
                 /**
                  * Get string.

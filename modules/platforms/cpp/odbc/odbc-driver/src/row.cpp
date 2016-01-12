@@ -186,7 +186,8 @@ namespace ignite
 
                 case IGNITE_HDR_NULL:
                 {
-                    // TODO: clear buffer here.
+                    dataBuf.PutNull();
+
                     break;
                 }
 
@@ -207,10 +208,20 @@ namespace ignite
                 }
 
                 case IGNITE_TYPE_DECIMAL:
+                {
+                    Decimal res;
+
+                    utility::ReadDecimal(reader, res);
+
+                    //dataBuf.putDecimal(res);
+
+                    break;
+                }
+
                 case IGNITE_TYPE_DATE:
                 default:
                 {
-                    // TODO: This is a fail case. Process it somehow.
+                    // This is a fail case. Return false.
                     return false;
                 }
             }
@@ -307,10 +318,18 @@ namespace ignite
                 }
 
                 case IGNITE_TYPE_DECIMAL:
+                {
+                    Decimal res;
+
+                    utility::ReadDecimal(reader, res);
+
+                    break;
+                }
+
                 case IGNITE_TYPE_DATE:
                 default:
                 {
-                    // TODO: This is a fail case. Process it somehow.
+                    // This is a fail case. Return false.
                     return false;
                 }
             }

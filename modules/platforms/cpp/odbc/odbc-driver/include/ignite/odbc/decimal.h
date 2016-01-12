@@ -62,11 +62,30 @@ namespace ignite
         Decimal& operator=(const Decimal& other);
 
         /**
+         * Convert to double.
+         */
+        operator double() const;
+
+        /**
          * Get scale.
          *
          * @return Scale.
          */
         int32_t GetScale() const;
+
+        /**
+         * Get sign.
+         *
+         * @return Sign: -1 if negative and 1 if positive.
+         */
+        int32_t GetSign() const;
+
+        /**
+         * Check if the value is negative.
+         * 
+         * @return True if negative and false otherwise.
+         */
+        bool IsNegative() const;
 
         /**
          * Get magnitude length.
