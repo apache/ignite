@@ -22,6 +22,7 @@ namespace Apache.Ignite.Core.Impl
     using System.Diagnostics;
     using System.Diagnostics.CodeAnalysis;
     using System.Security;
+    using System.Text.RegularExpressions;
     using System.Threading;
     using Apache.Ignite.Core.Cache;
     using Apache.Ignite.Core.Cache.Store;
@@ -50,6 +51,9 @@ namespace Apache.Ignite.Core.Impl
 
         /** Exception factory delegate. */
         private delegate Exception ExceptionFactoryDelegate(IIgnite ignite, string msg, Exception innerEx);
+
+        /** Inner class regex. */
+        private static readonly Regex InnerClassRegex = new Regex(@"class ([^\s]+): (.*)", RegexOptions.Compiled);
         
         /// <summary>
         /// Static initializer.
@@ -117,20 +121,25 @@ namespace Apache.Ignite.Core.Impl
 
             if (Exs.TryGetValue(clsName, out ctor))
             {
-                // TODO: Inner
+                var match = InnerClassRegex.Match(msg);
+
+                ExceptionFactoryDelegate innerCtor;
+
+                if (match.Success && Exs.TryGetValue(match.Groups[1].Value, out innerCtor))
+                    return ctor(ignite, msg, innerCtor(ignite, match.Groups[2].Value, null));
 
                 return ctor(ignite, msg, null);
             }
 
-            if (ClsNoClsDefFoundErr.Equals(clsName))
+            if (ClsNoClsDefFoundErr.Equals(clsName, StringComparison.OrdinalIgnoreCase))
                 return new IgniteException("Java class is not found (did you set IGNITE_HOME environment " +
                     "variable?): " + msg);
 
-            if (ClsNoSuchMthdErr.Equals(clsName))
+            if (ClsNoSuchMthdErr.Equals(clsName, StringComparison.OrdinalIgnoreCase))
                 return new IgniteException("Java class method is not found (did you set IGNITE_HOME environment " +
                     "variable?): " + msg);
 
-            if (ClsCachePartialUpdateErr.Equals(clsName))
+            if (ClsCachePartialUpdateErr.Equals(clsName, StringComparison.OrdinalIgnoreCase))
                 return ProcessCachePartialUpdateException(ignite, msg, reader);
             
             return new IgniteException("Java exception occurred [class=" + clsName + ", message=" + msg + ']');
