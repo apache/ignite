@@ -17,6 +17,7 @@
 
 namespace Apache.Ignite.Core.Tests
 {
+    using Apache.Ignite.Core.Cache;
     using Apache.Ignite.Core.Tests.Compute;
     using Apache.Ignite.Core.Tests.Process;
     using NUnit.Framework;
@@ -36,9 +37,7 @@ namespace Apache.Ignite.Core.Tests
                 JvmOptions = TestUtils.TestJavaOptions()
             };
 
-            var proc = new IgniteProcess(
-                "-springConfigUrl=" + cfg.SpringConfigUrl, "-J-ea", "-J-Xcheck:jni", "-J-Xms512m", "-J-Xmx512m",
-                "-J-DIGNITE_QUIET=false");
+            var proc = StartServerProcess(cfg);
 
             Ignition.ClientMode = true;
 
@@ -50,11 +49,25 @@ namespace Apache.Ignite.Core.Tests
 
                 proc.Kill();
 
-                // This throws reconnectException
+                Assert.Throws<CacheException>(() => cache.Get(1));
+
+                // Reconnect
+                // TODO: Test future
+                StartServerProcess(cfg);
+
+                Assert.IsTrue(ignite.WaitTopology(2, 30000));
+
                 Assert.AreEqual(1, cache[1]);
             }
 
             // TODO: Compute, services, etc..
+        }
+
+        private static IgniteProcess StartServerProcess(IgniteConfiguration cfg)
+        {
+            return new IgniteProcess(
+                "-springConfigUrl=" + cfg.SpringConfigUrl, "-J-ea", "-J-Xcheck:jni", "-J-Xms512m", "-J-Xmx512m",
+                "-J-DIGNITE_QUIET=false");
         }
 
         [TestFixtureTearDown]
