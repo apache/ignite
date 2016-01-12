@@ -17,6 +17,7 @@
 
 namespace Apache.Ignite.Core.Tests
 {
+    using Apache.Ignite.Core.Tests.Process;
     using NUnit.Framework;
 
     /// <summary>
@@ -34,17 +35,28 @@ namespace Apache.Ignite.Core.Tests
                 JvmOptions = TestUtils.TestJavaOptions()
             };
 
+            var proc = new IgniteProcess(
+                "-springConfigUrl=" + cfg.SpringConfigUrl, "-J-ea", "-J-Xcheck:jni", "-J-Xms512m", "-J-Xmx512m",
+                "-J-DIGNITE_QUIET=false");
+
             Ignition.ClientMode = true;
 
             using (var ignite = Ignition.Start(cfg))
             {
-                
+                var cache = ignite.GetCache<int, int>(null);
+
+                cache[1] = 1;
+
+                proc.Kill();
+
+                Assert.AreEqual(1, cache[1]);
             }
         }
 
         [TestFixtureTearDown]
         public void FixtureTearDown()
         {
+            IgniteProcess.KillAll();
             Ignition.ClientMode = false;
         }
     }
