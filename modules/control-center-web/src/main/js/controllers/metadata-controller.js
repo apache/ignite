@@ -202,7 +202,6 @@ consoleModule.controller('metadataController', function ($filter, $http, $timeou
 
                     if (preset) {
                         preset.jdbcUrl = restoredPreset.jdbcUrl;
-
                         preset.user = restoredPreset.user;
                     }
                 });
@@ -230,55 +229,54 @@ consoleModule.controller('metadataController', function ($filter, $http, $timeou
             }
         }
 
-        $scope.preset = {
+        $scope.ui.selectedJdbcDriverJar = {};
+
+        $scope.$watch('ui.selectedJdbcDriverJar', function (val) {
+            if (val)
+                $scope.updateSelectedPreset(val);
+        }, true);
+
+        $scope.selectedPreset = {
             db: 'unknown',
-            jdbcDriverClass: '',
             jdbcDriverJar: '',
+            jdbcDriverClass: '',
             jdbcUrl: 'jdbc:[database]',
             user: 'sa',
+            password: '',
             tablesOnly: true
         };
 
-        $scope.selectedPreset = {};
-
         $scope.ui.showValid = true;
 
-        function _findPreset(idx) {
-            var selected = $scope.jdbcDriverJars[idx];
-
-            idx = _.findIndex(_dbPresets, function (preset) {
-                return preset.jdbcDriverClass === selected.jdbcDriverClass;
+        function _findPreset(selectedJdbcJar) {
+            var result = _.find(_dbPresets, function (preset) {
+                return preset.jdbcDriverClass === selectedJdbcJar.jdbcDriverClass;
             });
 
-            if (idx >= 0)
-                return _dbPresets[idx];
+            if (!result)
+                result = {
+                    db: 'unknown',
+                    jdbcUrl: 'jdbc:[database]',
+                    user: 'admin'
+                };
 
-            return {
-                db: 'unknown',
-                jdbcDriverClass: selected.jdbcDriverClass,
-                jdbcDriverJar: selected.jdbcDriverJar,
-                jdbcUrl: 'jdbc:[database]',
-                user: 'admin'
-            };
+            result.jdbcDriverJar = selectedJdbcJar.jdbcDriverJar;
+            result.jdbcDriverClass = selectedJdbcJar.jdbcDriverClass;
+
+            return result;
         }
 
-        $scope.$watch('preset.drvIdx', function (drvIdx) {
-            if (_.isNumber(drvIdx)) {
-                var preset = $scope.jdbcDriverJars[drvIdx];
+        $scope.updateSelectedPreset = function (selectedJdbcDriverJar) {
+            var foundPreset = _findPreset(selectedJdbcDriverJar);
 
-                var jdbcDriverJar = preset.jdbcDriverJar;
+            var selectedPreset = $scope.selectedPreset;
 
-                preset = _findPreset(drvIdx);
-
-                var newPreset = angular.copy(preset);
-
-                newPreset.jdbcDriverJar = jdbcDriverJar;
-                newPreset.drvIdx = drvIdx;
-                newPreset.tablesOnly = $scope.preset.tablesOnly;
-
-                $scope.preset = newPreset;
-            }
-        }, true);
+            selectedPreset.db = foundPreset.db;
+            selectedPreset.jdbcDriverJar = foundPreset.jdbcDriverJar;
+            selectedPreset.jdbcDriverClass = foundPreset.jdbcDriverClass;
+            selectedPreset.jdbcUrl = foundPreset.jdbcUrl;
+            selectedPreset.user = foundPreset.user;
+        };
 
         $scope.supportedJdbcTypes = $common.mkOptions($common.SUPPORTED_JDBC_TYPES);
 
@@ -289,7 +287,7 @@ consoleModule.controller('metadataController', function ($filter, $http, $timeou
             {value: false, label: 'DESC'}
         ];
 
-        $scope.panels = {activePanels: [0, 1]};
+        $scope.panels = { activePanels: [0, 1] };
 
         $scope.metadatas = [];
 
@@ -377,38 +375,45 @@ consoleModule.controller('metadataController', function ($filter, $http, $timeou
                     if ($scope.loadMeta.action === 'drivers') {
                         $loading.start('loadingMetadataFromDb');
 
+                        $scope.jdbcDriverJars = [];
+                        $scope.ui.selectedJdbcDriverJar = {};
+
                         $http.post('/api/v1/agent/drivers')
                             .success(function (drivers) {
                                 onSuccess();
 
                                 if (drivers && drivers.length > 0) {
-                                    $scope.jdbcDriverJars = [];
+                                    drivers = _.sortBy(drivers, 'jdbcDriverJar');
 
-                                    var _h2DrvJar = _.find(drivers, function (drv) {
-                                        return drv.jdbcDriverJar.startsWith('h2');
-                                    });
-
-                                    if (_h2DrvJar) {
-                                        $scope.demoConnection = {
-                                            jdbcDriverJar: _h2DrvJar.jdbcDriverJar,
-                                            jdbcDriverClass: 'org.h2.Driver',
-                                            jdbcUrl: 'jdbc:h2:mem:demo-db',
-                                            user: 'sa',
-                                            password: '',
-                                            tablesOnly: true
-                                        };
-                                    }
-
-                                    drivers.forEach(function (driver) {
-                                        $scope.jdbcDriverJars.push({
-                                            label: driver.jdbcDriverJar,
-                                            value: $scope.jdbcDriverJars.length,
-                                            jdbcDriverJar: driver.jdbcDriverJar,
-                                            jdbcDriverClass: driver.jdbcDriverClass
+                                    if ($scope.loadMeta.demo) {
+                                        var _h2DrvJar = _.find(drivers, function (drv) {
+                                            return drv.jdbcDriverJar.startsWith('h2');
                                         });
-                                    });
 
-                                    $scope.preset.drvIdx = 0;
+                                        if (_h2DrvJar) {
+                                            $scope.selectedPreset = {
+                                                jdbcDriverJar: _h2DrvJar.jdbcDriverJar,
+                                                jdbcDriverClass: 'org.h2.Driver',
+                                                jdbcUrl: 'jdbc:h2:mem:demo-db',
+                                                user: 'sa',
+                                                password: '',
+                                                tablesOnly: true
+                                            };
+                                        }
+                                    }
+                                    else {
+                                        drivers.forEach(function (driver) {
+                                            $scope.jdbcDriverJars.push({
+                                                label: driver.jdbcDriverJar,
+                                                value: {
+                                                    jdbcDriverJar: driver.jdbcDriverJar,
+                                                    jdbcDriverClass: driver.jdbcDriverClass
+                                                }
+                                            });
+                                        });
+
+                                        $scope.ui.selectedJdbcDriverJar = $scope.jdbcDriverJars[0].value;
+                                    }
 
                                     $common.confirmUnsavedChanges($scope.ui.isDirty(), function () {
                                         loadMetaModal.$promise.then(function () {
@@ -445,13 +450,15 @@ consoleModule.controller('metadataController', function ($filter, $http, $timeou
         function _loadSchemas() {
             $loading.start('loadingMetadataFromDb');
 
-            $scope.selectedPreset = $scope.loadMeta.demo ? angular.copy($scope.demoConnection) : angular.copy($scope.preset);
+            if (!$scope.loadMeta.demo)
+                _savePreset($scope.selectedPreset);
 
             $http.post('/api/v1/agent/schemas', $scope.selectedPreset)
                 .success(function (schemas) {
                     $scope.loadMeta.schemas = _.map(schemas, function (schema) {
                         return {use: false, name: schema};
                     });
+
                     $scope.loadMeta.action = 'schemas';
 
                     if ($scope.loadMeta.schemas.length === 0)
@@ -460,14 +467,14 @@ consoleModule.controller('metadataController', function ($filter, $http, $timeou
                         _.forEach($scope.loadMeta.schemas, function (sch) {
                             sch.use = true;
                         });
+
+                    $scope.loadMeta.info = INFO_SELECT_SCHEMAS;
+                    $scope.loadMeta.loadingOptions = LOADING_TABLES;
                 })
                 .error(function (errMsg) {
                     $common.showError(errMsg);
                 })
                 .finally(function() {
-                    $scope.loadMeta.info = INFO_SELECT_SCHEMAS;
-                    $scope.loadMeta.loadingOptions = LOADING_TABLES;
-
                     $loading.finish('loadingMetadataFromDb');
                 });
         }
@@ -500,16 +507,15 @@ consoleModule.controller('metadataController', function ($filter, $http, $timeou
                         }));
                     });
 
-                    $scope.loadMeta.tables = tables;
                     $scope.loadMeta.action = 'tables';
+                    $scope.loadMeta.tables = tables;
+                    $scope.loadMeta.info = INFO_SELECT_TABLES;
+                    $scope.loadMeta.loadingOptions = LOADING_METADATA;
                 })
                 .error(function (errMsg) {
                     $common.showError(errMsg);
                 })
                 .finally(function() {
-                    $scope.loadMeta.info = INFO_SELECT_TABLES;
-                    $scope.loadMeta.loadingOptions = LOADING_METADATA;
-
                     $loading.finish('loadingMetadataFromDb');
                 });
         }
@@ -614,8 +620,6 @@ consoleModule.controller('metadataController', function ($filter, $http, $timeou
 
             if (!$common.isValidJavaClass('Package', $scope.ui.packageName, false, 'metadataLoadPackage', true))
                 return false;
-
-            _savePreset($scope.preset);
 
             var batch = [];
             var tables = [];
