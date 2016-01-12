@@ -17,35 +17,6 @@
 
 package org.apache.ignite.internal.binary;
 
-import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.binary.BinaryIdMapper;
-import org.apache.ignite.binary.BinaryInvalidTypeException;
-import org.apache.ignite.binary.BinaryObjectException;
-import org.apache.ignite.binary.BinaryReflectiveSerializer;
-import org.apache.ignite.binary.BinarySerializer;
-import org.apache.ignite.binary.BinaryType;
-import org.apache.ignite.binary.BinaryTypeConfiguration;
-import org.apache.ignite.cache.CacheKeyConfiguration;
-import org.apache.ignite.cache.affinity.AffinityKey;
-import org.apache.ignite.cache.affinity.AffinityKeyMapped;
-import org.apache.ignite.configuration.BinaryConfiguration;
-import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.internal.IgnitionEx;
-import org.apache.ignite.internal.processors.cache.binary.BinaryMetadataKey;
-import org.apache.ignite.internal.processors.datastructures.CollocatedQueueItemKey;
-import org.apache.ignite.internal.processors.datastructures.CollocatedSetItemKey;
-import org.apache.ignite.internal.util.IgniteUtils;
-import org.apache.ignite.internal.util.lang.GridMapEntry;
-import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.internal.util.typedef.T2;
-import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.lang.IgniteBiTuple;
-import org.apache.ignite.marshaller.MarshallerContext;
-import org.apache.ignite.marshaller.optimized.OptimizedMarshaller;
-import org.jetbrains.annotations.Nullable;
-import org.jsr166.ConcurrentHashMap8;
-
 import java.io.Externalizable;
 import java.io.File;
 import java.io.IOException;
@@ -71,6 +42,33 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentMap;
 import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.binary.BinaryIdMapper;
+import org.apache.ignite.binary.BinaryInvalidTypeException;
+import org.apache.ignite.binary.BinaryObjectException;
+import org.apache.ignite.binary.BinaryReflectiveSerializer;
+import org.apache.ignite.binary.BinarySerializer;
+import org.apache.ignite.binary.BinaryType;
+import org.apache.ignite.binary.BinaryTypeConfiguration;
+import org.apache.ignite.cache.CacheKeyConfiguration;
+import org.apache.ignite.cache.affinity.AffinityKey;
+import org.apache.ignite.cache.affinity.AffinityKeyMapped;
+import org.apache.ignite.configuration.BinaryConfiguration;
+import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.processors.cache.binary.BinaryMetadataKey;
+import org.apache.ignite.internal.processors.datastructures.CollocatedQueueItemKey;
+import org.apache.ignite.internal.processors.datastructures.CollocatedSetItemKey;
+import org.apache.ignite.internal.util.IgniteUtils;
+import org.apache.ignite.internal.util.lang.GridMapEntry;
+import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.T2;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteBiTuple;
+import org.apache.ignite.marshaller.MarshallerContext;
+import org.apache.ignite.marshaller.optimized.OptimizedMarshaller;
+import org.jetbrains.annotations.Nullable;
+import org.jsr166.ConcurrentHashMap8;
 
 /**
  * Binary context.
@@ -552,7 +550,7 @@ public class BinaryContext {
     private BinaryClassDescriptor registerUserClassDescriptor(Class<?> cls, boolean deserialize) {
         boolean registered;
 
-        String typeName = typeName(cls.getName());
+        String typeName = cls.getName();
 
         BinaryIdMapper idMapper = userTypeIdMapper(typeName);
 
@@ -656,7 +654,7 @@ public class BinaryContext {
      * @return Type ID.
      */
     public int typeId(String typeName) {
-        String typeName0 = typeName(typeName);
+        String typeName0 = typeName;
 
         Integer id = predefinedTypeNames.get(typeName0);
 
@@ -728,7 +726,7 @@ public class BinaryContext {
      * @return GridBinaryClassDescriptor.
      */
     public BinaryClassDescriptor registerPredefinedType(Class<?> cls, int id, String affFieldName) {
-        String typeName = typeName(cls.getName());
+        String typeName = cls.getName();
 
         if (id == 0)
             id = BinaryInternalIdMapper.defaultInstance().typeId(typeName);
@@ -783,9 +781,7 @@ public class BinaryContext {
             // No-op.
         }
 
-        String typeName = typeName(clsName);
-
-        int id = idMapper.typeId(typeName);
+        int id = idMapper.typeId(clsName);
 
         //Workaround for IGNITE-1358
         if (predefinedTypes.get(id) != null)
@@ -799,7 +795,7 @@ public class BinaryContext {
                 throw new BinaryObjectException("Duplicate type ID [clsName=" + clsName + ", id=" + id + ']');
         }
 
-        typeMappers.put(typeName, idMapper);
+        typeMappers.put(clsName, idMapper);
 
         Map<String, Integer> fieldsMeta = null;
         Collection<BinarySchema> schemas = null;
@@ -818,7 +814,7 @@ public class BinaryContext {
                 cls,
                 true,
                 id,
-                typeName,
+                clsName,
                 affKeyFieldName,
                 idMapper,
                 serializer,
@@ -835,7 +831,7 @@ public class BinaryContext {
             descByCls.put(cls, desc);
         }
 
-        metaHnd.addMeta(id, new BinaryMetadata(id, typeName, fieldsMeta, affKeyFieldName, schemas, isEnum).wrap(this));
+        metaHnd.addMeta(id, new BinaryMetadata(id, clsName, fieldsMeta, affKeyFieldName, schemas, isEnum).wrap(this));
     }
 
     /**
@@ -951,43 +947,6 @@ public class BinaryContext {
      */
     OptimizedMarshaller optimizedMarsh() {
         return optmMarsh;
-    }
-
-    /**
-     * @param clsName Class name.
-     * @return Type name.
-     */
-    @SuppressWarnings("ResultOfMethodCallIgnored")
-    public static String typeName(String clsName) {
-        assert clsName != null;
-
-        int idx = clsName.lastIndexOf('$');
-
-        if (idx == clsName.length() - 1)
-            // This is a regular (not inner) class name that ends with '$'. Common use case for Scala classes.
-            idx = -1;
-        else if (idx >= 0) {
-            String typeName = clsName.substring(idx + 1);
-
-            try {
-                Integer.parseInt(typeName);
-
-                // This is an anonymous class. Don't cut off enclosing class name for it.
-                idx = -1;
-            }
-            catch (NumberFormatException ignore) {
-                // This is a lambda class.
-                if (clsName.indexOf("$$Lambda$") > 0)
-                    idx = -1;
-                else
-                    return typeName;
-            }
-        }
-
-        if (idx < 0)
-            idx = clsName.lastIndexOf('.');
-
-        return idx >= 0 ? clsName.substring(idx + 1) : clsName;
     }
 
     /**

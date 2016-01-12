@@ -1342,8 +1342,8 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
         assertEquals("key".hashCode(), ctx.typeId("Key"));
         assertEquals("nonexistentclass3".hashCode(), ctx.typeId("NonExistentClass3"));
         assertEquals("nonexistentclass4".hashCode(), ctx.typeId("NonExistentClass4"));
-        assertEquals(300, ctx.typeId(getClass().getSimpleName() + "$Value"));
-        assertEquals(400, ctx.typeId("NonExistentClass1"));
+        assertEquals(300, ctx.typeId(getClass().getName() + "$Value"));
+        assertEquals(400, ctx.typeId("org.gridgain.NonExistentClass1"));
         assertEquals(500, ctx.typeId("NonExistentClass2"));
         assertEquals("nonexistentclass5".hashCode(), ctx.typeId("NonExistentClass5"));
     }
@@ -2169,6 +2169,7 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testDuplicateName() throws Exception {
+        // TODO make this test for 2 different types of IdMapper (positive and negative).
         BinaryMarshaller marsh = binaryMarshaller();
 
         Test1.Job job1 = new Test1().new Job();
@@ -2176,16 +2177,7 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
 
         marsh.marshal(job1);
 
-        try {
-            marsh.marshal(job2);
-        }
-        catch (BinaryObjectException e) {
-            assertEquals(true, e.getMessage().contains("Failed to register class"));
-
-            return;
-        }
-
-        assert false;
+        marsh.marshal(job2);
     }
 
     /**
@@ -2266,13 +2258,13 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
     public void testPredefinedTypeIds() throws Exception {
         BinaryMarshaller marsh = binaryMarshaller();
 
-        BinaryContext pCtx = binaryContext(marsh);
+        BinaryContext bCtx = binaryContext(marsh);
 
-        Field field = pCtx.getClass().getDeclaredField("predefinedTypeNames");
+        Field field = bCtx.getClass().getDeclaredField("predefinedTypeNames");
 
         field.setAccessible(true);
 
-        Map<String, Integer> map = (Map<String, Integer>)field.get(pCtx);
+        Map<String, Integer> map = (Map<String, Integer>)field.get(bCtx);
 
         assertTrue(map.size() > 0);
 
@@ -2282,10 +2274,9 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
             if (id == GridBinaryMarshaller.UNREGISTERED_TYPE_ID)
                 continue;
 
-            BinaryClassDescriptor desc = pCtx.descriptorForTypeId(false, entry.getValue(), null, false);
+            BinaryClassDescriptor desc = bCtx.descriptorForTypeId(false, entry.getValue(), null, false);
 
-            assertEquals(desc.typeId(), pCtx.typeId(desc.describedClass().getName()));
-            assertEquals(desc.typeId(), pCtx.typeId(pCtx.typeName(desc.describedClass().getName())));
+            assertEquals(desc.typeId(), bCtx.typeId(desc.describedClass().getName()));
         }
     }
 

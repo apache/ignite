@@ -787,12 +787,12 @@ public class BinaryObjectBuilderSelfTest extends GridCommonAbstractTest {
 
         builder.setField("i", 1);
 
-        BinaryObject po = builder.build();
+        BinaryObject bo = builder.build();
 
-        assertEquals("value".hashCode(), po.type().typeId());
-        assertEquals(100, po.hashCode());
+        assertEquals("value".hashCode(), bo.type().typeId());
+        assertEquals(100, bo.hashCode());
 
-        assertEquals(1, po.<Value>deserialize().i);
+        assertEquals(1, bo.<Value>deserialize().i);
     }
 
     /**

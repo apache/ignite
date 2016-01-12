@@ -93,56 +93,50 @@ public class GridBinaryMetaDataSelfTest extends GridCommonAbstractTest {
         for (BinaryType meta : metas) {
             Collection<String> fields;
 
-            switch (meta.typeName()) {
-                case "TestObject1":
-                    fields = meta.fieldNames();
+            if (TestObject1.class.getName().equals(meta.typeName())) {
+                fields = meta.fieldNames();
 
-                    assertEquals(7, fields.size());
+                assertEquals(7, fields.size());
 
-                    assertTrue(fields.contains("intVal"));
-                    assertTrue(fields.contains("strVal"));
-                    assertTrue(fields.contains("arrVal"));
-                    assertTrue(fields.contains("obj1Val"));
-                    assertTrue(fields.contains("obj2Val"));
-                    assertTrue(fields.contains("decVal"));
-                    assertTrue(fields.contains("decArrVal"));
+                assertTrue(fields.contains("intVal"));
+                assertTrue(fields.contains("strVal"));
+                assertTrue(fields.contains("arrVal"));
+                assertTrue(fields.contains("obj1Val"));
+                assertTrue(fields.contains("obj2Val"));
+                assertTrue(fields.contains("decVal"));
+                assertTrue(fields.contains("decArrVal"));
 
-                    assertEquals("int", meta.fieldTypeName("intVal"));
-                    assertEquals("String", meta.fieldTypeName("strVal"));
-                    assertEquals("byte[]", meta.fieldTypeName("arrVal"));
-                    assertEquals("Object", meta.fieldTypeName("obj1Val"));
-                    assertEquals("Object", meta.fieldTypeName("obj2Val"));
-                    assertEquals("decimal", meta.fieldTypeName("decVal"));
-                    assertEquals("decimal[]", meta.fieldTypeName("decArrVal"));
-
-                    break;
-
-                case "TestObject2":
-                    fields = meta.fieldNames();
-
-                    assertEquals(7, fields.size());
-
-                    assertTrue(fields.contains("boolVal"));
-                    assertTrue(fields.contains("dateVal"));
-                    assertTrue(fields.contains("uuidArrVal"));
-                    assertTrue(fields.contains("objVal"));
-                    assertTrue(fields.contains("mapVal"));
-                    assertTrue(fields.contains("decVal"));
-                    assertTrue(fields.contains("decArrVal"));
-
-                    assertEquals("boolean", meta.fieldTypeName("boolVal"));
-                    assertEquals("Date", meta.fieldTypeName("dateVal"));
-                    assertEquals("UUID[]", meta.fieldTypeName("uuidArrVal"));
-                    assertEquals("Object", meta.fieldTypeName("objVal"));
-                    assertEquals("Map", meta.fieldTypeName("mapVal"));
-                    assertEquals("decimal", meta.fieldTypeName("decVal"));
-                    assertEquals("decimal[]", meta.fieldTypeName("decArrVal"));
-
-                    break;
-
-                default:
-                    assert false : meta.typeName();
+                assertEquals("int", meta.fieldTypeName("intVal"));
+                assertEquals("String", meta.fieldTypeName("strVal"));
+                assertEquals("byte[]", meta.fieldTypeName("arrVal"));
+                assertEquals("Object", meta.fieldTypeName("obj1Val"));
+                assertEquals("Object", meta.fieldTypeName("obj2Val"));
+                assertEquals("decimal", meta.fieldTypeName("decVal"));
+                assertEquals("decimal[]", meta.fieldTypeName("decArrVal"));
             }
+            else if (TestObject2.class.getName().equals(meta.typeName())) {
+                fields = meta.fieldNames();
+
+                assertEquals(7, fields.size());
+
+                assertTrue(fields.contains("boolVal"));
+                assertTrue(fields.contains("dateVal"));
+                assertTrue(fields.contains("uuidArrVal"));
+                assertTrue(fields.contains("objVal"));
+                assertTrue(fields.contains("mapVal"));
+                assertTrue(fields.contains("decVal"));
+                assertTrue(fields.contains("decArrVal"));
+
+                assertEquals("boolean", meta.fieldTypeName("boolVal"));
+                assertEquals("Date", meta.fieldTypeName("dateVal"));
+                assertEquals("UUID[]", meta.fieldTypeName("uuidArrVal"));
+                assertEquals("Object", meta.fieldTypeName("objVal"));
+                assertEquals("Map", meta.fieldTypeName("mapVal"));
+                assertEquals("decimal", meta.fieldTypeName("decVal"));
+                assertEquals("decimal[]", meta.fieldTypeName("decArrVal"));
+            }
+            else
+                assert false : meta.typeName();
         }
     }
 
@@ -163,7 +157,7 @@ public class GridBinaryMetaDataSelfTest extends GridCommonAbstractTest {
 
         assertNotNull(meta);
 
-        assertEquals("TestObject1", meta.typeName());
+        assertEquals(TestObject1.class.getName(), meta.typeName());
 
         Collection<String> fields = meta.fieldNames();
 
@@ -196,7 +190,7 @@ public class GridBinaryMetaDataSelfTest extends GridCommonAbstractTest {
 
         assertNotNull(meta);
 
-        assertEquals("TestObject2", meta.typeName());
+        assertEquals(TestObject2.class.getName(), meta.typeName());
 
         Collection<String> fields = meta.fieldNames();
 
@@ -233,7 +227,7 @@ public class GridBinaryMetaDataSelfTest extends GridCommonAbstractTest {
 
         assertNotNull(meta);
 
-        assertEquals("TestObject2", meta.typeName());
+        assertEquals(TestObject2.class.getName(), meta.typeName());
 
         Collection<String> fields = meta.fieldNames();
 
@@ -282,7 +276,7 @@ public class GridBinaryMetaDataSelfTest extends GridCommonAbstractTest {
 
         assertNotNull(meta);
 
-        assertEquals("TestObject1", meta.typeName());
+        assertEquals(TestObject1.class.getName(), meta.typeName());
 
         Collection<String> fields = meta.fieldNames();
 
