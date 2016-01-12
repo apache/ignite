@@ -18,6 +18,7 @@
 namespace Apache.Ignite.Core.Tests
 {
     using Apache.Ignite.Core.Cache;
+    using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Tests.Process;
     using NUnit.Framework;
 
@@ -50,7 +51,11 @@ namespace Apache.Ignite.Core.Tests
 
                 proc.Suspend();
 
-                Assert.Throws<CacheException>(() => cache.Get(1));
+                var ex = Assert.Throws<CacheException>(() => cache.Get(1));
+
+                var inner = (ClientDisconnectedException) ex.InnerException;
+
+                Assert.AreEqual(ignite.GetCluster().ClientReconnectTask, inner.ClientReconnectTask);
 
                 // Reconnect
                 proc.Resume();
