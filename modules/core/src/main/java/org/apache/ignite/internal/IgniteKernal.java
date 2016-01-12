@@ -937,27 +937,26 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
             notifyLifecycleBeans(AFTER_NODE_START);
 
             // Start update notifier.
-            Boolean clusterNotifyEnabled = (Boolean)ctx.cache().utilityCache().
-                getAndPutIfAbsent("ignite.update.notifier.enabled.for.cluster", notifyEnabled);
+            try {
+                // Daemon nodes don't have utility cache.
+                if (ctx.cache().utilityCache() != null) {
+                    Boolean clusterNotifyEnabled = (Boolean)ctx.cache().utilityCache().
+                        getAndPutIfAbsent("ignite.update.notifier.enabled.for.cluster", notifyEnabled);
 
-            log.info("Update notifier is "
-                + ((clusterNotifyEnabled != null ? clusterNotifyEnabled : notifyEnabled) ? "on" : "off")
-                + " [locUpdNtfEnabled=" + notifyEnabled + ", clusterUpdNtfEnabled=" + clusterNotifyEnabled + "]");
+                    if (clusterNotifyEnabled != null ? clusterNotifyEnabled : notifyEnabled) {
 
-            if (clusterNotifyEnabled != null ? clusterNotifyEnabled : notifyEnabled) {
-                try {
-                    verChecker = new GridUpdateNotifier(gridName, VER_STR, gw, ctx.plugins().allProviders(), false);
+                        verChecker = new GridUpdateNotifier(gridName, VER_STR, gw, ctx.plugins().allProviders(), false);
 
-                    updateNtfTimer = new Timer("ignite-update-notifier-timer", true);
+                        updateNtfTimer = new Timer("ignite-update-notifier-timer", true);
 
-                    // Setup periodic version check.
-                    updateNtfTimer.scheduleAtFixedRate(new UpdateNotifierTimerTask(this, execSvc, verChecker),
-                        0, PERIODIC_VER_CHECK_DELAY);
+                        // Setup periodic version check.
+                        updateNtfTimer.scheduleAtFixedRate(new UpdateNotifierTimerTask(this, execSvc, verChecker),
+                            0, PERIODIC_VER_CHECK_DELAY);
+                    }
                 }
-                catch (IgniteCheckedException e) {
-                    if (log.isDebugEnabled())
-                        log.debug("Failed to create GridUpdateNotifier: " + e);
-                }
+            }
+            catch (Exception e) {
+                U.error(log, "Failed to initialize update notifier.", e);
             }
         }
         catch (Throwable e) {
