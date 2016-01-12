@@ -24,6 +24,7 @@ namespace Apache.Ignite.Core.Common
     /// <summary>
     /// Indicates that client-mode local node has been disconnected from the cluster.
     /// </summary>
+    [Serializable]
     public class ClientDisconnectedException : IgniteException
     {
         /// <summary>
