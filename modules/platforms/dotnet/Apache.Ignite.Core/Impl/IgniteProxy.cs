@@ -270,7 +270,7 @@ namespace Apache.Ignite.Core.Impl
         }
 
         /** <inheritdoc /> */
-        public Task ClientReconnectTask
+        public Task<bool> ClientReconnectTask
         {
             get { return _ignite.GetCluster().ClientReconnectTask; }
         }
