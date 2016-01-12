@@ -113,7 +113,7 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testByte() throws Exception {
-        assertEquals((byte) 100, marshalUnmarshal((byte)100).byteValue());
+        assertEquals((byte)100, marshalUnmarshal((byte)100).byteValue());
     }
 
     /**
@@ -401,7 +401,7 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
         CustomCollections cc = new CustomCollections();
 
         cc.list.add(1);
-        cc.customList.add(2);
+        cc.customList.add(new Value(1));
 
         CustomCollections copiedCc = marshalUnmarshal(cc);
 
@@ -412,6 +412,28 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
 
         assertEquals(cc.list.get(0), copiedCc.list.get(0));
         assertEquals(cc.customList.get(0), copiedCc.customList.get(0));
+    }
+
+    /**
+     * Test serialization of custom collections.
+     *
+     * @throws Exception If failed.
+     */
+    @SuppressWarnings("unchecked")
+    public void testCustomCollections2() throws Exception {
+        CustomArrayList arrList = new CustomArrayList();
+
+        arrList.add(1);
+
+        Object cp = marshalUnmarshal(arrList);
+
+        assert cp.getClass().equals(CustomArrayList.class);
+
+        CustomArrayList customCp = (CustomArrayList)cp;
+
+        assertEquals(customCp.size(), arrList.size());
+
+        assertEquals(customCp.get(0), arrList.get(0));
     }
 
     /**
