@@ -338,6 +338,7 @@ public class PlatformProcessorImpl extends GridProcessorAdapter implements Platf
     /** {@inheritDoc} */
     @Override public void onDisconnected(IgniteFuture<?> reconnectFut) throws IgniteCheckedException {
         // TODO: Platform callback
+        platformCtx.gateway();
     }
 
     /** {@inheritDoc} */
