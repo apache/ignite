@@ -25,14 +25,21 @@ mixin chk(mdl, change, tip)
             #errors-container.modal-header.header
                 button.close(ng-click='$hide()' aria-hidden='true') &times;
                 h4.modal-title Load metadata from database
-            .metadata-content(ng-show='loadMeta.action == "drivers"')
+            .metadata-content(ng-show='loadMeta.action == "drivers"' style="margin-bottom: 256px;")
             .metadata-content(ng-show='loadMeta.action == "connect" && loadMeta.demo' style='margin-bottom: 141px')
-                label Demo description:
-                ul
-                    li In-memory H2 database server will be started inside agent
-                    li Database will be populated with sample tables
-                    li You could test loading metadata using this demo database
-                    li Click "Next" to continue
+                div(ng-if='selectedPreset')
+                    label Demo description:
+                    ul
+                        li In-memory H2 database server will be started inside agent
+                        li Database will be populated with sample tables
+                        li You could test loading metadata using this demo database
+                        li Click "Next" to continue
+                div(ng-if='!selectedPreset')
+                    label Demo could not be started
+                        ul
+                            li Agent failed to resolve H2 database jar
+                            li Copy h2-x.x.x.jar into agent '\jdbc-drivers' folder and try again
+                            li Refer to agent README.txt for more information
             .metadata-content(ng-show='loadMeta.action == "connect" && !loadMeta.demo')
                 form.form-horizontal(name='connectForm' novalidate)
                     .settings-row

@@ -234,16 +234,6 @@ consoleModule.controller('metadataController', function ($filter, $http, $timeou
                 $scope.updateSelectedPreset(val);
         }, true);
 
-        $scope.selectedPreset = {
-            db: 'unknown',
-            jdbcDriverJar: '',
-            jdbcDriverClass: '',
-            jdbcUrl: 'jdbc:[database]',
-            user: 'sa',
-            password: '',
-            tablesOnly: true
-        };
-
         $scope.ui.showValid = true;
 
         function _findPreset(selectedJdbcJar) {
@@ -381,6 +371,16 @@ consoleModule.controller('metadataController', function ($filter, $http, $timeou
                                 onSuccess();
 
                                 if (drivers && drivers.length > 0) {
+                                    $scope.selectedPreset = {
+                                        db: 'unknown',
+                                        jdbcDriverJar: '',
+                                        jdbcDriverClass: '',
+                                        jdbcUrl: 'jdbc:[database]',
+                                        user: 'sa',
+                                        password: '',
+                                        tablesOnly: true
+                                    };
+
                                     drivers = _.sortBy(drivers, 'jdbcDriverJar');
 
                                     if ($scope.loadMeta.demo) {
@@ -389,15 +389,13 @@ consoleModule.controller('metadataController', function ($filter, $http, $timeou
                                         });
 
                                         if (_h2DrvJar) {
-                                            $scope.selectedPreset = {
-                                                jdbcDriverJar: _h2DrvJar.jdbcDriverJar,
-                                                jdbcDriverClass: 'org.h2.Driver',
-                                                jdbcUrl: 'jdbc:h2:mem:demo-db',
-                                                user: 'sa',
-                                                password: '',
-                                                tablesOnly: true
-                                            };
+                                            $scope.selectedPreset.db = 'H2';
+                                            $scope.jdbcDriverJar = _h2DrvJar.jdbcDriverJar;
+                                            $scope.jdbcDriverClass = 'org.h2.Driver';
+                                            $scope.jdbcUrl = 'jdbc:h2:mem:demo-db';
                                         }
+                                        else
+                                            $scope.selectedPreset = null;
                                     }
                                     else {
                                         drivers.forEach(function (driver) {
@@ -720,6 +718,7 @@ consoleModule.controller('metadataController', function ($filter, $http, $timeou
                     meta.indexes = indexes;
                     meta.keyFields = keyFields;
                     meta.valueFields = valFields;
+                    meta.demo = $scope.loadMeta.demo;
 
                     // Use Java built-in type for key.
                     if ($scope.ui.builtinKeys && meta.keyFields.length === 1) {
@@ -791,16 +790,41 @@ consoleModule.controller('metadataController', function ($filter, $http, $timeou
         };
 
         $scope.nextTooltipText = function () {
-            if ($scope.loadMeta.action === 'tables' && !$scope.nextAvailable())
+            if ($scope.nextAvailable())
+                return 'Click to continue';
+
+            if ($scope.loadMeta.action === 'connect')
+                return 'Resolve issue with H2 database driver<br>Close this dialog and try again';
+
+            if ($scope.loadMeta.action === 'schemas')
+                return 'Select schemas to continue';
+
+            if ($scope.loadMeta.action === 'tables')
                 return 'Select tables to continue';
         };
 
         $scope.nextAvailable = function () {
+            var res = true;
+
             switch ($scope.loadMeta.action) {
-                case 'tables': return $('#metadataTableData').find(':checked').length > 0;
-                case 'schemas': return $common.isEmptyArray($scope.loadMeta.schemas) || $('#metadataSchemaData').find(':checked').length > 0;
-                default: return true;
+                case 'connect':
+                    if ($scope.loadMeta.demo)
+                        res = $common.isDefined($scope.selectedPreset);
+
+                    break;
+
+                case 'schemas':
+                    res = $common.isEmptyArray($scope.loadMeta.schemas) || $('#metadataSchemaData').find(':checked').length > 0;
+
+                    break;
+
+                case 'tables':
+                    res = $('#metadataTableData').find(':checked').length > 0;
+
+                    break;
             }
+
+            return res;
         };
 
         $scope.loadMetadataPrev = function () {

@@ -83,7 +83,8 @@ var CacheTypeMetadataSchema = new Schema({
     valueFields: [{databaseFieldName: String, databaseFieldType: String, javaFieldName: String, javaFieldType: String}],
     fields: [{name: String, className: String}],
     aliases: [{field: String, alias: String}],
-    indexes: [{name: String, indexType: {type: String, enum: ['SORTED', 'FULLTEXT', 'GEOSPATIAL']}, fields: [{name: String, direction: Boolean}]}]
+    indexes: [{name: String, indexType: {type: String, enum: ['SORTED', 'FULLTEXT', 'GEOSPATIAL']}, fields: [{name: String, direction: Boolean}]}],
+    demo: Boolean
 });
 
 // Define Cache type metadata model.
@@ -205,7 +206,8 @@ var CacheSchema = new Schema({
                 maxSize: Number
             }
         }
-    }
+    },
+    demo: Boolean
 });
 
 // Install deep populate plugin.
