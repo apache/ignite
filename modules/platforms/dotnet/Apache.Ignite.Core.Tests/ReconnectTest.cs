@@ -17,7 +17,6 @@
 
 namespace Apache.Ignite.Core.Tests
 {
-    using System.Threading;
     using Apache.Ignite.Core.Cache;
     using Apache.Ignite.Core.Tests.Process;
     using NUnit.Framework;
@@ -55,12 +54,8 @@ namespace Apache.Ignite.Core.Tests
 
                 // Reconnect
                 proc.Resume();
-                // TODO: Test future
-                Assert.IsTrue(ignite.WaitTopology(2, 30000));
 
-                Thread.Sleep(3000);
-
-                cache = ignite.GetCache<int, int>(null); // TODO: remove this, reconnect should work properly
+                ignite.GetCluster().ClientReconnectTask.Wait();
 
                 Assert.AreEqual(1, cache[1]);
             }
