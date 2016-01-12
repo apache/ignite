@@ -17,8 +17,8 @@
 
 namespace Apache.Ignite.Core.Tests
 {
+    using System.Threading;
     using Apache.Ignite.Core.Cache;
-    using Apache.Ignite.Core.Tests.Compute;
     using Apache.Ignite.Core.Tests.Process;
     using NUnit.Framework;
 
@@ -43,19 +43,24 @@ namespace Apache.Ignite.Core.Tests
 
             using (var ignite = Ignition.Start(cfg))
             {
+                Assert.IsTrue(ignite.WaitTopology(2, 30000));
+
                 var cache = ignite.GetCache<int, int>(null);
 
                 cache[1] = 1;
 
-                proc.Kill();
+                proc.Suspend();
 
                 Assert.Throws<CacheException>(() => cache.Get(1));
 
                 // Reconnect
+                proc.Resume();
                 // TODO: Test future
-                StartServerProcess(cfg);
-
                 Assert.IsTrue(ignite.WaitTopology(2, 30000));
+
+                Thread.Sleep(3000);
+
+                cache = ignite.GetCache<int, int>(null); // TODO: remove this, reconnect should work properly
 
                 Assert.AreEqual(1, cache[1]);
             }
