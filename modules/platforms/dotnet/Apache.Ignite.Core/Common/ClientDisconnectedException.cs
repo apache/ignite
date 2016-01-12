@@ -50,18 +50,6 @@ namespace Apache.Ignite.Core.Common
         }
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="ClientDisconnectedException" /> class.
-        /// </summary>
-        /// <param name="message">The message.</param>
-        /// <param name="clientReconnectTask">The client reconnect task.</param>
-        public ClientDisconnectedException(string message, Task<bool> clientReconnectTask) : base(message)
-        {
-            IgniteArgumentCheck.NotNull(clientReconnectTask, "clientReconnectTask");
-
-            _clientReconnectTask = clientReconnectTask;
-        }
-
-        /// <summary>
         /// Initializes a new instance of the <see cref="ClientDisconnectedException"/> class.
         /// </summary>
         /// <param name="message">The message.</param>
@@ -69,6 +57,19 @@ namespace Apache.Ignite.Core.Common
         public ClientDisconnectedException(string message, Exception cause) : base(message, cause)
         {
             // No-op.
+        }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="ClientDisconnectedException" /> class.
+        /// </summary>
+        /// <param name="message">The message.</param>
+        /// <param name="cause">The cause.</param>
+        /// <param name="clientReconnectTask">The client reconnect task.</param>
+        public ClientDisconnectedException(string message, Exception cause, Task<bool> clientReconnectTask) : base(message, cause)
+        {
+            IgniteArgumentCheck.NotNull(clientReconnectTask, "clientReconnectTask");
+
+            _clientReconnectTask = clientReconnectTask;
         }
 
         /// <summary>
