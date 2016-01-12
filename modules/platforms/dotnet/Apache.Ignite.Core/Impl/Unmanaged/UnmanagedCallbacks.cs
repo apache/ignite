@@ -1056,8 +1056,24 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
             }
         }
 
+        private void OnClientDisconnected(void* target)
+        {
+            SafeCall(() =>
+            {
+                _ignite.OnClientDisconnected();
+            });
+        }
+
+        private void OnClientReconnected(void* target, bool clusterRestarted)
+        {
+            SafeCall(() =>
+            {
+                _ignite.OnClientReconnected(clusterRestarted);
+            });
+        }
+
         #endregion
-        
+
         #region HELPERS
 
         [SuppressMessage("Microsoft.Design", "CA1031:DoNotCatchGeneralExceptionTypes")]

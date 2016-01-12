@@ -537,5 +537,20 @@ namespace Apache.Ignite.Core.Impl
         {
             get { return _proc; }
         }
+
+        /// <summary>
+        /// Called when local client node has been disconnected from the cluster.
+        /// </summary>
+        public void OnClientDisconnected()
+        {
+        }
+
+        /// <summary>
+        /// Called when local client node has been reconnected to the cluster.
+        /// </summary>
+        /// <param name="clusterRestarted">Cluster restarted flag.</param>
+        public void OnClientReconnected(bool clusterRestarted)
+        {
+        }
     }
 }
