@@ -39,9 +39,9 @@ $generatorReadme.readme = function (res) {
     res.line('    /src - this folder contains generated java code.');
     res.line('    /src/main/java/config - this folder contains generated java classes with cluster configuration from code.');
     res.line('    /src/main/java/startup - this folder contains generated java classes with server and client nodes startup code.');
-    res.line('    /src/main/java/[model] - this folder will be named as package name for your POJO classes and contain generated POJO files.');
-    res.line('    /src/main/resources - this folder contains generated secret.properties file with security sensitive information.');
-    res.line('    Dockerfile - sample docker file.');
+    res.line('    /src/main/java/[model] - this optional folder will be named as package name for your POJO classes and contain generated POJO files.');
+    res.line('    /src/main/resources - this optional folder contains generated secret.properties file with security sensitive information if any.');
+    res.line('    Dockerfile - sample Docker file. With this file you could package Ignite deployment with all the dependencies into a standard container.');
     res.line('    pom.xml - generated Maven project description, could be used to open generated project in IDE or build with Maven.');
     res.line('    README.txt - this file.');
 
