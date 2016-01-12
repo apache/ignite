@@ -23,6 +23,7 @@ namespace Apache.Ignite.Core.Impl
     using System.Diagnostics;
     using System.Diagnostics.CodeAnalysis;
     using System.Linq;
+    using System.Threading.Tasks;
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Cache;
     using Apache.Ignite.Core.Cluster;
@@ -385,6 +386,16 @@ namespace Apache.Ignite.Core.Impl
         public void ResetMetrics()
         {
             UU.ProjectionResetMetrics(_prj.Target);
+        }
+
+        /** <inheritdoc /> */
+        public Task ClientReconnectTask
+        {
+            get
+            {
+                // TODO:
+                return null;
+            }
         }
 
         /** <inheritdoc /> */
