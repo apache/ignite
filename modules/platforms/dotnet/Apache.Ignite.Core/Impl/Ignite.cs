@@ -86,9 +86,11 @@ namespace Apache.Ignite.Core.Impl
         private readonly UnmanagedCallbacks _cbs;
 
         /** Node info cache. */
-
         private readonly ConcurrentDictionary<Guid, ClusterNodeImpl> _nodes =
             new ConcurrentDictionary<Guid, ClusterNodeImpl>();
+
+        private volatile TaskCompletionSource<bool> _clientReconnectTaskCompletionSource = 
+            new TaskCompletionSource<bool>();
 
         /// <summary>
         /// Constructor.
@@ -128,6 +130,9 @@ namespace Apache.Ignite.Core.Impl
             // Grid is not completely started here, can't initialize interop transactions right away.
             _transactions = new Lazy<TransactionsImpl>(
                     () => new TransactionsImpl(UU.ProcessorTransactions(proc), marsh, GetLocalNode().Id));
+
+            // Set reconnected task to completed state for convenience.
+            _clientReconnectTaskCompletionSource.SetResult(false);
         }
 
         /// <summary>
@@ -389,13 +394,9 @@ namespace Apache.Ignite.Core.Impl
         }
 
         /** <inheritdoc /> */
-        public Task ClientReconnectTask
+        public Task<bool> ClientReconnectTask
         {
-            get
-            {
-                // TODO:
-                return null;
-            }
+            get { return _clientReconnectTaskCompletionSource.Task; }
         }
 
         /** <inheritdoc /> */
@@ -543,6 +544,7 @@ namespace Apache.Ignite.Core.Impl
         /// </summary>
         public void OnClientDisconnected()
         {
+            _clientReconnectTaskCompletionSource = new TaskCompletionSource<bool>();
         }
 
         /// <summary>
@@ -551,6 +553,7 @@ namespace Apache.Ignite.Core.Impl
         /// <param name="clusterRestarted">Cluster restarted flag.</param>
         public void OnClientReconnected(bool clusterRestarted)
         {
+            _clientReconnectTaskCompletionSource.TrySetResult(clusterRestarted);
         }
     }
 }

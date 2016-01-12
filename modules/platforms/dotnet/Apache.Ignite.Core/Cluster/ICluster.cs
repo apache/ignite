@@ -79,11 +79,15 @@ namespace Apache.Ignite.Core.Cluster
 
         /// <summary>
         /// Gets the reconnect task, which will transition to Completed state 
-        /// when local client node reconnects to the cluster.
+        /// when local client node reconnects to the cluster. 
+        /// <para />
+        /// Result of the task indicates whether cluster has been restarted.
+        /// <para />
+        /// If local node is not in client mode or is not disconnected, returns completed task.
         /// </summary>
         /// <value>
         /// The reconnect task.
         /// </value>
-        Task ClientReconnectTask { get; } 
+        Task<bool> ClientReconnectTask { get; } 
     }
 }
