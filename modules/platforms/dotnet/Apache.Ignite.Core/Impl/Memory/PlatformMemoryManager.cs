@@ -27,6 +27,7 @@ namespace Apache.Ignite.Core.Impl.Memory
     [SuppressMessage("Microsoft.Design", "CA1001:TypesThatOwnDisposableFieldsShouldBeDisposable",
         Justification = "This class instance usually lives as long as the app runs.")]
     [CLSCompliant(false)]
+    // ReSharper disable once ClassWithVirtualMembersNeverInherited.Global
     public class PlatformMemoryManager
     {
         /** Default capacity. */
