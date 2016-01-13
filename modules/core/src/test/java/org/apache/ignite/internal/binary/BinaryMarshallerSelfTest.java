@@ -3980,6 +3980,24 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
         private Value(int val) {
             this.val = val;
         }
+
+        /** {@inheritDoc} */
+        @Override public boolean equals(Object o) {
+            if (this == o)
+                return true;
+
+            if (!(o instanceof Value))
+                return false;
+
+            Value value = (Value)o;
+
+            return val == value.val;
+        }
+
+        /** {@inheritDoc} */
+        @Override public int hashCode() {
+            return val;
+        }
     }
 
     /**

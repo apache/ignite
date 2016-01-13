@@ -596,7 +596,8 @@ public class BinaryUtils {
     public static boolean knownMap(Object map) {
         Class<?> cls = map == null ? null : map.getClass();
 
-        return cls == LinkedHashMap.class ||
+        return cls == HashMap.class ||
+            cls == LinkedHashMap.class ||
             cls == TreeMap.class ||
             cls == ConcurrentHashMap8.class ||
             cls == ConcurrentHashMap.class;
@@ -611,7 +612,9 @@ public class BinaryUtils {
     public static <K, V> Map<K, V> newKnownMap(Object map) {
         Class<?> cls = map == null ? null : map.getClass();
 
-        if (cls == LinkedHashMap.class)
+        if (cls == HashMap.class)
+            return U.newHashMap(((Map)map).size());
+        else if (cls == LinkedHashMap.class)
             return U.newLinkedHashMap(((Map)map).size());
         else if (cls == TreeMap.class)
             return new TreeMap<>(((TreeMap<Object, Object>)map).comparator());
@@ -649,7 +652,8 @@ public class BinaryUtils {
     public static boolean knownCollection(Object col) {
         Class<?> cls = col == null ? null : col.getClass();
 
-        return cls == LinkedHashSet.class ||
+        return cls == HashSet.class ||
+            cls == LinkedHashSet.class ||
             cls == TreeSet.class ||
             cls == ConcurrentSkipListSet.class ||
             cls == ArrayList.class ||
@@ -666,7 +670,9 @@ public class BinaryUtils {
     public static <V> Collection<V> newKnownCollection(Object col) {
         Class<?> cls = col == null ? null : col.getClass();
 
-        if (cls == LinkedHashSet.class)
+        if (cls == HashSet.class)
+            return U.newHashSet(((Collection)col).size());
+        else if (cls == LinkedHashSet.class)
             return U.newLinkedHashSet(((Collection)col).size());
         else if (cls == TreeSet.class)
             return new TreeSet<>(((TreeSet<Object>)col).comparator());
