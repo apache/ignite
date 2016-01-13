@@ -62,7 +62,9 @@ export default ['$scope', 'IgniteUiAceOnLoad', 'JavaTypes', function($scope, onL
         if (!value || !ctrl.metadatas.length)
             return;
 
-        ctrl.class = ctrl.class || ctrl.metadatas[0].keyType || ctrl.metadatas[0].valueType;
+        const keyType = ctrl.metadatas[0].keyType;
+
+        ctrl.class = ctrl.class || (JavaTypes.isBuildInClass(keyType) ? null : keyType) || ctrl.metadatas[0].valueType;
     };
 
     // Update pojos data.

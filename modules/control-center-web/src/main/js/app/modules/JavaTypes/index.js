@@ -19,16 +19,16 @@ import angular from 'angular';
 
 angular
     .module('ignite-console.JavaTypes', [])
-    .provider('JavaTypes', function () {
+    .provider('JavaTypes', function() {
         // Java built-in short class names.
         const _classes = [
             'BigDecimal', 'Boolean', 'Byte', 'Date', 'Double', 'Float', 'Integer', 'Long', 'Short', 'String', 'Time', 'Timestamp', 'UUID'
         ];
 
-        const _types = [
-            'BigDecimal', 'boolean', 'Boolean', 'byte', 'Byte', 'Date', 'double', 'Double', 'float', 'Float',
-            'int', 'Integer', 'long', 'Long', 'short', 'Short', 'String', 'Time', 'Timestamp', 'UUID'
-        ];
+        // TODO use later const _types = [
+        //    'BigDecimal', 'boolean', 'Boolean', 'byte', 'Byte', 'Date', 'double', 'Double', 'float', 'Float',
+        //    'int', 'Integer', 'long', 'Long', 'short', 'Short', 'String', 'Time', 'Timestamp', 'UUID'
+        // ];
 
         // Java built-in full class names.
         const _fullNameClasses = [
@@ -37,7 +37,7 @@ angular
             'java.sql.Time', 'java.sql.Timestamp', 'java.util.UUID'
         ];
 
-        this.$get = [function () {
+        this.$get = [function() {
             return {
                 /**
                  * @param cls Class name to check.
