@@ -111,11 +111,11 @@ namespace Apache.Ignite.Core
         IDataStreamer<TK, TV> GetDataStreamer<TK, TV>(string cacheName);
 
         /// <summary>
-        /// Gets an instance of <see cref="IIgniteBinary"/> interface.
+        /// Gets an instance of <see cref="IBinary"/> interface.
         /// </summary>
-        /// <returns>Instance of <see cref="IIgniteBinary"/> interface</returns>
+        /// <returns>Instance of <see cref="IBinary"/> interface</returns>
         [SuppressMessage("Microsoft.Design", "CA1024:UsePropertiesWhereAppropriate", Justification = "Semantics.")]
-        IIgniteBinary GetBinary();
+        IBinary GetBinary();
 
         /// <summary>
         /// Gets affinity service to provide information about data partitioning and distribution.
@@ -153,15 +153,15 @@ namespace Apache.Ignite.Core
 
         /// <summary>
         /// Gets an atomic long with specified name from cache.
-        /// Creates new atomic long in cache if it does not exist and <see cref="create"/> is true.
+        /// Creates new atomic long in cache if it does not exist and <c>create</c> is true.
         /// </summary>
         /// <param name="name">Name of the atomic long.</param>
         /// <param name="initialValue">
-        /// Initial value for the atomic long. Ignored if <see cref="create"/> is false.
+        /// Initial value for the atomic long. Ignored if <c>create</c> is false.
         /// </param>
         /// <param name="create">Flag indicating whether atomic long should be created if it does not exist.</param>
         /// <returns>Atomic long instance with specified name, 
-        /// or null if it does not exist and <see cref="create"/> flag is not set.</returns>
+        /// or null if it does not exist and <c>create</c> flag is not set.</returns>
         /// <exception cref="IgniteException">If atomic long could not be fetched or created.</exception>
         IAtomicLong GetAtomicLong(string name, long initialValue, bool create);
     }

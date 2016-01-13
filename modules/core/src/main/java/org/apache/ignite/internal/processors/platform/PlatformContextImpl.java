@@ -34,11 +34,12 @@ import org.apache.ignite.events.JobEvent;
 import org.apache.ignite.events.SwapSpaceEvent;
 import org.apache.ignite.events.TaskEvent;
 import org.apache.ignite.internal.GridKernalContext;
-import org.apache.ignite.internal.portable.BinaryRawReaderEx;
-import org.apache.ignite.internal.portable.BinaryRawWriterEx;
-import org.apache.ignite.internal.portable.BinaryTypeImpl;
-import org.apache.ignite.internal.portable.GridPortableMarshaller;
-import org.apache.ignite.internal.processors.cache.portable.CacheObjectBinaryProcessorImpl;
+import org.apache.ignite.internal.binary.BinaryRawReaderEx;
+import org.apache.ignite.internal.binary.BinaryRawWriterEx;
+import org.apache.ignite.internal.binary.BinaryReaderExImpl;
+import org.apache.ignite.internal.binary.BinaryTypeImpl;
+import org.apache.ignite.internal.binary.GridBinaryMarshaller;
+import org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl;
 import org.apache.ignite.internal.processors.platform.cache.PlatformCacheEntryFilter;
 import org.apache.ignite.internal.processors.platform.cache.PlatformCacheEntryFilterImpl;
 import org.apache.ignite.internal.processors.platform.cache.PlatformCacheEntryProcessor;
@@ -68,7 +69,6 @@ import org.apache.ignite.internal.processors.platform.utils.PlatformReaderBiClos
 import org.apache.ignite.internal.processors.platform.utils.PlatformReaderClosure;
 import org.apache.ignite.internal.processors.platform.utils.PlatformUtils;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.internal.util.typedef.T4;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.jetbrains.annotations.Nullable;
 
@@ -94,7 +94,7 @@ public class PlatformContextImpl implements PlatformContext {
     private final GridKernalContext ctx;
 
     /** Marshaller. */
-    private final GridPortableMarshaller marsh;
+    private final GridBinaryMarshaller marsh;
 
     /** Memory manager. */
     private final PlatformMemoryManagerImpl mem;
@@ -175,7 +175,11 @@ public class PlatformContextImpl implements PlatformContext {
 
     /** {@inheritDoc} */
     @Override public BinaryRawReaderEx reader(PlatformInputStream in) {
-        return marsh.reader(in);
+        return new BinaryReaderExImpl(marsh.context(),
+            in,
+            ctx.config().getClassLoader(),
+            null,
+            true);
     }
 
     /** {@inheritDoc} */
@@ -339,9 +343,9 @@ public class PlatformContextImpl implements PlatformContext {
     /** {@inheritDoc} */
     @SuppressWarnings("ConstantConditions")
     @Override public void processMetadata(BinaryRawReaderEx reader) {
-        Collection<T4<Integer, String, String, Map<String, Integer>>> metas = PlatformUtils.readCollection(reader,
-            new PlatformReaderClosure<T4<Integer, String, String, Map<String, Integer>>>() {
-                @Override public T4<Integer, String, String, Map<String, Integer>> read(BinaryRawReaderEx reader) {
+        Collection<Metadata> metas = PlatformUtils.readCollection(reader,
+            new PlatformReaderClosure<Metadata>() {
+                @Override public Metadata read(BinaryRawReaderEx reader) {
                     int typeId = reader.readInt();
                     String typeName = reader.readString();
                     String affKey = reader.readString();
@@ -353,13 +357,15 @@ public class PlatformContextImpl implements PlatformContext {
                             }
                         });
 
-                    return new T4<>(typeId, typeName, affKey, fields);
+                    boolean isEnum = reader.readBoolean();
+
+                    return new Metadata(typeId, typeName, affKey, fields, isEnum);
                 }
             }
         );
 
-        for (T4<Integer, String, String, Map<String, Integer>> meta : metas)
-            cacheObjProc.updateMetadata(meta.get1(), meta.get2(), meta.get3(), meta.get4());
+        for (Metadata meta : metas)
+            cacheObjProc.updateMetadata(meta.typeId, meta.typeName, meta.affKey, meta.fields, meta.isEnum);
     }
 
     /** {@inheritDoc} */
@@ -378,7 +384,7 @@ public class PlatformContextImpl implements PlatformContext {
     }
 
     /**
-     * Write portable metadata.
+     * Write binary metadata.
      *
      * @param writer Writer.
      * @param typeId Type id.
@@ -396,6 +402,7 @@ public class PlatformContextImpl implements PlatformContext {
             writer.writeString(meta.typeName());
             writer.writeString(meta.affinityKeyFieldName());
             writer.writeMap(fields);
+            writer.writeBoolean(meta.isEnum());
         }
     }
 
@@ -605,12 +612,49 @@ public class PlatformContextImpl implements PlatformContext {
     }
 
     /** {@inheritDoc} */
-    @Override public PlatformStreamReceiver createStreamReceiver(Object rcv, long ptr, boolean keepPortable) {
-        return new PlatformStreamReceiverImpl(rcv, ptr, keepPortable, this);
+    @Override public PlatformStreamReceiver createStreamReceiver(Object rcv, long ptr, boolean keepBinary) {
+        return new PlatformStreamReceiverImpl(rcv, ptr, keepBinary, this);
     }
 
     /** {@inheritDoc} */
     @Override public PlatformClusterNodeFilter createClusterNodeFilter(Object filter) {
         return new PlatformClusterNodeFilterImpl(filter, this);
+    }
+
+    /**
+     * Metadata holder.
+     */
+    private static class Metadata {
+        /** Type ID. */
+        private final int typeId;
+
+        /** Type name. */
+        private final String typeName;
+
+        /** Affinity key. */
+        private final String affKey;
+
+        /** Fields map. */
+        private final Map<String, Integer> fields;
+
+        /** Enum flag. */
+        private final boolean isEnum;
+
+        /**
+         * Constructor.
+         *
+         * @param typeId Type ID.
+         * @param typeName Type name.
+         * @param affKey Affinity key.
+         * @param fields Fields.
+         * @param isEnum Enum flag.
+         */
+        public Metadata(int typeId, String typeName, String affKey, Map<String, Integer> fields, boolean isEnum) {
+            this.typeId = typeId;
+            this.typeName = typeName;
+            this.affKey = affKey;
+            this.fields = fields;
+            this.isEnum = isEnum;
+        }
     }
 }

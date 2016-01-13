@@ -22,8 +22,8 @@ import java.util.Arrays;
 import java.util.Collection;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.Ignition;
-import org.apache.ignite.examples.binary.Address;
-import org.apache.ignite.examples.binary.Employee;
+import org.apache.ignite.examples.model.Address;
+import org.apache.ignite.examples.model.Employee;
 import org.apache.ignite.binary.BinaryObject;
 
 /**
@@ -34,11 +34,11 @@ import org.apache.ignite.binary.BinaryObject;
  * Since these objects are never deserialized on remote nodes, classes are not required on classpath
  * of these nodes.
  * <p>
- * Remote nodes should always be started with special configuration file which
- * enables the binary marshaller: {@code 'ignite.{sh|bat} examples/config/binary/example-ignite-binary.xml'}.
+ * Remote nodes should always be started with the following command:
+ * {@code 'ignite.{sh|bat} examples/config/example-ignite.xml'}.
  * <p>
- * Alternatively you can run {@link org.apache.ignite.examples.binary.ExampleBinaryNodeStartup} in another JVM which will
- * start node with {@code examples/config/binary/example-ignite-binary.xml} configuration.
+ * Alternatively you can run {@link org.apache.ignite.examples.ExampleNodeStartup} in another JVM which will
+ * start a node with {@code examples/config/example-ignite.xml} configuration.
  */
 public class ComputeClientBinaryTaskExecutionExample {
     /**
@@ -47,7 +47,7 @@ public class ComputeClientBinaryTaskExecutionExample {
      * @param args Command line arguments, none required.
      */
     public static void main(String[] args) {
-        try (Ignite ignite = Ignition.start("examples/config/binary/example-ignite-binary.xml")) {
+        try (Ignite ignite = Ignition.start("examples/config/example-ignite.xml")) {
             System.out.println();
             System.out.println(">>> Binary objects task execution example started.");
 

@@ -39,6 +39,9 @@ import static org.apache.ignite.events.EventType.EVT_CACHE_STOPPED;
  * Cache event manager.
  */
 public class GridCacheEventManager extends GridCacheManagerAdapter {
+    /** Force keep binary flag. Will be set if event notification encountered exception during unmarshalling. */
+    private boolean forceKeepBinary;
+
     /**
      * Adds local event listener.
      *
@@ -151,7 +154,7 @@ public class GridCacheEventManager extends GridCacheManagerAdapter {
         UUID subjId,
         String cloClsName,
         String taskName,
-        boolean keepPortable)
+        boolean keepBinary)
     {
         addEvent(part,
             key,
@@ -165,7 +168,7 @@ public class GridCacheEventManager extends GridCacheManagerAdapter {
             subjId,
             cloClsName,
             taskName,
-            keepPortable);
+            keepBinary);
     }
 
     /**
@@ -243,7 +246,7 @@ public class GridCacheEventManager extends GridCacheManagerAdapter {
         UUID subjId,
         @Nullable String cloClsName,
         @Nullable String taskName,
-        boolean keepPortable
+        boolean keepBinary
     ) {
         assert key != null || type == EVT_CACHE_STARTED || type == EVT_CACHE_STOPPED;
 
@@ -262,6 +265,35 @@ public class GridCacheEventManager extends GridCacheManagerAdapter {
                     "(try to increase topology history size configuration property of configured " +
                     "discovery SPI): " + evtNodeId);
 
+            keepBinary = keepBinary || forceKeepBinary;
+
+            Object key0;
+            Object val0;
+            Object oldVal0;
+
+            try {
+                key0 = cctx.cacheObjectContext().unwrapBinaryIfNeeded(key, keepBinary, false);
+                val0 = cctx.cacheObjectContext().unwrapBinaryIfNeeded(newVal, keepBinary, false);
+                oldVal0 = cctx.cacheObjectContext().unwrapBinaryIfNeeded(oldVal, keepBinary, false);
+            }
+            catch (Exception e) {
+                if (!cctx.cacheObjectContext().processor().isBinaryEnabled(cctx.config()))
+                    throw e;
+
+                if (log.isDebugEnabled())
+                    log.debug("Failed to unmarshall cache object value for the event notification: " + e);
+
+                if (!forceKeepBinary)
+                    LT.warn(log, null, "Failed to unmarshall cache object value for the event notification " +
+                        "(all further notifications will keep binary object format).");
+
+                forceKeepBinary = true;
+
+                key0 = cctx.cacheObjectContext().unwrapBinaryIfNeeded(key, true, false);
+                val0 = cctx.cacheObjectContext().unwrapBinaryIfNeeded(newVal, true, false);
+                oldVal0 = cctx.cacheObjectContext().unwrapBinaryIfNeeded(oldVal, true, false);
+            }
+
             cctx.gridEvents().record(new CacheEvent(cctx.name(),
                 cctx.localNode(),
                 evtNode,
@@ -269,12 +301,12 @@ public class GridCacheEventManager extends GridCacheManagerAdapter {
                 type,
                 part,
                 cctx.isNear(),
-                cctx.cacheObjectContext().unwrapPortableIfNeeded(key, keepPortable, false),
+                key0,
                 xid,
                 lockId,
-                cctx.cacheObjectContext().unwrapPortableIfNeeded(newVal, keepPortable, false),
+                val0,
                 hasNewVal,
-                cctx.cacheObjectContext().unwrapPortableIfNeeded(oldVal, keepPortable, false),
+                oldVal0,
                 hasOldVal,
                 subjId,
                 cloClsName,
@@ -344,7 +376,9 @@ public class GridCacheEventManager extends GridCacheManagerAdapter {
      * @return {@code True} if event is recordable.
      */
     public boolean isRecordable(int type) {
-        return cctx.userCache() && cctx.gridEvents().isRecordable(type);
+        GridCacheContext cctx0 = cctx;
+
+        return cctx0 != null && cctx0.userCache() && cctx0.gridEvents().isRecordable(type);
     }
 
     /** {@inheritDoc} */

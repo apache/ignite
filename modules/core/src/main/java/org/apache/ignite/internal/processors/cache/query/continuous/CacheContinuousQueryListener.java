@@ -81,6 +81,11 @@ interface CacheContinuousQueryListener<K, V> {
     public boolean oldValueRequired();
 
     /**
+     * @return Keep binary flag.
+     */
+    public boolean keepBinary();
+
+    /**
      * @return Whether to notify on existing entries.
      */
     public boolean notifyExisting();

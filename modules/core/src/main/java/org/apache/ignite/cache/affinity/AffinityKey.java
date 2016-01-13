@@ -64,6 +64,7 @@ public class AffinityKey<K> implements Externalizable {
     private K key;
 
     /** Affinity key. */
+    @AffinityKeyMapped
     @GridToStringInclude
     private Object affKey;
 
@@ -126,7 +127,6 @@ public class AffinityKey<K> implements Externalizable {
      *
      * @return Affinity key to use for affinity mapping.
      */
-    @AffinityKeyMapped
     @SuppressWarnings({"unchecked"})
     public <T> T affinityKey() {
         A.notNull(key, "key");

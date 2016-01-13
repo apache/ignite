@@ -329,6 +329,19 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
      * @return {@code True} if cache was added during this exchange.
      */
     public boolean isCacheAdded(int cacheId, AffinityTopologyVersion topVer) {
+        if (cacheStarted(cacheId))
+            return true;
+
+        GridCacheContext<?, ?> cacheCtx = cctx.cacheContext(cacheId);
+
+        return cacheCtx != null && F.eq(cacheCtx.startTopologyVersion(), topVer);
+    }
+
+    /**
+     * @param cacheId Cache ID.
+     * @return {@code True} if non-client cache was added during this exchange.
+     */
+    private boolean cacheStarted(int cacheId) {
         if (!F.isEmpty(reqs)) {
             for (DynamicCacheChangeRequest req : reqs) {
                 if (req.start() && !req.clientStartOnly()) {
@@ -338,9 +351,7 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
             }
         }
 
-        GridCacheContext<?, ?> cacheCtx = cctx.cacheContext(cacheId);
-
-        return cacheCtx != null && F.eq(cacheCtx.startTopologyVersion(), topVer);
+        return false;
     }
 
     /**
@@ -419,7 +430,8 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
         // If local node did not initiate exchange or local node is the only cache node in grid.
         Collection<ClusterNode> affNodes = CU.affinityNodes(cacheCtx, exchId.topologyVersion());
 
-        return !exchId.nodeId().equals(cctx.localNodeId()) ||
+        return cacheStarted(cacheCtx.cacheId()) ||
+            !exchId.nodeId().equals(cctx.localNodeId()) ||
             (affNodes.size() == 1 && affNodes.contains(cctx.localNode()));
     }
 
@@ -754,6 +766,9 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
                 // Assign to class variable so it will be included into toString() method.
                 this.partReleaseFut = partReleaseFut;
 
+                if (exchId.isLeft())
+                    cctx.mvcc().removeExplicitNodeLocks(exchId.nodeId(), exchId.topologyVersion());
+
                 if (log.isDebugEnabled())
                     log.debug("Before waiting for partition release future: " + this);
 
@@ -777,9 +792,6 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
 
                 if (log.isDebugEnabled())
                     log.debug("After waiting for partition release future: " + this);
-
-                if (exchId.isLeft())
-                    cctx.mvcc().removeExplicitNodeLocks(exchId.nodeId(), exchId.topologyVersion());
 
                 IgniteInternalFuture<?> locksFut = cctx.mvcc().finishLocks(exchId.topologyVersion());
 
@@ -910,8 +922,8 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
      *
      */
     private void dumpPendingObjects() {
-        U.warn(log, "Failed to wait for partition release future. Dumping pending objects that might be the cause: " +
-            cctx.localNodeId());
+        U.warn(log, "Failed to wait for partition release future [topVer=" + topologyVersion() +
+            ", node=" + cctx.localNodeId() + "]. Dumping pending objects that might be the cause: ");
 
         cctx.exchange().dumpPendingObjects();
     }
@@ -1015,9 +1027,8 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
                 if (ready) {
                     GridDhtPartitionFullMap locMap = cacheCtx.topology().partitionMap(true);
 
-                    if (useOldApi) {
+                    if (useOldApi)
                         locMap = new GridDhtPartitionFullMap(locMap.nodeId(), locMap.nodeOrder(), locMap.updateSequence(), locMap);
-                    }
 
                     m.addFullPartitionsMap(cacheCtx.cacheId(), locMap);
 

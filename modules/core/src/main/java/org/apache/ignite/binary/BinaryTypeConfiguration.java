@@ -17,9 +17,10 @@
 
 package org.apache.ignite.binary;
 
-import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.BinaryConfiguration;
+import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.util.typedef.internal.A;
+import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
  * Defines configuration properties for a specific binary type. Providing per-type
@@ -38,10 +39,28 @@ public class BinaryTypeConfiguration {
     /** Serializer. */
     private BinarySerializer serializer;
 
+    /** Enum flag. */
+    private boolean isEnum;
+
     /**
+     * Constructor.
      */
     public BinaryTypeConfiguration() {
         // No-op.
+    }
+
+    /**
+     * Copying constructor.
+     *
+     * @param other Other instance.
+     */
+    public BinaryTypeConfiguration(BinaryTypeConfiguration other) {
+        A.notNull(other, "other");
+
+        typeName = other.typeName;
+        idMapper = other.idMapper;
+        serializer = other.serializer;
+        isEnum = other.isEnum;
     }
 
     /**
@@ -103,6 +122,24 @@ public class BinaryTypeConfiguration {
      */
     public void setSerializer(BinarySerializer serializer) {
         this.serializer = serializer;
+    }
+
+    /**
+     * Gets whether this is enum type.
+     *
+     * @return {@code True} if enum.
+     */
+    public boolean isEnum() {
+        return isEnum;
+    }
+
+    /**
+     * Sets whether this is enum type.
+     *
+     * @param isEnum {@code True} if enum.
+     */
+    public void setEnum(boolean isEnum) {
+        this.isEnum = isEnum;
     }
 
     /** {@inheritDoc} */

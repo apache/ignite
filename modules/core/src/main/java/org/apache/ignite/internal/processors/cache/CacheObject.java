@@ -31,6 +31,9 @@ public interface CacheObject extends Message {
     /** */
     public static final byte TYPE_BYTE_ARR = 2;
 
+    /** */
+    public static final byte TYPE_BINARY = 100;
+
     /**
      * @param ctx Context.
      * @param cpy If {@code true} need to copy value.

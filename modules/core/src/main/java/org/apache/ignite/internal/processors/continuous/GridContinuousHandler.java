@@ -130,17 +130,22 @@ public interface GridContinuousHandler extends Externalizable, Cloneable {
     /**
      * @return {@code True} if for events.
      */
-    public boolean isForEvents();
+    public boolean isEvents();
 
     /**
      * @return {@code True} if for messaging.
      */
-    public boolean isForMessaging();
+    public boolean isMessaging();
 
     /**
      * @return {@code True} if for continuous queries.
      */
-    public boolean isForQuery();
+    public boolean isQuery();
+
+    /**
+     * @return {@code True} if Ignite Binary objects should be passed to the listener and filter.
+     */
+    public boolean keepBinary();
 
     /**
      * @return Cache name if this is a continuous query handler.

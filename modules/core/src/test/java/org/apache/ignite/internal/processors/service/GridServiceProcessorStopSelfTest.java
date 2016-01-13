@@ -17,20 +17,31 @@
 
 package org.apache.ignite.internal.processors.service;
 
+import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteServices;
 import org.apache.ignite.Ignition;
+import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.services.Service;
 import org.apache.ignite.services.ServiceContext;
+import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 /**
  * Tests that {@link GridServiceProcessor} completes deploy/undeploy futures during node stop.
  */
 public class GridServiceProcessorStopSelfTest extends GridCommonAbstractTest {
+    /** {@inheritDoc} */
+    @Override protected void afterTest() throws Exception {
+        stopAllGrids();
+
+        super.afterTest();
+    }
+
     /**
      * @throws Exception If failed.
      */
@@ -41,8 +52,8 @@ public class GridServiceProcessorStopSelfTest extends GridCommonAbstractTest {
 
         final Ignite ignite = startGrid(0);
 
-        Thread t = new Thread(new Runnable() {
-            @Override public void run() {
+        IgniteInternalFuture<?> fut = GridTestUtils.runAsync(new Callable<Void>() {
+            @Override public Void call() throws Exception {
                 IgniteServices svcs = ignite.services();
 
                 IgniteServices services = svcs.withAsync();
@@ -57,25 +68,33 @@ public class GridServiceProcessorStopSelfTest extends GridCommonAbstractTest {
                 catch (IgniteException e) {
                     finishLatch.countDown();
                 }
-                catch (Throwable e) {
-                    log.error("Service deployment error: ", e);
+                finally {
+                    finishLatch.countDown();
                 }
-            }
-        });
 
-        t.start();
+                return null;
+            }
+        }, "deploy-thread");
 
         depLatch.await();
 
         Ignition.stopAll(true);
 
-        assertTrue("Deploy future isn't completed", finishLatch.await(15, TimeUnit.SECONDS));
+        boolean wait = finishLatch.await(15, TimeUnit.SECONDS);
+
+        if (!wait)
+            U.dumpThreads(log);
+
+        assertTrue("Deploy future isn't completed", wait);
+
+        fut.get();
     }
 
     /**
      * Simple map service.
      */
     public interface TestService {
+        // No-op.
     }
 
     /**

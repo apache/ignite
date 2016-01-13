@@ -88,7 +88,7 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
      *          if called on backup node.
      * @param subjId Subject ID.
      * @param taskName Task name.
-     * @param deserializePortable Deserialize portable flag.
+     * @param deserializeBinary Deserialize binary flag.
      * @param expiryPlc Expiry policy.
      * @param skipVals Skip values flag.
      * @param canRemap Flag indicating whether future can be remapped on a newer topology version.
@@ -103,7 +103,7 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
         boolean forcePrimary,
         @Nullable UUID subjId,
         String taskName,
-        boolean deserializePortable,
+        boolean deserializeBinary,
         @Nullable IgniteCacheExpiryPolicy expiryPlc,
         boolean skipVals,
         boolean canRemap,
@@ -116,7 +116,7 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
             forcePrimary,
             subjId,
             taskName,
-            deserializePortable,
+            deserializeBinary,
             expiryPlc,
             skipVals,
             canRemap,
@@ -133,10 +133,19 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
      * Initializes future.
      */
     public void init() {
-        AffinityTopologyVersion topVer = this.topVer.topologyVersion() > 0 ? this.topVer :
-            canRemap ? cctx.affinity().affinityTopologyVersion() : cctx.shared().exchange().readyAffinityVersion();
+        AffinityTopologyVersion lockedTopVer = cctx.shared().lockedTopologyVersion(null);
 
-        map(keys, Collections.<ClusterNode, LinkedHashMap<KeyCacheObject, Boolean>>emptyMap(), topVer);
+        if (lockedTopVer != null) {
+            canRemap = false;
+
+            map(keys, Collections.<ClusterNode, LinkedHashMap<KeyCacheObject, Boolean>>emptyMap(), lockedTopVer);
+        }
+        else {
+            AffinityTopologyVersion topVer = this.topVer.topologyVersion() > 0 ? this.topVer :
+                canRemap ? cctx.affinity().affinityTopologyVersion() : cctx.shared().exchange().readyAffinityVersion();
+
+            map(keys, Collections.<ClusterNode, LinkedHashMap<KeyCacheObject, Boolean>>emptyMap(), topVer);
+        }
 
         markInitialized();
     }
@@ -400,7 +409,7 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
                                     null,
                                     taskName,
                                     expiryPlc,
-                                    !deserializePortable);
+                                    !deserializeBinary);
 
                                 if (res != null) {
                                     v = res.get1();
@@ -420,7 +429,7 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
                                     null,
                                     taskName,
                                     expiryPlc,
-                                    !deserializePortable);
+                                    !deserializeBinary);
                             }
 
                             colocated.context().evicts().touch(entry, topVer);
@@ -439,7 +448,7 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
                                         v,
                                         skipVals,
                                         keepCacheObjects,
-                                        deserializePortable,
+                                        deserializeBinary,
                                         true);
 
                                 return false;
@@ -465,7 +474,7 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
                 LinkedHashMap<KeyCacheObject, Boolean> keys = mapped.get(node);
 
                 if (keys != null && keys.containsKey(key)) {
-                    if (remapCnt.incrementAndGet() > MAX_REMAP_CNT) {
+                    if (REMAP_CNT_UPD.incrementAndGet(this) > MAX_REMAP_CNT) {
                         onDone(new ClusterTopologyCheckedException("Failed to remap key to a new node after " +
                             MAX_REMAP_CNT + " attempts (key got remapped to the same node) [key=" + key + ", node=" +
                             U.toShortString(node) + ", mappings=" + mapped + ']'));
@@ -524,7 +533,7 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
                         info.value(),
                         skipVals,
                         keepCacheObjects,
-                        deserializePortable,
+                        deserializeBinary,
                         false);
                 }
             }

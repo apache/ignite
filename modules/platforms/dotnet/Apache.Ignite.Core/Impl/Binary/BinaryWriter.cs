@@ -20,6 +20,7 @@ namespace Apache.Ignite.Core.Impl.Binary
     using System;
     using System.Collections;
     using System.Collections.Generic;
+    using System.Diagnostics;
     using System.IO;
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Impl.Binary.IO;
@@ -44,7 +45,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         private BinaryHandleDictionary<object, long> _hnds;
 
         /** Metadatas collected during this write session. */
-        private IDictionary<int, IBinaryType> _metas;
+        private IDictionary<int, BinaryType> _metas;
 
         /** Current type ID. */
         private int _curTypeId;
@@ -792,8 +793,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         {
             WriteFieldId(fieldName, BinaryUtils.TypeEnum);
 
-            _stream.WriteByte(BinaryUtils.TypeEnum);
-            BinaryUtils.WriteEnum(_stream, (Enum)(object)val);
+            WriteEnum(val);
         }
 
         /// <summary>
@@ -803,8 +803,28 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// <param name="val">Enum value.</param>
         public void WriteEnum<T>(T val)
         {
-            _stream.WriteByte(BinaryUtils.TypeEnum);
-            BinaryUtils.WriteEnum(_stream, (Enum)(object)val);
+            if (val == null)
+                WriteNullField();
+            else
+            {
+                var desc = _marsh.GetDescriptor(val.GetType());
+
+                if (desc != null)
+                {
+                    var metaHnd = _marsh.GetBinaryTypeHandler(desc);
+
+                    _stream.WriteByte(BinaryUtils.TypeEnum);
+
+                    BinaryUtils.WriteEnum(this, val);
+
+                    SaveMetadata(desc, metaHnd.OnObjectWriteFinished());
+                }
+                else
+                {
+                    // Unregistered enum, write as serializable
+                    Write(new SerializableObjectHolder(val));
+                }
+            }
         }
 
         /// <summary>
@@ -817,13 +837,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         {
             WriteFieldId(fieldName, BinaryUtils.TypeArrayEnum);
 
-            if (val == null)
-                WriteNullField();
-            else
-            {
-                _stream.WriteByte(BinaryUtils.TypeArrayEnum);
-                BinaryUtils.WriteArray(val, this);
-            }
+            WriteEnumArray(val);
         }
 
         /// <summary>
@@ -833,12 +847,25 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// <param name="val">Enum array.</param>
         public void WriteEnumArray<T>(T[] val)
         {
+            WriteEnumArrayInternal(val, null);
+        }
+
+        /// <summary>
+        /// Writes the enum array.
+        /// </summary>
+        /// <param name="val">The value.</param>
+        /// <param name="elementTypeId">The element type id.</param>
+        public void WriteEnumArrayInternal(Array val, int? elementTypeId)
+        {
             if (val == null)
-                WriteNullRawField();
+                WriteNullField();
             else
             {
                 _stream.WriteByte(BinaryUtils.TypeArrayEnum);
-                BinaryUtils.WriteArray(val, this);
+
+                var elTypeId = elementTypeId ?? BinaryUtils.GetEnumTypeId(val.GetType().GetElementType(), Marshaller);
+
+                BinaryUtils.WriteArray(val, this, elTypeId);
             }
         }
 
@@ -1039,6 +1066,14 @@ namespace Apache.Ignite.Core.Impl.Binary
             if (type.IsPrimitive)
             {
                 WritePrimitive(obj, type);
+
+                return;
+            }
+
+            // Handle enums.
+            if (type.IsEnum)
+            {
+                WriteEnum(obj);
 
                 return;
             }
@@ -1348,9 +1383,9 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// Gets collected metadatas.
         /// </summary>
         /// <returns>Collected metadatas (if any).</returns>
-        internal IDictionary<int, IBinaryType> GetBinaryTypes()
+        internal ICollection<BinaryType> GetBinaryTypes()
         {
-            return _metas;
+            return _metas == null ? null : _metas.Values;
         }
 
         /// <summary>
@@ -1391,37 +1426,38 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// <summary>
         /// Saves metadata for this session.
         /// </summary>
-        /// <param name="typeId">Type ID.</param>
-        /// <param name="typeName">Type name.</param>
-        /// <param name="affKeyFieldName">Affinity key field name.</param>
+        /// <param name="desc">The descriptor.</param>
         /// <param name="fields">Fields metadata.</param>
-        internal void SaveMetadata(int typeId, string typeName, string affKeyFieldName, IDictionary<string, int> fields)
+        internal void SaveMetadata(IBinaryTypeDescriptor desc, IDictionary<string, int> fields)
         {
+            Debug.Assert(desc != null);
+
             if (_metas == null)
             {
-                BinaryType meta =
-                    new BinaryType(typeId, typeName, fields, affKeyFieldName);
-
-                _metas = new Dictionary<int, IBinaryType>(1);
-
-                _metas[typeId] = meta;
+                _metas = new Dictionary<int, BinaryType>(1)
+                {
+                    {desc.TypeId, new BinaryType(desc, fields)}
+                };
             }
             else
             {
-                IBinaryType meta;
+                BinaryType meta;
 
-                if (_metas.TryGetValue(typeId, out meta))
+                if (_metas.TryGetValue(desc.TypeId, out meta))
                 {
-                    IDictionary<string, int> existingFields = ((BinaryType)meta).FieldsMap();
-
-                    foreach (KeyValuePair<string, int> field in fields)
+                    if (fields != null)
                     {
-                        if (!existingFields.ContainsKey(field.Key))
-                            existingFields[field.Key] = field.Value;
+                        IDictionary<string, int> existingFields = meta.GetFieldsMap();
+
+                        foreach (KeyValuePair<string, int> field in fields)
+                        {
+                            if (!existingFields.ContainsKey(field.Key))
+                                existingFields[field.Key] = field.Value;
+                        }
                     }
                 }
                 else
-                    _metas[typeId] = new BinaryType(typeId, typeName, fields, affKeyFieldName);
+                    _metas[desc.TypeId] = new BinaryType(desc, fields);
             }
         }
     }

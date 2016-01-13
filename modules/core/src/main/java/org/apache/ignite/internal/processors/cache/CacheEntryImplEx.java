@@ -78,7 +78,18 @@ public class CacheEntryImplEx<K, V> extends CacheEntryImpl<K, V> implements Cach
 
     /** {@inheritDoc} */
     public String toString() {
-        return "VersionedEntry [key=" + getKey() + ", val=" + getValue() + ", topVer=" + ver.topologyVersion() +
-            ", nodeOrder=" + ver.nodeOrder() + ", order=" + ver.order() + ", updateTime=" + ver.globalTime() + ']';
+        String res = "CacheEntry [key=" + getKey() +
+            ", val=" + getValue();
+
+        if (ver != null) {
+            res += ", topVer=" + ver.topologyVersion() +
+                ", nodeOrder=" + ver.nodeOrder() +
+                ", order=" + ver.order() +
+                ", updateTime=" + ver.globalTime();
+        }
+        else
+            res += ", ver=n/a";
+
+        return res + ']';
     }
 }

@@ -55,6 +55,7 @@ import org.apache.ignite.internal.processors.GridProcessorAdapter;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
+import org.apache.ignite.internal.processors.cache.query.continuous.CacheContinuousQueryHandler;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutObject;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
@@ -210,28 +211,24 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
                         if (msg.errs().isEmpty()) {
                             LocalRoutineInfo routine = locInfos.get(msg.routineId());
 
-                            if (routine != null && routine.handler().isForQuery()) {
-                                try {
-                                    Map<Integer, Long> cntrs = msg.updateCounters();
+                            // Update partition counters.
+                            if (routine != null && routine.handler().isQuery()) {
+                                Map<Integer, Long> cntrs = msg.updateCounters();
 
-                                    GridCacheAdapter<Object, Object> interCache =
-                                        ctx.cache().internalCache(routine.handler().cacheName());
+                                GridCacheAdapter<Object, Object> interCache =
+                                    ctx.cache().internalCache(routine.handler().cacheName());
 
-                                    if (interCache != null && cntrs != null && interCache.context() != null
-                                        && !interCache.isLocal() && !CU.clientNode(ctx.grid().localNode())) {
-                                        Map<Integer, Long> map = interCache.context().topology().updateCounters();
+                                if (interCache != null && cntrs != null && interCache.context() != null
+                                    && !interCache.isLocal() && !CU.clientNode(ctx.grid().localNode())) {
+                                    Map<Integer, Long> map = interCache.context().topology().updateCounters();
 
-                                        for (Map.Entry<Integer, Long> e : map.entrySet()) {
-                                            Long cntr0 = cntrs.get(e.getKey());
-                                            Long cntr1 = e.getValue();
+                                    for (Map.Entry<Integer, Long> e : map.entrySet()) {
+                                        Long cntr0 = cntrs.get(e.getKey());
+                                        Long cntr1 = e.getValue();
 
-                                            if (cntr0 == null || cntr1 > cntr0)
-                                                cntrs.put(e.getKey(), cntr1);
-                                        }
+                                        if (cntr0 == null || cntr1 > cntr0)
+                                            cntrs.put(e.getKey(), cntr1);
                                     }
-                                }
-                                catch (Exception e) {
-                                    U.warn(log, "Failed to load update counters.", e);
                                 }
 
                                 routine.handler().updateCounters(msg.updateCounters());
@@ -496,7 +493,7 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
 
             GridContinuousHandler hnd = rmtInfo.hnd;
 
-            if (hnd.isForQuery() && F.eq(ctx.name(), hnd.cacheName()) && rmtInfo.clearDelayedRegister()) {
+            if (hnd.isQuery() && F.eq(ctx.name(), hnd.cacheName()) && rmtInfo.clearDelayedRegister()) {
                 GridContinuousHandler.RegisterStatus status = hnd.register(rmtInfo.nodeId, routineId, this.ctx);
 
                 assert status != GridContinuousHandler.RegisterStatus.DELAYED;
@@ -518,7 +515,7 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
 
             GridContinuousHandler hnd = entry.getValue().hnd;
 
-            if (hnd.isForQuery() && F.eq(ctx.name(), hnd.cacheName()))
+            if (hnd.isQuery() && F.eq(ctx.name(), hnd.cacheName()))
                 it.remove();
         }
     }
@@ -612,7 +609,8 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
             if (locIncluded && registerHandler(ctx.localNodeId(), routineId, hnd, bufSize, interval, autoUnsubscribe, true))
                 hnd.onListenerRegistered(routineId, ctx);
 
-            ctx.discovery().sendCustomEvent(new StartRoutineDiscoveryMessage(routineId, reqData));
+            ctx.discovery().sendCustomEvent(new StartRoutineDiscoveryMessage(routineId, reqData,
+                reqData.handler().keepBinary()));
         }
         catch (IgniteCheckedException e) {
             startFuts.remove(routineId);
@@ -822,6 +820,12 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
 
         GridContinuousHandler hnd = data.handler();
 
+        if (req.keepBinary()) {
+            assert hnd instanceof CacheContinuousQueryHandler;
+
+            ((CacheContinuousQueryHandler)hnd).keepBinary(true);
+        }
+
         IgniteCheckedException err = null;
 
         try {
@@ -888,16 +892,12 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
             }
         }
 
-        try {
-            if (hnd.isForQuery() && ctx.cache() != null && ctx.cache().internalCache(hnd.cacheName()) != null) {
-                Map<Integer, Long> cntrs = ctx.cache().internalCache(hnd.cacheName())
-                    .context().topology().updateCounters();
+        // Load partition counters.
+        if (hnd.isQuery() && ctx.cache() != null && ctx.cache().internalCache(hnd.cacheName()) != null) {
+            Map<Integer, Long> cntrs = ctx.cache().internalCache(hnd.cacheName())
+                .context().topology().updateCounters();
 
-                req.addUpdateCounters(cntrs);
-            }
-        }
-        catch (Exception e) {
-            U.warn(log, "Failed to load partition counters.", e);
+            req.addUpdateCounters(cntrs);
         }
 
         if (err != null)
@@ -1319,7 +1319,7 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
          * Marks info to be registered when cache is started.
          */
         public void markDelayedRegister() {
-            assert hnd.isForQuery();
+            assert hnd.isQuery();
 
             delayedRegister = true;
         }

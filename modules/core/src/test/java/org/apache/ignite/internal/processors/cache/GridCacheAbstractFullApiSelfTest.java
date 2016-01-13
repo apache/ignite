@@ -38,6 +38,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.Lock;
 import javax.cache.Cache;
+import javax.cache.CacheException;
 import javax.cache.expiry.Duration;
 import javax.cache.expiry.ExpiryPolicy;
 import javax.cache.expiry.TouchedExpiryPolicy;
@@ -106,6 +107,7 @@ import static org.apache.ignite.events.EventType.EVT_CACHE_OBJECT_SWAPPED;
 import static org.apache.ignite.events.EventType.EVT_CACHE_OBJECT_UNLOCKED;
 import static org.apache.ignite.events.EventType.EVT_CACHE_OBJECT_UNSWAPPED;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
+import static org.apache.ignite.testframework.GridTestUtils.waitForCondition;
 import static org.apache.ignite.transactions.TransactionConcurrency.OPTIMISTIC;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
 import static org.apache.ignite.transactions.TransactionIsolation.READ_COMMITTED;
@@ -118,6 +120,9 @@ import static org.apache.ignite.transactions.TransactionState.COMMITTED;
  */
 @SuppressWarnings("TransientFieldInNonSerializableClass")
 public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstractSelfTest {
+    /** Test timeout */
+    private static final long TEST_TIMEOUT = 60 * 1000;
+
     /** */
     public static final CacheEntryProcessor<String, Integer, String> ERR_PROCESSOR =
         new CacheEntryProcessor<String, Integer, String>() {
@@ -162,6 +167,11 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
 
     /** */
     private Map<String, CacheConfiguration[]> cacheCfgMap;
+
+    /** {@inheritDoc} */
+    @Override protected long getTestTimeout() {
+        return TEST_TIMEOUT;
+    }
 
     /** {@inheritDoc} */
     @Override protected int gridCount() {
@@ -2392,6 +2402,60 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
     /**
      * @throws Exception If failed.
      */
+    public void testGetAndRemoveObject() throws Exception {
+        IgniteCache<String, TestValue> cache = ignite(0).cache(null);
+
+        TestValue val1 = new TestValue(1);
+        TestValue val2 = new TestValue(2);
+
+        cache.put("key1", val1);
+        cache.put("key2", val2);
+
+        assert !cache.remove("key1", new TestValue(0));
+
+        TestValue oldVal = cache.get("key1");
+
+        assert oldVal != null && F.eq(val1, oldVal);
+
+        assert cache.remove("key1");
+
+        assert cache.get("key1") == null;
+
+        TestValue oldVal2 = cache.getAndRemove("key2");
+
+        assert F.eq(val2, oldVal2);
+
+        assert cache.get("key2") == null;
+        assert cache.getAndRemove("key2") == null;
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testGetAndPutObject() throws Exception {
+        IgniteCache<String, TestValue> cache = ignite(0).cache(null);
+
+        TestValue val1 = new TestValue(1);
+        TestValue val2 = new TestValue(2);
+
+        cache.put("key1", val1);
+
+        TestValue oldVal = cache.get("key1");
+
+        assertEquals(val1, oldVal);
+
+        oldVal = cache.getAndPut("key1", val2);
+
+        assertEquals(val1, oldVal);
+
+        TestValue updVal = cache.get("key1");
+
+        assertEquals(val2, updVal);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
     public void testDeletedEntriesFlag() throws Exception {
         if (cacheMode() != LOCAL && cacheMode() != REPLICATED && memoryMode() != OFFHEAP_TIERED) {
             final int cnt = 3;
@@ -3161,9 +3225,9 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
      * @throws Exception In case of error.
      */
     public void testEvictExpired() throws Exception {
-        IgniteCache<String, Integer> cache = jcache();
+        final IgniteCache<String, Integer> cache = jcache();
 
-        String key = primaryKeysForCache(cache, 1).get(0);
+        final String key = primaryKeysForCache(cache, 1).get(0);
 
         cache.put(key, 1);
 
@@ -3175,7 +3239,13 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
 
         grid(0).cache(null).withExpiryPolicy(expiry).put(key, 1);
 
-        Thread.sleep(ttl + 100);
+        boolean wait = waitForCondition(new GridAbsPredicate() {
+            @Override public boolean apply() {
+                return cache.localPeek(key) == null;
+            }
+        }, ttl + 1000);
+
+        assertTrue("Failed to wait for entry expiration.", wait);
 
         // Expired entry should not be swapped.
         cache.localEvict(Collections.singleton(key));
@@ -3207,9 +3277,9 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
      * @throws Exception If failed.
      */
     public void testPeekExpired() throws Exception {
-        IgniteCache<String, Integer> c = jcache();
+        final IgniteCache<String, Integer> c = jcache();
 
-        String key = primaryKeysForCache(c, 1).get(0);
+        final String key = primaryKeysForCache(c, 1).get(0);
 
         info("Using key: " + key);
 
@@ -3225,6 +3295,12 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
 
         Thread.sleep(ttl + 100);
 
+        GridTestUtils.waitForCondition(new GridAbsPredicate() {
+            @Override public boolean apply() {
+                return peek(c, key) == null;
+            }
+        }, 2000);
+
         assert peek(c, key) == null;
 
         assert c.localSize() == 0 : "Cache is not empty.";
@@ -3237,9 +3313,9 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
      */
     public void testPeekExpiredTx() throws Exception {
         if (txShouldBeUsed()) {
-            IgniteCache<String, Integer> c = jcache();
+            final IgniteCache<String, Integer> c = jcache();
 
-            String key = "1";
+            final String key = "1";
             int ttl = 500;
 
             try (Transaction tx = grid(0).transactions().txStart()) {
@@ -3250,9 +3326,13 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
                 tx.commit();
             }
 
-            Thread.sleep(ttl + 100);
+            GridTestUtils.waitForCondition(new GridAbsPredicate() {
+                @Override public boolean apply() {
+                    return peek(c, key) == null;
+                }
+            }, 2000);
 
-            assertNull(c.localPeek(key, ONHEAP));
+            assertNull(peek(c, key));
 
             assert c.localSize() == 0;
         }
@@ -3738,9 +3818,9 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
      * @throws Exception If failed.
      */
     public void testCompactExpired() throws Exception {
-        IgniteCache<String, Integer> cache = jcache();
+        final IgniteCache<String, Integer> cache = jcache();
 
-        String key = F.first(primaryKeysForCache(cache, 1));
+        final String key = F.first(primaryKeysForCache(cache, 1));
 
         cache.put(key, 1);
 
@@ -3750,10 +3830,14 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
 
         grid(0).cache(null).withExpiryPolicy(expiry).put(key, 1);
 
-        Thread.sleep(ttl + 100);
+        waitForCondition(new GridAbsPredicate() {
+            @Override public boolean apply() {
+                return cache.localPeek(key) == null;
+            }
+        }, ttl + 1000);
 
         // Peek will actually remove entry from cache.
-        assertNull(cache.localPeek(key, ONHEAP));
+        assertNull(cache.localPeek(key));
 
         assert cache.localSize() == 0;
 
@@ -4072,8 +4156,6 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
      * @throws Exception If failed.
      */
     public void testIgniteCacheIterator() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-1756");
-
         IgniteCache<String, Integer> cache = jcache(0);
 
         Iterator<Cache.Entry<String, Integer>> it = cache.iterator();
@@ -5128,6 +5210,43 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
     }
 
     /**
+     * @throws Exception If failed.
+     */
+    public void testLockInsideTransaction() throws Exception {
+        if (txEnabled()) {
+            GridTestUtils.assertThrows(
+                log,
+                new Callable<Object>() {
+                    @Override public Object call() throws Exception {
+                        try (Transaction tx = ignite(0).transactions().txStart()) {
+                            jcache(0).lock("key").lock();
+                        }
+
+                        return null;
+                    }
+                },
+                CacheException.class,
+                "Explicit lock can't be acquired within a transaction."
+            );
+
+            GridTestUtils.assertThrows(
+                log,
+                new Callable<Object>() {
+                    @Override public Object call() throws Exception {
+                        try (Transaction tx = ignite(0).transactions().txStart()) {
+                            jcache(0).lockAll(Arrays.asList("key1", "key2")).lock();
+                        }
+
+                        return null;
+                    }
+                },
+                CacheException.class,
+                "Explicit lock can't be acquired within a transaction."
+            );
+        }
+    }
+
+    /**
      * Sets given value, returns old value.
      */
     public static final class SetValueProcessor implements EntryProcessor<String, Integer, Integer> {
@@ -5438,6 +5557,49 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
         /** {@inheritDoc} */
         @Override public Integer process(MutableEntry<String, Integer> e, Object... args) {
             throw new EntryProcessorException("Test entry processor exception.");
+        }
+    }
+
+    /**
+     *
+     */
+    private static class TestValue implements Serializable {
+        /** */
+        private int val;
+
+        /**
+         * @param val Value.
+         */
+        TestValue(int val) {
+            this.val = val;
+        }
+
+        /**
+         * @return Value.
+         */
+        public int value() {
+            return val;
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean equals(Object o) {
+            if (this == o)
+                return true;
+
+            if (!(o instanceof TestValue))
+                return false;
+
+            TestValue value = (TestValue)o;
+
+            if (val != value.val)
+                return false;
+
+            return true;
+        }
+
+        /** {@inheritDoc} */
+        @Override public int hashCode() {
+            return val;
         }
     }
 }
