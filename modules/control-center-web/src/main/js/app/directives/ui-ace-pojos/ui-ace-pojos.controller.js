@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-export default ['$scope', 'IgniteUiAceOnLoad', function($scope, onLoad) {
+export default ['$scope', 'IgniteUiAceOnLoad', 'JavaTypes', function($scope, onLoad, JavaTypes) {
     const ctrl = this;
 
     // Scope methods.
@@ -50,7 +50,7 @@ export default ['$scope', 'IgniteUiAceOnLoad', function($scope, onLoad) {
         const classes = ctrl.classes = [];
 
         _.forEach(ctrl.metadatas, (meta) => {
-            if (meta.keyType)
+            if (meta.keyType && !JavaTypes.isBuildInClass(meta.keyType))
                 classes.push(meta.keyType);
 
             classes.push(meta.valueType);
