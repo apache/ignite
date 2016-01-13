@@ -308,8 +308,6 @@ $generatorCommon.STORE_FACTORIES = {
         className: 'org.apache.ignite.cache.store.jdbc.CacheJdbcBlobStoreFactory',
         suffix: 'JdbcBlob',
         fields: {
-            user: null,
-            dataSourceBean: null,
             initSchema: null,
             createTableQuery: null,
             loadQuery: null,
@@ -448,7 +446,7 @@ $generatorCommon.cacheHasDatasource = function (cache) {
 
         var storeFactory = cache.cacheStoreFactory[factoryKind];
 
-        if (storeFactory && storeFactory.dialect) {
+        if (storeFactory && (storeFactory.dialect || storeFactory.database)) {
             return true;
         }
     }
@@ -463,5 +461,5 @@ $generatorCommon.secretPropertiesNeeded = function (cluster) {
 // Check that binary is configured.
 $generatorCommon.binaryIsDefined = function (binary) {
     return binary && ($commonUtils.isDefinedAndNotEmpty(binary.idMapper) || $commonUtils.isDefinedAndNotEmpty(binary.serializer) ||
-        $commonUtils.isDefinedAndNotEmpty(binary.typeConfigurations) || ($commonUtils.isDefined(binary.compactFooter) && !binary.compactFooter))
+        $commonUtils.isDefinedAndNotEmpty(binary.typeConfigurations) || ($commonUtils.isDefined(binary.compactFooter) && !binary.compactFooter));
 };

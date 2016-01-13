@@ -146,6 +146,7 @@ mixin details-row(lblClasses, fieldClasses)
     - var lblDetailClasses = lblClasses + ' details-label'
 
     - var detailMdl = 'getModel(backupItem, detail)[detail.model]';
+    - var detailHide = '{{detail.hide}}'
     - var detailCommon = {'ng-model': detailMdl, 'ng-required': '{{detail.required}}', 'ng-disabled': '{{detail.disabled}}', 'ng-focus': 'tableReset(true)'};
     - var dropdownPlaceholder = {'ng-class': '{placeholder: !(' + detailMdl + ' && ' + detailMdl + '.length > 0)}'}
 
@@ -154,18 +155,18 @@ mixin details-row(lblClasses, fieldClasses)
     div(ng-switch='detail.type')
         div(ng-switch-when='label')
             label {{::detail.label}}
-        div.checkbox(ng-switch-when='check')
+        div.checkbox(ng-switch-when='check' ng-hide=detailHide)
             label(id='{{::detail.id}}')
                 input(type='checkbox')&attributes(detailCommon)
                 |{{::detail.label}}
                 +tipLabel('detail.tip')
-        div(ng-switch-when='text')
+        div(ng-switch-when='text' ng-hide=detailHide)
             label(class=lblDetailClasses ng-class='{required: detail.required}') {{::detail.label}}:
             .div(class=fieldClasses)
                 +tipField('detail.tip')
                 .input-tip
                     input.form-control(id='{{::detail.model}}' type='text' placeholder='{{::detail.placeholder}}')&attributes(detailCommon)
-        div(ng-switch-when='number')
+        div(ng-switch-when='number' ng-hide=detailHide)
             label(class=lblDetailClasses ng-class='{required: detail.required}') {{::detail.label}}:
             .div(class=fieldClasses)
                 +tipField('detail.tip')
@@ -174,19 +175,19 @@ mixin details-row(lblClasses, fieldClasses)
                     +ico-exclamation('{{detail.model}}', 'min', 'Value is less than allowable minimum.')
                     +ico-exclamation('{{detail.model}}', 'max', 'Value is more than allowable maximum.')
                     +ico-exclamation('{{detail.model}}', 'number', 'Invalid value. Only numbers allowed.')
-        div(ng-switch-when='dropdown')
+        div(ng-switch-when='dropdown' ng-hide=detailHide)
             label(class=lblDetailClasses ng-class='{required: detail.required}') {{::detail.label}}:
             .div(class=fieldClasses)
                 +tipField('detail.tip')
                 .input-tip
                     button.select-toggle.form-control(id='{{::detail.id}}' bs-select data-placeholder='{{::detail.placeholder}}' bs-options='item.value as item.label for item in {{detail.items}}' tabindex='0')&attributes(detailCommon)&attributes(dropdownPlaceholder)
-        div(ng-switch-when='dropdown-multiple')
+        div(ng-switch-when='dropdown-multiple' ng-hide=detailHide)
             label(class=lblDetailClasses ng-class='{required: detail.required}') {{::detail.label}}:
             .div(class=fieldClasses)
                 +tipField('detail.tip')
                 .input-tip
                     button.select-toggle.form-control(bs-select data-multiple='1' data-placeholder='{{::detail.placeholder}}' bs-options='item.value as item.label for item in {{detail.items}}' tabindex='-1')&attributes(detailCommon)&attributes(dropdownPlaceholder)
-        .group-section(ng-switch-when='table-simple')&attributes(detailCommon)
+        .group-section(ng-switch-when='table-simple' ng-hide=detailHide)&attributes(detailCommon)
             .col-sm-12.group(id='{{::detail.model}}')
                 .group-legend
                     label {{::detail.label}}

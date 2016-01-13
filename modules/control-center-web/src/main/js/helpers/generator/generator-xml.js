@@ -834,17 +834,39 @@ $generatorXml.cacheStore = function(cache, metadatas, res) {
                 res.endBlock('</bean>');
                 res.endBlock("</property>");
             }
+            else if (factoryKind === 'CacheJdbcBlobStoreFactory') {
+                res.startBlock('<property name="cacheStoreFactory">');
+                res.startBlock('<bean class="org.apache.ignite.cache.store.jdbc.CacheJdbcPojoStoreFactory">');
+
+                if (storeFactory.connectBy === 'DataSource')
+                    $generatorXml.property(res, storeFactory, 'dataSourceBean');
+                else {
+                    $generatorXml.property(res, storeFactory, 'connectionUrl');
+                    $generatorXml.property(res, storeFactory, 'user');
+                    res.line('<property name="password" value="${ds.' + storeFactory.user + '.password}" />');
+                }
+
+                $generatorXml.property(res, storeFactory, 'initSchema');
+                $generatorXml.property(res, storeFactory, 'createTableQuery');
+                $generatorXml.property(res, storeFactory, 'loadQuery');
+                $generatorXml.property(res, storeFactory, 'insertQuery');
+                $generatorXml.property(res, storeFactory, 'updateQuery');
+                $generatorXml.property(res, storeFactory, 'deleteQuery');
+
+                res.endBlock('</bean>');
+                res.endBlock("</property>");
+            }
             else
                 $generatorXml.beanProperty(res, storeFactory, 'cacheStoreFactory', $generatorCommon.STORE_FACTORIES[factoryKind], true);
 
-            if (storeFactory.dialect && storeFactory.dataSourceBean) {
+            if (storeFactory.dataSourceBean && (storeFactory.dialect || (storeFactory.connectBy === 'DataSource' ? storeFactory.database : undefined))) {
                 if (_.findIndex(res.datasources, function (ds) {
                         return ds.dataSourceBean === storeFactory.dataSourceBean;
                     }) < 0) {
                     res.datasources.push({
                         dataSourceBean: storeFactory.dataSourceBean,
-                        className: $generatorCommon.DATA_SOURCES[storeFactory.dialect],
-                        dialect: storeFactory.dialect
+                        className: $generatorCommon.DATA_SOURCES[storeFactory.dialect || storeFactory.database],
+                        dialect: storeFactory.dialect || storeFactory.database
                     });
                 }
             }
@@ -1450,6 +1472,11 @@ $generatorXml.generateDataSources = function (datasources, res) {
                     res.line('<property name="portNumber" value="${' + beanId + '.jdbc.port_number}" />');
                     res.line('<property name="databaseName" value="${' + beanId + '.jdbc.database_name}" />');
                     res.line('<property name="driverType" value="${' + beanId + '.jdbc.driver_type}" />');
+
+                    break;
+
+                case 'PostgreSQL':
+                    res.line('<property name="url" value="${' + beanId + '.jdbc.url}" />');
 
                     break;
 

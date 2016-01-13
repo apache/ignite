@@ -146,6 +146,11 @@ consoleModule.controller('cachesController', [
                 {value: undefined, label: 'Not set'}
             ];
 
+            $scope.jdbcBlobStoreConnections = [
+                {value: 'URL', label: 'URL'},
+                {value: 'DataSource', label: 'Data source'}
+            ];
+
             $scope.cacheStoreJdbcDialects = [
                 {value: 'Generic', label: 'Generic JDBC'},
                 {value: 'Oracle', label: 'Oracle'},
@@ -474,6 +479,7 @@ consoleModule.controller('cachesController', [
                         ? [id]
                         : _.map($scope.clusters, function(cluster) { return cluster.value; }),
                     metadatas: id && _.find($scope.metadatas, {value: id}) ? [id] : [],
+                    cacheStoreFactory: {CacheJdbcBlobStoreFactory: {connectVia: 'DataSource'}},
                     get label() { return angular.bind(this, _cacheLbl)(); }
                 };
             }
@@ -506,24 +512,43 @@ consoleModule.controller('cachesController', [
                 var cacheStoreFactorySelected = item.cacheStoreFactory && item.cacheStoreFactory.kind;
 
                 if (cacheStoreFactorySelected) {
+                    var storeFactory = item.cacheStoreFactory[item.cacheStoreFactory.kind];
+
                     if (item.cacheStoreFactory.kind === 'CacheJdbcPojoStoreFactory') {
-                        if ($common.isEmptyString(item.cacheStoreFactory.CacheJdbcPojoStoreFactory.dataSourceBean))
+                        if ($common.isEmptyString(storeFactory.dataSourceBean))
                             return showPopoverMessage($scope.panels, 'store', 'dataSourceBean',
                                 'Data source bean name should not be empty');
 
-                        if (!item.cacheStoreFactory.CacheJdbcPojoStoreFactory.dialect)
+                        if (!$common.isValidJavaIdentifier('Data source bean', storeFactory.dataSourceBean, 'dataSourceBean', $scope.panels, 'store'))
+                            return false;
+
+                        if (!storeFactory.dialect)
                             return showPopoverMessage($scope.panels, 'store', 'dialect',
                                 'Dialect should not be empty');
                     }
 
                     if (item.cacheStoreFactory.kind === 'CacheJdbcBlobStoreFactory') {
-                        if ($common.isEmptyString(item.cacheStoreFactory.CacheJdbcBlobStoreFactory.user))
-                            return showPopoverMessage($scope.panels, 'store', 'user',
-                                'User should not be empty');
+                        if (storeFactory.connectVia === 'URL') {
+                            if ($common.isEmptyString(storeFactory.connectionUrl))
+                                return showPopoverMessage($scope.panels, 'store', 'connectionUrl',
+                                    'Connection URL should not be empty');
 
-                        if ($common.isEmptyString(item.cacheStoreFactory.CacheJdbcBlobStoreFactory.dataSourceBean))
-                            return showPopoverMessage($scope.panels, 'store', 'dataSourceBean',
-                                'Data source bean name should not be empty');
+                            if ($common.isEmptyString(storeFactory.user))
+                                return showPopoverMessage($scope.panels, 'store', 'user',
+                                    'User should not be empty');
+                        }
+                        else {
+                            if ($common.isEmptyString(storeFactory.dataSourceBean))
+                                return showPopoverMessage($scope.panels, 'store', 'dataSourceBean',
+                                    'Data source bean name should not be empty');
+
+                            if (!$common.isValidJavaIdentifier('Data source bean', storeFactory.dataSourceBean, 'dataSourceBean', $scope.panels, 'store'))
+                                return false;
+
+                            if (!storeFactory.database)
+                                return showPopoverMessage($scope.panels, 'store', 'database',
+                                    'Database should not be empty');
+                        }
                     }
                 }
 

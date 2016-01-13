@@ -125,7 +125,6 @@ var CacheSchema = new Schema({
     },
 
     rebalanceMode: {type: String, enum: ['SYNC', 'ASYNC', 'NONE']},
-    rebalanceThreadPoolSize: Number,
     rebalanceBatchSize: Number,
     rebalanceOrder: Number,
     rebalanceDelay: Number,
@@ -145,8 +144,14 @@ var CacheSchema = new Schema({
             }
         },
         CacheJdbcBlobStoreFactory: {
+            connectVia: {type: String, enum: ['URL', 'DataSource']},
+            connectionUrl: String,
             user: String,
             dataSourceBean: String,
+            database: {
+                type: String,
+                enum: ['Generic', 'Oracle', 'DB2', 'SQLServer', 'MySQL', 'PostgreSQL', 'H2']
+            },
             initSchema: Boolean,
             createTableQuery: String,
             loadQuery: String,

@@ -455,15 +455,45 @@
               "expanded": true,
               "fields": [
                 {
+                  "label": "Connect via",
+                  "id": "connectVia",
+                  "type": "dropdown",
+                  "path": "cacheStoreFactory.CacheJdbcBlobStoreFactory",
+                  "model": "connectVia",
+                  "required": true,
+                  "placeholder": "Choose connection",
+                  "items": "jdbcBlobStoreConnections",
+                  "tip": [
+                    "Select variant of connection to database"
+                  ]
+                },
+                {
+                  "label": "Connection URL",
+                  "id": "connectionUrl",
+                  "type": "text",
+                  "path": "cacheStoreFactory.CacheJdbcBlobStoreFactory",
+                  "model": "connectionUrl",
+                  "required": true,
+                  "hide": "backupItem.cacheStoreFactory.CacheJdbcBlobStoreFactory.connectVia == 'DataSource'",
+                  "tip": [
+                    "URL for database access, for example: TODO"
+                  ]
+                },
+                {
                   "label": "User",
                   "id": "user",
                   "type": "text",
                   "path": "cacheStoreFactory.CacheJdbcBlobStoreFactory",
                   "model": "user",
                   "required": true,
+                  "hide": "backupItem.cacheStoreFactory.CacheJdbcBlobStoreFactory.connectVia == 'DataSource'",
                   "tip": [
                     "User name for database access"
                   ]
+                },
+                {
+                  "label": "Note, password is not stored for security reasons TODO",
+                  "type": "label"
                 },
                 {
                   "label": "Data source bean name",
@@ -473,8 +503,32 @@
                   "model": "dataSourceBean",
                   "required": true,
                   "placeholder": "Bean name in Spring context",
+                  "hide": "backupItem.cacheStoreFactory.CacheJdbcBlobStoreFactory.connectVia == 'URL'",
                   "tip": [
                     "Name of the data source bean in Spring context"
+                  ]
+                },
+                {
+                  "label": "Database",
+                  "id": "database",
+                  "type": "dropdown",
+                  "path": "cacheStoreFactory.CacheJdbcBlobStoreFactory",
+                  "model": "database",
+                  "required": true,
+                  "placeholder": "Choose database",
+                  "items": "cacheStoreJdbcDialects",
+                  "hide": "backupItem.cacheStoreFactory.CacheJdbcBlobStoreFactory.connectVia == 'URL'",
+                  "tip": [
+                    "Database:",
+                    "<ul>",
+                    "  <li>Generic JDBC dialect</li>",
+                    "  <li>Oracle database</li>",
+                    "  <li>IBM DB2</li>",
+                    "  <li>Microsoft SQL Server</li>",
+                    "  <li>MySQL</li>",
+                    "  <li>PostgreSQL</li>",
+                    "  <li>H2 database</li>",
+                    "</ul>"
                   ]
                 },
                 {
@@ -767,17 +821,6 @@
             "  <li>Asynchronous - in this mode distributed caches will start immediately and will load all necessary data from other available grid nodes in the background</li>",
             "  <li>None - in this mode no rebalancing will take place which means that caches will be either loaded on demand from persistent store whenever data is accessed, or will be populated explicitly</li>",
             "</ul>"
-          ]
-        },
-        {
-          "label": "Pool size",
-          "id": "rebalanceThreadPoolSize",
-          "type": "number",
-          "model": "rebalanceThreadPoolSize",
-          "placeholder": 2,
-          "tip": [
-            "Size of rebalancing thread pool<br>",
-            "Note that size serves as a hint and implementation may create more threads for rebalancing than specified here (but never less threads)"
           ]
         },
         {
