@@ -29,7 +29,7 @@ namespace Apache.Ignite.Core.Impl
     internal class InteropExceptionHolder : IBinarizable
     {
         /** Initial exception. */
-        private Exception _err;
+        private readonly Exception _err;
 
         /// <summary>
         /// Constructor.
