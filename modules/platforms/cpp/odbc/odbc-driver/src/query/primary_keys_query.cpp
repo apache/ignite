@@ -71,12 +71,12 @@ namespace ignite
                 const std::string sch("");
                 const std::string tbl("");
 
-                columnsMeta.push_back(ColumnMeta(sch, tbl, "TABLE_CAT",   SqlTypeName::varcharType,  IGNITE_TYPE_STRING));
-                columnsMeta.push_back(ColumnMeta(sch, tbl, "TABLE_SCHEM", SqlTypeName::varcharType,  IGNITE_TYPE_STRING));
-                columnsMeta.push_back(ColumnMeta(sch, tbl, "TABLE_NAME",  SqlTypeName::varcharType,  IGNITE_TYPE_STRING));
-                columnsMeta.push_back(ColumnMeta(sch, tbl, "COLUMN_NAME", SqlTypeName::varcharType,  IGNITE_TYPE_STRING));
-                columnsMeta.push_back(ColumnMeta(sch, tbl, "KEY_SEQ",     SqlTypeName::smallintType, IGNITE_TYPE_SHORT));
-                columnsMeta.push_back(ColumnMeta(sch, tbl, "PK_NAME",     SqlTypeName::varcharType,  IGNITE_TYPE_STRING));
+                columnsMeta.push_back(ColumnMeta(sch, tbl, "TABLE_CAT",   SqlTypeName::VARCHAR,  IGNITE_TYPE_STRING));
+                columnsMeta.push_back(ColumnMeta(sch, tbl, "TABLE_SCHEM", SqlTypeName::VARCHAR,  IGNITE_TYPE_STRING));
+                columnsMeta.push_back(ColumnMeta(sch, tbl, "TABLE_NAME",  SqlTypeName::VARCHAR,  IGNITE_TYPE_STRING));
+                columnsMeta.push_back(ColumnMeta(sch, tbl, "COLUMN_NAME", SqlTypeName::VARCHAR,  IGNITE_TYPE_STRING));
+                columnsMeta.push_back(ColumnMeta(sch, tbl, "KEY_SEQ",     SqlTypeName::SMALLINT, IGNITE_TYPE_SHORT));
+                columnsMeta.push_back(ColumnMeta(sch, tbl, "PK_NAME",     SqlTypeName::VARCHAR,  IGNITE_TYPE_STRING));
             }
 
             PrimaryKeysQuery::~PrimaryKeysQuery()

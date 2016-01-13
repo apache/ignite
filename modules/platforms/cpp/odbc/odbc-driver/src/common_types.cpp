@@ -15,6 +15,8 @@
  * limitations under the License.
  */
 
+#include <ignite/impl/binary/binary_common.h>
+
 #include "ignite/odbc/system/odbc_constants.h"
 #include "ignite/odbc/common_types.h"
 
@@ -22,11 +24,94 @@ namespace ignite
 {
     namespace odbc
     {
-        const std::string SqlTypeName::varcharType("VARCHAR");
+        const std::string SqlTypeName::VARCHAR("LONG VARCHAR");
 
-        const std::string SqlTypeName::smallintType("SMALLINT");
+        const std::string SqlTypeName::SMALLINT("SMALLINT");
 
-        const std::string SqlTypeName::integerType("INTEGER");
+        const std::string SqlTypeName::INTEGER("INTEGER");
+
+        const std::string SqlTypeName::DECIMAL("DECIMAL");
+
+        const std::string SqlTypeName::FLOAT("FLOAT");
+
+        const std::string SqlTypeName::DOUBLE("DOUBLE");
+
+        const std::string SqlTypeName::BIT("BIT");
+
+        const std::string SqlTypeName::TINYINT("TINYINT");
+
+        const std::string SqlTypeName::BIGINT("BIGINT");
+
+        const std::string SqlTypeName::BINARY("LONG VARBINARY");
+
+        const std::string SqlTypeName::DATE("DATE");
+
+        const std::string SqlTypeName::GUID("GUID");
+
+        const std::string& BinaryTypeToSqlTypeName(int8_t binaryType)
+        {
+            using namespace ignite::impl::binary;
+
+            switch (binaryType)
+            {
+                case IGNITE_TYPE_STRING:
+                    return SqlTypeName::VARCHAR;
+
+                case IGNITE_TYPE_SHORT:
+                    return SqlTypeName::SMALLINT;
+
+                case IGNITE_TYPE_INT:
+                    return SqlTypeName::INTEGER;
+
+                case IGNITE_TYPE_DECIMAL:
+                    return SqlTypeName::DECIMAL;
+
+                case IGNITE_TYPE_FLOAT:
+                    return SqlTypeName::FLOAT;
+
+                case IGNITE_TYPE_DOUBLE:
+                    return SqlTypeName::DOUBLE;
+
+                case IGNITE_TYPE_BOOL:
+                    return SqlTypeName::BIT;
+
+                case IGNITE_TYPE_BYTE:
+                case IGNITE_TYPE_CHAR:
+                    return SqlTypeName::TINYINT;
+
+                case IGNITE_TYPE_LONG:
+                    return SqlTypeName::BIGINT;
+
+                case IGNITE_TYPE_UUID:
+                    return SqlTypeName::GUID;
+
+                case IGNITE_TYPE_DATE:
+                    return SqlTypeName::DATE;
+
+                case IGNITE_TYPE_OBJECT:
+                case IGNITE_TYPE_ARRAY_BYTE:
+                case IGNITE_TYPE_ARRAY_SHORT:
+                case IGNITE_TYPE_ARRAY_INT:
+                case IGNITE_TYPE_ARRAY_LONG:
+                case IGNITE_TYPE_ARRAY_FLOAT:
+                case IGNITE_TYPE_ARRAY_DOUBLE:
+                case IGNITE_TYPE_ARRAY_CHAR:
+                case IGNITE_TYPE_ARRAY_BOOL:
+                case IGNITE_TYPE_ARRAY_DECIMAL:
+                case IGNITE_TYPE_ARRAY_STRING:
+                case IGNITE_TYPE_ARRAY_UUID:
+                case IGNITE_TYPE_ARRAY_DATE:
+                case IGNITE_TYPE_ARRAY:
+                case IGNITE_TYPE_COLLECTION:
+                case IGNITE_TYPE_MAP:
+                case IGNITE_TYPE_MAP_ENTRY:
+                case IGNITE_TYPE_BINARY:
+                default:
+                    return SqlTypeName::BINARY;
+            }
+
+            return SqlTypeName::BINARY;
+        }
 
         int SqlResultToReturnCode(SqlResult result)
         {

@@ -70,11 +70,11 @@ namespace ignite
                 const std::string sch("");
                 const std::string tbl("");
 
-                columnsMeta.push_back(ColumnMeta(sch, tbl, "TABLE_CAT",   SqlTypeName::varcharType, IGNITE_TYPE_STRING));
-                columnsMeta.push_back(ColumnMeta(sch, tbl, "TABLE_SCHEM", SqlTypeName::varcharType, IGNITE_TYPE_STRING));
-                columnsMeta.push_back(ColumnMeta(sch, tbl, "TABLE_NAME",  SqlTypeName::varcharType, IGNITE_TYPE_STRING));
-                columnsMeta.push_back(ColumnMeta(sch, tbl, "TABLE_TYPE",  SqlTypeName::varcharType, IGNITE_TYPE_STRING));
-                columnsMeta.push_back(ColumnMeta(sch, tbl, "REMARKS",     SqlTypeName::varcharType, IGNITE_TYPE_STRING));
+                columnsMeta.push_back(ColumnMeta(sch, tbl, "TABLE_CAT",   SqlTypeName::VARCHAR, IGNITE_TYPE_STRING));
+                columnsMeta.push_back(ColumnMeta(sch, tbl, "TABLE_SCHEM", SqlTypeName::VARCHAR, IGNITE_TYPE_STRING));
+                columnsMeta.push_back(ColumnMeta(sch, tbl, "TABLE_NAME",  SqlTypeName::VARCHAR, IGNITE_TYPE_STRING));
+                columnsMeta.push_back(ColumnMeta(sch, tbl, "TABLE_TYPE",  SqlTypeName::VARCHAR, IGNITE_TYPE_STRING));
+                columnsMeta.push_back(ColumnMeta(sch, tbl, "REMARKS",     SqlTypeName::VARCHAR, IGNITE_TYPE_STRING));
             }
 
             TableMetadataQuery::~TableMetadataQuery()

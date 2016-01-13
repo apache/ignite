@@ -33,13 +33,40 @@ namespace ignite
         {
         public:
             /** VARCHAR SQL type name constant. */
-            static const std::string varcharType;
+            static const std::string VARCHAR;
 
             /** SMALLINT SQL type name constant. */
-            static const std::string smallintType;
+            static const std::string SMALLINT;
 
             /** INTEGER SQL type name constant. */
-            static const std::string integerType;
+            static const std::string INTEGER;
+
+            /** DECIMAL SQL type name constant. */
+            static const std::string DECIMAL;
+
+            /** FLOAT SQL type name constant. */
+            static const std::string FLOAT;
+
+            /** DOUBLE SQL type name constant. */
+            static const std::string DOUBLE;
+
+            /** BIT SQL type name constant. */
+            static const std::string BIT;
+
+            /** TINYINT SQL type name constant. */
+            static const std::string TINYINT;
+
+            /** BIGINT SQL type name constant. */
+            static const std::string BIGINT;
+
+            /** BINARY SQL type name constant. */
+            static const std::string BINARY;
+
+            /** DATE SQL type name constant. */
+            static const std::string DATE;
+
+            /** GUID SQL type name constant. */
+            static const std::string GUID;
         };
 
         /**
@@ -61,16 +88,8 @@ namespace ignite
         };
 
         /**
-         * Convert internal Ignite type into ODBC SQL return code.
-         *
-         * @param result Internal result type.
-         * @return ODBC result type.
-         */
-        int SqlResultToReturnCode(SqlResult result);
-
-        /**
-         * Provides detailed information about the cause of a warning or error.
-         */
+        * Provides detailed information about the cause of a warning or error.
+        */
         enum SqlState
         {
             /** Undefined state. Internal, should never be exposed to user. */
@@ -86,69 +105,69 @@ namespace ignite
             SQL_STATE_24000_INVALID_CURSOR_STATE,
 
             /**
-             * The driver was unable to establish a connection with the data
-             * source.
-             */
+            * The driver was unable to establish a connection with the data
+            * source.
+            */
             SQL_STATE_08001_CANNOT_CONNECT,
 
             /**
-             * The specified ConnectionHandle had already been used
-             * to establish a connection with a data source, and the connection
-             * was still open.
-             */
+            * The specified ConnectionHandle had already been used
+            * to establish a connection with a data source, and the connection
+            * was still open.
+            */
             SQL_STATE_08002_ALREADY_CONNECTED,
 
             /** The connection specified was not open. */
             SQL_STATE_08003_NOT_CONNECTED,
 
             /**
-             * An error occurred for which there was no specific SQLSTATE
-             * and for which no implementation-specific SQLSTATE was defined.
-             */
+            * An error occurred for which there was no specific SQLSTATE
+            * and for which no implementation-specific SQLSTATE was defined.
+            */
             SQL_STATE_HY000_GENERAL_ERROR,
 
             /**
-             * The driver was unable to allocate memory for the specified
-             * handle.
-             */
+            * The driver was unable to allocate memory for the specified
+            * handle.
+            */
             SQL_STATE_HY001_MEMORY_ALLOCATION,
 
             /**
-             * Function sequence error.
-             */
+            * Function sequence error.
+            */
             SQL_STATE_HY010_SEQUENCE_ERROR,
 
             /**
-             * The driver does not support the feature of ODBC behavior that
-             * the application requested.
-             */
+            * The driver does not support the feature of ODBC behavior that
+            * the application requested.
+            */
             SQL_STATE_HYC00_OPTIONAL_FEATURE_NOT_IMPLEMENTED,
 
             /**
-             * The connection timeout period expired before the data source
-             * responded to the request.
-             */
+            * The connection timeout period expired before the data source
+            * responded to the request.
+            */
             SQL_STATE_HYT01_CONNECTIOIN_TIMEOUT
         };
 
         /**
-         * Diagnostic field type.
-         */
+        * Diagnostic field type.
+        */
         enum DiagnosticField
         {
             /** Header record field: Count of rows in the cursor. */
             IGNITE_SQL_DIAG_HEADER_CURSOR_ROW_COUNT,
 
             /**
-             * Header record field: String that describes the SQL statement
-             * that the underlying function executed.
-             */
+            * Header record field: String that describes the SQL statement
+            * that the underlying function executed.
+            */
             IGNITE_SQL_DIAG_HEADER_DYNAMIC_FUNCTION,
 
             /**
-             * Header record field: Numeric code that describes the SQL
-             * statement that was executed by the underlying function.
-             */
+            * Header record field: Numeric code that describes the SQL
+            * statement that was executed by the underlying function.
+            */
             IGNITE_SQL_DIAG_HEADER_DYNAMIC_FUNCTION_CODE,
 
             /** Header record field: Number of status records. */
@@ -190,6 +209,22 @@ namespace ignite
             /** Field type is unknown to the driver. */
             IGNITE_SQL_DIAG_UNKNOWN
         };
+
+        /**
+         * Get SQL type name for the binary type.
+         *
+         * @param binaryType Binary type.
+         * @return Corresponding SQL type name.
+         */
+        const std::string& BinaryTypeToSqlTypeName(int8_t binaryType);
+
+        /**
+         * Convert internal Ignite type into ODBC SQL return code.
+         *
+         * @param result Internal result type.
+         * @return ODBC result type.
+         */
+        int SqlResultToReturnCode(SqlResult result);
 
         /**
          * Convert ODBC field type to internal DiagnosticField type value.

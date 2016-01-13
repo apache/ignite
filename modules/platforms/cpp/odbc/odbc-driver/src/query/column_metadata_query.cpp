@@ -90,18 +90,18 @@ namespace ignite
                 const std::string sch("");
                 const std::string tbl("");
 
-                columnsMeta.push_back(ColumnMeta(sch, tbl, "TABLE_CAT",      SqlTypeName::varcharType,  IGNITE_TYPE_STRING));
-                columnsMeta.push_back(ColumnMeta(sch, tbl, "TABLE_SCHEM",    SqlTypeName::varcharType,  IGNITE_TYPE_STRING));
-                columnsMeta.push_back(ColumnMeta(sch, tbl, "TABLE_NAME",     SqlTypeName::varcharType,  IGNITE_TYPE_STRING));
-                columnsMeta.push_back(ColumnMeta(sch, tbl, "COLUMN_NAME",    SqlTypeName::varcharType,  IGNITE_TYPE_STRING));
-                columnsMeta.push_back(ColumnMeta(sch, tbl, "DATA_TYPE",      SqlTypeName::smallintType, IGNITE_TYPE_SHORT));
-                columnsMeta.push_back(ColumnMeta(sch, tbl, "TYPE_NAME",      SqlTypeName::varcharType,  IGNITE_TYPE_STRING));
-                columnsMeta.push_back(ColumnMeta(sch, tbl, "COLUMN_SIZE",    SqlTypeName::integerType,  IGNITE_TYPE_INT));
-                columnsMeta.push_back(ColumnMeta(sch, tbl, "BUFFER_LENGTH",  SqlTypeName::integerType,  IGNITE_TYPE_INT));
-                columnsMeta.push_back(ColumnMeta(sch, tbl, "DECIMAL_DIGITS", SqlTypeName::smallintType, IGNITE_TYPE_SHORT));
-                columnsMeta.push_back(ColumnMeta(sch, tbl, "NUM_PREC_RADIX", SqlTypeName::smallintType, IGNITE_TYPE_SHORT));
-                columnsMeta.push_back(ColumnMeta(sch, tbl, "NULLABLE",       SqlTypeName::smallintType, IGNITE_TYPE_SHORT));
-                columnsMeta.push_back(ColumnMeta(sch, tbl, "REMARKS",        SqlTypeName::varcharType,  IGNITE_TYPE_STRING));
+                columnsMeta.push_back(ColumnMeta(sch, tbl, "TABLE_CAT",      SqlTypeName::VARCHAR,  IGNITE_TYPE_STRING));
+                columnsMeta.push_back(ColumnMeta(sch, tbl, "TABLE_SCHEM",    SqlTypeName::VARCHAR,  IGNITE_TYPE_STRING));
+                columnsMeta.push_back(ColumnMeta(sch, tbl, "TABLE_NAME",     SqlTypeName::VARCHAR,  IGNITE_TYPE_STRING));
+                columnsMeta.push_back(ColumnMeta(sch, tbl, "COLUMN_NAME",    SqlTypeName::VARCHAR,  IGNITE_TYPE_STRING));
+                columnsMeta.push_back(ColumnMeta(sch, tbl, "DATA_TYPE",      SqlTypeName::SMALLINT, IGNITE_TYPE_SHORT));
+                columnsMeta.push_back(ColumnMeta(sch, tbl, "TYPE_NAME",      SqlTypeName::VARCHAR,  IGNITE_TYPE_STRING));
+                columnsMeta.push_back(ColumnMeta(sch, tbl, "COLUMN_SIZE",    SqlTypeName::INTEGER,  IGNITE_TYPE_INT));
+                columnsMeta.push_back(ColumnMeta(sch, tbl, "BUFFER_LENGTH",  SqlTypeName::INTEGER,  IGNITE_TYPE_INT));
+                columnsMeta.push_back(ColumnMeta(sch, tbl, "DECIMAL_DIGITS", SqlTypeName::SMALLINT, IGNITE_TYPE_SHORT));
+                columnsMeta.push_back(ColumnMeta(sch, tbl, "NUM_PREC_RADIX", SqlTypeName::SMALLINT, IGNITE_TYPE_SHORT));
+                columnsMeta.push_back(ColumnMeta(sch, tbl, "NULLABLE",       SqlTypeName::SMALLINT, IGNITE_TYPE_SHORT));
+                columnsMeta.push_back(ColumnMeta(sch, tbl, "REMARKS",        SqlTypeName::VARCHAR,  IGNITE_TYPE_STRING));
             }
 
             ColumnMetadataQuery::~ColumnMetadataQuery()

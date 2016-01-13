@@ -51,20 +51,20 @@ namespace ignite
                 const std::string sch("");
                 const std::string tbl("");
 
-                columnsMeta.push_back(ColumnMeta(sch, tbl, "PKTABLE_CAT",   SqlTypeName::varcharType,  IGNITE_TYPE_STRING));
-                columnsMeta.push_back(ColumnMeta(sch, tbl, "PKTABLE_SCHEM", SqlTypeName::varcharType,  IGNITE_TYPE_STRING));
-                columnsMeta.push_back(ColumnMeta(sch, tbl, "PKTABLE_NAME",  SqlTypeName::varcharType,  IGNITE_TYPE_STRING));
-                columnsMeta.push_back(ColumnMeta(sch, tbl, "PKCOLUMN_NAME", SqlTypeName::varcharType,  IGNITE_TYPE_STRING));
-                columnsMeta.push_back(ColumnMeta(sch, tbl, "FKTABLE_CAT",   SqlTypeName::varcharType,  IGNITE_TYPE_STRING));
-                columnsMeta.push_back(ColumnMeta(sch, tbl, "FKTABLE_SCHEM", SqlTypeName::varcharType,  IGNITE_TYPE_STRING));
-                columnsMeta.push_back(ColumnMeta(sch, tbl, "FKTABLE_NAME",  SqlTypeName::varcharType,  IGNITE_TYPE_STRING));
-                columnsMeta.push_back(ColumnMeta(sch, tbl, "FKCOLUMN_NAME", SqlTypeName::varcharType,  IGNITE_TYPE_STRING));
-                columnsMeta.push_back(ColumnMeta(sch, tbl, "KEY_SEQ",       SqlTypeName::smallintType, IGNITE_TYPE_SHORT));
-                columnsMeta.push_back(ColumnMeta(sch, tbl, "UPDATE_RULE",   SqlTypeName::smallintType, IGNITE_TYPE_SHORT));
-                columnsMeta.push_back(ColumnMeta(sch, tbl, "DELETE_RULE",   SqlTypeName::smallintType, IGNITE_TYPE_SHORT));
-                columnsMeta.push_back(ColumnMeta(sch, tbl, "FK_NAME",       SqlTypeName::varcharType,  IGNITE_TYPE_STRING));
-                columnsMeta.push_back(ColumnMeta(sch, tbl, "PK_NAME",       SqlTypeName::varcharType,  IGNITE_TYPE_STRING));
-                columnsMeta.push_back(ColumnMeta(sch, tbl, "DEFERRABILITY", SqlTypeName::smallintType, IGNITE_TYPE_SHORT));
+                columnsMeta.push_back(ColumnMeta(sch, tbl, "PKTABLE_CAT",   SqlTypeName::VARCHAR,  IGNITE_TYPE_STRING));
+                columnsMeta.push_back(ColumnMeta(sch, tbl, "PKTABLE_SCHEM", SqlTypeName::VARCHAR,  IGNITE_TYPE_STRING));
+                columnsMeta.push_back(ColumnMeta(sch, tbl, "PKTABLE_NAME",  SqlTypeName::VARCHAR,  IGNITE_TYPE_STRING));
+                columnsMeta.push_back(ColumnMeta(sch, tbl, "PKCOLUMN_NAME", SqlTypeName::VARCHAR,  IGNITE_TYPE_STRING));
+                columnsMeta.push_back(ColumnMeta(sch, tbl, "FKTABLE_CAT",   SqlTypeName::VARCHAR,  IGNITE_TYPE_STRING));
+                columnsMeta.push_back(ColumnMeta(sch, tbl, "FKTABLE_SCHEM", SqlTypeName::VARCHAR,  IGNITE_TYPE_STRING));
+                columnsMeta.push_back(ColumnMeta(sch, tbl, "FKTABLE_NAME",  SqlTypeName::VARCHAR,  IGNITE_TYPE_STRING));
+                columnsMeta.push_back(ColumnMeta(sch, tbl, "FKCOLUMN_NAME", SqlTypeName::VARCHAR,  IGNITE_TYPE_STRING));
+                columnsMeta.push_back(ColumnMeta(sch, tbl, "KEY_SEQ",       SqlTypeName::SMALLINT, IGNITE_TYPE_SHORT));
+                columnsMeta.push_back(ColumnMeta(sch, tbl, "UPDATE_RULE",   SqlTypeName::SMALLINT, IGNITE_TYPE_SHORT));
+                columnsMeta.push_back(ColumnMeta(sch, tbl, "DELETE_RULE",   SqlTypeName::SMALLINT, IGNITE_TYPE_SHORT));
+                columnsMeta.push_back(ColumnMeta(sch, tbl, "FK_NAME",       SqlTypeName::VARCHAR,  IGNITE_TYPE_STRING));
+                columnsMeta.push_back(ColumnMeta(sch, tbl, "PK_NAME",       SqlTypeName::VARCHAR,  IGNITE_TYPE_STRING));
+                columnsMeta.push_back(ColumnMeta(sch, tbl, "DEFERRABILITY", SqlTypeName::SMALLINT, IGNITE_TYPE_SHORT));
             }
 
             ForeignKeysQuery::~ForeignKeysQuery()

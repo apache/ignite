@@ -18,6 +18,7 @@
 #include "ignite/odbc/system/odbc_constants.h"
 #include "ignite/odbc/meta/column_meta.h"
 #include "ignite/odbc/type_traits.h"
+#include "ignite/odbc/common_types.h"
 
 namespace ignite
 {
@@ -131,7 +132,7 @@ namespace ignite
                     case SQL_DESC_TYPE_NAME:
                     case SQL_DESC_LOCAL_TYPE_NAME:
                     {
-                        value = typeName;
+                        value = BinaryTypeToSqlTypeName(dataType);
 
                         return true;
                     }
