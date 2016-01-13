@@ -789,7 +789,7 @@ public class BinaryObjectBuilderSelfTest extends GridCommonAbstractTest {
 
         BinaryObject bo = builder.build();
 
-        assertEquals("value".hashCode(), bo.type().typeId());
+        assertEquals(Value.class.getName().toLowerCase().hashCode(), bo.type().typeId());
         assertEquals(100, bo.hashCode());
 
         assertEquals(1, bo.<Value>deserialize().i);
@@ -803,11 +803,11 @@ public class BinaryObjectBuilderSelfTest extends GridCommonAbstractTest {
 
         builder.setField("objectField", "a", Object.class);
 
-        BinaryObject po = builder.build();
+        BinaryObject bo = builder.build();
 
-        BinaryType meta = po.type();
+        BinaryType meta = bo.type();
 
-        assertEquals("MetaTest2", meta.typeName());
+        assertEquals("org.test.MetaTest2", meta.typeName());
         assertEquals("Object", meta.fieldTypeName("objectField"));
     }
 
@@ -826,7 +826,7 @@ public class BinaryObjectBuilderSelfTest extends GridCommonAbstractTest {
 
         BinaryType meta = po.type();
 
-        assertEquals("MetaTest", meta.typeName());
+        assertEquals("org.test.MetaTest", meta.typeName());
 
         Collection<String> fields = meta.fieldNames();
 
@@ -849,7 +849,7 @@ public class BinaryObjectBuilderSelfTest extends GridCommonAbstractTest {
 
         meta = po.type();
 
-        assertEquals("MetaTest", meta.typeName());
+        assertEquals("org.test.MetaTest", meta.typeName());
 
         fields = meta.fieldNames();
 

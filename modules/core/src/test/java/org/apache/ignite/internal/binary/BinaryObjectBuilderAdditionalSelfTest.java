@@ -1259,6 +1259,6 @@ public class BinaryObjectBuilderAdditionalSelfTest extends GridCommonAbstractTes
             (IgniteBinaryImpl)binaries()).processor();
 
         return new BinaryObjectBuilderImpl(processor.binaryContext(), processor.typeId(aCls.getName()),
-            aCls.getSimpleName());
+            aCls.getName());
     }
 }
