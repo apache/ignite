@@ -52,6 +52,9 @@ namespace Apache.Ignite.Core.Datastream
         /** <inheritdoc /> */
         public void Receive(ICache<TK, TV> cache, ICollection<ICacheEntry<TK, TV>> entries)
         {
+            IgniteArgumentCheck.NotNull(cache, "cache");
+            IgniteArgumentCheck.NotNull(entries, "entries");
+
             var keys = new List<TK>(entries.Count);
 
             foreach (var entry in entries)

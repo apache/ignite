@@ -22,6 +22,7 @@ namespace Apache.Ignite.Core.Compute
     using Apache.Ignite.Core.Cluster;
     using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Impl;
+    using Apache.Ignite.Core.Impl.Common;
     using Apache.Ignite.Core.Impl.Compute;
 
     /// <summary>
@@ -63,7 +64,8 @@ namespace Apache.Ignite.Core.Compute
         /// <exception cref="IgniteException">Split returned no jobs.</exception>
         override public IDictionary<IComputeJob<TJobRes>, IClusterNode> Map(IList<IClusterNode> subgrid, TArg arg)
         {
-            Debug.Assert(subgrid != null && subgrid.Count > 0);
+            IgniteArgumentCheck.NotNull(subgrid, "subgrid");
+            IgniteArgumentCheck.Ensure(subgrid.Count > 0, "subgrid", "subgrid should not be empty");
 
             var jobs = Split(subgrid.Count, arg);
 

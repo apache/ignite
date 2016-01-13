@@ -20,6 +20,7 @@ namespace Apache.Ignite.Core.Cache.Store
     using System;
     using System.Collections;
     using System.Linq;
+    using Apache.Ignite.Core.Impl.Common;
 
     /// <summary>
     /// Cache storage convenience adapter. It provides default implementation for 
@@ -74,6 +75,8 @@ namespace Apache.Ignite.Core.Cache.Store
         /// <param name="entries">The map.</param>
         public virtual void WriteAll(IDictionary entries)
         {
+            IgniteArgumentCheck.NotNull(entries, "entries");
+
             foreach (DictionaryEntry entry in entries)
                 Write(entry.Key, entry.Value);
         }
@@ -97,6 +100,8 @@ namespace Apache.Ignite.Core.Cache.Store
         /// the keys that were not successfully deleted.</param>
         public virtual void DeleteAll(ICollection keys)
         {
+            IgniteArgumentCheck.NotNull(keys, "keys");
+
             foreach (object key in keys)
                 Delete(key);
         }
