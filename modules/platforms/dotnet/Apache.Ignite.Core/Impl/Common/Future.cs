@@ -114,6 +114,7 @@ namespace Apache.Ignite.Core.Impl.Common
         }
 
         /** <inheritdoc /> */
+        [SuppressMessage("Microsoft.Design", "CA1031:DoNotCatchGeneralExceptionTypes")]
         public void OnNullResult()
         {
             if (_converter == null)
