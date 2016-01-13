@@ -1070,6 +1070,63 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    public void testPlatformIdMapper() throws Exception {
+        BinaryTypeConfiguration innerClassType = new BinaryTypeConfiguration(InnerMappedObject.class.getName());
+        BinaryTypeConfiguration publicClassType = new BinaryTypeConfiguration(TestMappedObject.class.getName());
+        BinaryTypeConfiguration typeWithCustomMapper = new BinaryTypeConfiguration(CustomMappedObject2.class.getName());
+
+        typeWithCustomMapper.setIdMapper(new BinaryIdMapper() {
+            @Override public int typeId(String clsName) {
+                return 44444;
+            }
+
+            @Override public int fieldId(int typeId, String fieldName) {
+                assert typeId == 44444;
+
+                if ("val1".equals(fieldName))
+                    return 55555;
+                else if ("val2".equals(fieldName))
+                    return 66666;
+
+                assert false : "Unknown field: " + fieldName;
+
+                return 0;
+            }
+        });
+
+        BinaryMarshaller marsh = binaryMarshaller(new BinaryPlatformIdMapper(),
+            Arrays.asList(innerClassType, publicClassType, typeWithCustomMapper));
+
+        InnerMappedObject innerObj = new InnerMappedObject(10, "str1");
+
+        BinaryObjectExImpl innerBo = marshal(innerObj, marsh);
+
+        assertEquals("InnerMappedObject".toLowerCase().hashCode(), innerBo.type().typeId());
+
+        assertEquals(10, innerBo.<CustomMappedObject1>deserialize().val1);
+        assertEquals("str1", innerBo.<CustomMappedObject1>deserialize().val2);
+
+        TestMappedObject publicObj = new TestMappedObject();
+
+        BinaryObjectExImpl publicBo = marshal(publicObj, marsh);
+
+        assertEquals("TestMappedObject".toLowerCase().hashCode(), publicBo.type().typeId());
+
+        CustomMappedObject2 obj2 = new CustomMappedObject2(20, "str2");
+
+        BinaryObjectExImpl po2 = marshal(obj2, marsh);
+
+        assertEquals(44444, po2.type().typeId());
+        assertEquals((Integer)20, po2.field(55555));
+        assertEquals("str2", po2.field(66666));
+
+        assertEquals(20, po2.<CustomMappedObject2>deserialize().val1);
+        assertEquals("str2", po2.<CustomMappedObject2>deserialize().val2);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
     public void testDynamicObject() throws Exception {
         BinaryMarshaller marsh = binaryMarshaller(Arrays.asList(
             new BinaryTypeConfiguration(DynamicObject.class.getName())
@@ -3621,6 +3678,18 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
         private CustomMappedObject1(int val1, String val2) {
             this.val1 = val1;
             this.val2 = val2;
+        }
+    }
+
+    /**
+     */
+    private static class InnerMappedObject extends CustomMappedObject1 {
+        /**
+         * @param val1 Val1
+         * @param val2 Val2
+         */
+        InnerMappedObject(int val1, String val2) {
+            super(val1, val2);
         }
     }
 

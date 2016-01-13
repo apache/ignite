@@ -17,28 +17,20 @@
 
 package org.apache.ignite.internal.binary;
 
-import org.apache.ignite.binary.BinaryIdMapper;
-
 /**
- * TODO
+ * ID mapper that uses a simple name of classes in lower case to calculate type ID.
  */
-public class BinaryInteropIdMapper implements BinaryIdMapper {
+public class BinaryPlatformIdMapper extends BinaryInternalIdMapper{
     /** {@inheritDoc} */
     @Override public int typeId(String clsName) {
-        return 0; // TODO: CODE: implement.
-    }
-
-    /** {@inheritDoc} */
-    @Override public int fieldId(int typeId, String fieldName) {
-        return 0; // TODO: CODE: implement.
+        return super.typeId(simpleName(clsName));
     }
 
     /**
      * @param clsName Class name.
      * @return Type name.
      */
-    @SuppressWarnings("ResultOfMethodCallIgnored")
-    public static String typeName(String clsName) {
+    public static String simpleName(String clsName) {
         assert clsName != null;
 
         int idx = clsName.lastIndexOf('$');
