@@ -52,7 +52,7 @@ $generatorProperties.dataSourcesProperties = function (cluster, res) {
             if (cache.cacheStoreFactory && cache.cacheStoreFactory.kind) {
                 var storeFactory = cache.cacheStoreFactory[cache.cacheStoreFactory.kind];
 
-                var dialect = storeFactory.dialect || (storeFactory.connectBy === 'DataSource' ? storeFactory.database : undefined);
+                var dialect = storeFactory.dialect || (storeFactory.connectVia === 'DataSource' ? storeFactory.database : undefined);
 
                 if (dialect) {
                     if (!res) {
@@ -99,7 +99,7 @@ $generatorProperties.dataSourcesProperties = function (cluster, res) {
                     }
                 }
 
-                if (cache.cacheStoreFactory.kind === 'CacheJdbcBlobStoreFactory' && storeFactory.connectBy === 'URL') {
+                if (cache.cacheStoreFactory.kind === 'CacheJdbcBlobStoreFactory' && storeFactory.connectVia === 'URL') {
                     res.line('ds.' + storeFactory.user + '.password=YOUR_PASSWORD');
                 }
             }

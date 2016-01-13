@@ -82,7 +82,7 @@ $generatorPom.pom = function (cluster, igniteVersion, mvnRepositories, res) {
         }
 
         if (cache.cacheStoreFactory && cache.cacheStoreFactory.kind === 'CacheJdbcBlobStoreFactory') {
-            if (cache.cacheStoreFactory.CacheJdbcBlobStoreFactory && cache.cacheStoreFactory.CacheJdbcBlobStoreFactory.connectBy === 'DataSource') {
+            if (cache.cacheStoreFactory.CacheJdbcBlobStoreFactory && cache.cacheStoreFactory.CacheJdbcBlobStoreFactory.connectVia === 'DataSource') {
                 dialect[cache.cacheStoreFactory.CacheJdbcBlobStoreFactory.database] = true;
             }
         }

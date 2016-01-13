@@ -464,7 +464,11 @@
                   "placeholder": "Choose connection",
                   "items": "jdbcBlobStoreConnections",
                   "tip": [
-                    "Select variant of connection to database"
+                    "You can connect to database via:",
+                    "<ul>",
+                    "  <li>JDBC URL, for example: jdbc:h2:mem:myDatabase</li>",
+                    "  <li>Сonfigured data source</li>",
+                    "</ul>"
                   ]
                 },
                 {
@@ -476,7 +480,7 @@
                   "required": true,
                   "hide": "backupItem.cacheStoreFactory.CacheJdbcBlobStoreFactory.connectVia == 'DataSource'",
                   "tip": [
-                    "URL for database access, for example: TODO"
+                    "URL for database access, for example: jdbc:h2:mem:myDatabase"
                   ]
                 },
                 {
@@ -492,8 +496,9 @@
                   ]
                 },
                 {
-                  "label": "Note, password is not stored for security reasons TODO",
-                  "type": "label"
+                  "label": "Note, password will be generated as stubs.",
+                  "type": "label",
+                  "hide": "backupItem.cacheStoreFactory.CacheJdbcBlobStoreFactory.connectVia == 'DataSource'"
                 },
                 {
                   "label": "Data source bean name",

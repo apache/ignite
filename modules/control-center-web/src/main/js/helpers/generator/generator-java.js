@@ -189,8 +189,6 @@ $generatorJava.property = function (res, varName, obj, propName, dataType, sette
 
         // Add to result if no default provided or value not equals to default.
         if (!hasDflt || (hasDflt && val !== dflt)) {
-            res.emptyLineIfNeeded();
-
             res.line(varName + '.' + $generatorJava.setterName(propName, setterName) +
                 '(' + $generatorJava.toJavaCode(val, dataType ? res.importClass(dataType) : null) + ');');
 
@@ -199,6 +197,16 @@ $generatorJava.property = function (res, varName, obj, propName, dataType, sette
     }
 
     return false;
+};
+
+// Add property for class name.
+$generatorJava.classNameProperty = function (res, varName, obj, propName) {
+    var val = obj[propName];
+
+    if ($commonUtils.isDefined(val)) {
+        res.line(varName + '.' + $generatorJava.setterName(propName) +
+            '("' + $dataStructures.fullClassName(val) + '");');
+    }
 };
 
 /**
@@ -1011,9 +1019,11 @@ $generatorJava.cacheQuery = function (cache, varName, res) {
  * @param res Resulting output with generated code.
  */
 $generatorJava.cacheStoreDataSource = function (storeFactory, res) {
-    var dialect = storeFactory.dialect || (storeFactory.connectBy === 'DataSource' ? storeFactory.database : undefined);
+    var dialect = storeFactory.dialect || (storeFactory.connectVia === 'DataSource' ? storeFactory.database : undefined);
 
     if (dialect) {
+        var varName = 'dataSource';
+
         var dataSourceBean = storeFactory.dataSourceBean;
 
         var dsClsName = $generatorCommon.dataSourceClassName(dialect);
@@ -1023,95 +1033,62 @@ $generatorJava.cacheStoreDataSource = function (storeFactory, res) {
         var beanClassName = $commonUtils.toJavaName(varType, dataSourceBean);
 
         res.line('/** Helper class for datasource creation. */');
-        if (dialect !== 'Generic') {
-            res.startBlock('public static class ' + beanClassName + ' extends ' + varType + ' {');
-            res.startBlock('private ' + beanClassName + '() ' + (dialect === 'Oracle' ? 'throws ' + res.importClass('java.sql.SQLException') : '') + ' {');
+        res.startBlock('public static class ' + beanClassName + ' {');
+        res.line('public static final ' + varType + ' INSTANCE = createInstance();');
 
-            switch (dialect) {
-                case 'DB2':
-                    res.line('setServerName(props.getProperty("' + dataSourceBean + '.jdbc.server_name"));');
-                    res.line('setPortNumber(Integer.valueOf(props.getProperty("' + dataSourceBean + '.jdbc.port_number")));');
-                    res.line('setDatabaseName(props.getProperty("' + dataSourceBean + '.jdbc.database_name"));');
-                    res.line('setDriverType(Integer.valueOf(props.getProperty("' + dataSourceBean + '.jdbc.driver_type")));');
+        res.needEmptyLine = true;
 
-                    break;
+        res.startBlock('private static ' + varType + ' createInstance() {');
+        if (dialect === 'Oracle')
+            res.startBlock('try {');
 
-                case 'PostgreSQL':
-                    res.line('setDataSourceName("' + dataSourceBean + '");');
-                    res.line('setServerName(props.getProperty("' + dataSourceBean + '.jdbc.server_name"));');
-                    res.line('setDatabaseName(props.getProperty("' + dataSourceBean + '.jdbc.database_name"));');
+        $generatorJava.resetVariables(res);
 
-                    break;
+        $generatorJava.declareVariable(res, varName, varType);
 
-                default:
-                    res.line('setURL(props.getProperty("' + dataSourceBean + '.jdbc.url"));');
-            }
+        switch (dialect) {
+            case 'Generic':
+                res.line(varName + '.setJdbcUrl(props.getProperty("' + dataSourceBean + '.jdbc.url"));');
+                res.line(varName + '.setUser(props.getProperty("' + dataSourceBean + '.jdbc.username"));');
+                res.line(varName + '.setPassword(props.getProperty("' + dataSourceBean + '.jdbc.password"));');
 
-            res.line('setUser(props.getProperty("' + dataSourceBean + '.jdbc.username"));');
-            res.line('setPassword(props.getProperty("' + dataSourceBean + '.jdbc.password"));');
+                break;
 
+            case 'DB2':
+                res.line(varName + '.setServerName(props.getProperty("' + dataSourceBean + '.jdbc.server_name"));');
+                res.line(varName + '.setPortNumber(Integer.valueOf(props.getProperty("' + dataSourceBean + '.jdbc.port_number")));');
+                res.line(varName + '.setDatabaseName(props.getProperty("' + dataSourceBean + '.jdbc.database_name"));');
+                res.line(varName + '.setDriverType(Integer.valueOf(props.getProperty("' + dataSourceBean + '.jdbc.driver_type")));');
+
+                break;
+
+            case 'PostgreSQL':
+                res.line(varName + '.setDataSourceName("' + dataSourceBean + '");');
+                res.line(varName + '.setServerName(props.getProperty("' + dataSourceBean + '.jdbc.server_name"));');
+                res.line(varName + '.setDatabaseName(props.getProperty("' + dataSourceBean + '.jdbc.database_name"));');
+
+                break;
+
+            default:
+                res.line(varName + '.setURL(props.getProperty("' + dataSourceBean + '.jdbc.url"));');
+        }
+
+        res.line(varName + '.setUser(props.getProperty("' + dataSourceBean + '.jdbc.username"));');
+        res.line(varName + '.setPassword(props.getProperty("' + dataSourceBean + '.jdbc.password"));');
+
+        res.needEmptyLine = true;
+
+        res.line('return dataSource;');
+
+        if (dialect === 'Oracle') {
             res.endBlock('}');
-
-            res.needEmptyLine = true;
-
-            if (dialect !== 'Oracle')
-                res.line('public static final ' + beanClassName + ' INSTANCE = new ' + beanClassName + '();');
-            else {
-                res.line('public static final ' + beanClassName + ' INSTANCE = createInstance();');
-
-                res.needEmptyLine = true;
-
-                res.startBlock('private static ' + beanClassName + ' createInstance() {');
-                res.startBlock('try {');
-                res.line('return new ' + beanClassName + '();');
-                res.endBlock('}');
-                res.startBlock('catch (SQLException ex) {');
-                res.line('throw new Error(ex);');
-                res.endBlock('}');
-                res.endBlock('}');
-            }
-
-            switch (dialect) {
-                case 'H2':
-                case 'Oracle':
-                case 'MySQL':
-                    res.needEmptyLine = true;
-
-                    res.startBlock('@Override public ' + res.importClass('java.util.logging.Logger') + ' getParentLogger() throws ' + res.importClass('java.sql.SQLFeatureNotSupportedException') + ' {');
-                    res.line('return null; // TODO: CODE: implement.');
-                    res.endBlock('}');
-
-                    if (dialect === 'MySQL') {
-                        res.needEmptyLine = true;
-
-                        res.startBlock('@Override public <T> T unwrap(Class<T> iface) throws ' + res.importClass('java.sql.SQLException') + ' {');
-                        res.line('return null; // TODO: CODE: implement.');
-                        res.endBlock('}');
-
-                        res.needEmptyLine = true;
-
-                        res.startBlock('@Override public boolean isWrapperFor(Class<?> iface) throws SQLException {');
-                        res.line('return false; // TODO: CODE: implement.');
-                        res.endBlock('}');
-                    }
-
-                    break;
-
-                default:
-            }
-
+            res.startBlock('catch (' + res.importClass('java.sql.SQLException') + ' ex) {');
+            res.line('throw new Error(ex);');
             res.endBlock('}');
         }
-        else {
-            res.startBlock('public static class ' + beanClassName + ' {');
-            res.line('public static final ' + varType + ' INSTANCE = new ' + varType + '();');
-            res.startBlock('static {');
-            res.line('INSTANCE.setJdbcUrl(props.getProperty("' + dataSourceBean + '.jdbc.url"));');
-            res.line('INSTANCE.setUser(props.getProperty("' + dataSourceBean + '.jdbc.username"));');
-            res.line('INSTANCE.setPassword(props.getProperty("' + dataSourceBean + '.jdbc.password"));');
-            res.endBlock('}');
-            res.endBlock('}');
-        }
+
+        res.endBlock('}');
+        res.endBlock('}');
 
         res.needEmptyLine = true;
 
@@ -1218,9 +1195,9 @@ $generatorJava.cacheStore = function (cache, metadatas, cacheVarName, res) {
             }
             else if (factoryKind === 'CacheJdbcBlobStoreFactory') {
                 // Generate POJO store factory.
-                $generatorJava.declareVariable(res, varName, 'org.apache.ignite.cache.store.jdbc.CacheJdbcBlobStoreFactory', null, null, null, storeFactory.connectBy === 'DataSource');
+                $generatorJava.declareVariable(res, varName, 'org.apache.ignite.cache.store.jdbc.CacheJdbcBlobStoreFactory', null, null, null, storeFactory.connectVia === 'DataSource');
 
-                if (storeFactory.connectBy === 'DataSource') {
+                if (storeFactory.connectVia === 'DataSource') {
                     res.deep++;
 
                     res.line('/** {@inheritDoc} */');
@@ -1499,7 +1476,7 @@ $generatorJava.metadataGeneral = function (meta, res) {
     if (!res)
         res = $generatorCommon.builder();
 
-    $generatorJava.property(res, 'typeMeta', meta, 'keyType');
+    $generatorJava.classNameProperty(res, 'typeMeta', meta, 'keyType');
     $generatorJava.property(res, 'typeMeta', meta, 'valueType');
 
     res.needEmptyLine = true;
@@ -1532,7 +1509,7 @@ $generatorJava.metadataStore = function (meta, withTypes, res) {
     $generatorJava.property(res, 'jdbcType', meta, 'databaseTable');
 
     if (withTypes) {
-        $generatorJava.property(res, 'jdbcType', meta, 'keyType');
+        $generatorJava.classNameProperty(res, 'jdbcType', meta, 'keyType');
         $generatorJava.property(res, 'jdbcType', meta, 'valueType');
     }
 
@@ -1646,7 +1623,7 @@ $generatorJava.clusterMetadatas = function (caches, res) {
 
                     $generatorJava.declareVariable(res, metaVarName, 'org.apache.ignite.cache.QueryEntity');
 
-                    $generatorJava.property(res, metaVarName, meta, 'keyType');
+                    $generatorJava.classNameProperty(res, metaVarName, meta, 'keyType');
                     $generatorJava.property(res, metaVarName, meta, 'valueType');
 
                     res.needEmptyLine = true;
@@ -2490,7 +2467,7 @@ $generatorJava.cluster = function (cluster, pkg, javaClass, clientNearCfg) {
  * @returns {*} Data source class name.
  */
 $generatorJava.dataSourceClassName = function (res, storeFactory) {
-    var dialect = storeFactory.dialect || (storeFactory.connectBy === 'DataSource' ? storeFactory.database : undefined);
+    var dialect = storeFactory.dialect || (storeFactory.connectVia === 'DataSource' ? storeFactory.database : undefined);
 
     if (dialect) {
         var dataSourceBean = storeFactory.dataSourceBean;

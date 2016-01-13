@@ -838,7 +838,7 @@ $generatorXml.cacheStore = function(cache, metadatas, res) {
                 res.startBlock('<property name="cacheStoreFactory">');
                 res.startBlock('<bean class="org.apache.ignite.cache.store.jdbc.CacheJdbcPojoStoreFactory">');
 
-                if (storeFactory.connectBy === 'DataSource')
+                if (storeFactory.connectVia === 'DataSource')
                     $generatorXml.property(res, storeFactory, 'dataSourceBean');
                 else {
                     $generatorXml.property(res, storeFactory, 'connectionUrl');
@@ -859,7 +859,7 @@ $generatorXml.cacheStore = function(cache, metadatas, res) {
             else
                 $generatorXml.beanProperty(res, storeFactory, 'cacheStoreFactory', $generatorCommon.STORE_FACTORIES[factoryKind], true);
 
-            if (storeFactory.dataSourceBean && (storeFactory.dialect || (storeFactory.connectBy === 'DataSource' ? storeFactory.database : undefined))) {
+            if (storeFactory.dataSourceBean && (storeFactory.dialect || (storeFactory.connectVia === 'DataSource' ? storeFactory.database : undefined))) {
                 if (_.findIndex(res.datasources, function (ds) {
                         return ds.dataSourceBean === storeFactory.dataSourceBean;
                     }) < 0) {
@@ -1150,7 +1150,7 @@ $generatorXml.cacheQueryMetadata = function(meta, res) {
 
     res.startBlock('<bean class="org.apache.ignite.cache.QueryEntity">');
 
-    $generatorXml.property(res, meta, 'keyType');
+    $generatorXml.classNameProperty(res, meta, 'keyType');
     $generatorXml.property(res, meta, 'valueType');
 
     $generatorXml.metadataQuery(meta, res);

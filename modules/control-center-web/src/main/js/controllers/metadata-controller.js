@@ -419,6 +419,15 @@ consoleModule.controller('metadataController', function ($filter, $http, $timeou
                             .success(function (drivers) {
                                 onSuccess();
 
+                                if ($scope.loadMeta.demo) {
+                                    $scope.ui.packageNamePrev = $scope.ui.packageName;
+                                    $scope.ui.packageName = 'org.apache.ignite.console.demo.model';
+                                }
+                                else if ($scope.ui.packageNamePrev) {
+                                    $scope.ui.packageName = $scope.ui.packageNamePrev;
+                                    $scope.ui.packageNamePrev = null;
+                                }
+
                                 if (drivers && drivers.length > 0) {
                                     drivers = _.sortBy(drivers, 'jdbcDriverJar');
 
@@ -763,10 +772,8 @@ consoleModule.controller('metadataController', function ($filter, $http, $timeou
                     meta.demo = $scope.loadMeta.demo;
 
                     // Use Java built-in type for key.
-                    if ($scope.ui.builtinKeys && meta.keyFields.length === 1) {
+                    if ($scope.ui.builtinKeys && meta.keyFields.length === 1)
                         meta.keyType = meta.keyFields[0].jdbcType.javaType;
-                        meta.keyFields = [];
-                    }
 
                     // Prepare caches for generation.
                     if ($scope.ui.generateCaches)
