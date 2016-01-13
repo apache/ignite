@@ -153,7 +153,8 @@ function _save(metas, res) {
                                     }
                                 },
                                 readThrough: true,
-                                writeThrough: true
+                                writeThrough: true,
+                                demo: meta.demo
                             })).save(function (err, cache) {
                                 var cacheId = cache._id;
 

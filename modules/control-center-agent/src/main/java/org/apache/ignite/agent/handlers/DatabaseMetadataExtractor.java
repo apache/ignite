@@ -95,10 +95,10 @@ public class DatabaseMetadataExtractor {
 
             return schemas;
         }
-        catch (SQLException e) {
+        catch (Throwable e) {
             log.error("Failed to collect schemas", e);
 
-            throw e;
+            throw new SQLException("Failed to collect schemas", e);
         }
     }
 
@@ -124,10 +124,10 @@ public class DatabaseMetadataExtractor {
 
             return metadata;
         }
-        catch (SQLException e) {
+        catch (Throwable e) {
             log.error("Failed to collect metadata", e);
 
-            throw e;
+            throw new SQLException("Failed to collect metadata", e);
         }
     }
 

@@ -32,6 +32,39 @@ consoleModule.controller('metadataController', function ($filter, $http, $timeou
         $scope.ui.generateCaches = true;
         $scope.ui.generatedCachesClusters = [];
 
+        $scope.removeDemoDropdown = [{ 'text': 'Remove Demo data', 'click': 'removeDemoItems()'}];
+
+        $scope.removeDemoItems = function () {
+            $table.tableReset();
+
+            $confirm.confirm('Are you sure you want to remove all demo metadata and caches?')
+                .then(function () {
+                    $http.post('/api/v1/configuration/metadata/remove/demo')
+                        .success(function () {
+                            $common.showInfo('All demo metadata and caches have been removed');
+
+                            $http.post('/api/v1/configuration/metadata/list')
+                                .success(function (data) {
+                                    $scope.spaces = data.spaces;
+                                    $scope.clusters = data.clusters;
+                                    $scope.caches = data.caches;
+                                    $scope.metadatas = data.metadatas;
+
+                                    $scope.ui.generatedCachesClusters = [];
+
+                                    _.forEach($scope.clusters, function (cluster) {
+                                        $scope.ui.generatedCachesClusters.push(cluster.value);
+                                    });
+                                });
+
+                            $scope.selectItem(undefined, undefined);
+                        })
+                        .error(function (errMsg) {
+                            $common.showError(errMsg);
+                        });
+                });
+        };
+
         $scope.joinTip = $common.joinTip;
         $scope.getModel = $common.getModel;
         $scope.javaBuildInClasses = $common.javaBuildInClasses;
@@ -193,7 +226,26 @@ consoleModule.controller('metadataController', function ($filter, $http, $timeou
             }
         ];
 
-        function _loadPresets () {
+        $scope.selectedPreset = {
+            db: 'unknown',
+            jdbcDriverJar: '',
+            jdbcDriverClass: '',
+            jdbcUrl: 'jdbc:[database]',
+            user: 'sa',
+            password: '',
+            tablesOnly: true
+        };
+
+        $scope.demoConnection = {
+            db: 'H2',
+            jdbcDriverClass: 'org.h2.Driver',
+            jdbcUrl: 'jdbc:h2:mem:demo-db',
+            user: 'sa',
+            password: '',
+            tablesOnly: true
+        };
+
+    function _loadPresets () {
             try {
                var restoredPresets =  JSON.parse(localStorage.dbPresets);
 
@@ -230,8 +282,17 @@ consoleModule.controller('metadataController', function ($filter, $http, $timeou
         }
 
         $scope.$watch('ui.selectedJdbcDriverJar', function (val) {
-            if (val)
-                $scope.updateSelectedPreset(val);
+            if (val && !$scope.loadMeta.demo) {
+                var foundPreset = _findPreset(val);
+
+                var selectedPreset = $scope.selectedPreset;
+
+                selectedPreset.db = foundPreset.db;
+                selectedPreset.jdbcDriverJar = foundPreset.jdbcDriverJar;
+                selectedPreset.jdbcDriverClass = foundPreset.jdbcDriverClass;
+                selectedPreset.jdbcUrl = foundPreset.jdbcUrl;
+                selectedPreset.user = foundPreset.user;
+            }
         }, true);
 
         $scope.ui.showValid = true;
@@ -253,18 +314,6 @@ consoleModule.controller('metadataController', function ($filter, $http, $timeou
 
             return result;
         }
-
-        $scope.updateSelectedPreset = function (selectedJdbcDriverJar) {
-            var foundPreset = _findPreset(selectedJdbcDriverJar);
-
-            var selectedPreset = $scope.selectedPreset;
-
-            selectedPreset.db = foundPreset.db;
-            selectedPreset.jdbcDriverJar = foundPreset.jdbcDriverJar;
-            selectedPreset.jdbcDriverClass = foundPreset.jdbcDriverClass;
-            selectedPreset.jdbcUrl = foundPreset.jdbcUrl;
-            selectedPreset.user = foundPreset.user;
-        };
 
         $scope.supportedJdbcTypes = $common.mkOptions($common.SUPPORTED_JDBC_TYPES);
 
@@ -371,16 +420,6 @@ consoleModule.controller('metadataController', function ($filter, $http, $timeou
                                 onSuccess();
 
                                 if (drivers && drivers.length > 0) {
-                                    $scope.selectedPreset = {
-                                        db: 'unknown',
-                                        jdbcDriverJar: '',
-                                        jdbcDriverClass: '',
-                                        jdbcUrl: 'jdbc:[database]',
-                                        user: 'sa',
-                                        password: '',
-                                        tablesOnly: true
-                                    };
-
                                     drivers = _.sortBy(drivers, 'jdbcDriverJar');
 
                                     if ($scope.loadMeta.demo) {
@@ -389,13 +428,11 @@ consoleModule.controller('metadataController', function ($filter, $http, $timeou
                                         });
 
                                         if (_h2DrvJar) {
-                                            $scope.selectedPreset.db = 'H2';
-                                            $scope.jdbcDriverJar = _h2DrvJar.jdbcDriverJar;
-                                            $scope.jdbcDriverClass = 'org.h2.Driver';
-                                            $scope.jdbcUrl = 'jdbc:h2:mem:demo-db';
+                                            $scope.demoConnection.db = 'H2';
+                                            $scope.demoConnection.jdbcDriverJar = _h2DrvJar.jdbcDriverJar;
                                         }
                                         else
-                                            $scope.selectedPreset = null;
+                                            $scope.demoConnection.db = 'unknown';
                                     }
                                     else {
                                         drivers.forEach(function (driver) {
@@ -446,10 +483,12 @@ consoleModule.controller('metadataController', function ($filter, $http, $timeou
         function _loadSchemas() {
             $loading.start('loadingMetadataFromDb');
 
-            if (!$scope.loadMeta.demo)
-                _savePreset($scope.selectedPreset);
+            var preset = $scope.loadMeta.demo ? $scope.demoConnection : $scope.selectedPreset;
 
-            $http.post('/api/v1/agent/schemas', $scope.selectedPreset)
+            if (!$scope.loadMeta.demo)
+                _savePreset(preset);
+
+            $http.post('/api/v1/agent/schemas', preset)
                 .success(function (schemas) {
                     $scope.loadMeta.schemas = _.map(schemas, function (schema) {
                         return {use: false, name: schema};
@@ -482,14 +521,17 @@ consoleModule.controller('metadataController', function ($filter, $http, $timeou
             $loading.start('loadingMetadataFromDb');
 
             $scope.loadMeta.allTablesSelected = false;
-            $scope.selectedPreset.schemas = [];
+
+            var preset = $scope.loadMeta.demo ? $scope.demoConnection : $scope.selectedPreset;
+
+            preset.schemas = [];
 
             _.forEach($scope.loadMeta.schemas, function (schema) {
                 if (schema.use)
-                    $scope.selectedPreset.schemas.push(schema.name);
+                    preset.schemas.push(schema.name);
             });
 
-            $http.post('/api/v1/agent/metadata', $scope.selectedPreset)
+            $http.post('/api/v1/agent/metadata', preset)
                 .success(function (tables) {
                     tables.forEach(function (tbl) {
                         Object.defineProperty(tbl, 'label', {
@@ -730,7 +772,8 @@ consoleModule.controller('metadataController', function ($filter, $http, $timeou
                     if ($scope.ui.generateCaches)
                         meta.newCache = {
                             name: typeName,
-                            clusters: $scope.ui.generatedCachesClusters
+                            clusters: $scope.ui.generatedCachesClusters,
+                            demo: $scope.loadMeta.demo
                         };
 
                     batch.push(meta);
@@ -809,7 +852,7 @@ consoleModule.controller('metadataController', function ($filter, $http, $timeou
             switch ($scope.loadMeta.action) {
                 case 'connect':
                     if ($scope.loadMeta.demo)
-                        res = $common.isDefined($scope.selectedPreset);
+                        res = $common.isDefined($scope.demoConnection.db === 'H2');
 
                     break;
 
@@ -858,6 +901,26 @@ consoleModule.controller('metadataController', function ($filter, $http, $timeou
         // When landing on the page, get metadatas and show them.
         $loading.start('loadingMetadataScreen');
 
+        function restoreSelection() {
+            var lastSelectedMetadata = angular.fromJson(sessionStorage.lastSelectedMetadata);
+
+            if (lastSelectedMetadata) {
+                var idx = _.findIndex($scope.metadatas, function (metadata) {
+                    return metadata._id === lastSelectedMetadata;
+                });
+
+                if (idx >= 0)
+                    $scope.selectItem($scope.metadatas[idx]);
+                else {
+                    sessionStorage.removeItem('lastSelectedMetadata');
+
+                    selectFirstItem();
+                }
+            }
+            else
+                selectFirstItem();
+        }
+
         $http.post('/api/v1/configuration/metadata/list')
             .success(function (data) {
                 $scope.spaces = data.spaces;
@@ -881,25 +944,8 @@ consoleModule.controller('metadataController', function ($filter, $http, $timeou
 
                         if ($common.getQueryVariable('new'))
                             $scope.createItem($common.getQueryVariable('id'));
-                        else {
-                            var lastSelectedMetadata = angular.fromJson(sessionStorage.lastSelectedMetadata);
-
-                            if (lastSelectedMetadata) {
-                                var idx = _.findIndex($scope.metadatas, function (metadata) {
-                                    return metadata._id === lastSelectedMetadata;
-                                });
-
-                                if (idx >= 0)
-                                    $scope.selectItem($scope.metadatas[idx]);
-                                else {
-                                    sessionStorage.removeItem('lastSelectedMetadata');
-
-                                    selectFirstItem();
-                                }
-                            }
-                            else
-                                selectFirstItem();
-                        }
+                        else
+                            restoreSelection();
 
                         $timeout(function () {
                             $scope.$apply();

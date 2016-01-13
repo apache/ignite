@@ -27,14 +27,14 @@ mixin chk(mdl, change, tip)
                 h4.modal-title Load metadata from database
             .metadata-content(ng-show='loadMeta.action == "drivers"' style="margin-bottom: 256px;")
             .metadata-content(ng-show='loadMeta.action == "connect" && loadMeta.demo' style='margin-bottom: 141px')
-                div(ng-if='selectedPreset')
+                div(ng-if='demoConnection.db == "H2"')
                     label Demo description:
                     ul
                         li In-memory H2 database server will be started inside agent
                         li Database will be populated with sample tables
                         li You could test loading metadata using this demo database
                         li Click "Next" to continue
-                div(ng-if='!selectedPreset')
+                div(ng-if='demoConnection.db != "H2"')
                     label Demo could not be started
                         ul
                             li Agent failed to resolve H2 database jar
