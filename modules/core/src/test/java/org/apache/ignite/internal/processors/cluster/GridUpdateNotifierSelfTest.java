@@ -15,11 +15,14 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal;
+package org.apache.ignite.internal.processors.cluster;
 
 import java.util.Collections;
 import java.util.Properties;
 import org.apache.ignite.IgniteSystemProperties;
+import org.apache.ignite.internal.GridKernalGateway;
+import org.apache.ignite.internal.GridKernalState;
+import org.apache.ignite.internal.IgniteProperties;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteProductVersion;
@@ -84,7 +87,7 @@ public class GridUpdateNotifierSelfTest extends GridCommonAbstractTest {
             ver = ntf.latestVersion();
         }
 
-        info("Latest version: " + ver);
+        info("Notifier version [ver=" + ver + ", nodeVer=" + nodeVer + ']');
 
         assertNotNull("Ignite latest version has not been detected.", ver);
 
@@ -92,8 +95,8 @@ public class GridUpdateNotifierSelfTest extends GridCommonAbstractTest {
 
         byte lastMaintenance = IgniteProductVersion.fromString(ver).maintenance();
 
-        assertTrue("Wrong latest version.", (nodeMaintenance == 0 && lastMaintenance == 0) ||
-            (nodeMaintenance > 0 && lastMaintenance > 0));
+        assertTrue("Wrong latest version [nodeVer=" + nodeMaintenance + ", lastVer=" + lastMaintenance + ']',
+            (nodeMaintenance == 0 && lastMaintenance == 0) || (nodeMaintenance > 0 && lastMaintenance > 0));
 
         ntf.reportStatus(log);
     }
