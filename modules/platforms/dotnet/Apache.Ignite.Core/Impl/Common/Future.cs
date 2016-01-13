@@ -70,6 +70,7 @@ namespace Apache.Ignite.Core.Impl.Common
         /// <summary>
         /// Gets the task.
         /// </summary>
+        [SuppressMessage("Microsoft.Naming", "CA1721:PropertyNamesShouldNotMatchGetMethods")]
         public Task<T> Task
         {
             get { return _taskCompletionSource.Task; }
