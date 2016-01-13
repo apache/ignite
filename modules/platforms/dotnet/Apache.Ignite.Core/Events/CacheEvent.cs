@@ -166,9 +166,11 @@ namespace Apache.Ignite.Core.Events
         /// Gets task name if cache event was caused by an operation initiated within task execution. 
         /// </summary>
         public string TaskName { get { return _taskName; } }
-        
-        /** <inheritDoc /> */
-	    public override string ToShortString()
+
+        /// <summary>
+        /// Gets shortened version of ToString result.
+        /// </summary>
+        public override string ToShortString()
 	    {
             return string.Format(CultureInfo.InvariantCulture, 
                 "{0}: IsNear={1}, Key={2}, HasNewValue={3}, HasOldValue={4}, NodeId={5}", Name, 
