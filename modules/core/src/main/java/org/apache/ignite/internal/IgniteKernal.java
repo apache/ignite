@@ -1424,8 +1424,11 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
     }
 
     /** @throws IgniteCheckedException If registration failed. */
-    private void registerExecutorMBeans(ExecutorService execSvc, ExecutorService sysExecSvc, ExecutorService p2pExecSvc,
-        ExecutorService mgmtExecSvc, ExecutorService restExecSvc) throws IgniteCheckedException {
+    private void registerExecutorMBeans(ExecutorService execSvc,
+        ExecutorService sysExecSvc,
+        ExecutorService p2pExecSvc,
+        ExecutorService mgmtExecSvc,
+        ExecutorService restExecSvc) throws IgniteCheckedException {
         pubExecSvcMBean = registerExecutorMBean(execSvc, "GridExecutionExecutor");
         sysExecSvcMBean = registerExecutorMBean(sysExecSvc, "GridSystemExecutor");
         mgmtExecSvcMBean = registerExecutorMBean(mgmtExecSvc, "GridManagementExecutor");
@@ -2414,7 +2417,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
         guard();
 
         try {
-            return ctx.cache().publicJCache(name, false);
+            return ctx.cache().publicJCache(name, false, true);
         }
         catch (IgniteCheckedException e) {
             throw CU.convertToCacheException(e);
@@ -2431,7 +2434,12 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
         guard();
 
         try {
-            ctx.cache().dynamicStartCache(cacheCfg, cacheCfg.getName(), null, true, true).get();
+            ctx.cache().dynamicStartCache(cacheCfg,
+                cacheCfg.getName(),
+                null,
+                true,
+                true,
+                true).get();
 
             return ctx.cache().publicJCache(cacheCfg.getName());
         }
@@ -2467,8 +2475,14 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
         guard();
 
         try {
-            if (ctx.cache().cache(cacheCfg.getName()) == null)
-                ctx.cache().dynamicStartCache(cacheCfg, cacheCfg.getName(), null, false, true).get();
+            if (ctx.cache().cache(cacheCfg.getName()) == null) {
+                ctx.cache().dynamicStartCache(cacheCfg,
+                    cacheCfg.getName(),
+                    null,
+                    false,
+                    true,
+                    true).get();
+            }
 
             return ctx.cache().publicJCache(cacheCfg.getName());
         }
@@ -2491,7 +2505,12 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
         guard();
 
         try {
-            ctx.cache().dynamicStartCache(cacheCfg, cacheCfg.getName(), nearCfg, true, true).get();
+            ctx.cache().dynamicStartCache(cacheCfg,
+                cacheCfg.getName(),
+                nearCfg,
+                true,
+                true,
+                true).get();
 
             return ctx.cache().publicJCache(cacheCfg.getName());
         }
@@ -2514,11 +2533,23 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
         try {
             IgniteInternalCache<Object, Object> cache = ctx.cache().cache(cacheCfg.getName());
 
-            if (cache == null)
-                ctx.cache().dynamicStartCache(cacheCfg, cacheCfg.getName(), nearCfg, false, true).get();
+            if (cache == null) {
+                ctx.cache().dynamicStartCache(cacheCfg,
+                    cacheCfg.getName(),
+                    nearCfg,
+                    false,
+                    true,
+                    true).get();
+            }
             else {
-                if (cache.configuration().getNearConfiguration() == null)
-                    ctx.cache().dynamicStartCache(cacheCfg, cacheCfg.getName(), nearCfg, false, true).get();
+                if (cache.configuration().getNearConfiguration() == null) {
+                    ctx.cache().dynamicStartCache(cacheCfg,
+                        cacheCfg.getName(),
+                        nearCfg,
+                        false,
+                        true,
+                        true).get();
+                }
             }
 
             return ctx.cache().publicJCache(cacheCfg.getName());
@@ -2538,7 +2569,12 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
         guard();
 
         try {
-            ctx.cache().dynamicStartCache(null, cacheName, nearCfg, true, true).get();
+            ctx.cache().dynamicStartCache(null,
+                cacheName,
+                nearCfg,
+                true,
+                true,
+                true).get();
 
             IgniteCacheProxy<K, V> cache = ctx.cache().publicJCache(cacheName);
 
@@ -2564,11 +2600,23 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
         try {
             IgniteInternalCache<Object, Object> internalCache = ctx.cache().cache(cacheName);
 
-            if (internalCache == null)
-                ctx.cache().dynamicStartCache(null, cacheName, nearCfg, false, true).get();
+            if (internalCache == null) {
+                ctx.cache().dynamicStartCache(null,
+                    cacheName,
+                    nearCfg,
+                    false,
+                    true,
+                    true).get();
+            }
             else {
-                if (internalCache.configuration().getNearConfiguration() == null)
-                    ctx.cache().dynamicStartCache(null, cacheName, nearCfg, false, true).get();
+                if (internalCache.configuration().getNearConfiguration() == null) {
+                    ctx.cache().dynamicStartCache(null,
+                        cacheName,
+                        nearCfg,
+                        false,
+                        true,
+                        true).get();
+                }
             }
 
             IgniteCacheProxy<K, V> cache = ctx.cache().publicJCache(cacheName);
@@ -2587,6 +2635,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
 
     /**
      * @param cache Cache.
+     * @throws IgniteCheckedException If cache without near cache was already started.
      */
     private void checkNearCacheStarted(IgniteCacheProxy<?, ?> cache) throws IgniteCheckedException {
         if (!cache.context().isNear())
@@ -2596,7 +2645,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
 
     /** {@inheritDoc} */
     @Override public void destroyCache(String cacheName) {
-        IgniteInternalFuture stopFut = destroyCacheAsync(cacheName);
+        IgniteInternalFuture stopFut = destroyCacheAsync(cacheName, true);
 
         try {
             stopFut.get();
@@ -2608,13 +2657,14 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
 
     /**
      * @param cacheName Cache name.
+     * @param checkThreadTx If {@code true} checks that current thread does not have active transactions.
      * @return Ignite future.
      */
-    public IgniteInternalFuture<?> destroyCacheAsync(String cacheName) {
+    public IgniteInternalFuture<?> destroyCacheAsync(String cacheName, boolean checkThreadTx) {
         guard();
 
         try {
-            return ctx.cache().dynamicDestroyCache(cacheName);
+            return ctx.cache().dynamicDestroyCache(cacheName, checkThreadTx);
         }
         finally {
             unguard();
@@ -2627,7 +2677,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
 
         try {
             if (ctx.cache().cache(cacheName) == null)
-                ctx.cache().getOrCreateFromTemplate(cacheName).get();
+                ctx.cache().getOrCreateFromTemplate(cacheName, true).get();
 
             return ctx.cache().publicJCache(cacheName);
         }
@@ -2641,14 +2691,15 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
 
     /**
      * @param cacheName Cache name.
+     * @param checkThreadTx If {@code true} checks that current thread does not have active transactions.
      * @return Future that will be completed when cache is deployed.
      */
-    public IgniteInternalFuture<?> getOrCreateCacheAsync(String cacheName) {
+    public IgniteInternalFuture<?> getOrCreateCacheAsync(String cacheName, boolean checkThreadTx) {
         guard();
 
         try {
             if (ctx.cache().cache(cacheName) == null)
-                return ctx.cache().getOrCreateFromTemplate(cacheName);
+                return ctx.cache().getOrCreateFromTemplate(cacheName, checkThreadTx);
 
             return new GridFinishedFuture<>();
         }

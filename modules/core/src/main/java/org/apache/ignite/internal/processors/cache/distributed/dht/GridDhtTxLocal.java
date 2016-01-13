@@ -421,6 +421,7 @@ public class GridDhtTxLocal extends GridDhtTxLocalAdapter implements GridCacheMa
             if (!state(PREPARING)) {
                 if (state() == PREPARED && isSystemInvalidate())
                     fut.complete();
+
                 if (setRollbackOnly()) {
                     if (timedOut())
                         fut.onError(new IgniteTxTimeoutCheckedException("Transaction timed out and was rolled back: " +

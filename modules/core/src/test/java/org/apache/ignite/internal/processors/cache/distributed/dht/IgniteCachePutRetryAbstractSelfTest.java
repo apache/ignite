@@ -30,6 +30,8 @@ import javax.cache.integration.CacheLoaderException;
 import javax.cache.integration.CacheWriterException;
 import javax.cache.processor.EntryProcessorResult;
 import javax.cache.processor.MutableEntry;
+
+import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheAtomicWriteOrderMode;
 import org.apache.ignite.cache.CacheAtomicityMode;
@@ -238,7 +240,7 @@ public abstract class IgniteCachePutRetryAbstractSelfTest extends GridCommonAbst
      * @param store If {@code true} uses cache with store.
      * @throws Exception If failed.
      */
-    private void checkRetry(Test test, TestMemoryMode memMode, boolean store) throws Exception {
+    protected final void checkRetry(Test test, TestMemoryMode memMode, boolean store) throws Exception {
         ignite(0).createCache(cacheConfiguration(memMode, store));
 
         final AtomicBoolean finished = new AtomicBoolean();
@@ -259,7 +261,7 @@ public abstract class IgniteCachePutRetryAbstractSelfTest extends GridCommonAbst
             }
         });
 
-        IgniteCache<Integer, Integer> cache = ignite(0).cache(null);
+        final IgniteCache<Integer, Integer> cache = ignite(0).cache(null);
 
         int iter = 0;
 
@@ -300,6 +302,31 @@ public abstract class IgniteCachePutRetryAbstractSelfTest extends GridCommonAbst
 
                             assertTrue("Unexpected old value [old=" + old + ", exp=" + expOld + ']',
                                 expOld.equals(old) || val.equals(old));
+                        }
+
+                        for (int i = 0; i < keysCnt; i++)
+                            assertEquals(val, cache.get(i));
+                    }
+
+                    break;
+                }
+
+                case TX_PUT: {
+                    while (System.currentTimeMillis() < stopTime) {
+                        final Integer val = ++iter;
+
+                        Ignite ignite = ignite(0);
+
+                        for (int i = 0; i < keysCnt; i++) {
+                            final Integer key = i;
+
+                            doInTransaction(ignite, new Callable<Void>() {
+                                @Override public Void call() throws Exception {
+                                    cache.put(key, val);
+
+                                    return null;
+                                }
+                            });
                         }
 
                         for (int i = 0; i < keysCnt; i++)
@@ -541,7 +568,10 @@ public abstract class IgniteCachePutRetryAbstractSelfTest extends GridCommonAbst
         INVOKE,
 
         /** */
-        INVOKE_ALL
+        INVOKE_ALL,
+
+        /** */
+        TX_PUT
     }
 
     /**

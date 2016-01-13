@@ -4337,7 +4337,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
 
                 log.info("Set iterators not cleared, will wait");
 
-                Thread.sleep(500);
+                Thread.sleep(1000);
             }
         }
     }
