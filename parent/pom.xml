@@ -885,7 +885,7 @@
                                         <exclude>**/*.sln</exclude>
                                         <exclude>**/*.snk</exclude>
                                         <exclude>**/*.slnrel</exclude>
-                                        <exclude>**/*.sln.DotSettings</exclude>
+                                        <exclude>**/*.DotSettings</exclude>
                                         <exclude>**/*.FxCop</exclude>
                                         <exclude>**/*.csproj</exclude>
                                         <exclude>**/*.csprojrel</exclude>
