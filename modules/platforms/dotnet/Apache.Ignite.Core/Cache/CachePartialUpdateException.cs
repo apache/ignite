@@ -21,6 +21,7 @@ namespace Apache.Ignite.Core.Cache
     using System.Collections.Generic;
     using System.Linq;
     using System.Runtime.Serialization;
+    using Apache.Ignite.Core.Impl.Common;
 
     /// <summary>
     /// Exception thrown from non-transactional cache in case when update succeeded only partially.
@@ -111,6 +112,8 @@ namespace Apache.Ignite.Core.Cache
         /** <inheritdoc /> */
         public override void GetObjectData(SerializationInfo info, StreamingContext context)
         {
+            IgniteArgumentCheck.NotNull(info, "info");
+
             info.AddValue(KeyFailedKeys, _failedKeys);
 
             base.GetObjectData(info, context);
