@@ -18,6 +18,7 @@
 namespace Apache.Ignite.Core.Impl.Binary.Metadata
 {
     using System.Collections.Generic;
+    using System.Diagnostics.CodeAnalysis;
     using Apache.Ignite.Core.Binary;
 
     /// <summary>
@@ -56,6 +57,8 @@ namespace Apache.Ignite.Core.Impl.Binary.Metadata
         /// <summary>
         /// Initializes the <see cref="BinaryType"/> class.
         /// </summary>
+        [SuppressMessage("Microsoft.Performance", "CA1810:InitializeReferenceTypeStaticFieldsInline",
+            Justification = "Readability.")]
         static BinaryType()
         {
             TypeNames[BinaryUtils.TypeBool] = BinaryTypeNames.TypeNameBool;
