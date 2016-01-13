@@ -275,7 +275,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
                         if (_ignite != null)
                             cacheStore.Init(_ignite);
                         else
-                            _initActions.Add(g => cacheStore.Init(g));
+                            _initActions.Add(cacheStore.Init);
                     }
                 }
 

@@ -1125,7 +1125,7 @@ namespace Apache.Ignite.Core.Impl.Binary
                 res = factory.Invoke(len);
 
             if (adder == null)
-                adder = (col, elem) => { ((ArrayList) col).Add(elem); };
+                adder = (col, elem) => ((ArrayList) col).Add(elem);
 
             for (int i = 0; i < len; i++)
                 adder.Invoke(res, ctx.Deserialize<object>());

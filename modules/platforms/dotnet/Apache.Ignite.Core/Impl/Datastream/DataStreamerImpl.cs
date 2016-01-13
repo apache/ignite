@@ -537,6 +537,7 @@ namespace Apache.Ignite.Core.Impl.Datastream
                     if (_batch != null)
                         _batch.Send(this, PlcCancelClose);
                 }
+                // ReSharper disable once EmptyGeneralCatchClause
                 catch (Exception)
                 {
                     // Finalizers should never throw

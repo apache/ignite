@@ -187,7 +187,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// <returns>Empty binary object.</returns>
         private BinaryObject BinaryFromDescriptor(IBinaryTypeDescriptor desc)
         {
-            var len = BinaryObjectHeader.Size;
+            const int len = BinaryObjectHeader.Size;
 
             var hdr = new BinaryObjectHeader(desc.TypeId, 0, len, 0, len,
                 desc.UserType ? BinaryObjectHeader.Flag.UserType : BinaryObjectHeader.Flag.None);
