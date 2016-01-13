@@ -18,7 +18,6 @@
 namespace Apache.Ignite.Core.Impl.Binary.Metadata
 {
     using System.Collections.Generic;
-    using System.Diagnostics.CodeAnalysis;
     using Apache.Ignite.Core.Binary;
 
     /// <summary>
