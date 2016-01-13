@@ -61,7 +61,7 @@ public class GridOdbcColumnMeta {
         try {
             this.dataType = Class.forName(info.fieldTypeName());
         }
-        catch (Exception ignoreed) {
+        catch (Exception ignored) {
             this.dataType = Object.class;
         }
     }

@@ -143,6 +143,18 @@ public class GridOdbcCommandHandler {
     }
 
     /**
+     * Remove quotation marks at the beginning and end of the string if present.
+     * @param str Input string.
+     * @return String without leading and trailing quotation marks.
+     */
+    private String RemoveQuotationMarksIfNeeded(String str) {
+        if (str.startsWith("\"") && str.endsWith("\""))
+            return str.substring(1, str.length() - 1);
+
+        return str;
+    }
+
+    /**
      * @param req Execute query request.
      * @param qryCurs Queries cursors.
      * @return Response.
@@ -245,10 +257,28 @@ public class GridOdbcCommandHandler {
         try {
             List<GridOdbcColumnMeta> meta = new ArrayList<>();
 
-            Collection<GridQueryTypeDescriptor> tablesMeta = ctx.query().types(req.cacheName());
+            String cacheName;
+            String tableName;
+
+            if (req.tableName().contains("."))
+            {
+                // Parsing two-part table name.
+                String[] parts = req.tableName().split("\\.");
+
+                cacheName = RemoveQuotationMarksIfNeeded(parts[0]);
+
+                tableName = parts[1];
+            }
+            else {
+                cacheName = RemoveQuotationMarksIfNeeded(req.cacheName());
+
+                tableName = req.tableName();
+            }
+
+            Collection<GridQueryTypeDescriptor> tablesMeta = ctx.query().types(cacheName);
 
             for (GridQueryTypeDescriptor table : tablesMeta) {
-                if (!matches(table.name(), req.tableName()))
+                if (!matches(table.name(), tableName))
                     continue;
 
                 for (Map.Entry<String, Class<?>> field : table.fields().entrySet()) {
@@ -279,7 +309,9 @@ public class GridOdbcCommandHandler {
         try {
             List<GridOdbcTableMeta> meta = new ArrayList<>();
 
-            Collection<GridQueryTypeDescriptor> tablesMeta = ctx.query().types(req.schema());
+            String realSchema = RemoveQuotationMarksIfNeeded(req.schema());
+
+            Collection<GridQueryTypeDescriptor> tablesMeta = ctx.query().types(realSchema);
 
             for (GridQueryTypeDescriptor table : tablesMeta) {
                 if (!matches(table.name(), req.table()))

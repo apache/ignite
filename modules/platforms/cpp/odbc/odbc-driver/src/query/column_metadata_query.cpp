@@ -290,6 +290,7 @@ namespace ignite
                     LOG_MSG("[%d] TableName:      %s\n", i, meta[i].GetTableName().c_str());
                     LOG_MSG("[%d] ColumnName:     %s\n", i, meta[i].GetColumnName().c_str());
                     LOG_MSG("[%d] ColumnTypeName: %s\n", i, meta[i].GetColumnTypeName().c_str());
+                    LOG_MSG("[%d] ColumnType:     %d\n", i, meta[i].GetDataType());
                     LOG_MSG("\n");
                 }
 
