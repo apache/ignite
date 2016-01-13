@@ -77,6 +77,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         private readonly GCHandle _thisHnd;
 
         /** Callbacks pointer. */
+        [SuppressMessage("Microsoft.Reliability", "CA2006:UseSafeHandleToEncapsulateNativeResources")]
         private readonly IntPtr _cbsPtr;
 
         /** Error type: generic. */
