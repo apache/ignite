@@ -260,8 +260,7 @@ public class GridOdbcCommandHandler {
             String cacheName;
             String tableName;
 
-            if (req.tableName().contains("."))
-            {
+            if (req.tableName().contains(".")) {
                 // Parsing two-part table name.
                 String[] parts = req.tableName().split("\\.");
 
