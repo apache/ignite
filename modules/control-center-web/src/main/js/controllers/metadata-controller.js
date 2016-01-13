@@ -778,7 +778,7 @@ consoleModule.controller('metadataController', function ($filter, $http, $timeou
                     // Prepare caches for generation.
                     if ($scope.ui.generateCaches)
                         meta.newCache = {
-                            name: typeName,
+                            name: typeName + 'Cache',
                             clusters: $scope.ui.generatedCachesClusters,
                             demo: $scope.loadMeta.demo
                         };
