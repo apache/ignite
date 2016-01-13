@@ -234,7 +234,7 @@ namespace Apache.Ignite.Core.Impl
         /// <param name="writeItem">Write action to perform on item when it is not null.</param>
         /// <returns>The same writer for chaining.</returns>
         protected static BinaryWriter WriteNullable<T>(BinaryWriter writer, T item,
-            Func<BinaryWriter, T, BinaryWriter> writeItem)
+            Func<BinaryWriter, T, BinaryWriter> writeItem) where T : class
         {
             if (item == null)
             {
