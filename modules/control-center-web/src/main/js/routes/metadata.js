@@ -231,4 +231,35 @@ router.post('/remove/all', function (req, res) {
     });
 });
 
+/**
+ * Remove all generated demo metadata and caches.
+ */
+router.post('/remove/demo', function (req, res) {
+    var user_id = req.currentUserId();
+
+    // Get owned space and all accessed space.
+    db.Space.find({$or: [{owner: user_id}, {usedBy: {$elemMatch: {account: user_id}}}]}, function (err, spaces) {
+        if (db.processed(err, res)) {
+            var space_ids = spaces.map(function (value) {
+                return value._id;
+            });
+
+            // Remove all demo metadata.
+            db.CacheTypeMetadata.remove({$and: [{space: {$in: space_ids}}, {demo: true}]}, function (err) {
+                if (err)
+                    return res.status(500).send(err.message);
+
+                // Remove all demo caches.
+                db.Cache.remove({$and: [{space: {$in: space_ids}}, {demo: true}]}, function (err) {
+                    if (err)
+                        return res.status(500).send(err.message);
+
+                    res.sendStatus(200);
+                });
+            });
+        }
+    });
+});
+
+
 module.exports = router;

@@ -32,12 +32,32 @@ consoleModule.controller('metadataController', function ($filter, $http, $timeou
         $scope.ui.generateCaches = true;
         $scope.ui.generatedCachesClusters = [];
 
-        $scope.removeDemoDropdown = [{ 'text': 'Remove Demo data', 'click': 'removeDemoItems()'}];
+        $scope.removeDemoDropdown = [{ 'text': 'Remove generated demo metadata', 'click': 'removeDemoItems()'}];
+
+        function restoreSelection() {
+            var lastSelectedMetadata = angular.fromJson(sessionStorage.lastSelectedMetadata);
+
+            if (lastSelectedMetadata) {
+                var idx = _.findIndex($scope.metadatas, function (metadata) {
+                    return metadata._id === lastSelectedMetadata;
+                });
+
+                if (idx >= 0)
+                    $scope.selectItem($scope.metadatas[idx]);
+                else {
+                    sessionStorage.removeItem('lastSelectedMetadata');
+
+                    selectFirstItem();
+                }
+            }
+            else
+                selectFirstItem();
+        }
 
         $scope.removeDemoItems = function () {
             $table.tableReset();
 
-            $confirm.confirm('Are you sure you want to remove all demo metadata and caches?')
+            $confirm.confirm('Are you sure you want to remove all generated demo metadata and caches?')
                 .then(function () {
                     $http.post('/api/v1/configuration/metadata/remove/demo')
                         .success(function () {
@@ -57,12 +77,18 @@ consoleModule.controller('metadataController', function ($filter, $http, $timeou
                                     });
                                 });
 
-                            $scope.selectItem(undefined, undefined);
+                            restoreSelection();
                         })
                         .error(function (errMsg) {
                             $common.showError(errMsg);
                         });
                 });
+        };
+
+        $scope.hasDemoItems =  function () {
+            return _.findIndex($scope.metadatas, function (meta) {
+                    return meta.demo;
+                }) >= 0;
         };
 
         $scope.joinTip = $common.joinTip;
@@ -907,26 +933,6 @@ consoleModule.controller('metadataController', function ($filter, $http, $timeou
 
         // When landing on the page, get metadatas and show them.
         $loading.start('loadingMetadataScreen');
-
-        function restoreSelection() {
-            var lastSelectedMetadata = angular.fromJson(sessionStorage.lastSelectedMetadata);
-
-            if (lastSelectedMetadata) {
-                var idx = _.findIndex($scope.metadatas, function (metadata) {
-                    return metadata._id === lastSelectedMetadata;
-                });
-
-                if (idx >= 0)
-                    $scope.selectItem($scope.metadatas[idx]);
-                else {
-                    sessionStorage.removeItem('lastSelectedMetadata');
-
-                    selectFirstItem();
-                }
-            }
-            else
-                selectFirstItem();
-        }
 
         $http.post('/api/v1/configuration/metadata/list')
             .success(function (data) {

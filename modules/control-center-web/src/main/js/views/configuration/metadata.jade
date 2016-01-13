@@ -69,7 +69,7 @@ include ../includes/controls
                     button.btn.btn-primary(ng-click='showLoadMetadataModal(false)') Load from database
                 .btn-group.panel-tip-container(bs-tooltip='' data-title='Load metadata from demo database' data-placement='bottom')
                     button.btn.btn-info(ng-click='showLoadMetadataModal(true)') Load from demo database
-                        button.btn.dropdown-toggle.btn-info(id='remove-demo-dropdown' data-toggle='dropdown' data-container='body' bs-dropdown='removeDemoDropdown' data-placement='bottom-right')
+                        button.btn.dropdown-toggle.btn-info(id='remove-demo-dropdown' ng-if='hasDemoItems()' data-toggle='dropdown' data-container='body' bs-dropdown='removeDemoDropdown' data-placement='bottom-right')
                             span.caret
                 +save-remove-buttons('metadata')
                 hr
