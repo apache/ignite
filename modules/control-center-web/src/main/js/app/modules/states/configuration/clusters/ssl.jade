@@ -106,26 +106,29 @@ form.panel.panel-default(bs-collapse ng-model='panel' name='sslConfiguration')
                         .group-content-empty(ng-if='!(#{model}.trustManagers.length) && !__.addTrustManager')
                             | Not defined
                         .group-content(ng-if='#{model}.trustManagers.length')
-                            ignite-form-field(ng-repeat='model in #{model}.trustManagers track by $index' type='internal')
+                            ignite-form-field(ng-repeat='model in #{model}.trustManagers track by $index' type='internal' ng-init='')
                                 .indexField
                                     | {{ $index+1 }}) 
                                 i.tipField.fa.fa-remove(
+                                    ng-hide='___.edit'
                                     bs-tooltip='"Remove trust manager"'
                                     ng-click='#{model}.trustManagers.splice(#{model}.trustManagers.indexOf(model), 1)'
                                 )
-                                span(ng-hide='__edit')
-                                    a.labelFormField(ng-click='__edit = true') {{ model }}
-                                span(ng-if='__edit')
+                                span(ng-hide='___.edit')
+                                    a.labelFormField(ng-click='___.edit = true') {{ model }}
+                                span(ng-if='___.edit' ng-form='form' ng-init='field = model')
                                     ignite-form-field-input-text(
-                                        data-ng-model='model'
+                                        data-name='field'
+                                        data-ng-model='field'
+                                        data-placeholder='Enter fully qualified class name'
                                         data-java-keywords='true'
                                         data-java-identifier='true'
                                         data-java-package-specified='true'
                                         data-java-build-in-class='true'
                                         data-ng-required='true'
                                         data-ignite-form-field-input-autofocus='true'
-                                        on-enter='__edit = false'
-                                        ng-blur='__edit = false'
+                                        on-enter='form.$valid && (#{model}.trustManagers[$index] = field); form.$valid && (___.edit = false);'
+                                        ng-blur='form.$valid && (#{model}.trustManagers[$index] = field); (___.edit = false)'
                                     )
                                         i.fa.fa-floppy-o(
                                             ng-show='form.$valid'
@@ -155,6 +158,7 @@ form.panel.panel-default(bs-collapse ng-model='panel' name='sslConfiguration')
                                     data-ng-required='true'
                                     data-ignite-form-field-input-autofocus='true'
                                     on-enter='form.$valid && #{model}.trustManagers.push(field); form.$valid && (__.addTrustManager = false)'
+                                    ng-blur='form.$valid && #{model}.trustManagers.push(field); (__.addTrustManager = false)'
                                 )
                                     i.fa.fa-floppy-o(
                                         ng-show='form.$valid'
@@ -168,68 +172,30 @@ form.panel.panel-default(bs-collapse ng-model='panel' name='sslConfiguration')
                                     +feedback('field', 'javaKeywords', 'Trust manager could not contains reserved java keyword: ""!')
                                     +feedback('field', 'javaBuildInClass', 'Trust manager should not be the Java build-in class!')
                                     +feedback('field', 'javaPackageSpecified', 'Trust manager does not have package specified!')
-                //- data-ng-model-options='{ updateOn: "blur"}'
-                                        data-java-class='true'
-                                        
-                                        data-java-identifier='true'                
+               
+                .settings-row(ng-if='backupItem.sslEnabled && !#{model}.trustManagers.length')
+                    ignite-form-field(data-label='Trust store file')
+                        ignite-form-field-tooltip
+                            | Path to the trust store file
+                        ignite-form-field-input-text(
+                            data-id='trustStoreFilePath'
+                            data-name='trustStoreFilePath'
+                            data-ng-model='#{model}.trustStoreFilePath'
+                            data-placeholder='Path to the trust store file'
+                        )
 
-                //- .settings-row
-                    .col-sm-12.panel-details(ng-if='#{model}.expanded && #{model}.kind')
-                        .details-row
-                            ignite-form-field(data-label='Base directory')
-                                ignite-form-field-tooltip
-                                    | Base directory where to write files
-                                ignite-form-field-input-text(
-                                    data-id='baseDirectory'
-                                    data-name='baseDirectory'
-                                    data-ng-model='#{model}.FileSwapSpaceSpi.baseDirectory'
-                                    data-placeholder='swapspace'
-                                )
-                        .details-row
-                            ignite-form-field(data-label='Read stripe size')
-                                ignite-form-field-tooltip
-                                    | Read stripe size defines number of file channels to be used concurrently
-                                ignite-form-field-input-number(
-                                    data-id='readStripesNumber'
-                                    data-name='readStripesNumber'
-                                    data-ng-model='#{model}.FileSwapSpaceSpi.readStripesNumber'
-                                    data-placeholder='available CPU cores'
-                                )
-                        .details-row
-                            ignite-form-field(data-label='Maximum sparsity')
-                                ignite-form-field-tooltip
-                                    | This property defines maximum acceptable wasted file space to whole file size ratio#[br]
-                                    | When this ratio becomes higher than specified number compacting thread starts working
-                                ignite-form-field-input-number(
-                                    data-id='maximumSparsity'
-                                    data-name='maximumSparsity'
-                                    data-ng-model='#{model}.FileSwapSpaceSpi.maximumSparsity'
-                                    data-placeholder='0.5'
-                                )
-                        .details-row
-                            ignite-form-field(data-label='Max write queue size')
-                                ignite-form-field-tooltip
-                                    | Max write queue size in bytes#[br]
-                                    | If there are more values are waiting for being written to disk then specified size, SPI will block on store operation
-                                ignite-form-field-input-number(
-                                    data-id='maxWriteQueueSize'
-                                    data-name='maxWriteQueueSize'
-                                    data-ng-model='#{model}.FileSwapSpaceSpi.maxWriteQueueSize'
-                                    data-placeholder='1024 * 1024'
-                                )
-                        .details-row
-                            ignite-form-field(data-label='Write buffer size')
-                                ignite-form-field-tooltip
-                                    | Write buffer size in bytes#[br]
-                                    | Write to disk occurs only when this buffer is full
-                                ignite-form-field-input-number(
-                                    data-id='writeBufferSize'
-                                    data-name='writeBufferSize'
-                                    data-ng-model='#{model}.FileSwapSpaceSpi.writeBufferSize'
-                                    data-placeholder='Available CPU cores'
-                                )
-
-
+                .settings-row(ng-if='backupItem.sslEnabled && !#{model}.trustManagers.length')
+                    ignite-form-field(data-label='Trust store type')
+                        ignite-form-field-tooltip
+                            | Trust store type used in context initialization
+                        ignite-form-field-input-datalist(
+                            data-id='trustStoreType'
+                            data-name='trustStoreType'
+                            data-options="['JKS', 'PCKS11', 'PCKS12']"
+                            data-ng-model='#{model}.trustStoreType'
+                            data-placeholder='JKS'
+                        )                        
+ 
             .col-sm-6
                 .preview-panel(ng-init='mode = false')
                     .preview-legend

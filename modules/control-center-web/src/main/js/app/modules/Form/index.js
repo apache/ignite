@@ -17,6 +17,7 @@
 
 import angular from 'angular';
 import igniteFormField from './field/field.directive';
+import igniteFormFieldLabel from './field/label.directive';
 import igniteFormFieldTooltip from './field/tooltip.directive';
 import igniteFormFieldDropdown from './field/dropdown.directive';
 import igniteFormFieldInputNumber from './field/input/number.directive';
@@ -39,6 +40,7 @@ angular
 
 ])
 .directive(...igniteFormField)
+.directive(...igniteFormFieldLabel)
 .directive(...igniteFormFieldTooltip)
 .directive(...igniteFormFieldDropdown)
 .directive(...igniteFormFieldInputNumber)

@@ -15,21 +15,9 @@
  * limitations under the License.
  */
 
-const template = `<i class='tipField fa fa-question-circle'></i>`;
-
-export default ['igniteFormFieldTooltip', ['$tooltip', ($tooltip) => {
+export default ['igniteFormFieldLabel', ['$tooltip', ($tooltip) => {
     const link = ($scope, $element, $attrs, $ctrls, $transclude) => {
-        const content = Array.prototype.slice
-        .apply($transclude($scope))
-        .reduce((html, el) => html += el.outerHTML, '');
-
-        $tooltip($element, { title: content });
-
-        if ($element.hasClass('tipLabel'))
-            $element.removeClass('tipField');
-
-        if ($element.parent('label').length)
-            $element.addClass('tipLabel').removeClass('tipField');
+        
     };
 
     return {

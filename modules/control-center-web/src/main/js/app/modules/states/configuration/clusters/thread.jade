@@ -14,9 +14,6 @@
     See the License for the specific language governing permissions and
     limitations under the License.
 
-mixin ignite-form-field-tooltip(message)
-    i.tipField.fa.fa-question-circle(bs-tooltip='"#{message}"')
-
 - var model = 'backupItem'
 
 form.panel.panel-default(bs-collapse ng-model='panel' name='pools')
@@ -34,7 +31,8 @@ form.panel.panel-default(bs-collapse ng-model='panel' name='pools')
             .col-sm-6
                 .settings-row
                     ignite-form-field(data-label='Public')
-                        +ignite-form-field-tooltip('Thread pool that is in charge of processing ComputeJob, GridJobs and user messages sent to node')
+                        ignite-form-field-tooltip
+                            | Thread pool that is in charge of processing ComputeJob, GridJobs and user messages sent to node
                         ignite-form-field-input-number(
                             data-id='publicThreadPoolSize'
                             data-name='publicThreadPoolSize'
@@ -43,7 +41,8 @@ form.panel.panel-default(bs-collapse ng-model='panel' name='pools')
                         )
                 .settings-row
                     ignite-form-field(data-label='System')
-                        +ignite-form-field-tooltip('Thread pool that is in charge of processing internal system messages')
+                        ignite-form-field-tooltip
+                            | Thread pool that is in charge of processing internal system messages
                         ignite-form-field-input-number(
                             data-id='systemThreadPoolSize'
                             data-name='systemThreadPoolSize'
@@ -52,7 +51,8 @@ form.panel.panel-default(bs-collapse ng-model='panel' name='pools')
                         )
                 .settings-row
                     ignite-form-field(data-label='Management')
-                        +ignite-form-field-tooltip('Thread pool that is in charge of processing internal and Visor ComputeJob, GridJobs')
+                        ignite-form-field-tooltip
+                            | Thread pool that is in charge of processing internal and Visor ComputeJob, GridJobs
                         ignite-form-field-input-number(
                             data-id='managementThreadPoolSize'
                             data-name='managementThreadPoolSize'
@@ -61,7 +61,8 @@ form.panel.panel-default(bs-collapse ng-model='panel' name='pools')
                         )
                 .settings-row
                     ignite-form-field(data-label='IGFS')
-                        +ignite-form-field-tooltip('Thread pool that is in charge of processing outgoing IGFS messages')
+                        ignite-form-field-tooltip
+                            | Thread pool that is in charge of processing outgoing IGFS messages
                         ignite-form-field-input-number(
                             data-id='igfsThreadPoolSize'
                             data-name='igfsThreadPoolSize'
@@ -70,7 +71,8 @@ form.panel.panel-default(bs-collapse ng-model='panel' name='pools')
                         )
                 .settings-row
                     ignite-form-field(data-label='Rebalance')
-                        +ignite-form-field-tooltip('Max count of threads can be used at rebalancing')
+                        ignite-form-field-tooltip
+                            | Max count of threads can be used at rebalancing
                         ignite-form-field-input-number(
                             data-irebalanceThreadPoolSized=''
                             data-name='rebalanceThreadPoolSize'

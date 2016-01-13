@@ -16,7 +16,10 @@
  */
 
 export default ['igniteFormFieldInputAutofocus', [() => {
-    const link = (scope, el) => {
+    const link = (scope, el, attrs) => {
+        if (typeof attrs.igniteFormFieldInputAutofocus === 'undefined' || !attrs.igniteFormFieldInputAutofocus)
+            return;
+
         el.focus();
     };
 

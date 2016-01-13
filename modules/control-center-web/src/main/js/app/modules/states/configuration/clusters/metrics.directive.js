@@ -15,30 +15,13 @@
  * limitations under the License.
  */
 
-const template = `<i class='tipField fa fa-question-circle'></i>`;
+import template from './metrics.jade!';
 
-export default ['igniteFormFieldTooltip', ['$tooltip', ($tooltip) => {
-    const link = ($scope, $element, $attrs, $ctrls, $transclude) => {
-        const content = Array.prototype.slice
-        .apply($transclude($scope))
-        .reduce((html, el) => html += el.outerHTML, '');
-
-        $tooltip($element, { title: content });
-
-        if ($element.hasClass('tipLabel'))
-            $element.removeClass('tipField');
-
-        if ($element.parent('label').length)
-            $element.addClass('tipLabel').removeClass('tipField');
-    };
-
+export default ['igniteConfigurationClustersMetrics', [() => {
     return {
+        scope: true,
         restrict: 'E',
-        scope: {},
         template,
-        link,
-        replace: true,
-        transclude: true,
-        require: '^form'
+        replace: true
     };
 }]];

@@ -25,6 +25,9 @@ import clustersThread from './clusters/thread.directive';
 import clustersTime from './clusters/time.directive';
 import clustersSwap from './clusters/swap.directive';
 import clustersSsl from './clusters/ssl.directive';
+import clustersMetrics from './clusters/metrics.directive';
+import clustersMarshaller from './clusters/marshaller.directive';
+import clustersIgfs from './clusters/igfs.directive';
 
 angular
 .module('ignite-console.states.configuration', [
@@ -35,6 +38,9 @@ angular
 .directive(...clustersTime)
 .directive(...clustersSwap)
 .directive(...clustersSsl)
+.directive(...clustersMetrics)
+.directive(...clustersMarshaller)
+.directive(...clustersIgfs)
 // Services.
 .service(...ConfigurationSummaryResource)
 .config(['$stateProvider', function($stateProvider) {
