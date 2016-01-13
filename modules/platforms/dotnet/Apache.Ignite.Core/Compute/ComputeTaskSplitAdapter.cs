@@ -22,6 +22,7 @@ namespace Apache.Ignite.Core.Compute
     using System.Diagnostics;
     using Apache.Ignite.Core.Cluster;
     using Apache.Ignite.Core.Common;
+    using Apache.Ignite.Core.Impl;
     using Apache.Ignite.Core.Impl.Compute;
 
     /// <summary>
@@ -32,11 +33,6 @@ namespace Apache.Ignite.Core.Compute
     /// </summary>
     public abstract class ComputeTaskSplitAdapter<TArg, TJobRes, TTaskRes> : ComputeTaskAdapter<TArg, TJobRes, TTaskRes>
     {
-        /** Random generator */
-        [ThreadStatic]
-        // ReSharper disable once StaticMemberInGenericType
-        private static Random _rnd;
-
         /// <summary>
         /// This is a simplified version of <see cref="IComputeTask{A,T,R}.Map"/> method.
         /// <p/>
@@ -77,12 +73,11 @@ namespace Apache.Ignite.Core.Compute
 
             var map = new Dictionary<IComputeJob<TJobRes>, IClusterNode>(jobs.Count);
 
-            if (_rnd == null)
-                _rnd = new Random();
+            var rnd = IgniteUtils.ThreadLocalRandom;
 
             foreach (var job in jobs)
             {
-                int idx = _rnd.Next(subgrid.Count);
+                int idx = rnd.Next(subgrid.Count);
 
                 IClusterNode node = subgrid[idx];
 
