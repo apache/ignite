@@ -69,6 +69,7 @@ namespace ignite
             }
 
 #undef DBG_STR_CASE
+
 #endif
 
             void ColumnMeta::Read(ignite::impl::binary::BinaryReaderImpl& reader)
@@ -132,7 +133,7 @@ namespace ignite
                     case SQL_DESC_TYPE_NAME:
                     case SQL_DESC_LOCAL_TYPE_NAME:
                     {
-                        value = BinaryTypeToSqlTypeName(dataType);
+                        value = type_traits::BinaryTypeToSqlTypeName(dataType);
 
                         return true;
                     }

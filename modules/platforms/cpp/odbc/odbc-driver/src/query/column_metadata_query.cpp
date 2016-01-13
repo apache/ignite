@@ -83,6 +83,8 @@ namespace ignite
                 columnsMeta()
             {
                 using namespace ignite::impl::binary;
+                using namespace ignite::odbc::type_traits;
+
                 using meta::ColumnMeta;
 
                 columnsMeta.reserve(12);

@@ -20,6 +20,8 @@
 
 #include <stdint.h>
 
+#include <string>
+
 namespace ignite
 {
     namespace odbc
@@ -106,6 +108,57 @@ namespace ignite
                 /** Alias for all unsupported types. */
                 IGNITE_ODBC_C_TYPE_UNSUPPORTED
             };
+
+            /**
+             * SQL type name constants.
+             */
+            class SqlTypeName
+            {
+            public:
+                /** VARCHAR SQL type name constant. */
+                static const std::string VARCHAR;
+
+                /** SMALLINT SQL type name constant. */
+                static const std::string SMALLINT;
+
+                /** INTEGER SQL type name constant. */
+                static const std::string INTEGER;
+
+                /** DECIMAL SQL type name constant. */
+                static const std::string DECIMAL;
+
+                /** FLOAT SQL type name constant. */
+                static const std::string FLOAT;
+
+                /** DOUBLE SQL type name constant. */
+                static const std::string DOUBLE;
+
+                /** BIT SQL type name constant. */
+                static const std::string BIT;
+
+                /** TINYINT SQL type name constant. */
+                static const std::string TINYINT;
+
+                /** BIGINT SQL type name constant. */
+                static const std::string BIGINT;
+
+                /** BINARY SQL type name constant. */
+                static const std::string BINARY;
+
+                /** DATE SQL type name constant. */
+                static const std::string DATE;
+
+                /** GUID SQL type name constant. */
+                static const std::string GUID;
+            };
+
+            /**
+             * Get SQL type name for the binary type.
+             *
+             * @param binaryType Binary type.
+             * @return Corresponding SQL type name.
+             */
+            const std::string& BinaryTypeToSqlTypeName(int8_t binaryType);
 
             /**
              * Check if the C type supported by the current implementation.
