@@ -51,9 +51,6 @@ import static org.apache.ignite.cache.CacheMemoryMode.OFFHEAP_VALUES;
  *
  */
 public class IgniteCacheObjectProcessorImpl extends GridProcessorAdapter implements IgniteCacheObjectProcessor {
-    /** */
-    private static final sun.misc.Unsafe UNSAFE = GridUnsafe.unsafe();
-
     /** Immutable classes. */
     private static final Collection<Class<?>> IMMUTABLE_CLS = new HashSet<>();
 
@@ -138,9 +135,9 @@ public class IgniteCacheObjectProcessorImpl extends GridProcessorAdapter impleme
     {
         assert valPtr != 0;
 
-        int size = UNSAFE.getInt(valPtr);
+        int size = GridUnsafe.getInt(valPtr);
 
-        byte type = UNSAFE.getByte(valPtr + 4);
+        byte type = GridUnsafe.getByte(valPtr + 4);
 
         byte[] bytes = U.copyMemory(valPtr + 5, size);
 

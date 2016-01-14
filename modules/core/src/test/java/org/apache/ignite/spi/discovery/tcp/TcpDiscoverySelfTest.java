@@ -118,6 +118,8 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
+        ((TcpCommunicationSpi)cfg.getCommunicationSpi()).setSharedMemoryPort(-1);
+
         TcpDiscoverySpi spi = nodeSpi.get();
 
         if (spi == null) {
@@ -1098,7 +1100,7 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
         // On Windows and Mac machines two nodes can reside on the same port
         // (if one node has localHost="127.0.0.1" and another has localHost="0.0.0.0").
         // So two nodes do not even discover each other.
-        if (U.isWindows() || U.isMacOs())
+        if (U.isWindows() || U.isMacOs() || U.isSolaris())
             return;
 
         try {

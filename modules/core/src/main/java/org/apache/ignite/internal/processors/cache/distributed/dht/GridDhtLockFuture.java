@@ -494,14 +494,12 @@ public final class GridDhtLockFuture extends GridCompoundIdentityFuture<Boolean>
         boolean found = false;
 
         for (IgniteInternalFuture<?> fut : futures()) {
-            if (isMini(fut)) {
-                MiniFuture f = (MiniFuture)fut;
+            MiniFuture f = (MiniFuture)fut;
 
-                if (f.node().id().equals(nodeId)) {
-                    f.onResult(new ClusterTopologyCheckedException("Remote node left grid (will ignore): " + nodeId));
+            if (f.node().id().equals(nodeId)) {
+                f.onResult(new ClusterTopologyCheckedException("Remote node left grid (will ignore): " + nodeId));
 
-                    found = true;
-                }
+                found = true;
             }
         }
 
@@ -551,12 +549,7 @@ public final class GridDhtLockFuture extends GridCompoundIdentityFuture<Boolean>
         synchronized (futs) {
             // Avoid iterator creation.
             for (int i = 0; i < futs.size(); i++) {
-                IgniteInternalFuture<Boolean> fut = futs.get(i);
-
-                if (!isMini(fut))
-                    continue;
-
-                MiniFuture mini = (MiniFuture)fut;
+                MiniFuture mini = (MiniFuture)futs.get(i);
 
                 if (mini.futureId().equals(miniId)) {
                     if (!mini.isDone())
@@ -769,14 +762,6 @@ public final class GridDhtLockFuture extends GridCompoundIdentityFuture<Boolean>
         }
 
         return false;
-    }
-
-    /**
-     * @param f Future.
-     * @return {@code True} if mini-future.
-     */
-    private boolean isMini(IgniteInternalFuture<?> f) {
-        return f.getClass().equals(MiniFuture.class);
     }
 
     /**
@@ -1006,7 +991,24 @@ public final class GridDhtLockFuture extends GridCompoundIdentityFuture<Boolean>
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(GridDhtLockFuture.class, this, super.toString());
+        Collection<String> futs = F.viewReadOnly(futures(), new C1<IgniteInternalFuture<?>, String>() {
+            @Override public String apply(IgniteInternalFuture<?> f) {
+                MiniFuture m = (MiniFuture)f;
+
+                return "[node=" + m.node().id() + ", loc=" + m.node().isLocal() + ", done=" + f.isDone() + "]";
+            }
+        });
+
+        Collection<KeyCacheObject> locks;
+
+        synchronized (this) {
+            locks = new HashSet<>(pendingLocks);
+        }
+
+        return S.toString(GridDhtLockFuture.class, this,
+            "innerFuts", futs,
+            "pendingLocks", locks,
+            "super", super.toString());
     }
 
     /**

@@ -89,9 +89,6 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
     /** */
     private static final long serialVersionUID = 0L;
 
-    /** Unsafe instance. */
-    private static final sun.misc.Unsafe UNSAFE = GridUnsafe.unsafe();
-
     /** */
     private GridCachePreloader preldr;
 
@@ -1506,12 +1503,12 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
             for (int i = 0; i < locked.size(); i++) {
                 GridCacheEntryEx entry = locked.get(i);
 
-                UNSAFE.monitorEnter(entry);
+                GridUnsafe.monitorEnter(entry);
 
                 if (entry.obsolete()) {
                     // Unlock all locked.
                     for (int j = 0; j <= i; j++)
-                        UNSAFE.monitorExit(locked.get(j));
+                        GridUnsafe.monitorExit(locked.get(j));
 
                     // Clear entries.
                     locked.clear();
@@ -1542,7 +1539,7 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
      */
     private void unlockEntries(Iterable<GridCacheEntryEx> locked) {
         for (GridCacheEntryEx entry : locked)
-            UNSAFE.monitorExit(entry);
+            GridUnsafe.monitorExit(entry);
 
         AffinityTopologyVersion topVer = ctx.affinity().affinityTopologyVersion();
 

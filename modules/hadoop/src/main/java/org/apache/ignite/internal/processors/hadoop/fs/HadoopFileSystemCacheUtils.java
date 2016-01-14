@@ -39,7 +39,7 @@ public class HadoopFileSystemCacheUtils {
     public static HadoopLazyConcurrentMap<FsCacheKey, FileSystem> createHadoopLazyConcurrentMap() {
         return new HadoopLazyConcurrentMap<>(
             new HadoopLazyConcurrentMap.ValueFactory<FsCacheKey, FileSystem>() {
-                @Override public FileSystem createValue(FsCacheKey key) {
+                @Override public FileSystem createValue(FsCacheKey key) throws IOException {
                     try {
                         assert key != null;
 
@@ -57,8 +57,10 @@ public class HadoopFileSystemCacheUtils {
 
                         return FileSystem.get(uri, cfg, key.user());
                     }
-                    catch (IOException | InterruptedException ioe) {
-                        throw new IgniteException(ioe);
+                    catch (InterruptedException e) {
+                        Thread.currentThread().interrupt();
+
+                        throw new IOException("Failed to create file system due to interrupt.", e);
                     }
                 }
             }
