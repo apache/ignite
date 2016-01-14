@@ -43,6 +43,7 @@ namespace Apache.Ignite.AspNet
         private ICache<string, object> _cache;
 
         /** Cached expired policy caches. */
+        // TODO: Need a cache with limited memory usage and LRU policy maybe...
         private MemoryCache _caches = new MemoryCache(typeof(IgniteOutputCacheProvider).FullName); 
 
         /// <summary>
