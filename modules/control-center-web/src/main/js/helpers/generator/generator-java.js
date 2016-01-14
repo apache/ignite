@@ -1837,8 +1837,8 @@ $generatorJava.javaClassCode = function (meta, key, pkg, useConstructor, include
         res.line(' */');
         res.startBlock('public ' + type + '(');
 
-        _.forEach(allFields, function(field) {
-            res.line(res.importClass(field.javaFieldType) + ' ' + field.javaFieldName + (fldIx < allFields.length - 1 ? ',' : ''));
+        _.forEach(allFields, function(field, idx) {
+            res.line(res.importClass(field.javaFieldType) + ' ' + field.javaFieldName + (idx < allFields.length - 1 ? ',' : ''));
         });
 
         res.endBlock(') {');
