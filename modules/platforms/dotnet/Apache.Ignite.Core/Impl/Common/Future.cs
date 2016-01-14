@@ -15,6 +15,7 @@
  * limitations under the License.
  */
 
+#pragma warning disable 1591  // Missing XML comment for publicly visible type or member
 namespace Apache.Ignite.Core.Impl.Common
 {
     using System;
@@ -69,6 +70,7 @@ namespace Apache.Ignite.Core.Impl.Common
         /// <summary>
         /// Gets the task.
         /// </summary>
+        [SuppressMessage("Microsoft.Naming", "CA1721:PropertyNamesShouldNotMatchGetMethods")]
         public Task<T> Task
         {
             get { return _taskCompletionSource.Task; }
@@ -112,6 +114,7 @@ namespace Apache.Ignite.Core.Impl.Common
         }
 
         /** <inheritdoc /> */
+        [SuppressMessage("Microsoft.Design", "CA1031:DoNotCatchGeneralExceptionTypes")]
         public void OnNullResult()
         {
             if (_converter == null)

@@ -15,11 +15,13 @@
  * limitations under the License.
  */
 
+
 namespace Apache.Ignite.Core.Cache.Event
 {
     /// <summary>
     /// Cache entry event filter.
     /// </summary>
+    // ReSharper disable TypeParameterCanBeVariant
     public interface ICacheEntryEventFilter<TK, TV>
     {
         /// <summary>

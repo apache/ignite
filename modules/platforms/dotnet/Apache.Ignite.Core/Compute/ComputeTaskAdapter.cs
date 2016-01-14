@@ -21,6 +21,7 @@ namespace Apache.Ignite.Core.Compute
     using System.Collections.Generic;
     using Apache.Ignite.Core.Cluster;
     using Apache.Ignite.Core.Common;
+    using Apache.Ignite.Core.Impl.Common;
 
     /// <summary>
     /// Convenience adapter for <see cref="IComputeTask{TArg,TJobRes,TTaskRes}"/> interface
@@ -45,6 +46,8 @@ namespace Apache.Ignite.Core.Compute
         public virtual ComputeJobResultPolicy OnResult(IComputeJobResult<TJobRes> res,
             IList<IComputeJobResult<TJobRes>> rcvd)
         {
+            IgniteArgumentCheck.NotNull(res, "res");
+
             Exception err = res.Exception;
 
             if (err != null)

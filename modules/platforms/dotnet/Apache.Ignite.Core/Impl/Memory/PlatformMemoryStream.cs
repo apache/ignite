@@ -15,6 +15,7 @@
  * limitations under the License.
  */
 
+#pragma warning disable 1591  // Missing XML comment for publicly visible type or member
 namespace Apache.Ignite.Core.Impl.Memory
 {
     using System;
@@ -71,6 +72,7 @@ namespace Apache.Ignite.Core.Impl.Memory
         /// Constructor.
         /// </summary>
         /// <param name="mem">Memory.</param>
+        [SuppressMessage("Microsoft.Design", "CA1062:Validate arguments of public methods")]
         public PlatformMemoryStream(IPlatformMemory mem)
         {
             _mem = mem;
@@ -242,6 +244,7 @@ namespace Apache.Ignite.Core.Impl.Memory
         }
 
         /** <inheritdoc /> */
+        [SuppressMessage("Microsoft.Design", "CA1062:Validate arguments of public methods")]
         public int WriteString(char* chars, int charCnt, int byteCnt, Encoding encoding)
         {
             IgniteArgumentCheck.NotNull(charCnt, "charCnt");

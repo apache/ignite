@@ -18,6 +18,7 @@
 namespace Apache.Ignite.Core.Services
 {
     using System;
+    using System.Diagnostics.CodeAnalysis;
     using System.Runtime.Serialization;
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Common;
@@ -91,6 +92,7 @@ namespace Apache.Ignite.Core.Services
         }
 
         /** <inheritdoc /> */
+        [SuppressMessage("Microsoft.Design", "CA1062:Validate arguments of public methods")]
         public override void GetObjectData(SerializationInfo info, StreamingContext context)
         {
             info.AddValue(KeyBinaryCause, _binaryCause);
