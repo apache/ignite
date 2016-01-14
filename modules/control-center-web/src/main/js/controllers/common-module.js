@@ -160,26 +160,26 @@ consoleModule.service('$common', [
             return false;
         }
 
-        var javaBuildInClasses = [
+        var javaBuiltInClasses = [
             'BigDecimal', 'Boolean', 'Byte', 'Date', 'Double', 'Float', 'Integer', 'Long', 'Short', 'String', 'Time', 'Timestamp', 'UUID'
         ];
 
-        var javaBuildInTypes = [
+        var javaBuiltInTypes = [
             'BigDecimal', 'boolean', 'Boolean', 'byte', 'Byte', 'Date', 'double', 'Double', 'float', 'Float',
             'int', 'Integer', 'long', 'Long', 'short', 'Short', 'String', 'Time', 'Timestamp', 'UUID'
         ];
 
-        var javaBuildInFullNameClasses = [
+        var javaBuiltInFullNameClasses = [
             'java.math.BigDecimal', 'java.lang.Boolean', 'java.lang.Byte', 'java.sql.Date', 'java.lang.Double',
             'java.lang.Float', 'java.lang.Integer', 'java.lang.Long', 'java.lang.Short', 'java.lang.String',
             'java.sql.Time', 'java.sql.Timestamp', 'java.util.UUID'
         ];
 
-        function isJavaBuildInClass(cls) {
+        function isJavaBuiltInClass(cls) {
             if (isEmptyString(cls))
                 return false;
 
-            return _.contains(javaBuildInClasses, cls) || _.contains(javaBuildInFullNameClasses, cls);
+            return _.contains(javaBuiltInClasses, cls) || _.contains(javaBuiltInFullNameClasses, cls);
         }
 
         var SUPPORTED_JDBC_TYPES = [
@@ -733,11 +733,11 @@ consoleModule.service('$common', [
 
                 return res ? res : {dbName: 'Unknown', javaType: 'Unknown'};
             },
-            javaBuildInClasses: javaBuildInClasses,
-            javaBuildInTypes: javaBuildInTypes,
-            isJavaBuildInClass: isJavaBuildInClass,
+            javaBuiltInClasses: javaBuiltInClasses,
+            javaBuiltInTypes: javaBuiltInTypes,
+            isJavaBuiltInClass: isJavaBuiltInClass,
             isValidJavaIdentifier: isValidJavaIdentifier,
-            isValidJavaClass: function (msg, ident, allowBuildInClass, elemId, packageOnly, panels, panelId) {
+            isValidJavaClass: function (msg, ident, allowBuiltInClass, elemId, packageOnly, panels, panelId) {
                 if (isEmptyString(ident))
                     return showPopoverMessage(panels, panelId, elemId, msg + ' could not be empty!');
 
@@ -745,10 +745,10 @@ consoleModule.service('$common', [
 
                 var len = parts.length;
 
-                if (!allowBuildInClass && isJavaBuildInClass(ident))
+                if (!allowBuiltInClass && isJavaBuiltInClass(ident))
                     return showPopoverMessage(panels, panelId, elemId, msg + ' should not be the Java build-in class!');
 
-                if (len < 2 && !isJavaBuildInClass(ident) && !packageOnly)
+                if (len < 2 && !isJavaBuiltInClass(ident) && !packageOnly)
                     return showPopoverMessage(panels, panelId, elemId, msg + ' does not have package specified!');
 
                 for (var i = 0; i < parts.length; i++) {
@@ -1689,7 +1689,7 @@ consoleModule.filter('metadatasValidation', ['$common', function ($common) {
         var out = [];
 
         _.forEach(metadatas, function (meta) {
-            var _valid = !$common.metadataForStoreConfigured(meta) || $common.isJavaBuildInClass(meta.keyType) || !$common.isEmptyArray(meta.keyFields);
+            var _valid = !$common.metadataForStoreConfigured(meta) || $common.isJavaBuiltInClass(meta.keyType) || !$common.isEmptyArray(meta.keyFields);
 
             if (valid && _valid || invalid && !_valid)
                 out.push(meta);

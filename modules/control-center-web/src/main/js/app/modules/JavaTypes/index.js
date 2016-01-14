@@ -43,7 +43,7 @@ angular
                  * @param cls Class name to check.
                  * @returns 'true' if given class name is a Java built-in type.
                  */
-                isBuildInClass(cls) {
+                isBuiltInClass(cls) {
                     return _.contains(_classes, cls) || _.contains(_fullNameClasses, cls);
                 }
             };

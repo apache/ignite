@@ -50,7 +50,7 @@ export default ['$scope', 'IgniteUiAceOnLoad', 'JavaTypes', function($scope, onL
         const classes = ctrl.classes = [];
 
         _.forEach(ctrl.metadatas, (meta) => {
-            if (meta.keyType && !JavaTypes.isBuildInClass(meta.keyType))
+            if (meta.keyType && !JavaTypes.isBuiltInClass(meta.keyType))
                 classes.push(meta.keyType);
 
             classes.push(meta.valueType);
@@ -64,7 +64,7 @@ export default ['$scope', 'IgniteUiAceOnLoad', 'JavaTypes', function($scope, onL
 
         const keyType = ctrl.metadatas[0].keyType;
 
-        ctrl.class = ctrl.class || (JavaTypes.isBuildInClass(keyType) ? null : keyType) || ctrl.metadatas[0].valueType;
+        ctrl.class = ctrl.class || (JavaTypes.isBuiltInClass(keyType) ? null : keyType) || ctrl.metadatas[0].valueType;
     };
 
     // Update pojos data.

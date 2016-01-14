@@ -28,7 +28,7 @@ consoleModule.controller('igfsController', [
 
             $scope.joinTip = $common.joinTip;
             $scope.getModel = $common.getModel;
-            $scope.javaBuildInClasses = $common.javaBuildInClasses;
+            $scope.javaBuiltInClasses = $common.javaBuiltInClasses;
             $scope.compactJavaName = $common.compactJavaName;
             $scope.widthIsSufficient = $common.widthIsSufficient;
             $scope.saveBtnTipText = $common.saveBtnTipText;

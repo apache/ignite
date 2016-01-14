@@ -93,7 +93,7 @@ consoleModule.controller('metadataController', function ($filter, $http, $timeou
 
         $scope.joinTip = $common.joinTip;
         $scope.getModel = $common.getModel;
-        $scope.javaBuildInClasses = $common.javaBuildInClasses;
+        $scope.javaBuiltInClasses = $common.javaBuiltInClasses;
         $scope.compactJavaName = $common.compactJavaName;
         $scope.widthIsSufficient = $common.widthIsSufficient;
         $scope.saveBtnTipText = $common.saveBtnTipText;
@@ -343,7 +343,7 @@ consoleModule.controller('metadataController', function ($filter, $http, $timeou
 
         $scope.supportedJdbcTypes = $common.mkOptions($common.SUPPORTED_JDBC_TYPES);
 
-        $scope.supportedJavaTypes = $common.mkOptions($common.javaBuildInTypes);
+        $scope.supportedJavaTypes = $common.mkOptions($common.javaBuiltInTypes);
 
         $scope.sortDirections = [
             {value: true, label: 'ASC'},
@@ -354,11 +354,11 @@ consoleModule.controller('metadataController', function ($filter, $http, $timeou
 
         $scope.metadatas = [];
 
-        $scope.isJavaBuildInClass = function () {
+        $scope.isJavaBuiltInClass = function () {
             var item = $scope.backupItem;
 
             if (item && item.keyType)
-                return $common.isJavaBuildInClass(item.keyType);
+                return $common.isJavaBuiltInClass(item.keyType);
 
             return false;
         };
@@ -1090,8 +1090,11 @@ consoleModule.controller('metadataController', function ($filter, $http, $timeou
                 if ($common.isEmptyString(item.databaseTable))
                     return showPopoverMessage($scope.panels, 'store', 'databaseTable', 'Database table should not be empty');
 
-                if ($common.isEmptyArray(item.keyFields) && !$common.isJavaBuildInClass(item.keyType))
+                if ($common.isEmptyArray(item.keyFields))
                     return showPopoverMessage($scope.panels, 'store', 'keyFields-add', 'Key fields are not specified');
+
+                if ($common.isJavaBuiltInClass(item.keyType) && item.keyFields.length !== 1)
+                    return showPopoverMessage($scope.panels, 'store', 'keyFields-add', 'Only one field should be specified in case when key type is a Java built-in type');
 
                 if ($common.isEmptyArray(item.valueFields))
                     return showPopoverMessage($scope.panels, 'store', 'valueFields-add', 'Value fields are not specified');

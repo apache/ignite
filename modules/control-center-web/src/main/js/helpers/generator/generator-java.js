@@ -2050,9 +2050,9 @@ $generatorJava.pojos = function (caches, useConstructor, includeKeyFields) {
  * @returns Field java type name.
  */
 $generatorJava.javaTypeName = function(type) {
-    var ix = $generatorJava.javaBuildInClasses.indexOf(type);
+    var ix = $generatorJava.javaBuiltInClasses.indexOf(type);
 
-    var resType = ix >= 0 ? $generatorJava.javaBuildInFullNameClasses[ix] : type;
+    var resType = ix >= 0 ? $generatorJava.javaBuiltInFullNameClasses[ix] : type;
 
     return resType.indexOf("java.lang.") >= 0 ? resType.substring(10) : resType;
 };

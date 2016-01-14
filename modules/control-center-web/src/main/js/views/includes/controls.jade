@@ -49,7 +49,7 @@ mixin btn-up(show, click)
 mixin btn-down(show, click)
     i.tipField.fa.fa-arrow-down(ng-if=show ng-click=click bs-tooltip='' data-title='Move item down')
 
-mixin table-pair-edit(prefix, keyPlaceholder, valPlaceholder, keyJavaBuildInTypes, valueJavaBuildInTypes, focusId, index, divider)
+mixin table-pair-edit(prefix, keyPlaceholder, valPlaceholder, keyJavaBuiltInTypes, valueJavaBuiltInTypes, focusId, index, divider)
     -var keyModel = 'field.' + prefix + 'Key'
     -var valModel = 'field.' + prefix + 'Value'
 
@@ -60,8 +60,8 @@ mixin table-pair-edit(prefix, keyPlaceholder, valPlaceholder, keyJavaBuildInType
         label.placeholder #{keyPlaceholder}
         label.fieldSep #{divider}
         .input-tip
-            if keyJavaBuildInTypes
-                input.form-control(id=keyFocusId enter-focus-next=valFocusId type='text' ng-model=keyModel placeholder=keyPlaceholder bs-typeahead container='body' retain-selection data-min-length='1' bs-options='javaClass for javaClass in javaBuildInClasses' on-escape='tableReset()')
+            if keyJavaBuiltInTypes
+                input.form-control(id=keyFocusId enter-focus-next=valFocusId type='text' ng-model=keyModel placeholder=keyPlaceholder bs-typeahead container='body' retain-selection data-min-length='1' bs-options='javaClass for javaClass in javaBuiltInClasses' on-escape='tableReset()')
             else
                 input.form-control(id=keyFocusId enter-focus-next=valFocusId type='text' ng-model=keyModel placeholder=keyPlaceholder on-escape='tableReset()')
     .col-xs-6.col-sm-6.col-md-6
@@ -73,12 +73,12 @@ mixin table-pair-edit(prefix, keyPlaceholder, valPlaceholder, keyJavaBuildInType
         label.placeholder #{valPlaceholder}
         +btn-save(btnVisible, btnSave)
         .input-tip
-            if valueJavaBuildInTypes
-                input.form-control(id=valFocusId type='text' ng-model=valModel placeholder=valPlaceholder bs-typeahead container='body' retain-selection data-min-length='1' bs-options='javaClass for javaClass in javaBuildInClasses' on-enter=btnVisibleAndSave on-escape='tableReset()')
+            if valueJavaBuiltInTypes
+                input.form-control(id=valFocusId type='text' ng-model=valModel placeholder=valPlaceholder bs-typeahead container='body' retain-selection data-min-length='1' bs-options='javaClass for javaClass in javaBuiltInClasses' on-enter=btnVisibleAndSave on-escape='tableReset()')
             else
                 input.form-control(id=valFocusId type='text' ng-model=valModel placeholder=valPlaceholder on-enter=btnVisibleAndSave on-escape='tableReset()')
 
-mixin table-pair(header, tblMdl, keyFld, valFld, keyPlaceholder, valPlaceholder, keyJavaBuildInTypes, valueJavaBuildInTypes, divider)
+mixin table-pair(header, tblMdl, keyFld, valFld, keyPlaceholder, valPlaceholder, keyJavaBuiltInTypes, valueJavaBuiltInTypes, divider)
     .col-sm-12.group
         .group-legend
             label(id='{{::field.model}}-legend') #{header}
@@ -93,11 +93,11 @@ mixin table-pair(header, tblMdl, keyFld, valFld, keyPlaceholder, valPlaceholder,
                             a.labelFormField(ng-click='tableStartEdit(backupItem, field, $index)') {{compactJavaName(field.model, $index + 1, 55, [item.#{keyFld}, item.#{valFld}], '#{divider}')}}
                             +btn-remove('tableRemove(backupItem, field, $index)', 'field.removeTip')
                         td.col-sm-12(ng-show='tableEditing(field, $index)')
-                            +table-pair-edit('cur', keyPlaceholder, valPlaceholder, keyJavaBuildInTypes, valueJavaBuildInTypes, '{{::field.focusId + $index}}', '$index', divider)
+                            +table-pair-edit('cur', keyPlaceholder, valPlaceholder, keyJavaBuiltInTypes, valueJavaBuiltInTypes, '{{::field.focusId + $index}}', '$index', divider)
                 tfoot(ng-show='tableNewItemActive(field)')
                     tr
                         td.col-sm-12
-                            +table-pair-edit('new', keyPlaceholder, valPlaceholder, keyJavaBuildInTypes, valueJavaBuildInTypes, '{{::field.focusId}}', '-1', divider)
+                            +table-pair-edit('new', keyPlaceholder, valPlaceholder, keyJavaBuiltInTypes, valueJavaBuiltInTypes, '{{::field.focusId}}', '-1', divider)
 
 mixin table-igfs-path-mode-edit(prefix, keyPlaceholder, valPlaceholder, focusId, index)
     -var keyModel = 'field.' + prefix + 'Key'

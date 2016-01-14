@@ -464,7 +464,7 @@ consoleModule.controller('sqlController', function ($http, $timeout, $interval, 
     };
 
     var _notObjectType = function(cls) {
-        return $common.isJavaBuildInClass(cls);
+        return $common.isJavaBuiltInClass(cls);
     };
 
     var _numberClasses = ['java.math.BigDecimal', 'java.lang.Byte', 'java.lang.Double',

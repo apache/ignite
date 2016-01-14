@@ -1134,7 +1134,7 @@ $generatorXml.metadataStore = function(meta, res) {
 
     res.needEmptyLine = true;
 
-    if (!$dataStructures.isJavaBuildInClass(meta.keyType))
+    if (!$dataStructures.isJavaBuiltInClass(meta.keyType))
         $generatorXml.metadataDatabaseFields(res, meta, 'keyFields');
 
     $generatorXml.metadataDatabaseFields(res, meta, 'valueFields');
