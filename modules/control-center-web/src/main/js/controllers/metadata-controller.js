@@ -688,10 +688,10 @@ consoleModule.controller('metadataController', function ($filter, $http, $timeou
 
         function _saveMetadata() {
             if ($common.isEmptyString($scope.ui.packageName))
-                return $common.showPopoverMessage(undefined, undefined, 'metadataLoadPackage',
+                return $common.showPopoverMessage(undefined, undefined, 'metadataPackageName',
                     'Package should be not empty');
 
-            if (!$common.isValidJavaClass('Package', $scope.ui.packageName, false, 'metadataLoadPackage', true))
+            if (!$common.isValidJavaClass('Package', $scope.ui.packageName, false, 'metadataPackageName', true))
                 return false;
 
             var batch = [];
