@@ -112,11 +112,12 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// <returns>Serialized data as byte array.</returns>
         public byte[] Marshal<T>(T val)
         {
-            BinaryHeapStream stream = new BinaryHeapStream(128);
+            using (var stream = new BinaryHeapStream(128))
+            {
+                Marshal(val, stream);
 
-            Marshal(val, stream);
-
-            return stream.GetArrayCopy();
+                return stream.GetArrayCopy();
+            }
         }
 
         /// <summary>
@@ -170,7 +171,10 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// </returns>
         public T Unmarshal<T>(byte[] data, bool keepBinary)
         {
-            return Unmarshal<T>(new BinaryHeapStream(data), keepBinary);
+            using (var stream = new BinaryHeapStream(data))
+            {
+                return Unmarshal<T>(stream, keepBinary);
+            }
         }
 
         /// <summary>
@@ -183,7 +187,10 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// </returns>
         public T Unmarshal<T>(byte[] data, BinaryMode mode = BinaryMode.Deserialize)
         {
-            return Unmarshal<T>(new BinaryHeapStream(data), mode);
+            using (var stream = new BinaryHeapStream(data))
+            {
+                return Unmarshal<T>(stream, mode);
+            }
         }
 
         /// <summary>
