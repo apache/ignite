@@ -110,7 +110,7 @@ namespace Apache.Ignite.AspNet
             if (utcExpiry == DateTime.MaxValue)
                 return _cache;
 
-            var expiration = DateTime.UtcNow - utcExpiry;
+            var expiration = utcExpiry - DateTime.UtcNow;
 
             // TODO: Cache caches with similar expiration? They are likely to be similar.
             return _cache.WithExpiryPolicy(new ExpiryPolicy(expiration, null, null));
