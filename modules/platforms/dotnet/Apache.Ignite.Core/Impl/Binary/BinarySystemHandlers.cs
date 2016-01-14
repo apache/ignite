@@ -799,6 +799,7 @@ namespace Apache.Ignite.Core.Impl.Binary
             }
 
             /** <inheritdoc /> */
+            [SuppressMessage("Microsoft.Design", "CA1062:Validate arguments of public methods")]
             T2 IBinarySystemReader<T2>.Read(BinaryReader ctx)
             {
                 return _readDelegate2(ctx.Stream);
