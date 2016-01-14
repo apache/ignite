@@ -89,7 +89,11 @@ namespace ignite
             SqlResult ForeignKeysQuery::FetchNextRow(app::ColumnBindingMap & columnBindings)
             {
                 if (!executed)
+                {
+                    diag.AddStatusRecord(SQL_STATE_HY010_SEQUENCE_ERROR, "Query was not executed.");
+
                     return SQL_RESULT_ERROR;
+                }
 
                 return SQL_RESULT_NO_DATA;
             }

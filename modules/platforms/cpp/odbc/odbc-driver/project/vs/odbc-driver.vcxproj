@@ -170,6 +170,7 @@
     <ClCompile Include="..\..\src\query\foreign_keys_query.cpp" />
     <ClCompile Include="..\..\src\query\primary_keys_query.cpp" />
     <ClCompile Include="..\..\src\query\table_metadata_query.cpp" />
+    <ClCompile Include="..\..\src\query\type_info_query.cpp" />
     <ClCompile Include="..\..\src\result_page.cpp" />
     <ClCompile Include="..\..\src\row.cpp" />
     <ClCompile Include="..\..\src\statement.cpp" />
@@ -204,6 +205,7 @@
     <ClInclude Include="..\..\include\ignite\odbc\query\primary_keys_query.h" />
     <ClInclude Include="..\..\include\ignite\odbc\query\query.h" />
     <ClInclude Include="..\..\include\ignite\odbc\query\table_metadata_query.h" />
+    <ClInclude Include="..\..\include\ignite\odbc\query\type_info_query.h" />
     <ClInclude Include="..\..\include\ignite\odbc\result_page.h" />
     <ClInclude Include="..\..\include\ignite\odbc\row.h" />
     <ClInclude Include="..\..\include\ignite\odbc\statement.h" />

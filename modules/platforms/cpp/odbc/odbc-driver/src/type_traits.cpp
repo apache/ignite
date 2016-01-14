@@ -174,7 +174,6 @@ namespace ignite
                 return SqlTypeName::BINARY;
             }
 
-
             bool IsApplicationTypeSupported(int16_t type)
             {
                 return ToDriverType(type) != IGNITE_ODBC_C_TYPE_UNSUPPORTED;
@@ -198,13 +197,13 @@ namespace ignite
                     case SQL_VARBINARY:
                     case SQL_LONGVARBINARY:
                     case SQL_GUID:
+                    case SQL_DECIMAL:
                         return true;
 
                     case SQL_WCHAR:
                     case SQL_WVARCHAR:
                     case SQL_WLONGVARCHAR:
                     case SQL_REAL:
-                    case SQL_DECIMAL:
                     case SQL_NUMERIC:
                     case SQL_TYPE_DATE:
                     case SQL_TYPE_TIME:
@@ -225,6 +224,59 @@ namespace ignite
                     default:
                         return false;
                 }
+            }
+
+            int8_t SqlTypeToBinary(int16_t sqlType)
+            {
+                using namespace ignite::impl::binary;
+
+                switch (sqlType)
+                {
+                    case SQL_CHAR:
+                    case SQL_VARCHAR:
+                    case SQL_LONGVARCHAR:
+                        return IGNITE_TYPE_STRING;
+
+                    case SQL_SMALLINT:
+                        return IGNITE_TYPE_SHORT;
+
+                    case SQL_TINYINT:
+                        return IGNITE_TYPE_BYTE;
+
+                    case SQL_INTEGER:
+                        return IGNITE_TYPE_INT;
+
+                    case SQL_BIGINT:
+                        return IGNITE_TYPE_LONG;
+
+                    case SQL_FLOAT:
+                        return IGNITE_TYPE_FLOAT;
+
+                    case SQL_DOUBLE:
+                        return IGNITE_TYPE_DOUBLE;
+
+                    case SQL_BIT:
+                        return IGNITE_TYPE_BOOL;
+
+                    case SQL_BINARY:
+                    case SQL_VARBINARY:
+                    case SQL_LONGVARBINARY:
+                        return IGNITE_TYPE_BINARY;
+
+                    case SQL_DECIMAL:
+                        return IGNITE_TYPE_DECIMAL;
+
+                    case SQL_GUID:
+                        return IGNITE_TYPE_UUID;
+
+                    case SQL_TYPE_DATE:
+                        return IGNITE_TYPE_DATE;
+
+                    default:
+                        break;
+                }
+
+                return -1;
             }
 
             IgniteSqlType ToDriverType(int16_t type)

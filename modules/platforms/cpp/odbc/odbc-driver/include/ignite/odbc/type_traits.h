@@ -177,6 +177,14 @@ namespace ignite
             bool IsSqlTypeSupported(int16_t type);
 
             /**
+             * Get corresponding binary type for ODBC SQL type.
+             *
+             * @param sqlType SQL type.
+             * @return Binary type.
+             */
+            int8_t SqlTypeToBinary(int16_t sqlType);
+
+            /**
              * Convert ODBC type to driver type alias.
              *
              * @param ODBC type;
