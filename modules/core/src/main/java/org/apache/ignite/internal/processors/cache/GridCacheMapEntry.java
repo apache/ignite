@@ -2001,8 +2001,12 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                                 || !context().userCache(), partition(), primary, false, updateCntr0, topVer);
                         }
 
+                        CacheObject val = rawGetOrUnmarshalUnlocked(false);
+
+                        drReplicate(drType, val, newVer);
+
                         return new GridCacheUpdateAtomicResult(false,
-                            retval ? rawGetOrUnmarshalUnlocked(false) : null,
+                            retval ? val : null,
                             null,
                             invokeRes,
                             CU.TTL_ETERNAL,
