@@ -281,7 +281,7 @@ public class GridDhtTxPrepareRequest extends GridDistributedTxPrepareRequest {
     @Override public void prepareMarshal(GridCacheSharedContext ctx) throws IgniteCheckedException {
         super.prepareMarshal(ctx);
 
-        if (owned != null) {
+        if (owned != null && ownedKeys == null) {
             ownedKeys = owned.keySet();
 
             ownedVals = owned.values();

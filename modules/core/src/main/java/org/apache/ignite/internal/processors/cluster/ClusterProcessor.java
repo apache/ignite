@@ -17,24 +17,64 @@
 
 package org.apache.ignite.internal.processors.cluster;
 
+import java.io.Serializable;
+import java.lang.ref.WeakReference;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Timer;
+import java.util.UUID;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.IgniteKernal;
+import org.apache.ignite.internal.IgniteProperties;
 import org.apache.ignite.internal.cluster.IgniteClusterImpl;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
+import org.apache.ignite.internal.util.GridTimerTask;
 import org.apache.ignite.internal.util.future.IgniteFinishedFutureImpl;
+import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.lang.IgniteFuture;
+import org.jetbrains.annotations.Nullable;
+
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_UPDATE_NOTIFIER;
+import static org.apache.ignite.internal.IgniteVersionUtils.VER_STR;
 
 /**
  *
  */
 public class ClusterProcessor extends GridProcessorAdapter {
     /** */
+    private static final String ATTR_UPDATE_NOTIFIER_STATUS = "UPDATE_NOTIFIER_STATUS";
+
+    /** Periodic version check delay. */
+    private static final long PERIODIC_VER_CHECK_DELAY = 1000 * 60 * 60; // Every hour.
+
+    /** Periodic version check delay. */
+    private static final long PERIODIC_VER_CHECK_CONN_TIMEOUT = 10 * 1000; // 10 seconds.
+
+    /** */
     private IgniteClusterImpl cluster;
+
+    /** */
+    private boolean notifyEnabled;
+
+    /** */
+    @GridToStringExclude
+    private Timer updateNtfTimer;
+
+    /** Version checker. */
+    @GridToStringExclude
+    private GridUpdateNotifier verChecker;
 
     /**
      * @param ctx Kernal context.
      */
     public ClusterProcessor(GridKernalContext ctx) {
         super(ctx);
+
+        notifyEnabled = IgniteSystemProperties.getBoolean(IGNITE_UPDATE_NOTIFIER,
+            Boolean.parseBoolean(IgniteProperties.get("ignite.update.notifier.enabled.by.default")));
 
         cluster = new IgniteClusterImpl(ctx);
     }
@@ -53,5 +93,139 @@ public class ClusterProcessor extends GridProcessorAdapter {
         IgniteFuture<?> fut = cluster.clientReconnectFuture();
 
         return fut != null ? fut : new IgniteFinishedFutureImpl<>();
+    }
+
+    /** {@inheritDoc} */
+    @Nullable @Override public DiscoveryDataExchangeType discoveryDataType() {
+        return DiscoveryDataExchangeType.CLUSTER_PROC;
+    }
+
+    /** {@inheritDoc} */
+    @Nullable @Override public Serializable collectDiscoveryData(UUID nodeId) {
+        HashMap<String, Object> map = new HashMap<>();
+
+        map.put(ATTR_UPDATE_NOTIFIER_STATUS, notifyEnabled);
+
+        return map;
+    }
+
+    /** {@inheritDoc} */
+    @SuppressWarnings("unchecked")
+    @Override public void onDiscoveryDataReceived(UUID joiningNodeId, UUID rmtNodeId, Serializable data) {
+        if (joiningNodeId.equals(ctx.localNodeId())) {
+            Map<String, Object> map = (Map<String, Object>)data;
+
+            if (map != null && map.containsKey(ATTR_UPDATE_NOTIFIER_STATUS))
+                notifyEnabled = (Boolean)map.get(ATTR_UPDATE_NOTIFIER_STATUS);
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public void onKernalStart() throws IgniteCheckedException {
+        if (notifyEnabled) {
+            try {
+                verChecker = new GridUpdateNotifier(ctx.gridName(),
+                    VER_STR,
+                    ctx.gateway(),
+                    ctx.plugins().allProviders(),
+                    false);
+
+                updateNtfTimer = new Timer("ignite-update-notifier-timer", true);
+
+                // Setup periodic version check.
+                updateNtfTimer.scheduleAtFixedRate(new UpdateNotifierTimerTask((IgniteKernal)ctx.grid(), verChecker),
+                    0, PERIODIC_VER_CHECK_DELAY);
+            }
+            catch (IgniteCheckedException e) {
+                if (log.isDebugEnabled())
+                    log.debug("Failed to create GridUpdateNotifier: " + e);
+            }
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public void stop(boolean cancel) throws IgniteCheckedException {
+        // Cancel update notification timer.
+        if (updateNtfTimer != null)
+            updateNtfTimer.cancel();
+
+        if (verChecker != null)
+            verChecker.stop();
+
+    }
+
+    /**
+     * @return Update notifier status.
+     */
+    public boolean updateNotifierEnabled() {
+        return notifyEnabled;
+    }
+
+    /**
+     * @return Latest version string.
+     */
+    public String latestVersion() {
+        return verChecker != null ? verChecker.latestVersion() : null;
+    }
+
+    /**
+     * Update notifier timer task.
+     */
+    private static class UpdateNotifierTimerTask extends GridTimerTask {
+        /** Reference to kernal. */
+        private final WeakReference<IgniteKernal> kernalRef;
+
+        /** Logger. */
+        private final IgniteLogger log;
+
+        /** Version checker. */
+        private final GridUpdateNotifier verChecker;
+
+        /** Whether this is the first run. */
+        private boolean first = true;
+
+        /**
+         * Constructor.
+         *
+         * @param kernal Kernal.
+         * @param verChecker Version checker.
+         */
+        private UpdateNotifierTimerTask(IgniteKernal kernal, GridUpdateNotifier verChecker) {
+            kernalRef = new WeakReference<>(kernal);
+
+            log = kernal.context().log(UpdateNotifierTimerTask.class);
+
+            this.verChecker = verChecker;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void safeRun() throws InterruptedException {
+            if (!first) {
+                IgniteKernal kernal = kernalRef.get();
+
+                if (kernal != null)
+                    verChecker.topologySize(kernal.cluster().nodes().size());
+            }
+
+            verChecker.checkForNewVersion(log);
+
+            // Just wait for 10 secs.
+            Thread.sleep(PERIODIC_VER_CHECK_CONN_TIMEOUT);
+
+            // Just wait another 60 secs in order to get
+            // version info even on slow connection.
+            for (int i = 0; i < 60 && verChecker.latestVersion() == null; i++)
+                Thread.sleep(1000);
+
+            // Report status if one is available.
+            // No-op if status is NOT available.
+            verChecker.reportStatus(log);
+
+            if (first) {
+                first = false;
+
+                verChecker.reportOnlyNew(true);
+            }
+        }
     }
 }
