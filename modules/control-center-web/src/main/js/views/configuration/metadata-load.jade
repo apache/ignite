@@ -164,5 +164,5 @@ mixin chk(mdl, change, tip)
                                 button.select-toggle.form-control(id='metadataGeneratedCachesCluster' bs-select ng-model='ui.generatedCachesClusters' ng-disabled='!ui.generateCaches' ng-class='{placeholder: !(ui.generatedCachesClusters && ui.generatedCachesClusters.length > 0)}' data-container='false' data-multiple='1' placeholder='Choose clusters for generated caches' bs-options='item.value as item.label for item in clusters')
             .modal-footer
                 label(ng-hide='loadMeta.action == "connect" && loadMeta.demo').labelField {{loadMeta.info}}
-                button.btn.btn-primary(ng-show='loadMeta.action != "connect"' ng-click='loadMetadataPrev()') Prev
+                a.btn.btn-primary(ng-show='loadMeta.action != "connect"' ng-click='loadMetadataPrev()' bs-tooltip='' data-title='{{prevTooltipText()}}' data-placement='bottom') Prev
                 a.btn.btn-primary(ng-click='loadMetadataNext()' ng-disabled='!nextAvailable()' bs-tooltip='' data-title='{{nextTooltipText()}}' data-placement='bottom') {{loadMeta.button}}

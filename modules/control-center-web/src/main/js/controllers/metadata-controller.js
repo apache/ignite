@@ -466,8 +466,10 @@ consoleModule.controller('metadataController', function ($filter, $http, $timeou
                                             $scope.demoConnection.db = 'H2';
                                             $scope.demoConnection.jdbcDriverJar = _h2DrvJar.jdbcDriverJar;
                                         }
-                                        else
+                                        else {
                                             $scope.demoConnection.db = 'unknown';
+                                            $scope.loadMeta.button = 'Cancel';
+                                        }
                                     }
                                     else {
                                         drivers.forEach(function (driver) {
@@ -855,8 +857,12 @@ consoleModule.controller('metadataController', function ($filter, $http, $timeou
             if (!$scope.nextAvailable())
                 return;
 
-            if ($scope.loadMeta.action === 'connect')
-                _loadSchemas();
+            if ($scope.loadMeta.action === 'connect') {
+               if ($scope.loadMeta.demo && $scope.demoConnection.db !== 'H2')
+                   loadMetaModal.hide();
+               else
+                   _loadSchemas();
+            }
             else if ($scope.loadMeta.action === 'schemas')
                 _loadTables();
             else if ($scope.loadMeta.action === 'tables')
@@ -866,29 +872,43 @@ consoleModule.controller('metadataController', function ($filter, $http, $timeou
         };
 
         $scope.nextTooltipText = function () {
-            if ($scope.nextAvailable())
-                return 'Click to continue';
+            var nextAvailable = $scope.nextAvailable();
 
-            if ($scope.loadMeta.action === 'connect')
-                return 'Resolve issue with H2 database driver<br>Close this dialog and try again';
+            if ($scope.loadMeta.action === 'connect') {
+                if ($scope.loadMeta.demo && $scope.demoConnection.db !== 'H2')
+                    return 'Resolve issue with H2 database driver<br>Close this dialog and try again';
+
+                if (nextAvailable)
+                    return 'Click to load list of schemas from database';
+            }
 
             if ($scope.loadMeta.action === 'schemas')
-                return 'Select schemas to continue';
+                return nextAvailable ? 'Click to load list of tables from database' : 'Select schemas to continue';
 
             if ($scope.loadMeta.action === 'tables')
-                return 'Select tables to continue';
+                return nextAvailable ? 'Click to show load options' : 'Select tables to continue';
+
+            if ($scope.loadMeta.action === 'options')
+                return 'Click to save loaded metadata';
+
+            return 'Click to continue';
+        };
+
+        $scope.prevTooltipText = function () {
+            if ($scope.loadMeta.action === 'schemas')
+                return $scope.loadMeta.demo ? 'Click to return on demo description step' : 'Click to return on connection configuration step';
+
+            if ($scope.loadMeta.action === 'tables')
+                return 'Click to return on schemas selection step';
+
+            if ($scope.loadMeta.action === 'options')
+                return 'Click to return on tables selection step';
         };
 
         $scope.nextAvailable = function () {
             var res = true;
 
             switch ($scope.loadMeta.action) {
-                case 'connect':
-                    if ($scope.loadMeta.demo)
-                        res = $common.isDefined($scope.demoConnection.db === 'H2');
-
-                    break;
-
                 case 'schemas':
                     res = $common.isEmptyArray($scope.loadMeta.schemas) || $('#metadataSchemaData').find(':checked').length > 0;
 
