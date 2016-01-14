@@ -257,6 +257,8 @@ export default [
                 zip.file(srcPath + meta.valueType.replace(/\./g, '/') + '.java', meta.valueClass);
             }
 
+            $generatorOptional.optionalContent(zip, cluster);
+
             const blob = zip.generate({type: 'blob', mimeType: 'application/octet-stream'});
 
             // Download archive.
