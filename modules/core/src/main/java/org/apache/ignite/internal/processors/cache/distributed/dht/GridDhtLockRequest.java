@@ -311,7 +311,7 @@ public class GridDhtLockRequest extends GridDistributedLockRequest {
 
         prepareMarshalCacheObjects(nearKeys, ctx.cacheContext(cacheId));
 
-        if (owned != null) {
+        if (owned != null && ownedKeys == null) {
             ownedKeys = new KeyCacheObject[owned.size()];
             ownedValues = new GridCacheVersion[ownedKeys.length];
 

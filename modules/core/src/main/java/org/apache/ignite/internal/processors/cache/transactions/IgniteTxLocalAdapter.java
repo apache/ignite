@@ -809,7 +809,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
             catch (IgniteCheckedException ex) {
                 commitError(ex);
 
-                setRollbackOnly();
+                errorWhenCommitting();
 
                 // Safe to remove transaction from committed tx list because nothing was committed yet.
                 cctx.tm().removeCommittedTx(this);
@@ -819,7 +819,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
             catch (Throwable ex) {
                 commitError(ex);
 
-                setRollbackOnly();
+                errorWhenCommitting();
 
                 // Safe to remove transaction from committed tx list because nothing was committed yet.
                 cctx.tm().removeCommittedTx(this);
@@ -1161,7 +1161,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                             // Set operation to NOOP.
                             txEntry.op(NOOP);
 
-                            setRollbackOnly();
+                            errorWhenCommitting();
 
                             throw ex;
                         }

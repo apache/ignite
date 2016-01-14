@@ -134,7 +134,7 @@ public class GridDhtPartitionsFullMessage extends GridDhtPartitionsAbstractMessa
         if (parts != null && partsBytes == null)
             partsBytes = ctx.marshaller().marshal(parts);
 
-        if (partCntrs != null)
+        if (partCntrs != null && partCntrsBytes == null)
             partCntrsBytes = ctx.marshaller().marshal(partCntrs);
     }
 
