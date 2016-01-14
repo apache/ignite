@@ -185,7 +185,6 @@ namespace ignite
              * @param schema Schema search pattern.
              * @param table Table search pattern.
              * @param column Column search pattern.
-             * @return True on success.
              */
             void ExecuteGetColumnsMetaQuery(const std::string& schema,
                 const std::string& table, const std::string& column);
@@ -197,7 +196,6 @@ namespace ignite
              * @param schema Schema search pattern.
              * @param table Table search pattern.
              * @param tableType Table type search pattern.
-             * @return True on success.
              */
             void ExecuteGetTablesMetaQuery(const std::string& catalog,
                 const std::string& schema, const std::string& table,
@@ -212,7 +210,6 @@ namespace ignite
              * @param foreignCatalog Foreign key catalog name.
              * @param foreignSchema Foreign key schema name.
              * @param foreignTable Foreign key table name.
-             * @return True on success.
              */
             void ExecuteGetForeignKeysQuery(const std::string& primaryCatalog,
                 const std::string& primarySchema, const std::string& primaryTable,
@@ -225,10 +222,16 @@ namespace ignite
              * @param catalog Catalog name.
              * @param schema Schema name.
              * @param table Table name.
-             * @return True on success.
              */
             void ExecuteGetPrimaryKeysQuery(const std::string& catalog,
                 const std::string& schema, const std::string& table);
+
+            /**
+             * Get type info.
+             *
+             * @param sqlType SQL type for which to return info or SQL_ALL_TYPES.
+             */
+            void ExecuteGetTypeInfoQuery(int16_t sqlType);
 
             /**
              * Close statement.
@@ -406,6 +409,13 @@ namespace ignite
              */
             SqlResult InternalExecuteGetPrimaryKeysQuery(const std::string& catalog,
                 const std::string& schema, const std::string& table);
+
+            /**
+             * Get type info.
+             *
+             * @param sqlType SQL type for which to return info or SQL_ALL_TYPES.
+             */
+            SqlResult InternalExecuteGetTypeInfoQuery(int16_t sqlType);
 
             /**
              * Get column attribute.

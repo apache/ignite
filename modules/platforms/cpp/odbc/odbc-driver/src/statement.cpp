@@ -21,6 +21,7 @@
 #include "ignite/odbc/query/table_metadata_query.h"
 #include "ignite/odbc/query/foreign_keys_query.h"
 #include "ignite/odbc/query/primary_keys_query.h"
+#include "ignite/odbc/query/type_info_query.h"
 #include "ignite/odbc/connection.h"
 #include "ignite/odbc/utility.h"
 #include "ignite/odbc/message.h"
@@ -297,6 +298,28 @@ namespace ignite
                 currentQuery->Close();
 
             currentQuery.reset(new query::PrimaryKeysQuery(*this, connection, catalog, schema, table));
+
+            return currentQuery->Execute();
+        }
+
+        void Statement::ExecuteGetTypeInfoQuery(int16_t sqlType)
+        {
+            IGNITE_ODBC_API_CALL(InternalExecuteGetTypeInfoQuery(sqlType));
+        }
+
+        SqlResult Statement::InternalExecuteGetTypeInfoQuery(int16_t sqlType)
+        {
+            if (!type_traits::IsSqlTypeSupported(sqlType))
+            {
+                AddStatusRecord(SQL_STATE_HYC00_OPTIONAL_FEATURE_NOT_IMPLEMENTED, "Data type is not supported.");
+
+                return SQL_RESULT_ERROR;
+            }
+
+            if (currentQuery.get())
+                currentQuery->Close();
+
+            currentQuery.reset(new query::TypeInfoQuery(*this, sqlType));
 
             return currentQuery->Execute();
         }

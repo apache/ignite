@@ -1193,6 +1193,23 @@ SQLRETURN SQL_API SQLGetDiagRec(SQLSMALLINT     handleType,
     return SQL_SUCCESS;
 }
 
+SQLRETURN SQL_API SQLGetTypeInfo(SQLHSTMT       stmt,
+                                 SQLSMALLINT    type)
+{
+    using ignite::odbc::Statement;
+
+    LOG_MSG("SQLGetTypeInfo called\n");
+
+    Statement *statement = reinterpret_cast<Statement*>(stmt);
+
+    if (!statement)
+        return SQL_INVALID_HANDLE;
+
+    statement->ExecuteGetTypeInfoQuery(static_cast<int16_t>(type));
+
+    return statement->GetDiagnosticRecords().GetReturnCode();
+}
+
 //
 // ==== Not implemented ====
 //
@@ -1277,13 +1294,6 @@ SQLRETURN SQL_API SQLGetStmtOption(SQLHSTMT     stmt,
                                    SQLPOINTER   value)
 {
     LOG_MSG("SQLGetStmtOption called\n");
-    return SQL_SUCCESS;
-}
-
-SQLRETURN SQL_API SQLGetTypeInfo(SQLHSTMT       stmt,
-                                 SQLSMALLINT    type)
-{
-    LOG_MSG("SQLGetTypeInfo called\n");
     return SQL_SUCCESS;
 }
 
