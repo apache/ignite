@@ -283,6 +283,7 @@ public class BinaryContext {
      * @param typeCfgs Type configurations.
      * @throws BinaryObjectException In case of error.
      */
+    // TODO test this method and final mapper.
     private void configure(
         BinaryIdMapper globalIdMapper,
         BinarySerializer globalSerializer,
@@ -309,7 +310,7 @@ public class BinaryContext {
                 if (typeCfg.getIdMapper() != null)
                     idMapper = typeCfg.getIdMapper();
 
-                idMapper = BinaryInternalIdMapper.create(idMapper);
+                idMapper = resolveIdMapper(idMapper);
 
                 BinarySerializer serializer = globalSerializer;
 
@@ -332,19 +333,66 @@ public class BinaryContext {
         for (TypeDescriptor desc : descs.descriptors())
             registerUserType(desc.clsName, desc.idMapper, desc.serializer, desc.affKeyFieldName, desc.isEnum);
 
-        BinaryInternalIdMapper dfltMapper = BinaryInternalIdMapper.create(globalIdMapper);
+        globalIdMapper = resolveIdMapper(globalIdMapper);
 
         // Put affinity field names for unconfigured types.
         for (Map.Entry<String, String> entry : affFields.entrySet()) {
             String typeName = entry.getKey();
 
-            int typeId = dfltMapper.typeId(typeName);
+            int typeId = globalIdMapper.typeId(typeName);
 
             affKeyFieldNames.putIfAbsent(typeId, entry.getValue());
         }
 
         addSystemClassAffinityKey(CollocatedSetItemKey.class);
         addSystemClassAffinityKey(CollocatedQueueItemKey.class);
+    }
+
+    /**
+     * @param mapper Mapper.
+     * @return Not null BinaryIdMapper.
+     */
+    private static BinaryIdMapper resolveIdMapper(@Nullable BinaryIdMapper mapper) {
+        return mapper == null ? BinaryInternalIdMapper.defaultInstance() :
+            (mapper instanceof BinarySimpleNameIdMapper ? mapper :
+                BinarySimpleNameIdMapper.wrap(mapper));
+    }
+
+    /**
+     * @param typeName Type name.
+     * @param cfg Binary configuration.
+     * @return BinaryIdMapper according to configuration.
+     */
+    private static BinaryIdMapper resolveIdMapper(String typeName, BinaryConfiguration cfg) {
+        assert typeName != null;
+
+        BinaryIdMapper globalIdMapper = cfg.getIdMapper();
+
+        Collection<BinaryTypeConfiguration> typeCfgs = cfg.getTypeConfigurations();
+
+        if (typeCfgs != null) {
+            for (BinaryTypeConfiguration typeCfg : typeCfgs) {
+                String clsName = typeCfg.getTypeName();
+
+                if (clsName != null && clsName.endsWith(".*")) {
+                    String pkgName = clsName.substring(0, clsName.length() - 2);
+                    String typePkgName = typeName.substring(0, typeName.lastIndexOf('.'));
+
+                    if (pkgName.equals(typePkgName)) {
+                        BinaryIdMapper idMapper = globalIdMapper;
+
+                        if (typeCfg.getIdMapper() != null)
+                            idMapper = typeCfg.getIdMapper();
+
+                        idMapper = resolveIdMapper(idMapper);
+
+                        return idMapper;
+                    }
+                }
+            }
+        }
+
+        return resolveIdMapper(globalIdMapper);
     }
 
     /**
@@ -524,7 +572,7 @@ public class BinaryContext {
                 clsName.hashCode(),
                 clsName,
                 null,
-                BinaryInternalIdMapper.defaultInstance(),
+                BinaryInternalIdMapper.defaultInstance(), // TODO should we use globalMapper or not?
                 null,
                 false,
                 true /* registered */
@@ -683,7 +731,10 @@ public class BinaryContext {
     public BinaryIdMapper userTypeIdMapper(int typeId) {
         BinaryIdMapper idMapper = mappers.get(typeId);
 
-        return idMapper != null ? idMapper : BinaryInternalIdMapper.defaultInstance();
+        if (idMapper == null)
+            throw new BinaryObjectException("Failed to get ID mapper by typeId: " + typeId);
+
+        return idMapper;
     }
 
     /**
@@ -693,7 +744,14 @@ public class BinaryContext {
     private BinaryIdMapper userTypeIdMapper(String typeName) {
         BinaryIdMapper idMapper = typeMappers.get(typeName);
 
-        return idMapper != null ? idMapper : BinaryInternalIdMapper.defaultInstance();
+        if (idMapper != null)
+            return idMapper;
+
+        idMapper = resolveIdMapper(typeName, igniteCfg.getBinaryConfiguration());
+
+        typeMappers.put(typeName, idMapper);
+
+        return idMapper;
     }
 
     /**
@@ -729,7 +787,7 @@ public class BinaryContext {
         String typeName = cls.getName();
 
         if (id == 0)
-            id = BinaryInternalIdMapper.defaultInstance().typeId(typeName);
+            id = BinaryInternalIdMapper.defaultInstance().typeId(typeName); // TODO should we use globalMapper or not?
 
         BinaryClassDescriptor desc = new BinaryClassDescriptor(
             this,
@@ -738,7 +796,7 @@ public class BinaryContext {
             id,
             typeName,
             affFieldName,
-            BinaryInternalIdMapper.defaultInstance(),
+            BinaryInternalIdMapper.defaultInstance(), // TODO should we use globalMapper or not?
             new BinaryReflectiveSerializer(),
             false,
             true /* registered */

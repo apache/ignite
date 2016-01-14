@@ -17,30 +17,52 @@
 
 package org.apache.ignite.internal.binary;
 
+import java.util.Arrays;
 import java.util.Collection;
+import java.util.Map;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.binary.BinaryIdMapper;
 import org.apache.ignite.binary.BinarySerializer;
 import org.apache.ignite.binary.BinaryTypeConfiguration;
 import org.apache.ignite.configuration.BinaryConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.binary.test.GridBinaryTestClass1;
+import org.apache.ignite.internal.binary.test.GridBinaryTestClass2;
 import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.logger.NullLogger;
 import org.apache.ignite.marshaller.MarshallerContextTestImpl;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
-import java.util.Arrays;
-import java.util.Map;
-
 /**
  * Wildcards test.
  */
 public class GridBinaryWildcardsSelfTest extends GridCommonAbstractTest {
+    /** */
+    private BinaryIdMapper mapper;
+
     /**
      * @throws Exception If failed.
      */
-    public void testClassNames() throws Exception {
+    public void testClassNamesInternalMapper() throws Exception {
+        mapper = BinaryInternalIdMapper.defaultInstance();
+
+        checkClassNames();
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testClassNamesSimpleNameMapper() throws Exception {
+        mapper = BinarySimpleNameIdMapper.defaultInstance();
+
+        checkClassNames();
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    private void checkClassNames() throws Exception {
         BinaryMarshaller marsh = binaryMarshaller(Arrays.asList(
             new BinaryTypeConfiguration("org.apache.ignite.internal.binary.test.*"),
             new BinaryTypeConfiguration("unknown.*")
@@ -52,9 +74,23 @@ public class GridBinaryWildcardsSelfTest extends GridCommonAbstractTest {
 
         assertEquals(3, typeIds.size());
 
-        assertTrue(typeIds.containsKey("gridbinarytestclass1".hashCode()));
-        assertTrue(typeIds.containsKey("gridbinarytestclass2".hashCode()));
-        assertTrue(typeIds.containsKey("innerclass".hashCode()));
+        if (internalMapperMode()) {
+            assertTrue(typeIds.containsKey(GridBinaryTestClass1.class.getName().hashCode()));
+            assertTrue(typeIds.containsKey(GridBinaryTestClass2.class.getName().hashCode()));
+            assertTrue(typeIds.containsKey((GridBinaryTestClass1.class.getName() + "$InnerClass").hashCode()));
+        }
+        else {
+            assertTrue(typeIds.containsKey("gridbinarytestclass1".hashCode()));
+            assertTrue(typeIds.containsKey("gridbinarytestclass2".hashCode()));
+            assertTrue(typeIds.containsKey("innerclass".hashCode()));
+        }
+    }
+
+    /**
+     * @return Test executed with internal mapper.
+     */
+    private boolean internalMapperMode() {
+        return mapper instanceof BinaryInternalIdMapper;
     }
 
     /**

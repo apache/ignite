@@ -19,30 +19,20 @@ package org.apache.ignite.internal.binary;
 
 import org.apache.ignite.binary.BinaryIdMapper;
 import org.apache.ignite.binary.BinaryObjectException;
-import org.jetbrains.annotations.Nullable;
 
 /**
  * Internal ID mapper. Mimics ID mapper interface, but provides default implementation and offers slightly better
  * performance on micro-level in default case because it doesn't need virtual calls.
  */
 public class BinaryInternalIdMapper implements BinaryIdMapper {
-    /** Maximum lower-case character. */
-    private static final char MAX_LOWER_CASE_CHAR = 0x7e;
-
-    /** Cached lower-case characters. */
-    private static final char[] LOWER_CASE_CHARS;
-
     /** Default implementation. */
     private static final BinaryInternalIdMapper DFLT = new BinaryInternalIdMapper();
 
     /**
-     * Static initializer.
+     * Private constructor.
      */
-    static {
-        LOWER_CASE_CHARS = new char[MAX_LOWER_CASE_CHAR + 1];
-
-        for (char c = 0; c <= MAX_LOWER_CASE_CHAR; c++)
-            LOWER_CASE_CHARS[c] = Character.toLowerCase(c);
+    private BinaryInternalIdMapper() {
+        // No-op.
     }
 
     /**
@@ -54,108 +44,25 @@ public class BinaryInternalIdMapper implements BinaryIdMapper {
         return DFLT;
     }
 
-    /**
-     * Create internal mapper.
-     *
-     * @param mapper Public mapper.
-     * @return Internal mapper.
-     */
-    public static BinaryInternalIdMapper create(@Nullable BinaryIdMapper mapper) {
-        return mapper == null ? DFLT : new Wrapper(mapper);
-    }
-
-    /**
-     * Private constructor.
-     */
-    protected BinaryInternalIdMapper() {
-        // No-op.
-    }
-
-    /**
-     * Get type ID.
-     *
-     * @param typeName Type name.
-     * @return Type ID.
-     */
-    public int typeId(String typeName) {
-        assert typeName != null;
-
-        return lowerCaseHashCode(typeName, true);
-    }
-
-    /**
-     * Get field ID.
-     *
-     * @param typeId Type ID.
-     * @param fieldName Field name.
-     * @return Field ID.
-     */
-    public int fieldId(int typeId, String fieldName) {
-        assert fieldName != null;
-
-        return lowerCaseHashCode(fieldName, false);
-    }
-
-    /**
-     * Routine to calculate string hash code an
-     *
-     * @param str String.
-     * @param type {@code True} if this is type name, false otherwise.
-     * @return Hash code for given string converted to lower case.
-     */
-    private static int lowerCaseHashCode(String str, boolean type) {
-        int len = str.length();
-
-        int h = 0;
-
-        for (int i = 0; i < len; i++) {
-            int c = str.charAt(i);
-
-            c = c <= MAX_LOWER_CASE_CHAR ? LOWER_CASE_CHARS[c] : Character.toLowerCase(c);
-
-            h = 31 * h + c;
-        }
+    /** {@inheritDoc} */
+    @Override public int typeId(String clsName) {
+        int h = clsName.hashCode();
 
         if (h != 0)
             return h;
-        else {
-            String what = type ? "type" : "field";
-
-            throw new BinaryObjectException("Default binary ID mapper resolved " + what + " ID to zero " +
-                "(either change " + what + "'s name or use custom ID mapper) [name=" + str + ']');
-        }
+        else
+            throw new BinaryObjectException("Default binary ID mapper resolved type ID to zero " +
+                "(either change type's name or use custom ID mapper) [name=" + clsName + ']');
     }
 
-    /**
-     * Wrapping ID mapper.
-     */
-    private static class Wrapper extends BinaryInternalIdMapper {
-        /** Delegate. */
-        private final BinaryIdMapper mapper;
+    /** {@inheritDoc} */
+    @Override public int fieldId(int typeId, String fieldName) {
+        int h = fieldName.hashCode();
 
-        /**
-         * Constructor.
-         *
-         * @param mapper Delegate.
-         */
-        private Wrapper(BinaryIdMapper mapper) {
-            assert mapper != null;
-
-            this.mapper = mapper;
-        }
-
-        /** {@inheritDoc} */
-        @Override public int typeId(String typeName) {
-            int id = mapper.typeId(typeName);
-
-            return id != 0 ? id : super.typeId(typeName);
-        }
-
-        /** {@inheritDoc} */
-        @Override public int fieldId(int typeId, String fieldName) {
-            int id = mapper.fieldId(typeId, fieldName);
-
-            return id != 0 ? id : super.fieldId(typeId, fieldName);
-        }
+        if (h != 0)
+            return h;
+        else
+            throw new BinaryObjectException("Default binary ID mapper resolved field ID to zero " +
+                "(either change filed's name or use custom ID mapper) [name=" + fieldName + ']');
     }
 }
