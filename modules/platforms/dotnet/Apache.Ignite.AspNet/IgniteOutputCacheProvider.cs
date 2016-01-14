@@ -21,6 +21,7 @@ namespace Apache.Ignite.AspNet
 {
     using System;
     using System.Collections.Specialized;
+    using System.Runtime.Caching;
     using Apache.Ignite.Core;
     using Apache.Ignite.Core.Cache;
     using Apache.Ignite.Core.Cache.Expiry;
@@ -40,6 +41,9 @@ namespace Apache.Ignite.AspNet
 
         /** */
         private ICache<string, object> _cache;
+
+        /** Cached expired policy caches. */
+        private MemoryCache _caches = new MemoryCache(typeof(IgniteOutputCacheProvider).FullName); 
 
         /// <summary>
         /// Returns a reference to the specified entry in the output cache.
@@ -99,7 +103,7 @@ namespace Apache.Ignite.AspNet
             var gridName = config[GridName];
             var cacheName = config[CacheName];
 
-            // TODO: GetOrStartIgnite, spring url?
+            // TODO: GetOrStartIgnite, spring url? We may need all other properties then...
             var grid = Ignition.GetIgnite(gridName);
 
             _cache = grid.GetOrCreateCache<string, object>(cacheName);
