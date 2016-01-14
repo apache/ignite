@@ -23,6 +23,7 @@ namespace Apache.Ignite.AspNet
     using System.Collections.Specialized;
     using Apache.Ignite.Core;
     using Apache.Ignite.Core.Cache;
+    using Apache.Ignite.Core.Cache.Expiry;
 
     /// <summary>
     /// ASP.NET output cache provider that uses Ignite cache as a storage.
@@ -63,9 +64,7 @@ namespace Apache.Ignite.AspNet
         /// </returns>
         public override object Add(string key, object entry, DateTime utcExpiry)
         {
-            // TODO: Expiry
-
-            return _cache.GetAndPutIfAbsent(key, entry);
+            return GetCacheWithExpiration(utcExpiry).GetAndPutIfAbsent(key, entry);
         }
 
         /// <summary>
@@ -76,9 +75,7 @@ namespace Apache.Ignite.AspNet
         /// <param name="utcExpiry">The time and date on which the cached <paramref name="entry" /> expires.</param>
         public override void Set(string key, object entry, DateTime utcExpiry)
         {
-            // TODO: Expiry
-
-            _cache[key] = entry;
+            GetCacheWithExpiration(utcExpiry)[key] = entry;
         }
 
         /// <summary>
@@ -106,6 +103,17 @@ namespace Apache.Ignite.AspNet
             var grid = Ignition.GetIgnite(gridName);
 
             _cache = grid.GetOrCreateCache<string, object>(cacheName);
+        }
+
+        private ICache<string, object> GetCacheWithExpiration(DateTime utcExpiry)
+        {
+            if (utcExpiry == DateTime.MaxValue)
+                return _cache;
+
+            var expiration = DateTime.UtcNow - utcExpiry;
+
+            // TODO: Cache caches with similar expiration? They are likely to be similar.
+            return _cache.WithExpiryPolicy(new ExpiryPolicy(expiration, null, null));
         }
     }
 }
