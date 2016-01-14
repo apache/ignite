@@ -105,29 +105,37 @@ mixin chk(mdl, change, tip)
                 table.table.metadata(st-table='loadMeta.displayedTables' st-safe-src='loadMeta.tables')
                     thead
                         tr
-                            th.header(colspan='3')
+                            th.header(colspan='5')
                                 .col-sm-4.pull-right
                                     input.form-control(type='text' st-search='label' placeholder='Filter tables...' ng-model='loadMeta.displayedTablesFilter' ng-change='selectTable()')
                         tr
-                            th(width='50px')
+                            th(width='30px')
                                 +chk('loadMeta.allTablesSelected',  'selectAllTables()', 'Select all tables')
-                            th(width='200px')
+                            th(width='130px')
                                 label Schema
-                            th
+                            th(width='160px')
                                 label Table name
+                            th(width='160px')
+                                label Cache
+                            th
+                                label Template
                     tbody
                         tr
-                            td(colspan='3')
+                            td(colspan='5')
                                 .scrollable-y(style='height: 137px')
                                     table.table-modal-striped(id='metadataTableData')
                                         tbody
                                             tr(ng-repeat='table in loadMeta.displayedTables')
-                                                td(width='50px')
+                                                td(width='30px')
                                                     input(type='checkbox' ng-model='table.use' ng-change='selectTable()')
-                                                td(width='200px')
+                                                td(width='130px')
                                                     label {{::table.schema}}
-                                                td
+                                                td(width='160px')
                                                     label {{::table.tbl}}
+                                                td(width='160px')
+                                                    label TODO
+                                                td
+                                                    label TODO
             .metadata-content(ng-show='loadMeta.action == "options"' style='margin-bottom: 75px')
                 form.form-horizontal(name='optionsForm' novalidate)
                     .settings-row

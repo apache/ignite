@@ -872,6 +872,10 @@ button.form-control {
         }
     }
 
+    > thead > tr > th {
+        padding: 5px 0 5px 5px !important;
+    }
+
     tbody > tr > td {
         padding: 0;
     }
@@ -889,7 +893,7 @@ button.form-control {
     }
 
     > tbody > tr > td {
-        padding: 8px !important;
+        padding: 5px 0 5px 5px !important;
     }
 }
 
