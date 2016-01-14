@@ -284,6 +284,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
             }, true);
         }
 
+        [SuppressMessage("Reliability", "S2930:\"IDisposables\" should be disposed")]
         private int CacheStoreInvoke(void* target, long objPtr, long memPtr, void* cb)
         {
             return SafeCall(() =>
@@ -604,6 +605,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
             });
         }
 
+        [SuppressMessage("Reliability", "S2930:\"IDisposables\" should be disposed")]
         private void DataStreamerStreamReceiverInvoke(void* target, long rcvPtr, void* cache, long memPtr, 
             byte keepBinary)
         {

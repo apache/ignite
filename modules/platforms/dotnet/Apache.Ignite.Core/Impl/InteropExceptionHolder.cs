@@ -70,9 +70,10 @@ namespace Apache.Ignite.Core.Impl
             {
                 writer0.WriteBoolean(false);
 
-                BinaryFormatter bf = new BinaryFormatter();
-
-                bf.Serialize(new BinaryStreamAdapter(writer0.Stream), _err);
+                using (var streamAdapter = new BinaryStreamAdapter(writer0.Stream))
+                {
+                    new BinaryFormatter().Serialize(streamAdapter, _err);
+                }
             }
         }
 

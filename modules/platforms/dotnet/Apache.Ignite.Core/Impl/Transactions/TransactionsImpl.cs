@@ -18,6 +18,7 @@
 namespace Apache.Ignite.Core.Impl.Transactions
 {
     using System;
+    using System.Diagnostics.CodeAnalysis;
     using System.Threading.Tasks;
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Impl.Binary;
@@ -89,7 +90,9 @@ namespace Apache.Ignite.Core.Impl.Transactions
             return TxStart(concurrency, isolation, _dfltTimeout, 0);
         }
 
+
         /** <inheritDoc /> */
+        [SuppressMessage("Reliability", "S2930:\"IDisposables\" should be disposed")]
         public ITransaction TxStart(TransactionConcurrency concurrency, TransactionIsolation isolation,
             TimeSpan timeout, int txSize)
         {
