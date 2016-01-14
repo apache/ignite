@@ -92,7 +92,7 @@ namespace Apache.Ignite.Core.Impl.Transactions
 
 
         /** <inheritDoc /> */
-        [SuppressMessage("Reliability", "S2930:\"IDisposables\" should be disposed")]
+        [SuppressMessage("Microsoft.Reliability", "CA2000:Dispose objects before losing scope")]
         public ITransaction TxStart(TransactionConcurrency concurrency, TransactionIsolation isolation,
             TimeSpan timeout, int txSize)
         {

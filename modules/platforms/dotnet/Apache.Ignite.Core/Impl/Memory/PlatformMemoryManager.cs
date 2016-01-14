@@ -81,7 +81,7 @@ namespace Apache.Ignite.Core.Impl.Memory
         /// Gets or creates thread-local memory pool.
         /// </summary>
         /// <returns>Memory pool.</returns>
-        [SuppressMessage("Reliability", "S2930:\"IDisposables\" should be disposed")]
+        [SuppressMessage("Microsoft.Reliability", "CA2000:Dispose objects before losing scope")]
         public PlatformMemoryPool Pool()
         {
             PlatformMemoryPool pool = _threadLocPool.Value;
