@@ -31,7 +31,7 @@ import java.util.TreeMap;
 public class TestStormSpout implements IRichSpout {
 
     /** Field by which tuple data is obtained by the streamer. */
-    private static final String IGNITE_TUPLE_FIELD = "ignite";
+    public static final String IGNITE_TUPLE_FIELD = "test-field";
 
     /** Number of outgoing tuples. */
     public static final int CNT = 500;
@@ -72,7 +72,7 @@ public class TestStormSpout implements IRichSpout {
      */
     @Override
     public void nextTuple() {
-        // Noop. Sent via mocked sources.
+        // No-op. Sent via mocked sources.
     }
 
     /**

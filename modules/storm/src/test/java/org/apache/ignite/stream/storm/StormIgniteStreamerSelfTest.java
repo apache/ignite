@@ -84,18 +84,21 @@ public class StormIgniteStreamerSelfTest extends GridCommonAbstractTest {
      */
     public void testStormStreamerIgniteBolt() throws TimeoutException, InterruptedException {
         final StormStreamer<String, String> stormStreamer = new StormStreamer<>();
+
         stormStreamer.setAutoFlushFrequency(10L);
         stormStreamer.setAllowOverwrite(true);
         stormStreamer.setCacheName(TEST_CACHE);
+        stormStreamer.setIgniteTupleField(TestStormSpout.IGNITE_TUPLE_FIELD);
         stormStreamer.setIgniteConfigFile(GRID_CONF_FILE);
 
-        MkClusterParam mkClusterParam = new MkClusterParam();
-        mkClusterParam.setSupervisors(4);
-
         Config daemonConf = new Config();
+
         daemonConf.put(Config.STORM_LOCAL_MODE_ZMQ, false);
 
+        MkClusterParam mkClusterParam = new MkClusterParam();
+
         mkClusterParam.setDaemonConf(daemonConf);
+        mkClusterParam.setSupervisors(4);
 
         final CountDownLatch latch = new CountDownLatch(TestStormSpout.CNT);
 
@@ -109,7 +112,8 @@ public class StormIgniteStreamerSelfTest extends GridCommonAbstractTest {
             }
         };
 
-        final UUID putLsnrId = ignite.events(ignite.cluster().forCacheNodes(TEST_CACHE)).remoteListen(putLsnr, null, EVT_CACHE_OBJECT_PUT);
+        final UUID putLsnrId = ignite.events(ignite.cluster().forCacheNodes(TEST_CACHE))
+            .remoteListen(putLsnr, null, EVT_CACHE_OBJECT_PUT);
 
         Testing.withSimulatedTimeLocalCluster(mkClusterParam, new TestJob() {
                 @Override
@@ -126,16 +130,24 @@ public class StormIgniteStreamerSelfTest extends GridCommonAbstractTest {
 
                     // Prepares a mock data for the spout.
                     MockedSources mockedSources = new MockedSources();
+
                     mockedSources.addMockData("test-spout", getMockData());
 
                     // Prepares the config.
                     Config conf = new Config();
+
                     conf.setMessageTimeoutSecs(10);
 
+                    IgniteCache<Integer, String> cache = ignite.cache(TEST_CACHE);
+
                     CompleteTopologyParam completeTopologyParam = new CompleteTopologyParam();
+
                     completeTopologyParam.setTimeoutMs(10000);
                     completeTopologyParam.setMockedSources(mockedSources);
                     completeTopologyParam.setStormConf(conf);
+
+                    // Checks the cache doesn't contain any entries yet.
+                    assertEquals(0, cache.size(CachePeekMode.PRIMARY));
 
                     Testing.completeTopology(cluster, topology, completeTopologyParam);
 
@@ -144,41 +156,30 @@ public class StormIgniteStreamerSelfTest extends GridCommonAbstractTest {
 
                     ignite.events(ignite.cluster().forCacheNodes(TEST_CACHE)).stopRemoteListen(putLsnrId);
 
-                    validateStreamCacheData(TestStormSpout.getKeyValMap());
+                    // Validates all entries are in the cache.
+                    assertEquals(TestStormSpout.CNT, cache.size(CachePeekMode.PRIMARY));
+
+                    for (Map.Entry<Integer, String> entry : TestStormSpout.getKeyValMap().entrySet())
+                        assertEquals(entry.getValue(), cache.get(entry.getKey()));
                 }
             }
         );
     }
 
     /**
-     * Prepares entry values for test input.s
+     * Prepares entry values for test input.
      *
      * @return Array of entry values.
      */
     @NotNull
     private static Values[] getMockData() {
         final int SIZE = 10;
+
         ArrayList<Values> mockData = new ArrayList<>();
 
-        for (int i = 0; i < TestStormSpout.CNT; i += SIZE) {
+        for (int i = 0; i < TestStormSpout.CNT; i += SIZE)
             mockData.add(new Values(TestStormSpout.getKeyValMap().subMap(i, i + SIZE)));
-        }
 
         return mockData.toArray(new Values[mockData.size()]);
-    }
-
-    /**
-     * Validates the data submitted to the grid is correctly stored.
-     *
-     * @param keyValMap Validation entries.s
-     */
-    private void validateStreamCacheData(Map<Integer, String> keyValMap) {
-        IgniteCache<Integer, String> cache = ignite.cache(TEST_CACHE);
-
-        for (Map.Entry<Integer, String> entry : keyValMap.entrySet()) {
-            assertEquals(entry.getValue(), cache.get(entry.getKey()));
-        }
-
-        assertEquals(TestStormSpout.CNT, cache.size(CachePeekMode.PRIMARY));
     }
 }

@@ -30,7 +30,8 @@ interested in):
 
 2. Create an Ignite configuration file (see example-ignite.xml) and make sure it is accessible from the streamer.
 
-3. Make sure data input to the streamer is specified with the field named "ignite." See TestStormSpout's declareOutputFields(...)
-for an example.
+3. Make sure your key-value data input to the streamer is specified with the field named "ignite"
+(or a different one you configure with StormStreamer.setIgniteTupleField(...)).
+See TestStormSpout.declareOutputFields(...) for an example.
 
 4. Create a topology with the streamer and start.

@@ -33,17 +33,20 @@ import org.apache.ignite.stream.StreamAdapter;
 
 /**
  * Apache Storm streamer implemented as a Storm bolt.
- * Obtaining data from other bolts and spouts is done by field "ignite."
+ * Obtaining data from other bolts and spouts is done by the specified tuple field.
  */
 public class StormStreamer<K, V> extends StreamAdapter<Tuple, K, V> implements IRichBolt {
     /** Default flush frequency. */
     private static final long DFLT_FLUSH_FREQ = 10000L;
 
-    /** Field by which tuple data is obtained in topology. */
-    private static final String IGNITE_TUPLE_FIELD = "ignite";
+    /** Default Ignite tuple field. */
+    private static final String DFLT_TUPLE_FIELD = "ignite";
 
     /** Logger. */
     private IgniteLogger log;
+
+    /** Field by which tuple data is obtained in topology. */
+    private String igniteTupleField = DFLT_TUPLE_FIELD;
 
     /** Automatic flush frequency. */
     private long autoFlushFrequency = DFLT_FLUSH_FREQ;
@@ -62,6 +65,24 @@ public class StormStreamer<K, V> extends StreamAdapter<Tuple, K, V> implements I
 
     /** Cache name. */
     private static String cacheName;
+
+    /**
+     * Gets Ignite tuple field, by which tuple data is obtained in topology.
+     *
+     * @return Tuple field.
+     */
+    public String getIgniteTupleField() {
+        return igniteTupleField;
+    }
+
+    /**
+     * Names Ignite tuple field, by which tuple data is obtained in topology.
+     *
+     * @param igniteTupleField Name of tuple field.
+     */
+    public void setIgniteTupleField(String igniteTupleField) {
+        this.igniteTupleField = igniteTupleField;
+    }
 
     /**
      * Gets the cache name.
@@ -143,6 +164,7 @@ public class StormStreamer<K, V> extends StreamAdapter<Tuple, K, V> implements I
     public void start() throws IgniteException {
         A.notNull(igniteConfigFile, "Ignite config file");
         A.notNull(cacheName, "Cache name");
+        A.notNull(igniteTupleField, "Ignite tuple field");
 
         setIgnite(StreamerContext.getIgnite());
 
@@ -195,10 +217,10 @@ public class StormStreamer<K, V> extends StreamAdapter<Tuple, K, V> implements I
         if (stopped)
             return;
 
-        if (!(tuple.getValueByField(IGNITE_TUPLE_FIELD) instanceof Map))
+        if (!(tuple.getValueByField(igniteTupleField) instanceof Map))
             throw new IgniteException("Map as a streamer input is expected!");
 
-        final Map<K, V> gridVals = (Map)tuple.getValueByField(IGNITE_TUPLE_FIELD);
+        final Map<K, V> gridVals = (Map)tuple.getValueByField(igniteTupleField);
 
         try {
             if (log.isDebugEnabled())
@@ -223,14 +245,14 @@ public class StormStreamer<K, V> extends StreamAdapter<Tuple, K, V> implements I
     }
 
     /**
-     * Normally declares output fields for the stream of the topology. Empty because we have no tuples for any further
-     * processing.
+     * Normally declares output fields for the stream of the topology.
+     * Empty because we have no tuples for any further processing.
      *
      * @param declarer OutputFieldsDeclarer.
      */
     @Override
     public void declareOutputFields(OutputFieldsDeclarer declarer) {
-        // Noop.
+        // No-op.
     }
 
     /**
