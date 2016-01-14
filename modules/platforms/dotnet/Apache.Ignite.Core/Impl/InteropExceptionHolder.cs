@@ -18,6 +18,7 @@
 namespace Apache.Ignite.Core.Impl
 {
     using System;
+    using System.Diagnostics.CodeAnalysis;
     using System.Runtime.Serialization.Formatters.Binary;
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Impl.Binary;
@@ -57,6 +58,7 @@ namespace Apache.Ignite.Core.Impl
         }
 
         /** <inheritDoc /> */
+        [SuppressMessage("Microsoft.Design", "CA1062:Validate arguments of public methods")]
         public void WriteBinary(IBinaryWriter writer)
         {
             var writer0 = (BinaryWriter) writer.GetRawWriter();
