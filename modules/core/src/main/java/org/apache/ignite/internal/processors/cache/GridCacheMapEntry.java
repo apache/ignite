@@ -77,6 +77,7 @@ import static org.apache.ignite.events.EventType.EVT_CACHE_OBJECT_READ;
 import static org.apache.ignite.events.EventType.EVT_CACHE_OBJECT_REMOVED;
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.DELETE;
 import static org.apache.ignite.internal.processors.dr.GridDrType.DR_NONE;
+import static org.apache.ignite.internal.processors.dr.GridDrType.DR_PRELOAD;
 
 /**
  * Adapter for cache entry.
@@ -2003,7 +2004,9 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
                         CacheObject val = rawGetOrUnmarshalUnlocked(false);
 
-                        drReplicate(drType, val, newVer);
+                        // Previously value was assigned on preload and wasn't processed by DR.
+                        if (ATOMIC_VER_COMPARATOR.compare(ver, newVer, ignoreTime) == 0 && drType != DR_PRELOAD)
+                            drReplicate(drType, val, newVer);
 
                         return new GridCacheUpdateAtomicResult(false,
                             retval ? val : null,
