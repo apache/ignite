@@ -18,8 +18,8 @@
 import JSZip from 'jszip';
 
 export default [
-    '$scope', '$http', '$common', '$loading', '$table', '$filter', 'ConfigurationSummaryResource',
-    function($scope, $http, $common, $loading, $table, $filter, Resource) {
+    '$scope', '$http', '$common', '$loading', '$table', '$filter', 'ConfigurationSummaryResource', 'JavaTypes',
+    function($scope, $http, $common, $loading, $table, $filter, Resource, JavaTypes) {
         const ctrl = this;
         const igniteVersion = '1.5.0.final';
 
@@ -189,11 +189,10 @@ export default [
             _.forEach(cluster.caches, (cache) => {
                 _.forEach(cache.metadatas, (metadata) => {
                     if (!$common.isEmptyArray(metadata.keyFields)) {
-                        const keyType = metadata.keyType;
-                        const valType = metadata.valueType;
+                        if (!JavaTypes.isBuiltInClass(metadata.keyType))
+                            addChildren(metadata.keyType);
 
-                        addChildren(keyType);
-                        addChildren(valType);
+                        addChildren(metadata.valueType);
                     }
                 });
             });
@@ -252,7 +251,7 @@ export default [
             zip.file('jdbc-drivers/README.txt', $generatorReadme.readmeJdbc().asString());
 
             for (const meta of ctrl.data.metadatas) {
-                if (meta.keyClass)
+                if (meta.keyClass && !JavaTypes.isBuiltInClass(meta.keyType))
                     zip.file(srcPath + meta.keyType.replace(/\./g, '/') + '.java', meta.keyClass);
 
                 zip.file(srcPath + meta.valueType.replace(/\./g, '/') + '.java', meta.valueClass);
