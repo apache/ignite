@@ -1119,7 +1119,7 @@ consoleModule.controller('metadataController', function ($filter, $http, $timeou
                 .success(function (res) {
                     $scope.ui.markPristine();
 
-                    var savedMeta = res[0];
+                    var savedMeta = res.savedMetas[0];
 
                     var idx = _.findIndex($scope.metadatas, function (metadata) {
                         return metadata._id === savedMeta._id;
