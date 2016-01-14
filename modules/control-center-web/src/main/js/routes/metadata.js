@@ -135,8 +135,12 @@ function _save(metas, res) {
             if (meta.newCache) {
                 db.Cache.findOne({space: meta.space, name: meta.newCache.name}, function (err, cache) {
                     if (db.processed(err, res))
-                        if (cache) // Cache already exists, just save metadata.
+                        if (cache) {
+                            // Cache already exists, just save metadata.
+                            meta.caches = [cache._id];
+
                             _saveMeta(meta, savedMetas, callback);
+                        }
                         else {
                             // If cache not found, then create it and associate with metadata.
                             (new db.Cache({
