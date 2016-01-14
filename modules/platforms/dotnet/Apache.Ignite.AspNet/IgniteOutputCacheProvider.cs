@@ -15,12 +15,97 @@
  * limitations under the License.
  */
 
+using System.Web.Caching;
+
 namespace Apache.Ignite.AspNet
 {
+    using System;
+    using System.Collections.Specialized;
+    using Apache.Ignite.Core;
+    using Apache.Ignite.Core.Cache;
+
     /// <summary>
     /// ASP.NET output cache provider that uses Ignite cache as a storage.
     /// </summary>
-    public class IgniteOutputCacheProvider
+    public class IgniteOutputCacheProvider : OutputCacheProvider
     {
+        // TODO: Tests (separate assembly?)
+
+        /** */
+        private const string GridName = "gridName";
+        
+        /** */
+        private const string CacheName = "cacheName";
+
+        /** */
+        private ICache<string, object> _cache;
+
+        /// <summary>
+        /// Returns a reference to the specified entry in the output cache.
+        /// </summary>
+        /// <param name="key">A unique identifier for a cached entry in the output cache.</param>
+        /// <returns>
+        /// The <paramref name="key" /> value that identifies the specified entry in the cache, or null if the specified entry is not in the cache.
+        /// </returns>
+        public override object Get(string key)
+        {
+            return _cache[key];
+        }
+
+        /// <summary>
+        /// Inserts the specified entry into the output cache.
+        /// </summary>
+        /// <param name="key">A unique identifier for <paramref name="entry" />.</param>
+        /// <param name="entry">The content to add to the output cache.</param>
+        /// <param name="utcExpiry">The time and date on which the cached entry expires.</param>
+        /// <returns>
+        /// A reference to the specified provider.
+        /// </returns>
+        public override object Add(string key, object entry, DateTime utcExpiry)
+        {
+            // TODO: Expiry
+
+            return _cache.GetAndPutIfAbsent(key, entry);
+        }
+
+        /// <summary>
+        /// Inserts the specified entry into the output cache, overwriting the entry if it is already cached.
+        /// </summary>
+        /// <param name="key">A unique identifier for <paramref name="entry" />.</param>
+        /// <param name="entry">The content to add to the output cache.</param>
+        /// <param name="utcExpiry">The time and date on which the cached <paramref name="entry" /> expires.</param>
+        public override void Set(string key, object entry, DateTime utcExpiry)
+        {
+            // TODO: Expiry
+
+            _cache[key] = entry;
+        }
+
+        /// <summary>
+        /// Removes the specified entry from the output cache.
+        /// </summary>
+        /// <param name="key">The unique identifier for the entry to remove from the output cache.</param>
+        public override void Remove(string key)
+        {
+            _cache.Remove(key);
+        }
+
+        /// <summary>
+        /// Initializes the provider.
+        /// </summary>
+        /// <param name="name">The friendly name of the provider.</param>
+        /// <param name="config">A collection of the name/value pairs representing the provider-specific attributes specified in the configuration for this provider.</param>
+        public override void Initialize(string name, NameValueCollection config)
+        {
+            base.Initialize(name, config);
+
+            var gridName = config[GridName];
+            var cacheName = config[CacheName];
+
+            // TODO: GetOrStartIgnite, spring url?
+            var grid = Ignition.GetIgnite(gridName);
+
+            _cache = grid.GetOrCreateCache<string, object>(cacheName);
+        }
     }
 }
