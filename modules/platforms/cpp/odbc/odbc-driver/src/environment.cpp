@@ -41,6 +41,28 @@ namespace ignite
             return connection;
         }
 
+        void Environment::TransactionCommit()
+        {
+            IGNITE_ODBC_API_CALL(InternalTransactionCommit());
+        }
+
+        SqlResult Environment::InternalTransactionCommit()
+        {
+            return SQL_RESULT_SUCCESS;
+        }
+
+        void Environment::TransactionRollback()
+        {
+            IGNITE_ODBC_API_CALL(InternalTransactionRollback());
+        }
+
+        SqlResult Environment::InternalTransactionRollback()
+        {
+            AddStatusRecord(SQL_STATE_HYC00_OPTIONAL_FEATURE_NOT_IMPLEMENTED,
+                "Rollback operation is not supported.");
+
+            return SQL_RESULT_ERROR;
+        }
 
         SqlResult Environment::InternalCreateConnection(Connection*& connection)
         {

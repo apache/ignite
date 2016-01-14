@@ -221,6 +221,29 @@ namespace ignite
         {
             return diagnostic::DiagnosticRecord(sqlState, message, "", "", rowNum, columnNum);
         }
+
+        void Connection::TransactionCommit()
+        {
+            IGNITE_ODBC_API_CALL(InternalTransactionCommit());
+        }
+
+        SqlResult Connection::InternalTransactionCommit()
+        {
+            return SQL_RESULT_SUCCESS;
+        }
+
+        void Connection::TransactionRollback()
+        {
+            IGNITE_ODBC_API_CALL(InternalTransactionRollback());
+        }
+
+        SqlResult Connection::InternalTransactionRollback()
+        {
+            AddStatusRecord(SQL_STATE_HYC00_OPTIONAL_FEATURE_NOT_IMPLEMENTED,
+                "Rollback operation is not supported.");
+
+            return SQL_RESULT_ERROR;
+        }
     }
 }
 

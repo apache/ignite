@@ -1210,6 +1210,63 @@ SQLRETURN SQL_API SQLGetTypeInfo(SQLHSTMT       stmt,
     return statement->GetDiagnosticRecords().GetReturnCode();
 }
 
+SQLRETURN SQL_API SQLEndTran(SQLSMALLINT    handleType,
+                             SQLHANDLE      handle,
+                             SQLSMALLINT    completionType)
+{
+    using namespace ignite::odbc;
+
+    LOG_MSG("SQLEndTran called\n");
+
+    SQLRETURN result;
+
+    switch (handleType)
+    {
+        case SQL_HANDLE_ENV:
+        {
+            Environment *env = reinterpret_cast<Environment*>(handle);
+
+            if (!env)
+                return SQL_INVALID_HANDLE;
+
+            if (completionType == SQL_COMMIT)
+                env->TransactionCommit();
+            else
+                env->TransactionRollback();
+
+            result = env->GetDiagnosticRecords().GetReturnCode();
+
+            break;
+        }
+
+        case SQL_HANDLE_DBC:
+        {
+            Connection *conn = reinterpret_cast<Connection*>(handle);
+
+            if (!conn)
+                return SQL_INVALID_HANDLE;
+
+            if (completionType == SQL_COMMIT)
+                conn->TransactionCommit();
+            else
+                conn->TransactionRollback();
+
+            result = conn->GetDiagnosticRecords().GetReturnCode();
+
+            break;
+        }
+
+        default:
+        {
+            result = SQL_INVALID_HANDLE;
+
+            break;
+        }
+    }
+
+    return result;
+}
+
 //
 // ==== Not implemented ====
 //
@@ -1468,14 +1525,6 @@ SQLRETURN SQL_API SQLTablePrivileges(SQLHSTMT      stmt,
 SQLRETURN SQL_API SQLCopyDesc(SQLHDESC src, SQLHDESC dst)
 {
     LOG_MSG("SQLCopyDesc called\n");
-    return SQL_SUCCESS;
-}
-
-SQLRETURN SQL_API SQLEndTran(SQLSMALLINT    handleType,
-                             SQLHANDLE      handle,
-                             SQLSMALLINT    completionType)
-{
-    LOG_MSG("SQLEndTran called\n");
     return SQL_SUCCESS;
 }
 

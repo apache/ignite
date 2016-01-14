@@ -150,6 +150,16 @@ namespace ignite
                 return true;
             }
 
+            /**
+             * Perform transaction commit.
+             */
+            void TransactionCommit();
+
+            /**
+             * Perform transaction rollback.
+             */
+            void TransactionRollback();
+
         private:
             IGNITE_NO_COPY_ASSIGNMENT(Connection);
 
@@ -192,6 +202,22 @@ namespace ignite
              * @return Operation result.
              */
             SqlResult InternalCreateStatement(Statement*& statement);
+
+            /**
+             * Perform transaction commit on all the associated connections.
+             * Internal call.
+             *
+             * @return Operation result.
+             */
+            SqlResult InternalTransactionCommit();
+
+            /**
+             * Perform transaction rollback on all the associated connections.
+             * Internal call.
+             *
+             * @return Operation result.
+             */
+            SqlResult InternalTransactionRollback();
 
             /**
              * Constructor.
