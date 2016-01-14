@@ -244,9 +244,7 @@ consoleModule.controller('clustersController', function ($http, $timeout, $scope
                 $scope.spaces = data.spaces;
 
                 data.clusters.forEach(function (cluster) {
-                    Object.defineProperty(cluster, 'label', {
-                        get: _clusterLbl
-                    });
+                    Object.defineProperty(cluster, 'label', { get: _clusterLbl });
                 });
 
                 $scope.clusters = data.clusters;
@@ -438,9 +436,7 @@ consoleModule.controller('clustersController', function ($http, $timeout, $scope
             newItem.igfss = id && _.find($scope.igfss, {value: id}) ? [id] : [];
             newItem.space = $scope.spaces[0]._id;
 
-            Object.defineProperty(newItem, 'label', {
-                get: _clusterLbl
-            });
+            Object.defineProperty(newItem, 'label', { get: _clusterLbl });
 
             return newItem;
         }
@@ -710,15 +706,22 @@ consoleModule.controller('clustersController', function ($http, $timeout, $scope
             }
         };
 
+        function _clusterNames() {
+            return _.map($scope.clusters, function (cluster) {
+                return cluster.name;
+            });
+        }
+
         // Copy cluster with new name.
         $scope.cloneItem = function () {
             if ($scope.tableReset(true)) {
                 if (validate($scope.backupItem))
-                    $clone.confirm($scope.backupItem.name).then(function (newName) {
+                    $clone.confirm($scope.backupItem.name, _clusterNames()).then(function (newName) {
                         var item = angular.copy($scope.backupItem);
 
-                        item._id = undefined;
+                        delete item._id;
                         item.name = newName;
+                        Object.defineProperty(item, 'label', { get: _clusterLbl });
 
                         save(item);
                     });

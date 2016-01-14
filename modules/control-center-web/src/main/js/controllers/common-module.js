@@ -1196,22 +1196,30 @@ consoleModule.service('$clone', function ($modal, $rootScope, $q) {
     scope.ok = function (newName) {
         deferred.resolve(newName);
 
-        copyModal.hide();
+        cloneModal.hide();
     };
 
-    var copyModal = $modal({templateUrl: '/templates/clone.html', scope: scope, placement: 'center', show: false});
+    var cloneModal = $modal({templateUrl: '/templates/clone.html', scope: scope, placement: 'center', show: false});
 
-    copyModal.confirm = function (oldName) {
-        scope.newName = oldName + '(1)';
+    cloneModal.confirm = function (oldName, names) {
+        var num = 1;
+
+        scope.newName = oldName + '(' + num.toString() + ')';
+
+        while(_.includes(names, scope.newName)) {
+            num++;
+
+            scope.newName = oldName + '(' + num.toString() + ')';
+        }
 
         deferred = $q.defer();
 
-        copyModal.show();
+        cloneModal.show();
 
         return deferred.promise;
     };
 
-    return copyModal;
+    return cloneModal;
 });
 
 // Tables support service.
@@ -1834,7 +1842,7 @@ consoleModule.directive('onEscape', function () {
 consoleModule.directive('retainSelection', function ($timeout) {
     var promise;
 
-    return function (scope, elem, attr) {
+    return function (scope, elem) {
         elem.on('keydown', function (evt) {
             var key = evt.which;
             var ctrlDown = evt.ctrlKey || evt.metaKey;
@@ -2228,7 +2236,7 @@ consoleModule.controller('notebooks', ['$scope', '$modal', '$state', '$http', '$
 
                 $state.go('base.sql', {id: id});
             })
-            .error(function (message, state) {
+            .error(function (message) {
                 $common.showError(message);
             });
     };

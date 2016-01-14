@@ -32,7 +32,7 @@ consoleModule.controller('metadataController', function ($filter, $http, $timeou
         $scope.ui.generateCaches = true;
         $scope.ui.generatedCachesClusters = [];
 
-        $scope.removeDemoDropdown = [{ 'text': 'Remove generated demo metadata', 'click': 'removeDemoItems()'}];
+        $scope.removeDemoDropdown = [{ 'text': 'Remove generated demo data', 'click': 'removeDemoItems()'}];
 
         function restoreSelection() {
             var lastSelectedMetadata = angular.fromJson(sessionStorage.lastSelectedMetadata);
@@ -1172,14 +1172,20 @@ consoleModule.controller('metadataController', function ($filter, $http, $timeou
             }
         };
 
+        function _metadataNames() {
+            return _.map($scope.metadatas, function (meta) {
+                return meta.valueType;
+            });
+        }
+
         // Save cache type metadata with new name.
         $scope.cloneItem = function () {
             if ($scope.tableReset(true)) {
                 if (validate($scope.backupItem))
-                    $clone.confirm($scope.backupItem.valueType).then(function (newName) {
+                    $clone.confirm($scope.backupItem.valueType, _metadataNames()).then(function (newName) {
                         var item = angular.copy($scope.backupItem);
 
-                        item._id = undefined;
+                        delete item._id;
                         item.valueType = newName;
 
                         save(item);

@@ -67,14 +67,12 @@ include ../includes/controls
                     button.btn.btn-primary(id='new-item' ng-click='createItem()') Add metadata
                 .panel-tip-container(bs-tooltip='' data-title='Load metadata from database' data-placement='bottom')
                     button.btn.btn-primary(ng-click='showLoadMetadataModal(false)') Load from database
+                +save-remove-buttons('metadata')
                 .btn-group.panel-tip-container(bs-tooltip='' data-title='Load metadata from demo database' data-placement='bottom')
-                    button.btn.btn-info(ng-click='showLoadMetadataModal(true)') Load from demo database
+                    button.btn.btn-info(ng-click='showLoadMetadataModal(true)') Demo
                         button.btn.dropdown-toggle.btn-info(id='remove-demo-dropdown' ng-if='hasDemoItems()' data-toggle='dropdown' data-container='body' bs-dropdown='removeDemoDropdown' data-placement='bottom-right')
                             span.caret
-                +save-remove-buttons('metadata')
                 hr
             form.form-horizontal(name='ui.inputForm' ng-show='backupItem && tableVisibleRow((displayedRows | metadatasValidation:ui.showValid:true), selectedItem)' novalidate unsaved-warning-form)
                 .panel-group(bs-collapse ng-model='panels.activePanels' data-allow-multiple='true')
                     +groups('metadata', 'backupItem')
-                .section
-                    +save-remove-buttons('metadata')

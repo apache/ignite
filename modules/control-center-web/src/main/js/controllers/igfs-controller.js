@@ -382,7 +382,7 @@ consoleModule.controller('igfsController', [
                         $clone.confirm($scope.backupItem.name).then(function (newName) {
                             var item = angular.copy($scope.backupItem);
 
-                            item._id = undefined;
+                            delete item._id;
                             item.name = newName;
 
                             save(item);

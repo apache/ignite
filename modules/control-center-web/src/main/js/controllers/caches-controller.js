@@ -297,9 +297,7 @@ consoleModule.controller('cachesController', [
                 $scope.spaces = data.spaces;
 
                 data.caches.forEach(function (cache) {
-                    Object.defineProperty(cache, 'label', {
-                        get: _cacheLbl
-                    });
+                    Object.defineProperty(cache, 'label', { get: _cacheLbl });
                 });
 
                 $scope.caches = data.caches;
@@ -461,7 +459,7 @@ consoleModule.controller('cachesController', [
         };
 
         function prepareNewItem(id) {
-            return {
+            var newItem =  {
                 space: $scope.spaces[0]._id,
                 cacheMode: 'PARTITIONED',
                 atomicityMode: 'ATOMIC',
@@ -471,9 +469,12 @@ consoleModule.controller('cachesController', [
                     ? [id]
                     : _.map($scope.clusters, function (cluster) { return cluster.value; }),
                 metadatas: id && _.find($scope.metadatas, {value: id}) ? [id] : [],
-                cacheStoreFactory: {CacheJdbcBlobStoreFactory: {connectVia: 'DataSource'}},
-                get label() { return angular.bind(this, _cacheLbl)(); }
+                cacheStoreFactory: {CacheJdbcBlobStoreFactory: {connectVia: 'DataSource'}}
             };
+
+            Object.defineProperty(newItem, 'label', { get: _cacheLbl });
+
+            return newItem;
         }
 
         // Add new cache.
@@ -644,15 +645,25 @@ consoleModule.controller('cachesController', [
             }
         };
 
+        function _cacheNames() {
+            return _.map($scope.caches, function (cache) {
+                return cache.name;
+            });
+        }
+
         // Save cache with new name.
         $scope.cloneItem = function () {
             if ($scope.tableReset(true)) {
                 if (validate($scope.backupItem))
-                    $clone.confirm($scope.backupItem.name).then(function (newName) {
+                    $clone.confirm($scope.backupItem.name, _cacheNames()).then(function (newName) {
                         var item = angular.copy($scope.backupItem);
 
-                        item._id = undefined;
+                        delete item._id;
+                        delete item.demo;
+
                         item.name = newName;
+
+                        Object.defineProperty(item, 'label', { get: _cacheLbl });
 
                         save(item);
                     });
