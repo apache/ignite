@@ -467,6 +467,22 @@ consoleModule.controller('clustersController', function ($http, $timeout, $scope
             if ($common.isEmptyString(item.name))
                 return showPopoverMessage($scope.panels, 'general', 'clusterName', 'Name should not be empty');
 
+            var caches = _.filter(_.map($scope.caches, function (scopeCache) {
+                return scopeCache.cache;
+            }), function (cache) {
+                return _.contains($scope.backupItem.caches, cache._id);
+            });
+
+            var checkRes = $common.checkCachesDataSources(caches);
+
+            if (!checkRes.checked) {
+                return showPopoverMessage($scope.panels, 'general', 'caches',
+                    'Found caches "' + checkRes.firstCache.name + '" and "' + checkRes.secondCache.name + '" ' +
+                    'with the same data source bean name "' + checkRes.firstCache.cacheStoreFactory[checkRes.firstCache.cacheStoreFactory.kind].dataSourceBean +
+                    '" and different configured databases: "' + $common.cacheStoreJdbcDialectsLabel(checkRes.firstDB) + '" in "' + checkRes.firstCache.name + '" and "' +
+                    $common.cacheStoreJdbcDialectsLabel(checkRes.secondDB) + '" in "' + checkRes.secondCache.name + '"');
+            }
+
             var b = item.binaryConfiguration;
 
             if ($common.isDefined(b)) {

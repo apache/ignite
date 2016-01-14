@@ -151,15 +151,7 @@ consoleModule.controller('cachesController', [
             {value: 'DataSource', label: 'Data source'}
         ];
 
-        $scope.cacheStoreJdbcDialects = [
-            {value: 'Generic', label: 'Generic JDBC'},
-            {value: 'Oracle', label: 'Oracle'},
-            {value: 'DB2', label: 'IBM DB2'},
-            {value: 'SQLServer', label: 'Microsoft SQL Server'},
-            {value: 'MySQL', label: 'MySQL'},
-            {value: 'PostgreSQL', label: 'PostgreSQL'},
-            {value: 'H2', label: 'H2 database'}
-        ];
+        $scope.cacheStoreJdbcDialects = $common.cacheStoreJdbcDialects;
 
         $scope.toggleExpanded = function () {
             $scope.ui.expanded = !$scope.ui.expanded;
@@ -495,6 +487,38 @@ consoleModule.controller('cachesController', [
             }
         };
 
+        function checkDataSources() {
+            var clusters = _.filter($scope.clusters, function (cluster) {
+                return _.contains($scope.backupItem.clusters, cluster.value);
+            });
+
+            var checkRes = { checked: true };
+
+            var failCluster = _.find(clusters, function (cluster) {
+                var caches = _.filter($scope.caches, function (cache) {
+                    return cache._id !== $scope.backupItem._id && _.find(cluster.caches, function (clusterCache) {
+                        return clusterCache === cache._id;
+                    });
+                });
+
+                caches.push($scope.backupItem);
+
+                checkRes = $common.checkCachesDataSources(caches);
+
+                return !checkRes.checked;
+            });
+
+            if (!checkRes.checked) {
+                return showPopoverMessage($scope.panels, 'store', checkRes.secondCache.cacheStoreFactory.kind === 'CacheJdbcPojoStoreFactory' ? 'dialect' : 'database',
+                    'Found caches "' + checkRes.firstCache.name + '" and "' + checkRes.secondCache.name + '" in cluster "' + failCluster.label + '" ' +
+                    'with the same data source bean name "' + checkRes.firstCache.cacheStoreFactory[checkRes.firstCache.cacheStoreFactory.kind].dataSourceBean +
+                    '" and different configured databases: "' + $common.cacheStoreJdbcDialectsLabel(checkRes.firstDB) + '" in "' + checkRes.firstCache.name + '" and "' +
+                    $common.cacheStoreJdbcDialectsLabel(checkRes.secondDB) + '" in "' + checkRes.secondCache.name + '"');
+            }
+
+            return true;
+        }
+
         // Check cache logical consistency.
         function validate(item) {
             if ($common.isEmptyString(item.name))
@@ -523,6 +547,9 @@ consoleModule.controller('cachesController', [
                     if (!storeFactory.dialect)
                         return showPopoverMessage($scope.panels, 'store', 'dialect',
                             'Dialect should not be empty');
+
+                    if (!checkDataSources())
+                        return false;
                 }
 
                 if (item.cacheStoreFactory.kind === 'CacheJdbcBlobStoreFactory') {
@@ -546,6 +573,9 @@ consoleModule.controller('cachesController', [
                         if (!storeFactory.database)
                             return showPopoverMessage($scope.panels, 'store', 'database',
                                 'Database should not be empty');
+
+                        if (!checkDataSources())
+                            return false;
                     }
                 }
             }

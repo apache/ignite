@@ -674,6 +674,27 @@ consoleModule.service('$common', [
             return group.dirty;
         }
 
+        function extractDataSource(cache) {
+            if (cache.cacheStoreFactory && cache.cacheStoreFactory.kind) {
+                var storeFactory = cache.cacheStoreFactory[cache.cacheStoreFactory.kind];
+
+                if (storeFactory.dialect || (storeFactory.connectVia === 'DataSource'))
+                    return storeFactory;
+            }
+
+            return undefined;
+        }
+
+        var cacheStoreJdbcDialects = [
+            {value: 'Generic', label: 'Generic JDBC'},
+            {value: 'Oracle', label: 'Oracle'},
+            {value: 'DB2', label: 'IBM DB2'},
+            {value: 'SQLServer', label: 'Microsoft SQL Server'},
+            {value: 'MySQL', label: 'MySQL'},
+            {value: 'PostgreSQL', label: 'PostgreSQL'},
+            {value: 'H2', label: 'H2 database'}
+        ];
+
         return {
             getModel: getModel,
             joinTip: function (arr) {
@@ -999,6 +1020,40 @@ consoleModule.service('$common', [
                     return true;
 
                 return attr.substr(attr.indexOf('=') + 1);
+            },
+            cacheStoreJdbcDialects: cacheStoreJdbcDialects,
+            cacheStoreJdbcDialectsLabel: function (dialect) {
+                var found = _.find(cacheStoreJdbcDialects, function (dialectVal) {
+                    return dialectVal.value === dialect;
+                });
+
+                return found ? found.label : undefined;
+            },
+            checkCachesDataSources: function (caches) {
+                var res = { checked: true };
+
+                res.checked = !isDefined(_.find(caches, function (curCache, curIx) {
+                    return _.find(caches, function (checkCache, checkIx) {
+                        if (checkIx < curIx) {
+                            var curDs = extractDataSource(curCache);
+                            var checkDs = extractDataSource(checkCache);
+
+                            var curDB = curDs.dialect || curDs.database;
+                            var checkDB = checkDs.dialect || checkDs.database;
+
+                            var fail = curDs && checkDs && curDs.dataSourceBean === checkDs.dataSourceBean && curDB !== checkDB;
+
+                            if (fail) {
+                                res = { checked: false, firstCache: checkCache, firstDB: checkDB,
+                                    secondCache: curCache, secondDB: curDB }
+                            }
+
+                            return fail;
+                        }
+                    })
+                }));
+
+                return res;
             }
         };
     }]);
