@@ -32,6 +32,8 @@ namespace Apache.Ignite.AspNet
     public class IgniteOutputCacheProvider : OutputCacheProvider
     {
         // TODO: Tests (separate assembly?)
+        // TODO: thread safety. Check whether initialization and put/get come from different threads, etc
+        // TODO: Cache caches (long seconds -> cache)
 
         /** */
         private const string GridName = "gridName";
