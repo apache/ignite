@@ -55,6 +55,15 @@ namespace Apache.Ignite.Core.Tests.AspNet
         }
 
         /// <summary>
+        /// Fixture teardown.
+        /// </summary>
+        [TestFixtureTearDown]
+        public void TestFixtureTearDown()
+        {
+            Ignition.StopAll(true);
+        }
+
+        /// <summary>
         /// Tests provider initialization.
         /// </summary>
         [Test]
@@ -74,11 +83,7 @@ namespace Apache.Ignite.Core.Tests.AspNet
                 }));
 
             // Valid grid
-            cacheProvider.Initialize("testName", new NameValueCollection
-            {
-                {GridNameAttr, GridName},
-                {CacheNameAttr, CacheName}
-            });
+            cacheProvider = GetProvider();
 
             cacheProvider.Set("1", 1, DateTime.MaxValue);
 
@@ -91,7 +96,29 @@ namespace Apache.Ignite.Core.Tests.AspNet
         [Test]
         public void TestCaching()
         {
-            
+            var cacheProvider = GetProvider();
+
+            Assert.AreEqual(null, cacheProvider.Get("1"));
+            cacheProvider.Set("1", 1, DateTime.MaxValue);
+            Assert.AreEqual(1, cacheProvider.Get("1"));
+
+            cacheProvider.Remove("1");
+            Assert.AreEqual(null, cacheProvider.Get("1"));
+        }
+
+        /// <summary>
+        /// Gets the initialized provider.
+        /// </summary>
+        private static IgniteOutputCacheProvider GetProvider()
+        {
+            var cacheProvider = new IgniteOutputCacheProvider();
+
+            cacheProvider.Initialize("testName", new NameValueCollection
+            {
+                {GridNameAttr, GridName},
+                {CacheNameAttr, CacheName}
+            });
+            return cacheProvider;
         }
     }
 }
