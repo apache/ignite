@@ -21,6 +21,7 @@ import junit.framework.Assert;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.binary.BinaryCollectionFactory;
 import org.apache.ignite.binary.BinaryField;
+import org.apache.ignite.binary.BinaryFullNameIdMapper;
 import org.apache.ignite.binary.BinaryIdMapper;
 import org.apache.ignite.binary.BinaryMapFactory;
 import org.apache.ignite.binary.BinaryObject;
@@ -30,6 +31,7 @@ import org.apache.ignite.binary.BinaryRawReader;
 import org.apache.ignite.binary.BinaryRawWriter;
 import org.apache.ignite.binary.BinaryReader;
 import org.apache.ignite.binary.BinarySerializer;
+import org.apache.ignite.binary.BinarySimpleNameIdMapper;
 import org.apache.ignite.binary.BinaryType;
 import org.apache.ignite.binary.BinaryTypeConfiguration;
 import org.apache.ignite.binary.BinaryWriter;
@@ -1342,10 +1344,10 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testTypeNamesInternalIdMapper() throws Exception {
-        checkTypeNamesDefaultIdMapper(BinaryInternalIdMapper.defaultInstance());
+        checkTypeNamesDefaultIdMapper(BinaryFullNameIdMapper.defaultInstance());
     }
 
-    private void checkTypeNamesDefaultIdMapper(BinaryInternalIdMapper mapper) throws IgniteCheckedException {
+    private void checkTypeNamesDefaultIdMapper(BinaryFullNameIdMapper mapper) throws IgniteCheckedException {
         BinaryTypeConfiguration customType1 = new BinaryTypeConfiguration(Value.class.getName());
 
         customType1.setIdMapper(new BinaryIdMapper() {
@@ -1473,7 +1475,7 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
 
         BinaryTypeConfiguration customType5 = new BinaryTypeConfiguration(DateClass1.class.getName());
 
-        customType5.setIdMapper(BinaryInternalIdMapper.defaultInstance());
+        customType5.setIdMapper(BinaryFullNameIdMapper.defaultInstance());
 
         BinaryMarshaller marsh = binaryMarshaller(BinarySimpleNameIdMapper.defaultInstance(), Arrays.asList(
             new BinaryTypeConfiguration(Key.class.getName()),
@@ -1558,7 +1560,7 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
 
         BinaryTypeConfiguration customType5 = new BinaryTypeConfiguration(DateClass1.class.getName());
 
-        customType5.setIdMapper(BinaryInternalIdMapper.defaultInstance());
+        customType5.setIdMapper(BinaryFullNameIdMapper.defaultInstance());
 
         BinaryTypeConfiguration customType6 = new BinaryTypeConfiguration(MyTestClass.class.getName());
 

@@ -28,6 +28,7 @@ import java.util.Map;
 import java.util.UUID;
 
 import org.apache.ignite.binary.BinaryCollectionFactory;
+import org.apache.ignite.binary.BinaryFullNameIdMapper;
 import org.apache.ignite.binary.BinaryIdMapper;
 import org.apache.ignite.binary.BinaryInvalidTypeException;
 import org.apache.ignite.binary.BinaryMapFactory;
@@ -248,7 +249,7 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Bina
             }
 
             // TODO should we use globalMapper or not?
-            idMapper = userType ? ctx.userTypeIdMapper(typeId) : BinaryInternalIdMapper.defaultInstance();
+            idMapper = userType ? ctx.userTypeIdMapper(typeId) : BinaryFullNameIdMapper.defaultInstance();
             schema = BinaryUtils.hasSchema(flags) ? getOrCreateSchema() : null;
         }
         else {

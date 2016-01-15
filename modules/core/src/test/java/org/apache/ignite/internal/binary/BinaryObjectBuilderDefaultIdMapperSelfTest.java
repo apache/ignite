@@ -29,6 +29,7 @@ import java.util.UUID;
 import junit.framework.TestCase;
 import org.apache.ignite.IgniteBinary;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.binary.BinaryFullNameIdMapper;
 import org.apache.ignite.binary.BinaryIdMapper;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.binary.BinaryObjectBuilder;
@@ -68,11 +69,11 @@ public class BinaryObjectBuilderDefaultIdMapperSelfTest extends GridCommonAbstra
         customTypeCfg.setTypeName(CustomIdMapper.class.getName());
         customTypeCfg.setIdMapper(new BinaryIdMapper() {
             @Override public int typeId(String clsName) {
-                return ~BinaryInternalIdMapper.defaultInstance().typeId(clsName);
+                return ~BinaryFullNameIdMapper.defaultInstance().typeId(clsName);
             }
 
             @Override public int fieldId(int typeId, String fieldName) {
-                return typeId + ~BinaryInternalIdMapper.defaultInstance().fieldId(typeId, fieldName);
+                return typeId + ~BinaryFullNameIdMapper.defaultInstance().fieldId(typeId, fieldName);
             }
         });
 
@@ -289,7 +290,7 @@ public class BinaryObjectBuilderDefaultIdMapperSelfTest extends GridCommonAbstra
         BinaryIdMapper idMapper = cfg.getBinaryConfiguration().getIdMapper();
 
         if (idMapper == null)
-            idMapper = BinaryInternalIdMapper.defaultInstance();
+            idMapper = BinaryFullNameIdMapper.defaultInstance();
 
         return idMapper.typeId(fullName);
     }

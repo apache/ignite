@@ -19,6 +19,7 @@ package org.apache.ignite.internal.binary;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import org.apache.ignite.binary.BinarySimpleNameIdMapper;
 import org.apache.ignite.binary.BinaryTypeConfiguration;
 import org.apache.ignite.configuration.BinaryConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;

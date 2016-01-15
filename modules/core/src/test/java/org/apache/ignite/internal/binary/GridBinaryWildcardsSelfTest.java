@@ -21,8 +21,10 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Map;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.binary.BinaryFullNameIdMapper;
 import org.apache.ignite.binary.BinaryIdMapper;
 import org.apache.ignite.binary.BinarySerializer;
+import org.apache.ignite.binary.BinarySimpleNameIdMapper;
 import org.apache.ignite.binary.BinaryTypeConfiguration;
 import org.apache.ignite.configuration.BinaryConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -45,7 +47,7 @@ public class GridBinaryWildcardsSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testClassNamesInternalMapper() throws Exception {
-        mapper = BinaryInternalIdMapper.defaultInstance();
+        mapper = BinaryFullNameIdMapper.defaultInstance();
 
         checkClassNames();
     }
@@ -90,7 +92,7 @@ public class GridBinaryWildcardsSelfTest extends GridCommonAbstractTest {
      * @return Test executed with internal mapper.
      */
     private boolean internalMapperMode() {
-        return mapper instanceof BinaryInternalIdMapper;
+        return mapper instanceof BinaryFullNameIdMapper;
     }
 
     /**

@@ -15,23 +15,20 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.binary;
-
-import org.apache.ignite.binary.BinaryIdMapper;
-import org.apache.ignite.binary.BinaryObjectException;
+package org.apache.ignite.binary;
 
 /**
  * Internal ID mapper. Mimics ID mapper interface, but provides default implementation and offers slightly better
  * performance on micro-level in default case because it doesn't need virtual calls.
  */
-public class BinaryInternalIdMapper implements BinaryIdMapper {
+public class BinaryFullNameIdMapper implements BinaryIdMapper {
     /** Default implementation. */
-    private static final BinaryInternalIdMapper DFLT = new BinaryInternalIdMapper();
+    private static final BinaryFullNameIdMapper DFLT = new BinaryFullNameIdMapper();
 
     /**
      * Private constructor.
      */
-    private BinaryInternalIdMapper() {
+    private BinaryFullNameIdMapper() {
         // No-op.
     }
 
@@ -40,7 +37,7 @@ public class BinaryInternalIdMapper implements BinaryIdMapper {
      *
      * @return Default instance.
      */
-    public static BinaryInternalIdMapper defaultInstance() {
+    public static BinaryFullNameIdMapper defaultInstance() {
         return DFLT;
     }
 
