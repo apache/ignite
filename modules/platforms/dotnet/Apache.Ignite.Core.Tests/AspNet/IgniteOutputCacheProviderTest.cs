@@ -20,6 +20,8 @@ namespace Apache.Ignite.Core.Tests.AspNet
     using System;
     using System.Collections.Specialized;
     using Apache.Ignite.AspNet;
+    using Apache.Ignite.Core.Common;
+    using Apache.Ignite.Core.Impl;
     using NUnit.Framework;
 
     /// <summary>
@@ -27,17 +29,20 @@ namespace Apache.Ignite.Core.Tests.AspNet
     /// </summary>
     public class IgniteOutputCacheProviderTest
     {
-        /** */
-        private const string GridName = "gridName";
+        /** Grid name XML config attribute. */
+        private const string GridNameAttr = "gridName";
 
-        /** */
-        private const string CacheName = "cacheName";
+        /** Cache name XML config attribute. */
+        private const string CacheNameAttr = "cacheName";
 
+        /// <summary>
+        /// Tests output caching.
+        /// </summary>
         [Test]
         public void TestCaching()
         {
-            var gridName = "myGrid";
-            var cacheName = "myCache";
+            const string gridName = "myGrid";
+            const string cacheName = "myCache";
 
             var cacheProvider = new IgniteOutputCacheProvider();
 
@@ -45,11 +50,30 @@ namespace Apache.Ignite.Core.Tests.AspNet
             Assert.Throws<InvalidOperationException>(() => cacheProvider.Get("1"));
 
             // Grid not started
+            Assert.Throws<IgniteException>(() =>
+                cacheProvider.Initialize("testName", new NameValueCollection
+                {
+                    {GridNameAttr, gridName},
+                    {CacheNameAttr, cacheName}
+                }));
+
+            // Start grid
+            Ignition.Start(new IgniteConfigurationEx
+            {
+                GridName = gridName,
+                SpringConfigUrl = "config\\compute\\compute-grid1.xml",
+                JvmClasspath = TestUtils.CreateTestClasspath(),
+                JvmOptions = TestUtils.TestJavaOptions()
+            });
+
             cacheProvider.Initialize("testName", new NameValueCollection
             {
-                {GridName, gridName},
-                {CacheName, cacheName}
+                {GridNameAttr, gridName},
+                {CacheNameAttr, cacheName}
             });
+
+            // Test cache operations
+
         }
     }
 }
