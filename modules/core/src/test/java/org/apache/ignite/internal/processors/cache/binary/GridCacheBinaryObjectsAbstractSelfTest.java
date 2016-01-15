@@ -200,8 +200,8 @@ public abstract class GridCacheBinaryObjectsAbstractSelfTest extends GridCommonA
 
         assertNotNull(str);
 
-        assertTrue("Unexpected toString: " + str,
-            str.startsWith("TestReferenceObject") && str.contains("obj=TestReferenceObject ["));
+        assertTrue("Unexpected toString: " + str, str.startsWith(TestReferenceObject.class.getName()) && 
+            str.contains("obj=" + TestReferenceObject.class.getName() + " ["));
 
         TestReferenceObject obj1_r = po.deserialize();
 
