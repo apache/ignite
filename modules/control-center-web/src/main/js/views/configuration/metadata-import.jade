@@ -143,7 +143,7 @@ mixin td-ellipses-a(w, ref)
                                                     a(ng-if='!table.editCache' ng-click='startEditDbTableCache(table)') {{dbTableCache(table)}}
                                                     button.select-toggle.form-control(ng-if='table.editCache' bs-select ng-model='table.cache' data-container='false' bs-options='item.value as item.label for item in importCaches')
 
-                                                +td-ellipses-a('128px', '{{table.template}}')
+                                                +td-ellipses-a('128px', '{{dbTableTemplate(table)}}')
             .metadata-content(ng-show='importMeta.action == "options"' style='margin-bottom: 75px')
                 form.form-horizontal(name='optionsForm' novalidate)
                     .settings-row

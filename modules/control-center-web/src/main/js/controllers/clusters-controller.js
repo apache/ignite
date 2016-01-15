@@ -227,8 +227,8 @@ consoleModule.controller('clustersController', function ($http, $timeout, $scope
 
         $scope.clusters = [];
 
-        function _clusterLbl () {
-            return this.name + ', ' + _.result(_.find($scope.discoveries, {value: this.discovery.kind}), 'label');
+        function _clusterLbl (cluster) {
+            return cluster.name + ', ' + _.find($scope.discoveries, {value: cluster.discovery.kind}).label;
         }
 
         function selectFirstItem() {
@@ -244,7 +244,7 @@ consoleModule.controller('clustersController', function ($http, $timeout, $scope
                 $scope.spaces = data.spaces;
 
                 data.clusters.forEach(function (cluster) {
-                    Object.defineProperty(cluster, 'label', { get: _clusterLbl });
+                    cluster.label = _clusterLbl(cluster);
                 });
 
                 $scope.clusters = data.clusters;
@@ -435,8 +435,6 @@ consoleModule.controller('clustersController', function ($http, $timeout, $scope
             newItem.caches = id && _.find($scope.caches, {value: id}) ? [id] : [];
             newItem.igfss = id && _.find($scope.igfss, {value: id}) ? [id] : [];
             newItem.space = $scope.spaces[0]._id;
-
-            Object.defineProperty(newItem, 'label', { get: _clusterLbl });
 
             return newItem;
         }
@@ -674,6 +672,8 @@ consoleModule.controller('clustersController', function ($http, $timeout, $scope
         function save(item) {
             $http.post('/api/v1/configuration/clusters/save', item)
                 .success(function (_id) {
+                    item.label = _clusterLbl(item);
+
                     $scope.ui.markPristine();
 
                     var idx = _.findIndex($scope.clusters, function (cluster) {
@@ -721,7 +721,6 @@ consoleModule.controller('clustersController', function ($http, $timeout, $scope
 
                         delete item._id;
                         item.name = newName;
-                        Object.defineProperty(item, 'label', { get: _clusterLbl });
 
                         save(item);
                     });

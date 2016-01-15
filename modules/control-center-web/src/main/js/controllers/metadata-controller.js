@@ -54,13 +54,6 @@ consoleModule.controller('metadataController', function ($filter, $http, $timeou
                 selectFirstItem();
         }
 
-        function _dropDownItem(lbl, val) {
-            return {
-                label: lbl,
-                value: val
-            }
-        }
-
         $scope.removeDemoItems = function () {
             $table.tableReset();
 
@@ -76,12 +69,6 @@ consoleModule.controller('metadataController', function ($filter, $http, $timeou
                                     $scope.clusters = data.clusters;
                                     $scope.caches = data.caches;
                                     $scope.metadatas = data.metadatas;
-
-                                    $scope.importCaches = [_dropDownItem('New cache', 'IMPORT_META_NEW_CACHE')];
-                                    $scope.importCacheTemplates = [
-                                        _dropDownItem('PARTITIONED', 'IMPORT_META_DFLT_PARTITIONED_CACHE'),
-                                        _dropDownItem('REPLICATED', 'IMPORT_META_DFLT_REPLICATED_CACHE')
-                                    ];
 
                                     $scope.ui.generatedCachesClusters = [];
 
@@ -199,7 +186,7 @@ consoleModule.controller('metadataController', function ($filter, $http, $timeou
 
         var INFO_CONNECT_TO_DB = 'Configure connection to database';
         var INFO_SELECT_SCHEMAS = 'Select schemas to load tables from';
-        var INFO_SELECT_TABLES = 'Select tables to import as cache type metadata';
+        var INFO_SELECT_TABLES = 'Select tables to import as domain model';
         var INFO_SELECT_OPTIONS = 'Select import metadata options';
         var LOADING_JDBC_DRIVERS = {text: 'Loading JDBC drivers...'};
         var LOADING_SCHEMAS = {text: 'Loading schemas...'};
@@ -566,6 +553,18 @@ consoleModule.controller('metadataController', function ($filter, $http, $timeou
                 });
         }
 
+        function _dropDownItem(lbl, val) {
+            return {
+                label: lbl,
+                value: val
+            }
+        }
+
+        var IMPORT_DM_NEW_CACHE = 'IMPORT_DM_NEW_CACHE';
+        var IMPORT_DM_DO_NOT_GENERATE = 'IMPORT_DM_DO_NOT_GENERATE';
+        var IMPORT_DM_DFLT_PARTITIONED_CACHE = 'IMPORT_DM_DFLT_PARTITIONED_CACHE';
+        var IMPORT_DM_DFLT_REPLICATED_CACHE = 'IMPORT_DM_DFLT_REPLICATED_CACHE';
+
         /**
          * Load list of database tables.
          */
@@ -585,22 +584,33 @@ consoleModule.controller('metadataController', function ($filter, $http, $timeou
 
             $http.post('/api/v1/agent/tables', preset)
                 .success(function (tables) {
-                    tables.forEach(function (tbl) {
-                        tbl.cache = 'IMPORT_META_NEW_CACHE';
-                        tbl.template = 'PARTITIONED';
+                    $scope.importCaches = [
+                        _dropDownItem('New cache', IMPORT_DM_NEW_CACHE),
+                        _dropDownItem('Do not generate', IMPORT_DM_DO_NOT_GENERATE)
+                    ];
 
-                        Object.defineProperty(tbl, 'label', {
-                            get: function () {
-                                return tbl.schema + '.' + tbl.tbl;
-                            }
+                    if (!$common.isEmptyArray($scope.caches)) {
+                        $scope.importCaches.push(null);
+
+                        _.forEach($scope.caches, function (cache) {
+                            $scope.importCaches.push(cache);
                         });
+                    }
 
+                    $scope.importCacheTemplates = [
+                        _dropDownItem('PARTITIONED', 'IMPORT_DM_DFLT_PARTITIONED_CACHE'),
+                        _dropDownItem('REPLICATED', 'IMPORT_DM_DFLT_REPLICATED_CACHE')
+                    ];
+                    
+                    tables.forEach(function (tbl) {
+                        tbl.cache = IMPORT_DM_NEW_CACHE;
+                        tbl.template = 'IMPORT_DM_DFLT_PARTITIONED_CACHE';
+                        tbl.label = tbl.schema + '.' + tbl.tbl;
+                        tbl.editCache = false;
+                        tbl.editTemplate = false;
                         tbl.use = $common.isDefined(_.find(tbl.cols, function (col) {
                             return col.key;
                         }));
-
-                        tbl.editCache = false;
-                        tbl.editTemplate = false;
                     });
 
                     $scope.importMeta.action = 'tables';
@@ -623,7 +633,6 @@ consoleModule.controller('metadataController', function ($filter, $http, $timeou
                 $scope.curDbTable.editTemplate = false;
             }
 
-
             tbl.editCache = true;
 
             $scope.curDbTable = tbl;
@@ -641,12 +650,14 @@ consoleModule.controller('metadataController', function ($filter, $http, $timeou
         };
 
         $scope.dbTableCache = function (tbl) {
-            var cache = tbl.cache;
+            return _.find($scope.importCaches, {value: tbl.cache}).label;
+        };
 
-            if (cache === 'IMPORT_META_NEW_CACHE')
-                return 'New cache';
+        $scope.dbTableTemplate = function (tbl) {
+            if (tbl.cache === IMPORT_DM_NEW_CACHE)
+                return _.find($scope.importCacheTemplates, {value: tbl.template}).label;
 
-            return tbl.cache;
+            return '';
         };
 
         /**
@@ -1015,21 +1026,6 @@ consoleModule.controller('metadataController', function ($filter, $http, $timeou
                 $scope.clusters = data.clusters;
                 $scope.caches = data.caches;
                 $scope.metadatas = data.metadatas;
-
-                $scope.importCaches = [_dropDownItem('New cache', 'IMPORT_META_NEW_CACHE')];
-
-                if (!$common.isEmptyArray($scope.caches)) {
-                    $scope.importCaches.push(null);
-
-                    _.forEach($scope.caches, function (cache) {
-                        $scope.importCaches.push(cache);
-                    });
-                }
-
-                $scope.importCacheTemplates = [
-                    _dropDownItem('PARTITIONED', 'IMPORT_META_DFLT_PARTITIONED_CACHE'),
-                    _dropDownItem('REPLICATED', 'IMPORT_META_DFLT_REPLICATED_CACHE')
-                ];
 
                 _.forEach($scope.clusters, function (cluster) {
                     $scope.ui.generatedCachesClusters.push(cluster.value);

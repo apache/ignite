@@ -682,7 +682,7 @@ consoleModule.service('$common', [
                     return storeFactory;
             }
 
-            return undefined;
+            return null;
         }
 
         var cacheStoreJdbcDialects = [
@@ -1038,19 +1038,26 @@ consoleModule.service('$common', [
                             var curDs = extractDataSource(curCache);
                             var checkDs = extractDataSource(checkCache);
 
-                            var curDB = curDs.dialect || curDs.database;
-                            var checkDB = checkDs.dialect || checkDs.database;
+                            if (curDs && checkDs) {
+                                var curDB = curDs.dialect || curDs.database;
+                                var checkDB = checkDs.dialect || checkDs.database;
 
-                            var fail = curDs && checkDs && curDs.dataSourceBean === checkDs.dataSourceBean && curDB !== checkDB;
+                                if (curDs.dataSourceBean === checkDs.dataSourceBean && curDB !== checkDB) {
+                                    res = {
+                                        checked: false,
+                                        firstCache: checkCache,
+                                        firstDB: checkDB,
+                                        secondCache: curCache,
+                                        secondDB: curDB
+                                    };
 
-                            if (fail) {
-                                res = { checked: false, firstCache: checkCache, firstDB: checkDB,
-                                    secondCache: curCache, secondDB: curDB }
+                                    return true;
+                                }
                             }
-
-                            return fail;
                         }
-                    })
+
+                        return false;
+                    });
                 }));
 
                 return res;
