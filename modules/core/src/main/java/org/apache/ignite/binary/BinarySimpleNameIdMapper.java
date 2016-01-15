@@ -53,7 +53,7 @@ public class BinarySimpleNameIdMapper implements BinaryIdMapper {
     }
 
     /**
-     * Wraps cusrom mapper.
+     * Wraps custom id mapper.
      *
      * @param mapper Public mapper.
      * @return Wrapper for public mapper.

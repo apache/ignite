@@ -248,7 +248,6 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Bina
                 dataStart = start + DFLT_HDR_LEN;
             }
 
-            // TODO should we use globalMapper or not?
             idMapper = userType ? ctx.userTypeIdMapper(typeId) : BinaryFullNameIdMapper.defaultInstance();
             schema = BinaryUtils.hasSchema(flags) ? getOrCreateSchema() : null;
         }

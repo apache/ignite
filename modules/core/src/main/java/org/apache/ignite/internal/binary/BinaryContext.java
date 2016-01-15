@@ -285,7 +285,6 @@ public class BinaryContext {
      * @param typeCfgs Type configurations.
      * @throws BinaryObjectException In case of error.
      */
-    // TODO test this method and final mapper.
     private void configure(
         BinaryIdMapper globalIdMapper,
         BinarySerializer globalSerializer,
@@ -537,7 +536,7 @@ public class BinaryContext {
                 clsName.hashCode(),
                 clsName,
                 null,
-                BinaryFullNameIdMapper.defaultInstance(), // TODO should we use globalMapper or not?
+                BinaryFullNameIdMapper.defaultInstance(),
                 null,
                 false,
                 true /* registered */
@@ -742,7 +741,7 @@ public class BinaryContext {
         String typeName = cls.getName();
 
         if (id == 0)
-            id = BinaryFullNameIdMapper.defaultInstance().typeId(typeName); // TODO should we use globalMapper or not?
+            id = BinaryFullNameIdMapper.defaultInstance().typeId(typeName);
 
         BinaryClassDescriptor desc = new BinaryClassDescriptor(
             this,
@@ -751,7 +750,7 @@ public class BinaryContext {
             id,
             typeName,
             affFieldName,
-            BinaryFullNameIdMapper.defaultInstance(), // TODO should we use globalMapper or not?
+            BinaryFullNameIdMapper.defaultInstance(),
             new BinaryReflectiveSerializer(),
             false,
             true /* registered */

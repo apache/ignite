@@ -25,7 +25,6 @@ import org.apache.ignite.cache.query.ScanQuery;
 import org.apache.ignite.cache.query.SqlQuery;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.marshaller.optimized.OptimizedMarshaller;
 
@@ -86,8 +85,6 @@ public class IgniteCacheP2pUnmarshallingQueryErrorTest extends IgniteCacheP2pUnm
             assertTrue("Request unmarshalling failed, but error response was not sent.", binaryMarshaller());
         }
         catch (Exception e) {
-            U.error(log, "Got exception: ", e);
-
             assertFalse("Unexpected exception: " + e, binaryMarshaller());
         }
     }

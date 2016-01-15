@@ -18,6 +18,8 @@
 package org.apache.ignite.binary;
 
 /**
+ * TODO update javadoc.
+ *
  * Internal ID mapper. Mimics ID mapper interface, but provides default implementation and offers slightly better
  * performance on micro-level in default case because it doesn't need virtual calls.
  */
