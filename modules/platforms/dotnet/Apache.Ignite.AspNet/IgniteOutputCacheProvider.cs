@@ -59,7 +59,9 @@ namespace Apache.Ignite.AspNet
         /// </returns>
         public override object Get(string key)
         {
-            return _cache[key];
+            object res;
+
+            return _cache.TryGet(key, out res) ? res : null;
         }
 
         /// <summary>
