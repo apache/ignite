@@ -99,7 +99,7 @@ public class StormStreamer<K, V> extends StreamAdapter<Tuple, K, V> implements I
      * @param cacheName Cache name.
      */
     public void setCacheName(String cacheName) {
-        this.cacheName = cacheName;
+        StormStreamer.cacheName = cacheName;
     }
 
     /**
@@ -117,7 +117,7 @@ public class StormStreamer<K, V> extends StreamAdapter<Tuple, K, V> implements I
      * @param igniteConfigFile Ignite config file.
      */
     public void setIgniteConfigFile(String igniteConfigFile) {
-        this.igniteConfigFile = igniteConfigFile;
+        StormStreamer.igniteConfigFile = igniteConfigFile;
     }
 
     /**
@@ -161,6 +161,7 @@ public class StormStreamer<K, V> extends StreamAdapter<Tuple, K, V> implements I
      *
      * @throws IgniteException If failed.
      */
+    @SuppressWarnings("unchecked")
     public void start() throws IgniteException {
         A.notNull(igniteConfigFile, "Ignite config file");
         A.notNull(cacheName, "Cache name");
@@ -168,7 +169,7 @@ public class StormStreamer<K, V> extends StreamAdapter<Tuple, K, V> implements I
 
         setIgnite(StreamerContext.getIgnite());
 
-        final IgniteDataStreamer dataStreamer = StreamerContext.getStreamer();
+        final IgniteDataStreamer<K, V> dataStreamer = StreamerContext.getStreamer();
         dataStreamer.autoFlushFrequency(autoFlushFrequency);
         dataStreamer.allowOverwrite(allowOverwrite);
 
@@ -181,6 +182,8 @@ public class StormStreamer<K, V> extends StreamAdapter<Tuple, K, V> implements I
 
     /**
      * Stops streamer.
+     *
+     * @throws IgniteException If failed.
      */
     public void stop() throws IgniteException {
         if (stopped)
@@ -212,6 +215,7 @@ public class StormStreamer<K, V> extends StreamAdapter<Tuple, K, V> implements I
      *
      * @param tuple Storm tuple.
      */
+    @SuppressWarnings("unchecked")
     @Override
     public void execute(Tuple tuple) {
         if (stopped)
@@ -220,7 +224,7 @@ public class StormStreamer<K, V> extends StreamAdapter<Tuple, K, V> implements I
         if (!(tuple.getValueByField(igniteTupleField) instanceof Map))
             throw new IgniteException("Map as a streamer input is expected!");
 
-        final Map<K, V> gridVals = (Map)tuple.getValueByField(igniteTupleField);
+        final Map<K, V> gridVals = (Map<K, V>)tuple.getValueByField(igniteTupleField);
 
         try {
             if (log.isDebugEnabled())
