@@ -234,11 +234,17 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
                     map.put("compactFooter", bCfg.isCompactFooter());
 
                     if (bCfg.getTypeConfigurations() != null) {
-                        Map<String, Object> typeCfgsMap = new HashMap<>();
+                        Map<Object, Object> typeCfgsMap = new HashMap<>();
 
                         for (BinaryTypeConfiguration c : bCfg.getTypeConfigurations()) {
-                            typeCfgsMap.put(c.getTypeName(),
-                                Arrays.asList(c.getIdMapper().getClass(), c.getSerializer().getClass(), c.isEnum()));
+                            typeCfgsMap.put(
+                                c.getTypeName() != null ? c.getTypeName() : (byte)0,
+                                Arrays.asList(
+                                    c.getIdMapper() != null ? c.getIdMapper().getClass() : (byte)0,
+                                    c.getSerializer() != null ? c.getSerializer().getClass() : (byte)0, 
+                                    c.isEnum()
+                                )
+                            );
                         }
 
                         map.put("typeCfgs", typeCfgsMap);
