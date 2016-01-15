@@ -41,7 +41,7 @@ angular
                     name: 'Query with aggregates',
                     cacheName: 'CarCache',
                     pageSize: 50,
-                    query: 'SELECT p.name, count(*) AS cnt\nFROM "ParkingCache".Parking p\nINNER JOIN "CarCache".Car c\nON (p.id) = (c.parkingId)\nGROUP BY P.NAME',
+                    query: 'SELECT p.name, count(*) AS cnt\nFROM "ParkingCache".Parking p\nINNER JOIN "CarCache".Car c\n  ON (p.id) = (c.parkingId)\nGROUP BY P.NAME',
                     result: 'table',
                     rate: {
                         value: 30,

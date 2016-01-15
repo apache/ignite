@@ -2019,6 +2019,8 @@ consoleModule.service('$agentDownload', [
          * Special dialog hide function.
          */
         _agentDownloadModal.hide = function () {
+            _stopInterval();
+
             $common.hideAlert();
 
             _agentDownloadHide();
