@@ -766,7 +766,7 @@ $generatorXml.cacheQuery = function(cache, res) {
     $generatorXml.property(res, cache, 'longQueryWarningTimeout');
 
     var indexedTypes = _.filter(cache.metadatas, function (meta) {
-        return meta.metadata === 'Annotations'
+        return meta.queryMetadata === 'Annotations'
     });
 
     if (indexedTypes.length > 0) {
@@ -815,8 +815,7 @@ $generatorXml.cacheStore = function(cache, metadatas, res) {
                 res.endBlock('</property>');
 
                 var metaConfigs = _.filter(metadatas, function (meta) {
-                    return $generatorCommon.domainMetadata(meta) === 'Configuration' &&
-                        $commonUtils.isDefinedAndNotEmpty(meta.databaseTable);
+                    return $commonUtils.isDefinedAndNotEmpty(meta.databaseTable);
                 });
 
                 if ($commonUtils.isDefinedAndNotEmpty(metaConfigs)) {
@@ -1122,7 +1121,7 @@ $generatorXml.metadataQuery = function(meta, res) {
     if (!res)
         res = $generatorCommon.builder();
 
-    if ($generatorCommon.domainMetadata(meta) === 'Configuration') {
+    if ($generatorCommon.domainQueryMetadata(meta) === 'Configuration') {
         $generatorXml.metadataQueryFields(res, meta);
 
         $generatorXml.metadataQueryAliases(res, meta);
@@ -1140,19 +1139,17 @@ $generatorXml.metadataStore = function(meta, res) {
     if (!res)
         res = $generatorCommon.builder();
 
-    if ($generatorCommon.domainMetadata(meta) === 'Configuration') {
-        $generatorXml.property(res, meta, 'databaseSchema');
-        $generatorXml.property(res, meta, 'databaseTable');
+    $generatorXml.property(res, meta, 'databaseSchema');
+    $generatorXml.property(res, meta, 'databaseTable');
 
-        res.needEmptyLine = true;
+    res.needEmptyLine = true;
 
-        if (!$dataStructures.isJavaBuiltInClass(meta.keyType))
-            $generatorXml.metadataDatabaseFields(res, meta, 'keyFields');
+    if (!$dataStructures.isJavaBuiltInClass(meta.keyType))
+        $generatorXml.metadataDatabaseFields(res, meta, 'keyFields');
 
-        $generatorXml.metadataDatabaseFields(res, meta, 'valueFields');
+    $generatorXml.metadataDatabaseFields(res, meta, 'valueFields');
 
-        res.needEmptyLine = true;
-    }
+    res.needEmptyLine = true;
 
     return res;
 };
@@ -1181,7 +1178,7 @@ $generatorXml.cacheMetadatas = function(metadatas, res) {
         res = $generatorCommon.builder();
 
     var metaConfigs = _.filter(metadatas, function (meta) {
-        return $generatorCommon.domainMetadata(meta) === 'Configuration' &&
+        return $generatorCommon.domainQueryMetadata(meta) === 'Configuration' &&
             $commonUtils.isDefinedAndNotEmpty(meta.fields);
     });
 
@@ -1247,7 +1244,7 @@ $generatorXml.clusterCaches = function(caches, igfss, isSrvCfg, res) {
     if (!res)
         res = $generatorCommon.builder();
 
-    if ((caches && caches.length > 0) || (igfss && igfss.length > 0)) {
+    if ($commonUtils.isDefinedAndNotEmpty(caches) || (isSrvCfg && $commonUtils.isDefinedAndNotEmpty(igfss))) {
         res.emptyLineIfNeeded();
 
         res.startBlock('<property name="cacheConfiguration">');
