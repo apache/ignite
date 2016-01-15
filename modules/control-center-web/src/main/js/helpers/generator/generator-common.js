@@ -465,6 +465,6 @@ $generatorCommon.binaryIsDefined = function (binary) {
 };
 
 // Extract domain metadata.
-$generatorCommon.domainMetadata = function(domain) {
-    return domain.metadata ? domain.metadata : 'Configuration';
+$generatorCommon.domainQueryMetadata = function(domain) {
+    return domain.queryMetadata ? domain.queryMetadata : 'Configuration';
 };

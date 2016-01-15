@@ -23,17 +23,17 @@
           }
         },
         {
-          "label": "Metadata",
-          "id": "metadata",
+          "label": "Query metadata",
+          "id": "queryMetadata",
           "type": "dropdown",
-          "model": "metadata",
+          "model": "queryMetadata",
           "items": "metadataVariants",
           "required": true,
           "tip": [
-            "Metadata configured in: ",
+            "Query metadata configured with: ",
             "<ul>",
-            "  <li>Class annotations</li>",
-            "  <li>Configuration</li>",
+            "  <li>Java annotations like @QuerySqlField</li>",
+            "  <li>Configuration via QueryEntity class</li>",
             "</ul>"
           ]
         },
@@ -72,7 +72,7 @@
         {
           "label": "Not available for annotated types",
           "type": "not-available",
-          "hide": "backupItem.metadata !== 'Annotations'"
+          "hide": "backupItem.queryMetadata !== 'Annotations'"
         },
         {
           "label": "Fields",
@@ -83,7 +83,7 @@
           "keyName": "name",
           "valueName": "className",
           "focusId": "QryField",
-          "hide": "backupItem.metadata !== 'Configuration'",
+          "hide": "backupItem.queryMetadata !== 'Configuration'",
           "addTip": "Add field to query",
           "removeTip": "Remove field",
           "tip": [
@@ -99,7 +99,7 @@
           "keyName": "field",
           "valueName": "alias",
           "focusId": "Alias",
-          "hide": "backupItem.metadata !== 'Configuration'",
+          "hide": "backupItem.queryMetadata !== 'Configuration'",
           "addTip": "Add alias to query",
           "removeTip": "Remove alias",
           "tip": [
@@ -113,7 +113,7 @@
           "type": "table-indexes",
           "ui": "table-indexes",
           "model": "indexes",
-          "hide": "backupItem.metadata !== 'Configuration'",
+          "hide": "backupItem.queryMetadata !== 'Configuration'",
           "addTip": "Add new index",
           "removeTip": "Remove index",
           "addItemTip": "Add new field to index",
@@ -133,16 +133,10 @@
       ],
       "fields": [
         {
-          "label": "Not available for annotated types",
-          "type": "not-available",
-          "hide": "backupItem.metadata !== 'Annotations'"
-        },
-        {
           "label": "Database schema",
           "id": "databaseSchema",
           "type": "text",
           "model": "databaseSchema",
-          "hide": "backupItem.metadata !== 'Configuration'",
           "placeholder": "Input DB schema name",
           "tip": [
             "Schema name in database"
@@ -153,7 +147,6 @@
           "id": "databaseTable",
           "type": "text",
           "model": "databaseTable",
-          "hide": "backupItem.metadata !== 'Configuration'",
           "placeholder": "Input DB table name",
           "tip": [
             "Table name in database"
@@ -167,7 +160,6 @@
           "keyName": "name",
           "valueName": "className",
           "focusId": "KeyField",
-          "hide": "backupItem.metadata !== 'Configuration'",
           "addTip": "Add key field",
           "removeTip": "Remove key field",
           "tip": [
@@ -182,7 +174,6 @@
           "keyName": "name",
           "valueName": "className",
           "focusId": "ValueField",
-          "hide": "backupItem.metadata !== 'Configuration'",
           "addTip": "Add value field",
           "removeTip": "Remove value field",
           "tip": [
