@@ -696,9 +696,14 @@ public class GridDhtPartitionDemander {
                                 (IgniteUuid)null, null, EVT_CACHE_REBALANCE_OBJECT_LOADED, entry.value(), true, null,
                                 false, null, null, null, true);
                     }
-                    else if (log.isDebugEnabled())
-                        log.debug("Rebalancing entry is already in cache (will ignore) [key=" + cached.key() +
-                            ", part=" + p + ']');
+                    else {
+                        if (cctx.isSwapOrOffheapEnabled())
+                            cctx.evicts().touch(cached, topVer); // Start tracking.
+
+                        if (log.isDebugEnabled())
+                            log.debug("Rebalancing entry is already in cache (will ignore) [key=" + cached.key() +
+                                ", part=" + p + ']');
+                    }
                 }
                 else if (log.isDebugEnabled())
                     log.debug("Rebalance predicate evaluated to false for entry (will ignore): " + entry);
