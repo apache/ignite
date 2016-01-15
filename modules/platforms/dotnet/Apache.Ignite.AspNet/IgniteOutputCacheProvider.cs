@@ -75,7 +75,7 @@ namespace Apache.Ignite.AspNet
         /// </returns>
         public override object Add(string key, object entry, DateTime utcExpiry)
         {
-            return GetCacheWithExpiry(utcExpiry).GetAndPutIfAbsent(key, entry);
+            return GetCacheWithExpiry(utcExpiry).GetAndPutIfAbsent(key, entry).Value;
         }
 
         /// <summary>
