@@ -234,7 +234,7 @@ ul.navbar-nav, .sidebar-nav {
 
 .header .nav.navbar-nav.pull-right {
     position: relative;
-    right: -30px;
+    right: -15px;
 }
 
 .header .nav.navbar-nav .not-link {
@@ -435,7 +435,7 @@ h1, h2, h3, h4, h5, h6 {
     margin-bottom: 0;
 }
 
-button, a.btn, i.btn {
+button, a.btn {
     margin-right: 5px;
 }
 
@@ -448,8 +448,8 @@ button, a.btn, i.btn {
     }
 }
 
-.btn-last {
-    margin-right: 0 !important;
+.btn-group.pull-right {
+    margin-right: 0;
 }
 
 .btn-group {
