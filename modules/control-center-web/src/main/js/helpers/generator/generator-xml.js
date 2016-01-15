@@ -773,7 +773,7 @@ $generatorXml.cacheQuery = function(cache, res) {
         res.startBlock('<property name="indexedTypes">');
         res.startBlock('<list>');
 
-        _.forEach(cache.indexedTypes, function(meta) {
+        _.forEach(indexedTypes, function(meta) {
             res.line('<value>' + $dataStructures.fullClassName(meta.keyType) + '</value>');
             res.line('<value>' + $dataStructures.fullClassName(meta.valueType) + '</value>');
         });
