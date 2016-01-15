@@ -1365,10 +1365,14 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
-    public void testTypeNamesInternalIdMapper() throws Exception {
+    public void testTypeNamesFullNameIdMapper() throws Exception {
         checkTypeNamesDefaultIdMapper(BinaryFullNameIdMapper.defaultInstance());
     }
 
+    /**
+     * @param mapper Mapper.
+     * @throws IgniteCheckedException If failed.
+     */
     private void checkTypeNamesDefaultIdMapper(BinaryFullNameIdMapper mapper) throws IgniteCheckedException {
         BinaryTypeConfiguration customType1 = new BinaryTypeConfiguration(Value.class.getName());
 
@@ -1432,10 +1436,10 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
 
         // Full name hashCode.
         assertEquals("NotConfiguredClass".hashCode(), ctx.typeId("NotConfiguredClass"));
-        assertEquals(Key.class.getName().hashCode(), ctx.typeId(getClass().getName() + "$Key"));
+        assertEquals(Key.class.getName().hashCode(), ctx.typeId(Key.class.getName()));
         assertEquals("org.gridgain.NonExistentClass3".hashCode(), ctx.typeId("org.gridgain.NonExistentClass3"));
         assertEquals("NonExistentClass4".hashCode(), ctx.typeId("NonExistentClass4"));
-        assertEquals(300, ctx.typeId(getClass().getName() + "$Value"));
+        assertEquals(300, ctx.typeId(Value.class.getName()));
         assertEquals(400, ctx.typeId("org.gridgain.NonExistentClass1"));
         assertEquals(500, ctx.typeId("NonExistentClass2"));
 

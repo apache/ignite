@@ -51,7 +51,7 @@ public class GridCacheBinaryStoreBinariesSelfTest extends GridCacheBinaryStoreAb
 
             BinaryObject po = (BinaryObject)val;
 
-            assertEquals("Value", po.type().typeName());
+            assertEquals(Value.class.getName(), po.type().typeName());
             assertEquals(new Integer(idx), po.field("idx"));
         }
     }
