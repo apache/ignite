@@ -182,6 +182,8 @@ consoleModule.controller('metadataController', function ($filter, $http, $timeou
         $scope.tablePairSave = $table.tablePairSave;
         $scope.tablePairSaveVisible = $table.tablePairSaveVisible;
 
+        $scope.metadataVariants = $common.mkOptions(['Annotations', 'Configuration']);
+
         var INFO_CONNECT_TO_DB = 'Configure connection to database';
         var INFO_SELECT_SCHEMAS = 'Select schemas to load tables from';
         var INFO_SELECT_TABLES = 'Select tables to import as cache type metadata';
@@ -1041,6 +1043,13 @@ consoleModule.controller('metadataController', function ($filter, $http, $timeou
                 else
                     $scope.backupItem = undefined;
 
+                if ($common.isDefined($scope.backupItem) && !$common.isDefined($scope.backupItem.metadata)) {
+                    $scope.backupItem.metadata = 'Configuration';
+
+                    if ($common.isDefined($scope.selectedItem))
+                        $scope.selectedItem.metadata = 'Configuration';
+                }
+
                 if ($common.getQueryVariable('new'))
                     $state.go('base.configuration.metadata');
             }
@@ -1056,7 +1065,8 @@ consoleModule.controller('metadataController', function ($filter, $http, $timeou
             return {
                 space: $scope.spaces[0]._id,
                 caches: cacheId && _.find($scope.caches, {value: cacheId}) ? [cacheId] :
-                    (!$common.isEmptyArray($scope.caches) ? [$scope.caches[0].value] : [])
+                    (!$common.isEmptyArray($scope.caches) ? [$scope.caches[0].value] : []),
+                metadata: 'Configuration'
             };
         }
 
@@ -1084,43 +1094,45 @@ consoleModule.controller('metadataController', function ($filter, $http, $timeou
             else if (!$common.isValidJavaClass('Value type', item.valueType, false, 'valueType'))
                 return false;
 
-            var qry = $common.metadataForQueryConfigured(item);
+            if (item.metadata === 'Configuration') {
+                var qry = $common.metadataForQueryConfigured(item);
 
-            if (qry) {
-                if ($common.isEmptyArray(item.fields))
-                    return showPopoverMessage($scope.panels, 'query', 'fields-legend', 'Query fields should not be empty');
+                if (qry) {
+                    if ($common.isEmptyArray(item.fields))
+                        return showPopoverMessage($scope.panels, 'query', 'fields-legend', 'Query fields should not be empty');
 
-                var indexes = item.indexes;
+                    var indexes = item.indexes;
 
-                if (indexes && indexes.length > 0) {
-                    if (_.find(indexes, function(index, i) {
-                        if ($common.isEmptyArray(index.fields))
-                            return !showPopoverMessage($scope.panels, 'query', 'indexes' + i, 'Index fields are not specified');
-                    }))
-                        return false;
+                    if (indexes && indexes.length > 0) {
+                        if (_.find(indexes, function (index, i) {
+                                if ($common.isEmptyArray(index.fields))
+                                    return !showPopoverMessage($scope.panels, 'query', 'indexes' + i, 'Index fields are not specified');
+                            }))
+                            return false;
+                    }
                 }
-            }
 
-            var str = $common.metadataForStoreConfigured(item);
+                var str = $common.metadataForStoreConfigured(item);
 
-            if (str) {
-                if ($common.isEmptyString(item.databaseSchema))
-                    return showPopoverMessage($scope.panels, 'store', 'databaseSchema', 'Database schema should not be empty');
+                if (str) {
+                    if ($common.isEmptyString(item.databaseSchema))
+                        return showPopoverMessage($scope.panels, 'store', 'databaseSchema', 'Database schema should not be empty');
 
-                if ($common.isEmptyString(item.databaseTable))
-                    return showPopoverMessage($scope.panels, 'store', 'databaseTable', 'Database table should not be empty');
+                    if ($common.isEmptyString(item.databaseTable))
+                        return showPopoverMessage($scope.panels, 'store', 'databaseTable', 'Database table should not be empty');
 
-                if ($common.isEmptyArray(item.keyFields))
-                    return showPopoverMessage($scope.panels, 'store', 'keyFields-add', 'Key fields are not specified');
+                    if ($common.isEmptyArray(item.keyFields))
+                        return showPopoverMessage($scope.panels, 'store', 'keyFields-add', 'Key fields are not specified');
 
-                if ($common.isJavaBuiltInClass(item.keyType) && item.keyFields.length !== 1)
-                    return showPopoverMessage($scope.panels, 'store', 'keyFields-add', 'Only one field should be specified in case when key type is a Java built-in type');
+                    if ($common.isJavaBuiltInClass(item.keyType) && item.keyFields.length !== 1)
+                        return showPopoverMessage($scope.panels, 'store', 'keyFields-add', 'Only one field should be specified in case when key type is a Java built-in type');
 
-                if ($common.isEmptyArray(item.valueFields))
-                    return showPopoverMessage($scope.panels, 'store', 'valueFields-add', 'Value fields are not specified');
-            }
-            else if (!qry) {
-                return showPopoverMessage($scope.panels, 'query', 'query-title', 'SQL query metadata should be configured');
+                    if ($common.isEmptyArray(item.valueFields))
+                        return showPopoverMessage($scope.panels, 'store', 'valueFields-add', 'Value fields are not specified');
+                }
+                else if (!qry) {
+                    return showPopoverMessage($scope.panels, 'query', 'query-title', 'SQL query metadata should be configured');
+                }
             }
 
             return true;

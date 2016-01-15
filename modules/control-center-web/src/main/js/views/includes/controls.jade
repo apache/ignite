@@ -432,8 +432,6 @@ mixin form-row-custom(lblClasses, fieldClasses, dataSource)
                                     +btn-save('tableSimpleSaveVisible(field, -1)', 'tableSimpleSave(tableSimpleValid, backupItem, field, -1)')
                                     .input-tip
                                         input.form-control(id='new{{::field.focusId}}' type='text' ng-model='field.newValue' placeholder='{{::field.placeholder}}' on-enter='tableSimpleSaveVisible(field, -1) && tableSimpleSave(tableSimpleValid, backupItem, field, -1)' on-escape='tableReset()')
-        .group-section(ng-switch-when='indexedTypes')
-            +table-pair('Index key-value type pairs', fieldMdl, 'keyClass', 'valueClass', 'Key full class name', 'Value class full name', true, true, '/')
         div(ng-switch-when='fields' ng-hide=fieldHide)
             +table-pair('{{::field.label}}', fieldMdl, 'name', 'className', 'Field name', 'Field full class name', false, true, '/')
         .group-section(ng-switch-when='aliases' ng-hide=fieldHide)

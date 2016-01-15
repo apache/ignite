@@ -74,6 +74,7 @@ exports.Space = mongoose.model('Space', new Schema({
 var CacheTypeMetadataSchema = new Schema({
     space: {type: ObjectId, ref: 'Space'},
     caches: [{type: ObjectId, ref: 'Cache'}],
+    metadata: {type: String, enum: ['Annotations', 'Config']},
     kind: {type: String, enum: ['query', 'store', 'both']},
     databaseSchema: String,
     databaseTable: String,
@@ -183,7 +184,6 @@ var CacheSchema = new Schema({
     sqlSchema: String,
     sqlOnheapRowCacheSize: Number,
     longQueryWarningTimeout: Number,
-    indexedTypes: [{keyClass: String, valueClass: String}],
     sqlFunctionClasses: [String],
     statisticsEnabled: Boolean,
     managementEnabled: Boolean,

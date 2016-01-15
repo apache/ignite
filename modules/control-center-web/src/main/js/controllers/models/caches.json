@@ -350,20 +350,6 @@
           ]
         },
         {
-          "ui": "table-pair",
-          "id": "indexedTypes",
-          "type": "indexedTypes",
-          "model": "indexedTypes",
-          "keyName": "keyClass",
-          "valueName": "valueClass",
-          "focusId": "IndexedType",
-          "addTip": "Add new key and value classes to indexed types",
-          "removeTip": "Remove item from indexed types",
-          "tip": [
-            "Collection of types to index"
-          ]
-        },
-        {
           "label": "SQL functions",
           "id": "sqlFunctionClasses",
           "type": "table-simple",

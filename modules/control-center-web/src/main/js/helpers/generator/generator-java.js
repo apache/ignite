@@ -986,16 +986,20 @@ $generatorJava.cacheQuery = function (cache, varName, res) {
     $generatorJava.property(res, varName, cache, 'sqlOnheapRowCacheSize');
     $generatorJava.property(res, varName, cache, 'longQueryWarningTimeout');
 
-    if (cache.indexedTypes && cache.indexedTypes.length > 0) {
+    var indexedTypes = _.filter(cache.metadatas, function (meta) {
+        return meta.metadata === 'Annotations'
+    });
+
+    if ($commonUtils.isDefinedAndNotEmpty(indexedTypes)) {
         res.emptyLineIfNeeded();
 
         res.startBlock(varName + '.setIndexedTypes(');
 
-        var len = cache.indexedTypes.length - 1;
+        var len = indexedTypes.length - 1;
 
-        _.forEach(cache.indexedTypes, function(pair, ix) {
-            res.line($generatorJava.toJavaCode(res.importClass(pair.keyClass), 'class') + ', ' +
-                $generatorJava.toJavaCode(res.importClass(pair.valueClass), 'class') + (ix < len ? ',' : ''));
+        _.forEach(indexedTypes, function(meta, ix) {
+            res.line($generatorJava.toJavaCode(res.importClass(meta.keyType), 'class') + ', ' +
+                $generatorJava.toJavaCode(res.importClass(meta.valueType), 'class') + (ix < len ? ',' : ''));
         });
 
         res.endBlock(');');
@@ -1172,14 +1176,17 @@ $generatorJava.cacheStore = function (cache, metadatas, cacheVarName, res) {
 
                 res.needEmptyLine = true;
 
-                if (metadatas && _.find(metadatas, function (meta) {
-                    return $commonUtils.isDefinedAndNotEmpty(meta.databaseTable);
-                })) {
+                var metaConfigs = _.filter(metadatas, function (meta) {
+                    return $generatorCommon.domainMetadata(meta) === 'Configuration' &&
+                        $commonUtils.isDefinedAndNotEmpty(meta.databaseTable);
+                });
+
+                if ($commonUtils.isDefinedAndNotEmpty(metaConfigs)) {
                     $generatorJava.declareVariable(res, 'jdbcTypes', 'java.util.Collection', 'java.util.ArrayList', 'org.apache.ignite.cache.store.jdbc.JdbcType');
 
                     res.needEmptyLine = true;
 
-                    _.forEach(metadatas, function (meta) {
+                    _.forEach(metaConfigs, function (meta) {
                         if ($commonUtils.isDefinedAndNotEmpty(meta.databaseTable))
                             res.line('jdbcTypes.add(jdbcType' + $generatorJava.extractType(meta.valueType) + '(' + cacheVarName + '.getName()));');
                     });
@@ -1489,13 +1496,15 @@ $generatorJava.metadataQuery = function (meta, res) {
     if (!res)
         res = $generatorCommon.builder();
 
-    $generatorJava.metadataQueryFields(res, meta);
+    if ($generatorCommon.domainMetadata(meta) === 'Configuration') {
+        $generatorJava.metadataQueryFields(res, meta);
 
-    $generatorJava.metadataQueryAliases(res, meta);
+        $generatorJava.metadataQueryAliases(res, meta);
 
-    $generatorJava.metadataQueryIndexes(res, meta);
+        $generatorJava.metadataQueryIndexes(res, meta);
 
-    res.needEmptyLine = true;
+        res.needEmptyLine = true;
+    }
 
     return res;
 };
@@ -1505,19 +1514,21 @@ $generatorJava.metadataStore = function (meta, withTypes, res) {
     if (!res)
         res = $generatorCommon.builder();
 
-    $generatorJava.property(res, 'jdbcType', meta, 'databaseSchema');
-    $generatorJava.property(res, 'jdbcType', meta, 'databaseTable');
+    if ($generatorCommon.domainMetadata(meta) === 'Configuration') {
+        $generatorJava.property(res, 'jdbcType', meta, 'databaseSchema');
+        $generatorJava.property(res, 'jdbcType', meta, 'databaseTable');
 
-    if (withTypes) {
-        $generatorJava.classNameProperty(res, 'jdbcType', meta, 'keyType');
-        $generatorJava.property(res, 'jdbcType', meta, 'valueType');
+        if (withTypes) {
+            $generatorJava.classNameProperty(res, 'jdbcType', meta, 'keyType');
+            $generatorJava.property(res, 'jdbcType', meta, 'valueType');
+        }
+
+        $generatorJava.metadataDatabaseFields(res, meta, 'keyFields');
+
+        $generatorJava.metadataDatabaseFields(res, meta, 'valueFields');
+
+        res.needEmptyLine = true;
     }
-
-    $generatorJava.metadataDatabaseFields(res, meta, 'keyFields');
-
-    $generatorJava.metadataDatabaseFields(res, meta, 'valueFields');
-
-    res.needEmptyLine = true;
 
     return res;
 };
@@ -1527,13 +1538,16 @@ $generatorJava.cacheMetadatas = function (metadatas, varName, res) {
     if (!res)
         res = $generatorCommon.builder();
 
+    var metaConfigs = _.filter(metadatas, function (meta) {
+        return $generatorCommon.domainMetadata(meta) === 'Configuration' &&
+            $commonUtils.isDefinedAndNotEmpty(meta.fields);
+    });
+
     // Generate cache type metadata configs.
-    if (metadatas && _.find(metadatas, function (meta) {
-            return $commonUtils.isDefinedAndNotEmpty(meta.fields);
-        })) {
+    if ($commonUtils.isDefinedAndNotEmpty(metaConfigs)) {
         $generatorJava.declareVariable(res, 'queryEntities', 'java.util.Collection', 'java.util.ArrayList', 'org.apache.ignite.cache.QueryEntity');
 
-        _.forEach(metadatas, function (meta) {
+        _.forEach(metaConfigs, function (meta) {
             if ($commonUtils.isDefinedAndNotEmpty(meta.fields))
                 res.line('queryEntities.add(queryEntity' + $generatorJava.extractType(meta.valueType) + '());');
         });
@@ -1581,7 +1595,8 @@ $generatorJava.clusterMetadatas = function (caches, res) {
 
     _.forEach(caches, function (cache) {
         _.forEach(cache.metadatas, function (meta) {
-            if (!$commonUtils.isDefined(_.find(metadatas, function (m) {
+            if ($generatorCommon.domainMetadata(meta) === 'Configuration' &&
+                !$commonUtils.isDefined(_.find(metadatas, function (m) {
                     return m === meta.valueType;
                 }))) {
                 $generatorJava.resetVariables(res);
@@ -2021,9 +2036,10 @@ $generatorJava.pojos = function (caches, useConstructor, includeKeyFields) {
     _.forEach(caches, function(cache) {
         _.forEach(cache.metadatas, function(meta) {
             // Skip already generated classes.
-            if (!_.find(metadatas, {valueType: meta.valueType}) &&
+            if ($generatorCommon.domainMetadata(meta) === 'Configuration' &&
+                !_.find(metadatas, {valueType: meta.valueType}) &&
                 // Skip metadata without value fields.
-                $commonUtils.isDefined(meta.valueFields) && meta.valueFields.length > 0) {
+                $commonUtils.isDefinedAndNotEmpty(meta.valueFields)) {
                 var metadata = {};
 
                 // Key class generation only if key is not build in java class.

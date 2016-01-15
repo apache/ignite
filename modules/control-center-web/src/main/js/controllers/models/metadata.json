@@ -23,6 +23,21 @@
           }
         },
         {
+          "label": "Metadata",
+          "id": "metadata",
+          "type": "dropdown",
+          "model": "metadata",
+          "items": "metadataVariants",
+          "required": true,
+          "tip": [
+            "Metadata configured in: ",
+            "<ul>",
+            "  <li>Class annotations</li>",
+            "  <li>Configuration</li>",
+            "</ul>"
+          ]
+        },
+        {
           "label": "Key type",
           "id": "keyType",
           "type": "typeahead",
@@ -55,6 +70,11 @@
       ],
       "fields": [
         {
+          "label": "Not available for annotated types",
+          "type": "label",
+          "hide": "backupItem.metadata === 'Configuration'"
+        },
+        {
           "label": "Fields",
           "id": "fields",
           "ui": "table-pair",
@@ -63,6 +83,7 @@
           "keyName": "name",
           "valueName": "className",
           "focusId": "QryField",
+          "hide": "backupItem.metadata !== 'Configuration'",
           "addTip": "Add field to query",
           "removeTip": "Remove field",
           "tip": [
@@ -78,6 +99,7 @@
           "keyName": "field",
           "valueName": "alias",
           "focusId": "Alias",
+          "hide": "backupItem.metadata !== 'Configuration'",
           "addTip": "Add alias to query",
           "removeTip": "Remove alias",
           "tip": [
@@ -91,6 +113,7 @@
           "type": "table-indexes",
           "ui": "table-indexes",
           "model": "indexes",
+          "hide": "backupItem.metadata !== 'Configuration'",
           "addTip": "Add new index",
           "removeTip": "Remove index",
           "addItemTip": "Add new field to index",
@@ -110,10 +133,16 @@
       ],
       "fields": [
         {
+          "label": "Not available for annotated types",
+          "type": "label",
+          "hide": "backupItem.metadata === 'Configuration'"
+        },
+        {
           "label": "Database schema",
           "id": "databaseSchema",
           "type": "text",
           "model": "databaseSchema",
+          "hide": "backupItem.metadata !== 'Configuration'",
           "placeholder": "Input DB schema name",
           "tip": [
             "Schema name in database"
@@ -124,6 +153,7 @@
           "id": "databaseTable",
           "type": "text",
           "model": "databaseTable",
+          "hide": "backupItem.metadata !== 'Configuration'",
           "placeholder": "Input DB table name",
           "tip": [
             "Table name in database"
@@ -137,6 +167,7 @@
           "keyName": "name",
           "valueName": "className",
           "focusId": "KeyField",
+          "hide": "backupItem.metadata !== 'Configuration'",
           "addTip": "Add key field",
           "removeTip": "Remove key field",
           "tip": [
@@ -151,6 +182,7 @@
           "keyName": "name",
           "valueName": "className",
           "focusId": "ValueField",
+          "hide": "backupItem.metadata !== 'Configuration'",
           "addTip": "Add value field",
           "removeTip": "Remove value field",
           "tip": [

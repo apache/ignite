@@ -463,3 +463,8 @@ $generatorCommon.binaryIsDefined = function (binary) {
     return binary && ($commonUtils.isDefinedAndNotEmpty(binary.idMapper) || $commonUtils.isDefinedAndNotEmpty(binary.serializer) ||
         $commonUtils.isDefinedAndNotEmpty(binary.typeConfigurations) || ($commonUtils.isDefined(binary.compactFooter) && !binary.compactFooter));
 };
+
+// Extract domain metadata.
+$generatorCommon.domainMetadata = function(domain) {
+    return domain.metadata ? domain.metadata : 'Configuration';
+};
