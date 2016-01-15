@@ -107,13 +107,13 @@ router.post('/password/forgot', function(req, res) {
     var transporter = {
         service: config.get('smtp:service'),
         auth: {
-            user:config.get('smtp:username'),
+            user:config.get('smtp:email'),
             pass: config.get('smtp:password')
         }
     };
 
     if (transporter.service == '' || transporter.auth.user == '' || transporter.auth.pass == '')
-        return res.status(401).send('Can\'t send e-mail with instructions to reset password. Please ask webmaster to setup smtp server!');
+        return res.status(401).send('Can\'t send e-mail with instructions to reset password. Please ask webmaster to setup SMTP server!');
 
     var token = $commonUtils.randomString(20);
 
@@ -135,8 +135,8 @@ router.post('/password/forgot', function(req, res) {
             var mailer  = nodemailer.createTransport(transporter);
 
             var mailOptions = {
-                from: transporter.auth.user,
-                to: user.email,
+                from: config.address(config.get('smtp:username'), config.get('smtp:email')),
+                to: config.address(user.username, user.email),
                 subject: 'Password Reset',
                 text: 'You are receiving this because you (or someone else) have requested the reset of the password for your account.\n\n' +
                 'Please click on the following link, or paste this into your browser to complete the process:\n\n' +
@@ -148,7 +148,7 @@ router.post('/password/forgot', function(req, res) {
 
             mailer.sendMail(mailOptions, function(err){
                 if (err)
-                    return res.status(401).send('Failed to send e-mail with reset link!<br />' + err);
+                    return res.status(401).send('Failed to send e-mail with reset link! ' + err);
 
                 return res.status(200).send('An e-mail has been sent with further instructions.');
             });
@@ -181,7 +181,7 @@ router.post('/password/reset', function(req, res) {
                 var transporter = {
                     service: config.get('smtp:service'),
                     auth: {
-                        user: config.get('smtp:username'),
+                        user: config.get('smtp:email'),
                         pass: config.get('smtp:password')
                     }
                 };
@@ -189,8 +189,8 @@ router.post('/password/reset', function(req, res) {
                 var mailer = nodemailer.createTransport(transporter);
 
                 var mailOptions = {
-                    from: transporter.auth.user,
-                    to: user.email,
+                    from: config.address(config.get('smtp:username'), config.get('smtp:email')),
+                    to: config.address(user.username, user.email),
                     subject: 'Your password has been changed',
                     text: 'Hello,\n\n' +
                     'This is a confirmation that the password for your account ' + user.email + ' has just been changed.\n\n' +
