@@ -1716,7 +1716,7 @@ $generatorJava.clusterCaches = function (caches, igfss, isSrvCfg, res) {
 
     var names = [];
 
-    if (caches && caches.length > 0) {
+    if ($commonUtils.isDefinedAndNotEmpty(caches)) {
         res.emptyLineIfNeeded();
 
         _.forEach(caches, function (cache) {
@@ -1726,7 +1726,7 @@ $generatorJava.clusterCaches = function (caches, igfss, isSrvCfg, res) {
         res.needEmptyLine = true;
     }
 
-    if (isSrvCfg && igfss && igfss.length > 0) {
+    if (isSrvCfg && $commonUtils.isDefinedAndNotEmpty(igfss)) {
         res.emptyLineIfNeeded();
 
         _.forEach(igfss, function (igfs) {

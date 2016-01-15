@@ -1244,7 +1244,7 @@ $generatorXml.clusterCaches = function(caches, igfss, isSrvCfg, res) {
     if (!res)
         res = $generatorCommon.builder();
 
-    if ((caches && caches.length > 0) || (igfss && igfss.length > 0)) {
+    if ($commonUtils.isDefinedAndNotEmpty(caches) || (isSrvCfg && $commonUtils.isDefinedAndNotEmpty(igfss))) {
         res.emptyLineIfNeeded();
 
         res.startBlock('<property name="cacheConfiguration">');
