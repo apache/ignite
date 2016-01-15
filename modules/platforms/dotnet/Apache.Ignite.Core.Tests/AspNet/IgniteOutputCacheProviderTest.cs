@@ -19,6 +19,7 @@ namespace Apache.Ignite.Core.Tests.AspNet
 {
     using System;
     using System.Collections.Specialized;
+    using System.Threading;
     using Apache.Ignite.AspNet;
     using Apache.Ignite.Core.Common;
     using NUnit.Framework;
@@ -116,8 +117,15 @@ namespace Apache.Ignite.Core.Tests.AspNet
         public void TestExpiry()
         {
             var cacheProvider = GetProvider();
+            cacheProvider.Remove("1");
 
-            // TODO: Set and Add
+            // Set
+            cacheProvider.Set("1", 1, DateTime.Now.AddSeconds(1.5));
+            Assert.AreEqual(1, cacheProvider.Get("1"));
+            Thread.Sleep(2000);
+            Assert.AreEqual(null, cacheProvider.Get("1"));
+
+            // Add
         }
 
         /// <summary>
