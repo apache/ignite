@@ -279,9 +279,9 @@ public class GridNearPessimisticTxPrepareFuture extends GridNearTxPrepareFutureA
     /** {@inheritDoc} */
     @Override public boolean onDone(@Nullable IgniteInternalTx res, @Nullable Throwable err) {
         if (err != null)
-            this.err.compareAndSet(null, err);
+            ERR_UPD.compareAndSet(GridNearPessimisticTxPrepareFuture.this, null, err);
 
-        err = this.err.get();
+        err = this.err;
 
         if (err == null || tx.needCheckBackup())
             tx.state(PREPARED);
@@ -384,7 +384,7 @@ public class GridNearPessimisticTxPrepareFuture extends GridNearTxPrepareFutureA
             if (log.isDebugEnabled())
                 log.debug("Error on tx prepare [fut=" + this + ", err=" + e + ", tx=" + tx +  ']');
 
-            if (err.compareAndSet(null, e))
+            if (ERR_UPD.compareAndSet(GridNearPessimisticTxPrepareFuture.this, null, e))
                 tx.setRollbackOnly();
 
             onDone(e);
