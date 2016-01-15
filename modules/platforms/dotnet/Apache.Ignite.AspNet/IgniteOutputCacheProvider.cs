@@ -122,35 +122,40 @@ namespace Apache.Ignite.AspNet
         /// <returns>Cache with expiry policy.</returns>
         private ICache<string, object> GetCacheWithExpiry(DateTime utcExpiry)
         {
+            var cache = _cache;
+
+            if (cache == null)
+                throw new InvalidOperationException("IgniteOutputCacheProvider has not been initialized.");
+
             if (utcExpiry == DateTime.MaxValue)
-                return _cache;
+                return cache;
 
             // Round up to seconds
             var expirySeconds = (long) (utcExpiry - DateTime.UtcNow).TotalSeconds;
 
             if (expirySeconds < 1)
-                return _cache;
-
-            ICache<string, object> cache;
-
-            if (_expiryCaches.TryGetValue(expirySeconds, out cache))
                 return cache;
+
+            ICache<string, object> expiryCache;
+
+            if (_expiryCaches.TryGetValue(expirySeconds, out expiryCache))
+                return expiryCache;
 
             lock (_syncRoot)
             {
-                if (_expiryCaches.TryGetValue(expirySeconds, out cache))
-                    return cache;
+                if (_expiryCaches.TryGetValue(expirySeconds, out expiryCache))
+                    return expiryCache;
 
                 // Copy on write with size limit
                 _expiryCaches = _expiryCaches.Count > MaxCaches
                     ? new Dictionary<long, ICache<string, object>>()
                     : new Dictionary<long, ICache<string, object>>(_expiryCaches);
 
-                cache = _cache.WithExpiryPolicy(new ExpiryPolicy(TimeSpan.FromSeconds(expirySeconds), null, null));
+                expiryCache = cache.WithExpiryPolicy(new ExpiryPolicy(TimeSpan.FromSeconds(expirySeconds), null, null));
 
-                _expiryCaches[expirySeconds] = cache;
+                _expiryCaches[expirySeconds] = expiryCache;
 
-                return cache;
+                return expiryCache;
             }
         }
     }
