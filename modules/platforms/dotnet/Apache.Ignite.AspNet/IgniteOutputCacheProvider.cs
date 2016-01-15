@@ -61,7 +61,7 @@ namespace Apache.Ignite.AspNet
         {
             object res;
 
-            return _cache.TryGet(key, out res) ? res : null;
+            return Cache.TryGet(key, out res) ? res : null;
         }
 
         /// <summary>
@@ -95,7 +95,7 @@ namespace Apache.Ignite.AspNet
         /// <param name="key">The unique identifier for the entry to remove from the output cache.</param>
         public override void Remove(string key)
         {
-            _cache.Remove(key);
+            Cache.Remove(key);
         }
 
         /// <summary>
@@ -116,6 +116,22 @@ namespace Apache.Ignite.AspNet
         }
 
         /// <summary>
+        /// Gets the cache.
+        /// </summary>
+        private ICache<string, object> Cache
+        {
+            get
+            {
+                var cache = _cache;
+
+                if (cache == null)
+                    throw new InvalidOperationException("IgniteOutputCacheProvider has not been initialized.");
+
+                return cache;
+            }
+        }
+
+        /// <summary>
         /// Gets the cache with expiry policy according to provided expiration date.
         /// </summary>
         /// <param name="utcExpiry">The UTC expiry.</param>
@@ -123,13 +139,13 @@ namespace Apache.Ignite.AspNet
         private ICache<string, object> GetCacheWithExpiry(DateTime utcExpiry)
         {
             if (utcExpiry == DateTime.MaxValue)
-                return _cache;
+                return Cache;
 
             // Round up to seconds
             var expirySeconds = (long) (utcExpiry - DateTime.UtcNow).TotalSeconds;
 
             if (expirySeconds < 1)
-                return _cache;
+                return Cache;
 
             ICache<string, object> expiryCache;
 
@@ -146,7 +162,7 @@ namespace Apache.Ignite.AspNet
                     ? new Dictionary<long, ICache<string, object>>()
                     : new Dictionary<long, ICache<string, object>>(_expiryCaches);
 
-                expiryCache = _cache.WithExpiryPolicy(new ExpiryPolicy(TimeSpan.FromSeconds(expirySeconds), null, null));
+                expiryCache = Cache.WithExpiryPolicy(new ExpiryPolicy(TimeSpan.FromSeconds(expirySeconds), null, null));
 
                 _expiryCaches[expirySeconds] = expiryCache;
 
