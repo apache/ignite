@@ -57,7 +57,7 @@ public class ClusterProcessor extends GridProcessorAdapter {
     private IgniteClusterImpl cluster;
 
     /** */
-    private boolean notifyEnabled;
+    private volatile boolean notifyEnabled;
 
     /** */
     @GridToStringExclude
