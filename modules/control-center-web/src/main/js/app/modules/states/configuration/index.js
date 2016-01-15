@@ -28,6 +28,8 @@ import clustersSsl from './clusters/ssl.directive';
 import clustersMetrics from './clusters/metrics.directive';
 import clustersMarshaller from './clusters/marshaller.directive';
 import clustersIgfs from './clusters/igfs.directive';
+import clustersEvents from './clusters/events.directive';
+import clustersDiscovery from './clusters/discovery.directive';
 
 angular
 .module('ignite-console.states.configuration', [
@@ -41,6 +43,8 @@ angular
 .directive(...clustersMetrics)
 .directive(...clustersMarshaller)
 .directive(...clustersIgfs)
+.directive(...clustersEvents)
+.directive(...clustersDiscovery)
 // Services.
 .service(...ConfigurationSummaryResource)
 .config(['$stateProvider', function($stateProvider) {

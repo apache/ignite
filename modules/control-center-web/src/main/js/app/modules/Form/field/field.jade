@@ -19,7 +19,8 @@ div
         label.col-xs-4.col-sm-4.col-md-4(
             for='{{::field.for}}'
             class='{{ field.required ? "required" : "" }}'
-        ) {{::field.label}}:
+        ) 
+            span(ng-if='field.label') {{::field.label}}:
         div.col-xs-8.col-sm-8.col-md-8(ng-transclude='')
     div(ng-if='field.type == "internal"')
         label.col-xs-12.col-sm-12.col-md-12(ng-transclude)       

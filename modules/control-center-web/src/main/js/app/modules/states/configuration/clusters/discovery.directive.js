@@ -15,36 +15,13 @@
  * limitations under the License.
  */
 
-import template from './dropdown.jade!';
+import template from './discovery.jade!';
 
-export default ['igniteFormFieldDropdown', ['IgniteFormGUID', (guid) => {
-    const controller = () => {};
-
-    const link = (scope) => {
-        const {id} = scope;
-
-        scope.id = id || guid();
-    };
-
+export default ['igniteConfigurationClustersDiscovery', [() => {
     return {
+        scope: true,
         restrict: 'E',
-        scope: {
-            id: '@'
-        },
-        bindToController: {
-            name: '@',
-            placeholder: '@',
-            ngModel: '=',
-            options: '=',
-            ngDisabled: '=',
-            multiple: '='
-        },
-        link,
         template,
-        controller,
-        controllerAs: 'dropdown',
-        replace: true,
-        transclude: true,
-        require: ['^form', '?^igniteFormField']
+        replace: true
     };
 }]];

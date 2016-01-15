@@ -147,14 +147,9 @@ form.panel.panel-default(bs-collapse ng-model='panel' name='sslConfiguration')
                             ng-form='form' 
                         )
                             ignite-form-field(type='internal')
-                                ignite-form-field-input-text(
+                                ignite-form-field-java-class(
                                     data-name='field'
                                     data-ng-model='field'
-                                    data-placeholder='Enter fully qualified class name'
-                                    data-java-keywords='true'
-                                    data-java-identifier='true'
-                                    data-java-package-specified='true'
-                                    data-java-build-in-class='true'
                                     data-ng-required='true'
                                     data-ignite-form-field-input-autofocus='true'
                                     on-enter='form.$valid && #{model}.trustManagers.push(field); form.$valid && (__.addTrustManager = false)'
@@ -166,12 +161,6 @@ form.panel.panel-default(bs-collapse ng-model='panel' name='sslConfiguration')
                                         bs-tooltip 
                                         data-title='Click icon or press [Enter] to save item' 
                                     )
-
-                                    +feedback('field', 'javaIdentifier', 'Trust manager is invalid!')
-                                    +feedback('field', 'required', 'Trust manager could not be empty!')
-                                    +feedback('field', 'javaKeywords', 'Trust manager could not contains reserved java keyword: ""!')
-                                    +feedback('field', 'javaBuildInClass', 'Trust manager should not be the Java build-in class!')
-                                    +feedback('field', 'javaPackageSpecified', 'Trust manager does not have package specified!')
                
                 .settings-row(ng-if='backupItem.sslEnabled && !#{model}.trustManagers.length')
                     ignite-form-field(data-label='Trust store file')

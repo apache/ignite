@@ -1299,51 +1299,6 @@
           ]
         }
       ]
-    },
-    {
-      "label": "Events",
-      "group": "events",
-      "tip": [
-        " Grid events are used for notification about what happens within the grid"
-      ],
-      "fields": [
-        {
-          "label": "Include type",
-          "id": "includeEventTypes",
-          "type": "dropdown-multiple",
-          "model": "includeEventTypes",
-          "placeholder": "Choose recorded event types",
-          "items": "events",
-          "tip": [
-            "Array of event types, which will be recorded by GridEventStorageManager#record(Event)",
-            "Note, that either the include event types or the exclude event types can be established"
-          ]
-        }
-      ]
-    },
-    {
-      "label": "IGFS",
-      "group": "igfs",
-      "tip": [
-        "IGFS (Ignite In-Memory File System) configurations"
-      ],
-      "fields": [
-        {
-          "label": "IGFS",
-          "id": "igfs",
-          "type": "dropdown-multiple",
-          "model": "igfss",
-          "placeholder": "Choose IGFS",
-          "placeholderEmpty": "No IGFS configured",
-          "items": "igfss",
-          "tip": [
-            "Select IGFS to start in cluster or add a new IGFS"
-          ],
-          "addLink": {
-            "ref": "/configuration/igfs?new"
-          }
-        }
-      ]
     }
   ]
 }

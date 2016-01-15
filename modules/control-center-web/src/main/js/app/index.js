@@ -83,6 +83,7 @@ import igniteUiAceJava from './directives/ui-ace-java/ui-ace-java.directive';
 import igniteUiAcePom from './directives/ui-ace-pom/ui-ace-pom.directive';
 import igniteUiAceDocker from './directives/ui-ace-docker/ui-ace-docker.directive';
 import igniteUiAcePojos from './directives/ui-ace-pojos/ui-ace-pojos.directive';
+import igniteFormFieldJavaClass from './directives/form-field-java-class/form-field-java-class.directive';
 
 // Services.
 import IgniteUiAceOnLoad from './services/UiAceOnLoad/service';
@@ -121,6 +122,7 @@ angular
 .directive(...igniteUiAcePom)
 .directive(...igniteUiAceDocker)
 .directive(...igniteUiAcePojos)
+.directive(...igniteFormFieldJavaClass)
 // Services.
 .service(...IgniteUiAceOnLoad)
 // Filters.

@@ -15,34 +15,34 @@
  * limitations under the License.
  */
 
-import template from './dropdown.jade!';
+import template from './form-field-java-class.jade!';
 
-export default ['igniteFormFieldDropdown', ['IgniteFormGUID', (guid) => {
-    const controller = () => {};
+export default ['igniteFormFieldJavaClass', ['IgniteFormGUID', (guid) => {
+    const link = (scope, el, attrs, [form, label]) => {
+        const {id, name} = scope;
+        const field = form[name];
 
-    const link = (scope) => {
-        const {id} = scope;
-
-        scope.id = id || guid();
+        scope.form = form;
+        scope.field = field;
+        label.for = scope.id = id || guid();
+        label.required = scope.required || false;
     };
 
     return {
         restrict: 'E',
         scope: {
-            id: '@'
-        },
-        bindToController: {
+            id: '@',
             name: '@',
             placeholder: '@',
+            required: '=ngRequired',
+
             ngModel: '=',
-            options: '=',
-            ngDisabled: '=',
-            multiple: '='
+            ngBlur: '&',
+
+            autofocus: '=igniteFormFieldInputAutofocus'
         },
         link,
         template,
-        controller,
-        controllerAs: 'dropdown',
         replace: true,
         transclude: true,
         require: ['^form', '?^igniteFormField']

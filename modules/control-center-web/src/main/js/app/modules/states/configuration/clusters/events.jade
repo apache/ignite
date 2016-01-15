@@ -16,34 +16,34 @@
 
 - var model = 'backupItem'
 
-form.panel.panel-default(bs-collapse ng-model='panel' name='igfs')
+form.panel.panel-default(bs-collapse ng-model='panel' name='eventsForm')
     .panel-heading(bs-collapse-toggle)
         i.fa(ng-class='panel === 0 ? "fa-chevron-circle-up" : "fa-chevron-circle-down"')
-        label IGFS
+        label Events
         ignite-form-field-tooltip.tipLabel
-            | IGFS (Ignite In-Memory File System) configurations
+            | Grid events are used for notification about what happens within the grid
         //- i.pull-right.fa.fa-undo(
             ng-show='!preview["pools"].allDefaults' 
             ng-click='#{model} = {}; $event.stopPropagation()' 
             bs-tooltip 
             data-title='"Undo unsaved changes"')
-    .panel-collapse(role='tabpanel' bs-collapse-target id='igfs')
+    .panel-collapse(role='tabpanel' bs-collapse-target id='events')
         .panel-body
             .col-sm-6
                 .settings-row
                     ignite-form-field
                         ignite-form-field-label
-                            | IGFS: #[a(ui-sref='base.configuration.igfs') (add)]
+                            | Include type:
                         ignite-form-field-tooltip
-                            | Select IGFS to start in cluster or add a new IGFS
+                            | Array of event types, which will be recorded by GridEventStorageManager#record(Event)#[br]
+                            | Note, that either the include event types or the exclude event types can be established
                         ignite-form-field-dropdown(
-                            data-id='igfss'
-                            data-name='igfss'
-                            data-options="igfss"
+                            data-id='includeEventTypes'
+                            data-name='includeEventTypes'
+                            data-options="events"
                             data-multiple='true'
-                            data-ng-model='#{model}.igfss'
-                            data-ng-disabled='!igfss.length'
-                            data-placeholder='{{ igfss.length ? "Choose IGFS": "No IGFS configured" }}'
+                            data-ng-model='#{model}.includeEventTypes'
+                            data-placeholder='Choose recorded event types'
                         )
             .col-sm-6
                 .preview-panel(ng-init='mode = false')
@@ -52,12 +52,12 @@ form.panel.panel-default(bs-collapse ng-model='panel' name='igfs')
                         | &nbsp;
                         a(ng-class='{active: mode, inactive: !mode}' ng-click='mode = true') Java
                     .preview-content(
-                        ng-if='!preview["igfs"].allDefaults && mode'
+                        ng-if='!preview["events"].allDefaults && mode'
                         ui-ace='{onLoad: previewInit, onChange: previewChanged, mode: "java", rendererOptions: {minLines: group.previewMinLines || 3}}' 
-                        ng-model='preview["igfs"].java')
+                        ng-model='preview["events"].java')
                     .preview-content(
-                        ng-if='!preview["igfs"].allDefaults && !mode'
+                        ng-if='!preview["events"].allDefaults && !mode'
                         ui-ace='{onLoad: previewInit, onChange: previewChanged, mode: "xml", rendererOptions: {minLines: group.previewMinLines || 3}}' 
-                        ng-model='preview["igfs"].xml')
-                    .preview-content-empty(ng-if='preview["igfs"].allDefaults')
+                        ng-model='preview["events"].xml')
+                    .preview-content-empty(ng-if='preview["events"].allDefaults')
                         label All Defaults

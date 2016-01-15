@@ -17,14 +17,16 @@
 .input-tip
     button.select-toggle.form-control(
         id='{{ id }}'
-        name='{{ name }}'
-        data-placeholder='{{ placeholder }}' 
+        name='{{ dropdown.name }}'
+        data-placeholder='{{ dropdown.placeholder }}' 
 
         bs-select 
-        bs-options='item.value as item.label for item in options' 
+        bs-options='item.value as item.label for item in dropdown.options' 
+        data-multiple='dropdown.multiple'
 
-        ng-model='ngModel'
-        ng-class='{ placeholder: ngModel === undefined || ngModel === null}'
+        ng-model='dropdown.ngModel'
+        ng-class='{ placeholder: dropdown.ngModel === undefined || dropdown.ngModel === null || !dropdown.ngModel.length }'
+        ng-disabled='dropdown.ngDisabled'
 
         tabindex='0'
     )
