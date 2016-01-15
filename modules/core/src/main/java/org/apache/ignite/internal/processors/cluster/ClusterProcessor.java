@@ -155,6 +155,13 @@ public class ClusterProcessor extends GridProcessorAdapter {
     }
 
     /**
+     * Disables update notifier.
+     */
+    public void disableUpdateNotifier() {
+        notifyEnabled = false;
+    }
+
+    /**
      * @return Update notifier status.
      */
     public boolean updateNotifierEnabled() {
