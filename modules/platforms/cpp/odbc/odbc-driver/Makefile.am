@@ -24,31 +24,33 @@ AM_CPPFLAGS = -I$(srcdir)/include -I$(JAVA_HOME)/include -I$(JAVA_HOME)/include/
 AM_CXXFLAGS = -Wall -std=c++0x
 LIB_LDFLAGS = -no-undefined -version-info 1
 
-COMMON_SRC = os/linux/src/system/socket_client.cpp \
-             src/query/table_metadata_query.cpp \
-             src/query/data_query.cpp \
-             src/query/primary_keys_query.cpp \
-             src/query/foreign_keys_query.cpp \
-             src/query/column_metadata_query.cpp \
-             src/config/configuration.cpp \
-             src/config/connection_info.cpp \
-             src/row.cpp \
-             src/environment.cpp \
-             src/result_page.cpp \
-             src/utility.cpp \
-             src/app/parameter.cpp \
-             src/app/application_data_buffer.cpp \
-             src/common_types.cpp \
-             src/odbc.cpp \
-             src/meta/table_meta.cpp \
-             src/meta/column_meta.cpp \
-             src/type_traits.cpp \
+COMMON_SRC = os/linux/src/system/socket_client.cpp        \
+             src/app/application_data_buffer.cpp          \
+             src/app/parameter.cpp                        \
+             src/common_types.cpp                         \
+             src/config/configuration.cpp                 \
+             src/config/connection_info.cpp               \
+             src/connection.cpp                           \
+             src/cursor.cpp                               \
+             src/decimal.cpp                              \
+             src/diagnostic/diagnosable_adapter.cpp       \
+             src/diagnostic/diagnostic_record.cpp         \
              src/diagnostic/diagnostic_record_storage.cpp \
-             src/diagnostic/diagnosable_adapter.cpp \
-             src/diagnostic/diagnostic_record.cpp \
-             src/statement.cpp \
-             src/cursor.cpp \
-             src/connection.cpp
+             src/environment.cpp                          \
+             src/meta/column_meta.cpp                     \
+             src/meta/table_meta.cpp                      \
+             src/odbc.cpp                                 \
+             src/query/column_metadata_query.cpp          \
+             src/query/data_query.cpp                     \
+             src/query/foreign_keys_query.cpp             \
+             src/query/primary_keys_query.cpp             \
+             src/query/table_metadata_query.cpp           \
+             src/query/type_info_query.cpp                \
+             src/result_page.cpp                          \
+             src/row.cpp                                  \
+             src/statement.cpp                            \
+             src/type_traits.cpp                          \
+             src/utility.cpp
 
 
 lib_LTLIBRARIES = libignite-odbc.la

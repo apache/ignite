@@ -39,6 +39,7 @@ ignite_odbc_tests_SOURCES = src/teamcity_boost.cpp \
                        ../odbc-driver/src/app/application_data_buffer.cpp \
                        ../odbc-driver/src/config/configuration.cpp \
                        ../odbc-driver/src/row.cpp \
+                       ../odbc-driver/src/decimal.cpp \
                        ../odbc-driver/src/utility.cpp \
                        ../odbc-driver/src/result_page.cpp
 
