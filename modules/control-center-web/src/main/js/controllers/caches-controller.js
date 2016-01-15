@@ -171,8 +171,8 @@ consoleModule.controller('cachesController', [
             statistics: {xml: '', java: '', allDefaults: true}
         };
 
-        function _cacheLbl() {
-            return this.name + ', ' + _.result(_.find($scope.cacheModes, {value: this.cacheMode}), 'label') + ', ' + _.result(_.find($scope.atomicities, {value: this.atomicityMode}), 'label');
+        function _cacheLbl(cache) {
+            return cache.name + ', ' + cache.cacheMode + ', ' + cache.atomicityMode;
         }
 
         $scope.required = function (field) {
@@ -291,7 +291,7 @@ consoleModule.controller('cachesController', [
                 $scope.spaces = data.spaces;
 
                 data.caches.forEach(function (cache) {
-                    Object.defineProperty(cache, 'label', { get: _cacheLbl });
+                    cache.label = _cacheLbl(cache);
                 });
 
                 $scope.caches = data.caches;
@@ -453,7 +453,7 @@ consoleModule.controller('cachesController', [
         };
 
         function prepareNewItem(id) {
-            var newItem =  {
+            return {
                 space: $scope.spaces[0]._id,
                 cacheMode: 'PARTITIONED',
                 atomicityMode: 'ATOMIC',
@@ -465,10 +465,6 @@ consoleModule.controller('cachesController', [
                 metadatas: id && _.find($scope.metadatas, {value: id}) ? [id] : [],
                 cacheStoreFactory: {CacheJdbcBlobStoreFactory: {connectVia: 'DataSource'}}
             };
-
-            Object.defineProperty(newItem, 'label', { get: _cacheLbl });
-
-            return newItem;
         }
 
         // Add new cache.
@@ -608,6 +604,8 @@ consoleModule.controller('cachesController', [
                 .success(function (_id) {
                     $scope.ui.markPristine();
 
+                    item.label = _cacheLbl(item);
+
                     var idx = _.findIndex($scope.caches, function (cache) {
                         return cache._id === _id;
                     });
@@ -656,8 +654,6 @@ consoleModule.controller('cachesController', [
                         delete item.demo;
 
                         item.name = newName;
-
-                        Object.defineProperty(item, 'label', { get: _cacheLbl });
 
                         save(item);
                     });
