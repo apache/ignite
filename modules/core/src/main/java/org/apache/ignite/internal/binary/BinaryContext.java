@@ -359,43 +359,6 @@ public class BinaryContext {
     }
 
     /**
-     * @param typeName Type name.
-     * @param cfg Binary configuration.
-     * @return BinaryIdMapper according to configuration.
-     */
-    private static BinaryIdMapper resolveIdMapper(String typeName, BinaryConfiguration cfg) {
-        assert typeName != null;
-
-        BinaryIdMapper globalIdMapper = cfg.getIdMapper();
-
-        Collection<BinaryTypeConfiguration> typeCfgs = cfg.getTypeConfigurations();
-
-        if (typeCfgs != null) {
-            for (BinaryTypeConfiguration typeCfg : typeCfgs) {
-                String clsName = typeCfg.getTypeName();
-
-                if (clsName != null && clsName.endsWith(".*")) {
-                    String pkgName = clsName.substring(0, clsName.length() - 2);
-                    String typePkgName = typeName.substring(0, typeName.lastIndexOf('.'));
-
-                    if (pkgName.equals(typePkgName)) {
-                        BinaryIdMapper idMapper = globalIdMapper;
-
-                        if (typeCfg.getIdMapper() != null)
-                            idMapper = typeCfg.getIdMapper();
-
-                        idMapper = resolveIdMapper(idMapper);
-
-                        return idMapper;
-                    }
-                }
-            }
-        }
-
-        return resolveIdMapper(globalIdMapper);
-    }
-
-    /**
      * @param cls Class.
      */
     private void addSystemClassAffinityKey(Class<?> cls) {
@@ -731,10 +694,7 @@ public class BinaryContext {
     public BinaryIdMapper userTypeIdMapper(int typeId) {
         BinaryIdMapper idMapper = mappers.get(typeId);
 
-        if (idMapper == null)
-            throw new BinaryObjectException("Failed to get ID mapper by typeId: " + typeId);
-
-        return idMapper;
+        return idMapper != null ? idMapper : BinaryInternalIdMapper.defaultInstance();
     }
 
     /**
@@ -744,14 +704,7 @@ public class BinaryContext {
     private BinaryIdMapper userTypeIdMapper(String typeName) {
         BinaryIdMapper idMapper = typeMappers.get(typeName);
 
-        if (idMapper != null)
-            return idMapper;
-
-        idMapper = resolveIdMapper(typeName, igniteCfg.getBinaryConfiguration());
-
-        typeMappers.put(typeName, idMapper);
-
-        return idMapper;
+        return idMapper != null ? idMapper : BinaryInternalIdMapper.defaultInstance();
     }
 
     /**
