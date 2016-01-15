@@ -2171,7 +2171,7 @@ consoleModule.service('$agentDownload', [
 
                 _agentDownloadModal.backState = 'base.configuration.metadata';
 
-                scope.agentGoal = 'load metadata from database schema';
+                scope.agentGoal = 'import metadata from database schema';
 
                 scope.backText = 'Back to Metadata';
 
