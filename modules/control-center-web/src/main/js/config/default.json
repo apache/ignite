@@ -18,9 +18,9 @@
         "keyPassphrase": "password"
     },
     "smtp": {
-         "service": "",
-         "username": "",
-         "email": "",
-         "password": ""
+        "service": "",
+        "username": "",
+        "email": "",
+        "password": ""
     }
 }
