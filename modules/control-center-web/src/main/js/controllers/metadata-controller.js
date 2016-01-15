@@ -522,33 +522,33 @@ consoleModule.controller('metadataController', function ($filter, $http, $timeou
 
             var preset = $scope.importMeta.demo ? $scope.demoConnection : $scope.selectedPreset;
 
-            if (!$scope.importMeta.demo) {
+            if (!$scope.importMeta.demo)
                 _savePreset(preset);
-                $http.post('/api/v1/agent/schemas', preset)
-                    .success(function (schemas) {
-                        $scope.importMeta.schemas = _.map(schemas, function (schema) {
-                            return {use: false, name: schema};
+
+            $http.post('/api/v1/agent/schemas', preset)
+                .success(function (schemas) {
+                    $scope.importMeta.schemas = _.map(schemas, function (schema) {
+                        return {use: false, name: schema};
+                    });
+
+                    $scope.importMeta.action = 'schemas';
+
+                    if ($scope.importMeta.schemas.length === 0)
+                        $scope.importMetadataNext();
+                    else
+                        _.forEach($scope.importMeta.schemas, function (sch) {
+                            sch.use = true;
                         });
 
-                        $scope.importMeta.action = 'schemas';
-
-                        if ($scope.importMeta.schemas.length === 0)
-                            $scope.importMetadataNext();
-                        else
-                            _.forEach($scope.importMeta.schemas, function (sch) {
-                                sch.use = true;
-                            });
-
-                        $scope.importMeta.info = INFO_SELECT_SCHEMAS;
-                        $scope.importMeta.loadingOptions = LOADING_TABLES;
-                    })
-                    .error(function (errMsg) {
-                        $common.showError(errMsg);
-                    })
-                    .finally(function () {
-                        $loading.finish('loadingMetadataFromDb');
-                    });
-            }
+                    $scope.importMeta.info = INFO_SELECT_SCHEMAS;
+                    $scope.importMeta.loadingOptions = LOADING_TABLES;
+                })
+                .error(function (errMsg) {
+                    $common.showError(errMsg);
+                })
+                .finally(function () {
+                    $loading.finish('loadingMetadataFromDb');
+                });
         }
 
         /**
