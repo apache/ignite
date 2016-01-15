@@ -91,6 +91,9 @@ public class RestExecutor {
         String mtd, Map<String, String> headers, String body) throws IOException, URISyntaxException {
         log.debug("Start execute REST command [method=" + mtd + ", uri=/" + uri + ", parameters=" + params + "]");
 
+        if (demo)
+            AgentSqlDemo.testDrive(cfg);
+
         URIBuilder builder = new URIBuilder(demo ? cfg.demoNodeUri() : cfg.nodeUri());
 
         if (builder.getPort() == -1)
@@ -163,14 +166,6 @@ public class RestExecutor {
 
             return new RestResult(404, "Failed connect to node and execute REST command.");
         }
-    }
-
-    /**
-     * Enable test-drive SQL.
-     */
-    @Remote
-    public boolean startDemoSQL() {
-        return AgentSqlDemo.testDrive(cfg);
     }
 
     /**

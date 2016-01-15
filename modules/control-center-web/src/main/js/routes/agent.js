@@ -268,23 +268,6 @@ router.post('/ping', function (req, res) {
         res.sendStatus(200);
 });
 
-/* Enable test-drive for sql. */
-router.post('/demo/sql/start', function (req, res) {
-    var client = _client(req, res);
-
-    if (client) {
-        client.startDemoSQL(function (err, enabled) {
-            if (err)
-                return res.status(500).send(err.message);
-
-            if (!enabled)
-                return res.status(500).send('Failed to start SQL demo');
-
-            res.sendStatus(200);
-        });
-    }
-});
-
 /* Get JDBC drivers list. */
 router.post('/drivers', function (req, res) {
     var client = _client(req, res);

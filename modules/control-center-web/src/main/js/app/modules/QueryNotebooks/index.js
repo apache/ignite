@@ -29,17 +29,11 @@ angular
                     name: 'Simple query',
                     cacheName: 'CarCache',
                     pageSize: 50,
-                    query: 'SELECT * FROM Car',
+                    query: 'SELECT * FROM "CarCache".Car',
                     result: 'table',
-                    queryArgs: {
-                        type: 'QUERY',
-                        query: 'SELECT * FROM Car',
-                        pageSize: 50,
-                        cacheName: 'CarCache'
-                    },
                     rate: {
-                        value: 1,
-                        unit: 60000,
+                        value: 30,
+                        unit: 1000,
                         installed: false
                     }
                 },
@@ -47,17 +41,11 @@ angular
                     name: 'Query with aggregates',
                     cacheName: 'CarCache',
                     pageSize: 50,
-                    query: 'SELECT * FROM Car',
+                    query: 'SELECT p.name, count(*) AS cnt\nFROM "ParkingCache".Parking p\nINNER JOIN "CarCache".Car c\nON (p.id) = (c.parkingId)\nGROUP BY P.NAME',
                     result: 'table',
-                    queryArgs: {
-                        type: 'QUERY',
-                        query: 'SELECT * FROM Car',
-                        pageSize: 50,
-                        cacheName: 'CarCache'
-                    },
                     rate: {
-                        value: 1,
-                        unit: 60000,
+                        value: 30,
+                        unit: 1000,
                         installed: false
                     }
                 },
@@ -65,18 +53,12 @@ angular
                     name: 'Query with refresh rate',
                     cacheName: 'CarCache',
                     pageSize: 50,
-                    query: 'SELECT * FROM Car',
+                    query: 'SELECT * FROM "CarCache".Car',
                     result: 'table',
-                    queryArgs: {
-                        type: 'QUERY',
-                        query: 'SELECT * FROM Car',
-                        pageSize: 50,
-                        cacheName: 'CarCache'
-                    },
                     rate: {
-                        value: 1,
-                        unit: 60000,
-                        installed: false
+                        value: 5,
+                        unit: 1000,
+                        installed: true
                     }
                 }
             ],
@@ -86,12 +68,8 @@ angular
         this.$get = ['$q', '$http', ($q, $http) => {
             return {
                 read(demo, noteId) {
-                    if (demo) {
-                        return $http.post('/api/v1/agent/demo/sql/start')
-                            .then(() => {
-                                return angular.copy(_demoNotebook);
-                            });
-                    }
+                    if (demo)
+                        return $q.when(angular.copy(_demoNotebook));
 
                     return $http.post('/api/v1/notebooks/get', {noteId})
                         .then(({data}) => {

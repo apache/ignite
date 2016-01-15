@@ -322,14 +322,14 @@ public class AgentSqlDemo {
 
         IgniteCache<Integer, Country> cacheCountry = ignite.cache(COUNTRY_CACHE_NAME);
 
-        for (int i = 0, n = i + 1; i < CNTR_CNT; i++)
+        for (int i = 0, n = 1; i < CNTR_CNT; i++, n++)
             cacheCountry.put(i, new Country(i, "Country #" + n, n * 10000000));
 
         IgniteCache<Integer, Department> cacheDepartment = ignite.cache(DEPARTMENT_CACHE_NAME);
 
         IgniteCache<Integer, Employee> cacheEmployee = ignite.cache(EMPLOYEE_CACHE_NAME);
 
-        for (int i = 0, n = i + 1; i < DEP_CNT; i++) {
+        for (int i = 0, n = 1; i < DEP_CNT; i++, n++) {
             cacheDepartment.put(i, new Department(n, rnd.nextInt(CNTR_CNT), "Department #" + n));
 
             double r = rnd.nextDouble();
@@ -339,7 +339,7 @@ public class AgentSqlDemo {
                 new java.sql.Date((long)(r * range)), "Job manager #" + n, 1000 + round(r * 4000, 2)));
         }
 
-        for (int i = 0, n = i + 1; i < EMPL_CNT; i++) {
+        for (int i = 0, n = 1; i < EMPL_CNT; i++, n++) {
             Integer depId = rnd.nextInt(DEP_CNT);
 
             double r = rnd.nextDouble();
@@ -360,12 +360,12 @@ public class AgentSqlDemo {
 
         IgniteCache<Integer, Parking> cacheParking = ignite.cache(PARKING_CACHE_NAME);
 
-        for (int i = 0, n = i + 1; i < PARK_CNT; i++)
+        for (int i = 0, n = 1; i < PARK_CNT; i++, n++)
             cacheParking.put(i, new Parking(i, "Parking #" + n, n * 10));
 
         IgniteCache<Integer, Car> cacheCar = ignite.cache(CAR_CACHE_NAME);
 
-        for (int i = 0, n = i + 1; i < CAR_CNT; i++)
+        for (int i = 0, n = 1; i < CAR_CNT; i++, n++)
             cacheCar.put(i, new Car(i, rnd.nextInt(PARK_CNT), "Car #" + n));
 
         log.trace("DEMO: Finished cars population.");
@@ -419,7 +419,7 @@ public class AgentSqlDemo {
                     IgniteCache<Integer, Employee> cacheEmployee = ignite.cache(EMPLOYEE_CACHE_NAME);
 
                     if (cacheEmployee != null)
-                        for (int i = 0, n = i + 1; i < cnt; i++) {
+                        for (int i = 0, n = 1; i < cnt; i++, n++) {
                             Integer id = rnd.nextInt(EMPL_CNT);
 
                             Integer depId = rnd.nextInt(DEP_CNT);

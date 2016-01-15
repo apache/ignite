@@ -282,17 +282,7 @@ consoleModule.controller('sqlController', function ($http, $timeout, $interval, 
         .then(loadNotebook)
         .catch(function(err) {
             $scope.notebook = undefined;
-        })
-        .finally(function() {
-            $scope.loaded = true;
-
-            $loading.finish('loading');
         });
-
-    var _saveNotebook = function (cb) {
-        QueryNotebooks.save(_demo, $scope.notebook)
-            .catch(_handleException);
-    };
 
     $scope.renameNotebook = function (name) {
         if (!name)
@@ -462,6 +452,10 @@ consoleModule.controller('sqlController', function ($http, $timeout, $interval, 
         }), 'name');
 
         _setActiveCache();
+
+        $scope.loaded = true;
+
+        $loading.finish('loading');
     }
 
     var _columnFilter = function(paragraph) {
