@@ -1007,6 +1007,28 @@ button.form-control {
     text-align: center;
 }
 
+.content-not-available {
+    min-height: 28px;
+
+    margin-right: 20px;
+
+    border-radius: 5px;
+    border: thin dotted $ignite-border-color;
+
+    padding: 0;
+
+    color: $input-color-placeholder;
+    display: table;
+    width: 100%;
+    height: 26px;
+
+    label {
+        display: table-cell;
+        text-align: center;
+        vertical-align: middle;
+    }
+}
+
 .tooltip > .tooltip-inner {
     text-align: left;
     border: solid 1px #ccc;

@@ -71,8 +71,8 @@
       "fields": [
         {
           "label": "Not available for annotated types",
-          "type": "label",
-          "hide": "backupItem.metadata === 'Configuration'"
+          "type": "not-available",
+          "hide": "backupItem.metadata !== 'Annotations'"
         },
         {
           "label": "Fields",
@@ -134,8 +134,8 @@
       "fields": [
         {
           "label": "Not available for annotated types",
-          "type": "label",
-          "hide": "backupItem.metadata === 'Configuration'"
+          "type": "not-available",
+          "hide": "backupItem.metadata !== 'Annotations'"
         },
         {
           "label": "Database schema",

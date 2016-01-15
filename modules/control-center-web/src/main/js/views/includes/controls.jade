@@ -335,8 +335,10 @@ mixin form-row-custom(lblClasses, fieldClasses, dataSource)
     - var dropdownMultiPlaceholder = {'ng-class': '{placeholder: !(' + fieldMdl + ' && ' + fieldMdl + '.length > 0)}'}
 
     div(ng-switch='field.type')
-        div(ng-switch-when='label')
+        div(ng-switch-when='label' ng-hide=fieldHide)
             label {{::field.label}}
+        div.content-not-available(ng-switch-when='not-available' ng-hide=fieldHide)
+            label {{ field.label }}
         div.checkbox(ng-switch-when='check' ng-hide=fieldHide)
             label(id='{{::field.id}}')
                 input(type='checkbox')&attributes(fieldCommon)&attributes(fieldDisabled)
