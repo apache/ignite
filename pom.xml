@@ -80,6 +80,7 @@
         <module>modules/mqtt</module>
         <module>modules/zookeeper</module>
         <module>modules/camel</module>
+        <module>modules/storm</module>
         <module>modules/osgi-paxlogging</module>
         <module>modules/osgi-karaf</module>
         <module>modules/osgi</module>
