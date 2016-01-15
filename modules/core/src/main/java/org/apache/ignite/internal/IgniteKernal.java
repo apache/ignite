@@ -793,8 +793,6 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
 
             startProcessor(clusterProc);
 
-            fillNodeAttributes(clusterProc.updateNotifierEnabled());
-
             U.onGridStart();
 
             // Start and configure resource processor first as it contains resources used
@@ -895,6 +893,8 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
 
                 provider.start(ctx.plugins().pluginContextForProvider(provider));
             }
+
+            fillNodeAttributes(clusterProc.updateNotifierEnabled());
 
             gw.writeLock();
 
