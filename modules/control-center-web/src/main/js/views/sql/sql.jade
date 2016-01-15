@@ -100,7 +100,7 @@ mixin chart-settings(mdl)
                                         .input-tip
                                             input.form-control(id='paragraph-name-{{paragraph.id}}' ng-model='paragraph.editName' required ng-click='$event.stopPropagation();' on-enter='renameParagraph(paragraph, paragraph.editName)' on-escape='paragraph.edit = false')
                             .panel-collapse(role='tabpanel' bs-collapse-target)
-                                .col-sm-12(ng-show='paragraph.editor')
+                                .col-sm-12
                                     .col-xs-8.col-sm-9(style='border-right: 1px solid #eee')
                                         .sql-editor(ui-ace='{onLoad: aceInit(paragraph), theme: "chrome", mode: "sql", require: ["ace/ext/language_tools"],' +
                                         'advanced: {enableSnippets: false, enableBasicAutocompletion: true, enableLiveAutocompletion: true}}'
@@ -182,6 +182,6 @@ mixin chart-settings(mdl)
                                         -var nextVisibleCondition = 'paragraph.queryId && (paragraph.table() || paragraph.chart() && paragraph.queryExecute() && (paragraph.timeLineSupported() || !paragraph.chartTimeLineEnabled()))'
 
                                         hr(style='margin-top: 0; margin-bottom: 5px')
-                                        a(ng-show='paragraph.queryArgs.type' style='float: left; margin-left: 5px; margin-bottom: 5px' ng-click='showResultQuery(paragraph)') Show query
-                                        i.fa.fa-chevron-circle-right(ng-show=nextVisibleCondition style='float: right;margin-right: 10px;' ng-click='nextPage(paragraph)')
+                                        a(ng-show='paragraph.queryArgs.type' style='float: left; margin-left: 10px; margin-bottom: 5px' ng-click='showResultQuery(paragraph)') Show query
+                                        i.fa.fa-chevron-circle-right(ng-show=nextVisibleCondition style='float: right;margin-right: 10px; margin-top: 3px' ng-click='nextPage(paragraph)')
                                         a(ng-show=nextVisibleCondition style='float: right; margin-bottom: 5px;margin-right: 5px;' ng-click='nextPage(paragraph)') Next
