@@ -44,12 +44,6 @@ consoleModule.controller('cachesController', [
                         return $table.tableSimpleSave($scope.tableSimpleValid, $scope.backupItem, field, index, stopEdit);
 
                     break;
-
-                case 'indexedTypes':
-                    if ($table.tablePairSaveVisible(field, index))
-                        return $table.tablePairSave($scope.tablePairValid, $scope.backupItem, field, index, stopEdit);
-
-                    break;
             }
 
             return true;
