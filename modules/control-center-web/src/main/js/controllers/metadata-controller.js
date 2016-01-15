@@ -184,12 +184,12 @@ consoleModule.controller('metadataController', function ($filter, $http, $timeou
 
         var INFO_CONNECT_TO_DB = 'Configure connection to database';
         var INFO_SELECT_SCHEMAS = 'Select schemas to load tables from';
-        var INFO_SELECT_TABLES = 'Select tables to load as cache type metadata';
-        var INFO_SELECT_OPTIONS = 'Select load metadata options';
+        var INFO_SELECT_TABLES = 'Select tables to import as cache type metadata';
+        var INFO_SELECT_OPTIONS = 'Select import metadata options';
         var LOADING_JDBC_DRIVERS = {text: 'Loading JDBC drivers...'};
         var LOADING_SCHEMAS = {text: 'Loading schemas...'};
         var LOADING_TABLES = {text: 'Loading tables...'};
-        var LOADING_METADATA = {text: 'Loading metadata...'};
+        var SAVING_METADATA = {text: 'Saving metadata...'};
 
         var previews = [];
 
@@ -308,7 +308,7 @@ consoleModule.controller('metadataController', function ($filter, $http, $timeou
         }
 
         $scope.$watch('ui.selectedJdbcDriverJar', function (val) {
-            if (val && !$scope.loadMeta.demo) {
+            if (val && !$scope.importMeta.demo) {
                 var foundPreset = _findPreset(val);
 
                 var selectedPreset = $scope.selectedPreset;
@@ -364,61 +364,61 @@ consoleModule.controller('metadataController', function ($filter, $http, $timeou
         };
 
         $scope.selectAllSchemas = function () {
-            var allSelected = $scope.loadMeta.allSchemasSelected;
+            var allSelected = $scope.importMeta.allSchemasSelected;
 
-            _.forEach($scope.loadMeta.displayedSchemas, function (schema) {
+            _.forEach($scope.importMeta.displayedSchemas, function (schema) {
                 schema.use = allSelected;
             });
         };
 
         $scope.selectSchema = function () {
-            if ($common.isDefined($scope.loadMeta) && $common.isDefined($scope.loadMeta.displayedSchemas))
-                $scope.loadMeta.allSchemasSelected = $scope.loadMeta.displayedSchemas.length > 0 &&
-                    _.every($scope.loadMeta.displayedSchemas, 'use', true);
+            if ($common.isDefined($scope.importMeta) && $common.isDefined($scope.importMeta.displayedSchemas))
+                $scope.importMeta.allSchemasSelected = $scope.importMeta.displayedSchemas.length > 0 &&
+                    _.every($scope.importMeta.displayedSchemas, 'use', true);
         };
 
         $scope.selectAllTables = function () {
-            var allSelected = $scope.loadMeta.allTablesSelected;
+            var allSelected = $scope.importMeta.allTablesSelected;
 
-            _.forEach($scope.loadMeta.displayedTables, function (table) {
+            _.forEach($scope.importMeta.displayedTables, function (table) {
                 table.use = allSelected;
             });
         };
 
         $scope.selectTable = function () {
-            if ($common.isDefined($scope.loadMeta) && $common.isDefined($scope.loadMeta.displayedTables))
-                $scope.loadMeta.allTablesSelected = $scope.loadMeta.displayedTables.length > 0 &&
-                    _.every($scope.loadMeta.displayedTables, 'use', true);
+            if ($common.isDefined($scope.importMeta) && $common.isDefined($scope.importMeta.displayedTables))
+                $scope.importMeta.allTablesSelected = $scope.importMeta.displayedTables.length > 0 &&
+                    _.every($scope.importMeta.displayedTables, 'use', true);
         };
 
-        $scope.$watch('loadMeta.displayedSchemas', $scope.selectSchema);
+        $scope.$watch('importMeta.displayedSchemas', $scope.selectSchema);
 
-        $scope.$watch('loadMeta.displayedTables', $scope.selectTable);
+        $scope.$watch('importMeta.displayedTables', $scope.selectTable);
 
         // Pre-fetch modal dialogs.
-        var loadMetaModal = $modal({scope: $scope, templateUrl: '/configuration/metadata-load.html', show: false});
+        var importMetaModal = $modal({scope: $scope, templateUrl: '/configuration/metadata-import.html', show: false});
 
-        var hideLoadMetadata = loadMetaModal.hide;
+        var hideImportMetadata = importMetaModal.hide;
 
-        loadMetaModal.hide = function () {
+        importMetaModal.hide = function () {
             $agentDownload.stopAwaitAgent();
 
-            hideLoadMetadata();
+            hideImportMetadata();
         };
 
         /**
-         * Show load metadata modal.
+         * Show import metadata modal.
          *
-         * @param demo If 'true' then load metadata from demo database.
+         * @param demo If 'true' then import metadata from demo database.
          */
-        $scope.showLoadMetadataModal = function (demo) {
+        $scope.showImportMetadataModal = function (demo) {
             $table.tableReset();
 
             $common.confirmUnsavedChanges($scope.ui.isDirty(), function () {
                 if ($scope.ui.isDirty())
                     $scope.backupItem = $scope.selectedItem ? angular.copy($scope.selectedItem) : prepareNewItem();
 
-                $scope.loadMeta = {
+                $scope.importMeta = {
                     demo: demo,
                     action: 'drivers',
                     schemas: [],
@@ -429,13 +429,13 @@ consoleModule.controller('metadataController', function ($filter, $http, $timeou
                     info: ''
                 };
 
-                $scope.loadMeta.loadingOptions = LOADING_JDBC_DRIVERS;
+                $scope.importMeta.loadingOptions = LOADING_JDBC_DRIVERS;
 
                 $agentDownload.awaitAgent(function (result, onSuccess, onException) {
-                    loadMetaModal.$promise.then(loadMetaModal.show);
+                    importMetaModal.$promise.then(importMetaModal.show);
 
                     // Get available JDBC drivers via agent.
-                    if ($scope.loadMeta.action === 'drivers') {
+                    if ($scope.importMeta.action === 'drivers') {
                         $loading.start('loadingMetadataFromDb');
 
                         $scope.jdbcDriverJars = [];
@@ -445,7 +445,7 @@ consoleModule.controller('metadataController', function ($filter, $http, $timeou
                             .success(function (drivers) {
                                 onSuccess();
 
-                                if ($scope.loadMeta.demo) {
+                                if ($scope.importMeta.demo) {
                                     $scope.ui.packageNamePrev = $scope.ui.packageName;
                                     $scope.ui.packageName = 'org.apache.ignite.console.demo.model';
                                 }
@@ -457,7 +457,7 @@ consoleModule.controller('metadataController', function ($filter, $http, $timeou
                                 if (drivers && drivers.length > 0) {
                                     drivers = _.sortBy(drivers, 'jdbcDriverJar');
 
-                                    if ($scope.loadMeta.demo) {
+                                    if ($scope.importMeta.demo) {
                                         var _h2DrvJar = _.find(drivers, function (drv) {
                                             return drv.jdbcDriverJar.startsWith('h2');
                                         });
@@ -468,7 +468,7 @@ consoleModule.controller('metadataController', function ($filter, $http, $timeou
                                         }
                                         else {
                                             $scope.demoConnection.db = 'unknown';
-                                            $scope.loadMeta.button = 'Cancel';
+                                            $scope.importMeta.button = 'Cancel';
                                         }
                                     }
                                     else {
@@ -486,10 +486,10 @@ consoleModule.controller('metadataController', function ($filter, $http, $timeou
                                     }
 
                                     $common.confirmUnsavedChanges($scope.ui.isDirty(), function () {
-                                        loadMetaModal.$promise.then(function () {
-                                            $scope.loadMeta.action = 'connect';
-                                            $scope.loadMeta.tables = [];
-                                            $scope.loadMeta.loadingOptions = LOADING_SCHEMAS;
+                                        importMetaModal.$promise.then(function () {
+                                            $scope.importMeta.action = 'connect';
+                                            $scope.importMeta.tables = [];
+                                            $scope.importMeta.loadingOptions = LOADING_SCHEMAS;
 
                                             $focus('jdbcUrl');
                                         });
@@ -498,14 +498,14 @@ consoleModule.controller('metadataController', function ($filter, $http, $timeou
                                 else {
                                     $common.showError('JDBC drivers not found!');
 
-                                    loadMetaModal.hide();
+                                    importMetaModal.hide();
                                 }
                             })
                             .error(function (errMsg, status) {
                                 onException(errMsg, status);
                             })
                             .finally(function () {
-                                $scope.loadMeta.info = INFO_CONNECT_TO_DB;
+                                $scope.importMeta.info = INFO_CONNECT_TO_DB;
 
                                 $loading.finish('loadingMetadataFromDb');
                             });
@@ -520,35 +520,35 @@ consoleModule.controller('metadataController', function ($filter, $http, $timeou
         function _loadSchemas() {
             $loading.start('loadingMetadataFromDb');
 
-            var preset = $scope.loadMeta.demo ? $scope.demoConnection : $scope.selectedPreset;
+            var preset = $scope.importMeta.demo ? $scope.demoConnection : $scope.selectedPreset;
 
-            if (!$scope.loadMeta.demo)
+            if (!$scope.importMeta.demo) {
                 _savePreset(preset);
-
-            $http.post('/api/v1/agent/schemas', preset)
-                .success(function (schemas) {
-                    $scope.loadMeta.schemas = _.map(schemas, function (schema) {
-                        return {use: false, name: schema};
-                    });
-
-                    $scope.loadMeta.action = 'schemas';
-
-                    if ($scope.loadMeta.schemas.length === 0)
-                        $scope.loadMetadataNext();
-                    else
-                        _.forEach($scope.loadMeta.schemas, function (sch) {
-                            sch.use = true;
+                $http.post('/api/v1/agent/schemas', preset)
+                    .success(function (schemas) {
+                        $scope.importMeta.schemas = _.map(schemas, function (schema) {
+                            return {use: false, name: schema};
                         });
 
-                    $scope.loadMeta.info = INFO_SELECT_SCHEMAS;
-                    $scope.loadMeta.loadingOptions = LOADING_TABLES;
-                })
-                .error(function (errMsg) {
-                    $common.showError(errMsg);
-                })
-                .finally(function() {
-                    $loading.finish('loadingMetadataFromDb');
-                });
+                        $scope.importMeta.action = 'schemas';
+
+                        if ($scope.importMeta.schemas.length === 0)
+                            $scope.importMetadataNext();
+                        else
+                            _.forEach($scope.importMeta.schemas, function (sch) {
+                                sch.use = true;
+                            });
+
+                        $scope.importMeta.info = INFO_SELECT_SCHEMAS;
+                        $scope.importMeta.loadingOptions = LOADING_TABLES;
+                    })
+                    .error(function (errMsg) {
+                        $common.showError(errMsg);
+                    })
+                    .finally(function () {
+                        $loading.finish('loadingMetadataFromDb');
+                    });
+            }
         }
 
         /**
@@ -557,18 +557,18 @@ consoleModule.controller('metadataController', function ($filter, $http, $timeou
         function _loadTables() {
             $loading.start('loadingMetadataFromDb');
 
-            $scope.loadMeta.allTablesSelected = false;
+            $scope.importMeta.allTablesSelected = false;
 
-            var preset = $scope.loadMeta.demo ? $scope.demoConnection : $scope.selectedPreset;
+            var preset = $scope.importMeta.demo ? $scope.demoConnection : $scope.selectedPreset;
 
             preset.schemas = [];
 
-            _.forEach($scope.loadMeta.schemas, function (schema) {
+            _.forEach($scope.importMeta.schemas, function (schema) {
                 if (schema.use)
                     preset.schemas.push(schema.name);
             });
 
-            $http.post('/api/v1/agent/metadata', preset)
+            $http.post('/api/v1/agent/tables', preset)
                 .success(function (tables) {
                     tables.forEach(function (tbl) {
                         Object.defineProperty(tbl, 'label', {
@@ -582,10 +582,9 @@ consoleModule.controller('metadataController', function ($filter, $http, $timeou
                         }));
                     });
 
-                    $scope.loadMeta.action = 'tables';
-                    $scope.loadMeta.tables = tables;
-                    $scope.loadMeta.info = INFO_SELECT_TABLES;
-                    $scope.loadMeta.loadingOptions = LOADING_METADATA;
+                    $scope.importMeta.action = 'tables';
+                    $scope.importMeta.tables = tables;
+                    $scope.importMeta.info = INFO_SELECT_TABLES;
                 })
                 .error(function (errMsg) {
                     $common.showError(errMsg);
@@ -596,12 +595,13 @@ consoleModule.controller('metadataController', function ($filter, $http, $timeou
         }
 
         /**
-         * Show page with load metadata options.
+         * Show page with import metadata options.
          */
         function _selectOptions() {
-            $scope.loadMeta.action = 'options';
-            $scope.loadMeta.button = 'Save';
-            $scope.loadMeta.info = INFO_SELECT_OPTIONS;
+            $scope.importMeta.action = 'options';
+            $scope.importMeta.button = 'Save';
+            $scope.importMeta.info = INFO_SELECT_OPTIONS;
+            $scope.importMeta.loadingOptions = SAVING_METADATA;
         }
 
         function toJavaClassName(name) {
@@ -669,7 +669,7 @@ consoleModule.controller('metadataController', function ($filter, $http, $timeou
 
                         $scope.selectItem(lastItem);
 
-                        $common.showInfo('Cache type metadata loaded from database.');
+                        $common.showInfo('Cache type metadata imported from database.');
 
                         $scope.panels.activePanels = [0, 1, 2];
 
@@ -681,11 +681,11 @@ consoleModule.controller('metadataController', function ($filter, $http, $timeou
                     .finally(function() {
                         $loading.finish('loadingMetadataFromDb');
 
-                        loadMetaModal.hide();
+                        importMetaModal.hide();
                     });
             }
             else
-                loadMetaModal.hide();
+                importMetaModal.hide();
         }
 
         function _saveMetadata() {
@@ -717,7 +717,7 @@ consoleModule.controller('metadataController', function ($filter, $http, $timeou
                 };
             }
 
-            _.forEach($scope.loadMeta.tables, function (table) {
+            _.forEach($scope.importMeta.tables, function (table) {
                 if (table.use) {
                     var qryFields = [];
                     var indexes = [];
@@ -797,7 +797,7 @@ consoleModule.controller('metadataController', function ($filter, $http, $timeou
                     meta.indexes = indexes;
                     meta.keyFields = keyFields;
                     meta.valueFields = valFields;
-                    meta.demo = $scope.loadMeta.demo;
+                    meta.demo = $scope.importMeta.demo;
 
                     // Use Java built-in type for key.
                     if ($scope.ui.builtinKeys && meta.keyFields.length === 1)
@@ -808,7 +808,7 @@ consoleModule.controller('metadataController', function ($filter, $http, $timeou
                         meta.newCache = {
                             name: typeName + 'Cache',
                             clusters: $scope.ui.generatedCachesClusters,
-                            demo: $scope.loadMeta.demo
+                            demo: $scope.importMeta.demo
                         };
 
                     batch.push(meta);
@@ -839,7 +839,7 @@ consoleModule.controller('metadataController', function ($filter, $http, $timeou
                                 return !item.skip;
                             }));
                         }, function () {
-                            $common.showError('Cache type metadata loading interrupted by user.');
+                            $common.showError('Cache type metadata importing interrupted by user.');
                         });
                 else
                     _saveBatch(batch);
@@ -849,68 +849,68 @@ consoleModule.controller('metadataController', function ($filter, $http, $timeou
                 checkOverwrite();
             else
                 $confirm.confirm('Some tables have no primary key.<br/>' +
-                    'You will need to configure key type and key fields for such tables after load complete.')
+                    'You will need to configure key type and key fields for such tables after import complete.')
                     .then(function () { checkOverwrite(); });
         }
 
-        $scope.loadMetadataNext = function () {
-            if (!$scope.nextAvailable())
+        $scope.importMetadataNext = function () {
+            if (!$scope.importMetadataNextAvailable())
                 return;
 
-            if ($scope.loadMeta.action === 'connect') {
-               if ($scope.loadMeta.demo && $scope.demoConnection.db !== 'H2')
-                   loadMetaModal.hide();
+            if ($scope.importMeta.action === 'connect') {
+               if ($scope.importMeta.demo && $scope.demoConnection.db !== 'H2')
+                   importMetaModal.hide();
                else
                    _loadSchemas();
             }
-            else if ($scope.loadMeta.action === 'schemas')
+            else if ($scope.importMeta.action === 'schemas')
                 _loadTables();
-            else if ($scope.loadMeta.action === 'tables')
+            else if ($scope.importMeta.action === 'tables')
                 _selectOptions();
-            else if ($scope.loadMeta.action === 'options')
+            else if ($scope.importMeta.action === 'options')
                 _saveMetadata();
         };
 
         $scope.nextTooltipText = function () {
-            var nextAvailable = $scope.nextAvailable();
+            var importMetadataNextAvailable = $scope.importMetadataNextAvailable();
 
-            if ($scope.loadMeta.action === 'connect') {
-                if ($scope.loadMeta.demo && $scope.demoConnection.db !== 'H2')
+            if ($scope.importMeta.action === 'connect') {
+                if ($scope.importMeta.demo && $scope.demoConnection.db !== 'H2')
                     return 'Resolve issue with H2 database driver<br>Close this dialog and try again';
 
-                if (nextAvailable)
+                if (importMetadataNextAvailable)
                     return 'Click to load list of schemas from database';
             }
 
-            if ($scope.loadMeta.action === 'schemas')
-                return nextAvailable ? 'Click to load list of tables from database' : 'Select schemas to continue';
+            if ($scope.importMeta.action === 'schemas')
+                return importMetadataNextAvailable ? 'Click to load list of tables from database' : 'Select schemas to continue';
 
-            if ($scope.loadMeta.action === 'tables')
-                return nextAvailable ? 'Click to show load options' : 'Select tables to continue';
+            if ($scope.importMeta.action === 'tables')
+                return importMetadataNextAvailable ? 'Click to show import options' : 'Select tables to continue';
 
-            if ($scope.loadMeta.action === 'options')
-                return 'Click to save loaded metadata';
+            if ($scope.importMeta.action === 'options')
+                return 'Click to import metadata for selected tables';
 
             return 'Click to continue';
         };
 
         $scope.prevTooltipText = function () {
-            if ($scope.loadMeta.action === 'schemas')
-                return $scope.loadMeta.demo ? 'Click to return on demo description step' : 'Click to return on connection configuration step';
+            if ($scope.importMeta.action === 'schemas')
+                return $scope.importMeta.demo ? 'Click to return on demo description step' : 'Click to return on connection configuration step';
 
-            if ($scope.loadMeta.action === 'tables')
+            if ($scope.importMeta.action === 'tables')
                 return 'Click to return on schemas selection step';
 
-            if ($scope.loadMeta.action === 'options')
+            if ($scope.importMeta.action === 'options')
                 return 'Click to return on tables selection step';
         };
 
-        $scope.nextAvailable = function () {
+        $scope.importMetadataNextAvailable = function () {
             var res = true;
 
-            switch ($scope.loadMeta.action) {
+            switch ($scope.importMeta.action) {
                 case 'schemas':
-                    res = $common.isEmptyArray($scope.loadMeta.schemas) || $('#metadataSchemaData').find(':checked').length > 0;
+                    res = $common.isEmptyArray($scope.importMeta.schemas) || $('#metadataSchemaData').find(':checked').length > 0;
 
                     break;
 
@@ -923,22 +923,22 @@ consoleModule.controller('metadataController', function ($filter, $http, $timeou
             return res;
         };
 
-        $scope.loadMetadataPrev = function () {
-            $scope.loadMeta.button = 'Next';
+        $scope.importMetadataPrev = function () {
+            $scope.importMeta.button = 'Next';
 
-            if  ($scope.loadMeta.action === 'options') {
-                $scope.loadMeta.action = 'tables';
-                $scope.loadMeta.info = INFO_SELECT_TABLES;
+            if  ($scope.importMeta.action === 'options') {
+                $scope.importMeta.action = 'tables';
+                $scope.importMeta.info = INFO_SELECT_TABLES;
             }
-            else if  ($scope.loadMeta.action === 'tables' && $scope.loadMeta.schemas.length > 0) {
-                $scope.loadMeta.action = 'schemas';
-                $scope.loadMeta.info = INFO_SELECT_SCHEMAS;
-                $scope.loadMeta.loadingOptions = LOADING_TABLES;
+            else if  ($scope.importMeta.action === 'tables' && $scope.importMeta.schemas.length > 0) {
+                $scope.importMeta.action = 'schemas';
+                $scope.importMeta.info = INFO_SELECT_SCHEMAS;
+                $scope.importMeta.loadingOptions = LOADING_TABLES;
             }
             else {
-                $scope.loadMeta.action = 'connect';
-                $scope.loadMeta.info = INFO_CONNECT_TO_DB;
-                $scope.loadMeta.loadingOptions = LOADING_SCHEMAS;
+                $scope.importMeta.action = 'connect';
+                $scope.importMeta.info = INFO_CONNECT_TO_DB;
+                $scope.importMeta.loadingOptions = LOADING_SCHEMAS;
             }
         };
 
@@ -1186,6 +1186,7 @@ consoleModule.controller('metadataController', function ($filter, $http, $timeou
                         var item = angular.copy($scope.backupItem);
 
                         delete item._id;
+                        delete item.demo;
                         item.valueType = newName;
 
                         save(item);

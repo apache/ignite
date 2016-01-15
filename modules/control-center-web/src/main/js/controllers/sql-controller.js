@@ -1458,7 +1458,7 @@ consoleModule.controller('sqlController', function ($http, $timeout, $interval, 
         }, 1);
     };
 
-    $scope.loadMetadata = function () {
+    $scope.importMetadata = function () {
         $loading.start('loadingCacheMetadata');
 
         $scope.metadata = [];

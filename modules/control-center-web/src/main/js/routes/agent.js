@@ -312,8 +312,8 @@ router.post('/schemas', function (req, res) {
     }
 });
 
-/** Get database metadata. */
-router.post('/metadata', function (req, res) {
+/** Get database tables. */
+router.post('/tables', function (req, res) {
     var client = _client(req, res);
 
     if (client) {

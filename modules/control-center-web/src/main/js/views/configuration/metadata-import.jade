@@ -21,12 +21,13 @@ mixin chk(mdl, change, tip)
 
 .modal.center(role='dialog')
     .modal-dialog
-        .modal-content(dw-loading='loadingMetadataFromDb' dw-loading-options='loadMeta.loadingOptions')
+        .modal-content(dw-loading='loadingMetadataFromDb' dw-loading-options='importMeta.loadingOptions')
             #errors-container.modal-header.header
                 button.close(ng-click='$hide()' aria-hidden='true') &times;
-                h4.modal-title Load metadata from database
-            .metadata-content(ng-show='loadMeta.action == "drivers"' style="margin-bottom: 256px;")
-            .metadata-content(ng-show='loadMeta.action == "connect" && loadMeta.demo' style='margin-bottom: 141px')
+                h4.modal-title(ng-if='!importMeta.demo') Import metadata from database
+                h4.modal-title(ng-if='importMeta.demo') Import metadata from demo database
+            .metadata-content(ng-show='importMeta.action == "drivers"' style="margin-bottom: 256px;")
+            .metadata-content(ng-show='importMeta.action == "connect" && importMeta.demo' style='margin-bottom: 141px')
                 div(ng-if='demoConnection.db == "H2"')
                     label Demo description:
                     ul
@@ -40,7 +41,7 @@ mixin chk(mdl, change, tip)
                             li Agent failed to resolve H2 database jar
                             li Copy h2-x.x.x.jar into agent '\jdbc-drivers' folder and try again
                             li Refer to agent README.txt for more information
-            .metadata-content(ng-show='loadMeta.action == "connect" && !loadMeta.demo')
+            .metadata-content(ng-show='importMeta.action == "connect" && !importMeta.demo')
                 form.form-horizontal(name='connectForm' novalidate)
                     .settings-row
                         label.col-xs-4.col-sm-2.col-md-2 Driver JAR:
@@ -71,46 +72,46 @@ mixin chk(mdl, change, tip)
                         .col-xs-8.col-sm-10.col-md-10
                             i.tipField.fa.fa-question-circle(bs-tooltip='' data-title='Password for connecting to database<br>Note, password would not be saved in preferences for security reasons')
                             .input-tip
-                                input.form-control(id='password' type='password' ng-model='selectedPreset.password' on-enter='loadMetadataNext()')
+                                input.form-control(id='password' type='password' ng-model='selectedPreset.password' on-enter='importMetadataNext()')
                     .settings-row
                         .checkbox
                             label
                                 input(id='tablesOnly' type='checkbox' ng-model='selectedPreset.tablesOnly')
                                 | Tables only
                             i.tipLabel.fa.fa-question-circle(bs-tooltip='' data-title='If selected, then only tables metadata will be parsed<br>Otherwise table and view metadata will be parsed')
-            .metadata-content(ng-show='loadMeta.action == "schemas"')
-                table.table.metadata(st-table='loadMeta.displayedSchemas' st-safe-src='loadMeta.schemas')
+            .metadata-content(ng-show='importMeta.action == "schemas"')
+                table.table.metadata(st-table='importMeta.displayedSchemas' st-safe-src='importMeta.schemas')
                     thead
                         tr
                             th.header(colspan='2')
                                 .col-sm-4.pull-right
-                                    input.form-control(type='text' st-search='name' placeholder='Filter schemas...' ng-model='loadMeta.displayedSchemasFilter' ng-change='selectSchema()')
+                                    input.form-control(type='text' st-search='name' placeholder='Filter schemas...' ng-model='importMeta.displayedSchemasFilter' ng-change='selectSchema()')
                         tr
                             th(width='50px')
-                                +chk('loadMeta.allSchemasSelected',  'selectAllSchemas()', 'Select all schemas')
+                                +chk('importMeta.allSchemasSelected',  'selectAllSchemas()', 'Select all schemas')
                             th
                                 label Schema
                         tbody
                             tr
                                 td(colspan='2')
-                                    .scrollable-y(style='height: 137px')
+                                    .scrollable-y(style='height: 143px')
                                         table.table-modal-striped(id='metadataSchemaData')
                                             tbody
-                                                tr(ng-repeat='schema in loadMeta.displayedSchemas')
+                                                tr(ng-repeat='schema in importMeta.displayedSchemas')
                                                     td(width='50px')
                                                         input(type='checkbox' ng-model='schema.use' ng-change='selectSchema()')
                                                     td
                                                         label {{::schema.name}}
-            .metadata-content(ng-show='loadMeta.action == "tables"')
-                table.table.metadata(st-table='loadMeta.displayedTables' st-safe-src='loadMeta.tables')
+            .metadata-content(ng-show='importMeta.action == "tables"')
+                table.table.metadata(st-table='importMeta.displayedTables' st-safe-src='importMeta.tables')
                     thead
                         tr
                             th.header(colspan='5')
                                 .col-sm-4.pull-right
-                                    input.form-control(type='text' st-search='label' placeholder='Filter tables...' ng-model='loadMeta.displayedTablesFilter' ng-change='selectTable()')
+                                    input.form-control(type='text' st-search='label' placeholder='Filter tables...' ng-model='importMeta.displayedTablesFilter' ng-change='selectTable()')
                         tr
                             th(width='30px')
-                                +chk('loadMeta.allTablesSelected',  'selectAllTables()', 'Select all tables')
+                                +chk('importMeta.allTablesSelected',  'selectAllTables()', 'Select all tables')
                             th(width='130px')
                                 label Schema
                             th(width='160px')
@@ -122,10 +123,10 @@ mixin chk(mdl, change, tip)
                     tbody
                         tr
                             td(colspan='5')
-                                .scrollable-y(style='height: 137px')
+                                .scrollable-y(style='height: 143px')
                                     table.table-modal-striped(id='metadataTableData')
                                         tbody
-                                            tr(ng-repeat='table in loadMeta.displayedTables')
+                                            tr(ng-repeat='table in importMeta.displayedTables')
                                                 td(width='30px')
                                                     input(type='checkbox' ng-model='table.use' ng-change='selectTable()')
                                                 td(width='130px')
@@ -136,7 +137,7 @@ mixin chk(mdl, change, tip)
                                                     label TODO
                                                 td
                                                     label TODO
-            .metadata-content(ng-show='loadMeta.action == "options"' style='margin-bottom: 75px')
+            .metadata-content(ng-show='importMeta.action == "options"' style='margin-bottom: 75px')
                 form.form-horizontal(name='optionsForm' novalidate)
                     .settings-row
                         .col-xs-3.col-sm-2.col-md-2.required
@@ -171,6 +172,6 @@ mixin chk(mdl, change, tip)
                             .input-tip
                                 button.select-toggle.form-control(id='metadataGeneratedCachesCluster' bs-select ng-model='ui.generatedCachesClusters' ng-disabled='!ui.generateCaches' ng-class='{placeholder: !(ui.generatedCachesClusters && ui.generatedCachesClusters.length > 0)}' data-container='false' data-multiple='1' placeholder='Choose clusters for generated caches' bs-options='item.value as item.label for item in clusters')
             .modal-footer
-                label(ng-hide='loadMeta.action == "connect" && loadMeta.demo').labelField {{loadMeta.info}}
-                a.btn.btn-primary(ng-show='loadMeta.action != "connect"' ng-click='loadMetadataPrev()' bs-tooltip='' data-title='{{prevTooltipText()}}' data-placement='bottom') Prev
-                a.btn.btn-primary(ng-click='loadMetadataNext()' ng-disabled='!nextAvailable()' bs-tooltip='' data-title='{{nextTooltipText()}}' data-placement='bottom') {{loadMeta.button}}
+                label(ng-hide='importMeta.action == "connect" && importMeta.demo').labelField {{importMeta.info}}
+                a.btn.btn-primary(ng-show='importMeta.action != "connect"' ng-click='importMetadataPrev()' bs-tooltip='' data-title='{{prevTooltipText()}}' data-placement='bottom') Prev
+                a.btn.btn-primary(ng-click='importMetadataNext()' ng-disabled='!importMetadataNextAvailable()' bs-tooltip='' data-title='{{nextTooltipText()}}' data-placement='bottom') {{importMeta.button}}

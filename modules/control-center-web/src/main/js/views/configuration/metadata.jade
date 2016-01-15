@@ -65,11 +65,11 @@ include ../includes/controls
             .padding-top-dflt(bs-affix)
                 .panel-tip-container(data-placement='bottom' bs-tooltip='' data-title='Create new metadata')
                     button.btn.btn-primary(id='new-item' ng-click='createItem()') Add metadata
-                .panel-tip-container(bs-tooltip='' data-title='Load metadata from database' data-placement='bottom')
-                    button.btn.btn-primary(ng-click='showLoadMetadataModal(false)') Load from database
+                .panel-tip-container(bs-tooltip='' data-title='Import metadata from database' data-placement='bottom')
+                    button.btn.btn-primary(ng-click='showImportMetadataModal(false)') Import from database
                 +save-remove-buttons('metadata')
-                .btn-group.panel-tip-container(bs-tooltip='' data-title='Load metadata from demo database' data-placement='bottom')
-                    button.btn.btn-info(ng-click='showLoadMetadataModal(true)') Demo
+                .btn-group.btn-last.panel-tip-container.pull-right(bs-tooltip='' data-title='Import metadata from demo database' data-placement='bottom')
+                    button.btn.btn-info(ng-click='showImportMetadataModal(true)') Demo
                         button.btn.dropdown-toggle.btn-info(id='remove-demo-dropdown' ng-if='hasDemoItems()' data-toggle='dropdown' data-container='body' bs-dropdown='removeDemoDropdown' data-placement='bottom-right')
                             span.caret
                 hr
