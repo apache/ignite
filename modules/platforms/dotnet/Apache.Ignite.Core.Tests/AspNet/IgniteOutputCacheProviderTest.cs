@@ -33,7 +33,6 @@ namespace Apache.Ignite.Core.Tests.AspNet
         /** */
         private const string CacheName = "cacheName";
 
-
         [Test]
         public void TestCaching()
         {
