@@ -41,31 +41,34 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
  */
 public class GridBinaryWildcardsSelfTest extends GridCommonAbstractTest {
     /** */
-    private BinaryIdMapper mapper;
+    public static final String CLASS1_FULL_NAME = GridBinaryTestClass1.class.getName();
+
+    /** */
+    public static final String CLASS2_FULL_NAME = GridBinaryTestClass2.class.getName();
+
+    /** */
+    public static final String INNER_CLASS_FULL_NAME = GridBinaryTestClass1.class.getName() + "$InnerClass";
 
     /**
      * @throws Exception If failed.
      */
-    public void testClassNamesInternalMapper() throws Exception {
-        mapper = new BinaryFullNameIdMapper();
-
-        checkClassNames();
+    public void testClassNamesFullNameMapper() throws Exception {
+        checkClassNames(new BinaryFullNameIdMapper());
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testClassNamesSimpleNameMapper() throws Exception {
-        mapper = new BinarySimpleNameIdMapper();
-
-        checkClassNames();
+        checkClassNames(new BinarySimpleNameIdMapper());
     }
 
     /**
      * @throws Exception If failed.
+     * @param mapper
      */
-    private void checkClassNames() throws Exception {
-        BinaryMarshaller marsh = binaryMarshaller(Arrays.asList(
+    private void checkClassNames(BinaryIdMapper mapper) throws Exception {
+        BinaryMarshaller marsh = binaryMarshaller(mapper, Arrays.asList(
             new BinaryTypeConfiguration("org.apache.ignite.internal.binary.test.*"),
             new BinaryTypeConfiguration("unknown.*")
         ));
@@ -76,23 +79,9 @@ public class GridBinaryWildcardsSelfTest extends GridCommonAbstractTest {
 
         assertEquals(3, typeIds.size());
 
-        if (internalMapperMode()) {
-            assertTrue(typeIds.containsKey(GridBinaryTestClass1.class.getName().hashCode()));
-            assertTrue(typeIds.containsKey(GridBinaryTestClass2.class.getName().hashCode()));
-            assertTrue(typeIds.containsKey((GridBinaryTestClass1.class.getName() + "$InnerClass").hashCode()));
-        }
-        else {
-            assertTrue(typeIds.containsKey("gridbinarytestclass1".hashCode()));
-            assertTrue(typeIds.containsKey("gridbinarytestclass2".hashCode()));
-            assertTrue(typeIds.containsKey("innerclass".hashCode()));
-        }
-    }
-
-    /**
-     * @return Test executed with internal mapper.
-     */
-    private boolean internalMapperMode() {
-        return mapper instanceof BinaryFullNameIdMapper;
+        assertTrue(typeIds.containsKey(typeId(CLASS1_FULL_NAME, mapper)));
+        assertTrue(typeIds.containsKey(typeId(CLASS2_FULL_NAME, mapper)));
+        assertTrue(typeIds.containsKey(typeId(INNER_CLASS_FULL_NAME, mapper)));
     }
 
     /**
@@ -126,16 +115,31 @@ public class GridBinaryWildcardsSelfTest extends GridCommonAbstractTest {
 
         assertEquals(3, typeMappers.size());
 
-        assertEquals(300, typeMappers.get("GridBinaryTestClass1").typeId("GridBinaryTestClass1"));
-        assertEquals(400, typeMappers.get("GridBinaryTestClass2").typeId("GridBinaryTestClass2"));
-        assertEquals(500, typeMappers.get("InnerClass").typeId("InnerClass"));
+        assertEquals(300, typeMappers.get(CLASS1_FULL_NAME).typeId(CLASS1_FULL_NAME));
+        assertEquals(400, typeMappers.get(CLASS2_FULL_NAME).typeId(CLASS2_FULL_NAME));
+        assertEquals(500, typeMappers.get(INNER_CLASS_FULL_NAME).typeId(INNER_CLASS_FULL_NAME));
     }
 
     /**
      * @throws Exception If failed.
      */
-    public void testTypeConfigurations() throws Exception {
-        BinaryMarshaller marsh = binaryMarshaller(Arrays.asList(
+    public void testTypeConfigurationsSimpleNameIdMapper() throws Exception {
+        checkTypeConfigurations(new BinarySimpleNameIdMapper());
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testTypeConfigurationsFullNameIdMapper() throws Exception {
+        checkTypeConfigurations(new BinaryFullNameIdMapper());
+    }
+
+    /**
+     * @param idMapper ID mapper.
+     * @throws IgniteCheckedException If failed.
+     */
+    private void checkTypeConfigurations(BinaryIdMapper idMapper) throws IgniteCheckedException {
+        BinaryMarshaller marsh = binaryMarshaller(idMapper, Arrays.asList(
             new BinaryTypeConfiguration("org.apache.ignite.internal.binary.test.*"),
             new BinaryTypeConfiguration("unknown.*")
         ));
@@ -146,9 +150,21 @@ public class GridBinaryWildcardsSelfTest extends GridCommonAbstractTest {
 
         assertEquals(3, typeIds.size());
 
-        assertTrue(typeIds.containsKey("gridbinarytestclass1".hashCode()));
-        assertTrue(typeIds.containsKey("gridbinarytestclass2".hashCode()));
-        assertTrue(typeIds.containsKey("innerclass".hashCode()));
+        assertTrue(typeIds.containsKey(typeId(CLASS1_FULL_NAME, idMapper)));
+        assertTrue(typeIds.containsKey(typeId(CLASS2_FULL_NAME, idMapper)));
+        assertTrue(typeIds.containsKey(typeId(INNER_CLASS_FULL_NAME, idMapper)));
+    }
+
+    /**
+     * @param typeName Type name.
+     * @param mapper ID mapper.
+     * @return Type ID.
+     */
+    private int typeId(String typeName, BinaryIdMapper mapper) {
+        if (mapper != null)
+            return mapper.typeId(typeName);
+
+        return BinaryFullNameIdMapper.defaultInstance().typeId(typeName);
     }
 
     /**
@@ -182,9 +198,9 @@ public class GridBinaryWildcardsSelfTest extends GridCommonAbstractTest {
 
         assertEquals(3, typeMappers.size());
 
-        assertEquals(300, typeMappers.get("GridBinaryTestClass1").typeId("GridBinaryTestClass1"));
-        assertEquals(400, typeMappers.get("GridBinaryTestClass2").typeId("GridBinaryTestClass2"));
-        assertEquals(500, typeMappers.get("InnerClass").typeId("InnerClass"));
+        assertEquals(300, typeMappers.get(CLASS1_FULL_NAME).typeId(CLASS1_FULL_NAME));
+        assertEquals(400, typeMappers.get(CLASS2_FULL_NAME).typeId(CLASS2_FULL_NAME));
+        assertEquals(500, typeMappers.get(INNER_CLASS_FULL_NAME).typeId(INNER_CLASS_FULL_NAME));
     }
 
     /**
@@ -218,18 +234,33 @@ public class GridBinaryWildcardsSelfTest extends GridCommonAbstractTest {
 
         assertEquals(3, typeMappers.size());
 
-        assertEquals(300, typeMappers.get("GridBinaryTestClass1").typeId("GridBinaryTestClass1"));
-        assertEquals(400, typeMappers.get("GridBinaryTestClass2").typeId("GridBinaryTestClass2"));
-        assertEquals(500, typeMappers.get("InnerClass").typeId("InnerClass"));
+        assertEquals(300, typeMappers.get(CLASS1_FULL_NAME).typeId(CLASS1_FULL_NAME));
+        assertEquals(400, typeMappers.get(CLASS2_FULL_NAME).typeId(CLASS2_FULL_NAME));
+        assertEquals(500, typeMappers.get(INNER_CLASS_FULL_NAME).typeId(INNER_CLASS_FULL_NAME));
     }
 
     /**
      * @throws Exception If failed.
      */
-    public void testOverride() throws Exception {
+    public void testOverrideSimpleNameMapper() throws Exception {
+        checkOverride(new BinarySimpleNameIdMapper());
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testOverrideFullNameMapper() throws Exception {
+        checkOverride(new BinaryFullNameIdMapper());
+    }
+
+    /**
+     * @param mapper Mapper.
+     * @throws IgniteCheckedException If failed.
+     */
+    private void checkOverride(BinaryIdMapper mapper) throws IgniteCheckedException {
         BinaryTypeConfiguration typeCfg = new BinaryTypeConfiguration();
 
-        typeCfg.setTypeName("GridBinaryTestClass2");
+        typeCfg.setTypeName(CLASS2_FULL_NAME);
         typeCfg.setIdMapper(new BinaryIdMapper() {
             @Override public int typeId(String clsName) {
                 return 100;
@@ -240,7 +271,7 @@ public class GridBinaryWildcardsSelfTest extends GridCommonAbstractTest {
             }
         });
 
-        BinaryMarshaller marsh = binaryMarshaller(Arrays.asList(
+        BinaryMarshaller marsh = binaryMarshaller(mapper, Arrays.asList(
             new BinaryTypeConfiguration("org.apache.ignite.internal.binary.test.*"),
             typeCfg));
 
@@ -250,19 +281,34 @@ public class GridBinaryWildcardsSelfTest extends GridCommonAbstractTest {
 
         assertEquals(3, typeIds.size());
 
-        assertTrue(typeIds.containsKey("gridbinarytestclass1".hashCode()));
-        assertTrue(typeIds.containsKey("innerclass".hashCode()));
-        assertFalse(typeIds.containsKey(100));
+        assertTrue(typeIds.containsKey(typeId(CLASS1_FULL_NAME, mapper)));
+        assertTrue(typeIds.containsKey(typeId(INNER_CLASS_FULL_NAME, mapper)));
+        assertTrue(typeIds.containsKey(100));
 
         Map<String, BinaryIdMapper> typeMappers = U.field(ctx, "typeMappers");
 
-        assertEquals(100, typeMappers.get("GridBinaryTestClass2").typeId("GridBinaryTestClass2"));
+        assertEquals(100, typeMappers.get(CLASS2_FULL_NAME).typeId(CLASS2_FULL_NAME));
     }
 
     /**
      * @throws Exception If failed.
      */
-    public void testClassNamesJar() throws Exception {
+    public void testClassNamesJarFullNameMapper() throws Exception {
+        checkClassNamesJar(new BinaryFullNameIdMapper());
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testClassNamesJarSimpleNameMapper() throws Exception {
+        checkClassNamesJar(new BinaryFullNameIdMapper());
+    }
+
+    /**
+     * @param mapper Mapper.
+     * @throws IgniteCheckedException If failed.
+     */
+    private void checkClassNamesJar(BinaryIdMapper mapper) throws IgniteCheckedException {
         BinaryMarshaller marsh = binaryMarshaller(Arrays.asList(
             new BinaryTypeConfiguration("org.apache.ignite.internal.binary.test.*"),
             new BinaryTypeConfiguration("unknown.*")
@@ -274,14 +320,14 @@ public class GridBinaryWildcardsSelfTest extends GridCommonAbstractTest {
 
         assertEquals(3, typeIds.size());
 
-        assertTrue(typeIds.containsKey("gridbinarytestclass1".hashCode()));
-        assertTrue(typeIds.containsKey("gridbinarytestclass2".hashCode()));
+        assertTrue(typeIds.containsKey(typeId(CLASS1_FULL_NAME, mapper)));
+        assertTrue(typeIds.containsKey(typeId(CLASS2_FULL_NAME, mapper)));
     }
 
     /**
      * @throws Exception If failed.
      */
-    public void testClassNamesWithMapperJar() throws Exception {
+    public void testClassNamesWithCustomMapperJar() throws Exception {
         BinaryMarshaller marsh = binaryMarshaller(new BinaryIdMapper() {
             @SuppressWarnings("IfMayBeConditional")
             @Override public int typeId(String clsName) {
@@ -307,15 +353,30 @@ public class GridBinaryWildcardsSelfTest extends GridCommonAbstractTest {
 
         assertEquals(3, typeMappers.size());
 
-        assertEquals(300, typeMappers.get("GridBinaryTestClass1").typeId("GridBinaryTestClass1"));
-        assertEquals(400, typeMappers.get("GridBinaryTestClass2").typeId("GridBinaryTestClass2"));
+        assertEquals(300, typeMappers.get(CLASS1_FULL_NAME).typeId(CLASS1_FULL_NAME));
+        assertEquals(400, typeMappers.get(CLASS2_FULL_NAME).typeId(CLASS2_FULL_NAME));
     }
 
     /**
      * @throws Exception If failed.
      */
-    public void testTypeConfigurationsJar() throws Exception {
-        BinaryMarshaller marsh = binaryMarshaller(Arrays.asList(
+    public void testTypeConfigurationsJarSimpleNameMapper() throws Exception {
+        checkTypeConfigurationJar(new BinarySimpleNameIdMapper());
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testTypeConfigurationsJarFullNameMapper() throws Exception {
+        checkTypeConfigurationJar(new BinaryFullNameIdMapper());
+    }
+
+    /**
+     * @param mapper Mapper.
+     * @throws IgniteCheckedException If failed.
+     */
+    private void checkTypeConfigurationJar(BinaryIdMapper mapper) throws IgniteCheckedException {
+        BinaryMarshaller marsh = binaryMarshaller(mapper, Arrays.asList(
             new BinaryTypeConfiguration("org.apache.ignite.internal.binary.test.*"),
             new BinaryTypeConfiguration("unknown.*")
         ));
@@ -326,8 +387,8 @@ public class GridBinaryWildcardsSelfTest extends GridCommonAbstractTest {
 
         assertEquals(3, typeIds.size());
 
-        assertTrue(typeIds.containsKey("gridbinarytestclass1".hashCode()));
-        assertTrue(typeIds.containsKey("gridbinarytestclass2".hashCode()));
+        assertTrue(typeIds.containsKey(typeId(CLASS1_FULL_NAME, mapper)));
+        assertTrue(typeIds.containsKey(typeId(CLASS2_FULL_NAME, mapper)));
     }
 
     /**
@@ -359,8 +420,8 @@ public class GridBinaryWildcardsSelfTest extends GridCommonAbstractTest {
 
         assertEquals(3, typeMappers.size());
 
-        assertEquals(300, typeMappers.get("GridBinaryTestClass1").typeId("GridBinaryTestClass1"));
-        assertEquals(400, typeMappers.get("GridBinaryTestClass2").typeId("GridBinaryTestClass2"));
+        assertEquals(300, typeMappers.get(CLASS1_FULL_NAME).typeId(CLASS1_FULL_NAME));
+        assertEquals(400, typeMappers.get(CLASS2_FULL_NAME).typeId(CLASS2_FULL_NAME));
     }
 
     /**
@@ -392,14 +453,29 @@ public class GridBinaryWildcardsSelfTest extends GridCommonAbstractTest {
 
         assertEquals(3, typeMappers.size());
 
-        assertEquals(300, typeMappers.get("GridBinaryTestClass1").typeId("GridBinaryTestClass1"));
-        assertEquals(400, typeMappers.get("GridBinaryTestClass2").typeId("GridBinaryTestClass2"));
+        assertEquals(300, typeMappers.get(CLASS1_FULL_NAME).typeId(CLASS1_FULL_NAME));
+        assertEquals(400, typeMappers.get(CLASS2_FULL_NAME).typeId(CLASS2_FULL_NAME));
     }
 
     /**
      * @throws Exception If failed.
      */
-    public void testOverrideJar() throws Exception {
+    public void testOverrideJarSimpleNameMapper() throws Exception {
+        checkOverrideJar(new BinarySimpleNameIdMapper());
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testOverrideJarFullNameMapper() throws Exception {
+        checkOverrideJar(new BinaryFullNameIdMapper());
+    }
+
+    /**
+     * @param mapper Mapper.
+     * @throws IgniteCheckedException If failed.
+     */
+    private void checkOverrideJar(BinaryIdMapper mapper) throws IgniteCheckedException {
         BinaryTypeConfiguration typeCfg = new BinaryTypeConfiguration(
             "org.apache.ignite.internal.binary.test.GridBinaryTestClass2");
 
@@ -413,7 +489,7 @@ public class GridBinaryWildcardsSelfTest extends GridCommonAbstractTest {
             }
         });
 
-        BinaryMarshaller marsh = binaryMarshaller(Arrays.asList(
+        BinaryMarshaller marsh = binaryMarshaller(mapper, Arrays.asList(
             new BinaryTypeConfiguration("org.apache.ignite.internal.binary.test.*"),
             typeCfg));
 
@@ -423,13 +499,13 @@ public class GridBinaryWildcardsSelfTest extends GridCommonAbstractTest {
 
         assertEquals(3, typeIds.size());
 
-        assertTrue(typeIds.containsKey("gridbinarytestclass1".hashCode()));
+        assertTrue(typeIds.containsKey(typeId(CLASS1_FULL_NAME, mapper)));
 
         Map<String, BinaryIdMapper> typeMappers = U.field(ctx, "typeMappers");
 
         assertEquals(3, typeMappers.size());
 
-        assertEquals(100, typeMappers.get("GridBinaryTestClass2").typeId("GridBinaryTestClass2"));
+        assertEquals(100, typeMappers.get(CLASS2_FULL_NAME).typeId(CLASS2_FULL_NAME));
     }
 
     /**
