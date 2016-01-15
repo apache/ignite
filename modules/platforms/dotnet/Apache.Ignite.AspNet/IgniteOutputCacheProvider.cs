@@ -145,7 +145,7 @@ namespace Apache.Ignite.AspNet
             var expirySeconds = (long) (utcExpiry - DateTime.UtcNow).TotalSeconds;
 
             if (expirySeconds < 1)
-                return Cache;
+                expirySeconds = 0;
 
             ICache<string, object> expiryCache;
 
