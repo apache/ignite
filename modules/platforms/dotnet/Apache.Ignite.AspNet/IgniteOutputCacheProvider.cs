@@ -122,19 +122,14 @@ namespace Apache.Ignite.AspNet
         /// <returns>Cache with expiry policy.</returns>
         private ICache<string, object> GetCacheWithExpiry(DateTime utcExpiry)
         {
-            var cache = _cache;
-
-            if (cache == null)
-                throw new InvalidOperationException("IgniteOutputCacheProvider has not been initialized.");
-
             if (utcExpiry == DateTime.MaxValue)
-                return cache;
+                return _cache;
 
             // Round up to seconds
             var expirySeconds = (long) (utcExpiry - DateTime.UtcNow).TotalSeconds;
 
             if (expirySeconds < 1)
-                return cache;
+                return _cache;
 
             ICache<string, object> expiryCache;
 
@@ -151,7 +146,7 @@ namespace Apache.Ignite.AspNet
                     ? new Dictionary<long, ICache<string, object>>()
                     : new Dictionary<long, ICache<string, object>>(_expiryCaches);
 
-                expiryCache = cache.WithExpiryPolicy(new ExpiryPolicy(TimeSpan.FromSeconds(expirySeconds), null, null));
+                expiryCache = _cache.WithExpiryPolicy(new ExpiryPolicy(TimeSpan.FromSeconds(expirySeconds), null, null));
 
                 _expiryCaches[expirySeconds] = expiryCache;
 
