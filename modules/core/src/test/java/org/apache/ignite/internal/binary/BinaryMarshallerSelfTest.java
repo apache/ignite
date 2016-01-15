@@ -1408,7 +1408,7 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
 
         // Full name hashCode.
         assertEquals("NotConfiguredClass".hashCode(), ctx.typeId("NotConfiguredClass"));
-        assertEquals("Key".hashCode(), ctx.typeId(getClass().getName() + "$Key"));
+        assertEquals(Key.class.getName().hashCode(), ctx.typeId(getClass().getName() + "$Key"));
         assertEquals("org.gridgain.NonExistentClass3".hashCode(), ctx.typeId("org.gridgain.NonExistentClass3"));
         assertEquals("NonExistentClass4".hashCode(), ctx.typeId("NonExistentClass4"));
         assertEquals(300, ctx.typeId(getClass().getName() + "$Value"));
@@ -2065,11 +2065,11 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
 
         BinaryObject copy = copy(po, F.<String, Object>asMap("strArr", new String[]{"str1", "str2"}));
 
-        assertArrayEquals(new String[]{"str1", "str2"}, copy.<String[]>field("strArr"));
+        assertArrayEquals(new String[] {"str1", "str2"}, copy.<String[]>field("strArr"));
 
         SimpleObject obj0 = copy.deserialize();
 
-        assertArrayEquals(new String[]{"str1", "str2"}, obj0.strArr);
+        assertArrayEquals(new String[] {"str1", "str2"}, obj0.strArr);
     }
 
     /**
@@ -2133,7 +2133,7 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
 
         assertEquals("str555", obj0.str);
         assertEquals(newObj, obj0.inner);
-        assertArrayEquals(new byte[]{6, 7, 9}, obj0.bArr);
+        assertArrayEquals(new byte[] {6, 7, 9}, obj0.bArr);
     }
 
     /**

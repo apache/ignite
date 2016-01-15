@@ -22,7 +22,9 @@ import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
@@ -43,12 +45,15 @@ import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.binary.BinaryObjectBuilder;
 import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.binary.BinaryType;
+import org.apache.ignite.binary.BinaryTypeConfiguration;
 import org.apache.ignite.cache.CacheEntryEventSerializableFilter;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.cluster.ClusterTopologyException;
+import org.apache.ignite.configuration.BinaryConfiguration;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
-import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
+import org.apache.ignite.internal.IgniteNodeAttributes;
+import org.apache.ignite.internal.binary.BinaryContext;
 import org.apache.ignite.internal.binary.BinaryEnumObjectImpl;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.binary.BinaryMetadata;
@@ -57,12 +62,12 @@ import org.apache.ignite.internal.binary.BinaryObjectEx;
 import org.apache.ignite.internal.binary.BinaryObjectImpl;
 import org.apache.ignite.internal.binary.BinaryObjectOffheapImpl;
 import org.apache.ignite.internal.binary.BinaryTypeImpl;
-import org.apache.ignite.internal.binary.GridBinaryMarshaller;
-import org.apache.ignite.internal.binary.BinaryContext;
 import org.apache.ignite.internal.binary.BinaryUtils;
+import org.apache.ignite.internal.binary.GridBinaryMarshaller;
 import org.apache.ignite.internal.binary.builder.BinaryObjectBuilderImpl;
 import org.apache.ignite.internal.binary.streams.BinaryInputStream;
 import org.apache.ignite.internal.binary.streams.BinaryOffheapInputStream;
+import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheEntryPredicate;
 import org.apache.ignite.internal.processors.cache.CacheEntryPredicateAdapter;
@@ -93,9 +98,13 @@ import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.marshaller.Marshaller;
+import org.apache.ignite.spi.IgniteNodeValidationResult;
 import org.jetbrains.annotations.Nullable;
 import org.jsr166.ConcurrentHashMap8;
 import sun.misc.Unsafe;
+
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_SKIP_CONFIGURATION_CONSISTENCY_CHECK;
+import static org.apache.ignite.IgniteSystemProperties.getBoolean;
 
 /**
  * Binary processor implementation.
@@ -204,16 +213,42 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
                 }
             };
 
-            BinaryMarshaller pMarh0 = (BinaryMarshaller)marsh;
+            BinaryMarshaller bMarsh0 = (BinaryMarshaller)marsh;
 
             binaryCtx = new BinaryContext(metaHnd, ctx.config(), ctx.log(BinaryContext.class));
 
-            IgniteUtils.invoke(BinaryMarshaller.class, pMarh0, "setBinaryContext", binaryCtx,
-                ctx.config());
+            IgniteUtils.invoke(BinaryMarshaller.class, bMarsh0, "setBinaryContext", binaryCtx, ctx.config());
 
             binaryMarsh = new GridBinaryMarshaller(binaryCtx);
 
             binaries = new IgniteBinaryImpl(ctx, this);
+
+            if (!getBoolean(IGNITE_SKIP_CONFIGURATION_CONSISTENCY_CHECK)) {
+                BinaryConfiguration bCfg = ctx.config().getBinaryConfiguration();
+
+                if (bCfg != null) {
+                    Map<String, Object> map = new HashMap<>();
+
+                    map.put("globIdMapper", bCfg.getIdMapper() != null ? bCfg.getIdMapper().getClass() : (byte)0);
+                    map.put("globSerializer", bCfg.getSerializer() != null ? bCfg.getSerializer().getClass() : (byte)0);
+                    map.put("compactFooter", bCfg.isCompactFooter());
+
+                    if (bCfg.getTypeConfigurations() != null) {
+                        Map<String, Object> typeCfgsMap = new HashMap<>();
+
+                        for (BinaryTypeConfiguration c : bCfg.getTypeConfigurations()) {
+                            typeCfgsMap.put(c.getTypeName(),
+                                Arrays.asList(c.getIdMapper().getClass(), c.getSerializer().getClass(), c.isEnum()));
+                        }
+
+                        map.put("typeCfgs", typeCfgsMap);
+                    }
+
+                    ctx.addNodeAttribute(IgniteNodeAttributes.ATTR_BINARY_CONFIGURATION, map);
+                }
+                else
+                    ctx.addNodeAttribute(IgniteNodeAttributes.ATTR_BINARY_CONFIGURATION, (byte)0);
+            }
         }
     }
 
@@ -781,6 +816,39 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
             return obj;
 
         return marshalToBinary(obj);
+    }
+
+    /** {@inheritDoc} */
+    @Nullable @Override public IgniteNodeValidationResult validateNode(ClusterNode rmtNode) {
+        IgniteNodeValidationResult res = super.validateNode(rmtNode);
+
+        if (res != null)
+            return res;
+
+        if (getBoolean(IGNITE_SKIP_CONFIGURATION_CONSISTENCY_CHECK) || !(marsh instanceof BinaryMarshaller))
+            return null;
+
+        Object rmtBinaryCfg = rmtNode.attribute(IgniteNodeAttributes.ATTR_BINARY_CONFIGURATION);
+
+        // Config can be null if and only if the remote node uses
+        // an old version of Ignite which doesn't support binary configuration check at all.
+        if (rmtBinaryCfg == null)
+            return null;
+
+        ClusterNode locNode = ctx.discovery().localNode();
+
+        Object locBinaryCfg = locNode.attribute(IgniteNodeAttributes.ATTR_BINARY_CONFIGURATION);
+
+        if (!F.eq(locBinaryCfg, rmtBinaryCfg)) {
+            String msg = "Local node's binary configuration is not equal to remote node's binary configuration " +
+                "[locNodeId=%s, rmtNodeId=%s, locBinaryCfg=%s, rmtBinaryCfg=%s]";
+
+            return new IgniteNodeValidationResult(rmtNode.id(),
+                String.format(msg, locNode.id(), rmtNode.id(), locBinaryCfg, rmtBinaryCfg),
+                String.format(msg, rmtNode.id(), locNode.id(), rmtBinaryCfg, locBinaryCfg));
+        }
+
+        return null;
     }
 
     /**
