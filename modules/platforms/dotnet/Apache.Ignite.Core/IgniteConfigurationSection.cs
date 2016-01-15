@@ -18,6 +18,8 @@
 namespace Apache.Ignite.Core
 {
     using System.Configuration;
+    using System.Xml;
+    using Apache.Ignite.Core.Impl.Common;
 
     /// <summary>
     /// Ignite configuration section for app.config and web.config files.
@@ -35,10 +37,10 @@ namespace Apache.Ignite.Core
         /// <summary>
         /// Reads XML from the configuration file.
         /// </summary>
-        /// <param name="reader">The <see cref="T:System.Xml.XmlReader" /> object, which reads from the configuration file.</param>
-        protected override void DeserializeSection(System.Xml.XmlReader reader)
+        /// <param name="reader">The reader object, which reads from the configuration file.</param>
+        protected override void DeserializeSection(XmlReader reader)
         {
-            // TODO
+            IgniteConfiguration = IgniteConfigurationXmlSerializer.Deserialize(reader);
         }
 
         /// <summary>
