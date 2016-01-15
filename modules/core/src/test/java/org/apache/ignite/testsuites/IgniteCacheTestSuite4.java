@@ -71,6 +71,7 @@ import org.apache.ignite.internal.processors.cache.IgniteCacheTxStoreValueTest;
 import org.apache.ignite.internal.processors.cache.IgniteDynamicCacheFilterTest;
 import org.apache.ignite.internal.processors.cache.IgniteDynamicCacheStartNoExchangeTimeoutTest;
 import org.apache.ignite.internal.processors.cache.IgniteDynamicCacheStartSelfTest;
+import org.apache.ignite.internal.processors.cache.IgniteDynamicCacheStartStopConcurrentTest;
 import org.apache.ignite.internal.processors.cache.IgniteDynamicCacheWithConfigStartSelfTest;
 import org.apache.ignite.internal.processors.cache.IgniteDynamicClientCacheStartSelfTest;
 import org.apache.ignite.internal.processors.cache.IgniteExchangeFutureHistoryTest;
@@ -204,6 +205,7 @@ public class IgniteCacheTestSuite4 extends TestSuite {
         suite.addTestSuite(IgniteDynamicCacheStartSelfTest.class);
         suite.addTestSuite(IgniteDynamicCacheWithConfigStartSelfTest.class);
         suite.addTestSuite(IgniteCacheDynamicStopSelfTest.class);
+        suite.addTestSuite(IgniteDynamicCacheStartStopConcurrentTest.class);
         suite.addTestSuite(IgniteCacheConfigurationTemplateTest.class);
         suite.addTestSuite(IgniteCacheConfigurationDefaultTemplateTest.class);
         suite.addTestSuite(IgniteDynamicClientCacheStartSelfTest.class);

@@ -52,7 +52,6 @@ import org.apache.ignite.internal.managers.deployment.GridDeploymentInfoBean;
 import org.apache.ignite.internal.managers.discovery.CustomEventListener;
 import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
-import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.query.continuous.CacheContinuousQueryHandler;
@@ -193,8 +192,7 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
         ctx.discovery().setCustomEventListener(StartRoutineDiscoveryMessage.class,
             new CustomEventListener<StartRoutineDiscoveryMessage>() {
                 @Override public void onCustomEvent(ClusterNode snd,
-                    StartRoutineDiscoveryMessage msg,
-                    AffinityTopologyVersion topVer) {
+                    StartRoutineDiscoveryMessage msg) {
                     if (!snd.id().equals(ctx.localNodeId()) && !ctx.isStopping())
                         processStartRequest(snd, msg);
                 }
@@ -203,8 +201,7 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
         ctx.discovery().setCustomEventListener(StartRoutineAckDiscoveryMessage.class,
             new CustomEventListener<StartRoutineAckDiscoveryMessage>() {
                 @Override public void onCustomEvent(ClusterNode snd,
-                    StartRoutineAckDiscoveryMessage msg,
-                    AffinityTopologyVersion topVer) {
+                    StartRoutineAckDiscoveryMessage msg) {
                     StartFuture fut = startFuts.remove(msg.routineId());
 
                     if (fut != null) {
@@ -250,8 +247,7 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
         ctx.discovery().setCustomEventListener(StopRoutineDiscoveryMessage.class,
             new CustomEventListener<StopRoutineDiscoveryMessage>() {
                 @Override public void onCustomEvent(ClusterNode snd,
-                    StopRoutineDiscoveryMessage msg,
-                    AffinityTopologyVersion topVer) {
+                    StopRoutineDiscoveryMessage msg) {
                     if (!snd.id().equals(ctx.localNodeId())) {
                         UUID routineId = msg.routineId();
 
@@ -270,8 +266,7 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
         ctx.discovery().setCustomEventListener(StopRoutineAckDiscoveryMessage.class,
             new CustomEventListener<StopRoutineAckDiscoveryMessage>() {
                 @Override public void onCustomEvent(ClusterNode snd,
-                    StopRoutineAckDiscoveryMessage msg,
-                    AffinityTopologyVersion topVer) {
+                    StopRoutineAckDiscoveryMessage msg) {
                     StopFuture fut = stopFuts.remove(msg.routineId());
 
                     if (fut != null)
