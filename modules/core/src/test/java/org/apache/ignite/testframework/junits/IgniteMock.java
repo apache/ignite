@@ -18,6 +18,7 @@
 package org.apache.ignite.testframework.junits;
 
 import java.util.Collection;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ExecutorService;
 import javax.management.MBeanServer;
@@ -54,6 +55,8 @@ import org.apache.ignite.internal.binary.BinaryCachingMetadataHandler;
 import org.apache.ignite.internal.binary.BinaryContext;
 import org.apache.ignite.internal.binary.builder.BinaryObjectBuilderImpl;
 import org.apache.ignite.internal.processors.cacheobject.NoOpBinary;
+import org.apache.ignite.internal.util.future.IgniteFutureImpl;
+import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.logger.NullLogger;
 import org.apache.ignite.marshaller.Marshaller;
@@ -241,6 +244,11 @@ public class IgniteMock implements Ignite {
 
     /** {@inheritDoc} */
     @Override public <K, V> IgniteCache<K, V> getOrCreateNearCache(@Nullable String cacheName, NearCacheConfiguration<K, V> nearCfg) {
+        return null;
+    }
+
+    /** {@inheritDoc} */
+    @Override public IgniteFuture<?> resetLostPartitions(Set<String> cacheNames) {
         return null;
     }
 

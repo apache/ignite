@@ -42,7 +42,7 @@ public class DynamicCacheChangeBatch implements DiscoveryCustomMessage {
     private Map<String, Map<UUID, Boolean>> clientNodes;
 
     /** Custom message ID. */
-    private IgniteUuid id = IgniteUuid.randomUuid();
+    private final IgniteUuid id = IgniteUuid.randomUuid();
 
     /** */
     private boolean clientReconnect;

@@ -234,6 +234,9 @@ public final class GridDhtGetFuture<K, V> extends GridCompoundIdentityFuture<Col
 
                         if (retries == null || !retries.contains(part)) {
                             if (!map(key.getKey(), parts)) {
+                                if (isFailed())
+                                    return Collections.emptyList();
+
                                 if (retries == null)
                                     retries = new HashSet<>();
 
@@ -277,6 +280,13 @@ public final class GridDhtGetFuture<K, V> extends GridCompoundIdentityFuture<Col
 
         if (part == null)
             return false;
+
+        if (part.state() == GridDhtPartitionState.LOST) {
+            onDone(null, new GridDhtInvalidPartitionException(part.id(), "Partition is lost " +
+                "[part=" + part + ", topVer=" + topVer + ", this.topVer=" + this.topVer + ']'));
+
+            return false;
+        }
 
         if (!parts.contains(part)) {
             // By reserving, we make sure that partition won't be unloaded while processed.

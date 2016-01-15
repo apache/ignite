@@ -89,7 +89,7 @@ public class IgniteTxImplicitSingleStateImpl extends IgniteTxLocalStateAdapter {
         if (cacheCtx == null)
             return null;
 
-        Throwable err = topFut.validateCache(cacheCtx);
+        Throwable err = topFut.validateCacheForKey(cacheCtx, entry.key());
 
         if (err != null) {
             return new IgniteCheckedException("Failed to perform cache operation (cache topology is not valid): " +

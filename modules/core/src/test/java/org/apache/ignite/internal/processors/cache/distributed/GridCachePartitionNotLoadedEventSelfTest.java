@@ -47,7 +47,7 @@ import org.eclipse.jetty.util.ConcurrentHashSet;
  */
 public class GridCachePartitionNotLoadedEventSelfTest extends GridCommonAbstractTest {
     /** */
-    private static final TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
+    protected static final TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
 
     /** */
     private int backupCnt;
@@ -246,7 +246,7 @@ public class GridCachePartitionNotLoadedEventSelfTest extends GridCommonAbstract
 
         GridTestUtils.waitForCondition(new GridAbsPredicate() {
             @Override public boolean apply() {
-                return !lsnr.lostParts.isEmpty();
+                return !lsnr.getLostParts().isEmpty();
             }
         }, getTestTimeout());
     }
@@ -254,7 +254,7 @@ public class GridCachePartitionNotLoadedEventSelfTest extends GridCommonAbstract
     /**
      *
      */
-    private static class PartitionNotFullyLoadedListener implements IgnitePredicate<Event> {
+    protected static class PartitionNotFullyLoadedListener implements IgnitePredicate<Event> {
         /** */
         private Collection<Integer> lostParts = new ConcurrentHashSet<>();
 
@@ -263,6 +263,10 @@ public class GridCachePartitionNotLoadedEventSelfTest extends GridCommonAbstract
             lostParts.add(((CacheRebalancingEvent)evt).partition());
 
             return true;
+        }
+
+        public Collection<Integer> getLostParts() {
+            return lostParts;
         }
     }
 }

@@ -41,7 +41,7 @@ public class GridDhtPartitionsFullMessage extends GridDhtPartitionsAbstractMessa
     /** */
     private static final long serialVersionUID = 0L;
 
-    /** */
+    /** cacheId -> GridDhtPartitionFullMap */
     @GridToStringInclude
     @GridDirectTransient
     private Map<Integer, GridDhtPartitionFullMap> parts;

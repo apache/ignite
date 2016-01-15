@@ -35,6 +35,7 @@ import java.util.concurrent.locks.ReadWriteLock;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
+import org.apache.ignite.cache.DataLossPolicy;
 import org.apache.ignite.cache.affinity.AffinityCentralizedFunction;
 import org.apache.ignite.cache.affinity.AffinityFunction;
 import org.apache.ignite.cluster.ClusterNode;
@@ -54,6 +55,8 @@ import org.apache.ignite.internal.processors.cache.GridCacheMvccCandidate;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridClientPartitionTopology;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtAssignmentFetchFuture;
+import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLocalPartition;
+import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionState;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionTopology;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTopologyFuture;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxKey;
@@ -75,6 +78,7 @@ import org.apache.ignite.lang.IgnitePredicate;
 import org.jetbrains.annotations.Nullable;
 import org.jsr166.ConcurrentHashMap8;
 
+import static org.apache.ignite.events.EventType.EVT_CACHE_REBALANCE_PART_DATA_LOST;
 import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
 import static org.apache.ignite.events.EventType.EVT_NODE_JOINED;
 import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
@@ -168,7 +172,7 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
     private final Map<UUID, GridDhtPartitionsSingleMessage> singleMsgs = new ConcurrentHashMap8<>();
 
     /** Messages received from new coordinator. */
-    private final Map<UUID, GridDhtPartitionsFullMessage> fullMsgs = new ConcurrentHashMap8<>();
+    private final Map<UUID, GridDhtPartitionsFullMessage> fullMsgs = new HashMap<>();
 
     /** */
     @SuppressWarnings({"FieldCanBeLocal", "UnusedDeclaration"})
@@ -184,8 +188,14 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
     /** Dynamic cache change requests. */
     private Collection<DynamicCacheChangeRequest> reqs;
 
+    /** Caches ids for lost partitions resetting. */
+    private int[] resetLostCacheIds;
+
     /** Cache validation results. */
     private volatile Map<Integer, Boolean> cacheValidRes;
+
+    /** Partitions' validation results. True if lost. cacheId -> (partitionId -> isLost). */
+    private volatile Map<Integer, Map<Integer, Boolean>> cachesPartitionsLoss = new HashMap<>();
 
     /** Skip preload flag. */
     private boolean skipPreload;
@@ -249,12 +259,14 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
      * @param busyLock Busy lock.
      * @param exchId Exchange ID.
      * @param reqs Cache change requests.
+     * @param resetLostCacheIds Caches for resetting lost partitions.
      */
     public GridDhtPartitionsExchangeFuture(
         GridCacheSharedContext cctx,
         ReadWriteLock busyLock,
         GridDhtPartitionExchangeId exchId,
-        Collection<DynamicCacheChangeRequest> reqs
+        Collection<DynamicCacheChangeRequest> reqs,
+        int[] resetLostCacheIds
     ) {
         assert busyLock != null;
         assert exchId != null;
@@ -267,6 +279,7 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
         this.busyLock = busyLock;
         this.exchId = exchId;
         this.reqs = reqs;
+        this.resetLostCacheIds = resetLostCacheIds;
 
         log = cctx.logger(getClass());
 
@@ -523,16 +536,26 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
                 startCaches();
 
                 // True if client node joined or failed.
-                boolean clientNodeEvt;
+                boolean clientNodeEvt = false;
 
-                if (F.isEmpty(reqs)) {
+                if (F.isEmpty(reqs) && F.isEmpty(resetLostCacheIds)) {
                     int type = discoEvt.type();
 
                     assert type == EVT_NODE_JOINED || type == EVT_NODE_LEFT || type == EVT_NODE_FAILED : discoEvt;
 
                     clientNodeEvt = CU.clientNode(discoEvt.eventNode());
                 }
-                else {
+
+                if (!F.isEmpty(resetLostCacheIds))
+                    for (int cacheId : resetLostCacheIds) {
+                        GridCacheContext cacheCtx = cctx.cacheContext(cacheId);
+
+                        for (GridDhtLocalPartition localPartition : cacheCtx.topology().localPartitions())
+                            if (localPartition.state() == GridDhtPartitionState.LOST)
+                                cacheCtx.topology().own(localPartition);
+                    }
+
+                if (!F.isEmpty(reqs)) {
                     assert discoEvt.type() == EVT_DISCOVERY_CUSTOM_EVT : discoEvt;
 
                     boolean clientOnlyCacheEvt = true;
@@ -1095,24 +1118,92 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
         }
     }
 
-    /** {@inheritDoc} */
-    @Override public boolean onDone(AffinityTopologyVersion res, Throwable err) {
-        Map<Integer, Boolean> m = null;
+    /**
+     * Checking each partition for an existing of an owning node.
+     */
+    private void processLostPartitions() {
+        // Collect all owned partitions for caches.
+        for (GridCacheContext cacheContext : cctx.cacheContexts()) {
+            int cacheId = cacheContext.cacheId();
+            GridDhtPartitionFullMap partitionFullMap = cacheContext.topology().partitionMap(false);
 
-        for (GridCacheContext cacheCtx : cctx.cacheContexts()) {
-            if (cacheCtx.config().getTopologyValidator() != null && !CU.isSystemCache(cacheCtx.name())) {
-                if (m == null)
-                    m = new HashMap<>();
+            if (!cachesPartitionsLoss.containsKey(cacheId))
+                cachesPartitionsLoss.put(cacheId, new HashMap<>());
 
-                m.put(cacheCtx.cacheId(), cacheCtx.config().getTopologyValidator().validate(discoEvt.topologyNodes()));
+            Map<Integer, Boolean> currentCacheLoss = cachesPartitionsLoss.get(cacheId);
+
+            for (GridDhtPartitionMap2 nodePartitions : partitionFullMap.values()) {
+                for (Map.Entry<Integer, GridDhtPartitionState> partitionState : nodePartitions.entrySet())
+                    if (partitionState.getValue() == GridDhtPartitionState.OWNING)
+                        currentCacheLoss.put(partitionState.getKey(), false);
             }
         }
 
-        cacheValidRes = m != null ? m : Collections.<Integer, Boolean>emptyMap();
+        for (Map.Entry<Integer, Map<Integer, Boolean>> cachePartitions : cachesPartitionsLoss.entrySet()) {
+            GridCacheContext cacheContext = cctx.cacheContext(cachePartitions.getKey());
+            int amountOfPartitions = cacheContext.affinity().partitions();
+
+            // Size of owned partitions is equal to the total amount of partitions. Which means - nothing is lost.
+            if (cachePartitions.getValue().size() == amountOfPartitions)
+                continue;
+
+            for (int partId = 0; partId < amountOfPartitions; partId++)
+                if (!cachePartitions.getValue().containsKey(partId)) { // Partition is lost.
+
+                    GridDhtLocalPartition localPartition = cacheContext.topology().localPartition(partId, false);
+                    boolean updateState = false;
+
+                    cachePartitions.getValue().put(partId, true);
+
+                    // This partition will be created during next topology event,
+                    // which obviously has not happened at this point.
+                    if (localPartition == null) {
+                        continue;
+                    }
+
+                    if (cacheContext.config().getDataLossPolicy() == DataLossPolicy.FAIL_OPS)
+                        updateState = cacheContext.topology().loose(localPartition);
+                    else
+                        updateState = cacheContext.topology().own(localPartition);
+
+                    assert updateState : "Failed to update state for lost partition [cacheName" + cacheContext.name() +
+                        ", locPart=" + cacheContext.topology().localPartition(partId, false) + ']';
+
+                    if (cacheContext.events().isRecordable(EVT_CACHE_REBALANCE_PART_DATA_LOST)) {
+                        DiscoveryEvent discoEvt = discoveryEvent();
+
+                        cacheContext.events().addPreloadEvent(partId,
+                            EVT_CACHE_REBALANCE_PART_DATA_LOST, discoEvt.eventNode(),
+                            discoEvt.type(), discoEvt.timestamp());
+                    }
+
+                    if (log.isDebugEnabled())
+                        log.debug("Updated state for the lost partition: " + partId);
+                }
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean onDone(AffinityTopologyVersion res, Throwable err) {
+        Map<Integer, Boolean> validationResults = null;
+
+        for (GridCacheContext cacheCtx : cctx.cacheContexts())
+            if (cacheCtx.config().getTopologyValidator() != null && !CU.isSystemCache(cacheCtx.name())) {
+                if (validationResults == null)
+                    validationResults = new HashMap<>();
+
+                validationResults.put(cacheCtx.cacheId(),
+                    cacheCtx.config().getTopologyValidator().validate(discoEvt.topologyNodes()));
+            }
+
+        cacheValidRes = validationResults != null ? validationResults : Collections.<Integer, Boolean>emptyMap();
 
         cctx.cache().onExchangeDone(exchId.topologyVersion(), reqs, err);
 
         cctx.exchange().onExchangeDone(this, err);
+
+        // Check for the lost partition have to be complete under the lock, thus it precedes super.onDone.
+        processLostPartitions();
 
         if (super.onDone(res, err) && !dummy && !forcePreload) {
             if (log.isDebugEnabled())
@@ -1139,7 +1230,24 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
     }
 
     /** {@inheritDoc} */
-    @Override public Throwable validateCache(GridCacheContext cctx) {
+    @Override public Throwable validateCacheForKeys(GridCacheContext cctx, Collection<?> keys) {
+        return validateCache(cctx, keys, null);
+    }
+
+    /** {@inheritDoc} */
+    @Override public Throwable validateCacheForKey(GridCacheContext cctx, Object key) {
+        return validateCache(cctx, null, key);
+    }
+
+    /**
+     * Groups similar checking flow for both #validateCacheForKeys and #validateCacheForKey methods.
+     *
+     * @param cctx Cache context.
+     * @param keys Keys for checking. This collection could be null only when {@code key} is not null.
+     * @param key Key for checking. This key could be null only when {@code keys} is not null.
+     * @return Valid ot not.
+     */
+    private Throwable validateCache(GridCacheContext cctx, @Nullable Collection<?> keys, @Nullable Object key) {
         Throwable err = error();
 
         if (err != null)
@@ -1152,6 +1260,23 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
                 return new IgniteCheckedException("Failed to perform cache operation " +
                     "(cache topology is not valid): " + cctx.name());
             }
+        }
+
+        if (cctx.config().getDataLossPolicy() == DataLossPolicy.FAIL_OPS) {
+            Map<Integer, Boolean> partitionIsLost = cachesPartitionsLoss.get(cctx.cacheId());
+
+            if (keys != null) {
+                for (Object k : keys)
+                    if (partitionIsLost.get(cctx.affinity().partition(k)))
+                        return new IgniteCheckedException("Failed to perform cache operation " +
+                            "(lost partition): " + cctx.name());
+
+                return null;
+            }
+
+            if (partitionIsLost.get(cctx.affinity().partition(key)))
+                return new IgniteCheckedException("Failed to perform cache operation " +
+                    "(lost partition): " + cctx.name());
         }
 
         return null;

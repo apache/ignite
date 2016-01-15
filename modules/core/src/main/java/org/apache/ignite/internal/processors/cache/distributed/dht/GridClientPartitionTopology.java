@@ -834,6 +834,26 @@ public class GridClientPartitionTopology implements GridDhtPartitionTopology {
     }
 
     /** {@inheritDoc} */
+    @Override public boolean loose(GridDhtLocalPartition part) {
+        ClusterNode loc = cctx.localNode();
+
+        lock.writeLock().lock();
+
+        try {
+            if (part.loose()) {
+                updateLocal(part.id(), loc.id(), part.state(), updateSeq.incrementAndGet());
+
+                return true;
+            }
+
+            return false;
+        }
+        finally {
+            lock.writeLock().unlock();
+        }
+    }
+
+    /** {@inheritDoc} */
     @Override public void onEvicted(GridDhtLocalPartition part, boolean updateSeq) {
         assert updateSeq || lock.isWriteLockedByCurrentThread();
 

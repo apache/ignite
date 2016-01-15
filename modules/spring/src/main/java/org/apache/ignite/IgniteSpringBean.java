@@ -22,6 +22,7 @@ import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import java.util.Collection;
+import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import org.apache.ignite.cache.affinity.Affinity;
 import org.apache.ignite.cluster.ClusterGroup;
@@ -31,6 +32,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.plugin.IgnitePlugin;
 import org.apache.ignite.plugin.PluginNotFoundException;
@@ -289,6 +291,13 @@ public class IgniteSpringBean implements Ignite, DisposableBean, InitializingBea
         assert g != null;
 
         return g.getOrCreateNearCache(cacheName, nearCfg);
+    }
+
+    /** {@inheritDoc} */
+    @Override public IgniteFuture<?> resetLostPartitions(Set<String> cacheNames) {
+        assert g != null;
+
+        return g.resetLostPartitions(cacheNames);
     }
 
     /** {@inheritDoc} */

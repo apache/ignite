@@ -32,8 +32,8 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.cache.DataLossPolicy;
 import org.apache.ignite.cluster.ClusterNode;
-import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
@@ -51,8 +51,8 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
 import org.jsr166.ConcurrentHashMap8;
 
-import static org.apache.ignite.events.EventType.EVT_CACHE_REBALANCE_PART_DATA_LOST;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionState.EVICTED;
+import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionState.LOST;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionState.MOVING;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionState.OWNING;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionState.RENTING;
@@ -431,7 +431,7 @@ class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
             if (node2part != null && node2part.valid())
                 checkEvictions(updateSeq);
 
-            consistencyCheck();
+            assert consistencyCheck();
 
             if (log.isDebugEnabled())
                 log.debug("Partition map after beforeExchange [exchId=" + exchId + ", fullMap=" +
@@ -489,28 +489,8 @@ class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
                         if (cctx.rebalanceEnabled()) {
                             Collection<ClusterNode> owners = owners(p);
 
-                            // If there are no other owners, then become an owner.
-                            if (F.isEmpty(owners)) {
-                                boolean owned = locPart.own();
-
-                                assert owned : "Failed to own partition [cacheName" + cctx.name() + ", locPart=" +
-                                    locPart + ']';
-
-                                updateLocal(p, loc.id(), locPart.state(), updateSeq);
-
+                            if (F.isEmpty(owners))
                                 changed = true;
-
-                                if (cctx.events().isRecordable(EVT_CACHE_REBALANCE_PART_DATA_LOST)) {
-                                    DiscoveryEvent discoEvt = exchFut.discoveryEvent();
-
-                                    cctx.events().addPreloadEvent(p,
-                                        EVT_CACHE_REBALANCE_PART_DATA_LOST, discoEvt.eventNode(),
-                                        discoEvt.type(), discoEvt.timestamp());
-                                }
-
-                                if (log.isDebugEnabled())
-                                    log.debug("Owned partition: " + locPart);
-                            }
                             else if (log.isDebugEnabled())
                                 log.debug("Will not own partition (there are owners to rebalance from) [locPart=" +
                                     locPart + ", owners = " + owners + ']');
@@ -539,7 +519,7 @@ class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
 
             updateRebalanceVersion();
 
-            consistencyCheck();
+            assert consistencyCheck();
         }
         finally {
             lock.writeLock().unlock();
@@ -570,18 +550,28 @@ class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
         while (true) {
             GridDhtLocalPartition loc = locParts.get(p);
 
-            if (loc != null && loc.state() == EVICTED) {
-                locParts.remove(p, loc);
+            if (loc != null) {
 
-                if (!create)
-                    return null;
+                if (loc.state() == LOST && cctx.config().getDataLossPolicy() == DataLossPolicy.FAIL_OPS) {
+                    if (log.isDebugEnabled())
+                        log.debug("Obtaining lost partition: " + loc);
 
-                if (!belongs)
-                    throw new GridDhtInvalidPartitionException(p, "Adding entry to evicted partition " +
-                        "(often may be caused by inconsistent 'key.hashCode()' implementation) " +
-                        "[part=" + p + ", topVer=" + topVer + ", this.topVer=" + this.topVer + ']');
+                    return loc;
+                }
 
-                continue;
+                if (loc.state() == EVICTED) {
+                    locParts.remove(p, loc);
+
+                    if (!create)
+                        return null;
+
+                    if (!belongs)
+                        throw new GridDhtInvalidPartitionException(p, "Adding entry to evicted partition " +
+                            "(often may be caused by inconsistent 'key.hashCode()' implementation) " +
+                            "[part=" + p + ", topVer=" + topVer + ", this.topVer=" + this.topVer + ']');
+
+                    continue;
+                }
             }
 
             if (loc == null && create) {
@@ -954,7 +944,7 @@ class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
 
             updateRebalanceVersion();
 
-            consistencyCheck();
+            assert consistencyCheck();
 
             if (log.isDebugEnabled())
                 log.debug("Partition map after full update: " + fullMapString());
@@ -1067,7 +1057,7 @@ class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
 
             updateRebalanceVersion();
 
-            consistencyCheck();
+            assert consistencyCheck();
 
             if (log.isDebugEnabled())
                 log.debug("Partition map after single update: " + fullMapString());
@@ -1249,7 +1239,7 @@ class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
                 }
             }
 
-            consistencyCheck();
+            assert consistencyCheck();
         }
     }
 
@@ -1263,12 +1253,36 @@ class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
             if (part.own()) {
                 updateLocal(part.id(), loc.id(), part.state(), updateSeq.incrementAndGet());
 
-                consistencyCheck();
+                assert consistencyCheck();
 
                 return true;
             }
 
-            consistencyCheck();
+            assert consistencyCheck();
+
+            return false;
+        }
+        finally {
+            lock.writeLock().unlock();
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean loose(GridDhtLocalPartition part) {
+        ClusterNode loc = cctx.localNode();
+
+        lock.writeLock().lock();
+
+        try {
+            if (part.loose()) {
+                updateLocal(part.id(), loc.id(), part.state(), updateSeq.incrementAndGet());
+
+                assert consistencyCheck();
+
+                return true;
+            }
+
+            assert consistencyCheck();
 
             return false;
         }
@@ -1293,7 +1307,7 @@ class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
 
             updateLocal(part.id(), cctx.localNodeId(), part.state(), seq);
 
-            consistencyCheck();
+            assert consistencyCheck();
         }
         finally {
             lock.writeLock().unlock();
@@ -1409,12 +1423,12 @@ class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
     /**
      * Checks consistency after all operations.
      */
-    private void consistencyCheck() {
+    private boolean consistencyCheck() {
         if (CONSISTENCY_CHECK) {
             assert lock.writeLock().isHeldByCurrentThread();
 
             if (node2part == null)
-                return;
+                return true;
 
             for (Map.Entry<UUID, GridDhtPartitionMap2> e : node2part.entrySet()) {
                 for (Integer p : e.getValue().keySet()) {
@@ -1436,5 +1450,7 @@ class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
                 }
             }
         }
+
+        return true;
     }
 }

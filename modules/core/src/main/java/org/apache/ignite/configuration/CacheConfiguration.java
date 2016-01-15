@@ -50,6 +50,7 @@ import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.CacheRebalanceMode;
 import org.apache.ignite.cache.CacheTypeMetadata;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
+import org.apache.ignite.cache.DataLossPolicy;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.QueryIndex;
 import org.apache.ignite.cache.QueryIndexType;
@@ -286,6 +287,9 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     /** Write ordering mode. */
     private CacheAtomicWriteOrderMode atomicWriteOrderMode;
 
+    /** Cache data loss policy. */
+    private DataLossPolicy dataLossPolicy = DataLossPolicy.NOOP;
+
     /** Number of backups for cache. */
     private int backups = DFLT_BACKUPS;
 
@@ -427,6 +431,7 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
         affMapper = cc.getAffinityMapper();
         atomicityMode = cc.getAtomicityMode();
         atomicWriteOrderMode = cc.getAtomicWriteOrderMode();
+        dataLossPolicy = cc.getDataLossPolicy();
         backups = cc.getBackups();
         cacheLoaderFactory = cc.getCacheLoaderFactory();
         cacheMode = cc.getCacheMode();
@@ -1039,6 +1044,32 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
      */
     public CacheConfiguration<K, V> setAtomicWriteOrderMode(CacheAtomicWriteOrderMode atomicWriteOrderMode) {
         this.atomicWriteOrderMode = atomicWriteOrderMode;
+
+        return this;
+    }
+
+    /**
+     * Gets cache policy for a lost partition. It specifies how cache react if some cache partitions get lost.
+     * <p/>
+     * Default lost policy is the {@link DataLossPolicy#NOOP}.
+     *
+     * @return Cache policy for a lost partition.
+     */
+    public DataLossPolicy getDataLossPolicy() {
+        return dataLossPolicy;
+    }
+
+    /**
+     * Sets cache policy for a lost partition. Data could be lost primarily due to unexpected shutdown of a node with
+     * a cache, that has {@link CacheConfiguration#setBackups} equal to zero. Data policy affects cache behaviour for
+     * requesting data from partition that has been lost. Check {@link DataLossPolicy} for a different policies
+     * description.
+     *
+     * @param dataLossPolicy Cache policy for a lost partition.
+     * @return {@code this} for chaining.
+     */
+    public CacheConfiguration<K, V> setDataLossPolicy(DataLossPolicy dataLossPolicy) {
+        this.dataLossPolicy = dataLossPolicy;
 
         return this;
     }

@@ -60,6 +60,7 @@ import org.jsr166.LongAdder8;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_ATOMIC_CACHE_DELETE_HISTORY_SIZE;
 import static org.apache.ignite.events.EventType.EVT_CACHE_REBALANCE_OBJECT_UNLOADED;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionState.EVICTED;
+import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionState.LOST;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionState.MOVING;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionState.OWNING;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionState.RENTING;
@@ -153,7 +154,7 @@ public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition>,
      * @return {@code false} If such reservation already added.
      */
     public boolean addReservation(GridDhtPartitionsReservation r) {
-        assert state.getReference() != EVICTED : "we can reserve only active partitions";
+        assert state.getReference().active() : "we can reserve only active partitions";
         assert state.getStamp() != 0 : "partition must be already reserved before adding group reservation";
 
         return reservations.addIfAbsent(r);
@@ -259,7 +260,7 @@ public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition>,
     void onAdded(GridDhtCacheEntry entry) {
         GridDhtPartitionState state = state();
 
-        if (state == EVICTED)
+        if (!state.active())
             throw new GridDhtInvalidPartitionException(id, "Adding entry to invalid partition " +
                 "(often may be caused by inconsistent 'key.hashCode()' implementation) [part=" + id + ']');
 
@@ -384,24 +385,26 @@ public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition>,
      * @return {@code True} if reserved.
      */
     @Override public boolean reserve() {
-        while (true) {
+        while (!Thread.currentThread().isInterrupted()) {
             int reservations = state.getStamp();
 
             GridDhtPartitionState s = state.getReference();
 
-            if (s == EVICTED)
+            if (!s.active())
                 return false;
 
             if (state.compareAndSet(s, s, reservations, reservations + 1))
                 return true;
         }
+
+        return false;
     }
 
     /**
      * Releases previously reserved partition.
      */
     @Override public void release() {
-        while (true) {
+        while (!Thread.currentThread().isInterrupted()) {
             int reservations = state.getStamp();
 
             if (reservations == 0)
@@ -409,7 +412,7 @@ public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition>,
 
             GridDhtPartitionState s = state.getReference();
 
-            assert s != EVICTED;
+            assert s.active();
 
             // Decrement reservations.
             if (state.compareAndSet(s, s, reservations, --reservations)) {
@@ -424,7 +427,7 @@ public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition>,
      * @return {@code True} if transitioned to OWNING state.
      */
     boolean own() {
-        while (true) {
+        while (!Thread.currentThread().isInterrupted()) {
             int reservations = state.getStamp();
 
             GridDhtPartitionState s = state.getReference();
@@ -435,9 +438,9 @@ public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition>,
             if (s == OWNING)
                 return true;
 
-            assert s == MOVING;
+            assert s == MOVING || s == LOST;
 
-            if (state.compareAndSet(MOVING, OWNING, reservations, reservations)) {
+            if (state.compareAndSet(s, OWNING, reservations, reservations)) {
                 if (log.isDebugEnabled())
                     log.debug("Owned partition: " + this);
 
@@ -447,6 +450,39 @@ public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition>,
                 return true;
             }
         }
+
+        return false;
+    }
+
+    /**
+     * @return {@code true} if switched to {@link GridDhtPartitionState#LOST} state.
+     */
+    boolean loose() {
+        while (!Thread.currentThread().isInterrupted()) {
+            int reservations = state.getStamp();
+
+            GridDhtPartitionState s = state.getReference();
+
+            if (s == LOST)
+                return true;
+
+            if (s == RENTING || s == EVICTED)
+                return false;
+
+            assert s == MOVING;
+
+            if (state.compareAndSet(MOVING, LOST, reservations, reservations)) {
+                if (log.isDebugEnabled())
+                    log.debug("Lost partition: " + this);
+
+                // No need to keep history any more.
+                evictHist = null;
+
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /**
@@ -454,10 +490,12 @@ public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition>,
      * @return Future to signal that this node is no longer an owner or backup.
      */
     IgniteInternalFuture<?> rent(boolean updateSeq) {
-        while (true) {
+        while (!Thread.currentThread().isInterrupted()) {
             int reservations = state.getStamp();
 
             GridDhtPartitionState s = state.getReference();
+
+            assert s != LOST;
 
             if (s == RENTING || s == EVICTED)
                 return rent;
@@ -483,7 +521,7 @@ public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition>,
     void tryEvictAsync(boolean updateSeq) {
         if (map.isEmpty() && !GridQueryProcessor.isEnabled(cctx.config()) &&
             state.getReference() == RENTING && state.getStamp() == 0 &&
-            state.compareAndSet(RENTING, EVICTED, 0, 0)) {
+            tryEvictState(state)) {
             if (log.isDebugEnabled())
                 log.debug("Evicted partition: " + this);
 
@@ -526,7 +564,8 @@ public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition>,
         // Attempt to evict partition entries from cache.
         clearAll();
 
-        if (map.isEmpty() && state.compareAndSet(RENTING, EVICTED, 0, 0)) {
+        // We should also evict partition that has been lost.
+        if (map.isEmpty() && tryEvictState(state)) {
             if (log.isDebugEnabled())
                 log.debug("Evicted partition: " + this);
 
@@ -552,7 +591,7 @@ public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition>,
      * Clears swap entries for evicted partition.
      */
     private void clearSwap() {
-        assert state() == EVICTED;
+        assert !state().active();
         assert !GridQueryProcessor.isEnabled(cctx.config()) : "Indexing needs to have unswapped values.";
 
         try {
@@ -697,7 +736,7 @@ public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition>,
                     }
                 }
                 catch (GridDhtInvalidPartitionException e) {
-                    assert map.isEmpty() && state() == EVICTED: "Invalid error [e=" + e + ", part=" + this + ']';
+                    assert map.isEmpty() && !state().active() : "Invalid error [e=" + e + ", part=" + this + ']';
                     assert swapEmpty() : "Invalid error when swap is not cleared [e=" + e + ", part=" + this + ']';
 
                     break; // Partition is already concurrently cleared and evicted.
@@ -791,6 +830,16 @@ public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition>,
                 cctx.dht().removeVersionedEntry(t.get1(), t.get2());
             }
         });
+    }
+
+    /**
+     * Holds logic for changing state to evicted.
+     *
+     * @param state to be evicted.
+     * @return true if state has been evicted successfully. False otherwise.
+     */
+    private static boolean tryEvictState(AtomicStampedReference<GridDhtPartitionState> state) {
+        return (state.compareAndSet(RENTING, EVICTED, 0, 0) || state.compareAndSet(LOST, EVICTED, 0, 0));
     }
 
     /** {@inheritDoc} */

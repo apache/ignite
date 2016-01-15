@@ -74,6 +74,7 @@ import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.datastructures.CacheDataStructuresManager;
+import org.apache.ignite.internal.processors.cache.distributed.ResetLostPartitionMessage;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCache;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCacheAdapter;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridNoStorageCacheMap;
@@ -164,6 +165,9 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
     /** Transaction interface implementation. */
     private IgniteTransactionsImpl transactions;
+
+    /** Pending lost partitions resets. */
+    private final ConcurrentMap<IgniteUuid, GridFutureAdapter> pendingResets = new ConcurrentHashMap<>();
 
     /** Pending cache starts. */
     private ConcurrentMap<String, IgniteInternalFuture> pendingFuts = new ConcurrentHashMap<>();
@@ -918,6 +922,9 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         IgniteClientDisconnectedCheckedException err = new IgniteClientDisconnectedCheckedException(
             ctx.cluster().clientReconnectFuture(),
             "Failed to execute dynamic cache change request, client node disconnected.");
+
+        for (GridFutureAdapter fut : pendingResets.values())
+            fut.onDone(err);
 
         for (IgniteInternalFuture fut : pendingFuts.values())
             ((GridFutureAdapter)fut).onDone(err);
@@ -1765,6 +1772,13 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             fut.onDone();
     }
 
+    public void completeResetPartitionsFuture(ResetLostPartitionMessage msg) {
+        GridFutureAdapter fut = pendingResets.get(msg.id());
+
+        if (fut != null )
+            fut.onDone();
+    }
+
     /**
      * Creates shared context.
      *
@@ -2299,6 +2313,56 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         t.close(true);
 
         return F.first(initiateCacheChanges(F.asList(t), false));
+    }
+
+    /**
+     * @param cacheNames Caches' names for resetting.
+     * @return Future that will be completed when caches are reset.
+     */
+    public IgniteInternalFuture<?> resetLostPartitions(Set<String> cacheNames) {
+
+        checkEmptyTransactions();
+
+        Exception err = null;
+        int[] cacheIds = new int[cacheNames.size()];
+        int i = 0;
+
+        for (String cacheName : cacheNames)
+            cacheIds[i++] = CU.cacheId(cacheName);
+
+        final ResetLostPartitionMessage resetMsg = new ResetLostPartitionMessage(cacheIds);
+        GridFutureAdapter<?> res = new GridFutureAdapter() {
+            /** {@inheritDoc} */
+            @Override public boolean onDone(@Nullable Object res, @Nullable Throwable err) {
+                // Make sure to remove future before completion.
+                pendingFuts.remove(resetMsg.id(), this);
+
+                return super.onDone(res, err);
+            }
+        };
+
+        try {
+            ctx.discovery().sendCustomEvent(resetMsg);
+
+            if (ctx.isStopping()) {
+                err = new IgniteCheckedException("Failed to execute cache reset partition request, " +
+                    "node is stopping.");
+            }
+            else if (ctx.clientDisconnected()) {
+                err = new IgniteClientDisconnectedCheckedException(ctx.cluster().clientReconnectFuture(),
+                    "Failed to execute cache reset partition request, client node disconnected.");
+            }
+        }
+        catch (IgniteCheckedException e) {
+            err = e;
+        }
+
+        if (err != null)
+            res.onDone(err);
+        else
+            pendingResets.put(resetMsg.id(), res);
+
+        return res;
     }
 
     /**
@@ -3217,6 +3281,9 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         Exception err = new IgniteCheckedException("Operation has been cancelled (node is stopping).");
 
+        for (GridFutureAdapter fut : pendingResets.values())
+            fut.onDone(err);
+
         for (IgniteInternalFuture fut : pendingFuts.values())
             ((GridFutureAdapter)fut).onDone(err);
 
@@ -3379,7 +3446,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      */
     private void checkEmptyTransactions() throws IgniteException {
         if (transactions().tx() != null || sharedCtx.lockedTopologyVersion(null) != null)
-            throw new IgniteException("Cannot start/stop cache within lock or transaction.");
+            throw new IgniteException("Cannot change cache state within lock or transaction.");
     }
 
     /**

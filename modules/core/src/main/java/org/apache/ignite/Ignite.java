@@ -18,6 +18,7 @@
 package org.apache.ignite;
 
 import java.util.Collection;
+import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import org.apache.ignite.cache.CacheMode;
@@ -28,6 +29,7 @@ import org.apache.ignite.configuration.CollectionConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.internal.util.typedef.G;
+import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.plugin.IgnitePlugin;
 import org.apache.ignite.plugin.PluginNotFoundException;
@@ -316,6 +318,15 @@ public interface Ignite extends AutoCloseable {
      * @return {@code IgniteCache} instance.
      */
     public <K, V> IgniteCache<K, V> getOrCreateNearCache(@Nullable String cacheName, NearCacheConfiguration<K, V> nearCfg);
+
+    /**
+     * Resets state for the lost partitions. New affinity nodes will own partitions with lost data.
+     *
+     * @param cacheNames Set of the cache names for the lost partition resetting. If some cache hasn't lost any
+     *                   partition but included in this list, then this cache will be skipped.
+     * @return Future that will be completed when resetting is finished.
+     */
+    public IgniteFuture<?> resetLostPartitions(Set<String> cacheNames);
 
     /**
      * Stops dynamically started cache.

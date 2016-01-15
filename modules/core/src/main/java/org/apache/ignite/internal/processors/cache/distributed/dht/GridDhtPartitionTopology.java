@@ -225,6 +225,12 @@ public interface GridDhtPartitionTopology {
     public boolean own(GridDhtLocalPartition part);
 
     /**
+     * @param part Mark partition as lost.
+     * @return {@code True} if lost.
+     */
+    boolean loose(GridDhtLocalPartition part);
+
+    /**
      * @param part Evicted partition.
      * @param updateSeq Update sequence increment flag.
      */
