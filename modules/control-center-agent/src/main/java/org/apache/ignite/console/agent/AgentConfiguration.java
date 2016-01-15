@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.agent;
+package org.apache.ignite.console.agent;
 
 import com.beust.jcommander.Parameter;
 import java.io.File;
@@ -59,6 +59,9 @@ public class AgentConfiguration {
         "                        " +
         "      Default value: " + DFLT_NODE_URI)
     private String nodeUri;
+
+    /** URI for connect to Ignite demo node REST server */
+    private String demoNodeUri;
 
     /** */
     @Parameter(names = {"-c", "--config"}, description = "Path to agent property file" +
@@ -116,6 +119,20 @@ public class AgentConfiguration {
      */
     public void nodeUri(String nodeUri) {
         this.nodeUri = nodeUri;
+    }
+
+    /**
+     * @return Demo node URI.
+     */
+    public String demoNodeUri() {
+        return demoNodeUri;
+    }
+
+    /**
+     * @param demoNodeUri Demo node URI.
+     */
+    public void demoNodeUri(String demoNodeUri) {
+        this.demoNodeUri = demoNodeUri;
     }
 
     /**

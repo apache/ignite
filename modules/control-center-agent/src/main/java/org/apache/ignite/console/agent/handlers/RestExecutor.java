@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.agent.handlers;
+package org.apache.ignite.console.agent.handlers;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -36,12 +36,12 @@ import org.apache.http.client.utils.URIBuilder;
 import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClientBuilder;
-import org.apache.ignite.agent.AgentConfiguration;
-import org.apache.ignite.agent.remote.Remote;
-import org.apache.ignite.agent.demo.AgentSqlDemo;
+import org.apache.ignite.console.agent.AgentConfiguration;
+import org.apache.ignite.console.agent.remote.Remote;
+import org.apache.ignite.console.demo.AgentSqlDemo;
 import org.apache.log4j.Logger;
 
-import static org.apache.ignite.agent.AgentConfiguration.DFLT_NODE_PORT;
+import static org.apache.ignite.console.agent.AgentConfiguration.DFLT_NODE_PORT;
 
 /**
  * Executor for REST requests.
@@ -79,28 +79,28 @@ public class RestExecutor {
     }
 
     /**
-     * @param path Path.
-     * @param mtd Method.
+     * @param uri Url.
      * @param params Params.
+     * @param demo Use demo node.
+     * @param mtd Method.
      * @param headers Headers.
      * @param body Body.
      */
     @Remote
-    public RestResult executeRest(String path, Map<String, String> params, String mtd, Map<String, String> headers,
-        String body) throws IOException, URISyntaxException {
-        log.debug("Start execute REST command [url=/" + path + ", method=" + mtd +
-            ", parameters=" + params + "]");
+    public RestResult executeRest(String uri, Map<String, String> params, boolean demo,
+        String mtd, Map<String, String> headers, String body) throws IOException, URISyntaxException {
+        log.debug("Start execute REST command [method=" + mtd + ", uri=/" + uri + ", parameters=" + params + "]");
 
-        URIBuilder builder = new URIBuilder(cfg.nodeUri());
+        URIBuilder builder = new URIBuilder(demo ? cfg.demoNodeUri() : cfg.nodeUri());
 
         if (builder.getPort() == -1)
             builder.setPort(DFLT_NODE_PORT);
 
-        if (path != null) {
-            if (!path.startsWith("/") && !cfg.nodeUri().endsWith("/"))
-                path = '/' + path;
+        if (uri != null) {
+            if (!uri.startsWith("/") && !cfg.nodeUri().endsWith("/"))
+                uri = '/' + uri;
 
-            builder.setPath(path);
+            builder.setPath(uri);
         }
 
         if (params != null) {

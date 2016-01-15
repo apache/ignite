@@ -17,7 +17,7 @@
 
 // Controller for SQL notebook screen.
 consoleModule.controller('sqlController', function ($http, $timeout, $interval, $scope, $animate,  $location, $anchorScroll, $state,
-    $modal, $popover, $loading, $common, $confirm, $agentDownload, uiGridExporterConstants) {
+    $modal, $popover, $loading, $common, $confirm, $agentDownload, QueryNotebooks, uiGridExporterConstants) {
 
     $scope.joinTip = $common.joinTip;
 
@@ -56,8 +56,14 @@ consoleModule.controller('sqlController', function ($http, $timeout, $interval, 
         }
     };
 
+    var _demo = $state.includes('**.sql.demo');
+
     var _mask = function (cacheName) {
         return _.isEmpty(cacheName) ? '<default>' : cacheName;
+    };
+
+    var _handleException = function(errMsg) {
+        $common.showError(errMsg);
     };
 
     // Time line X axis descriptor.
@@ -245,52 +251,47 @@ consoleModule.controller('sqlController', function ($http, $timeout, $interval, 
         $state.go('/configuration/clusters');
     };
 
-    var loadNotebook = function () {
-        $loading.start('loading');
+    var loadNotebook = function (notebook) {
+        $scope.notebook = notebook;
 
-        $http.post('/api/v1/notebooks/get', {noteId: $state.params.id})
-            .success(function (notebook) {
-                $scope.notebook = notebook;
+        $scope.notebook_name = notebook.name;
 
-                $scope.notebook_name = notebook.name;
+        if (!$scope.notebook.expandedParagraphs)
+            $scope.notebook.expandedParagraphs = [];
 
-                if (!$scope.notebook.expandedParagraphs)
-                    $scope.notebook.expandedParagraphs = [];
+        if (!$scope.notebook.paragraphs)
+            $scope.notebook.paragraphs = [];
 
-                if (!$scope.notebook.paragraphs)
-                    $scope.notebook.paragraphs = [];
+        _.forEach(notebook.paragraphs, function (paragraph) {
+            paragraph.id = 'paragraph-' + paragraphId++;
 
-                _.forEach(notebook.paragraphs, function (paragraph) {
-                    paragraph.id = 'paragraph-' + paragraphId++;
+            enhanceParagraph(paragraph);
+        });
 
-                    enhanceParagraph(paragraph);
-                });
+        if (!notebook.paragraphs || notebook.paragraphs.length == 0)
+            $scope.addParagraph();
+        else
+            $scope.rebuildScrollParagraphs();
 
-                if (!notebook.paragraphs || notebook.paragraphs.length == 0)
-                    $scope.addParagraph();
-                else
-                    $scope.rebuildScrollParagraphs();
-
-                $agentDownload.startTopologyListening(getTopology);
-            })
-            .error(function () {
-                $scope.notebook = undefined;
-            })
-            .finally(function () {
-                $scope.loaded = true;
-
-                $loading.finish('loading');
-            });
+        $agentDownload.startTopologyListening(getTopology, _demo);
     };
 
-    loadNotebook();
+    $loading.start('loading');
 
-    var _saveNotebook = function (f) {
-        $http.post('/api/v1/notebooks/save', $scope.notebook)
-            .success(f || function() {})
-            .error(function (errMsg) {
-                $common.showError(errMsg);
-            });
+    QueryNotebooks.read(_demo, $state.params.noteId)
+        .then(loadNotebook)
+        .catch(function(err) {
+            $scope.notebook = undefined;
+        })
+        .finally(function() {
+            $scope.loaded = true;
+
+            $loading.finish('loading');
+        });
+
+    var _saveNotebook = function (cb) {
+        QueryNotebooks.save(_demo, $scope.notebook)
+            .catch(_handleException);
     };
 
     $scope.renameNotebook = function (name) {
@@ -300,19 +301,21 @@ consoleModule.controller('sqlController', function ($http, $timeout, $interval, 
         if ($scope.notebook.name != name) {
             $scope.notebook.name = name;
 
-            _saveNotebook(function () {
-                var idx = _.findIndex($scope.$root.notebooks, function (item) {
-                    return item._id == $scope.notebook._id;
-                });
+            QueryNotebooks.save(_demo, $scope.notebook)
+                .then(function() {
+                    var idx = _.findIndex($scope.$root.notebooks, function (item) {
+                        return item._id == $scope.notebook._id;
+                    });
 
-                if (idx >= 0) {
-                    $scope.$root.notebooks[idx].name = name;
+                    if (idx >= 0) {
+                        $scope.$root.notebooks[idx].name = name;
 
-                    $scope.$root.rebuildDropdown();
-                }
+                        $scope.$root.rebuildDropdown();
+                    }
 
-                $scope.notebook.edit = false;
-            });
+                    $scope.notebook.edit = false;
+                })
+                .catch(_handleException);
         }
         else
             $scope.notebook.edit = false
@@ -353,7 +356,9 @@ consoleModule.controller('sqlController', function ($http, $timeout, $interval, 
 
             $scope.rebuildScrollParagraphs();
 
-            _saveNotebook(function () { paragraph.edit = false; });
+            QueryNotebooks.save(_demo, $scope.notebook)
+                .then(function () { paragraph.edit = false; })
+                .catch(_handleException);
         }
         else
             paragraph.edit = false
@@ -365,7 +370,6 @@ consoleModule.controller('sqlController', function ($http, $timeout, $interval, 
         var paragraph = {
             id: 'paragraph-' + paragraphId++,
             name: 'Query' + (sz ==0 ? '' : sz),
-            editor: true,
             query: '',
             pageSize: $scope.pageSizes[0],
             timeLineSpan: $scope.timeLineSpans[0],
@@ -431,7 +435,8 @@ consoleModule.controller('sqlController', function ($http, $timeout, $interval, 
 
                     $scope.rebuildScrollParagraphs();
 
-                    _saveNotebook();
+                    QueryNotebooks.save(_demo, $scope.notebook)
+                        .catch(_handleException);
             });
     };
 
@@ -683,7 +688,8 @@ consoleModule.controller('sqlController', function ($http, $timeout, $interval, 
     };
 
     $scope.execute = function (paragraph) {
-        _saveNotebook();
+        QueryNotebooks.save(_demo, $scope.notebook)
+            .catch(_handleException);
 
         paragraph.prevQuery = paragraph.queryArgs ? paragraph.queryArgs.query : paragraph.query;
 
@@ -692,6 +698,7 @@ consoleModule.controller('sqlController', function ($http, $timeout, $interval, 
         _tryCloseQueryResult(paragraph.queryId);
 
         paragraph.queryArgs = {
+            demo: _demo,
             type: "QUERY",
             query: paragraph.query,
             pageSize: paragraph.pageSize,
@@ -720,7 +727,8 @@ consoleModule.controller('sqlController', function ($http, $timeout, $interval, 
     };
 
     $scope.explain = function (paragraph) {
-        _saveNotebook();
+        QueryNotebooks.save(_demo, $scope.notebook)
+            .catch(_handleException);
 
         _cancelRefresh(paragraph);
 
@@ -729,6 +737,7 @@ consoleModule.controller('sqlController', function ($http, $timeout, $interval, 
         _tryCloseQueryResult(paragraph.queryId);
 
         paragraph.queryArgs = {
+            demo: _demo,
             type: "EXPLAIN",
             query: 'EXPLAIN ' + paragraph.query,
             pageSize: paragraph.pageSize,
@@ -747,7 +756,8 @@ consoleModule.controller('sqlController', function ($http, $timeout, $interval, 
     };
 
     $scope.scan = function (paragraph) {
-        _saveNotebook();
+        QueryNotebooks.save(_demo, $scope.notebook)
+            .catch(_handleException);
 
         _cancelRefresh(paragraph);
 
@@ -756,6 +766,7 @@ consoleModule.controller('sqlController', function ($http, $timeout, $interval, 
         _tryCloseQueryResult(paragraph.queryId);
 
         paragraph.queryArgs = {
+            demo: _demo,
             type: "SCAN",
             pageSize: paragraph.pageSize,
             cacheName: paragraph.cacheName || undefined
@@ -775,7 +786,7 @@ consoleModule.controller('sqlController', function ($http, $timeout, $interval, 
     $scope.nextPage = function(paragraph) {
         _showLoading(paragraph, true);
 
-        $http.post('/api/v1/agent/query/fetch', {queryId: paragraph.queryId, pageSize: paragraph.pageSize, cacheName: paragraph.queryArgs.cacheName})
+        $http.post('/api/v1/agent/query/fetch', {demo: _demo, queryId: paragraph.queryId, pageSize: paragraph.pageSize, cacheName: paragraph.queryArgs.cacheName})
             .success(function (res) {
                 paragraph.page++;
 
@@ -862,7 +873,7 @@ consoleModule.controller('sqlController', function ($http, $timeout, $interval, 
     };
 
     $scope.exportCsvAll = function(paragraph) {
-        $http.post('/api/v1/agent/query/getAll', {query: paragraph.query, cacheName: paragraph.cacheName})
+        $http.post('/api/v1/agent/query/getAll', {demo: _demo, query: paragraph.query, cacheName: paragraph.cacheName})
             .success(function (item) {
                 _export(paragraph.name + '-all.csv', item.meta, item.rows);
             })
@@ -1463,7 +1474,7 @@ consoleModule.controller('sqlController', function ($http, $timeout, $interval, 
 
         $scope.metadata = [];
 
-        $http.post('/api/v1/agent/cache/metadata')
+        $http.post('/api/v1/agent/cache/metadata', {demo: _demo})
             .success(function (metadata) {
                 $scope.metadata = _.sortBy(metadata, _.filter(metadata, function (meta) {
                     var cacheName = _mask(meta.cacheName);

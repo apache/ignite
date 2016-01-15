@@ -2143,10 +2143,10 @@ consoleModule.service('$agentDownload', [
              * @param attr
              * @param mtr
              */
-            startTopologyListening: function (success, attr, mtr) {
+            startTopologyListening: function (success, demo, attr, mtr) {
                 _agentDownloadModal.check = {
                     url: '/api/v1/agent/topology',
-                    params: {attr: !!attr, mtr: !!mtr},
+                    params: {demo: !!demo,  attr: !!attr, mtr: !!mtr},
                     cb: success
                 };
 
@@ -2196,16 +2196,15 @@ consoleModule.controller('notebooks', ['$scope', '$modal', '$state', '$http', '$
 
     $scope.$root.rebuildDropdown = function() {
         $scope.notebookDropdown = [
-            {text: 'Create new notebook', click: 'inputNotebookName()'}
+            {text: 'Create new notebook', click: 'inputNotebookName()'},
+            {divider: true},
+            {text: 'SQL demo', sref: 'base.sql.demo'}
         ];
-
-        if ($scope.$root.notebooks.length > 0)
-            $scope.notebookDropdown.push({divider: true});
 
         _.forEach($scope.$root.notebooks, function (notebook) {
             $scope.notebookDropdown.push({
                 text: notebook.name,
-                href: '/sql/' + notebook._id
+                sref: 'base.sql.notebook({noteId:"' + notebook._id + '"})'
             });
         });
     };

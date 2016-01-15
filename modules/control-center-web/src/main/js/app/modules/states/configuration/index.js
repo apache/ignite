@@ -41,7 +41,7 @@ angular
         },
         resolve: {
             $title: () => {
-                return 'Create and Configure Ignite Clusters';
+                return 'Configure Clusters - Ignite Console';
             }
         }
     })
@@ -53,7 +53,7 @@ angular
         },
         resolve: {
             $title: () => {
-                return 'Create and Configure Ignite Caches';
+                return 'Configure Caches - Ignite Console';
             }
         }
     })
@@ -65,7 +65,7 @@ angular
         },
         resolve: {
             $title: () => {
-                return 'Create and Configure Cache Type Metadata';
+                return 'Configure Cache Type Metadata - Ignite Console';
             }
         }
     })
@@ -77,7 +77,7 @@ angular
         },
         resolve: {
             $title: () => {
-                return 'Create and Configure IGFS';
+                return 'Configure IGFS - Ignite Console';
             }
         }
     })
@@ -91,7 +91,7 @@ angular
         },
         resolve: {
             $title: () => {
-                return 'Configurations Summary';
+                return 'Configurations Summary - Ignite Console';
             }
         }
     });

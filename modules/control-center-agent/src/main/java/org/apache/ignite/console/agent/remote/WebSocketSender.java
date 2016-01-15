@@ -15,23 +15,25 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.agent.remote;
+package org.apache.ignite.console.agent.remote;
 
-import java.lang.annotation.ElementType;
-import java.lang.annotation.Retention;
-import java.lang.annotation.RetentionPolicy;
-import java.lang.annotation.Target;
+import com.google.gson.JsonObject;
 
 /**
- * Use this annotation to associate methods with remote NodeJS server commands.
+ * Sender for messages to web-socket.
  */
-@Target(ElementType.METHOD)
-@Retention(RetentionPolicy.RUNTIME)
-public @interface Remote {
+public interface WebSocketSender {
     /**
-     * Whether or not method should be executed synchronously.
-     *
-     * @return {@code true} if method will be executed in separated thread otherwise if method will be executed in handler thread.
+     * Send message.
+     * @param msg Message.
+     * @return {@code true} if message sent successfully.
      */
-    boolean async() default true;
+    public boolean send(String msg);
+
+    /**
+     * Send message.
+     * @param msg Message.
+     * @return {@code true} if message sent successfully.
+     */
+    public boolean send(JsonObject msg);
 }

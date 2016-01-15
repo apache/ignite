@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.agent.remote;
+package org.apache.ignite.console.agent.remote;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonArray;

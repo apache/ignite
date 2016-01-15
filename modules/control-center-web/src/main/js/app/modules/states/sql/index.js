@@ -25,14 +25,31 @@ angular
     // set up the states
     $stateProvider
     .state('base.sql', {
-        url: '/sql/{id}',
+        url: '/sql',
+        abstract: true,
+        template: '<ui-view></ui-view>'
+    })
+    .state('base.sql.notebook', {
+        url: '/notebook/{noteId}',
         templateUrl: '/sql/sql.html',
         data: {
             loading: 'Loading notebook screen...'
         },
         resolve: {
             $title: () => {
-                return 'SQL notebook';
+                return 'Query notebook';
+            }
+        }
+    })
+    .state('base.sql.demo', {
+        url: '/demo',
+        templateUrl: '/sql/sql.html',
+        data: {
+            loading: 'Enable SQL demo...'
+        },
+        resolve: {
+            $title: () => {
+                return 'SQL demo';
             }
         }
     });

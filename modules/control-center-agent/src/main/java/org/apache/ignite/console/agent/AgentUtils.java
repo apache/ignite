@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.agent;
+package org.apache.ignite.console.agent;
 
 import org.apache.log4j.Logger;
 

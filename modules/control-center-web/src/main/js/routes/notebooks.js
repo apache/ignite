@@ -68,8 +68,8 @@ router.post('/get', function (req, res) {
 
         // Get all metadata for spaces.
         db.Notebook.findOne({space: {$in: space_ids}, _id: req.body.noteId}).exec(function (err, notebook) {
-            if (err || notebook == null)
-                return res.sendStatus(500);
+            if (err)
+                return res.status(500).send(err.message);
 
             res.json(notebook);
         });

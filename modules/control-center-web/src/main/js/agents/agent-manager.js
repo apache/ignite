@@ -113,14 +113,15 @@ function Client(ws, manager) {
 }
 
 /**
- * @param {String} path
+ * @param {String} uri
  * @param {Object} params
+ * @param {Boolean} demo
  * @param {String} [method]
  * @param {Object} [headers]
  * @param {String} [body]
  * @param {Function} [cb] Callback. Take 3 arguments: {String} error, {number} httpCode, {string} response.
  */
-Client.prototype.executeRest = function(path, params, method, headers, body, cb) {
+Client.prototype.executeRest = function(uri, params, demo, method, headers, body, cb) {
     if (typeof(params) != 'object')
         throw '"params" argument must be an object';
 
@@ -143,7 +144,7 @@ Client.prototype.executeRest = function(path, params, method, headers, body, cb)
 
     var newArgs = argsToArray(arguments);
 
-    newArgs[5] = function(ex, res) {
+    newArgs[6] = function(ex, res) {
         if (ex)
             cb(ex.message);
         else
@@ -250,7 +251,9 @@ Client.prototype._rmtAuthMessage = function(msg) {
 
             self._manager._addClient(account._id, self);
 
-            self._ignite = new apacheIgnite.Ignite(new AgentServer(self));
+            self._cluster = new apacheIgnite.Ignite(new AgentServer(self));
+
+            self._demo = new apacheIgnite.Ignite(new AgentServer(self, true));
         }
     });
 };
@@ -271,8 +274,8 @@ Client.prototype._rmtCallRes = function(msg) {
 /**
  * @returns {Ignite}
  */
-Client.prototype.ignite = function() {
-    return this._ignite;
+Client.prototype.ignite = function(demo) {
+    return demo ? this._demo : this._cluster;
 };
 
 function removeFromArray(arr, val) {

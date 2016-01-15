@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.agent;
+package org.apache.ignite.console.agent;
 
 import com.beust.jcommander.JCommander;
 import java.io.File;
@@ -25,13 +25,12 @@ import java.net.URISyntaxException;
 import java.util.Arrays;
 
 import com.beust.jcommander.ParameterException;
-import org.apache.ignite.agent.handlers.RestExecutor;
+import org.apache.ignite.console.agent.handlers.RestExecutor;
 import org.apache.log4j.Logger;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.websocket.client.WebSocketClient;
 
-import static org.apache.ignite.agent.AgentConfiguration.DFLT_SERVER_PORT;
-import static org.apache.ignite.agent.AgentUtils.resolvePath;
+import static org.apache.ignite.console.agent.AgentConfiguration.DFLT_SERVER_PORT;
 
 /**
  * Control Center Agent launcher.
@@ -74,7 +73,7 @@ public class AgentLauncher {
         AgentConfiguration propCfg = new AgentConfiguration();
 
         try {
-            File f = resolvePath(prop);
+            File f = AgentUtils.resolvePath(prop);
 
             if (f == null)
                 log.warn("Failed to find agent property file: '" + prop + "'");

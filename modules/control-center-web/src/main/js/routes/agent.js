@@ -67,7 +67,7 @@ router.get('/download/zip', function (req, res) {
 
         zip.file(agentFld + '/default.properties', prop.join('\n'));
 
-        var buffer = zip.generate({type:"nodebuffer", platform: "UNIX"});
+        var buffer = zip.generate({type: 'nodebuffer', platform: 'UNIX'});
 
         // Set the archive name.
         res.attachment(agentZip);
@@ -81,7 +81,7 @@ router.post('/topology', function (req, res) {
     var client = _client(req, res);
 
     if (client) {
-        client.ignite().cluster(req.body.attr, req.body.mtr).then(
+        client.ignite(req.body.demo).cluster(req.body.attr, req.body.mtr).then(
             function (clusters) {
                 res.json(clusters);
             },
@@ -105,7 +105,7 @@ router.post('/query', function (req, res) {
         qry.setPageSize(req.body.pageSize);
 
         // Get query cursor.
-        client.ignite().cache(req.body.cacheName).query(qry).nextPage().then(function (cursor) {
+        client.ignite(req.body.demo).cache(req.body.cacheName).query(qry).nextPage().then(function (cursor) {
             res.json({meta: cursor.fieldsMetadata(), rows: cursor.page(), queryId: cursor.queryId()});
         }, function (err) {
             res.status(500).send(err);
@@ -125,7 +125,7 @@ router.post('/query/getAll', function (req, res) {
         qry.setPageSize(1024);
 
         // Get query cursor.
-        var cursor = client.ignite().cache(req.body.cacheName).query(qry);
+        var cursor = client.ignite(req.body.demo).cache(req.body.cacheName).query(qry);
 
         cursor.getAll().then(function (rows) {
             res.json({meta: cursor.fieldsMetadata(), rows: rows});
@@ -147,7 +147,7 @@ router.post('/scan', function (req, res) {
         qry.setPageSize(req.body.pageSize);
 
         // Get query cursor.
-        client.ignite().cache(req.body.cacheName).query(qry).nextPage().then(function (cursor) {
+        client.ignite(req.body.demo).cache(req.body.cacheName).query(qry).nextPage().then(function (cursor) {
             res.json({meta: cursor.fieldsMetadata(), rows: cursor.page(), queryId: cursor.queryId()});
         }, function (err) {
             res.status(500).send(err);
@@ -160,7 +160,7 @@ router.post('/query/fetch', function (req, res) {
     var client = _client(req, res);
 
     if (client) {
-        var cache = client.ignite().cache(req.body.cacheName);
+        var cache = client.ignite(req.body.demo).cache(req.body.cacheName);
 
         var cmd = cache._createCommand('qryfetch').addParam('qryId', req.body.queryId).
             addParam('pageSize', req.body.pageSize);
@@ -178,7 +178,7 @@ router.post('/query/close', function (req, res) {
     var client = _client(req, res);
 
     if (client) {
-        var cache = client.ignite().cache(req.body.cacheName);
+        var cache = client.ignite(req.body.demo).cache(req.body.cacheName);
 
         var cmd = cache._createCommand('qrycls').addParam('qryId', req.body.queryId);
 
@@ -195,7 +195,7 @@ router.post('/cache/metadata', function (req, res) {
     var client = _client(req, res);
 
     if (client) {
-        client.ignite().cache(req.body.cacheName).metadata().then(function (caches) {
+        client.ignite(req.body.demo).cache(req.body.cacheName).metadata().then(function (caches) {
             var types = [];
 
             for (var meta of caches) {
@@ -275,9 +275,12 @@ router.post('/demo/sql/start', function (req, res) {
     if (client) {
         client.startDemoSQL(function (err, enabled) {
             if (err)
-                return res.status(500).send(err);
+                return res.status(500).send(err.message);
 
-            res.status(200).send(enabled);
+            if (!enabled)
+                return res.status(500).send('Failed to start SQL demo');
+
+            res.sendStatus(200);
         });
     }
 });

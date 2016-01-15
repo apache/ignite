@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.agent.demo;
+package org.apache.ignite.console.demo;
 
 import java.io.File;
 import java.io.FileReader;
@@ -27,7 +27,7 @@ import org.apache.log4j.Logger;
 import org.h2.tools.RunScript;
 import org.h2.tools.Server;
 
-import static org.apache.ignite.agent.AgentUtils.resolvePath;
+import static org.apache.ignite.console.agent.AgentUtils.resolvePath;
 
 /**
  * Demo for metadata load from database.
@@ -59,10 +59,10 @@ public class AgentMetadataDemo {
             try {
                 Connection conn = DriverManager.getConnection("jdbc:h2:mem:demo-db;DB_CLOSE_DELAY=-1", "sa", "");
 
-                File sqlScript = resolvePath("demo/demo-db.sql");
+                File sqlScript = resolvePath("demo/db-init.sql");
 
                 if (sqlScript == null) {
-                    log.error("DEMO: Failed to find demo database init script file: demo/demo-db.sql");
+                    log.error("DEMO: Failed to find demo database init script file: demo/db-init.sql");
                     log.error("DEMO: Failed to start demo for metadata");
 
                     return;

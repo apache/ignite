@@ -98,7 +98,7 @@
                 <configuration>
                     <archive>
                         <manifest>
-                            <mainClass>org.apache.ignite.agent.AgentLauncher</mainClass>
+                            <mainClass>org.apache.ignite.console.agent.AgentLauncher</mainClass>
                         </manifest>
                     </archive>
                 </configuration>

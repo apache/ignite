@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.agent.handlers;
+package org.apache.ignite.console.agent.handlers;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -30,14 +30,14 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Properties;
-import org.apache.ignite.agent.AgentConfiguration;
-import org.apache.ignite.agent.remote.Remote;
-import org.apache.ignite.agent.demo.AgentMetadataDemo;
+import org.apache.ignite.console.agent.AgentConfiguration;
+import org.apache.ignite.console.agent.remote.Remote;
+import org.apache.ignite.console.demo.AgentMetadataDemo;
 import org.apache.ignite.schema.parser.DbMetadataReader;
 import org.apache.ignite.schema.parser.DbTable;
 import org.apache.log4j.Logger;
 
-import static org.apache.ignite.agent.AgentUtils.resolvePath;
+import static org.apache.ignite.console.agent.AgentUtils.resolvePath;
 
 /**
  * Remote API to extract database metadata.

@@ -59,6 +59,7 @@ import './modules/User/index';
 import './modules/Auth/index';
 import './modules/Form/index';
 import './modules/JavaTypes/index';
+import './modules/QueryNotebooks/index';
 
 import './modules/states/login/index';
 import './modules/states/logout/index';
@@ -102,6 +103,7 @@ angular
     'ignite-console.User',
     'ignite-console.Form',
     'ignite-console.JavaTypes',
+    'ignite-console.QueryNotebooks',
     // States.
     'ignite-console.states.login',
     'ignite-console.states.logout',

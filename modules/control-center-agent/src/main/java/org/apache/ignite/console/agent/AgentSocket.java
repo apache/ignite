@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.agent;
+package org.apache.ignite.console.agent;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonElement;
@@ -25,11 +25,11 @@ import java.io.IOException;
 import java.net.ConnectException;
 import java.util.concurrent.CountDownLatch;
 import javax.net.ssl.SSLHandshakeException;
-import org.apache.ignite.agent.handlers.DatabaseMetadataExtractor;
-import org.apache.ignite.agent.handlers.RestExecutor;
-import org.apache.ignite.agent.remote.Remote;
-import org.apache.ignite.agent.remote.RemoteHandler;
-import org.apache.ignite.agent.remote.WebSocketSender;
+import org.apache.ignite.console.agent.handlers.DatabaseMetadataExtractor;
+import org.apache.ignite.console.agent.handlers.RestExecutor;
+import org.apache.ignite.console.agent.remote.Remote;
+import org.apache.ignite.console.agent.remote.RemoteHandler;
+import org.apache.ignite.console.agent.remote.WebSocketSender;
 import org.apache.log4j.Logger;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketClose;
