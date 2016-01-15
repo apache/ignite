@@ -20,6 +20,7 @@ package org.apache.ignite.testsuites;
 import junit.framework.TestSuite;
 import org.apache.ignite.internal.processors.cache.CacheNearReaderUpdateTest;
 import org.apache.ignite.internal.processors.cache.CacheSerializableTransactionsTest;
+import org.apache.ignite.internal.processors.cache.IgniteCacheStoreCollectionTest;
 
 /**
  * Test suite.
@@ -34,6 +35,7 @@ public class IgniteCacheTestSuite5 extends TestSuite {
 
         suite.addTestSuite(CacheSerializableTransactionsTest.class);
         suite.addTestSuite(CacheNearReaderUpdateTest.class);
+        suite.addTestSuite(IgniteCacheStoreCollectionTest.class);
 
         return suite;
     }
