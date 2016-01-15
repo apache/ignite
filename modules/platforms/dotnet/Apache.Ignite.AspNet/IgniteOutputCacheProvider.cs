@@ -20,8 +20,8 @@ using System.Web.Caching;
 namespace Apache.Ignite.AspNet
 {
     using System;
+    using System.Collections.Generic;
     using System.Collections.Specialized;
-    using System.Runtime.Caching;
     using Apache.Ignite.Core;
     using Apache.Ignite.Core.Cache;
     using Apache.Ignite.Core.Cache.Expiry;
@@ -31,22 +31,24 @@ namespace Apache.Ignite.AspNet
     /// </summary>
     public class IgniteOutputCacheProvider : OutputCacheProvider
     {
-        // TODO: Tests (separate assembly?)
-        // TODO: thread safety. Check whether initialization and put/get come from different threads, etc
-        // TODO: Cache caches (long seconds -> cache)
-
         /** */
         private const string GridName = "gridName";
         
         /** */
         private const string CacheName = "cacheName";
 
-        /** */
-        private ICache<string, object> _cache;
+        /** Max number of cached expiry caches. */
+        private const int MaxCaches = 1000;
 
-        /** Cached expired policy caches. */
-        // TODO: Need a cache with limited memory usage and LRU policy maybe...
-        private MemoryCache _caches = new MemoryCache(typeof(IgniteOutputCacheProvider).FullName); 
+        /** */
+        private volatile ICache<string, object> _cache;
+
+        /** Cached caches per expiry seconds. */
+        private volatile Dictionary<long, ICache<string, object>> _expiryCaches = 
+            new Dictionary<long, ICache<string, object>>();
+
+        /** Sync object. */ 
+        private readonly object _syncRoot = new object();
 
         /// <summary>
         /// Returns a reference to the specified entry in the output cache.
@@ -71,7 +73,7 @@ namespace Apache.Ignite.AspNet
         /// </returns>
         public override object Add(string key, object entry, DateTime utcExpiry)
         {
-            return GetCacheWithExpiration(utcExpiry).GetAndPutIfAbsent(key, entry);
+            return GetCacheWithExpiry(utcExpiry).GetAndPutIfAbsent(key, entry);
         }
 
         /// <summary>
@@ -82,7 +84,7 @@ namespace Apache.Ignite.AspNet
         /// <param name="utcExpiry">The time and date on which the cached <paramref name="entry" /> expires.</param>
         public override void Set(string key, object entry, DateTime utcExpiry)
         {
-            GetCacheWithExpiration(utcExpiry)[key] = entry;
+            GetCacheWithExpiry(utcExpiry)[key] = entry;
         }
 
         /// <summary>
@@ -106,21 +108,48 @@ namespace Apache.Ignite.AspNet
             var gridName = config[GridName];
             var cacheName = config[CacheName];
 
-            // TODO: GetOrStartIgnite, spring url? We may need all other properties then...
             var grid = Ignition.GetIgnite(gridName);
 
             _cache = grid.GetOrCreateCache<string, object>(cacheName);
         }
 
-        private ICache<string, object> GetCacheWithExpiration(DateTime utcExpiry)
+        /// <summary>
+        /// Gets the cache with expiry policy according to provided expiration date.
+        /// </summary>
+        /// <param name="utcExpiry">The UTC expiry.</param>
+        /// <returns>Cache with expiry policy.</returns>
+        private ICache<string, object> GetCacheWithExpiry(DateTime utcExpiry)
         {
             if (utcExpiry == DateTime.MaxValue)
                 return _cache;
 
-            var expiration = utcExpiry - DateTime.UtcNow;
+            // Round up to seconds
+            var expirySeconds = (long) (utcExpiry - DateTime.UtcNow).TotalSeconds;
 
-            // TODO: Cache caches with similar expiration? They are likely to be similar.
-            return _cache.WithExpiryPolicy(new ExpiryPolicy(expiration, null, null));
+            if (expirySeconds < 1)
+                return _cache;
+
+            ICache<string, object> cache;
+
+            if (_expiryCaches.TryGetValue(expirySeconds, out cache))
+                return cache;
+
+            lock (_syncRoot)
+            {
+                if (_expiryCaches.TryGetValue(expirySeconds, out cache))
+                    return cache;
+
+                // Copy on write with size limit
+                _expiryCaches = _expiryCaches.Count > MaxCaches
+                    ? new Dictionary<long, ICache<string, object>>()
+                    : new Dictionary<long, ICache<string, object>>(_expiryCaches);
+
+                cache = _cache.WithExpiryPolicy(new ExpiryPolicy(TimeSpan.FromSeconds(expirySeconds), null, null));
+
+                _expiryCaches[expirySeconds] = cache;
+
+                return cache;
+            }
         }
     }
 }
