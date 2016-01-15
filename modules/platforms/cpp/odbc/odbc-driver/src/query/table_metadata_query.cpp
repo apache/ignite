@@ -212,7 +212,7 @@ namespace ignite
 
                 meta = rsp.GetMeta();
 
-                for (int i = 0; i < meta.size(); ++i)
+                for (size_t i = 0; i < meta.size(); ++i)
                 {
                     LOG_MSG("[%d] CatalogName: %s\n", i, meta[i].GetCatalogName().c_str());
                     LOG_MSG("[%d] SchemaName:  %s\n", i, meta[i].GetSchemaName().c_str());

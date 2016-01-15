@@ -39,7 +39,7 @@ namespace ignite
             }
 
             Parameter::Parameter(const ApplicationDataBuffer& buffer, int16_t sqlType, 
-                uint64_t columnSize, int16_t decDigits) :
+                size_t columnSize, int16_t decDigits) :
                 buffer(buffer),
                 sqlType(sqlType),
                 columnSize(columnSize),

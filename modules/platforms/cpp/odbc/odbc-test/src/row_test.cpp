@@ -75,7 +75,7 @@ void FillMemWithData(ignite::impl::interop::InteropUnpooledMemory& mem, size_t r
 
 void CheckRowData(Row& row, size_t rowIdx)
 {
-    int64_t reslen;
+    SqlLen reslen;
 
     long longBuf;
     char strBuf[1024];
@@ -158,7 +158,7 @@ BOOST_AUTO_TEST_CASE(TestRowSkip)
     {
         BOOST_REQUIRE(row.GetSize() == 4);
 
-        for (size_t j = 0; j < row.GetSize(); ++j)
+        for (int32_t j = 0; j < row.GetSize(); ++j)
             BOOST_REQUIRE(row.SkipColumn());
 
         BOOST_REQUIRE(row.MoveToNext());

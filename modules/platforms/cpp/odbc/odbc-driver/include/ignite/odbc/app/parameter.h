@@ -55,7 +55,7 @@ namespace ignite
                  * @param decDigits IPD decimal digits.
                  */
                 Parameter(const ApplicationDataBuffer& buffer, int16_t sqlType,
-                    uint64_t columnSize, int16_t decDigits);
+                    size_t columnSize, int16_t decDigits);
 
                 /**
                  * Copy constructor.
@@ -98,7 +98,7 @@ namespace ignite
                 int16_t sqlType;
 
                 /** IPD column size. */
-                uint64_t columnSize;
+                size_t columnSize;
 
                 /** IPD decimal digits. */
                 int16_t decDigits;

@@ -268,7 +268,7 @@ namespace ignite
              * @param numbuf Numeric value buffer.
              */
             void GetColumnAttribute(uint16_t colIdx, uint16_t attrId, char* strbuf,
-                int16_t buflen, int16_t* reslen, int64_t* numbuf);
+                int16_t buflen, int16_t* reslen, SqlLen* numbuf);
 
             /**
              * Get number of rows affected by the statement.
@@ -429,7 +429,7 @@ namespace ignite
              * @return Operation result.
              */
             SqlResult InternalGetColumnAttribute(uint16_t colIdx, uint16_t attrId,
-                char* strbuf, int16_t buflen, int16_t* reslen, int64_t* numbuf);
+                char* strbuf, int16_t buflen, int16_t* reslen, SqlLen* numbuf);
 
             /**
              * Get number of rows affected by the statement.

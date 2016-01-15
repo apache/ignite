@@ -174,7 +174,7 @@ namespace ignite
 
                 LOG_MSG("Query id: %lld\n", cursor->GetQueryId());
 
-                for (int i = 0; i < rsp.GetMeta().size(); ++i)
+                for (size_t i = 0; i < rsp.GetMeta().size(); ++i)
                 {
                     LOG_MSG("[%d] SchemaName:     %s\n", i, rsp.GetMeta()[i].GetSchemaName().c_str());
                     LOG_MSG("[%d] TypeName:       %s\n", i, rsp.GetMeta()[i].GetTableName().c_str());

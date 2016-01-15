@@ -286,7 +286,7 @@ namespace ignite
 
                 meta = rsp.GetMeta();
 
-                for (int i = 0; i < meta.size(); ++i)
+                for (size_t i = 0; i < meta.size(); ++i)
                 {
                     LOG_MSG("[%d] SchemaName:     %s\n", i, meta[i].GetSchemaName().c_str());
                     LOG_MSG("[%d] TableName:      %s\n", i, meta[i].GetTableName().c_str());

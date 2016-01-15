@@ -24,6 +24,13 @@ namespace ignite
 {
     namespace odbc
     {
+
+#ifdef _WIN64
+        typedef long long SqlLen;
+#else
+        typedef long SqlLen;
+#endif
+
         /**
          * SQL result.
          */
@@ -43,8 +50,8 @@ namespace ignite
         };
 
         /**
-        * Provides detailed information about the cause of a warning or error.
-        */
+         * Provides detailed information about the cause of a warning or error.
+         */
         enum SqlState
         {
             /** Undefined state. Internal, should never be exposed to user. */
@@ -106,8 +113,8 @@ namespace ignite
         };
 
         /**
-        * Diagnostic field type.
-        */
+         * Diagnostic field type.
+         */
         enum DiagnosticField
         {
             /** Header record field: Count of rows in the cursor. */

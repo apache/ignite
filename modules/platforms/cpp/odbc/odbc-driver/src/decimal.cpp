@@ -65,7 +65,7 @@ namespace ignite
 
         int32_t localScale = GetScale();
         
-        for (size_t i = 0; i < len; ++i)
+        for (int32_t i = 0; i < len; ++i)
         {
             res = (res * 256) + magnitude[i];
 

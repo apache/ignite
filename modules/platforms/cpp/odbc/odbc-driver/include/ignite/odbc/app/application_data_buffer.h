@@ -25,6 +25,7 @@
 #include <ignite/guid.h>
 
 #include "ignite/odbc/decimal.h"
+#include "ignite/odbc/common_types.h"
 #include "ignite/odbc/type_traits.h"
 
 namespace ignite
@@ -53,7 +54,7 @@ namespace ignite
                  * @param reslen Resulting data length.
                  * @param offset Pointer to buffer and reslen offset pointer.
                  */
-                ApplicationDataBuffer(type_traits::IgniteSqlType type, void* buffer, int64_t buflen, int64_t* reslen, size_t** offset = 0);
+                ApplicationDataBuffer(type_traits::IgniteSqlType type, void* buffer, SqlLen buflen, SqlLen* reslen, size_t** offset = 0);
 
                 /**
                  * Copy constructor.
@@ -222,14 +223,14 @@ namespace ignite
                  *
                  * @return Data length pointer.
                  */
-                const int64_t* GetResLen() const;
+                const SqlLen* GetResLen() const;
 
                 /**
                  * Get buffer size in bytes.
                  *
                  * @return Buffer size.
                  */
-                int64_t GetSize() const
+                SqlLen GetSize() const
                 {
                     return buflen;
                 }
@@ -247,7 +248,7 @@ namespace ignite
                  *
                  * @return Data length pointer.
                  */
-                int64_t* GetResLen();
+                SqlLen* GetResLen();
 
                 /**
                  * Put value of numeric type in the buffer.
@@ -321,10 +322,10 @@ namespace ignite
                 void* buffer;
 
                 /** Buffer length. */
-                int64_t buflen;
+                SqlLen buflen;
 
                 /** Result length. */
-                int64_t* reslen;
+                SqlLen* reslen;
 
                 /** Pointer to implementation pointer to application offset */
                 size_t** offset;

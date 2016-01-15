@@ -36,7 +36,7 @@ namespace ignite
             }
 
             ApplicationDataBuffer::ApplicationDataBuffer(type_traits::IgniteSqlType type, 
-                void* buffer, int64_t buflen, int64_t* reslen, size_t** offset) :
+                void* buffer, SqlLen buflen, SqlLen* reslen, size_t** offset) :
                 type(type), buffer(buffer), buflen(buflen), reslen(reslen), offset(offset)
             {
                 // No-op.
@@ -178,7 +178,7 @@ namespace ignite
                             }
                             else
                             {
-                                memcpy(GetData(), &value, buflen);
+                                memcpy(GetData(), &value, static_cast<size_t>(buflen));
 
                                 if (GetResLen())
                                     *GetResLen() = SQL_NO_TOTAL;
@@ -236,7 +236,7 @@ namespace ignite
             template<typename OutCharT, typename InCharT>
             void ApplicationDataBuffer::PutStrToStrBuffer(const std::basic_string<InCharT>& value)
             {
-                int64_t charSize = static_cast<int64_t>(sizeof(OutCharT));
+                SqlLen charSize = static_cast<SqlLen>(sizeof(OutCharT));
 
                 if (GetData())
                 {
@@ -244,11 +244,11 @@ namespace ignite
                     {
                         OutCharT* out = reinterpret_cast<OutCharT*>(GetData());
 
-                        int64_t outLen = (buflen / charSize) - 1;
+                        SqlLen outLen = (buflen / charSize) - 1;
 
-                        int64_t toCopy = std::min<int64_t>(outLen, value.size());
+                        SqlLen toCopy = std::min<size_t>(outLen, value.size());
 
-                        for (int64_t i = 0; i < toCopy; ++i)
+                        for (SqlLen i = 0; i < toCopy; ++i)
                             out[i] = value[i];
 
                         out[toCopy] = 0;
@@ -256,8 +256,8 @@ namespace ignite
 
                     if (GetResLen())
                     {
-                        if (buflen >= static_cast<int64_t>((value.size() + 1) * charSize))
-                            *GetResLen() = value.size();
+                        if (buflen >= static_cast<SqlLen>((value.size() + 1) * charSize))
+                            *GetResLen() = static_cast<SqlLen>(value.size());
                         else
                             *GetResLen() = SQL_NO_TOTAL;
                     }
@@ -268,11 +268,11 @@ namespace ignite
 
             void ApplicationDataBuffer::PutRawDataToBuffer(void *data, size_t len)
             {
-                int64_t ilen = static_cast<int64_t>(len);
+                SqlLen ilen = static_cast<SqlLen>(len);
 
                 if (GetData())
                 {
-                    int64_t toCopy = std::min(buflen, ilen);
+                    size_t toCopy = static_cast<size_t>(std::min(buflen, ilen));
 
                     memcpy(GetData(), data, toCopy);
 
@@ -532,7 +532,7 @@ namespace ignite
                     case IGNITE_ODBC_C_TYPE_DEFAULT:
                     {
                         if (GetData())
-                            memcpy(GetData(), &value, std::min<size_t>(buflen, sizeof(value)));
+                            memcpy(GetData(), &value, std::min(static_cast<size_t>(buflen), sizeof(value)));
 
                         if (GetResLen())
                             *GetResLen() = sizeof(value);
@@ -559,7 +559,7 @@ namespace ignite
                     case IGNITE_ODBC_C_TYPE_CHAR:
                     {
                         res.assign(reinterpret_cast<const char*>(GetData()),
-                                   std::min<size_t>(maxLen, buflen));
+                                   std::min(maxLen, static_cast<size_t>(buflen)));
                         break;
                     }
 
@@ -657,7 +657,7 @@ namespace ignite
                 return ApplyOffset(buffer);
             }
 
-            const int64_t* ApplicationDataBuffer::GetResLen() const
+            const SqlLen* ApplicationDataBuffer::GetResLen() const
             {
                 return ApplyOffset(reslen);
             }
@@ -667,7 +667,7 @@ namespace ignite
                 return ApplyOffset(buffer);
             }
 
-            int64_t* ApplicationDataBuffer::GetResLen()
+            SqlLen* ApplicationDataBuffer::GetResLen()
             {
                 return ApplyOffset(reslen);
             }
@@ -683,7 +683,7 @@ namespace ignite
                 {
                     case IGNITE_ODBC_C_TYPE_CHAR:
                     {
-                        std::string str = GetString(buflen);
+                        std::string str = GetString(static_cast<size_t>(buflen));
 
                         std::stringstream converter(str);
 

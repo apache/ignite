@@ -393,7 +393,7 @@ namespace ignite
         }
 
         void Statement::GetColumnAttribute(uint16_t colIdx, uint16_t attrId,
-            char* strbuf, int16_t buflen, int16_t* reslen, int64_t* numbuf)
+            char* strbuf, int16_t buflen, int16_t* reslen, SqlLen* numbuf)
         {
             IGNITE_ODBC_API_CALL(InternalGetColumnAttribute(colIdx, attrId,
                 strbuf, buflen, reslen, numbuf));
@@ -401,7 +401,7 @@ namespace ignite
 
         SqlResult Statement::InternalGetColumnAttribute(uint16_t colIdx,
             uint16_t attrId, char* strbuf, int16_t buflen, int16_t* reslen,
-            int64_t* numbuf)
+            SqlLen* numbuf)
         {
             const meta::ColumnMetaVector *meta = GetMeta();
 

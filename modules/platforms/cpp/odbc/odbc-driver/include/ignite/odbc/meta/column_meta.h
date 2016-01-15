@@ -23,6 +23,7 @@
 
 #include "ignite/impl/binary/binary_reader_impl.h"
 
+#include "ignite/odbc/common_types.h"
 #include "ignite/odbc/utility.h"
 
 namespace ignite
@@ -174,7 +175,7 @@ namespace ignite
                  * @param value Output attribute value.
                  * @return True if the attribute supported and false otherwise.
                  */
-                bool GetAttribute(uint16_t fieldId, int64_t& value) const;
+                bool GetAttribute(uint16_t fieldId, SqlLen& value) const;
 
             private:
                 /** Schema name. */

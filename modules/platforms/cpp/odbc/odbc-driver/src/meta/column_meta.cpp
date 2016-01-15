@@ -143,7 +143,7 @@ namespace ignite
                 }
             }
 
-            bool ColumnMeta::GetAttribute(uint16_t fieldId, int64_t& value) const
+            bool ColumnMeta::GetAttribute(uint16_t fieldId, SqlLen& value) const
             {
                 using namespace ignite::impl::binary;
 

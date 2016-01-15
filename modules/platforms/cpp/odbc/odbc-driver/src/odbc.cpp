@@ -781,6 +781,7 @@ SQLRETURN SQL_API SQLDescribeCol(SQLHSTMT       stmt,
                                  SQLSMALLINT*   nullable)
 {
     using ignite::odbc::Statement;
+    using ignite::odbc::SqlLen;
 
     LOG_MSG("SQLDescribeCol called\n");
 
@@ -792,10 +793,10 @@ SQLRETURN SQL_API SQLDescribeCol(SQLHSTMT       stmt,
     statement->GetColumnAttribute(columnNum, SQL_DESC_NAME,
         reinterpret_cast<char*>(columnNameBuf), columnNameBufLen, columnNameLen, 0);
 
-    int64_t dataTypeRes;
-    int64_t columnSizeRes;
-    int64_t decimalDigitsRes;
-    int64_t nullableRes;
+    SqlLen dataTypeRes;
+    SqlLen columnSizeRes;
+    SqlLen decimalDigitsRes;
+    SqlLen nullableRes;
 
     statement->GetColumnAttribute(columnNum, SQL_DESC_TYPE, 0, 0, 0, &dataTypeRes);
     statement->GetColumnAttribute(columnNum, SQL_DESC_PRECISION, 0, 0, 0, &columnSizeRes);
@@ -1102,7 +1103,7 @@ SQLRETURN SQL_API SQLGetDiagField(SQLSMALLINT   handleType,
 
     LOG_MSG("SQLGetDiagField called: %d\n", recNum);
 
-    int64_t outResLen;
+    SqlLen outResLen;
     ApplicationDataBuffer outBuffer(IGNITE_ODBC_C_TYPE_DEFAULT, buffer, bufferLen, &outResLen);
 
     SqlResult result;
@@ -1183,7 +1184,7 @@ SQLRETURN SQL_API SQLGetDiagRec(SQLSMALLINT     handleType,
     if (nativeError)
         *nativeError = 0;
 
-    int64_t outResLen;
+    SqlLen outResLen;
     ApplicationDataBuffer outBuffer(IGNITE_ODBC_C_TYPE_CHAR, msgBuffer, msgBufferLen, &outResLen);
 
     outBuffer.PutString(record.GetMessage());
