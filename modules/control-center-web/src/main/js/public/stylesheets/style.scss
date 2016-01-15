@@ -459,8 +459,10 @@ button, a.btn, i.btn {
         margin-left: 0;
     }
 
-    > button.btn-primary:not(:last-child) {
-        border-right-color: black;
+    > .btn + .dropdown-toggle {
+        margin-right: 0;
+        padding: 3px 6px;
+        border-left-width: 0;
     }
 }
 
