@@ -42,7 +42,7 @@ namespace ignite
         namespace config
         {
 
-#ifdef _DEBUG
+#ifdef ODBC_DEBUG
 
 #define DBG_STR_CASE(x) case x: return #x
 

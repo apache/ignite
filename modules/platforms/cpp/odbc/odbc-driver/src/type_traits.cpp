@@ -59,7 +59,7 @@ namespace ignite
 
             const std::string SqlTypeName::GUID("GUID");
 
-#ifdef _DEBUG
+#ifdef ODBC_DEBUG
 
 #define DBG_STR_CASE(x) case x: return #x
 

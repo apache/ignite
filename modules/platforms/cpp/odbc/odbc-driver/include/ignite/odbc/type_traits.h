@@ -28,7 +28,7 @@ namespace ignite
     {
         namespace type_traits
         {
-#ifdef _DEBUG
+#ifdef ODBC_DEBUG
             /**
              * Convert statement attribute ID to string containing its name.
              * Debug function.

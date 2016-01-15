@@ -38,7 +38,7 @@ namespace ignite
             class ColumnMeta
             {
             public:
-#ifdef _DEBUG
+#ifdef ODBC_DEBUG
                 /**
                  * Convert attribute ID to string containing its name.
                  * Debug function.
