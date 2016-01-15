@@ -29,8 +29,30 @@ namespace Apache.Ignite.Core.Impl.Common
     {
         public static IgniteConfiguration Deserialize(XmlReader reader)
         {
+            var cfg = new IgniteConfiguration();
+
+            ReadElement(reader, cfg);
+
+            return cfg;
+        }
+
+        private static void ReadElement(XmlReader reader, object target)
+        {
             // TODO: see http://referencesource.microsoft.com/#System.Configuration/System/Configuration/ConfigurationElement.cs
-            return new IgniteConfiguration();
+            var type = target.GetType();
+
+            if (reader.AttributeCount > 0) // ???
+            {
+                while (reader.MoveToNextAttribute())
+                {
+                    var name = reader.Name;
+                    var val = reader.Value;
+
+                    // Set property
+                    // TODO: lowercase first letter
+                    type.GetProperty(name).SetValue(target, val, null);
+                }
+            }
         }
 
         private static object GetConverter(Type type)
