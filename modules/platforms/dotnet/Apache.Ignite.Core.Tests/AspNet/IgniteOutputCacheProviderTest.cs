@@ -104,6 +104,20 @@ namespace Apache.Ignite.Core.Tests.AspNet
 
             cacheProvider.Remove("1");
             Assert.AreEqual(null, cacheProvider.Get("1"));
+
+            Assert.AreEqual(2, cacheProvider.Add("2", 2, DateTime.MaxValue));
+            Assert.AreEqual(2, cacheProvider.Add("2", 5, DateTime.MaxValue));  // should return existing value
+        }
+
+        /// <summary>
+        /// Tests cache expiration.
+        /// </summary>
+        [Test]
+        public void TestExpiry()
+        {
+            var cacheProvider = GetProvider();
+
+            // TODO: Set and Add
         }
 
         /// <summary>
@@ -118,6 +132,7 @@ namespace Apache.Ignite.Core.Tests.AspNet
                 {GridNameAttr, GridName},
                 {CacheNameAttr, CacheName}
             });
+
             return cacheProvider;
         }
     }
