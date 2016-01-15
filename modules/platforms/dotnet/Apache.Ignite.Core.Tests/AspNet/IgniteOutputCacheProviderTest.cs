@@ -21,7 +21,6 @@ namespace Apache.Ignite.Core.Tests.AspNet
     using System.Collections.Specialized;
     using Apache.Ignite.AspNet;
     using Apache.Ignite.Core.Common;
-    using Apache.Ignite.Core.Impl;
     using NUnit.Framework;
 
     /// <summary>
@@ -35,15 +34,32 @@ namespace Apache.Ignite.Core.Tests.AspNet
         /** Cache name XML config attribute. */
         private const string CacheNameAttr = "cacheName";
 
+        /** Grid name. */
+        private const string GridName = "grid1";
+
+        /** Cache name. */
+        private const string CacheName = "myCache";
+
         /// <summary>
-        /// Tests output caching.
+        /// Fixture setup.
+        /// </summary>
+        [TestFixtureSetUp]
+        public void TestFixtureSetUp()
+        {
+            Ignition.Start(new IgniteConfiguration
+            {
+                SpringConfigUrl = "config\\compute\\compute-grid1.xml",
+                JvmClasspath = TestUtils.CreateTestClasspath(),
+                JvmOptions = TestUtils.TestJavaOptions()
+            });
+        }
+
+        /// <summary>
+        /// Tests provider initialization.
         /// </summary>
         [Test]
-        public void TestCaching()
+        public void TestInitialization()
         {
-            const string gridName = "myGrid";
-            const string cacheName = "myCache";
-
             var cacheProvider = new IgniteOutputCacheProvider();
 
             // Not initialized
@@ -53,27 +69,29 @@ namespace Apache.Ignite.Core.Tests.AspNet
             Assert.Throws<IgniteException>(() =>
                 cacheProvider.Initialize("testName", new NameValueCollection
                 {
-                    {GridNameAttr, gridName},
-                    {CacheNameAttr, cacheName}
+                    {GridNameAttr, "invalidGridName"},
+                    {CacheNameAttr, CacheName}
                 }));
 
-            // Start grid
-            Ignition.Start(new IgniteConfigurationEx
-            {
-                GridName = gridName,
-                SpringConfigUrl = "config\\compute\\compute-grid1.xml",
-                JvmClasspath = TestUtils.CreateTestClasspath(),
-                JvmOptions = TestUtils.TestJavaOptions()
-            });
-
+            // Valid grid
             cacheProvider.Initialize("testName", new NameValueCollection
             {
-                {GridNameAttr, gridName},
-                {CacheNameAttr, cacheName}
+                {GridNameAttr, GridName},
+                {CacheNameAttr, CacheName}
             });
 
-            // Test cache operations
+            cacheProvider.Set("1", 1, DateTime.MaxValue);
 
+            Assert.AreEqual(1, cacheProvider.Get("1"));
+        }
+
+        /// <summary>
+        /// Tests provider caching.
+        /// </summary>
+        [Test]
+        public void TestCaching()
+        {
+            
         }
     }
 }
