@@ -22,6 +22,7 @@ namespace Apache.Ignite.AspNet
     using System;
     using System.Collections.Generic;
     using System.Collections.Specialized;
+    using System.Diagnostics.CodeAnalysis;
     using Apache.Ignite.Core;
     using Apache.Ignite.Core.Cache;
     using Apache.Ignite.Core.Cache.Expiry;
@@ -103,6 +104,7 @@ namespace Apache.Ignite.AspNet
         /// </summary>
         /// <param name="name">The friendly name of the provider.</param>
         /// <param name="config">A collection of the name/value pairs representing the provider-specific attributes specified in the configuration for this provider.</param>
+        [SuppressMessage("Microsoft.Design", "CA1062:Validate arguments of public methods")]
         public override void Initialize(string name, NameValueCollection config)
         {
             base.Initialize(name, config);

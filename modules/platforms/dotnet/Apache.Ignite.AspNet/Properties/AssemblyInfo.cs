@@ -15,6 +15,7 @@
 * limitations under the License.
 */
 
+using System;
 using System.Reflection;
 using System.Runtime.InteropServices;
 
@@ -34,3 +35,5 @@ using System.Runtime.InteropServices;
 [assembly: AssemblyVersion("1.5.1.7927")]
 [assembly: AssemblyFileVersion("1.5.1.7927")]
 [assembly: AssemblyInformationalVersion("1.5.1.final")]
+
+[assembly: CLSCompliant(true)]
