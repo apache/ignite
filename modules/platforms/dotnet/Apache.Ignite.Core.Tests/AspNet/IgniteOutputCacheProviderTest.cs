@@ -120,7 +120,7 @@ namespace Apache.Ignite.Core.Tests.AspNet
             cacheProvider.Remove("1");
 
             // Set
-            cacheProvider.Set("1", 1, DateTime.Now.AddSeconds(1.5));
+            cacheProvider.Set("1", 1, DateTime.UtcNow.AddSeconds(1.5));
             Assert.AreEqual(1, cacheProvider.Get("1"));
             Thread.Sleep(2000);
             Assert.AreEqual(null, cacheProvider.Get("1"));
