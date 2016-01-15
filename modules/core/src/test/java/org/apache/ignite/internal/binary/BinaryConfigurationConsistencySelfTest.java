@@ -199,7 +199,7 @@ public class BinaryConfigurationConsistencySelfTest extends GridCommonAbstractTe
     private BinaryConfiguration customConfig(boolean compactFooter) {
         BinaryConfiguration c = new BinaryConfiguration();
 
-        c.setIdMapper(BinarySimpleNameIdMapper.defaultInstance());
+        c.setIdMapper(new BinarySimpleNameIdMapper());
         c.setSerializer(new BinarySerializer() {
             @Override public void writeBinary(Object obj, BinaryWriter writer) throws BinaryObjectException {
                 // No-op.

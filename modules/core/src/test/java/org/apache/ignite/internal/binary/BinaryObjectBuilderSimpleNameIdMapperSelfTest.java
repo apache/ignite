@@ -35,7 +35,7 @@ public class BinaryObjectBuilderSimpleNameIdMapperSelfTest extends BinaryObjectB
 
         BinaryConfiguration bCfg = cfg.getBinaryConfiguration();
 
-        bCfg.setIdMapper(BinarySimpleNameIdMapper.defaultInstance());
+        bCfg.setIdMapper(new BinarySimpleNameIdMapper());
 
         // TODO this line must be deleted when IGNITE-2395 will be fixed.
         Collection<BinaryTypeConfiguration> typeCfgs = new ArrayList<>(bCfg.getTypeConfigurations());

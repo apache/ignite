@@ -17,9 +17,6 @@
 
 package org.apache.ignite.binary;
 
-import org.apache.ignite.internal.util.typedef.internal.A;
-import org.jetbrains.annotations.Nullable;
-
 /**
  * ID mapper that uses a simple name of classes in lower case to calculate type ID.
  */
@@ -38,18 +35,6 @@ public class BinarySimpleNameIdMapper implements BinaryIdMapper {
 
         for (char c = 0; c <= MAX_LOWER_CASE_CHAR; c++)
             LOWER_CASE_CHARS[c] = Character.toLowerCase(c);
-    }
-
-    /**
-     * Wraps custom id mapper.
-     *
-     * @param mapper Public mapper.
-     * @return Wrapper for public mapper.
-     */
-    public static BinarySimpleNameIdMapper wrap(@Nullable BinaryIdMapper mapper) {
-        A.notNull(mapper, "publicMapper");
-
-        return new Wrapper(mapper);
     }
 
     /**
@@ -141,38 +126,5 @@ public class BinarySimpleNameIdMapper implements BinaryIdMapper {
             idx = clsName.lastIndexOf('.');
 
         return idx >= 0 ? clsName.substring(idx + 1) : clsName;
-    }
-
-    /**
-     * Wrapping ID mapper.
-     */
-    private static class Wrapper extends BinarySimpleNameIdMapper {
-        /** Delegate. */
-        private final BinaryIdMapper mapper;
-
-        /**
-         * Constructor.
-         *
-         * @param mapper Delegate.
-         */
-        private Wrapper(BinaryIdMapper mapper) {
-            assert mapper != null;
-
-            this.mapper = mapper;
-        }
-
-        /** {@inheritDoc} */
-        @Override public int typeId(String typeName) {
-            int id = mapper.typeId(typeName);
-
-            return id != 0 ? id : super.typeId(typeName);
-        }
-
-        /** {@inheritDoc} */
-        @Override public int fieldId(int typeId, String fieldName) {
-            int id = mapper.fieldId(typeId, fieldName);
-
-            return id != 0 ? id : super.fieldId(typeId, fieldName);
-        }
     }
 }

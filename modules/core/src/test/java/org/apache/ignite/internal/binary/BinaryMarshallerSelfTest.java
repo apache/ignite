@@ -1118,7 +1118,7 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
             }
         });
 
-        BinaryMarshaller marsh = binaryMarshaller(BinarySimpleNameIdMapper.defaultInstance(),
+        BinaryMarshaller marsh = binaryMarshaller(new BinarySimpleNameIdMapper(),
             Arrays.asList(innerClassType, publicClassType, typeWithCustomMapper));
 
         InnerMappedObject innerObj = new InnerMappedObject(10, "str1");
@@ -1499,7 +1499,7 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
 
         customType5.setIdMapper(BinaryFullNameIdMapper.defaultInstance());
 
-        BinaryMarshaller marsh = binaryMarshaller(BinarySimpleNameIdMapper.defaultInstance(), Arrays.asList(
+        BinaryMarshaller marsh = binaryMarshaller(new BinarySimpleNameIdMapper(), Arrays.asList(
             new BinaryTypeConfiguration(Key.class.getName()),
             new BinaryTypeConfiguration("org.gridgain.NonExistentClass3"),
             new BinaryTypeConfiguration("NonExistentClass4"),
@@ -1586,7 +1586,7 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
 
         BinaryTypeConfiguration customType6 = new BinaryTypeConfiguration(MyTestClass.class.getName());
 
-        customType6.setIdMapper(BinarySimpleNameIdMapper.defaultInstance());
+        customType6.setIdMapper(new BinarySimpleNameIdMapper());
 
         BinaryMarshaller marsh = binaryMarshaller(new BinaryIdMapper() {
             @Override public int typeId(String clsName) {

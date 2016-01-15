@@ -356,7 +356,7 @@ public class BinaryContext {
     private static BinaryIdMapper resolveIdMapper(@Nullable BinaryIdMapper mapper) {
         return mapper == null ? BinaryFullNameIdMapper.defaultInstance() :
             (mapper instanceof BinarySimpleNameIdMapper ? mapper :
-                BinarySimpleNameIdMapper.wrap(mapper));
+                new SimpleNameIdMapperWrapper(mapper));
     }
 
     /**
@@ -1121,6 +1121,39 @@ public class BinaryContext {
          */
         public boolean registered() {
             return registered;
+        }
+    }
+
+    /**
+     * Wrapping ID mapper.
+     */
+    private static class SimpleNameIdMapperWrapper extends BinarySimpleNameIdMapper {
+        /** Delegate. */
+        private final BinaryIdMapper mapper;
+
+        /**
+         * Constructor.
+         *
+         * @param mapper Delegate.
+         */
+        private SimpleNameIdMapperWrapper(BinaryIdMapper mapper) {
+            assert mapper != null;
+
+            this.mapper = mapper;
+        }
+
+        /** {@inheritDoc} */
+        @Override public int typeId(String typeName) {
+            int id = mapper.typeId(typeName);
+
+            return id != 0 ? id : super.typeId(typeName);
+        }
+
+        /** {@inheritDoc} */
+        @Override public int fieldId(int typeId, String fieldName) {
+            int id = mapper.fieldId(typeId, fieldName);
+
+            return id != 0 ? id : super.fieldId(typeId, fieldName);
         }
     }
 }

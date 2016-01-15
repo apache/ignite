@@ -47,7 +47,7 @@ public class GridBinaryWildcardsSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testClassNamesInternalMapper() throws Exception {
-        mapper = BinaryFullNameIdMapper.defaultInstance();
+        mapper = new BinaryFullNameIdMapper();
 
         checkClassNames();
     }
@@ -56,7 +56,7 @@ public class GridBinaryWildcardsSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testClassNamesSimpleNameMapper() throws Exception {
-        mapper = BinarySimpleNameIdMapper.defaultInstance();
+        mapper = new BinarySimpleNameIdMapper();
 
         checkClassNames();
     }

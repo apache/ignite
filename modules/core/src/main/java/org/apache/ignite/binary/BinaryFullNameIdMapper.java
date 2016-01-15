@@ -28,13 +28,6 @@ public class BinaryFullNameIdMapper implements BinaryIdMapper {
     private static final BinaryFullNameIdMapper DFLT = new BinaryFullNameIdMapper();
 
     /**
-     * Private constructor.
-     */
-    private BinaryFullNameIdMapper() {
-        // No-op.
-    }
-
-    /**
      * Get default instance.
      *
      * @return Default instance.
