@@ -57,7 +57,7 @@ public class ClusterProcessor extends GridProcessorAdapter {
     private IgniteClusterImpl cluster;
 
     /** */
-    private boolean notifyEnabled;
+    private volatile boolean notifyEnabled;
 
     /** */
     @GridToStringExclude
@@ -155,6 +155,13 @@ public class ClusterProcessor extends GridProcessorAdapter {
     }
 
     /**
+     * Disables update notifier.
+     */
+    public void disableUpdateNotifier() {
+        notifyEnabled = false;
+    }
+
+    /**
      * @return Update notifier status.
      */
     public boolean updateNotifierEnabled() {
@@ -171,7 +178,7 @@ public class ClusterProcessor extends GridProcessorAdapter {
     /**
      * Update notifier timer task.
      */
-    private static class UpdateNotifierTimerTask extends GridTimerTask {
+    private class UpdateNotifierTimerTask extends GridTimerTask {
         /** Reference to kernal. */
         private final WeakReference<IgniteKernal> kernalRef;
 
@@ -200,6 +207,9 @@ public class ClusterProcessor extends GridProcessorAdapter {
 
         /** {@inheritDoc} */
         @Override public void safeRun() throws InterruptedException {
+            if (!notifyEnabled)
+                return;
+
             if (!first) {
                 IgniteKernal kernal = kernalRef.get();
 
