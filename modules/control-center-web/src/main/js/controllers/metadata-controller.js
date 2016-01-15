@@ -54,6 +54,13 @@ consoleModule.controller('metadataController', function ($filter, $http, $timeou
                 selectFirstItem();
         }
 
+        function _dropDownItem(lbl, val) {
+            return {
+                label: lbl,
+                value: val
+            }
+        }
+
         $scope.removeDemoItems = function () {
             $table.tableReset();
 
@@ -69,6 +76,12 @@ consoleModule.controller('metadataController', function ($filter, $http, $timeou
                                     $scope.clusters = data.clusters;
                                     $scope.caches = data.caches;
                                     $scope.metadatas = data.metadatas;
+
+                                    $scope.importCaches = [_dropDownItem('New cache', 'IMPORT_META_NEW_CACHE')];
+                                    $scope.importCacheTemplates = [
+                                        _dropDownItem('PARTITIONED', 'IMPORT_META_DFLT_PARTITIONED_CACHE'),
+                                        _dropDownItem('REPLICATED', 'IMPORT_META_DFLT_REPLICATED_CACHE')
+                                    ];
 
                                     $scope.ui.generatedCachesClusters = [];
 
@@ -573,6 +586,9 @@ consoleModule.controller('metadataController', function ($filter, $http, $timeou
             $http.post('/api/v1/agent/tables', preset)
                 .success(function (tables) {
                     tables.forEach(function (tbl) {
+                        tbl.cache = 'IMPORT_META_NEW_CACHE';
+                        tbl.template = 'PARTITIONED';
+
                         Object.defineProperty(tbl, 'label', {
                             get: function () {
                                 return tbl.schema + '.' + tbl.tbl;
@@ -582,6 +598,9 @@ consoleModule.controller('metadataController', function ($filter, $http, $timeou
                         tbl.use = $common.isDefined(_.find(tbl.cols, function (col) {
                             return col.key;
                         }));
+
+                        tbl.editCache = false;
+                        tbl.editTemplate = false;
                     });
 
                     $scope.importMeta.action = 'tables';
@@ -595,6 +614,40 @@ consoleModule.controller('metadataController', function ($filter, $http, $timeou
                     $loading.finish('loadingMetadataFromDb');
                 });
         }
+
+        $scope.curDbTable = null;
+
+        $scope.startEditDbTableCache = function (tbl) {
+            if ($scope.curDbTable) {
+                $scope.curDbTable.editCache = false;
+                $scope.curDbTable.editTemplate = false;
+            }
+
+
+            tbl.editCache = true;
+
+            $scope.curDbTable = tbl;
+        };
+
+        $scope.startEditDbTableTemplate = function (tbl) {
+            if ($scope.curDbTable) {
+                $scope.curDbTable.editCache = false;
+                $scope.curDbTable.editTemplate = false;
+            }
+
+            tbl.editTemplate = true;
+
+            $scope.curDbTable = tbl;
+        };
+
+        $scope.dbTableCache = function (tbl) {
+            var cache = tbl.cache;
+
+            if (cache === 'IMPORT_META_NEW_CACHE')
+                return 'New cache';
+
+            return tbl.cache;
+        };
 
         /**
          * Show page with import metadata options.
@@ -963,6 +1016,21 @@ consoleModule.controller('metadataController', function ($filter, $http, $timeou
                 $scope.caches = data.caches;
                 $scope.metadatas = data.metadatas;
 
+                $scope.importCaches = [_dropDownItem('New cache', 'IMPORT_META_NEW_CACHE')];
+
+                if (!$common.isEmptyArray($scope.caches)) {
+                    $scope.importCaches.push(null);
+
+                    _.forEach($scope.caches, function (cache) {
+                        $scope.importCaches.push(cache);
+                    });
+                }
+
+                $scope.importCacheTemplates = [
+                    _dropDownItem('PARTITIONED', 'IMPORT_META_DFLT_PARTITIONED_CACHE'),
+                    _dropDownItem('REPLICATED', 'IMPORT_META_DFLT_REPLICATED_CACHE')
+                ];
+
                 _.forEach($scope.clusters, function (cluster) {
                     $scope.ui.generatedCachesClusters.push(cluster.value);
                 });
@@ -1065,7 +1133,7 @@ consoleModule.controller('metadataController', function ($filter, $http, $timeou
                 space: $scope.spaces[0]._id,
                 caches: cacheId && _.find($scope.caches, {value: cacheId}) ? [cacheId] :
                     (!$common.isEmptyArray($scope.caches) ? [$scope.caches[0].value] : []),
-                metadata: 'Configuration'
+                queryMetadata: 'Configuration'
             };
         }
 
