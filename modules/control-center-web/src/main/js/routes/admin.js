@@ -55,7 +55,7 @@ router.post('/remove', function (req, res) {
         var transporter = {
             service: config.get('smtp:service'),
             auth: {
-                user:config.get('smtp:username'),
+                user:config.get('smtp:email'),
                 pass: config.get('smtp:password')
             }
         };
@@ -64,8 +64,8 @@ router.post('/remove', function (req, res) {
             var mailer  = nodemailer.createTransport(transporter);
 
             var mailOptions = {
-                from: transporter.auth.user,
-                to: user.email,
+                from: config.address(config.get('smtp:username'), config.get('smtp:email')),
+                to: config.address(user.username, user.email),
                 subject: 'Your account was deleted',
                 text: 'You are receiving this e-mail because admin remove your account.\n\n' +
                 '--------------\n' +
