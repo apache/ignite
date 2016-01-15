@@ -1844,3 +1844,42 @@ treecontrol.tree-classic {
         }
     }
 }
+
+.ribbon {
+    position: absolute;
+    top: 42px;
+    width: 200px;
+    padding: 1px 0;
+    color: $btn-primary-color;
+    background: $btn-primary-border;
+
+    -moz-box-shadow: 0 0 10px rgba(0,0,0,0.5);
+    -webkit-box-shadow: 0 0 10px rgba(0,0,0,0.5);
+    box-shadow: 0 0 10px rgba(0,0,0,0.5);
+
+    right: -42px;
+    -moz-transform: rotate(45deg);
+    -webkit-transform: rotate(45deg);
+    -o-transform: rotate(45deg);
+    -ms-transform: rotate(45deg);
+    transform: rotate(45deg);
+
+    > label {
+        display: block;
+        padding: 1px 0;
+        height: 24px;
+        line-height: 18px;
+
+        text-align: center;
+        text-decoration: none;
+        font-family: 'Roboto Slab', sans-serif;
+        font-size: 20px;
+        font-weight: 500;
+
+        border: 1px solid rgba(255,255,255,0.3);
+
+        -moz-text-shadow: 0 0 10px rgba(0,0,0,0.31);
+        -webkit-text-shadow: 0 0 10px rgba(0,0,0,0.31);
+        text-shadow: 0 0 10px rgba(0,0,0,0.31);
+    }
+}
