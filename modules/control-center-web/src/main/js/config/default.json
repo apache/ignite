@@ -18,9 +18,9 @@
         "keyPassphrase": "password"
     },
     "smtp": {
-             "service": "gmail",
-         "username": "GridGain Web Console",
-            "email": "no-reply@gridgain.com",
-            "password": "wANyMw4fyjkT0Q6DuEtG"
+         "service": "",
+         "username": "",
+         "email": "",
+         "password": ""
     }
 }
