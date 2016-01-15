@@ -38,7 +38,7 @@ namespace Apache.Ignite.AspNet
         private const string CacheName = "cacheName";
 
         /** Max number of cached expiry caches. */
-        private const int MaxCaches = 1000;
+        private const int MaxExpiryCaches = 1000;
 
         /** */
         private volatile ICache<string, object> _cache;
@@ -158,7 +158,7 @@ namespace Apache.Ignite.AspNet
                     return expiryCache;
 
                 // Copy on write with size limit
-                _expiryCaches = _expiryCaches.Count > MaxCaches
+                _expiryCaches = _expiryCaches.Count > MaxExpiryCaches
                     ? new Dictionary<long, ICache<string, object>>()
                     : new Dictionary<long, ICache<string, object>>(_expiryCaches);
 
