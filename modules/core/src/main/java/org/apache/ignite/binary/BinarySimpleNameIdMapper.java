@@ -30,9 +30,6 @@ public class BinarySimpleNameIdMapper implements BinaryIdMapper {
     /** Cached lower-case characters. */
     private static final char[] LOWER_CASE_CHARS;
 
-    /** Default implementation. */
-    private static final BinarySimpleNameIdMapper DFLT = new BinarySimpleNameIdMapper();
-
     /**
      * Static initializer.
      */
@@ -41,15 +38,6 @@ public class BinarySimpleNameIdMapper implements BinaryIdMapper {
 
         for (char c = 0; c <= MAX_LOWER_CASE_CHAR; c++)
             LOWER_CASE_CHARS[c] = Character.toLowerCase(c);
-    }
-
-    /**
-     * Get default instance.
-     *
-     * @return Default instance.
-     */
-    public static BinarySimpleNameIdMapper defaultInstance() {
-        return DFLT;
     }
 
     /**
@@ -62,14 +50,6 @@ public class BinarySimpleNameIdMapper implements BinaryIdMapper {
         A.notNull(mapper, "publicMapper");
 
         return new Wrapper(mapper);
-    }
-
-    /**
-     * Private constructor.
-     */
-    // TODO should we have public default constructor or not?
-    private BinarySimpleNameIdMapper() {
-        // No-op.
     }
 
     /**

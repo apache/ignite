@@ -54,6 +54,7 @@
 
         <property name="binaryConfiguration">
             <bean class="org.apache.ignite.configuration.BinaryConfiguration">
+                <property name="idMapper" value="org.apache.ignite.binary.BinarySimpleNameIdMapper"/>
                 <property name="compactFooter" value="false"/>
                 <property name="typeConfigurations">
                     <list>
