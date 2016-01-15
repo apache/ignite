@@ -125,7 +125,17 @@ namespace Apache.Ignite.Core.Tests.AspNet
             Thread.Sleep(2000);
             Assert.AreEqual(null, cacheProvider.Get("1"));
 
+            cacheProvider.Set("1", 1, DateTime.UtcNow);
+            Assert.AreEqual(null, cacheProvider.Get("1"));
+
             // Add
+            cacheProvider.Add("1", 1, DateTime.UtcNow.AddSeconds(1.5));
+            Assert.AreEqual(1, cacheProvider.Get("1"));
+            Thread.Sleep(2000);
+            Assert.AreEqual(null, cacheProvider.Get("1"));
+
+            cacheProvider.Add("1", 1, DateTime.UtcNow);
+            Assert.AreEqual(null, cacheProvider.Get("1"));
         }
 
         /// <summary>
