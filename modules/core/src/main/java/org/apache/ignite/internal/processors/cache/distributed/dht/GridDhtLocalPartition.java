@@ -22,6 +22,7 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicLong;
@@ -93,6 +94,9 @@ public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition>,
     /** Entries map. */
     private final ConcurrentMap<KeyCacheObject, GridDhtCacheEntry> map;
 
+    private ConcurrentHashMap<Long,GridDhtPartitionState> statesHistory = new ConcurrentHashMap<>();
+
+
     /** Context. */
     private final GridCacheContext cctx;
 
@@ -102,6 +106,9 @@ public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition>,
 
     /** Eviction history. */
     private volatile Map<KeyCacheObject, GridCacheVersion> evictHist = new HashMap<>();
+
+
+
 
     /** Lock. */
     private final ReentrantLock lock = new ReentrantLock();
@@ -117,6 +124,44 @@ public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition>,
 
     /** Update counter. */
     private final AtomicLong cntr = new AtomicLong();
+
+
+    private void addStateHistory(GridDhtPartitionState state) {
+        statesHistory.put( U.currentTimeMillis(), state);
+    }
+
+
+    /**
+     * check is the state is changed in the nearest moment
+     * of the argument
+     * @param atTime the current moment timestamp
+     * @return true if changed, false otherwise
+     */
+    public boolean isStateChangedSince(long atTime) {
+        Long max_value = 0L;
+        if ( statesHistory.get(atTime) != null) {
+            if ( state() == statesHistory.get(atTime)){
+                return false;
+            } else {
+                return true;
+            }
+        }else {
+            // get the occurrence
+            for (Map.Entry<Long,GridDhtPartitionState> state: statesHistory.entrySet()) {
+                if (state.getKey() < System.currentTimeMillis()){
+                    if (state.getKey() > max_value ) {
+                        max_value = state.getKey();
+                    }
+                }
+            }
+            if (state()  == statesHistory.get(max_value)) {
+                return false;
+            }else {
+                return true;
+            }
+        }
+    }
+
 
     /**
      * @param cctx Context.
@@ -413,8 +458,8 @@ public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition>,
 
             // Decrement reservations.
             if (state.compareAndSet(s, s, reservations, --reservations)) {
+                addStateHistory(s);
                 tryEvict();
-
                 break;
             }
         }
@@ -441,6 +486,7 @@ public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition>,
                 if (log.isDebugEnabled())
                     log.debug("Owned partition: " + this);
 
+                addStateHistory(s);
                 // No need to keep history any more.
                 evictHist = null;
 
@@ -466,6 +512,7 @@ public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition>,
                 if (log.isDebugEnabled())
                     log.debug("Moved partition to RENTING state: " + this);
 
+                addStateHistory(s);
                 // Evict asynchronously, as the 'rent' method may be called
                 // from within write locks on local partition.
                 tryEvictAsync(updateSeq);
@@ -488,6 +535,9 @@ public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition>,
                 log.debug("Evicted partition: " + this);
 
             clearSwap();
+
+            addStateHistory(state.getReference());
+
 
             if (cctx.isDrEnabled())
                 cctx.dr().partitionEvicted(id);
@@ -530,6 +580,7 @@ public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition>,
             if (log.isDebugEnabled())
                 log.debug("Evicted partition: " + this);
 
+
             if (!GridQueryProcessor.isEnabled(cctx.config()))
                 clearSwap();
 
@@ -539,6 +590,8 @@ public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition>,
             cctx.continuousQueries().onPartitionEvicted(id);
 
             cctx.dataStructures().onPartitionEvicted(id);
+
+            addStateHistory(state.getReference());
 
             rent.onDone();
 

@@ -50,6 +50,7 @@ import org.apache.ignite.internal.events.DiscoveryCustomEvent;
 import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridClientPartitionTopology;
+import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionTopology;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTopologyFuture;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionDemandMessage;
@@ -675,7 +676,8 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
      */
     void refreshPartitions() {
         ClusterNode oldest = CU.oldestAliveCacheServerNode(cctx, AffinityTopologyVersion.NONE);
-
+        boolean resend = false;
+        long last = lastRefresh.get();
         if (oldest == null) {
             if (log.isDebugEnabled())
                 log.debug("Skip partitions refresh, there are no server nodes [loc=" + cctx.localNodeId() + ']');
@@ -702,7 +704,22 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                 log.debug("Refreshing local partitions from non-oldest node: " +
                     cctx.localNodeId());
 
-            sendLocalPartitions(oldest, null);
+
+            for (GridCacheContext cacheCtx : cctx.cacheContexts()) {
+                if (!cacheCtx.isLocal()) {
+                    // check
+                    List<GridDhtLocalPartition> partitions = cacheCtx.topology().localPartitions();
+                    for ( GridDhtLocalPartition partition : partitions ){
+                        if (  partition.isStateChangedSince(last) ) {
+                            resend = true;
+                        }
+                    }
+                }
+            }
+            if ( resend ) {
+                sendLocalPartitions(oldest, null);
+            }
+            // sendLocalPartitions(oldest, null);
         }
     }
 
