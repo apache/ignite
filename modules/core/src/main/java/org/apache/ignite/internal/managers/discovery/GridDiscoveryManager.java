@@ -474,21 +474,11 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
 
                 if (type == EVT_NODE_METRICS_UPDATED)
                     verChanged = false;
-                else if (type == DiscoveryCustomEvent.EVT_DISCOVERY_CUSTOM_EVT) {
-                    assert customMsg != null;
-
-                    if (customMsg.incrementMinorTopologyVersion()) {
-                        minorTopVer++;
-
-                        verChanged = true;
-                    }
-                    else
-                        verChanged = false;
-                }
                 else {
                     if (type != EVT_NODE_SEGMENTED &&
                         type != EVT_CLIENT_NODE_DISCONNECTED &&
-                        type != EVT_CLIENT_NODE_RECONNECTED) {
+                        type != EVT_CLIENT_NODE_RECONNECTED &&
+                        type != DiscoveryCustomEvent.EVT_DISCOVERY_CUSTOM_EVT) {
                         minorTopVer = 0;
 
                         verChanged = true;
@@ -497,8 +487,6 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                         verChanged = false;
                 }
 
-                final AffinityTopologyVersion nextTopVer = new AffinityTopologyVersion(topVer, minorTopVer);
-
                 if (type == EVT_NODE_FAILED || type == EVT_NODE_LEFT) {
                     for (DiscoCache c : discoCacheHist.values())
                         c.updateAlives(node);
@@ -506,14 +494,27 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                     updateClientNodes(node.id());
                 }
 
+                final AffinityTopologyVersion nextTopVer;
+
                 if (type == DiscoveryCustomEvent.EVT_DISCOVERY_CUSTOM_EVT) {
+                    assert customMsg != null;
+
+                    boolean incMinorTopVer = ctx.cache().onCustomEvent(customMsg,
+                        new AffinityTopologyVersion(topVer, minorTopVer));
+
+                    if (incMinorTopVer) {
+                        minorTopVer++;
+
+                        verChanged = true;
+                    }
+
                     for (Class cls = customMsg.getClass(); cls != null; cls = cls.getSuperclass()) {
                         List<CustomEventListener<DiscoveryCustomMessage>> list = customEvtLsnrs.get(cls);
 
                         if (list != null) {
                             for (CustomEventListener<DiscoveryCustomMessage> lsnr : list) {
                                 try {
-                                    lsnr.onCustomEvent(node, customMsg, nextTopVer);
+                                    lsnr.onCustomEvent(node, customMsg);
                                 }
                                 catch (Exception e) {
                                     U.error(log, "Failed to notify direct custom event listener: " + customMsg, e);
@@ -522,6 +523,8 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                         }
                     }
                 }
+
+                nextTopVer = new AffinityTopologyVersion(topVer, minorTopVer);
 
                 // Put topology snapshot into discovery history.
                 // There is no race possible between history maintenance and concurrent discovery
@@ -651,8 +654,10 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
 
                     if (comp != null)
                         comp.onDiscoveryDataReceived(joiningNodeId, nodeId, e.getValue());
-                    else
-                        U.warn(log, "Received discovery data for unknown component: " + e.getKey());
+                    else {
+                        if (log.isDebugEnabled())
+                            log.debug("Received discovery data for unknown component: " + e.getKey());
+                    }
                 }
             }
         });

@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal;
+package org.apache.ignite.internal.processors.cluster;
 
 import java.io.BufferedReader;
 import java.io.ByteArrayInputStream;
@@ -37,6 +37,9 @@ import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.internal.GridKernalGateway;
+import org.apache.ignite.internal.IgniteKernal;
+import org.apache.ignite.internal.IgniteProperties;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -63,7 +66,7 @@ class GridUpdateNotifier {
     private static final String CHARSET = "UTF-8";
 
     /** Access URL to be used to access latest version data. */
-    private static final String UPD_STATUS_PARAMS = IgniteProperties.get("ignite.update.status.params");
+    private final String UPD_STATUS_PARAMS = IgniteProperties.get("ignite.update.status.params");
 
     /** Throttling for logging out. */
     private static final long THROTTLE_PERIOD = 24 * 60 * 60 * 1000; // 1 day.

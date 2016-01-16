@@ -21,7 +21,8 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
-import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
+
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
@@ -50,6 +51,10 @@ public abstract class CacheDistributedGetFutureAdapter<K, V> extends GridCompoun
     /** Maximum number of attempts to remap key to the same primary node. */
     protected static final int MAX_REMAP_CNT = getInteger(IGNITE_NEAR_GET_MAX_REMAPS, DFLT_MAX_REMAP_CNT);
 
+    /** Remap count updater. */
+    protected static final AtomicIntegerFieldUpdater<CacheDistributedGetFutureAdapter> REMAP_CNT_UPD =
+        AtomicIntegerFieldUpdater.newUpdater(CacheDistributedGetFutureAdapter.class, "remapCnt");
+
     /** Context. */
     protected final GridCacheContext<K, V> cctx;
 
@@ -69,7 +74,8 @@ public abstract class CacheDistributedGetFutureAdapter<K, V> extends GridCompoun
     protected boolean trackable;
 
     /** Remap count. */
-    protected AtomicInteger remapCnt = new AtomicInteger();
+    @SuppressWarnings("UnusedDeclaration")
+    protected volatile int remapCnt;
 
     /** Subject ID. */
     protected UUID subjId;

@@ -69,8 +69,8 @@ import org.apache.ignite.internal.IgniteComponentType;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteNodeAttributes;
 import org.apache.ignite.internal.IgniteTransactionsEx;
-import org.apache.ignite.internal.managers.discovery.CustomEventListener;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
+import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.datastructures.CacheDataStructuresManager;
@@ -579,15 +579,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                     "(it is recommended that you change deployment mode and restart): " + depMode,
                     "Deployment mode for cache is not CONTINUOUS or SHARED.");
         }
-
-        ctx.discovery().setCustomEventListener(DynamicCacheChangeBatch.class,
-            new CustomEventListener<DynamicCacheChangeBatch>() {
-                @Override public void onCustomEvent(ClusterNode snd,
-                    DynamicCacheChangeBatch msg,
-                    AffinityTopologyVersion topVer) {
-                    onCacheChangeRequested(msg, topVer);
-                }
-            });
 
         Set<String> internalCaches = internalCachesNames();
 
@@ -2030,7 +2021,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         try {
             CacheConfiguration cfg = createConfigFromTemplate(cacheName);
 
-            return dynamicStartCache(cfg, cacheName, null, true, true);
+            return dynamicStartCache(cfg, cacheName, null, true, true, true);
         }
         catch (IgniteCheckedException e) {
             throw U.convertException(e);
@@ -2041,16 +2032,17 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      * Dynamically starts cache using template configuration.
      *
      * @param cacheName Cache name.
+     * @param checkThreadTx If {@code true} checks that current thread does not have active transactions.
      * @return Future that will be completed when cache is deployed.
      */
-    public IgniteInternalFuture<?> getOrCreateFromTemplate(String cacheName) {
+    public IgniteInternalFuture<?> getOrCreateFromTemplate(String cacheName, boolean checkThreadTx) {
         try {
-            if (publicJCache(cacheName, false) != null) // Cache with given name already started.
+            if (publicJCache(cacheName, false, checkThreadTx) != null) // Cache with given name already started.
                 return new GridFinishedFuture<>();
 
             CacheConfiguration cfg = createConfigFromTemplate(cacheName);
 
-            return dynamicStartCache(cfg, cacheName, null, false, true);
+            return dynamicStartCache(cfg, cacheName, null, false, true, checkThreadTx);
         }
         catch (IgniteCheckedException e) {
             return new GridFinishedFuture<>(e);
@@ -2060,6 +2052,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     /**
      * @param cacheName Cache name.
      * @return Cache configuration.
+     * @throws IgniteCheckedException If failed.
      */
     private CacheConfiguration createConfigFromTemplate(String cacheName) throws IgniteCheckedException {
         CacheConfiguration cfgTemplate = null;
@@ -2138,6 +2131,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      * @param cacheName Cache name.
      * @param nearCfg Near cache configuration.
      * @param failIfExists Fail if exists flag.
+     * @param failIfNotStarted If {@code true} fails if cache is not started.
+     * @param checkThreadTx If {@code true} checks that current thread does not have active transactions.
      * @return Future that will be completed when cache is deployed.
      */
     @SuppressWarnings("IfMayBeConditional")
@@ -2146,9 +2141,16 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         String cacheName,
         @Nullable NearCacheConfiguration nearCfg,
         boolean failIfExists,
-        boolean failIfNotStarted
+        boolean failIfNotStarted,
+        boolean checkThreadTx
     ) {
-        return dynamicStartCache(ccfg, cacheName, nearCfg, CacheType.USER, failIfExists, failIfNotStarted);
+        return dynamicStartCache(ccfg,
+            cacheName,
+            nearCfg,
+            CacheType.USER,
+            failIfExists,
+            failIfNotStarted,
+            checkThreadTx);
     }
 
     /**
@@ -2157,7 +2159,10 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      * @param ccfg Cache configuration.
      * @param cacheName Cache name.
      * @param nearCfg Near cache configuration.
+     * @param cacheType Cache type.
      * @param failIfExists Fail if exists flag.
+     * @param failIfNotStarted If {@code true} fails if cache is not started.
+     * @param checkThreadTx If {@code true} checks that current thread does not have active transactions.
      * @return Future that will be completed when cache is deployed.
      */
     @SuppressWarnings("IfMayBeConditional")
@@ -2167,9 +2172,11 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         @Nullable NearCacheConfiguration nearCfg,
         CacheType cacheType,
         boolean failIfExists,
-        boolean failIfNotStarted
+        boolean failIfNotStarted,
+        boolean checkThreadTx
     ) {
-        checkEmptyTransactions();
+        if (checkThreadTx)
+            checkEmptyTransactions();
 
         DynamicCacheDescriptor desc = registeredCaches.get(maskNull(cacheName));
 
@@ -2260,10 +2267,12 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
     /**
      * @param cacheName Cache name to destroy.
+     * @param checkThreadTx If {@code true} checks that current thread does not have active transactions.
      * @return Future that will be completed when cache is destroyed.
      */
-    public IgniteInternalFuture<?> dynamicDestroyCache(String cacheName) {
-        checkEmptyTransactions();
+    public IgniteInternalFuture<?> dynamicDestroyCache(String cacheName, boolean checkThreadTx) {
+        if (checkThreadTx)
+            checkEmptyTransactions();
 
         DynamicCacheChangeRequest t = new DynamicCacheChangeRequest(cacheName, ctx.localNodeId());
 
@@ -2406,12 +2415,28 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     }
 
     /**
-     * Callback invoked from discovery thread when cache deployment request is received.
+     * Callback invoked from discovery thread when discovery custom message  is received.
      *
+     * @param msg Customer message.
+     * @param topVer Current topology version.
+     * @return {@code True} if minor topology version should be increased.
+     */
+    public boolean onCustomEvent(DiscoveryCustomMessage msg,
+        AffinityTopologyVersion topVer) {
+        return msg instanceof DynamicCacheChangeBatch && onCacheChangeRequested((DynamicCacheChangeBatch) msg, topVer);
+    }
+
+    /**
      * @param batch Change request batch.
      * @param topVer Current topology version.
+     * @return {@code True} if minor topology version should be increased.
      */
-    private void onCacheChangeRequested(DynamicCacheChangeBatch batch, AffinityTopologyVersion topVer) {
+    private boolean onCacheChangeRequested(DynamicCacheChangeBatch batch,
+        AffinityTopologyVersion topVer) {
+        AffinityTopologyVersion newTopVer = null;
+
+        boolean incMinorTopVer = false;
+
         for (DynamicCacheChangeRequest req : batch.requests()) {
             if (req.template()) {
                 CacheConfiguration ccfg = req.startCacheConfiguration();
@@ -2468,7 +2493,12 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                         DynamicCacheDescriptor startDesc =
                             new DynamicCacheDescriptor(ctx, ccfg, req.cacheType(), false, req.deploymentId());
 
-                        startDesc.startTopologyVersion(topVer);
+                        if (newTopVer == null) {
+                            newTopVer = new AffinityTopologyVersion(topVer.topologyVersion(),
+                                topVer.minorTopologyVersion() + 1);
+                        }
+
+                        startDesc.startTopologyVersion(newTopVer);
 
                         DynamicCacheDescriptor old = registeredCaches.put(maskNull(ccfg.getName()), startDesc);
 
@@ -2544,7 +2574,11 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             }
 
             req.exchangeNeeded(needExchange);
+
+            incMinorTopVer |= needExchange;
         }
+
+        return incMinorTopVer;
     }
 
     /**
@@ -2898,7 +2932,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         IgniteCacheProxy<?, ?> cache = jCacheProxies.get(masked);
 
         if (cache == null) {
-            dynamicStartCache(null, name, null, false, true).get();
+            dynamicStartCache(null, name, null, false, true, true).get();
 
             cache = jCacheProxies.get(masked);
         }
@@ -3001,21 +3035,21 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      * @throws IgniteCheckedException If failed.
      */
     public <K, V> IgniteCacheProxy<K, V> publicJCache(@Nullable String cacheName) throws IgniteCheckedException {
-        return publicJCache(cacheName, true);
+        return publicJCache(cacheName, true, true);
     }
 
     /**
      * @param cacheName Cache name.
      * @param failIfNotStarted If {@code true} throws {@link IllegalArgumentException} if cache is not started,
      *        otherwise returns {@code null} in this case.
-     * @param <K> type of keys.
-     * @param <V> type of values.
+     * @param checkThreadTx If {@code true} checks that current thread does not have active transactions.
      * @return Cache instance for given name.
      * @throws IgniteCheckedException If failed.
      */
     @SuppressWarnings({"unchecked", "ConstantConditions"})
-    @Nullable public <K, V> IgniteCacheProxy<K, V> publicJCache(@Nullable String cacheName, boolean failIfNotStarted)
-        throws IgniteCheckedException
+    @Nullable public <K, V> IgniteCacheProxy<K, V> publicJCache(@Nullable String cacheName,
+        boolean failIfNotStarted,
+        boolean checkThreadTx) throws IgniteCheckedException
     {
         if (log.isDebugEnabled())
             log.debug("Getting public cache for name: " + cacheName);
@@ -3030,7 +3064,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             throw new IllegalStateException("Failed to get cache because it is a system cache: " + cacheName);
 
         if (cache == null) {
-            dynamicStartCache(null, cacheName, null, false, failIfNotStarted).get();
+            dynamicStartCache(null, cacheName, null, false, failIfNotStarted, checkThreadTx).get();
 
             cache = jCacheProxies.get(masked);
         }

@@ -51,11 +51,6 @@ public abstract class AbstractContinuousMessage implements DiscoveryCustomMessag
     }
 
     /** {@inheritDoc} */
-    @Override public boolean incrementMinorTopologyVersion() {
-        return false;
-    }
-
-    /** {@inheritDoc} */
     @Override public boolean isMutable() {
         return false;
     }
