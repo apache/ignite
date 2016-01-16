@@ -23,17 +23,12 @@ import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-<<<<<<< HEAD
 import java.util.NavigableMap;
 import java.util.Queue;
 import java.util.TreeMap;
 import java.util.UUID;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.Callable;
-=======
-import java.util.UUID;
-import java.util.concurrent.BlockingQueue;
->>>>>>> bfe23fb8eca05d67ec4c3e195c9a972616072c93
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.concurrent.LinkedBlockingDeque;
@@ -1544,7 +1539,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
          * has a refresh partition which runs at regular intervals in the method body() of
          * GridCachePartitionExchangeManager retrieved from the background process ExchangeWorker. Thus eliminating the
          * refreshPartition in ResendTimeoutObject class should not have any impact on the operation, but an increase in
-         * performance when we avoid sending redundant message. 
+         * performance when we avoid sending redundant message.
          */
         @Override public void onTimeout() {
         }
