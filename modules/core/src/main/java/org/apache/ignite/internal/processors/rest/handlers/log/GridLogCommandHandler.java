@@ -101,19 +101,17 @@ public class GridLogCommandHandler extends GridRestCommandHandlerAdapter {
                 to = req0.to();
             }
             String path = DEFAULT_LOG_PATH;
-            Path filePath = getPath(req0, path);
             if (from >= to) {
                 return new GridFinishedFuture<>(new GridRestResponse(GridRestResponse.STATUS_FAILED,
                         "Log file start from cannot be greater than to"));
             }
-            if(req0.command() == LOG) {
+            Path filePath = getPath(req0, path);
                 try {
-                   List content = getContent(from, to, filePath);
+                   String content = getContent(from, to, filePath);
                    return new GridFinishedFuture<>(new GridRestResponse(content));
                 } catch (IgniteCheckedException e) {
                    return new GridFinishedFuture<>(new GridRestResponse(GridRestResponse.STATUS_FAILED, e.getMessage()));
                 }
-            }
         }
         return new GridFinishedFuture<>();
     }
@@ -137,15 +135,15 @@ public class GridLogCommandHandler extends GridRestCommandHandlerAdapter {
         return filePath;
     }
 
-    private List getContent(int from, int to, Path filePath) throws IgniteCheckedException {
-        List content = new ArrayList<>();
+    private String getContent(int from, int to, Path filePath) throws IgniteCheckedException {
+        StringBuilder content = new StringBuilder();
         try (BufferedReader reader = Files.newBufferedReader(filePath, Charset.defaultCharset())) {
             String line = null;
             int start = from;
             while ((line = reader.readLine()) != null
                     && from < to) {
                 if (start >= from) {
-                    content.add(line);
+                    content.append(line);
                     start++;
                 }
                 from++;
@@ -153,6 +151,6 @@ public class GridLogCommandHandler extends GridRestCommandHandlerAdapter {
         } catch (IOException e) {
             throw new IgniteCheckedException(e);
         }
-        return content;
+        return content.toString();
     }
 }
