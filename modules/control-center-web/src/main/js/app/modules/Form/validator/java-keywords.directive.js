@@ -21,6 +21,8 @@ export default ['javaKeywords', [() => {
     const link = (scope, el, attrs, [ngModel]) => {
         const validate = (isValid) => {
             ngModel.$setValidity('javaKeywords', isValid);
+
+            return isValid;
         };
 
         if (typeof attrs.javaKeywords === 'undefined' || !attrs.javaKeywords)
@@ -29,9 +31,10 @@ export default ['javaKeywords', [() => {
         ngModel.$parsers.push((value) => {
             const keywords = JAVA_KEYWORDS.filter((key) => value && !!~value.indexOf(key));
 
-            validate(!keywords.length);
+            if (validate(!keywords.length))
+                return value;
 
-            return value;
+            return '';
         });
     };
 

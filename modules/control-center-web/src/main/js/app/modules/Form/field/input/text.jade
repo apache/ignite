@@ -21,16 +21,16 @@
         placeholder='{{ placeholder }}' 
         type='text' 
 
-        ng-model='ngModel'
-        ng-required='{{ required }}'
-        ng-blur='ngBlur()'
+        data-ng-model='ngModel'
+        data-ng-required='required || false'
+        data-ng-blur='ngBlur()'
 
-        data-java-keywords='{{ javaKeywords }}'
-        data-java-identifier='{{ javaIdentifier }}'
-        data-java-package-specified='{{ javaPackageSpecified }}'
-        data-java-build-in-class='{{ javaBuildInClass }}'
+        data-java-keywords='javaKeywords || false'
+        data-java-identifier='avaIdentifier || false'
+        data-java-package-specified='javaPackageSpecified || false'
+        data-java-build-in-class='javaBuildInClass || false'
 
-        data-ignite-form-field-input-autofocus='{{ autofocus }}'
+        data-ignite-form-field-input-autofocus='autofocus || false'
     )
 
     span(ng-transclude='')

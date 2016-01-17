@@ -1,27 +1,33 @@
-mixin feedback(field, error, message)
+mixin feedback(error, message)
     i.fa.fa-exclamation-triangle.form-control-feedback(
-        ng-show='!form.$pristine && form.#{field}.$error.#{error}'
+        ng-show='!form.$pristine && form[name].$error.#{error}'
         bs-tooltip
         data-title='#{message}'
     )
 
-ignite-form-field-input-text(
-    data-name='field'
-    data-ng-model='field'
-    data-placeholder='Enter fully qualified class name'
-    data-java-keywords='true'
-    data-java-identifier='true'
-    data-java-package-specified='true'
-    data-java-build-in-class='true'
-    data-ng-required='true'
-    data-ignite-form-field-input-autofocus='true'
-    on-enter='onEnter()'
-    ng-blur='ngBlur()'
-)
-    span(ng-transclude)
+div
+    ignite-form-field-input-text(
+        data-id='{{ id }}'
+        data-name='{{ name }}'
+        data-placeholder='Enter fully qualified class name'
 
-    +feedback('field', 'javaIdentifier', 'Trust manager is invalid!')
-    +feedback('field', 'required', 'Trust manager could not be empty!')
-    +feedback('field', 'javaKeywords', 'Trust manager could not contains reserved java keyword: ""!')
-    +feedback('field', 'javaBuildInClass', 'Trust manager should not be the Java build-in class!')
-    +feedback('field', 'javaPackageSpecified', 'Trust manager does not have package specified!')
+        data-ng-model='ngModel'
+        data-ng-required='required || false'
+
+        data-java-keywords='true'
+        data-java-identifier='true'
+        data-java-package-specified='true'
+        data-java-build-in-class='true'
+        
+        data-ignite-form-field-input-autofocus='autofocus || false '
+
+        on-enter='onEnter()'
+        data-ng-blur='ngBlur()'
+    )
+        span(ng-transclude)
+
+        +feedback('javaIdentifier', 'Trust manager is invalid!')
+        +feedback('required', 'Trust manager could not be empty!')
+        +feedback('javaKeywords', 'Trust manager could not contains reserved java keyword: ""!')
+        +feedback('javaBuildInClass', 'Trust manager should not be the Java build-in class!')
+        +feedback('javaPackageSpecified', 'Trust manager does not have package specified!')

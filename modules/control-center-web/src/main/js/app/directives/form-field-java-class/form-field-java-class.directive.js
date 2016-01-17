@@ -33,7 +33,6 @@ export default ['igniteFormFieldJavaClass', ['IgniteFormGUID', (guid) => {
         scope: {
             id: '@',
             name: '@',
-            placeholder: '@',
             required: '=ngRequired',
 
             ngModel: '=',

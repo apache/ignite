@@ -117,14 +117,9 @@ form.panel.panel-default(bs-collapse ng-model='panel' name='sslConfiguration')
                                 span(ng-hide='___.edit')
                                     a.labelFormField(ng-click='___.edit = true') {{ model }}
                                 span(ng-if='___.edit' ng-form='form' ng-init='field = model')
-                                    ignite-form-field-input-text(
+                                    ignite-form-field-java-class(
                                         data-name='field'
                                         data-ng-model='field'
-                                        data-placeholder='Enter fully qualified class name'
-                                        data-java-keywords='true'
-                                        data-java-identifier='true'
-                                        data-java-package-specified='true'
-                                        data-java-build-in-class='true'
                                         data-ng-required='true'
                                         data-ignite-form-field-input-autofocus='true'
                                         on-enter='form.$valid && (#{model}.trustManagers[$index] = field); form.$valid && (___.edit = false);'
@@ -132,16 +127,10 @@ form.panel.panel-default(bs-collapse ng-model='panel' name='sslConfiguration')
                                     )
                                         i.fa.fa-floppy-o(
                                             ng-show='form.$valid'
-                                            ng-click='form.$valid && #{model}.trustManagers.push(field)'
+                                            ng-click='form.$valid && (#{model}.trustManagers[$index] = field); form.$valid && (___.edit = false);'
                                             bs-tooltip 
                                             data-title='Click icon or press [Enter] to save item' 
                                         )
-
-                                        +feedback('field', 'javaIdentifier', 'Trust manager is invalid!')
-                                        +feedback('field', 'required', 'Trust manager could not be empty!')
-                                        +feedback('field', 'javaKeywords', 'Trust manager could not contains reserved java keyword: ""!')
-                                        +feedback('field', 'javaBuildInClass', 'Trust manager should not be the Java build-in class!')
-                                        +feedback('field', 'javaPackageSpecified', 'Trust manager does not have package specified!')
                                 
                         .group-content(ng-if='__.addTrustManager'
                             ng-form='form' 
@@ -157,7 +146,7 @@ form.panel.panel-default(bs-collapse ng-model='panel' name='sslConfiguration')
                                 )
                                     i.fa.fa-floppy-o(
                                         ng-show='form.$valid'
-                                        ng-click='form.$valid && #{model}.trustManagers.push(field)'
+                                        ng-click='form.$valid && #{model}.trustManagers.push(field); form.$valid && (__.addTrustManager = false)'
                                         bs-tooltip 
                                         data-title='Click icon or press [Enter] to save item' 
                                     )

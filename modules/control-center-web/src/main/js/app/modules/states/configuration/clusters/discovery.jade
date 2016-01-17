@@ -74,11 +74,11 @@ form.panel.panel-default(bs-collapse ng-model='panel' name='discovery')
                             | Address resolver
                         ignite-form-field-tooltip
                             | Class name of resolution between external and internal addresses provider
-                        ignite-form-field-input-text(
+                        ignite-form-field-java-class(
                             data-id='discoAddressResolver'
                             data-name='discoAddressResolver'
                             data-ng-model='#{model}.addressResolver'
-                            data-placeholder='Enter fully qualified class name'
+                            data-ng-required='!!#{model}.addressResolver'
                         )
                 .settings-row
                     ignite-form-field
@@ -206,11 +206,10 @@ form.panel.panel-default(bs-collapse ng-model='panel' name='discovery')
                             | Discovery listener
                         ignite-form-field-tooltip
                             | Grid discovery listener
-                        ignite-form-field-input-text(
+                        ignite-form-field-java-class(
                             data-id='discoListener'
                             data-name='discoListener'
                             data-ng-model='#{model}.listener'
-                            data-placeholder='Enter fully qualified class name'
                         )
                 .settings-row
                    ignite-form-field
@@ -218,11 +217,10 @@ form.panel.panel-default(bs-collapse ng-model='panel' name='discovery')
                             | Data exchange
                         ignite-form-field-tooltip
                             | Class name of handler for initial data exchange between Ignite nodes
-                        ignite-form-field-input-text(
+                        ignite-form-field-java-class(
                             data-id='dataExchange'
                             data-name='dataExchange'
                             data-ng-model='#{model}.dataExchange'
-                            data-placeholder='Enter fully qualified class name'
                         )
                 .settings-row
                    ignite-form-field
@@ -230,11 +228,10 @@ form.panel.panel-default(bs-collapse ng-model='panel' name='discovery')
                             | Metrics provider
                         ignite-form-field-tooltip
                             | Class name of metric provider to discovery SPI
-                        ignite-form-field-input-text(
+                        ignite-form-field-java-class(
                             data-id='metricsProvider'
                             data-name='metricsProvider'
                             data-ng-model='#{model}.metricsProvider'
-                            data-placeholder='Enter fully qualified class name'
                         )
                 .settings-row
                     ignite-form-field
@@ -278,11 +275,10 @@ form.panel.panel-default(bs-collapse ng-model='panel' name='discovery')
                             | Node authenticator
                         ignite-form-field-tooltip
                             | Node authenticator
-                        ignite-form-field-input-text(
+                        ignite-form-field-java-class(
                             data-id='authenticator'
                             data-name='authenticator'
                             data-ng-model='#{model}.authenticator'
-                            data-placeholder='Enter fully qualified class name'
                         )
                 .settings-row
                     ignite-form-field.checkbox

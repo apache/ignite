@@ -22,22 +22,24 @@ export default ['javaBuildInClass', [() => {
     const link = (scope, el, attrs, [ngModel]) => {
         const validate = (isValid) => {
             ngModel.$setValidity('javaBuildInClass', isValid);
+
+            return isValid;
         };
 
         if (typeof attrs.javaBuildInClass === 'undefined' || !attrs.javaBuildInClass)
             return;
 
         ngModel.$parsers.push((value) => {
-            if (!value)
-                validate(true);
-            else {
-                const jclasses = JAVA_CLASSES.filter((key) => value === key).length;
-                const jfclasses = JAVA_FULLNAME_CLASSES.filter((key) => value === key).length;
+            if (validate(!value))
+                return value;
 
-                validate(!(jclasses || jfclasses));
-            }
+            const jclasses = JAVA_CLASSES.filter((key) => value === key).length;
+            const jfclasses = JAVA_FULLNAME_CLASSES.filter((key) => value === key).length;
 
-            return value;
+            if (validate(!(jclasses || jfclasses)))
+                return value;
+
+            return '';
         });
     };
 
