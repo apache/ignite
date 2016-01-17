@@ -87,6 +87,13 @@ namespace Apache.Ignite.Core.Impl.Binary
         }
 
         /** <inheritdoc /> */
+        public IBinaryObjectBuilder ToBuilder()
+        {
+            throw new InvalidOperationException(
+                "BinaryObjectBuilder does not support binary enums. Use IBinary.BuildEnum instead.");
+        }
+
+        /** <inheritdoc /> */
         public bool Equals(BinaryEnum other)
         {
             if (ReferenceEquals(null, other))

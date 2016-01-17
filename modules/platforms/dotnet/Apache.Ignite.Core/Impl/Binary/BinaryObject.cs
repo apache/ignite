@@ -133,6 +133,12 @@ namespace Apache.Ignite.Core.Impl.Binary
             }
         }
 
+        /** <inheritdoc /> */
+        public IBinaryObjectBuilder ToBuilder()
+        {
+            return _marsh.Ignite.GetBinary().GetBuilder(this);
+        }
+
         /// <summary>
         /// Internal deserialization routine.
         /// </summary>
