@@ -2,7 +2,7 @@ node_modules
 jspm_packages
 *.idea
 *.log
-*.css
 .npmrc
 build
 app/plugins
+public/stylesheets/*.css
