@@ -159,8 +159,8 @@ if "%JMX_PORT%" == "" (
 ::
 :: ADD YOUR/CHANGE ADDITIONAL OPTIONS HERE
 ::
-for /f tokens^=2-5^ delims^=.-_^" %%j in ('java -fullversion 2^>^&1') do set "JAVA_VERSION=%%j%%k%%l%%m"
-if %JAVA_VERSION% LSS 18000 (
+"%JAVA_HOME%\bin\java.exe" -version 2>&1 | findstr "1\.[7]\." > nul
+if %ERRORLEVEL% equ 0 (
     if "%JVM_OPTS%" == "" set JVM_OPTS=-Xms1g -Xmx1g -server -XX:+AggressiveOpts -XX:MaxPermSize=256m
 ) else (
     if "%JVM_OPTS%" == "" set JVM_OPTS=-Xms1g -Xmx1g -server -XX:+AggressiveOpts -XX:MaxMetaspaceSize=256m
