@@ -86,7 +86,8 @@ public class CacheEntrySerializablePredicate implements CacheEntryPredicate {
 
         p.prepareMarshal(ctx);
 
-        bytes = ctx.marshaller().marshal(p);
+        if (bytes == null)
+            bytes = ctx.marshaller().marshal(p);
     }
 
     /** {@inheritDoc} */

@@ -978,7 +978,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
     /**
      * @param key Key.
      * @param cacheName Cache name.
-     * @return Ignite instance which has primary cache for given key.
+     * @return Ignite instance which has backup cache for given key.
      */
     protected Ignite backupNode(Object key, String cacheName) {
         List<Ignite> allGrids = Ignition.allGrids();
@@ -1001,8 +1001,38 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
     }
 
     /**
+     * @param key Key.
+     * @param cacheName Cache name.
+     * @return Ignite instances which has backup cache for given key.
+     */
+    protected List<Ignite> backupNodes(Object key, String cacheName) {
+        List<Ignite> allGrids = Ignition.allGrids();
+
+        assertFalse("There are no alive nodes.", F.isEmpty(allGrids));
+
+        Ignite ignite = allGrids.get(0);
+
+        Affinity<Object> aff = ignite.affinity(cacheName);
+
+        Collection<ClusterNode> nodes = aff.mapKeyToPrimaryAndBackups(key);
+
+        assertTrue("Expected more than one node for key [key=" + key + ", nodes=" + nodes +']', nodes.size() > 1);
+
+        Iterator<ClusterNode> it = nodes.iterator();
+
+        it.next(); // Skip primary.
+
+        List<Ignite> backups = new ArrayList<>(nodes.size() - 1);
+
+        while (it.hasNext())
+            backups.add(grid(it.next()));
+
+        return backups;
+    }
+
+    /**
      * In ATOMIC cache with CLOCK mode if key is updated from different nodes at same time
-     * only one update wins others are ignored (can happen in test event when updates are executed from
+     * only one update wins others are ignored (can happen in test even when updates are executed from
      * different nodes sequentially), this delay is used to avoid lost updates.
      *
      * @param cache Cache.

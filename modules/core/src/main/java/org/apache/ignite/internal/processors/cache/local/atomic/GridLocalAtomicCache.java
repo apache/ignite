@@ -60,6 +60,7 @@ import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.local.GridLocalCacheEntry;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxLocalEx;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
+import org.apache.ignite.internal.util.F0;
 import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.future.GridEmbeddedFuture;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
@@ -188,7 +189,7 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
     @Override public IgniteInternalFuture<V> getAndPutAsync0(K key, V val, @Nullable CacheEntryPredicate... filter) {
         A.notNull(key, "key", val, "val");
 
-        return updateAllAsync0(F.asMap(key, val),
+        return updateAllAsync0(F0.asMap(key, val),
             null,
             null,
             true,
@@ -201,7 +202,7 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
     @Override public IgniteInternalFuture<Boolean> putAsync0(K key, V val, @Nullable CacheEntryPredicate... filter) {
         A.notNull(key, "key", val, "val");
 
-        return updateAllAsync0(F.asMap(key, val),
+        return updateAllAsync0(F0.asMap(key, val),
             null,
             null,
             false,
@@ -658,7 +659,11 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
         if (keyCheck)
             validateCacheKeys(keys);
 
-        Map<? extends K, EntryProcessor<K, V, Object>> invokeMap = CU.invokeMap(keys, entryProcessor);
+        Map<? extends K, EntryProcessor> invokeMap = F.viewAsMap(keys, new C1<K, EntryProcessor>() {
+            @Override public EntryProcessor apply(K k) {
+                return entryProcessor;
+            }
+        });
 
         CacheOperationContext opCtx = ctx.operationContextPerCall();
 
@@ -724,7 +729,11 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
         if (keyCheck)
             validateCacheKeys(keys);
 
-        Map<? extends K, EntryProcessor<K, V, Object>> invokeMap = CU.invokeMap(keys, entryProcessor);
+        Map<? extends K, EntryProcessor> invokeMap = F.viewAsMap(keys, new C1<K, EntryProcessor>() {
+            @Override public EntryProcessor apply(K k) {
+                return entryProcessor;
+            }
+        });
 
         return updateAllAsync0(null,
             invokeMap,

@@ -36,6 +36,7 @@ import org.apache.ignite.internal.managers.communication.GridMessageListener;
 import org.apache.ignite.internal.managers.deployment.GridDeploymentInfo;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.distributed.dht.CacheGetFuture;
+import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtAffinityAssignmentRequest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLockRequest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLockResponse;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxPrepareRequest;
@@ -57,6 +58,7 @@ import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxPr
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxPrepareResponse;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryRequest;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryResponse;
+import org.apache.ignite.internal.util.F0;
 import org.apache.ignite.internal.util.GridLeanSet;
 import org.apache.ignite.internal.util.GridSpinReadWriteLock;
 import org.apache.ignite.internal.util.typedef.CI1;
@@ -121,6 +123,28 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
             IgniteInternalFuture<?> fut = null;
 
             if (cacheMsg.partitionExchangeMessage()) {
+                if (cacheMsg instanceof GridDhtAffinityAssignmentRequest) {
+                    assert cacheMsg.topologyVersion() != null : cacheMsg;
+
+                    AffinityTopologyVersion startTopVer = new AffinityTopologyVersion(cctx.localNode().order());
+
+                    assert cacheMsg.topologyVersion().compareTo(startTopVer) > 0 :
+                        "Invalid affinity request [startTopVer=" + startTopVer + ", msg=" + cacheMsg + ']';
+
+                    // Need to wait for initial exchange to avoid race between cache start and affinity request.
+                    fut = cctx.exchange().affinityReadyFuture(startTopVer);
+
+                    if (fut != null && !fut.isDone()) {
+                        cctx.kernalContext().closure().runLocalSafe(new Runnable() {
+                            @Override public void run() {
+                                lsnr.onMessage(nodeId, cacheMsg);
+                            }
+                        });
+
+                        return;
+                    }
+                }
+
                 long locTopVer = cctx.discovery().topologyVersion();
                 long rmtTopVer = cacheMsg.topologyVersion().topologyVersion();
 
@@ -730,7 +754,7 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
                 }
 
                 if (added) {
-                    if (!F.exist(F.nodeIds(nodes), F.not(F.contains(leftIds)))) {
+                    if (!F.exist(F.nodeIds(nodes), F0.not(F.contains(leftIds)))) {
                         if (log.isDebugEnabled())
                             log.debug("Message will not be sent because all nodes left topology [msg=" + msg +
                                 ", nodes=" + U.toShortString(nodes) + ']');
@@ -766,7 +790,7 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
                     U.sleep(retryDelay);
                 }
 
-                if (!F.exist(F.nodeIds(nodes), F.not(F.contains(leftIds)))) {
+                if (!F.exist(F.nodeIds(nodes), F0.not(F.contains(leftIds)))) {
                     if (log.isDebugEnabled())
                         log.debug("Message will not be sent because all nodes left topology [msg=" + msg + ", nodes=" +
                             U.toShortString(nodes) + ']');

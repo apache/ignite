@@ -104,7 +104,7 @@ public class GridDhtAffinityAssignmentResponse extends GridCacheMessage {
     @Override public void prepareMarshal(GridCacheSharedContext ctx) throws IgniteCheckedException {
         super.prepareMarshal(ctx);
 
-        if (affAssignment != null)
+        if (affAssignment != null && affAssignmentBytes == null)
             affAssignmentBytes = ctx.marshaller().marshal(affAssignment);
     }
 
@@ -113,7 +113,7 @@ public class GridDhtAffinityAssignmentResponse extends GridCacheMessage {
     @Override public void finishUnmarshal(GridCacheSharedContext ctx, ClassLoader ldr) throws IgniteCheckedException {
         super.finishUnmarshal(ctx, ldr);
 
-        if (affAssignmentBytes != null) {
+        if (affAssignmentBytes != null && affAssignment == null) {
             affAssignment = ctx.marshaller().unmarshal(affAssignmentBytes, ldr);
 
             // TODO IGNITE-2110: setting 'local' for nodes not needed when IGNITE-2110 is implemented.

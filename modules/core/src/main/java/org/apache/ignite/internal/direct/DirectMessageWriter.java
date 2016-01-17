@@ -27,6 +27,8 @@ import org.apache.ignite.internal.direct.state.DirectMessageStateItem;
 import org.apache.ignite.internal.direct.stream.DirectByteBufferStream;
 import org.apache.ignite.internal.direct.stream.v1.DirectByteBufferStreamImplV1;
 import org.apache.ignite.internal.direct.stream.v2.DirectByteBufferStreamImplV2;
+import org.apache.ignite.internal.util.tostring.GridToStringInclude;
+import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteOutClosure;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.plugin.extensions.communication.Message;
@@ -39,6 +41,7 @@ import org.jetbrains.annotations.Nullable;
  */
 public class DirectMessageWriter implements MessageWriter {
     /** State. */
+    @GridToStringInclude
     private final DirectMessageState<StateItem> state;
 
     /**
@@ -327,6 +330,11 @@ public class DirectMessageWriter implements MessageWriter {
         state.reset();
     }
 
+    /** {@inheritDoc} */
+    public String toString() {
+        return S.toString(DirectMessageWriter.class, this);
+    }
+
     /**
      */
     private static class StateItem implements DirectMessageStateItem {
@@ -363,6 +371,11 @@ public class DirectMessageWriter implements MessageWriter {
         @Override public void reset() {
             state = 0;
             hdrWritten = false;
+        }
+
+        /** {@inheritDoc} */
+        public String toString() {
+            return S.toString(StateItem.class, this);
         }
     }
 }

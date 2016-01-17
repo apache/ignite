@@ -926,8 +926,15 @@ public final class DataStructuresProcessor extends GridProcessorAdapter {
 
         CacheConfiguration newCfg = cacheConfiguration(cfg, cacheName);
 
-        if (ctx.cache().cache(cacheName) == null)
-            ctx.cache().dynamicStartCache(newCfg, cacheName, null, CacheType.INTERNAL, false, true).get();
+        if (ctx.cache().cache(cacheName) == null) {
+            ctx.cache().dynamicStartCache(newCfg,
+                cacheName,
+                null,
+                CacheType.INTERNAL,
+                false,
+                true,
+                true).get();
+        }
 
         assert ctx.cache().cache(cacheName) != null : cacheName;
 
