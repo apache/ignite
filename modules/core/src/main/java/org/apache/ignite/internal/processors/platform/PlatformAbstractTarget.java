@@ -24,9 +24,8 @@ import org.apache.ignite.internal.binary.BinaryRawReaderEx;
 import org.apache.ignite.internal.binary.BinaryRawWriterEx;
 import org.apache.ignite.internal.processors.platform.memory.PlatformMemory;
 import org.apache.ignite.internal.processors.platform.memory.PlatformOutputStream;
-import org.apache.ignite.internal.processors.platform.utils.*;
-import org.apache.ignite.internal.util.future.IgniteFutureImpl;
-import org.apache.ignite.lang.IgniteFuture;
+import org.apache.ignite.internal.processors.platform.utils.PlatformFutureUtils;
+import org.apache.ignite.internal.processors.platform.utils.PlatformListenable;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -204,19 +203,6 @@ public abstract class PlatformAbstractTarget implements PlatformTarget {
     }
 
     /**
-     * Get current future with proper exception conversions.
-     *
-     * @return Future.
-     * @throws IgniteCheckedException If failed.
-     */
-    @SuppressWarnings({"ThrowableResultOfMethodCallIgnored", "unchecked"})
-    /*protected IgniteInternalFuture currentFutureWrapped() throws IgniteCheckedException {
-        IgniteFutureImpl fut = (IgniteFutureImpl)currentFuture();
-
-        return fut.internalFuture();
-    }*/
-
-    /**
      * When overridden in a derived class, gets future for the current operation.
      *
      * @return current future.
@@ -232,7 +218,7 @@ public abstract class PlatformAbstractTarget implements PlatformTarget {
      * @param opId Operation id.
      * @return A custom writer for given op id.
      */
-    protected @Nullable PlatformFutureUtils.Writer futureWriter(int opId){
+    @Nullable protected PlatformFutureUtils.Writer futureWriter(int opId){
         return null;
     }
 
