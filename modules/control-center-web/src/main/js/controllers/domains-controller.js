@@ -955,7 +955,7 @@ consoleModule.controller('domainsController', function ($filter, $http, $timeout
                 return importMetadataNextAvailable ? 'Click to show import options' : 'Select tables to continue';
 
             if ($scope.importMeta.action === 'options')
-                return 'Click to import domain models for selected tables';
+                return 'Click to import domain model for selected tables';
 
             return 'Click to continue';
         };

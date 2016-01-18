@@ -2181,7 +2181,7 @@ consoleModule.service('$agentDownload', [
 
                 _agentDownloadModal.backState = 'base.configuration.domains';
 
-                scope.agentGoal = 'import domain models from database schema';
+                scope.agentGoal = 'import domain model from database schema';
 
                 scope.backText = 'Back to Domain models';
 
