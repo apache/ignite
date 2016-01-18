@@ -18,6 +18,7 @@ package org.apache.ignite.internal.processors.odbc.protocol;
 
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.configuration.ConnectorConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.OdbcConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
@@ -122,7 +123,12 @@ public class GridTcpOdbcServer {
      * @throws IOException If failed to resolve host.
      */
     private InetAddress resolveOdbcTcpHost(IgniteConfiguration cfg) throws IOException {
-        String host = cfg.getConnectorConfiguration().getHost();
+        String host = null;
+
+        ConnectorConfiguration connectionCfg = cfg.getConnectorConfiguration();
+
+        if (connectionCfg != null)
+            host = connectionCfg.getHost();
 
         if (host == null)
             host = cfg.getLocalHost();
