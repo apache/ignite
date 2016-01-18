@@ -26,7 +26,6 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
@@ -97,6 +96,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteClosure;
+import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.spi.IgniteNodeValidationResult;
 import org.jetbrains.annotations.Nullable;
@@ -113,6 +113,9 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
     CacheObjectBinaryProcessor {
     /** */
     private static final Unsafe UNSAFE = GridUnsafe.unsafe();
+
+    /** */
+    public static final IgniteProductVersion BINARY_CFG_CHECK_SINCE = IgniteProductVersion.fromString("1.5.4");
 
     /** */
     private final CountDownLatch startLatch = new CountDownLatch(1);
@@ -238,10 +241,10 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
 
                         for (BinaryTypeConfiguration c : bCfg.getTypeConfigurations()) {
                             typeCfgsMap.put(
-                                c.getTypeName() != null ? c.getTypeName() : (byte)0,
+                                c.getTypeName() != null,
                                 Arrays.asList(
-                                    c.getIdMapper() != null ? c.getIdMapper().getClass() : (byte)0,
-                                    c.getSerializer() != null ? c.getSerializer().getClass() : (byte)0, 
+                                    c.getIdMapper() != null ? c.getIdMapper().getClass() : null,
+                                    c.getSerializer() != null ? c.getSerializer().getClass() : null,
                                     c.isEnum()
                                 )
                             );
@@ -252,8 +255,6 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
 
                     ctx.addNodeAttribute(IgniteNodeAttributes.ATTR_BINARY_CONFIGURATION, map);
                 }
-                else
-                    ctx.addNodeAttribute(IgniteNodeAttributes.ATTR_BINARY_CONFIGURATION, (byte)0);
             }
         }
     }
@@ -835,9 +836,7 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
 
         Object rmtBinaryCfg = rmtNode.attribute(IgniteNodeAttributes.ATTR_BINARY_CONFIGURATION);
 
-        // Config can be null if and only if the remote node uses
-        // an old version of Ignite which doesn't support binary configuration check at all.
-        if (rmtBinaryCfg == null)
+        if (rmtNode.version().compareTo(BINARY_CFG_CHECK_SINCE) < 0)
             return null;
 
         ClusterNode locNode = ctx.discovery().localNode();
