@@ -20,7 +20,6 @@ package org.apache.ignite.internal.binary;
 import java.util.Arrays;
 import java.util.concurrent.Callable;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.binary.BinaryFullNameIdMapper;
 import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.binary.BinaryReader;
 import org.apache.ignite.binary.BinarySerializer;
@@ -213,7 +212,7 @@ public class BinaryConfigurationConsistencySelfTest extends GridCommonAbstractTe
 
         BinaryTypeConfiguration btc = new BinaryTypeConfiguration("org.MyClass");
 
-        btc.setIdMapper(BinaryFullNameIdMapper.defaultInstance());
+        btc.setIdMapper(BinaryContext.defaultIdMapper());
         btc.setEnum(false);
         btc.setSerializer(new BinarySerializer() {
             @Override public void writeBinary(Object obj, BinaryWriter writer) throws BinaryObjectException {

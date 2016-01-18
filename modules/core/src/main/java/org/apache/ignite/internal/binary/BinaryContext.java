@@ -44,7 +44,6 @@ import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.binary.BinaryFullNameIdMapper;
 import org.apache.ignite.binary.BinaryIdMapper;
 import org.apache.ignite.binary.BinaryInvalidTypeException;
 import org.apache.ignite.binary.BinaryObjectException;
@@ -78,6 +77,9 @@ import org.jsr166.ConcurrentHashMap8;
 public class BinaryContext {
     /** */
     private static final ClassLoader dfltLdr = U.gridClassLoader();
+
+    /** */
+    private static final BinaryIdMapper DFLT_ID_MAPPER = new BinarySimpleNameIdMapper();
 
     /** */
     private final ConcurrentMap<Class<?>, BinaryClassDescriptor> descByCls = new ConcurrentHashMap8<>();
@@ -354,9 +356,16 @@ public class BinaryContext {
      * @return Not null BinaryIdMapper.
      */
     private static BinaryIdMapper resolveIdMapper(@Nullable BinaryIdMapper mapper) {
-        return mapper == null ? BinaryFullNameIdMapper.defaultInstance() :
+        return mapper == null ? DFLT_ID_MAPPER :
             (mapper instanceof BinarySimpleNameIdMapper ? mapper :
                 new SimpleNameIdMapperWrapper(mapper));
+    }
+
+    /**
+     * @return ID mapper used as default.
+     */
+    static BinaryIdMapper defaultIdMapper() {
+        return DFLT_ID_MAPPER;
     }
 
     /**
@@ -536,7 +545,7 @@ public class BinaryContext {
                 clsName.hashCode(),
                 clsName,
                 null,
-                BinaryFullNameIdMapper.defaultInstance(),
+                DFLT_ID_MAPPER,
                 null,
                 false,
                 true /* registered */
@@ -695,7 +704,7 @@ public class BinaryContext {
     public BinaryIdMapper userTypeIdMapper(int typeId) {
         BinaryIdMapper idMapper = mappers.get(typeId);
 
-        return idMapper != null ? idMapper : BinaryFullNameIdMapper.defaultInstance();
+        return idMapper != null ? idMapper : DFLT_ID_MAPPER;
     }
 
     /**
@@ -705,7 +714,7 @@ public class BinaryContext {
     private BinaryIdMapper userTypeIdMapper(String typeName) {
         BinaryIdMapper idMapper = typeMappers.get(typeName);
 
-        return idMapper != null ? idMapper : BinaryFullNameIdMapper.defaultInstance();
+        return idMapper != null ? idMapper : DFLT_ID_MAPPER;
     }
 
     /**
@@ -741,7 +750,7 @@ public class BinaryContext {
         String typeName = cls.getName();
 
         if (id == 0)
-            id = BinaryFullNameIdMapper.defaultInstance().typeId(typeName);
+            id = DFLT_ID_MAPPER.typeId(typeName);
 
         BinaryClassDescriptor desc = new BinaryClassDescriptor(
             this,
@@ -750,7 +759,7 @@ public class BinaryContext {
             id,
             typeName,
             affFieldName,
-            BinaryFullNameIdMapper.defaultInstance(),
+            DFLT_ID_MAPPER,
             new BinaryReflectiveSerializer(),
             false,
             true /* registered */

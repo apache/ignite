@@ -1366,7 +1366,7 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testTypeNamesFullNameIdMapper() throws Exception {
-        checkTypeNamesDefaultIdMapper(BinaryFullNameIdMapper.defaultInstance());
+        checkTypeNamesDefaultIdMapper(new BinaryFullNameIdMapper());
     }
 
     /**
@@ -1501,7 +1501,7 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
 
         BinaryTypeConfiguration customType5 = new BinaryTypeConfiguration(DateClass1.class.getName());
 
-        customType5.setIdMapper(BinaryFullNameIdMapper.defaultInstance());
+        customType5.setIdMapper(new BinaryFullNameIdMapper());
 
         BinaryMarshaller marsh = binaryMarshaller(new BinarySimpleNameIdMapper(), Arrays.asList(
             new BinaryTypeConfiguration(Key.class.getName()),
@@ -1586,7 +1586,7 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
 
         BinaryTypeConfiguration customType5 = new BinaryTypeConfiguration(DateClass1.class.getName());
 
-        customType5.setIdMapper(BinaryFullNameIdMapper.defaultInstance());
+        customType5.setIdMapper(new BinaryFullNameIdMapper());
 
         BinaryTypeConfiguration customType6 = new BinaryTypeConfiguration(MyTestClass.class.getName());
 

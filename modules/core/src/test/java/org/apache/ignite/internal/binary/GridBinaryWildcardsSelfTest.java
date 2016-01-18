@@ -164,7 +164,7 @@ public class GridBinaryWildcardsSelfTest extends GridCommonAbstractTest {
         if (mapper != null)
             return mapper.typeId(typeName);
 
-        return BinaryFullNameIdMapper.defaultInstance().typeId(typeName);
+        return BinaryContext.defaultIdMapper().typeId(typeName);
     }
 
     /**

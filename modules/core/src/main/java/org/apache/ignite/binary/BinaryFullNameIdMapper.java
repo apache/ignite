@@ -24,18 +24,6 @@ package org.apache.ignite.binary;
  * performance on micro-level in default case because it doesn't need virtual calls.
  */
 public class BinaryFullNameIdMapper implements BinaryIdMapper {
-    /** Default implementation. */
-    private static final BinaryFullNameIdMapper DFLT = new BinaryFullNameIdMapper();
-
-    /**
-     * Get default instance.
-     *
-     * @return Default instance.
-     */
-    public static BinaryFullNameIdMapper defaultInstance() {
-        return DFLT;
-    }
-
     /** {@inheritDoc} */
     @Override public int typeId(String clsName) {
         int h = clsName.hashCode();
