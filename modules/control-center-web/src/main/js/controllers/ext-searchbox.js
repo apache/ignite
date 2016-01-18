@@ -1,4 +1,7 @@
 /* */ 
+
+// TODO This code MUST BE refactored before SOURCE release!!!
+
 "format global";
 ace.define("ace/ext/searchbox",["require","exports","module","ace/lib/dom","ace/lib/lang","ace/lib/event","ace/keyboard/hash_handler","ace/lib/keys"], function(require, exports, module) {
 "use strict";
@@ -415,4 +418,3 @@ exports.Search = function(editor, isReplace) {
                 (function() {
                     ace.require(["ace/ext/searchbox"], function() {});
                 })();
-            

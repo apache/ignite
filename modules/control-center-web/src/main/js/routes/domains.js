@@ -153,7 +153,7 @@ function _save(metas, res) {
                                     kind: 'CacheJdbcPojoStoreFactory',
                                     CacheJdbcPojoStoreFactory: {
                                         dataSourceBean: 'dataSource',
-                                        dialect: 'H2'
+                                        dialect: meta.newCache.dialect
                                     }
                                 },
                                 readThrough: true,

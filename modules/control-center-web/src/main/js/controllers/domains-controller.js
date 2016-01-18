@@ -35,17 +35,17 @@ consoleModule.controller('domainsController', function ($filter, $http, $timeout
         $scope.removeDemoDropdown = [{ 'text': 'Remove generated demo data', 'click': 'removeDemoItems()'}];
 
         function restoreSelection() {
-            var lastSelectedMetadata = angular.fromJson(sessionStorage.lastSelectedMetadata);
+            var lastSelectedDomain = angular.fromJson(sessionStorage.lastSelectedDomain);
 
-            if (lastSelectedMetadata) {
+            if (lastSelectedDomain) {
                 var idx = _.findIndex($scope.metadatas, function (metadata) {
-                    return metadata._id === lastSelectedMetadata;
+                    return metadata._id === lastSelectedDomain;
                 });
 
                 if (idx >= 0)
                     $scope.selectItem($scope.metadatas[idx]);
                 else {
-                    sessionStorage.removeItem('lastSelectedMetadata');
+                    sessionStorage.removeItem('lastSelectedDomain');
 
                     selectFirstItem();
                 }
@@ -217,37 +217,36 @@ consoleModule.controller('domainsController', function ($filter, $http, $timeout
 
         var _dbPresets = [
             {
-                db: 'oracle',
+                db: 'Oracle',
                 jdbcDriverClass: 'oracle.jdbc.OracleDriver',
                 jdbcUrl: 'jdbc:oracle:thin:@[host]:[port]:[database]',
                 user: 'system'
             },
             {
-                db: 'db2',
+                db: 'DB2',
                 jdbcDriverClass: 'com.ibm.db2.jcc.DB2Driver',
                 jdbcUrl: 'jdbc:db2://[host]:[port]/[database]',
                 user: 'db2admin'
             },
             {
-                db: 'mssql',
+                db: 'SQLServer',
                 jdbcDriverClass: 'com.microsoft.sqlserver.jdbc.SQLServerDriver',
-                jdbcUrl: 'jdbc:sqlserver://[host]:[port][;databaseName=database]',
-                user: 'sa'
+                jdbcUrl: 'jdbc:sqlserver://[host]:[port][;databaseName=database]'
             },
             {
-                db: 'postgre',
+                db: 'PostgreSQL',
                 jdbcDriverClass: 'org.postgresql.Driver',
                 jdbcUrl: 'jdbc:postgresql://[host]:[port]/[database]',
                 user: 'sa'
             },
             {
-                db: 'mysql',
+                db: 'MySQL',
                 jdbcDriverClass: 'com.mysql.jdbc.Driver',
                 jdbcUrl: 'jdbc:mysql://[host]:[port]/[database]',
                 user: 'root'
             },
             {
-                db: 'h2',
+                db: 'H2',
                 jdbcDriverClass: 'org.h2.Driver',
                 jdbcUrl: 'jdbc:h2:tcp://[host]/[database]',
                 user: 'sa'
@@ -255,7 +254,7 @@ consoleModule.controller('domainsController', function ($filter, $http, $timeout
         ];
 
         $scope.selectedPreset = {
-            db: 'unknown',
+            db: 'General',
             jdbcDriverJar: '',
             jdbcDriverClass: '',
             jdbcUrl: 'jdbc:[database]',
@@ -310,7 +309,7 @@ consoleModule.controller('domainsController', function ($filter, $http, $timeout
         }
 
         $scope.$watch('ui.selectedJdbcDriverJar', function (val) {
-            if (val && !$scope.importMeta.demo) {
+            if (val && !$scope.importDomain.demo) {
                 var foundPreset = _findPreset(val);
 
                 var selectedPreset = $scope.selectedPreset;
@@ -332,7 +331,7 @@ consoleModule.controller('domainsController', function ($filter, $http, $timeout
 
             if (!result)
                 result = {
-                    db: 'unknown',
+                    db: 'General',
                     jdbcUrl: 'jdbc:[database]',
                     user: 'admin'
                 };
@@ -366,46 +365,46 @@ consoleModule.controller('domainsController', function ($filter, $http, $timeout
         };
 
         $scope.selectAllSchemas = function () {
-            var allSelected = $scope.importMeta.allSchemasSelected;
+            var allSelected = $scope.importDomain.allSchemasSelected;
 
-            _.forEach($scope.importMeta.displayedSchemas, function (schema) {
+            _.forEach($scope.importDomain.displayedSchemas, function (schema) {
                 schema.use = allSelected;
             });
         };
 
         $scope.selectSchema = function () {
-            if ($common.isDefined($scope.importMeta) && $common.isDefined($scope.importMeta.displayedSchemas))
-                $scope.importMeta.allSchemasSelected = $scope.importMeta.displayedSchemas.length > 0 &&
-                    _.every($scope.importMeta.displayedSchemas, 'use', true);
+            if ($common.isDefined($scope.importDomain) && $common.isDefined($scope.importDomain.displayedSchemas))
+                $scope.importDomain.allSchemasSelected = $scope.importDomain.displayedSchemas.length > 0 &&
+                    _.every($scope.importDomain.displayedSchemas, 'use', true);
         };
 
         $scope.selectAllTables = function () {
-            var allSelected = $scope.importMeta.allTablesSelected;
+            var allSelected = $scope.importDomain.allTablesSelected;
 
-            _.forEach($scope.importMeta.displayedTables, function (table) {
+            _.forEach($scope.importDomain.displayedTables, function (table) {
                 table.use = allSelected;
             });
         };
 
         $scope.selectTable = function () {
-            if ($common.isDefined($scope.importMeta) && $common.isDefined($scope.importMeta.displayedTables))
-                $scope.importMeta.allTablesSelected = $scope.importMeta.displayedTables.length > 0 &&
-                    _.every($scope.importMeta.displayedTables, 'use', true);
+            if ($common.isDefined($scope.importDomain) && $common.isDefined($scope.importDomain.displayedTables))
+                $scope.importDomain.allTablesSelected = $scope.importDomain.displayedTables.length > 0 &&
+                    _.every($scope.importDomain.displayedTables, 'use', true);
         };
 
-        $scope.$watch('importMeta.displayedSchemas', $scope.selectSchema);
+        $scope.$watch('importDomain.displayedSchemas', $scope.selectSchema);
 
-        $scope.$watch('importMeta.displayedTables', $scope.selectTable);
+        $scope.$watch('importDomain.displayedTables', $scope.selectTable);
 
         // Pre-fetch modal dialogs.
-        var importMetaModal = $modal({scope: $scope, templateUrl: '/configuration/domains-import.html', show: false});
+        var importDomainModal = $modal({scope: $scope, templateUrl: '/configuration/domains-import.html', show: false});
 
-        var hideImportMetadata = importMetaModal.hide;
+        var hideimportDomain = importDomainModal.hide;
 
-        importMetaModal.hide = function () {
+        importDomainModal.hide = function () {
             $agentDownload.stopAwaitAgent();
 
-            hideImportMetadata();
+            hideimportDomain();
         };
 
         /**
@@ -413,14 +412,14 @@ consoleModule.controller('domainsController', function ($filter, $http, $timeout
          *
          * @param demo If 'true' then import domain models from demo database.
          */
-        $scope.showImportMetadataModal = function (demo) {
+        $scope.showImportDomainModal = function (demo) {
             $table.tableReset();
 
             $common.confirmUnsavedChanges($scope.ui.isDirty(), function () {
                 if ($scope.ui.isDirty())
                     $scope.backupItem = $scope.selectedItem ? angular.copy($scope.selectedItem) : prepareNewItem();
 
-                $scope.importMeta = {
+                $scope.importDomain = {
                     demo: demo,
                     action: 'drivers',
                     schemas: [],
@@ -431,14 +430,14 @@ consoleModule.controller('domainsController', function ($filter, $http, $timeout
                     info: ''
                 };
 
-                $scope.importMeta.loadingOptions = LOADING_JDBC_DRIVERS;
+                $scope.importDomain.loadingOptions = LOADING_JDBC_DRIVERS;
 
                 $agentDownload.awaitAgent(function (result, onSuccess, onException) {
-                    importMetaModal.$promise.then(importMetaModal.show);
+                    importDomainModal.$promise.then(importDomainModal.show);
 
                     // Get available JDBC drivers via agent.
-                    if ($scope.importMeta.action === 'drivers') {
-                        $loading.start('loadingMetadataFromDb');
+                    if ($scope.importDomain.action === 'drivers') {
+                        $loading.start('importDomainFromDb');
 
                         $scope.jdbcDriverJars = [];
                         $scope.ui.selectedJdbcDriverJar = {};
@@ -447,7 +446,7 @@ consoleModule.controller('domainsController', function ($filter, $http, $timeout
                             .success(function (drivers) {
                                 onSuccess();
 
-                                if ($scope.importMeta.demo) {
+                                if ($scope.importDomain.demo) {
                                     $scope.ui.packageNamePrev = $scope.ui.packageName;
                                     $scope.ui.packageName = 'org.apache.ignite.console.demo.model';
                                 }
@@ -459,7 +458,7 @@ consoleModule.controller('domainsController', function ($filter, $http, $timeout
                                 if (drivers && drivers.length > 0) {
                                     drivers = _.sortBy(drivers, 'jdbcDriverJar');
 
-                                    if ($scope.importMeta.demo) {
+                                    if ($scope.importDomain.demo) {
                                         var _h2DrvJar = _.find(drivers, function (drv) {
                                             return drv.jdbcDriverJar.startsWith('h2');
                                         });
@@ -469,8 +468,8 @@ consoleModule.controller('domainsController', function ($filter, $http, $timeout
                                             $scope.demoConnection.jdbcDriverJar = _h2DrvJar.jdbcDriverJar;
                                         }
                                         else {
-                                            $scope.demoConnection.db = 'unknown';
-                                            $scope.importMeta.button = 'Cancel';
+                                            $scope.demoConnection.db = 'General';
+                                            $scope.importDomain.button = 'Cancel';
                                         }
                                     }
                                     else {
@@ -488,10 +487,10 @@ consoleModule.controller('domainsController', function ($filter, $http, $timeout
                                     }
 
                                     $common.confirmUnsavedChanges($scope.ui.isDirty(), function () {
-                                        importMetaModal.$promise.then(function () {
-                                            $scope.importMeta.action = 'connect';
-                                            $scope.importMeta.tables = [];
-                                            $scope.importMeta.loadingOptions = LOADING_SCHEMAS;
+                                        importDomainModal.$promise.then(function () {
+                                            $scope.importDomain.action = 'connect';
+                                            $scope.importDomain.tables = [];
+                                            $scope.importDomain.loadingOptions = LOADING_SCHEMAS;
 
                                             $focus('jdbcUrl');
                                         });
@@ -500,16 +499,16 @@ consoleModule.controller('domainsController', function ($filter, $http, $timeout
                                 else {
                                     $common.showError('JDBC drivers not found!');
 
-                                    importMetaModal.hide();
+                                    importDomainModal.hide();
                                 }
                             })
                             .error(function (errMsg, status) {
                                 onException(errMsg, status);
                             })
                             .finally(function () {
-                                $scope.importMeta.info = INFO_CONNECT_TO_DB;
+                                $scope.importDomain.info = INFO_CONNECT_TO_DB;
 
-                                $loading.finish('loadingMetadataFromDb');
+                                $loading.finish('importDomainFromDb');
                             });
                     }
                 });
@@ -520,36 +519,36 @@ consoleModule.controller('domainsController', function ($filter, $http, $timeout
          * Load list of database schemas.
          */
         function _loadSchemas() {
-            $loading.start('loadingMetadataFromDb');
+            $loading.start('importDomainFromDb');
 
-            var preset = $scope.importMeta.demo ? $scope.demoConnection : $scope.selectedPreset;
+            var preset = $scope.importDomain.demo ? $scope.demoConnection : $scope.selectedPreset;
 
-            if (!$scope.importMeta.demo)
+            if (!$scope.importDomain.demo)
                 _savePreset(preset);
 
             $http.post('/api/v1/agent/schemas', preset)
                 .success(function (schemas) {
-                    $scope.importMeta.schemas = _.map(schemas, function (schema) {
+                    $scope.importDomain.schemas = _.map(schemas, function (schema) {
                         return {use: false, name: schema};
                     });
 
-                    $scope.importMeta.action = 'schemas';
+                    $scope.importDomain.action = 'schemas';
 
-                    if ($scope.importMeta.schemas.length === 0)
-                        $scope.importMetadataNext();
+                    if ($scope.importDomain.schemas.length === 0)
+                        $scope.importDomainNext();
                     else
-                        _.forEach($scope.importMeta.schemas, function (sch) {
+                        _.forEach($scope.importDomain.schemas, function (sch) {
                             sch.use = true;
                         });
 
-                    $scope.importMeta.info = INFO_SELECT_SCHEMAS;
-                    $scope.importMeta.loadingOptions = LOADING_TABLES;
+                    $scope.importDomain.info = INFO_SELECT_SCHEMAS;
+                    $scope.importDomain.loadingOptions = LOADING_TABLES;
                 })
                 .error(function (errMsg) {
                     $common.showError(errMsg);
                 })
                 .finally(function () {
-                    $loading.finish('loadingMetadataFromDb');
+                    $loading.finish('importDomainFromDb');
                 });
         }
 
@@ -569,15 +568,15 @@ consoleModule.controller('domainsController', function ($filter, $http, $timeout
          * Load list of database tables.
          */
         function _loadTables() {
-            $loading.start('loadingMetadataFromDb');
+            $loading.start('importDomainFromDb');
 
-            $scope.importMeta.allTablesSelected = false;
+            $scope.importDomain.allTablesSelected = false;
 
-            var preset = $scope.importMeta.demo ? $scope.demoConnection : $scope.selectedPreset;
+            var preset = $scope.importDomain.demo ? $scope.demoConnection : $scope.selectedPreset;
 
             preset.schemas = [];
 
-            _.forEach($scope.importMeta.schemas, function (schema) {
+            _.forEach($scope.importDomain.schemas, function (schema) {
                 if (schema.use)
                     preset.schemas.push(schema.name);
             });
@@ -589,20 +588,23 @@ consoleModule.controller('domainsController', function ($filter, $http, $timeout
                         _dropDownItem('Do not generate', IMPORT_DM_DO_NOT_GENERATE)
                     ];
 
-                    if (!$common.isEmptyArray($scope.caches)) {
-                        $scope.importCaches.push(null);
-
-                        _.forEach($scope.caches, function (cache) {
-                            $scope.importCaches.push(cache);
-                        });
-                    }
-
                     $scope.importCacheTemplates = [
                         _dropDownItem('PARTITIONED', 'IMPORT_DM_DFLT_PARTITIONED_CACHE'),
                         _dropDownItem('REPLICATED', 'IMPORT_DM_DFLT_REPLICATED_CACHE')
                     ];
 
-                    tables.forEach(function (tbl) {
+                    if (!$common.isEmptyArray($scope.caches)) {
+                        $scope.importCaches.push(null);
+                        $scope.importCacheTemplates.push(null);
+
+                        _.forEach($scope.caches, function (cache) {
+                            $scope.importCaches.push(cache);
+                            $scope.importCacheTemplates.push(cache);
+                        });
+                    }
+
+                    _.forEach(tables, function (tbl, idx) {
+                        tbl.id = idx;
                         tbl.cache = IMPORT_DM_NEW_CACHE;
                         tbl.template = 'IMPORT_DM_DFLT_PARTITIONED_CACHE';
                         tbl.label = tbl.schema + '.' + tbl.tbl;
@@ -613,15 +615,15 @@ consoleModule.controller('domainsController', function ($filter, $http, $timeout
                         }));
                     });
 
-                    $scope.importMeta.action = 'tables';
-                    $scope.importMeta.tables = tables;
-                    $scope.importMeta.info = INFO_SELECT_TABLES;
+                    $scope.importDomain.action = 'tables';
+                    $scope.importDomain.tables = tables;
+                    $scope.importDomain.info = INFO_SELECT_TABLES;
                 })
                 .error(function (errMsg) {
                     $common.showError(errMsg);
                 })
                 .finally(function() {
-                    $loading.finish('loadingMetadataFromDb');
+                    $loading.finish('importDomainFromDb');
                 });
         }
 
@@ -634,7 +636,6 @@ consoleModule.controller('domainsController', function ($filter, $http, $timeout
             }
 
             tbl.editCache = true;
-
             $scope.curDbTable = tbl;
         };
 
@@ -644,9 +645,10 @@ consoleModule.controller('domainsController', function ($filter, $http, $timeout
                 $scope.curDbTable.editTemplate = false;
             }
 
-            tbl.editTemplate = true;
-
-            $scope.curDbTable = tbl;
+            $timeout(function () {
+                tbl.editTemplate = true;
+                $scope.curDbTable = tbl;
+            });
         };
 
         $scope.dbTableCache = function (tbl) {
@@ -664,10 +666,10 @@ consoleModule.controller('domainsController', function ($filter, $http, $timeout
          * Show page with import domain models options.
          */
         function _selectOptions() {
-            $scope.importMeta.action = 'options';
-            $scope.importMeta.button = 'Save';
-            $scope.importMeta.info = INFO_SELECT_OPTIONS;
-            $scope.importMeta.loadingOptions = SAVING_METADATA;
+            $scope.importDomain.action = 'options';
+            $scope.importDomain.button = 'Save';
+            $scope.importDomain.info = INFO_SELECT_OPTIONS;
+            $scope.importDomain.loadingOptions = SAVING_METADATA;
         }
 
         function toJavaClassName(name) {
@@ -702,7 +704,7 @@ consoleModule.controller('domainsController', function ($filter, $http, $timeout
 
         function _saveBatch(batch) {
             if (batch && batch.length > 0) {
-                $loading.start('loadingMetadataFromDb');
+                $loading.start('importDomainFromDb');
 
                 $http.post('/api/v1/configuration/domains/save/batch', batch)
                     .success(function (savedBatch) {
@@ -745,21 +747,21 @@ consoleModule.controller('domainsController', function ($filter, $http, $timeout
                         $common.showError(errMsg);
                     })
                     .finally(function() {
-                        $loading.finish('loadingMetadataFromDb');
+                        $loading.finish('importDomainFromDb');
 
-                        importMetaModal.hide();
+                        importDomainModal.hide();
                     });
             }
             else
-                importMetaModal.hide();
+                importDomainModal.hide();
         }
 
         function _saveMetadata() {
             if ($common.isEmptyString($scope.ui.packageName))
-                return $common.showPopoverMessage(undefined, undefined, 'metadataPackageName',
+                return $common.showPopoverMessage(undefined, undefined, 'domainPackageName',
                     'Package should be not empty');
 
-            if (!$common.isValidJavaClass('Package', $scope.ui.packageName, false, 'metadataPackageName', true))
+            if (!$common.isValidJavaClass('Package', $scope.ui.packageName, false, 'domainPackageName', true))
                 return false;
 
             var batch = [];
@@ -783,7 +785,7 @@ consoleModule.controller('domainsController', function ($filter, $http, $timeout
                 };
             }
 
-            _.forEach($scope.importMeta.tables, function (table) {
+            _.forEach($scope.importDomain.tables, function (table) {
                 if (table.use) {
                     var qryFields = [];
                     var indexes = [];
@@ -863,7 +865,7 @@ consoleModule.controller('domainsController', function ($filter, $http, $timeout
                     meta.indexes = indexes;
                     meta.keyFields = keyFields;
                     meta.valueFields = valFields;
-                    meta.demo = $scope.importMeta.demo;
+                    meta.demo = $scope.importDomain.demo;
 
                     // Use Java built-in type for key.
                     if ($scope.ui.builtinKeys && meta.keyFields.length === 1)
@@ -873,8 +875,9 @@ consoleModule.controller('domainsController', function ($filter, $http, $timeout
                     if ($scope.ui.generateCaches)
                         meta.newCache = {
                             name: typeName + 'Cache',
+                            dialect: $scope.importDomain.demo ? 'H2' : $scope.selectedPreset.db,
                             clusters: $scope.ui.generatedCachesClusters,
-                            demo: $scope.importMeta.demo
+                            demo: $scope.importDomain.demo
                         };
 
                     batch.push(meta);
@@ -919,69 +922,69 @@ consoleModule.controller('domainsController', function ($filter, $http, $timeout
                     .then(function () { checkOverwrite(); });
         }
 
-        $scope.importMetadataNext = function () {
-            if (!$scope.importMetadataNextAvailable())
+        $scope.importDomainNext = function () {
+            if (!$scope.importDomainNextAvailable())
                 return;
 
-            if ($scope.importMeta.action === 'connect') {
-               if ($scope.importMeta.demo && $scope.demoConnection.db !== 'H2')
-                   importMetaModal.hide();
+            if ($scope.importDomain.action === 'connect') {
+               if ($scope.importDomain.demo && $scope.demoConnection.db !== 'H2')
+                   importDomainModal.hide();
                else
                    _loadSchemas();
             }
-            else if ($scope.importMeta.action === 'schemas')
+            else if ($scope.importDomain.action === 'schemas')
                 _loadTables();
-            else if ($scope.importMeta.action === 'tables')
+            else if ($scope.importDomain.action === 'tables')
                 _selectOptions();
-            else if ($scope.importMeta.action === 'options')
+            else if ($scope.importDomain.action === 'options')
                 _saveMetadata();
         };
 
         $scope.nextTooltipText = function () {
-            var importMetadataNextAvailable = $scope.importMetadataNextAvailable();
+            var importDomainNextAvailable = $scope.importDomainNextAvailable();
 
-            if ($scope.importMeta.action === 'connect') {
-                if ($scope.importMeta.demo && $scope.demoConnection.db !== 'H2')
+            if ($scope.importDomain.action === 'connect') {
+                if ($scope.importDomain.demo && $scope.demoConnection.db !== 'H2')
                     return 'Resolve issue with H2 database driver<br>Close this dialog and try again';
 
-                if (importMetadataNextAvailable)
+                if (importDomainNextAvailable)
                     return 'Click to load list of schemas from database';
             }
 
-            if ($scope.importMeta.action === 'schemas')
-                return importMetadataNextAvailable ? 'Click to load list of tables from database' : 'Select schemas to continue';
+            if ($scope.importDomain.action === 'schemas')
+                return importDomainNextAvailable ? 'Click to load list of tables from database' : 'Select schemas to continue';
 
-            if ($scope.importMeta.action === 'tables')
-                return importMetadataNextAvailable ? 'Click to show import options' : 'Select tables to continue';
+            if ($scope.importDomain.action === 'tables')
+                return importDomainNextAvailable ? 'Click to show import options' : 'Select tables to continue';
 
-            if ($scope.importMeta.action === 'options')
+            if ($scope.importDomain.action === 'options')
                 return 'Click to import domain model for selected tables';
 
             return 'Click to continue';
         };
 
         $scope.prevTooltipText = function () {
-            if ($scope.importMeta.action === 'schemas')
-                return $scope.importMeta.demo ? 'Click to return on demo description step' : 'Click to return on connection configuration step';
+            if ($scope.importDomain.action === 'schemas')
+                return $scope.importDomain.demo ? 'Click to return on demo description step' : 'Click to return on connection configuration step';
 
-            if ($scope.importMeta.action === 'tables')
+            if ($scope.importDomain.action === 'tables')
                 return 'Click to return on schemas selection step';
 
-            if ($scope.importMeta.action === 'options')
+            if ($scope.importDomain.action === 'options')
                 return 'Click to return on tables selection step';
         };
 
-        $scope.importMetadataNextAvailable = function () {
+        $scope.importDomainNextAvailable = function () {
             var res = true;
 
-            switch ($scope.importMeta.action) {
+            switch ($scope.importDomain.action) {
                 case 'schemas':
-                    res = $common.isEmptyArray($scope.importMeta.schemas) || $('#metadataSchemaData').find(':checked').length > 0;
+                    res = $common.isEmptyArray($scope.importDomain.schemas) || $('#importSchemasData').find(':checked').length > 0;
 
                     break;
 
                 case 'tables':
-                    res = $('#metadataTableData').find(':checked').length > 0;
+                    res = $('#importTableData').find(':checked').length > 0;
 
                     break;
             }
@@ -989,22 +992,22 @@ consoleModule.controller('domainsController', function ($filter, $http, $timeout
             return res;
         };
 
-        $scope.importMetadataPrev = function () {
-            $scope.importMeta.button = 'Next';
+        $scope.importDomainPrev = function () {
+            $scope.importDomain.button = 'Next';
 
-            if  ($scope.importMeta.action === 'options') {
-                $scope.importMeta.action = 'tables';
-                $scope.importMeta.info = INFO_SELECT_TABLES;
+            if  ($scope.importDomain.action === 'options') {
+                $scope.importDomain.action = 'tables';
+                $scope.importDomain.info = INFO_SELECT_TABLES;
             }
-            else if  ($scope.importMeta.action === 'tables' && $scope.importMeta.schemas.length > 0) {
-                $scope.importMeta.action = 'schemas';
-                $scope.importMeta.info = INFO_SELECT_SCHEMAS;
-                $scope.importMeta.loadingOptions = LOADING_TABLES;
+            else if  ($scope.importDomain.action === 'tables' && $scope.importDomain.schemas.length > 0) {
+                $scope.importDomain.action = 'schemas';
+                $scope.importDomain.info = INFO_SELECT_SCHEMAS;
+                $scope.importDomain.loadingOptions = LOADING_TABLES;
             }
             else {
-                $scope.importMeta.action = 'connect';
-                $scope.importMeta.info = INFO_CONNECT_TO_DB;
-                $scope.importMeta.loadingOptions = LOADING_SCHEMAS;
+                $scope.importDomain.action = 'connect';
+                $scope.importDomain.info = INFO_CONNECT_TO_DB;
+                $scope.importDomain.loadingOptions = LOADING_SCHEMAS;
             }
         };
 
@@ -1034,8 +1037,6 @@ consoleModule.controller('domainsController', function ($filter, $http, $timeout
                 // Load page descriptor.
                 $http.get('/models/domains.json')
                     .success(function (data) {
-                        $scope.screenTip = data.screenTip;
-                        $scope.moreInfo = data.moreInfo;
                         $scope.domainModel = data.domainModel;
                         $scope.metadataDb = data.metadataDb;
 
@@ -1090,9 +1091,9 @@ consoleModule.controller('domainsController', function ($filter, $http, $timeout
 
                 try {
                     if (item && item._id)
-                        sessionStorage.lastSelectedMetadata = angular.toJson(item._id);
+                        sessionStorage.lastSelectedDomain = angular.toJson(item._id);
                     else
-                        sessionStorage.removeItem('lastSelectedMetadata');
+                        sessionStorage.removeItem('lastSelectedDomain');
                 }
                 catch (error) { }
 
@@ -1645,7 +1646,7 @@ consoleModule.controller('domainsController', function ($filter, $http, $timeout
             if (!$common.isDefined(resetTo))
                 resetTo = prepareNewItem();
 
-            $common.resetItem($scope.backupItem, resetTo, $scope.domainModel, group);
+            $common.resetItem($scope.backupItem, resetTo, $scope.domain, group);
         };
 
         $scope.resetAll = function() {

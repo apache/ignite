@@ -260,8 +260,6 @@ consoleModule.controller('clustersController', function ($http, $timeout, $scope
                 // Load page descriptor.
                 $http.get('/models/clusters.json')
                     .success(function (data) {
-                        $scope.screenTip = data.screenTip;
-                        $scope.moreInfo = data.moreInfo;
                         $scope.general = data.general;
                         $scope.advanced = data.advanced;
 
