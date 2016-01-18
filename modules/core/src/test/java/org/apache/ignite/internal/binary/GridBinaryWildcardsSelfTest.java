@@ -301,7 +301,7 @@ public class GridBinaryWildcardsSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testClassNamesJarSimpleNameMapper() throws Exception {
-        checkClassNamesJar(new BinaryFullNameIdMapper());
+        checkClassNamesJar(new BinarySimpleNameIdMapper());
     }
 
     /**
@@ -309,7 +309,7 @@ public class GridBinaryWildcardsSelfTest extends GridCommonAbstractTest {
      * @throws IgniteCheckedException If failed.
      */
     private void checkClassNamesJar(BinaryIdMapper mapper) throws IgniteCheckedException {
-        BinaryMarshaller marsh = binaryMarshaller(Arrays.asList(
+        BinaryMarshaller marsh = binaryMarshaller(mapper, Arrays.asList(
             new BinaryTypeConfiguration("org.apache.ignite.internal.binary.test.*"),
             new BinaryTypeConfiguration("unknown.*")
         ));
