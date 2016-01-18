@@ -29,16 +29,17 @@ Demo of Ignite Web Agent:
     2) Demo for SQL.
        In this mode internal Ignite node will be started. Cache created and populated with data.
        How to evaluate:
-       2.1) Go to Ignite Web Console "SQL" menu and select "Create new notebook" menu item.
-       2.2) In notebook paragraph enter SQL queries for tables: "Country, Department, Employee" in "demo-employee" cache
-        and for tables: "Parking, Car" in "demo-car" cache.
+       2.1) Go to Ignite Web Console "SQL" menu and select "SQL demo" menu item.
+       2.2) In "SQL demo" notebook paragraph enter SQL queries for tables: "Country, Department, Employee", "Parking, Car".
 
        For example:
-        2.3) select "demo-car" cache,
+        2.3) select "ParkingCache" cache,
         2.4) Enter SQL statement:
-                select count(*) cnt, p.ParkingName from car c
-                 inner join PARKING p on (p.PARKINGID=c.PARKINGID)
-                group by c.PARKINGID order by p.ParkingName
+                SELECT p.name, count(*) AS cnt
+                FROM "ParkingCache".Parking p
+                INNER JOIN "CarCache".Car c
+                  ON (p.id) = (c.parkingId)
+                GROUP BY P.NAME
         2.5) Click "Execute" button. You should get some data in table.
         2.6) Click charts buttons to see auto generated charts.
 
