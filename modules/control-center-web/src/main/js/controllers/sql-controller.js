@@ -780,8 +780,7 @@ consoleModule.controller('sqlController', function ($http, $timeout, $interval, 
     $scope.nextPage = function(paragraph) {
         _showLoading(paragraph, true);
 
-        $http.post('/api/v1/agent/query/fetch',
-            {
+        $http.post('/api/v1/agent/query/fetch', {
                 demo: $scope.demo,
                 queryId: paragraph.queryId,
                 pageSize: paragraph.pageSize,
@@ -873,7 +872,7 @@ consoleModule.controller('sqlController', function ($http, $timeout, $interval, 
     };
 
     $scope.exportCsvAll = function(paragraph) {
-        $http.post('/api/v1/agent/query/getAll', {demo: demo, query: paragraph.query, cacheName: paragraph.cacheName})
+        $http.post('/api/v1/agent/query/getAll', {demo: $scope.demo, query: paragraph.query, cacheName: paragraph.cacheName})
             .success(function (item) {
                 _export(paragraph.name + '-all.csv', item.meta, item.rows);
             })
@@ -1474,7 +1473,7 @@ consoleModule.controller('sqlController', function ($http, $timeout, $interval, 
 
         $scope.metadata = [];
 
-        $http.post('/api/v1/agent/cache/metadata', {demo: demo})
+        $http.post('/api/v1/agent/cache/metadata', {demo: $scope.demo})
             .success(function (metadata) {
                 $scope.metadata = _.sortBy(metadata, _.filter(metadata, function (meta) {
                     var cacheName = _mask(meta.cacheName);
