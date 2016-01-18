@@ -32,6 +32,7 @@ import javaKeywords from './validator/java-keywords.directive';
 import javaPackageSpecified from './validator/java-package-specified.directive';
 import javaBuildInClass from './validator/java-build-in-class.directive';
 import javaIdentifier from './validator/java-identifier.directive';
+import javaPackageName from './validator/java-package-name.directive';
 // Helpers.
 import igniteFormFieldInputAutofocus from './field/input/autofocus.directive';
 
@@ -55,6 +56,7 @@ angular
 .directive(...javaPackageSpecified)
 .directive(...javaBuildInClass)
 .directive(...javaIdentifier)
+.directive(...javaPackageName)
 // Helpers.
 .directive(...igniteFormFieldInputAutofocus)
 // Generator of globally unique identifier.

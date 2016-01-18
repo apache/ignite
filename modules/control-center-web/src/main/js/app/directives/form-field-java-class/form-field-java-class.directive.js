@@ -25,7 +25,10 @@ export default ['igniteFormFieldJavaClass', ['IgniteFormGUID', (guid) => {
         scope.form = form;
         scope.field = field;
         label.for = scope.id = id || guid();
-        label.required = scope.required || false;
+
+        scope.$watch('required', (required) => {
+            label.required = required || false;
+        });
     };
 
     return {
@@ -34,6 +37,7 @@ export default ['igniteFormFieldJavaClass', ['IgniteFormGUID', (guid) => {
             id: '@',
             name: '@',
             required: '=ngRequired',
+            disabled: '=ngDisabled',
 
             ngModel: '=',
             ngBlur: '&',

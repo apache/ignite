@@ -26,7 +26,10 @@ export default ['igniteFormFieldInputText', ['IgniteFormGUID', (guid) => {
         scope.form = form;
         scope.field = field;
         label.for = scope.id = id || guid();
-        label.required = scope.required || false;
+
+        scope.$watch('required', (required) => {
+            label.required = required || false;
+        });
     };
 
     return {
@@ -36,6 +39,7 @@ export default ['igniteFormFieldInputText', ['IgniteFormGUID', (guid) => {
             name: '@',
             placeholder: '@',
             required: '=ngRequired',
+            disabled: '=ngDisabled',
 
             ngModel: '=',
             ngBlur: '&',
@@ -44,6 +48,7 @@ export default ['igniteFormFieldInputText', ['IgniteFormGUID', (guid) => {
             javaIdentifier: '=',
             javaPackageSpecified: '=',
             javaBuildInClass: '=',
+            javaPackageName: '=',
 
             autofocus: '=igniteFormFieldInputAutofocus'
         },

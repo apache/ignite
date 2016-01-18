@@ -19,23 +19,17 @@ import JAVA_KEYWORDS from 'app/data/java-keywords.json!';
 
 export default ['javaKeywords', [() => {
     const link = (scope, el, attrs, [ngModel]) => {
-        const validate = (isValid) => {
-            ngModel.$setValidity('javaKeywords', isValid);
-
-            return isValid;
-        };
-
         if (typeof attrs.javaKeywords === 'undefined' || !attrs.javaKeywords)
             return;
 
-        ngModel.$parsers.push((value) => {
+        ngModel.$validators.javaKeywords = (value) => {
             const keywords = JAVA_KEYWORDS.filter((key) => value && !!~value.indexOf(key));
 
-            if (validate(!keywords.length))
-                return value;
+            if (!keywords.length)
+                return true;
 
-            return '';
-        });
+            return false;
+        };
     };
 
     return {

@@ -15,34 +15,24 @@
  * limitations under the License.
  */
 
-import template from './number.jade!';
+export default ['javaPackageName', [() => {
+    const link = (scope, el, attrs, [ngModel]) => {
+        if (typeof attrs.javaPackageName === 'undefined' || !attrs.javaPackageName)
+            return;
 
-export default ['igniteFormFieldInputNumber', ['IgniteFormGUID', (guid) => {
-    const link = (scope, el, attrs, [form, label]) => {
-        const {id, name} = scope;
-        const field = form[name];
+        ngModel.$validators.javaPackageName = (value) => {
+            const regexp = /^(([a-zA-Z_$][a-zA-Z0-9_$]*)\.)*([a-zA-Z_$][a-zA-Z0-9_$]*(\.[*]|[*])?)$/igm;
 
-        scope.field = field;
-        label.for = scope.id = id || guid();
+            if (value === '' || regexp.test(value))
+                return true;
+
+            return false;
+        };
     };
 
     return {
-        restrict: 'E',
-        scope: {
-            id: '@',
-            name: '@',
-            placeholder: '@',
-            required: '=ngRequired',
-            disabled: '=ngDisabled',
-
-            min: '@',
-            max: '@',
-            ngModel: '='
-        },
+        restrict: 'A',
         link,
-        template,
-        replace: true,
-        transclude: true,
-        require: ['^form', '?^igniteFormField']
+        require: ['ngModel']
     };
 }]];

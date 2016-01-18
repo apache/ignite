@@ -20,27 +20,21 @@ import JAVA_FULLNAME_CLASSES from 'app/data/java-fullname-classes.json!';
 
 export default ['javaBuildInClass', [() => {
     const link = (scope, el, attrs, [ngModel]) => {
-        const validate = (isValid) => {
-            ngModel.$setValidity('javaBuildInClass', isValid);
-
-            return isValid;
-        };
-
         if (typeof attrs.javaBuildInClass === 'undefined' || !attrs.javaBuildInClass)
             return;
 
-        ngModel.$parsers.push((value) => {
-            if (validate(!value))
-                return value;
+        ngModel.$validators.javaBuildInClass = (value) => {
+            if (!value)
+                return true;
 
             const jclasses = JAVA_CLASSES.filter((key) => value === key).length;
             const jfclasses = JAVA_FULLNAME_CLASSES.filter((key) => value === key).length;
 
-            if (validate(!(jclasses || jfclasses)))
-                return value;
+            if (!(jclasses || jfclasses))
+                return true;
 
-            return '';
-        });
+            return false;
+        };
     };
 
     return {

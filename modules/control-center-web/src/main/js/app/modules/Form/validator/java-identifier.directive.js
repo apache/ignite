@@ -17,23 +17,17 @@
 
 export default ['javaIdentifier', [() => {
     const link = (scope, el, attrs, [ngModel]) => {
-        const validate = (isValid) => {
-            ngModel.$setValidity('javaIdentifier', isValid);
-
-            return isValid;
-        };
-
         if (typeof attrs.javaIdentifier === 'undefined' || !attrs.javaIdentifier)
             return;
 
-        ngModel.$parsers.push((value) => {
+        ngModel.$validators.javaIdentifier = (value) => {
             const regexp = /^(([a-zA-Z_$][a-zA-Z0-9_$]*)\.)*([a-zA-Z_$][a-zA-Z0-9_$]*)$/igm;
 
-            if (validate(value === '' || regexp.test(value)))
-                return value;
+            if (value === '' || regexp.test(value))
+                return true;
 
-            return '';
-        });
+            return false;
+        };
     };
 
     return {

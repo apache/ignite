@@ -22,7 +22,10 @@
         type='number'
         min='{{ min || 0 }}'
         max='{{ max || Number.MAX_VALUE }}'
-        ng-model='ngModel'
+
+        data-ng-model='ngModel'
+        data-ng-required='required || false'
+        data-ng-disabled='disabled || false'
     )
 
     i.fa.fa-exclamation-triangle.form-control-feedback(

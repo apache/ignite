@@ -33,6 +33,9 @@ export default ['igniteFormFieldInputCheckbox', ['IgniteFormGUID', (guid) => {
         scope: {
             id: '@',
             name: '@',
+            required: '=ngRequired',
+            disabled: '=ngDisabled',
+
             ngModel: '='
         },
         link,

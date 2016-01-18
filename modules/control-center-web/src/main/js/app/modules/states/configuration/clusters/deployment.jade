@@ -17,6 +17,13 @@
 - var model = 'backupItem'
 - var exclude = model + '.peerClassLoadingLocalClassPathExclude'
 
+mixin feedback(name, error, message)
+    i.fa.fa-exclamation-triangle.form-control-feedback(
+        ng-show='!form.$pristine && form.#{name}.$error.#{error}'
+        bs-tooltip
+        data-title='#{message}'
+    )
+
 form.panel.panel-default(bs-collapse ng-model='panel' name='deployment')
     .panel-heading(bs-collapse-toggle)
         i.fa(ng-class='panel === 0 ? "fa-chevron-circle-up" : "fa-chevron-circle-down"')
@@ -34,7 +41,7 @@ form.panel.panel-default(bs-collapse ng-model='panel' name='deployment')
                 .settings-row
                     ignite-form-field
                         ignite-form-field-label
-                            | Deployment mode
+                            | Deployment mode:
                         ignite-form-field-tooltip
                             | Task classes and resources sharing mode#[br]
                             | The following deployment modes are supported:#[br]
@@ -63,7 +70,7 @@ form.panel.panel-default(bs-collapse ng-model='panel' name='deployment')
                 .settings-row(ng-if='#{model}.peerClassLoadingEnabled')
                     ignite-form-field
                         ignite-form-field-label
-                            | Missed resources cache size
+                            | Missed resources cache size:
                         ignite-form-field-tooltip
                             | If size greater than 0, missed resources will be cached and next resource request ignored
                             | If size is 0, then request for the resource will be sent to the remote node every time this resource is requested
@@ -76,7 +83,7 @@ form.panel.panel-default(bs-collapse ng-model='panel' name='deployment')
                 .settings-row(ng-if='#{model}.peerClassLoadingEnabled')
                     ignite-form-field
                         ignite-form-field-label
-                            | Pool size
+                            | Pool size:
                         ignite-form-field-tooltip
                             | Thread pool size to use for peer class loading
                         ignite-form-field-input-number(
@@ -108,9 +115,15 @@ form.panel.panel-default(bs-collapse ng-model='panel' name='deployment')
                                 span(ng-if='___.edit' ng-form='form' ng-init='field = model')
                                     ignite-form-field-input-text(
                                         data-name='field'
+                                        data-placeholder='Enter package name'
+
                                         data-ng-model='field'
                                         data-ng-required='true'
+
+                                        data-java-keywords='true'
+                                        data-java-package-name='true'
                                         data-ignite-form-field-input-autofocus='true'
+
                                         on-enter='form.$valid && (#{exclude}[$index] = field); form.$valid && (___.edit = false);'
                                         ng-dblur='form.$valid && (#{exclude}[$index] = field); (___.edit = false)'
                                     )
@@ -120,6 +133,10 @@ form.panel.panel-default(bs-collapse ng-model='panel' name='deployment')
                                             bs-tooltip 
                                             data-title='Click icon or press [Enter] to save item' 
                                         )
+
+                                        +feedback('field', 'required', 'Package name could not be empty!')
+                                        +feedback('field', 'javaPackageName', 'Package name is invalid!')
+                                        +feedback('field', 'javaKeywords', 'Package name could not contains reserved java keyword: ""!')
                                 
                         .group-content(ng-if='__.add'
                             ng-form='form' 
@@ -127,9 +144,15 @@ form.panel.panel-default(bs-collapse ng-model='panel' name='deployment')
                             ignite-form-field(type='internal')
                                 ignite-form-field-input-text(
                                     data-name='field'
+                                    data-placeholder='Enter package name'
+
                                     data-ng-model='field'
                                     data-ng-required='true'
+                                    
+                                    data-java-keywords='true'
+                                    data-java-package-name='true'
                                     data-ignite-form-field-input-autofocus='true'
+                                    
                                     on-enter='form.$valid && #{exclude}.push(field); form.$valid && (__.add = false)'
                                     ng-dblur='form.$valid && #{exclude}.push(field); (__.add = false)'
                                 )
@@ -139,6 +162,10 @@ form.panel.panel-default(bs-collapse ng-model='panel' name='deployment')
                                         bs-tooltip 
                                         data-title='Click icon or press [Enter] to save item' 
                                     )
+
+                                    +feedback('field', 'required', 'Package name could not be empty!')
+                                    +feedback('field', 'javaPackageName', 'Package name is invalid!')
+                                    +feedback('field', 'javaKeywords', 'Package name could not contains reserved java keyword: ""!')
             .col-sm-6
                 .preview-panel(ng-init='mode = false')
                     .preview-legend

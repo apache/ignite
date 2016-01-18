@@ -17,21 +17,15 @@
 
 export default ['javaPackageSpecified', [() => {
     const link = (scope, el, attrs, [ngModel]) => {
-        const validate = (isValid) => {
-            ngModel.$setValidity('javaPackageSpecified', isValid);
-
-            return isValid;
-        };
-
         if (typeof attrs.javaPackageSpecified === 'undefined' || !attrs.javaPackageSpecified)
             return;
 
-        ngModel.$parsers.push((value) => {
-            if (validate(!value || !(value.split('.').length < 2)))
-                return value;
+        ngModel.$validators.javaPackageSpecified = (value) => {
+            if (!value || !(value.split('.').length < 2))
+                return true;
 
-            return '';
-        });
+            return false;
+        };
     };
 
     return {

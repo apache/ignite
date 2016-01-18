@@ -31,6 +31,9 @@ import clustersIgfs from './clusters/igfs.directive';
 import clustersEvents from './clusters/events.directive';
 import clustersDiscovery from './clusters/discovery.directive';
 import clustersDeployment from './clusters/deployment.directive';
+import clustersConnector from './clusters/connector.directive';
+import clustersCommunication from './clusters/communication.directive';
+import clustersBinary from './clusters/binary.directive';
 
 angular
 .module('ignite-console.states.configuration', [
@@ -47,6 +50,9 @@ angular
 .directive(...clustersEvents)
 .directive(...clustersDiscovery)
 .directive(...clustersDeployment)
+.directive(...clustersConnector)
+.directive(...clustersCommunication)
+.directive(...clustersBinary)
 // Services.
 .service(...ConfigurationSummaryResource)
 .config(['$stateProvider', function($stateProvider) {

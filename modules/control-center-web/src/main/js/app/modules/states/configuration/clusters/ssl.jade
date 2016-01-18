@@ -124,7 +124,7 @@ form.panel.panel-default(bs-collapse ng-model='panel' name='sslConfiguration')
                                         data-ng-required='true'
                                         data-ignite-form-field-input-autofocus='true'
                                         on-enter='form.$valid && (#{trust}[$index] = field); form.$valid && (___.edit = false);'
-                                        nng-blur='form.$valid && (#{trust}[$index] = field); (___.edit = false)'
+                                        ng-blur='form.$valid && (#{trust}[$index] = field); (___.edit = false)'
                                     )
                                         i.fa.fa-floppy-o(
                                             ng-show='form.$valid'
@@ -143,7 +143,7 @@ form.panel.panel-default(bs-collapse ng-model='panel' name='sslConfiguration')
                                     data-ng-required='true'
                                     data-ignite-form-field-input-autofocus='true'
                                     on-enter='form.$valid && #{trust}.push(field); form.$valid && (__.add = false)'
-                                    nng-blur='form.$valid && #{trust}.push(field); (__.add = false)'
+                                    ng-blur='form.$valid && #{trust}.push(field); (__.add = false)'
                                 )
                                     i.fa.fa-floppy-o(
                                         ng-show='form.$valid'

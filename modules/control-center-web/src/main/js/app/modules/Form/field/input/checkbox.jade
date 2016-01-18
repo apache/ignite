@@ -19,7 +19,10 @@
         id='{{ id }}'
         name='{{ name }}'
         type='checkbox'
-        ng-model='ngModel'
+
+        data-ng-model='ngModel'
+        data-ng-required='required || false'
+        data-ng-disabled='disabled || false'
     )
 
     span(ng-transclude='')
