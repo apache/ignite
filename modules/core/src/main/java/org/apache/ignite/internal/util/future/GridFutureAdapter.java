@@ -17,102 +17,350 @@
 
 package org.apache.ignite.internal.util.future;
 
-import java.util.Arrays;
+import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.locks.AbstractQueuedSynchronizer;
+import java.util.concurrent.locks.LockSupport;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.IgniteFutureCancelledCheckedException;
 import org.apache.ignite.internal.IgniteFutureTimeoutCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
-import org.apache.ignite.internal.util.tostring.GridToStringInclude;
+import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.jetbrains.annotations.Nullable;
+import sun.misc.Unsafe;
 
 /**
  * Future adapter.
  */
-public class GridFutureAdapter<R> extends AbstractQueuedSynchronizer implements IgniteInternalFuture<R> {
+public class GridFutureAdapter<R> implements IgniteInternalFuture<R> {
     /** */
-    private static final long serialVersionUID = 0L;
+    private static final Unsafe UNSAFE = GridUnsafe.unsafe();
 
-    /** Initial state. */
-    private static final int INIT = 0;
+    private static final long RESULT;
+    private static final long WAITERS;
+    private static final long COMPLETIONS;
 
-    /** Cancelled state. */
-    private static final int CANCELLED = 1;
+    static {
+        try {
+            Class<?> k = GridFutureAdapter.class;
+            RESULT = UNSAFE.objectFieldOffset
+                (k.getDeclaredField("result"));
+            WAITERS = UNSAFE.objectFieldOffset
+                (k.getDeclaredField("waiters"));
+            COMPLETIONS = UNSAFE.objectFieldOffset
+                (k.getDeclaredField("completions"));
+        } catch (Exception e) {
+            throw new Error(e);
+        }
+    }
 
-    /** Done state. */
-    private static final int DONE = 2;
+    static final class AltResult {
+        final Throwable ex; // null only for NIL
+        AltResult(Throwable ex) { this.ex = ex; }
+    }
 
-    /** */
-    private static final byte ERR = 1;
+    static final AltResult NIL = new AltResult(null);
+    static final AltResult CANCEL = new AltResult(null);
 
-    /** */
-    private static final byte RES = 2;
+    // Fields
 
-    /** */
-    private byte resFlag;
+    volatile Object result;    // Either the result or boxed AltResult
+    volatile WaitNode waiters; // Treiber stack of threads blocked on get()
+    volatile CompletionNode completions; // list (Treiber stack) of completions
 
-    /** Result. */
-    @GridToStringInclude
-    private Object res;
+    // Basic utilities for triggering and processing completions
 
-    /** Future start time. */
-    private final long startTime = U.currentTimeMillis();
+    /**
+     * Removes and signals all waiting threads and runs all completions.
+     */
+    final void postComplete() {
+        WaitNode q; Thread t;
+        while ((q = waiters) != null) {
+            if (UNSAFE.compareAndSwapObject(this, WAITERS, q, q.next) &&
+                (t = q.thread) != null) {
+                q.thread = null;
+                LockSupport.unpark(t);
+            }
+        }
 
-    /** Future end time. */
-    private volatile long endTime;
+        CompletionNode h; IgniteInClosure<? super IgniteInternalFuture<R>> c;
+        while ((h = completions) != null) {
+            if (UNSAFE.compareAndSwapObject(this, COMPLETIONS, h, h.next) &&
+                (c = h.completion) != null)
+                c.apply(this);
+        }
+    }
 
-    /** */
-    private boolean ignoreInterrupts;
+    /**
+     * Triggers completion with the encoding of the given arguments:
+     * if the exception is non-null, encodes it as a wrapped
+     * CompletionException unless it is one already.  Otherwise uses
+     * the given result, boxed as NIL if null.
+     */
+    final boolean internalComplete(R v, Throwable ex, boolean cancel) {
+        boolean ret = false;
 
-    /** */
-    private IgniteInClosure<? super IgniteInternalFuture<R>> lsnr;
+        if (result == null)
+            ret = UNSAFE.compareAndSwapObject
+                (this, RESULT, null,
+                    cancel ?
+                        CANCEL :
+                        (ex == null) ?
+                            (v == null) ?
+                                NIL : v : new AltResult(ex));
+
+        postComplete(); // help out even if not triggered
+
+        return ret;
+    }
+
+    /**
+     * If triggered, helps release and/or process completions.
+     */
+    final void helpPostComplete() {
+        if (result != null)
+            postComplete();
+    }
+
+    /* ------------- waiting for completions -------------- */
+
+    /**
+     * Simple linked list nodes to record completions, used in
+     * basically the same way as WaitNodes. (We separate nodes from
+     * the Completions themselves mainly because for the And and Or
+     * methods, the same Completion object resides in two lists.)
+     */
+    static final class CompletionNode<R> {
+        final IgniteInClosure<? super IgniteInternalFuture<R>> completion;
+        volatile CompletionNode next;
+        CompletionNode(IgniteInClosure<? super IgniteInternalFuture<R>> completion) { this.completion = completion; }
+    }
+
+    /**
+     * Linked nodes to record waiting threads in a Treiber stack.  See
+     * other classes such as Phaser and SynchronousQueue for more
+     * detailed explanation. This class implements ManagedBlocker to
+     * avoid starvation when blocking actions pile up in
+     * ForkJoinPools.
+     */
+    static final class WaitNode implements ForkJoinPool.ManagedBlocker {
+        long nanos;          // wait time if timed
+        final long deadline; // non-zero if timed
+        volatile int interruptControl; // > 0: interruptible, < 0: interrupted
+        volatile Thread thread;
+        volatile WaitNode next;
+        WaitNode(boolean interruptible, long nanos, long deadline) {
+            this.thread = Thread.currentThread();
+            this.interruptControl = interruptible ? 1 : 0;
+            this.nanos = nanos;
+            this.deadline = deadline;
+        }
+        public boolean isReleasable() {
+            if (thread == null)
+                return true;
+            if (Thread.interrupted()) {
+                int i = interruptControl;
+                interruptControl = -1;
+                if (i > 0)
+                    return true;
+            }
+            if (deadline != 0L &&
+                (nanos <= 0L || (nanos = deadline - System.nanoTime()) <= 0L)) {
+                thread = null;
+                return true;
+            }
+            return false;
+        }
+        public boolean block() {
+            if (isReleasable())
+                return true;
+            else if (deadline == 0L)
+                LockSupport.park(this);
+            else if (nanos > 0L)
+                LockSupport.parkNanos(this, nanos);
+            return isReleasable();
+        }
+    }
+
+    /**
+     * Returns raw result after waiting, or null if interruptible and
+     * interrupted.
+     */
+    private Object waitingGet(boolean interruptible) {
+        WaitNode q = null;
+        boolean queued = false;
+        for (Object r;;) {
+            if ((r = result) != null) {
+                if (q != null) { // suppress unpark
+                    q.thread = null;
+                    if (q.interruptControl < 0) {
+                        if (interruptible) {
+                            removeWaiter(q);
+                            return null;
+                        }
+                        Thread.currentThread().interrupt();
+                    }
+                }
+                postComplete(); // help release others
+                return r;
+            }
+            else if (q == null)
+                q = new WaitNode(interruptible, 0L, 0L);
+            else if (!queued)
+                queued = UNSAFE.compareAndSwapObject(this, WAITERS,
+                    q.next = waiters, q);
+            else if (interruptible && q.interruptControl < 0) {
+                removeWaiter(q);
+                return null;
+            }
+            else if (q.thread != null && result == null) {
+                try {
+                    ForkJoinPool.managedBlock(q);
+                } catch (InterruptedException ex) {
+                    q.interruptControl = -1;
+                }
+            }
+        }
+    }
+
+    /**
+     * Awaits completion or aborts on interrupt or timeout.
+     *
+     * @param nanos time to wait
+     * @return raw result
+     */
+    private Object timedAwaitDone(long nanos)
+        throws InterruptedException, IgniteFutureTimeoutCheckedException {
+        WaitNode q = null;
+        boolean queued = false;
+        for (Object r;;) {
+            if ((r = result) != null) {
+                if (q != null) {
+                    q.thread = null;
+                    if (q.interruptControl < 0) {
+                        removeWaiter(q);
+                        throw new InterruptedException();
+                    }
+                }
+                postComplete();
+                return r;
+            }
+            else if (q == null) {
+                if (nanos <= 0L)
+                    throw new IgniteFutureTimeoutCheckedException("Timeout was reached before computation completed.");
+                long d = System.nanoTime() + nanos;
+                q = new WaitNode(true, nanos, d == 0L ? 1L : d); // avoid 0
+            }
+            else if (!queued)
+                queued = UNSAFE.compareAndSwapObject(this, WAITERS,
+                    q.next = waiters, q);
+            else if (q.interruptControl < 0) {
+                removeWaiter(q);
+                throw new InterruptedException();
+            }
+            else if (q.nanos <= 0L) {
+                if (result == null) {
+                    removeWaiter(q);
+                    throw new IgniteFutureTimeoutCheckedException("Timeout was reached before computation completed.");
+                }
+            }
+            else if (q.thread != null && result == null) {
+                try {
+                    ForkJoinPool.managedBlock(q);
+                } catch (InterruptedException ex) {
+                    q.interruptControl = -1;
+                }
+            }
+        }
+    }
+
+    /**
+     * Tries to unlink a timed-out or interrupted wait node to avoid
+     * accumulating garbage.  Internal nodes are simply unspliced
+     * without CAS since it is harmless if they are traversed anyway
+     * by releasers.  To avoid effects of unsplicing from already
+     * removed nodes, the list is retraversed in case of an apparent
+     * race.  This is slow when there are a lot of nodes, but we don't
+     * expect lists to be long enough to outweigh higher-overhead
+     * schemes.
+     */
+    private void removeWaiter(WaitNode node) {
+        if (node != null) {
+            node.thread = null;
+            retry:
+            for (;;) {          // restart on removeWaiter race
+                for (WaitNode pred = null, q = waiters, s; q != null; q = s) {
+                    s = q.next;
+                    if (q.thread != null)
+                        pred = q;
+                    else if (pred != null) {
+                        pred.next = s;
+                        if (pred.thread == null) // check for race
+                            continue retry;
+                    }
+                    else if (!UNSAFE.compareAndSwapObject(this, WAITERS, q, s))
+                        continue retry;
+                }
+                break;
+            }
+        }
+    }
 
     /** {@inheritDoc} */
     @Override public long startTime() {
-        return startTime;
+        return -1;
     }
 
     /** {@inheritDoc} */
     @Override public long duration() {
-        long endTime = this.endTime;
-
-        return endTime == 0 ? U.currentTimeMillis() - startTime : endTime - startTime;
+        return -1;
     }
 
     /**
      * @param ignoreInterrupts Ignore interrupts flag.
      */
     public void ignoreInterrupts(boolean ignoreInterrupts) {
-        this.ignoreInterrupts = ignoreInterrupts;
+        //this.ignoreInterrupts = ignoreInterrupts;
     }
 
     /**
      * @return Future end time.
      */
     public long endTime() {
-        return endTime;
+        return -1;
     }
 
     /** {@inheritDoc} */
     @Override public Throwable error() {
-        return (resFlag == ERR) ? (Throwable)res : null;
+        Object result0 = result;
+
+        return result0 instanceof AltResult ? ((AltResult)result0).ex : null;
     }
 
     /** {@inheritDoc} */
     @Override public R result() {
-        return resFlag == RES ? (R)res : null;
+        Object result0 = result;
+
+        if (result0 == NIL)
+            return null;
+
+        if (result0 == CANCEL)
+            return null;
+
+        if (result instanceof AltResult)
+            return null;
+
+        return (R)result0;
     }
 
     /** {@inheritDoc} */
     @Override public R get() throws IgniteCheckedException {
-        return get0(ignoreInterrupts);
+        return get0(false);
     }
 
     /** {@inheritDoc} */
@@ -149,29 +397,26 @@ public class GridFutureAdapter<R> extends AbstractQueuedSynchronizer implements 
      * @throws IgniteCheckedException If failed.
      */
     private R get0(boolean ignoreInterrupts) throws IgniteCheckedException {
-        try {
-            if (endTime == 0) {
-                if (ignoreInterrupts)
-                    acquireShared(0);
-                else
-                    acquireSharedInterruptibly(0);
-            }
+        Object r;
 
-            if (getState() == CANCELLED)
-                throw new IgniteFutureCancelledCheckedException("Future was cancelled: " + this);
+        Throwable ex;
 
-            assert resFlag != 0;
+        if ((r = result) == null && (r = waitingGet(!ignoreInterrupts)) == null)
+            throw new IgniteInterruptedCheckedException("Interrupted.");
 
-            if (resFlag == ERR)
-                throw U.cast((Throwable)res);
+        if (r == CANCEL)
+            throw new IgniteFutureCancelledCheckedException("Future was cancelled: " + this);
 
-            return (R)res;
+        if (!(r instanceof AltResult)) {
+            R tr = (R)r;
+
+            return tr;
         }
-        catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
 
-            throw new IgniteInterruptedCheckedException(e);
-        }
+        if ((ex = ((AltResult)r).ex) == null)
+            return null;
+
+        throw U.cast(ex);
     }
 
     /**
@@ -182,72 +427,50 @@ public class GridFutureAdapter<R> extends AbstractQueuedSynchronizer implements 
      * @throws IgniteCheckedException If error occurred.
      */
     @Nullable protected R get0(long nanosTimeout) throws InterruptedException, IgniteCheckedException {
-        if (endTime == 0 && !tryAcquireSharedNanos(0, nanosTimeout))
-            throw new IgniteFutureTimeoutCheckedException("Timeout was reached before computation completed.");
+        Object r; Throwable ex;
+        if (Thread.interrupted())
+            throw new InterruptedException();
 
-        if (getState() == CANCELLED)
+        if ((r = result) == null)
+            r = timedAwaitDone(nanosTimeout);
+
+        if (!(r instanceof AltResult)) {
+            R tr = (R)r;
+
+            return tr;
+        }
+
+        if (r == CANCEL)
             throw new IgniteFutureCancelledCheckedException("Future was cancelled: " + this);
 
-        assert resFlag != 0;
+        if ((ex = ((AltResult)r).ex) == null)
+            return null;
 
-        if (resFlag == ERR)
-            throw U.cast((Throwable)res);
-
-        return (R)res;
+        throw U.cast(ex);
     }
 
     /** {@inheritDoc} */
     @Override public void listen(IgniteInClosure<? super IgniteInternalFuture<R>> lsnr0) {
         assert lsnr0 != null;
 
-        boolean done = isDone();
+        CompletionNode<R> cn = new CompletionNode<>(lsnr0);
 
-        if (!done) {
-            synchronized (this) {
-                done = isDone(); // Double check.
+        for (;;) {
+            CompletionNode completions1 = completions;
 
-                if (!done) {
-                    if (lsnr == null)
-                        lsnr = lsnr0;
-                    else if (lsnr instanceof ArrayListener)
-                        ((ArrayListener)lsnr).add(lsnr0);
-                    else {
-                        lsnr = (IgniteInClosure)new ArrayListener<IgniteInternalFuture>(lsnr, lsnr0);
-                    }
+            cn.next = completions1;
 
-                    return;
-                }
-            }
+            if (UNSAFE.compareAndSwapObject(this, COMPLETIONS, completions1, cn))
+                break;
         }
 
-        assert done;
-
-        notifyListener(lsnr0);
+        if (isDone())
+            postComplete();
     }
 
     /** {@inheritDoc} */
     @Override public <T> IgniteInternalFuture<T> chain(final IgniteClosure<? super IgniteInternalFuture<R>, T> doneCb) {
         return new ChainFuture<>(this, doneCb);
-    }
-
-    /**
-     * Notifies all registered listeners.
-     */
-    private void notifyListeners() {
-        IgniteInClosure<? super IgniteInternalFuture<R>> lsnr0;
-
-        synchronized (this) {
-            lsnr0 = lsnr;
-
-            if (lsnr0 == null)
-                return;
-
-            lsnr = null;
-        }
-
-        assert lsnr0 != null;
-
-        notifyListener(lsnr0);
     }
 
     /**
@@ -284,22 +507,21 @@ public class GridFutureAdapter<R> extends AbstractQueuedSynchronizer implements 
 
     /** {@inheritDoc} */
     @Override public boolean isDone() {
-        // Don't check for "valid" here, as "done" flag can be read
-        // even in invalid state.
-        return endTime != 0;
+        return result != null;
     }
 
     /**
      * @return Checks is future is completed with exception.
      */
     public boolean isFailed() {
-        // Must read endTime first.
-        return endTime != 0 && resFlag == ERR;
+        Object result0 = result;
+
+        return result0 instanceof AltResult && result0 != NIL;
     }
 
     /** {@inheritDoc} */
     @Override public boolean isCancelled() {
-        return getState() == CANCELLED;
+        return result == CANCEL;
     }
 
     /**
@@ -353,32 +575,7 @@ public class GridFutureAdapter<R> extends AbstractQueuedSynchronizer implements 
      * @return {@code True} if result was set by this call.
      */
     private boolean onDone(@Nullable R res, @Nullable Throwable err, boolean cancel) {
-        boolean notify = false;
-
-        try {
-            if (compareAndSetState(INIT, cancel ? CANCELLED : DONE)) {
-                if (err != null) {
-                    resFlag = ERR;
-                    this.res = err;
-                }
-                else {
-                    resFlag = RES;
-                    this.res = res;
-                }
-
-                notify = true;
-
-                releaseShared(0);
-
-                return true;
-            }
-
-            return false;
-        }
-        finally {
-            if (notify)
-                notifyListeners();
-        }
+        return internalComplete(res, err, cancel);
     }
 
     /**
@@ -391,68 +588,8 @@ public class GridFutureAdapter<R> extends AbstractQueuedSynchronizer implements 
     }
 
     /** {@inheritDoc} */
-    @Override protected final int tryAcquireShared(int ignore) {
-        return endTime != 0 ? 1 : -1;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected final boolean tryReleaseShared(int ignore) {
-        endTime = U.currentTimeMillis();
-
-        // Always signal after setting final done status.
-        return true;
-    }
-
-    /**
-     * @return String representation of state.
-     */
-    private String state() {
-        int s = getState();
-
-        return s == INIT ? "INIT" : s == CANCELLED ? "CANCELLED" : "DONE";
-    }
-
-    /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(GridFutureAdapter.class, this, "state", state());
-    }
-
-    /**
-     *
-     */
-    private static class ArrayListener<R> implements IgniteInClosure<IgniteInternalFuture<R>> {
-        /** */
-        private static final long serialVersionUID = 0L;
-
-        /** */
-        private IgniteInClosure<? super IgniteInternalFuture<R>>[] arr;
-
-        /**
-         * @param lsnrs Listeners.
-         */
-        private ArrayListener(IgniteInClosure... lsnrs) {
-            this.arr = lsnrs;
-        }
-
-        /** {@inheritDoc} */
-        @Override public void apply(IgniteInternalFuture<R> fut) {
-            for (int i = 0; i < arr.length; i++)
-                arr[i].apply(fut);
-        }
-
-        /**
-         * @param lsnr Listener.
-         */
-        void add(IgniteInClosure<? super IgniteInternalFuture<R>> lsnr) {
-            arr = Arrays.copyOf(arr, arr.length + 1);
-
-            arr[arr.length - 1] = lsnr;
-        }
-
-        /** {@inheritDoc} */
-        @Override public String toString() {
-            return S.toString(ArrayListener.class, this, "arrSize", arr.length);
-        }
+        return S.toString(GridFutureAdapter.class, this, "res", result);
     }
 
     /**
@@ -460,20 +597,10 @@ public class GridFutureAdapter<R> extends AbstractQueuedSynchronizer implements 
      */
     private static class ChainFuture<R, T> extends GridFutureAdapter<T> {
         /** */
-        private static final long serialVersionUID = 0L;
-
-        /** */
         private GridFutureAdapter<R> fut;
 
         /** */
         private IgniteClosure<? super IgniteInternalFuture<R>, T> doneCb;
-
-        /**
-         *
-         */
-        public ChainFuture() {
-            // No-op.
-        }
 
         /**
          * @param fut Future.
