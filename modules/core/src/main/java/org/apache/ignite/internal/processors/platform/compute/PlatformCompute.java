@@ -391,10 +391,10 @@ public class PlatformCompute extends PlatformAbstractTarget {
 
         /** {@inheritDoc} */
         @Override public void listen(final IgniteInClosure lsnr) {
-            fut.listen(new IgniteInClosure<IgniteFuture>() {
+            fut.listen(new IgniteInClosure<IgniteInternalFuture>() {
                 private static final long serialVersionUID = 0L;
 
-                @Override public void apply(IgniteFuture fut0) {
+                @Override public void apply(IgniteInternalFuture fut0) {
                     lsnr.apply(ComputeConvertingFuture.this);
                 }
             });
