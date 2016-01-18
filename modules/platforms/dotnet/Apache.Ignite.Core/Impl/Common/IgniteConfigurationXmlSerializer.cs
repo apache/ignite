@@ -34,7 +34,8 @@ namespace Apache.Ignite.Core.Impl.Common
         {
             var cfg = new IgniteConfiguration();
 
-            ReadElement(reader, cfg);
+            if (reader.Read())
+                ReadElement(reader, cfg);
 
             return cfg;
         }
