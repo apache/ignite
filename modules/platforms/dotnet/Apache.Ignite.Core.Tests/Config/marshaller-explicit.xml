@@ -27,6 +27,9 @@
 
         <property name="binaryConfiguration">
             <bean class="org.apache.ignite.configuration.BinaryConfiguration">
+                <property name="idMapper">
+                    <bean class="org.apache.ignite.binary.BinarySimpleNameIdMapper"/>
+                </property>
                 <property name="compactFooter" value="false"/>
             </bean>
         </property>
