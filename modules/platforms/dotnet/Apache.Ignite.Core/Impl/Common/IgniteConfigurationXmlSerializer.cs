@@ -18,8 +18,11 @@
 namespace Apache.Ignite.Core.Impl.Common
 {
     using System;
+    using System.Collections.Generic;
     using System.ComponentModel;
     using System.Configuration;
+    using System.Diagnostics;
+    using System.Reflection;
     using System.Xml;
 
     /// <summary>
@@ -60,27 +63,64 @@ namespace Apache.Ignite.Core.Impl.Common
                 if (reader.NodeType != XmlNodeType.Element)
                     continue;
 
+                var name = reader.Name;
 
+                var prop = GetPropertyOrThrow(name, reader.Value, type);
+
+                // Either (valueType|string), or ICollection, or reftype
+
+                var propType = prop.PropertyType;
+
+                if (propType.IsValueType || propType == typeof (string))
+                {
+                    // Regular property on xmlElement form
+                    SetProperty(target, name, reader.Value);
+                }
+                else if (propType.IsGenericType && propType.GetGenericTypeDefinition() == typeof(ICollection<>))
+                {
+                    // TODO: read collection
+                }
+                else
+                {
+                    // Nested object (complex property)
+                    var nestedVal = Activator.CreateInstance(propType);
+                    prop.SetValue(target, nestedVal, null);
+                    ReadElement(reader, nestedVal);
+                }
             }
         }
 
         private static void SetProperty(object target, string propName, string propVal)
         {
             var type = target.GetType();
-            // TODO: lowercase first letter
-            var property = type.GetProperty(propName);
+            var property = GetPropertyOrThrow(propName, propVal, type);
+
+            var converter = GetConverter(property.PropertyType);
+
+            // TODO: try-catch and wrap
+            var convertedVal = converter.ConvertFromString(propVal);
+
+            property.SetValue(target, convertedVal, null);
+        }
+
+        private static PropertyInfo GetPropertyOrThrow(string propName, string propVal, Type type)
+        {
+            var property = type.GetProperty(XmlNameToPropertyName(propName));
 
             if (property == null)
                 throw new ConfigurationErrorsException(
                     string.Format(
                         "Invalid IgniteConfiguration attribute '{0}={1}', there is no such property on '{2}'",
-                        propName, propVal, target));
+                        propName, propVal, type));
 
-            var converter = GetConverter(property.PropertyType);
+            return property;
+        }
 
-            var convertedVal = converter.ConvertFromString(propVal);
+        private static string XmlNameToPropertyName(string name)
+        {
+            Debug.Assert(name.Length > 0);
 
-            property.SetValue(target, convertedVal, null);
+            return char.ToUpper(name[0]) + name.Substring(1);
         }
 
         private static TypeConverter GetConverter(Type type)
