@@ -1611,7 +1611,9 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
                     }
                 };
 
-                GridDirectParser parser = new GridDirectParser(msgFactory, readerFactory);
+                GridDirectParser parser = new GridDirectParser(log.getLogger(GridDirectParser.class),
+                    msgFactory,
+                    readerFactory);
 
                 IgnitePredicate<Message> skipRecoveryPred = new IgnitePredicate<Message>() {
                     @Override public boolean apply(Message msg) {
@@ -2983,7 +2985,10 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
                     endpoint,
                     srvLsnr,
                     writerFactory,
-                    new GridNioCodecFilter(new GridDirectParser(msgFactory, readerFactory), log, true),
+                    new GridNioCodecFilter(
+                        new GridDirectParser(log.getLogger(GridDirectParser.class),msgFactory, readerFactory),
+                        log,
+                        true),
                     new GridConnectionBytesVerifyFilter(log)
                 );
 

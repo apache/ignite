@@ -402,31 +402,30 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
             return new IgniteBiTuple<>(marshalToBinary(tup.get1()), marshalToBinary(tup.get2()));
         }
 
-        if (obj instanceof Collection) {
-            Collection<Object> col = (Collection<Object>)obj;
+        {
+            Collection<Object> pCol = BinaryUtils.newKnownCollection(obj);
 
-            Collection<Object> pCol;
+            if (pCol != null) {
+                Collection<?> col = (Collection<?>)obj;
 
-            if (col instanceof Set)
-                pCol = (Collection<Object>)BinaryUtils.newSet((Set<?>)col);
-            else
-                pCol = new ArrayList<>(col.size());
+                for (Object item : col)
+                    pCol.add(marshalToBinary(item));
 
-            for (Object item : col)
-                pCol.add(marshalToBinary(item));
-
-            return pCol;
+                return pCol;
+            }
         }
 
-        if (obj instanceof Map) {
-            Map<?, ?> map = (Map<?, ?>)obj;
+        {
+            Map<Object, Object> pMap = BinaryUtils.newKnownMap(obj);
 
-            Map<Object, Object> pMap = BinaryUtils.newMap((Map<Object, Object>)obj);
+            if (pMap != null) {
+                Map<?, ?> map = (Map<?, ?>)obj;
 
-            for (Map.Entry<?, ?> e : map.entrySet())
-                pMap.put(marshalToBinary(e.getKey()), marshalToBinary(e.getValue()));
+                for (Map.Entry<?, ?> e : map.entrySet())
+                    pMap.put(marshalToBinary(e.getKey()), marshalToBinary(e.getValue()));
 
-            return pMap;
+                return pMap;
+            }
         }
 
         if (obj instanceof Map.Entry) {

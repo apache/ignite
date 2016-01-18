@@ -15,27 +15,23 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.testsuites;
+package org.apache.ignite.stream.storm;
 
 import junit.framework.TestSuite;
-import org.apache.ignite.internal.processors.cache.CacheNearReaderUpdateTest;
-import org.apache.ignite.internal.processors.cache.CacheSerializableTransactionsTest;
-import org.apache.ignite.internal.processors.cache.IgniteCacheStoreCollectionTest;
 
 /**
- * Test suite.
+ * Apache Storm streamer tests.
  */
-public class IgniteCacheTestSuite5 extends TestSuite {
+public class IgniteStormStreamerSelfTestSuite extends TestSuite {
+
     /**
-     * @return IgniteCache test suite.
+     * @return Test suite.
      * @throws Exception Thrown in case of the failure.
      */
     public static TestSuite suite() throws Exception {
-        TestSuite suite = new TestSuite("IgniteCache Test Suite part 5");
+        TestSuite suite = new TestSuite("Apache Storm streamer Test Suite");
 
-        suite.addTestSuite(CacheSerializableTransactionsTest.class);
-        suite.addTestSuite(CacheNearReaderUpdateTest.class);
-        suite.addTestSuite(IgniteCacheStoreCollectionTest.class);
+        suite.addTest(new TestSuite(StormIgniteStreamerSelfTest.class));
 
         return suite;
     }

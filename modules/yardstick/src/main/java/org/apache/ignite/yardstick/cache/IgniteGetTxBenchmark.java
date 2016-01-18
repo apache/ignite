@@ -15,43 +15,16 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.continuous;
+package org.apache.ignite.yardstick.cache;
 
-import java.util.UUID;
-import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
-import org.apache.ignite.lang.IgniteUuid;
+import org.apache.ignite.IgniteCache;
 
 /**
  *
  */
-public abstract class AbstractContinuousMessage implements DiscoveryCustomMessage {
-    /** Routine ID. */
-    protected final UUID routineId;
-
-    /** Custom message ID. */
-    private final IgniteUuid id = IgniteUuid.randomUuid();
-
-    /**
-     * @param id Id.
-     */
-    protected AbstractContinuousMessage(UUID id) {
-        routineId = id;
-    }
-
+public class IgniteGetTxBenchmark extends IgniteGetBenchmark {
     /** {@inheritDoc} */
-    @Override public IgniteUuid id() {
-        return id;
-    }
-
-    /**
-     * @return Routine ID.
-     */
-    public UUID routineId() {
-        return routineId;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean isMutable() {
-        return false;
+    @Override protected IgniteCache<Integer, Object> cache() {
+        return ignite().cache("tx");
     }
 }

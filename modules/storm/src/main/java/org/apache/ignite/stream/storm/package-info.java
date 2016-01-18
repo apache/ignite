@@ -15,17 +15,8 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.managers.discovery;
-
-import org.apache.ignite.cluster.ClusterNode;
-
 /**
- * Listener interface.
+ * <!-- Package description. -->
+ * StormStreamer -- integration with Apache Storm.
  */
-public interface CustomEventListener<T extends DiscoveryCustomMessage> {
-    /**
-     * @param snd Sender.
-     * @param msg Message.
-     */
-    public void onCustomEvent(ClusterNode snd, T msg);
-}
+package org.apache.ignite.stream.storm;
