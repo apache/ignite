@@ -419,7 +419,7 @@ public class PlatformCompute extends PlatformAbstractTarget {
             try {
                 return fut.get();
             }
-            catch (Throwable e) {
+            catch (Throwable ignored) {
                 return null;
             }
         }
