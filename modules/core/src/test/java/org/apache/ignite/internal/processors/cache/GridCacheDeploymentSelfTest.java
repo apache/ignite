@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
@@ -306,7 +307,7 @@ public class GridCacheDeploymentSelfTest extends GridCommonAbstractTest {
 
             assert cache != null;
 
-            cache.put(key, Arrays.asList(val1Cls.newInstance()));
+            cache.put(key, new ArrayList<>(Arrays.asList(val1Cls.newInstance())));
 
             info(">>>>>>> First put completed.");
 

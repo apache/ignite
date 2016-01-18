@@ -38,7 +38,9 @@ import org.apache.hadoop.util.DataChecksum;
 import org.apache.hadoop.util.Progressable;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.configuration.FileSystemConfiguration;
 import org.apache.ignite.hadoop.fs.HadoopFileSystemFactory;
+import org.apache.ignite.hadoop.fs.IgniteHadoopIgfsSecondaryFileSystem;
 import org.apache.ignite.igfs.IgfsBlockLocation;
 import org.apache.ignite.igfs.IgfsFile;
 import org.apache.ignite.igfs.IgfsMode;
@@ -343,6 +345,11 @@ public class IgniteHadoopFileSystem extends AbstractFileSystem implements Closea
                 catch (IgniteCheckedException e) {
                     throw new IOException("Failed to get secondary file system factory.", e);
                 }
+
+                if (factory == null)
+                    throw new IOException("Failed to get secondary file system factory (did you set " +
+                        IgniteHadoopIgfsSecondaryFileSystem.class.getName() + " as \"secondaryFIleSystem\" in " +
+                        FileSystemConfiguration.class.getName() + "?)");
 
                 assert factory != null;
 
