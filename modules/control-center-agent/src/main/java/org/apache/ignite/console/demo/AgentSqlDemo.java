@@ -46,13 +46,14 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.logger.NullLogger;
+import org.apache.ignite.logger.log4j.Log4JLogger;
 import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinderAdapter;
 import org.apache.log4j.Logger;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_JETTY_PORT;
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_NO_ASCII;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_REST_JETTY_ADDRS;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_REST_JETTY_PORT;
 
@@ -318,7 +319,7 @@ public class AgentSqlDemo {
      * @param range Time range in milliseconds.
      */
     private static void populateCacheEmployee(Ignite ignite, long range) {
-        log.trace("DEMO: Start employees population with data...");
+        log.debug("DEMO: Start employees population with data...");
 
         IgniteCache<Integer, Country> cacheCountry = ignite.cache(COUNTRY_CACHE_NAME);
 
@@ -349,14 +350,14 @@ public class AgentSqlDemo {
                     new java.sql.Date((long)(r * range)), "Job employee #" + n, 500 + round(r * 2000, 2)));
         }
 
-        log.trace("DEMO: Finished employees population.");
+        log.debug("DEMO: Finished employees population.");
     }
 
     /**
      * @param ignite Ignite.
      */
     private static void populateCacheCar(Ignite ignite) {
-        log.trace("DEMO: Start cars population...");
+        log.debug("DEMO: Start cars population...");
 
         IgniteCache<Integer, Parking> cacheParking = ignite.cache(PARKING_CACHE_NAME);
 
@@ -368,7 +369,7 @@ public class AgentSqlDemo {
         for (int i = 0, n = 1; i < CAR_CNT; i++, n++)
             cacheCar.put(i, new Car(i, rnd.nextInt(PARK_CNT), "Car #" + n));
 
-        log.trace("DEMO: Finished cars population.");
+        log.debug("DEMO: Finished cars population.");
     }
 
     /**
@@ -482,9 +483,9 @@ public class AgentSqlDemo {
 
                 cfg.setLocalHost("127.0.0.1");
 
-                cfg.setMetricsLogFrequency(0);
+                cfg.setGridLogger(new Log4JLogger(log));
 
-                cfg.setGridLogger(new NullLogger());
+                cfg.setMetricsLogFrequency(0);
 
                 // Configure discovery SPI.
                 TcpDiscoverySpi discoSpi = new TcpDiscoverySpi();
@@ -517,8 +518,9 @@ public class AgentSqlDemo {
                 cfg.setCacheConfiguration(cacheCountry(), cacheDepartment(), cacheEmployee(), cacheParking(), cacheCar());
 
                 System.setProperty(IGNITE_JETTY_PORT, "60800");
+                System.setProperty(IGNITE_NO_ASCII, "true");
 
-                log.trace("DEMO: Start embedded node with indexed enabled caches...");
+                log.debug("DEMO: Start embedded node with indexed enabled caches...");
 
                 IgniteEx ignite = (IgniteEx)Ignition.start(cfg);
 

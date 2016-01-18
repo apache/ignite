@@ -89,7 +89,7 @@ public class RestExecutor {
     @Remote
     public RestResult executeRest(String uri, Map<String, String> params, boolean demo,
         String mtd, Map<String, String> headers, String body) throws IOException, URISyntaxException {
-        log.debug("Start execute REST command [method=" + mtd + ", uri=/" + uri + ", parameters=" + params + "]");
+        log.info("Start execute REST command [method=" + mtd + ", uri=/" + uri + ", parameters=" + params + "]");
 
         if (demo)
             AgentSqlDemo.testDrive(cfg);
@@ -162,7 +162,7 @@ public class RestExecutor {
             return new RestResult(resp.getStatusLine().getStatusCode(), new String(out.toByteArray(), charset));
         }
         catch (ConnectException e) {
-            log.debug("Failed connect to node and execute REST command [uri=" + builder.build() + "]");
+            log.info("Failed connect to node and execute REST command [uri=" + builder.build() + "]");
 
             return new RestResult(404, "Failed connect to node and execute REST command.");
         }

@@ -1865,6 +1865,12 @@ treecontrol.tree-classic {
     }
 }
 
+.grid.ui-grid {
+    border-left-width: 0;
+    border-right-width: 0;
+    border-bottom-width: 0;
+}
+
 .summary-tabs {
     .nav-tabs > li:first-child,
     .nav-tabs > li:first-child.active {
