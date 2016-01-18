@@ -276,7 +276,7 @@ public class PlatformCompute extends PlatformAbstractTarget {
         Object res = compute0.execute(taskName, arg);
 
         if (async) {
-            curFut.set(new ComputeTaskFutureInternal(compute0.future()));
+            curFut.set(new ComputeConvertingFuture(compute0.future()));
 
             return null;
         }
@@ -329,7 +329,7 @@ public class PlatformCompute extends PlatformAbstractTarget {
     /**
      * Wraps ComputeTaskFuture as IgniteInternalFuture.
      */
-    protected class ComputeTaskFutureInternal implements IgniteInternalFuture {
+    protected class ComputeConvertingFuture implements IgniteInternalFuture {
         /** */
         private final ComputeTaskFuture fut;
 
@@ -338,7 +338,7 @@ public class PlatformCompute extends PlatformAbstractTarget {
          *
          * @param fut Future to wrap.
          */
-        public ComputeTaskFutureInternal(ComputeTaskFuture fut) {
+        public ComputeConvertingFuture(ComputeTaskFuture fut) {
             this.fut = fut;
         }
 
@@ -393,7 +393,7 @@ public class PlatformCompute extends PlatformAbstractTarget {
                 private static final long serialVersionUID = 0L;
 
                 @Override public void apply(IgniteFuture fut0) {
-                    lsnr.apply(ComputeTaskFutureInternal.this);
+                    lsnr.apply(ComputeConvertingFuture.this);
                 }
             });
         }
