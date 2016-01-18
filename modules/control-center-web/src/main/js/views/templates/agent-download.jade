@@ -14,7 +14,7 @@
 
 .modal.center(tabindex='-1' role='dialog')
     .modal-dialog
-        .modal-content(dw-loading='startDemoSQL' dw-loading-options='loadingOptions')
+        .modal-content
             #errors-container.modal-header.header
                 h4.modal-title(ng-if='!nodeFailedConnection') Connection to Ignite Web Agent is not established
                 h4.modal-title(ng-if='nodeFailedConnection') Connection to Ignite Node is not established

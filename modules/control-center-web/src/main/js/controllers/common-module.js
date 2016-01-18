@@ -2015,34 +2015,34 @@ consoleModule.service('$agentDownload', [
         function ($http, $interval, $rootScope, $state, $modal, $loading, $common) {
         var scope = $rootScope.$new();
 
-        scope.loadingOptions = { text: 'Starting SQL demo...' };
-
         // Pre-fetch modal dialogs.
-        var _agentDownloadModal = $modal({scope: scope, templateUrl: '/templates/agent-download.html', show: false, backdrop: 'static'});
+        var _modal = $modal({scope: scope, templateUrl: '/templates/agent-download.html', show: false, backdrop: 'static'});
 
-        var _agentDownloadHide = _agentDownloadModal.hide;
+        var _modalHide = _modal.hide;
+
+        var _modalAlertHide = function () {
+            $common.hideAlert();
+
+            _modalHide();
+        };
 
         /**
          * Special dialog hide function.
          */
-        _agentDownloadModal.hide = function () {
+        _modal.hide = function () {
             _stopInterval();
 
-            $common.hideAlert();
-
-            _agentDownloadHide();
+            _modalAlertHide();
         };
 
         /**
          * Close dialog and go by specified link.
          */
         scope.back = function () {
-            _stopInterval();
+            _modal.hide();
 
-            _agentDownloadModal.hide();
-
-            if (_agentDownloadModal.backState)
-                $state.go(_agentDownloadModal.backState);
+            if (_modal.backState)
+                $state.go(_modal.backState);
         };
 
         scope.downloadAgent = function () {
@@ -2059,22 +2059,6 @@ consoleModule.service('$agentDownload', [
             document.body.removeChild(lnk);
         };
 
-        scope.startDemoSQL = function () {
-            $loading.start('startDemoSQL');
-
-            $http.post('/api/v1/agent/demo/sql/start')
-                .success(function (enabled) {
-                    if (!enabled)
-                        $common.showError('Failed to start SQL demo', 'top-right', 'body', true);
-                })
-                .catch(function (errMsg, status) {
-                    _handleException(errMsg, status);
-                })
-                .finally(function () {
-                    $loading.finish('startDemoSQL');
-                });
-        };
-
         /**
          * Base handler of exceptions on agent interaction
          *
@@ -2083,10 +2067,10 @@ consoleModule.service('$agentDownload', [
          * @param timedOut True if request timedOut.
          */
         function _handleException (errMsg, status, timedOut) {
-            if (_agentDownloadModal.skipSingleError)
-                _agentDownloadModal.skipSingleError = false;
-            else if (!_agentDownloadModal.$isShown)
-                _agentDownloadModal.$promise.then(_agentDownloadModal.show);
+            if (_modal.skipSingleError)
+                _modal.skipSingleError = false;
+            else if (!_modal.$isShown)
+                _modal.$promise.then(_modal.show);
 
             scope.nodeFailedConnection = status === 404 || timedOut;
 
@@ -2098,12 +2082,12 @@ consoleModule.service('$agentDownload', [
          * Start interval to agent listening.
          */
         function _startInterval(awaitFirstSuccess) {
-            _agentDownloadModal.skipSingleError = false;
+            _modal.skipSingleError = false;
 
             // Stop refresh after first success.
-            _agentDownloadModal.awaitFirstSuccess = awaitFirstSuccess;
+            _modal.awaitFirstSuccess = awaitFirstSuccess;
 
-            _agentDownloadModal.updatePromise = $interval(function () {
+            _modal.updatePromise = $interval(function () {
                 _tryWithAgent();
             }, 5000, 0, false);
 
@@ -2114,7 +2098,7 @@ consoleModule.service('$agentDownload', [
          * Stop interval to agent listening.
          */
         function _stopInterval() {
-            $interval.cancel(_agentDownloadModal.updatePromise);
+            $interval.cancel(_modal.updatePromise);
         }
 
         /**
@@ -2128,18 +2112,18 @@ consoleModule.service('$agentDownload', [
                 _timedOut = true;
             }, _timeout);
 
-            $http.post(_agentDownloadModal.check.url, _agentDownloadModal.check.params, {timeout: _timeout})
-                .success(function (result) {
-                    _agentDownloadModal.skipSingleError = true;
+            $http.post(_modal.check.url, _modal.check.params, {timeout: _timeout})
+                .then(function (result) {
+                    _modal.skipSingleError = true;
 
-                    if (_agentDownloadModal.awaitFirstSuccess)
+                    if (_modal.awaitFirstSuccess)
                         _stopInterval();
 
-                    $loading.finish('startDemoSQL');
+                    $loading.finish('loading');
 
-                    _agentDownloadModal.check.cb(result, _agentDownloadModal.hide, _handleException);
+                    _modal.check.cb(result.data, _modalAlertHide, _handleException);
                 })
-                .error(function (errMsg, status) {
+                .catch(function (errMsg, status) {
                     _handleException(errMsg, status, _timedOut);
                 });
         }
@@ -2154,13 +2138,13 @@ consoleModule.service('$agentDownload', [
              * @param mtr
              */
             startTopologyListening: function (success, demo, attr, mtr) {
-                _agentDownloadModal.check = {
+                _modal.check = {
                     url: '/api/v1/agent/topology',
                     params: {demo: !!demo,  attr: !!attr, mtr: !!mtr},
                     cb: success
                 };
 
-                _agentDownloadModal.backState = 'base.configuration.clusters';
+                _modal.backState = 'base.configuration.clusters';
 
                 scope.agentGoal = 'execute sql statements';
 
@@ -2174,12 +2158,12 @@ consoleModule.service('$agentDownload', [
              * @param success Function to execute by timer when agent available.
              */
             awaitAgent: function (success) {
-                _agentDownloadModal.check = {
+                _modal.check = {
                     url: '/api/v1/agent/ping',
                     cb: success
                 };
 
-                _agentDownloadModal.backState = 'base.configuration.domains';
+                _modal.backState = 'base.configuration.domains';
 
                 scope.agentGoal = 'import domain model from database schema';
 
