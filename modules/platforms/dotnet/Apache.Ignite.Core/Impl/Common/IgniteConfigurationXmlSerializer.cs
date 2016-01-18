@@ -22,6 +22,7 @@ namespace Apache.Ignite.Core.Impl.Common
     using System.ComponentModel;
     using System.Configuration;
     using System.Diagnostics;
+    using System.Linq;
     using System.Reflection;
     using System.Xml;
 
@@ -86,9 +87,25 @@ namespace Apache.Ignite.Core.Impl.Common
                 {
                     // Nested object (complex property)
                     // TODO: propType can be abstract, check 'type' attribute in this case
-                    var nestedVal = Activator.CreateInstance(propType);
-                    prop.SetValue(target, nestedVal, null);
+                    object nestedVal;
+
+                    if (propType.IsAbstract)
+                    {
+                        var typeName = reader.GetAttribute("type");
+                        var derivedTypes = GetDerivedTypes(propType);
+                        propType = derivedTypes.FirstOrDefault(x => x.Name == typeName);
+
+                        if (propType == null)
+                            throw new ConfigurationErrorsException(
+                                string.Format(
+                                    "'type' attribute is required for '{0}.{1}' property, possible values are: {2}",
+                                    type.Name, prop.Name, string.Join(", ", derivedTypes.Select(x => x.Name))
+                                    ));
+                    }
+
+                    nestedVal = Activator.CreateInstance(propType);
                     ReadElement(reader, nestedVal);
+                    prop.SetValue(target, nestedVal, null);
                 }
             }
         }
@@ -104,6 +121,11 @@ namespace Apache.Ignite.Core.Impl.Common
             var convertedVal = converter.ConvertFromString(propVal);
 
             property.SetValue(target, convertedVal, null);
+        }
+
+        private static List<Type> GetDerivedTypes(Type type)
+        {
+            return type.Assembly.GetTypes().Where(t => t.BaseType == type).ToList();
         }
 
         private static PropertyInfo GetPropertyOrThrow(string propName, string propVal, Type type)
