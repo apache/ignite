@@ -20,6 +20,7 @@ namespace Apache.Ignite.Core.Tests
     using System;
     using System.IO;
     using System.Xml;
+    using Apache.Ignite.Core.Discovery;
     using Apache.Ignite.Core.Impl.Common;
     using NUnit.Framework;
 
@@ -34,7 +35,7 @@ namespace Apache.Ignite.Core.Tests
             var xml = @"<igniteConfig workDirectory='c:' JvmMaxMemoryMb='1024' MetricsLogFrequency='0:0:10'>
                             <localHost>127.1.1.1</localHost>
                             <discoveryConfiguration joinTimeout='0:1:0'>
-                                
+                                <ipFinder type='MulticastIpFinder' addressRequestAttempts='7' />
                             </discoveryConfiguration>
                         </igniteConfig>";
             var reader = XmlReader.Create(new StringReader(xml));
@@ -46,6 +47,7 @@ namespace Apache.Ignite.Core.Tests
             Assert.AreEqual(1024, cfg.JvmMaxMemoryMb);
             Assert.AreEqual(TimeSpan.FromSeconds(10), cfg.MetricsLogFrequency);
             Assert.AreEqual(TimeSpan.FromMinutes(1), cfg.DiscoveryConfiguration.JoinTimeout);
+            Assert.AreEqual(7, ((MulticastIpFinder) cfg.DiscoveryConfiguration.IpFinder).AddressRequestAttempts);
         }
     }
 }

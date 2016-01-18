@@ -31,6 +31,9 @@ namespace Apache.Ignite.Core.Impl.Common
     /// </summary>
     internal static class IgniteConfigurationXmlSerializer
     {
+        /** Attribute that specifies a type for abstract properties, such as IpFinder. */
+        private const string TypeNameAttribute = "type";
+
         public static IgniteConfiguration Deserialize(XmlReader reader)
         {
             var cfg = new IgniteConfiguration();
@@ -91,7 +94,7 @@ namespace Apache.Ignite.Core.Impl.Common
 
                     if (propType.IsAbstract)
                     {
-                        var typeName = reader.GetAttribute("type");
+                        var typeName = reader.GetAttribute(TypeNameAttribute);
                         var derivedTypes = GetDerivedTypes(propType);
                         propType = derivedTypes.FirstOrDefault(x => x.Name == typeName);
 
@@ -112,6 +115,9 @@ namespace Apache.Ignite.Core.Impl.Common
 
         private static void SetProperty(object target, string propName, string propVal)
         {
+            if (propName == TypeNameAttribute)
+                return;
+
             var type = target.GetType();
             var property = GetPropertyOrThrow(propName, propVal, type);
 
@@ -125,7 +131,7 @@ namespace Apache.Ignite.Core.Impl.Common
 
         private static List<Type> GetDerivedTypes(Type type)
         {
-            return type.Assembly.GetTypes().Where(t => t.BaseType == type).ToList();
+            return type.Assembly.GetTypes().Where(t => t.IsClass && !t.IsAbstract && t.IsSubclassOf(type)).ToList();
         }
 
         private static PropertyInfo GetPropertyOrThrow(string propName, string propVal, Type type)
