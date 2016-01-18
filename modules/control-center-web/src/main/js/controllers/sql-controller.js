@@ -56,7 +56,7 @@ consoleModule.controller('sqlController', function ($http, $timeout, $interval, 
         }
     };
 
-    var _demo = $state.includes('**.sql.demo');
+    $scope.demo = $state.includes('**.sql.demo');
 
     var _mask = function (cacheName) {
         return _.isEmpty(cacheName) ? '<default>' : cacheName;
@@ -273,12 +273,12 @@ consoleModule.controller('sqlController', function ($http, $timeout, $interval, 
         else
             $scope.rebuildScrollParagraphs();
 
-        $agentDownload.startTopologyListening(getTopology, _demo);
+        $agentDownload.startTopologyListening(getTopology, $scope.demo);
     };
 
     $loading.start('loading');
 
-    QueryNotebooks.read(_demo, $state.params.noteId)
+    QueryNotebooks.read($scope.demo, $state.params.noteId)
         .then(loadNotebook)
         .catch(function(err) {
             $scope.notebook = undefined;
@@ -291,7 +291,7 @@ consoleModule.controller('sqlController', function ($http, $timeout, $interval, 
         if ($scope.notebook.name != name) {
             $scope.notebook.name = name;
 
-            QueryNotebooks.save(_demo, $scope.notebook)
+            QueryNotebooks.save($scope.demo, $scope.notebook)
                 .then(function() {
                     var idx = _.findIndex($scope.$root.notebooks, function (item) {
                         return item._id == $scope.notebook._id;
@@ -346,7 +346,7 @@ consoleModule.controller('sqlController', function ($http, $timeout, $interval, 
 
             $scope.rebuildScrollParagraphs();
 
-            QueryNotebooks.save(_demo, $scope.notebook)
+            QueryNotebooks.save($scope.demo, $scope.notebook)
                 .then(function () { paragraph.edit = false; })
                 .catch(_handleException);
         }
@@ -425,7 +425,7 @@ consoleModule.controller('sqlController', function ($http, $timeout, $interval, 
 
                     $scope.rebuildScrollParagraphs();
 
-                    QueryNotebooks.save(_demo, $scope.notebook)
+                    QueryNotebooks.save($scope.demo, $scope.notebook)
                         .catch(_handleException);
             });
     };
@@ -682,7 +682,7 @@ consoleModule.controller('sqlController', function ($http, $timeout, $interval, 
     };
 
     $scope.execute = function (paragraph) {
-        QueryNotebooks.save(_demo, $scope.notebook)
+        QueryNotebooks.save($scope.demo, $scope.notebook)
             .catch(_handleException);
 
         paragraph.prevQuery = paragraph.queryArgs ? paragraph.queryArgs.query : paragraph.query;
@@ -692,7 +692,7 @@ consoleModule.controller('sqlController', function ($http, $timeout, $interval, 
         _tryCloseQueryResult(paragraph.queryId);
 
         paragraph.queryArgs = {
-            demo: _demo,
+            demo: $scope.demo,
             type: "QUERY",
             query: paragraph.query,
             pageSize: paragraph.pageSize,
@@ -721,7 +721,7 @@ consoleModule.controller('sqlController', function ($http, $timeout, $interval, 
     };
 
     $scope.explain = function (paragraph) {
-        QueryNotebooks.save(_demo, $scope.notebook)
+        QueryNotebooks.save($scope.demo, $scope.notebook)
             .catch(_handleException);
 
         _cancelRefresh(paragraph);
@@ -731,7 +731,7 @@ consoleModule.controller('sqlController', function ($http, $timeout, $interval, 
         _tryCloseQueryResult(paragraph.queryId);
 
         paragraph.queryArgs = {
-            demo: _demo,
+            demo: $scope.demo,
             type: "EXPLAIN",
             query: 'EXPLAIN ' + paragraph.query,
             pageSize: paragraph.pageSize,
@@ -750,7 +750,7 @@ consoleModule.controller('sqlController', function ($http, $timeout, $interval, 
     };
 
     $scope.scan = function (paragraph) {
-        QueryNotebooks.save(_demo, $scope.notebook)
+        QueryNotebooks.save($scope.demo, $scope.notebook)
             .catch(_handleException);
 
         _cancelRefresh(paragraph);
@@ -760,7 +760,7 @@ consoleModule.controller('sqlController', function ($http, $timeout, $interval, 
         _tryCloseQueryResult(paragraph.queryId);
 
         paragraph.queryArgs = {
-            demo: _demo,
+            demo: $scope.demo,
             type: "SCAN",
             pageSize: paragraph.pageSize,
             cacheName: paragraph.cacheName || undefined
@@ -780,7 +780,13 @@ consoleModule.controller('sqlController', function ($http, $timeout, $interval, 
     $scope.nextPage = function(paragraph) {
         _showLoading(paragraph, true);
 
-        $http.post('/api/v1/agent/query/fetch', {demo: _demo, queryId: paragraph.queryId, pageSize: paragraph.pageSize, cacheName: paragraph.queryArgs.cacheName})
+        $http.post('/api/v1/agent/query/fetch',
+            {
+                demo: $scope.demo,
+                queryId: paragraph.queryId,
+                pageSize: paragraph.pageSize,
+                cacheName: paragraph.queryArgs.cacheName
+            })
             .success(function (res) {
                 paragraph.page++;
 
@@ -867,7 +873,7 @@ consoleModule.controller('sqlController', function ($http, $timeout, $interval, 
     };
 
     $scope.exportCsvAll = function(paragraph) {
-        $http.post('/api/v1/agent/query/getAll', {demo: _demo, query: paragraph.query, cacheName: paragraph.cacheName})
+        $http.post('/api/v1/agent/query/getAll', {demo: demo, query: paragraph.query, cacheName: paragraph.cacheName})
             .success(function (item) {
                 _export(paragraph.name + '-all.csv', item.meta, item.rows);
             })
@@ -1468,7 +1474,7 @@ consoleModule.controller('sqlController', function ($http, $timeout, $interval, 
 
         $scope.metadata = [];
 
-        $http.post('/api/v1/agent/cache/metadata', {demo: _demo})
+        $http.post('/api/v1/agent/cache/metadata', {demo: demo})
             .success(function (metadata) {
                 $scope.metadata = _.sortBy(metadata, _.filter(metadata, function (meta) {
                     var cacheName = _mask(meta.cacheName);

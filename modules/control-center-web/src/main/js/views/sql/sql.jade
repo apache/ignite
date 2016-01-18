@@ -66,7 +66,7 @@ mixin chart-settings(mdl)
                     .docs-header.notebook-header
                         h1.col-sm-6(ng-hide='notebook.edit')
                             label(style='max-width: calc(100% - 60px)') {{notebook.name}}
-                            .btn-group
+                            .btn-group(ng-if='!demo')
                                 +btn-toolbar('fa-pencil', 'notebook.edit = true;notebook.editName = notebook.name', 'Rename notebook')
                                 +btn-toolbar('fa-trash', 'removeNotebook()', 'Remove notebook')
                         h1.col-sm-6(ng-show='notebook.edit')
