@@ -49,15 +49,12 @@ namespace Apache.Ignite.Core.Impl.Common
             // TODO: see http://referencesource.microsoft.com/#System.Configuration/System/Configuration/ConfigurationElement.cs
             var type = target.GetType();
 
-            if (reader.AttributeCount > 0) // ???
+            while (reader.MoveToNextAttribute())
             {
-                while (reader.MoveToNextAttribute())
-                {
-                    var name = reader.Name;
-                    var val = reader.Value;
+                var name = reader.Name;
+                var val = reader.Value;
 
-                    SetProperty(target, name, val);
-                }
+                SetProperty(target, name, val);
             }
 
             if (!reader.MoveToElement())
@@ -69,29 +66,23 @@ namespace Apache.Ignite.Core.Impl.Common
                     continue;
 
                 var name = reader.Name;
-
                 var prop = GetPropertyOrThrow(name, reader.Value, type);
-
-                // Either (valueType|string), or ICollection, or reftype
-
                 var propType = prop.PropertyType;
 
                 if (propType.IsValueType || propType == typeof (string))
                 {
                     // Regular property in xmlElement form
-                    var val = reader.ReadString();
-                    SetProperty(target, name, val);
+                    SetProperty(target, name, reader.ReadString());
                 }
                 else if (propType.IsGenericType && propType.GetGenericTypeDefinition() == typeof(ICollection<>))
                 {
                     // TODO: read collection
+                    // TODO: IncludedEventTypes!! We need an attribute that specifies a converter 
+                    // (so that user can say <includedEventTypes>SwapspaceAll, NodeJoined, 15</includedEventTypes>)
                 }
                 else
                 {
                     // Nested object (complex property)
-                    // TODO: propType can be abstract, check 'type' attribute in this case
-                    object nestedVal;
-
                     if (propType.IsAbstract)
                     {
                         var typeName = reader.GetAttribute(TypeNameAttribute);
@@ -106,7 +97,7 @@ namespace Apache.Ignite.Core.Impl.Common
                                     ));
                     }
 
-                    nestedVal = Activator.CreateInstance(propType);
+                    var nestedVal = Activator.CreateInstance(propType);
                     ReadElement(reader, nestedVal);
                     prop.SetValue(target, nestedVal, null);
                 }
