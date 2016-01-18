@@ -507,14 +507,18 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
 
                         verChanged = true;
                     }
+                }
 
+                nextTopVer = new AffinityTopologyVersion(topVer, minorTopVer);
+
+                if (type == DiscoveryCustomEvent.EVT_DISCOVERY_CUSTOM_EVT) {
                     for (Class cls = customMsg.getClass(); cls != null; cls = cls.getSuperclass()) {
                         List<CustomEventListener<DiscoveryCustomMessage>> list = customEvtLsnrs.get(cls);
 
                         if (list != null) {
                             for (CustomEventListener<DiscoveryCustomMessage> lsnr : list) {
                                 try {
-                                    lsnr.onCustomEvent(node, customMsg);
+                                    lsnr.onCustomEvent(nextTopVer, node, customMsg);
                                 }
                                 catch (Exception e) {
                                     U.error(log, "Failed to notify direct custom event listener: " + customMsg, e);
@@ -523,8 +527,6 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                         }
                     }
                 }
-
-                nextTopVer = new AffinityTopologyVersion(topVer, minorTopVer);
 
                 // Put topology snapshot into discovery history.
                 // There is no race possible between history maintenance and concurrent discovery
