@@ -22,6 +22,7 @@
 #include "ignite/odbc/utility.h"
 #include "ignite/odbc/statement.h"
 #include "ignite/odbc/connection.h"
+#include "ignite/odbc/config/configuration.h"
 
 // TODO: implement appropriate protocol with de-/serialisation.
 namespace
@@ -71,6 +72,25 @@ namespace ignite
                 AddStatusRecord(SQL_STATE_HYC00_OPTIONAL_FEATURE_NOT_IMPLEMENTED, "Not implemented.");
 
             return res;
+        }
+
+        void Connection::Establish(const std::string& server)
+        {
+            IGNITE_ODBC_API_CALL(InternalEstablish(server));
+        }
+
+        SqlResult Connection::InternalEstablish(const std::string& server)
+        {
+            config::Configuration config;
+
+            if (server != config.GetDsn())
+            {
+                AddStatusRecord(SQL_STATE_HY000_GENERAL_ERROR, "Unknown DNS.");
+
+                return SQL_RESULT_ERROR;
+            }
+
+            return InternalEstablish(config.GetHost(), config.GetPort(), config.GetCache());
         }
 
         void Connection::Establish(const std::string& host, uint16_t port, const std::string& cache)

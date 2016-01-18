@@ -65,6 +65,13 @@ namespace ignite
             /**
              * Establish connection to ODBC server.
              *
+             * @param server Server (DSN).
+             */
+            void Establish(const std::string& server);
+
+            /**
+             * Establish connection to ODBC server.
+             *
              * @param host Host.
              * @param port Port.
              * @param cache Cache name to connect to.
@@ -162,6 +169,15 @@ namespace ignite
 
         private:
             IGNITE_NO_COPY_ASSIGNMENT(Connection);
+
+            /**
+             * Establish connection to ODBC server.
+             * Internal call.
+             *
+             * @param server Server (DNS).
+             * @return Operation result.
+             */
+            SqlResult InternalEstablish(const std::string& server);
 
             /**
              * Establish connection to ODBC server.

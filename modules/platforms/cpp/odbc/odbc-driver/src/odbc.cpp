@@ -165,7 +165,7 @@ SQLRETURN SQL_API SQLAllocConnect(SQLHENV env, SQLHDBC* conn)
     Connection *connection = environment->CreateConnection();
 
     if (!connection)
-        return SQL_ERROR;
+        return environment->GetDiagnosticRecords().GetReturnCode();
 
     *conn = reinterpret_cast<SQLHDBC>(connection);
 
@@ -375,15 +375,9 @@ SQLRETURN SQL_API SQLConnect(SQLHDBC        conn,
     if (!connection)
         return SQL_INVALID_HANDLE;
 
-    ignite::odbc::config::Configuration config;
-
     std::string server = SqlStringToString(serverName, serverNameLen);
 
-    //TODO: move into Establish()
-    if (server != config.GetDsn())
-        return SQL_ERROR;
-
-    connection->Establish(config.GetHost(), config.GetPort(), config.GetCache());
+    connection->Establish(server);
 
     return connection->GetDiagnosticRecords().GetReturnCode();
 }
