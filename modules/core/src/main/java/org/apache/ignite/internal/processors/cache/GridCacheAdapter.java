@@ -4540,9 +4540,33 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
      * @return Cached value.
      * @throws IgniteCheckedException If failed.
      */
-    @Nullable public V get(K key, boolean deserializeBinary)
-        throws IgniteCheckedException {
-        return getAsync(key, deserializeBinary).get();
+    @Nullable public V get(K key, boolean deserializeBinary) throws IgniteCheckedException {
+        checkJta();
+
+        String taskName = ctx.kernalContext().job().currentTaskName();
+
+        return get(key, taskName, deserializeBinary);
+    }
+
+    /**
+     * @param key Key.
+     * @param taskName Task name.
+     * @param deserializeBinary Deserialize binary flag.
+     * @return Cached value.
+     * @throws IgniteCheckedException If failed.
+     */
+    protected V get(
+        final K key,
+        String taskName,
+        boolean deserializeBinary) throws IgniteCheckedException {
+        return getAsync(key,
+            !ctx.config().isReadFromBackup(),
+            /*skip tx*/false,
+            null,
+            taskName,
+            deserializeBinary,
+            false,
+            /*can remap*/true).get();
     }
 
     /**
