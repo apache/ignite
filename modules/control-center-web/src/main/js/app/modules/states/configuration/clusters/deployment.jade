@@ -1,0 +1,157 @@
+//-
+    Licensed to the Apache Software Foundation (ASF) under one or more
+    contributor license agreements.  See the NOTICE file distributed with
+    this work for additional information regarding copyright ownership.
+    The ASF licenses this file to You under the Apache License, Version 2.0
+    (the "License"); you may not use this file except in compliance with
+    the License.  You may obtain a copy of the License at
+
+         http://www.apache.org/licenses/LICENSE-2.0
+
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
+
+- var model = 'backupItem'
+- var exclude = model + '.peerClassLoadingLocalClassPathExclude'
+
+form.panel.panel-default(bs-collapse ng-model='panel' name='deployment')
+    .panel-heading(bs-collapse-toggle)
+        i.fa(ng-class='panel === 0 ? "fa-chevron-circle-up" : "fa-chevron-circle-down"')
+        label Class deployment
+        ignite-form-field-tooltip.tipLabel
+            | Task and resources deployment in cluster
+        //- i.pull-right.fa.fa-undo(
+        //-     ng-show='!preview["pools"].allDefaults' 
+        //-     ng-click='#{model} = {}; $event.stopPropagation()' 
+        //-     bs-tooltip 
+        //-     data-title='"Undo unsaved changes"')
+    .panel-collapse(role='tabpanel' bs-collapse-target id='deployment')
+        .panel-body
+            .col-sm-6
+                .settings-row
+                    ignite-form-field
+                        ignite-form-field-label
+                            | Deployment mode
+                        ignite-form-field-tooltip
+                            | Task classes and resources sharing mode#[br]
+                            | The following deployment modes are supported:#[br]
+                            ul
+                                li PRIVATE - in this mode deployed classes do not share resources
+                                li ISOLATED - in this mode tasks or classes deployed within the same class loader will share the same instances of resources
+                                li SHARED - same as ISOLATED, but now tasks from different master nodes with the same user version and same class loader will share the same class loader on remote nodes
+                                li CONTINUOUS - same as SHARED deployment mode, but resources will not be undeployed even after all master nodes left grid
+                        ignite-form-field-dropdown(
+                            data-id='deploymentMode'
+                            data-name='deploymentMode'
+                            data-options="deploymentModes"
+                            data-ng-model='#{model}.deploymentMode'
+                            data-placeholder='SHARED'
+                        )
+                .settings-row
+                    ignite-form-field.checkbox
+                        ignite-form-field-input-checkbox(
+                            data-id='peerClassLoadingEnabled'
+                            data-name='peerClassLoadingEnabled'
+                            data-ng-model='#{model}.peerClassLoadingEnabled'
+                        )
+                        | Enable peer class loading
+                        ignite-form-field-tooltip
+                            | Enables/disables peer class loading
+                .settings-row(ng-if='#{model}.peerClassLoadingEnabled')
+                    ignite-form-field
+                        ignite-form-field-label
+                            | Missed resources cache size
+                        ignite-form-field-tooltip
+                            | If size greater than 0, missed resources will be cached and next resource request ignored
+                            | If size is 0, then request for the resource will be sent to the remote node every time this resource is requested
+                        ignite-form-field-input-number(
+                            data-id='peerClassLoadingMissedResourcesCacheSize'
+                            data-name='peerClassLoadingMissedResourcesCacheSize'
+                            data-ng-model='#{model}.peerClassLoadingMissedResourcesCacheSize'
+                            data-placeholder='100'
+                        )
+                .settings-row(ng-if='#{model}.peerClassLoadingEnabled')
+                    ignite-form-field
+                        ignite-form-field-label
+                            | Pool size
+                        ignite-form-field-tooltip
+                            | Thread pool size to use for peer class loading
+                        ignite-form-field-input-number(
+                            data-id='peerClassLoadingThreadPoolSize'
+                            data-name='peerClassLoadingThreadPoolSize'
+                            data-ng-model='#{model}.peerClassLoadingThreadPoolSize'
+                            data-placeholder='availableProcessors'
+                        )
+                .settings-row(ng-if='#{model}.peerClassLoadingEnabled')
+                    ignite-form-group(data-label='Local class path exclude')
+                        ignite-form-group-tooltip
+                            | List of packages from the system classpath that need to be peer-to-peer loaded from task originating node#[br]
+                            | '*' is supported at the end of the package name which means that all sub-packages and their classes are included like in Java package import clause
+                        ignite-form-group-add(ng-click='__.add = true')
+                            | Add package name.
+                        .group-content-empty(ng-if='!(#{exclude}.length) && !__.add')
+                            | Not defined
+                        .group-content(ng-if='#{exclude}.length')
+                            ignite-form-field(ng-repeat='model in #{exclude} track by $index' type='internal' ng-init='')
+                                .indexField
+                                    | {{ $index+1 }}) 
+                                i.tipField.fa.fa-remove(
+                                    ng-hide='___.edit'
+                                    bs-tooltip='"Remove package name"'
+                                    ng-click='#{exclude}.splice(#{exclude}.indexOf(model), 1)'
+                                )
+                                span(ng-hide='___.edit')
+                                    a.labelFormField(ng-click='___.edit = true') {{ model }}
+                                span(ng-if='___.edit' ng-form='form' ng-init='field = model')
+                                    ignite-form-field-input-text(
+                                        data-name='field'
+                                        data-ng-model='field'
+                                        data-ng-required='true'
+                                        data-ignite-form-field-input-autofocus='true'
+                                        on-enter='form.$valid && (#{exclude}[$index] = field); form.$valid && (___.edit = false);'
+                                        ng-dblur='form.$valid && (#{exclude}[$index] = field); (___.edit = false)'
+                                    )
+                                        i.fa.fa-floppy-o(
+                                            ng-show='form.$valid'
+                                            ng-click='form.$valid && (#{exclude}[$index] = field); form.$valid && (___.edit = false);'
+                                            bs-tooltip 
+                                            data-title='Click icon or press [Enter] to save item' 
+                                        )
+                                
+                        .group-content(ng-if='__.add'
+                            ng-form='form' 
+                        )
+                            ignite-form-field(type='internal')
+                                ignite-form-field-input-text(
+                                    data-name='field'
+                                    data-ng-model='field'
+                                    data-ng-required='true'
+                                    data-ignite-form-field-input-autofocus='true'
+                                    on-enter='form.$valid && #{exclude}.push(field); form.$valid && (__.add = false)'
+                                    ng-dblur='form.$valid && #{exclude}.push(field); (__.add = false)'
+                                )
+                                    i.fa.fa-floppy-o(
+                                        ng-show='form.$valid'
+                                        ng-click='form.$valid && #{exclude}.push(field); form.$valid && (__.add = false)'
+                                        bs-tooltip 
+                                        data-title='Click icon or press [Enter] to save item' 
+                                    )
+            .col-sm-6
+                .preview-panel(ng-init='mode = false')
+                    .preview-legend
+                        a(ng-class='{active: !mode, inactive: mode}' ng-click='mode = false') XML
+                        | &nbsp;
+                        a(ng-class='{active: mode, inactive: !mode}' ng-click='mode = true') Java
+                    .preview-content(
+                        ng-if='!preview["deployment"].allDefaults && mode'
+                        ui-ace='{onLoad: previewInit, onChange: previewChanged, mode: "java", rendererOptions: {minLines: group.previewMinLines || 3}}' 
+                        ng-model='preview["deployment"].java')
+                    .preview-content(
+                        ng-if='!preview["deployment"].allDefaults && !mode'
+                        ui-ace='{onLoad: previewInit, onChange: previewChanged, mode: "xml", rendererOptions: {minLines: group.previewMinLines || 3}}' 
+                        ng-model='preview["deployment"].xml')
+                    .preview-content-empty(ng-if='preview["deployment"].allDefaults')
+                        label All Defaults

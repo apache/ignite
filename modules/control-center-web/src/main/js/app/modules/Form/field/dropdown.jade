@@ -16,13 +16,30 @@
 
 .input-tip
     button.select-toggle.form-control(
+        ng-if='dropdown.multiple'
         id='{{ id }}'
         name='{{ dropdown.name }}'
         data-placeholder='{{ dropdown.placeholder }}' 
 
         bs-select 
         bs-options='item.value as item.label for item in dropdown.options' 
-        data-multiple='dropdown.multiple'
+        data-multiple="1"
+
+        ng-model='dropdown.ngModel'
+        ng-class='{ placeholder: dropdown.ngModel === undefined || dropdown.ngModel === null || !dropdown.ngModel.length }'
+        ng-disabled='dropdown.ngDisabled'
+
+        tabindex='0'
+    )
+
+    button.select-toggle.form-control(
+        ng-if='!dropdown.multiple'
+        id='{{ id }}'
+        name='{{ dropdown.name }}'
+        data-placeholder='{{ dropdown.placeholder }}' 
+
+        bs-select 
+        bs-options='item.value as item.label for item in dropdown.options' 
 
         ng-model='dropdown.ngModel'
         ng-class='{ placeholder: dropdown.ngModel === undefined || dropdown.ngModel === null || !dropdown.ngModel.length }'

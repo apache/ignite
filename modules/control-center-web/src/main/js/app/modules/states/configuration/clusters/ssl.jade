@@ -15,6 +15,7 @@
     limitations under the License.
 
 - var model = 'backupItem.sslContextFactory'
+- var trust = model + '.trustManagers'
 
 mixin feedback(field, error, message)
     i.fa.fa-exclamation-triangle.form-control-feedback(
@@ -101,18 +102,18 @@ form.panel.panel-default(bs-collapse ng-model='panel' name='sslConfiguration')
                     ignite-form-group(data-label='Trust managers')
                         ignite-form-group-tooltip
                             | Pre-configured trust managers
-                        ignite-form-group-add(ng-click='__.addTrustManager = true')
+                        ignite-form-group-add(ng-click='__.add = true')
                             | Add new trust manager.
-                        .group-content-empty(ng-if='!(#{model}.trustManagers.length) && !__.addTrustManager')
+                        .group-content-empty(ng-if='!(#{trust}.length) && !__.add')
                             | Not defined
-                        .group-content(ng-if='#{model}.trustManagers.length')
-                            ignite-form-field(ng-repeat='model in #{model}.trustManagers track by $index' type='internal' ng-init='')
+                        .group-content(ng-if='#{trust}.length')
+                            ignite-form-field(ng-repeat='model in #{trust} track by $index' type='internal' ng-init='')
                                 .indexField
                                     | {{ $index+1 }}) 
                                 i.tipField.fa.fa-remove(
                                     ng-hide='___.edit'
                                     bs-tooltip='"Remove trust manager"'
-                                    ng-click='#{model}.trustManagers.splice(#{model}.trustManagers.indexOf(model), 1)'
+                                    ng-click='#{trust}.splice(#{trust}.indexOf(model), 1)'
                                 )
                                 span(ng-hide='___.edit')
                                     a.labelFormField(ng-click='___.edit = true') {{ model }}
@@ -122,17 +123,17 @@ form.panel.panel-default(bs-collapse ng-model='panel' name='sslConfiguration')
                                         data-ng-model='field'
                                         data-ng-required='true'
                                         data-ignite-form-field-input-autofocus='true'
-                                        on-enter='form.$valid && (#{model}.trustManagers[$index] = field); form.$valid && (___.edit = false);'
-                                        ng-blur='form.$valid && (#{model}.trustManagers[$index] = field); (___.edit = false)'
+                                        on-enter='form.$valid && (#{trust}[$index] = field); form.$valid && (___.edit = false);'
+                                        nng-blur='form.$valid && (#{trust}[$index] = field); (___.edit = false)'
                                     )
                                         i.fa.fa-floppy-o(
                                             ng-show='form.$valid'
-                                            ng-click='form.$valid && (#{model}.trustManagers[$index] = field); form.$valid && (___.edit = false);'
+                                            ng-click='form.$valid && (#{trust}[$index] = field); form.$valid && (___.edit = false);'
                                             bs-tooltip 
                                             data-title='Click icon or press [Enter] to save item' 
                                         )
                                 
-                        .group-content(ng-if='__.addTrustManager'
+                        .group-content(ng-if='__.add'
                             ng-form='form' 
                         )
                             ignite-form-field(type='internal')
@@ -141,17 +142,17 @@ form.panel.panel-default(bs-collapse ng-model='panel' name='sslConfiguration')
                                     data-ng-model='field'
                                     data-ng-required='true'
                                     data-ignite-form-field-input-autofocus='true'
-                                    on-enter='form.$valid && #{model}.trustManagers.push(field); form.$valid && (__.addTrustManager = false)'
-                                    ng-blur='form.$valid && #{model}.trustManagers.push(field); (__.addTrustManager = false)'
+                                    on-enter='form.$valid && #{trust}.push(field); form.$valid && (__.add = false)'
+                                    nng-blur='form.$valid && #{trust}.push(field); (__.add = false)'
                                 )
                                     i.fa.fa-floppy-o(
                                         ng-show='form.$valid'
-                                        ng-click='form.$valid && #{model}.trustManagers.push(field); form.$valid && (__.addTrustManager = false)'
+                                        ng-click='form.$valid && #{trust}.push(field); form.$valid && (__.add = false)'
                                         bs-tooltip 
                                         data-title='Click icon or press [Enter] to save item' 
                                     )
                
-                .settings-row(ng-if='backupItem.sslEnabled && !#{model}.trustManagers.length')
+                .settings-row(ng-if='backupItem.sslEnabled && !#{trust}.length')
                     ignite-form-field(data-label='Trust store file')
                         ignite-form-field-tooltip
                             | Path to the trust store file
@@ -162,7 +163,7 @@ form.panel.panel-default(bs-collapse ng-model='panel' name='sslConfiguration')
                             data-placeholder='Path to the trust store file'
                         )
 
-                .settings-row(ng-if='backupItem.sslEnabled && !#{model}.trustManagers.length')
+                .settings-row(ng-if='backupItem.sslEnabled && !#{trust}.length')
                     ignite-form-field(data-label='Trust store type')
                         ignite-form-field-tooltip
                             | Trust store type used in context initialization
