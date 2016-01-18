@@ -48,14 +48,42 @@ namespace Apache.Ignite.Core.Impl.Common
                     var name = reader.Name;
                     var val = reader.Value;
 
-                    // Set property
-                    // TODO: lowercase first letter
-                    type.GetProperty(name).SetValue(target, val, null);
+                    SetProperty(target, name, val);
                 }
+            }
+
+            if (!reader.MoveToElement())
+                return;
+
+            while (reader.Read())
+            {
+                if (reader.NodeType != XmlNodeType.Element)
+                    continue;
+
+
             }
         }
 
-        private static object GetConverter(Type type)
+        private static void SetProperty(object target, string propName, string propVal)
+        {
+            var type = target.GetType();
+            // TODO: lowercase first letter
+            var property = type.GetProperty(propName);
+
+            if (property == null)
+                throw new ConfigurationErrorsException(
+                    string.Format(
+                        "Invalid IgniteConfiguration attribute '{0}={1}', there is no such property on '{2}'",
+                        propName, propVal, target));
+
+            var converter = GetConverter(property.PropertyType);
+
+            var convertedVal = converter.ConvertFromString(propVal);
+
+            property.SetValue(target, convertedVal, null);
+        }
+
+        private static TypeConverter GetConverter(Type type)
         {
             // TODO: ICollection?
             if (type.IsEnum)
