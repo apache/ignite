@@ -43,7 +43,7 @@ namespace Apache.Ignite.Core.Tests.Compute
         private const string BinaryArgTask = "org.apache.ignite.platform.PlatformComputeBinarizableArgTask";
 
         /** Broadcast task name. */
-        private const string BroadcastTask = "org.apache.ignite.platform.PlatformComputeBroadcastTask";
+        public const string BroadcastTask = "org.apache.ignite.platform.PlatformComputeBroadcastTask";
 
         /** Broadcast task name. */
         private const string DecimalTask = "org.apache.ignite.platform.PlatformComputeDecimalTask";

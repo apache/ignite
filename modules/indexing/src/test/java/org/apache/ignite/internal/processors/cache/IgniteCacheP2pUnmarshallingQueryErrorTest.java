@@ -65,6 +65,8 @@ public class IgniteCacheP2pUnmarshallingQueryErrorTest extends IgniteCacheP2pUnm
      * @throws Exception If failed.
      */
     public void testResponseMessageOnRequestUnmarshallingFailed() throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-1923");
+
         readCnt.set(Integer.MAX_VALUE);
 
         try {
