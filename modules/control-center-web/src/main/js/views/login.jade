@@ -28,7 +28,7 @@ header#header.header
         .row.greedy.home
             .col-xs-12.col-md-6
                 form(name='loginForm')
-                    .modal-body.row(style='padding: 0; margin: 0')
+                    .modal-body.row(style='padding-bottom: 10px; margin: 0')
                         .settings-row(ng-if='action == "register"')
                             h3.login-header Sign Up
                         .settings-row(ng-if='action == "login"')
@@ -56,9 +56,9 @@ header#header.header
                                 input#user_confirm.form-control(type='password' ng-model='user_info.confirm' match='user_info.password' placeholder='Confirm password' ng-required='action == "register"' on-enter='loginForm.$valid && auth(action, user_info)')
                         .settings-row(ignite-terms)
                             .col-md-offset-3(ng-if='action == "register" && terms.termsState')
-                                input(type='checkbox' ng-model='user_info.agree', ng-required='true')
-                                | I agree to the&nbsp;
-                                a(ui-sref='{{::terms.termsState}}') terms and conditions
+                                label
+                                    input(type='checkbox' ng-model='user_info.agree', ng-required='true')
+                                    | I agree to the #[a(ui-sref='{{::terms.termsState}}' target='_blank') terms and conditions]
                     .col-xs-12.col-md-11
                         .login-footer(ng-show='action == "register"')
                             a.labelField(ng-click='action = "password/forgot"' on-click-focus='user_email') Forgot password?
@@ -78,7 +78,7 @@ header#header.header
                     p Apache Ignite Web Console is an interactive web management tool which allows users to:
                     ul
                         li Create and download various configurations for Apache Ignite
-                        li Automatically load SQL metadata from any RDBMS
+                        li Automatically load SQL domain models from any RDBMS
                         li Connect to Ignite cluster and run SQL analytics on it
             .col-xs-12.col-md-6
                 #carousel.carousel.slide(data-ride='carousel')
@@ -102,12 +102,12 @@ header#header.header
                             img(src='/images/cache.png', alt='Caches screen')
                             .carousel-caption
                                 h3 Caches screen
-                                p Configure caches, link metadata to caches, link caches to clusters
+                                p Configure caches, link domain models to caches, link caches to clusters
                         .item
-                            img(src='/images/metadata.png', alt='Metadatas screen')
+                            img(src='/images/domains.png', alt='Domain models screen')
                             .carousel-caption
-                                h3 Metadata screen
-                                p Manually enter metadata or load from database
+                                h3 Domain models screen
+                                p Manually enter domain models or load from database
                         .item
                             img(src='/images/summary.png', alt='Summary screen')
                             .carousel-caption

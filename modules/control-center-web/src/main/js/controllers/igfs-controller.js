@@ -28,26 +28,70 @@ consoleModule.controller('igfsController', [
 
             $scope.joinTip = $common.joinTip;
             $scope.getModel = $common.getModel;
-            $scope.javaBuildInClasses = $common.javaBuildInClasses;
+            $scope.javaBuiltInClasses = $common.javaBuiltInClasses;
             $scope.compactJavaName = $common.compactJavaName;
             $scope.widthIsSufficient = $common.widthIsSufficient;
             $scope.saveBtnTipText = $common.saveBtnTipText;
             $scope.panelExpanded = $common.panelExpanded;
 
             $scope.tableVisibleRow = $table.tableVisibleRow;
-            $scope.tableReset = $table.tableReset;
-            $scope.tableNewItem = $table.tableNewItem;
+
+            $scope.tableSave = function (field, index, stopEdit) {
+                switch (field.type) {
+                    case 'pathModes':
+                        if ($table.tablePairSaveVisible(field, index))
+                            return $table.tablePairSave($scope.tablePairValid, $scope.backupItem, field, index, stopEdit);
+
+                        break;
+                }
+
+                return true;
+            };
+
+            $scope.tableReset = function (save) {
+                var field = $table.tableField();
+
+                if (!save || !$common.isDefined(field) || $scope.tableSave(field, $table.tableEditedRowIndex(), true)) {
+                    $table.tableReset();
+
+                    return true;
+                }
+
+                return false;
+            };
+
+            $scope.tableNewItem = function (field) {
+                if ($scope.tableReset(true))
+                    $table.tableNewItem(field);
+            };
+
             $scope.tableNewItemActive = $table.tableNewItemActive;
+
+            $scope.tableStartEdit = function (item, field, index) {
+                if ($scope.tableReset(true))
+                    $table.tableStartEdit(item, field, index);
+            };
+
             $scope.tableEditing = $table.tableEditing;
-            $scope.tableStartEdit = $table.tableStartEdit;
+
             $scope.tableRemove = function (item, field, index) {
-                $table.tableRemove(item, field, index);
+                if ($scope.tableReset(true))
+                    $table.tableRemove(item, field, index);
             };
 
             $scope.tableSimpleSave = $table.tableSimpleSave;
             $scope.tableSimpleSaveVisible = $table.tableSimpleSaveVisible;
-            $scope.tableSimpleUp = $table.tableSimpleUp;
-            $scope.tableSimpleDown = $table.tableSimpleDown;
+
+            $scope.tableSimpleUp = function (item, field, index) {
+                if ($scope.tableReset(true))
+                    $table.tableSimpleUp(item, field, index);
+            };
+
+            $scope.tableSimpleDown = function (item, field, index) {
+                if ($scope.tableReset(true))
+                    $table.tableSimpleDown(item, field, index);
+            };
+
             $scope.tableSimpleDownVisible = $table.tableSimpleDownVisible;
 
             $scope.tablePairSave = $table.tablePairSave;
@@ -128,8 +172,6 @@ consoleModule.controller('igfsController', [
                     // Load page descriptor.
                     $http.get('/models/igfs.json')
                         .success(function (data) {
-                            $scope.screenTip = data.screenTip;
-                            $scope.moreInfo = data.moreInfo;
                             $scope.general = data.general;
                             $scope.advanced = data.advanced;
 
@@ -244,19 +286,20 @@ consoleModule.controller('igfsController', [
                     space: $scope.spaces[0]._id,
                     ipcEndpointEnabled: true,
                     fragmentizerEnabled: true,
-                    clusters: id && _.find($scope.clusters, {value: id}) ? [id] : []
+                    clusters: id && _.find($scope.clusters, {value: id}) ? [id] :
+                        (!$common.isEmptyArray($scope.clusters) ? [$scope.clusters[0].value] : [])
                 };
             }
 
             // Add new IGFS.
             $scope.createItem = function (id) {
-                $table.tableReset();
+                if ($scope.tableReset(true)) {
+                    $timeout(function () {
+                        $common.ensureActivePanel($scope.panels, 'general', 'igfsName');
+                    });
 
-                $timeout(function () {
-                    $common.ensureActivePanel($scope.panels, 'general', 'igfsName');
-                });
-
-                $scope.selectItem(undefined, prepareNewItem(id));
+                    $scope.selectItem(undefined, prepareNewItem(id));
+                }
             };
 
             // Check IGFS logical consistency.
@@ -322,27 +365,27 @@ consoleModule.controller('igfsController', [
 
             // Save IGFS.
             $scope.saveItem = function () {
-                $table.tableReset();
+                if ($scope.tableReset(true)) {
+                    var item = $scope.backupItem;
 
-                var item = $scope.backupItem;
-
-                if (validate(item))
-                    save(item);
+                    if (validate(item))
+                        save(item);
+                }
             };
 
             // Save IGFS with new name.
             $scope.cloneItem = function () {
-                $table.tableReset();
+                if ($scope.tableReset(true)) {
+                    if (validate($scope.backupItem))
+                        $clone.confirm($scope.backupItem.name).then(function (newName) {
+                            var item = angular.copy($scope.backupItem);
 
-                if (validate($scope.backupItem))
-                    $clone.confirm($scope.backupItem.name).then(function (newName) {
-                        var item = angular.copy($scope.backupItem);
+                            delete item._id;
+                            item.name = newName;
 
-                        item._id = undefined;
-                        item.name = newName;
-
-                        save(item);
-                    });
+                            save(item);
+                        });
+                }
             };
 
             // Remove IGFS from db.

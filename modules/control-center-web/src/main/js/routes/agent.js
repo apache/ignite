@@ -45,7 +45,7 @@ router.get('/download/zip', function (req, res) {
     var JSZip = require('jszip');
     var config = require('../helpers/configuration-loader.js');
 
-    var agentFld = 'ignite-web-agent-1.5.0.final-SNAPSHOT';
+    var agentFld = 'ignite-web-agent-1.5.0.final';
     var agentZip = agentFld + '.zip';
 
     // Read a zip file.
@@ -64,12 +64,10 @@ router.get('/download/zip', function (req, res) {
         prop.push('#Uncomment following options if needed:');
         prop.push('#node-uri=http://localhost:8080');
         prop.push('#driver-folder=./jdbc-drivers');
-        prop.push('#test-drive-metadata=true');
-        prop.push('#test-drive-sql=true');
 
         zip.file(agentFld + '/default.properties', prop.join('\n'));
 
-        var buffer = zip.generate({type:"nodebuffer", platform: "UNIX"});
+        var buffer = zip.generate({type: 'nodebuffer', platform: 'UNIX'});
 
         // Set the archive name.
         res.attachment(agentZip);
@@ -83,17 +81,11 @@ router.post('/topology', function (req, res) {
     var client = _client(req, res);
 
     if (client) {
-        client.ignite().cluster(false).then(function (clusters) {
-            var caches = clusters.map(function (cluster) {
-                return Object.keys(cluster._caches).map(function (key) {
-                    return {name: key, mode: cluster._caches[key]};
-                });
-            });
-
-            res.json(_.uniq(_.reject(_.flatten(caches), { mode: 'LOCAL' }), function(cache) {
-                return cache.name;
-            }));
-        }, function (err) {
+        client.ignite(req.body.demo).cluster(req.body.attr, req.body.mtr).then(
+            function (clusters) {
+                res.json(clusters);
+            },
+            function (err) {
             var mStatusCode = /.*Status code:\s+(\d+)(?:\s|$)/g.exec(err);
 
             res.status(mStatusCode != null && mStatusCode[1] ? mStatusCode[1] : 500).send(err);
@@ -113,7 +105,7 @@ router.post('/query', function (req, res) {
         qry.setPageSize(req.body.pageSize);
 
         // Get query cursor.
-        client.ignite().cache(req.body.cacheName).query(qry).nextPage().then(function (cursor) {
+        client.ignite(req.body.demo).cache(req.body.cacheName).query(qry).nextPage().then(function (cursor) {
             res.json({meta: cursor.fieldsMetadata(), rows: cursor.page(), queryId: cursor.queryId()});
         }, function (err) {
             res.status(500).send(err);
@@ -133,7 +125,7 @@ router.post('/query/getAll', function (req, res) {
         qry.setPageSize(1024);
 
         // Get query cursor.
-        var cursor = client.ignite().cache(req.body.cacheName).query(qry);
+        var cursor = client.ignite(req.body.demo).cache(req.body.cacheName).query(qry);
 
         cursor.getAll().then(function (rows) {
             res.json({meta: cursor.fieldsMetadata(), rows: rows});
@@ -155,7 +147,7 @@ router.post('/scan', function (req, res) {
         qry.setPageSize(req.body.pageSize);
 
         // Get query cursor.
-        client.ignite().cache(req.body.cacheName).query(qry).nextPage().then(function (cursor) {
+        client.ignite(req.body.demo).cache(req.body.cacheName).query(qry).nextPage().then(function (cursor) {
             res.json({meta: cursor.fieldsMetadata(), rows: cursor.page(), queryId: cursor.queryId()});
         }, function (err) {
             res.status(500).send(err);
@@ -168,7 +160,7 @@ router.post('/query/fetch', function (req, res) {
     var client = _client(req, res);
 
     if (client) {
-        var cache = client.ignite().cache(req.body.cacheName);
+        var cache = client.ignite(req.body.demo).cache(req.body.cacheName);
 
         var cmd = cache._createCommand('qryfetch').addParam('qryId', req.body.queryId).
             addParam('pageSize', req.body.pageSize);
@@ -186,7 +178,7 @@ router.post('/query/close', function (req, res) {
     var client = _client(req, res);
 
     if (client) {
-        var cache = client.ignite().cache(req.body.cacheName);
+        var cache = client.ignite(req.body.demo).cache(req.body.cacheName);
 
         var cmd = cache._createCommand('qrycls').addParam('qryId', req.body.queryId);
 
@@ -198,20 +190,16 @@ router.post('/query/close', function (req, res) {
     }
 });
 
-/* Get metadata for cache. */
+/* Get domain model for cache. */
 router.post('/cache/metadata', function (req, res) {
     var client = _client(req, res);
 
     if (client) {
-        client.ignite().cache(req.body.cacheName).metadata().then(function (caches) {
+        client.ignite(req.body.demo).cache(req.body.cacheName).metadata().then(function (caches) {
             var types = [];
 
             for (var meta of caches) {
                 var cacheTypes = meta.types.map(function (typeName) {
-                    var cacheName = meta.cacheName ? meta.cacheName : '<default>';
-
-                    var fullTypeName = '"' + (meta.cacheName ? meta.cacheName : "") + '".' + typeName;
-
                     var fields = meta.fields[typeName];
 
                     var columns = [];
@@ -224,7 +212,7 @@ router.post('/cache/metadata', function (req, res) {
                             name: fieldName,
                             clazz: fieldClass,
                             system: fieldName == "_KEY" || fieldName == "_VAL",
-                            cacheName: cacheName,
+                            cacheName: meta.cacheName,
                             typeName: typeName
                         });
                     }
@@ -240,7 +228,7 @@ router.post('/cache/metadata', function (req, res) {
                                 name: field,
                                 order: index.descendings.indexOf(field) < 0,
                                 unique: index.unique,
-                                cacheName: cacheName,
+                                cacheName: meta.cacheName,
                                 typeName: typeName
                             });
                         }
@@ -250,7 +238,7 @@ router.post('/cache/metadata', function (req, res) {
                                 type: 'index',
                                 name: index.name,
                                 children: fields,
-                                cacheName: cacheName,
+                                cacheName: meta.cacheName,
                                 typeName: typeName
                             });
                     }
@@ -258,9 +246,9 @@ router.post('/cache/metadata', function (req, res) {
                     columns = _.sortBy(columns, 'name');
 
                     if (!_.isEmpty(indexes))
-                        columns = columns.concat({type: 'indexes', name: 'Indexes', cacheName: cacheName, typeName: typeName, children: indexes });
+                        columns = columns.concat({type: 'indexes', name: 'Indexes', cacheName: meta.cacheName, typeName: typeName, children: indexes });
 
-                    return {type: 'type', name: cacheName + '.' + typeName, fullName: fullTypeName,  children: columns };
+                    return {type: 'type', cacheName: meta.cacheName,  typeName: typeName, children: columns };
                 });
 
                 if (!_.isEmpty(cacheTypes))
@@ -278,20 +266,6 @@ router.post('/cache/metadata', function (req, res) {
 router.post('/ping', function (req, res) {
     if (_client(req, res) != null)
         res.sendStatus(200);
-});
-
-/* Enable test-drive for sql. */
-router.post('/testdrive/sql', function (req, res) {
-    var client = _client(req, res);
-
-    if (client) {
-        client.enableTestDriveSQL(function (err, drivers) {
-            if (err)
-                return res.status(500).send(err);
-
-            res.sendStatus(200);
-        });
-    }
 });
 
 /* Get JDBC drivers list. */
@@ -324,8 +298,8 @@ router.post('/schemas', function (req, res) {
     }
 });
 
-/** Get database metadata. */
-router.post('/metadata', function (req, res) {
+/** Get database tables. */
+router.post('/tables', function (req, res) {
     var client = _client(req, res);
 
     if (client) {

@@ -28,7 +28,12 @@ angular
     $stateProvider
     .state('login', {
         url: '/login',
-        templateUrl: '/login.html'
+        templateUrl: '/login.html',
+        resolve: {
+            $title: () => {
+                return 'Sign In - Ignite Console';
+            }
+        }
     });
 }])
 .run(['$rootScope', '$state', 'Auth', 'igniteTerms', function($root, $state, Auth, igniteTerms) {

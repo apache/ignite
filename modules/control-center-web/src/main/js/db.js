@@ -74,6 +74,7 @@ exports.Space = mongoose.model('Space', new Schema({
 var CacheTypeMetadataSchema = new Schema({
     space: {type: ObjectId, ref: 'Space'},
     caches: [{type: ObjectId, ref: 'Cache'}],
+    queryMetadata: {type: String, enum: ['Annotations', 'Config']},
     kind: {type: String, enum: ['query', 'store', 'both']},
     databaseSchema: String,
     databaseTable: String,
@@ -83,7 +84,8 @@ var CacheTypeMetadataSchema = new Schema({
     valueFields: [{databaseFieldName: String, databaseFieldType: String, javaFieldName: String, javaFieldType: String}],
     fields: [{name: String, className: String}],
     aliases: [{field: String, alias: String}],
-    indexes: [{name: String, indexType: {type: String, enum: ['SORTED', 'FULLTEXT', 'GEOSPATIAL']}, fields: [{name: String, direction: Boolean}]}]
+    indexes: [{name: String, indexType: {type: String, enum: ['SORTED', 'FULLTEXT', 'GEOSPATIAL']}, fields: [{name: String, direction: Boolean}]}],
+    demo: Boolean
 });
 
 // Define Cache type metadata model.
@@ -124,7 +126,6 @@ var CacheSchema = new Schema({
     },
 
     rebalanceMode: {type: String, enum: ['SYNC', 'ASYNC', 'NONE']},
-    rebalanceThreadPoolSize: Number,
     rebalanceBatchSize: Number,
     rebalanceOrder: Number,
     rebalanceDelay: Number,
@@ -144,8 +145,14 @@ var CacheSchema = new Schema({
             }
         },
         CacheJdbcBlobStoreFactory: {
+            connectVia: {type: String, enum: ['URL', 'DataSource']},
+            connectionUrl: String,
             user: String,
             dataSourceBean: String,
+            database: {
+                type: String,
+                enum: ['Generic', 'Oracle', 'DB2', 'SQLServer', 'MySQL', 'PostgreSQL', 'H2']
+            },
             initSchema: Boolean,
             createTableQuery: String,
             loadQuery: String,
@@ -177,7 +184,6 @@ var CacheSchema = new Schema({
     sqlSchema: String,
     sqlOnheapRowCacheSize: Number,
     longQueryWarningTimeout: Number,
-    indexedTypes: [{keyClass: String, valueClass: String}],
     sqlFunctionClasses: [String],
     statisticsEnabled: Boolean,
     managementEnabled: Boolean,
@@ -205,7 +211,8 @@ var CacheSchema = new Schema({
                 maxSize: Number
             }
         }
-    }
+    },
+    demo: Boolean
 });
 
 // Install deep populate plugin.
@@ -345,11 +352,7 @@ var ClusterSchema = new Schema({
     discoveryStartupDelay: Number,
     igfsThreadPoolSize: Number,
     igfss: [{type: ObjectId, ref: 'Igfs'}],
-    includeEventTypes: [{
-        type: String, enum: ['EVTS_CHECKPOINT', 'EVTS_DEPLOYMENT', 'EVTS_ERROR', 'EVTS_DISCOVERY',
-            'EVTS_JOB_EXECUTION', 'EVTS_TASK_EXECUTION', 'EVTS_CACHE', 'EVTS_CACHE_REBALANCE', 'EVTS_CACHE_LIFECYCLE',
-            'EVTS_CACHE_QUERY', 'EVTS_SWAPSPACE', 'EVTS_IGFS']
-    }],
+    includeEventTypes: [String],
     managementThreadPoolSize: Number,
     marshaller: {
         kind: {type: String, enum: ['OptimizedMarshaller', 'JdkMarshaller']},
@@ -430,7 +433,7 @@ var ClusterSchema = new Schema({
     timeServerPortRange: Number,
     transactionConfiguration: {
         defaultTxConcurrency: {type: String, enum: ['OPTIMISTIC', 'PESSIMISTIC']},
-        transactionIsolation: {type: String, enum: ['READ_COMMITTED', 'REPEATABLE_READ', 'SERIALIZABLE']},
+        defaultTxIsolation: {type: String, enum: ['READ_COMMITTED', 'REPEATABLE_READ', 'SERIALIZABLE']},
         defaultTxTimeout: Number,
         pessimisticTxLogLinger: Number,
         pessimisticTxLogSize: Number,

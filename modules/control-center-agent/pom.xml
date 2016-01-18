@@ -78,12 +78,12 @@
             <groupId>org.apache.ignite</groupId>
             <artifactId>ignite-rest-http</artifactId>
             <version>${project.version}</version>
-            <exclusions>
-                <exclusion>
-                    <groupId>org.apache.ignite</groupId>
-                    <artifactId>ignite-log4j</artifactId>
-                </exclusion>
-            </exclusions>
+        </dependency>
+
+        <dependency>
+            <groupId>org.apache.ignite</groupId>
+            <artifactId>ignite-log4j</artifactId>
+            <version>${project.version}</version>
         </dependency>
     </dependencies>
 
@@ -98,7 +98,7 @@
                 <configuration>
                     <archive>
                         <manifest>
-                            <mainClass>org.apache.ignite.agent.AgentLauncher</mainClass>
+                            <mainClass>org.apache.ignite.console.agent.AgentLauncher</mainClass>
                         </manifest>
                     </archive>
                 </configuration>

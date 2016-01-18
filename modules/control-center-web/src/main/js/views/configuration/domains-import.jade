@@ -1,0 +1,187 @@
+//-
+    Licensed to the Apache Software Foundation (ASF) under one or more
+    contributor license agreements.  See the NOTICE file distributed with
+    this work for additional information regarding copyright ownership.
+    The ASF licenses this file to You under the Apache License, Version 2.0
+    (the "License"); you may not use this file except in compliance with
+    the License.  You may obtain a copy of the License at
+
+         http://www.apache.org/licenses/LICENSE-2.0
+
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
+
+include ../includes/controls
+
+mixin chk(mdl, change, tip)
+    input(type='checkbox' ng-model=mdl ng-change=change bs-tooltip='' data-title=tip data-placement='bottom')
+
+mixin td-ellipses-lbl(w, lbl)
+    td.td-ellipsis(width='#{w}' style='min-width: #{w}; max-width: #{w}')
+        label #{lbl}
+
+.modal.center(role='dialog')
+    .modal-dialog
+        .modal-content(dw-loading='importDomainFromDb' dw-loading-options='importDomain.loadingOptions')
+            #errors-container.modal-header.header
+                button.close(ng-click='$hide()' aria-hidden='true') &times;
+                h4.modal-title(ng-if='!importDomain.demo') Import domain models from database
+                h4.modal-title(ng-if='importDomain.demo') Import domain models from demo database
+            .import-domain-model-wizard-page(ng-show='importDomain.action == "drivers"' style="margin-bottom: 256px;")
+            .import-domain-model-wizard-page(ng-show='importDomain.action == "connect" && importDomain.demo' style='margin-bottom: 141px')
+                div(ng-if='demoConnection.db == "H2"')
+                    label Demo description:
+                    ul
+                        li In-memory H2 database server will be started inside agent
+                        li Database will be populated with sample tables
+                        li You could test domain model generation with this demo database
+                        li Click "Next" to continue
+                div(ng-if='demoConnection.db != "H2"')
+                    label Demo could not be started
+                        ul
+                            li Agent failed to resolve H2 database jar
+                            li Copy h2-x.x.x.jar into agent '\jdbc-drivers' folder and try again
+                            li Refer to agent README.txt for more information
+            .import-domain-model-wizard-page(ng-show='importDomain.action == "connect" && !importDomain.demo')
+                form.form-horizontal(name='connectForm' novalidate)
+                    .settings-row
+                        label.col-xs-4.col-sm-2.col-md-2 Driver JAR:
+                        .col-xs-8.col-sm-10.col-md-10
+                            i.tipField.fa.fa-question-circle(bs-tooltip='' data-title='Select appropriate JAR with JDBC driver<br> To add another driver you need to place it into "/jdbc-drivers" folder of Ignite Web Agent<br> Refer to Ignite Web Agent README.txt for for more information')
+                            .input-tip
+                                button.select-toggle.form-control(id='jdbcDriverJar' bs-select ng-model='ui.selectedJdbcDriverJar' ng-class='{placeholder: !(jdbcDriverJars && jdbcDriverJars.length > 0)}' data-container='false' placeholder='Choose JDBC driver' bs-options='item.value as item.label for item in jdbcDriverJars')
+                    .settings-row
+                        label.col-xs-4.col-sm-2.col-md-2 JDBC Driver:
+                        .col-xs-8.col-sm-10.col-md-10
+                            i.tipField.fa.fa-question-circle(bs-tooltip='' data-title='Fully qualified class name of JDBC driver that will be used to connect to database')
+                            .input-tip
+                                input.form-control(id='jdbcDriverClass' type='text' ng-model='selectedPreset.jdbcDriverClass' placeholder='JDBC driver fully qualified class name' required=true)
+                    .settings-row
+                        label.col-xs-4.col-sm-2.col-md-2 JDBC URL:
+                        .col-xs-8.col-sm-10.col-md-10
+                            i.tipField.fa.fa-question-circle(bs-tooltip='' data-title='JDBC URL for connecting to database<br>Refer to your database documentation for details')
+                            .input-tip
+                                input.form-control(id='jdbcUrl' type='text' ng-model='selectedPreset.jdbcUrl' placeholder='JDBC URL' required=true)
+                    .settings-row
+                        label.col-xs-4.col-sm-2.col-md-2 User:
+                        .col-xs-8.col-sm-10.col-md-10
+                            i.tipField.fa.fa-question-circle(bs-tooltip='' data-title='User name for connecting to database')
+                            .input-tip
+                                input.form-control(id='user' type='text' ng-model='selectedPreset.user')
+                    .settings-row
+                        label.col-xs-4.col-sm-2.col-md-2 Password:
+                        .col-xs-8.col-sm-10.col-md-10
+                            i.tipField.fa.fa-question-circle(bs-tooltip='' data-title='Password for connecting to database<br>Note, password would not be saved in preferences for security reasons')
+                            .input-tip
+                                input.form-control(id='password' type='password' ng-model='selectedPreset.password' on-enter='importDomainNext()')
+                    .settings-row
+                        .checkbox
+                            label
+                                input(id='tablesOnly' type='checkbox' ng-model='selectedPreset.tablesOnly')
+                                | Tables only
+                            i.tipLabel.fa.fa-question-circle(bs-tooltip='' data-title='If selected, then only tables metadata will be parsed<br>Otherwise table and view metadata will be parsed')
+            .import-domain-model-wizard-page(ng-show='importDomain.action == "schemas"')
+                table.table.metadata(st-table='importDomain.displayedSchemas' st-safe-src='importDomain.schemas')
+                    thead
+                        tr
+                            th.header(colspan='2')
+                                .col-sm-4.pull-right(style='margin-bottom: 5px')
+                                    input.form-control(type='text' st-search='name' placeholder='Filter schemas...' ng-model='importDomain.displayedSchemasFilter' ng-change='selectSchema()')
+                        tr
+                            th(width='30px')
+                                +chk('importDomain.allSchemasSelected',  'selectAllSchemas()', 'Select all schemas')
+                            th
+                                label Schema
+                        tbody
+                            tr
+                                td(colspan='2')
+                                    .scrollable-y(style='height: 143px')
+                                        table.table-modal-striped(id='importSchemasData')
+                                            tbody
+                                                tr(ng-repeat='schema in importDomain.displayedSchemas')
+                                                    td(width='30px')
+                                                        input(type='checkbox' ng-model='schema.use' ng-change='selectSchema()')
+                                                    td
+                                                        label {{::schema.name}}
+            .import-domain-model-wizard-page(ng-show='importDomain.action == "tables"')
+                table.table.metadata(st-table='importDomain.displayedTables' st-safe-src='importDomain.tables')
+                    thead
+                        tr
+                            th.header(colspan='5')
+                                .col-sm-4.pull-right(style='margin-bottom: 5px')
+                                    input.form-control(type='text' st-search='label' placeholder='Filter tables...' ng-model='importDomain.displayedTablesFilter' ng-change='selectTable()')
+                        tr
+                            th(width='30px')
+                                +chk('importDomain.allTablesSelected',  'selectAllTables()', 'Select all tables')
+                            th(width='130px')
+                                label Schema
+                            th(width='160px')
+                                label Table name
+                            th(width='160px' ng-show='ui.generateCaches')
+                                label Cache
+                            th(width='128px' ng-show='ui.generateCaches')
+                                label Template
+                    tbody
+                        tr
+                            td(colspan='5')
+                                .scrollable-y(style='height: 143px')
+                                    table.table-modal-striped(id='importTableData')
+                                        tbody
+                                            tr(ng-repeat='table in importDomain.displayedTables track by $index')
+                                                td(width='30px' style='min-width: 30px; max-width: 30px')
+                                                    input(type='checkbox' ng-model='table.use' ng-change='selectTable()')
+                                                +td-ellipses-lbl('130px', '{{::table.schema}}')
+                                                +td-ellipses-lbl('160px', '{{::table.tbl}}')
+                                                td.td-ellipsis(width='160px' style='min-width: 160px; max-width: 160px' ng-show='ui.generateCaches')
+                                                    button.select-toggle.form-control(ng-if='table.editCache' bs-select ng-model='table.cache' data-container='false' bs-options='item.value as item.label for item in importCaches')
+                                                    a(ng-if='!table.editCache' ng-click='startEditDbTableCache(table)') {{dbTableCache(table)}}
+                                                td.td-ellipsis(width='128px' style='min-width: 128px; max-width: 128px' ng-show='ui.generateCaches')
+                                                    button.select-toggle.form-control(ng-if='table.editTemplate' bs-select ng-model='table.template' style='max-width: 110px' data-container='false' bs-options='item.value as item.label for item in importCacheTemplates')
+                                                    a(ng-if='!table.editTemplate' ng-click='startEditDbTableTemplate(table)') {{dbTableTemplate(table)}}
+                .settings-row
+                    .checkbox
+                        label
+                            input(id='importGenerateCaches' type='checkbox' ng-model='ui.generateCaches')
+                            | Generate caches
+                        i.tipLabel.fa.fa-question-circle(bs-tooltip='' data-title='Separate cache will be generated for each loaded table')
+                    div
+                        label Cache:
+                        button.select-toggle.form-control(bs-select ng-model='dfltTableCache' data-container='false' bs-options='item.value as item.label for item in importCaches')
+                        label Template:
+                        button.select-toggle.form-control(bs-select ng-model='dfltTableTemplate' data-container='false' bs-options='item.value as item.label for item in importCacheTemplates')
+                        button.btn.btn-primary Apply to all
+            .import-domain-model-wizard-page(ng-show='importDomain.action == "options"' style='margin-bottom: 75px')
+                form.form-horizontal(name='optionsForm' novalidate)
+                    .settings-row
+                        .col-xs-3.col-sm-2.col-md-2.required
+                            label.required Package:
+                        .col-xs-9.col-sm-10.col-md-10
+                            i.tipField.fa.fa-question-circle(bs-tooltip='' data-title='Package that will be used for POJOs generation')
+                            .input-tip
+                                input.form-control(id='domainPackageName' type="text" ng-model='ui.packageName' placeholder='Package for POJOs generation')
+                    .settings-row
+                        .checkbox
+                            label
+                                input(id='domainBuiltinKeys' type='checkbox' ng-model='ui.builtinKeys')
+                                | Use Java built-in types for keys
+                                i.tipLabel.fa.fa-question-circle(bs-tooltip='' data-title='Use Java built-in types like "Integer", "Long", "String" instead of POJO generation in case when table primary key contains only one field')
+                    .settings-row
+                        .checkbox
+                            label
+                                input(id='domainUsePrimitives' type='checkbox' ng-model='ui.usePrimitives')
+                                | Use primitive types for NOT NULL table columns
+                                i.tipLabel.fa.fa-question-circle(bs-tooltip='' data-title='Use primitive types like "int", "long", "double" for POJOs fields generation in case of NOT NULL columns')
+                    .settings-row
+                        .col-xs-3.col-sm-2.col-md-2.required
+                            label Clusters:
+                        .col-xs-9.col-sm-10.col-md-10
+                            i.tipField.fa.fa-question-circle(bs-tooltip='' data-title='Choose clusters that will be associated with generated caches')
+                            .input-tip
+                                button.select-toggle.form-control(id='generatedCachesClusters' bs-select ng-model='ui.generatedCachesClusters' ng-disabled='!ui.generateCaches' ng-class='{placeholder: !(ui.generatedCachesClusters && ui.generatedCachesClusters.length > 0)}' data-container='false' data-multiple='1' placeholder='Choose clusters for generated caches' bs-options='item.value as item.label for item in clusters')
+            .modal-footer
+                label(ng-hide='importDomain.action == "connect" && importDomain.demo').labelField {{importDomain.info}}
+                a.btn.btn-primary(ng-show='importDomain.action != "connect"' ng-click='importDomainPrev()' bs-tooltip='' data-title='{{prevTooltipText()}}' data-placement='bottom') Prev
+                a.btn.btn-primary(ng-click='importDomainNext()' ng-disabled='!importDomainNextAvailable()' bs-tooltip='' data-title='{{nextTooltipText()}}' data-placement='bottom') {{importDomain.button}}

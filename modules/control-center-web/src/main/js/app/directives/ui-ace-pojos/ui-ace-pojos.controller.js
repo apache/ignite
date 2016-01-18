@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-export default ['$scope', 'IgniteUiAceOnLoad', function($scope, onLoad) {
+export default ['$scope', 'IgniteUiAceOnLoad', 'JavaTypes', function($scope, onLoad, JavaTypes) {
     const ctrl = this;
 
     // Scope methods.
@@ -50,7 +50,9 @@ export default ['$scope', 'IgniteUiAceOnLoad', function($scope, onLoad) {
         const classes = ctrl.classes = [];
 
         _.forEach(ctrl.metadatas, (meta) => {
-            classes.push(meta.keyType);
+            if (meta.keyType && !JavaTypes.isBuiltInClass(meta.keyType))
+                classes.push(meta.keyType);
+
             classes.push(meta.valueType);
         });
     };
@@ -60,7 +62,9 @@ export default ['$scope', 'IgniteUiAceOnLoad', function($scope, onLoad) {
         if (!value || !ctrl.metadatas.length)
             return;
 
-        ctrl.class = ctrl.class || ctrl.metadatas[0].keyType || ctrl.metadatas[0].valueType;
+        const keyType = ctrl.metadatas[0].keyType;
+
+        ctrl.class = ctrl.class || (JavaTypes.isBuiltInClass(keyType) ? null : keyType) || ctrl.metadatas[0].valueType;
     };
 
     // Update pojos data.

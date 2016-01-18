@@ -15,13 +15,8 @@
  * limitations under the License.
  */
 
-import types from 'app/data/os.json!';
-
 export default ['$scope', 'IgniteUiAceOnLoad', function($scope, onLoad) {
     const ctrl = this;
-
-    // Scope values.
-    $scope.types = types;
 
     // Scope methods.
     $scope.onLoad = onLoad;
@@ -34,10 +29,9 @@ export default ['$scope', 'IgniteUiAceOnLoad', function($scope, onLoad) {
             return;
 
         // TODO IGNITE-2058: need move $generatorDocker to services.
-        ctrl.data = $generatorDocker.clusterDocker($scope.cluster, $scope.type);
+        ctrl.data = $generatorDocker.clusterDocker($scope.cluster, 'latest');
     };
 
     // Setup watchers.
-    $scope.$watch('type', clusterWatcher);
     $scope.$watch('cluster', clusterWatcher);
 }];

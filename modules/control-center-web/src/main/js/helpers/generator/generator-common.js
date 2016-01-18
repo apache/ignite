@@ -171,6 +171,9 @@ $generatorCommon.builder = function (deep) {
      * @returns {String} Short class name or full class name in case of names conflict.
      */
     res.importClass = function (clsName) {
+        if ($dataStructures.isJavaPrimitive(clsName))
+            return clsName;
+
         var fullClassName = $dataStructures.fullClassName(clsName);
 
         var dotIdx = fullClassName.lastIndexOf('.');
@@ -305,8 +308,6 @@ $generatorCommon.STORE_FACTORIES = {
         className: 'org.apache.ignite.cache.store.jdbc.CacheJdbcBlobStoreFactory',
         suffix: 'JdbcBlob',
         fields: {
-            user: null,
-            dataSourceBean: null,
             initSchema: null,
             createTableQuery: null,
             loadQuery: null,
@@ -339,10 +340,7 @@ $generatorCommon.TRANSACTION_CONFIGURATION = {
     className: 'org.apache.ignite.configuration.TransactionConfiguration',
     fields: {
         defaultTxConcurrency: {type: 'enum', enumClass: 'org.apache.ignite.transactions.TransactionConcurrency'},
-        transactionIsolation: {
-            type: 'org.apache.ignite.transactions.TransactionIsolation',
-            setterName: 'defaultTxIsolation'
-        },
+        defaultTxIsolation: {type: 'enum', enumClass: 'org.apache.ignite.transactions.TransactionIsolation'},
         defaultTxTimeout: null,
         pessimisticTxLogLinger: null,
         pessimisticTxLogSize: null,
@@ -448,7 +446,7 @@ $generatorCommon.cacheHasDatasource = function (cache) {
 
         var storeFactory = cache.cacheStoreFactory[factoryKind];
 
-        if (storeFactory && storeFactory.dialect) {
+        if (storeFactory && (storeFactory.dialect || storeFactory.database)) {
             return true;
         }
     }
@@ -456,6 +454,17 @@ $generatorCommon.cacheHasDatasource = function (cache) {
     return false;
 };
 
-$generatorCommon.secretPropertiesNeeded = function (cluster, res) {
+$generatorCommon.secretPropertiesNeeded = function (cluster) {
     return $commonUtils.isDefined(_.find(cluster.caches, $generatorCommon.cacheHasDatasource)) || cluster.sslEnabled;
+};
+
+// Check that binary is configured.
+$generatorCommon.binaryIsDefined = function (binary) {
+    return binary && ($commonUtils.isDefinedAndNotEmpty(binary.idMapper) || $commonUtils.isDefinedAndNotEmpty(binary.serializer) ||
+        $commonUtils.isDefinedAndNotEmpty(binary.typeConfigurations) || ($commonUtils.isDefined(binary.compactFooter) && !binary.compactFooter));
+};
+
+// Extract domain model metadata location.
+$generatorCommon.domainQueryMetadata = function(domain) {
+    return domain.queryMetadata ? domain.queryMetadata : 'Configuration';
 };

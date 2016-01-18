@@ -22,17 +22,17 @@ include ../includes/controls
     ignite-callout
         ignite-callout-cel(data-title='On This Screen')
             li Configure Caches
-            li Link Metadata to Caches
+            li Link Domain models to Caches
             li Link Caches to Clusters
             li
                 ignite-dialog More info
                     ignite-dialog-title Caches screen
                     ignite-dialog-content 
-                        | Caches can be linked with specified #[a(ui-sref='base.configuration.clusters') clusters] and #[a(ui-sref='base.configuration.metadata') metadata].#[br]
+                        | Caches can be linked with specified #[a(ui-sref='base.configuration.clusters') clusters] and #[a(ui-sref='base.configuration.domains') domain models].#[br]
                         | Generated cluster with caches configuration available on #[a(ui-sref='base.configuration.summary') summary] screen.
                     
         ignite-callout-cel(data-title='Next Steps')
-            li Continue to #[a(ui-sref='base.configuration.metadata') Metadata]
+            li Continue to #[a(ui-sref='base.configuration.domains') Domain models]
             li Continue to #[a(ui-sref='base.configuration.summary') Summary]
             li Back to #[a(ui-sref='base.configuration.clusters') Clusters]
 
@@ -41,7 +41,7 @@ include ../includes/controls
             hr
             +main-table('caches', 'caches', 'cacheName', 'selectItem(row)', '{{$index + 1}}) {{row.label}}', 'label')
             .padding-top-dflt(bs-affix)
-                .panel-tip-container(data-placement='bottom' bs-tooltip data-title='Create new cache')
+                .panel-tip-container(data-placement='bottom' bs-tooltip='' data-title='Create new cache')
                     button.btn.btn-primary(id='new-item' ng-click='createItem()') Add cache
                 +save-remove-buttons('cache')
                 hr
@@ -52,5 +52,3 @@ include ../includes/controls
                         +advanced-options
                         +groups('advanced', 'backupItem')
                 +advanced-options
-                .section(ng-if='ui.expanded')
-                    +save-remove-buttons('cache')

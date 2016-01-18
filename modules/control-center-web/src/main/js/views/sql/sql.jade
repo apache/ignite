@@ -31,7 +31,7 @@ mixin chart-settings(mdl)
         .col-xs-4
             .chart-settings-link(ng-show='paragraph.chart && paragraph.chartColumns.length > 0')
                 a(title='Click to show chart settings dialog' ng-click='$event.stopPropagation()' bs-popover data-template-url='/sql/chart-settings.html' data-placement='bottom' data-auto-close='1' data-trigger='click')
-                    i.fa.fa-chevron-circle-down
+                    i.fa.fa-chevron-circle-right
                     | Chart settings
                 div(ng-show='paragraphTimeSpanVisible(paragraph)')
                     label Show
@@ -42,7 +42,7 @@ mixin chart-settings(mdl)
 
 .row
     ignite-callout
-        ignite-callout-cel(data-title='With SQL Notebook you can')
+        ignite-callout-cel(data-title='With SQL notebook you can')
             li Create any number of queries
             li Execute and explain SQL queries
             li Execute scan queries
@@ -66,7 +66,7 @@ mixin chart-settings(mdl)
                     .docs-header.notebook-header
                         h1.col-sm-6(ng-hide='notebook.edit')
                             label(style='max-width: calc(100% - 60px)') {{notebook.name}}
-                            .btn-group
+                            .btn-group(ng-if='!demo')
                                 +btn-toolbar('fa-pencil', 'notebook.edit = true;notebook.editName = notebook.name', 'Rename notebook')
                                 +btn-toolbar('fa-trash', 'removeNotebook()', 'Remove notebook')
                         h1.col-sm-6(ng-show='notebook.edit')
@@ -84,7 +84,7 @@ mixin chart-settings(mdl)
                             .panel-heading(id='{{paragraph.id}}' bs-collapse-toggle)
                                 .row
                                     .col-sm-6(ng-hide='paragraph.edit')
-                                        i.tipLabel.fa(ng-class='paragraphExpanded(paragraph) ? "fa-chevron-circle-up" : "fa-chevron-circle-down"')
+                                        i.tipLabel.fa(ng-class='paragraphExpanded(paragraph) ? "fa-chevron-circle-down" : "fa-chevron-circle-right"')
                                         label {{paragraph.name}}
 
                                         .btn-group(ng-hide='notebook.paragraphs.length > 1')
@@ -95,12 +95,12 @@ mixin chart-settings(mdl)
                                             +btn-toolbar('fa-remove', 'removeParagraph(paragraph)', 'Remove query')
 
                                     .col-sm-6(ng-show='paragraph.edit')
-                                        i.tipLabel.fa(style='float: left;' ng-class='paragraphExpanded(paragraph) ? "fa-chevron-circle-up" : "fa-chevron-circle-down"')
+                                        i.tipLabel.fa(style='float: left;' ng-class='paragraphExpanded(paragraph) ? "fa-chevron-circle-down" : "fa-chevron-circle-right"')
                                         i.tipLabel.fa.fa-floppy-o(style='float: right;' ng-show='paragraph.editName' ng-click='renameParagraph(paragraph, paragraph.editName); $event.stopPropagation();' bs-tooltip data-title='Save query name' data-trigger='hover')
                                         .input-tip
                                             input.form-control(id='paragraph-name-{{paragraph.id}}' ng-model='paragraph.editName' required ng-click='$event.stopPropagation();' on-enter='renameParagraph(paragraph, paragraph.editName)' on-escape='paragraph.edit = false')
                             .panel-collapse(role='tabpanel' bs-collapse-target)
-                                .col-sm-12(ng-show='paragraph.editor')
+                                .col-sm-12
                                     .col-xs-8.col-sm-9(style='border-right: 1px solid #eee')
                                         .sql-editor(ui-ace='{onLoad: aceInit(paragraph), theme: "chrome", mode: "sql", require: ["ace/ext/language_tools"],' +
                                         'advanced: {enableSnippets: false, enableBasicAutocompletion: true, enableLiveAutocompletion: true}}'
@@ -110,7 +110,7 @@ mixin chart-settings(mdl)
                                             lable.labelField.labelFormField Caches:
                                             i.fa.fa-database.tipField(title='Click to show cache types metadata dialog' bs-popover data-template-url='/sql/cache-metadata.html', data-placement='bottom', data-trigger='click')
                                             .input-tip
-                                                input.form-control(type='text' st-search placeholder='Filter caches...')
+                                                input.form-control(type='text' st-search='name' placeholder='Filter caches...')
                                             table.links
                                                 tbody.scrollable-y(style='max-height: 15em;display:block;' ng-model='paragraph.cacheName' bs-radio-group)
                                                     tr(ng-repeat='cache in displayedCaches track by cache.name')
@@ -182,6 +182,6 @@ mixin chart-settings(mdl)
                                         -var nextVisibleCondition = 'paragraph.queryId && (paragraph.table() || paragraph.chart() && paragraph.queryExecute() && (paragraph.timeLineSupported() || !paragraph.chartTimeLineEnabled()))'
 
                                         hr(style='margin-top: 0; margin-bottom: 5px')
-                                        a(ng-show='paragraph.queryArgs.type' style='float: left; margin-left: 5px; margin-bottom: 5px' ng-click='showResultQuery(paragraph)') Show query
-                                        i.fa.fa-chevron-circle-right(ng-show=nextVisibleCondition style='float: right;margin-right: 10px;' ng-click='nextPage(paragraph)')
+                                        a(ng-show='paragraph.queryArgs.type' style='float: left; margin-left: 10px; margin-bottom: 5px' ng-click='showResultQuery(paragraph)') Show query
+                                        i.fa.fa-chevron-circle-right(ng-show=nextVisibleCondition style='float: right;margin-right: 10px; margin-top: 3px' ng-click='nextPage(paragraph)')
                                         a(ng-show=nextVisibleCondition style='float: right; margin-bottom: 5px;margin-right: 5px;' ng-click='nextPage(paragraph)') Next

@@ -11,7 +11,7 @@
     WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
     See the License for the specific language governing permissions and
     limitations under the License.
-.popover.cache-metadata(tabindex='-1' dw-loading='loadingCacheMetadata' dw-loading-options='{text: ""}' ng-init='loadMetadata()')
+.popover.cache-metadata(tabindex='-1' dw-loading='loadingCacheMetadata' dw-loading-options='{text: ""}' ng-init='importMetadata()')
     h3.popover-title
         label.labelField Metadata for caches:
         button.close(id='cache-metadata-close' ng-click='$hide()') &times;
@@ -22,7 +22,9 @@
             span(ng-switch='' on='node.type')
                 span(ng-switch-when='type' ng-dblclick='dblclickMetadata(paragraph, node)')
                     i.fa.fa-table
-                    label.clickable {{node.name}}
+                    label.clickable {{node.displayMame}}
+                span(ng-switch-when='plain')
+                    label {{node.name}}
                 span(ng-switch-when='field' ng-dblclick='dblclickMetadata(paragraph, node)')
                     i.fa(ng-class='node.system ? "fa-file-text-o" : "fa-file-o"')
                     label.clickable {{node.name}} [{{node.clazz}}]

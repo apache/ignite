@@ -52,21 +52,29 @@ $generatorProperties.dataSourcesProperties = function (cluster, res) {
             if (cache.cacheStoreFactory && cache.cacheStoreFactory.kind) {
                 var storeFactory = cache.cacheStoreFactory[cache.cacheStoreFactory.kind];
 
-                if (storeFactory.dialect) {
+                var dialect = storeFactory.dialect || (storeFactory.connectVia === 'DataSource' ? storeFactory.database : undefined);
+
+                if (dialect) {
+                    if (!res) {
+                        res = $generatorCommon.builder();
+
+                        res.line('# ' + $generatorCommon.mainComment());
+                    }
+
                     var beanId = storeFactory.dataSourceBean;
 
-                    if (!_.contains(datasources, beanId)) {
-                        datasources.push(beanId);
+                    var dsClsName = $generatorCommon.dataSourceClassName(dialect);
 
-                        if (!res) {
-                            res = $generatorCommon.builder();
+                    var varType = res.importClass(dsClsName);
 
-                            res.line('# ' + $generatorCommon.mainComment());
-                        }
+                    var beanClassName = $commonUtils.toJavaName(varType, storeFactory.dataSourceBean);
+
+                    if (!_.contains(datasources, beanClassName)) {
+                        datasources.push(beanClassName);
 
                         res.needEmptyLine = true;
 
-                        switch (storeFactory.dialect) {
+                        switch (dialect) {
                             case 'DB2':
                                 res.line(beanId + '.jdbc.server_name=YOUR_DATABASE_SERVER_NAME');
                                 res.line(beanId + '.jdbc.port_number=YOUR_JDBC_PORT_NUMBER');
@@ -82,13 +90,17 @@ $generatorProperties.dataSourcesProperties = function (cluster, res) {
                                 break;
 
                             default:
-                                res.line(beanId + '.jdbc.url=' + $generatorProperties.jdbcUrlTemplate(storeFactory.dialect));
+                                res.line(beanId + '.jdbc.url=' + $generatorProperties.jdbcUrlTemplate(dialect));
                         }
 
                         res.line(beanId + '.jdbc.username=YOUR_USER_NAME');
                         res.line(beanId + '.jdbc.password=YOUR_PASSWORD');
                         res.line('');
                     }
+                }
+
+                if (cache.cacheStoreFactory.kind === 'CacheJdbcBlobStoreFactory' && storeFactory.connectVia === 'URL') {
+                    res.line('ds.' + storeFactory.user + '.password=YOUR_PASSWORD');
                 }
             }
         });

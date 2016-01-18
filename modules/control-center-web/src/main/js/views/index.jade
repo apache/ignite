@@ -15,12 +15,13 @@
     limitations under the License.
 
 doctype html
-html(ng-app='ignite-web-console')
+html(ng-app='ignite-web-console' id='app')
     head
         base(href='/')
-        link(rel="icon" type="image/png" href="favicon.png")
+        link(rel='shortcut icon' href='favicon.ico')
         meta(http-equiv='content-type' content='text/html; charset=UTF8')
-        title=title
+
+        title(ng-bind='$title')
 
         link(rel='stylesheet', href='/app.min.css')
 
@@ -35,4 +36,7 @@ html(ng-app='ignite-web-console')
         // endignite
 
     body.theme-line.body-overlap.greedy
+        .ribbon
+            label Beta
+
         .wrapper(ui-view='')

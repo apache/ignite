@@ -68,4 +68,8 @@ config.findIgniteModules = function () {
     return _find(igniteModules);
 };
 
+config.address = function (username, email) {
+    return username ? '"' + username + '" <' + email + '>' : email;
+};
+
 module.exports = config;

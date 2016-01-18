@@ -27,19 +27,26 @@ mixin ignite-form-field-tooltip(message)
 .docs-body
     ignite-callout
         ignite-callout-cel(data-title='On This Screen')
-            li Download XML Config
-            li Download Java Code
-            li Download Docker File
+            li Download Project
+            li Preview generated XML, Java and Docker files
             li
                 ignite-dialog More info
                     ignite-dialog-title Summary screen
                     ignite-dialog-content 
-                        | Configurations available in XML, Java and Dockerfile format for Server and Client mode.#[br]
-                        | Database table POJO classes for cluster's metadata available on "POJO" tab.#[br]
-                        | Use "Download" button to receive configurations in ZIP file.#[br]
-                        | Go back to change configuration on #[a(ui-sref='base.configuration.clusters') clusters],&nbsp;
-                        | #[a(ui-sref='base.configuration.caches') caches] or #[a(ui-sref='base.configuration.metadata') metadata] screen.
-                
+                        | On this screen you can preview:
+                        | <ul>
+                        | <li>XML configurations for server and client nodes</li>
+                        | <li>Java classes with server and client nodes configuration from code</li>
+                        | <li>POJO classes generated for configured domain model</li>
+                        | <li>Maven pom.xml for generated project</li>
+                        | <li>Dockerfile for server node</li>
+                        | </ul>
+                        | Also you can:
+                        | <ul>
+                        | <li>Read #[a(href='https://apacheignite.readme.io/docs' target='_blank') Ignite Documentation]</li>
+                        | <li>Download #[a(href='https://ignite.apache.org/download.cgi#binaries' target='_blank') Ignite Binary Release]</li>
+                        | </ul>
+
         ignite-callout-cel(data-title='Next Steps')
             li Deploy Ignite Servers
             li Connect Ignite Clients
@@ -49,22 +56,23 @@ mixin ignite-form-field-tooltip(message)
         hr
 
         .padding-dflt(ng-if='!clusters || clusters.length == 0')
-            | You have no clusters configured. Please configure them &nbsp;
-            a(href='/configuration/clusters') here.
+            | You have no clusters configured. Please configure them #[a(ui-sref='base.configuration.clusters') here].
 
         div(ng-show='clusters || clusters.length > 0')
             +main-table('clusters', 'clusters', 'clusterName', 'selectItem(row)', '{{$index + 1}}) {{row.name}}', 'name')
 
             div(ng-show='selectedItem && tableVisibleRow(displayedRows, selectedItem)')
                 .padding-top-dflt(bs-affix)
-                    button.btn.btn-primary(id='download' ng-click='downloadConfiguration()' bs-tooltip data-title='Download configuration' data-placement='bottom') Download
-
+                    button.btn.btn-primary(id='download' ng-click='downloadConfiguration()' bs-tooltip='' data-title='Download project' data-placement='bottom') Download project
+                    .btn.btn-primary(bs-tooltip='' data-title='Preview generated project structure' data-placement='bottom')
+                        div(bs-popover data-template-url='/configuration/summary-project-structure.html', data-placement='bottom', data-trigger='click' data-auto-close='true')
+                            i.fa.fa-sitemap
+                            label.tipLabel Project structure
                     hr
-
                 .panel-group(bs-collapse ng-init='panels.activePanels=[0,1]' ng-model='panels.activePanels' data-allow-multiple='true')
                     .panel.panel-default
                         .panel-heading(role='tab' bs-collapse-toggle)
-                            i.fa(ng-class='panelExpanded(panels, "server") ? "fa-chevron-circle-up" : "fa-chevron-circle-down"')
+                            i.fa(ng-class='panelExpanded(panels, "server") ? "fa-chevron-circle-down" : "fa-chevron-circle-right"')
                             label Server
 
                         .panel-collapse(id='server' role='tabpanel' bs-collapse-target)
@@ -80,7 +88,7 @@ mixin ignite-form-field-tooltip(message)
 
                     .panel.panel-default
                         .panel-heading(role='tab' bs-collapse-toggle)
-                            i.fa(ng-class='panelExpanded(panels, "client") ? "fa-chevron-circle-up" : "fa-chevron-circle-down"')
+                            i.fa(ng-class='panelExpanded(panels, "client") ? "fa-chevron-circle-down" : "fa-chevron-circle-right"')
                             label Client
 
                         .panel-collapse(id='client' role='tabpanel' bs-collapse-target)

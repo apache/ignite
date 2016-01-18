@@ -28,6 +28,7 @@ globals:
     $generatorPom: true
     $generatorReadme: true
     $generatorDocker: true
+    $generatorOptional: true
     saveAs: true
 
 rules:

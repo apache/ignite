@@ -18,36 +18,33 @@
 // Docker file generation entry point.
 $generatorDocker = {};
 
-// Generate Docker file for cluster.
-$generatorDocker.clusterDocker = function (cluster, os) {
-    if (!os)
-        os = 'debian:8';
+// Generate from
+$generatorDocker.from = function(cluster, version) {
+    return '# Start from Apache Ignite image.\n' +
+        'FROM apacheignite/ignite:' + version
+};
 
-    return '# Start from a OS image.\n' +
-        'FROM ' + os + '\n' +
-        '\n' +
-        '# Install tools.\n' +
-        'RUN apt-get update && apt-get install -y --fix-missing \\\n' +
-        '  wget \\\n' +
-        '  dstat \\\n' +
-        '  maven \\\n' +
-        '  git\n' +
-        '\n' +
-        '# Install Java. \n' +
-        'RUN \\\n' +
-        'apt-get update && \\\n' +
-        'apt-get install -y openjdk-7-jdk && \\\n' +
-        'rm -rf /var/lib/apt/lists/*\n' +
-        '\n' +
-        '# Define commonly used JAVA_HOME variable.\n' +
-        'ENV JAVA_HOME /usr/lib/jvm/java-7-openjdk-amd64\n' +
-        '\n' +
-        '# Create working directory\n' +
-        'WORKDIR /home\n' +
-        '\n' +
-        'RUN wget -O ignite.zip http://tiny.cc/updater/download_ignite.php && unzip ignite.zip && rm ignite.zip\n' +
-        '\n' +
-        'COPY *.xml /tmp/\n' +
-        '\n' +
-        'RUN mv /tmp/*.xml /home/$(ls)/config';
+// Generate secret properties if needed.
+$generatorDocker.secret = function(cluster) {
+    if ($generatorCommon.secretPropertiesNeeded(cluster))
+        return '# Append secret.properties file to container.\n' +
+            'ADD ./src/main/resources/secret.properties $IGNITE_HOME/config/secret.properties\n\n' +
+            '# Add secret.properties file to classpath.\n' +
+            'ENV USER_LIBS $IGNITE_HOME/config';
+
+    return '';
+};
+
+// Generate Docker file for cluster.
+$generatorDocker.clusterDocker = function (cluster, version) {
+    return  $generatorDocker.from(cluster, version) + '\n\n' +
+        '# Set config uri for node.\n' +
+        'ENV CONFIG_URI config/' + cluster.name + '-server.xml\n\n' +
+        '# Copy ignite-http-rest from optional.\n' +
+        'ENV OPTION_LIBS ignite-rest-http\n\n' +
+        '# Append config file to container.\n' +
+        'ADD ./config $IGNITE_HOME/config\n\n' +
+        '# Append jdbc drivers to container.\n' +
+        'ADD ./jdbc-drivers $IGNITE_HOME/libs/jdbc-drivers\n\n' +
+        $generatorDocker.secret(cluster) + '\n';
 };

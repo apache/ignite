@@ -22,6 +22,7 @@ import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.List;
@@ -656,6 +657,7 @@ public class GridRestProcessor extends GridProcessorAdapter {
 
         authCtx.subjectType(REMOTE_CLIENT);
         authCtx.subjectId(req.clientId());
+        authCtx.nodeAttributes(Collections.<String, Object>emptyMap());
 
         SecurityCredentials cred;
 
@@ -884,11 +886,13 @@ public class GridRestProcessor extends GridProcessorAdapter {
 
         /** Session token id. */
         private final UUID sesId;
+
         /**
          * Time when session is used last time.
          * If this time was set at TIMEDOUT_FLAG, then it should never be changed.
          */
         private final AtomicLong lastTouchTime = new AtomicLong(U.currentTimeMillis());
+
         /** Security context. */
         private volatile SecurityContext secCtx;
 

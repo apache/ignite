@@ -33,9 +33,22 @@ $generatorReadme.readme = function (res) {
 
     res.needEmptyLine = true;
 
-    res.line('Ignite ships with CacheJdbcPojoStore, which is out-of-the-box JDBC');
-    res.line('implementation of the IgniteCacheStore interface, and automatically');
-    res.line('handles all the write-through and read-through logic.');
+    res.line('Project structure:');
+    res.line('    /config - this folder contains client and server XML configurations.');
+    res.line('    /jdbc-drivers - this folder should contains proprietary JDBC drivers.');
+    res.line('    /src - this folder contains generated java code.');
+    res.line('    /src/main/java/config - this folder contains generated java classes with cluster configuration from code.');
+    res.line('    /src/main/java/startup - this folder contains generated java classes with server and client nodes startup code.');
+    res.line('    /src/main/java/[model] - this optional folder will be named as package name for your POJO classes and contain generated POJO files.');
+    res.line('    /src/main/resources - this optional folder contains generated secret.properties file with security sensitive information if any.');
+    res.line('    Dockerfile - sample Docker file. With this file you could package Ignite deployment with all the dependencies into a standard container.');
+    res.line('    pom.xml - generated Maven project description, could be used to open generated project in IDE or build with Maven.');
+    res.line('    README.txt - this file.');
+
+    res.needEmptyLine = true;
+
+    res.line('Ignite ships with CacheJdbcPojoStore, which is out-of-the-box JDBC implementation of the IgniteCacheStore ');
+    res.line('interface, and automatically handles all the write-through and read-through logic.');
 
     res.needEmptyLine = true;
 
@@ -44,7 +57,7 @@ $generatorReadme.readme = function (res) {
     res.needEmptyLine = true;
 
     res.line('Note, in case of using proprietary JDBC drivers (Oracle, IBM DB2, Microsoft SQL Server)');
-    res.line('you should download them and copy into ./jdbc-drivers folder.');
+    res.line('you should download them manually and copy into ./jdbc-drivers folder.');
 
     return res;
 };
@@ -59,7 +72,8 @@ $generatorReadme.readmeJdbc = function (res) {
     if (!res)
         res = $generatorCommon.builder();
 
-    res.line('Copy proprietary JDBC drivers to this folder.');
+    res.line('Proprietary JDBC drivers for databases like Oracle, IBM DB2, Microsoft SQL Server are not available on Maven Central repository.');
+    res.line('Drivers should be downloaded manually and copied to this folder.');
 
     return res;
 };

@@ -11,36 +11,36 @@ Two main functions of Ignite Web Agent:
     You may need to copy JDBC driver into "./jdbc-drivers" subfolder or specify path via "-d" option.
 
 Usage example:
-    ignite-web-agent.sh -t 1a2b3c4d5f -s wss://console.example.com
+    ignite-web-agent.sh
 
-Test drive of Ignite Web Agent:
-    In order to simplify evaluation two test drive modes were implemented:
+Demo of Ignite Web Agent:
+    In order to simplify evaluation two demo modes were implemented:
 
-    1) Get security token on Web Console "Profile" screen.
-
-    2) Test drive for metadata load from database. Activated by option: -tm or --test-drive-metadata.
+    1) Demo for metadata load from database.
        In this mode an in-memory H2 database will started.
        How to evaluate:
-         2.1) Go to Ignite Web Console "Metadata" screen.
-         2.2) Select "Load from database".
-         2.3) Select H2 driver and enter JDBC URL: "jdbc:h2:mem:test-drive-db".
-         2.4) You should see list of available schemas and tables. Select some of them and click "Save".
+         1.1) Go to Ignite Web Console "Metadata" screen.
+         1.2) Click "Load from demo database".
+         1.3) Click "Next" button. You should see list of available schemas.
+         1.4) Click "Next" button. You should see list of available tables.
+         1.5) Click "Next" button. You should see metadata load options.
+         1.6) Select some of them and click "Save".
 
-    3) Test drive for SQL. Activated by option: -ts or --test-drive-sql.
+    2) Demo for SQL.
        In this mode internal Ignite node will be started. Cache created and populated with data.
        How to evaluate:
-       3.1) Go to Ignite Web Console "SQL" menu and select "Create new notebook" menu item.
-       3.2) In notebook paragraph enter SQL queries for tables: "Country, Department, Employee" in "test-drive-employee" cache
-        and for tables: "Parking, Car" in "test-drive-car" cache.
+       2.1) Go to Ignite Web Console "SQL" menu and select "Create new notebook" menu item.
+       2.2) In notebook paragraph enter SQL queries for tables: "Country, Department, Employee" in "demo-employee" cache
+        and for tables: "Parking, Car" in "demo-car" cache.
 
        For example:
-        3.3) select "test-drive-car" cache,
-        3.4) enter SQL:
+        2.3) select "demo-car" cache,
+        2.4) Enter SQL statement:
                 select count(*) cnt, p.ParkingName from car c
                  inner join PARKING p on (p.PARKINGID=c.PARKINGID)
                 group by c.PARKINGID order by p.ParkingName
-        3.5) Click "Execute" button. You should get some data in table.
-        3.6) Click charts buttons to see auto generated charts.
+        2.5) Click "Execute" button. You should get some data in table.
+        2.6) Click charts buttons to see auto generated charts.
 
 Configuration file:
     Should be a file with simple line-oriented format as described here: http://docs.oracle.com/javase/7/docs/api/java/util/Properties.html#load(java.io.Reader)
@@ -50,13 +50,18 @@ Configuration file:
         server-uri
         node-uri
         driver-folder
-        test-drive-metadata
-        test-drive-sql
 
     Example configuration file:
         token=1a2b3c4d5f
         serverURI=wss://console.example.com:3001
-        test-drive-sql=true
+
+Security token:
+    1) By default token will be included into downloaded agent zip.
+    2) You can get/change token in your profile.
+
+Ignite Web agent requirements:
+    1) Ignite node should be started with REST server (move ignite-rest-http folder from lib/optional/ to lib/).
+    2) Pass Ignite node REST server URI to agent.
 
 Options:
     -h, --help
@@ -71,11 +76,6 @@ Options:
     -s, --server-uri
        URI for connect to Ignite Web Console via web-socket protocol, default
        value: wss://localhost:3001
-    -tm, --test-drive-metadata
-       Start H2 database with sample tables in same process. JDBC URL for
-       connecting to sample database: jdbc:h2:mem:test-drive-db
-    -ts, --test-drive-sql
-       Create cache and populate it with sample data for use in query
     -t, --token
        User's security token
 

@@ -18,10 +18,10 @@
 import JSZip from 'jszip';
 
 export default [
-    '$scope', '$http', '$common', '$loading', '$table', '$filter', 'ConfigurationSummaryResource',
-    function($scope, $http, $common, $loading, $table, $filter, Resource) {
+    '$scope', '$http', '$common', '$loading', '$table', '$filter', 'ConfigurationSummaryResource', 'JavaTypes',
+    function($scope, $http, $common, $loading, $table, $filter, Resource, JavaTypes) {
         const ctrl = this;
-        const igniteVersion = '1.5.0-b1';
+        const igniteVersion = '1.5.0.final';
 
         $loading.start('loading');
 
@@ -30,17 +30,146 @@ export default [
 
             $loading.finish('loading');
 
-            const idx = sessionStorage.summarySelectedId || 0;
+            if (!$common.isEmptyArray(clusters)) {
+                const idx = sessionStorage.summarySelectedId || 0;
 
-            $scope.selectItem(clusters[idx]);
+                $scope.selectItem(clusters[idx]);
+            }
         });
 
         $scope.panelExpanded = $common.panelExpanded;
         $scope.tableVisibleRow = $table.tableVisibleRow;
         $scope.widthIsSufficient = $common.widthIsSufficient;
 
+        $scope.projectStructureOptions = {
+            nodeChildren: 'children',
+            dirSelectable: false,
+            injectClasses: {
+                iExpanded: 'fa fa-folder-open-o',
+                iCollapsed: 'fa fa-folder-o'
+            }
+        };
+
+        const javaConfigFolder = {
+            type: 'folder',
+            name: 'src-config',
+            title: 'config',
+            children: [
+                { type: 'file', name: 'ClientConfigurationFactory.java' },
+                { type: 'file', name: 'ServerConfigurationFactory.java' }
+            ]
+        };
+
+        const javaStartupFolder = {
+            type: 'folder',
+            name: 'startup',
+            children: [
+                { type: 'file', name: 'ClientNodeCodeStartup.java' },
+                { type: 'file', name: 'ClientNodeSpringStartup.java' },
+                { type: 'file', name: 'ServerNodeCodeStartup.java' },
+                { type: 'file', name: 'ServerNodeSpringStartup.java' }
+            ]
+        };
+
+        const javaFolder = {
+            type: 'folder',
+            name: 'java',
+            children: [
+                {
+                    type: 'folder',
+                    name: 'src-config',
+                    title: 'config',
+                    children: [
+                        javaConfigFolder,
+                        javaStartupFolder
+                    ]
+                }
+            ]
+        };
+
+        const clnCfg = { type: 'file', name: 'client.xml' };
+
+        const srvCfg = { type: 'file', name: 'server.xml' };
+
+        const projectStructureRoot = {
+            type: 'folder',
+            name: 'project.zip',
+            children: [
+                {
+                    type: 'folder',
+                    name: 'config',
+                    children: [clnCfg, srvCfg]
+                },
+                {
+                    type: 'folder',
+                    name: 'jdbc-drivers',
+                    children: [
+                        { type: 'file', name: 'README.txt' }
+                    ]
+                },
+                {
+                    type: 'folder',
+                    name: 'src',
+                    children: [
+                        {
+                            type: 'folder',
+                            name: 'main',
+                            children: [javaFolder]
+                        }
+                    ]
+                },
+                { type: 'file', name: 'Dockerfile' },
+                { type: 'file', name: 'pom.xml' },
+                { type: 'file', name: 'README.txt' }
+            ]
+        };
+
+        $scope.projectStructure = [projectStructureRoot];
+
+        $scope.projectStructureExpanded = [projectStructureRoot];
+
         $scope.tabsServer = { activeTab: 0 };
         $scope.tabsClient = { activeTab: 0 };
+
+        function findFolder(node, name) {
+            if (node.name === name)
+                return node;
+
+            if (node.children) {
+                let folder = null;
+
+                for (let i = 0; folder === null && i < node.children.length; i++)
+                    folder = findFolder(node.children[i], name);
+
+                return folder;
+            }
+
+            return null;
+        }
+
+        function addChildren(fullClsName) {
+            const parts = fullClsName.split('.');
+
+            const shortClsName = parts.pop() + '.java';
+
+            let lastFolder = javaFolder;
+
+            _.forEach(parts, (part) => {
+                const folder = findFolder(javaFolder, part);
+
+                if (!folder) {
+                    const newLastFolder = {type: 'folder', name: part, children: []};
+
+                    lastFolder.children.push(newLastFolder);
+
+                    lastFolder = newLastFolder;
+                }
+                else
+                    lastFolder = folder;
+            });
+
+            lastFolder.children.push({type: 'file', name: shortClsName});
+        }
 
         $scope.selectItem = (cluster) => {
             delete ctrl.cluster;
@@ -54,6 +183,23 @@ export default [
             $scope.selectedItem = cluster;
 
             sessionStorage.summarySelectedId = $scope.clusters.indexOf(cluster);
+
+            javaFolder.children = [javaConfigFolder, javaStartupFolder];
+
+            _.forEach(cluster.caches, (cache) => {
+                _.forEach(cache.metadatas, (metadata) => {
+                    if (!$common.isEmptyArray(metadata.keyFields)) {
+                        if (!JavaTypes.isBuiltInClass(metadata.keyType))
+                            addChildren(metadata.keyType);
+
+                        addChildren(metadata.valueType);
+                    }
+                });
+            });
+
+            projectStructureRoot.name = cluster.name + '-configuration.zip';
+            clnCfg.name = cluster.name + '-client.xml';
+            srvCfg.name = cluster.name + '-server.xml';
         };
 
         const updateTab = (cluster) => {
@@ -88,16 +234,16 @@ export default [
             zip.file(serverXml, $generatorXml.cluster(cluster));
             zip.file(clientXml, $generatorXml.cluster(cluster, clientNearCfg));
 
-            zip.file(srcPath + 'factory/ServerConfigurationFactory.java', $generatorJava.cluster(cluster, 'factory', 'ServerConfigurationFactory', null));
-            zip.file(srcPath + 'factory/ClientConfigurationFactory.java', $generatorJava.cluster(cluster, 'factory', 'ClientConfigurationFactory', clientNearCfg));
+            zip.file(srcPath + 'config/ServerConfigurationFactory.java', $generatorJava.cluster(cluster, 'config', 'ServerConfigurationFactory', null));
+            zip.file(srcPath + 'config/ClientConfigurationFactory.java', $generatorJava.cluster(cluster, 'config', 'ClientConfigurationFactory', clientNearCfg));
 
             zip.file(srcPath + 'startup/ServerNodeSpringStartup.java', $generatorJava.nodeStartup(cluster, 'startup', 'ServerNodeSpringStartup', '"' + serverXml + '"'));
             zip.file(srcPath + 'startup/ClientNodeSpringStartup.java', $generatorJava.nodeStartup(cluster, 'startup', 'ClientNodeSpringStartup', '"' + clientXml + '"'));
 
             zip.file(srcPath + 'startup/ServerNodeCodeStartup.java', $generatorJava.nodeStartup(cluster, 'startup', 'ServerNodeCodeStartup',
-                'ServerConfigurationFactory.createConfiguration()', 'factory.ServerConfigurationFactory'));
+                'ServerConfigurationFactory.createConfiguration()', 'config.ServerConfigurationFactory'));
             zip.file(srcPath + 'startup/ClientNodeCodeStartup.java', $generatorJava.nodeStartup(cluster, 'startup', 'ClientNodeCodeStartup',
-                'ClientConfigurationFactory.createConfiguration()', 'factory.ClientConfigurationFactory', clientNearCfg));
+                'ClientConfigurationFactory.createConfiguration()', 'config.ClientConfigurationFactory', clientNearCfg));
 
             zip.file('pom.xml', $generatorPom.pom(cluster, igniteVersion).asString());
 
@@ -105,11 +251,13 @@ export default [
             zip.file('jdbc-drivers/README.txt', $generatorReadme.readmeJdbc().asString());
 
             for (const meta of ctrl.data.metadatas) {
-                if (meta.keyClass)
+                if (meta.keyClass && !JavaTypes.isBuiltInClass(meta.keyType))
                     zip.file(srcPath + meta.keyType.replace(/\./g, '/') + '.java', meta.keyClass);
 
                 zip.file(srcPath + meta.valueType.replace(/\./g, '/') + '.java', meta.valueClass);
             }
+
+            $generatorOptional.optionalContent(zip, cluster);
 
             const blob = zip.generate({type: 'blob', mimeType: 'application/octet-stream'});
 

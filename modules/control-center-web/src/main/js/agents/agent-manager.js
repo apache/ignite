@@ -73,7 +73,7 @@ AgentManager.prototype._addClient = function(userId, client) {
 
 /**
  * @param userId
- * @return {Client}
+ * @returns {Client}
  */
 AgentManager.prototype.findClient = function(userId) {
     var clientsList = this._clients[userId];
@@ -113,14 +113,15 @@ function Client(ws, manager) {
 }
 
 /**
- * @param {String} path
+ * @param {String} uri
  * @param {Object} params
+ * @param {Boolean} demo
  * @param {String} [method]
  * @param {Object} [headers]
  * @param {String} [body]
  * @param {Function} [cb] Callback. Take 3 arguments: {String} error, {number} httpCode, {string} response.
  */
-Client.prototype.executeRest = function(path, params, method, headers, body, cb) {
+Client.prototype.executeRest = function(uri, params, demo, method, headers, body, cb) {
     if (typeof(params) != 'object')
         throw '"params" argument must be an object';
 
@@ -143,7 +144,7 @@ Client.prototype.executeRest = function(path, params, method, headers, body, cb)
 
     var newArgs = argsToArray(arguments);
 
-    newArgs[5] = function(ex, res) {
+    newArgs[6] = function(ex, res) {
         if (ex)
             cb(ex.message);
         else
@@ -166,7 +167,7 @@ Client.prototype.authResult = function(error) {
  * @param {String} jdbcUrl
  * @param {Object} jdbcInfo
  * @param {Function} cb Callback. Take two arguments: {Object} exception, {Object} result.
- * @return {Array} List of tables (see org.apache.ignite.schema.parser.DbTable java class)
+ * @returns {Array} List of tables (see org.apache.ignite.schema.parser.DbTable java class)
  */
 Client.prototype.metadataSchemas = function(jdbcDriverJarPath, jdbcDriverClass, jdbcUrl, jdbcInfo, cb) {
     this._invokeRmtMethod('schemas', arguments)
@@ -180,7 +181,7 @@ Client.prototype.metadataSchemas = function(jdbcDriverJarPath, jdbcDriverClass, 
  * @param {Array} schemas
  * @param {Boolean} tablesOnly
  * @param {Function} cb Callback. Take two arguments: {Object} exception, {Object} result.
- * @return {Array} List of tables (see org.apache.ignite.schema.parser.DbTable java class)
+ * @returns {Array} List of tables (see org.apache.ignite.schema.parser.DbTable java class)
  */
 Client.prototype.metadataTables = function(jdbcDriverJarPath, jdbcDriverClass, jdbcUrl, jdbcInfo, schemas, tablesOnly, cb) {
     this._invokeRmtMethod('metadata', arguments)
@@ -188,18 +189,10 @@ Client.prototype.metadataTables = function(jdbcDriverJarPath, jdbcDriverClass, j
 
 /**
  * @param {Function} cb Callback. Take two arguments: {Object} exception, {Object} result.
- * @return {Array} List of jars from driver folder.
+ * @returns {Array} List of jars from driver folder.
  */
 Client.prototype.availableDrivers = function(cb) {
     this._invokeRmtMethod('availableDrivers', arguments)
-};
-
-/**
- * @param {Function} cb Callback. Take two arguments: {Object} exception, {Object} result.
- * @return {Boolean} If test-drive SQL was enabled.
- */
-Client.prototype.enableTestDriveSQL = function(cb) {
-    this._invokeRmtMethod('enableTestDriveSQL', arguments)
 };
 
 Client.prototype._invokeRmtMethod = function(methodName, args) {
@@ -250,7 +243,9 @@ Client.prototype._rmtAuthMessage = function(msg) {
 
             self._manager._addClient(account._id, self);
 
-            self._ignite = new apacheIgnite.Ignite(new AgentServer(self));
+            self._cluster = new apacheIgnite.Ignite(new AgentServer(self));
+
+            self._demo = new apacheIgnite.Ignite(new AgentServer(self, true));
         }
     });
 };
@@ -269,10 +264,10 @@ Client.prototype._rmtCallRes = function(msg) {
 };
 
 /**
- * @return {Ignite}
+ * @returns {Ignite}
  */
-Client.prototype.ignite = function() {
-    return this._ignite;
+Client.prototype.ignite = function(demo) {
+    return demo ? this._demo : this._cluster;
 };
 
 function removeFromArray(arr, val) {
@@ -291,7 +286,7 @@ function argsToArray(args) {
     var res = [];
 
     for (var i = 0; i < args.length; i++)
-        res.push(args[i])
+        res.push(args[i]);
 
     return res;
 }
@@ -311,7 +306,7 @@ exports.createManager = function(srv) {
 };
 
 /**
- * @return {AgentManager}
+ * @returns {AgentManager}
  */
 exports.getAgentManager = function() {
     return manager;

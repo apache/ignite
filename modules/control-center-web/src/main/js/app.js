@@ -30,7 +30,7 @@ var publicRoutes = require('./routes/public');
 var notebooksRoutes = require('./routes/notebooks');
 var clustersRouter = require('./routes/clusters');
 var cachesRouter = require('./routes/caches');
-var metadataRouter = require('./routes/metadata');
+var domainsRouter = require('./routes/domains');
 var igfsRouter = require('./routes/igfs');
 var adminRouter = require('./routes/admin');
 var profileRouter = require('./routes/profile');
@@ -118,7 +118,7 @@ app.use('/profile', mustAuthenticated, profileRouter);
 
 app.use('/configuration/clusters', clustersRouter);
 app.use('/configuration/caches', cachesRouter);
-app.use('/configuration/metadata', metadataRouter);
+app.use('/configuration/domains', domainsRouter);
 app.use('/configuration/igfs', igfsRouter);
 
 app.use('/agent', mustAuthenticated, agentRouter);

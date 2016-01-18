@@ -40,7 +40,7 @@ var legacyPaths = [
     './helpers/*.js',
     './helpers/**/*.js',
     './public/**/*.png',
-    './public/*.png'
+    './public/*.ico'
 ];
 
 var igniteModulePaths = [

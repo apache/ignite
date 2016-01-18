@@ -38,8 +38,9 @@
             <directory>${basedir}</directory>
             <outputDirectory>/</outputDirectory>
             <includes>
-                <include>jdbc-drivers/*.*</include>
-                <include>test-drive/*.*</include>
+                <include>jdbc-drivers/README*</include>
+                <include>demo/README*</include>
+                <include>demo/*.sql</include>
                 <include>README*</include>
                 <include>LICENSE*</include>
                 <include>NOTICE*</include>

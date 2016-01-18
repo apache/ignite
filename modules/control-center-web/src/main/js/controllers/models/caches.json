@@ -28,18 +28,18 @@
           }
         },
         {
-          "label": "Metadata",
+          "label": "Domain models",
           "id": "metadata",
           "type": "dropdown-multiple",
           "model": "metadatas",
-          "placeholder": "Choose metadata",
-          "placeholderEmpty": "No metadata configured",
+          "placeholder": "Choose domain models",
+          "placeholderEmpty": "No domain models configured",
           "items": "metadatas",
           "tip": [
-            "Select cache type metadata to describe types in cache"
+            "Select domain models to describe types in cache"
           ],
           "addLink": {
-            "ref": "/configuration/metadata?new"
+            "ref": "/configuration/domains?new"
           }
         },
         {
@@ -350,23 +350,10 @@
           ]
         },
         {
-          "ui": "table-pair",
-          "id": "indexedTypes",
-          "type": "indexedTypes",
-          "model": "indexedTypes",
-          "keyName": "keyClass",
-          "valueName": "valueClass",
-          "focusId": "IndexedType",
-          "addTip": "Add new key and value classes to indexed types",
-          "removeTip": "Remove item from indexed types",
-          "tip": [
-            "Collection of types to index"
-          ]
-        },
-        {
           "label": "SQL functions",
           "id": "sqlFunctionClasses",
           "type": "table-simple",
+          "ui": "table-simple",
           "model": "sqlFunctionClasses",
           "placeholder": "SQL function full class name",
           "focusId": "SqlFx",
@@ -415,7 +402,7 @@
               "expanded": true,
               "fields": [
                 {
-                  "label": "Data source bean",
+                  "label": "Data source bean name",
                   "id": "dataSourceBean",
                   "type": "text",
                   "path": "cacheStoreFactory.CacheJdbcPojoStoreFactory",
@@ -454,26 +441,85 @@
               "expanded": true,
               "fields": [
                 {
+                  "label": "Connect via",
+                  "id": "connectVia",
+                  "type": "dropdown",
+                  "path": "cacheStoreFactory.CacheJdbcBlobStoreFactory",
+                  "model": "connectVia",
+                  "required": true,
+                  "placeholder": "Choose connection",
+                  "items": "jdbcBlobStoreConnections",
+                  "tip": [
+                    "You can connect to database via:",
+                    "<ul>",
+                    "  <li>JDBC URL, for example: jdbc:h2:mem:myDatabase</li>",
+                    "  <li>Сonfigured data source</li>",
+                    "</ul>"
+                  ]
+                },
+                {
+                  "label": "Connection URL",
+                  "id": "connectionUrl",
+                  "type": "text",
+                  "path": "cacheStoreFactory.CacheJdbcBlobStoreFactory",
+                  "model": "connectionUrl",
+                  "required": true,
+                  "hide": "backupItem.cacheStoreFactory.CacheJdbcBlobStoreFactory.connectVia == 'DataSource'",
+                  "tip": [
+                    "URL for database access, for example: jdbc:h2:mem:myDatabase"
+                  ]
+                },
+                {
                   "label": "User",
                   "id": "user",
                   "type": "text",
                   "path": "cacheStoreFactory.CacheJdbcBlobStoreFactory",
                   "model": "user",
                   "required": true,
+                  "hide": "backupItem.cacheStoreFactory.CacheJdbcBlobStoreFactory.connectVia == 'DataSource'",
                   "tip": [
                     "User name for database access"
                   ]
                 },
                 {
-                  "label": "Data source bean",
+                  "label": "Note, password will be generated as stubs.",
+                  "type": "label",
+                  "hide": "backupItem.cacheStoreFactory.CacheJdbcBlobStoreFactory.connectVia == 'DataSource'"
+                },
+                {
+                  "label": "Data source bean name",
                   "id": "dataSourceBean",
                   "type": "text",
                   "path": "cacheStoreFactory.CacheJdbcBlobStoreFactory",
                   "model": "dataSourceBean",
                   "required": true,
                   "placeholder": "Bean name in Spring context",
+                  "hide": "backupItem.cacheStoreFactory.CacheJdbcBlobStoreFactory.connectVia == 'URL'",
                   "tip": [
                     "Name of the data source bean in Spring context"
+                  ]
+                },
+                {
+                  "label": "Database",
+                  "id": "database",
+                  "type": "dropdown",
+                  "path": "cacheStoreFactory.CacheJdbcBlobStoreFactory",
+                  "model": "database",
+                  "required": true,
+                  "placeholder": "Choose database",
+                  "items": "cacheStoreJdbcDialects",
+                  "hide": "backupItem.cacheStoreFactory.CacheJdbcBlobStoreFactory.connectVia == 'URL'",
+                  "tip": [
+                    "Database:",
+                    "<ul>",
+                    "  <li>Generic JDBC dialect</li>",
+                    "  <li>Oracle database</li>",
+                    "  <li>IBM DB2</li>",
+                    "  <li>Microsoft SQL Server</li>",
+                    "  <li>MySQL</li>",
+                    "  <li>PostgreSQL</li>",
+                    "  <li>H2 database</li>",
+                    "</ul>"
                   ]
                 },
                 {
@@ -549,6 +595,7 @@
                   "label": "Hibernate properties",
                   "id": "hibernateProperties",
                   "type": "table-simple",
+                  "ui": "table-simple",
                   "path": "cacheStoreFactory.CacheHibernateBlobStoreFactory",
                   "model": "hibernateProperties",
                   "placeholder": "key=value",
@@ -765,17 +812,6 @@
             "  <li>Asynchronous - in this mode distributed caches will start immediately and will load all necessary data from other available grid nodes in the background</li>",
             "  <li>None - in this mode no rebalancing will take place which means that caches will be either loaded on demand from persistent store whenever data is accessed, or will be populated explicitly</li>",
             "</ul>"
-          ]
-        },
-        {
-          "label": "Pool size",
-          "id": "rebalanceThreadPoolSize",
-          "type": "number",
-          "model": "rebalanceThreadPoolSize",
-          "placeholder": 2,
-          "tip": [
-            "Size of rebalancing thread pool<br>",
-            "Note that size serves as a hint and implementation may create more threads for rebalancing than specified here (but never less threads)"
           ]
         },
         {

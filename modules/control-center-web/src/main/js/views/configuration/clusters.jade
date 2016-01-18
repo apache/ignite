@@ -39,7 +39,7 @@ include ../includes/controls
             hr
             +main-table('clusters', 'clusters', 'clusterName', 'selectItem(row)', '{{$index + 1}}) {{row.label}}', 'label')
             .padding-top-dflt(bs-affix)
-                .panel-tip-container(data-placement='bottom' bs-tooltip data-title='Create new cluster')
+                .panel-tip-container(data-placement='bottom' bs-tooltip='' data-title='Create new cluster')
                     button.btn.btn-primary(id='new-item' ng-click='createItem()') Add cluster
                 +save-remove-buttons('cluster')
                 hr
@@ -65,5 +65,3 @@ include ../includes/controls
                         ignite-configuration-clusters-thread
                         ignite-configuration-clusters-transactions
                 +advanced-options
-                .section(ng-show='ui.expanded')
-                    +save-remove-buttons('cluster')

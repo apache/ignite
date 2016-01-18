@@ -16,13 +16,8 @@
  */
 
 // Controller for SQL notebook screen.
-consoleModule.controller('sqlController', function ($animate, $scope, $controller, $http, $timeout, $common, $confirm,
-    $interval, $modal, $popover, $loading, $location, $anchorScroll, $state, uiGridExporterConstants) {
-    // Initialize the super class and extend it.
-    angular.extend(this, $controller('agent-download', {$scope: $scope}));
-
-    $scope.agentGoal = 'execute sql statements';
-    $scope.agentTestDriveOption = '--test-drive-sql';
+consoleModule.controller('sqlController', function ($http, $timeout, $interval, $scope, $animate,  $location, $anchorScroll, $state,
+    $modal, $popover, $loading, $common, $confirm, $agentDownload, QueryNotebooks, uiGridExporterConstants) {
 
     $scope.joinTip = $common.joinTip;
 
@@ -59,6 +54,16 @@ consoleModule.controller('sqlController', function ($animate, $scope, $controlle
             iExpanded: 'fa fa-minus-square-o',
             iCollapsed: 'fa fa-plus-square-o'
         }
+    };
+
+    $scope.demo = $state.includes('**.sql.demo');
+
+    var _mask = function (cacheName) {
+        return _.isEmpty(cacheName) ? '<default>' : cacheName;
+    };
+
+    var _handleException = function(errMsg) {
+        $common.showError(errMsg);
     };
 
     // Time line X axis descriptor.
@@ -246,53 +251,38 @@ consoleModule.controller('sqlController', function ($animate, $scope, $controlle
         $state.go('/configuration/clusters');
     };
 
-    var loadNotebook = function () {
-        $loading.start('loading');
+    var loadNotebook = function (notebook) {
+        $scope.notebook = notebook;
 
-        $http.post('/api/v1/notebooks/get', {noteId: $state.params.id})
-            .success(function (notebook) {
-                $scope.notebook = notebook;
+        $scope.notebook_name = notebook.name;
 
-                $scope.notebook_name = notebook.name;
+        if (!$scope.notebook.expandedParagraphs)
+            $scope.notebook.expandedParagraphs = [];
 
-                if (!$scope.notebook.expandedParagraphs)
-                    $scope.notebook.expandedParagraphs = [];
+        if (!$scope.notebook.paragraphs)
+            $scope.notebook.paragraphs = [];
 
-                if (!$scope.notebook.paragraphs)
-                    $scope.notebook.paragraphs = [];
+        _.forEach(notebook.paragraphs, function (paragraph) {
+            paragraph.id = 'paragraph-' + paragraphId++;
 
-                _.forEach(notebook.paragraphs, function (paragraph) {
-                    paragraph.id = 'paragraph-' + paragraphId++;
+            enhanceParagraph(paragraph);
+        });
 
-                    enhanceParagraph(paragraph);
-                });
+        if (!notebook.paragraphs || notebook.paragraphs.length == 0)
+            $scope.addParagraph();
+        else
+            $scope.rebuildScrollParagraphs();
 
-                if (!notebook.paragraphs || notebook.paragraphs.length == 0)
-                    $scope.addParagraph();
-                else
-                    $scope.rebuildScrollParagraphs();
-
-                $scope.startTopologyListening(getTopology);
-            })
-            .error(function () {
-                $scope.notebook = undefined;
-            })
-            .finally(function () {
-                $scope.loaded = true;
-
-                $loading.finish('loading');
-            });
+        $agentDownload.startTopologyListening(getTopology, $scope.demo);
     };
 
-    loadNotebook();
+    $loading.start('loading');
 
-    var _saveNotebook = function (f) {
-        $http.post('/api/v1/notebooks/save', $scope.notebook)
-            .success(f || function() {})
-            .error(function (errMsg) {
-                $common.showError(errMsg);
-            });
-    };
+    QueryNotebooks.read($scope.demo, $state.params.noteId)
+        .then(loadNotebook)
+        .catch(function(err) {
+            $scope.notebook = undefined;
+        });
 
     $scope.renameNotebook = function (name) {
         if (!name)
@@ -301,19 +291,21 @@ consoleModule.controller('sqlController', function ($animate, $scope, $controlle
         if ($scope.notebook.name != name) {
             $scope.notebook.name = name;
 
-            _saveNotebook(function () {
-                var idx = _.findIndex($scope.$root.notebooks, function (item) {
-                    return item._id == $scope.notebook._id;
-                });
+            QueryNotebooks.save($scope.demo, $scope.notebook)
+                .then(function() {
+                    var idx = _.findIndex($scope.$root.notebooks, function (item) {
+                        return item._id == $scope.notebook._id;
+                    });
 
-                if (idx >= 0) {
-                    $scope.$root.notebooks[idx].name = name;
+                    if (idx >= 0) {
+                        $scope.$root.notebooks[idx].name = name;
 
-                    $scope.$root.rebuildDropdown();
-                }
+                        $scope.$root.rebuildDropdown();
+                    }
 
-                $scope.notebook.edit = false;
-            });
+                    $scope.notebook.edit = false;
+                })
+                .catch(_handleException);
         }
         else
             $scope.notebook.edit = false
@@ -354,7 +346,9 @@ consoleModule.controller('sqlController', function ($animate, $scope, $controlle
 
             $scope.rebuildScrollParagraphs();
 
-            _saveNotebook(function () { paragraph.edit = false; });
+            QueryNotebooks.save($scope.demo, $scope.notebook)
+                .then(function () { paragraph.edit = false; })
+                .catch(_handleException);
         }
         else
             paragraph.edit = false
@@ -366,7 +360,6 @@ consoleModule.controller('sqlController', function ($animate, $scope, $controlle
         var paragraph = {
             id: 'paragraph-' + paragraphId++,
             name: 'Query' + (sz ==0 ? '' : sz),
-            editor: true,
             query: '',
             pageSize: $scope.pageSizes[0],
             timeLineSpan: $scope.timeLineSpans[0],
@@ -432,7 +425,8 @@ consoleModule.controller('sqlController', function ($animate, $scope, $controlle
 
                     $scope.rebuildScrollParagraphs();
 
-                    _saveNotebook();
+                    QueryNotebooks.save($scope.demo, $scope.notebook)
+                        .catch(_handleException);
             });
     };
 
@@ -448,12 +442,20 @@ consoleModule.controller('sqlController', function ($animate, $scope, $controlle
         return panel_idx >= 0;
     };
 
-    function getTopology(caches, onSuccess) {
+    function getTopology(clusters, onSuccess) {
         onSuccess();
 
-        $scope.caches = _.sortBy(caches, 'name');
+        var caches = _.flattenDeep(clusters.map(function (cluster) { return cluster._caches; }));
+
+        $scope.caches = _.sortBy(_.uniq(_.reject(caches, { mode: 'LOCAL' }), function (cache) {
+            return _mask(cache.name);
+        }), 'name');
 
         _setActiveCache();
+
+        $scope.loaded = true;
+
+        $loading.finish('loading');
     }
 
     var _columnFilter = function(paragraph) {
@@ -461,7 +463,7 @@ consoleModule.controller('sqlController', function ($animate, $scope, $controlle
     };
 
     var _notObjectType = function(cls) {
-        return $common.isJavaBuildInClass(cls);
+        return $common.isJavaBuiltInClass(cls);
     };
 
     var _numberClasses = ['java.math.BigDecimal', 'java.lang.Byte', 'java.lang.Double',
@@ -680,7 +682,8 @@ consoleModule.controller('sqlController', function ($animate, $scope, $controlle
     };
 
     $scope.execute = function (paragraph) {
-        _saveNotebook();
+        QueryNotebooks.save($scope.demo, $scope.notebook)
+            .catch(_handleException);
 
         paragraph.prevQuery = paragraph.queryArgs ? paragraph.queryArgs.query : paragraph.query;
 
@@ -689,6 +692,7 @@ consoleModule.controller('sqlController', function ($animate, $scope, $controlle
         _tryCloseQueryResult(paragraph.queryId);
 
         paragraph.queryArgs = {
+            demo: $scope.demo,
             type: "QUERY",
             query: paragraph.query,
             pageSize: paragraph.pageSize,
@@ -717,7 +721,8 @@ consoleModule.controller('sqlController', function ($animate, $scope, $controlle
     };
 
     $scope.explain = function (paragraph) {
-        _saveNotebook();
+        QueryNotebooks.save($scope.demo, $scope.notebook)
+            .catch(_handleException);
 
         _cancelRefresh(paragraph);
 
@@ -726,6 +731,7 @@ consoleModule.controller('sqlController', function ($animate, $scope, $controlle
         _tryCloseQueryResult(paragraph.queryId);
 
         paragraph.queryArgs = {
+            demo: $scope.demo,
             type: "EXPLAIN",
             query: 'EXPLAIN ' + paragraph.query,
             pageSize: paragraph.pageSize,
@@ -744,7 +750,8 @@ consoleModule.controller('sqlController', function ($animate, $scope, $controlle
     };
 
     $scope.scan = function (paragraph) {
-        _saveNotebook();
+        QueryNotebooks.save($scope.demo, $scope.notebook)
+            .catch(_handleException);
 
         _cancelRefresh(paragraph);
 
@@ -753,6 +760,7 @@ consoleModule.controller('sqlController', function ($animate, $scope, $controlle
         _tryCloseQueryResult(paragraph.queryId);
 
         paragraph.queryArgs = {
+            demo: $scope.demo,
             type: "SCAN",
             pageSize: paragraph.pageSize,
             cacheName: paragraph.cacheName || undefined
@@ -772,7 +780,12 @@ consoleModule.controller('sqlController', function ($animate, $scope, $controlle
     $scope.nextPage = function(paragraph) {
         _showLoading(paragraph, true);
 
-        $http.post('/api/v1/agent/query/fetch', {queryId: paragraph.queryId, pageSize: paragraph.pageSize, cacheName: paragraph.queryArgs.cacheName})
+        $http.post('/api/v1/agent/query/fetch', {
+                demo: $scope.demo,
+                queryId: paragraph.queryId,
+                pageSize: paragraph.pageSize,
+                cacheName: paragraph.queryArgs.cacheName
+            })
             .success(function (res) {
                 paragraph.page++;
 
@@ -859,7 +872,7 @@ consoleModule.controller('sqlController', function ($animate, $scope, $controlle
     };
 
     $scope.exportCsvAll = function(paragraph) {
-        $http.post('/api/v1/agent/query/getAll', {query: paragraph.query, cacheName: paragraph.cacheName})
+        $http.post('/api/v1/agent/query/getAll', {demo: $scope.demo, query: paragraph.query, cacheName: paragraph.cacheName})
             .success(function (item) {
                 _export(paragraph.name + '-all.csv', item.meta, item.rows);
             })
@@ -1442,7 +1455,8 @@ consoleModule.controller('sqlController', function ($animate, $scope, $controlle
     };
 
     $scope.dblclickMetadata = function (paragraph, node) {
-        paragraph.ace.insert(node.type == 'type' ? node.fullName : node.name);
+        paragraph.ace.insert(node.name);
+
         var position = paragraph.ace.selection.getCursor();
 
         paragraph.query = paragraph.ace.getValue();
@@ -1454,14 +1468,31 @@ consoleModule.controller('sqlController', function ($animate, $scope, $controlle
         }, 1);
     };
 
-    $scope.loadMetadata = function () {
+    $scope.importMetadata = function () {
         $loading.start('loadingCacheMetadata');
 
         $scope.metadata = [];
 
-        $http.post('/api/v1/agent/cache/metadata')
+        $http.post('/api/v1/agent/cache/metadata', {demo: $scope.demo})
             .success(function (metadata) {
-                $scope.metadata = _.sortBy(metadata, 'name');
+                $scope.metadata = _.sortBy(metadata, _.filter(metadata, function (meta) {
+                    var cacheName = _mask(meta.cacheName);
+
+                    var cache = _.find($scope.caches, { name: cacheName });
+
+                    if (cache) {
+                        meta.name = (cache.sqlSchema ? cache.sqlSchema : (_.isEmpty(cache.cacheName) ? '"' + cacheName + '"' : "")) + '.' + meta.typeName;
+
+                        meta.displayMame = _mask(meta.cacheName) + '.' + meta.typeName;
+
+                        if (cache.sqlSchema)
+                            meta.children.unshift({type: 'plain', name: 'sqlSchema: ' + cache.sqlSchema});
+
+                        meta.children.unshift({type: 'plain', name: 'mode: ' + cache.mode});
+                    }
+
+                    return cache;
+                }), 'name');
             })
             .error(function (errMsg) {
                 $common.showError(errMsg);
@@ -1494,7 +1525,7 @@ consoleModule.controller('sqlController', function ($animate, $scope, $controlle
             }
 
             // Show a basic modal from a controller
-            $modal({scope: scope, template: '/templates/message.html', show: true});
+            $modal({scope: scope, template: '/templates/message.html', placement:'center', show: true});
         }
     }
 });

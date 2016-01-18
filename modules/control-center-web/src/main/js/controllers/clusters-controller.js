@@ -16,9 +16,8 @@
  */
 
 // Controller for Clusters screen.
-consoleModule.controller('clustersController', [
-    '$scope', '$state', '$controller', '$http', '$timeout', '$common', '$focus', '$confirm', '$clone', '$table', '$preview', '$loading', '$unsavedChangesGuard',
-    function ($scope, $state, $controller, $http, $timeout, $common, $focus, $confirm, $clone, $table, $preview, $loading, $unsavedChangesGuard) {
+consoleModule.controller('clustersController', function ($http, $timeout, $scope, $state, $controller,
+    $common, $focus, $confirm, $clone, $table, $preview, $loading, $unsavedChangesGuard, igniteIncludeEventGroups) {
         $unsavedChangesGuard.install($scope);
 
         // Initialize the super class and extend it.
@@ -34,20 +33,80 @@ consoleModule.controller('clustersController', [
         $scope.panelExpanded = $common.panelExpanded;
 
         $scope.tableVisibleRow = $table.tableVisibleRow;
-        $scope.tableReset = $table.tableReset;
-        $scope.tableNewItem = $table.tableNewItem;
+
+        $scope.tableSave = function (field, index, stopEdit) {
+            switch (field.type) {
+                case 'table-simple':
+                    if ($table.tableSimpleSaveVisible(field, index))
+                        return $table.tableSimpleSave($scope.tableSimpleValid, $scope.backupItem, field, index, stopEdit);
+
+                    break;
+            }
+
+            return true;
+        };
+
+        $scope.tableReset = function (save) {
+            var field = $table.tableField();
+
+            if (!save || !$common.isDefined(field) || $scope.tableSave(field, $table.tableEditedRowIndex(), true)) {
+                $table.tableReset();
+
+                return true;
+            }
+
+            return false;
+        };
+
+        $scope.tableNewItem = function (field) {
+            if ($scope.tableReset(true)) {
+                if (field.type === 'typeConfigurations') {
+                    var binary = $scope.backupItem.binaryConfiguration;
+
+                    if (!binary)
+                        $scope.backupItem.binaryConfiguration = {typeConfigurations: [{}]};
+                    else if (!$common.isDefined(binary.typeConfigurations))
+                        binary.typeConfigurations = [{}];
+                    else
+                        binary.typeConfigurations.push({});
+                }
+                else
+                    $table.tableNewItem(field);
+            }
+        };
         $scope.tableNewItemActive = $table.tableNewItemActive;
+
+        $scope.tableStartEdit = function (item, field, index) {
+            if ($scope.tableReset(true))
+                $table.tableStartEdit(item, field, index);
+        };
         $scope.tableEditing = $table.tableEditing;
-        $scope.tableStartEdit = $table.tableStartEdit;
+
         $scope.tableRemove = function (item, field, index) {
-            $table.tableRemove(item, field, index);
+            if ($scope.tableReset(true)) {
+                if (field.type === 'typeConfigurations')
+                    $scope.backupItem.binaryConfiguration.typeConfigurations.splice(index, 1);
+                else
+                    $table.tableRemove(item, field, index);
+            }
         };
 
         $scope.tableSimpleSave = $table.tableSimpleSave;
         $scope.tableSimpleSaveVisible = $table.tableSimpleSaveVisible;
-        $scope.tableSimpleUp = $table.tableSimpleUp;
-        $scope.tableSimpleDown = $table.tableSimpleDown;
+
+        $scope.tableSimpleUp = function (item, field, index) {
+            if ($scope.tableReset(true))
+                $table.tableSimpleUp(item, field, index);
+        };
+
+        $scope.tableSimpleDown = function (item, field, index) {
+            if ($scope.tableReset(true))
+                $table.tableSimpleDown(item, field, index);
+        };
+
         $scope.tableSimpleDownVisible = $table.tableSimpleDownVisible;
+
+        $scope.tableEditedRowIndex = $table.tableEditedRowIndex;
 
         var previews = [];
 
@@ -58,8 +117,8 @@ consoleModule.controller('clustersController', [
         };
 
         $scope.trustManagersConfigured = function() {
-            return $scope.backupItem.sslEnabled && $common.isDefined($scope.backupItem.sslContextFactory)
-                && !$common.isEmptyArray($scope.backupItem.sslContextFactory.trustManagers)
+            return $scope.backupItem.sslEnabled && $common.isDefined($scope.backupItem.sslContextFactory) &&
+                !$common.isEmptyArray($scope.backupItem.sslContextFactory.trustManagers);
         };
 
         $scope.previewChanged = $preview.previewChanged;
@@ -85,11 +144,9 @@ consoleModule.controller('clustersController', [
 
         $scope.events = [];
 
-        for (var eventGroupName in $dataStructures.EVENT_GROUPS) {
-            if ($dataStructures.EVENT_GROUPS.hasOwnProperty(eventGroupName)) {
-                $scope.events.push({value: eventGroupName, label: eventGroupName});
-            }
-        }
+        _.forEach(igniteIncludeEventGroups, function (evts, evtGrp) {
+            $scope.events.push({label: evtGrp, value: evtGrp});
+        });
 
         $scope.preview = {
             general: {xml: '', java: '', allDefaults: true},
@@ -147,14 +204,14 @@ consoleModule.controller('clustersController', [
         $scope.tableSimpleValid = function (item, field, val, index) {
             var model = $common.getModel(item, field)[field.model];
 
-            if (field.model == 'trustManagers' && !$common.isValidJavaClass('Trust manager', val, false,  $table.tableFieldId(index, 'trustManagers'), false))
+            if (field.model === 'trustManagers' && !$common.isValidJavaClass('Trust manager', val, false,  $table.tableFieldId(index, 'trustManagers'), false))
                 return false;
 
             if ($common.isDefined(model)) {
                 var idx = _.indexOf(model, val);
 
                 // Found duplicate.
-                if (idx >= 0 && idx != index) {
+                if (idx >= 0 && idx !== index) {
                     var simpleTable = simpleTables[field.model];
 
                     if (simpleTable) {
@@ -170,8 +227,8 @@ consoleModule.controller('clustersController', [
 
         $scope.clusters = [];
 
-        function _clusterLbl () {
-            return this.name + ', ' + _.result(_.find($scope.discoveries, {value: this.discovery.kind}), 'label');
+        function _clusterLbl (cluster) {
+            return cluster.name + ', ' + _.find($scope.discoveries, {value: cluster.discovery.kind}).label;
         }
 
         function selectFirstItem() {
@@ -187,9 +244,7 @@ consoleModule.controller('clustersController', [
                 $scope.spaces = data.spaces;
 
                 data.clusters.forEach(function (cluster) {
-                    Object.defineProperty(cluster, 'label', {
-                        get: _clusterLbl
-                    });
+                    cluster.label = _clusterLbl(cluster);
                 });
 
                 $scope.clusters = data.clusters;
@@ -205,8 +260,6 @@ consoleModule.controller('clustersController', [
                 // Load page descriptor.
                 $http.get('/models/clusters.json')
                     .success(function (data) {
-                        $scope.screenTip = data.screenTip;
-                        $scope.moreInfo = data.moreInfo;
                         $scope.general = data.general;
                         $scope.advanced = data.advanced;
 
@@ -219,7 +272,7 @@ consoleModule.controller('clustersController', [
 
                             if (lastSelectedCluster) {
                                 var idx = _.findIndex($scope.clusters, function (cluster) {
-                                    return cluster._id == lastSelectedCluster;
+                                    return cluster._id === lastSelectedCluster;
                                 });
 
                                 if (idx >= 0)
@@ -370,34 +423,34 @@ consoleModule.controller('clustersController', [
         function prepareNewItem(id) {
             var newItem = {
                 discovery: {kind: 'Multicast', Vm: {addresses: ['127.0.0.1:47500..47510']}, Multicast: {}},
-                deploymentMode: 'SHARED'
+                deploymentMode: 'SHARED',
+                binaryConfiguration: {
+                    typeConfigurations: [],
+                    compactFooter: true
+                }
             };
 
             newItem.caches = id && _.find($scope.caches, {value: id}) ? [id] : [];
             newItem.igfss = id && _.find($scope.igfss, {value: id}) ? [id] : [];
             newItem.space = $scope.spaces[0]._id;
 
-            Object.defineProperty(newItem, 'label', {
-                get: _clusterLbl
-            });
-
             return newItem;
         }
 
         // Add new cluster.
         $scope.createItem = function(id) {
-            $table.tableReset();
+            if ($scope.tableReset(true)) {
+                $timeout(function () {
+                    $common.ensureActivePanel($scope.panels, "general", 'clusterName');
+                });
 
-            $timeout(function () {
-                $common.ensureActivePanel($scope.panels, "general", 'clusterName');
-            });
-
-            $scope.selectItem(undefined, prepareNewItem(id));
+                $scope.selectItem(undefined, prepareNewItem(id));
+            }
         };
 
         $scope.indexOfCache = function (cacheId) {
             return _.findIndex($scope.caches, function (cache) {
-                return cache.value == cacheId;
+                return cache.value === cacheId;
             });
         };
 
@@ -405,6 +458,82 @@ consoleModule.controller('clustersController', [
         function validate(item) {
             if ($common.isEmptyString(item.name))
                 return showPopoverMessage($scope.panels, 'general', 'clusterName', 'Name should not be empty');
+
+            var caches = _.filter(_.map($scope.caches, function (scopeCache) {
+                return scopeCache.cache;
+            }), function (cache) {
+                return _.contains($scope.backupItem.caches, cache._id);
+            });
+
+            var checkRes = $common.checkCachesDataSources(caches);
+
+            if (!checkRes.checked) {
+                return showPopoverMessage($scope.panels, 'general', 'caches',
+                    'Found caches "' + checkRes.firstCache.name + '" and "' + checkRes.secondCache.name + '" ' +
+                    'with the same data source bean name "' + checkRes.firstCache.cacheStoreFactory[checkRes.firstCache.cacheStoreFactory.kind].dataSourceBean +
+                    '" and different configured databases: "' + $common.cacheStoreJdbcDialectsLabel(checkRes.firstDB) + '" in "' + checkRes.firstCache.name + '" and "' +
+                    $common.cacheStoreJdbcDialectsLabel(checkRes.secondDB) + '" in "' + checkRes.secondCache.name + '"');
+            }
+
+            var b = item.binaryConfiguration;
+
+            if ($common.isDefined(b)) {
+                if (!$common.isEmptyString(b.idMapper) && !$common.isValidJavaClass('ID mapper', b.idMapper, false, 'idMapper', false, $scope.panels, 'binary')) {
+                    $scope.ui.expanded = true;
+
+                    return false;
+                }
+
+                if (!$common.isEmptyString(b.serializer) && !$common.isValidJavaClass('Serializer', b.serializer, false, 'serializer', false, $scope.panels, 'binary')) {
+                    $scope.ui.expanded = true;
+
+                    return false;
+                }
+
+                if (!$common.isEmptyArray(b.typeConfigurations)) {
+                    var sameName = function (t, ix) {
+                        return ix < typeIx && t.typeName === type.typeName;
+                    };
+
+                    for (var typeIx = 0; typeIx < b.typeConfigurations.length; typeIx++) {
+                        var type = b.typeConfigurations[typeIx];
+
+                        if ($common.isEmptyString(type.typeName)) {
+                            $scope.ui.expanded = true;
+
+                            showPopoverMessage($scope.panels, 'binary', 'typeName' + typeIx, 'Type name should be specified');
+
+                            return false;
+                        }
+
+                        if (!$common.isEmptyString(type.typeName) && !$common.isValidJavaClass('Type name', type.typeName, false, 'typeName' + typeIx, false, $scope.panels, 'binary')) {
+                            $scope.ui.expanded = true;
+
+                            return false;
+                        }
+
+                        if (!$common.isEmptyString(type.idMapper) && !$common.isValidJavaClass('ID mapper', type.idMapper, false, 'idMapper' + typeIx, false, $scope.panels, 'binary')) {
+                            $scope.ui.expanded = true;
+
+                            return false;
+                        }
+
+                        if (!$common.isEmptyString(type.serializer) && !$common.isValidJavaClass('Serializer', type.serializer, false, 'serializer' + typeIx, false, $scope.panels, 'binary')) {
+                            $scope.ui.expanded = true;
+
+                            return false;
+                        }
+
+                        if (_.find(b.typeConfigurations, sameName)) {
+                            $scope.ui.expanded = true;
+
+                            showPopoverMessage($scope.panels, 'binary', 'typeName' + typeIx, 'Type with such name is already specified');
+
+                            return false;
+                        }
+                    }
+                }
+            }
 
             var c = item.communication;
 
@@ -472,13 +601,13 @@ consoleModule.controller('clustersController', [
             if (!$common.isEmptyString(d.authenticator) && !$common.isValidJavaClass('Node authenticator', d.authenticator, false, 'authenticator', false, $scope.panels, 'discovery'))
                 return false;
 
-            if (item.discovery.kind == 'Vm' && item.discovery.Vm.addresses.length == 0)
+            if (item.discovery.kind === 'Vm' && item.discovery.Vm.addresses.length === 0)
                 return showPopoverMessage($scope.panels, 'general', 'addresses', 'Addresses are not specified');
 
-            if (item.discovery.kind == 'S3' && $common.isEmptyString(item.discovery.S3.bucketName))
+            if (item.discovery.kind === 'S3' && $common.isEmptyString(item.discovery.S3.bucketName))
                 return showPopoverMessage($scope.panels, 'general', 'bucketName', 'Bucket name should not be empty');
 
-            if (item.discovery.kind == 'Cloud') {
+            if (item.discovery.kind === 'Cloud') {
                 if ($common.isEmptyString(item.discovery.Cloud.identity))
                     return showPopoverMessage($scope.panels, 'general', 'identity', 'Identity should not be empty');
 
@@ -486,7 +615,7 @@ consoleModule.controller('clustersController', [
                     return showPopoverMessage($scope.panels, 'general', 'provider', 'Provider should not be empty');
             }
 
-            if (item.discovery.kind == 'GoogleStorage') {
+            if (item.discovery.kind === 'GoogleStorage') {
                 if ($common.isEmptyString(item.discovery.GoogleStorage.projectName))
                     return showPopoverMessage($scope.panels, 'general', 'projectName', 'Project name should not be empty');
 
@@ -500,9 +629,17 @@ consoleModule.controller('clustersController', [
                     return showPopoverMessage($scope.panels, 'general', 'serviceAccountId', 'Account ID should not be empty');
             }
 
+            var swapKind = item.swapSpaceSpi.kind;
+
+            if ($common.isDefined(swapKind)) {
+                var sparsity = item.swapSpaceSpi[swapKind].maximumSparsity;
+
+                if (sparsity < 0 || sparsity >= 1)
+                    return showPopoverMessage($scope.panels, 'swap', 'maximumSparsity', 'Maximum sparsity should be more or equal 0 and less than 1');
+            }
+
             if (item.sslEnabled) {
-                if (!$common.isDefined(item.sslContextFactory)
-                    || $common.isEmptyString(item.sslContextFactory.keyStoreFilePath))
+                if (!$common.isDefined(item.sslContextFactory) || $common.isEmptyString(item.sslContextFactory.keyStoreFilePath))
                     return showPopoverMessage($scope.panels, 'sslConfiguration', 'keyStoreFilePath', 'Key store file should not be empty');
 
                 if ($common.isEmptyString(item.sslContextFactory.trustStoreFilePath) && $common.isEmptyArray(item.sslContextFactory.trustManagers))
@@ -533,10 +670,12 @@ consoleModule.controller('clustersController', [
         function save(item) {
             $http.post('/api/v1/configuration/clusters/save', item)
                 .success(function (_id) {
+                    item.label = _clusterLbl(item);
+
                     $scope.ui.markPristine();
 
                     var idx = _.findIndex($scope.clusters, function (cluster) {
-                        return cluster._id == _id;
+                        return cluster._id === _id;
                     });
 
                     if (idx >= 0)
@@ -557,27 +696,33 @@ consoleModule.controller('clustersController', [
 
         // Save cluster.
         $scope.saveItem = function () {
-            $table.tableReset();
+            if ($scope.tableReset(true)) {
+                var item = $scope.backupItem;
 
-            var item = $scope.backupItem;
-
-            if (validate(item))
-                save(item);
+                if (validate(item))
+                    save(item);
+            }
         };
+
+        function _clusterNames() {
+            return _.map($scope.clusters, function (cluster) {
+                return cluster.name;
+            });
+        }
 
         // Copy cluster with new name.
         $scope.cloneItem = function () {
-            $table.tableReset();
+            if ($scope.tableReset(true)) {
+                if (validate($scope.backupItem))
+                    $clone.confirm($scope.backupItem.name, _clusterNames()).then(function (newName) {
+                        var item = angular.copy($scope.backupItem);
 
-            if (validate($scope.backupItem))
-                $clone.confirm($scope.backupItem.name).then(function (newName) {
-                    var item = angular.copy($scope.backupItem);
+                        delete item._id;
+                        item.name = newName;
 
-                    item._id = undefined;
-                    item.name = newName;
-
-                    save(item);
-                });
+                        save(item);
+                    });
+            }
         };
 
         // Remove cluster from db.
@@ -597,7 +742,7 @@ consoleModule.controller('clustersController', [
                                 var clusters = $scope.clusters;
 
                                 var idx = _.findIndex(clusters, function (cluster) {
-                                    return cluster._id == _id;
+                                    return cluster._id === _id;
                                 });
 
                                 if (idx >= 0) {
@@ -653,5 +798,5 @@ consoleModule.controller('clustersController', [
                     $scope.backupItem = $scope.selectedItem ? angular.copy($scope.selectedItem) : prepareNewItem();
                 });
         };
-    }]
+    }
 );

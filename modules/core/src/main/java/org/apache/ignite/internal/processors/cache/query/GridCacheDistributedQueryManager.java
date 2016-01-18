@@ -570,7 +570,8 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
                 qry.query().subjectId(),
                 qry.query().taskHash(),
                 queryTopologyVersion(),
-                cctx.deploymentEnabled());
+                // Force deployment anyway if scan query is used.
+                cctx.deploymentEnabled() || (qry.query().scanFilter() != null && cctx.gridDeploy().enabled()));
 
             addQueryFuture(req.id(), fut);
 
@@ -616,7 +617,8 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
                 qry.subjectId(),
                 qry.taskHash(),
                 queryTopologyVersion(),
-                cctx.deploymentEnabled());
+                // Force deployment anyway if scan query is used.
+                cctx.deploymentEnabled() || (qry.scanFilter() != null && cctx.gridDeploy().enabled()));
 
             sendRequest(fut, req, nodes);
         }

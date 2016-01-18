@@ -22,6 +22,7 @@ import angular from 'angular';
 import pdfMake from 'pdfmake';
 
 import 'angular-ui-router';
+import 'angular-ui-router-title';
 import 'angular-strap';
 import 'angular-ui-ace';
 import 'angular-tree-control';
@@ -57,6 +58,8 @@ window.pdfMake = pdfMake;
 import './modules/User/index';
 import './modules/Auth/index';
 import './modules/Form/index';
+import './modules/JavaTypes/index';
+import './modules/QueryNotebooks/index';
 
 import './modules/states/login/index';
 import './modules/states/logout/index';
@@ -71,6 +74,7 @@ import './modules/dialog/index';
 import './modules/navbar/main';
 import './modules/settings/main';
 import './modules/configuration/sidebar/main';
+import './modules/configuration/include-event-types/main';
 import './modules/terms/main';
 // endignite
 
@@ -94,10 +98,13 @@ import hasPojo from './filters/hasPojo/hasPojo.filter';
 angular
 .module('ignite-console', [
     'ui.router',
+    'ui.router.title',
     // Base modules.
     'ignite-console.Auth',
     'ignite-console.User',
     'ignite-console.Form',
+    'ignite-console.JavaTypes',
+    'ignite-console.QueryNotebooks',
     // States.
     'ignite-console.states.login',
     'ignite-console.states.logout',
@@ -111,6 +118,7 @@ angular
     'ignite-console.navbar',
     'ignite-console.userbar',
     'ignite-console.configuration.sidebar',
+    'ignite-console.configuration.include-event-types',
     'ignite-console.terms'
 ])
 // Directives.

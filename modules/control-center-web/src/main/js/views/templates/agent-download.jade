@@ -14,7 +14,7 @@
 
 .modal.center(tabindex='-1' role='dialog')
     .modal-dialog
-        .modal-content(dw-loading='loadingAgent' dw-loading-options='loadingAgentOptions')
+        .modal-content
             #errors-container.modal-header.header
                 h4.modal-title(ng-if='!nodeFailedConnection') Connection to Ignite Web Agent is not established
                 h4.modal-title(ng-if='nodeFailedConnection') Connection to Ignite Node is not established
@@ -28,21 +28,19 @@
                         b ignite-web-agent
                     li For list of options, run&nbsp;
                         b ignite-web-agent.{sh|bat} --help
-                    li To test drive, run&nbsp;
-                        b ignite-web-agent.{sh|bat} {{::agentTestDriveOption}}
                     li Refer to&nbsp;
                         b README.txt
                         | &nbsp;for more information
                 .modal-advanced-options
-                    i.fa.fa-chevron-circle-up(ng-show='agentLoad.showToken' ng-click='agentLoad.showToken = ! agentLoad.showToken')
-                    i.fa.fa-chevron-circle-down(ng-show='!agentLoad.showToken' ng-click='agentLoad.showToken = ! agentLoad.showToken')
+                    i.fa.fa-chevron-circle-down(ng-show='agentLoad.showToken' ng-click='agentLoad.showToken = ! agentLoad.showToken')
+                    i.fa.fa-chevron-circle-right(ng-show='!agentLoad.showToken' ng-click='agentLoad.showToken = ! agentLoad.showToken')
                     a(ng-click='agentLoad.showToken = ! agentLoad.showToken') {{agentLoad.showToken ? 'Hide security token...' : 'Show security token...'}}
                 .details-row(ng-show='agentLoad.showToken')
                     label.labelField Security token: {{user.token}}
                     i.tipLabel.fa.fa-clipboard(ng-click-copy='{{user.token}}' bs-tooltip='' data-title='Copy security token to clipboard')
                     i.tipLabel.fa.fa-question-circle(ng-if=lines bs-tooltip='' data-title='The security token is used for authorization of web agent')
             .agent-download(ng-if='nodeFailedConnection')
-                p Connection to Ignite Web Agent is established but agent failed to connect to Ignite Node
+                p Connection to Ignite Web Agent is established, but agent failed to connect to Ignite Node
                 p Please check the following:
                 ul
                     li Ignite Grid is up and running
@@ -52,6 +50,5 @@
                         b README.txt
                         | &nbsp; in agent folder for more information
             .modal-footer
-                button.btn.btn-default(ng-click='goBack()') Back to {{::agentDownloadBackTo}}
-                button.btn.btn-primary(ng-if='nodeFailedConnection' ng-click='enableTestDriveSQL()') Start test-drive sql
+                button.btn.btn-default(ng-click='back()') {{::backText}}
                 button.btn.btn-primary(ng-if='!nodeFailedConnection' ng-click='downloadAgent()') Download zip

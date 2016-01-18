@@ -22,10 +22,12 @@ var _ = require('lodash');
  *
  * @constructor
  * @this {AgentServer}
- * @param {Client} client connected client
+ * @param {Client} client Connected client
+ * @param {Boolean} demo Use demo node for request
  */
-function AgentServer(client) {
+function AgentServer(client, demo) {
     this._client = client;
+    this._demo = !!demo;
 }
 
 /**
@@ -56,9 +58,10 @@ AgentServer.prototype.runCommand = function(cmd, callback) {
         headers = {'JSONObject': 'application/json'};
     }
 
-    this._client.executeRest("ignite", params, method, headers, body, function(error, code, message) {
+    this._client.executeRest("ignite", params, this._demo, method, headers, body, function(error, code, message) {
         if (error) {
             callback(error);
+
             return
         }
 
@@ -71,22 +74,16 @@ AgentServer.prototype.runCommand = function(cmd, callback) {
             return;
         }
 
-        var igniteResponse;
-
         try {
-            igniteResponse = JSON.parse(message);
+            var igniteResponse = JSON.parse(message);
+
+            if (igniteResponse.successStatus)
+                callback.call(null, igniteResponse.error, null);
+            else
+                callback.call(null, null, igniteResponse.response);
         }
         catch (e) {
             callback.call(null, e, null);
-
-            return;
-        }
-
-        if (igniteResponse.successStatus) {
-            callback.call(null, igniteResponse.error, null)
-        }
-        else {
-            callback.call(null, null, igniteResponse.response);
         }
     });
 };

@@ -67,6 +67,11 @@ angular
         templateUrl: '/configuration/clusters.html',
         data: {
             loading: 'Loading clusters screen...'
+        },
+        resolve: {
+            $title: () => {
+                return 'Configure Clusters - Ignite Console';
+            }
         }
     })
     .state('base.configuration.caches', {
@@ -74,13 +79,23 @@ angular
         templateUrl: '/configuration/caches.html',
         data: {
             loading: 'Loading caches screen...'
+        },
+        resolve: {
+            $title: () => {
+                return 'Configure Caches - Ignite Console';
+            }
         }
     })
-    .state('base.configuration.metadata', {
-        url: '/metadata',
-        templateUrl: '/configuration/metadata.html',
+    .state('base.configuration.domains', {
+        url: '/domains',
+        templateUrl: '/configuration/domains.html',
         data: {
-            loading: 'Loading metadata screen...'
+            loading: 'Loading domain models screen...'
+        },
+        resolve: {
+            $title: () => {
+                return 'Configure Domain Models - Ignite Console';
+            }
         }
     })
     .state('base.configuration.igfs', {
@@ -88,6 +103,11 @@ angular
         templateUrl: '/configuration/igfs.html',
         data: {
             loading: 'Loading IGFS screen...'
+        },
+        resolve: {
+            $title: () => {
+                return 'Configure IGFS - Ignite Console';
+            }
         }
     })
     .state('base.configuration.summary', {
@@ -97,6 +117,11 @@ angular
         controllerAs: 'ctrl',
         data: {
             loading: 'Loading summary screen...'
+        },
+        resolve: {
+            $title: () => {
+                return 'Configurations Summary - Ignite Console';
+            }
         }
     });
 }]);

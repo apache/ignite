@@ -37,7 +37,7 @@ var consoleModule = angular.module('ignite-web-console',
                 .then(function (user) {
                     $rootScope.$broadcast('user', user);
 
-                    $state.go('base.admin');
+                    $state.go('settings.admin');
                 })
                 .catch(function (errMsg) {
                     $common.showError($common.errorMessage(errMsg));
@@ -160,21 +160,26 @@ consoleModule.service('$common', [
             return false;
         }
 
-        var javaBuildInClasses = [
+        var javaBuiltInClasses = [
             'BigDecimal', 'Boolean', 'Byte', 'Date', 'Double', 'Float', 'Integer', 'Long', 'Short', 'String', 'Time', 'Timestamp', 'UUID'
         ];
 
-        var javaBuildInFullNameClasses = [
+        var javaBuiltInTypes = [
+            'BigDecimal', 'boolean', 'Boolean', 'byte', 'Byte', 'Date', 'double', 'Double', 'float', 'Float',
+            'int', 'Integer', 'long', 'Long', 'short', 'Short', 'String', 'Time', 'Timestamp', 'UUID'
+        ];
+
+        var javaBuiltInFullNameClasses = [
             'java.math.BigDecimal', 'java.lang.Boolean', 'java.lang.Byte', 'java.sql.Date', 'java.lang.Double',
             'java.lang.Float', 'java.lang.Integer', 'java.lang.Long', 'java.lang.Short', 'java.lang.String',
             'java.sql.Time', 'java.sql.Timestamp', 'java.util.UUID'
         ];
 
-        function isJavaBuildInClass(cls) {
+        function isJavaBuiltInClass(cls) {
             if (isEmptyString(cls))
                 return false;
 
-            return _.contains(javaBuildInClasses, cls) || _.contains(javaBuildInFullNameClasses, cls);
+            return _.contains(javaBuiltInClasses, cls) || _.contains(javaBuiltInFullNameClasses, cls);
         }
 
         var SUPPORTED_JDBC_TYPES = [
@@ -201,14 +206,14 @@ consoleModule.service('$common', [
         ];
 
         var ALL_JDBC_TYPES = [
-            {dbName: 'BIT', dbType: -7, javaType: 'Boolean'},
-            {dbName: 'TINYINT', dbType: -6, javaType: 'Byte'},
-            {dbName: 'SMALLINT', dbType:  5, javaType: 'Short'},
-            {dbName: 'INTEGER', dbType: 4, javaType: 'Integer'},
-            {dbName: 'BIGINT', dbType: -5, javaType: 'Long'},
-            {dbName: 'FLOAT', dbType: 6, javaType: 'Float'},
-            {dbName: 'REAL', dbType: 7, javaType: 'Double'},
-            {dbName: 'DOUBLE', dbType: 8, javaType: 'Double'},
+            {dbName: 'BIT', dbType: -7, javaType: 'Boolean', primitiveType: 'boolean'},
+            {dbName: 'TINYINT', dbType: -6, javaType: 'Byte', primitiveType: 'byte'},
+            {dbName: 'SMALLINT', dbType:  5, javaType: 'Short', primitiveType: 'short'},
+            {dbName: 'INTEGER', dbType: 4, javaType: 'Integer', primitiveType: 'int'},
+            {dbName: 'BIGINT', dbType: -5, javaType: 'Long', primitiveType: 'long'},
+            {dbName: 'FLOAT', dbType: 6, javaType: 'Float', primitiveType: 'float'},
+            {dbName: 'REAL', dbType: 7, javaType: 'Double', primitiveType: 'double'},
+            {dbName: 'DOUBLE', dbType: 8, javaType: 'Double', primitiveType: 'double'},
             {dbName: 'NUMERIC', dbType: 2, javaType: 'BigDecimal'},
             {dbName: 'DECIMAL', dbType: 3, javaType: 'BigDecimal'},
             {dbName: 'CHAR', dbType: 1, javaType: 'String'},
@@ -230,7 +235,7 @@ consoleModule.service('$common', [
             {dbName: 'CLOB', dbType: 2005, javaType: 'String'},
             {dbName: 'REF', dbType: 2006, javaType: 'Object'},
             {dbName: 'DATALINK', dbType: 70, javaType: 'Object'},
-            {dbName: 'BOOLEAN', dbType: 16, javaType: 'Boolean'},
+            {dbName: 'BOOLEAN', dbType: 16, javaType: 'Boolean', primitiveType: 'boolean'},
             {dbName: 'ROWID', dbType: -8, javaType: 'Object'},
             {dbName: 'NCHAR', dbType: -15, javaType: 'String'},
             {dbName: 'NVARCHAR', dbType: -9, javaType: 'String'},
@@ -669,6 +674,27 @@ consoleModule.service('$common', [
             return group.dirty;
         }
 
+        function extractDataSource(cache) {
+            if (cache.cacheStoreFactory && cache.cacheStoreFactory.kind) {
+                var storeFactory = cache.cacheStoreFactory[cache.cacheStoreFactory.kind];
+
+                if (storeFactory.dialect || (storeFactory.connectVia === 'DataSource'))
+                    return storeFactory;
+            }
+
+            return null;
+        }
+
+        var cacheStoreJdbcDialects = [
+            {value: 'Generic', label: 'Generic JDBC'},
+            {value: 'Oracle', label: 'Oracle'},
+            {value: 'DB2', label: 'IBM DB2'},
+            {value: 'SQLServer', label: 'Microsoft SQL Server'},
+            {value: 'MySQL', label: 'MySQL'},
+            {value: 'PostgreSQL', label: 'PostgreSQL'},
+            {value: 'H2', label: 'H2 database'}
+        ];
+
         return {
             getModel: getModel,
             joinTip: function (arr) {
@@ -728,10 +754,11 @@ consoleModule.service('$common', [
 
                 return res ? res : {dbName: 'Unknown', javaType: 'Unknown'};
             },
-            javaBuildInClasses: javaBuildInClasses,
-            isJavaBuildInClass: isJavaBuildInClass,
+            javaBuiltInClasses: javaBuiltInClasses,
+            javaBuiltInTypes: javaBuiltInTypes,
+            isJavaBuiltInClass: isJavaBuiltInClass,
             isValidJavaIdentifier: isValidJavaIdentifier,
-            isValidJavaClass: function (msg, ident, allowBuildInClass, elemId, packageOnly, panels, panelId) {
+            isValidJavaClass: function (msg, ident, allowBuiltInClass, elemId, packageOnly, panels, panelId) {
                 if (isEmptyString(ident))
                     return showPopoverMessage(panels, panelId, elemId, msg + ' could not be empty!');
 
@@ -739,10 +766,10 @@ consoleModule.service('$common', [
 
                 var len = parts.length;
 
-                if (!allowBuildInClass && isJavaBuildInClass(ident))
+                if (!allowBuiltInClass && isJavaBuiltInClass(ident))
                     return showPopoverMessage(panels, panelId, elemId, msg + ' should not be the Java build-in class!');
 
-                if (len < 2 && !isJavaBuildInClass(ident) && !packageOnly)
+                if (len < 2 && !isJavaBuiltInClass(ident) && !packageOnly)
                     return showPopoverMessage(panels, panelId, elemId, msg + ' does not have package specified!');
 
                 for (var i = 0; i < parts.length; i++) {
@@ -993,6 +1020,47 @@ consoleModule.service('$common', [
                     return true;
 
                 return attr.substr(attr.indexOf('=') + 1);
+            },
+            cacheStoreJdbcDialects: cacheStoreJdbcDialects,
+            cacheStoreJdbcDialectsLabel: function (dialect) {
+                var found = _.find(cacheStoreJdbcDialects, function (dialectVal) {
+                    return dialectVal.value === dialect;
+                });
+
+                return found ? found.label : undefined;
+            },
+            checkCachesDataSources: function (caches) {
+                var res = { checked: true };
+
+                res.checked = !isDefined(_.find(caches, function (curCache, curIx) {
+                    return _.find(caches, function (checkCache, checkIx) {
+                        if (checkIx < curIx) {
+                            var curDs = extractDataSource(curCache);
+                            var checkDs = extractDataSource(checkCache);
+
+                            if (curDs && checkDs) {
+                                var curDB = curDs.dialect || curDs.database;
+                                var checkDB = checkDs.dialect || checkDs.database;
+
+                                if (curDs.dataSourceBean === checkDs.dataSourceBean && curDB !== checkDB) {
+                                    res = {
+                                        checked: false,
+                                        firstCache: checkCache,
+                                        firstDB: checkDB,
+                                        secondCache: curCache,
+                                        secondDB: curDB
+                                    };
+
+                                    return true;
+                                }
+                            }
+                        }
+
+                        return false;
+                    });
+                }));
+
+                return res;
             }
         };
     }]);
@@ -1061,85 +1129,69 @@ consoleModule.service('$unsavedChangesGuard', function ($rootScope) {
 consoleModule.service('$confirmBatch', function ($rootScope, $modal,  $q) {
     var scope = $rootScope.$new();
 
-    var contentGenerator = function () {
-        return 'No content';
-    };
-
-    var deferred;
-
-    var stepConfirmModal = $modal({templateUrl: '/templates/batch-confirm.html', scope: scope, placement: 'center', show: false});
+    scope.confirmModal = $modal({templateUrl: '/templates/batch-confirm.html', scope: scope, placement: 'center', show: false});
 
     function _done(cancel) {
-        if (cancel)
-            deferred.reject('cancelled');
-        else
-            deferred.resolve();
+        scope.confirmModal.hide();
 
-        stepConfirmModal.hide();
+        if (cancel)
+            scope.deferred.reject('cancelled');
+        else
+            scope.deferred.resolve();
     }
 
-    var items = [];
-    var curIx = 0;
-
     function _nextElement(skip) {
-        items[curIx].skip = skip;
+        scope.items[scope.curIx++].skip = skip;
 
-        curIx++;
-
-        if (curIx < items.length)
-            scope.batchConfirm.content = contentGenerator(items[curIx]);
+        if (scope.curIx < scope.items.length)
+            scope.content = scope.contentGenerator(scope.items[scope.curIx]);
         else
             _done();
     }
 
-    scope.batchConfirm = {
-        applyToAll: false,
-        cancel: function () {
+    scope.cancel = function () {
             _done(true);
-        },
-        skip: function () {
-            if (this.applyToAll) {
-                for (var i = curIx; i < items.length; i++)
-                    items[i].skip = true;
+    };
+
+    scope.skip = function (applyToAll) {
+        if (applyToAll) {
+            for (var i = scope.curIx; i < scope.items.length; i++)
+                scope.items[i].skip = true;
 
                 _done();
             }
             else
                 _nextElement(true);
-        },
-        overwrite: function () {
-            if (this.applyToAll)
+    };
+
+    scope.overwrite = function (applyToAll) {
+        if (applyToAll)
                 _done();
             else
                 _nextElement(false);
-        },
-        reset: function (itemsToConfirm) {
-            items = itemsToConfirm;
-            curIx = 0;
-            this.applyToAll = false;
-            this.content = (items && items.length > 0) ? contentGenerator(items[0]) : undefined;
-        }
     };
 
+    return {
     /**
      * Show confirm all dialog.
      *
-     * @param confirmMessageFx Function to generate a confirm message.
+         * @param confirmMessageFn Function to generate a confirm message.
      * @param itemsToConfirm Array of element to process by confirm.
      */
-    stepConfirmModal.confirm = function (confirmMessageFx, itemsToConfirm) {
-        contentGenerator = confirmMessageFx;
+        confirm: function (confirmMessageFn, itemsToConfirm) {
+            scope.deferred = $q.defer();
 
-        scope.batchConfirm.reset(itemsToConfirm);
+            scope.contentGenerator = confirmMessageFn;
 
-        deferred = $q.defer();
+            scope.items = itemsToConfirm;
+            scope.curIx = 0;
+            scope.content = (scope.items && scope.items.length > 0) ? scope.contentGenerator(scope.items[0]) : undefined;
 
-        stepConfirmModal.show();
+            scope.confirmModal.$promise.then(scope.confirmModal.show);
 
-        return deferred.promise;
+            return scope.deferred.promise;
+        }
     };
-
-    return stepConfirmModal;
 });
 
 // 'Clone' popup service.
@@ -1151,22 +1203,30 @@ consoleModule.service('$clone', function ($modal, $rootScope, $q) {
     scope.ok = function (newName) {
         deferred.resolve(newName);
 
-        copyModal.hide();
+        cloneModal.hide();
     };
 
-    var copyModal = $modal({templateUrl: '/templates/clone.html', scope: scope, placement: 'center', show: false});
+    var cloneModal = $modal({templateUrl: '/templates/clone.html', scope: scope, placement: 'center', show: false});
 
-    copyModal.confirm = function (oldName) {
-        scope.newName = oldName + '(1)';
+    cloneModal.confirm = function (oldName, names) {
+        var num = 1;
+
+        scope.newName = oldName + '(' + num.toString() + ')';
+
+        while(_.includes(names, scope.newName)) {
+            num++;
+
+            scope.newName = oldName + '(' + num.toString() + ')';
+        }
 
         deferred = $q.defer();
 
-        copyModal.show();
+        cloneModal.show();
 
         return deferred.promise;
     };
 
-    return copyModal;
+    return cloneModal;
 });
 
 // Tables support service.
@@ -1185,14 +1245,16 @@ consoleModule.service('$table', ['$common', '$focus', function ($common, $focus)
     var table = {name: 'none', editIndex: -1};
 
     function _tableReset() {
+        table.field = undefined;
         table.name = 'none';
         table.editIndex = -1;
 
         $common.hidePopover();
     }
 
-    function _tableState(name, editIndex) {
-        table.name = name;
+    function _tableState(field, editIndex, specName) {
+        table.field = field;
+        table.name = specName || field.model;
         table.editIndex = editIndex;
     }
 
@@ -1215,7 +1277,7 @@ consoleModule.service('$table', ['$common', '$focus', function ($common, $focus)
     }
 
     function _tableStartEdit(item, field, index) {
-        _tableState(field.model, index);
+        _tableState(field, index);
 
         var val = _model(item, field)[field.model][index];
 
@@ -1250,7 +1312,7 @@ consoleModule.service('$table', ['$common', '$focus', function ($common, $focus)
     }
 
     function _tableNewItem(field) {
-        _tableState(field.model, -1);
+        _tableState(field, -1);
 
         var ui = _tableUI(field);
 
@@ -1280,21 +1342,14 @@ consoleModule.service('$table', ['$common', '$focus', function ($common, $focus)
 
             _tableFocus(field.focusId, -1);
         }
-        else if (ui === 'table-index-fields') {
-            _tableFocus('FieldName' + (field.sorted ? 'S' : '') + field.indexIdx, -1);
-        }
     }
 
     return {
         tableVisibleRow: function (rows, row) {
             return !row || !row._id || _.findIndex(rows, function(item) {return item._id === row._id;}) >= 0;
         },
-        tableState: function (name, editIndex) {
-            _tableState(name, editIndex);
-        },
-        tableReset: function () {
-            _tableReset();
-        },
+        tableState: _tableState,
+        tableReset: _tableReset,
         tableNewItem: _tableNewItem,
         tableNewItemActive: function (field) {
             return table.name === field.model && table.editIndex < 0;
@@ -1302,16 +1357,24 @@ consoleModule.service('$table', ['$common', '$focus', function ($common, $focus)
         tableEditing: function (field, index) {
             return table.name === field.model && table.editIndex === index;
         },
+        tableEditedRowIndex: function () {
+            return table.editIndex;
+        },
+        tableField: function () {
+            return table.field;
+        },
         tableStartEdit: _tableStartEdit,
         tableRemove: function (item, field, index) {
             _tableReset();
 
             _model(item, field)[field.model].splice(index, 1);
         },
-        tableSimpleSave: function (valueValid, item, field, index) {
+        tableSimpleSave: function (valueValid, item, field, index, stopEdit) {
             var simpleValue = _tableSimpleValue(field, index);
 
-            if (valueValid(item, field, simpleValue, index)) {
+            var valid = valueValid(item, field, simpleValue, index);
+
+            if (valid) {
                 _tableReset();
 
                 if (index < 0) {
@@ -1320,19 +1383,24 @@ consoleModule.service('$table', ['$common', '$focus', function ($common, $focus)
                     else
                         _model(item, field)[field.model] = [simpleValue];
 
-                    _tableNewItem(field);
+                    if (!stopEdit)
+                        _tableNewItem(field);
                 }
                 else {
                     var arr = _model(item, field)[field.model];
 
                     arr[index] = simpleValue;
 
-                    if (index < arr.length - 1)
-                        _tableStartEdit(item, field, index + 1);
-                    else
-                        _tableNewItem(field);
+                    if (!stopEdit) {
+                        if (index < arr.length - 1)
+                            _tableStartEdit(item, field, index + 1);
+                        else
+                            _tableNewItem(field);
+                    }
                 }
             }
+
+            return valid;
         },
         tableSimpleSaveVisible: function (field, index) {
             return !$common.isEmptyString(_tableSimpleValue(field, index));
@@ -1351,8 +1419,10 @@ consoleModule.service('$table', ['$common', '$focus', function ($common, $focus)
             return index < _model(item, field)[field.model].length - 1;
         },
         tablePairValue: _tablePairValue,
-        tablePairSave: function (pairValid, item, field, index) {
-            if (pairValid(item, field, index)) {
+        tablePairSave: function (pairValid, item, field, index, stopEdit) {
+            var valid = pairValid(item, field, index);
+
+            if (valid) {
                 var pairValue = _tablePairValue(field, index);
 
                 var pairModel = {};
@@ -1366,7 +1436,8 @@ consoleModule.service('$table', ['$common', '$focus', function ($common, $focus)
                     else
                         item[field.model] = [pairModel];
 
-                    _tableNewItem(field);
+                    if (!stopEdit)
+                        _tableNewItem(field);
                 }
                 else {
                     pairModel = item[field.model][index];
@@ -1374,12 +1445,16 @@ consoleModule.service('$table', ['$common', '$focus', function ($common, $focus)
                     pairModel[field.keyName] = pairValue.key;
                     pairModel[field.valueName] = pairValue.value;
 
-                    if (index < item[field.model].length - 1)
-                        _tableStartEdit(item, field, index + 1);
-                    else
-                        _tableNewItem(field);
+                    if (!stopEdit) {
+                        if (index < item[field.model].length - 1)
+                            _tableStartEdit(item, field, index + 1);
+                        else
+                            _tableNewItem(field);
+                    }
                 }
             }
+
+            return valid;
         },
         tablePairSaveVisible: function (field, index) {
             var pairValue = _tablePairValue(field, index);
@@ -1675,8 +1750,8 @@ consoleModule.filter('tablesSearch', function() {
     };
 });
 
-// Filter metadata with key fields configuration.
-consoleModule.filter('metadatasValidation', ['$common', function ($common) {
+// Filter domain models with key fields configuration.
+consoleModule.filter('domainsValidation', ['$common', function ($common) {
     return function(metadatas, valid, invalid) {
         if (valid && invalid)
             return metadatas;
@@ -1684,7 +1759,7 @@ consoleModule.filter('metadatasValidation', ['$common', function ($common) {
         var out = [];
 
         _.forEach(metadatas, function (meta) {
-            var _valid = !$common.metadataForStoreConfigured(meta) || $common.isJavaBuildInClass(meta.keyType) || !$common.isEmptyArray(meta.keyFields);
+            var _valid = !$common.metadataForStoreConfigured(meta) || $common.isJavaBuiltInClass(meta.keyType) || !$common.isEmptyArray(meta.keyFields);
 
             if (valid && _valid || invalid && !_valid)
                 out.push(meta);
@@ -1774,7 +1849,7 @@ consoleModule.directive('onEscape', function () {
 consoleModule.directive('retainSelection', function ($timeout) {
     var promise;
 
-    return function (scope, elem, attr) {
+    return function (scope, elem) {
         elem.on('keydown', function (evt) {
             var key = evt.which;
             var ctrlDown = evt.ctrlKey || evt.metaKey;
@@ -1935,38 +2010,42 @@ consoleModule.controller('auth', [
     }]);
 
 // Download agent controller.
-consoleModule.controller('agent-download', [
-    '$http', '$common', '$scope', '$interval', '$modal', '$loading', '$state',
-        function ($http, $common, $scope, $interval, $modal, $loading, $state) {
-        $scope.loadingAgentOptions = { text: 'Enabling test-drive SQL...' };
+consoleModule.service('$agentDownload', [
+    '$http', '$interval', '$rootScope', '$state', '$modal', '$loading', '$common',
+        function ($http, $interval, $rootScope, $state, $modal, $loading, $common) {
+        var scope = $rootScope.$new();
 
         // Pre-fetch modal dialogs.
-        var _agentDownloadModal = $modal({scope: $scope, templateUrl: '/templates/agent-download.html', show: false, backdrop: 'static'});
+        var _modal = $modal({scope: scope, templateUrl: '/templates/agent-download.html', show: false, backdrop: 'static'});
 
-        var _agentDownloadHide = _agentDownloadModal.hide;
+        var _modalHide = _modal.hide;
+
+        var _modalAlertHide = function () {
+            $common.hideAlert();
+
+            _modalHide();
+        };
 
         /**
          * Special dialog hide function.
          */
-        _agentDownloadModal.hide = function () {
-            $common.hideAlert();
+        _modal.hide = function () {
+            _stopInterval();
 
-            _agentDownloadHide();
+            _modalAlertHide();
         };
 
         /**
          * Close dialog and go by specified link.
          */
-        $scope.goBack = function () {
-            _stopInterval();
+        scope.back = function () {
+            _modal.hide();
 
-            _agentDownloadModal.hide();
-
-            if (_agentDownloadModal.backLink)
-                $state.go(_agentDownloadModal.backLink);
+            if (_modal.backState)
+                $state.go(_modal.backState);
         };
 
-        $scope.downloadAgent = function () {
+        scope.downloadAgent = function () {
             var lnk = document.createElement('a');
 
             lnk.setAttribute('href', '/api/v1/agent/download/zip');
@@ -1980,21 +2059,6 @@ consoleModule.controller('agent-download', [
             document.body.removeChild(lnk);
         };
 
-        $scope.enableTestDriveSQL = function () {
-            $loading.start('loadingAgent');
-
-            $http.post('/api/v1/agent/testdrive/sql')
-                .success(function (result) {
-                    if (!result)
-                        $common.showError('Failed to start test-drive sql', 'top-right', 'body', true);
-                })
-                .error(function (errMsg, status) {
-                    $loading.finish('loadingAgent');
-
-                    _handleException(errMsg, status);
-                });
-        };
-
         /**
          * Base handler of exceptions on agent interaction
          *
@@ -2002,23 +2066,28 @@ consoleModule.controller('agent-download', [
          * @param status Error code.
          * @param timedOut True if request timedOut.
          */
-        var _handleException = function (errMsg, status, timedOut) {
-            if (_agentDownloadModal.skipSingleError)
-                _agentDownloadModal.skipSingleError = false;
-            else if (!_agentDownloadModal.$isShown)
-                _agentDownloadModal.$promise.then(_agentDownloadModal.show);
+        function _handleException (errMsg, status, timedOut) {
+            if (_modal.skipSingleError)
+                _modal.skipSingleError = false;
+            else if (!_modal.$isShown)
+                _modal.$promise.then(_modal.show);
 
-            $scope.nodeFailedConnection = status === 404 || timedOut;
+            scope.nodeFailedConnection = status === 404 || timedOut;
 
             if (status === 500)
                 $common.showError(errMsg, 'top-right', 'body', true);
-        };
+        }
 
         /**
          * Start interval to agent listening.
          */
-        function _startInterval() {
-            _agentDownloadModal.updatePromise = $interval(function () {
+        function _startInterval(awaitFirstSuccess) {
+            _modal.skipSingleError = false;
+
+            // Stop refresh after first success.
+            _modal.awaitFirstSuccess = awaitFirstSuccess;
+
+            _modal.updatePromise = $interval(function () {
                 _tryWithAgent();
             }, 5000, 0, false);
 
@@ -2029,82 +2098,85 @@ consoleModule.controller('agent-download', [
          * Stop interval to agent listening.
          */
         function _stopInterval() {
-            $interval.cancel(_agentDownloadModal.updatePromise);
+            $interval.cancel(_modal.updatePromise);
         }
 
         /**
          * Try to access agent and execute specified function.
          */
         function _tryWithAgent() {
-            var timeout = 3000,
-                timedOut = false;
+            var _timeout = 3000,
+                _timedOut = false;
 
             setTimeout(function () {
-                timedOut = true;
-            }, timeout);
+                _timedOut = true;
+            }, _timeout);
 
-            $http.post(_agentDownloadModal.checkUrl, undefined, {timeout: timeout})
-                .success(function (result) {
-                    _agentDownloadModal.skipSingleError = true;
+            $http.post(_modal.check.url, _modal.check.params, {timeout: _timeout})
+                .then(function (result) {
+                    _modal.skipSingleError = true;
 
-                    _agentDownloadModal.hide();
-
-                    if (_agentDownloadModal.awaitFirstSuccess)
+                    if (_modal.awaitFirstSuccess)
                         _stopInterval();
 
-                    $loading.finish('loadingAgent');
+                    $loading.finish('loading');
 
-                    _agentDownloadModal.checkFn(result, _agentDownloadModal.hide, _handleException);
+                    _modal.check.cb(result.data, _modalAlertHide, _handleException);
                 })
-                .error(function (errMsg, status) {
-                    _handleException(errMsg, status, timedOut);
+                .catch(function (errMsg, status) {
+                    _handleException(errMsg, status, _timedOut);
                 });
         }
 
-        /**
-         * Start awaiting agent start using ping.
-         *
-         * @param checkFn Function to execute by timer when agent available.
-         */
-        $scope.awaitAgent = function (checkFn) {
-            _agentDownloadModal.skipSingleError = false;
+        return {
+            /**
+             * Start listening topology from node.
+             *
+             * @param success Function to execute by timer when agent available.
+             * @param demo
+             * @param attr
+             * @param mtr
+             */
+            startTopologyListening: function (success, demo, attr, mtr) {
+                _modal.check = {
+                    url: '/api/v1/agent/topology',
+                    params: {demo: !!demo,  attr: !!attr, mtr: !!mtr},
+                    cb: success
+                };
 
-            _agentDownloadModal.checkUrl = '/api/v1/agent/ping';
+                _modal.backState = 'base.configuration.clusters';
 
-            _agentDownloadModal.checkFn = checkFn;
+                scope.agentGoal = 'execute sql statements';
 
-            // Stop refresh after first success.
-            _agentDownloadModal.awaitFirstSuccess = true;
+                scope.backText = 'Back to Configuration';
 
-            $scope.agentDownloadBackTo = 'Metadata';
+                _startInterval();
+            },
+            /**
+             * Start awaiting agent start using ping.
+             *
+             * @param success Function to execute by timer when agent available.
+             */
+            awaitAgent: function (success) {
+                _modal.check = {
+                    url: '/api/v1/agent/ping',
+                    cb: success
+                };
 
-            _startInterval();
-        };
+                _modal.backState = 'base.configuration.domains';
 
-        /**
-         * Start listening topology from node.
-         *
-         * @param checkFn Function to execute by timer when agent available.
-         */
-        $scope.startTopologyListening = function (checkFn) {
-            _agentDownloadModal.skipSingleError = false;
+                scope.agentGoal = 'import domain model from database schema';
 
-            _agentDownloadModal.checkUrl = '/api/v1/agent/topology';
+                scope.backText = 'Back to Domain models';
 
-            _agentDownloadModal.checkFn = checkFn;
-
-            _agentDownloadModal.backLink = 'base.configuration.clusters';
-
-            $scope.agentDownloadBackTo = 'Configuration';
-
-            _startInterval();
-        };
-
-        /**
-         * Stop listening of agent by ping.
-         */
-        $scope.finishAgentListening = function () {
-            _stopInterval();
+                _startInterval(true);
+            },
+            /**
+             * Stop listening of agent by ping.
+             */
+            stopAwaitAgent: function () {
+                _stopInterval();
+            }
         };
     }]);
 
@@ -2118,16 +2190,15 @@ consoleModule.controller('notebooks', ['$scope', '$modal', '$state', '$http', '$
 
     $scope.$root.rebuildDropdown = function() {
         $scope.notebookDropdown = [
-            {text: 'Create new notebook', click: 'inputNotebookName()'}
+            {text: 'Create new notebook', click: 'inputNotebookName()'},
+            {divider: true},
+            {text: 'SQL demo', sref: 'base.sql.demo'}
         ];
-
-        if ($scope.$root.notebooks.length > 0)
-            $scope.notebookDropdown.push({divider: true});
 
         _.forEach($scope.$root.notebooks, function (notebook) {
             $scope.notebookDropdown.push({
                 text: notebook.name,
-                href: '/sql/' + notebook._id
+                sref: 'base.sql.notebook({noteId:"' + notebook._id + '"})'
             });
         });
     };
@@ -2158,7 +2229,7 @@ consoleModule.controller('notebooks', ['$scope', '$modal', '$state', '$http', '$
 
                 $state.go('base.sql', {id: id});
             })
-            .error(function (message, state) {
+            .error(function (message) {
                 $common.showError(message);
             });
     };

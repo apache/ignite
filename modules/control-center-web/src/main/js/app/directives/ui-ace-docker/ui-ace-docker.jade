@@ -28,8 +28,4 @@ div
             | . For more information about using Ignite with Docker please read&nbsp;
             +hard-link('http://apacheignite.readme.io/docs/docker-deployment', 'documentation')
             |.
-        .col-xs-3.col-sm-2
-            label(for='os') Operation System:
-        .col-xs-5.col-sm-4
-            input#os.form-control(type='text' ng-model='type' placeholder='debian:8' data-min-length='0' data-html='1' data-auto-select='true' bs-typeahead retain-selection bs-options='os for os in types')
     div(ng-if='ctrl.data' ui-ace='{onLoad: onLoad, mode: "dockerfile"}' ng-model='ctrl.data')
