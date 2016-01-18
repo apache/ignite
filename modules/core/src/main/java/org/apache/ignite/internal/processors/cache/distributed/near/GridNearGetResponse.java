@@ -188,7 +188,7 @@ public class GridNearGetResponse extends GridCacheMessage implements GridCacheDe
                 info.marshal(cctx);
         }
 
-        if (err != null)
+        if (err != null && errBytes == null)
             errBytes = ctx.marshaller().marshal(err);
     }
 
@@ -203,7 +203,7 @@ public class GridNearGetResponse extends GridCacheMessage implements GridCacheDe
                 info.unmarshal(cctx, ldr);
         }
 
-        if (errBytes != null)
+        if (errBytes != null && err == null)
             err = ctx.marshaller().unmarshal(errBytes, ldr);
     }
 

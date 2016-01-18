@@ -66,6 +66,7 @@ public class GridDhtPartitionDemandMessage extends GridCacheMessage {
     /**
      * @param updateSeq Update sequence for this node.
      * @param topVer Topology version.
+     * @param cacheId Cache ID.
      */
     GridDhtPartitionDemandMessage(long updateSeq, @NotNull AffinityTopologyVersion topVer, int cacheId) {
         this.cacheId = cacheId;
@@ -75,6 +76,7 @@ public class GridDhtPartitionDemandMessage extends GridCacheMessage {
 
     /**
      * @param cp Message to copy from.
+     * @param parts Partitions.
      */
     GridDhtPartitionDemandMessage(GridDhtPartitionDemandMessage cp, Collection<Integer> parts) {
         cacheId = cp.cacheId;
@@ -181,7 +183,7 @@ public class GridDhtPartitionDemandMessage extends GridCacheMessage {
     @Override public void prepareMarshal(GridCacheSharedContext ctx) throws IgniteCheckedException {
         super.prepareMarshal(ctx);
 
-        if (topic != null)
+        if (topic != null && topicBytes == null)
             topicBytes = ctx.marshaller().marshal(topic);
     }
 
@@ -189,7 +191,7 @@ public class GridDhtPartitionDemandMessage extends GridCacheMessage {
     @Override public void finishUnmarshal(GridCacheSharedContext ctx, ClassLoader ldr) throws IgniteCheckedException {
         super.finishUnmarshal(ctx, ldr);
 
-        if (topicBytes != null)
+        if (topicBytes != null && topic == null)
             topic = ctx.marshaller().unmarshal(topicBytes, ldr);
     }
 
