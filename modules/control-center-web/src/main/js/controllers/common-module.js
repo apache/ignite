@@ -2113,17 +2113,20 @@ consoleModule.service('$agentDownload', [
             }, _timeout);
 
             $http.post(_modal.check.url, _modal.check.params, {timeout: _timeout})
-                .then(function (result) {
-                    _modal.skipSingleError = true;
-
+                .success(function (data) {
                     if (_modal.awaitFirstSuccess)
                         _stopInterval();
 
                     $loading.finish('loading');
 
-                    _modal.check.cb(result.data, _modalAlertHide, _handleException);
+                    _modal.check.cb(data, _modalAlertHide, _handleException);
+
+                    if (!_modal.skipSingleError)
+                        _modal.check.onConnect();
+
+                    _modal.skipSingleError = true;
                 })
-                .catch(function (errMsg, status) {
+                .error(function (errMsg, status) {
                     _handleException(errMsg, status, _timedOut);
                 });
         }
@@ -2132,16 +2135,18 @@ consoleModule.service('$agentDownload', [
             /**
              * Start listening topology from node.
              *
-             * @param success Function to execute by timer when agent available.
-             * @param demo
-             * @param attr
-             * @param mtr
+             * @param cb Function to execute by timer when topology received.
+             * @param onConnect Function to execute when agent connected to a grid.
+             * @param demo True if need work with demo grid.
+             * @param attr True if need receive nodes attributes.
+             * @param mtr True if need receive nodes metrics.
              */
-            startTopologyListening: function (success, demo, attr, mtr) {
+            startTopologyListening: function (cb, onConnect, demo, attr, mtr) {
                 _modal.check = {
                     url: '/api/v1/agent/topology',
                     params: {demo: !!demo,  attr: !!attr, mtr: !!mtr},
-                    cb: success
+                    onConnect: onConnect,
+                    cb: cb
                 };
 
                 _modal.backState = 'base.configuration.clusters';
@@ -2222,12 +2227,12 @@ consoleModule.controller('notebooks', ['$scope', '$modal', '$state', '$http', '$
 
     $scope.$root.createNewNotebook = function(name) {
         $http.post('/api/v1/notebooks/new', {name: name})
-            .success(function (id) {
+            .success(function (noteId) {
                 _notebookNewModal.hide();
 
                 $scope.$root.reloadNotebooks();
 
-                $state.go('base.sql', {id: id});
+                $state.go('base.sql.notebook', {noteId: noteId});
             })
             .error(function (message) {
                 $common.showError(message);

@@ -247,10 +247,6 @@ consoleModule.controller('sqlController', function ($http, $timeout, $interval, 
             });
     };
 
-    $scope.goToConfiguration = function () {
-        $state.go('/configuration/clusters');
-    };
-
     var loadNotebook = function (notebook) {
         $scope.notebook = notebook;
 
@@ -273,7 +269,7 @@ consoleModule.controller('sqlController', function ($http, $timeout, $interval, 
         else
             $scope.rebuildScrollParagraphs();
 
-        $agentDownload.startTopologyListening(getTopology, $scope.demo);
+        $agentDownload.startTopologyListening(getTopology, _onConnect, $scope.demo);
     };
 
     $loading.start('loading');
@@ -282,6 +278,8 @@ consoleModule.controller('sqlController', function ($http, $timeout, $interval, 
         .then(loadNotebook)
         .catch(function(err) {
             $scope.notebook = undefined;
+
+            $loading.finish('loading');
         });
 
     $scope.renameNotebook = function (name) {
@@ -314,26 +312,16 @@ consoleModule.controller('sqlController', function ($http, $timeout, $interval, 
     $scope.removeNotebook = function () {
         $confirm.confirm('Are you sure you want to remove: "' + $scope.notebook.name + '"?')
             .then(function () {
-                $http.post('/api/v1/notebooks/remove', {_id: $scope.notebook._id})
-                    .success(function () {
-                        var idx = _.findIndex($scope.$root.notebooks, function (item) {
-                            return item._id == $scope.notebook._id;
-                        });
-
-                        if (idx >= 0) {
-                            $scope.$root.notebooks.splice(idx, 1);
-
-                            $scope.$root.rebuildDropdown();
-
-                            if ($scope.$root.notebooks.length > 0)
-                                $state.go('base.sql', {id: $scope.$root.notebooks[Math.min(idx,  $scope.$root.notebooks.length - 1)]._id});
-                            else
-                                $state.go('base.configuration.clusters');
-                        }
-                    })
-                    .error(function (errMsg) {
-                        $common.showError(errMsg);
-                    });
+                return QueryNotebooks.remove($scope.demo, $scope.notebook._id);
+            })
+            .then(function (notebook) {
+                if (notebook)
+                    $state.go('base.sql.notebook', {noteId: notebook._id});
+                else
+                    $state.go('base.configuration.clusters');
+            })
+            .catch(function (errMsg) {
+                $common.showError(errMsg);
             });
     };
 
@@ -453,9 +441,14 @@ consoleModule.controller('sqlController', function ($http, $timeout, $interval, 
 
         _setActiveCache();
 
-        $scope.loaded = true;
-
         $loading.finish('loading');
+    }
+
+    function _onConnect() {
+        if (!$scope.demo)
+            return;
+
+        _.forEach($scope.notebook.paragraphs, $scope.execute);
     }
 
     var _columnFilter = function(paragraph) {

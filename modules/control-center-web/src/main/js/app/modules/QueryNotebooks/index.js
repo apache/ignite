@@ -31,6 +31,7 @@ angular
                     pageSize: 50,
                     query: 'SELECT * FROM "CarCache".Car',
                     result: 'table',
+                    timeLineSpan: '1',
                     rate: {
                         value: 30,
                         unit: 1000,
@@ -43,6 +44,7 @@ angular
                     pageSize: 50,
                     query: 'SELECT p.name, count(*) AS cnt\nFROM "ParkingCache".Parking p\nINNER JOIN "CarCache".Car c\n  ON (p.id) = (c.parkingId)\nGROUP BY P.NAME',
                     result: 'table',
+                    timeLineSpan: '1',
                     rate: {
                         value: 30,
                         unit: 1000,
@@ -53,10 +55,11 @@ angular
                     name: 'Query with refresh rate',
                     cacheName: 'CarCache',
                     pageSize: 50,
-                    query: 'SELECT * FROM "CarCache".Car',
-                    result: 'table',
+                    query: 'SELECT count(*)\nFROM "CarCache".Car',
+                    result: 'line',
+                    timeLineSpan: '1',
                     rate: {
-                        value: 5,
+                        value: 3,
                         unit: 1000,
                         installed: true
                     }
@@ -65,7 +68,7 @@ angular
             expandedParagraphs: [0, 1, 2]
         };
 
-        this.$get = ['$q', '$http', ($q, $http) => {
+        this.$get = ['$q', '$http', '$rootScope', ($q, $http, $rootScope) => {
             return {
                 read(demo, noteId) {
                     if (demo)
@@ -78,11 +81,34 @@ angular
                 },
                 save(demo, notebook) {
                     if (demo)
-                        return $http.post('/api/v1/notebooks/save', notebook);
+                        return $q.when();
 
-                    return $q.when();
+                    return $http.post('/api/v1/notebooks/save', notebook).then(({data}) => {
+                        return data;
+                    });
                 },
                 remove(demo, nodeId) {
+                    if (demo)
+                        return $q.reject('Removing "SQL demo" notebook is not supported.');
+
+                    return $http.post('/api/v1/notebooks/remove', {_id: nodeId})
+                        .then(() => {
+                            const idx = _.findIndex($rootScope.notebooks, (item) => {
+                                return item._id === nodeId;
+                            });
+
+                            if (idx >= 0) {
+                                $rootScope.notebooks.splice(idx, 1);
+
+                                $rootScope.rebuildDropdown();
+
+                                if (idx < $rootScope.notebooks.length)
+                                    return $rootScope.notebooks[idx];
+                            }
+
+                            if ($rootScope.notebooks.length > 0)
+                                return $rootScope.notebooks[$rootScope.notebooks.length - 1];
+                        });
                 }
             };
         }];
