@@ -1,10 +1,10 @@
 {
-  "metadata": [
+  "domainModel": [
     {
-      "label": "Metadata common",
+      "label": "General",
       "group": "general",
       "tip": [
-        "Metadata properties common to Query and Store"
+        "Domain model properties common to Query and Store"
       ],
       "fields": [
         {
@@ -16,7 +16,7 @@
           "placeholderEmpty": "No caches configured",
           "items": "caches",
           "tip": [
-            "Select caches to associate metadata with cache"
+            "Select caches to associate domain model with cache"
           ],
           "addLink": {
             "ref": "/configuration/caches?new"
@@ -63,10 +63,10 @@
       ]
     },
     {
-      "label": "Metadata for SQL query",
+      "label": "Domain model for SQL query",
       "group": "query",
       "tip": [
-        "Metadata properties for fields queries"
+        "Domain model properties for fields queries"
       ],
       "fields": [
         {
@@ -126,10 +126,10 @@
       ]
     },
     {
-      "label": "Metadata for cache store",
+      "label": "Domain model for cache store",
       "group": "store",
       "tip": [
-        "Metadata properties for binding database with cache via POJO cache store"
+        "Domain model properties for binding database with cache via POJO cache store"
       ],
       "fields": [
         {

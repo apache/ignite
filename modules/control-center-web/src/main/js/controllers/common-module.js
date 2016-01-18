@@ -1750,8 +1750,8 @@ consoleModule.filter('tablesSearch', function() {
     };
 });
 
-// Filter metadata with key fields configuration.
-consoleModule.filter('metadatasValidation', ['$common', function ($common) {
+// Filter domain models with key fields configuration.
+consoleModule.filter('domainsValidation', ['$common', function ($common) {
     return function(metadatas, valid, invalid) {
         if (valid && invalid)
             return metadatas;
@@ -2179,11 +2179,11 @@ consoleModule.service('$agentDownload', [
                     cb: success
                 };
 
-                _agentDownloadModal.backState = 'base.configuration.metadata';
+                _agentDownloadModal.backState = 'base.configuration.domains';
 
-                scope.agentGoal = 'import metadata from database schema';
+                scope.agentGoal = 'import domain models from database schema';
 
-                scope.backText = 'Back to Metadata';
+                scope.backText = 'Back to Domain models';
 
                 _startInterval(true);
             },

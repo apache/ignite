@@ -1132,12 +1132,12 @@ $generatorJava.clusterDataSources = function (caches, res) {
  * Generate cache store group.
  *
  * @param cache Cache descriptor.
- * @param metadatas Metadata descriptors.
+ * @param domains Domain model descriptors.
  * @param cacheVarName Cache variable name.
  * @param res Resulting output with generated code.
  * @returns {*} Java code for cache store configuration.
  */
-$generatorJava.cacheStore = function (cache, metadatas, cacheVarName, res) {
+$generatorJava.cacheStore = function (cache, domains, cacheVarName, res) {
     if (!res)
         res = $generatorCommon.builder();
 
@@ -1176,7 +1176,7 @@ $generatorJava.cacheStore = function (cache, metadatas, cacheVarName, res) {
 
                 res.needEmptyLine = true;
 
-                var metaConfigs = _.filter(metadatas, function (meta) {
+                var metaConfigs = _.filter(domains, function (meta) {
                     return $generatorCommon.domainQueryMetadata(meta) === 'Configuration' &&
                         $commonUtils.isDefinedAndNotEmpty(meta.databaseTable);
                 });
@@ -1358,7 +1358,7 @@ $generatorJava.cacheStatistics = function (cache, varName, res) {
     return res;
 };
 
-// Generate metadata query fields.
+// Generate domain model query fields.
 $generatorJava.metadataQueryFields = function (res, meta) {
     var fields = meta.fields;
 
@@ -1377,7 +1377,7 @@ $generatorJava.metadataQueryFields = function (res, meta) {
     }
 };
 
-// Generate metadata query aliases.
+// Generate domain model query aliases.
 $generatorJava.metadataQueryAliases = function (res, meta) {
     var aliases = meta.aliases;
 
@@ -1396,7 +1396,7 @@ $generatorJava.metadataQueryAliases = function (res, meta) {
     }
 };
 
-// Generate metadata indexes.
+// Generate domain model indexes.
 $generatorJava.metadataQueryIndexes = function (res, meta) {
     var indexes = meta.indexes;
 
@@ -1451,7 +1451,7 @@ $generatorJava.metadataQueryIndexes = function (res, meta) {
     }
 };
 
-// Generate metadata db fields.
+// Generate domain model db fields.
 $generatorJava.metadataDatabaseFields = function (res, meta, fieldProperty) {
     var dbFields = meta[fieldProperty];
 
@@ -1478,7 +1478,7 @@ $generatorJava.metadataDatabaseFields = function (res, meta, fieldProperty) {
     }
 };
 
-// Generate metadata general group.
+// Generate domain model general group.
 $generatorJava.metadataGeneral = function (meta, res) {
     if (!res)
         res = $generatorCommon.builder();
@@ -1491,7 +1491,7 @@ $generatorJava.metadataGeneral = function (meta, res) {
     return res;
 };
 
-// Generate metadata for query group.
+// Generate domain model for query group.
 $generatorJava.metadataQuery = function (meta, res) {
     if (!res)
         res = $generatorCommon.builder();
@@ -1509,7 +1509,7 @@ $generatorJava.metadataQuery = function (meta, res) {
     return res;
 };
 
-// Generate metadata for store group.
+// Generate domain model for store group.
 $generatorJava.metadataStore = function (meta, withTypes, res) {
     if (!res)
         res = $generatorCommon.builder();
@@ -1531,7 +1531,7 @@ $generatorJava.metadataStore = function (meta, withTypes, res) {
     return res;
 };
 
-// Generate cache type metadata configs.
+// Generate doman model configs.
 $generatorJava.cacheMetadatas = function (metadatas, varName, res) {
     if (!res)
         res = $generatorCommon.builder();
@@ -1541,7 +1541,7 @@ $generatorJava.cacheMetadatas = function (metadatas, varName, res) {
             $commonUtils.isDefinedAndNotEmpty(meta.fields);
     });
 
-    // Generate cache type metadata configs.
+    // Generate domain model configs.
     if ($commonUtils.isDefinedAndNotEmpty(metaConfigs)) {
         $generatorJava.declareVariable(res, 'queryEntities', 'java.util.Collection', 'java.util.ArrayList', 'org.apache.ignite.cache.QueryEntity');
 
@@ -1584,7 +1584,7 @@ $generatorJava.cache = function(cache, varName, res) {
     $generatorJava.cacheMetadatas(cache.metadatas, varName, res);
 };
 
-// Generation of cache metadatas in separate methods.
+// Generation of cache domain model in separate methods.
 $generatorJava.clusterMetadatas = function (caches, res) {
     var metadatas = [];
 
@@ -1787,18 +1787,18 @@ $generatorJava.extractType = function (fullType) {
 /**
  * Generate java class code.
  *
- * @param meta Metadata object.
+ * @param domain Domain model object.
  * @param key If 'true' then key class should be generated.
  * @param pkg Package name.
  * @param useConstructor If 'true' then empty and full constructors should be generated.
  * @param includeKeyFields If 'true' then include key fields into value POJO.
  * @param res Resulting output with generated code.
  */
-$generatorJava.javaClassCode = function (meta, key, pkg, useConstructor, includeKeyFields, res) {
+$generatorJava.javaClassCode = function (domain, key, pkg, useConstructor, includeKeyFields, res) {
     if (!res)
         res = $generatorCommon.builder();
 
-    var type = $generatorJava.extractType(key ? meta.keyType : meta.valueType);
+    var type = $generatorJava.extractType(key ? domain.keyType : domain.valueType);
 
     // Class comment.
     res.line('/**');
@@ -1813,10 +1813,10 @@ $generatorJava.javaClassCode = function (meta, key, pkg, useConstructor, include
     res.line('private static final long serialVersionUID = 0L;');
     res.needEmptyLine = true;
 
-    var allFields = (key || includeKeyFields) ? meta.keyFields.slice() : [];
+    var allFields = (key || includeKeyFields) ? domain.keyFields.slice() : [];
 
     if (!key)
-        _.forEach(meta.valueFields, function (valFld) {
+        _.forEach(domain.valueFields, function (valFld) {
             if (_.findIndex(allFields, function(fld) {
                 return fld.javaFieldName === valFld.javaFieldName;
             }) < 0)
@@ -2022,7 +2022,7 @@ $generatorJava.javaClassCode = function (meta, key, pkg, useConstructor, include
 };
 
 /**
- * Generate source code for type by its metadata.
+ * Generate source code for type by its domain models.
  *
  * @param caches List of caches to generate POJOs for.
  * @param useConstructor If 'true' then generate constructors.
@@ -2035,7 +2035,7 @@ $generatorJava.pojos = function (caches, useConstructor, includeKeyFields) {
         _.forEach(cache.metadatas, function(meta) {
             // Skip already generated classes.
             if (!_.find(metadatas, {valueType: meta.valueType}) &&
-                // Skip metadata without value fields.
+                // Skip domain models without value fields.
                 $commonUtils.isDefinedAndNotEmpty(meta.valueFields)) {
                 var metadata = {};
 

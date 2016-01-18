@@ -464,7 +464,7 @@ $generatorCommon.binaryIsDefined = function (binary) {
         $commonUtils.isDefinedAndNotEmpty(binary.typeConfigurations) || ($commonUtils.isDefined(binary.compactFooter) && !binary.compactFooter));
 };
 
-// Extract domain metadata.
+// Extract domain model metadata location.
 $generatorCommon.domainQueryMetadata = function(domain) {
     return domain.queryMetadata ? domain.queryMetadata : 'Configuration';
 };

@@ -17,25 +17,25 @@
 include ../includes/controls
 
 .docs-header
-    h1 Create and Configure Cache Type Metadata
-.docs-body(ng-controller='metadataController')
+    h1 Create and Configure Domain Models
+.docs-body(ng-controller='domainsController')
     ignite-callout
         ignite-callout-cel(data-title='On This Screen')
-            li Manually enter Metadata
-            li Import Metadata from Database
+            li Manually enter Domain models
+            li Import Domain models from Database
             li
                 ignite-dialog More info
-                    ignite-dialog-title Metadata screen
+                    ignite-dialog-title Domain models screen
                     ignite-dialog-content 
-                        | Metadata can be assigned to specified #[a(ui-sref='base.configuration.caches') caches].#[br]
-                        | Generated cluster with caches and metadata configuration available on #[a(ui-sref='base.configuration.summary') summary] screen.
+                        | Domain models can be assigned to specified #[a(ui-sref='base.configuration.caches') caches].#[br]
+                        | Generated cluster with caches and domain models configuration available on #[a(ui-sref='base.configuration.summary') summary] screen.
                     
         ignite-callout-cel(data-title='Next Steps')
             li Continue to #[a(ui-sref='base.configuration.summary') Summary]
             li Back to #[a(ui-sref='base.configuration.caches') Caches]
             li Back to #[a(ui-sref='base.configuration.clusters') Clusters]
                         
-    div(dw-loading='loadingMetadataScreen' dw-loading-options='{text: "Loading metadata screen...", className: "page-loading-overlay"}')
+    div(dw-loading='loadingMetadataScreen' dw-loading-options='{text: "Loading domain models screen...", className: "page-loading-overlay"}')
         div(ng-show='ui.ready')
             hr
             .padding-bottom-dflt(ng-show='metadatas && metadatas.length > 0')
@@ -47,32 +47,32 @@ include ../includes/controls
                                     .col-sm-5
                                         lable.labelHeader.labelFormField {{metadataTitle()}}
                                     .col-sm-7
-                                        .pull-right.labelLogin.additional-filter(ng-if='(metadatas | metadatasValidation:false:true).length > 0')
-                                            a.labelFormField(ng-if='ui.showValid' ng-click='toggleValid()') Key fields should be configured: {{(displayedRows | metadatasValidation:false:true).length}}&nbsp
-                                            a.labelFormField(ng-if='!ui.showValid' ng-click='toggleValid()') Show all metadata: {{displayedRows.length}}&nbsp
+                                        .pull-right.labelLogin.additional-filter(ng-if='(metadatas | domainsValidation:false:true).length > 0')
+                                            a.labelFormField(ng-if='ui.showValid' ng-click='toggleValid()') Key fields should be configured: {{(displayedRows | domainsValidation:false:true).length}}&nbsp
+                                            a.labelFormField(ng-if='!ui.showValid' ng-click='toggleValid()') Show all domain models: {{displayedRows.length}}&nbsp
                                 .col-sm-4
-                                    input.form-control.pull-right(type='text' st-search='valueType' placeholder='Filter metadatas...')
+                                    input.form-control.pull-right(type='text' st-search='valueType' placeholder='Filter domain models...')
                         tbody
                             tr
                                 td
-                                    .scrollable-y(ng-show='(displayedRows | metadatasValidation:ui.showValid:true).length > 0' style='max-height: 200px')
+                                    .scrollable-y(ng-show='(displayedRows | domainsValidation:ui.showValid:true).length > 0' style='max-height: 200px')
                                         table
                                             tbody
-                                                tr(ng-repeat='row in (displayedRows | metadatasValidation:ui.showValid:true) track by row._id')
+                                                tr(ng-repeat='row in (displayedRows | domainsValidation:ui.showValid:true) track by row._id')
                                                     td
                                                         a(ng-class='{active: row._id == selectedItem._id}' ng-click='selectItem(row)') {{$index + 1}}) {{row.valueType}}
-                                    label.placeholder(ng-show='(displayedRows | metadatasValidation:ui.showValid:true).length == 0') No metadata found
+                                    label.placeholder(ng-show='(displayedRows | domainsValidation:ui.showValid:true).length == 0') No domain models found
             .padding-top-dflt(bs-affix)
-                .panel-tip-container(data-placement='bottom' bs-tooltip='' data-title='Create new metadata')
-                    button.btn.btn-primary(id='new-item' ng-click='createItem()') Add metadata
-                .panel-tip-container(bs-tooltip='' data-title='Import metadata from database' data-placement='bottom')
+                .panel-tip-container(data-placement='bottom' bs-tooltip='' data-title='Create new domain model')
+                    button.btn.btn-primary(id='new-item' ng-click='createItem()') Add domain model
+                .panel-tip-container(bs-tooltip='' data-title='Import domain models from database' data-placement='bottom')
                     button.btn.btn-primary(ng-click='showImportMetadataModal(false)') Import from database
-                +save-remove-buttons('metadata')
-                .btn-group.panel-tip-container.pull-right(bs-tooltip='' data-title='Import metadata from demo database' data-placement='bottom')
+                +save-remove-buttons('domain model')
+                .btn-group.panel-tip-container.pull-right(bs-tooltip='' data-title='Import domain models from demo database' data-placement='bottom')
                     button.btn.btn-info(ng-click='showImportMetadataModal(true)') Demo
                         button.btn.dropdown-toggle.btn-info(id='remove-demo-dropdown' ng-if='hasDemoItems()' data-toggle='dropdown' data-container='body' bs-dropdown='removeDemoDropdown' data-placement='bottom-right')
                             span.caret
                 hr
-            form.form-horizontal(name='ui.inputForm' ng-show='backupItem && tableVisibleRow((displayedRows | metadatasValidation:ui.showValid:true), selectedItem)' novalidate unsaved-warning-form)
+            form.form-horizontal(name='ui.inputForm' ng-show='backupItem && tableVisibleRow((displayedRows | domainsValidation:ui.showValid:true), selectedItem)' novalidate unsaved-warning-form)
                 .panel-group(bs-collapse ng-model='panels.activePanels' data-allow-multiple='true')
-                    +groups('metadata', 'backupItem')
+                    +groups('domainModel', 'backupItem')

@@ -286,7 +286,7 @@ consoleModule.controller('cachesController', [
         // When landing on the page, get caches and show them.
         $http.post('/api/v1/configuration/caches/list')
             .success(function (data) {
-                var validFilter = $filter('metadatasValidation');
+                var validFilter = $filter('domainsValidation');
 
                 $scope.spaces = data.spaces;
 
@@ -590,7 +590,7 @@ consoleModule.controller('cachesController', [
 
                         if (_.findIndex(metadatas, $common.metadataForStoreConfigured) < 0)
                             return showPopoverMessage($scope.panels, 'general', 'metadata',
-                                'Cache with configured JDBC POJO store factory should contain at least one metadata with store configuration');
+                                'Cache with configured JDBC POJO store factory should be associated with at least one domain model for cache store');
                     }
                 }
             }

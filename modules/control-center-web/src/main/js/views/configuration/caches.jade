@@ -22,17 +22,17 @@ include ../includes/controls
     ignite-callout
         ignite-callout-cel(data-title='On This Screen')
             li Configure Caches
-            li Link Metadata to Caches
+            li Link Domain models to Caches
             li Link Caches to Clusters
             li
                 ignite-dialog More info
                     ignite-dialog-title Caches screen
                     ignite-dialog-content 
-                        | Caches can be linked with specified #[a(ui-sref='base.configuration.clusters') clusters] and #[a(ui-sref='base.configuration.metadata') metadata].#[br]
+                        | Caches can be linked with specified #[a(ui-sref='base.configuration.clusters') clusters] and #[a(ui-sref='base.configuration.domains') domain models].#[br]
                         | Generated cluster with caches configuration available on #[a(ui-sref='base.configuration.summary') summary] screen.
                     
         ignite-callout-cel(data-title='Next Steps')
-            li Continue to #[a(ui-sref='base.configuration.metadata') Metadata]
+            li Continue to #[a(ui-sref='base.configuration.domains') Domain models]
             li Continue to #[a(ui-sref='base.configuration.summary') Summary]
             li Back to #[a(ui-sref='base.configuration.clusters') Clusters]
 

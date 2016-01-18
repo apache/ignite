@@ -190,7 +190,7 @@ router.post('/query/close', function (req, res) {
     }
 });
 
-/* Get metadata for cache. */
+/* Get domain model for cache. */
 router.post('/cache/metadata', function (req, res) {
     var client = _client(req, res);
 

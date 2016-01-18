@@ -32,8 +32,8 @@ mixin td-ellipses-a(w, ref)
         .modal-content(dw-loading='loadingMetadataFromDb' dw-loading-options='importMeta.loadingOptions')
             #errors-container.modal-header.header
                 button.close(ng-click='$hide()' aria-hidden='true') &times;
-                h4.modal-title(ng-if='!importMeta.demo') Import metadata from database
-                h4.modal-title(ng-if='importMeta.demo') Import metadata from demo database
+                h4.modal-title(ng-if='!importMeta.demo') Import domain models from database
+                h4.modal-title(ng-if='importMeta.demo') Import domain models from demo database
             .metadata-content(ng-show='importMeta.action == "drivers"' style="margin-bottom: 256px;")
             .metadata-content(ng-show='importMeta.action == "connect" && importMeta.demo' style='margin-bottom: 141px')
                 div(ng-if='demoConnection.db == "H2"')
@@ -41,7 +41,7 @@ mixin td-ellipses-a(w, ref)
                     ul
                         li In-memory H2 database server will be started inside agent
                         li Database will be populated with sample tables
-                        li You could test loading metadata using this demo database
+                        li You could test domain model generation with this demo database
                         li Click "Next" to continue
                 div(ng-if='demoConnection.db != "H2"')
                     label Demo could not be started

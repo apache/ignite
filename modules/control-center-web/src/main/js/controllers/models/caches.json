@@ -28,18 +28,18 @@
           }
         },
         {
-          "label": "Metadata",
+          "label": "Domain models",
           "id": "metadata",
           "type": "dropdown-multiple",
           "model": "metadatas",
-          "placeholder": "Choose metadata",
-          "placeholderEmpty": "No metadata configured",
+          "placeholder": "Choose domain models",
+          "placeholderEmpty": "No domain models configured",
           "items": "metadatas",
           "tip": [
-            "Select cache type metadata to describe types in cache"
+            "Select domain models to describe types in cache"
           ],
           "addLink": {
-            "ref": "/configuration/metadata?new"
+            "ref": "/configuration/domains?new"
           }
         },
         {

@@ -21,7 +21,7 @@ var router = require('express').Router();
 var db = require('../db');
 
 /**
- * Get spaces and metadata accessed for user account.
+ * Get spaces and domain models accessed for user account.
  *
  * @param req Request.
  * @param res Response.
@@ -42,7 +42,7 @@ router.post('/list', function (req, res) {
                     // Get all caches for spaces.
                     db.Cache.find({space: {$in: space_ids}}).sort('name').exec(function (err, caches) {
                         if (db.processed(err, res)) {
-                            // Get all metadata for spaces.
+                            // Get all domain models for spaces.
                             db.CacheTypeMetadata.find({space: {$in: space_ids}}).sort('valueType').exec(function (err, metadatas) {
                                 if (db.processed(err, res)) {
                                     // Remove deleted caches.
@@ -104,7 +104,7 @@ function _saveMeta(meta, savedMetas, callback) {
                 callback(err);
             else
             if (metadata)
-                return callback('Cache type metadata with value type: "' + metadata.valueType + '" already exist.');
+                return callback('Domain model with value type: "' + metadata.valueType + '" already exist.');
 
             (new db.CacheTypeMetadata(meta)).save(function (err, metadata) {
                 if (err)
@@ -136,13 +136,13 @@ function _save(metas, res) {
                 db.Cache.findOne({space: meta.space, name: meta.newCache.name}, function (err, cache) {
                     if (db.processed(err, res))
                         if (cache) {
-                            // Cache already exists, just save metadata.
+                            // Cache already exists, just save domain model.
                             meta.caches = [cache._id];
 
                             _saveMeta(meta, savedMetas, callback);
                         }
                         else {
-                            // If cache not found, then create it and associate with metadata.
+                            // If cache not found, then create it and associate with domain model.
                             (new db.Cache({
                                 space: meta.space,
                                 name: meta.newCache.name,
@@ -189,21 +189,21 @@ function _save(metas, res) {
 }
 
 /**
- * Save metadata.
+ * Save domain model.
  */
 router.post('/save', function (req, res) {
     _save([req.body], res);
 });
 
 /**
- * Batch save metadata .
+ * Batch save domain models.
  */
 router.post('/save/batch', function (req, res) {
     _save(req.body, res);
 });
 
 /**
- * Remove metadata by ._id.
+ * Remove domain model by ._id.
  */
 router.post('/remove', function (req, res) {
     db.CacheTypeMetadata.remove(req.body, function (err) {
@@ -213,7 +213,7 @@ router.post('/remove', function (req, res) {
 });
 
 /**
- * Remove all metadata.
+ * Remove all domain models.
  */
 router.post('/remove/all', function (req, res) {
     var user_id = req.currentUserId();
@@ -236,7 +236,7 @@ router.post('/remove/all', function (req, res) {
 });
 
 /**
- * Remove all generated demo metadata and caches.
+ * Remove all generated demo domain models and caches.
  */
 router.post('/remove/demo', function (req, res) {
     var user_id = req.currentUserId();
@@ -248,7 +248,7 @@ router.post('/remove/demo', function (req, res) {
                 return value._id;
             });
 
-            // Remove all demo metadata.
+            // Remove all demo domain models.
             db.CacheTypeMetadata.remove({$and: [{space: {$in: space_ids}}, {demo: true}]}, function (err) {
                 if (err)
                     return res.status(500).send(err.message);

@@ -57,15 +57,15 @@ angular
             }
         }
     })
-    .state('base.configuration.metadata', {
-        url: '/metadata',
-        templateUrl: '/configuration/metadata.html',
+    .state('base.configuration.domains', {
+        url: '/domains',
+        templateUrl: '/configuration/domains.html',
         data: {
-            loading: 'Loading metadata screen...'
+            loading: 'Loading domain models screen...'
         },
         resolve: {
             $title: () => {
-                return 'Configure Cache Type Metadata - Ignite Console';
+                return 'Configure Domain Models - Ignite Console';
             }
         }
     })

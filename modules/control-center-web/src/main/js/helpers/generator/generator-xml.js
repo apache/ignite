@@ -987,7 +987,7 @@ $generatorXml.cacheStatistics = function(cache, res) {
     return res;
 };
 
-// Generate metadata query fields.
+// Generate domain model query fields.
 $generatorXml.metadataQueryFields = function (res, meta) {
     var fields = meta.fields;
 
@@ -1008,7 +1008,7 @@ $generatorXml.metadataQueryFields = function (res, meta) {
     }
 };
 
-// Generate metadata query fields.
+// Generate domain model query fields.
 $generatorXml.metadataQueryAliases = function (res, meta) {
     var aliases = meta.aliases;
 
@@ -1029,7 +1029,7 @@ $generatorXml.metadataQueryAliases = function (res, meta) {
     }
 };
 
-// Generate metadata indexes.
+// Generate domain model indexes.
 $generatorXml.metadataQueryIndexes = function (res, meta) {
     var indexes = meta.indexes;
 
@@ -1069,7 +1069,7 @@ $generatorXml.metadataQueryIndexes = function (res, meta) {
     }
 };
 
-// Generate metadata db fields.
+// Generate domain model db fields.
 $generatorXml.metadataDatabaseFields = function (res, meta, fieldProp) {
     var fields = meta[fieldProp];
 
@@ -1103,7 +1103,7 @@ $generatorXml.metadataDatabaseFields = function (res, meta, fieldProp) {
     }
 };
 
-// Generate metadata general group.
+// Generate domain model general group.
 $generatorXml.metadataGeneral = function(meta, res) {
     if (!res)
         res = $generatorCommon.builder();
@@ -1116,7 +1116,7 @@ $generatorXml.metadataGeneral = function(meta, res) {
     return res;
 };
 
-// Generate metadata for query group.
+// Generate domain model for query group.
 $generatorXml.metadataQuery = function(meta, res) {
     if (!res)
         res = $generatorCommon.builder();
@@ -1134,7 +1134,7 @@ $generatorXml.metadataQuery = function(meta, res) {
     return res;
 };
 
-// Generate metadata for store group.
+// Generate domain model for store group.
 $generatorXml.metadataStore = function(meta, res) {
     if (!res)
         res = $generatorCommon.builder();
@@ -1172,7 +1172,7 @@ $generatorXml.cacheQueryMetadata = function(meta, res) {
     return res;
 };
 
-// Generate cache type metadata configs.
+// Generate domain models configs.
 $generatorXml.cacheMetadatas = function(metadatas, res) {
     if (!res)
         res = $generatorCommon.builder();

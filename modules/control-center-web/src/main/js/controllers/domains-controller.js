@@ -15,8 +15,8 @@
  * limitations under the License.
  */
 
-// Controller for Metadata screen.
-consoleModule.controller('metadataController', function ($filter, $http, $timeout, $state, $scope, $controller, $modal,
+// Controller for Domain models screen.
+consoleModule.controller('domainsController', function ($filter, $http, $timeout, $state, $scope, $controller, $modal,
      $common,  $focus, $confirm, $confirmBatch, $clone, $table, $preview, $loading, $unsavedChangesGuard, $agentDownload) {
         $unsavedChangesGuard.install($scope);
 
@@ -57,13 +57,13 @@ consoleModule.controller('metadataController', function ($filter, $http, $timeou
         $scope.removeDemoItems = function () {
             $table.tableReset();
 
-            $confirm.confirm('Are you sure you want to remove all generated demo metadata and caches?')
+            $confirm.confirm('Are you sure you want to remove all generated demo domain models and caches?')
                 .then(function () {
-                    $http.post('/api/v1/configuration/metadata/remove/demo')
+                    $http.post('/api/v1/configuration/domains/remove/demo')
                         .success(function () {
-                            $common.showInfo('All demo metadata and caches have been removed');
+                            $common.showInfo('All demo domain models and caches have been removed');
 
-                            $http.post('/api/v1/configuration/metadata/list')
+                            $http.post('/api/v1/configuration/domains/list')
                                 .success(function (data) {
                                     $scope.spaces = data.spaces;
                                     $scope.clusters = data.clusters;
@@ -186,12 +186,12 @@ consoleModule.controller('metadataController', function ($filter, $http, $timeou
 
         var INFO_CONNECT_TO_DB = 'Configure connection to database';
         var INFO_SELECT_SCHEMAS = 'Select schemas to load tables from';
-        var INFO_SELECT_TABLES = 'Select tables to import as domain model';
-        var INFO_SELECT_OPTIONS = 'Select import metadata options';
+        var INFO_SELECT_TABLES = 'Select tables to import as domain models';
+        var INFO_SELECT_OPTIONS = 'Select import domain models options';
         var LOADING_JDBC_DRIVERS = {text: 'Loading JDBC drivers...'};
         var LOADING_SCHEMAS = {text: 'Loading schemas...'};
         var LOADING_TABLES = {text: 'Loading tables...'};
-        var SAVING_METADATA = {text: 'Saving metadata...'};
+        var SAVING_METADATA = {text: 'Saving domain models...'};
 
         var previews = [];
 
@@ -398,7 +398,7 @@ consoleModule.controller('metadataController', function ($filter, $http, $timeou
         $scope.$watch('importMeta.displayedTables', $scope.selectTable);
 
         // Pre-fetch modal dialogs.
-        var importMetaModal = $modal({scope: $scope, templateUrl: '/configuration/metadata-import.html', show: false});
+        var importMetaModal = $modal({scope: $scope, templateUrl: '/configuration/domains-import.html', show: false});
 
         var hideImportMetadata = importMetaModal.hide;
 
@@ -409,9 +409,9 @@ consoleModule.controller('metadataController', function ($filter, $http, $timeou
         };
 
         /**
-         * Show import metadata modal.
+         * Show import domain models modal.
          *
-         * @param demo If 'true' then import metadata from demo database.
+         * @param demo If 'true' then import domain models from demo database.
          */
         $scope.showImportMetadataModal = function (demo) {
             $table.tableReset();
@@ -601,7 +601,7 @@ consoleModule.controller('metadataController', function ($filter, $http, $timeou
                         _dropDownItem('PARTITIONED', 'IMPORT_DM_DFLT_PARTITIONED_CACHE'),
                         _dropDownItem('REPLICATED', 'IMPORT_DM_DFLT_REPLICATED_CACHE')
                     ];
-                    
+
                     tables.forEach(function (tbl) {
                         tbl.cache = IMPORT_DM_NEW_CACHE;
                         tbl.template = 'IMPORT_DM_DFLT_PARTITIONED_CACHE';
@@ -661,7 +661,7 @@ consoleModule.controller('metadataController', function ($filter, $http, $timeou
         };
 
         /**
-         * Show page with import metadata options.
+         * Show page with import domain models options.
          */
         function _selectOptions() {
             $scope.importMeta.action = 'options';
@@ -704,7 +704,7 @@ consoleModule.controller('metadataController', function ($filter, $http, $timeou
             if (batch && batch.length > 0) {
                 $loading.start('loadingMetadataFromDb');
 
-                $http.post('/api/v1/configuration/metadata/save/batch', batch)
+                $http.post('/api/v1/configuration/domains/save/batch', batch)
                     .success(function (savedBatch) {
                         var lastItem;
                         var newItems = [];
@@ -735,7 +735,7 @@ consoleModule.controller('metadataController', function ($filter, $http, $timeou
 
                         $scope.selectItem(lastItem);
 
-                        $common.showInfo('Cache type metadata imported from database.');
+                        $common.showInfo('Domain models imported from database.');
 
                         $scope.panels.activePanels = [0, 1, 2];
 
@@ -890,7 +890,7 @@ consoleModule.controller('metadataController', function ($filter, $http, $timeou
              */
             function overwriteMessage(meta) {
                 return '<span>' +
-                    'Metadata with name &quot;' + meta.databaseTable + '&quot; already exist.<br/><br/>' +
+                    'Domain model with name &quot;' + meta.databaseTable + '&quot; already exist.<br/><br/>' +
                     'Are you sure you want to overwrite it?' +
                     '</span>';
             }
@@ -905,7 +905,7 @@ consoleModule.controller('metadataController', function ($filter, $http, $timeou
                                 return !item.skip;
                             }));
                         }, function () {
-                            $common.showError('Cache type metadata importing interrupted by user.');
+                            $common.showError('Importing of domain models interrupted by user.');
                         });
                 else
                     _saveBatch(batch);
@@ -955,7 +955,7 @@ consoleModule.controller('metadataController', function ($filter, $http, $timeou
                 return importMetadataNextAvailable ? 'Click to show import options' : 'Select tables to continue';
 
             if ($scope.importMeta.action === 'options')
-                return 'Click to import metadata for selected tables';
+                return 'Click to import domain models for selected tables';
 
             return 'Click to continue';
         };
@@ -1009,7 +1009,7 @@ consoleModule.controller('metadataController', function ($filter, $http, $timeou
         };
 
         $scope.metadataTitle = function () {
-            return $scope.ui.showValid ? 'Types metadata:' : 'Type metadata without key fields:';
+            return $scope.ui.showValid ? 'Types domain models:' : 'Type domain models without key fields:';
         };
 
         function selectFirstItem() {
@@ -1017,10 +1017,10 @@ consoleModule.controller('metadataController', function ($filter, $http, $timeou
                 $scope.selectItem($scope.metadatas[0]);
         }
 
-        // When landing on the page, get metadatas and show them.
+        // When landing on the page, get domain models and show them.
         $loading.start('loadingMetadataScreen');
 
-        $http.post('/api/v1/configuration/metadata/list')
+        $http.post('/api/v1/configuration/domains/list')
             .success(function (data) {
                 $scope.spaces = data.spaces;
                 $scope.clusters = data.clusters;
@@ -1032,14 +1032,14 @@ consoleModule.controller('metadataController', function ($filter, $http, $timeou
                 });
 
                 // Load page descriptor.
-                $http.get('/models/metadata.json')
+                $http.get('/models/domains.json')
                     .success(function (data) {
                         $scope.screenTip = data.screenTip;
                         $scope.moreInfo = data.moreInfo;
-                        $scope.metadata = data.metadata;
+                        $scope.domainModel = data.domainModel;
                         $scope.metadataDb = data.metadataDb;
 
-                        $scope.ui.groups = data.metadata;
+                        $scope.ui.groups = data.domainModel;
 
                         if ($common.getQueryVariable('new'))
                             $scope.createItem($common.getQueryVariable('id'));
@@ -1114,14 +1114,14 @@ consoleModule.controller('metadataController', function ($filter, $http, $timeou
                     $scope.selectedItem.queryMetadata = 'Configuration';
 
                 if ($common.getQueryVariable('new'))
-                    $state.go('base.configuration.metadata');
+                    $state.go('base.configuration.domains');
             }
 
             $common.confirmUnsavedChanges($scope.ui.isDirty(), selectItem);
 
             $scope.ui.formTitle = $common.isDefined($scope.backupItem) && $scope.backupItem._id ?
-                'Selected metadata: ' + $scope.backupItem.valueType
-                : 'New metadata';
+                'Selected domain model: ' + $scope.backupItem.valueType
+                : 'New domain model';
         };
 
         function prepareNewItem(cacheId) {
@@ -1133,7 +1133,7 @@ consoleModule.controller('metadataController', function ($filter, $http, $timeou
             };
         }
 
-        // Add new metadata.
+        // Add new domain model.
         $scope.createItem = function (cacheId) {
             if ($scope.tableReset(true)) {
                 $timeout(function () {
@@ -1145,7 +1145,7 @@ consoleModule.controller('metadataController', function ($filter, $http, $timeou
             }
         };
 
-        // Check metadata logical consistency.
+        // Check domain model logical consistency.
         function validate(item) {
             if ($common.isEmptyString(item.keyType))
                 return showPopoverMessage($scope.panels, 'general', 'keyType', 'Key type should not be empty');
@@ -1192,13 +1192,13 @@ consoleModule.controller('metadataController', function ($filter, $http, $timeou
                     return showPopoverMessage($scope.panels, 'store', 'valueFields-add', 'Value fields are not specified');
             }
             else if (!qry && item.queryMetadata === 'Configuration') {
-                return showPopoverMessage($scope.panels, 'query', 'query-title', 'SQL query metadata should be configured');
+                return showPopoverMessage($scope.panels, 'query', 'query-title', 'SQL query domain model should be configured');
             }
 
             return true;
         }
 
-        // Save cache type metadata into database.
+        // Save domain models into database.
         function save(item) {
             var qry = $common.metadataForQueryConfigured(item);
             var str = $common.metadataForStoreConfigured(item);
@@ -1210,7 +1210,7 @@ consoleModule.controller('metadataController', function ($filter, $http, $timeou
             else if (str)
                 item.kind = 'store';
 
-            $http.post('/api/v1/configuration/metadata/save', item)
+            $http.post('/api/v1/configuration/domains/save', item)
                 .success(function (res) {
                     $scope.ui.markPristine();
 
@@ -1227,14 +1227,14 @@ consoleModule.controller('metadataController', function ($filter, $http, $timeou
 
                     $scope.selectItem(savedMeta);
 
-                    $common.showInfo('Cache type metadata"' + item.valueType + '" saved.');
+                    $common.showInfo('Domain model "' + item.valueType + '" saved.');
                 })
                 .error(function (errMsg) {
                     $common.showError(errMsg);
                 });
         }
 
-        // Save cache type metadata.
+        // Save domain model.
         $scope.saveItem = function () {
             if ($scope.tableReset(true)) {
                 var item = $scope.backupItem;
@@ -1250,7 +1250,7 @@ consoleModule.controller('metadataController', function ($filter, $http, $timeou
             });
         }
 
-        // Save cache type metadata with new name.
+        // Save domain model with new name.
         $scope.cloneItem = function () {
             if ($scope.tableReset(true)) {
                 if (validate($scope.backupItem))
@@ -1266,19 +1266,19 @@ consoleModule.controller('metadataController', function ($filter, $http, $timeou
             }
         };
 
-        // Remove metadata from db.
+        // Remove domain model from db.
         $scope.removeItem = function () {
             $table.tableReset();
 
             var selectedItem = $scope.selectedItem;
 
-            $confirm.confirm('Are you sure you want to remove cache type metadata: "' + selectedItem.valueType + '"?')
+            $confirm.confirm('Are you sure you want to remove domain model: "' + selectedItem.valueType + '"?')
                 .then(function () {
                         var _id = selectedItem._id;
 
-                        $http.post('/api/v1/configuration/metadata/remove', {_id: _id})
+                        $http.post('/api/v1/configuration/domains/remove', {_id: _id})
                             .success(function () {
-                                $common.showInfo('Cache type metadata has been removed: ' + selectedItem.valueType);
+                                $common.showInfo('Domain model has been removed: ' + selectedItem.valueType);
 
                                 var metadatas = $scope.metadatas;
 
@@ -1296,7 +1296,7 @@ consoleModule.controller('metadataController', function ($filter, $http, $timeou
                                 }
 
                                 if (!$scope.ui.showValid) {
-                                    var validFilter = $filter('metadatasValidation');
+                                    var validFilter = $filter('domainsValidation');
 
                                     $scope.ui.showValid = validFilter($scope.metadatas, false, true).length === 0;
                                 }
@@ -1307,15 +1307,15 @@ consoleModule.controller('metadataController', function ($filter, $http, $timeou
                 });
         };
 
-        // Remove all metadata from db.
+        // Remove all domain models from db.
         $scope.removeAllItems = function () {
             $table.tableReset();
 
-            $confirm.confirm('Are you sure you want to remove all metadata?')
+            $confirm.confirm('Are you sure you want to remove all domain models?')
                 .then(function () {
-                        $http.post('/api/v1/configuration/metadata/remove/all')
+                        $http.post('/api/v1/configuration/domains/remove/all')
                             .success(function () {
-                                $common.showInfo('All metadata have been removed');
+                                $common.showInfo('All domain models have been removed');
 
                                 $scope.metadatas = [];
 
@@ -1332,7 +1332,7 @@ consoleModule.controller('metadataController', function ($filter, $http, $timeou
         $scope.toggleValid = function () {
             $scope.ui.showValid = !$scope.ui.showValid;
 
-            var validFilter = $filter('metadatasValidation');
+            var validFilter = $filter('domainsValidation');
 
             var idx = _.findIndex(validFilter($scope.metadatas, $scope.ui.showValid, true), function (metadata) {
                 return metadata._id === $scope.selectedItem._id;
@@ -1645,13 +1645,13 @@ consoleModule.controller('metadataController', function ($filter, $http, $timeou
             if (!$common.isDefined(resetTo))
                 resetTo = prepareNewItem();
 
-            $common.resetItem($scope.backupItem, resetTo, $scope.metadata, group);
+            $common.resetItem($scope.backupItem, resetTo, $scope.domainModel, group);
         };
 
         $scope.resetAll = function() {
             $table.tableReset();
 
-            $confirm.confirm('Are you sure you want to undo all changes for current metadata?')
+            $confirm.confirm('Are you sure you want to undo all changes for current domain model?')
                 .then(function() {
                     $scope.backupItem = $scope.selectedItem ? angular.copy($scope.selectedItem) : prepareNewItem();
                 });
