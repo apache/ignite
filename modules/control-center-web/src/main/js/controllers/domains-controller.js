@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-// Controller for Domain models screen.
+// Controller for Domain model screen.
 consoleModule.controller('domainsController', function ($filter, $http, $timeout, $state, $scope, $controller, $modal,
      $common,  $focus, $confirm, $confirmBatch, $clone, $table, $preview, $loading, $unsavedChangesGuard, $agentDownload) {
         $unsavedChangesGuard.install($scope);
@@ -564,6 +564,9 @@ consoleModule.controller('domainsController', function ($filter, $http, $timeout
         var IMPORT_DM_DFLT_PARTITIONED_CACHE = 'IMPORT_DM_DFLT_PARTITIONED_CACHE';
         var IMPORT_DM_DFLT_REPLICATED_CACHE = 'IMPORT_DM_DFLT_REPLICATED_CACHE';
 
+        $scope.ui.dfltTableCache = IMPORT_DM_NEW_CACHE;
+        $scope.ui.dfltTableTemplate = IMPORT_DM_DFLT_PARTITIONED_CACHE;
+
         /**
          * Load list of database tables.
          */
@@ -626,6 +629,19 @@ consoleModule.controller('domainsController', function ($filter, $http, $timeout
                     $loading.finish('importDomainFromDb');
                 });
         }
+
+        $scope.dfltTableTemplateVisible = function () {
+            return $scope.ui.dfltTableCache === IMPORT_DM_NEW_CACHE;
+        };
+
+        $scope.applyDefaults = function() {
+            _.forEach($scope.importDomain.displayedTables, function (table) {
+                table.editCache = false;
+                table.editTemplate = false;
+                table.cache = $scope.ui.dfltTableCache;
+                table.template = $scope.ui.dfltTableTemplate;
+            });
+        };
 
         $scope.curDbTable = null;
 
@@ -756,7 +772,7 @@ consoleModule.controller('domainsController', function ($filter, $http, $timeout
                 importDomainModal.hide();
         }
 
-        function _saveMetadata() {
+        function _saveDomainModel() {
             if ($common.isEmptyString($scope.ui.packageName))
                 return $common.showPopoverMessage(undefined, undefined, 'domainPackageName',
                     'Package should be not empty');
@@ -836,51 +852,56 @@ consoleModule.controller('domainsController', function ($filter, $http, $timeout
                         });
                     }
 
-                    var metaFound = _.find($scope.metadatas, function (meta) {
+                    var domainFound = _.find($scope.metadatas, function (meta) {
                         return meta.valueType === valType;
                     });
 
-                    var meta = {
+                    var newDomain = {
                         confirm: false,
                         skip: false,
                         space: $scope.spaces[0],
                         caches: []
                     };
 
-                    if ($common.isDefined(metaFound)) {
-                        meta._id = metaFound._id;
-                        meta.caches = metaFound.caches;
-                        meta.confirm = true;
+                    if ($common.isDefined(domainFound)) {
+                        newDomain._id = domainFound._id;
+                        newDomain.caches = domainFound.caches;
+                        newDomain.confirm = true;
                     }
 
                     var dupSfx = (dup ? '_' + dupCnt : '');
 
-                    meta.keyType = valType + 'Key' + dupSfx;
+                    newDomain.keyType = valType + 'Key' + dupSfx;
 
-                    meta.keyType = valType + 'Key' + dupSfx;
-                    meta.valueType = valType + dupSfx;
-                    meta.databaseSchema = table.schema;
-                    meta.databaseTable = tableName;
-                    meta.fields = qryFields;
-                    meta.indexes = indexes;
-                    meta.keyFields = keyFields;
-                    meta.valueFields = valFields;
-                    meta.demo = $scope.importDomain.demo;
+                    newDomain.keyType = valType + 'Key' + dupSfx;
+                    newDomain.valueType = valType + dupSfx;
+                    newDomain.databaseSchema = table.schema;
+                    newDomain.databaseTable = tableName;
+                    newDomain.fields = qryFields;
+                    newDomain.indexes = indexes;
+                    newDomain.keyFields = keyFields;
+                    newDomain.valueFields = valFields;
+                    newDomain.demo = $scope.importDomain.demo;
 
                     // Use Java built-in type for key.
-                    if ($scope.ui.builtinKeys && meta.keyFields.length === 1)
-                        meta.keyType = meta.keyFields[0].jdbcType.javaType;
+                    if ($scope.ui.builtinKeys && newDomain.keyFields.length === 1)
+                        newDomain.keyType = newDomain.keyFields[0].jdbcType.javaType;
 
                     // Prepare caches for generation.
-                    if ($scope.ui.generateCaches)
-                        meta.newCache = {
+                    if ($scope.ui.generateCaches && table.cache !== IMPORT_DM_DO_NOT_GENERATE) {
+                        newDomain.newCache = {
                             name: typeName + 'Cache',
+                            cache: table.cache,
                             dialect: $scope.importDomain.demo ? 'H2' : $scope.selectedPreset.db,
                             clusters: $scope.ui.generatedCachesClusters,
                             demo: $scope.importDomain.demo
                         };
 
-                    batch.push(meta);
+                        if (table.cache === IMPORT_DM_NEW_CACHE)
+                            newDomain.newCache.template = table.template;
+                    }
+
+                    batch.push(newDomain);
                     tables.push(tableName);
                 }
             });
@@ -937,7 +958,7 @@ consoleModule.controller('domainsController', function ($filter, $http, $timeout
             else if ($scope.importDomain.action === 'tables')
                 _selectOptions();
             else if ($scope.importDomain.action === 'options')
-                _saveMetadata();
+                _saveDomainModel();
         };
 
         $scope.nextTooltipText = function () {

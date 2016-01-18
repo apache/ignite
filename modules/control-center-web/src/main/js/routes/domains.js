@@ -126,6 +126,24 @@ function _saveMeta(meta, savedMetas, callback) {
         });
 }
 
+function _saveCacheAndMeta(res, generatedCaches, savedMetas, newCache, callback) {
+    // If cache not found, then create it and associate with domain model.
+    (new db.Cache(newCache)).save(function (err, cache) {
+        var cacheId = cache._id;
+
+        if (db.processed(err, res)) {
+            db.Cluster.update({_id: {$in: cache.clusters}}, {$addToSet: {caches: cacheId}}, {multi: true}, function (err) {
+                if (db.processed(err, res)) {
+                    meta.caches = [cacheId];
+                    generatedCaches.push({ value: cacheId, label: cache.name });
+
+                    _saveMeta(meta, savedMetas, callback);
+                }
+            });
+        }
+    });
+}
+
 function _save(metas, res) {
     var savedMetas = [];
     var generatedCaches = [];
@@ -142,8 +160,7 @@ function _save(metas, res) {
                             _saveMeta(meta, savedMetas, callback);
                         }
                         else {
-                            // If cache not found, then create it and associate with domain model.
-                            (new db.Cache({
+                            var newCache = {
                                 space: meta.space,
                                 name: meta.newCache.name,
                                 clusters: meta.newCache.clusters,
@@ -159,20 +176,36 @@ function _save(metas, res) {
                                 readThrough: true,
                                 writeThrough: true,
                                 demo: meta.demo
-                            })).save(function (err, cache) {
-                                var cacheId = cache._id;
+                            };
 
-                                if (db.processed(err, res)) {
-                                    db.Cluster.update({_id: {$in: cache.clusters}}, {$addToSet: {caches: cacheId}}, {multi: true}, function (err) {
+                            if (meta.cache === 'IMPORT_DM_NEW_CACHE') {
+                                if (meta.template === 'IMPORT_DM_DFLT_REPLICATED_CACHE')
+                                    newCache.cacheMode = 'REPLICATED';
+                                else {
+                                    db.Cache.findOne({_id: meta.template}, function (err, cacheTemplate) {
                                         if (db.processed(err, res)) {
-                                            meta.caches = [cacheId];
-                                            generatedCaches.push({ value: cacheId, label: cache.name });
+                                            if (cacheTemplate) {
+                                                newCache.cacheMode = cacheTemplate.cacheMode;
+                                                newCache.atomicityMode = cacheTemplate.atomicityMode;
 
-                                            _saveMeta(meta, savedMetas, callback);
+                                                if (cacheTemplate.cacheStoreFactory && cacheTemplate.cacheStoreFactory.kind === 'CacheJdbcPojoStoreFactory') {
+                                                    newCache.cacheStoreFactory.dataSourceBean = cacheTemplate.cacheStoreFactory.dataSourceBean;
+                                                    newCache.cacheStoreFactory.dialect = cacheTemplate.cacheStoreFactory.dialect;
+                                                    newCache.readThrough = cacheTemplate.readThrough;
+                                                    newCache.writeThrough = cacheTemplate.writeThrough
+                                                }
+                                            }
+
+                                            _saveCacheAndMeta(res, generatedCaches, savedMetas, newCache, callback);
                                         }
                                     });
                                 }
-                            });
+                            }
+                            else {
+                                if (meta.template !== 'IMPORT_DM_DO_NOT_GENERATE')
+
+                                _saveMeta(res, generatedCaches, savedMetas, newCache, callback);
+                            }
                         }
                 });
             }
