@@ -130,7 +130,7 @@ public class GridCacheDataLossPolicySelfTest extends GridCommonAbstractTest {
             }
         }, IgniteException.class, "Partition is lost");
 
-        IgniteFuture fut = ignite(1).resetLostPartitions(Collections.singleton(null));
+        IgniteFuture fut = ignite(1).resetLostPartitions(Collections.<String>singleton(null));
 
         fut.listen(new IgniteInClosure<IgniteFuture<?>>() {
             @Override public void apply(IgniteFuture<?> future) {

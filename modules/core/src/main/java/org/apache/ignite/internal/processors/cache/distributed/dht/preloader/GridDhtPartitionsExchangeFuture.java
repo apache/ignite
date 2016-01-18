@@ -1128,7 +1128,7 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
             GridDhtPartitionFullMap partitionFullMap = cacheContext.topology().partitionMap(false);
 
             if (!cachesPartitionsLoss.containsKey(cacheId))
-                cachesPartitionsLoss.put(cacheId, new HashMap<>());
+                cachesPartitionsLoss.put(cacheId, new HashMap<Integer, Boolean>());
 
             Map<Integer, Boolean> currentCacheLoss = cachesPartitionsLoss.get(cacheId);
 
