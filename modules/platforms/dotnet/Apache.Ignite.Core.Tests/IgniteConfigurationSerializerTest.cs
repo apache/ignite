@@ -17,10 +17,26 @@
 
 namespace Apache.Ignite.Core.Tests
 {
+    using System.IO;
+    using System.Xml;
+    using Apache.Ignite.Core.Impl.Common;
+    using NUnit.Framework;
+
     /// <summary>
     /// Tests <see cref="IgniteConfiguration"/> serialization.
     /// </summary>
     public class IgniteConfigurationSerializerTest
     {
+        [Test]
+        public void Test()
+        {
+            var xml = "<igniteConfig workDirectory='c:'><localHost>127.1.1.1</localHost></igniteConfig>";
+            var reader = XmlReader.Create(new StringReader(xml));
+
+            var cfg = IgniteConfigurationXmlSerializer.Deserialize(reader);
+
+            Assert.AreEqual("c:", cfg.WorkDirectory);
+            Assert.AreEqual("127.1.1.1", cfg.LocalHost);
+        }
     }
 }
