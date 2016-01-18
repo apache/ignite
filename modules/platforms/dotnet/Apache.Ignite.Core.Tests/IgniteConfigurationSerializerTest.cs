@@ -17,6 +17,7 @@
 
 namespace Apache.Ignite.Core.Tests
 {
+    using System;
     using System.IO;
     using System.Xml;
     using Apache.Ignite.Core.Impl.Common;
@@ -30,13 +31,21 @@ namespace Apache.Ignite.Core.Tests
         [Test]
         public void Test()
         {
-            var xml = "<igniteConfig workDirectory='c:'><localHost>127.1.1.1</localHost></igniteConfig>";
+            var xml = @"<igniteConfig workDirectory='c:' JvmMaxMemoryMb='1024' MetricsLogFrequency='0:0:10'>
+                            <localHost>127.1.1.1</localHost>
+                            <discoveryConfiguration joinTimeout='0:1:0'>
+                                
+                            </discoveryConfiguration>
+                        </igniteConfig>";
             var reader = XmlReader.Create(new StringReader(xml));
 
             var cfg = IgniteConfigurationXmlSerializer.Deserialize(reader);
 
             Assert.AreEqual("c:", cfg.WorkDirectory);
             Assert.AreEqual("127.1.1.1", cfg.LocalHost);
+            Assert.AreEqual(1024, cfg.JvmMaxMemoryMb);
+            Assert.AreEqual(TimeSpan.FromSeconds(10), cfg.MetricsLogFrequency);
+            Assert.AreEqual(TimeSpan.FromMinutes(1), cfg.DiscoveryConfiguration.JoinTimeout);
         }
     }
 }

@@ -74,8 +74,9 @@ namespace Apache.Ignite.Core.Impl.Common
 
                 if (propType.IsValueType || propType == typeof (string))
                 {
-                    // Regular property on xmlElement form
-                    SetProperty(target, name, reader.Value);
+                    // Regular property in xmlElement form
+                    var val = reader.ReadString();
+                    SetProperty(target, name, val);
                 }
                 else if (propType.IsGenericType && propType.GetGenericTypeDefinition() == typeof(ICollection<>))
                 {
@@ -84,6 +85,7 @@ namespace Apache.Ignite.Core.Impl.Common
                 else
                 {
                     // Nested object (complex property)
+                    // TODO: propType can be abstract, check 'type' attribute in this case
                     var nestedVal = Activator.CreateInstance(propType);
                     prop.SetValue(target, nestedVal, null);
                     ReadElement(reader, nestedVal);
