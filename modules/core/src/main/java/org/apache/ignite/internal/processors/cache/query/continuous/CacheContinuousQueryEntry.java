@@ -84,17 +84,17 @@ public class CacheContinuousQueryEntry implements GridCacheDeployable, Message {
     private GridDeploymentInfo depInfo;
 
     /** Partition. */
-    private int part;
+    private int _part;
 
     /** Update counter. */
-    private long updateCntr;
+    private long _updateCntr;
 
     /** Flags. */
     private byte flags;
 
     /** */
     @GridToStringInclude
-    private AffinityTopologyVersion topVer;
+    private AffinityTopologyVersion _topVer;
 
     /** Filtered events. */
     private GridLongList filteredEvts;
@@ -134,9 +134,9 @@ public class CacheContinuousQueryEntry implements GridCacheDeployable, Message {
         this.key = key;
         this.newVal = newVal;
         this.oldVal = oldVal;
-        this.part = part;
-        this.updateCntr = updateCntr;
-        this.topVer = topVer;
+        this._part = part;
+        this._updateCntr = updateCntr;
+        this._topVer = topVer;
         this.keepBinary = keepBinary;
     }
 
@@ -144,7 +144,7 @@ public class CacheContinuousQueryEntry implements GridCacheDeployable, Message {
      * @return Topology version if applicable.
      */
     @Nullable AffinityTopologyVersion topologyVersion() {
-        return topVer;
+        return _topVer;
     }
 
     /**
@@ -165,14 +165,14 @@ public class CacheContinuousQueryEntry implements GridCacheDeployable, Message {
      * @return Partition.
      */
     int partition() {
-        return part;
+        return _part;
     }
 
     /**
      * @return Update counter.
      */
     long updateCounter() {
-        return updateCntr;
+        return _updateCntr;
     }
 
     /**
@@ -310,67 +310,67 @@ public class CacheContinuousQueryEntry implements GridCacheDeployable, Message {
 
         switch (writer.state()) {
             case 0:
-                if (!writer.writeInt("cacheId", cacheId))
+                if (!writer.writeInt("_part", _part))
                     return false;
 
                 writer.incrementState();
 
             case 1:
-                if (!writer.writeByte("evtType", evtType != null ? (byte)evtType.ordinal() : -1))
+                if (!writer.writeMessage("_topVer", _topVer))
                     return false;
 
                 writer.incrementState();
 
             case 2:
-                if (!writer.writeMessage("filteredEvts", filteredEvts))
+                if (!writer.writeLong("_updateCntr", _updateCntr))
                     return false;
 
                 writer.incrementState();
 
             case 3:
-                if (!writer.writeByte("flags", flags))
+                if (!writer.writeInt("cacheId", cacheId))
                     return false;
 
                 writer.incrementState();
 
             case 4:
-                if (!writer.writeBoolean("keepBinary", keepBinary))
+                if (!writer.writeByte("evtType", evtType != null ? (byte)evtType.ordinal() : -1))
                     return false;
 
                 writer.incrementState();
 
             case 5:
-                if (!writer.writeMessage("key", key))
+                if (!writer.writeMessage("filteredEvts", filteredEvts))
                     return false;
 
                 writer.incrementState();
 
             case 6:
-                if (!writer.writeMessage("newVal", newVal))
+                if (!writer.writeByte("flags", flags))
                     return false;
 
                 writer.incrementState();
 
             case 7:
-                if (!writer.writeMessage("oldVal", oldVal))
+                if (!writer.writeBoolean("keepBinary", keepBinary))
                     return false;
 
                 writer.incrementState();
 
             case 8:
-                if (!writer.writeInt("part", part))
+                if (!writer.writeMessage("key", key))
                     return false;
 
                 writer.incrementState();
 
             case 9:
-                if (!writer.writeMessage("topVer", topVer))
+                if (!writer.writeMessage("newVal", newVal))
                     return false;
 
                 writer.incrementState();
 
             case 10:
-                if (!writer.writeLong("updateCntr", updateCntr))
+                if (!writer.writeMessage("oldVal", oldVal))
                     return false;
 
                 writer.incrementState();
@@ -389,7 +389,7 @@ public class CacheContinuousQueryEntry implements GridCacheDeployable, Message {
 
         switch (reader.state()) {
             case 0:
-                cacheId = reader.readInt("cacheId");
+                _part = reader.readInt("_part");
 
                 if (!reader.isLastRead())
                     return false;
@@ -397,6 +397,30 @@ public class CacheContinuousQueryEntry implements GridCacheDeployable, Message {
                 reader.incrementState();
 
             case 1:
+                _topVer = reader.readMessage("_topVer");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+            case 2:
+                _updateCntr = reader.readLong("_updateCntr");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+            case 3:
+                cacheId = reader.readInt("cacheId");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+            case 4:
                 byte evtTypeOrd;
 
                 evtTypeOrd = reader.readByte("evtType");
@@ -408,7 +432,7 @@ public class CacheContinuousQueryEntry implements GridCacheDeployable, Message {
 
                 reader.incrementState();
 
-            case 2:
+            case 5:
                 filteredEvts = reader.readMessage("filteredEvts");
 
                 if (!reader.isLastRead())
@@ -416,7 +440,7 @@ public class CacheContinuousQueryEntry implements GridCacheDeployable, Message {
 
                 reader.incrementState();
 
-            case 3:
+            case 6:
                 flags = reader.readByte("flags");
 
                 if (!reader.isLastRead())
@@ -424,7 +448,7 @@ public class CacheContinuousQueryEntry implements GridCacheDeployable, Message {
 
                 reader.incrementState();
 
-            case 4:
+            case 7:
                 keepBinary = reader.readBoolean("keepBinary");
 
                 if (!reader.isLastRead())
@@ -432,7 +456,7 @@ public class CacheContinuousQueryEntry implements GridCacheDeployable, Message {
 
                 reader.incrementState();
 
-            case 5:
+            case 8:
                 key = reader.readMessage("key");
 
                 if (!reader.isLastRead())
@@ -440,7 +464,7 @@ public class CacheContinuousQueryEntry implements GridCacheDeployable, Message {
 
                 reader.incrementState();
 
-            case 6:
+            case 9:
                 newVal = reader.readMessage("newVal");
 
                 if (!reader.isLastRead())
@@ -448,32 +472,8 @@ public class CacheContinuousQueryEntry implements GridCacheDeployable, Message {
 
                 reader.incrementState();
 
-            case 7:
-                oldVal = reader.readMessage("oldVal");
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 8:
-                part = reader.readInt("part");
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 9:
-                topVer = reader.readMessage("topVer");
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
             case 10:
-                updateCntr = reader.readLong("updateCntr");
+                oldVal = reader.readMessage("oldVal");
 
                 if (!reader.isLastRead())
                     return false;
