@@ -21,6 +21,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteCompute;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.compute.ComputeTaskFuture;
+import org.apache.ignite.internal.ComputeTaskInternalFuture;
 import org.apache.ignite.internal.IgniteComputeImpl;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.binary.BinaryObjectImpl;
@@ -30,6 +31,7 @@ import org.apache.ignite.internal.processors.platform.PlatformAbstractTarget;
 import org.apache.ignite.internal.processors.platform.PlatformContext;
 import org.apache.ignite.internal.processors.platform.utils.PlatformFutureUtils;
 import org.apache.ignite.internal.processors.platform.utils.PlatformListenable;
+import org.apache.ignite.internal.util.future.IgniteFutureImpl;
 import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteInClosure;
@@ -331,7 +333,7 @@ public class PlatformCompute extends PlatformAbstractTarget {
      */
     protected class ComputeConvertingFuture implements IgniteInternalFuture {
         /** */
-        private final ComputeTaskFuture fut;
+        private final IgniteInternalFuture fut;
 
         /**
          * Ctor.
@@ -339,7 +341,7 @@ public class PlatformCompute extends PlatformAbstractTarget {
          * @param fut Future to wrap.
          */
         public ComputeConvertingFuture(ComputeTaskFuture fut) {
-            this.fut = fut;
+            this.fut = ((IgniteFutureImpl)fut).internalFuture();
         }
 
         /** {@inheritDoc} */
