@@ -19,6 +19,8 @@ package org.apache.ignite.internal.processors.platform.cpp;
 
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.binary.BinaryIdMapper;
+import org.apache.ignite.binary.BinarySimpleNameIdMapper;
 import org.apache.ignite.configuration.BinaryConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.PlatformConfiguration;
@@ -87,8 +89,25 @@ public class PlatformCppConfigurationClosure extends PlatformAbstractConfigurati
             bCfg = new BinaryConfiguration();
 
             bCfg.setCompactFooter(false);
+            bCfg.setIdMapper(new BinarySimpleNameIdMapper());
 
             igniteCfg.setBinaryConfiguration(bCfg);
+
+            cppCfg0.warnings(Collections.singleton("Binary configuration is automatically initiated, " +
+                "note that binary ID mapper is set to " +
+                BinarySimpleNameIdMapper.class.getName()
+                + " (other nodes must have the same binary ID mapper type)."));
+        }
+        else {
+            BinaryIdMapper idMapper = bCfg.getIdMapper();
+
+            if (idMapper == null) {
+                bCfg.setIdMapper(new BinarySimpleNameIdMapper());
+
+                cppCfg0.warnings(Collections.singleton("Binary ID mapper is automatically set to " +
+                    BinarySimpleNameIdMapper.class.getName()
+                    + " (other nodes must have the same binary ID mapper type)."));
+            }
         }
 
         if (bCfg.isCompactFooter())
