@@ -17,7 +17,7 @@
 - var model = 'backupItem.marshaller'
 
 form.panel.panel-default(bs-collapse ng-model='panel' name='marshaller')
-    .panel-heading(bs-collapse-toggle)
+    .panel-heading(bs-collapse-toggle ng-click='__show__ = true')
         i.fa(ng-class='panel === 0 ? "fa-chevron-circle-down" : "fa-chevron-circle-right"')
         label Marshaller
         ignite-form-field-tooltip.tipLabel
@@ -29,7 +29,7 @@ form.panel.panel-default(bs-collapse ng-model='panel' name='marshaller')
             bs-tooltip 
             data-title='"Undo unsaved changes"')
     .panel-collapse(role='tabpanel' bs-collapse-target id='marshaller')
-        .panel-body
+        .panel-body(ng-if='__show__')
             .col-sm-6
                 .settings-row
                     ignite-form-field

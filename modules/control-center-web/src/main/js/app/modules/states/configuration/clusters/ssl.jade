@@ -14,8 +14,11 @@
     See the License for the specific language governing permissions and
     limitations under the License.
 
-- var model = 'backupItem.sslContextFactory'
+- var cluster = 'backupItem'
+- var enabled = 'backupItem.sslEnabled'
+- var model = cluster + '.sslContextFactory'
 - var trust = model + '.trustManagers'
+- var form = 'sslConfiguration'
 
 mixin feedback(field, error, message)
     i.fa.fa-exclamation-triangle.form-control-feedback(
@@ -25,7 +28,7 @@ mixin feedback(field, error, message)
     )
 
 form.panel.panel-default(bs-collapse ng-model='panel' name='sslConfiguration')
-    .panel-heading(bs-collapse-toggle)
+    .panel-heading(bs-collapse-toggle ng-click='__show__ = true')
         i.fa(ng-class='panel === 0 ? "fa-chevron-circle-down" : "fa-chevron-circle-right"')
         label SSL configuration
         i.tipLabel.fa.fa-question-circle(bs-tooltip='"Settings for SSL configuration"')
@@ -35,14 +38,14 @@ form.panel.panel-default(bs-collapse ng-model='panel' name='sslConfiguration')
             bs-tooltip 
             data-title='"Undo unsaved changes"')
     .panel-collapse(role='tabpanel' bs-collapse-target id='sslConfiguration')
-        .panel-body
+        .panel-body(ng-if='__show__')
             .col-sm-6
                 .settings-row
                     ignite-form-field.checkbox
                         ignite-form-field-input-checkbox(
                             data-id='sslEnabled'
                             data-name='sslEnabled'
-                            data-ng-model='backupItem.sslEnabled'
+                            data-ng-model='#{enabled}'
                         )
                         | Enabled
                         ignite-form-field-tooltip
@@ -61,7 +64,7 @@ form.panel.panel-default(bs-collapse ng-model='panel' name='sslConfiguration')
                             data-options="['SumX509', 'X509']"
                             data-ng-model='#{model}.keyAlgorithm'
                             data-placeholder='SumX509'
-                            data-ng-disabled='!backupItem.sslEnabled'
+                            data-ng-disabled='!#{enabled}'
                         )
 
                 .settings-row
@@ -77,7 +80,7 @@ form.panel.panel-default(bs-collapse ng-model='panel' name='sslConfiguration')
                             data-ng-model='#{model}.keyStoreFilePath'
                             data-placeholder='Path to the key store file'
                             data-ng-required='true'
-                            data-ng-disabled='!backupItem.sslEnabled'
+                            data-ng-disabled='!#{enabled}'
                         )
 
                 .settings-row
@@ -92,7 +95,7 @@ form.panel.panel-default(bs-collapse ng-model='panel' name='sslConfiguration')
                             data-options="['JKS', 'PCKS11', 'PCKS12']"
                             data-ng-model='#{model}.keyStoreType'
                             data-placeholder='JKS'
-                            data-ng-disabled='!backupItem.sslEnabled'
+                            data-ng-disabled='!#{enabled}'
                         )
 
                 .settings-row
@@ -107,65 +110,74 @@ form.panel.panel-default(bs-collapse ng-model='panel' name='sslConfiguration')
                             data-options="['TSL', 'SSL']"
                             data-ng-model='#{model}.protocol'
                             data-placeholder='TSL'
-                            data-ng-disabled='!backupItem.sslEnabled'
+                            data-ng-disabled='!#{enabled}'
                         )
 
                 .settings-row
-                    ignite-form-group
+                    ignite-form-group(ng-init='__ = {}; ___ = {}')
                         ignite-form-field-label
                             | Trust managers:
                         ignite-form-group-tooltip
                             | Pre-configured trust managers
-                        ignite-form-group-add(ng-click='backupItem.sslEnabled && (__.add = true)')
+                        ignite-form-group-add(ng-show='#{enabled}' ng-click='(__.add = true)')
                             | Add new trust manager.
-                        .group-content-empty(ng-if='!(#{trust}.length) && !__.add')
-                            | Not defined
+
+                        - var field = 'edit'
+                        - var valid = form + '.' + field + '.$valid'
+                        - var save = trust + '[$index] = ' + field
+
                         .group-content(ng-if='#{trust}.length')
                             ignite-form-field(ng-repeat='model in #{trust} track by $index' type='internal' ng-init='')
                                 .indexField
                                     | {{ $index+1 }}) 
                                 i.tipField.fa.fa-remove(
+                                    ng-show='#{enabled}'
                                     ng-hide='___.edit'
                                     bs-tooltip='"Remove trust manager"'
-                                    ng-click='backupItem.sslEnabled && (#{trust}.splice(#{trust}.indexOf(model), 1))'
+                                    ng-click='#{enabled} && (#{trust}.splice(#{trust}.indexOf(model), 1))'
                                 )
                                 span(ng-hide='___.edit')
-                                    a.labelFormField(ng-click='backupItem.sslEnabled && (___.edit = true)') {{ model }}
-                                span(ng-if='___.edit' ng-form='form' ng-init='field = model')
+                                    a.labelFormField(ng-click='#{enabled} && (___.edit = true)') {{ model }}
+                                span(ng-if='___.edit' ng-init='#{field} = model')
                                     ignite-form-field-java-class(
-                                        data-name='field'
-                                        data-ng-model='field'
+                                        data-name='#{field}'
+                                        data-ng-model='#{field}'
                                         data-ng-required='true'
                                         data-ignite-form-field-input-autofocus='true'
-                                        on-enter='form.$valid && (#{trust}[$index] = field); form.$valid && (___.edit = false);'
-                                        ng-blur='form.$valid && (#{trust}[$index] = field); (___.edit = false)'
+                                        on-enter='#{valid} && (#{save}); #{valid} && (___.edit = false);'
+                                        ng-blur='#{valid} && (#{save}); (___.edit = false)'
                                     )
                                         i.fa.fa-floppy-o(
-                                            ng-show='form.$valid'
-                                            ng-click='form.$valid && (#{trust}[$index] = field); form.$valid && (___.edit = false);'
+                                            ng-show='#{valid}'
+                                            ng-click='#{valid} && (#{save}); #{valid} && (___.edit = false);'
                                             bs-tooltip 
                                             data-title='Click icon or press [Enter] to save item' 
                                         )
-                                
-                        .group-content(ng-if='__.add'
-                            ng-form='form' 
-                        )
+
+                        - var field = 'new'
+                        - var valid = form + '.' + field + '.$valid'
+                        - var push = trust + '.push(' + field + ')'
+
+                        .group-content(ng-if='__.add')
                             ignite-form-field(type='internal')
                                 ignite-form-field-java-class(
-                                    data-name='field'
-                                    data-ng-model='field'
+                                    data-name='#{field}'
+                                    data-ng-model='#{field}'
                                     data-ng-required='true'
                                     data-ignite-form-field-input-autofocus='true'
-                                    on-enter='form.$valid && #{trust}.push(field); form.$valid && (__.add = false)'
-                                    ng-blur='form.$valid && #{trust}.push(field); (__.add = false)'
+                                    on-enter='#{valid} && #{push}; #{valid} && (__.add = false)'
+                                    ng-blur='#{valid} && #{push}; (__.add = false)'
                                 )
                                     i.fa.fa-floppy-o(
-                                        ng-show='form.$valid'
-                                        ng-click='form.$valid && #{trust}.push(field); form.$valid && (__.add = false)'
+                                        ng-show='#{valid}'
+                                        ng-click='#{valid} && #{push}; #{valid} && (__.add = false)'
                                         bs-tooltip 
                                         data-title='Click icon or press [Enter] to save item' 
                                     )
-               
+
+                        .group-content-empty(ng-if='!(#{trust}.length) && !__.add')
+                            | Not defined
+
                 .settings-row(ng-if='!#{trust}.length')
                     ignite-form-field
                         ignite-form-field-label
@@ -177,7 +189,7 @@ form.panel.panel-default(bs-collapse ng-model='panel' name='sslConfiguration')
                             data-name='trustStoreFilePath'
                             data-ng-model='#{model}.trustStoreFilePath'
                             data-placeholder='Path to the trust store file'
-                            data-ng-disabled='!backupItem.sslEnabled'
+                            data-ng-disabled='!#{enabled}'
                         )
 
                 .settings-row(ng-if='!#{trust}.length')
@@ -192,7 +204,7 @@ form.panel.panel-default(bs-collapse ng-model='panel' name='sslConfiguration')
                             data-options="['JKS', 'PCKS11', 'PCKS12']"
                             data-ng-model='#{model}.trustStoreType'
                             data-placeholder='JKS'
-                            data-ng-disabled='!backupItem.sslEnabled'
+                            data-ng-disabled='!#{enabled}'
                         )                        
  
             .col-sm-6

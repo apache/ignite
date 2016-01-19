@@ -18,7 +18,7 @@
 - var types = model + '.typeConfigurations'
 
 form.panel.panel-default(bs-collapse ng-model='panel' name='binary')
-    .panel-heading(bs-collapse-toggle)
+    .panel-heading(bs-collapse-toggle ng-click='__show__ = true')
         i.fa(ng-class='panel === 0 ? "fa-chevron-circle-down" : "fa-chevron-circle-right"')
         label Binary configuration
         ignite-form-field-tooltip.tipLabel
@@ -29,7 +29,7 @@ form.panel.panel-default(bs-collapse ng-model='panel' name='binary')
             bs-tooltip 
             data-title='"Undo unsaved changes"')
     .panel-collapse(role='tabpanel' bs-collapse-target id='binary')
-        .panel-body
+        .panel-body(ng-if='__show__')
             .col-sm-6
                 .settings-row
                    ignite-form-field
