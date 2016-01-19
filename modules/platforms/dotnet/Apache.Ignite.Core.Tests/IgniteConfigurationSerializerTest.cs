@@ -49,6 +49,7 @@ namespace Apache.Ignite.Core.Tests
             Assert.AreEqual(TimeSpan.FromSeconds(10), cfg.MetricsLogFrequency);
             Assert.AreEqual(TimeSpan.FromMinutes(1), cfg.DiscoveryConfiguration.JoinTimeout);
             Assert.AreEqual(7, ((MulticastIpFinder) cfg.DiscoveryConfiguration.IpFinder).AddressRequestAttempts);
+            Assert.AreEqual(new[] { "-Xms1g", "-Xmx4g" }, cfg.JvmOptions);
         }
     }
 }

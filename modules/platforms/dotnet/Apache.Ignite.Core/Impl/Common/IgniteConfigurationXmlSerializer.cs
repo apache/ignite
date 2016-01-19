@@ -47,7 +47,7 @@ namespace Apache.Ignite.Core.Impl.Common
         private static void ReadElement(XmlReader reader, object target)
         {
             // TODO: see http://referencesource.microsoft.com/#System.Configuration/System/Configuration/ConfigurationElement.cs
-            var type = target.GetType();
+            var targetType = target.GetType();
 
             while (reader.MoveToNextAttribute())
             {
@@ -66,7 +66,7 @@ namespace Apache.Ignite.Core.Impl.Common
                     continue;
 
                 var name = reader.Name;
-                var prop = GetPropertyOrThrow(name, reader.Value, type);
+                var prop = GetPropertyOrThrow(name, reader.Value, targetType);
                 var propType = prop.PropertyType;
 
                 if (propType.IsValueType || propType == typeof (string))
@@ -76,6 +76,7 @@ namespace Apache.Ignite.Core.Impl.Common
                 }
                 else if (propType.IsGenericType && propType.GetGenericTypeDefinition() == typeof(ICollection<>))
                 {
+                    ReadCollection(reader, prop, target);
                     // TODO: read collection
                     // TODO: IncludedEventTypes!! We need an attribute that specifies a converter 
                     // (so that user can say <includedEventTypes>SwapspaceAll, NodeJoined, 15</includedEventTypes>)
@@ -83,25 +84,40 @@ namespace Apache.Ignite.Core.Impl.Common
                 else
                 {
                     // Nested object (complex property)
-                    if (propType.IsAbstract)
-                    {
-                        var typeName = reader.GetAttribute(TypeNameAttribute);
-                        var derivedTypes = GetDerivedTypes(propType);
-                        propType = derivedTypes.FirstOrDefault(x => x.Name == typeName);
-
-                        if (propType == null)
-                            throw new ConfigurationErrorsException(
-                                string.Format(
-                                    "'type' attribute is required for '{0}.{1}' property, possible values are: {2}",
-                                    type.Name, prop.Name, string.Join(", ", derivedTypes.Select(x => x.Name))
-                                    ));
-                    }
-
-                    var nestedVal = Activator.CreateInstance(propType);
-                    ReadElement(reader, nestedVal);
+                    var nestedVal = ReadNestedObject(reader, prop, targetType);
                     prop.SetValue(target, nestedVal, null);
                 }
             }
+        }
+
+        private static object ReadNestedObject(XmlReader reader, PropertyInfo prop, Type targetType)
+        {
+            var propType = prop.PropertyType;
+
+            if (propType.IsAbstract)
+            {
+                var typeName = reader.GetAttribute(TypeNameAttribute);
+                var derivedTypes = GetDerivedTypes(propType);
+                propType = derivedTypes.FirstOrDefault(x => x.Name == typeName);
+
+                if (propType == null)
+                    throw new ConfigurationErrorsException(
+                        string.Format(
+                            "'type' attribute is required for '{0}.{1}' property, possible values are: {2}",
+                            targetType.Name, prop.Name, string.Join(", ", derivedTypes.Select(x => x.Name))
+                            ));
+            }
+
+            var nestedVal = Activator.CreateInstance(propType);
+
+            ReadElement(reader, nestedVal);
+
+            return nestedVal;
+        }
+
+        private static void ReadCollection(XmlReader reader, PropertyInfo prop, object target)
+        {
+            // TODO
         }
 
         private static void SetProperty(object target, string propName, string propVal)
