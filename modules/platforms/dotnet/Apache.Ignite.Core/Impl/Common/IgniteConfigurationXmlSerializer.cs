@@ -70,7 +70,7 @@ namespace Apache.Ignite.Core.Impl.Common
                 var prop = GetPropertyOrThrow(name, reader.Value, targetType);
                 var propType = prop.PropertyType;
 
-                if (propType.IsValueType || propType == typeof (string))
+                if (IsBasicType(propType))
                 {
                     // Regular property in xmlElement form
                     SetProperty(target, name, reader.ReadString());
@@ -85,17 +85,20 @@ namespace Apache.Ignite.Core.Impl.Common
                 else
                 {
                     // Nested object (complex property)
-                    var nestedVal = ReadNestedObject(reader, prop, targetType);
+                    var nestedVal = ReadNestedObject(reader, propType, prop.Name, targetType);
                     prop.SetValue(target, nestedVal, null);
                 }
             }
         }
 
-        private static object ReadNestedObject(XmlReader reader, PropertyInfo prop, Type targetType)
+        private static bool IsBasicType(Type propType)
         {
-            var propType = prop.PropertyType;
+            return propType.IsValueType || propType == typeof (string);
+        }
 
-            if (propType.IsAbstract)
+        private static object ReadNestedObject(XmlReader reader, Type propType, string propName, Type targetType)
+        {
+            if (propType.IsAbstract || propType.IsInterface)
             {
                 var typeName = reader.GetAttribute(TypeNameAttribute);
                 var derivedTypes = GetDerivedTypes(propType);
@@ -105,7 +108,7 @@ namespace Apache.Ignite.Core.Impl.Common
                     throw new ConfigurationErrorsException(
                         string.Format(
                             "'type' attribute is required for '{0}.{1}' property, possible values are: {2}",
-                            targetType.Name, prop.Name, string.Join(", ", derivedTypes.Select(x => x.Name))
+                            targetType.Name, propName, string.Join(", ", derivedTypes.Select(x => x.Name))
                             ));
             }
 
@@ -144,24 +147,11 @@ namespace Apache.Ignite.Core.Impl.Common
                             string.Format("Invalid list element in IgniteConfiguration: expected '{0}', but was '{1}'",
                                 PropertyNameToXmlName(elementType.Name), subReader.Name));
 
-                    if (elementType == typeof (string))
+                    if (IsBasicType(elementType))  // TODO: Check outside loop?
                         list.Add(subReader.ReadString());
-                    else if (elementType.IsInterface)
-                    {
-                        // TODO: same way as with ip finder
-                    }
                     else
                     {
-                        var element = Activator.CreateInstance(elementType);
-
-                        using (var elementReader = subReader.ReadSubtree())
-                        {
-                            reader.Read();  // set on first element
-
-                            ReadElement(elementReader, element);
-
-                            list.Add(element);
-                        }
+                        list.Add(ReadNestedObject(subReader, elementType, prop.Name, target.GetType()));
                     }
                 }
             }
