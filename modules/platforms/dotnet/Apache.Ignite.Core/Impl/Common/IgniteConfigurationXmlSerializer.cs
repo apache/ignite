@@ -58,8 +58,7 @@ namespace Apache.Ignite.Core.Impl.Common
                 SetProperty(target, name, val);
             }
 
-            if (!reader.MoveToElement())
-                return;
+            reader.MoveToElement();
 
             while (reader.Read())
             {
@@ -113,7 +112,11 @@ namespace Apache.Ignite.Core.Impl.Common
                     var message = string.Format("'type' attribute is required for '{0}.{1}' property", targetType.Name,
                         propName);
 
-                    if (derivedTypes.Any())
+                    if (typeName != null)
+                    {
+                        message += ", specified type cannot be resolved: " + typeName;
+                    }
+                    else if (derivedTypes.Any())
                         message += ", possible values are: " + string.Join(", ", derivedTypes.Select(x => x.Name));
 
                     throw new ConfigurationErrorsException(message);

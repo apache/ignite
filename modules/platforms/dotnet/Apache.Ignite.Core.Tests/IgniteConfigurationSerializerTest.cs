@@ -37,6 +37,9 @@ namespace Apache.Ignite.Core.Tests
         {
             var xml = @"<igniteConfig workDirectory='c:' JvmMaxMemoryMb='1024' MetricsLogFrequency='0:0:10'>
                             <localHost>127.1.1.1</localHost>
+                            <binaryConfiguration>
+                                <defaultNameMapper type='Apache.Ignite.Core.Tests.IgniteConfigurationSerializerTest+NameMapper, Apache.Ignite.Core.Tests' bar='testBar' />
+                            </binaryConfiguration>
                             <discoveryConfiguration joinTimeout='0:1:0'>
                                 <ipFinder type='MulticastIpFinder' addressRequestAttempts='7' />
                             </discoveryConfiguration>
@@ -44,9 +47,6 @@ namespace Apache.Ignite.Core.Tests
                             <lifecycleBeans>
                                 <iLifecycleBean type='Apache.Ignite.Core.Tests.IgniteConfigurationSerializerTest+LifecycleBean, Apache.Ignite.Core.Tests' foo='15' />
                             </lifecycleBeans>
-                            <binaryConfiguration>
-                                <defaultNameMapper type='Apache.Ignite.Core.Tests.IgniteConfigurationSerializerTest+NameMapper' bar='testBar' />
-                            </binaryConfiguration>
                         </igniteConfig>";
             var reader = XmlReader.Create(new StringReader(xml));
 
