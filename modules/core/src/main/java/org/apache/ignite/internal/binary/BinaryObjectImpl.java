@@ -385,6 +385,122 @@ public final class BinaryObjectImpl extends BinaryObjectExImpl implements Extern
     }
 
     /** {@inheritDoc} */
+    @SuppressWarnings("IfMayBeConditional")
+    @Override public boolean writeFieldByOrder(int order, ByteBuffer buf) {
+        // Calculate field position.
+        int schemaOffset = BinaryPrimitives.readInt(arr, start + GridBinaryMarshaller.SCHEMA_OR_RAW_OFF_POS);
+
+        short flags = BinaryPrimitives.readShort(arr, start + GridBinaryMarshaller.FLAGS_POS);
+
+        int fieldIdLen = BinaryUtils.isCompactFooter(flags) ? 0 : BinaryUtils.FIELD_ID_LEN;
+        int fieldOffsetLen = BinaryUtils.fieldOffsetLength(flags);
+
+        int fieldOffsetPos = start + schemaOffset + order * (fieldIdLen + fieldOffsetLen) + fieldIdLen;
+
+        int fieldPos;
+
+        if (fieldOffsetLen == BinaryUtils.OFFSET_1)
+            fieldPos = start + ((int)BinaryPrimitives.readByte(arr, fieldOffsetPos) & 0xFF);
+        else if (fieldOffsetLen == BinaryUtils.OFFSET_2)
+            fieldPos = start + ((int)BinaryPrimitives.readShort(arr, fieldOffsetPos) & 0xFFFF);
+        else
+            fieldPos = start + BinaryPrimitives.readInt(arr, fieldOffsetPos);
+
+        // Read header and try performing fast lookup for well-known types (the most common types go first).
+        byte hdr = BinaryPrimitives.readByte(arr, fieldPos);
+
+        int totalLen;
+
+        switch (hdr) {
+            case GridBinaryMarshaller.NULL:
+                totalLen = 1;
+
+                break;
+
+            case GridBinaryMarshaller.INT:
+            case GridBinaryMarshaller.FLOAT:
+                totalLen = 5;
+
+                break;
+
+            case GridBinaryMarshaller.LONG:
+            case GridBinaryMarshaller.DOUBLE:
+            case GridBinaryMarshaller.DATE:
+                totalLen = 9;
+
+                break;
+
+            case GridBinaryMarshaller.BOOLEAN:
+                totalLen = 2;
+
+                break;
+
+            case GridBinaryMarshaller.SHORT:
+                totalLen = 3;
+
+                break;
+
+            case GridBinaryMarshaller.BYTE:
+                totalLen = 2;
+
+                break;
+
+            case GridBinaryMarshaller.CHAR:
+                totalLen = 3;
+
+                break;
+
+            case GridBinaryMarshaller.STRING: {
+                int dataLen = BinaryPrimitives.readInt(arr, fieldPos + 1);
+
+                totalLen = dataLen + 5;
+
+                break;
+            }
+
+            case GridBinaryMarshaller.TIMESTAMP:
+                totalLen = 13;
+
+                break;
+
+            case GridBinaryMarshaller.UUID:
+                totalLen = 17;
+
+                break;
+
+            case GridBinaryMarshaller.DECIMAL: {
+                int dataLen = BinaryPrimitives.readInt(arr, fieldPos + 5);
+
+                totalLen = dataLen + 9;
+
+                break;
+            }
+
+            case GridBinaryMarshaller.OBJ:
+                totalLen = BinaryPrimitives.readInt(arr, fieldPos + GridBinaryMarshaller.TOTAL_LEN_POS);
+
+                break;
+
+            case GridBinaryMarshaller.OPTM_MARSH:
+                totalLen = BinaryPrimitives.readInt(arr, fieldPos + 1);
+
+                break;
+
+            default:
+                throw new UnsupportedOperationException("Failed to write field of the given type " +
+                    "(field type is not supported): " + hdr);
+
+        }
+
+        if (buf.remaining() < totalLen)
+            return false;
+
+        buf.put(arr, fieldPos, totalLen);
+
+        return true;
+    }
+
+    /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
     @Nullable @Override protected <F> F field(BinaryReaderHandles rCtx, String fieldName) {
         return (F)reader(rCtx).unmarshalField(fieldName);

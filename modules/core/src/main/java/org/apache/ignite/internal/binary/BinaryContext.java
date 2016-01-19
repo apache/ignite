@@ -1010,7 +1010,7 @@ public class BinaryContext {
 
         int fieldId = mapper.fieldId(typeId, fieldName);
 
-        return new BinaryFieldImpl(typeId, schemaReg, fieldName, fieldId);
+        return new BinaryFieldImpl(this, typeId, schemaReg, fieldName, fieldId);
     }
 
     /**
