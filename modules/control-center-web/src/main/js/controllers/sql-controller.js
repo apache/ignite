@@ -558,7 +558,7 @@ consoleModule.controller('sqlController', function ($http, $timeout, $interval, 
 
     var _tryCloseQueryResult = function (queryId) {
         if (queryId)
-            $http.post('/api/v1/agent/query/close', { queryId: queryId });
+            $http.post('/api/v1/agent/query/close', { demo: $scope.demo, queryId: queryId });
     };
 
     var _processQueryResult = function (paragraph, refreshMode) {
