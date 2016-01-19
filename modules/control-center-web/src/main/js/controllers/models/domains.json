@@ -4,7 +4,7 @@
       "label": "General",
       "group": "general",
       "tip": [
-        "Domain model properties common to Query and Store"
+        "Domain model properties common for Query and Store"
       ],
       "fields": [
         {

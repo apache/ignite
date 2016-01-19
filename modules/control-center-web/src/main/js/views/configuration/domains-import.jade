@@ -110,7 +110,7 @@ mixin td-ellipses-lbl(w, lbl)
                 table.table.metadata(st-table='importDomain.displayedTables' st-safe-src='importDomain.tables')
                     thead
                         tr
-                            th.header(colspan='5')
+                            th.header(colspan='6')
                                 .col-sm-4.pull-right(style='margin-bottom: 5px')
                                     input.form-control(type='text' st-search='label' placeholder='Filter tables...' ng-model='importDomain.displayedTablesFilter' ng-change='selectTable()')
                         tr
@@ -120,13 +120,14 @@ mixin td-ellipses-lbl(w, lbl)
                                 label Schema
                             th(width='160px')
                                 label Table name
-                            th(width='160px' ng-show='ui.generateCaches')
-                                label Cache
-                            th(width='128px' ng-show='ui.generateCaches')
-                                label Template
+                            th(width='160px')
+                                label(ng-show='ui.generateCaches') Cache
+                            th(width='128px')
+                                label(ng-show='ui.generateCaches') Template
+                            th
                     tbody
                         tr
-                            td(colspan='5')
+                            td(colspan='6')
                                 .scrollable-y(style='height: 143px')
                                     table.table-modal-striped(id='importTableData')
                                         tbody
@@ -135,12 +136,15 @@ mixin td-ellipses-lbl(w, lbl)
                                                     input(type='checkbox' ng-model='table.use' ng-change='selectTable()')
                                                 +td-ellipses-lbl('130px', '{{::table.schema}}')
                                                 +td-ellipses-lbl('160px', '{{::table.tbl}}')
-                                                td.td-ellipsis(width='160px' ng-show='ui.generateCaches')
-                                                    button.select-toggle.form-control(ng-if='table.editCache' bs-select ng-model='table.cache' data-container='false' bs-options='item.value as item.label for item in importCaches')
-                                                    a(ng-if='!table.editCache' ng-click='startEditDbTableCache(table)') {{dbTableCache(table)}}
-                                                td.td-ellipsis(width='128px' ng-show='ui.generateCaches')
-                                                    button.select-toggle.form-control(ng-if='table.editTemplate' bs-select ng-model='table.template' style='max-width: 110px' data-container='false' bs-options='item.value as item.label for item in importCacheTemplates')
-                                                    a(ng-if='!table.editTemplate' ng-click='startEditDbTableTemplate(table)') {{dbTableTemplate(table)}}
+                                                td.td-ellipsis(width='160px')
+                                                    div(ng-show='ui.generateCaches')
+                                                        button.select-toggle.form-control(ng-if='table.editCache' bs-select ng-model='table.cache' data-container='false' bs-options='item.value as item.label for item in importCaches')
+                                                        a(ng-if='!table.editCache' ng-click='startEditDbTableCache(table)') {{dbTableCache(table)}}
+                                                td.td-ellipsis(width='128px')
+                                                    div(ng-show='ui.generateCaches')
+                                                        button.select-toggle.form-control(ng-if='table.editTemplate' bs-select ng-model='table.template' style='max-width: 110px' data-container='false' bs-options='item.value as item.label for item in importCacheTemplates')
+                                                        a(ng-if='!table.editTemplate' ng-click='startEditDbTableTemplate(table)') {{dbTableTemplate(table)}}
+                                                td
                 .settings-row
                     .checkbox
                         label
