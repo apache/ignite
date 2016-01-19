@@ -15,40 +15,31 @@
  * limitations under the License.
  */
 
-import template from './form-field-java-class.jade!';
 
-export default ['igniteFormFieldJavaClass', ['IgniteFormGUID', (guid) => {
-    const link = (scope, el, attrs, [form, label]) => {
-        const {id, name} = scope;
-        const field = form[name];
 
-        scope.form = form;
-        scope.field = field;
-        label.for = scope.id = id || guid();
+const template = `<i class='tipField fa fa-arrow-up ng-scope' ng-click='up()'></i>`;
 
-        scope.$watch('required', (required) => {
-            label.required = required || false;
-        });
+export default ['igniteFormFieldUp', ['$tooltip', ($tooltip) => {
+    const link = (scope, $element) => {
+        $tooltip($element, { title: 'Move item up' });
+
+        scope.up = () => {
+            const i = scope.models.indexOf(scope.model);
+            scope.models.splice(i, 1);
+            scope.models.splice(i - 1, 0, scope.model);
+        };
     };
 
     return {
         restrict: 'E',
         scope: {
-            id: '@',
-            name: '@',
-            required: '=ngRequired',
-            disabled: '=ngDisabled',
-            unique: '=igniteUnique',
-
-            ngModel: '=',
-            ngBlur: '&',
-
-            autofocus: '=igniteFormFieldInputAutofocus'
+            model: '=ngModel',
+            models: '=models'
         },
-        link,
         template,
+        link,
         replace: true,
         transclude: true,
-        require: ['^form', '?^igniteFormField']
+        require: '^form'
     };
 }]];

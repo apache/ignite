@@ -33,8 +33,11 @@ import javaPackageSpecified from './validator/java-package-specified.directive';
 import javaBuildInClass from './validator/java-build-in-class.directive';
 import javaIdentifier from './validator/java-identifier.directive';
 import javaPackageName from './validator/java-package-name.directive';
+import unique from './validator/unique.directive';
 // Helpers.
 import igniteFormFieldInputAutofocus from './field/input/autofocus.directive';
+import igniteFormFieldUp from './field/up.directive';
+import igniteFormFieldDown from './field/down.directive';
 
 angular
 .module('ignite-console.Form', [
@@ -57,8 +60,11 @@ angular
 .directive(...javaBuildInClass)
 .directive(...javaIdentifier)
 .directive(...javaPackageName)
+.directive(...unique)
 // Helpers.
 .directive(...igniteFormFieldInputAutofocus)
+.directive(...igniteFormFieldUp)
+.directive(...igniteFormFieldDown)
 // Generator of globally unique identifier.
 .factory('IgniteFormGUID', [() => {
     let guid = 0;

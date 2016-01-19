@@ -38,6 +38,7 @@ export default ['igniteFormFieldInputText', ['IgniteFormGUID', (guid) => {
             id: '@',
             name: '@',
             placeholder: '@',
+            unique: '=igniteUnique',
             required: '=ngRequired',
             disabled: '=ngDisabled',
 
