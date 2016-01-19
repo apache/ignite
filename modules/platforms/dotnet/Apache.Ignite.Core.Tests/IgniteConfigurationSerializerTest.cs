@@ -47,6 +47,17 @@ namespace Apache.Ignite.Core.Tests
                             <lifecycleBeans>
                                 <iLifecycleBean type='Apache.Ignite.Core.Tests.IgniteConfigurationSerializerTest+LifecycleBean, Apache.Ignite.Core.Tests' foo='15' />
                             </lifecycleBeans>
+                            <cacheConfiguration>
+                                <cacheConfiguration cacheMode='Replicated'>
+                                    <queryEntities>    
+                                        <queryEntity keyType='System.Int32' valueType='System.String'>    
+                                            <fields>
+                                                <queryField name='length' type='System.Int32' />
+                                            </fields>
+                                        </queryEntity>
+                                    </queryEntities>
+                                </cacheConfiguration>
+                            </cacheConfiguration>
                         </igniteConfig>";
             var reader = XmlReader.Create(new StringReader(xml));
 
