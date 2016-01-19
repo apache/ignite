@@ -75,7 +75,7 @@ namespace Apache.Ignite.Core.Impl.Common
                     // Regular property in xmlElement form
                     SetProperty(target, name, reader.ReadString());
                 }
-                else if (propType.IsGenericType && propType.GetGenericTypeDefinition() == typeof(ICollection<>))
+                else if (propType.IsGenericType && propType.GetGenericTypeDefinition() == typeof (ICollection<>))
                 {
                     ReadCollection(reader, prop, target);
                     // TODO: read collection
@@ -111,7 +111,10 @@ namespace Apache.Ignite.Core.Impl.Common
 
             var nestedVal = Activator.CreateInstance(propType);
 
-            ReadElement(reader, nestedVal);
+            using (var subReader = reader.ReadSubtree())
+            {
+                ReadElement(subReader, nestedVal);
+            }
 
             return nestedVal;
         }
@@ -121,7 +124,7 @@ namespace Apache.Ignite.Core.Impl.Common
             // TODO: dictionary?
             var elementType = prop.PropertyType.GetGenericArguments().Single();
 
-            var listType = typeof (IList<>).MakeGenericType(elementType);
+            var listType = typeof (List<>).MakeGenericType(elementType);
 
             var list = (IList) Activator.CreateInstance(listType);
 
@@ -143,9 +146,12 @@ namespace Apache.Ignite.Core.Impl.Common
                     {
                         var element = Activator.CreateInstance(elementType);
 
-                        ReadElement(subReader, element);
+                        using (var elementReader = subReader.ReadSubtree())
+                        {
+                            ReadElement(elementReader, element);
 
-                        list.Add(element);
+                            list.Add(element);
+                        }
                     }
                 }
             }
