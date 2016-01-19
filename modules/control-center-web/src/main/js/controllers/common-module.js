@@ -2121,7 +2121,7 @@ consoleModule.service('$agentDownload', [
 
                     _modal.check.cb(data, _modalAlertHide, _handleException);
 
-                    if (!_modal.skipSingleError)
+                    if (!_modal.skipSingleError && _modal.check.onConnect)
                         _modal.check.onConnect();
 
                     _modal.skipSingleError = true;
