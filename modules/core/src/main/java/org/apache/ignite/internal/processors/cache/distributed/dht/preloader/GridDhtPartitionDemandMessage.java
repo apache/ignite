@@ -66,10 +66,9 @@ public class GridDhtPartitionDemandMessage extends GridCacheMessage {
     /**
      * @param updateSeq Update sequence for this node.
      * @param topVer Topology version.
+     * @param cacheId Cache ID.
      */
     GridDhtPartitionDemandMessage(long updateSeq, @NotNull AffinityTopologyVersion topVer, int cacheId) {
-        assert updateSeq > 0;
-
         this.cacheId = cacheId;
         this.updateSeq = updateSeq;
         this.topVer = topVer;
@@ -77,6 +76,7 @@ public class GridDhtPartitionDemandMessage extends GridCacheMessage {
 
     /**
      * @param cp Message to copy from.
+     * @param parts Partitions.
      */
     GridDhtPartitionDemandMessage(GridDhtPartitionDemandMessage cp, Collection<Integer> parts) {
         cacheId = cp.cacheId;
@@ -113,6 +113,13 @@ public class GridDhtPartitionDemandMessage extends GridCacheMessage {
      */
     Collection<Integer> partitions() {
         return parts;
+    }
+
+    /**
+     * @param updateSeq Update sequence.
+     */
+    void updateSequence(long updateSeq) {
+        this.updateSeq = updateSeq;
     }
 
     /**
@@ -176,7 +183,7 @@ public class GridDhtPartitionDemandMessage extends GridCacheMessage {
     @Override public void prepareMarshal(GridCacheSharedContext ctx) throws IgniteCheckedException {
         super.prepareMarshal(ctx);
 
-        if (topic != null)
+        if (topic != null && topicBytes == null)
             topicBytes = ctx.marshaller().marshal(topic);
     }
 
@@ -184,7 +191,7 @@ public class GridDhtPartitionDemandMessage extends GridCacheMessage {
     @Override public void finishUnmarshal(GridCacheSharedContext ctx, ClassLoader ldr) throws IgniteCheckedException {
         super.finishUnmarshal(ctx, ldr);
 
-        if (topicBytes != null)
+        if (topicBytes != null && topic == null)
             topic = ctx.marshaller().unmarshal(topicBytes, ldr);
     }
 
@@ -325,7 +332,8 @@ public class GridDhtPartitionDemandMessage extends GridCacheMessage {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(GridDhtPartitionDemandMessage.class, this, "partCnt", parts.size(), "super",
-            super.toString());
+        return S.toString(GridDhtPartitionDemandMessage.class, this,
+            "partCnt", parts != null ? parts.size() : 0,
+            "super", super.toString());
     }
 }

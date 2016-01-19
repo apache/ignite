@@ -48,6 +48,7 @@ import org.apache.ignite.internal.processors.cache.transactions.IgniteTxLocalEx;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.transactions.IgniteTxRollbackCheckedException;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
+import org.apache.ignite.internal.util.lang.IgnitePair;
 import org.apache.ignite.internal.util.typedef.CI2;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.CU;
@@ -119,7 +120,7 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
         boolean skipTx,
         @Nullable UUID subjId,
         String taskName,
-        final boolean deserializePortable,
+        final boolean deserializeBinary,
         final boolean skipVals,
         boolean canRemap
     ) {
@@ -142,7 +143,7 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
                 @Override public IgniteInternalFuture<Map<K, V>> op(IgniteTxLocalAdapter tx) {
                     return tx.getAllAsync(ctx,
                         ctx.cacheKeysView(keys),
-                        deserializePortable,
+                        deserializeBinary,
                         skipVals,
                         false,
                         skipStore);
@@ -157,7 +158,7 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
             forcePrimary,
             subjId,
             taskName,
-            deserializePortable,
+            deserializeBinary,
             skipVals ? null : opCtx != null ? opCtx.expiry() : null,
             skipVals,
             skipStore,
@@ -168,7 +169,7 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
      * @param tx Transaction.
      * @param keys Keys to load.
      * @param readThrough Read through flag.
-     * @param deserializePortable Deserialize portable flag.
+     * @param deserializeBinary Deserialize binary flag.
      * @param expiryPlc Expiry policy.
      * @param skipVals Skip values flag.
      * @param needVer If {@code true} returns values as tuples containing value and version.
@@ -177,7 +178,7 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
     IgniteInternalFuture<Map<K, V>> txLoadAsync(GridNearTxLocal tx,
         @Nullable Collection<KeyCacheObject> keys,
         boolean readThrough,
-        boolean deserializePortable,
+        boolean deserializeBinary,
         @Nullable IgniteCacheExpiryPolicy expiryPlc,
         boolean skipVals,
         boolean needVer) {
@@ -190,7 +191,7 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
             tx,
             CU.subjectId(tx, ctx.shared()),
             tx.resolveTaskName(),
-            deserializePortable,
+            deserializeBinary,
             expiryPlc,
             skipVals,
             /*can remap*/true,
@@ -272,7 +273,7 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
      * @throws IgniteCheckedException If failed.
      * @throws GridDistributedLockCancelledException If lock has been cancelled.
      */
-    @SuppressWarnings({"RedundantTypeArguments"})
+    @SuppressWarnings({"RedundantTypeArguments", "ForLoopReplaceableByForEach"})
     @Nullable public GridNearTxRemote startRemoteTx(UUID nodeId, GridDhtLockRequest req)
         throws IgniteCheckedException, GridDistributedLockCancelledException {
         List<KeyCacheObject> nearKeys = req.nearKeys();
@@ -284,6 +285,7 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
         if (ldr != null) {
             Collection<IgniteTxKey> evicted = null;
 
+            // Avoid iterator creation.
             for (int i = 0; i < nearKeys.size(); i++) {
                 KeyCacheObject key = nearKeys.get(i);
 
@@ -291,8 +293,6 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
                     continue;
 
                 IgniteTxKey txKey = ctx.txKey(key);
-
-                Collection<GridCacheMvccCandidate> cands = req.candidatesByIndex(i);
 
                 if (log.isDebugEnabled())
                     log.debug("Unmarshalled key: " + key);
@@ -314,7 +314,6 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
                                         nodeId,
                                         req.nearNodeId(),
                                         req.nearXidVersion(),
-                                        req.threadId(),
                                         req.version(),
                                         null,
                                         ctx.systemTx(),
@@ -356,8 +355,6 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
                                 tx != null && tx.implicitSingle(),
                                 req.owned(entry.key())
                             );
-
-                            assert cands.isEmpty() : "Received non-empty candidates in dht lock request: " + cands;
 
                             if (!req.inTx())
                                 ctx.evicts().touch(entry, req.topologyVersion());
@@ -427,7 +424,7 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
         assert nodeId != null;
         assert res != null;
 
-        GridNearLockFuture fut = (GridNearLockFuture)ctx.mvcc().<Boolean>future(res.version(),
+        GridNearLockFuture fut = (GridNearLockFuture)ctx.mvcc().<Boolean>mvccFuture(res.version(),
             res.futureId());
 
         if (fut != null)
@@ -714,8 +711,10 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
             if (map == null || map.isEmpty())
                 return;
 
-            Collection<GridCacheVersion> committed = ctx.tm().committedVersions(ver);
-            Collection<GridCacheVersion> rolledback = ctx.tm().rolledbackVersions(ver);
+            IgnitePair<Collection<GridCacheVersion>> versPair = ctx.tm().versions(ver);
+
+            Collection<GridCacheVersion> committed = versPair.get1();
+            Collection<GridCacheVersion> rolledback = versPair.get2();
 
             for (Map.Entry<ClusterNode, GridNearUnlockRequest> mapping : map.entrySet()) {
                 ClusterNode n = mapping.getKey();

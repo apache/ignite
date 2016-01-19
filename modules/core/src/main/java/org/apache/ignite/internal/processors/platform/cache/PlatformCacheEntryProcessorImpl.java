@@ -26,8 +26,8 @@ import javax.cache.processor.MutableEntry;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.IgniteKernal;
-import org.apache.ignite.internal.portable.BinaryRawReaderEx;
-import org.apache.ignite.internal.portable.BinaryRawWriterEx;
+import org.apache.ignite.internal.binary.BinaryRawReaderEx;
+import org.apache.ignite.internal.binary.BinaryRawWriterEx;
 import org.apache.ignite.internal.processors.platform.PlatformContext;
 import org.apache.ignite.internal.processors.platform.PlatformProcessor;
 import org.apache.ignite.internal.processors.platform.memory.PlatformInputStream;
@@ -52,13 +52,13 @@ public class PlatformCacheEntryProcessorImpl implements PlatformCacheEntryProces
     /** Indicates that remove has been called on an entry  */
     private static final byte ENTRY_STATE_REMOVED = 2;
 
-    /** Indicates error in processor that is written as portable.  */
-    private static final byte ENTRY_STATE_ERR_PORTABLE = 3;
+    /** Indicates error in processor that is written as binary.  */
+    private static final byte ENTRY_STATE_ERR_BINARY = 3;
 
     /** Indicates error in processor that is written as string.  */
     private static final byte ENTRY_STATE_ERR_STRING = 4;
 
-    /** Native portable processor */
+    /** Native binary processor */
     private Object proc;
 
     /** Pointer to processor in the native platform. */
@@ -74,7 +74,7 @@ public class PlatformCacheEntryProcessorImpl implements PlatformCacheEntryProces
     /**
      * Constructor.
      *
-     * @param proc Native portable processor
+     * @param proc Native binary processor
      * @param ptr Pointer to processor in the native platform.
      */
     public PlatformCacheEntryProcessorImpl(Object proc, long ptr) {
@@ -184,7 +184,7 @@ public class PlatformCacheEntryProcessorImpl implements PlatformCacheEntryProces
 
                 break;
 
-            case ENTRY_STATE_ERR_PORTABLE:
+            case ENTRY_STATE_ERR_BINARY:
                 // Full exception
                 Object nativeErr = reader.readObjectDetached();
 

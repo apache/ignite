@@ -17,15 +17,13 @@
 
 package org.apache.ignite.binary;
 
-import org.apache.ignite.marshaller.portable.PortableMarshaller;
-
 /**
  * Interface that allows to implement custom serialization logic for binary objects.
  * Can be used instead of {@link Binarylizable} in case if the class
  * cannot be changed directly.
  * <p>
  * Binary serializer can be configured for all binary objects via
- * {@link PortableMarshaller#getSerializer()} method, or for a specific
+ * {@link org.apache.ignite.configuration.BinaryConfiguration#getSerializer()} method, or for a specific
  * binary type via {@link BinaryTypeConfiguration#getSerializer()} method.
  */
 public interface BinarySerializer {

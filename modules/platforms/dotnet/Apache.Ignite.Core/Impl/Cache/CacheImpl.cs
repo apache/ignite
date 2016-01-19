@@ -152,8 +152,6 @@ namespace Apache.Ignite.Core.Impl.Cache
         }
 
         /** <inheritDoc /> */
-
-        /** <inheritDoc /> */
         public bool IsEmpty()
         {
             return GetSize() == 0;
@@ -270,10 +268,10 @@ namespace Apache.Ignite.Core.Impl.Cache
             {
                 if (p != null)
                 {
-                    var p0 = new CacheEntryFilterHolder(p, (k, v) => p.Invoke(new CacheEntry<TK, TV>((TK)k, (TV)v)),
+                    var p0 = new CacheEntryFilterHolder(p, (k, v) => p.Invoke(new CacheEntry<TK, TV>((TK) k, (TV) v)),
                         Marshaller, IsKeepBinary);
+
                     writer.WriteObject(p0);
-                    writer.WriteLong(p0.Handle);
                 }
                 else
                     writer.WriteObject<CacheEntryFilterHolder>(null);

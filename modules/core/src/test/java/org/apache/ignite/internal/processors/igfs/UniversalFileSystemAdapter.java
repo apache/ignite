@@ -31,8 +31,9 @@ public interface UniversalFileSystemAdapter {
     /**
      * Gets name of the FS.
      * @return name of this file system.
+     * @throws IOException in case of failure.
      */
-    String name();
+    String name() throws IOException;
 
     /**
      * Answers if a file denoted by path exists.
@@ -93,5 +94,5 @@ public interface UniversalFileSystemAdapter {
      * @param <T> The type we need to adapt to.
      * @return the adapter object of the given type.
      */
-    <T> T getAdapter(Class<T> clazz);
+    <T> T unwrap(Class<T> clazz);
 }

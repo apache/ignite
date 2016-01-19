@@ -77,10 +77,10 @@ namespace Apache.Ignite.Core.Tests.Cache
         }
 
         /// <summary>
-        /// Test affinity with portable flag.
+        /// Test affinity with binary flag.
         /// </summary>
         [Test]
-        public void TestAffinityPortable()
+        public void TestAffinityBinary()
         {
             IIgnite g = Ignition.GetIgnite("grid-0");
 

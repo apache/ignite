@@ -50,20 +50,33 @@ public class QueryIndex implements Serializable {
     /**
      * Creates single-field sorted ascending index.
      *
-     * @param name Field name.
+     * @param field Field name.
      */
-    public QueryIndex(String name) {
-        this(name, QueryIndexType.SORTED, true);
+    public QueryIndex(String field) {
+        this(field, QueryIndexType.SORTED, true);
     }
 
     /**
      * Creates single-field sorted index.
      *
-     * @param name Field name.
+     * @param field Field name.
      * @param asc Ascending flag.
      */
-    public QueryIndex(String name, boolean asc) {
-        this(name, QueryIndexType.SORTED, asc);
+    public QueryIndex(String field, boolean asc) {
+        this(field, QueryIndexType.SORTED, asc);
+    }
+
+    /**
+     * Creates single-field sorted index.
+     *
+     * @param field Field name.
+     * @param asc Ascending flag.
+     * @param name Index name.
+     */
+    public QueryIndex(String field, boolean asc, String name) {
+        this(field, QueryIndexType.SORTED, asc);
+
+        this.name = name;
     }
 
     /**
@@ -71,20 +84,42 @@ public class QueryIndex implements Serializable {
      * If index is sorted, then ascending sorting is used by default.
      * To specify sort order, use the next method.
      * This constructor should also have a corresponding setter method.
+     *
+     * @param field Field name.
+     * @param type Index type.
      */
     public QueryIndex(String field, QueryIndexType type) {
         this(Arrays.asList(field), type);
     }
 
     /**
-     * Creates index for one field. The last boolean parameter
-     * is ignored for non-sorted indexes.
+     * Creates index for one field. The last boolean parameter is ignored for non-sorted indexes.
+     *
+     * @param field Field name.
+     * @param type Index type.
+     * @param asc Ascending flag.
      */
     public QueryIndex(String field, QueryIndexType type, boolean asc) {
         fields = new LinkedHashMap<>();
         fields.put(field, asc);
 
         this.type = type;
+    }
+
+    /**
+     * Creates index for one field. The last boolean parameter is ignored for non-sorted indexes.
+     *
+     * @param field Field name.
+     * @param type Index type.
+     * @param asc Ascending flag.
+     * @param name Index name.
+     */
+    public QueryIndex(String field, QueryIndexType type, boolean asc, String name) {
+        fields = new LinkedHashMap<>();
+        fields.put(field, asc);
+
+        this.type = type;
+        this.name = name;
     }
 
     /**

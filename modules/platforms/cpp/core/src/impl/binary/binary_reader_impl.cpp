@@ -47,7 +47,7 @@ namespace ignite
             BinaryReaderImpl::BinaryReaderImpl(InteropInputStream* stream) :
                 stream(stream), idRslvr(NULL), pos(0), usrType(false), typeId(0), hashCode(0), len(0),
                 rawOff(0), rawMode(true), elemIdGen(0), elemId(0), elemCnt(-1), elemRead(0), footerBegin(-1),
-                footerEnd(-1), schemaType(OFFSET_TYPE_4_BYTE)
+                footerEnd(-1), schemaType(OFFSET_TYPE_FOUR_BYTES)
             {
                 // No-op.
             }
@@ -637,7 +637,7 @@ namespace ignite
 
                 switch (schemaType)
                 {
-                    case OFFSET_TYPE_1_BYTE:
+                    case OFFSET_TYPE_ONE_BYTE:
                     {
                         for (int32_t schemaPos = footerBegin; schemaPos < footerEnd; schemaPos += 5)
                         {
@@ -649,7 +649,7 @@ namespace ignite
                         break;
                     }
 
-                    case OFFSET_TYPE_2_BYTE:
+                    case OFFSET_TYPE_TWO_BYTES:
                     {
                         for (int32_t schemaPos = footerBegin; schemaPos < footerEnd; schemaPos += 6)
                         {
@@ -661,7 +661,7 @@ namespace ignite
                         break;
                     }
 
-                    case OFFSET_TYPE_4_BYTE:
+                    case OFFSET_TYPE_FOUR_BYTES:
                     {
                         for (int32_t schemaPos = footerBegin; schemaPos < footerEnd; schemaPos += 8)
                         {

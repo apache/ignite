@@ -105,6 +105,7 @@ public class DataStreamerRequest implements Message {
      * @param entries Entries to put.
      * @param ignoreDepOwnership Ignore ownership.
      * @param skipStore Skip store flag.
+     * @param keepBinary Keep binary flag.
      * @param depMode Deployment mode.
      * @param sampleClsName Sample class name.
      * @param userVer User version.

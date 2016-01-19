@@ -19,12 +19,11 @@ package org.apache.ignite.internal.processors.cache;
 
 import java.io.IOException;
 import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
 import javax.cache.CacheException;
 import org.apache.ignite.cache.query.ScanQuery;
 import org.apache.ignite.cache.query.SqlQuery;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.lang.IgniteBiPredicate;
 
 /**
@@ -53,10 +52,10 @@ public class IgniteCacheP2pUnmarshallingQueryErrorTest extends IgniteCacheP2pUnm
         try {
             jcache(0).query(new SqlQuery<TestKey, String>(String.class, "field like '" + key + "'")).getAll();
 
-            assertTrue("p2p marshalling failed, but error response was not sent", portableMarshaller());
+            fail("p2p marshalling failed, but error response was not sent");
         }
         catch (CacheException e) {
-            assertFalse("Unexpected exception: " + e, portableMarshaller());
+            // No-op.
         }
     }
 
@@ -65,8 +64,6 @@ public class IgniteCacheP2pUnmarshallingQueryErrorTest extends IgniteCacheP2pUnm
      */
     public void testResponseMessageOnRequestUnmarshallingFailed() throws Exception {
         readCnt.set(Integer.MAX_VALUE);
-
-        jcache(0).put(new TestKey(String.valueOf(++key)), "");
 
         try {
             jcache().query(new ScanQuery<>(new IgniteBiPredicate<TestKey, String>() {
@@ -77,21 +74,16 @@ public class IgniteCacheP2pUnmarshallingQueryErrorTest extends IgniteCacheP2pUnm
                 private void readObject(ObjectInputStream is) throws IOException {
                     throw new IOException();
                 }
+
+                private void writeObject(ObjectOutputStream os) throws IOException {
+                    // No-op.
+                }
             })).getAll();
 
-            assertTrue("Request unmarshalling failed, but error response was not sent.", portableMarshaller());
+            fail();
         }
         catch (Exception e) {
-            assertFalse("Unexpected exception: " + e, portableMarshaller());
+            // No-op.
         }
-    }
-
-    /**
-     * @return {@code True} if portable marshaller is configured.
-     */
-    private boolean portableMarshaller() {
-        IgniteEx kernal = (IgniteKernal)ignite(0);
-
-        return "PortableMarshaller".equals(kernal.context().config().getMarshaller().getClass().getSimpleName());
     }
 }

@@ -151,8 +151,12 @@ public class GridNearAtomicUpdateRequest extends GridCacheMessage implements Gri
     /** */
     private boolean clientReq;
 
-    /** Keep portable flag. */
+    /** Keep binary flag. */
     private boolean keepBinary;
+
+    /** */
+    @GridDirectTransient
+    private GridNearAtomicUpdateResponse res;
 
     /**
      * Empty constructor required by {@link Externalizable}.
@@ -180,6 +184,7 @@ public class GridNearAtomicUpdateRequest extends GridCacheMessage implements Gri
      * @param subjId Subject ID.
      * @param taskNameHash Task name hash code.
      * @param skipStore Skip write-through to a persistent storage.
+     * @param keepBinary Keep binary flag.
      * @param clientReq Client node request flag.
      * @param addDepInfo Deployment info flag.
      */
@@ -341,7 +346,7 @@ public class GridNearAtomicUpdateRequest extends GridCacheMessage implements Gri
     }
 
     /**
-     * @return Keep portable flag.
+     * @return Keep binary flag.
      */
     public boolean keepBinary() {
         return keepBinary;
@@ -544,6 +549,27 @@ public class GridNearAtomicUpdateRequest extends GridCacheMessage implements Gri
         return hasPrimary;
     }
 
+    /**
+     * @param res Response.
+     * @return {@code True} if current response was {@code null}.
+     */
+    public boolean onResponse(GridNearAtomicUpdateResponse res) {
+        if (this.res == null) {
+            this.res = res;
+
+            return true;
+        }
+
+        return false;
+    }
+
+    /**
+     * @return Response.
+     */
+    @Nullable public GridNearAtomicUpdateResponse response() {
+        return res;
+    }
+
     /** {@inheritDoc}
      * @param ctx*/
     @Override public void prepareMarshal(GridCacheSharedContext ctx) throws IgniteCheckedException {
@@ -568,7 +594,7 @@ public class GridNearAtomicUpdateRequest extends GridCacheMessage implements Gri
                 filter = null;
         }
 
-        if (expiryPlc != null)
+        if (expiryPlc != null && expiryPlcBytes == null)
             expiryPlcBytes = CU.marshal(cctx, new IgniteExternalizableExpiryPolicy(expiryPlc));
 
         if (op == TRANSFORM) {
@@ -576,9 +602,11 @@ public class GridNearAtomicUpdateRequest extends GridCacheMessage implements Gri
             if (!addDepInfo && ctx.deploymentEnabled())
                 addDepInfo = true;
 
-            entryProcessorsBytes = marshalCollection(entryProcessors, cctx);
+            if (entryProcessorsBytes == null)
+                entryProcessorsBytes = marshalCollection(entryProcessors, cctx);
 
-            invokeArgsBytes = marshalInvokeArguments(invokeArgs, cctx);
+            if (invokeArgsBytes == null)
+                invokeArgsBytes = marshalInvokeArguments(invokeArgs, cctx);
         }
         else
             prepareMarshalCacheObjects(vals, cctx);
@@ -592,8 +620,13 @@ public class GridNearAtomicUpdateRequest extends GridCacheMessage implements Gri
 
         finishUnmarshalCacheObjects(keys, cctx, ldr);
 
-        if (op == TRANSFORM)
-            entryProcessors = unmarshalCollection(entryProcessorsBytes, ctx, ldr);
+        if (op == TRANSFORM) {
+            if (entryProcessors == null)
+                entryProcessors = unmarshalCollection(entryProcessorsBytes, ctx, ldr);
+
+            if (invokeArgs == null)
+                invokeArgs = unmarshalInvokeArguments(invokeArgsBytes, ctx, ldr);
+        }
         else
             finishUnmarshalCacheObjects(vals, cctx, ldr);
 
@@ -604,9 +637,7 @@ public class GridNearAtomicUpdateRequest extends GridCacheMessage implements Gri
             }
         }
 
-        invokeArgs = unmarshalInvokeArguments(invokeArgsBytes, ctx, ldr);
-
-        if (expiryPlcBytes != null)
+        if (expiryPlcBytes != null && expiryPlc == null)
             expiryPlc = ctx.marshaller().unmarshal(expiryPlcBytes, ldr);
     }
 

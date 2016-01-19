@@ -41,7 +41,7 @@ public final class MarshallerExclusions {
      * Classes that must be included in serialization. All marshallers must
      * included these classes.
      * <p>
-     * Note that this list supercedes {@link #EXCL_CLASSES}.
+     * Note that this list supersedes {@link #EXCL_CLASSES}.
      */
     private static final Class<?>[] INCL_CLASSES = new Class[] {
         // Ignite classes.
@@ -57,7 +57,7 @@ public final class MarshallerExclusions {
      * Excluded grid classes from serialization. All marshallers must omit
      * these classes. Fields of these types should be serialized as {@code null}.
      * <p>
-     * Note that {@link #INCL_CLASSES} supercedes this list.
+     * Note that {@link #INCL_CLASSES} supersedes this list.
      */
     private static final Class<?>[] EXCL_CLASSES;
 

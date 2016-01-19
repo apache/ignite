@@ -696,7 +696,10 @@ class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObject {
                         if (log.isDebugEnabled())
                             U.warn(log, "Received response for unknown child job (was job presumed failed?): " + res);
 
-                        return;
+                        res = delayedRess.poll();
+
+                        // We can not return here because there can be more delayed messages in the queue.
+                        continue;
                     }
 
                     // Only process 1st response and ignore following ones. This scenario
@@ -706,7 +709,10 @@ class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObject {
                         if (log.isDebugEnabled())
                             log.debug("Received redundant response for a job (will ignore): " + res);
 
-                        return;
+                        res = delayedRess.poll();
+
+                        // We can not return here because there can be more delayed messages in the queue.
+                        continue;
                     }
 
                     if (!jobRes.getNode().id().equals(res.getNodeId())) {

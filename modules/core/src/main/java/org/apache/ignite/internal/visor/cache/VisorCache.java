@@ -37,7 +37,7 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCacheA
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionState;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionTopology;
-import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionMap;
+import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionMap2;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearCacheAdapter;
 import org.apache.ignite.internal.util.lang.IgnitePair;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -106,7 +106,10 @@ public class VisorCache implements Serializable {
     private VisorCacheMetrics metrics;
 
     /** Cache partitions states. */
-    private GridDhtPartitionMap partitionsMap;
+    private GridDhtPartitionMap2 partitionsMap;
+
+    /** Flag indicating that cache has near cache. */
+    private boolean near;
 
     /**
      * @param ignite Grid.
@@ -139,6 +142,8 @@ public class VisorCache implements Serializable {
         backupPartitions = Collections.emptyList();
 
         CacheConfiguration cfg = ca.configuration();
+
+        near = ca.context().isNear();
 
         mode = cfg.getCacheMode();
 
@@ -229,7 +234,9 @@ public class VisorCache implements Serializable {
     protected void estimateMemorySize(IgniteEx ignite, GridCacheAdapter ca, int sample) throws IgniteCheckedException {
         int size = ca.size();
 
-        Set<GridCacheEntryEx> set = ca.map().entries0();
+        Set<GridCacheEntryEx> set = ca.context().isNear()
+            ? ((GridNearCacheAdapter)ca).dht().map().entries0()
+            : ca.map().entries0();
 
         long memSz = 0;
 
@@ -273,6 +280,7 @@ public class VisorCache implements Serializable {
         c.primaryPartitions = Collections.emptyList();
         c.backupPartitions = Collections.emptyList();
         c.metrics = metrics;
+        c.near = near;
 
         return c;
     }
@@ -399,8 +407,15 @@ public class VisorCache implements Serializable {
     /**
      * @return Cache partitions states.
      */
-    @Nullable public GridDhtPartitionMap partitionMap() {
+    @Nullable public GridDhtPartitionMap2 partitionMap() {
         return partitionsMap;
+    }
+
+    /**
+     * @return {@code true} if cache has near cache.
+     */
+    public boolean near() {
+        return near;
     }
 
     /** {@inheritDoc} */

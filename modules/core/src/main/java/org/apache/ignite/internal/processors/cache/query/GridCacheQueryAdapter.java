@@ -73,7 +73,7 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
     /** */
     private final IgniteLogger log;
 
-    /** Class name in case of portable query. */
+    /** Class name in case of binary query. */
     private final String clsName;
 
     /** */
@@ -110,7 +110,7 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
     private volatile ClusterGroup prj;
 
     /** */
-    private boolean keepPortable;
+    private boolean keepBinary;
 
     /** */
     private UUID subjId;
@@ -126,7 +126,7 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
      * @param filter Scan filter.
      * @param part Partition.
      * @param incMeta Include metadata flag.
-     * @param keepPortable Keep portable flag.
+     * @param keepBinary Keep binary flag.
      */
     public GridCacheQueryAdapter(GridCacheContext<?, ?> cctx,
         GridCacheQueryType type,
@@ -135,7 +135,7 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
         @Nullable IgniteBiPredicate<Object, Object> filter,
         @Nullable Integer part,
         boolean incMeta,
-        boolean keepPortable) {
+        boolean keepBinary) {
         assert cctx != null;
         assert type != null;
         assert part == null || part >= 0;
@@ -147,7 +147,7 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
         this.filter = filter;
         this.part = part;
         this.incMeta = incMeta;
-        this.keepPortable = keepPortable;
+        this.keepBinary = keepBinary;
 
         log = cctx.logger(getClass());
 
@@ -169,7 +169,7 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
      * @param clsName Class name.
      * @param clause Clause.
      * @param incMeta Include metadata flag.
-     * @param keepPortable Keep portable flag.
+     * @param keepBinary Keep binary flag.
      * @param subjId Security subject ID.
      * @param taskHash Task hash.
      */
@@ -187,7 +187,7 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
         @Nullable String clsName,
         String clause,
         boolean incMeta,
-        boolean keepPortable,
+        boolean keepBinary,
         UUID subjId,
         int taskHash) {
         this.cctx = cctx;
@@ -204,7 +204,7 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
         this.clsName = clsName;
         this.clause = clause;
         this.incMeta = incMeta;
-        this.keepPortable = keepPortable;
+        this.keepBinary = keepBinary;
         this.subjId = subjId;
         this.taskHash = taskHash;
     }
@@ -238,19 +238,19 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
     }
 
     /**
-     * @return {@code True} if portable should not be deserialized.
+     * @return {@code True} if binary should not be deserialized.
      */
-    public boolean keepPortable() {
-        return keepPortable;
+    public boolean keepBinary() {
+        return keepBinary;
     }
 
     /**
-     * Forces query to keep portable object representation even if query was created on plain projection.
+     * Forces query to keep binary object representation even if query was created on plain projection.
      *
-     * @param keepPortable Keep portable flag.
+     * @param keepBinary Keep binary flag.
      */
-    public void keepPortable(boolean keepPortable) {
-        this.keepPortable = keepPortable;
+    public void keepBinary(boolean keepBinary) {
+        this.keepBinary = keepBinary;
     }
 
     /**

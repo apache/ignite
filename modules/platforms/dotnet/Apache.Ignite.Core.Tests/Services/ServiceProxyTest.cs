@@ -42,29 +42,29 @@ namespace Apache.Ignite.Core.Tests.Services
         {
             TypeConfigurations = new[]
             {
-                new BinaryTypeConfiguration(typeof (TestPortableClass)),
-                new BinaryTypeConfiguration(typeof (CustomExceptionPortable))
+                new BinaryTypeConfiguration(typeof (TestBinarizableClass)),
+                new BinaryTypeConfiguration(typeof (CustomExceptionBinarizable))
             }
         });
 
         /** */
-        protected readonly IIgniteBinary IgniteBinary;
+        protected readonly IBinary Binary;
 
         /** */
         private readonly PlatformMemoryManager _memory = new PlatformMemoryManager(1024);
 
         /** */
-        protected bool KeepPortable;
+        protected bool KeepBinary;
 
         /** */
-        protected bool SrvKeepPortable;
+        protected bool SrvKeepBinary;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="ServiceProxyTest"/> class.
         /// </summary>
         public ServiceProxyTest()
         {
-            IgniteBinary = new IgniteBinary(_marsh);
+            Binary = new Binary(_marsh);
         }
 
         /// <summary>
@@ -196,13 +196,13 @@ namespace Apache.Ignite.Core.Tests.Services
         }
 
         [Test]
-        public void TestPortableMarshallingException()
+        public void TestBinarizableMarshallingException()
         {
             var prx = GetProxy();
                 
-            var ex = Assert.Throws<ServiceInvocationException>(() => prx.CustomExceptionPortableMethod(false, false));
+            var ex = Assert.Throws<ServiceInvocationException>(() => prx.CustomExceptionBinarizableMethod(false, false));
 
-            if (KeepPortable)
+            if (KeepBinary)
             {
                 Assert.AreEqual("Proxy method invocation failed with a binary error. " +
                                 "Examine BinaryCause for details.", ex.Message);
@@ -219,15 +219,15 @@ namespace Apache.Ignite.Core.Tests.Services
                 Assert.IsNotNull(ex.InnerException);
             }
 
-            ex = Assert.Throws<ServiceInvocationException>(() => prx.CustomExceptionPortableMethod(true, false));
+            ex = Assert.Throws<ServiceInvocationException>(() => prx.CustomExceptionBinarizableMethod(true, false));
             Assert.IsTrue(ex.ToString().Contains(
-                "Call completed with error, but error serialization failed [errType=CustomExceptionPortable, " +
-                "serializationErrMsg=Expected exception in CustomExceptionPortable.WritePortable]"));
+                "Call completed with error, but error serialization failed [errType=CustomExceptionBinarizable, " +
+                "serializationErrMsg=Expected exception in CustomExceptionBinarizable.WriteBinary]"));
 
-            ex = Assert.Throws<ServiceInvocationException>(() => prx.CustomExceptionPortableMethod(true, true));
+            ex = Assert.Throws<ServiceInvocationException>(() => prx.CustomExceptionBinarizableMethod(true, true));
             Assert.IsTrue(ex.ToString().Contains(
-                "Call completed with error, but error serialization failed [errType=CustomExceptionPortable, " +
-                "serializationErrMsg=Expected exception in CustomExceptionPortable.WritePortable]"));
+                "Call completed with error, but error serialization failed [errType=CustomExceptionBinarizable, " +
+                "serializationErrMsg=Expected exception in CustomExceptionBinarizable.WriteBinary]"));
         }
 
         /// <summary>
@@ -243,7 +243,7 @@ namespace Apache.Ignite.Core.Tests.Services
         /// </summary>
         protected T GetProxy<T>()
         {
-            _svc = new TestIgniteService(IgniteBinary);
+            _svc = new TestIgniteService(Binary);
 
             var prx = new ServiceProxy<T>(InvokeProxyMethod).GetTransparentProxy();
 
@@ -266,7 +266,7 @@ namespace Apache.Ignite.Core.Tests.Services
             using (var outStream = new PlatformMemoryStream(_memory.Allocate()))
             {
                 // 1) Write to a stream
-                inStream.WriteBool(SrvKeepPortable);  // WriteProxyMethod does not do this, but Java does
+                inStream.WriteBool(SrvKeepBinary);  // WriteProxyMethod does not do this, but Java does
 
                 ServiceProxySerializer.WriteProxyMethod(_marsh.StartMarshal(inStream), method, args);
 
@@ -290,7 +290,7 @@ namespace Apache.Ignite.Core.Tests.Services
 
                 outStream.Seek(0, SeekOrigin.Begin);
 
-                return ServiceProxySerializer.ReadInvocationResult(outStream, _marsh, KeepPortable);
+                return ServiceProxySerializer.ReadInvocationResult(outStream, _marsh, KeepBinary);
             }
         }
 
@@ -354,16 +354,16 @@ namespace Apache.Ignite.Core.Tests.Services
             void CustomExceptionMethod();
 
             /** */
-            void CustomExceptionPortableMethod(bool throwOnWrite, bool throwOnRead);
+            void CustomExceptionBinarizableMethod(bool throwOnWrite, bool throwOnRead);
 
             /** */
-            TestPortableClass PortableArgMethod(int arg1, IBinaryObject arg2);
+            TestBinarizableClass BinarizableArgMethod(int arg1, IBinaryObject arg2);
 
             /** */
-            IBinaryObject PortableResultMethod(int arg1, TestPortableClass arg2);
+            IBinaryObject BinarizableResultMethod(int arg1, TestBinarizableClass arg2);
 
             /** */
-            IBinaryObject PortableArgAndResultMethod(int arg1, IBinaryObject arg2);
+            IBinaryObject BinarizableArgAndResultMethod(int arg1, IBinaryObject arg2);
 
             /** */
             int AmbiguousMethod(int arg);
@@ -414,16 +414,16 @@ namespace Apache.Ignite.Core.Tests.Services
             void CustomExceptionMethod();
 
             /** */
-            void CustomExceptionPortableMethod(bool throwOnWrite, bool throwOnRead);
+            void CustomExceptionBinarizableMethod(bool throwOnWrite, bool throwOnRead);
 
             /** */
-            TestPortableClass PortableArgMethod(int arg1, IBinaryObject arg2);
+            TestBinarizableClass BinarizableArgMethod(int arg1, IBinaryObject arg2);
 
             /** */
-            IBinaryObject PortableResultMethod(int arg1, TestPortableClass arg2);
+            IBinaryObject BinarizableResultMethod(int arg1, TestBinarizableClass arg2);
 
             /** */
-            IBinaryObject PortableArgAndResultMethod(int arg1, IBinaryObject arg2);
+            IBinaryObject BinarizableArgAndResultMethod(int arg1, IBinaryObject arg2);
 
             /** */
             void MissingMethod();
@@ -439,15 +439,15 @@ namespace Apache.Ignite.Core.Tests.Services
         private class TestIgniteService : ITestIgniteService, ITestIgniteServiceAmbiguity
         {
             /** */
-            private readonly IIgniteBinary _igniteBinary;
+            private readonly IBinary _binary;
 
             /// <summary>
             /// Initializes a new instance of the <see cref="TestIgniteService"/> class.
             /// </summary>
-            /// <param name="igniteBinary">The portables.</param>
-            public TestIgniteService(IIgniteBinary igniteBinary)
+            /// <param name="binary">Binary.</param>
+            public TestIgniteService(IBinary binary)
             {
-                _igniteBinary = igniteBinary;
+                _binary = binary;
             }
 
             /** <inheritdoc /> */
@@ -520,27 +520,27 @@ namespace Apache.Ignite.Core.Tests.Services
             }
 
             /** <inheritdoc /> */
-            public void CustomExceptionPortableMethod(bool throwOnWrite, bool throwOnRead)
+            public void CustomExceptionBinarizableMethod(bool throwOnWrite, bool throwOnRead)
             {
-                throw new CustomExceptionPortable {ThrowOnRead = throwOnRead, ThrowOnWrite = throwOnWrite};
+                throw new CustomExceptionBinarizable {ThrowOnRead = throwOnRead, ThrowOnWrite = throwOnWrite};
             }
 
             /** <inheritdoc /> */
-            public TestPortableClass PortableArgMethod(int arg1, IBinaryObject arg2)
+            public TestBinarizableClass BinarizableArgMethod(int arg1, IBinaryObject arg2)
             {
-                return arg2.Deserialize<TestPortableClass>();
+                return arg2.Deserialize<TestBinarizableClass>();
             }
 
             /** <inheritdoc /> */
-            public IBinaryObject PortableResultMethod(int arg1, TestPortableClass arg2)
+            public IBinaryObject BinarizableResultMethod(int arg1, TestBinarizableClass arg2)
             {
-                return _igniteBinary.ToBinary<IBinaryObject>(arg2);
+                return _binary.ToBinary<IBinaryObject>(arg2);
             }
 
             /** <inheritdoc /> */
-            public IBinaryObject PortableArgAndResultMethod(int arg1, IBinaryObject arg2)
+            public IBinaryObject BinarizableArgAndResultMethod(int arg1, IBinaryObject arg2)
             {
-                return _igniteBinary.ToBinary<IBinaryObject>(arg2.Deserialize<TestPortableClass>());
+                return _binary.ToBinary<IBinaryObject>(arg2.Deserialize<TestBinarizableClass>());
             }
 
             /** <inheritdoc /> */
@@ -595,7 +595,7 @@ namespace Apache.Ignite.Core.Tests.Services
         /// <summary>
         /// Custom non-serializable exception.
         /// </summary>
-        private class CustomExceptionPortable : Exception, IBinarizable
+        private class CustomExceptionBinarizable : Exception, IBinarizable
         {
             /** */
             public bool ThrowOnWrite { get; set; }
@@ -609,7 +609,7 @@ namespace Apache.Ignite.Core.Tests.Services
                 writer.WriteBoolean("ThrowOnRead", ThrowOnRead);
 
                 if (ThrowOnWrite)
-                    throw new Exception("Expected exception in CustomExceptionPortable.WritePortable");
+                    throw new Exception("Expected exception in CustomExceptionBinarizable.WriteBinary");
             }
 
             /** <inheritdoc /> */
@@ -618,14 +618,14 @@ namespace Apache.Ignite.Core.Tests.Services
                 ThrowOnRead = reader.ReadBoolean("ThrowOnRead");
 
                 if (ThrowOnRead)
-                    throw new Exception("Expected exception in CustomExceptionPortable.ReadPortable");
+                    throw new Exception("Expected exception in CustomExceptionBinarizable.ReadBinary");
             }
         }
 
         /// <summary>
-        /// Portable object for method argument/result.
+        /// Binarizable object for method argument/result.
         /// </summary>
-        protected class TestPortableClass : IBinarizable
+        protected class TestBinarizableClass : IBinarizable
         {
             /** */
             public string Prop { get; set; }
@@ -643,7 +643,7 @@ namespace Apache.Ignite.Core.Tests.Services
                 writer.WriteBoolean("ThrowOnRead", ThrowOnRead);
 
                 if (ThrowOnWrite)
-                    throw new Exception("Expected exception in TestPortableClass.WritePortable");
+                    throw new Exception("Expected exception in TestBinarizableClass.WriteBinary");
             }
 
             /** <inheritdoc /> */
@@ -653,89 +653,89 @@ namespace Apache.Ignite.Core.Tests.Services
                 ThrowOnRead = reader.ReadBoolean("ThrowOnRead");
 
                 if (ThrowOnRead)
-                    throw new Exception("Expected exception in TestPortableClass.ReadPortable");
+                    throw new Exception("Expected exception in TestBinarizableClass.ReadBinary");
             }
         }
     }
 
     /// <summary>
-    /// Tests <see cref="ServiceProxySerializer"/> functionality with keepPortable mode enabled on client.
+    /// Tests <see cref="ServiceProxySerializer"/> functionality with keepBinary mode enabled on client.
     /// </summary>
-    public class ServiceProxyTestKeepPortableClient : ServiceProxyTest
+    public class ServiceProxyTestKeepBinaryClient : ServiceProxyTest
     {
         /// <summary>
-        /// Initializes a new instance of the <see cref="ServiceProxyTestKeepPortableClient"/> class.
+        /// Initializes a new instance of the <see cref="ServiceProxyTestKeepBinaryClient"/> class.
         /// </summary>
-        public ServiceProxyTestKeepPortableClient()
+        public ServiceProxyTestKeepBinaryClient()
         {
-            KeepPortable = true;
+            KeepBinary = true;
         }
 
         [Test]
-        public void TestPortableMethods()
+        public void TestBinarizableMethods()
         {
             var prx = GetProxy();
 
-            var obj = new TestPortableClass { Prop = "PropValue" };
+            var obj = new TestBinarizableClass { Prop = "PropValue" };
 
-            var result = prx.PortableResultMethod(1, obj);
+            var result = prx.BinarizableResultMethod(1, obj);
 
-            Assert.AreEqual(obj.Prop, result.Deserialize<TestPortableClass>().Prop);
+            Assert.AreEqual(obj.Prop, result.Deserialize<TestBinarizableClass>().Prop);
         }
     }
 
     /// <summary>
-    /// Tests <see cref="ServiceProxySerializer"/> functionality with keepPortable mode enabled on server.
+    /// Tests <see cref="ServiceProxySerializer"/> functionality with keepBinary mode enabled on server.
     /// </summary>
-    public class ServiceProxyTestKeepPortableServer : ServiceProxyTest
+    public class ServiceProxyTestKeepBinaryServer : ServiceProxyTest
     {
         /// <summary>
-        /// Initializes a new instance of the <see cref="ServiceProxyTestKeepPortableServer"/> class.
+        /// Initializes a new instance of the <see cref="ServiceProxyTestKeepBinaryServer"/> class.
         /// </summary>
-        public ServiceProxyTestKeepPortableServer()
+        public ServiceProxyTestKeepBinaryServer()
         {
-            SrvKeepPortable = true;
+            SrvKeepBinary = true;
         }
 
         [Test]
-        public void TestPortableMethods()
+        public void TestBinarizableMethods()
         {
             var prx = GetProxy();
 
-            var obj = new TestPortableClass { Prop = "PropValue" };
-            var portObj = IgniteBinary.ToBinary<IBinaryObject>(obj);
+            var obj = new TestBinarizableClass { Prop = "PropValue" };
+            var portObj = Binary.ToBinary<IBinaryObject>(obj);
 
-            var result = prx.PortableArgMethod(1, portObj);
+            var result = prx.BinarizableArgMethod(1, portObj);
 
             Assert.AreEqual(obj.Prop, result.Prop);
         }
     }
 
     /// <summary>
-    /// Tests <see cref="ServiceProxySerializer"/> functionality with keepPortable mode enabled on client and on server.
+    /// Tests <see cref="ServiceProxySerializer"/> functionality with keepBinary mode enabled on client and on server.
     /// </summary>
-    public class ServiceProxyTestKeepPortableClientServer : ServiceProxyTest
+    public class ServiceProxyTestKeepBinaryClientServer : ServiceProxyTest
     {
         /// <summary>
-        /// Initializes a new instance of the <see cref="ServiceProxyTestKeepPortableClientServer"/> class.
+        /// Initializes a new instance of the <see cref="ServiceProxyTestKeepBinaryClientServer"/> class.
         /// </summary>
-        public ServiceProxyTestKeepPortableClientServer()
+        public ServiceProxyTestKeepBinaryClientServer()
         {
-            KeepPortable = true;
-            SrvKeepPortable = true;
+            KeepBinary = true;
+            SrvKeepBinary = true;
         }
 
         [Test]
-        public void TestPortableMethods()
+        public void TestBinarizableMethods()
         {
             var prx = GetProxy();
             
-            var obj = new TestPortableClass { Prop = "PropValue" };
-            var portObj = IgniteBinary.ToBinary<IBinaryObject>(obj);
+            var obj = new TestBinarizableClass { Prop = "PropValue" };
+            var portObj = Binary.ToBinary<IBinaryObject>(obj);
 
-            var result = prx.PortableArgAndResultMethod(1, portObj);
+            var result = prx.BinarizableArgAndResultMethod(1, portObj);
 
-            Assert.AreEqual(obj.Prop, result.Deserialize<TestPortableClass>().Prop);
+            Assert.AreEqual(obj.Prop, result.Deserialize<TestBinarizableClass>().Prop);
         }
     }
 }

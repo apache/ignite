@@ -17,16 +17,15 @@
 
 package org.apache.ignite.internal.util.future;
 
+import java.util.ArrayList;
 import java.util.Collection;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicMarkableReference;
-import java.util.concurrent.atomic.AtomicReference;
+import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.IgniteFutureCancelledCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.transactions.IgniteTxOptimisticCheckedException;
+import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.C1;
 import org.apache.ignite.internal.util.typedef.F;
@@ -35,7 +34,6 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgniteReducer;
 import org.jetbrains.annotations.Nullable;
-import org.jsr166.ConcurrentLinkedDeque8;
 
 /**
  * Future composed of multiple inner futures.
@@ -44,33 +42,42 @@ public class GridCompoundFuture<T, R> extends GridFutureAdapter<R> {
     /** */
     private static final long serialVersionUID = 0L;
 
+    /** */
+    private static final int INITED = 0b1;
+
+    /** */
+    private static final AtomicIntegerFieldUpdater<GridCompoundFuture> flagsUpd =
+        AtomicIntegerFieldUpdater.newUpdater(GridCompoundFuture.class, "flags");
+
+    /** */
+    private static final AtomicIntegerFieldUpdater<GridCompoundFuture> lsnrCallsUpd =
+        AtomicIntegerFieldUpdater.newUpdater(GridCompoundFuture.class, "lsnrCalls");
+
     /** Futures. */
-    private final ConcurrentLinkedDeque8<IgniteInternalFuture<T>> futs = new ConcurrentLinkedDeque8<>();
+    protected final ArrayList<IgniteInternalFuture<T>> futs = new ArrayList<>();
 
-    /** Pending futures. */
-    private final Collection<IgniteInternalFuture<T>> pending = new ConcurrentLinkedDeque8<>();
-
-    /** Listener call count. */
-    private final AtomicInteger lsnrCalls = new AtomicInteger();
-
-    /** Finished flag. */
-    private final AtomicBoolean finished = new AtomicBoolean();
+    /** */
+    @GridToStringExclude
+    private final Listener lsnr = new Listener();
 
     /** Reducer. */
     @GridToStringInclude
     private IgniteReducer<T, R> rdc;
 
-    /** Initialize flag. */
-    private AtomicBoolean init = new AtomicBoolean(false);
-
-    /** Result with a flag to control if reducer has been called. */
-    private AtomicMarkableReference<R> res = new AtomicMarkableReference<>(null, false);
-
     /** Exceptions to ignore. */
     private Class<? extends Throwable>[] ignoreChildFailures;
 
-    /** Error. */
-    private AtomicReference<Throwable> err = new AtomicReference<>();
+    /**
+     * Updated via {@link #flagsUpd}.
+     *
+     * @see #INITED
+     */
+    @SuppressWarnings("unused")
+    private volatile int flags;
+
+    /** Updated via {@link #lsnrCallsUpd}. */
+    @SuppressWarnings("unused")
+    private volatile int lsnrCalls;
 
     /**
      *
@@ -104,7 +111,7 @@ public class GridCompoundFuture<T, R> extends GridFutureAdapter<R> {
     /** {@inheritDoc} */
     @Override public boolean cancel() throws IgniteCheckedException {
         if (onCancelled()) {
-            for (IgniteInternalFuture<T> fut : futs)
+            for (IgniteInternalFuture<T> fut : futures())
                 fut.cancel();
 
             return true;
@@ -118,8 +125,26 @@ public class GridCompoundFuture<T, R> extends GridFutureAdapter<R> {
      *
      * @return Collection of futures.
      */
+    private Collection<IgniteInternalFuture<T>> futures(boolean pending) {
+        synchronized (futs) {
+            Collection<IgniteInternalFuture<T>> res = new ArrayList<>(futs.size());
+
+            for (IgniteInternalFuture<T> fut : futs) {
+                if (!pending || !fut.isDone())
+                    res.add(fut);
+            }
+
+            return res;
+        }
+    }
+
+    /**
+     * Gets collection of futures.
+     *
+     * @return Collection of futures.
+     */
     public Collection<IgniteInternalFuture<T>> futures() {
-        return futs;
+        return futures(false);
     }
 
     /**
@@ -128,7 +153,7 @@ public class GridCompoundFuture<T, R> extends GridFutureAdapter<R> {
      * @return Pending futures.
      */
     public Collection<IgniteInternalFuture<T>> pending() {
-        return pending;
+        return futures(true);
     }
 
     /**
@@ -146,8 +171,19 @@ public class GridCompoundFuture<T, R> extends GridFutureAdapter<R> {
      *
      * @return {@code True} if there are pending futures.
      */
+    @SuppressWarnings("ForLoopReplaceableByForEach")
     public boolean hasPending() {
-        return !pending.isEmpty();
+        synchronized (futs) {
+            // Avoid iterator creation and collection copy.
+            for (int i = 0; i < futs.size(); i++) {
+                IgniteInternalFuture<T> fut = futs.get(i);
+
+                if (!fut.isDone())
+                    return true;
+            }
+        }
+
+        return false;
     }
 
     /**
@@ -155,7 +191,7 @@ public class GridCompoundFuture<T, R> extends GridFutureAdapter<R> {
      *      {@link #markInitialized()} method is called on future.
      */
     public boolean initialized() {
-        return init.get();
+        return flagSet(INITED);
     }
 
     /**
@@ -166,18 +202,20 @@ public class GridCompoundFuture<T, R> extends GridFutureAdapter<R> {
     public void add(IgniteInternalFuture<T> fut) {
         assert fut != null;
 
-        pending.add(fut);
-        futs.add(fut);
+        synchronized (futs) {
+            futs.add(fut);
+        }
 
-        fut.listen(new Listener());
+        fut.listen(lsnr);
 
-        if (isCancelled())
+        if (isCancelled()) {
             try {
                 fut.cancel();
             }
             catch (IgniteCheckedException e) {
                 onDone(e);
             }
+        }
     }
 
     /**
@@ -185,7 +223,8 @@ public class GridCompoundFuture<T, R> extends GridFutureAdapter<R> {
      *
      * @param futs Futures to add.
      */
-    public void addAll(@Nullable IgniteInternalFuture<T>... futs) {
+    @SafeVarargs
+    public final void addAll(@Nullable IgniteInternalFuture<T>... futs) {
         addAll(F.asList(futs));
     }
 
@@ -195,9 +234,10 @@ public class GridCompoundFuture<T, R> extends GridFutureAdapter<R> {
      * @param futs Futures to add.
      */
     public void addAll(@Nullable Iterable<IgniteInternalFuture<T>> futs) {
-        if (futs != null)
+        if (futs != null) {
             for (IgniteInternalFuture<T> fut : futs)
                 add(fut);
+        }
     }
 
     /**
@@ -219,10 +259,34 @@ public class GridCompoundFuture<T, R> extends GridFutureAdapter<R> {
     }
 
     /**
+     * @param flag Flag to CAS.
+     * @return {@code True} if CAS succeeds.
+     */
+    private boolean casFlag(int flag) {
+        for (;;) {
+            int flags0 = flags;
+
+            if ((flags0 & flag) != 0)
+                return false;
+
+            if (flagsUpd.compareAndSet(this, flags0, flags0 | flag))
+                return true;
+        }
+    }
+
+    /**
+     * @param flag Flag to check.
+     * @return {@code True} if set.
+     */
+    private boolean flagSet(int flag) {
+        return (flags & flag) != 0;
+    }
+
+    /**
      * Mark this future as initialized.
      */
     public void markInitialized() {
-        if (init.compareAndSet(false, true))
+        if (casFlag(INITED))
             // Check complete to make sure that we take care
             // of all the ignored callbacks.
             checkComplete();
@@ -232,22 +296,14 @@ public class GridCompoundFuture<T, R> extends GridFutureAdapter<R> {
      * Check completeness of the future.
      */
     private void checkComplete() {
-        Throwable err = this.err.get();
-
-        boolean ignore = ignoreFailure(err);
-
-        if (init.get() && (res.isMarked() || lsnrCalls.get() == futs.sizex() || (err != null && !ignore))
-            && finished.compareAndSet(false, true)) {
+        if (flagSet(INITED) && !isDone() && lsnrCalls == futuresSize()) {
             try {
-                if (err == null && rdc != null && !res.isMarked())
-                    res.compareAndSet(null, rdc.reduce(), false, true);
+                onDone(rdc != null ? rdc.reduce() : null);
             }
             catch (RuntimeException e) {
                 U.error(null, "Failed to execute compound future reducer: " + this, e);
 
                 onDone(e);
-
-                return;
             }
             catch (AssertionError e) {
                 U.error(null, "Failed to execute compound future reducer: " + this, e);
@@ -256,8 +312,15 @@ public class GridCompoundFuture<T, R> extends GridFutureAdapter<R> {
 
                 throw e;
             }
+        }
+    }
 
-            onDone(res.getReference(), ignore ? null : err);
+    /**
+     * @return Futures size.
+     */
+    private int futuresSize() {
+        synchronized (futs) {
+            return futs.size();
         }
     }
 
@@ -288,7 +351,7 @@ public class GridCompoundFuture<T, R> extends GridFutureAdapter<R> {
             "cancelled", isCancelled(),
             "err", error(),
             "futs",
-                F.viewReadOnly(futs, new C1<IgniteInternalFuture<T>, String>() {
+                F.viewReadOnly(futures(), new C1<IgniteInternalFuture<T>, String>() {
                     @Override public String apply(IgniteInternalFuture<T> f) {
                         return Boolean.toString(f.isDone());
                     }
@@ -305,14 +368,12 @@ public class GridCompoundFuture<T, R> extends GridFutureAdapter<R> {
 
         /** {@inheritDoc} */
         @Override public void apply(IgniteInternalFuture<T> fut) {
-            pending.remove(fut);
-
             try {
                 T t = fut.get();
 
                 try {
-                    if (rdc != null && !rdc.collect(t) && !res.isMarked())
-                        res.compareAndSet(null, rdc.reduce(), false, true);
+                    if (rdc != null && !rdc.collect(t))
+                        onDone(rdc.reduce());
                 }
                 catch (RuntimeException e) {
                     U.error(null, "Failed to execute compound future reducer: " + this, e);
@@ -331,18 +392,20 @@ public class GridCompoundFuture<T, R> extends GridFutureAdapter<R> {
             }
             catch (IgniteTxOptimisticCheckedException | IgniteFutureCancelledCheckedException |
                 ClusterTopologyCheckedException e) {
-                err.compareAndSet(null, e);
+                if (!ignoreFailure(e))
+                    onDone(e);
             }
             catch (IgniteCheckedException e) {
-                if (!ignoreFailure(e))
+                if (!ignoreFailure(e)) {
                     U.error(null, "Failed to execute compound future reducer: " + this, e);
 
-                err.compareAndSet(null, e);
+                    onDone(e);
+                }
             }
             catch (RuntimeException e) {
                 U.error(null, "Failed to execute compound future reducer: " + this, e);
 
-                err.compareAndSet(null, e);
+                onDone(e);
             }
             catch (AssertionError e) {
                 U.error(null, "Failed to execute compound future reducer: " + this, e);
@@ -353,14 +416,14 @@ public class GridCompoundFuture<T, R> extends GridFutureAdapter<R> {
                 throw e;
             }
 
-            lsnrCalls.incrementAndGet();
+            lsnrCallsUpd.incrementAndGet(GridCompoundFuture.this);
 
             checkComplete();
         }
 
         /** {@inheritDoc} */
         @Override public String toString() {
-            return "Compound future listener: " + GridCompoundFuture.this;
+            return "Compound future listener []";
         }
     }
 }

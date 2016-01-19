@@ -21,7 +21,7 @@ import java.util.Collection;
 
 /**
  * Binary type meta data. Metadata for binary types can be accessed from any of the
- * {@link org.apache.ignite.IgniteBinary#metadata(String)} methods.
+ * {@link org.apache.ignite.IgniteBinary#type(String)} methods.
  * Having metadata also allows for proper formatting of {@code BinaryObject#toString()} method,
  * even when binary objects are kept in binary format only, which may be necessary for audit reasons.
  */
@@ -34,11 +34,18 @@ public interface BinaryType {
     public String typeName();
 
     /**
+     * Gets binary type ID.
+     *
+     * @return Binary type ID.
+     */
+    public int typeId();
+
+    /**
      * Gets collection of all field names for this binary type.
      *
      * @return Collection of all field names for this binary type.
      */
-    public Collection<String> fields();
+    public Collection<String> fieldNames();
 
     /**
      * Gets name of the field type for a given field.
@@ -49,6 +56,15 @@ public interface BinaryType {
     public String fieldTypeName(String fieldName);
 
     /**
+     * Get {@link BinaryField} for the given field name. Later this field can be used for fast field's value
+     * retrieval from concrete {@link BinaryObject}.
+     *
+     * @param fieldName Field name.
+     * @return Binary field.
+     */
+    public BinaryField field(String fieldName);
+
+    /**
      * Binary objects can optionally specify custom key-affinity mapping in the
      * configuration. This method returns the name of the field which should be
      * used for the key-affinity mapping.
@@ -56,4 +72,11 @@ public interface BinaryType {
      * @return Affinity key field name.
      */
     public String affinityKeyFieldName();
+
+    /**
+     * Check whether type represents enum or not.
+     *
+     * @return {@code True} if type is enum.
+     */
+    public boolean isEnum();
 }
