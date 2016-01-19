@@ -860,7 +860,7 @@ public class BinaryContext {
 
         int fieldId = userTypeIdMapper(typeId).fieldId(typeId, fieldName);
 
-        return new BinaryFieldImpl(typeId, schemaReg, fieldName, fieldId);
+        return new BinaryFieldImpl(this, typeId, schemaReg, fieldName, fieldId);
     }
 
     /**

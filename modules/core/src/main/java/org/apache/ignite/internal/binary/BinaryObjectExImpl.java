@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.binary;
 
 import java.math.BigDecimal;
+import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.IdentityHashMap;
 import org.apache.ignite.IgniteException;
@@ -80,6 +81,15 @@ public abstract class BinaryObjectExImpl implements BinaryObjectEx {
      * @return Field value.
      */
     @Nullable protected abstract <F> F fieldByOrder(int fieldOffset);
+
+    /**
+     * Writes field value defined by the given field offset to the given byte buffer.
+     *
+     * @param fieldOffset Field offset.
+     * @return Boolean flag indicating whether the field was successfully written to the buffer, {@code false}
+     *      if there is no enough space for the field in the buffer.
+     */
+    protected abstract boolean writeFieldByOrder(int fieldOffset, ByteBuffer buf);
 
     /**
      * @param ctx Reader context.
