@@ -147,7 +147,8 @@ namespace Apache.Ignite.Core.Impl.Common
 
         private static TypeConverter GetConverter(Type type)
         {
-            // TODO: ICollection?
+            // TODO: ICollection<string>, ICollection<int>
+            // TODO: IDictionary < string, string>
             if (type.IsEnum)
                 return new GenericEnumConverter(type);
 
