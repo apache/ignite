@@ -18,6 +18,7 @@
 namespace Apache.Ignite.Core.Impl.Common
 {
     using System;
+    using System.Collections;
     using System.Collections.Generic;
     using System.ComponentModel;
     using System.Configuration;
@@ -117,7 +118,37 @@ namespace Apache.Ignite.Core.Impl.Common
 
         private static void ReadCollection(XmlReader reader, PropertyInfo prop, object target)
         {
-            // TODO
+            // TODO: dictionary?
+            var elementType = prop.PropertyType.GetGenericArguments().Single();
+
+            var listType = typeof (IList<>).MakeGenericType(elementType);
+
+            var list = (IList) Activator.CreateInstance(listType);
+
+            using (var subReader = reader.ReadSubtree())
+            {
+                while (subReader.Read())
+                {
+                    if (subReader.NodeType != XmlNodeType.Element)
+                        continue;
+
+                    if (subReader.Name != PropertyNameToXmlName(elementType.Name))
+                        throw new ConfigurationErrorsException(
+                            string.Format("Invalid list element in IgniteConfiguration: expected '{0}', but was '{1}'",
+                                PropertyNameToXmlName(elementType.Name), subReader.Name));
+
+                    if (elementType == typeof (string))
+                        list.Add(subReader.ReadString());
+                    else
+                    {
+                        var element = Activator.CreateInstance(elementType);
+
+                        ReadElement(subReader, element);
+
+                        list.Add(element);
+                    }
+                }
+            }
         }
 
         private static void SetProperty(object target, string propName, string propVal)
@@ -159,6 +190,13 @@ namespace Apache.Ignite.Core.Impl.Common
             Debug.Assert(name.Length > 0);
 
             return char.ToUpper(name[0]) + name.Substring(1);
+        }
+
+        private static string PropertyNameToXmlName(string name)
+        {
+            Debug.Assert(name.Length > 0);
+
+            return char.ToLower(name[0]) + name.Substring(1);
         }
 
         private static TypeConverter GetConverter(Type type)

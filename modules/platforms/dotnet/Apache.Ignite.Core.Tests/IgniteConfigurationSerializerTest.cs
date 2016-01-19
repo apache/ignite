@@ -36,8 +36,8 @@ namespace Apache.Ignite.Core.Tests
                             <localHost>127.1.1.1</localHost>
                             <discoveryConfiguration joinTimeout='0:1:0'>
                                 <ipFinder type='MulticastIpFinder' addressRequestAttempts='7' />
-                                <jvmOptions><string>-Xms1g</string><string>-Xmx4g</string></jvmOptions>
                             </discoveryConfiguration>
+                            <jvmOptions><string>-Xms1g</string><string>-Xmx4g</string></jvmOptions>
                         </igniteConfig>";
             var reader = XmlReader.Create(new StringReader(xml));
 
