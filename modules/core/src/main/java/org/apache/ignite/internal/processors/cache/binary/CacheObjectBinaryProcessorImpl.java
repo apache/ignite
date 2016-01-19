@@ -622,6 +622,8 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
     @Override public BinaryObject buildEnum(String typeName, int ord) throws IgniteException {
         int typeId = binaryCtx.typeId(typeName);
 
+        typeName = binaryCtx.userTypeName(typeName);
+
         updateMetadata(typeId, typeName, null, null, true);
 
         return new BinaryEnumObjectImpl(binaryCtx, typeId, null, ord);

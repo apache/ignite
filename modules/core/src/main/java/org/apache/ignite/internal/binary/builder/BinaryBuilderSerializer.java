@@ -98,8 +98,10 @@ class BinaryBuilderSerializer {
         }
 
         if (val.getClass().isEnum()) {
-            String typeName = val.getClass().getName();
-            int typeId = writer.context().typeId(typeName);
+            String clsName = val.getClass().getName();
+
+            int typeId = writer.context().typeId(clsName);
+            String typeName = writer.context().userTypeName(clsName);
 
             BinaryMetadata meta = new BinaryMetadata(typeId, typeName, null, null, null, true);
             writer.context().updateMetadata(typeId, meta);

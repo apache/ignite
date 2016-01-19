@@ -751,6 +751,16 @@ public class BinaryContext {
     }
 
     /**
+     * @param clsName Class name.
+     * @return Type name.
+     */
+    public String userTypeName(String clsName) {
+        T2<BinaryNameMapper, BinaryIdMapper> mappers = userMappers(clsName);
+
+        return mappers.get1().typeName(clsName);
+    }
+
+    /**
      * @param cls Class to get affinity field for.
      * @return Affinity field name or {@code null} if field name was not found.
      */

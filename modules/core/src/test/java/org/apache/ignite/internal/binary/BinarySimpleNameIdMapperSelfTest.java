@@ -31,7 +31,9 @@ public class BinarySimpleNameIdMapperSelfTest extends GridCommonAbstractTest {
     public void test() throws Exception {
         BinaryLowerCaseIdMapper mapper = new BinaryLowerCaseIdMapper();
 
-        assertEquals("gridbinarytestclass1".hashCode(), mapper.typeId(GridBinaryTestClass1.class.getName()));
-        assertEquals("innerclass".hashCode(), mapper.typeId(GridBinaryTestClass1.class.getName() + "$InnerClass"));
+        assertEquals(GridBinaryTestClass1.class.getName().toLowerCase().hashCode(), 
+            mapper.typeId(GridBinaryTestClass1.class.getName()));
+        assertEquals((GridBinaryTestClass1.class.getName() + "$InnerClass").toLowerCase().hashCode(), 
+            mapper.typeId(GridBinaryTestClass1.class.getName() + "$InnerClass"));
     }
 }
