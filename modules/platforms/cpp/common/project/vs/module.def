@@ -116,3 +116,4 @@ IgniteTargetListenFutureForOperationAndGet @113
 IgniteProcessorCreateCacheFromConfig @114
 IgniteProcessorGetOrCreateCacheFromConfig @115
 IgniteProcessorGetIgniteConfiguration @116
+IgniteProcessorDestroyCache @117

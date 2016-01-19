@@ -244,6 +244,8 @@ public class IgniteTcpCommunicationRecoveryAckClosureSelfTest<T extends Communic
      * @throws Exception If failed.
      */
     public void testQueueOverflow() throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-172");
+
         for (int i = 0; i < 3; i++) {
             try {
                 startSpis(5, 60_000, 10);
