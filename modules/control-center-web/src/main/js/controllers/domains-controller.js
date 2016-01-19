@@ -577,12 +577,6 @@ consoleModule.controller('domainsController', function ($filter, $http, $timeout
                 name: 'PARTITIONED',
                 cacheMode: 'PARTITIONED',
                 atomicityMode: 'ATOMIC',
-                cacheStoreFactory: {
-                    kind: 'CacheJdbcPojoStoreFactory',
-                    CacheJdbcPojoStoreFactory: {
-                        dataSourceBean: 'dataSource'
-                    }
-                },
                 readThrough: true,
                 writeThrough: true
             }
@@ -595,12 +589,6 @@ consoleModule.controller('domainsController', function ($filter, $http, $timeout
                 name: 'REPLICATED',
                 cacheMode: 'REPLICATED',
                 atomicityMode: 'ATOMIC',
-                cacheStoreFactory: {
-                    kind: 'CacheJdbcPojoStoreFactory',
-                    CacheJdbcPojoStoreFactory: {
-                        dataSourceBean: 'dataSource'
-                    }
-                },
                 readThrough: true,
                 writeThrough: true
             }
@@ -948,14 +936,17 @@ consoleModule.controller('domainsController', function ($filter, $http, $timeout
 
                             // POJO store factory is not defined in template.
                             if (!newDomain.newCache.cacheStoreFactory ||
-                                newDomain.newCache.cacheStoreFactory.kind !== 'CacheJdbcPojoStoreFactory')
+                                newDomain.newCache.cacheStoreFactory.kind !== 'CacheJdbcPojoStoreFactory') {
+                                var dialect = $scope.importDomain.demo ? 'H2' : $scope.selectedPreset.db;
+
                                 newDomain.newCache.cacheStoreFactory = {
                                     kind: 'CacheJdbcPojoStoreFactory',
-                                    CacheJdbcPojoStoreFactory: { dataSourceBean: 'dataSource' }
+                                    CacheJdbcPojoStoreFactory: {
+                                        dataSourceBean: 'dataSource' + dialect,
+                                        dialect: dialect
+                                    }
                                 };
-
-                            newDomain.newCache.cacheStoreFactory.CacheJdbcPojoStoreFactory.dialect =
-                                $scope.importDomain.demo ? 'H2' : $scope.selectedPreset.db
+                            }
                         }
                         else if (table.cache !== IMPORT_DM_DO_NOT_GENERATE._id)
                             newDomain.caches = [table.cache];
