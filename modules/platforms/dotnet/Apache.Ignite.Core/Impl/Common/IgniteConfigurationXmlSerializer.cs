@@ -105,11 +105,15 @@ namespace Apache.Ignite.Core.Impl.Common
                 propType = derivedTypes.FirstOrDefault(x => x.Name == typeName);
 
                 if (propType == null)
-                    throw new ConfigurationErrorsException(
-                        string.Format(
-                            "'type' attribute is required for '{0}.{1}' property, possible values are: {2}",
-                            targetType.Name, propName, string.Join(", ", derivedTypes.Select(x => x.Name))
-                            ));
+                {
+                    var message = string.Format("'type' attribute is required for '{0}.{1}' property", targetType.Name,
+                        propName);
+
+                    if (derivedTypes.Any())
+                        message += ", possible values are: " + string.Join(", ", derivedTypes.Select(x => x.Name));
+
+                    throw new ConfigurationErrorsException(message);
+                }
             }
 
             var nestedVal = Activator.CreateInstance(propType);
