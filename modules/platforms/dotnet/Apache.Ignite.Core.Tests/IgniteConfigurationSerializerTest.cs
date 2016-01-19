@@ -21,6 +21,7 @@ namespace Apache.Ignite.Core.Tests
     using System.IO;
     using System.Linq;
     using System.Xml;
+    using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Discovery;
     using Apache.Ignite.Core.Impl.Common;
     using Apache.Ignite.Core.Lifecycle;
@@ -40,7 +41,12 @@ namespace Apache.Ignite.Core.Tests
                                 <ipFinder type='MulticastIpFinder' addressRequestAttempts='7' />
                             </discoveryConfiguration>
                             <jvmOptions><string>-Xms1g</string><string>-Xmx4g</string></jvmOptions>
-                            <lifecycleBeans><iLifecycleBean type='Apache.Ignite.Core.Tests.IgniteConfigurationSerializerTest+LifecycleBean, Apache.Ignite.Core.Tests' foo='15' /></lifecycleBeans>
+                            <lifecycleBeans>
+                                <iLifecycleBean type='Apache.Ignite.Core.Tests.IgniteConfigurationSerializerTest+LifecycleBean, Apache.Ignite.Core.Tests' foo='15' />
+                            </lifecycleBeans>
+                            <binaryConfiguration>
+                                <defaultNameMapper type='Apache.Ignite.Core.Tests.IgniteConfigurationSerializerTest+NameMapper' bar='testBar' />
+                            </binaryConfiguration>
                         </igniteConfig>";
             var reader = XmlReader.Create(new StringReader(xml));
 
@@ -54,6 +60,7 @@ namespace Apache.Ignite.Core.Tests
             Assert.AreEqual(7, ((MulticastIpFinder) cfg.DiscoveryConfiguration.IpFinder).AddressRequestAttempts);
             Assert.AreEqual(new[] { "-Xms1g", "-Xmx4g" }, cfg.JvmOptions);
             Assert.AreEqual(15, ((LifecycleBean) cfg.LifecycleBeans.Single()).Foo);
+            Assert.AreEqual("testBar", ((NameMapper) cfg.BinaryConfiguration.DefaultNameMapper).Bar);
         }
 
         public class LifecycleBean : ILifecycleBean
@@ -63,6 +70,21 @@ namespace Apache.Ignite.Core.Tests
             public void OnLifecycleEvent(LifecycleEventType evt)
             {
                 // No-op.
+            }
+        }
+
+        public class NameMapper : IBinaryNameMapper
+        {
+            public string Bar { get; set; }
+
+            public string GetTypeName(string name)
+            {
+                return name;
+            }
+
+            public string GetFieldName(string name)
+            {
+                return name;
             }
         }
     }
