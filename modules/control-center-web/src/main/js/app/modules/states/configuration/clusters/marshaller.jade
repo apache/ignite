@@ -18,7 +18,7 @@
 
 form.panel.panel-default(bs-collapse ng-model='panel' name='marshaller')
     .panel-heading(bs-collapse-toggle)
-        i.fa(ng-class='panel === 0 ? "fa-chevron-circle-up" : "fa-chevron-circle-down"')
+        i.fa(ng-class='panel === 0 ? "fa-chevron-circle-down" : "fa-chevron-circle-right"')
         label Marshaller
         ignite-form-field-tooltip.tipLabel
             | Marshaller allows to marshal or unmarshal objects in grid#[br]
@@ -32,7 +32,9 @@ form.panel.panel-default(bs-collapse ng-model='panel' name='marshaller')
         .panel-body
             .col-sm-6
                 .settings-row
-                    ignite-form-field(data-label='Marshaller')
+                    ignite-form-field
+                        ignite-form-field-label
+                            | Marshaller:
                         ignite-form-field-tooltip
                             | Instance of marshaller to use in grid#[br]
                             | If not provided, BinaryMarshaller will be used
@@ -56,7 +58,9 @@ form.panel.panel-default(bs-collapse ng-model='panel' name='marshaller')
                 .settings-row
                     .col-sm-12.panel-details(ng-if='#{model}.expanded && #{model}.kind === "OptimizedMarshaller"')
                         .details-row
-                            ignite-form-field(data-label='Streams pool size')
+                            ignite-form-field
+                                ignite-form-field-label
+                                    | Streams pool size:
                                 ignite-form-field-tooltip
                                     | Specifies size of cached object streams used by marshaller#[br]
                                     | Object streams are cached for performance reason to avoid costly recreation for every serialization routine#[br]
@@ -94,7 +98,9 @@ form.panel.panel-default(bs-collapse ng-model='panel' name='marshaller')
                             | If this flag is enabled, jobs mapped to local node will be marshalled as if it was remote node
 
                 .settings-row
-                    ignite-form-field(data-label='Keep alive time')
+                    ignite-form-field
+                        ignite-form-field-label
+                            | Keep alive time:
                         ignite-form-field-tooltip
                             | Keep alive time of thread pool that is in charge of processing marshaller messages
                         ignite-form-field-input-number(
@@ -105,7 +111,9 @@ form.panel.panel-default(bs-collapse ng-model='panel' name='marshaller')
                         )
 
                 .settings-row
-                    ignite-form-field(data-label='Pool size')
+                    ignite-form-field
+                        ignite-form-field-label
+                            | Pool size:
                         ignite-form-field-tooltip
                             | Default size of thread pool that is in charge of processing marshaller messages
                         ignite-form-field-input-number(

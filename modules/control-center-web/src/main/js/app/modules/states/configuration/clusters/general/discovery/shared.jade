@@ -14,20 +14,16 @@
     See the License for the specific language governing permissions and
     limitations under the License.
 
-.input-tip
-    input.form-control(
-        id='{{ id }}'
-        name='{{ name }}'
-        placeholder='{{ placeholder }}' 
-        data-min-length='1'
+- var model = 'backupItem.discovery.SharedFs';
 
-        bs-typeahead
-        bs-options='item for item in options' 
-        retain-selection
-        container='body'
-
-        data-ng-model='ngModel'
-        data-ng-disabled='disabled || false'
-    )
-
-    span(ng-transclude='')
+div
+    .details-row
+        ignite-form-field
+            ignite-form-field-label
+                | File path:
+            ignite-form-field-input-text(
+                data-id='path'
+                data-name='path'
+                data-ng-model='#{model}.path'
+                data-placeholder='disco/tcp'
+            )

@@ -1,0 +1,192 @@
+//-
+    Licensed to the Apache Software Foundation (ASF) under one or more
+    contributor license agreements.  See the NOTICE file distributed with
+    this work for additional information regarding copyright ownership.
+    The ASF licenses this file to You under the Apache License, Version 2.0
+    (the "License"); you may not use this file except in compliance with
+    the License.  You may obtain a copy of the License at
+
+         http://www.apache.org/licenses/LICENSE-2.0
+
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
+
+- var model = 'backupItem.discovery.Cloud';
+- var regions = model + '.regions';
+- var zones = model + '.zones';
+
+div
+    .details-row
+        ignite-form-field
+            ignite-form-field-label
+                | Credential:
+            ignite-form-field-tooltip
+                | Credential that is used during authentication on the cloud#[br]
+                | Depending on a cloud platform it can be a password or access key
+            ignite-form-field-input-text(
+                data-id='credential'
+                data-name='credential'
+                data-ng-model='#{model}.credential'
+            )
+    .details-row
+        ignite-form-field
+            ignite-form-field-label
+                | Path to credential:
+            ignite-form-field-tooltip
+                | Path to a credential that is used during authentication on the cloud#[br]
+                | Access key or private key should be stored in a plain or PEM file without a passphrase
+            ignite-form-field-input-text(
+                data-id='credentialPath'
+                data-name='credentialPath'
+                data-ng-model='#{model}.credentialPath'
+            )
+    .details-row
+        ignite-form-field
+            ignite-form-field-label
+                | Identity:
+            ignite-form-field-tooltip
+                | Identity that is used as a user name during a connection to the cloud#[br]
+                | Depending on a cloud platform it can be an email address, user name, etc
+            ignite-form-field-input-text(
+                data-id='identity'
+                data-name='identity'
+                data-ng-model='#{model}.identity'
+                data-ng-required='true'
+            )
+    .details-row
+        ignite-form-field
+            ignite-form-field-label
+                | Provider:
+            ignite-form-field-tooltip
+                | Cloud provider to use
+            ignite-form-field-input-text(
+                data-id='provider'
+                data-name='provider'
+                data-ng-model='#{model}.provider'
+                data-ng-required='true'
+            )
+    .details-row
+        ignite-form-group(data-label='Regions')
+            ignite-form-group-tooltip
+                | List of regions where VMs are located#[br]
+                | If the regions are not set then every region, that a cloud provider has, will be investigated. This could lead to significant performance degradation#[br]
+                | Note, that some cloud providers, like Google Compute Engine, doesn't have a notion of a region. For such providers regions are redundant
+            ignite-form-group-add(ng-click='__.add = true')
+                | Add new region.
+            .group-content-empty(ng-if='!(#{regions}.length) && !__.add')
+                | Not defined
+            .group-content(ng-if='#{regions}.length')
+                ignite-form-field(ng-repeat='model in #{regions} track by $index' type='internal' ng-init='')
+                    .indexField
+                        | {{ $index+1 }}) 
+                    i.tipField.fa.fa-remove(
+                        ng-hide='___.edit'
+                        bs-tooltip='"Remove region"'
+                        ng-click='#{regions}.splice(#{regions}.indexOf(model), 1)'
+                    )
+                    span(ng-hide='___.edit')
+                        a.labelFormField(ng-click='___.edit = true') {{ model }}
+                    span(ng-if='___.edit' ng-form='form' ng-init='field = model')
+                        ignite-form-field-input-text(
+                            data-name='field'
+                            data-ng-model='field'
+                            data-ng-required='true'
+                            data-placeholder='Region name'
+                            data-ignite-form-field-input-autofocus='true'
+                            on-enter='form.$valid && (#{regions}[$index] = field); form.$valid && (___.edit = false);'
+                            ng-asblur='form.$valid && (#{regions}[$index] = field); (___.edit = false)'
+                        )
+                            i.fa.fa-floppy-o(
+                                ng-show='form.$valid'
+                                ng-click='form.$valid && (#{regions}[$index] = field); form.$valid && (___.edit = false);'
+                                bs-tooltip 
+                                data-title='Click icon or press [Enter] to save item' 
+                            )
+                            //- ignite-form-field-tooltip
+                                | Region where VMs are located
+                    
+            .group-content(ng-if='__.add'
+                ng-form='form' 
+            )
+                ignite-form-field(type='internal')
+                    ignite-form-field-input-text(
+                        data-name='field'
+                        data-ng-model='field'
+                        data-ng-required='true'
+                        data-placeholder='Region name'
+                        data-ignite-form-field-input-autofocus='true'
+                        on-enter='form.$valid && #{regions}.push(field); form.$valid && (__.add = false)'
+                        ng-asblur='form.$valid && #{regions}.push(field); (__.add = false)'
+                    )
+                        i.fa.fa-floppy-o(
+                            ng-show='form.$valid'
+                            ng-click='form.$valid && #{regions}.push(field); form.$valid && (__.add = false)'
+                            bs-tooltip 
+                            data-title='Click icon or press [Enter] to save item' 
+                        )
+                        //- ignite-form-field-tooltip
+                            | Region where VMs are located
+    .details-row
+        ignite-form-group(data-label='Zones')
+            ignite-form-group-tooltip
+                | List of zones where VMs are located#[br]
+                | If the zones are not set then every zone from specified regions, will be taken into account#[br]
+                | Note, that some cloud providers, like Rackspace, doesn't have a notion of a zone. For such providers zones are redundant
+            ignite-form-group-add(ng-click='__.add = true')
+                | Add new zone.
+            .group-content-empty(ng-if='!(#{zones}.length) && !__.add')
+                | Not defined
+            .group-content(ng-if='#{zones}.length')
+                ignite-form-field(ng-repeat='model in #{zones} track by $index' type='internal' ng-init='')
+                    .indexField
+                        | {{ $index+1 }}) 
+                    i.tipField.fa.fa-remove(
+                        ng-hide='___.edit'
+                        bs-tooltip='"Remove zone"'
+                        ng-click='#{zones}.splice(#{zones}.indexOf(model), 1)'
+                    )
+                    span(ng-hide='___.edit')
+                        a.labelFormField(ng-click='___.edit = true') {{ model }}
+                    span(ng-if='___.edit' ng-form='form' ng-init='field = model')
+                        ignite-form-field-input-text(
+                            data-name='field'
+                            data-ng-model='field'
+                            data-ng-required='true'
+                            data-placeholder='Zone name'
+                            data-ignite-form-field-input-autofocus='true'
+                            on-enter='form.$valid && (#{zones}[$index] = field); form.$valid && (___.edit = false);'
+                            ng-asblur='form.$valid && (#{zones}[$index] = field); (___.edit = false)'
+                        )
+                            i.fa.fa-floppy-o(
+                                ng-show='form.$valid'
+                                ng-click='form.$valid && (#{zones}[$index] = field); form.$valid && (___.edit = false);'
+                                bs-tooltip 
+                                data-title='Click icon or press [Enter] to save item' 
+                            )
+                            //- ignite-form-field-tooltip
+                                | Zone where VMs are located
+                    
+            .group-content(ng-if='__.add'
+                ng-form='form' 
+            )
+                ignite-form-field(type='internal')
+                    ignite-form-field-input-text(
+                        data-name='field'
+                        data-ng-model='field'
+                        data-ng-required='true'
+                        data-placeholder='Zone name'
+                        data-ignite-form-field-input-autofocus='true'
+                        on-enter='form.$valid && #{zones}.push(field); form.$valid && (__.add = false)'
+                        ng-asblur='form.$valid && #{zones}.push(field); (__.add = false)'
+                    )
+                        i.fa.fa-floppy-o(
+                            ng-show='form.$valid'
+                            ng-click='form.$valid && #{zones}.push(field); form.$valid && (__.add = false)'
+                            bs-tooltip 
+                            data-title='Click icon or press [Enter] to save item' 
+                        )
+                        //- ignite-form-field-tooltip
+                            | Zone where VMs are located

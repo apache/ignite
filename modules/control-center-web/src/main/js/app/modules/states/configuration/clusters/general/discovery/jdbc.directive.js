@@ -15,30 +15,13 @@
  * limitations under the License.
  */
 
-import template from './datalist.jade!';
+import template from './jdbc.jade!';
 
-export default ['igniteFormFieldInputDatalist', ['IgniteFormGUID', (guid) => {
-    const link = (scope) => {
-        const {id} = scope;
-
-        scope.id = id || guid();
-    };
-
+export default ['igniteConfigurationClustersGeneralDiscoveryJdbc', [() => {
     return {
+        scope: true,
         restrict: 'E',
-        scope: {
-            id: '@',
-            name: '@',
-            placeholder: '@',
-            disabled: '=ngDisabled',
-
-            options: '=',
-            ngModel: '='
-        },
-        link,
         template,
-        replace: true,
-        transclude: true,
-        require: ['^form', '?^igniteFormField']
+        replace: true
     };
 }]];

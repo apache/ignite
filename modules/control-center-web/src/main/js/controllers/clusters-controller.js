@@ -258,12 +258,12 @@ consoleModule.controller('clustersController', function ($http, $timeout, $scope
                 });
 
                 // Load page descriptor.
-                $http.get('/models/clusters.json')
-                    .success(function (data) {
-                        $scope.general = data.general;
-                        $scope.advanced = data.advanced;
+                // $http.get('/models/clusters.json')
+                //     .success(function (data) {
+                //         $scope.general = data.general;
+                //         $scope.advanced = data.advanced;
 
-                        $scope.ui.addGroups(data.general, data.advanced);
+                        // $scope.ui.addGroups(data.general, data.advanced);
 
                         if ($common.getQueryVariable('new'))
                             $scope.createItem($common.getQueryVariable('id'));
@@ -372,10 +372,10 @@ consoleModule.controller('clustersController', function ($http, $timeout, $scope
                                 $scope.preview.sslConfiguration.allDefaults = $common.isEmptyString($scope.preview.sslConfiguration.xml);
                             }
                         }, true);
-                    })
-                    .error(function (errMsg) {
-                        $common.showError(errMsg);
-                    });
+                    // })
+                    // .error(function (errMsg) {
+                    //     $common.showError(errMsg);
+                    // });
             })
             .catch(function (errMsg) {
                 $common.showError(errMsg);
@@ -629,7 +629,7 @@ consoleModule.controller('clustersController', function ($http, $timeout, $scope
                     return showPopoverMessage($scope.panels, 'general', 'serviceAccountId', 'Account ID should not be empty');
             }
 
-            var swapKind = item.swapSpaceSpi.kind;
+            var swapKind = item.swapSpaceSpi && item.swapSpaceSpi.kind;
 
             if ($common.isDefined(swapKind)) {
                 var sparsity = item.swapSpaceSpi[swapKind].maximumSparsity;

@@ -25,4 +25,4 @@ requireDir('./tasks', { recurse: true });
 gulp.task('default', ['build']);
 
 // Build + watch + connect task.
-gulp.task('watch', ['build', 'bundle:ignite:watch', 'bundle:legacy:watch', 'sass:watch', 'jade:watch', 'copy:watch', 'concat:watch', 'connect']);
+gulp.task('watch', ['build', 'bundle:ignite:watch', 'bundle:legacy:watch', 'sass:watch', 'jade:watch', 'copy:watch', 'connect']);

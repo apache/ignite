@@ -15,30 +15,13 @@
  * limitations under the License.
  */
 
-import template from './datalist.jade!';
+import template from './s3.jade!';
 
-export default ['igniteFormFieldInputDatalist', ['IgniteFormGUID', (guid) => {
-    const link = (scope) => {
-        const {id} = scope;
-
-        scope.id = id || guid();
-    };
-
+export default ['igniteConfigurationClustersGeneralDiscoveryS3', [() => {
     return {
+        scope: true,
         restrict: 'E',
-        scope: {
-            id: '@',
-            name: '@',
-            placeholder: '@',
-            disabled: '=ngDisabled',
-
-            options: '=',
-            ngModel: '='
-        },
-        link,
         template,
-        replace: true,
-        transclude: true,
-        require: ['^form', '?^igniteFormField']
+        replace: true
     };
 }]];

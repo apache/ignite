@@ -34,6 +34,15 @@ import clustersDeployment from './clusters/deployment.directive';
 import clustersConnector from './clusters/connector.directive';
 import clustersCommunication from './clusters/communication.directive';
 import clustersBinary from './clusters/binary.directive';
+import clustersAtomic from './clusters/atomic.directive';
+import clustersGeneral from './clusters/general.directive';
+import generalDiscoveryCloud from './clusters/general/discovery/cloud.directive';
+import generalDiscoveryGoogle from './clusters/general/discovery/google.directive';
+import generalDiscoveryJdbc from './clusters/general/discovery/jdbc.directive';
+import generalDiscoveryMulticast from './clusters/general/discovery/multicast.directive';
+import generalDiscoveryS3 from './clusters/general/discovery/s3.directive';
+import generalDiscoveryShared from './clusters/general/discovery/shared.directive';
+import generalDiscoveryVm from './clusters/general/discovery/vm.directive';
 
 angular
 .module('ignite-console.states.configuration', [
@@ -53,6 +62,15 @@ angular
 .directive(...clustersConnector)
 .directive(...clustersCommunication)
 .directive(...clustersBinary)
+.directive(...clustersAtomic)
+.directive(...clustersGeneral)
+.directive(...generalDiscoveryCloud)
+.directive(...generalDiscoveryGoogle)
+.directive(...generalDiscoveryJdbc)
+.directive(...generalDiscoveryMulticast)
+.directive(...generalDiscoveryS3)
+.directive(...generalDiscoveryShared)
+.directive(...generalDiscoveryVm)
 // Services.
 .service(...ConfigurationSummaryResource)
 .config(['$stateProvider', function($stateProvider) {

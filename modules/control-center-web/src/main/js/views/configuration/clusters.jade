@@ -45,10 +45,14 @@ include ../includes/controls
                 hr
             form.form-horizontal(name='ui.inputForm' ng-show='backupItem && tableVisibleRow(displayedRows, selectedItem)' novalidate unsaved-warning-form)
                 .panel-group(bs-collapse ng-model='panels.activePanels' data-allow-multiple='true' ng-click='triggerDigest = true')
-                    +groups('general', 'backupItem')
-                    div(ng-show='true')
-                        +advanced-options
-                        +groups('advanced', 'backupItem')
+                    ignite-configuration-clusters-general
+                    .advanced-options
+                        i.fa(
+                            ng-click='__.advanced = !__.advanced'
+                            ng-class='__.advanced ? "fa-chevron-circle-down" : "fa-chevron-circle-right"')
+                        a(ng-click='__.advanced = !__.advanced') 
+                            | {{__.advanced ? 'Hide advanced settings...' : 'Show advanced settings...'}}
+                    div(ng-if='__.advanced')
                         ignite-configuration-clusters-atomic
                         ignite-configuration-clusters-binary
                         ignite-configuration-clusters-communication
@@ -64,4 +68,3 @@ include ../includes/controls
                         ignite-configuration-clusters-time
                         ignite-configuration-clusters-thread
                         ignite-configuration-clusters-transactions
-                +advanced-options

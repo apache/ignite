@@ -21,7 +21,7 @@ mixin ignite-form-field-tooltip(message)
 
 form.panel.panel-default(bs-collapse ng-model='panel' name='transactions')
     .panel-heading(bs-collapse-toggle)
-        i.fa(ng-class='panel === 0 ? "fa-chevron-circle-up" : "fa-chevron-circle-down"')
+        i.fa(ng-class='panel === 0 ? "fa-chevron-circle-down" : "fa-chevron-circle-right"')
         label Transactions
         i.tipLabel.fa.fa-question-circle(bs-tooltip='"Settings for transactions"')
         i.pull-right.fa.fa-undo(

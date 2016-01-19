@@ -26,7 +26,7 @@ mixin feedback(field, error, message)
 
 form.panel.panel-default(bs-collapse ng-model='panel' name='sslConfiguration')
     .panel-heading(bs-collapse-toggle)
-        i.fa(ng-class='panel === 0 ? "fa-chevron-circle-up" : "fa-chevron-circle-down"')
+        i.fa(ng-class='panel === 0 ? "fa-chevron-circle-down" : "fa-chevron-circle-right"')
         label SSL configuration
         i.tipLabel.fa.fa-question-circle(bs-tooltip='"Settings for SSL configuration"')
         i.pull-right.fa.fa-undo(
@@ -48,8 +48,10 @@ form.panel.panel-default(bs-collapse ng-model='panel' name='sslConfiguration')
                         ignite-form-field-tooltip
                             | Flag indicating whether to configure SSL configuration
                 
-                .settings-row(ng-if='backupItem.sslEnabled')
-                    ignite-form-field(data-label='Algorithm to create a key manager')
+                .settings-row
+                    ignite-form-field
+                        ignite-form-field-label
+                            | Algorithm to create a key manager:
                         ignite-form-field-tooltip
                             | Sets key manager algorithm that will be used to create a key manager,#[br]
                             | Notice that in most cased default value suites well, however, on Android platform this value need to be set to X509
@@ -59,10 +61,13 @@ form.panel.panel-default(bs-collapse ng-model='panel' name='sslConfiguration')
                             data-options="['SumX509', 'X509']"
                             data-ng-model='#{model}.keyAlgorithm'
                             data-placeholder='SumX509'
+                            data-ng-disabled='!backupItem.sslEnabled'
                         )
 
-                .settings-row(ng-if='backupItem.sslEnabled')
-                    ignite-form-field(data-label='Key store file')
+                .settings-row
+                    ignite-form-field
+                        ignite-form-field-label
+                            | Key store file:
                         ignite-form-field-tooltip
                             | Path to the key store file,#[br]
                             | This is a mandatory parameter since ssl context could not be initialized without key manager
@@ -72,10 +77,13 @@ form.panel.panel-default(bs-collapse ng-model='panel' name='sslConfiguration')
                             data-ng-model='#{model}.keyStoreFilePath'
                             data-placeholder='Path to the key store file'
                             data-ng-required='true'
+                            data-ng-disabled='!backupItem.sslEnabled'
                         )
 
-                .settings-row(ng-if='backupItem.sslEnabled')
-                    ignite-form-field(data-label='Key store type')
+                .settings-row
+                    ignite-form-field
+                        ignite-form-field-label
+                            | Key store type:
                         ignite-form-field-tooltip
                             | Key store type used in context initialization
                         ignite-form-field-input-datalist(
@@ -84,10 +92,13 @@ form.panel.panel-default(bs-collapse ng-model='panel' name='sslConfiguration')
                             data-options="['JKS', 'PCKS11', 'PCKS12']"
                             data-ng-model='#{model}.keyStoreType'
                             data-placeholder='JKS'
+                            data-ng-disabled='!backupItem.sslEnabled'
                         )
 
-                .settings-row(ng-if='backupItem.sslEnabled')
-                    ignite-form-field(data-label='Protocol')
+                .settings-row
+                    ignite-form-field
+                        ignite-form-field-label
+                            | Protocol:
                         ignite-form-field-tooltip
                             | Protocol for secure transport
                         ignite-form-field-input-datalist(
@@ -96,13 +107,16 @@ form.panel.panel-default(bs-collapse ng-model='panel' name='sslConfiguration')
                             data-options="['TSL', 'SSL']"
                             data-ng-model='#{model}.protocol'
                             data-placeholder='TSL'
+                            data-ng-disabled='!backupItem.sslEnabled'
                         )
 
-                .settings-row(ng-if='backupItem.sslEnabled')
-                    ignite-form-group(data-label='Trust managers')
+                .settings-row
+                    ignite-form-group
+                        ignite-form-field-label
+                            | Trust managers:
                         ignite-form-group-tooltip
                             | Pre-configured trust managers
-                        ignite-form-group-add(ng-click='__.add = true')
+                        ignite-form-group-add(ng-click='backupItem.sslEnabled && (__.add = true)')
                             | Add new trust manager.
                         .group-content-empty(ng-if='!(#{trust}.length) && !__.add')
                             | Not defined
@@ -113,10 +127,10 @@ form.panel.panel-default(bs-collapse ng-model='panel' name='sslConfiguration')
                                 i.tipField.fa.fa-remove(
                                     ng-hide='___.edit'
                                     bs-tooltip='"Remove trust manager"'
-                                    ng-click='#{trust}.splice(#{trust}.indexOf(model), 1)'
+                                    ng-click='backupItem.sslEnabled && (#{trust}.splice(#{trust}.indexOf(model), 1))'
                                 )
                                 span(ng-hide='___.edit')
-                                    a.labelFormField(ng-click='___.edit = true') {{ model }}
+                                    a.labelFormField(ng-click='backupItem.sslEnabled && (___.edit = true)') {{ model }}
                                 span(ng-if='___.edit' ng-form='form' ng-init='field = model')
                                     ignite-form-field-java-class(
                                         data-name='field'
@@ -152,8 +166,10 @@ form.panel.panel-default(bs-collapse ng-model='panel' name='sslConfiguration')
                                         data-title='Click icon or press [Enter] to save item' 
                                     )
                
-                .settings-row(ng-if='backupItem.sslEnabled && !#{trust}.length')
-                    ignite-form-field(data-label='Trust store file')
+                .settings-row(ng-if='!#{trust}.length')
+                    ignite-form-field
+                        ignite-form-field-label
+                            | Trust store file:
                         ignite-form-field-tooltip
                             | Path to the trust store file
                         ignite-form-field-input-text(
@@ -161,10 +177,13 @@ form.panel.panel-default(bs-collapse ng-model='panel' name='sslConfiguration')
                             data-name='trustStoreFilePath'
                             data-ng-model='#{model}.trustStoreFilePath'
                             data-placeholder='Path to the trust store file'
+                            data-ng-disabled='!backupItem.sslEnabled'
                         )
 
-                .settings-row(ng-if='backupItem.sslEnabled && !#{trust}.length')
-                    ignite-form-field(data-label='Trust store type')
+                .settings-row(ng-if='!#{trust}.length')
+                    ignite-form-field
+                        ignite-form-field-label
+                            | Trust store type:
                         ignite-form-field-tooltip
                             | Trust store type used in context initialization
                         ignite-form-field-input-datalist(
@@ -173,6 +192,7 @@ form.panel.panel-default(bs-collapse ng-model='panel' name='sslConfiguration')
                             data-options="['JKS', 'PCKS11', 'PCKS12']"
                             data-ng-model='#{model}.trustStoreType'
                             data-placeholder='JKS'
+                            data-ng-disabled='!backupItem.sslEnabled'
                         )                        
  
             .col-sm-6

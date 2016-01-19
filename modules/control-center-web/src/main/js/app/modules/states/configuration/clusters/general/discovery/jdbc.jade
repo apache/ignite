@@ -14,20 +14,16 @@
     See the License for the specific language governing permissions and
     limitations under the License.
 
-.input-tip
-    input.form-control(
-        id='{{ id }}'
-        name='{{ name }}'
-        placeholder='{{ placeholder }}' 
-        data-min-length='1'
+- var model = 'backupItem.discovery.Jdbc';
 
-        bs-typeahead
-        bs-options='item for item in options' 
-        retain-selection
-        container='body'
-
-        data-ng-model='ngModel'
-        data-ng-disabled='disabled || false'
-    )
-
-    span(ng-transclude='')
+div
+    .details-row
+        ignite-form-field.checkbox
+            ignite-form-field-input-checkbox(
+                data-id='initSchema'
+                data-name='initSchema'
+                data-ng-model='#{model}.initSchema'
+            )
+            | DB schema should be initialized by Ignite
+            ignite-form-field-tooltip
+                | Flag indicating whether DB schema should be initialized by Ignite or was explicitly created by user
