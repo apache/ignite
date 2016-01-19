@@ -3203,7 +3203,23 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
         synchronized (this) {
             checkObsolete();
 
-            if ((isNew() && !cctx.swap().containsKey(key, partition())) || (!preload && deletedUnlocked())) {
+            boolean useNewExplicitly = false;
+
+            if (cctx.conflictNeedResolve()) {
+                GridCacheVersionedEntryEx oldEntry = versionedEntry();
+                GridCacheVersionedEntryEx newEntry = new GridCachePlainVersionedEntry<>(
+                    oldEntry.key(),
+                    val,
+                    ttl,
+                    expireTime,
+                    ver);
+
+                // Resolve conflict.
+                GridCacheVersionConflictContext conflictCtx = cctx.conflictResolve(oldEntry, newEntry, false);
+                useNewExplicitly = conflictCtx.isUseNew();
+            }
+
+            if ((isNew() && !cctx.swap().containsKey(key, partition())) || (!preload && deletedUnlocked()) || useNewExplicitly) {
                 long expTime = expireTime < 0 ? CU.toExpireTime(ttl) : expireTime;
 
                 val = cctx.kernalContext().cacheObjects().prepareForCache(val, cctx);
