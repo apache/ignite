@@ -199,8 +199,8 @@ consoleModule.controller('domainsController', function ($filter, $http, $timeout
 
         var INFO_CONNECT_TO_DB = 'Configure connection to database';
         var INFO_SELECT_SCHEMAS = 'Select schemas to load tables from';
-        var INFO_SELECT_TABLES = 'Select tables to import as domain models';
-        var INFO_SELECT_OPTIONS = 'Select import domain models options';
+        var INFO_SELECT_TABLES = 'Select tables to import as domain model';
+        var INFO_SELECT_OPTIONS = 'Select import domain model options';
         var LOADING_JDBC_DRIVERS = {text: 'Loading JDBC drivers...'};
         var LOADING_SCHEMAS = {text: 'Loading schemas...'};
         var LOADING_TABLES = {text: 'Loading tables...'};
@@ -439,6 +439,7 @@ consoleModule.controller('domainsController', function ($filter, $http, $timeout
                 $scope.importDomain = {
                     demo: demo,
                     action: 'drivers',
+                    jdbcDriversFound: false,
                     schemas: [],
                     allSchemasSelected: false,
                     tables: [],
@@ -473,6 +474,8 @@ consoleModule.controller('domainsController', function ($filter, $http, $timeout
                                 }
 
                                 if (drivers && drivers.length > 0) {
+                                    $scope.importDomain.jdbcDriversFound = true;
+
                                     drivers = _.sortBy(drivers, 'jdbcDriverJar');
 
                                     if ($scope.importDomain.demo) {
@@ -514,9 +517,7 @@ consoleModule.controller('domainsController', function ($filter, $http, $timeout
                                     });
                                 }
                                 else {
-                                    $common.showError('JDBC drivers not found!');
-
-                                    importDomainModal.hide();
+                                    $scope.importDomain.button = 'Cancel';
                                 }
                             })
                             .error(function (errMsg, status) {
@@ -1010,24 +1011,33 @@ consoleModule.controller('domainsController', function ($filter, $http, $timeout
             if (!$scope.importDomainNextAvailable())
                 return;
 
-            if ($scope.importDomain.action === 'connect') {
+            var act = $scope.importDomain.action;
+
+            if (act === 'drivers' && !$scope.importDomain.jdbcDriversFound)
+                importDomainModal.hide();
+            else if (act === 'connect') {
                 if ($scope.importDomain.demo && $scope.demoConnection.db !== 'H2')
                     importDomainModal.hide();
                 else
                     _loadSchemas();
             }
-            else if ($scope.importDomain.action === 'schemas')
+            else if (act === 'schemas')
                 _loadTables();
-            else if ($scope.importDomain.action === 'tables')
+            else if (act === 'tables')
                 _selectOptions();
-            else if ($scope.importDomain.action === 'options')
+            else if (act === 'options')
                 _saveDomainModel();
         };
 
         $scope.nextTooltipText = function () {
             var importDomainNextAvailable = $scope.importDomainNextAvailable();
 
-            if ($scope.importDomain.action === 'connect') {
+            var act = $scope.importDomain.action;
+
+            if (act === 'drivers' && !$scope.importDomain.jdbcDriversFound)
+                return 'Resolve issue with JDBC drivers<br>Close this dialog and try again';
+
+            if (act === 'connect') {
                 if ($scope.importDomain.demo && $scope.demoConnection.db !== 'H2')
                     return 'Resolve issue with H2 database driver<br>Close this dialog and try again';
 
@@ -1035,26 +1045,28 @@ consoleModule.controller('domainsController', function ($filter, $http, $timeout
                     return 'Click to load list of schemas from database';
             }
 
-            if ($scope.importDomain.action === 'schemas')
+            if (act === 'schemas')
                 return importDomainNextAvailable ? 'Click to load list of tables from database' : 'Select schemas to continue';
 
-            if ($scope.importDomain.action === 'tables')
+            if (act === 'tables')
                 return importDomainNextAvailable ? 'Click to show import options' : 'Select tables to continue';
 
-            if ($scope.importDomain.action === 'options')
+            if (act === 'options')
                 return 'Click to import domain model for selected tables';
 
             return 'Click to continue';
         };
 
         $scope.prevTooltipText = function () {
-            if ($scope.importDomain.action === 'schemas')
+            var act = $scope.importDomain.action;
+
+            if (act === 'schemas')
                 return $scope.importDomain.demo ? 'Click to return on demo description step' : 'Click to return on connection configuration step';
 
-            if ($scope.importDomain.action === 'tables')
+            if (act === 'tables')
                 return 'Click to return on schemas selection step';
 
-            if ($scope.importDomain.action === 'options')
+            if (act === 'options')
                 return 'Click to return on tables selection step';
         };
 

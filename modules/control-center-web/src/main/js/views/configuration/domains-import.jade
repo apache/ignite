@@ -31,6 +31,12 @@ mixin td-ellipses-lbl(w, lbl)
                 h4.modal-title(ng-if='!importDomain.demo') Import domain models from database
                 h4.modal-title(ng-if='importDomain.demo') Import domain models from demo database
             .import-domain-model-wizard-page(ng-show='importDomain.action == "drivers"' style="margin-bottom: 256px;")
+                div(ng-if='!importDomain.jdbcDriversFound')
+                    label Domain model could not be imported
+                        ul
+                            li Agent not found JDBC drivers
+                            li Copy required JDBC drivers into agent '\jdbc-drivers' folder and try again
+                            li Refer to agent README.txt for more information
             .import-domain-model-wizard-page(ng-show='importDomain.action == "connect" && importDomain.demo' style='margin-bottom: 211px')
                 div(ng-if='demoConnection.db == "H2"')
                     label Demo description:
@@ -191,6 +197,6 @@ mixin td-ellipses-lbl(w, lbl)
                             .input-tip
                                 button.select-toggle.form-control(id='generatedCachesClusters' bs-select ng-model='ui.generatedCachesClusters' ng-disabled='!ui.generateCaches' ng-class='{placeholder: !(ui.generatedCachesClusters && ui.generatedCachesClusters.length > 0)}' data-container='false' data-multiple='1' placeholder='Choose clusters for generated caches' bs-options='item.value as item.label for item in clusters')
             .modal-footer
-                label(ng-hide='importDomain.action == "connect" && importDomain.demo').labelField {{importDomain.info}}
-                a.btn.btn-primary(ng-show='importDomain.action != "connect"' ng-click='importDomainPrev()' bs-tooltip='' data-title='{{prevTooltipText()}}' data-placement='bottom') Prev
+                label(ng-hide='importDomain.action == "drivers" || (importDomain.action == "connect" && importDomain.demo)').labelField {{importDomain.info}}
+                a.btn.btn-primary(ng-hide='importDomain.action == "drivers" || importDomain.action == "connect"' ng-click='importDomainPrev()' bs-tooltip='' data-title='{{prevTooltipText()}}' data-placement='bottom') Prev
                 a.btn.btn-primary(ng-click='importDomainNext()' ng-disabled='!importDomainNextAvailable()' bs-tooltip='' data-title='{{nextTooltipText()}}' data-placement='bottom') {{importDomain.button}}
