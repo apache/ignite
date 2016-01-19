@@ -25,7 +25,7 @@ include ../includes/controls
             li Import Domain models from Database
             li
                 ignite-dialog More info
-                    ignite-dialog-title Domain models screen
+                    ignite-dialog-title Domain model screen
                     ignite-dialog-content 
                         | Domain models can be assigned to specified #[a(ui-sref='base.configuration.caches') caches].#[br]
                         | Generated cluster with caches and domain models configuration available on #[a(ui-sref='base.configuration.summary') summary] screen.
@@ -35,20 +35,20 @@ include ../includes/controls
             li Back to #[a(ui-sref='base.configuration.caches') Caches]
             li Back to #[a(ui-sref='base.configuration.clusters') Clusters]
                         
-    div(dw-loading='loadingMetadataScreen' dw-loading-options='{text: "Loading domain models screen...", className: "page-loading-overlay"}')
+    div(dw-loading='loadingDomainModelsScreen' dw-loading-options='{text: "Loading domain models screen...", className: "page-loading-overlay"}')
         div(ng-show='ui.ready')
             hr
-            .padding-bottom-dflt(ng-show='metadatas && metadatas.length > 0')
-                table.links(st-table='displayedRows' st-safe-src='metadatas')
+            .padding-bottom-dflt(ng-show='domains && domains.length > 0')
+                table.links(st-table='displayedRows' st-safe-src='domains')
                     thead
                         tr
                             th
                                 .col-sm-8
                                     .col-sm-5
-                                        lable.labelHeader.labelFormField {{metadataTitle()}}
+                                        lable.labelHeader.labelFormField {{domainModelTitle()}}
                                     .col-sm-7
-                                        .pull-right.labelLogin.additional-filter(ng-if='(metadatas | domainsValidation:false:true).length > 0')
-                                            a.labelFormField(ng-if='ui.showValid' ng-click='toggleValid()') Key fields should be configured: {{(displayedRows | domainsValidation:false:true).length}}&nbsp
+                                        .pull-right.labelLogin.additional-filter(ng-if='(domains | domainsValidation:false:true).length > 0')
+                                            a.labelFormField(ng-if='ui.showValid' ng-click='toggleValid()' bs-tooltip='' data-title='{{::ui.invalidKeyFieldsTooltip}}') Key fields should be configured: {{(displayedRows | domainsValidation:false:true).length}}&nbsp
                                             a.labelFormField(ng-if='!ui.showValid' ng-click='toggleValid()') Show all domain models: {{displayedRows.length}}&nbsp
                                 .col-sm-4
                                     input.form-control.pull-right(type='text' st-search='valueType' placeholder='Filter domain models...')

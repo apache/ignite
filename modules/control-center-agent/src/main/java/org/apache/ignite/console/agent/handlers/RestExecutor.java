@@ -89,7 +89,7 @@ public class RestExecutor {
     @Remote
     public RestResult executeRest(String uri, Map<String, String> params, boolean demo,
         String mtd, Map<String, String> headers, String body) throws IOException, URISyntaxException {
-        log.info("Start execute REST command [method=" + mtd + ", uri=/" + uri + ", parameters=" + params + "]");
+        log.debug("Start execute REST command [method=" + mtd + ", uri=/" + uri + ", parameters=" + params + "]");
 
         if (demo)
             AgentSqlDemo.testDrive(cfg);

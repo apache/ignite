@@ -57,11 +57,11 @@ mixin chart-settings(mdl)
     ignite-loading
         .docs-content(ng-controller='sqlController')
             hr
-            div(ng-if='loaded && !notebook' style='text-align: center')
+            div(ng-if='!notebook' style='text-align: center')
                 h2 Failed to load notebook
                 label.col-sm-12 Notebook not accessible any more. Go back to configuration or open to another notebook.
                 button.h3.btn.btn-primary(ui-sref='base.configuration.clusters') Back to configuration
-            div(ng-if='loaded && notebook')
+            div(ng-if='notebook')
                 .row(bs-affix style='margin-bottom: 10px')
                     .docs-header.notebook-header
                         h1.col-sm-6(ng-hide='notebook.edit')

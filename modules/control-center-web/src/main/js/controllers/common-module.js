@@ -161,7 +161,7 @@ consoleModule.service('$common', [
         }
 
         var javaBuiltInClasses = [
-            'BigDecimal', 'Boolean', 'Byte', 'Date', 'Double', 'Float', 'Integer', 'Long', 'Short', 'String', 'Time', 'Timestamp', 'UUID'
+            'BigDecimal', 'Boolean', 'Byte', 'Date', 'Double', 'Float', 'Integer', 'Long', 'Object', 'Short', 'String', 'Time', 'Timestamp', 'UUID'
         ];
 
         var javaBuiltInTypes = [
@@ -171,8 +171,8 @@ consoleModule.service('$common', [
 
         var javaBuiltInFullNameClasses = [
             'java.math.BigDecimal', 'java.lang.Boolean', 'java.lang.Byte', 'java.sql.Date', 'java.lang.Double',
-            'java.lang.Float', 'java.lang.Integer', 'java.lang.Long', 'java.lang.Short', 'java.lang.String',
-            'java.sql.Time', 'java.sql.Timestamp', 'java.util.UUID'
+            'java.lang.Float', 'java.lang.Integer', 'java.lang.Long', 'java.lang.Object', 'java.lang.Short',
+            'java.lang.String', 'java.sql.Time', 'java.sql.Timestamp', 'java.util.UUID'
         ];
 
         function isJavaBuiltInClass(cls) {
@@ -781,18 +781,18 @@ consoleModule.service('$common', [
 
                 return true;
             },
-            metadataForQueryConfigured: function (meta) {
-                var isEmpty = !isDefined(meta) || (isEmptyArray(meta.fields) &&
-                    isEmptyArray(meta.aliases) &&
-                    isEmptyArray(meta.indexes));
+            domainForQueryConfigured: function (domain) {
+                var isEmpty = !isDefined(domain) || (isEmptyArray(domain.fields) &&
+                    isEmptyArray(domain.aliases) &&
+                    isEmptyArray(domain.indexes));
 
                 return !isEmpty;
             },
-            metadataForStoreConfigured: function (meta) {
-                var isEmpty = !isDefined(meta) || (isEmptyString(meta.databaseSchema) &&
-                    isEmptyString(meta.databaseTable) &&
-                    isEmptyArray(meta.keyFields) &&
-                    isEmptyArray(meta.valueFields));
+            domainForStoreConfigured: function (domain) {
+                var isEmpty = !isDefined(domain) || (isEmptyString(domain.databaseSchema) &&
+                    isEmptyString(domain.databaseTable) &&
+                    isEmptyArray(domain.keyFields) &&
+                    isEmptyArray(domain.valueFields));
 
                 return !isEmpty;
             },
@@ -965,7 +965,7 @@ consoleModule.service('$common', [
                     }
                 }
 
-                // Find group metadata to reset group values.
+                // Find group to reset group values.
                 for (var grpIx = 0; grpIx < groups.length; grpIx ++) {
                     if (groups[grpIx].group === group) {
                         var fields = groups[grpIx].fields;
@@ -1752,17 +1752,17 @@ consoleModule.filter('tablesSearch', function() {
 
 // Filter domain models with key fields configuration.
 consoleModule.filter('domainsValidation', ['$common', function ($common) {
-    return function(metadatas, valid, invalid) {
+    return function(domains, valid, invalid) {
         if (valid && invalid)
-            return metadatas;
+            return domains;
 
         var out = [];
 
-        _.forEach(metadatas, function (meta) {
-            var _valid = !$common.metadataForStoreConfigured(meta) || $common.isJavaBuiltInClass(meta.keyType) || !$common.isEmptyArray(meta.keyFields);
+        _.forEach(domains, function (domain) {
+            var _valid = !$common.domainForStoreConfigured(domain) || $common.isJavaBuiltInClass(domain.keyType) || !$common.isEmptyArray(domain.keyFields);
 
             if (valid && _valid || invalid && !_valid)
-                out.push(meta);
+                out.push(domain);
         });
 
         return out;
@@ -2113,17 +2113,20 @@ consoleModule.service('$agentDownload', [
             }, _timeout);
 
             $http.post(_modal.check.url, _modal.check.params, {timeout: _timeout})
-                .then(function (result) {
-                    _modal.skipSingleError = true;
-
+                .success(function (data) {
                     if (_modal.awaitFirstSuccess)
                         _stopInterval();
 
                     $loading.finish('loading');
 
-                    _modal.check.cb(result.data, _modalAlertHide, _handleException);
+                    _modal.check.cb(data, _modalAlertHide, _handleException);
+
+                    if (!_modal.skipSingleError && _modal.check.onConnect)
+                        _modal.check.onConnect();
+
+                    _modal.skipSingleError = true;
                 })
-                .catch(function (errMsg, status) {
+                .error(function (errMsg, status) {
                     _handleException(errMsg, status, _timedOut);
                 });
         }
@@ -2132,16 +2135,18 @@ consoleModule.service('$agentDownload', [
             /**
              * Start listening topology from node.
              *
-             * @param success Function to execute by timer when agent available.
-             * @param demo
-             * @param attr
-             * @param mtr
+             * @param cb Function to execute by timer when topology received.
+             * @param onConnect Function to execute when agent connected to a grid.
+             * @param demo True if need work with demo grid.
+             * @param attr True if need receive nodes attributes.
+             * @param mtr True if need receive nodes metrics.
              */
-            startTopologyListening: function (success, demo, attr, mtr) {
+            startTopologyListening: function (cb, onConnect, demo, attr, mtr) {
                 _modal.check = {
                     url: '/api/v1/agent/topology',
                     params: {demo: !!demo,  attr: !!attr, mtr: !!mtr},
-                    cb: success
+                    onConnect: onConnect,
+                    cb: cb
                 };
 
                 _modal.backState = 'base.configuration.clusters';
@@ -2222,12 +2227,12 @@ consoleModule.controller('notebooks', ['$scope', '$modal', '$state', '$http', '$
 
     $scope.$root.createNewNotebook = function(name) {
         $http.post('/api/v1/notebooks/new', {name: name})
-            .success(function (id) {
+            .success(function (noteId) {
                 _notebookNewModal.hide();
 
                 $scope.$root.reloadNotebooks();
 
-                $state.go('base.sql', {id: id});
+                $state.go('base.sql.notebook', {noteId: noteId});
             })
             .error(function (message) {
                 $common.showError(message);

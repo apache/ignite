@@ -276,9 +276,6 @@ consoleModule.controller('igfsController', [
                 }
 
                 $common.confirmUnsavedChanges($scope.ui.isDirty(), selectItem);
-
-                $scope.ui.formTitle = $common.isDefined($scope.backupItem) && $scope.backupItem._id ?
-                    'Selected IGFS: ' + $scope.backupItem.name : 'New IGFS';
             };
 
             function prepareNewItem(id) {

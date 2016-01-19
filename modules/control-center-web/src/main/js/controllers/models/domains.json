@@ -27,7 +27,7 @@
           "id": "queryMetadata",
           "type": "dropdown",
           "model": "queryMetadata",
-          "items": "metadataVariants",
+          "items": "queryMetadataVariants",
           "required": true,
           "tip": [
             "Query metadata configured with: ",

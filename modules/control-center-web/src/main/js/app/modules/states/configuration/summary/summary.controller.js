@@ -187,12 +187,12 @@ export default [
             javaFolder.children = [javaConfigFolder, javaStartupFolder];
 
             _.forEach(cluster.caches, (cache) => {
-                _.forEach(cache.metadatas, (metadata) => {
-                    if (!$common.isEmptyArray(metadata.keyFields)) {
-                        if (!JavaTypes.isBuiltInClass(metadata.keyType))
-                            addChildren(metadata.keyType);
+                _.forEach(cache.domains, (domain) => {
+                    if (!$common.isEmptyArray(domain.keyFields)) {
+                        if (!JavaTypes.isBuiltInClass(domain.keyType))
+                            addChildren(domain.keyType);
 
-                        addChildren(metadata.valueType);
+                        addChildren(domain.valueType);
                     }
                 });
             });
@@ -250,11 +250,11 @@ export default [
             zip.file('README.txt', $generatorReadme.readme().asString());
             zip.file('jdbc-drivers/README.txt', $generatorReadme.readmeJdbc().asString());
 
-            for (const meta of ctrl.data.metadatas) {
-                if (meta.keyClass && !JavaTypes.isBuiltInClass(meta.keyType))
-                    zip.file(srcPath + meta.keyType.replace(/\./g, '/') + '.java', meta.keyClass);
+            for (const pojo of ctrl.data.pojos) {
+                if (pojo.keyClass && !JavaTypes.isBuiltInClass(pojo.keyType))
+                    zip.file(srcPath + pojo.keyType.replace(/\./g, '/') + '.java', pojo.keyClass);
 
-                zip.file(srcPath + meta.valueType.replace(/\./g, '/') + '.java', meta.valueClass);
+                zip.file(srcPath + pojo.valueType.replace(/\./g, '/') + '.java', pojo.valueClass);
             }
 
             $generatorOptional.optionalContent(zip, cluster);

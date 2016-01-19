@@ -43,11 +43,11 @@ router.post('/list', function (req, res) {
                     db.Cache.find({space: {$in: space_ids}}).sort('name').exec(function (err, caches) {
                         if (db.processed(err, res)) {
                             // Get all domain models for spaces.
-                            db.CacheTypeMetadata.find({space: {$in: space_ids}}).sort('valueType').exec(function (err, metadatas) {
+                            db.DomainModel.find({space: {$in: space_ids}}).sort('valueType').exec(function (err, domains) {
                                 if (db.processed(err, res)) {
                                     // Remove deleted caches.
-                                    _.forEach(metadatas, function (meta) {
-                                        meta.caches = _.filter(meta.caches, function (cacheId) {
+                                    _.forEach(domains, function (domain) {
+                                        domain.caches = _.filter(domain.caches, function (cacheId) {
                                             return _.findIndex(caches, function (cache) {
                                                     return cache._id.equals(cacheId);
                                                 }) >= 0;
@@ -59,10 +59,8 @@ router.post('/list', function (req, res) {
                                         clusters: clusters.map(function (cluster) {
                                             return {value: cluster._id, label: cluster.name};
                                         }),
-                                        caches: caches.map(function (cache) {
-                                            return {value: cache._id, label: cache.name};
-                                        }),
-                                        metadatas: metadatas
+                                        caches: caches,
+                                        domains: domains
                                     });
                                 }
                             });
@@ -74,24 +72,24 @@ router.post('/list', function (req, res) {
     });
 });
 
-function _saveMeta(meta, savedMetas, callback) {
-    var metaId = meta._id;
-    var caches = meta.caches;
+function _saveDomainModel(domain, savedDomains, callback) {
+    var domainId = domain._id;
+    var caches = domain.caches;
 
-    if (metaId)
-        db.CacheTypeMetadata.update({_id: meta._id}, meta, {upsert: true}, function (err) {
+    if (domainId)
+        db.DomainModel.update({_id: domain._id}, domain, {upsert: true}, function (err) {
             if (err)
                 callback(err);
             else
-                db.Cache.update({_id: {$in: caches}}, {$addToSet: {metadatas: metaId}}, {multi: true}, function (err) {
+                db.Cache.update({_id: {$in: caches}}, {$addToSet: {domains: domainId}}, {multi: true}, function (err) {
                     if (err)
                         callback(err);
                     else
-                        db.Cache.update({_id: {$nin: caches}}, {$pull: {metadatas: metaId}}, {multi: true}, function (err) {
+                        db.Cache.update({_id: {$nin: caches}}, {$pull: {domains: domainId}}, {multi: true}, function (err) {
                             if (err)
                                 callback(err);
                             else {
-                                savedMetas.push(meta);
+                                savedDomains.push(domain);
 
                                 callback();
                             }
@@ -99,24 +97,23 @@ function _saveMeta(meta, savedMetas, callback) {
                 });
         });
     else
-        db.CacheTypeMetadata.findOne({space: meta.space, valueType: meta.valueType}, function (err, metadata) {
+        db.DomainModel.findOne({space: domain.space, valueType: domain.valueType}, function (err, found) {
             if (err)
                 callback(err);
-            else
-            if (metadata)
-                return callback('Domain model with value type: "' + metadata.valueType + '" already exist.');
+            else if (found)
+                return callback('Domain model with value type: "' + found.valueType + '" already exist.');
 
-            (new db.CacheTypeMetadata(meta)).save(function (err, metadata) {
+            (new db.DomainModel(domain)).save(function (err, domain) {
                 if (err)
                     callback(err);
                 else {
-                    metaId = metadata._id;
+                    domainId = domain._id;
 
-                    db.Cache.update({_id: {$in: caches}}, {$addToSet: {metadatas: metaId}}, {multi: true}, function (err) {
+                    db.Cache.update({_id: {$in: caches}}, {$addToSet: {domains: domainId}}, {multi: true}, function (err) {
                         if (err)
                             callback(err);
                         else {
-                            savedMetas.push(metadata);
+                            savedDomains.push(domain);
 
                             callback();
                         }
@@ -126,49 +123,36 @@ function _saveMeta(meta, savedMetas, callback) {
         });
 }
 
-function _save(metas, res) {
-    var savedMetas = [];
+function _save(domains, res) {
+    var savedDomains = [];
     var generatedCaches = [];
 
-    if (metas && metas.length > 0)
-        async.forEachOf(metas, function(meta, idx, callback) {
-            if (meta.newCache) {
-                db.Cache.findOne({space: meta.space, name: meta.newCache.name}, function (err, cache) {
+    if (domains && domains.length > 0)
+        async.forEachOf(domains, function(domain, idx, callback) {
+            if (domain.newCache) {
+                db.Cache.findOne({space: domain.space, name: domain.newCache.name}, function (err, cache) {
                     if (db.processed(err, res))
                         if (cache) {
                             // Cache already exists, just save domain model.
-                            meta.caches = [cache._id];
+                            domain.caches = [cache._id];
 
-                            _saveMeta(meta, savedMetas, callback);
+                            _saveDomainModel(domain, savedDomains, callback);
                         }
                         else {
                             // If cache not found, then create it and associate with domain model.
-                            (new db.Cache({
-                                space: meta.space,
-                                name: meta.newCache.name,
-                                clusters: meta.newCache.clusters,
-                                cacheMode: 'PARTITIONED',
-                                atomicityMode: 'ATOMIC',
-                                cacheStoreFactory: {
-                                    kind: 'CacheJdbcPojoStoreFactory',
-                                    CacheJdbcPojoStoreFactory: {
-                                        dataSourceBean: 'dataSource',
-                                        dialect: meta.newCache.dialect
-                                    }
-                                },
-                                readThrough: true,
-                                writeThrough: true,
-                                demo: meta.demo
-                            })).save(function (err, cache) {
+                            var newCache = domain.newCache;
+                            newCache.space = domain.space;
+
+                            (new db.Cache(newCache)).save(function (err, cache) {
                                 var cacheId = cache._id;
 
                                 if (db.processed(err, res)) {
                                     db.Cluster.update({_id: {$in: cache.clusters}}, {$addToSet: {caches: cacheId}}, {multi: true}, function (err) {
                                         if (db.processed(err, res)) {
-                                            meta.caches = [cacheId];
+                                            domain.caches = [cacheId];
                                             generatedCaches.push({ value: cacheId, label: cache.name });
 
-                                            _saveMeta(meta, savedMetas, callback);
+                                            _saveDomainModel(domain, savedDomains, callback);
                                         }
                                     });
                                 }
@@ -177,12 +161,12 @@ function _save(metas, res) {
                 });
             }
             else
-                _saveMeta(meta, savedMetas, callback);
+                _saveDomainModel(domain, savedDomains, callback);
         }, function (err) {
             if (err)
                 res.status(500).send(err);
             else
-                res.send({ savedMetas: savedMetas, generatedCaches: generatedCaches });
+                res.send({ savedDomains: savedDomains, generatedCaches: generatedCaches });
         });
     else
         res.status(500).send('Nothing to save!');
@@ -206,7 +190,7 @@ router.post('/save/batch', function (req, res) {
  * Remove domain model by ._id.
  */
 router.post('/remove', function (req, res) {
-    db.CacheTypeMetadata.remove(req.body, function (err) {
+    db.DomainModel.remove(req.body, function (err) {
         if (db.processed(err, res))
             res.sendStatus(200);
     })
@@ -225,7 +209,7 @@ router.post('/remove/all', function (req, res) {
                 return value._id;
             });
 
-            db.CacheTypeMetadata.remove({space: {$in: space_ids}}, function (err) {
+            db.DomainModel.remove({space: {$in: space_ids}}, function (err) {
                 if (err)
                     return res.status(500).send(err.message);
 
@@ -249,7 +233,7 @@ router.post('/remove/demo', function (req, res) {
             });
 
             // Remove all demo domain models.
-            db.CacheTypeMetadata.remove({$and: [{space: {$in: space_ids}}, {demo: true}]}, function (err) {
+            db.DomainModel.remove({$and: [{space: {$in: space_ids}}, {demo: true}]}, function (err) {
                 if (err)
                     return res.status(500).send(err.message);
 

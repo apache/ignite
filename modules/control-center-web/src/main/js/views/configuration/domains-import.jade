@@ -31,7 +31,7 @@ mixin td-ellipses-lbl(w, lbl)
                 h4.modal-title(ng-if='!importDomain.demo') Import domain models from database
                 h4.modal-title(ng-if='importDomain.demo') Import domain models from demo database
             .import-domain-model-wizard-page(ng-show='importDomain.action == "drivers"' style="margin-bottom: 256px;")
-            .import-domain-model-wizard-page(ng-show='importDomain.action == "connect" && importDomain.demo' style='margin-bottom: 141px')
+            .import-domain-model-wizard-page(ng-show='importDomain.action == "connect" && importDomain.demo' style='margin-bottom: 211px')
                 div(ng-if='demoConnection.db == "H2"')
                     label Demo description:
                     ul
@@ -45,7 +45,7 @@ mixin td-ellipses-lbl(w, lbl)
                             li Agent failed to resolve H2 database jar
                             li Copy h2-x.x.x.jar into agent '\jdbc-drivers' folder and try again
                             li Refer to agent README.txt for more information
-            .import-domain-model-wizard-page(ng-show='importDomain.action == "connect" && !importDomain.demo')
+            .import-domain-model-wizard-page(ng-show='importDomain.action == "connect" && !importDomain.demo' style='margin-bottom: 90px')
                 form.form-horizontal(name='connectForm' novalidate)
                     .settings-row
                         label.col-xs-4.col-sm-2.col-md-2 Driver JAR:
@@ -98,7 +98,7 @@ mixin td-ellipses-lbl(w, lbl)
                         tbody
                             tr
                                 td(colspan='2')
-                                    .scrollable-y(style='height: 143px')
+                                    .scrollable-y(style='height: 213px')
                                         table.table-modal-striped(id='importSchemasData')
                                             tbody
                                                 tr(ng-repeat='schema in importDomain.displayedSchemas')
@@ -131,14 +131,14 @@ mixin td-ellipses-lbl(w, lbl)
                                     table.table-modal-striped(id='importTableData')
                                         tbody
                                             tr(ng-repeat='table in importDomain.displayedTables track by $index')
-                                                td(width='30px' style='min-width: 30px; max-width: 30px')
+                                                td(width='30px')
                                                     input(type='checkbox' ng-model='table.use' ng-change='selectTable()')
                                                 +td-ellipses-lbl('130px', '{{::table.schema}}')
                                                 +td-ellipses-lbl('160px', '{{::table.tbl}}')
-                                                td.td-ellipsis(width='160px' style='min-width: 160px; max-width: 160px' ng-show='ui.generateCaches')
+                                                td.td-ellipsis(width='160px' ng-show='ui.generateCaches')
                                                     button.select-toggle.form-control(ng-if='table.editCache' bs-select ng-model='table.cache' data-container='false' bs-options='item.value as item.label for item in importCaches')
                                                     a(ng-if='!table.editCache' ng-click='startEditDbTableCache(table)') {{dbTableCache(table)}}
-                                                td.td-ellipsis(width='128px' style='min-width: 128px; max-width: 128px' ng-show='ui.generateCaches')
+                                                td.td-ellipsis(width='128px' ng-show='ui.generateCaches')
                                                     button.select-toggle.form-control(ng-if='table.editTemplate' bs-select ng-model='table.template' style='max-width: 110px' data-container='false' bs-options='item.value as item.label for item in importCacheTemplates')
                                                     a(ng-if='!table.editTemplate' ng-click='startEditDbTableTemplate(table)') {{dbTableTemplate(table)}}
                 .settings-row
@@ -148,12 +148,17 @@ mixin td-ellipses-lbl(w, lbl)
                             | Generate caches
                         i.tipLabel.fa.fa-question-circle(bs-tooltip='' data-title='Separate cache will be generated for each loaded table')
                     div
-                        label Cache:
-                        button.select-toggle.form-control(bs-select ng-model='dfltTableCache' data-container='false' bs-options='item.value as item.label for item in importCaches')
-                        label Template:
-                        button.select-toggle.form-control(bs-select ng-model='dfltTableTemplate' data-container='false' bs-options='item.value as item.label for item in importCacheTemplates')
-                        button.btn.btn-primary Apply to all
-            .import-domain-model-wizard-page(ng-show='importDomain.action == "options"' style='margin-bottom: 75px')
+                        .col-xs-5.col-sm-5.col-md-5
+                            label(style='float: left; line-height: 28px; margin-right: 10px') Cache:
+                            .input-tip
+                                button.select-toggle.form-control(bs-select ng-model='ui.dfltTableCache' ng-disabled='!ui.generateCaches' data-container='false' bs-options='item.value as item.label for item in importCaches')
+                        .col-xs-5.col-sm-5.col-md-5(ng-show='dfltTableTemplateVisible()')
+                            label(style='float: left; line-height: 28px; margin: 0 10px') Template:
+                            .input-tip
+                                button.select-toggle.form-control(bs-select ng-model='ui.dfltTableTemplate' ng-disabled='!ui.generateCaches' data-container='false' bs-options='item.value as item.label for item in importCacheTemplates')
+                        .col-xs-2.col-sm-2.col-md-2
+                            button.btn.btn-primary(style="margin: 0 0 0 5px" ng-disabled='!ui.generateCaches' ng-click='applyDefaults()') Apply
+            .import-domain-model-wizard-page(ng-show='importDomain.action == "options"' style='margin-bottom: 176px')
                 form.form-horizontal(name='optionsForm' novalidate)
                     .settings-row
                         .col-xs-3.col-sm-2.col-md-2.required

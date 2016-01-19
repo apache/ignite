@@ -23,21 +23,21 @@ export default ['$scope', 'IgniteUiAceOnLoad', 'JavaTypes', function($scope, onL
 
     // Watchers definition.
     // Watcher clean instance data if instance to cluster caches was change
-    const cleanMetadatas = () => {
+    const cleanPojos = () => {
         delete ctrl.class;
-        delete ctrl.metadatas;
+        delete ctrl.pojos;
         delete ctrl.classes;
     };
 
-    // Watcher updata metadata when changes caches and checkers useConstructor and includeKeyFields
-    const updateMetadatas = () => {
-        delete ctrl.metadatas;
+    // Watcher update pojos when changes caches and checkers useConstructor and includeKeyFields
+    const updatePojos = () => {
+        delete ctrl.pojos;
 
         if (!ctrl.cluster || !ctrl.cluster.caches)
             return;
 
         // TODO IGNITE-2054: need move $generatorJava to services.
-        ctrl.metadatas = $generatorJava.pojos(ctrl.cluster.caches, ctrl.useConstructor, ctrl.includeKeyFields);
+        ctrl.pojos = $generatorJava.pojos(ctrl.cluster.caches, ctrl.useConstructor, ctrl.includeKeyFields);
     };
 
     // Watcher update classes after
@@ -49,22 +49,22 @@ export default ['$scope', 'IgniteUiAceOnLoad', 'JavaTypes', function($scope, onL
 
         const classes = ctrl.classes = [];
 
-        _.forEach(ctrl.metadatas, (meta) => {
-            if (meta.keyType && !JavaTypes.isBuiltInClass(meta.keyType))
-                classes.push(meta.keyType);
+        _.forEach(ctrl.pojos, (pojo) => {
+            if (pojo.keyType && !JavaTypes.isBuiltInClass(pojo.keyType))
+                classes.push(pojo.keyType);
 
-            classes.push(meta.valueType);
+            classes.push(pojo.valueType);
         });
     };
 
     // Update pojos class.
     const updateClass = (value) => {
-        if (!value || !ctrl.metadatas.length)
+        if (!value || !ctrl.pojos.length)
             return;
 
-        const keyType = ctrl.metadatas[0].keyType;
+        const keyType = ctrl.pojos[0].keyType;
 
-        ctrl.class = ctrl.class || (JavaTypes.isBuiltInClass(keyType) ? null : keyType) || ctrl.metadatas[0].valueType;
+        ctrl.class = ctrl.class || (JavaTypes.isBuiltInClass(keyType) ? null : keyType) || ctrl.pojos[0].valueType;
     };
 
     // Update pojos data.
@@ -72,22 +72,22 @@ export default ['$scope', 'IgniteUiAceOnLoad', 'JavaTypes', function($scope, onL
         if (!value)
             return;
 
-        _.forEach(ctrl.metadatas, (meta) => {
-            if (meta.keyType === ctrl.class)
-                return ctrl.data = meta.keyClass;
+        _.forEach(ctrl.pojos, (pojo) => {
+            if (pojo.keyType === ctrl.class)
+                return ctrl.data = pojo.keyClass;
 
-            if (meta.valueType === ctrl.class)
-                return ctrl.data = meta.valueClass;
+            if (pojo.valueType === ctrl.class)
+                return ctrl.data = pojo.valueClass;
         });
     };
 
     // Setup watchers. Watchers order is important.
-    $scope.$watch('ctrl.cluster.caches', cleanMetadatas);
-    $scope.$watch('ctrl.cluster.caches', updateMetadatas);
+    $scope.$watch('ctrl.cluster.caches', cleanPojos);
+    $scope.$watch('ctrl.cluster.caches', updatePojos);
     $scope.$watch('ctrl.cluster.caches', updateClasses);
-    $scope.$watch('ctrl.useConstructor', updateMetadatas);
-    $scope.$watch('ctrl.includeKeyFields', updateMetadatas);
-    $scope.$watch('ctrl.metadatas', updateClass);
-    $scope.$watch('ctrl.metadatas', updatePojosData);
+    $scope.$watch('ctrl.useConstructor', updatePojos);
+    $scope.$watch('ctrl.includeKeyFields', updatePojos);
+    $scope.$watch('ctrl.pojos', updateClass);
+    $scope.$watch('ctrl.pojos', updatePojosData);
     $scope.$watch('ctrl.class', updatePojosData);
 }];

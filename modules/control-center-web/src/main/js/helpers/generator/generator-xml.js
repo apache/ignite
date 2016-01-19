@@ -765,17 +765,17 @@ $generatorXml.cacheQuery = function(cache, res) {
     $generatorXml.property(res, cache, 'sqlOnheapRowCacheSize');
     $generatorXml.property(res, cache, 'longQueryWarningTimeout');
 
-    var indexedTypes = _.filter(cache.metadatas, function (meta) {
-        return meta.queryMetadata === 'Annotations'
+    var indexedTypes = _.filter(cache.domains, function (domain) {
+        return domain.queryMetadata === 'Annotations'
     });
 
     if (indexedTypes.length > 0) {
         res.startBlock('<property name="indexedTypes">');
         res.startBlock('<list>');
 
-        _.forEach(indexedTypes, function(meta) {
-            res.line('<value>' + $dataStructures.fullClassName(meta.keyType) + '</value>');
-            res.line('<value>' + $dataStructures.fullClassName(meta.valueType) + '</value>');
+        _.forEach(indexedTypes, function(domain) {
+            res.line('<value>' + $dataStructures.fullClassName(domain.keyType) + '</value>');
+            res.line('<value>' + $dataStructures.fullClassName(domain.valueType) + '</value>');
         });
 
         res.endBlock('</list>');
@@ -794,7 +794,7 @@ $generatorXml.cacheQuery = function(cache, res) {
 };
 
 // Generate cache store group.
-$generatorXml.cacheStore = function(cache, metadatas, res) {
+$generatorXml.cacheStore = function(cache, domains, res) {
     if (!res)
         res = $generatorCommon.builder();
 
@@ -814,23 +814,23 @@ $generatorXml.cacheStore = function(cache, metadatas, res) {
                 res.line('<bean class="' + $generatorCommon.jdbcDialectClassName(storeFactory.dialect) + '"/>');
                 res.endBlock('</property>');
 
-                var metaConfigs = _.filter(metadatas, function (meta) {
-                    return $commonUtils.isDefinedAndNotEmpty(meta.databaseTable);
+                var domainConfigs = _.filter(domains, function (domain) {
+                    return $commonUtils.isDefinedAndNotEmpty(domain.databaseTable);
                 });
 
-                if ($commonUtils.isDefinedAndNotEmpty(metaConfigs)) {
+                if ($commonUtils.isDefinedAndNotEmpty(domainConfigs)) {
                     res.startBlock('<property name="types">');
                     res.startBlock('<list>');
 
-                    _.forEach(metaConfigs, function (meta) {
+                    _.forEach(domainConfigs, function (domain) {
                         res.startBlock('<bean class="org.apache.ignite.cache.store.jdbc.JdbcType">');
 
                         $generatorXml.property(res, cache, 'name', 'cacheName');
 
-                        $generatorXml.classNameProperty(res, meta, 'keyType');
-                        $generatorXml.property(res, meta, 'valueType');
+                        $generatorXml.classNameProperty(res, domain, 'keyType');
+                        $generatorXml.property(res, domain, 'valueType');
 
-                        $generatorXml.metadataStore(meta, res);
+                        $generatorXml.domainStore(domain, res);
 
                         res.endBlock('</bean>');
                     });
@@ -988,8 +988,8 @@ $generatorXml.cacheStatistics = function(cache, res) {
 };
 
 // Generate domain model query fields.
-$generatorXml.metadataQueryFields = function (res, meta) {
-    var fields = meta.fields;
+$generatorXml.domainModelQueryFields = function (res, domain) {
+    var fields = domain.fields;
 
     if (fields && fields.length > 0) {
         res.emptyLineIfNeeded();
@@ -1009,8 +1009,8 @@ $generatorXml.metadataQueryFields = function (res, meta) {
 };
 
 // Generate domain model query fields.
-$generatorXml.metadataQueryAliases = function (res, meta) {
-    var aliases = meta.aliases;
+$generatorXml.domainModelQueryAliases = function (res, domain) {
+    var aliases = domain.aliases;
 
     if (aliases && aliases.length > 0) {
         res.emptyLineIfNeeded();
@@ -1030,8 +1030,8 @@ $generatorXml.metadataQueryAliases = function (res, meta) {
 };
 
 // Generate domain model indexes.
-$generatorXml.metadataQueryIndexes = function (res, meta) {
-    var indexes = meta.indexes;
+$generatorXml.domainModelQueryIndexes = function (res, domain) {
+    var indexes = domain.indexes;
 
     if (indexes && indexes.length > 0) {
         res.emptyLineIfNeeded();
@@ -1070,8 +1070,8 @@ $generatorXml.metadataQueryIndexes = function (res, meta) {
 };
 
 // Generate domain model db fields.
-$generatorXml.metadataDatabaseFields = function (res, meta, fieldProp) {
-    var fields = meta[fieldProp];
+$generatorXml.domainModelDatabaseFields = function (res, domain, fieldProp) {
+    var fields = domain[fieldProp];
 
     if (fields && fields.length > 0) {
         res.emptyLineIfNeeded();
@@ -1104,12 +1104,12 @@ $generatorXml.metadataDatabaseFields = function (res, meta, fieldProp) {
 };
 
 // Generate domain model general group.
-$generatorXml.metadataGeneral = function(meta, res) {
+$generatorXml.domainModelGeneral = function(domain, res) {
     if (!res)
         res = $generatorCommon.builder();
 
-    $generatorXml.classNameProperty(res, meta, 'keyType');
-    $generatorXml.property(res, meta, 'valueType');
+    $generatorXml.classNameProperty(res, domain, 'keyType');
+    $generatorXml.property(res, domain, 'valueType');
 
     res.needEmptyLine = true;
 
@@ -1117,16 +1117,14 @@ $generatorXml.metadataGeneral = function(meta, res) {
 };
 
 // Generate domain model for query group.
-$generatorXml.metadataQuery = function(meta, res) {
+$generatorXml.domainModelQuery = function(domain, res) {
     if (!res)
         res = $generatorCommon.builder();
 
-    if ($generatorCommon.domainQueryMetadata(meta) === 'Configuration') {
-        $generatorXml.metadataQueryFields(res, meta);
-
-        $generatorXml.metadataQueryAliases(res, meta);
-
-        $generatorXml.metadataQueryIndexes(res, meta);
+    if ($generatorCommon.domainQueryMetadata(domain) === 'Configuration') {
+        $generatorXml.domainModelQueryFields(res, domain);
+        $generatorXml.domainModelQueryAliases(res, domain);
+        $generatorXml.domainModelQueryIndexes(res, domain);
 
         res.needEmptyLine = true;
     }
@@ -1135,35 +1133,35 @@ $generatorXml.metadataQuery = function(meta, res) {
 };
 
 // Generate domain model for store group.
-$generatorXml.metadataStore = function(meta, res) {
+$generatorXml.domainStore = function(domain, res) {
     if (!res)
         res = $generatorCommon.builder();
 
-    $generatorXml.property(res, meta, 'databaseSchema');
-    $generatorXml.property(res, meta, 'databaseTable');
+    $generatorXml.property(res, domain, 'databaseSchema');
+    $generatorXml.property(res, domain, 'databaseTable');
 
     res.needEmptyLine = true;
 
-    if (!$dataStructures.isJavaBuiltInClass(meta.keyType))
-        $generatorXml.metadataDatabaseFields(res, meta, 'keyFields');
+    if (!$dataStructures.isJavaBuiltInClass(domain.keyType))
+        $generatorXml.domainModelDatabaseFields(res, domain, 'keyFields');
 
-    $generatorXml.metadataDatabaseFields(res, meta, 'valueFields');
+    $generatorXml.domainModelDatabaseFields(res, domain, 'valueFields');
 
     res.needEmptyLine = true;
 
     return res;
 };
 
-$generatorXml.cacheQueryMetadata = function(meta, res) {
+$generatorXml.cacheQueryMetadata = function(domain, res) {
     if (!res)
         res = $generatorCommon.builder();
 
     res.startBlock('<bean class="org.apache.ignite.cache.QueryEntity">');
 
-    $generatorXml.classNameProperty(res, meta, 'keyType');
-    $generatorXml.property(res, meta, 'valueType');
+    $generatorXml.classNameProperty(res, domain, 'keyType');
+    $generatorXml.property(res, domain, 'valueType');
 
-    $generatorXml.metadataQuery(meta, res);
+    $generatorXml.domainModelQuery(domain, res);
 
     res.endBlock('</bean>');
 
@@ -1173,23 +1171,23 @@ $generatorXml.cacheQueryMetadata = function(meta, res) {
 };
 
 // Generate domain models configs.
-$generatorXml.cacheMetadatas = function(metadatas, res) {
+$generatorXml.cacheDomains = function(domains, res) {
     if (!res)
         res = $generatorCommon.builder();
 
-    var metaConfigs = _.filter(metadatas, function (meta) {
-        return $generatorCommon.domainQueryMetadata(meta) === 'Configuration' &&
-            $commonUtils.isDefinedAndNotEmpty(meta.fields);
+    var domainConfigs = _.filter(domains, function (domain) {
+        return $generatorCommon.domainQueryMetadata(domain) === 'Configuration' &&
+            $commonUtils.isDefinedAndNotEmpty(domain.fields);
     });
 
-    if ($commonUtils.isDefinedAndNotEmpty(metaConfigs)) {
+    if ($commonUtils.isDefinedAndNotEmpty(domainConfigs)) {
         res.emptyLineIfNeeded();
 
         res.startBlock('<property name="queryEntities">');
         res.startBlock('<list>');
 
-        _.forEach(metaConfigs, function (meta) {
-            $generatorXml.cacheQueryMetadata(meta, res);
+        _.forEach(domainConfigs, function (domain) {
+            $generatorXml.cacheQueryMetadata(domain, res);
         });
 
         res.endBlock('</list>');
@@ -1219,22 +1217,14 @@ $generatorXml.cacheConfiguration = function(cache, res) {
         res = $generatorCommon.builder();
 
     $generatorXml.cacheGeneral(cache, res);
-
     $generatorXml.cacheMemory(cache, res);
-
     $generatorXml.cacheQuery(cache, res);
-
-    $generatorXml.cacheStore(cache, cache.metadatas, res);
-
+    $generatorXml.cacheStore(cache, cache.domains, res);
     $generatorXml.cacheConcurrency(cache, res);
-
     $generatorXml.cacheRebalance(cache, res);
-
     $generatorXml.cacheServerNearCache(cache, res);
-
     $generatorXml.cacheStatistics(cache, res);
-
-    $generatorXml.cacheMetadatas(cache.metadatas, res);
+    $generatorXml.cacheDomains(cache.domains, res);
 
     return res;
 };
