@@ -84,6 +84,11 @@ public class PlatformNoopProcessor extends GridProcessorAdapter implements Platf
     }
 
     /** {@inheritDoc} */
+    @Override public void destroyCache(@Nullable String name) throws IgniteCheckedException {
+        // No-op.
+    }
+
+    /** {@inheritDoc} */
     @Override public PlatformTarget affinity(@Nullable String name) throws IgniteCheckedException {
         return null;
     }

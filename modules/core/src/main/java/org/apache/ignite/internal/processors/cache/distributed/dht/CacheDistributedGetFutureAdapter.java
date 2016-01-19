@@ -24,6 +24,7 @@ import java.util.UUID;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.internal.cluster.ClusterTopologyServerNotFoundException;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheFuture;
@@ -39,6 +40,7 @@ import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_NEAR_GET_MAX_REMAPS;
 import static org.apache.ignite.IgniteSystemProperties.getInteger;
+import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionState.OWNING;
 
 /**
  *
@@ -168,14 +170,11 @@ public abstract class CacheDistributedGetFutureAdapter<K, V> extends GridCompoun
     /**
      * Affinity node to send get request to.
      *
-     * @param key Key to get.
-     * @param topVer Topology version.
+     * @param affNodes All affinity nodes.
      * @return Affinity node to get key from.
      */
-    protected final ClusterNode affinityNode(KeyCacheObject key, AffinityTopologyVersion topVer) {
+    protected final ClusterNode affinityNode(List<ClusterNode> affNodes) {
         if (!canRemap) {
-            List<ClusterNode> affNodes = cctx.affinity().nodes(key, topVer);
-
             for (ClusterNode node : affNodes) {
                 if (cctx.discovery().alive(node))
                     return node;
@@ -184,6 +183,23 @@ public abstract class CacheDistributedGetFutureAdapter<K, V> extends GridCompoun
             return null;
         }
         else
-            return cctx.affinity().primary(key, topVer);
+            return affNodes.get(0);
+    }
+
+    /**
+     * @param part Partition.
+     * @return {@code True} if partition is in owned state.
+     */
+    protected final boolean partitionOwned(int part) {
+        return cctx.topology().partitionState(cctx.localNodeId(), part) == OWNING;
+    }
+
+    /**
+     * @param topVer Topology version.
+     * @return Exception.
+     */
+    protected final ClusterTopologyServerNotFoundException serverNotFoundError(AffinityTopologyVersion topVer) {
+        return new ClusterTopologyServerNotFoundException("Failed to map keys for cache " +
+            "(all partition nodes left the grid) [topVer=" + topVer + ", cache=" + cctx.name() + ']');
     }
 }

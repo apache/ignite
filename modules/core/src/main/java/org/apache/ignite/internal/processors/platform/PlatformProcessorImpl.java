@@ -266,6 +266,11 @@ public class PlatformProcessorImpl extends GridProcessorAdapter implements Platf
     }
 
     /** {@inheritDoc} */
+    @Override public void destroyCache(@Nullable String name) throws IgniteCheckedException {
+        ctx.grid().destroyCache(name);
+    }
+
+    /** {@inheritDoc} */
     @Override public PlatformTarget affinity(@Nullable String name) throws IgniteCheckedException {
         return new PlatformAffinity(platformCtx, ctx, name);
     }

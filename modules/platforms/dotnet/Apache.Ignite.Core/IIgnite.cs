@@ -121,6 +121,13 @@ namespace Apache.Ignite.Core
         ICache<TK, TV> CreateCache<TK, TV>(CacheConfiguration configuration);
 
         /// <summary>
+        /// Destroys dynamically created (with <see cref="CreateCache{TK,TV}"/> or 
+        /// <see cref="GetOrCreateCache{TK,TV}"/>) cache.
+        /// </summary>
+        /// <param name="name">The name of the cache to stop.</param>
+        void DestroyCache(string name);
+
+        /// <summary>
         /// Gets a new instance of data streamer associated with given cache name. Data streamer
         /// is responsible for loading external data into Ignite. For more information
         /// refer to <see cref="IDataStreamer{K,V}"/> documentation.

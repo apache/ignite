@@ -381,6 +381,12 @@ namespace Apache.Ignite.Core.Impl
             }
         }
 
+        /** <inheritdoc /> */
+        public void DestroyCache(string name)
+        {
+            UU.ProcessorDestroyCache(_proc, name);
+        }
+
         /// <summary>
         /// Gets cache from specified native cache object.
         /// </summary>

@@ -249,6 +249,12 @@ namespace Apache.Ignite.Core.Impl
         {
             return _ignite.CreateCache<TK, TV>(configuration);
         }
+        public void DestroyCache(string name)
+        {
+            _ignite.DestroyCache(name);
+        }
+
+        /** <inheritdoc /> */
 
         /** <inheritdoc /> */
 

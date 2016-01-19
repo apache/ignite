@@ -300,6 +300,7 @@ namespace ignite
                 jmethodID m_PlatformProcessor_getOrCreateCache;
                 jmethodID m_PlatformProcessor_createCacheFromConfig;
                 jmethodID m_PlatformProcessor_getOrCreateCacheFromConfig;
+                jmethodID m_PlatformProcessor_destroyCache;
                 jmethodID m_PlatformProcessor_affinity;
                 jmethodID m_PlatformProcessor_dataStreamer;
                 jmethodID m_PlatformProcessor_transactions;
@@ -496,6 +497,8 @@ namespace ignite
                 jobject ProcessorCreateCacheFromConfig(jobject obj, long memPtr, JniErrorInfo* errInfo);
                 jobject ProcessorGetOrCreateCacheFromConfig(jobject obj, long memPtr);
                 jobject ProcessorGetOrCreateCacheFromConfig(jobject obj, long memPtr, JniErrorInfo* errInfo);
+                void ProcessorDestroyCache(jobject obj, const char* name);
+                void ProcessorDestroyCache(jobject obj, const char* name, JniErrorInfo* errInfo);
                 jobject ProcessorAffinity(jobject obj, const char* name);
                 jobject ProcessorDataStreamer(jobject obj, const char* name, bool keepPortable);
                 jobject ProcessorTransactions(jobject obj);
