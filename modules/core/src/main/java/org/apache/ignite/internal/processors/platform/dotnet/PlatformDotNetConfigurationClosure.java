@@ -20,7 +20,7 @@ package org.apache.ignite.internal.processors.platform.dotnet;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.binary.BinaryIdMapper;
-import org.apache.ignite.binary.BinarySimpleNameIdMapper;
+import org.apache.ignite.binary.BinaryLowerCaseIdMapper;
 import org.apache.ignite.configuration.BinaryConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.PlatformConfiguration;
@@ -111,23 +111,23 @@ public class PlatformDotNetConfigurationClosure extends PlatformAbstractConfigur
             bCfg = new BinaryConfiguration();
 
             bCfg.setCompactFooter(false);
-            bCfg.setIdMapper(new BinarySimpleNameIdMapper());
+            bCfg.setIdMapper(new BinaryLowerCaseIdMapper());
 
             igniteCfg.setBinaryConfiguration(bCfg);
 
             dotNetCfg0.warnings(Collections.singleton("Binary configuration is automatically initiated, " +
                 "note that binary ID mapper is set to " +
-                BinarySimpleNameIdMapper.class.getName()
+                BinaryLowerCaseIdMapper.class.getName()
                 + " (other nodes must have the same binary ID mapper type)."));
         }
         else {
             BinaryIdMapper idMapper = bCfg.getIdMapper();
 
             if (idMapper == null) {
-                bCfg.setIdMapper(new BinarySimpleNameIdMapper());
+                bCfg.setIdMapper(new BinaryLowerCaseIdMapper());
 
                 dotNetCfg0.warnings(Collections.singleton("Binary ID mapper is automatically set to " +
-                    BinarySimpleNameIdMapper.class.getName()
+                    BinaryLowerCaseIdMapper.class.getName()
                     + " (other nodes must have the same binary ID mapper type)."));
             }
         }

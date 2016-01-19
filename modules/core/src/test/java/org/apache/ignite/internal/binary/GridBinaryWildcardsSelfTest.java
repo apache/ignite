@@ -24,7 +24,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.binary.BinaryFullNameIdMapper;
 import org.apache.ignite.binary.BinaryIdMapper;
 import org.apache.ignite.binary.BinarySerializer;
-import org.apache.ignite.binary.BinarySimpleNameIdMapper;
+import org.apache.ignite.binary.BinaryLowerCaseIdMapper;
 import org.apache.ignite.binary.BinaryTypeConfiguration;
 import org.apache.ignite.configuration.BinaryConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -60,7 +60,7 @@ public class GridBinaryWildcardsSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testClassNamesSimpleNameMapper() throws Exception {
-        checkClassNames(new BinarySimpleNameIdMapper());
+        checkClassNames(new BinaryLowerCaseIdMapper());
     }
 
     /**
@@ -124,7 +124,7 @@ public class GridBinaryWildcardsSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testTypeConfigurationsSimpleNameIdMapper() throws Exception {
-        checkTypeConfigurations(new BinarySimpleNameIdMapper());
+        checkTypeConfigurations(new BinaryLowerCaseIdMapper());
     }
 
     /**
@@ -243,7 +243,7 @@ public class GridBinaryWildcardsSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testOverrideSimpleNameMapper() throws Exception {
-        checkOverride(new BinarySimpleNameIdMapper());
+        checkOverride(new BinaryLowerCaseIdMapper());
     }
 
     /**
@@ -301,7 +301,7 @@ public class GridBinaryWildcardsSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testClassNamesJarSimpleNameMapper() throws Exception {
-        checkClassNamesJar(new BinarySimpleNameIdMapper());
+        checkClassNamesJar(new BinaryLowerCaseIdMapper());
     }
 
     /**
@@ -361,7 +361,7 @@ public class GridBinaryWildcardsSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testTypeConfigurationsJarSimpleNameMapper() throws Exception {
-        checkTypeConfigurationJar(new BinarySimpleNameIdMapper());
+        checkTypeConfigurationJar(new BinaryLowerCaseIdMapper());
     }
 
     /**
@@ -461,7 +461,7 @@ public class GridBinaryWildcardsSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testOverrideJarSimpleNameMapper() throws Exception {
-        checkOverrideJar(new BinarySimpleNameIdMapper());
+        checkOverrideJar(new BinaryLowerCaseIdMapper());
     }
 
     /**

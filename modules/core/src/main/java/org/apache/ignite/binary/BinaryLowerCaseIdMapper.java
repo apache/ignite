@@ -18,9 +18,9 @@
 package org.apache.ignite.binary;
 
 /**
- * ID mapper that uses a simple name of classes in lower case to calculate type ID.
+ * ID mapper that uses given strings in lower case to calculate type ID.
  */
-public class BinarySimpleNameIdMapper implements BinaryIdMapper {
+public class BinaryLowerCaseIdMapper implements BinaryIdMapper {
     /** Maximum lower-case character. */
     private static final char MAX_LOWER_CASE_CHAR = 0x7e;
 
@@ -46,7 +46,7 @@ public class BinarySimpleNameIdMapper implements BinaryIdMapper {
     public int typeId(String typeName) {
         assert typeName != null;
 
-        return lowerCaseHashCode(simpleName(typeName), true);
+        return lowerCaseHashCode(typeName, true);
     }
 
     /**
@@ -90,41 +90,5 @@ public class BinarySimpleNameIdMapper implements BinaryIdMapper {
             throw new BinaryObjectException("Binary simple name ID mapper resolved " + what + " ID to zero " +
                 "(either change " + what + "'s name or use custom ID mapper) [name=" + str + ']');
         }
-    }
-
-    /**
-     * @param clsName Class name.
-     * @return Type name.
-     */
-    public static String simpleName(String clsName) {
-        assert clsName != null;
-
-        int idx = clsName.lastIndexOf('$');
-
-        if (idx == clsName.length() - 1)
-            // This is a regular (not inner) class name that ends with '$'. Common use case for Scala classes.
-            idx = -1;
-        else if (idx >= 0) {
-            String typeName = clsName.substring(idx + 1);
-
-            try {
-                Integer.parseInt(typeName);
-
-                // This is an anonymous class. Don't cut off enclosing class name for it.
-                idx = -1;
-            }
-            catch (NumberFormatException ignore) {
-                // This is a lambda class.
-                if (clsName.indexOf("$$Lambda$") > 0)
-                    idx = -1;
-                else
-                    return typeName;
-            }
-        }
-
-        if (idx < 0)
-            idx = clsName.lastIndexOf('.');
-
-        return idx >= 0 ? clsName.substring(idx + 1) : clsName;
     }
 }

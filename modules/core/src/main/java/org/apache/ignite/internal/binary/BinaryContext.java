@@ -46,10 +46,12 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.binary.BinaryIdMapper;
 import org.apache.ignite.binary.BinaryInvalidTypeException;
+import org.apache.ignite.binary.BinaryNameMapper;
 import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.binary.BinaryReflectiveSerializer;
 import org.apache.ignite.binary.BinarySerializer;
-import org.apache.ignite.binary.BinarySimpleNameIdMapper;
+import org.apache.ignite.binary.BinaryLowerCaseIdMapper;
+import org.apache.ignite.binary.BinarySimpleNameMapper;
 import org.apache.ignite.binary.BinaryType;
 import org.apache.ignite.binary.BinaryTypeConfiguration;
 import org.apache.ignite.cache.CacheKeyConfiguration;
@@ -79,7 +81,10 @@ public class BinaryContext {
     private static final ClassLoader dfltLdr = U.gridClassLoader();
 
     /** */
-    private static final BinaryIdMapper DFLT_ID_MAPPER = new BinarySimpleNameIdMapper();
+    private static final BinaryIdMapper DFLT_ID_MAPPER = new BinaryLowerCaseIdMapper();
+
+    /** */
+    private static final BinaryNameMapper DFLT_NAME_MAPPER = new BinarySimpleNameMapper();
 
     /** */
     private final ConcurrentMap<Class<?>, BinaryClassDescriptor> descByCls = new ConcurrentHashMap8<>();
@@ -356,9 +361,10 @@ public class BinaryContext {
      * @return Not null BinaryIdMapper.
      */
     private static BinaryIdMapper resolveIdMapper(@Nullable BinaryIdMapper mapper) {
+        // TODO check.
         return mapper == null ? DFLT_ID_MAPPER :
-            (mapper instanceof BinarySimpleNameIdMapper ? mapper :
-                new SimpleNameIdMapperWrapper(mapper));
+            (mapper instanceof BinaryLowerCaseIdMapper ? mapper :
+                new LowerCaseIdMapperWrapper(mapper));
     }
 
     /**
@@ -1136,7 +1142,7 @@ public class BinaryContext {
     /**
      * Wrapping ID mapper.
      */
-    private static class SimpleNameIdMapperWrapper extends BinarySimpleNameIdMapper {
+    private static class LowerCaseIdMapperWrapper extends BinaryLowerCaseIdMapper {
         /** Delegate. */
         private final BinaryIdMapper mapper;
 
@@ -1145,7 +1151,7 @@ public class BinaryContext {
          *
          * @param mapper Delegate.
          */
-        private SimpleNameIdMapperWrapper(BinaryIdMapper mapper) {
+        private LowerCaseIdMapperWrapper(BinaryIdMapper mapper) {
             assert mapper != null;
 
             this.mapper = mapper;

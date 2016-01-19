@@ -19,7 +19,7 @@ package org.apache.ignite.internal.binary;
 
 import java.util.ArrayList;
 import java.util.Collection;
-import org.apache.ignite.binary.BinarySimpleNameIdMapper;
+import org.apache.ignite.binary.BinaryLowerCaseIdMapper;
 import org.apache.ignite.binary.BinaryTypeConfiguration;
 import org.apache.ignite.configuration.BinaryConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -35,7 +35,7 @@ public class BinaryObjectBuilderSimpleNameIdMapperSelfTest extends BinaryObjectB
 
         BinaryConfiguration bCfg = cfg.getBinaryConfiguration();
 
-        bCfg.setIdMapper(new BinarySimpleNameIdMapper());
+        bCfg.setIdMapper(new BinaryLowerCaseIdMapper());
 
         // TODO this line must be deleted when IGNITE-2395 will be fixed.
         Collection<BinaryTypeConfiguration> typeCfgs = new ArrayList<>(bCfg.getTypeConfigurations());

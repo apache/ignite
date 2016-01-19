@@ -15,23 +15,25 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.binary;
-
-import org.apache.ignite.binary.BinaryLowerCaseIdMapper;
-import org.apache.ignite.internal.binary.test.GridBinaryTestClass1;
-import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+package org.apache.ignite.binary;
 
 /**
- *
+ * Maps type and field names to different names.
  */
-public class BinarySimpleNameIdMapperSelfTest extends GridCommonAbstractTest {
+public interface BinaryNameMapper {
     /**
-     * @throws Exception If failed.
+     * Gets type clsName.
+     *
+     * @param clsName Class came
+     * @return Type name.
      */
-    public void test() throws Exception {
-        BinaryLowerCaseIdMapper mapper = new BinaryLowerCaseIdMapper();
+    String typeName(String clsName);
 
-        assertEquals("gridbinarytestclass1".hashCode(), mapper.typeId(GridBinaryTestClass1.class.getName()));
-        assertEquals("innerclass".hashCode(), mapper.typeId(GridBinaryTestClass1.class.getName() + "$InnerClass"));
-    }
+    /**
+     * Gets field name.
+     *
+     * @param fieldName Field name.
+     * @return Field name.
+     */
+    String fieldName(String fieldName);
 }
