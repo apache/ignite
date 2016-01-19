@@ -113,6 +113,8 @@ namespace Apache.Ignite.Core.Impl.Common
 
             using (var subReader = reader.ReadSubtree())
             {
+                subReader.Read();  // read first element
+
                 ReadElement(subReader, nestedVal);
             }
 
@@ -130,6 +132,7 @@ namespace Apache.Ignite.Core.Impl.Common
 
             using (var subReader = reader.ReadSubtree())
             {
+                subReader.Read();  // skip list head
                 while (subReader.Read())
                 {
                     if (subReader.NodeType != XmlNodeType.Element)
@@ -148,6 +151,8 @@ namespace Apache.Ignite.Core.Impl.Common
 
                         using (var elementReader = subReader.ReadSubtree())
                         {
+                            reader.Read();  // set on first element
+
                             ReadElement(elementReader, element);
 
                             list.Add(element);
@@ -155,6 +160,8 @@ namespace Apache.Ignite.Core.Impl.Common
                     }
                 }
             }
+
+            prop.SetValue(target, list, null);
         }
 
         private static void SetProperty(object target, string propName, string propVal)
