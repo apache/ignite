@@ -23,6 +23,7 @@ namespace Apache.Ignite.Core.Impl.Common
     using System.ComponentModel;
     using System.Configuration;
     using System.Diagnostics;
+    using System.Globalization;
     using System.Linq;
     using System.Reflection;
     using System.Xml;
@@ -224,6 +225,9 @@ namespace Apache.Ignite.Core.Impl.Common
             if (type.IsEnum)
                 return new GenericEnumConverter(type);
 
+            if (type == typeof (Type))
+                return new TypeStringConverter();
+
             var converter = TypeDescriptor.GetConverter(type);
 
             if (converter == null || !converter.CanConvertFrom(typeof(string)) ||
@@ -231,6 +235,30 @@ namespace Apache.Ignite.Core.Impl.Common
                 throw new ConfigurationErrorsException("No converter for type " + type);
 
             return converter;
+        }
+    }
+
+    internal class TypeStringConverter : TypeConverter
+    {
+        public override bool CanConvertFrom(ITypeDescriptorContext context, Type sourceType)
+        {
+            return sourceType == typeof (string);
+        }
+
+        public override bool CanConvertTo(ITypeDescriptorContext context, Type destinationType)
+        {
+            return destinationType == typeof(Type);
+        }
+
+        public override object ConvertFrom(ITypeDescriptorContext context, CultureInfo culture, object value)
+        {
+            return value == null ? null : Type.GetType(value.ToString(), false);
+        }
+
+        public override object ConvertTo(ITypeDescriptorContext context, CultureInfo culture, object value, Type destinationType)
+        {
+            var type = value as Type;
+            return type == null ? null : type.AssemblyQualifiedName;
         }
     }
 }
