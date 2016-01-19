@@ -26,6 +26,7 @@ namespace Apache.Ignite.Core.Cache
     using Apache.Ignite.Core.Cache.Query;
     using Apache.Ignite.Core.Cache.Query.Continuous;
     using Apache.Ignite.Core.Cache.Store;
+    using Apache.Ignite.Core.Datastream;
     using Apache.Ignite.Core.Transactions;
 
     /// <summary>
@@ -840,5 +841,13 @@ namespace Apache.Ignite.Core.Cache
         /// </summary>
         /// <returns>Cache with no-retries behavior enabled.</returns>
         ICache<TK, TV> WithNoRetries();
+
+        /// <summary>
+        /// Gets a new instance of data streamer associated with this cache. Data streamer
+        /// is responsible for loading external data into Ignite. For more information
+        /// refer to <see cref="IDataStreamer{K,V}"/> documentation.
+        /// </summary>
+        /// <returns>New instance of data streamer associated with this cache.</returns>
+        IDataStreamer<TK, TV> GetDataStreamer();
     }
 }

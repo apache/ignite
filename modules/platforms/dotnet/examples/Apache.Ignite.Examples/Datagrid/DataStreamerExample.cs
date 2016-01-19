@@ -67,19 +67,20 @@ namespace Apache.Ignite.Examples.Datagrid
                 Console.WriteLine(">>> Cache data streamer example started.");
 
                 // Clean up caches on all nodes before run.
-                ignite.GetOrCreateCache<int, Account>(CacheName).Clear();
+                var cache = ignite.GetOrCreateCache<int, Account>(CacheName);
+                cache.Clear();
 
                 Stopwatch timer = new Stopwatch();
 
                 timer.Start();
 
-                using (var ldr = ignite.GetDataStreamer<int, Account>(CacheName))
+                using (var streamer = cache.GetDataStreamer())
                 {
-                    ldr.PerNodeBufferSize = 1024;
+                    streamer.PerNodeBufferSize = 1024;
 
                     for (int i = 0; i < EntryCount; i++)
                     {
-                        ldr.AddData(i, new Account(i, i));
+                        streamer.AddData(i, new Account(i, i));
 
                         // Print out progress while loading cache.
                         if (i > 0 && i % 10000 == 0)
