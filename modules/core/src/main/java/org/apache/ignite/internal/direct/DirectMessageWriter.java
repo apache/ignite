@@ -58,6 +58,11 @@ public class DirectMessageWriter implements MessageWriter {
     }
 
     /** {@inheritDoc} */
+    @Override public void setCurrentWriteClass(Class<? extends Message> msgCls) {
+        // No-op.
+    }
+
+    /** {@inheritDoc} */
     @Override public boolean writeHeader(byte type, byte fieldCnt) {
         DirectByteBufferStream stream = state.item().stream;
 
