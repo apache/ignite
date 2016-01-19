@@ -17,16 +17,6 @@
 
 package org.apache.ignite.internal.binary;
 
-import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.binary.BinaryIdMapper;
-import org.apache.ignite.binary.BinaryObjectException;
-import org.apache.ignite.binary.BinaryRawWriter;
-import org.apache.ignite.binary.BinaryWriter;
-import org.apache.ignite.internal.binary.streams.BinaryOutputStream;
-import org.apache.ignite.internal.binary.streams.BinaryHeapOutputStream;
-import org.apache.ignite.internal.util.typedef.internal.A;
-import org.jetbrains.annotations.Nullable;
-
 import java.io.IOException;
 import java.io.ObjectOutput;
 import java.lang.reflect.InvocationTargetException;
@@ -37,6 +27,17 @@ import java.util.Collection;
 import java.util.Date;
 import java.util.Map;
 import java.util.UUID;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.binary.BinaryIdMapper;
+import org.apache.ignite.binary.BinaryNameMapper;
+import org.apache.ignite.binary.BinaryObjectException;
+import org.apache.ignite.binary.BinaryRawWriter;
+import org.apache.ignite.binary.BinaryWriter;
+import org.apache.ignite.internal.binary.streams.BinaryHeapOutputStream;
+import org.apache.ignite.internal.binary.streams.BinaryOutputStream;
+import org.apache.ignite.internal.util.typedef.T2;
+import org.apache.ignite.internal.util.typedef.internal.A;
+import org.jetbrains.annotations.Nullable;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 
@@ -76,6 +77,9 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
 
     /** Amount of written fields. */
     private int fieldCnt;
+
+    /** Name mapper. */
+    private BinaryNameMapper nameMapper;
 
     /** ID mapper. */
     private BinaryIdMapper idMapper;
@@ -1642,10 +1646,18 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
         if (rawOffPos != 0)
             throw new BinaryObjectException("Individual field can't be written after raw writer is acquired.");
 
-        if (idMapper == null)
-            idMapper = ctx.userTypeIdMapper(typeId);
+        if (idMapper == null) {
+            assert nameMapper == null : nameMapper;
 
-        int id = idMapper.fieldId(typeId, fieldName);
+            T2<BinaryNameMapper, BinaryIdMapper> mappers = ctx.userMappers(typeId);
+
+            nameMapper = mappers.get1();
+            idMapper = mappers.get2();
+        }
+
+        assert nameMapper != null;
+
+        int id = idMapper.fieldId(typeId, nameMapper.fieldName(fieldName));
 
         writeFieldId(id);
     }

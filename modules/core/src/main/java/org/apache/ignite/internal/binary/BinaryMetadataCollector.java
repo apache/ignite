@@ -17,12 +17,6 @@
 
 package org.apache.ignite.internal.binary;
 
-import org.apache.ignite.binary.BinaryIdMapper;
-import org.apache.ignite.binary.BinaryObjectException;
-import org.apache.ignite.binary.BinaryRawWriter;
-import org.apache.ignite.binary.BinaryWriter;
-import org.jetbrains.annotations.Nullable;
-
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
@@ -33,6 +27,12 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
+import org.apache.ignite.binary.BinaryIdMapper;
+import org.apache.ignite.binary.BinaryNameMapper;
+import org.apache.ignite.binary.BinaryObjectException;
+import org.apache.ignite.binary.BinaryRawWriter;
+import org.apache.ignite.binary.BinaryWriter;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Writer for meta data collection.
@@ -43,6 +43,9 @@ class BinaryMetadataCollector implements BinaryWriter {
 
     /** Type name. */
     private final String typeName;
+
+    /** Name mapper. */
+    private final BinaryNameMapper nameMapper;
 
     /** ID mapper. */
     private final BinaryIdMapper idMapper;
@@ -58,11 +61,13 @@ class BinaryMetadataCollector implements BinaryWriter {
      *
      * @param typeId Type ID.
      * @param typeName Type name.
+     * @param nameMapper Name mapper.
      * @param idMapper ID mapper.
      */
-    BinaryMetadataCollector(int typeId, String typeName, BinaryIdMapper idMapper) {
+    BinaryMetadataCollector(int typeId, String typeName, BinaryNameMapper nameMapper, BinaryIdMapper idMapper) {
         this.typeId = typeId;
         this.typeName = typeName;
+        this.nameMapper = nameMapper;
         this.idMapper = idMapper;
     }
 
@@ -272,6 +277,6 @@ class BinaryMetadataCollector implements BinaryWriter {
             );
         }
 
-        schemaBuilder.addField(idMapper.fieldId(typeId, name));
+        schemaBuilder.addField(idMapper.fieldId(typeId, nameMapper.fieldName(name)));
     }
 }

@@ -17,20 +17,6 @@
 
 package org.apache.ignite.internal.binary;
 
-import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.binary.BinaryIdMapper;
-import org.apache.ignite.binary.BinaryObjectException;
-import org.apache.ignite.binary.BinaryReflectiveSerializer;
-import org.apache.ignite.binary.BinarySerializer;
-import org.apache.ignite.binary.Binarylizable;
-import org.apache.ignite.internal.processors.cache.CacheObjectImpl;
-import org.apache.ignite.internal.util.GridUnsafe;
-import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.marshaller.MarshallerExclusions;
-import org.apache.ignite.marshaller.optimized.OptimizedMarshaller;
-import org.jetbrains.annotations.Nullable;
-import sun.misc.Unsafe;
-
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
@@ -47,6 +33,20 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.binary.BinaryIdMapper;
+import org.apache.ignite.binary.BinaryNameMapper;
+import org.apache.ignite.binary.BinaryObjectException;
+import org.apache.ignite.binary.BinaryReflectiveSerializer;
+import org.apache.ignite.binary.BinarySerializer;
+import org.apache.ignite.binary.Binarylizable;
+import org.apache.ignite.internal.processors.cache.CacheObjectImpl;
+import org.apache.ignite.internal.util.GridUnsafe;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.marshaller.MarshallerExclusions;
+import org.apache.ignite.marshaller.optimized.OptimizedMarshaller;
+import org.jetbrains.annotations.Nullable;
+import sun.misc.Unsafe;
 
 /**
  * Binary class descriptor.
@@ -69,6 +69,9 @@ public class BinaryClassDescriptor {
 
     /** ID mapper. */
     private final BinaryIdMapper idMapper;
+
+    /** ID mapper. */
+    private final BinaryNameMapper nameMapper;
 
     /** */
     private final BinaryWriteMode mode;
@@ -122,6 +125,7 @@ public class BinaryClassDescriptor {
      * @param typeId Type ID.
      * @param typeName Type name.
      * @param affKeyFieldName Affinity key field name.
+     * @param nameMapper Name mapper.
      * @param idMapper ID mapper.
      * @param serializer Serializer.
      * @param metaDataEnabled Metadata enabled flag.
@@ -135,6 +139,7 @@ public class BinaryClassDescriptor {
         int typeId,
         String typeName,
         @Nullable String affKeyFieldName,
+        @Nullable BinaryNameMapper nameMapper,
         @Nullable BinaryIdMapper idMapper,
         @Nullable BinarySerializer serializer,
         boolean metaDataEnabled,
@@ -142,6 +147,7 @@ public class BinaryClassDescriptor {
     ) throws BinaryObjectException {
         assert ctx != null;
         assert cls != null;
+        assert nameMapper != null;
         assert idMapper != null;
 
         // If serializer is not defined at this point, then we have to user OptimizedMarshaller.
@@ -159,6 +165,7 @@ public class BinaryClassDescriptor {
         this.affKeyFieldName = affKeyFieldName;
         this.serializer = serializer;
         this.idMapper = idMapper;
+        this.nameMapper = nameMapper;
         this.registered = registered;
 
         schemaReg = ctx.schemaRegistry(typeId);
@@ -273,7 +280,7 @@ public class BinaryClassDescriptor {
 
                             assert added : name;
 
-                            int fieldId = idMapper.fieldId(typeId, name);
+                            int fieldId = idMapper.fieldId(typeId, nameMapper.typeName(name));
 
                             if (!ids.add(fieldId))
                                 throw new BinaryObjectException("Duplicate field ID: " + name);
@@ -639,7 +646,7 @@ public class BinaryClassDescriptor {
                             if (schemaReg.schema(schemaId) == null) {
                                 // This is new schema, let's update metadata.
                                 BinaryMetadataCollector collector =
-                                    new BinaryMetadataCollector(typeId, typeName, idMapper);
+                                    new BinaryMetadataCollector(typeId, typeName, nameMapper, idMapper);
 
                                 if (serializer != null)
                                     serializer.writeBinary(obj, collector);
