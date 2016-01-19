@@ -40,7 +40,7 @@ namespace Apache.Ignite.Core.Tests
                                 <ipFinder type='MulticastIpFinder' addressRequestAttempts='7' />
                             </discoveryConfiguration>
                             <jvmOptions><string>-Xms1g</string><string>-Xmx4g</string></jvmOptions>
-                            <lifecycleBeans><iLifecycleBean type='Apache.Ignite.Core.Tests.LifecycleBean' foo='15' /></lifecycleBeans>
+                            <lifecycleBeans><iLifecycleBean type='Apache.Ignite.Core.Tests.IgniteConfigurationSerializerTest+LifecycleBean, Apache.Ignite.Core.Tests' foo='15' /></lifecycleBeans>
                         </igniteConfig>";
             var reader = XmlReader.Create(new StringReader(xml));
 
