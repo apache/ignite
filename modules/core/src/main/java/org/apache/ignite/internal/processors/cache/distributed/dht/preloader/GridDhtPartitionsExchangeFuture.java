@@ -1124,6 +1124,9 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
     private void processLostPartitions() {
         // Collect all owned partitions for caches.
         for (GridCacheContext cacheContext : cctx.cacheContexts()) {
+            if (cacheContext.isLocal())
+                continue;
+
             int cacheId = cacheContext.cacheId();
             GridDhtPartitionFullMap partitionFullMap = cacheContext.topology().partitionMap(false);
 
@@ -1261,6 +1264,9 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
                     "(cache topology is not valid): " + cctx.name());
             }
         }
+
+        if (cctx.isLocal())
+            return null;
 
         if (cctx.config().getDataLossPolicy() == DataLossPolicy.FAIL_OPS) {
             Map<Integer, Boolean> partitionIsLost = cachesPartitionsLoss.get(cctx.cacheId());

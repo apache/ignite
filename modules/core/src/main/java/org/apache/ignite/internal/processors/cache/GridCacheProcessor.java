@@ -77,9 +77,11 @@ import org.apache.ignite.internal.processors.cache.datastructures.CacheDataStruc
 import org.apache.ignite.internal.processors.cache.distributed.ResetLostPartitionMessage;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCache;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCacheAdapter;
+import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionState;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridNoStorageCacheMap;
 import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridDhtAtomicCache;
 import org.apache.ignite.internal.processors.cache.distributed.dht.colocated.GridDhtColocatedCache;
+import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionMap2;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearAtomicCache;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearCacheAdapter;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTransactionalCache;
@@ -2479,7 +2481,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     }
 
     /**
-     * Callback invoked from discovery thread when discovery custom message  is received.
+     * Callback invoked from discovery thread when discovery custom message is received.
      *
      * @param msg Customer message.
      * @param topVer Current topology version.
@@ -2487,16 +2489,48 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      */
     public boolean onCustomEvent(DiscoveryCustomMessage msg,
         AffinityTopologyVersion topVer) {
-        return msg instanceof DynamicCacheChangeBatch && onCacheChangeRequested((DynamicCacheChangeBatch) msg, topVer);
+
+        if (msg instanceof ResetLostPartitionMessage)
+            return onPartitionResetRequested((ResetLostPartitionMessage)msg, topVer);
+
+        if (msg instanceof DynamicCacheChangeBatch)
+            return onCacheChangeRequested((DynamicCacheChangeBatch)msg, topVer);
+
+        return false;
     }
+
+    /**
+     * @param msg Change request batch.
+     * @param topVer Current topology version.
+     * @return {@code True} if minor topology version should be increased.
+     */
+    private boolean onPartitionResetRequested(ResetLostPartitionMessage msg, AffinityTopologyVersion topVer) {
+        if (F.isEmpty(msg.getCacheIds()))
+            return false;
+
+        for (int id : msg.getCacheIds()) {
+            GridCacheContext cacheContext = sharedCtx.cacheContext(id);
+
+            if (cacheContext == null || cacheContext.isLocal())
+                continue;
+
+            for (GridDhtPartitionMap2 nodePartitions : cacheContext.topology().partitionMap(false).values()) {
+                for (Map.Entry<Integer, GridDhtPartitionState> partitionState : nodePartitions.entrySet())
+                    if (partitionState.getValue() == GridDhtPartitionState.LOST)
+                        return true;
+            }
+        }
+
+        return false;
+    }
+
 
     /**
      * @param batch Change request batch.
      * @param topVer Current topology version.
      * @return {@code True} if minor topology version should be increased.
      */
-    private boolean onCacheChangeRequested(DynamicCacheChangeBatch batch,
-        AffinityTopologyVersion topVer) {
+    private boolean onCacheChangeRequested(DynamicCacheChangeBatch batch, AffinityTopologyVersion topVer) {
         AffinityTopologyVersion newTopVer = null;
 
         boolean incMinorTopVer = false;

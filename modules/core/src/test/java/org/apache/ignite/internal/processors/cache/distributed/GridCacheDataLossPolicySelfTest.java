@@ -99,6 +99,7 @@ public class GridCacheDataLossPolicySelfTest extends GridCommonAbstractTest {
 
         final int key = primaryKey(jcache(0));
         final int keyAfterLost = primaryKeys(jcache(0), 1, key + 1).get(0);
+        final int keyAtFututre = primaryKeys(jcache(0), 1, keyAfterLost + 1).get(0);
 
         jcache(1).put(key, key);
 
@@ -134,11 +135,13 @@ public class GridCacheDataLossPolicySelfTest extends GridCommonAbstractTest {
 
         fut.listen(new IgniteInClosure<IgniteFuture<?>>() {
             @Override public void apply(IgniteFuture<?> future) {
-                jcache(1).put(keyAfterLost, keyAfterLost);
+                jcache(1).put(keyAtFututre, keyAtFututre);
             }
         });
 
         fut.get(getTestTimeout());
+
+        jcache(1).put(keyAfterLost, keyAfterLost);
 
         assert !jcache(1).containsKey(key);
 

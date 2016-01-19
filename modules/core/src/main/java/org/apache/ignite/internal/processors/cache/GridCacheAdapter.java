@@ -426,7 +426,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
     }
 
     /**
-     * @return {@code True} if cache is DHT.
+     * @return {@code True} if cache is DHT. In some cases it means that this cache doesn't has a near cache.
      */
     public boolean isDht() {
         return false;
