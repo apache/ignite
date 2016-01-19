@@ -101,8 +101,12 @@ namespace Apache.Ignite.Core.Impl.Common
             if (propType.IsAbstract || propType.IsInterface)
             {
                 var typeName = reader.GetAttribute(TypeNameAttribute);
+
                 var derivedTypes = GetDerivedTypes(propType);
-                propType = derivedTypes.FirstOrDefault(x => x.Name == typeName);
+
+                propType = typeName == null
+                    ? null
+                    : Type.GetType(typeName, false) ?? derivedTypes.FirstOrDefault(x => x.Name == typeName);
 
                 if (propType == null)
                 {
