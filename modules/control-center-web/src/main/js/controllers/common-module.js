@@ -161,7 +161,7 @@ consoleModule.service('$common', [
         }
 
         var javaBuiltInClasses = [
-            'BigDecimal', 'Boolean', 'Byte', 'Date', 'Double', 'Float', 'Integer', 'Long', 'Short', 'String', 'Time', 'Timestamp', 'UUID'
+            'BigDecimal', 'Boolean', 'Byte', 'Date', 'Double', 'Float', 'Integer', 'Long', 'Object', 'Short', 'String', 'Time', 'Timestamp', 'UUID'
         ];
 
         var javaBuiltInTypes = [
@@ -171,8 +171,8 @@ consoleModule.service('$common', [
 
         var javaBuiltInFullNameClasses = [
             'java.math.BigDecimal', 'java.lang.Boolean', 'java.lang.Byte', 'java.sql.Date', 'java.lang.Double',
-            'java.lang.Float', 'java.lang.Integer', 'java.lang.Long', 'java.lang.Short', 'java.lang.String',
-            'java.sql.Time', 'java.sql.Timestamp', 'java.util.UUID'
+            'java.lang.Float', 'java.lang.Integer', 'java.lang.Long', 'java.lang.Object', 'java.lang.Short',
+            'java.lang.String', 'java.sql.Time', 'java.sql.Timestamp', 'java.util.UUID'
         ];
 
         function isJavaBuiltInClass(cls) {
@@ -781,18 +781,18 @@ consoleModule.service('$common', [
 
                 return true;
             },
-            metadataForQueryConfigured: function (meta) {
-                var isEmpty = !isDefined(meta) || (isEmptyArray(meta.fields) &&
-                    isEmptyArray(meta.aliases) &&
-                    isEmptyArray(meta.indexes));
+            domainForQueryConfigured: function (domain) {
+                var isEmpty = !isDefined(domain) || (isEmptyArray(domain.fields) &&
+                    isEmptyArray(domain.aliases) &&
+                    isEmptyArray(domain.indexes));
 
                 return !isEmpty;
             },
-            metadataForStoreConfigured: function (meta) {
-                var isEmpty = !isDefined(meta) || (isEmptyString(meta.databaseSchema) &&
-                    isEmptyString(meta.databaseTable) &&
-                    isEmptyArray(meta.keyFields) &&
-                    isEmptyArray(meta.valueFields));
+            domainForStoreConfigured: function (domain) {
+                var isEmpty = !isDefined(domain) || (isEmptyString(domain.databaseSchema) &&
+                    isEmptyString(domain.databaseTable) &&
+                    isEmptyArray(domain.keyFields) &&
+                    isEmptyArray(domain.valueFields));
 
                 return !isEmpty;
             },
@@ -965,7 +965,7 @@ consoleModule.service('$common', [
                     }
                 }
 
-                // Find group metadata to reset group values.
+                // Find group to reset group values.
                 for (var grpIx = 0; grpIx < groups.length; grpIx ++) {
                     if (groups[grpIx].group === group) {
                         var fields = groups[grpIx].fields;
@@ -1752,17 +1752,17 @@ consoleModule.filter('tablesSearch', function() {
 
 // Filter domain models with key fields configuration.
 consoleModule.filter('domainsValidation', ['$common', function ($common) {
-    return function(metadatas, valid, invalid) {
+    return function(domains, valid, invalid) {
         if (valid && invalid)
-            return metadatas;
+            return domains;
 
         var out = [];
 
-        _.forEach(metadatas, function (meta) {
-            var _valid = !$common.metadataForStoreConfigured(meta) || $common.isJavaBuiltInClass(meta.keyType) || !$common.isEmptyArray(meta.keyFields);
+        _.forEach(domains, function (domain) {
+            var _valid = !$common.domainForStoreConfigured(domain) || $common.isJavaBuiltInClass(domain.keyType) || !$common.isEmptyArray(domain.keyFields);
 
             if (valid && _valid || invalid && !_valid)
-                out.push(meta);
+                out.push(domain);
         });
 
         return out;

@@ -46,7 +46,7 @@ router.post('/remove', function (req, res) {
             _.forEach(spaces, function (space) {
                 db.Cluster.remove({space: space._id}).exec();
                 db.Cache.remove({space: space._id}).exec();
-                db.CacheTypeMetadata.remove({space: space._id}).exec();
+                db.DomainModel.remove({space: space._id}).exec();
                 db.Notebook.remove({space: space._id}).exec();
                 db.Space.remove({owner: space._id}).exec();
             });

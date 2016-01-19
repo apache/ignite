@@ -70,8 +70,8 @@ exports.Space = mongoose.model('Space', new Schema({
     }]
 }));
 
-// Define Cache type metadata schema.
-var CacheTypeMetadataSchema = new Schema({
+// Define Domain model schema.
+var DomainModelSchema = new Schema({
     space: {type: ObjectId, ref: 'Space'},
     caches: [{type: ObjectId, ref: 'Cache'}],
     queryMetadata: {type: String, enum: ['Annotations', 'Config']},
@@ -88,15 +88,15 @@ var CacheTypeMetadataSchema = new Schema({
     demo: Boolean
 });
 
-// Define Cache type metadata model.
-exports.CacheTypeMetadata = mongoose.model('CacheTypeMetadata', CacheTypeMetadataSchema);
+// Define model of Domain models.
+exports.DomainModel = mongoose.model('DomainModel', DomainModelSchema);
 
 // Define Cache schema.
 var CacheSchema = new Schema({
     space: {type: ObjectId, ref: 'Space'},
     name: String,
     clusters: [{type: ObjectId, ref: 'Cluster'}],
-    metadatas: [{type: ObjectId, ref: 'CacheTypeMetadata'}],
+    domains: [{type: ObjectId, ref: 'DomainModel'}],
     cacheMode: {type: String, enum: ['PARTITIONED', 'REPLICATED', 'LOCAL']},
     atomicityMode: {type: String, enum: ['ATOMIC', 'TRANSACTIONAL']},
 
@@ -217,7 +217,7 @@ var CacheSchema = new Schema({
 
 // Install deep populate plugin.
 CacheSchema.plugin(deepPopulate, {
-    whitelist: ['metadatas']
+    whitelist: ['domains']
 });
 
 // Define Cache model.
@@ -457,7 +457,7 @@ var ClusterSchema = new Schema({
 ClusterSchema.plugin(deepPopulate, {
     whitelist: [
         'caches',
-        'caches.metadatas',
+        'caches.domains',
         'igfss'
     ]
 });

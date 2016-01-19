@@ -17,7 +17,7 @@
 
 export default ['hasPojo', [() => {
     const filter = (cache) => {
-        return cache.metadatas && cache.metadatas.length;
+        return cache.domains && cache.domains.length;
     };
 
     return ({caches} = {}) => {

@@ -158,7 +158,7 @@ consoleModule.controller('cachesController', [
         $scope.general = [];
         $scope.advanced = [];
         $scope.caches = [];
-        $scope.metadatas = [];
+        $scope.domains = [];
 
         $scope.preview = {
             general: {xml: '', java: '', allDefaults: true},
@@ -271,10 +271,10 @@ consoleModule.controller('cachesController', [
                 $scope.selectItem($scope.caches[0]);
         }
 
-        function cacheMetadatas(item) {
-            return _.reduce($scope.metadatas, function (memo, meta) {
-                if (item && _.contains(item.metadatas, meta.value)) {
-                    memo.push(meta.meta);
+        function cacheDomains(item) {
+            return _.reduce($scope.domains, function (memo, domain) {
+                if (item && _.contains(item.domains, domain.value)) {
+                    memo.push(domain.meta);
                 }
 
                 return memo;
@@ -296,8 +296,13 @@ consoleModule.controller('cachesController', [
 
                 $scope.caches = data.caches;
                 $scope.clusters = data.clusters;
-                $scope.metadatas = _.sortBy(_.map(validFilter(data.metadatas, true, false), function (meta) {
-                    return {value: meta._id, label: meta.valueType, kind: meta.kind, meta: meta};
+                $scope.domains = _.sortBy(_.map(validFilter(data.domains, true, false), function (domain) {
+                    return {
+                        value: domain._id,
+                        label: domain.valueType,
+                        kind: domain.kind,
+                        meta: domain
+                    };
                 }), 'label');
 
                 // Load page descriptor.
@@ -336,11 +341,11 @@ consoleModule.controller('cachesController', [
 
                                 $scope.ui.checkDirty(val, srcItem);
 
-                                var metas = cacheMetadatas(val);
+                                var domains = cacheDomains(val);
                                 var varName = $commonUtils.toJavaName('cache', val.name);
 
-                                $scope.preview.general.xml = $generatorXml.cacheMetadatas(metas, $generatorXml.cacheGeneral(val)).asString();
-                                $scope.preview.general.java = $generatorJava.cacheMetadatas(metas, varName, $generatorJava.cacheGeneral(val, varName)).asString();
+                                $scope.preview.general.xml = $generatorXml.cacheDomains(domains, $generatorXml.cacheGeneral(val)).asString();
+                                $scope.preview.general.java = $generatorJava.cacheDomains(domains, varName, $generatorJava.cacheGeneral(val, varName)).asString();
                                 $scope.preview.general.allDefaults = $common.isEmptyString($scope.preview.general.xml);
 
                                 $scope.preview.memory.xml = $generatorXml.cacheMemory(val).asString();
@@ -351,10 +356,10 @@ consoleModule.controller('cachesController', [
                                 $scope.preview.query.java = $generatorJava.cacheQuery(val, varName).asString();
                                 $scope.preview.query.allDefaults = $common.isEmptyString($scope.preview.query.xml);
 
-                                var storeFactory = $generatorXml.cacheStore(val, metas);
+                                var storeFactory = $generatorXml.cacheStore(val, domains);
 
                                 $scope.preview.store.xml = $generatorXml.generateDataSources(storeFactory.datasources).asString() + storeFactory.asString();
-                                $scope.preview.store.java = $generatorJava.cacheStore(val, metas, varName).asString();
+                                $scope.preview.store.java = $generatorJava.cacheStore(val, domains, varName).asString();
                                 $scope.preview.store.allDefaults = $common.isEmptyString($scope.preview.store.xml);
 
                                 $scope.preview.concurrency.xml = $generatorXml.cacheConcurrency(val).asString();
@@ -375,7 +380,7 @@ consoleModule.controller('cachesController', [
                             }
                         }, true);
 
-                        $scope.$watchCollection('backupItem.metadatas', function (val) {
+                        $scope.$watchCollection('backupItem.domains', function (val) {
                             if ($scope.selectedItemWatchGuard)
                                 $scope.selectedItemWatchGuard = false;
                             else {
@@ -386,7 +391,7 @@ consoleModule.controller('cachesController', [
                                     $common.isDefined(item.cacheStoreFactory.kind);
 
                                 if (val && !cacheStoreFactory) {
-                                    if (_.findIndex(cacheMetadatas(item), $common.metadataForStoreConfigured) >= 0) {
+                                    if (_.findIndex(cacheDomains(item), $common.domainForStoreConfigured) >= 0) {
                                         item.cacheStoreFactory.kind = 'CacheJdbcPojoStoreFactory';
 
                                         if (!item.readThrough && !item.writeThrough) {
@@ -445,9 +450,6 @@ consoleModule.controller('cachesController', [
             }
 
             $common.confirmUnsavedChanges($scope.ui.isDirty(), selectItem);
-
-            $scope.ui.formTitle = $common.isDefined($scope.backupItem) && $scope.backupItem._id ?
-                'Selected cache: ' + $scope.backupItem.name : 'New cache';
         };
 
         function prepareNewItem(id) {
@@ -460,7 +462,7 @@ consoleModule.controller('cachesController', [
                 clusters: id && _.find($scope.clusters, {value: id})
                     ? [id]
                     : _.map($scope.clusters, function (cluster) { return cluster.value; }),
-                metadatas: id && _.find($scope.metadatas, {value: id}) ? [id] : [],
+                domains: id && _.find($scope.domains, { value: id }) ? [id] : [],
                 cacheStoreFactory: {CacheJdbcBlobStoreFactory: {connectVia: 'DataSource'}}
             };
         }
@@ -583,11 +585,11 @@ consoleModule.controller('cachesController', [
                         'Store is configured but read/write through are not enabled!');
 
                 if (item.cacheStoreFactory.kind === 'CacheJdbcPojoStoreFactory') {
-                    if ($common.isDefined(item.metadatas)) {
-                        var metadatas = cacheMetadatas($scope.backupItem);
+                    if ($common.isDefined(item.domains)) {
+                        var domains = cacheDomains($scope.backupItem);
 
-                        if (_.findIndex(metadatas, $common.metadataForStoreConfigured) < 0)
-                            return showPopoverMessage($scope.panels, 'general', 'metadata',
+                        if (_.findIndex(domains, $common.domainForStoreConfigured) < 0)
+                            return showPopoverMessage($scope.panels, 'general', 'domains',
                                 'Cache with configured JDBC POJO store factory should be associated with at least one domain model for cache store');
                     }
                 }

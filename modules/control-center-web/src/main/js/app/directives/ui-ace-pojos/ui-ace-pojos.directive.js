@@ -24,11 +24,11 @@ export default ['igniteUiAcePojos', [() => {
         restrict: 'E',
         scope: {
             cluster: '=',
-            metadatas: '=ngModel'
+            pojos: '=ngModel'
         },
         bindToController: {
             cluster: '=',
-            metadatas: '=ngModel'
+            pojos: '=ngModel'
         },
         template,
         controller,

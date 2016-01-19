@@ -36,7 +36,7 @@ router.post('/list', function (req, res) {
             });
 
             // Get all caches for spaces.
-            db.Cache.find({space: {$in: space_ids}}).sort('name').deepPopulate('metadatas').exec(function (err, caches) {
+            db.Cache.find({space: {$in: space_ids}}).sort('name').deepPopulate('domains').exec(function (err, caches) {
                 if (db.processed(err, res)) {
                     // Get all IGFSs for spaces.
                     db.Igfs.find({space: {$in: space_ids}}).sort('name').exec(function (err, igfss) {

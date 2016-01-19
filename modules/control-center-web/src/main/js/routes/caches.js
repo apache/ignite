@@ -39,7 +39,7 @@ router.post('/list', function (req, res) {
             db.Cluster.find({space: {$in: space_ids}}, '_id name caches').sort('name').exec(function (err, clusters) {
                 if (db.processed(err, res)) {
                     // Get all domain models for spaces.
-                    db.CacheTypeMetadata.find({space: {$in: space_ids}}).sort('name').exec(function (err, metadatas) {
+                    db.DomainModel.find({space: {$in: space_ids}}).sort('name').exec(function (err, domains) {
                         if (db.processed(err, res)) {
                             // Get all caches for spaces.
                             db.Cache.find({space: {$in: space_ids}}).sort('name').exec(function (err, caches) {
@@ -53,9 +53,9 @@ router.post('/list', function (req, res) {
                                         });
 
                                         // Remove deleted domain models.
-                                        cache.metadatas = _.filter(cache.metadatas, function (metaId) {
-                                            return _.findIndex(metadatas, function (meta) {
-                                                    return meta._id.equals(metaId);
+                                        cache.domains = _.filter(cache.domains, function (metaId) {
+                                            return _.findIndex(domains, function (domain) {
+                                                    return domain._id.equals(metaId);
                                                 }) >= 0;
                                         });
                                     });
@@ -65,7 +65,7 @@ router.post('/list', function (req, res) {
                                         clusters: clusters.map(function (cluster) {
                                             return {value: cluster._id, label: cluster.name, caches: cluster.caches};
                                         }),
-                                        metadatas: metadatas,
+                                        domains: domains,
                                         caches: caches
                                     });
                                 }
@@ -85,7 +85,7 @@ router.post('/save', function (req, res) {
     var params = req.body;
     var cacheId = params._id;
     var clusters = params.clusters;
-    var metadatas = params.metadatas;
+    var domains = params.domains;
 
     if (params._id) {
         db.Cache.update({_id: cacheId}, params, {upsert: true}, function (err) {
@@ -94,9 +94,9 @@ router.post('/save', function (req, res) {
                     if (db.processed(err, res))
                         db.Cluster.update({_id: {$nin: clusters}}, {$pull: {caches: cacheId}}, {multi: true}, function (err) {
                             if (db.processed(err, res))
-                                db.CacheTypeMetadata.update({_id: {$in: metadatas}}, {$addToSet: {caches: cacheId}}, {multi: true}, function (err) {
+                                db.DomainModel.update({_id: {$in: domains}}, {$addToSet: {caches: cacheId}}, {multi: true}, function (err) {
                                     if (db.processed(err, res))
-                                        db.CacheTypeMetadata.update({_id: {$nin: metadatas}}, {$pull: {caches: cacheId}}, {multi: true}, function (err) {
+                                        db.DomainModel.update({_id: {$nin: domains}}, {$pull: {caches: cacheId}}, {multi: true}, function (err) {
                                             if (db.processed(err, res))
                                                 res.send(params._id);
                                         });
@@ -117,7 +117,7 @@ router.post('/save', function (req, res) {
 
                         db.Cluster.update({_id: {$in: clusters}}, {$addToSet: {caches: cacheId}}, {multi: true}, function (err) {
                             if (db.processed(err, res))
-                                db.CacheTypeMetadata.update({_id: {$in: metadatas}}, {$addToSet: {caches: cacheId}}, {multi: true}, function (err) {
+                                db.DomainModel.update({_id: {$in: domains}}, {$addToSet: {caches: cacheId}}, {multi: true}, function (err) {
                                     if (db.processed(err, res))
                                         res.send(cacheId);
                                 });

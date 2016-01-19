@@ -415,9 +415,6 @@ consoleModule.controller('clustersController', function ($http, $timeout, $scope
             }
 
             $common.confirmUnsavedChanges($scope.ui.isDirty(), selectItem);
-
-            $scope.ui.formTitle = $common.isDefined($scope.backupItem) && $scope.backupItem._id ?
-                'Selected cluster: ' + $scope.backupItem.name : 'New cluster';
         };
 
         function prepareNewItem(id) {
