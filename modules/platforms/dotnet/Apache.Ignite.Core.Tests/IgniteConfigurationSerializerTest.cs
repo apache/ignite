@@ -19,9 +19,11 @@ namespace Apache.Ignite.Core.Tests
 {
     using System;
     using System.IO;
+    using System.Linq;
     using System.Xml;
     using Apache.Ignite.Core.Discovery;
     using Apache.Ignite.Core.Impl.Common;
+    using Apache.Ignite.Core.Lifecycle;
     using NUnit.Framework;
 
     /// <summary>
@@ -38,6 +40,7 @@ namespace Apache.Ignite.Core.Tests
                                 <ipFinder type='MulticastIpFinder' addressRequestAttempts='7' />
                             </discoveryConfiguration>
                             <jvmOptions><string>-Xms1g</string><string>-Xmx4g</string></jvmOptions>
+                            <lifecycleBeans><iLifecycleBean type='Apache.Ignite.Core.Tests.LifecycleBean' foo='15' /></lifecycleBeans>
                         </igniteConfig>";
             var reader = XmlReader.Create(new StringReader(xml));
 
@@ -50,6 +53,17 @@ namespace Apache.Ignite.Core.Tests
             Assert.AreEqual(TimeSpan.FromMinutes(1), cfg.DiscoveryConfiguration.JoinTimeout);
             Assert.AreEqual(7, ((MulticastIpFinder) cfg.DiscoveryConfiguration.IpFinder).AddressRequestAttempts);
             Assert.AreEqual(new[] { "-Xms1g", "-Xmx4g" }, cfg.JvmOptions);
+            Assert.AreEqual(15, ((LifecycleBean) cfg.LifecycleBeans.Single()).Foo);
+        }
+
+        public class LifecycleBean : ILifecycleBean
+        {
+            public int Foo { get; set; }
+
+            public void OnLifecycleEvent(LifecycleEventType evt)
+            {
+                // No-op.
+            }
         }
     }
 }

@@ -124,6 +124,7 @@ namespace Apache.Ignite.Core.Impl.Common
         private static void ReadCollection(XmlReader reader, PropertyInfo prop, object target)
         {
             // TODO: dictionary?
+            // TODO: ICollection<ILifecycleBean>
             var elementType = prop.PropertyType.GetGenericArguments().Single();
 
             var listType = typeof (List<>).MakeGenericType(elementType);
@@ -145,6 +146,10 @@ namespace Apache.Ignite.Core.Impl.Common
 
                     if (elementType == typeof (string))
                         list.Add(subReader.ReadString());
+                    else if (elementType.IsInterface)
+                    {
+                        // TODO: same way as with ip finder
+                    }
                     else
                     {
                         var element = Activator.CreateInstance(elementType);
