@@ -26,8 +26,8 @@ import org.apache.ignite.internal.binary.BinaryFooterOffsetsHeapSelfTest;
 import org.apache.ignite.internal.binary.BinaryFooterOffsetsOffheapSelfTest;
 import org.apache.ignite.internal.binary.BinaryMarshallerSelfTest;
 import org.apache.ignite.internal.binary.BinaryObjectBuilderAdditionalSelfTest;
-import org.apache.ignite.internal.binary.BinaryObjectBuilderDefaultIdMapperSelfTest;
-import org.apache.ignite.internal.binary.BinaryObjectBuilderSimpleNameIdMapperSelfTest;
+import org.apache.ignite.internal.binary.BinaryObjectBuilderDefaultMappersSelfTest;
+import org.apache.ignite.internal.binary.BinaryObjectBuilderSimpleNameLowerCaseMappersSelfTest;
 import org.apache.ignite.internal.binary.BinaryOriginalNameMapperSelfTest;
 import org.apache.ignite.internal.binary.BinarySimpleClassNameMapperSelfTest;
 import org.apache.ignite.internal.binary.BinarySimpleNameIdMapperSelfTest;
@@ -42,8 +42,8 @@ import org.apache.ignite.internal.binary.noncompact.BinaryFooterOffsetsHeapNonCo
 import org.apache.ignite.internal.binary.noncompact.BinaryFooterOffsetsOffheapNonCompactSelfTest;
 import org.apache.ignite.internal.binary.noncompact.BinaryMarshallerNonCompactSelfTest;
 import org.apache.ignite.internal.binary.noncompact.BinaryObjectBuilderAdditionalNonCompactSelfTest;
-import org.apache.ignite.internal.binary.noncompact.BinaryObjectBuilderNonCompactDefaultIdMapperSelfTest;
-import org.apache.ignite.internal.binary.noncompact.BinaryObjectBuilderNonCompactSimpleNameIdMapperSelfTest;
+import org.apache.ignite.internal.binary.noncompact.BinaryObjectBuilderNonCompactDefaultMappersSelfTest;
+import org.apache.ignite.internal.binary.noncompact.BinaryObjectBuilderNonCompactSimpleNameLowerCaseMappersSelfTest;
 import org.apache.ignite.internal.processors.cache.binary.GridCacheBinaryStoreBinariesSelfTest;
 import org.apache.ignite.internal.processors.cache.binary.GridCacheBinaryStoreObjectsSelfTest;
 import org.apache.ignite.internal.processors.cache.binary.GridCacheClientNodeBinaryObjectMetadataMultinodeTest;
@@ -83,8 +83,8 @@ public class IgniteBinaryObjectsTestSuite extends TestSuite {
         suite.addTestSuite(BinaryMarshallerSelfTest.class);
         suite.addTestSuite(BinaryConfigurationConsistencySelfTest.class);
         suite.addTestSuite(GridBinaryMarshallerCtxDisabledSelfTest.class);
-        suite.addTestSuite(BinaryObjectBuilderDefaultIdMapperSelfTest.class);
-        suite.addTestSuite(BinaryObjectBuilderSimpleNameIdMapperSelfTest.class);
+        suite.addTestSuite(BinaryObjectBuilderDefaultMappersSelfTest.class);
+        suite.addTestSuite(BinaryObjectBuilderSimpleNameLowerCaseMappersSelfTest.class);
         suite.addTestSuite(BinaryObjectBuilderAdditionalSelfTest.class);
         suite.addTestSuite(BinaryFieldsHeapSelfTest.class);
         suite.addTestSuite(BinaryFieldsOffheapSelfTest.class);
@@ -97,8 +97,8 @@ public class IgniteBinaryObjectsTestSuite extends TestSuite {
 
         // Tests for objects with non-compact footers.
         suite.addTestSuite(BinaryMarshallerNonCompactSelfTest.class);
-        suite.addTestSuite(BinaryObjectBuilderNonCompactDefaultIdMapperSelfTest.class);
-        suite.addTestSuite(BinaryObjectBuilderNonCompactSimpleNameIdMapperSelfTest.class);
+        suite.addTestSuite(BinaryObjectBuilderNonCompactDefaultMappersSelfTest.class);
+        suite.addTestSuite(BinaryObjectBuilderNonCompactSimpleNameLowerCaseMappersSelfTest.class);
         suite.addTestSuite(BinaryObjectBuilderAdditionalNonCompactSelfTest.class);
         suite.addTestSuite(BinaryFieldsHeapNonCompactSelfTest.class);
         suite.addTestSuite(BinaryFieldsOffheapNonCompactSelfTest.class);

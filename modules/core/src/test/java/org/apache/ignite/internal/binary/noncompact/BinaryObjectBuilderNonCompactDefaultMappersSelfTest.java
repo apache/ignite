@@ -17,13 +17,12 @@
 
 package org.apache.ignite.internal.binary.noncompact;
 
-import org.apache.ignite.internal.binary.BinaryObjectBuilderSimpleNameIdMapperSelfTest;
+import org.apache.ignite.internal.binary.BinaryObjectBuilderDefaultMappersSelfTest;
 
 /**
  * Binary builder test for objects with non-compact footer.
  */
-public class BinaryObjectBuilderNonCompactSimpleNameIdMapperSelfTest 
-    extends BinaryObjectBuilderSimpleNameIdMapperSelfTest {
+public class BinaryObjectBuilderNonCompactDefaultMappersSelfTest extends BinaryObjectBuilderDefaultMappersSelfTest {
     /** {@inheritDoc} */
     @Override protected boolean compactFooter() {
         return false;

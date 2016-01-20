@@ -17,10 +17,8 @@
 
 package org.apache.ignite.internal.binary;
 
-import java.util.ArrayList;
-import java.util.Collection;
 import org.apache.ignite.binary.BinaryLowerCaseIdMapper;
-import org.apache.ignite.binary.BinaryTypeConfiguration;
+import org.apache.ignite.binary.BinarySimpleNameMapper;
 import org.apache.ignite.configuration.BinaryConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 
@@ -28,7 +26,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
  * Binary builder test.
  */
 @SuppressWarnings("ResultOfMethodCallIgnored")
-public class BinaryObjectBuilderSimpleNameIdMapperSelfTest extends BinaryObjectBuilderDefaultIdMapperSelfTest {
+public class BinaryObjectBuilderSimpleNameLowerCaseMappersSelfTest extends BinaryObjectBuilderDefaultMappersSelfTest {
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
@@ -36,13 +34,7 @@ public class BinaryObjectBuilderSimpleNameIdMapperSelfTest extends BinaryObjectB
         BinaryConfiguration bCfg = cfg.getBinaryConfiguration();
 
         bCfg.setIdMapper(new BinaryLowerCaseIdMapper());
-
-        // TODO this line must be deleted when IGNITE-2395 will be fixed.
-        Collection<BinaryTypeConfiguration> typeCfgs = new ArrayList<>(bCfg.getTypeConfigurations());
-
-        typeCfgs.add(new BinaryTypeConfiguration("Class"));
-
-        bCfg.setTypeConfigurations(typeCfgs);
+        bCfg.setNameMapper(new BinarySimpleNameMapper());
 
         return cfg;
     }

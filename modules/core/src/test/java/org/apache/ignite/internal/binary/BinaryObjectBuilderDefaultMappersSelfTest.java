@@ -30,8 +30,11 @@ import junit.framework.TestCase;
 import org.apache.ignite.IgniteBinary;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.binary.BinaryIdMapper;
+import org.apache.ignite.binary.BinaryNameMapper;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.binary.BinaryObjectBuilder;
+import org.apache.ignite.binary.BinaryOriginalNameMapper;
+import org.apache.ignite.binary.BinaryStraightIdMapper;
 import org.apache.ignite.binary.BinaryType;
 import org.apache.ignite.binary.BinaryTypeConfiguration;
 import org.apache.ignite.configuration.BinaryConfiguration;
@@ -49,7 +52,7 @@ import sun.misc.Unsafe;
  * Binary builder test.
  */
 @SuppressWarnings("ResultOfMethodCallIgnored")
-public class BinaryObjectBuilderDefaultIdMapperSelfTest extends GridCommonAbstractTest {
+public class BinaryObjectBuilderDefaultMappersSelfTest extends GridCommonAbstractTest {
     /** */
     private static final Unsafe UNSAFE = GridUnsafe.unsafe();
 
@@ -84,7 +87,14 @@ public class BinaryObjectBuilderDefaultIdMapperSelfTest extends GridCommonAbstra
             new BinaryTypeConfiguration(Key.class.getName()),
             new BinaryTypeConfiguration(Value.class.getName()),
             new BinaryTypeConfiguration("org.gridgain.grid.internal.util.binary.mutabletest.*"),
+            // TODO the following 3 lines must be deleted when IGNITE-2395 will be fixed.
+            new BinaryTypeConfiguration("Class"),
+            new BinaryTypeConfiguration("org.test.MetaTest"),
+            new BinaryTypeConfiguration("org.test.MetaTest2"),
             customTypeCfg));
+
+        bCfg.setIdMapper(new BinaryStraightIdMapper());
+        bCfg.setNameMapper(new BinaryOriginalNameMapper());
 
         cfg.setBinaryConfiguration(bCfg);
 
@@ -287,11 +297,15 @@ public class BinaryObjectBuilderDefaultIdMapperSelfTest extends GridCommonAbstra
      */
     private int expectedHashCode(String fullName) {
         BinaryIdMapper idMapper = cfg.getBinaryConfiguration().getIdMapper();
+        BinaryNameMapper nameMapper = cfg.getBinaryConfiguration().getNameMapper();
 
         if (idMapper == null)
             idMapper = BinaryContext.defaultIdMapper();
 
-        return idMapper.typeId(fullName);
+        if (nameMapper == null)
+            nameMapper = BinaryContext.defaultNameMapper();
+
+        return idMapper.typeId(nameMapper.typeName(fullName));
     }
 
     /**
@@ -825,67 +839,27 @@ public class BinaryObjectBuilderDefaultIdMapperSelfTest extends GridCommonAbstra
 
         BinaryType meta = bo.type();
 
-        assertEquals("org.test.MetaTest2", meta.typeName());
+        assertEquals(expectedTypeName("org.test.MetaTest2"), meta.typeName());
         assertEquals("Object", meta.fieldTypeName("objectField"));
     }
 
     /**
-     * @throws Exception If failed.
+     * @param fullClsName Class name.
+     * @return Expected type name according to configuration.
      */
-    public void testMetaDataSimpleNameMapper() throws Exception {
-        BinaryObjectBuilder builder = builder("org.test.MetaTest");
+    private String expectedTypeName(String fullClsName) {
+        BinaryNameMapper mapper = cfg.getBinaryConfiguration().getNameMapper();
 
-        builder.hashCode(100);
+        if (mapper == null)
+            mapper = BinaryContext.defaultNameMapper();
 
-        builder.setField("intField", 1);
-        builder.setField("byteArrayField", new byte[] {1, 2, 3});
-
-        BinaryObject po = builder.build();
-
-        BinaryType meta = po.type();
-
-        assertEquals("org.test.MetaTest", meta.typeName());
-
-        Collection<String> fields = meta.fieldNames();
-
-        assertEquals(2, fields.size());
-
-        assertTrue(fields.contains("intField"));
-        assertTrue(fields.contains("byteArrayField"));
-
-        assertEquals("int", meta.fieldTypeName("intField"));
-        assertEquals("byte[]", meta.fieldTypeName("byteArrayField"));
-
-        builder = builder("org.test.MetaTest");
-
-        builder.hashCode(100);
-
-        builder.setField("intField", 2);
-        builder.setField("uuidField", UUID.randomUUID());
-
-        po = builder.build();
-
-        meta = po.type();
-
-        assertEquals("org.test.MetaTest", meta.typeName());
-
-        fields = meta.fieldNames();
-
-        assertEquals(3, fields.size());
-
-        assertTrue(fields.contains("intField"));
-        assertTrue(fields.contains("byteArrayField"));
-        assertTrue(fields.contains("uuidField"));
-
-        assertEquals("int", meta.fieldTypeName("intField"));
-        assertEquals("byte[]", meta.fieldTypeName("byteArrayField"));
-        assertEquals("UUID", meta.fieldTypeName("uuidField"));
+        return mapper.typeName(fullClsName);
     }
 
     /**
      * @throws Exception If failed.
      */
-    public void testMetaDataFullNameMapper() throws Exception {
+    public void testMetaData() throws Exception {
         BinaryObjectBuilder builder = builder("org.test.MetaTest");
 
         builder.hashCode(100);
@@ -897,7 +871,7 @@ public class BinaryObjectBuilderDefaultIdMapperSelfTest extends GridCommonAbstra
 
         BinaryType meta = po.type();
 
-        assertEquals("org.test.MetaTest", meta.typeName());
+        assertEquals(expectedTypeName("org.test.MetaTest"), meta.typeName());
 
         Collection<String> fields = meta.fieldNames();
 
@@ -920,7 +894,7 @@ public class BinaryObjectBuilderDefaultIdMapperSelfTest extends GridCommonAbstra
 
         meta = po.type();
 
-        assertEquals("org.test.MetaTest", meta.typeName());
+        assertEquals(expectedTypeName("org.test.MetaTest"), meta.typeName());
 
         fields = meta.fieldNames();
 
