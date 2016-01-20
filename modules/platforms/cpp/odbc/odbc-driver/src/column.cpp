@@ -373,9 +373,9 @@ namespace ignite
                     std::string str;
                     utility::ReadString(reader, str);
 
-                    dataBuf.PutString(str.substr(offset));
+                    int32_t written = dataBuf.PutString(str.substr(offset));
 
-                    IncreaseOffset(static_cast<int32_t>(dataBuf.GetSize() - 1));
+                    IncreaseOffset(written);
 
                     break;
                 }
@@ -395,7 +395,7 @@ namespace ignite
                 {
                     dataBuf.PutNull();
 
-                    IncreaseOffset(static_cast<int32_t>(dataBuf.GetSize()));
+                    IncreaseOffset(size);
 
                     break;
                 }
@@ -411,9 +411,9 @@ namespace ignite
 
                     stream->ReadInt8Array(&data[0], static_cast<int32_t>(data.size()));
 
-                    dataBuf.PutBinaryData(data.data() + offset, static_cast<size_t>(len - offset));
+                    int32_t written = dataBuf.PutBinaryData(data.data() + offset, static_cast<size_t>(len - offset));
 
-                    IncreaseOffset(static_cast<int32_t>(dataBuf.GetSize()));
+                    IncreaseOffset(written);
 
                     break;
                 }

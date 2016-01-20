@@ -318,9 +318,12 @@ namespace ignite
                 PutNum(value);
             }
 
-            void ApplicationDataBuffer::PutString(const std::string & value)
+            int32_t ApplicationDataBuffer::PutString(const std::string & value)
             {
                 using namespace type_traits;
+
+                int32_t used = 0;
+
                 switch (type)
                 {
                     case IGNITE_ODBC_C_TYPE_SIGNED_TINYINT:
@@ -342,6 +345,8 @@ namespace ignite
 
                         PutNum(numValue);
 
+                        used = static_cast<int32_t>(value.size());
+
                         break;
                     }
 
@@ -356,6 +361,8 @@ namespace ignite
 
                         PutNum(numValue);
 
+                        used = static_cast<int32_t>(value.size());
+
                         break;
                     }
 
@@ -365,12 +372,16 @@ namespace ignite
                     {
                         PutStrToStrBuffer<char>(value);
 
+                        used = static_cast<int32_t>(GetSize()) - 1;
+
                         break;
                     }
 
                     case IGNITE_ODBC_C_TYPE_WCHAR:
                     {
                         PutStrToStrBuffer<wchar_t>(value);
+
+                        used = (static_cast<int32_t>(GetSize()) / 2) - 1;
 
                         break;
                     }
@@ -381,11 +392,14 @@ namespace ignite
                             *GetResLen() = SQL_NO_TOTAL;
                     }
                 }
+
+                return used < 0 ? 0 : used;
             }
 
             void ApplicationDataBuffer::PutGuid(const Guid & value)
             {
                 using namespace type_traits;
+
                 switch (type)
                 {
                     case IGNITE_ODBC_C_TYPE_CHAR:
@@ -425,15 +439,21 @@ namespace ignite
                 }
             }
 
-            void ApplicationDataBuffer::PutBinaryData(void *data, size_t len)
+            int32_t ApplicationDataBuffer::PutBinaryData(void *data, size_t len)
             {
                 using namespace type_traits;
+
+                int32_t used = 0;
+
                 switch (type)
                 {
                     case IGNITE_ODBC_C_TYPE_BINARY:
                     case IGNITE_ODBC_C_TYPE_DEFAULT:
                     {
                         PutRawDataToBuffer(data, len);
+
+                        used = static_cast<int32_t>(GetSize());
+
                         break;
                     }
 
@@ -452,6 +472,8 @@ namespace ignite
                         }
 
                         PutStrToStrBuffer<char>(converter.str());
+
+                        used = static_cast<int32_t>(GetSize()) - 1;
 
                         break;
                     }
@@ -472,6 +494,8 @@ namespace ignite
 
                         PutStrToStrBuffer<wchar_t>(converter.str());
 
+                        used = static_cast<int32_t>(GetSize() / 2) - 1;
+
                         break;
                     }
 
@@ -481,6 +505,8 @@ namespace ignite
                             *GetResLen() = SQL_NO_TOTAL;
                     }
                 }
+
+                return used < 0 ? 0 : used;
             }
 
             void ApplicationDataBuffer::PutNull()

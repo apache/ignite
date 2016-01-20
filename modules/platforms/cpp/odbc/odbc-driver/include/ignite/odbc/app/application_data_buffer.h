@@ -132,8 +132,9 @@ namespace ignite
                  * Put in buffer value of type string.
                  *
                  * @param value Value.
+                 * @return Number of bytes that have been put in buffer.
                  */
-                void PutString(const std::string& value);
+                int32_t PutString(const std::string& value);
 
                 /**
                  * Put in buffer value of type GUID.
@@ -147,8 +148,9 @@ namespace ignite
                  *
                  * @param data Data pointer.
                  * @param len Data length.
+                 * @return Number of bytes that have been put in buffer.
                  */
-                void PutBinaryData(void* data, size_t len);
+                int32_t PutBinaryData(void* data, size_t len);
 
                 /**
                  * Put NULL.
