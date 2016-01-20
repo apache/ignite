@@ -106,6 +106,9 @@ namespace ignite
                 case SQL_ATTR_ODBC_VERSION:
                     return IGNITE_SQL_ENV_ATTR_ODBC_VERSION;
 
+                case SQL_ATTR_OUTPUT_NTS:
+                    return IGNITE_SQL_ENV_ATTR_OUTPUT_NTS;
+
                 default:
                     break;
             }

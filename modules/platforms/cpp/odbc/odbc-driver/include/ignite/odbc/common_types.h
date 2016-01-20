@@ -186,8 +186,11 @@ namespace ignite
             /** ODBC attribute is unknown to the driver. */
             IGNITE_SQL_ENV_ATTR_UNKNOWN,
 
-            /** ODBC attribute. */
-            IGNITE_SQL_ENV_ATTR_ODBC_VERSION
+            /** ODBC version. */
+            IGNITE_SQL_ENV_ATTR_ODBC_VERSION,
+
+            /** Null-termination of strings. */
+            IGNITE_SQL_ENV_ATTR_OUTPUT_NTS
         };
 
         /**

@@ -24,7 +24,7 @@ namespace ignite
     namespace odbc
     {
         Environment::Environment() : 
-            odbcVersion(SQL_OV_ODBC3)
+            odbcVersion(SQL_OV_ODBC3), odbcNts(SQL_TRUE)
         {
             // No-op.
         }
@@ -105,7 +105,24 @@ namespace ignite
                         return SQL_RESULT_SUCCESS_WITH_INFO;
                     }
 
-                    break;
+                    return SQL_RESULT_SUCCESS;
+                }
+
+                case IGNITE_SQL_ENV_ATTR_OUTPUT_NTS:
+                {
+                    int32_t* nts = reinterpret_cast<int32_t*>(value);
+
+                    if (*nts != odbcNts)
+                    {
+                        AddStatusRecord(SQL_STATE_01S02_OPTION_VALUE_CHANGED,
+                            "Only null-termination of strings is supported.");
+
+                        *nts = odbcNts;
+
+                        return SQL_RESULT_SUCCESS_WITH_INFO;
+                    }
+
+                    return SQL_RESULT_SUCCESS;
                 }
 
                 case IGNITE_SQL_ENV_ATTR_UNKNOWN:
@@ -134,7 +151,14 @@ namespace ignite
                 {
                     buffer.PutInt32(odbcVersion);
 
-                    break;
+                    return SQL_RESULT_SUCCESS;
+                }
+
+                case IGNITE_SQL_ENV_ATTR_OUTPUT_NTS:
+                {
+                    buffer.PutInt32(odbcNts);
+
+                    return SQL_RESULT_SUCCESS;
                 }
 
                 case IGNITE_SQL_ENV_ATTR_UNKNOWN:

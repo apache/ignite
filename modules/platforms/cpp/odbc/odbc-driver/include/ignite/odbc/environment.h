@@ -127,6 +127,9 @@ namespace ignite
 
             /** ODBC version. */
             int32_t odbcVersion;
+
+            /** ODBC null-termintaion of string behaviour. */
+            int32_t odbcNts;
         };
     }
 }
