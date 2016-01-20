@@ -5438,7 +5438,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
          * @param expiryPlc Expiry policy.
          * @return Access expire policy.
          */
-        @Nullable private static CacheExpiryPolicy forPolicy(@Nullable final ExpiryPolicy expiryPlc) {
+        @Nullable protected static CacheExpiryPolicy forPolicy(@Nullable final ExpiryPolicy expiryPlc) {
             if (expiryPlc == null)
                 return null;
 

@@ -3206,17 +3206,28 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
             boolean useNewExplicitly = false;
 
             if (cctx.conflictNeedResolve()) {
+                IgniteCacheExpiryPolicy expiryPlc = GridCacheAdapter.CacheExpiryPolicy.forPolicy(cctx.expiry());
+
+                GridTuple3<Long, Long, Boolean> expiration = ttlAndExpireTime(expiryPlc,
+                    ttl,
+                    expireTime);
+
                 GridCacheVersionedEntryEx oldEntry = versionedEntry();
                 GridCacheVersionedEntryEx newEntry = new GridCachePlainVersionedEntry<>(
                     oldEntry.key(),
                     val,
-                    ttl,
-                    expireTime,
+                    expiration.get1(),
+                    expiration.get2(),
                     ver);
 
-                // Resolve conflict.
-                GridCacheVersionConflictContext conflictCtx = cctx.conflictResolve(oldEntry, newEntry, false);
-                useNewExplicitly = conflictCtx.isUseNew();
+                boolean verCheck = cctx.config().getAtomicWriteOrderMode() == CacheAtomicWriteOrderMode.CLOCK;
+
+                GridCacheVersionConflictContext<?, ?> conflictCtx = cctx.conflictResolve(oldEntry, newEntry, verCheck);
+
+                if (conflictCtx.isMerge())
+                    val = cctx.toCacheObject(conflictCtx.mergeValue());
+
+                useNewExplicitly = conflictCtx.isUseNew() || conflictCtx.isMerge();
             }
 
             if ((isNew() && !cctx.swap().containsKey(key, partition())) || (!preload && deletedUnlocked()) || useNewExplicitly) {
