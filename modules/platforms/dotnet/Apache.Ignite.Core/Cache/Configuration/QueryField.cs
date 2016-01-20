@@ -37,6 +37,14 @@ namespace Apache.Ignite.Core.Cache.Configuration
         /// <summary>
         /// Initializes a new instance of the <see cref="QueryField"/> class.
         /// </summary>
+        public QueryField()
+        {
+            // No-op.
+        }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="QueryField"/> class.
+        /// </summary>
         /// <param name="name">Name.</param>
         /// <param name="javaTypeName">Java type name.</param>
         public QueryField(string name, string javaTypeName)
@@ -59,7 +67,7 @@ namespace Apache.Ignite.Core.Cache.Configuration
             IgniteArgumentCheck.NotNull(type, "type");
 
             Name = name;
-            TypeName = JavaTypes.GetJavaTypeName(type) ?? BinaryUtils.GetTypeName(type);
+            Type = type;
         }
 
         /// <summary>
