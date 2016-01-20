@@ -144,27 +144,6 @@ BOOST_AUTO_TEST_CASE(TestRowMoveToNext)
     }
 }
 
-//BOOST_AUTO_TEST_CASE(TestRowSkip)
-//{
-//    ignite::impl::interop::InteropUnpooledMemory mem(4096);
-//
-//    const size_t rowNum = 8;
-//
-//    FillMemWithData(mem, rowNum);
-//
-//    Row row(mem);
-//
-//    for (size_t i = 0; i < rowNum - 1; ++i)
-//    {
-//        BOOST_REQUIRE(row.GetSize() == 4);
-//
-//        for (int32_t j = 0; j < row.GetSize(); ++j)
-//            BOOST_REQUIRE(row.SkipColumn());
-//
-//        BOOST_REQUIRE(row.MoveToNext());
-//    }
-//}
-
 BOOST_AUTO_TEST_CASE(TestRowRead)
 {
     ignite::impl::interop::InteropUnpooledMemory mem(4096);

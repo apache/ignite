@@ -375,7 +375,7 @@ namespace ignite
 
                     dataBuf.PutString(str.substr(offset));
 
-                    IncreaseOffset(static_cast<int32_t>(dataBuf.GetSize()));
+                    IncreaseOffset(static_cast<int32_t>(dataBuf.GetSize() - 1));
 
                     break;
                 }
