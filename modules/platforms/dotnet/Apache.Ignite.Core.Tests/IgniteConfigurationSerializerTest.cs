@@ -63,6 +63,8 @@ namespace Apache.Ignite.Core.Tests
                             </cacheConfiguration>
                             <includedEventTypes>
                                 <int>42</int>
+                                <int>TaskFailed</int>
+                                <int>JobFinished</int>
                             </includedEventTypes>
                         </igniteConfig>";
             var reader = XmlReader.Create(new StringReader(xml));

@@ -49,14 +49,6 @@ namespace Apache.Ignite.Core.Impl.Common
             EventIdToNameMap.ToDictionary(p => p.Value, p => p.Key, StringComparer.InvariantCultureIgnoreCase);
 
         /// <summary>
-        /// The event type map.
-        /// </summary>
-        private static readonly Dictionary<string, ICollection<int>> EventCollectionNameToIdMap =
-            typeof (EventType).GetProperties()
-                .Where(p => p.PropertyType == typeof (ICollection<int>))
-                .ToDictionary(p => p.Name, p => (ICollection<int>) p.GetValue(null, null));
-
-        /// <summary>
         /// Returns whether this converter can convert an object of the given type to the type of this converter, 
         /// using the specified context.
         /// </summary>
@@ -82,7 +74,7 @@ namespace Apache.Ignite.Core.Impl.Common
         /// </returns>
         public override bool CanConvertTo(ITypeDescriptorContext context, Type destinationType)
         {
-            return destinationType == typeof(ICollection<int>);
+            return destinationType == typeof(string);
         }
 
         /// <summary>
@@ -106,11 +98,6 @@ namespace Apache.Ignite.Core.Impl.Common
             if (int.TryParse(s, out intResult) || EventNameToIdMap.TryGetValue(s, out intResult))
                 return intResult;
 
-            ICollection<int> colResult;
-
-            if (EventCollectionNameToIdMap.TryGetValue(s, out colResult))
-                return colResult;
-
             throw new InvalidOperationException(string.Format("Cannot convert value to {0}: {1}",
                 typeof (EventType).Name, s));
         }
@@ -133,8 +120,15 @@ namespace Apache.Ignite.Core.Impl.Common
         public override object ConvertTo(ITypeDescriptorContext context, CultureInfo culture, object value,
             Type destinationType)
         {
-            // TODO: Implement. What is the value? ICollection<int> or int?
-            return null;
+            if (!(value is int))
+                return null;
+
+            string eventName;
+
+            if (EventIdToNameMap.TryGetValue((int)value, out eventName))
+                return eventName;
+
+            return value.ToString();
         }
     }
 }

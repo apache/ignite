@@ -57,7 +57,7 @@ namespace Apache.Ignite.Core.Impl.Common
         /// </returns>
         public override bool CanConvertTo(ITypeDescriptorContext context, Type destinationType)
         {
-            return destinationType == typeof(Type);
+            return destinationType == typeof(string);
         }
 
         /// <summary>
