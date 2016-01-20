@@ -38,7 +38,13 @@ namespace Apache.Ignite.Core.Cache.Configuration
         private Type _keyType;
 
         /** */
-        private Type _valType;
+        private Type _valueType;
+
+        /** */
+        private string _valueTypeName;
+
+        /** */
+        private string _keyTypeName;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="QueryEntity"/> class.
@@ -51,7 +57,15 @@ namespace Apache.Ignite.Core.Cache.Configuration
         /// <summary>
         /// Gets or sets key Java type name.
         /// </summary>
-        public string KeyTypeName { get; set; }
+        public string KeyTypeName
+        {
+            get { return _keyTypeName; }
+            set
+            {
+                _keyTypeName = value;
+                _keyType = null;
+            }
+        }
 
         /// <summary>
         /// Gets or sets the type of the key.
@@ -66,7 +80,7 @@ namespace Apache.Ignite.Core.Cache.Configuration
             get { return _keyType ?? JavaTypes.GetDotNetType(KeyTypeName); }
             set
             {
-                RescanAttributes(value, _valType);  // Do this first because it can throw
+                RescanAttributes(value, _valueType);  // Do this first because it can throw
 
                 _keyType = value;
 
@@ -79,7 +93,15 @@ namespace Apache.Ignite.Core.Cache.Configuration
         /// <summary>
         /// Gets or sets value Java type name.
         /// </summary>
-        public string ValueTypeName { get; set; }
+        public string ValueTypeName
+        {
+            get { return _valueTypeName; }
+            set
+            {
+                _valueTypeName = value;
+                _valueType = null;
+            }
+        }
 
         /// <summary>
         /// Gets or sets the type of the value.
@@ -91,18 +113,16 @@ namespace Apache.Ignite.Core.Cache.Configuration
         /// </summary>
         public Type ValueType
         {
-            get { return _valType ?? JavaTypes.GetDotNetType(KeyTypeName); }
+            get { return _valueType ?? JavaTypes.GetDotNetType(KeyTypeName); }
             set
             {
                 RescanAttributes(_keyType, value);  // Do this first because it can throw
 
-                _valType = value;
+                _valueType = value;
 
                 ValueTypeName = value == null
                     ? null
                     : (JavaTypes.GetJavaTypeName(value) ?? BinaryUtils.GetTypeName(value));
-
-                RescanAttributes();
             }
         }
 
