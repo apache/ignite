@@ -20,7 +20,7 @@ package org.apache.ignite.binary;
 /**
  *
  */
-public class BinaryNoopNameMapper implements BinaryNameMapper {
+public class BinaryOriginalNameMapper implements BinaryNameMapper {
     /** {@inheritDoc} */
     @Override public String typeName(String clsName) {
         return clsName;

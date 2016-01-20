@@ -21,7 +21,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Map;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.binary.BinaryFullNameIdMapper;
+import org.apache.ignite.binary.BinaryStraightIdMapper;
 import org.apache.ignite.binary.BinaryIdMapper;
 import org.apache.ignite.binary.BinarySerializer;
 import org.apache.ignite.binary.BinaryLowerCaseIdMapper;
@@ -53,7 +53,7 @@ public class GridBinaryWildcardsSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testClassNamesFullNameMapper() throws Exception {
-        checkClassNames(new BinaryFullNameIdMapper());
+        checkClassNames(new BinaryStraightIdMapper());
     }
 
     /**
@@ -131,7 +131,7 @@ public class GridBinaryWildcardsSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testTypeConfigurationsFullNameIdMapper() throws Exception {
-        checkTypeConfigurations(new BinaryFullNameIdMapper());
+        checkTypeConfigurations(new BinaryStraightIdMapper());
     }
 
     /**
@@ -250,7 +250,7 @@ public class GridBinaryWildcardsSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testOverrideFullNameMapper() throws Exception {
-        checkOverride(new BinaryFullNameIdMapper());
+        checkOverride(new BinaryStraightIdMapper());
     }
 
     /**
@@ -294,7 +294,7 @@ public class GridBinaryWildcardsSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testClassNamesJarFullNameMapper() throws Exception {
-        checkClassNamesJar(new BinaryFullNameIdMapper());
+        checkClassNamesJar(new BinaryStraightIdMapper());
     }
 
     /**
@@ -368,7 +368,7 @@ public class GridBinaryWildcardsSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testTypeConfigurationsJarFullNameMapper() throws Exception {
-        checkTypeConfigurationJar(new BinaryFullNameIdMapper());
+        checkTypeConfigurationJar(new BinaryStraightIdMapper());
     }
 
     /**
@@ -468,7 +468,7 @@ public class GridBinaryWildcardsSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testOverrideJarFullNameMapper() throws Exception {
-        checkOverrideJar(new BinaryFullNameIdMapper());
+        checkOverrideJar(new BinaryStraightIdMapper());
     }
 
     /**

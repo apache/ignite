@@ -23,7 +23,7 @@ package org.apache.ignite.binary;
  * Internal ID mapper. Mimics ID mapper interface, but provides default implementation and offers slightly better
  * performance on micro-level in default case because it doesn't need virtual calls.
  */
-public class BinaryFullNameIdMapper implements BinaryIdMapper {
+public class BinaryStraightIdMapper implements BinaryIdMapper {
     /** {@inheritDoc} */
     @Override public int typeId(String clsName) {
         int h = clsName.hashCode();

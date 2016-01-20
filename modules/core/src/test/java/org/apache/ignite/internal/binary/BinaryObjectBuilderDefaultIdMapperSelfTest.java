@@ -832,7 +832,60 @@ public class BinaryObjectBuilderDefaultIdMapperSelfTest extends GridCommonAbstra
     /**
      * @throws Exception If failed.
      */
-    public void testMetaData() throws Exception {
+    public void testMetaDataSimpleNameMapper() throws Exception {
+        BinaryObjectBuilder builder = builder("org.test.MetaTest");
+
+        builder.hashCode(100);
+
+        builder.setField("intField", 1);
+        builder.setField("byteArrayField", new byte[] {1, 2, 3});
+
+        BinaryObject po = builder.build();
+
+        BinaryType meta = po.type();
+
+        assertEquals("org.test.MetaTest", meta.typeName());
+
+        Collection<String> fields = meta.fieldNames();
+
+        assertEquals(2, fields.size());
+
+        assertTrue(fields.contains("intField"));
+        assertTrue(fields.contains("byteArrayField"));
+
+        assertEquals("int", meta.fieldTypeName("intField"));
+        assertEquals("byte[]", meta.fieldTypeName("byteArrayField"));
+
+        builder = builder("org.test.MetaTest");
+
+        builder.hashCode(100);
+
+        builder.setField("intField", 2);
+        builder.setField("uuidField", UUID.randomUUID());
+
+        po = builder.build();
+
+        meta = po.type();
+
+        assertEquals("org.test.MetaTest", meta.typeName());
+
+        fields = meta.fieldNames();
+
+        assertEquals(3, fields.size());
+
+        assertTrue(fields.contains("intField"));
+        assertTrue(fields.contains("byteArrayField"));
+        assertTrue(fields.contains("uuidField"));
+
+        assertEquals("int", meta.fieldTypeName("intField"));
+        assertEquals("byte[]", meta.fieldTypeName("byteArrayField"));
+        assertEquals("UUID", meta.fieldTypeName("uuidField"));
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testMetaDataFullNameMapper() throws Exception {
         BinaryObjectBuilder builder = builder("org.test.MetaTest");
 
         builder.hashCode(100);

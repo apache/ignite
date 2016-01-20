@@ -17,25 +17,24 @@
 
 package org.apache.ignite.internal.binary;
 
-import org.apache.ignite.binary.BinaryFullNameIdMapper;
-import org.apache.ignite.binary.BinaryIdMapper;
+import org.apache.ignite.binary.BinaryNameMapper;
+import org.apache.ignite.binary.BinaryOriginalNameMapper;
 import org.apache.ignite.internal.binary.test.GridBinaryTestClass1;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 /**
  *
  */
-public class BinaryFullNameIdMapperSelfTest extends GridCommonAbstractTest {
+public class BinaryOriginalNameMapperSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
     public void test() throws Exception {
-        BinaryIdMapper mapper = new BinaryFullNameIdMapper();
+        BinaryNameMapper mapper = new BinaryOriginalNameMapper();
 
-        assertEquals(GridBinaryTestClass1.class.getName().hashCode(),
-            mapper.typeId(GridBinaryTestClass1.class.getName()));
+        assertEquals(GridBinaryTestClass1.class.getName(), mapper.typeName(GridBinaryTestClass1.class.getName()));
 
-        assertEquals((GridBinaryTestClass1.class.getName() + "$InnerClass").hashCode(),
-            mapper.typeId(GridBinaryTestClass1.class.getName() + "$InnerClass"));
+        assertEquals(GridBinaryTestClass1.class.getName() + "$InnerClass", 
+            mapper.typeName(GridBinaryTestClass1.class.getName() + "$InnerClass"));
     }
 }
