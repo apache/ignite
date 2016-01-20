@@ -1468,13 +1468,11 @@ consoleModule.controller('sqlController', function ($http, $timeout, $interval, 
 
         $http.post('/api/v1/agent/cache/metadata', {demo: $scope.demo})
             .success(function (metadata) {
-                $scope.metadata = _.sortBy(metadata, _.filter(metadata, function (meta) {
-                    var cacheName = _mask(meta.cacheName);
-
-                    var cache = _.find($scope.caches, { name: cacheName });
+                $scope.metadata = _.sortBy(_.filter(metadata, function (meta) {
+                    var cache = _.find($scope.caches, { name: meta.cacheName });
 
                     if (cache) {
-                        meta.name = (cache.sqlSchema ? cache.sqlSchema : (_.isEmpty(cache.cacheName) ? '"' + cacheName + '"' : "")) + '.' + meta.typeName;
+                        meta.name = (cache.sqlSchema ? cache.sqlSchema : '"' + meta.cacheName + '"') + '.' + meta.typeName;
 
                         meta.displayMame = _mask(meta.cacheName) + '.' + meta.typeName;
 

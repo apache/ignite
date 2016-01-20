@@ -227,7 +227,7 @@ router.post('/cache/metadata', function (req, res) {
                     if (!_.isEmpty(indexes))
                         columns = columns.concat({type: 'indexes', name: 'Indexes', cacheName: meta.cacheName, typeName: typeName, children: indexes });
 
-                    return {type: 'type', cacheName: meta.cacheName,  typeName: typeName, children: columns };
+                    return {type: 'type', cacheName: meta.cacheName || "",  typeName: typeName, children: columns };
                 });
 
                 if (!_.isEmpty(cacheTypes))
