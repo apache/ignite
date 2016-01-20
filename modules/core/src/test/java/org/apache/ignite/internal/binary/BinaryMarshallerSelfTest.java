@@ -2696,8 +2696,8 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
         BinaryObjectImpl objBin = marshal(obj, marsh);
 
         String fieldName = "x";
-        String fieldNameA = "DuplicateFieldsA." + fieldName;
-        String fieldNameB = "DuplicateFieldsB." + fieldName;
+        String fieldNameA = DuplicateFieldsA.class.getName() + "." + fieldName;
+        String fieldNameB = DuplicateFieldsB.class.getName() + "." + fieldName;
 
         // Check "hasField".
         assert !objBin.hasField(fieldName);

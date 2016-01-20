@@ -603,9 +603,7 @@ public class BinaryContext {
 
         final String typeName = mappers.get1().typeName(clsName);
 
-         userMappers(clsName);
-
-        int typeId = mappers.get2().typeId(typeName);
+        final int typeId = mappers.get2().typeId(typeName);
 
         try {
             registered = marshCtx.registerClass(typeId, cls);
@@ -1195,6 +1193,7 @@ public class BinaryContext {
     /**
      * Wrapping ID mapper.
      */
+    // TODO review it.
     private static class LowerCaseIdMapperWrapper extends BinaryLowerCaseIdMapper {
         /** Delegate. */
         private final BinaryIdMapper mapper;

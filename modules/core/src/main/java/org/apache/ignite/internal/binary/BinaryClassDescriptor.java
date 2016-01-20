@@ -280,7 +280,7 @@ public class BinaryClassDescriptor {
 
                             assert added : name;
 
-                            int fieldId = idMapper.fieldId(typeId, nameMapper.typeName(name));
+                            int fieldId = idMapper.fieldId(typeId, nameMapper.fieldName(name));
 
                             if (!ids.add(fieldId))
                                 throw new BinaryObjectException("Duplicate field ID: " + name);
