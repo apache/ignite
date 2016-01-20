@@ -1285,7 +1285,7 @@ SQLRETURN SQL_API SQLGetData(SQLHSTMT       stmt,
 
     ApplicationDataBuffer dataBuffer(driverType, targetValue, bufferLength, strLengthOrIndicator);
 
-    //statement->GetColumnData(colNum, dataBuffer);
+    statement->GetColumnData(colNum, dataBuffer);
 
     return statement->GetDiagnosticRecords().GetReturnCode();
 }
