@@ -31,6 +31,12 @@ mixin td-ellipses-lbl(w, lbl)
                 h4.modal-title(ng-if='!importDomain.demo') Import domain models from database
                 h4.modal-title(ng-if='importDomain.demo') Import domain models from demo database
             .import-domain-model-wizard-page(ng-show='importDomain.action == "drivers"' style="margin-bottom: 256px;")
+                div(ng-if='!importDomain.jdbcDriversFound')
+                    label Domain model could not be imported
+                        ul
+                            li Agent not found JDBC drivers
+                            li Copy required JDBC drivers into agent '\jdbc-drivers' folder and try again
+                            li Refer to agent README.txt for more information
             .import-domain-model-wizard-page(ng-show='importDomain.action == "connect" && importDomain.demo' style='margin-bottom: 211px')
                 div(ng-if='demoConnection.db == "H2"')
                     label Demo description:
@@ -110,7 +116,7 @@ mixin td-ellipses-lbl(w, lbl)
                 table.table.metadata(st-table='importDomain.displayedTables' st-safe-src='importDomain.tables')
                     thead
                         tr
-                            th.header(colspan='5')
+                            th.header(colspan='6')
                                 .col-sm-4.pull-right(style='margin-bottom: 5px')
                                     input.form-control(type='text' st-search='label' placeholder='Filter tables...' ng-model='importDomain.displayedTablesFilter' ng-change='selectTable()')
                         tr
@@ -120,27 +126,31 @@ mixin td-ellipses-lbl(w, lbl)
                                 label Schema
                             th(width='160px')
                                 label Table name
-                            th(width='160px' ng-show='ui.generateCaches')
-                                label Cache
-                            th(width='128px' ng-show='ui.generateCaches')
-                                label Template
+                            th(width='160px')
+                                label(ng-show='ui.generateCaches') Cache
+                            th(width='128px')
+                                label(ng-show='ui.generateCaches') Template
+                            th
                     tbody
                         tr
-                            td(colspan='5')
+                            td(colspan='6')
                                 .scrollable-y(style='height: 143px')
                                     table.table-modal-striped(id='importTableData')
                                         tbody
                                             tr(ng-repeat='table in importDomain.displayedTables track by $index')
-                                                td(width='30px')
+                                                td(width='30px' style='min-width: 30px; max-width: 30px')
                                                     input(type='checkbox' ng-model='table.use' ng-change='selectTable()')
                                                 +td-ellipses-lbl('130px', '{{::table.schema}}')
                                                 +td-ellipses-lbl('160px', '{{::table.tbl}}')
-                                                td.td-ellipsis(width='160px' ng-show='ui.generateCaches')
-                                                    button.select-toggle.form-control(ng-if='table.editCache' bs-select ng-model='table.cache' data-container='false' bs-options='item.value as item.label for item in importCaches')
-                                                    a(ng-if='!table.editCache' ng-click='startEditDbTableCache(table)') {{dbTableCache(table)}}
-                                                td.td-ellipsis(width='128px' ng-show='ui.generateCaches')
-                                                    button.select-toggle.form-control(ng-if='table.editTemplate' bs-select ng-model='table.template' style='max-width: 110px' data-container='false' bs-options='item.value as item.label for item in importCacheTemplates')
-                                                    a(ng-if='!table.editTemplate' ng-click='startEditDbTableTemplate(table)') {{dbTableTemplate(table)}}
+                                                td(width='160px' style='min-width: 160px; max-width: 160px')
+                                                    div.td-ellipsis(ng-show='ui.generateCaches')
+                                                        a(ng-if='!table.editCache' ng-click='startEditDbTableCache(table)') {{dbTableCache(table)}}
+                                                        button.select-toggle.form-control(ng-if='table.editCache' bs-select ng-model='table.cache' data-container='false' bs-options='item.value as item.label for item in importCaches')
+                                                td(width='128px' style='min-width: 128px; max-width: 128px')
+                                                    div.td-ellipsis(ng-show='ui.generateCaches')
+                                                        a(ng-if='!table.editTemplate' ng-click='startEditDbTableTemplate(table)') {{dbTableTemplate(table)}}
+                                                        button.select-toggle.form-control(ng-if='table.editTemplate' bs-select ng-model='table.template' style='max-width: 110px' data-container='false' bs-options='item.value as item.label for item in importCacheTemplates')
+                                                td
                 .settings-row
                     .checkbox
                         label
@@ -187,6 +197,6 @@ mixin td-ellipses-lbl(w, lbl)
                             .input-tip
                                 button.select-toggle.form-control(id='generatedCachesClusters' bs-select ng-model='ui.generatedCachesClusters' ng-disabled='!ui.generateCaches' ng-class='{placeholder: !(ui.generatedCachesClusters && ui.generatedCachesClusters.length > 0)}' data-container='false' data-multiple='1' placeholder='Choose clusters for generated caches' bs-options='item.value as item.label for item in clusters')
             .modal-footer
-                label(ng-hide='importDomain.action == "connect" && importDomain.demo').labelField {{importDomain.info}}
-                a.btn.btn-primary(ng-show='importDomain.action != "connect"' ng-click='importDomainPrev()' bs-tooltip='' data-title='{{prevTooltipText()}}' data-placement='bottom') Prev
+                label(ng-hide='importDomain.action == "drivers" || (importDomain.action == "connect" && importDomain.demo)').labelField {{importDomain.info}}
+                a.btn.btn-primary(ng-hide='importDomain.action == "drivers" || importDomain.action == "connect"' ng-click='importDomainPrev()' bs-tooltip='' data-title='{{prevTooltipText()}}' data-placement='bottom') Prev
                 a.btn.btn-primary(ng-click='importDomainNext()' ng-disabled='!importDomainNextAvailable()' bs-tooltip='' data-title='{{nextTooltipText()}}' data-placement='bottom') {{importDomain.button}}

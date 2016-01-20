@@ -159,12 +159,12 @@ public class RestExecutor {
                 charset = Charsets.toCharset(encoding);
             }
 
-            return new RestResult(resp.getStatusLine().getStatusCode(), new String(out.toByteArray(), charset));
+            return RestResult.success(resp.getStatusLine().getStatusCode(), new String(out.toByteArray(), charset));
         }
         catch (ConnectException e) {
             log.info("Failed connect to node and execute REST command [uri=" + builder.build() + "]");
 
-            return new RestResult(404, "Failed connect to node and execute REST command.");
+            return RestResult.fail(404, "Failed connect to node and execute REST command.");
         }
     }
 
@@ -172,19 +172,44 @@ public class RestExecutor {
      * Request result.
      */
     public static class RestResult {
-        /** Status code. */
-        private int code;
+        /** REST http code. */
+        private int restCode;
 
-        /** Message. */
-        private String message;
+        /** The field contains description of error if server could not handle the request. */
+        private String error;
+
+        /** The field contains result of command. */
+        private String response;
 
         /**
-         * @param code Code.
-         * @param msg Message.
+         * @param restCode REST http code.
+         * @param error The field contains description of error if server could not handle the request.
+         * @param response The field contains result of command.
          */
-        public RestResult(int code, String msg) {
-            this.code = code;
-            message = msg;
+        private RestResult(int restCode, String error, String response) {
+            this.restCode = restCode;
+            this.error = error;
+            this.response = response;
+        }
+
+        /**
+         * @param restCode REST http code.
+         * @param error The field contains description of error if server could not handle the request.
+
+         * @return Request result.
+         */
+        public static RestResult fail(int restCode, String error) {
+            return new RestResult(restCode, error, null);
+        }
+
+        /**
+         * @param restCode REST http code.
+         * @param response The field contains result of command.
+
+         * @return Request result.
+         */
+        public static RestResult success(int restCode, String response) {
+            return new RestResult(restCode, null, response);
         }
     }
 }

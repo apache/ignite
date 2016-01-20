@@ -1884,6 +1884,20 @@ treecontrol.tree-classic {
     }
 }
 
+.ribbon-wrapper {
+    width: 150px;
+    height: 150px;
+    position: absolute;
+    overflow: hidden;
+    top: 0;
+    z-index: 1001;
+    pointer-events: none;
+}
+
+.ribbon-wrapper.right {
+    right: 0;
+}
+
 .ribbon {
     position: absolute;
     top: 42px;

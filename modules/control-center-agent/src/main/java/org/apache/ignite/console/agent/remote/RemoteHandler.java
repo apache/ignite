@@ -68,11 +68,10 @@ public class RemoteHandler implements AutoCloseable {
 
         for (Object hnd : hnds) {
             for (Method method : hnd.getClass().getMethods()) {
-                Remote remoteAnn = method.getAnnotation(Remote.class);
+                Remote ann = method.getAnnotation(Remote.class);
 
-                if (remoteAnn != null) {
-                    MethodDescriptor old = mtds.put(method.getName(), new MethodDescriptor(method, hnd,
-                        remoteAnn.async()));
+                if (ann != null) {
+                    MethodDescriptor old = mtds.put(method.getName(), new MethodDescriptor(method, hnd, ann.async()));
 
                     if (old != null)
                         throw new IllegalArgumentException("Duplicated method: " + method.getName());
@@ -97,12 +96,12 @@ public class RemoteHandler implements AutoCloseable {
 
         final Long reqId = reqIdJson == null ? null : reqIdJson.getAsLong();
 
-        String mtdName = req.getAsJsonPrimitive("mtdName").getAsString();
+        String method = req.getAsJsonPrimitive("method").getAsString();
 
-        final MethodDescriptor desc = mtds.get(mtdName);
+        final MethodDescriptor desc = mtds.get(method);
 
         if (desc == null) {
-            sendException(reqId, INTERNAL_EXCEPTION_TYPE, "Unknown method: " + mtdName);
+            sendException(reqId, INTERNAL_EXCEPTION_TYPE, "Unknown method: " + method);
 
             return;
         }
@@ -117,7 +116,7 @@ public class RemoteHandler implements AutoCloseable {
             args = new Object[paramTypes.length];
 
             if (argsJson == null || argsJson.size() != paramTypes.length) {
-                sendException(reqId, INTERNAL_EXCEPTION_TYPE, "Inconsistent parameters");
+                sendException(reqId, INTERNAL_EXCEPTION_TYPE, "Inconsistent parameters count");
 
                 return;
             }
@@ -125,15 +124,8 @@ public class RemoteHandler implements AutoCloseable {
             for (int i = 0; i < paramTypes.length; i++)
                 args[i] = GSON.fromJson(argsJson.get(i), paramTypes[i]);
         }
-        else {
+        else
             args = EMPTY_OBJECTS;
-
-            if (argsJson != null && argsJson.size() > 0) {
-                sendException(reqId, INTERNAL_EXCEPTION_TYPE, "Inconsistent parameters");
-
-                return;
-            }
-        }
 
         Runnable run = new Runnable() {
             @Override public void run() {
@@ -183,12 +175,7 @@ public class RemoteHandler implements AutoCloseable {
 
         res.addProperty("type", "CallRes");
         res.addProperty("reqId", reqId);
-
-        JsonObject exJson = new JsonObject();
-        exJson.addProperty("type", exType);
-        exJson.addProperty("message", exMsg);
-
-        res.add("ex", exJson);
+        res.addProperty("error", exType + ": " + exMsg);
 
         snd.send(res);
     }
@@ -205,12 +192,11 @@ public class RemoteHandler implements AutoCloseable {
         JsonObject resp = new JsonObject();
 
         resp.addProperty("type", "CallRes");
-
         resp.addProperty("reqId", reqId);
 
         JsonElement resJson = type == void.class ? JsonNull.INSTANCE : GSON.toJsonTree(res, type);
 
-        resp.add("res", resJson);
+        resp.add("response", resJson);
 
         snd.send(resp);
     }

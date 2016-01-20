@@ -2069,12 +2069,15 @@ consoleModule.service('$agentDownload', [
         function _handleException (errMsg, status, timedOut) {
             if (_modal.skipSingleError)
                 _modal.skipSingleError = false;
-            else if (!_modal.$isShown)
+            else if (!_modal.$isShown) {
+                $loading.finish('loading');
+
                 _modal.$promise.then(_modal.show);
+            }
 
-            scope.nodeFailedConnection = status === 404 || timedOut;
+            scope.nodeFailedConnection = status !== 500 || timedOut;
 
-            if (status === 500)
+            if (status !== 404)
                 $common.showError(errMsg, 'top-right', 'body', true);
         }
 

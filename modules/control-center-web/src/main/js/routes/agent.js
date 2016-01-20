@@ -23,20 +23,28 @@ var apacheIgnite = require('apache-ignite');
 var SqlFieldsQuery = apacheIgnite.SqlFieldsQuery;
 var ScanQuery = apacheIgnite.ScanQuery;
 
-function _client(req, res) {
-    var client = agentManager.getAgentManager().findClient(req.currentUserId());
+function _client(userId) {
+    return new Promise(function(resolve, reject) {
+        var client = agentManager.getAgentManager().findClient(userId);
 
-    if (!client) {
-        res.status(503).send('Connection to Ignite Web Agent is not established');
+        if (client)
+            return resolve(client);
 
-        return null;
-    }
-
-    return client;
+        reject({code: 503, message: 'Connection to Ignite Web Agent is not established'});
+    });
 }
 
 function _compact(className) {
     return className.replace('java.lang.', '').replace('java.util.', '').replace('java.sql.', '');
+}
+
+function _handleException(res) {
+    return function (error) {
+        if (_.isObject(error))
+            return res.status(error.code).send(error.message);
+
+        return res.status(500).send(error);
+    }
 }
 
 /* Get grid topology. */
@@ -78,124 +86,95 @@ router.get('/download/zip', function (req, res) {
 
 /* Get grid topology. */
 router.post('/topology', function (req, res) {
-    var client = _client(req, res);
-
-    if (client) {
-        client.ignite(req.body.demo).cluster(req.body.attr, req.body.mtr).then(
-            function (clusters) {
-                res.json(clusters);
-            },
-            function (err) {
-            var mStatusCode = /.*Status code:\s+(\d+)(?:\s|$)/g.exec(err);
-
-            res.status(mStatusCode != null && mStatusCode[1] ? mStatusCode[1] : 500).send(err);
-        });
-    }
+    _client(req.currentUserId())
+        .then((client) => client.ignite(req.body.demo).cluster(req.body.attr, req.body.mtr))
+        .then((clusters) => res.json(clusters))
+        .catch(_handleException(res));
 });
 
 /* Execute query. */
 router.post('/query', function (req, res) {
-    var client = _client(req, res);
+    _client(req.currentUserId())
+        .then((client) => {
+            // Create sql query.
+            var qry = new SqlFieldsQuery(req.body.query);
 
-    if (client) {
-        // Create sql query.
-        var qry = new SqlFieldsQuery(req.body.query);
+            // Set page size for query.
+            qry.setPageSize(req.body.pageSize);
 
-        // Set page size for query.
-        qry.setPageSize(req.body.pageSize);
-
-        // Get query cursor.
-        client.ignite(req.body.demo).cache(req.body.cacheName).query(qry).nextPage().then(function (cursor) {
-            res.json({meta: cursor.fieldsMetadata(), rows: cursor.page(), queryId: cursor.queryId()});
-        }, function (err) {
-            res.status(500).send(err);
-        });
-    }
+            return client.ignite(req.body.demo).cache(req.body.cacheName).query(qry).nextPage()
+        })
+        .then((cursor) => res.json({meta: cursor.fieldsMetadata(), rows: cursor.page(), queryId: cursor.queryId()}))
+        .catch(_handleException(res));
 });
 
 /* Execute query getAll. */
 router.post('/query/getAll', function (req, res) {
-    var client = _client(req, res);
+    _client(req.currentUserId())
+        .then((client) => {
+            // Create sql query.
+            var qry = new SqlFieldsQuery(req.body.query);
 
-    if (client) {
-        // Create sql query.
-        var qry = new SqlFieldsQuery(req.body.query);
+            // Set page size for query.
+            qry.setPageSize(1024);
 
-        // Set page size for query.
-        qry.setPageSize(1024);
-
-        // Get query cursor.
-        var cursor = client.ignite(req.body.demo).cache(req.body.cacheName).query(qry);
-
-        cursor.getAll().then(function (rows) {
-            res.json({meta: cursor.fieldsMetadata(), rows: rows});
-        }, function (err) {
-            res.status(500).send(err);
-        });
-    }
+            // Get query cursor.
+            return client.ignite(req.body.demo).cache(req.body.cacheName).query(qry).getAll();
+        })
+        .then((rows) => res.json({meta: cursor.fieldsMetadata(), rows: rows}))
+        .catch(_handleException(res));
 });
 
 /* Execute query. */
 router.post('/scan', function (req, res) {
-    var client = _client(req, res);
+    _client(req.currentUserId())
+        .then((client) => {
+            // Create sql query.
+            var qry = new ScanQuery();
 
-    if (client) {
-        // Create sql query.
-        var qry = new ScanQuery();
+            // Set page size for query.
+            qry.setPageSize(req.body.pageSize);
 
-        // Set page size for query.
-        qry.setPageSize(req.body.pageSize);
-
-        // Get query cursor.
-        client.ignite(req.body.demo).cache(req.body.cacheName).query(qry).nextPage().then(function (cursor) {
-            res.json({meta: cursor.fieldsMetadata(), rows: cursor.page(), queryId: cursor.queryId()});
-        }, function (err) {
-            res.status(500).send(err);
-        });
-    }
+            // Get query cursor.
+            return client.ignite(req.body.demo).cache(req.body.cacheName).query(qry).nextPage()
+        })
+        .then((cursor) => res.json({meta: cursor.fieldsMetadata(), rows: cursor.page(), queryId: cursor.queryId()}))
+        .catch(_handleException(res));
 });
 
 /* Get next query page. */
 router.post('/query/fetch', function (req, res) {
-    var client = _client(req, res);
+    _client(req.currentUserId())
+        .then((client) => {
+            var cache = client.ignite(req.body.demo).cache(req.body.cacheName);
 
-    if (client) {
-        var cache = client.ignite(req.body.demo).cache(req.body.cacheName);
+            var cmd = cache._createCommand('qryfetch')
+                .addParam('qryId', req.body.queryId)
+                .addParam('pageSize', req.body.pageSize);
 
-        var cmd = cache._createCommand('qryfetch').addParam('qryId', req.body.queryId).
-            addParam('pageSize', req.body.pageSize);
-
-        cache.__createPromise(cmd).then(function (page) {
-            res.json({rows: page['items'], last: page === null || page['last']});
-        }, function (err) {
-            res.status(500).send(err);
-        });
-    }
+            return cache.__createPromise(cmd);
+        })
+        .then((page) => res.json({rows: page['items'], last: page === null || page['last']}))
+        .catch(_handleException(res));
 });
 
 /* Close query cursor by id. */
 router.post('/query/close', function (req, res) {
-    var client = _client(req, res);
+    _client(req.currentUserId())
+        .then((client) => {
+            var cache = client.ignite(req.body.demo).cache(req.body.cacheName);
 
-    if (client) {
-        var cache = client.ignite(req.body.demo).cache(req.body.cacheName);
-
-        var cmd = cache._createCommand('qrycls').addParam('qryId', req.body.queryId);
-
-        cache.__createPromise(cmd).then(function () {
-            res.sendStatus(200);
-        }, function (err) {
-            res.status(500).send(err);
-        });
-    }
+            return cache.__createPromise(cache._createCommand('qrycls').addParam('qryId', req.body.queryId))
+        })
+        .then(() => res.sendStatus(200))
+        .catch(_handleException(res));
 });
 
 /* Get metadata for cache. */
 router.post('/cache/metadata', function (req, res) {
-    var client = _client(req, res);
-
-    if (client) {
-        client.ignite(req.body.demo).cache(req.body.cacheName).metadata().then(function (caches) {
+    _client(req.currentUserId())
+        .then((client) => client.ignite(req.body.demo).cache(req.body.cacheName).metadata())
+        .then((caches) => {
             var types = [];
 
             for (var meta of caches) {
@@ -248,7 +227,7 @@ router.post('/cache/metadata', function (req, res) {
                     if (!_.isEmpty(indexes))
                         columns = columns.concat({type: 'indexes', name: 'Indexes', cacheName: meta.cacheName, typeName: typeName, children: indexes });
 
-                    return {type: 'type', cacheName: meta.cacheName,  typeName: typeName, children: columns };
+                    return {type: 'type', cacheName: meta.cacheName || "",  typeName: typeName, children: columns };
                 });
 
                 if (!_.isEmpty(cacheTypes))
@@ -256,64 +235,51 @@ router.post('/cache/metadata', function (req, res) {
             }
 
             res.json(types);
-        }, function (err) {
-            res.status(500).send(err);
-        });
-    }
+        })
+        .catch(_handleException(res));
 });
 
 /* Ping client. */
 router.post('/ping', function (req, res) {
-    if (_client(req, res) != null)
-        res.sendStatus(200);
+    _client(req.currentUserId())
+        .then(() => res.sendStatus(200))
+        .catch(_handleException(res));
 });
 
 /* Get JDBC drivers list. */
 router.post('/drivers', function (req, res) {
-    var client = _client(req, res);
-
-    if (client) {
-        client.availableDrivers(function (err, drivers) {
-            if (err)
-                return res.status(500).send(err);
-
-            res.json(drivers);
-        });
-    }
+    _client(req.currentUserId())
+        .then((client) => client.availableDrivers())
+        .then((arr) => res.json(arr))
+        .catch(_handleException(res));
 });
 
 /** Get database schemas. */
 router.post('/schemas', function (req, res) {
-    var client = _client(req, res);
+    _client(req.currentUserId())
+        .then((client) => {
+            var args = req.body;
 
-    if (client) {
-        var params = req.body;
+            args.jdbcInfo = {user: args.user, password: args.password};
 
-        client.metadataSchemas(params.jdbcDriverJar, params.jdbcDriverClass, params.jdbcUrl, {user: params.user, password: params.password}, function (err, meta) {
-            if (err)
-                return res.status(500).send(err);
-
-            res.json(meta);
-        });
-    }
+            return client.metadataSchemas(args.jdbcDriverJar, args.jdbcDriverClass, args.jdbcUrl, args.jdbcInfo)
+        })
+        .then((arr) => res.json(arr))
+        .catch(_handleException(res));
 });
 
 /** Get database tables. */
 router.post('/tables', function (req, res) {
-    var client = _client(req, res);
+    _client(req.currentUserId())
+        .then((client) => {
+            var args = req.body;
 
-    if (client) {
-        var params = req.body;
+            args.jdbcInfo = {user: args.user, password: args.password};
 
-        client.metadataTables(params.jdbcDriverJar, params.jdbcDriverClass, params.jdbcUrl,
-            {user: params.user, password: params.password}, params.schemas, params.tablesOnly,
-            function (err, meta) {
-                if (err)
-                    return res.status(500).send(err);
-
-                res.json(meta);
-            });
-    }
+            return client.metadataTables(args.jdbcDriverJar, args.jdbcDriverClass, args.jdbcUrl, args.jdbcInfo, args.schemas, args.tablesOnly)
+        })
+        .then((arr) => res.json(arr))
+        .catch(_handleException(res));
 });
 
 module.exports = router;

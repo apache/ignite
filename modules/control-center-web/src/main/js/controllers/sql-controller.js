@@ -19,6 +19,15 @@
 consoleModule.controller('sqlController', function ($http, $timeout, $interval, $scope, $animate,  $location, $anchorScroll, $state,
     $modal, $popover, $loading, $common, $confirm, $agentDownload, QueryNotebooks, uiGridExporterConstants) {
 
+    $scope.$on('$stateChangeStart', function(event, toState, toParams, fromState, fromParams) {
+        if ($scope.notebook && $scope.notebook.paragraphs)
+            $scope.notebook.paragraphs.forEach(function (paragraph) {
+                _tryStopRefresh(paragraph);
+            });
+
+        $agentDownload.stopAwaitAgent();
+    });
+
     $scope.joinTip = $common.joinTip;
 
     $scope.caches = [];
@@ -277,7 +286,7 @@ consoleModule.controller('sqlController', function ($http, $timeout, $interval, 
     QueryNotebooks.read($scope.demo, $state.params.noteId)
         .then(loadNotebook)
         .catch(function(err) {
-            $scope.notebook = undefined;
+            $scope.notebookLoadFailed = true;
 
             $loading.finish('loading');
         });
@@ -1468,13 +1477,11 @@ consoleModule.controller('sqlController', function ($http, $timeout, $interval, 
 
         $http.post('/api/v1/agent/cache/metadata', {demo: $scope.demo})
             .success(function (metadata) {
-                $scope.metadata = _.sortBy(metadata, _.filter(metadata, function (meta) {
-                    var cacheName = _mask(meta.cacheName);
-
-                    var cache = _.find($scope.caches, { name: cacheName });
+                $scope.metadata = _.sortBy(_.filter(metadata, function (meta) {
+                    var cache = _.find($scope.caches, { name: meta.cacheName });
 
                     if (cache) {
-                        meta.name = (cache.sqlSchema ? cache.sqlSchema : (_.isEmpty(cache.cacheName) ? '"' + cacheName + '"' : "")) + '.' + meta.typeName;
+                        meta.name = (cache.sqlSchema ? cache.sqlSchema : '"' + meta.cacheName + '"') + '.' + meta.typeName;
 
                         meta.displayMame = _mask(meta.cacheName) + '.' + meta.typeName;
 

@@ -58,34 +58,7 @@ AgentServer.prototype.runCommand = function(cmd, callback) {
         headers = {'JSONObject': 'application/json'};
     }
 
-    this._client.executeRest("ignite", params, this._demo, method, headers, body, function(error, code, message) {
-        if (error) {
-            callback(error);
-
-            return
-        }
-
-        if (code !== 200) {
-            if (code === 401)
-                callback.call(null, "Authentication failed. Status code: 401.");
-            else
-                callback.call(null, (message ? message : "Request failed.") +  " Status code: " + code);
-
-            return;
-        }
-
-        try {
-            var igniteResponse = JSON.parse(message);
-
-            if (igniteResponse.successStatus)
-                callback.call(null, igniteResponse.error, null);
-            else
-                callback.call(null, null, igniteResponse.response);
-        }
-        catch (e) {
-            callback.call(null, e, null);
-        }
-    });
+    this._client.executeRest("ignite", params, this._demo, method, headers, body, callback);
 };
 
 exports.AgentServer = AgentServer;
