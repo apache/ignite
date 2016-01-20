@@ -34,8 +34,9 @@ import org.apache.ignite.internal.binary.BinarySimpleNameIdMapperSelfTest;
 import org.apache.ignite.internal.binary.BinaryStraightIdMapperSelfTest;
 import org.apache.ignite.internal.binary.GridBinaryAffinityKeySelfTest;
 import org.apache.ignite.internal.binary.GridBinaryMarshallerCtxDisabledSelfTest;
-import org.apache.ignite.internal.binary.GridBinaryMetaDataSelfTest;
 import org.apache.ignite.internal.binary.GridBinaryWildcardsSelfTest;
+import org.apache.ignite.internal.binary.GridDefaultBinaryMappersBinaryMetaDataSelfTest;
+import org.apache.ignite.internal.binary.GridSimpleLowerCaseBinaryMappersBinaryMetaDataSelfTest;
 import org.apache.ignite.internal.binary.noncompact.BinaryFieldsHeapNonCompactSelfTest;
 import org.apache.ignite.internal.binary.noncompact.BinaryFieldsOffheapNonCompactSelfTest;
 import org.apache.ignite.internal.binary.noncompact.BinaryFooterOffsetsHeapNonCompactSelfTest;
@@ -91,7 +92,8 @@ public class IgniteBinaryObjectsTestSuite extends TestSuite {
         suite.addTestSuite(BinaryFooterOffsetsHeapSelfTest.class);
         suite.addTestSuite(BinaryFooterOffsetsOffheapSelfTest.class);
         suite.addTestSuite(BinaryEnumsSelfTest.class);
-        suite.addTestSuite(GridBinaryMetaDataSelfTest.class);
+        suite.addTestSuite(GridDefaultBinaryMappersBinaryMetaDataSelfTest.class);
+        suite.addTestSuite(GridSimpleLowerCaseBinaryMappersBinaryMetaDataSelfTest.class);
         suite.addTestSuite(GridBinaryAffinityKeySelfTest.class);
         suite.addTestSuite(GridBinaryWildcardsSelfTest.class);
 

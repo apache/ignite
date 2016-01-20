@@ -23,6 +23,9 @@ import java.util.Collection;
 import java.util.Date;
 import java.util.HashMap;
 import org.apache.ignite.IgniteBinary;
+import org.apache.ignite.binary.BinaryNameMapper;
+import org.apache.ignite.binary.BinaryOriginalNameMapper;
+import org.apache.ignite.binary.BinaryStraightIdMapper;
 import org.apache.ignite.configuration.BinaryConfiguration;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -38,7 +41,10 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 /**
  * Binary meta data test.
  */
-public class GridBinaryMetaDataSelfTest extends GridCommonAbstractTest {
+public class GridDefaultBinaryMappersBinaryMetaDataSelfTest extends GridCommonAbstractTest {
+    /** */
+    private static IgniteConfiguration cfg;
+
     /** */
     private static int idx;
 
@@ -47,6 +53,9 @@ public class GridBinaryMetaDataSelfTest extends GridCommonAbstractTest {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
         BinaryConfiguration bCfg = new BinaryConfiguration();
+
+        bCfg.setNameMapper(new BinaryOriginalNameMapper());
+        bCfg.setIdMapper(new BinaryStraightIdMapper());
 
         bCfg.setClassNames(Arrays.asList(TestObject1.class.getName(), TestObject2.class.getName()));
 
@@ -57,6 +66,8 @@ public class GridBinaryMetaDataSelfTest extends GridCommonAbstractTest {
         CacheConfiguration ccfg = new CacheConfiguration();
 
         cfg.setCacheConfiguration(ccfg);
+
+        GridDefaultBinaryMappersBinaryMetaDataSelfTest.cfg = cfg;
 
         return cfg;
     }
@@ -93,7 +104,7 @@ public class GridBinaryMetaDataSelfTest extends GridCommonAbstractTest {
         for (BinaryType meta : metas) {
             Collection<String> fields;
 
-            if (TestObject1.class.getName().equals(meta.typeName())) {
+            if (expectedTypeName(TestObject1.class.getName()).equals(meta.typeName())) {
                 fields = meta.fieldNames();
 
                 assertEquals(7, fields.size());
@@ -114,7 +125,7 @@ public class GridBinaryMetaDataSelfTest extends GridCommonAbstractTest {
                 assertEquals("decimal", meta.fieldTypeName("decVal"));
                 assertEquals("decimal[]", meta.fieldTypeName("decArrVal"));
             }
-            else if (TestObject2.class.getName().equals(meta.typeName())) {
+            else if (expectedTypeName(TestObject2.class.getName()).equals(meta.typeName())) {
                 fields = meta.fieldNames();
 
                 assertEquals(7, fields.size());
@@ -157,7 +168,7 @@ public class GridBinaryMetaDataSelfTest extends GridCommonAbstractTest {
 
         assertNotNull(meta);
 
-        assertEquals(TestObject1.class.getName(), meta.typeName());
+        assertEquals(expectedTypeName(TestObject1.class.getName()), meta.typeName());
 
         Collection<String> fields = meta.fieldNames();
 
@@ -181,6 +192,19 @@ public class GridBinaryMetaDataSelfTest extends GridCommonAbstractTest {
     }
 
     /**
+     * @param clsName Class name.
+     * @return Type name.
+     */
+    private String expectedTypeName(String clsName) {
+        BinaryNameMapper mapper = cfg.getBinaryConfiguration().getNameMapper();
+
+        if (mapper == null)
+            mapper = BinaryContext.defaultNameMapper();
+
+        return mapper.typeName(clsName);
+    }
+
+    /**
      * @throws Exception If failed.
      */
     public void testBinaryMarshalAware() throws Exception {
@@ -190,7 +214,7 @@ public class GridBinaryMetaDataSelfTest extends GridCommonAbstractTest {
 
         assertNotNull(meta);
 
-        assertEquals(TestObject2.class.getName(), meta.typeName());
+        assertEquals(expectedTypeName(TestObject2.class.getName()), meta.typeName());
 
         Collection<String> fields = meta.fieldNames();
 
@@ -227,7 +251,7 @@ public class GridBinaryMetaDataSelfTest extends GridCommonAbstractTest {
 
         assertNotNull(meta);
 
-        assertEquals(TestObject2.class.getName(), meta.typeName());
+        assertEquals(expectedTypeName(TestObject2.class.getName()), meta.typeName());
 
         Collection<String> fields = meta.fieldNames();
 
@@ -276,7 +300,7 @@ public class GridBinaryMetaDataSelfTest extends GridCommonAbstractTest {
 
         assertNotNull(meta);
 
-        assertEquals(TestObject1.class.getName(), meta.typeName());
+        assertEquals(expectedTypeName(TestObject1.class.getName()), meta.typeName());
 
         Collection<String> fields = meta.fieldNames();
 
