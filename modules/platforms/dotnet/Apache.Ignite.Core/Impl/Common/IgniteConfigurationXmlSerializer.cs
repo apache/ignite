@@ -145,6 +145,8 @@ namespace Apache.Ignite.Core.Impl.Common
 
             var list = (IList) Activator.CreateInstance(listType);
 
+            var converter = IsBasicType(elementType) ? GetConverter(elementType) : null;
+
             using (var subReader = reader.ReadSubtree())
             {
                 subReader.Read();  // skip list head
@@ -158,12 +160,9 @@ namespace Apache.Ignite.Core.Impl.Common
                             string.Format("Invalid list element in IgniteConfiguration: expected '{0}', but was '{1}'",
                                 PropertyNameToXmlName(elementType.Name), subReader.Name));
 
-                    if (IsBasicType(elementType)) // TODO: Check outside loop, converter outise the loop
-                        list.Add(GetConverter(elementType).ConvertFromString(subReader.ReadString()));
-                    else
-                    {
-                        list.Add(ReadNestedObject(subReader, elementType, prop.Name, target.GetType()));
-                    }
+                    list.Add(converter != null
+                        ? converter.ConvertFromString(subReader.ReadString())
+                        : ReadNestedObject(subReader, elementType, prop.Name, target.GetType()));
                 }
             }
 
@@ -220,8 +219,6 @@ namespace Apache.Ignite.Core.Impl.Common
 
         private static TypeConverter GetConverter(Type type)
         {
-            // TODO: ICollection<string>, ICollection<int>
-            // TODO: IDictionary < string, string>
             if (type.IsEnum)
                 return new GenericEnumConverter(type);
 
