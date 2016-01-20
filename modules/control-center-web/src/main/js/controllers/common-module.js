@@ -2075,9 +2075,11 @@ consoleModule.service('$agentDownload', [
                 _modal.$promise.then(_modal.show);
             }
 
-            scope.nodeFailedConnection = status !== 500 || timedOut;
+            var nodeError = _.includes([401, 403, 500], status);
 
-            if (status !== 404)
+            scope.nodeFailedConnection = nodeError || timedOut;
+
+            if (nodeError)
                 $common.showError(errMsg, 'top-right', 'body', true);
         }
 
