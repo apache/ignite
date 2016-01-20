@@ -18,18 +18,43 @@
 namespace Apache.Ignite.Core.Impl.Common
 {
     using System;
+    using System.Collections.Generic;
     using System.ComponentModel;
     using System.Globalization;
+    using System.Linq;
+    using Apache.Ignite.Core.Events;
 
     /// <summary>
-    /// Converts string to <see cref="Type"/>.
+    /// Converts string to <see cref="EventType"/> member value.
     /// </summary>
-    internal class TypeStringConverter : TypeConverter
+    internal class EventTypeConverter : TypeConverter
     {
         /// <summary>
         /// Default instance.
         /// </summary>
-        public static readonly TypeStringConverter Instance = new TypeStringConverter();
+        public static readonly EventTypeConverter Instance = new EventTypeConverter();
+
+        /// <summary>
+        /// The event type map.
+        /// </summary>
+        private static readonly Dictionary<int, string> EventIdToNameMap =
+            typeof (EventType).GetFields()
+                .Where(p => p.FieldType == typeof (int))
+                .ToDictionary(f => (int) f.GetValue(null), f => f.Name);
+
+        /// <summary>
+        /// The event type map.
+        /// </summary>
+        private static readonly Dictionary<string, int> EventNameToIdMap =
+            EventIdToNameMap.ToDictionary(p => p.Value, p => p.Key, StringComparer.InvariantCultureIgnoreCase);
+
+        /// <summary>
+        /// The event type map.
+        /// </summary>
+        private static readonly Dictionary<string, ICollection<int>> EventCollectionNameToIdMap =
+            typeof (EventType).GetProperties()
+                .Where(p => p.PropertyType == typeof (ICollection<int>))
+                .ToDictionary(p => p.Name, p => (ICollection<int>) p.GetValue(null, null));
 
         /// <summary>
         /// Returns whether this converter can convert an object of the given type to the type of this converter, 
@@ -42,7 +67,7 @@ namespace Apache.Ignite.Core.Impl.Common
         /// </returns>
         public override bool CanConvertFrom(ITypeDescriptorContext context, Type sourceType)
         {
-            return sourceType == typeof (string);
+            return sourceType == typeof(string);
         }
 
         /// <summary>
@@ -57,7 +82,7 @@ namespace Apache.Ignite.Core.Impl.Common
         /// </returns>
         public override bool CanConvertTo(ITypeDescriptorContext context, Type destinationType)
         {
-            return destinationType == typeof(Type);
+            return destinationType == typeof(ICollection<int>);
         }
 
         /// <summary>
@@ -72,8 +97,24 @@ namespace Apache.Ignite.Core.Impl.Common
         /// </returns>
         public override object ConvertFrom(ITypeDescriptorContext context, CultureInfo culture, object value)
         {
-            return value == null ? null : Type.GetType(value.ToString(), false);
+            if (value == null)
+                return null;
+
+            var s = value.ToString();
+            int intResult;
+
+            if (int.TryParse(s, out intResult) || EventNameToIdMap.TryGetValue(s, out intResult))
+                return intResult;
+
+            ICollection<int> colResult;
+
+            if (EventCollectionNameToIdMap.TryGetValue(s, out colResult))
+                return colResult;
+
+            throw new InvalidOperationException(string.Format("Cannot convert value to {0}: {1}",
+                typeof (EventType).Name, s));
         }
+
 
         /// <summary>
         /// Converts the given value object to the specified type, using the specified context and culture information.
@@ -89,11 +130,11 @@ namespace Apache.Ignite.Core.Impl.Common
         /// <returns>
         /// An <see cref="Object" /> that represents the converted value.
         /// </returns>
-        public override object ConvertTo(ITypeDescriptorContext context, CultureInfo culture, object value, 
+        public override object ConvertTo(ITypeDescriptorContext context, CultureInfo culture, object value,
             Type destinationType)
         {
-            var type = value as Type;
-            return type == null ? null : type.AssemblyQualifiedName;
+            // TODO: Implement. What is the value? ICollection<int> or int?
+            return null;
         }
     }
 }

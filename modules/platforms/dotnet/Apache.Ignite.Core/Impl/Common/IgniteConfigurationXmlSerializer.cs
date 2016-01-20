@@ -225,7 +225,7 @@ namespace Apache.Ignite.Core.Impl.Common
                 return new GenericEnumConverter(propertyType);
 
             if (propertyType == typeof (Type))
-                return new TypeStringConverter();
+                return TypeStringConverter.Instance;
 
             var converter = TypeDescriptor.GetConverter(propertyType);
 
