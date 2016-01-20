@@ -151,8 +151,8 @@ public class VisorCacheConfiguration implements Serializable {
         evictCfg = VisorCacheEvictionConfiguration.from(ccfg);
         nearCfg = VisorCacheNearConfiguration.from(ccfg);
         dfltCfg = VisorCacheDefaultConfiguration.from(ccfg);
-        storeCfg = VisorCacheStoreConfiguration.from(ignite, ccfg);
-        qryCfg = VisorCacheQueryConfiguration.from(ccfg);
+        storeCfg = new VisorCacheStoreConfiguration().from(ignite, ccfg);
+        qryCfg = new VisorCacheQueryConfiguration().from(ccfg);
 
         return this;
     }
