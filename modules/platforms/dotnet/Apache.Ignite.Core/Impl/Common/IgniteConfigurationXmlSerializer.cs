@@ -93,7 +93,7 @@ namespace Apache.Ignite.Core.Impl.Common
 
         private static bool IsBasicType(Type propType)
         {
-            return propType.IsValueType || propType == typeof (string);
+            return propType.IsValueType || propType == typeof (string) || propType == typeof(Type);
         }
 
         private static object ReadNestedObject(XmlReader reader, Type propType, string propName, Type targetType)
@@ -158,8 +158,8 @@ namespace Apache.Ignite.Core.Impl.Common
                             string.Format("Invalid list element in IgniteConfiguration: expected '{0}', but was '{1}'",
                                 PropertyNameToXmlName(elementType.Name), subReader.Name));
 
-                    if (IsBasicType(elementType))  // TODO: Check outside loop?
-                        list.Add(subReader.ReadString());
+                    if (IsBasicType(elementType)) // TODO: Check outside loop, converter outise the loop
+                        list.Add(GetConverter(elementType).ConvertFromString(subReader.ReadString()));
                     else
                     {
                         list.Add(ReadNestedObject(subReader, elementType, prop.Name, target.GetType()));

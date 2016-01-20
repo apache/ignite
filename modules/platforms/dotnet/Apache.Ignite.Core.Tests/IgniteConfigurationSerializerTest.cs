@@ -39,6 +39,9 @@ namespace Apache.Ignite.Core.Tests
                             <localHost>127.1.1.1</localHost>
                             <binaryConfiguration>
                                 <defaultNameMapper type='Apache.Ignite.Core.Tests.IgniteConfigurationSerializerTest+NameMapper, Apache.Ignite.Core.Tests' bar='testBar' />
+                                <types>
+                                    <type>Apache.Ignite.Core.Tests.IgniteConfigurationSerializerTest+Foo, Apache.Ignite.Core.Tests</type>
+                                </types>
                             </binaryConfiguration>
                             <discoveryConfiguration joinTimeout='0:1:0'>
                                 <ipFinder type='MulticastIpFinder' addressRequestAttempts='7' />
@@ -72,6 +75,7 @@ namespace Apache.Ignite.Core.Tests
             Assert.AreEqual(new[] { "-Xms1g", "-Xmx4g" }, cfg.JvmOptions);
             Assert.AreEqual(15, ((LifecycleBean) cfg.LifecycleBeans.Single()).Foo);
             Assert.AreEqual("testBar", ((NameMapper) cfg.BinaryConfiguration.DefaultNameMapper).Bar);
+            Assert.AreEqual(typeof(Foo), cfg.BinaryConfiguration.Types.Single());
         }
 
         public class LifecycleBean : ILifecycleBean
@@ -97,6 +101,11 @@ namespace Apache.Ignite.Core.Tests
             {
                 return name;
             }
+        }
+
+        public class Foo
+        {
+            // No-op.
         }
     }
 }
