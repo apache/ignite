@@ -113,7 +113,7 @@ namespace Apache.Ignite.Core.Cache.Configuration
         /// </summary>
         public Type ValueType
         {
-            get { return _valueType ?? JavaTypes.GetDotNetType(KeyTypeName); }
+            get { return _valueType ?? JavaTypes.GetDotNetType(ValueTypeName); }
             set
             {
                 RescanAttributes(_keyType, value);  // Do this first because it can throw
