@@ -27,6 +27,14 @@ namespace Apache.Ignite.Core.Cache.Configuration
         /// <summary>
         /// Initializes a new instance of the <see cref="QueryAlias"/> class.
         /// </summary>
+        public QueryAlias()
+        {
+            // No-op.
+        }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="QueryAlias"/> class.
+        /// </summary>
         /// <param name="fullName">The full name.</param>
         /// <param name="alias">The alias.</param>
         public QueryAlias(string fullName, string alias)
