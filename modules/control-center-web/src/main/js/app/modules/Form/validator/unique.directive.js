@@ -21,17 +21,10 @@ export default ['igniteUnique', ['$parse', ($parse) => {
             return;
 
         ngModel.$validators.igniteUnique = (value) => {
-            try {
-                const arr = $parse(attrs.igniteUnique)(scope);
+            const arr = $parse(attrs.igniteUnique)(scope);
 
-                if (!~arr.indexOf(value))
-                    return true;
-            }
-            catch (e) {
-                return true;
-            }
-
-            return false;
+            // Return true in case if array not exist, array empty, or value is unique.
+            return !(arr && (arr.length > 0) && !!~arr.indexOf(value));
         };
     };
 

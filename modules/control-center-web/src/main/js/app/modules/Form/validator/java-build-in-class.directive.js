@@ -30,10 +30,7 @@ export default ['javaBuildInClass', [() => {
             const jclasses = JAVA_CLASSES.filter((key) => value === key).length;
             const jfclasses = JAVA_FULLNAME_CLASSES.filter((key) => value === key).length;
 
-            if (!(jclasses || jfclasses))
-                return true;
-
-            return false;
+            return !(jclasses || jfclasses);
         };
     };
 

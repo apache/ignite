@@ -21,10 +21,7 @@ export default ['javaPackageSpecified', [() => {
             return;
 
         ngModel.$validators.javaPackageSpecified = (value) => {
-            if (!value || !(value.split('.').length < 2))
-                return true;
-
-            return false;
+            return !value || !(value.split('.').length < 2);
         };
     };
 

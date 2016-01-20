@@ -25,10 +25,7 @@ export default ['javaKeywords', [() => {
         ngModel.$validators.javaKeywords = (value) => {
             const keywords = JAVA_KEYWORDS.filter((key) => value && !!~value.indexOf(key));
 
-            if (!keywords.length)
-                return true;
-
-            return false;
+            return !keywords.length;
         };
     };
 

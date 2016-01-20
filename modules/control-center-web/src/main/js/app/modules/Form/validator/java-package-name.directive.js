@@ -23,10 +23,7 @@ export default ['javaPackageName', [() => {
         ngModel.$validators.javaPackageName = (value) => {
             const regexp = /^(([a-zA-Z_$][a-zA-Z0-9_$]*)\.)*([a-zA-Z_$][a-zA-Z0-9_$]*(\.[*]|[*])?)$/igm;
 
-            if (value === '' || regexp.test(value))
-                return true;
-
-            return false;
+            return value === '' || regexp.test(value);
         };
     };
 

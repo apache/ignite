@@ -238,7 +238,7 @@ consoleModule.controller('clustersController', function ($http, $timeout, $scope
                 $scope.selectItem($scope.clusters[0]);
         }
 
-        $loading.start('loading');
+        $loading.start('loadingClustersScreen');
 
         // When landing on the page, get clusters and show them.
         $http.post('/api/v1/configuration/clusters/list')
@@ -389,7 +389,7 @@ consoleModule.controller('clustersController', function ($http, $timeout, $scope
             .finally(function () {
                 $scope.ui.ready = true;
                 $scope.ui.inputForm.$setPristine();
-                $loading.finish('loading');
+                $loading.finish('loadingClustersScreen');
             });
 
         $scope.selectItem = function (item, backup) {
@@ -423,7 +423,7 @@ consoleModule.controller('clustersController', function ($http, $timeout, $scope
                     $state.go('base.configuration.clusters');
             }
 
-            $common.confirmUnsavedChanges($scope.ui.isDirty(), selectItem);
+            $common.confirmUnsavedChanges($scope.backupItem && $scope.ui.inputForm.$dirty, selectItem);
         };
 
         function prepareNewItem(id) {
