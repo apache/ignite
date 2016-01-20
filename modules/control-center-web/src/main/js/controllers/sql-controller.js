@@ -19,6 +19,15 @@
 consoleModule.controller('sqlController', function ($http, $timeout, $interval, $scope, $animate,  $location, $anchorScroll, $state,
     $modal, $popover, $loading, $common, $confirm, $agentDownload, QueryNotebooks, uiGridExporterConstants) {
 
+    $scope.$on('$stateChangeStart', function(event, toState, toParams, fromState, fromParams) {
+        if ($scope.notebook && $scope.notebook.paragraphs)
+            $scope.notebook.paragraphs.forEach(function (paragraph) {
+                _tryStopRefresh(paragraph);
+            });
+
+        $agentDownload.stopAwaitAgent();
+    });
+
     $scope.joinTip = $common.joinTip;
 
     $scope.caches = [];
@@ -277,7 +286,7 @@ consoleModule.controller('sqlController', function ($http, $timeout, $interval, 
     QueryNotebooks.read($scope.demo, $state.params.noteId)
         .then(loadNotebook)
         .catch(function(err) {
-            $scope.notebook = undefined;
+            $scope.notebookLoadFailed = true;
 
             $loading.finish('loading');
         });
