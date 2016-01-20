@@ -45,7 +45,8 @@ import org.apache.ignite.internal.binary.noncompact.BinaryMarshallerNonCompactSe
 import org.apache.ignite.internal.binary.noncompact.BinaryObjectBuilderAdditionalNonCompactSelfTest;
 import org.apache.ignite.internal.binary.noncompact.BinaryObjectBuilderNonCompactDefaultMappersSelfTest;
 import org.apache.ignite.internal.binary.noncompact.BinaryObjectBuilderNonCompactSimpleNameLowerCaseMappersSelfTest;
-import org.apache.ignite.internal.processors.cache.binary.GridCacheBinaryStoreBinariesSelfTest;
+import org.apache.ignite.internal.processors.cache.binary.GridCacheBinaryStoreBinariesDefaultMappersSelfTest;
+import org.apache.ignite.internal.processors.cache.binary.GridCacheBinaryStoreBinariesSimpleNameMappersSelfTest;
 import org.apache.ignite.internal.processors.cache.binary.GridCacheBinaryStoreObjectsSelfTest;
 import org.apache.ignite.internal.processors.cache.binary.GridCacheClientNodeBinaryObjectMetadataMultinodeTest;
 import org.apache.ignite.internal.processors.cache.binary.GridCacheClientNodeBinaryObjectMetadataTest;
@@ -122,7 +123,8 @@ public class IgniteBinaryObjectsTestSuite extends TestSuite {
         suite.addTestSuite(GridCacheBinaryObjectsPartitionedNearDisabledOffheapTieredSelfTest.class);
 
         suite.addTestSuite(GridCacheBinaryStoreObjectsSelfTest.class);
-        suite.addTestSuite(GridCacheBinaryStoreBinariesSelfTest.class);
+        suite.addTestSuite(GridCacheBinaryStoreBinariesDefaultMappersSelfTest.class);
+        suite.addTestSuite(GridCacheBinaryStoreBinariesSimpleNameMappersSelfTest.class);
 
         suite.addTestSuite(GridCacheClientNodeBinaryObjectMetadataTest.class);
         suite.addTestSuite(GridCacheClientNodeBinaryObjectMetadataMultinodeTest.class);

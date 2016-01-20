@@ -382,14 +382,14 @@ public class BinaryContext {
     /**
      * @return ID mapper used as default.
      */
-    static BinaryIdMapper defaultIdMapper() {
+    public static BinaryIdMapper defaultIdMapper() {
         return DFLT_ID_MAPPER;
     }
 
     /**
      * @return Name mapper used as default.
      */
-    static BinaryNameMapper defaultNameMapper() {
+    public static BinaryNameMapper defaultNameMapper() {
         return DFLT_NAME_MAPPER;
     }
 
