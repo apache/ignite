@@ -1316,10 +1316,6 @@ public final class GridDhtColocatedLockFuture extends GridCompoundIdentityFuture
         @GridToStringInclude
         private Collection<KeyCacheObject> keys;
 
-        /** Mappings to proceed. */
-        @GridToStringExclude
-        private Deque<GridNearLockMapping> mappings;
-
         /** */
         private boolean rcvRes;
 

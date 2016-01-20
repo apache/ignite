@@ -114,14 +114,14 @@ public class IgniteHadoopIgfsSecondaryFileSystem implements IgfsSecondaryFileSys
      *
      * @param uri URI of file system.
      * @param cfgPath Additional path to Hadoop configuration.
-     * @param usrName User name.
+     * @param userName User name.
      * @throws IgniteCheckedException In case of error.
      * @deprecated Use {@link #getFileSystemFactory()} instead.
      */
     @Deprecated
     public IgniteHadoopIgfsSecondaryFileSystem(@Nullable String uri, @Nullable String cfgPath,
-        @Nullable String usrName) throws IgniteCheckedException {
-        setDefaultUserName(usrName);
+        @Nullable String userName) throws IgniteCheckedException {
+        setDefaultUserName(userName);
 
         CachingHadoopFileSystemFactory fac = new CachingHadoopFileSystemFactory();
 
