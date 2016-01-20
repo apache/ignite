@@ -60,7 +60,7 @@ namespace Apache.Ignite.Core.Tests
                                                 <queryField name='length' type='System.Int32' />
                                             </fields>
                                             <aliases>
-                                                <queryAlias fullName='somefield.field' alias='shortField'>
+                                                <queryAlias fullName='somefield.field' alias='shortField' />
                                             </aliases>
                                             <indexes>
                                                 <queryIndex name='idx' indexType='GeoSpatial'>
