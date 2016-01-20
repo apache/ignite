@@ -108,9 +108,6 @@ public class VisorCache implements Serializable {
     /** Cache partitions states. */
     private GridDhtPartitionMap2 partitionsMap;
 
-    /** Flag indicating that cache has near cache. */
-    private boolean near;
-
     /**
      * @param ignite Grid.
      * @param cacheName Cache name.
@@ -142,8 +139,6 @@ public class VisorCache implements Serializable {
         backupPartitions = Collections.emptyList();
 
         CacheConfiguration cfg = ca.configuration();
-
-        near = ca.context().isNear();
 
         mode = cfg.getCacheMode();
 
@@ -259,11 +254,11 @@ public class VisorCache implements Serializable {
     }
 
     /**
-     * @return New instance suitable to store in history.
+     * Fill values that should be stored in history;
+     *
+     * @param c Source cache.
      */
-    public VisorCache history() {
-        VisorCache c = new VisorCache();
-
+    protected void initHistory(VisorCache c) {
         c.name = name;
         c.mode = mode;
         c.memorySize = memorySize;
@@ -280,7 +275,15 @@ public class VisorCache implements Serializable {
         c.primaryPartitions = Collections.emptyList();
         c.backupPartitions = Collections.emptyList();
         c.metrics = metrics;
-        c.near = near;
+    }
+
+    /**
+     * @return New instance suitable to store in history.
+     */
+    public VisorCache history() {
+        VisorCache c = new VisorCache();
+
+        initHistory(c);
 
         return c;
     }
@@ -409,13 +412,6 @@ public class VisorCache implements Serializable {
      */
     @Nullable public GridDhtPartitionMap2 partitionMap() {
         return partitionsMap;
-    }
-
-    /**
-     * @return {@code true} if cache has near cache.
-     */
-    public boolean near() {
-        return near;
     }
 
     /** {@inheritDoc} */
