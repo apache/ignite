@@ -227,6 +227,9 @@ namespace Apache.Ignite.Core.Impl.Common
             if (propertyType == typeof (Type))
                 return TypeStringConverter.Instance;
 
+            if (property.DeclaringType == typeof (IgniteConfiguration) && property.Name == "IncludedEventTypes")
+                return EventTypeConverter.Instance;
+
             var converter = TypeDescriptor.GetConverter(propertyType);
 
             if (converter == null || !converter.CanConvertFrom(typeof(string)) ||
