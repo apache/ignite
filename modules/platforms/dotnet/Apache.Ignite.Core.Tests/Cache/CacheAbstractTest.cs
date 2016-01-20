@@ -3117,6 +3117,8 @@ namespace Apache.Ignite.Core.Tests.Cache
             var ex = Assert.Throws<ArgumentException>(() => ignite.GetCache<int, int>(cacheName));
 
             Assert.IsTrue(ex.Message.StartsWith("Cache doesn't exist"));
+
+            Assert.Throws<InvalidOperationException>(() => cache.Get(1));
         }
 
 
