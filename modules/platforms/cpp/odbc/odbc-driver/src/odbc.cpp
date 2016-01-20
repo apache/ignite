@@ -1290,6 +1290,35 @@ SQLRETURN SQL_API SQLGetData(SQLHSTMT       stmt,
     return statement->GetDiagnosticRecords().GetReturnCode();
 }
 
+SQLRETURN SQL_API SQLSetEnvAttr(SQLHENV     env,
+                                SQLINTEGER  attr,
+                                SQLPOINTER  value,
+                                SQLINTEGER  valueLen)
+{
+    using ignite::odbc::Environment;
+
+    LOG_MSG("SQLSetEnvAttr called\n");
+
+    Environment *environment = reinterpret_cast<Environment*>(env);
+
+    if (!environment)
+        return SQL_INVALID_HANDLE;
+
+    environment->SetAttribute(attr, value, valueLen);
+
+    return environment->GetDiagnosticRecords().GetReturnCode();
+}
+
+SQLRETURN SQL_API SQLGetEnvAttr(SQLHENV     env,
+                                SQLINTEGER  attr,
+                                SQLPOINTER  valueBuf,
+                                SQLINTEGER  valueBufLen,
+                                SQLINTEGER* valueResLen)
+{
+    LOG_MSG("SQLGetEnvAttr called\n");
+    return SQL_SUCCESS;
+}
+
 //
 // ==== Not implemented ====
 //
@@ -1479,16 +1508,6 @@ SQLRETURN SQL_API SQLGetConnectAttr(SQLHDBC     conn,
     return SQL_SUCCESS;
 }
 
-SQLRETURN SQL_API SQLGetEnvAttr(SQLHENV     env,
-                                SQLINTEGER  attr,
-                                SQLPOINTER  valueBuf,
-                                SQLINTEGER  valueBufLen,
-                                SQLINTEGER* valueResLen)
-{
-    LOG_MSG("SQLGetEnvAttr called\n");
-    return SQL_SUCCESS;
-}
-
 SQLRETURN SQL_API SQLSetConnectAttr(SQLHDBC     conn,
                                     SQLINTEGER  attr,
                                     SQLPOINTER  value,
@@ -1503,15 +1522,6 @@ SQLRETURN SQL_API SQLSetConnectAttr(SQLHDBC     conn,
     if (!connection)
         return SQL_INVALID_HANDLE;
 
-    return SQL_SUCCESS;
-}
-
-SQLRETURN SQL_API SQLSetEnvAttr(SQLHENV     env,
-                                SQLINTEGER  attr,
-                                SQLPOINTER  value,
-                                SQLINTEGER  valueLen)
-{
-    LOG_MSG("SQLSetEnvAttr called\n");
     return SQL_SUCCESS;
 }
 

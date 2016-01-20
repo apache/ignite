@@ -41,6 +41,20 @@ namespace ignite
             return connection;
         }
 
+        SqlResult Environment::InternalCreateConnection(Connection*& connection)
+        {
+            connection = new Connection;
+
+            if (!connection)
+            {
+                AddStatusRecord(SQL_STATE_HY001_MEMORY_ALLOCATION, "Not enough memory.");
+
+                return SQL_RESULT_ERROR;
+            }
+
+            return SQL_RESULT_SUCCESS;
+        }
+
         void Environment::TransactionCommit()
         {
             IGNITE_ODBC_API_CALL(InternalTransactionCommit());
@@ -64,17 +78,13 @@ namespace ignite
             return SQL_RESULT_ERROR;
         }
 
-        SqlResult Environment::InternalCreateConnection(Connection*& connection)
+        void Environment::SetAttribute(int32_t attr, void* value, int32_t len)
         {
-            connection = new Connection;
+            IGNITE_ODBC_API_CALL(InternalSetAttribute(attr, value, len));
+        }
 
-            if (!connection)
-            {
-                AddStatusRecord(SQL_STATE_HY001_MEMORY_ALLOCATION, "Not enough memory.");
-
-                return SQL_RESULT_ERROR;
-            }
-
+        SqlResult Environment::InternalSetAttribute(int32_t attr, void* value, int32_t len)
+        {
             return SQL_RESULT_SUCCESS;
         }
     }

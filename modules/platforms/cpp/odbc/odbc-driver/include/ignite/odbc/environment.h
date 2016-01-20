@@ -59,6 +59,15 @@ namespace ignite
              */
             void TransactionRollback();
 
+            /**
+             * Set attribute.
+             *
+             * @param attr Attribute to set.
+             * @param value Value.
+             * @param len Value length if the attribute is of string type.
+             */
+            void SetAttribute(int32_t attr, void* value, int32_t len);
+
         private:
             IGNITE_NO_COPY_ASSIGNMENT(Environment);
 
@@ -86,6 +95,16 @@ namespace ignite
              * @return Operation result.
              */
             SqlResult InternalTransactionRollback();
+            
+            /**
+             * Set attribute.
+             *
+             * @param attr Attribute to set.
+             * @param value Value.
+             * @param len Value length if the attribute is of string type.
+             * @return Operation result.
+             */
+            SqlResult InternalSetAttribute(int32_t attr, void* value, int32_t len);
         };
     }
 }

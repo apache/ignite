@@ -41,7 +41,7 @@ void logInit(const char*);
 
 #   define LOG_MSG(fmt, ...)                                        \
     do {                                                            \
-        logInit(ODBC_LOG_PATH);                                    \
+        logInit(ODBC_LOG_PATH);                                     \
         fprintf(log_file, "%s: " fmt, __FUNCTION__, __VA_ARGS__);   \
         fflush(log_file);                                           \
     } while (false)
