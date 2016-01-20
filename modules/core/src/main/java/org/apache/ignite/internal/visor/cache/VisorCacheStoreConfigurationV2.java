@@ -15,19 +15,34 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.managers.discovery;
+package org.apache.ignite.internal.visor.cache;
 
-import org.apache.ignite.cluster.ClusterNode;
-import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.internal.IgniteEx;
 
 /**
- * Listener interface.
+ * Data transfer object for cache store configuration properties.
  */
-public interface CustomEventListener<T extends DiscoveryCustomMessage> {
+public class VisorCacheStoreConfigurationV2 extends VisorCacheStoreConfiguration {
+    /** */
+    private static final long serialVersionUID = 0L;
+
+    /** Keep binary in store flag. */
+    private boolean storeKeepBinary;
+
+    /** {@inheritDoc} */
+    @Override public VisorCacheStoreConfiguration from(IgniteEx ignite, CacheConfiguration ccfg) {
+        super.from(ignite, ccfg);
+
+        storeKeepBinary = ccfg.isStoreKeepBinary();
+
+        return this;
+    }
+
     /**
-     * @param topVer Current topology version.
-     * @param snd Sender.
-     * @param msg Message.
+     * @return Keep binary in store flag.
      */
-    public void onCustomEvent(AffinityTopologyVersion topVer, ClusterNode snd, T msg);
+    public boolean storeKeepBinary() {
+        return storeKeepBinary;
+    }
 }

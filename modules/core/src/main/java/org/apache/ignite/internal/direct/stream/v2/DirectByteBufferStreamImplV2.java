@@ -621,6 +621,8 @@ public class DirectByteBufferStreamImplV2 implements DirectByteBufferStream {
                 try {
                     writer.beforeInnerMessageWrite();
 
+                    writer.setCurrentWriteClass(msg.getClass());
+
                     lastFinished = msg.writeTo(buf, writer);
                 }
                 finally {

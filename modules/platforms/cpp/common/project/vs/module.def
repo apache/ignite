@@ -113,3 +113,4 @@ IgniteListenableCancel @110
 IgniteListenableIsCancelled @111
 IgniteTargetListenFutureAndGet @112
 IgniteTargetListenFutureForOperationAndGet @113
+IgniteProcessorDestroyCache @114

@@ -15,46 +15,33 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.continuous;
+package org.apache.ignite.internal.visor.cache;
 
-import java.util.UUID;
-import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
-import org.apache.ignite.lang.IgniteUuid;
+import org.apache.ignite.configuration.CacheConfiguration;
 
 /**
- *
+ * Data transfer object for cache query configuration data.
  */
-public abstract class AbstractContinuousMessage implements DiscoveryCustomMessage {
+public class VisorCacheQueryConfigurationV2 extends VisorCacheQueryConfiguration {
     /** */
-    private static final long serialVersionUID = 2781778657738703012L;
+    private static final long serialVersionUID = 0L;
 
-    /** Routine ID. */
-    protected final UUID routineId;
-
-    /** Custom message ID. */
-    private final IgniteUuid id = IgniteUuid.randomUuid();
+    /** */
+    private String sqlSchema;
 
     /**
-     * @param id Id.
+     * @return Schema name, which is used by SQL engine for SQL statements generation.
      */
-    protected AbstractContinuousMessage(UUID id) {
-        routineId = id;
+    public String sqlSchema() {
+        return sqlSchema;
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteUuid id() {
-        return id;
-    }
+    @Override public VisorCacheQueryConfiguration from(CacheConfiguration ccfg) {
+        super.from(ccfg);
 
-    /**
-     * @return Routine ID.
-     */
-    public UUID routineId() {
-        return routineId;
-    }
+        sqlSchema = ccfg.getSqlSchema();
 
-    /** {@inheritDoc} */
-    @Override public boolean isMutable() {
-        return false;
+        return this;
     }
 }
