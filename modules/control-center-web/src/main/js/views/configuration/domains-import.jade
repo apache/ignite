@@ -138,18 +138,18 @@ mixin td-ellipses-lbl(w, lbl)
                                     table.table-modal-striped(id='importTableData')
                                         tbody
                                             tr(ng-repeat='table in importDomain.displayedTables track by $index')
-                                                td(width='30px')
+                                                td(width='30px' style='min-width: 30px; max-width: 30px')
                                                     input(type='checkbox' ng-model='table.use' ng-change='selectTable()')
                                                 +td-ellipses-lbl('130px', '{{::table.schema}}')
                                                 +td-ellipses-lbl('160px', '{{::table.tbl}}')
-                                                td.td-ellipsis(width='160px')
-                                                    div(ng-show='ui.generateCaches')
-                                                        button.select-toggle.form-control(ng-if='table.editCache' bs-select ng-model='table.cache' data-container='false' bs-options='item.value as item.label for item in importCaches')
+                                                td(width='160px' style='min-width: 160px; max-width: 160px')
+                                                    div.td-ellipsis(ng-show='ui.generateCaches')
                                                         a(ng-if='!table.editCache' ng-click='startEditDbTableCache(table)') {{dbTableCache(table)}}
-                                                td.td-ellipsis(width='128px')
-                                                    div(ng-show='ui.generateCaches')
-                                                        button.select-toggle.form-control(ng-if='table.editTemplate' bs-select ng-model='table.template' style='max-width: 110px' data-container='false' bs-options='item.value as item.label for item in importCacheTemplates')
+                                                        button.select-toggle.form-control(ng-if='table.editCache' bs-select ng-model='table.cache' data-container='false' bs-options='item.value as item.label for item in importCaches')
+                                                td(width='128px' style='min-width: 128px; max-width: 128px')
+                                                    div.td-ellipsis(ng-show='ui.generateCaches')
                                                         a(ng-if='!table.editTemplate' ng-click='startEditDbTableTemplate(table)') {{dbTableTemplate(table)}}
+                                                        button.select-toggle.form-control(ng-if='table.editTemplate' bs-select ng-model='table.template' style='max-width: 110px' data-container='false' bs-options='item.value as item.label for item in importCacheTemplates')
                                                 td
                 .settings-row
                     .checkbox

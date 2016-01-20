@@ -174,9 +174,7 @@ public class RemoteHandler implements AutoCloseable {
         JsonObject res = new JsonObject();
 
         res.addProperty("type", "CallRes");
-
         res.addProperty("reqId", reqId);
-
         res.addProperty("error", exType + ": " + exMsg);
 
         snd.send(res);
@@ -194,7 +192,6 @@ public class RemoteHandler implements AutoCloseable {
         JsonObject resp = new JsonObject();
 
         resp.addProperty("type", "CallRes");
-
         resp.addProperty("reqId", reqId);
 
         JsonElement resJson = type == void.class ? JsonNull.INSTANCE : GSON.toJsonTree(res, type);

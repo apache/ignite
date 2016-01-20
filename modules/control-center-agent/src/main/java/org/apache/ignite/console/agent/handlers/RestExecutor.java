@@ -172,7 +172,7 @@ public class RestExecutor {
      * Request result.
      */
     public static class RestResult {
-        /** REST http code */
+        /** REST http code. */
         private int restCode;
 
         /** The field contains description of error if server could not handle the request. */

@@ -249,7 +249,7 @@ Client.prototype._invokeRmtMethod = function(method, args, callback) {
         if (callback)
             callback('org.apache.ignite.agent.AgentException: Connection is closed');
 
-        return
+        return;
     }
 
     var msg = {
