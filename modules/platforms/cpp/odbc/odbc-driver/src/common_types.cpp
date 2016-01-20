@@ -24,7 +24,6 @@ namespace ignite
 {
     namespace odbc
     {
-
         int SqlResultToReturnCode(SqlResult result)
         {
             switch (result)
@@ -96,7 +95,22 @@ namespace ignite
                 default:
                     break;
             }
+
             return IGNITE_SQL_DIAG_UNKNOWN;
+        }
+
+        EnvironmentAttribute EnvironmentAttributeToInternal(int32_t attr)
+        {
+            switch (attr)
+            {
+                case SQL_ATTR_ODBC_VERSION:
+                    return IGNITE_SQL_ENV_ATTR_ODBC_VERSION;
+
+                default:
+                    break;
+            }
+
+            return IGNITE_SQL_ENV_ATTR_UNKNOWN;
         }
     }
 }

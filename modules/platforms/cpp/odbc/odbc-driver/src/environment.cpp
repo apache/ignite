@@ -85,7 +85,10 @@ namespace ignite
 
         SqlResult Environment::InternalSetAttribute(int32_t attr, void* value, int32_t len)
         {
-            return SQL_RESULT_SUCCESS;
+            AddStatusRecord(SQL_STATE_HYC00_OPTIONAL_FEATURE_NOT_IMPLEMENTED,
+                "Attribute is not supported.");
+
+            return SQL_RESULT_ERROR;
         }
 
         void Environment::GetAttribute(int32_t attr, app::ApplicationDataBuffer& buffer)
@@ -95,7 +98,10 @@ namespace ignite
 
         SqlResult Environment::InternalGetAttribute(int32_t attr, app::ApplicationDataBuffer& buffer)
         {
-            return SQL_RESULT_SUCCESS;
+            AddStatusRecord(SQL_STATE_HYC00_OPTIONAL_FEATURE_NOT_IMPLEMENTED,
+                "Attribute is not supported.");
+
+            return SQL_RESULT_ERROR;
         }
     }
 }

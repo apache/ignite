@@ -117,6 +117,9 @@ namespace ignite
          */
         enum DiagnosticField
         {
+            /** Field type is unknown to the driver. */
+            IGNITE_SQL_DIAG_UNKNOWN,
+
             /** Header record field: Count of rows in the cursor. */
             IGNITE_SQL_DIAG_HEADER_CURSOR_ROW_COUNT,
 
@@ -166,10 +169,19 @@ namespace ignite
             IGNITE_SQL_DIAG_STATUS_SQLSTATE,
 
             /** Status record field: Subclass origin. */
-            IGNITE_SQL_DIAG_STATUS_SUBCLASS_ORIGIN,
+            IGNITE_SQL_DIAG_STATUS_SUBCLASS_ORIGIN
+        };
 
-            /** Field type is unknown to the driver. */
-            IGNITE_SQL_DIAG_UNKNOWN
+        /**
+         * Environment attribute.
+         */
+        enum EnvironmentAttribute
+        {
+            /** ODBC attribute is unknown to the driver. */
+            IGNITE_SQL_ENV_ATTR_UNKNOWN,
+
+            /** ODBC attribute. */
+            IGNITE_SQL_ENV_ATTR_ODBC_VERSION
         };
 
         /**
@@ -187,6 +199,14 @@ namespace ignite
          * @return Internal DiagnosticField type value.
          */
         DiagnosticField DiagnosticFieldToInternal(int16_t field);
+
+        /**
+         * Convert environment attribute to internal EnvironmentAttribute type value.
+         *
+         * @param attr Environment attribute.
+         * @return Internal EnvironmentAttribute type value.
+         */
+        EnvironmentAttribute EnvironmentAttributeToInternal(int32_t attr);
     }
 }
 
