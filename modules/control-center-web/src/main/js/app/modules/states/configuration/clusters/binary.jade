@@ -23,7 +23,7 @@ form.panel.panel-default(bs-collapse ng-model='panel' name='binary')
         label Binary configuration
         ignite-form-field-tooltip.tipLabel
             | Configuration for Ignite Binary Objects
-        i.pull-right.fa.fa-undo(
+        //i.pull-right.fa.fa-undo(
             ng-show='!preview["binary"].allDefaults' 
             ng-click='#{model} = {}; $event.stopPropagation()' 
             bs-tooltip 
@@ -114,7 +114,7 @@ form.panel.panel-default(bs-collapse ng-model='panel' name='binary')
                                     | Enum
                                     ignite-form-field-tooltip
                                         | Flag indicating that this type is the enum
-                                            
+
 
                 .settings-row
                     ignite-form-field.checkbox

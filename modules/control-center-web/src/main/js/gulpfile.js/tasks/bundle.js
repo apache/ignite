@@ -34,7 +34,6 @@ var legacy_paths = [
 	'./helpers/generator/**/*.js'
 ];
 
-
 var options = {
 	minify: true
 };
