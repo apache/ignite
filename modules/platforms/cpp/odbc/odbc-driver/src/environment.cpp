@@ -126,6 +126,22 @@ namespace ignite
 
         SqlResult Environment::InternalGetAttribute(int32_t attr, app::ApplicationDataBuffer& buffer)
         {
+            EnvironmentAttribute attribute = EnvironmentAttributeToInternal(attr);
+
+            switch (attribute)
+            {
+                case IGNITE_SQL_ENV_ATTR_ODBC_VERSION:
+                {
+                    buffer.PutInt32(odbcVersion);
+
+                    break;
+                }
+
+                case IGNITE_SQL_ENV_ATTR_UNKNOWN:
+                default:
+                    break;
+            }
+
             AddStatusRecord(SQL_STATE_HYC00_OPTIONAL_FEATURE_NOT_IMPLEMENTED,
                 "Attribute is not supported.");
 
