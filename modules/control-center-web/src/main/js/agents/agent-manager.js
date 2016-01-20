@@ -112,6 +112,19 @@ function Client(ws, manager) {
     this._cbMap = {};
 }
 
+Client.prototype._runCommand = function(method, args) {
+    var self = this;
+
+    return new Promise(function(resolve, reject) {
+        self._invokeRmtMethod(method, args, function(error, res) {
+            if (error != null)
+                return reject(error);
+
+            resolve(res);
+        });
+    });
+};
+
 /**
  * @param {String} uri
  * @param {Object} params
@@ -119,13 +132,13 @@ function Client(ws, manager) {
  * @param {String} [method]
  * @param {Object} [headers]
  * @param {String} [body]
- * @param {Function} [cb] Callback. Take 3 arguments: {String} error, {number} httpCode, {string} response.
+ * @param {callback} [callback] Callback. Take 3 arguments: {Number} successStatus, {String} error,  {String} response.
  */
-Client.prototype.executeRest = function(uri, params, demo, method, headers, body, cb) {
+Client.prototype.executeRest = function(uri, params, demo, method, headers, body, callback) {
     if (typeof(params) != 'object')
         throw '"params" argument must be an object';
 
-    if (typeof(cb) != 'function')
+    if (typeof(callback) != 'function')
         throw 'callback must be a function';
 
     if (body && typeof(body) != 'string')
@@ -142,83 +155,112 @@ Client.prototype.executeRest = function(uri, params, demo, method, headers, body
     if (method != 'GET' && method != 'POST')
         throw 'Unknown HTTP method: ' + method;
 
-    var newArgs = argsToArray(arguments);
+    const cb = function(error, restResult) {
+        if (error)
+            return callback(error);
 
-    newArgs[6] = function(ex, res) {
-        if (ex)
-            cb(ex.message);
-        else
-            cb(null, res.code, res.message)
+        const restError = restResult.error;
+
+        if (restError)
+            return callback(restError);
+
+        const restCode = restResult.restCode;
+
+        if (restCode !== 200) {
+            if (restCode === 401)
+                return callback.call({code: restCode, message: "Failed to authenticate on node."});
+
+            return callback.call({code: restCode, message: restError || "Failed connect to node and execute REST command."});
+        }
+
+        try {
+            var nodeResponse = JSON.parse(restResult.response);
+
+            if (nodeResponse.successStatus === 0)
+                return callback(null, nodeResponse.response);
+
+            switch (nodeResponse.successStatus) {
+                case 1:
+                    return callback({code: 500, message: nodeResponse.error});
+                case 2:
+                    return callback({code: 401, message: nodeResponse.error});
+                case 3:
+                    return callback({code: 403, message: nodeResponse.error});
+            }
+
+            callback(nodeResponse.error);
+        }
+        catch (e) {
+            callback(e);
+        }
     };
 
-    this._invokeRmtMethod('executeRest', newArgs);
+    this._invokeRmtMethod('executeRest', [uri, params, demo, method, headers, body], cb);
 };
 
 /**
  * @param {string} error
  */
 Client.prototype.authResult = function(error) {
-    this._invokeRmtMethod('authResult', arguments)
+    return this._runCommand('authResult', [].slice.call(arguments));
 };
 
 /**
- * @param {String} jdbcDriverJarPath
- * @param {String} jdbcDriverClass
- * @param {String} jdbcUrl
- * @param {Object} jdbcInfo
- * @param {Function} cb Callback. Take two arguments: {Object} exception, {Object} result.
- * @returns {Array} List of tables (see org.apache.ignite.schema.parser.DbTable java class)
+ * @param {String} driverPath
+ * @param {String} driverClass
+ * @param {String} url
+ * @param {Object} info
+ * @returns {Promise} Promise on list of tables (see org.apache.ignite.schema.parser.DbTable java class)
  */
-Client.prototype.metadataSchemas = function(jdbcDriverJarPath, jdbcDriverClass, jdbcUrl, jdbcInfo, cb) {
-    this._invokeRmtMethod('schemas', arguments)
+Client.prototype.metadataSchemas = function(driverPath, driverClass, url, info) {
+    return this._runCommand('schemas', [].slice.call(arguments));
 };
 
 /**
- * @param {String} jdbcDriverJarPath
- * @param {String} jdbcDriverClass
- * @param {String} jdbcUrl
- * @param {Object} jdbcInfo
+ * @param {String} driverPath
+ * @param {String} driverClass
+ * @param {String} url
+ * @param {Object} info
  * @param {Array} schemas
  * @param {Boolean} tablesOnly
- * @param {Function} cb Callback. Take two arguments: {Object} exception, {Object} result.
- * @returns {Array} List of tables (see org.apache.ignite.schema.parser.DbTable java class)
+ * @returns {Promise} Promise on list of tables (see org.apache.ignite.schema.parser.DbTable java class)
  */
-Client.prototype.metadataTables = function(jdbcDriverJarPath, jdbcDriverClass, jdbcUrl, jdbcInfo, schemas, tablesOnly, cb) {
-    this._invokeRmtMethod('metadata', arguments)
+Client.prototype.metadataTables = function(driverPath, driverClass, url, info, schemas, tablesOnly) {
+    return this._runCommand('metadata', [].slice.call(arguments));
 };
 
 /**
- * @param {Function} cb Callback. Take two arguments: {Object} exception, {Object} result.
- * @returns {Array} List of jars from driver folder.
+ * @returns {Promise} Promise on list of jars from driver folder.
  */
-Client.prototype.availableDrivers = function(cb) {
-    this._invokeRmtMethod('availableDrivers', arguments)
+Client.prototype.availableDrivers = function() {
+    return this._runCommand('availableDrivers', [].slice.call(arguments));
 };
 
-Client.prototype._invokeRmtMethod = function(methodName, args) {
-    var cb = null;
-
-    var m = argsToArray(args);
-
-    if (m.length > 0 && typeof m[m.length - 1] == 'function')
-        cb = m.pop();
-
+/**
+ * Run http request
+ *
+ * @this {AgentServer}
+ * @param {String} method Command name.
+ * @param {Array} args Command params.
+ * @param {Function} callback on finish
+ */
+Client.prototype._invokeRmtMethod = function(method, args, callback) {
     if (this._ws.readyState != 1) {
-        if (cb)
-            cb({type: 'org.apache.ignite.agent.AgentException', message: 'Connection is closed'});
+        if (callback)
+            callback('org.apache.ignite.agent.AgentException: Connection is closed');
 
         return
     }
 
     var msg = {
-        mtdName: methodName,
-        args: m
+        method: method,
+        args: args
     };
 
-    if (cb) {
+    if (callback) {
         var reqId = this._reqCounter++;
 
-        this._cbMap[reqId] = cb;
+        this._cbMap[reqId] = callback;
 
         msg.reqId = reqId;
     }
@@ -251,16 +293,13 @@ Client.prototype._rmtAuthMessage = function(msg) {
 };
 
 Client.prototype._rmtCallRes = function(msg) {
-    var cb = this._cbMap[msg.reqId];
+    var callback = this._cbMap[msg.reqId];
 
-    if (!cb) return;
+    if (!callback) return;
 
     delete this._cbMap[msg.reqId];
 
-    if (msg.ex)
-        cb(msg.ex);
-    else
-        cb(null, msg.res);
+    callback(msg.error, msg.response);
 };
 
 /**
@@ -276,19 +315,6 @@ function removeFromArray(arr, val) {
     while ((idx = arr.indexOf(val)) !== -1) {
         arr.splice(idx, 1);
     }
-}
-
-/**
- * @param args
- * @returns {Array}
- */
-function argsToArray(args) {
-    var res = [];
-
-    for (var i = 0; i < args.length; i++)
-        res.push(args[i]);
-
-    return res;
 }
 
 exports.AgentManager = AgentManager;
