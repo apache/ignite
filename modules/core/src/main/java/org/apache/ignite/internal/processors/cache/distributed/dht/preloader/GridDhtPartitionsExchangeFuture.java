@@ -1122,6 +1122,9 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
      * Checking each partition for an existing of an owning node.
      */
     private void processLostPartitions() {
+        if (oldestNode == null && exchId.topologyVersion().topologyVersion() <= 1)
+            return;
+
         // Collect all owned partitions for caches.
         for (GridCacheContext cacheContext : cctx.cacheContexts()) {
             if (cacheContext.isLocal())
@@ -1269,6 +1272,10 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
             return null;
 
         if (cctx.config().getDataLossPolicy() == DataLossPolicy.FAIL_OPS) {
+
+            if (oldestNode == null && exchId.topologyVersion().topologyVersion() <= 1)
+                return null;
+
             Map<Integer, Boolean> partitionIsLost = cachesPartitionsLoss.get(cctx.cacheId());
 
             if (keys != null) {
