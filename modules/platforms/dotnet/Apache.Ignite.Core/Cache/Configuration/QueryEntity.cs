@@ -82,11 +82,11 @@ namespace Apache.Ignite.Core.Cache.Configuration
             {
                 RescanAttributes(value, _valueType);  // Do this first because it can throw
 
-                _keyType = value;
-
                 KeyTypeName = value == null
                     ? null
                     : (JavaTypes.GetJavaTypeName(value) ?? BinaryUtils.GetTypeName(value));
+
+                _keyType = value;
             }
         }
 
@@ -113,16 +113,16 @@ namespace Apache.Ignite.Core.Cache.Configuration
         /// </summary>
         public Type ValueType
         {
-            get { return _valueType ?? JavaTypes.GetDotNetType(KeyTypeName); }
+            get { return _valueType ?? JavaTypes.GetDotNetType(ValueTypeName); }
             set
             {
                 RescanAttributes(_keyType, value);  // Do this first because it can throw
 
-                _valueType = value;
-
                 ValueTypeName = value == null
                     ? null
                     : (JavaTypes.GetJavaTypeName(value) ?? BinaryUtils.GetTypeName(value));
+
+                _valueType = value;
             }
         }
 
