@@ -214,6 +214,9 @@ namespace Apache.Ignite.Core.Impl.Common
         {
             Debug.Assert(name.Length > 0);
 
+            if (name == "Int32")
+                return "int"; // allow aliases
+
             return char.ToLower(name[0]) + name.Substring(1);
         }
 

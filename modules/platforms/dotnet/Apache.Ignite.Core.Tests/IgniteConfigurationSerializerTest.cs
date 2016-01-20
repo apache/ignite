@@ -61,6 +61,9 @@ namespace Apache.Ignite.Core.Tests
                                     </queryEntities>
                                 </cacheConfiguration>
                             </cacheConfiguration>
+                            <includedEventTypes>
+                                <int>42</int>
+                            </includedEventTypes>
                         </igniteConfig>";
             var reader = XmlReader.Create(new StringReader(xml));
 
@@ -76,6 +79,7 @@ namespace Apache.Ignite.Core.Tests
             Assert.AreEqual(15, ((LifecycleBean) cfg.LifecycleBeans.Single()).Foo);
             Assert.AreEqual("testBar", ((NameMapper) cfg.BinaryConfiguration.DefaultNameMapper).Bar);
             Assert.AreEqual(typeof(Foo), cfg.BinaryConfiguration.Types.Single());
+            Assert.AreEqual(42, cfg.IncludedEventTypes.Single());
         }
 
         public class LifecycleBean : ILifecycleBean
