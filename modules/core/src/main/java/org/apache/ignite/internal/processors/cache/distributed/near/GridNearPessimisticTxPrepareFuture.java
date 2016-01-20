@@ -63,9 +63,11 @@ public class GridNearPessimisticTxPrepareFuture extends GridNearTxPrepareFutureA
         super(cctx, tx);
 
         assert tx.pessimistic() : tx;
+    }
 
-        // Should wait for all mini futures completion before finishing tx.
-        ignoreChildFailures(IgniteCheckedException.class);
+    /** {@inheritDoc} */
+    @Override protected boolean ignoreFailure(Throwable err) {
+        return IgniteCheckedException.class.isAssignableFrom(err.getClass());
     }
 
     /** {@inheritDoc} */

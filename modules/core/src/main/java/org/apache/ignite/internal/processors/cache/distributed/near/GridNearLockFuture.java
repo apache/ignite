@@ -177,7 +177,7 @@ public final class GridNearLockFuture extends GridCompoundIdentityFuture<Boolean
         CacheEntryPredicate[] filter,
         boolean skipStore,
         boolean keepBinary) {
-        super(cctx.kernalContext(), CU.boolReducer());
+        super(CU.boolReducer());
 
         assert keys != null;
 
