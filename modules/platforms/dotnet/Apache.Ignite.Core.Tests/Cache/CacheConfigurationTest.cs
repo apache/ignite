@@ -239,7 +239,7 @@ namespace Apache.Ignite.Core.Tests.Cache
             Assert.AreEqual(x.ValueTypeName, y.ValueTypeName);
 
             AssertConfigsAreEqual(x.Fields, y.Fields);
-            CollectionAssert.AreEqual(x.Aliases, y.Aliases);
+            AssertConfigsAreEqual(x.Aliases, y.Aliases);
 
             AssertConfigsAreEqual(x.Indexes, y.Indexes);
         }
@@ -265,6 +265,23 @@ namespace Apache.Ignite.Core.Tests.Cache
         /// Asserts that two configurations have the same properties.
         /// </summary>
         private static void AssertConfigsAreEqual(ICollection<QueryField> x, ICollection<QueryField> y)
+        {
+            if (x == null)
+            {
+                Assert.IsNull(y);
+                return;
+            }
+
+            Assert.AreEqual(x.Count, y.Count);
+
+            for (var i = 0; i < x.Count; i++)
+                AssertConfigsAreEqual(x.ElementAt(i), y.ElementAt(i));
+        }
+
+        /// <summary>
+        /// Asserts that two configurations have the same properties.
+        /// </summary>
+        private static void AssertConfigsAreEqual(ICollection<QueryAlias> x, ICollection<QueryAlias> y)
         {
             if (x == null)
             {
@@ -319,6 +336,18 @@ namespace Apache.Ignite.Core.Tests.Cache
 
             Assert.AreEqual(x.Name, y.Name);
             Assert.AreEqual(x.TypeName, y.TypeName);
+        }
+
+        /// <summary>
+        /// Asserts that two configurations have the same properties.
+        /// </summary>
+        private static void AssertConfigsAreEqual(QueryAlias x, QueryAlias y)
+        {
+            Assert.IsNotNull(x);
+            Assert.IsNotNull(y);
+
+            Assert.AreEqual(x.FullName, y.FullName);
+            Assert.AreEqual(x.Alias, y.Alias);
         }
 
         /// <summary>
@@ -388,7 +417,7 @@ namespace Apache.Ignite.Core.Tests.Cache
                             new QueryField("name", typeof(string)), 
                             new QueryField("location", typeof(string)),
                         },
-                        Aliases = new Dictionary<string, string> {{"length", "len"}},
+                        Aliases = new [] {new QueryAlias("length", "len") },
                         Indexes = new[]
                         {
                             new QueryIndex("name") {Name = "index1" },

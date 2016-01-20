@@ -15,35 +15,33 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.util.future;
+package org.apache.ignite.internal.visor.cache;
 
-import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.lang.IgniteReducer;
-import org.jetbrains.annotations.Nullable;
+import org.apache.ignite.configuration.CacheConfiguration;
 
 /**
- * Compound future with reducer which accepts and produces results of the same type.
+ * Data transfer object for cache query configuration data.
  */
-public class GridCompoundIdentityFuture<T> extends GridCompoundFuture<T, T> {
+public class VisorCacheQueryConfigurationV2 extends VisorCacheQueryConfiguration {
     /** */
     private static final long serialVersionUID = 0L;
 
-    /**
-     *
-     */
-    public GridCompoundIdentityFuture() {
-        // No-op.
-    }
+    /** */
+    private String sqlSchema;
 
     /**
-     * @param rdc Reducer.
+     * @return Schema name, which is used by SQL engine for SQL statements generation.
      */
-    public GridCompoundIdentityFuture(@Nullable IgniteReducer<T, T> rdc) {
-        super(rdc);
+    public String sqlSchema() {
+        return sqlSchema;
     }
 
     /** {@inheritDoc} */
-    @Override public String toString() {
-        return S.toString(GridCompoundIdentityFuture.class, this, super.toString());
+    @Override public VisorCacheQueryConfiguration from(CacheConfiguration ccfg) {
+        super.from(ccfg);
+
+        sqlSchema = ccfg.getSqlSchema();
+
+        return this;
     }
 }

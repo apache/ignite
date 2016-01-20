@@ -30,6 +30,14 @@ namespace Apache.Ignite.Core.Cache.Configuration
     public class QueryIndex
     {
         /// <summary>
+        /// Initializes a new instance of the <see cref="QueryIndex"/> class.
+        /// </summary>
+        public QueryIndex()
+        {
+            // No-op.
+        }
+
+        /// <summary>
         /// Initializes a new instance of the <see cref="QueryIndex" /> class.
         /// </summary>
         /// <param name="fieldName">Name of the field.</param>

@@ -20,47 +20,32 @@ namespace Apache.Ignite.Core.Cache.Configuration
     using Apache.Ignite.Core.Impl.Common;
 
     /// <summary>
-    /// Represents an indexed field.
+    /// Represents cache query configuration alias.
     /// </summary>
-    public class IndexField
+    public class QueryAlias
     {
         /// <summary>
-        /// Initializes a new instance of the <see cref="IndexField"/> class.
+        /// Initializes a new instance of the <see cref="QueryAlias"/> class.
         /// </summary>
-        public IndexField()
+        /// <param name="fullName">The full name.</param>
+        /// <param name="alias">The alias.</param>
+        public QueryAlias(string fullName, string alias)
         {
-            // No-op.
+            IgniteArgumentCheck.NotNullOrEmpty(fullName, "fullName");
+            IgniteArgumentCheck.NotNullOrEmpty(alias, "alias");
+
+            FullName = fullName;
+            Alias = alias;
         }
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="IndexField"/> class.
+        /// Gets or sets the full name of the query field.
         /// </summary>
-        /// <param name="name">The name.</param>
-        public IndexField(string name)
-        {
-            IgniteArgumentCheck.NotNullOrEmpty(name, "name");
-
-            Name = name;
-        }
-
+        public string FullName { get; set; }
+        
         /// <summary>
-        /// Initializes a new instance of the <see cref="IndexField"/> class.
+        /// Gets or sets the alias for the full name.
         /// </summary>
-        /// <param name="name">The name.</param>
-        /// <param name="isDescending">Sort direction.</param>
-        public IndexField(string name, bool isDescending) : this (name)
-        {
-            IsDescending = isDescending;
-        }
-
-        /// <summary>
-        /// Gets the name.
-        /// </summary>
-        public string Name { get; set; }
-
-        /// <summary>
-        /// Gets a value indicating whether this index is descending. Default is false.
-        /// </summary>
-        public bool IsDescending { get; set; }
+        public string Alias { get; set; }
     }
 }

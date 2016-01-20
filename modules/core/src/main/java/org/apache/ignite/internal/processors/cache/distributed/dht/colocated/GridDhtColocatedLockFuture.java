@@ -169,7 +169,7 @@ public final class GridDhtColocatedLockFuture extends GridCompoundIdentityFuture
         CacheEntryPredicate[] filter,
         boolean skipStore,
         boolean keepBinary) {
-        super(cctx.kernalContext(), CU.boolReducer());
+        super(CU.boolReducer());
 
         assert keys != null;
 

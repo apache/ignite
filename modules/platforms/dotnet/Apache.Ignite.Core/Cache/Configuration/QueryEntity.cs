@@ -139,7 +139,7 @@ namespace Apache.Ignite.Core.Cache.Configuration
         /// Example: {"parent.name" -> "parentName"}.
         /// </summary>
         [SuppressMessage("Microsoft.Usage", "CA2227:CollectionPropertiesShouldBeReadOnly")]
-        public IDictionary<string, string> Aliases { get; set; }
+        public ICollection<QueryAlias> Aliases { get; set; }
 
         /// <summary>
         /// Gets or sets the query indexes.
@@ -162,7 +162,7 @@ namespace Apache.Ignite.Core.Cache.Configuration
 
             count = reader.ReadInt();
             Aliases = count == 0 ? null : Enumerable.Range(0, count)
-                .ToDictionary(x => reader.ReadString(), x => reader.ReadString());
+                .Select(x=> new QueryAlias(reader.ReadString(), reader.ReadString())).ToList();
 
             count = reader.ReadInt();
             Indexes = count == 0 ? null : Enumerable.Range(0, count).Select(x => new QueryIndex(reader)).ToList();
@@ -194,10 +194,10 @@ namespace Apache.Ignite.Core.Cache.Configuration
             {
                 writer.WriteInt(Aliases.Count);
 
-                foreach (var field in Aliases)
+                foreach (var queryAlias in Aliases)
                 {
-                    writer.WriteString(field.Key);
-                    writer.WriteString(field.Value);
+                    writer.WriteString(queryAlias.FullName);
+                    writer.WriteString(queryAlias.Alias);
                 }
             }
             else
