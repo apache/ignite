@@ -87,6 +87,16 @@ namespace ignite
         {
             return SQL_RESULT_SUCCESS;
         }
+
+        void Environment::GetAttribute(int32_t attr, app::ApplicationDataBuffer& buffer)
+        {
+            IGNITE_ODBC_API_CALL(InternalGetAttribute(attr, buffer));
+        }
+
+        SqlResult Environment::InternalGetAttribute(int32_t attr, app::ApplicationDataBuffer& buffer)
+        {
+            return SQL_RESULT_SUCCESS;
+        }
     }
 }
 

@@ -68,6 +68,14 @@ namespace ignite
              */
             void SetAttribute(int32_t attr, void* value, int32_t len);
 
+            /**
+             * Get attribute.
+             *
+             * @param attr Attribute to set.
+             * @param buffer Buffer to put value to.
+             */
+            void GetAttribute(int32_t attr, app::ApplicationDataBuffer& buffer);
+
         private:
             IGNITE_NO_COPY_ASSIGNMENT(Environment);
 
@@ -95,9 +103,10 @@ namespace ignite
              * @return Operation result.
              */
             SqlResult InternalTransactionRollback();
-            
+
             /**
              * Set attribute.
+             * Internal call.
              *
              * @param attr Attribute to set.
              * @param value Value.
@@ -105,6 +114,16 @@ namespace ignite
              * @return Operation result.
              */
             SqlResult InternalSetAttribute(int32_t attr, void* value, int32_t len);
+
+            /**
+             * Get attribute.
+             * Internal call.
+             *
+             * @param attr Attribute to set.
+             * @param buffer Buffer to put value to.
+             * @return Operation result.
+             */
+            SqlResult InternalGetAttribute(int32_t attr, app::ApplicationDataBuffer& buffer);
         };
     }
 }

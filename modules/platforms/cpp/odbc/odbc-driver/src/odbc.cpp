@@ -1315,8 +1315,27 @@ SQLRETURN SQL_API SQLGetEnvAttr(SQLHENV     env,
                                 SQLINTEGER  valueBufLen,
                                 SQLINTEGER* valueResLen)
 {
+    using namespace ignite::odbc;
+    using namespace ignite::odbc::type_traits;
+
+    using ignite::odbc::app::ApplicationDataBuffer;
+
     LOG_MSG("SQLGetEnvAttr called\n");
-    return SQL_SUCCESS;
+
+    Environment *environment = reinterpret_cast<Environment*>(env);
+
+    if (!environment)
+        return SQL_INVALID_HANDLE;
+
+    SqlLen outResLen;
+    ApplicationDataBuffer outBuffer(IGNITE_ODBC_C_TYPE_DEFAULT, valueBuf,
+        static_cast<int32_t>(valueBufLen), &outResLen);
+
+    environment->GetAttribute(attr, outBuffer);
+
+    *valueResLen = static_cast<SQLSMALLINT>(outResLen);
+
+    return environment->GetDiagnosticRecords().GetReturnCode();
 }
 
 //
