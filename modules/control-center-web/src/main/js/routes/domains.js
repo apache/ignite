@@ -164,7 +164,7 @@ function _save(domains, res) {
                 _saveDomainModel(domain, savedDomains, callback);
         }, function (err) {
             if (err)
-                res.status(500).send(err);
+                res.status(500).send(err.message);
             else
                 res.send({ savedDomains: savedDomains, generatedCaches: generatedCaches });
         });
