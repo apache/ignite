@@ -20,6 +20,8 @@ consoleModule.controller('clustersController', function ($http, $timeout, $scope
     $common, $focus, $confirm, $clone, $table, $preview, $loading, $unsavedChangesGuard, igniteIncludeEventGroups) {
         $unsavedChangesGuard.install($scope);
 
+        var __original_value;
+
         // Initialize the super class and extend it.
         angular.extend(this, $controller('save-remove', {$scope: $scope}));
 
@@ -236,7 +238,7 @@ consoleModule.controller('clustersController', function ($http, $timeout, $scope
                 $scope.selectItem($scope.clusters[0]);
         }
 
-        $loading.start('loadingClustersScreen');
+        $loading.start('loading');
 
         // When landing on the page, get clusters and show them.
         $http.post('/api/v1/configuration/clusters/list')
@@ -288,6 +290,10 @@ consoleModule.controller('clustersController', function ($http, $timeout, $scope
                         }
 
                         $scope.$watch('backupItem', function (val) {
+                            if (__original_value === JSON.stringify(val)) {
+                                $scope.ui.inputForm.$setPristine();
+                            }
+
                             if (val) {
                                 var clusterCaches = _.reduce($scope.caches, function(caches, cache){
                                     if (_.contains(val.caches, cache.value)) {
@@ -382,7 +388,8 @@ consoleModule.controller('clustersController', function ($http, $timeout, $scope
             })
             .finally(function () {
                 $scope.ui.ready = true;
-                $loading.finish('loadingClustersScreen');
+                $scope.ui.inputForm.$setPristine();
+                $loading.finish('loading');
             });
 
         $scope.selectItem = function (item, backup) {
@@ -409,6 +416,8 @@ consoleModule.controller('clustersController', function ($http, $timeout, $scope
                     $scope.backupItem = angular.copy(item);
                 else
                     $scope.backupItem = undefined;
+
+                __original_value = JSON.stringify($scope.backupItem);
 
                 if ($common.getQueryVariable('new'))
                     $state.go('base.configuration.clusters');
@@ -793,6 +802,7 @@ consoleModule.controller('clustersController', function ($http, $timeout, $scope
             $confirm.confirm('Are you sure you want to undo all changes for current cluster?')
                 .then(function() {
                     $scope.backupItem = $scope.selectedItem ? angular.copy($scope.selectedItem) : prepareNewItem();
+                    $scope.ui.inputForm.$setPristine();
                 });
         };
     }
