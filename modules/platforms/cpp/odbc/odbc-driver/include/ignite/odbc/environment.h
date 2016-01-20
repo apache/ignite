@@ -124,6 +124,9 @@ namespace ignite
              * @return Operation result.
              */
             SqlResult InternalGetAttribute(int32_t attr, app::ApplicationDataBuffer& buffer);
+
+            /** ODBC version. */
+            int32_t odbcVersion;
         };
     }
 }

@@ -63,6 +63,12 @@ namespace ignite
             /** Error in row. */
             SQL_STATE_01S01_ERROR_IN_ROW,
 
+            /**
+             * The driver did not support the specified value and
+             * substituted a similar value.
+             */
+            SQL_STATE_01S02_OPTION_VALUE_CHANGED,
+
             /** Invalid cursor state. */
             SQL_STATE_24000_INVALID_CURSOR_STATE,
 

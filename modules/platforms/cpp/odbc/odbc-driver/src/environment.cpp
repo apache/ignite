@@ -15,6 +15,7 @@
  * limitations under the License.
  */
 
+#include "ignite/odbc/system/odbc_constants.h"
 #include "ignite/odbc/connection.h"
 #include "ignite/odbc/environment.h"
 
@@ -22,7 +23,8 @@ namespace ignite
 {
     namespace odbc
     {
-        Environment::Environment()
+        Environment::Environment() : 
+            odbcVersion(SQL_OV_ODBC3)
         {
             // No-op.
         }
@@ -85,6 +87,32 @@ namespace ignite
 
         SqlResult Environment::InternalSetAttribute(int32_t attr, void* value, int32_t len)
         {
+            EnvironmentAttribute attribute = EnvironmentAttributeToInternal(attr);
+
+            switch (attribute)
+            {
+                case IGNITE_SQL_ENV_ATTR_ODBC_VERSION:
+                {
+                    int32_t* version = reinterpret_cast<int32_t*>(value);
+
+                    if (*version != odbcVersion)
+                    {
+                        AddStatusRecord(SQL_STATE_01S02_OPTION_VALUE_CHANGED,
+                            "ODBC version is not supported.");
+
+                        *version = odbcVersion;
+
+                        return SQL_RESULT_SUCCESS_WITH_INFO;
+                    }
+
+                    break;
+                }
+
+                case IGNITE_SQL_ENV_ATTR_UNKNOWN:
+                default:
+                    break;
+            }
+
             AddStatusRecord(SQL_STATE_HYC00_OPTIONAL_FEATURE_NOT_IMPLEMENTED,
                 "Attribute is not supported.");
 
