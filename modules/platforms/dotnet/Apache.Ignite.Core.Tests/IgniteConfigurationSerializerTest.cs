@@ -23,6 +23,7 @@ namespace Apache.Ignite.Core.Tests
     using System.Xml;
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Discovery;
+    using Apache.Ignite.Core.Events;
     using Apache.Ignite.Core.Impl.Common;
     using Apache.Ignite.Core.Lifecycle;
     using NUnit.Framework;
@@ -81,7 +82,7 @@ namespace Apache.Ignite.Core.Tests
             Assert.AreEqual(15, ((LifecycleBean) cfg.LifecycleBeans.Single()).Foo);
             Assert.AreEqual("testBar", ((NameMapper) cfg.BinaryConfiguration.DefaultNameMapper).Bar);
             Assert.AreEqual(typeof(Foo), cfg.BinaryConfiguration.Types.Single());
-            Assert.AreEqual(42, cfg.IncludedEventTypes.Single());
+            Assert.AreEqual(new[] {42, EventType.TaskFailed, EventType.JobFinished}, cfg.IncludedEventTypes);
         }
 
         public class LifecycleBean : ILifecycleBean
