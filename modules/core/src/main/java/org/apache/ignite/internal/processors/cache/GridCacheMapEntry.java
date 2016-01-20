@@ -3206,26 +3206,30 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
             boolean useNewExplicitly = false;
 
             if (cctx.conflictNeedResolve()) {
-                IgniteCacheExpiryPolicy expiryPlc = GridCacheAdapter.CacheExpiryPolicy.forPolicy(cctx.expiry());
-
-                GridTuple3<Long, Long, Boolean> expiration = ttlAndExpireTime(expiryPlc,
-                    ttl,
-                    expireTime);
-
                 GridCacheVersionedEntryEx oldEntry = versionedEntry();
                 GridCacheVersionedEntryEx newEntry = new GridCachePlainVersionedEntry<>(
                     oldEntry.key(),
                     val,
-                    expiration.get1(),
-                    expiration.get2(),
-                    ver);
+                    ttl,
+                    expireTime,
+                    ver.conflictVersion());
 
                 boolean verCheck = cctx.config().getAtomicWriteOrderMode() == CacheAtomicWriteOrderMode.CLOCK;
 
                 GridCacheVersionConflictContext<?, ?> conflictCtx = cctx.conflictResolve(oldEntry, newEntry, verCheck);
 
-                if (conflictCtx.isMerge())
+                if (conflictCtx.isMerge()) {
                     val = cctx.toCacheObject(conflictCtx.mergeValue());
+                    ttl = conflictCtx.ttl();
+                    expireTime = conflictCtx.expireTime();
+
+                    ver = new GridCacheVersion(
+                        ver.topologyVersion(),
+                        ver.globalTime(),
+                        ver.order(),
+                        ver.nodeOrder(),
+                        ver.dataCenterId());
+                }
 
                 useNewExplicitly = conflictCtx.isUseNew() || conflictCtx.isMerge();
             }
