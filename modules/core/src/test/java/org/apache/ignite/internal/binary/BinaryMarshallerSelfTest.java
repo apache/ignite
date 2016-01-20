@@ -17,44 +17,6 @@
 
 package org.apache.ignite.internal.binary;
 
-import junit.framework.Assert;
-import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.binary.BinaryCollectionFactory;
-import org.apache.ignite.binary.BinaryField;
-import org.apache.ignite.binary.BinaryStraightIdMapper;
-import org.apache.ignite.binary.BinaryIdMapper;
-import org.apache.ignite.binary.BinaryMapFactory;
-import org.apache.ignite.binary.BinaryObject;
-import org.apache.ignite.binary.BinaryObjectBuilder;
-import org.apache.ignite.binary.BinaryObjectException;
-import org.apache.ignite.binary.BinaryRawReader;
-import org.apache.ignite.binary.BinaryRawWriter;
-import org.apache.ignite.binary.BinaryReader;
-import org.apache.ignite.binary.BinarySerializer;
-import org.apache.ignite.binary.BinaryLowerCaseIdMapper;
-import org.apache.ignite.binary.BinaryType;
-import org.apache.ignite.binary.BinaryTypeConfiguration;
-import org.apache.ignite.binary.BinaryWriter;
-import org.apache.ignite.binary.Binarylizable;
-import org.apache.ignite.configuration.BinaryConfiguration;
-import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.internal.binary.builder.BinaryObjectBuilderImpl;
-import org.apache.ignite.internal.processors.cache.CacheObjectContext;
-import org.apache.ignite.internal.util.GridUnsafe;
-import org.apache.ignite.internal.util.IgniteUtils;
-import org.apache.ignite.internal.util.lang.GridMapEntry;
-import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.logger.NullLogger;
-import org.apache.ignite.marshaller.MarshallerContextTestImpl;
-import org.apache.ignite.testframework.GridTestUtils;
-import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
-import org.jsr166.ConcurrentHashMap8;
-import sun.misc.Unsafe;
-
 import java.io.Externalizable;
 import java.io.IOException;
 import java.io.ObjectInput;
@@ -89,9 +51,50 @@ import java.util.TreeSet;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentSkipListSet;
+import junit.framework.Assert;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.binary.BinaryCollectionFactory;
+import org.apache.ignite.binary.BinaryField;
+import org.apache.ignite.binary.BinaryIdMapper;
+import org.apache.ignite.binary.BinaryLowerCaseIdMapper;
+import org.apache.ignite.binary.BinaryMapFactory;
+import org.apache.ignite.binary.BinaryNameMapper;
+import org.apache.ignite.binary.BinaryObject;
+import org.apache.ignite.binary.BinaryObjectBuilder;
+import org.apache.ignite.binary.BinaryObjectException;
+import org.apache.ignite.binary.BinaryOriginalNameMapper;
+import org.apache.ignite.binary.BinaryRawReader;
+import org.apache.ignite.binary.BinaryRawWriter;
+import org.apache.ignite.binary.BinaryReader;
+import org.apache.ignite.binary.BinarySerializer;
+import org.apache.ignite.binary.BinarySimpleNameMapper;
+import org.apache.ignite.binary.BinaryStraightIdMapper;
+import org.apache.ignite.binary.BinaryType;
+import org.apache.ignite.binary.BinaryTypeConfiguration;
+import org.apache.ignite.binary.BinaryWriter;
+import org.apache.ignite.binary.Binarylizable;
+import org.apache.ignite.configuration.BinaryConfiguration;
+import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.binary.builder.BinaryObjectBuilderImpl;
+import org.apache.ignite.internal.processors.cache.CacheObjectContext;
+import org.apache.ignite.internal.util.GridUnsafe;
+import org.apache.ignite.internal.util.IgniteUtils;
+import org.apache.ignite.internal.util.lang.GridMapEntry;
+import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.logger.NullLogger;
+import org.apache.ignite.marshaller.MarshallerContextTestImpl;
+import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
+import org.jsr166.ConcurrentHashMap8;
+import sun.misc.Unsafe;
 
-import static org.apache.ignite.internal.binary.streams.BinaryMemoryAllocator.*;
-import static org.junit.Assert.*;
+import static org.apache.ignite.internal.binary.streams.BinaryMemoryAllocator.INSTANCE;
+import static org.junit.Assert.assertArrayEquals;
+import static org.junit.Assert.assertNotEquals;
 
 /**
  * Binary marshaller tests.
@@ -1049,7 +1052,7 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
             }
         });
 
-        BinaryMarshaller marsh = binaryMarshaller(new BinaryIdMapper() {
+        BinaryMarshaller marsh = binaryMarshaller(null, new BinaryIdMapper() {
             @Override public int typeId(String clsName) {
                 return 11111;
             }
@@ -1094,7 +1097,7 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
-    public void testPlatformIdMapper() throws Exception {
+    public void testSimpleNameLowerCaseMappers() throws Exception {
         BinaryTypeConfiguration innerClassType = new BinaryTypeConfiguration(InnerMappedObject.class.getName());
         BinaryTypeConfiguration publicClassType = new BinaryTypeConfiguration(TestMappedObject.class.getName());
         BinaryTypeConfiguration typeWithCustomMapper = new BinaryTypeConfiguration(CustomMappedObject2.class.getName());
@@ -1118,7 +1121,7 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
             }
         });
 
-        BinaryMarshaller marsh = binaryMarshaller(new BinaryLowerCaseIdMapper(),
+        BinaryMarshaller marsh = binaryMarshaller(new BinarySimpleNameMapper(), new BinaryLowerCaseIdMapper(),
             Arrays.asList(innerClassType, publicClassType, typeWithCustomMapper));
 
         InnerMappedObject innerObj = new InnerMappedObject(10, "str1");
@@ -1435,7 +1438,7 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
-    public void testTypeNamesFullNameIdMapper() throws Exception {
+    public void testTypeNamesFullNameMappers() throws Exception {
         BinaryTypeConfiguration customType1 = new BinaryTypeConfiguration(Value.class.getName());
 
         customType1.setIdMapper(new BinaryIdMapper() {
@@ -1484,15 +1487,16 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
             }
         });
 
-        BinaryMarshaller marsh = binaryMarshaller(new BinaryStraightIdMapper(), Arrays.asList(
-            new BinaryTypeConfiguration(Key.class.getName()),
-            new BinaryTypeConfiguration("org.gridgain.NonExistentClass3"),
-            new BinaryTypeConfiguration("NonExistentClass4"),
-            customType1,
-            customType2,
-            customType3,
-            customType4
-        ));
+        BinaryMarshaller marsh = binaryMarshaller(new BinaryOriginalNameMapper(), new BinaryStraightIdMapper(),
+            Arrays.asList(
+                new BinaryTypeConfiguration(Key.class.getName()),
+                new BinaryTypeConfiguration("org.gridgain.NonExistentClass3"),
+                new BinaryTypeConfiguration("NonExistentClass4"),
+                customType1,
+                customType2,
+                customType3,
+                customType4
+            ));
 
         BinaryContext ctx = binaryContext(marsh);
 
@@ -1512,7 +1516,7 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
-    public void testTypeNamesSimpleNameIdMapper() throws Exception {
+    public void testTypeNamesSimpleNameMappers() throws Exception {
         BinaryTypeConfiguration customType1 = new BinaryTypeConfiguration(Value.class.getName());
 
         customType1.setIdMapper(new BinaryIdMapper() {
@@ -1563,18 +1567,20 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
 
         BinaryTypeConfiguration customType5 = new BinaryTypeConfiguration(DateClass1.class.getName());
 
+        customType5.setNameMapper(new BinaryOriginalNameMapper());
         customType5.setIdMapper(new BinaryStraightIdMapper());
 
-        BinaryMarshaller marsh = binaryMarshaller(new BinaryLowerCaseIdMapper(), Arrays.asList(
-            new BinaryTypeConfiguration(Key.class.getName()),
-            new BinaryTypeConfiguration("org.gridgain.NonExistentClass3"),
-            new BinaryTypeConfiguration("NonExistentClass4"),
-            customType1,
-            customType2,
-            customType3,
-            customType4,
-            customType5
-        ));
+        BinaryMarshaller marsh = binaryMarshaller(new BinarySimpleNameMapper(), new BinaryLowerCaseIdMapper(),
+            Arrays.asList(
+                new BinaryTypeConfiguration(Key.class.getName()),
+                new BinaryTypeConfiguration("org.gridgain.NonExistentClass3"),
+                new BinaryTypeConfiguration("NonExistentClass4"),
+                customType1,
+                customType2,
+                customType3,
+                customType4,
+                customType5
+            ));
 
         BinaryContext ctx = binaryContext(marsh);
 
@@ -1653,8 +1659,9 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
         BinaryTypeConfiguration customType6 = new BinaryTypeConfiguration(MyTestClass.class.getName());
 
         customType6.setIdMapper(new BinaryLowerCaseIdMapper());
+        customType6.setNameMapper(new BinarySimpleNameMapper());
 
-        BinaryMarshaller marsh = binaryMarshaller(new BinaryIdMapper() {
+        BinaryMarshaller marsh = binaryMarshaller(new BinaryOriginalNameMapper(), new BinaryIdMapper() {
             @Override public int typeId(String clsName) {
                 if ("org.blabla.NotConfiguredSpecialClass".equals(clsName))
                     return 0;
@@ -2689,8 +2696,8 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
         BinaryObjectImpl objBin = marshal(obj, marsh);
 
         String fieldName = "x";
-        String fieldNameA = DuplicateFieldsA.class.getName() + "." + fieldName;
-        String fieldNameB = DuplicateFieldsB.class.getName() + "." + fieldName;
+        String fieldNameA = "DuplicateFieldsA." + fieldName;
+        String fieldNameB = "DuplicateFieldsB." + fieldName;
 
         // Check "hasField".
         assert !objBin.hasField(fieldName);
@@ -3052,7 +3059,7 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
      */
     protected BinaryMarshaller binaryMarshaller()
         throws IgniteCheckedException {
-        return binaryMarshaller(null, null, null);
+        return binaryMarshaller(null, null, null, null);
     }
 
     /**
@@ -3060,15 +3067,15 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
      */
     protected BinaryMarshaller binaryMarshaller(Collection<BinaryTypeConfiguration> cfgs)
         throws IgniteCheckedException {
-        return binaryMarshaller(null, null, cfgs);
+        return binaryMarshaller(null, null, null, cfgs);
     }
 
     /**
      *
      */
-    protected BinaryMarshaller binaryMarshaller(BinaryIdMapper mapper, Collection<BinaryTypeConfiguration> cfgs)
+    protected BinaryMarshaller binaryMarshaller(BinaryNameMapper nameMapper, BinaryIdMapper mapper, Collection<BinaryTypeConfiguration> cfgs)
         throws IgniteCheckedException {
-        return binaryMarshaller(mapper, null, cfgs);
+        return binaryMarshaller(nameMapper, mapper, null, cfgs);
     }
 
     /**
@@ -3076,13 +3083,14 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
      */
     protected BinaryMarshaller binaryMarshaller(BinarySerializer serializer, Collection<BinaryTypeConfiguration> cfgs)
         throws IgniteCheckedException {
-        return binaryMarshaller(null, serializer, cfgs);
+        return binaryMarshaller(null, null, serializer, cfgs);
     }
 
     /**
      * @return Binary marshaller.
      */
     protected BinaryMarshaller binaryMarshaller(
+        BinaryNameMapper nameMapper,
         BinaryIdMapper mapper,
         BinarySerializer serializer,
         Collection<BinaryTypeConfiguration> cfgs
@@ -3091,6 +3099,7 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
 
         BinaryConfiguration bCfg = new BinaryConfiguration();
 
+        bCfg.setNameMapper(nameMapper);
         bCfg.setIdMapper(mapper);
         bCfg.setSerializer(serializer);
         bCfg.setCompactFooter(compactFooter());
