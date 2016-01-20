@@ -208,7 +208,7 @@ consoleModule.controller('domainsController', function ($filter, $http, $timeout
 
         $scope.ui.invalidKeyFieldsTooltip = 'Found key types without configured key fields<br/>' +
             'It may be a result of import tables from database without primary keys<br/>' +
-            'Key field for suck key types should be configured manually';
+            'Key field for such key types should be configured manually';
 
         var previews = [];
 
