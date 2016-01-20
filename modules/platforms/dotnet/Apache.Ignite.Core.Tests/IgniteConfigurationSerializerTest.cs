@@ -22,6 +22,7 @@ namespace Apache.Ignite.Core.Tests
     using System.Linq;
     using System.Xml;
     using Apache.Ignite.Core.Binary;
+    using Apache.Ignite.Core.Cache.Configuration;
     using Apache.Ignite.Core.Discovery;
     using Apache.Ignite.Core.Events;
     using Apache.Ignite.Core.Impl.Common;
@@ -71,6 +72,7 @@ namespace Apache.Ignite.Core.Tests
                                         </queryEntity>
                                     </queryEntities>
                                 </cacheConfiguration>
+                                <cacheConfiguration name='secondCache' />
                             </cacheConfiguration>
                             <includedEventTypes>
                                 <int>42</int>
@@ -93,6 +95,23 @@ namespace Apache.Ignite.Core.Tests
             Assert.AreEqual("testBar", ((NameMapper) cfg.BinaryConfiguration.DefaultNameMapper).Bar);
             Assert.AreEqual(typeof(Foo), cfg.BinaryConfiguration.Types.Single());
             Assert.AreEqual(new[] {42, EventType.TaskFailed, EventType.JobFinished}, cfg.IncludedEventTypes);
+
+            Assert.AreEqual("secondCache", cfg.CacheConfiguration.Last().Name);
+
+            var cacheCfg = cfg.CacheConfiguration.First();
+
+            Assert.AreEqual(CacheMode.Replicated, cacheCfg.CacheMode);
+
+            var queryEntity = cacheCfg.QueryEntities.Single();
+            Assert.AreEqual(typeof(int), queryEntity.KeyType);
+            Assert.AreEqual(typeof(string), queryEntity.ValueType);
+            Assert.AreEqual("length", queryEntity.Fields.Single().Name);
+            Assert.AreEqual(typeof(int), queryEntity.Fields.Single().Type);
+            Assert.AreEqual("somefield.field", queryEntity.Aliases.Single().FullName);
+            Assert.AreEqual("shortField", queryEntity.Aliases.Single().Alias);
+            Assert.AreEqual(QueryIndexType.GeoSpatial, queryEntity.Indexes.Single().IndexType);
+            Assert.AreEqual("indexFld", queryEntity.Indexes.Single().Fields.Single().Name);
+            Assert.AreEqual(true, queryEntity.Indexes.Single().Fields.Single().IsDescending);
         }
 
         public class LifecycleBean : ILifecycleBean
