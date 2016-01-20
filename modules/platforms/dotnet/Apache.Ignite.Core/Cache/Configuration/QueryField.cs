@@ -28,6 +28,12 @@ namespace Apache.Ignite.Core.Cache.Configuration
     /// </summary>
     public class QueryField
     {
+        /** */
+        private Type _type;
+
+        /** */
+        private string _typeName;
+
         /// <summary>
         /// Initializes a new instance of the <see cref="QueryField"/> class.
         /// </summary>
@@ -59,11 +65,37 @@ namespace Apache.Ignite.Core.Cache.Configuration
         /// <summary>
         /// Gets the field name.
         /// </summary>
-        public string Name { get; private set; }
+        public string Name { get; set; }
+
+        /// <summary>
+        /// Gets or sets the type of the value.
+        /// <para />
+        /// This is a shortcut for <see cref="TypeName"/>. Getter will return null for non-primitive types.
+        /// </summary>
+        public Type Type
+        {
+            get { return _type ?? JavaTypes.GetDotNetType(TypeName); }
+            set
+            {
+                _type = value;
+
+                TypeName = value == null
+                    ? null
+                    : (JavaTypes.GetJavaTypeName(value) ?? BinaryUtils.GetTypeName(value));
+            }
+        }
 
         /// <summary>
         /// Gets the Java type name.
         /// </summary>
-        public string TypeName { get; private set; }
+        public string TypeName
+        {
+            get { return _typeName; }
+            set
+            {
+                _typeName = value;
+                _type = null;
+            }
+        }
     }
 }
