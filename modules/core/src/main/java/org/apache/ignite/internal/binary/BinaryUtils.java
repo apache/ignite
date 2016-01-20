@@ -882,8 +882,6 @@ public class BinaryUtils {
 
             // Check type name.
             if (!F.eq(oldMeta.typeName(), newMeta.typeName())) {
-                U.dumpStack(null, "lalalal");
-
                 throw new BinaryObjectException(
                     "Two binary types have duplicate type ID [" + "typeId=" + oldMeta.typeId() +
                         ", typeName1=" + oldMeta.typeName() + ", typeName2=" + newMeta.typeName() + ']'
