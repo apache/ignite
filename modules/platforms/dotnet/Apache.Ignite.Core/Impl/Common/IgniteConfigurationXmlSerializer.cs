@@ -23,7 +23,6 @@ namespace Apache.Ignite.Core.Impl.Common
     using System.ComponentModel;
     using System.Configuration;
     using System.Diagnostics;
-    using System.Globalization;
     using System.Linq;
     using System.Reflection;
     using System.Xml;
@@ -145,7 +144,7 @@ namespace Apache.Ignite.Core.Impl.Common
 
             var list = (IList) Activator.CreateInstance(listType);
 
-            var converter = IsBasicType(elementType) ? GetConverter(elementType) : null;
+            var converter = IsBasicType(elementType) ? GetConverter(prop, elementType) : null;
 
             using (var subReader = reader.ReadSubtree())
             {
@@ -177,7 +176,7 @@ namespace Apache.Ignite.Core.Impl.Common
             var type = target.GetType();
             var property = GetPropertyOrThrow(propName, propVal, type);
 
-            var converter = GetConverter(property.PropertyType);
+            var converter = GetConverter(property, property.PropertyType);
 
             // TODO: try-catch and wrap
             var convertedVal = converter.ConvertFromString(propVal);
@@ -220,45 +219,21 @@ namespace Apache.Ignite.Core.Impl.Common
             return char.ToLower(name[0]) + name.Substring(1);
         }
 
-        private static TypeConverter GetConverter(Type type)
+        private static TypeConverter GetConverter(PropertyInfo property, Type propertyType)
         {
-            if (type.IsEnum)
-                return new GenericEnumConverter(type);
+            if (propertyType.IsEnum)
+                return new GenericEnumConverter(propertyType);
 
-            if (type == typeof (Type))
+            if (propertyType == typeof (Type))
                 return new TypeStringConverter();
 
-            var converter = TypeDescriptor.GetConverter(type);
+            var converter = TypeDescriptor.GetConverter(propertyType);
 
             if (converter == null || !converter.CanConvertFrom(typeof(string)) ||
                 !converter.CanConvertTo(typeof(string)))
-                throw new ConfigurationErrorsException("No converter for type " + type);
+                throw new ConfigurationErrorsException("No converter for type " + propertyType);
 
             return converter;
-        }
-    }
-
-    internal class TypeStringConverter : TypeConverter
-    {
-        public override bool CanConvertFrom(ITypeDescriptorContext context, Type sourceType)
-        {
-            return sourceType == typeof (string);
-        }
-
-        public override bool CanConvertTo(ITypeDescriptorContext context, Type destinationType)
-        {
-            return destinationType == typeof(Type);
-        }
-
-        public override object ConvertFrom(ITypeDescriptorContext context, CultureInfo culture, object value)
-        {
-            return value == null ? null : Type.GetType(value.ToString(), false);
-        }
-
-        public override object ConvertTo(ITypeDescriptorContext context, CultureInfo culture, object value, Type destinationType)
-        {
-            var type = value as Type;
-            return type == null ? null : type.AssemblyQualifiedName;
         }
     }
 }
