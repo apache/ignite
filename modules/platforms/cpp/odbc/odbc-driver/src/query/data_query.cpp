@@ -58,7 +58,7 @@ namespace ignite
                 return resultMeta;
             }
 
-            SqlResult DataQuery::FetchNextRow(app::ColumnBindingMap & columnBindings)
+            SqlResult DataQuery::FetchNextRow(app::ColumnBindingMap& columnBindings)
             {
                 if (!cursor.get())
                 {
@@ -96,14 +96,12 @@ namespace ignite
                 {
                     app::ColumnBindingMap::iterator it = columnBindings.find(i);
 
-                    bool success;
+                    SqlResult result;
 
                     if (it != columnBindings.end())
-                        success = row->ReadColumnToBuffer(it->second);
-                    else
-                        success = row->SkipColumn();
+                        result = row->ReadColumnToBuffer(i, it->second);
 
-                    if (!success)
+                    if (result == SQL_RESULT_ERROR)
                     {
                         diag.AddStatusRecord(SQL_STATE_01S01_ERROR_IN_ROW, "Can not retrieve row column.", 0, i);
 
@@ -112,6 +110,32 @@ namespace ignite
                 }
 
                 return SQL_RESULT_SUCCESS;
+            }
+
+            SqlResult DataQuery::GetColumn(uint16_t columnIdx, app::ApplicationDataBuffer& buffer)
+            {
+                if (!cursor.get())
+                {
+                    diag.AddStatusRecord(SQL_STATE_HY010_SEQUENCE_ERROR, "Query was not executed.");
+
+                    return SQL_RESULT_ERROR;
+                }
+
+                Row* row = cursor->GetRow();
+
+                if (!row)
+                    return SQL_RESULT_NO_DATA;
+
+                SqlResult result = row->ReadColumnToBuffer(columnIdx, buffer);
+
+                if (result == SQL_RESULT_ERROR)
+                {
+                    diag.AddStatusRecord(SQL_STATE_HY000_GENERAL_ERROR, "Unknown column type.");
+
+                    return SQL_RESULT_ERROR;
+                }
+
+                return result;
             }
 
             SqlResult DataQuery::Close()

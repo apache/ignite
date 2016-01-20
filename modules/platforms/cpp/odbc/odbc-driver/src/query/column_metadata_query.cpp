@@ -148,96 +148,109 @@ namespace ignite
                 app::ColumnBindingMap::iterator it;
 
                 for (it = columnBindings.begin(); it != columnBindings.end(); ++it)
-                {
-                    uint16_t columnIdx = it->first;
-                    app::ApplicationDataBuffer& buffer = it->second;
-                    const meta::ColumnMeta& currentColumn = *cursor;
-                    uint8_t columnType = currentColumn.GetDataType();
-
-                    switch (columnIdx)
-                    {
-                        case TABLE_CAT:
-                        {
-                            buffer.PutNull();
-                            break;
-                        }
-
-                        case TABLE_SCHEM:
-                        {
-                            buffer.PutString(currentColumn.GetSchemaName());
-                            break;
-                        }
-
-                        case TABLE_NAME:
-                        {
-                            buffer.PutString(currentColumn.GetTableName());
-                            break;
-                        }
-
-                        case COLUMN_NAME:
-                        {
-                            buffer.PutString(currentColumn.GetColumnName());
-                            break;
-                        }
-
-                        case DATA_TYPE:
-                        {
-                            buffer.PutInt16(type_traits::BinaryToSqlType(columnType));
-                            break;
-                        }
-
-                        case TYPE_NAME:
-                        {
-                            buffer.PutString(currentColumn.GetColumnTypeName());
-                            break;
-                        }
-
-                        case COLUMN_SIZE:
-                        {
-                            buffer.PutInt16(type_traits::BinaryTypeColumnSize(columnType));
-                            break;
-                        }
-
-                        case BUFFER_LENGTH:
-                        {
-                            buffer.PutInt16(type_traits::BinaryTypeTransferLength(columnType));
-                            break;
-                        }
-
-                        case DECIMAL_DIGITS:
-                        {
-                            int32_t decDigits = type_traits::BinaryTypeDecimalDigits(columnType);
-                            if (decDigits < 0)
-                                buffer.PutNull();
-                            else
-                                buffer.PutInt16(static_cast<int16_t>(decDigits));
-                            break;
-                        }
-
-                        case NUM_PREC_RADIX:
-                        {
-                            buffer.PutInt16(type_traits::BinaryTypeNumPrecRadix(columnType));
-                            break;
-                        }
-
-                        case NULLABLE:
-                        {
-                            buffer.PutInt16(type_traits::BinaryTypeNullability(columnType));
-                            break;
-                        }
-
-                        case REMARKS:
-                        {
-                            buffer.PutNull();
-                            break;
-                        }
-
-                        default:
-                            break;
-                    }
-                }
+                    GetColumn(it->first, it->second);
 
                 ++cursor;
+
+                return SQL_RESULT_SUCCESS;
+            }
+
+            SqlResult ColumnMetadataQuery::GetColumn(uint16_t columnIdx, app::ApplicationDataBuffer & buffer)
+            {
+                if (!executed)
+                {
+                    diag.AddStatusRecord(SQL_STATE_HY010_SEQUENCE_ERROR, "Query was not executed.");
+
+                    return SQL_RESULT_ERROR;
+                }
+
+                if (cursor == meta.end())
+                    return SQL_RESULT_NO_DATA;
+
+                const meta::ColumnMeta& currentColumn = *cursor;
+                uint8_t columnType = currentColumn.GetDataType();
+
+                switch (columnIdx)
+                {
+                    case TABLE_CAT:
+                    {
+                        buffer.PutNull();
+                        break;
+                    }
+
+                    case TABLE_SCHEM:
+                    {
+                        buffer.PutString(currentColumn.GetSchemaName());
+                        break;
+                    }
+
+                    case TABLE_NAME:
+                    {
+                        buffer.PutString(currentColumn.GetTableName());
+                        break;
+                    }
+
+                    case COLUMN_NAME:
+                    {
+                        buffer.PutString(currentColumn.GetColumnName());
+                        break;
+                    }
+
+                    case DATA_TYPE:
+                    {
+                        buffer.PutInt16(type_traits::BinaryToSqlType(columnType));
+                        break;
+                    }
+
+                    case TYPE_NAME:
+                    {
+                        buffer.PutString(currentColumn.GetColumnTypeName());
+                        break;
+                    }
+
+                    case COLUMN_SIZE:
+                    {
+                        buffer.PutInt16(type_traits::BinaryTypeColumnSize(columnType));
+                        break;
+                    }
+
+                    case BUFFER_LENGTH:
+                    {
+                        buffer.PutInt16(type_traits::BinaryTypeTransferLength(columnType));
+                        break;
+                    }
+
+                    case DECIMAL_DIGITS:
+                    {
+                        int32_t decDigits = type_traits::BinaryTypeDecimalDigits(columnType);
+                        if (decDigits < 0)
+                            buffer.PutNull();
+                        else
+                            buffer.PutInt16(static_cast<int16_t>(decDigits));
+                        break;
+                    }
+
+                    case NUM_PREC_RADIX:
+                    {
+                        buffer.PutInt16(type_traits::BinaryTypeNumPrecRadix(columnType));
+                        break;
+                    }
+
+                    case NULLABLE:
+                    {
+                        buffer.PutInt16(type_traits::BinaryTypeNullability(columnType));
+                        break;
+                    }
+
+                    case REMARKS:
+                    {
+                        buffer.PutNull();
+                        break;
+                    }
+
+                    default:
+                        break;
+                }
 
                 return SQL_RESULT_SUCCESS;
             }

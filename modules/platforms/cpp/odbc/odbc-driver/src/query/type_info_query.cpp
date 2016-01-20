@@ -193,8 +193,6 @@ namespace ignite
 
             SqlResult TypeInfoQuery::FetchNextRow(app::ColumnBindingMap & columnBindings)
             {
-                using namespace ignite::impl::binary;
-
                 if (!executed)
                 {
                     diag.AddStatusRecord(SQL_STATE_HY010_SEQUENCE_ERROR, "Query was not executed.");
@@ -208,151 +206,166 @@ namespace ignite
                 app::ColumnBindingMap::iterator it;
 
                 for (it = columnBindings.begin(); it != columnBindings.end(); ++it)
-                {
-                    uint16_t columnIdx = it->first;
-                    app::ApplicationDataBuffer& buffer = it->second;
-                    int8_t currentType = *cursor;
-
-                    switch (columnIdx)
-                    {
-                        case TYPE_NAME:
-                        {
-                            buffer.PutString(type_traits::BinaryTypeToSqlTypeName(currentType));
-
-                            break;
-                        }
-
-                        case DATA_TYPE:
-                        case SQL_DATA_TYPE:
-                        {
-                            buffer.PutInt16(type_traits::BinaryToSqlType(currentType));
-
-                            break;
-                        }
-
-                        case COLUMN_SIZE:
-                        {
-                            buffer.PutInt32(type_traits::BinaryTypeColumnSize(currentType));
-
-                            break;
-                        }
-
-                        case LITERAL_PREFIX:
-                        {
-                            if (currentType == IGNITE_TYPE_STRING)
-                                buffer.PutString("'");
-                            else if (currentType == IGNITE_TYPE_BINARY)
-                                buffer.PutString("0x");
-                            else
-                                buffer.PutNull();
-
-                            break;
-                        }
-
-                        case LITERAL_SUFFIX:
-                        {
-                            if (currentType == IGNITE_TYPE_STRING)
-                                buffer.PutString("'");
-                            else
-                                buffer.PutNull();
-
-                            break;
-                        }
-
-                        case CREATE_PARAMS:
-                        {
-                            buffer.PutNull();
-
-                            break;
-                        }
-
-                        case NULLABLE:
-                        {
-                            buffer.PutInt32(type_traits::BinaryTypeNullability(currentType));
-
-                            break;
-                        }
-
-                        case CASE_SENSITIVE:
-                        {
-                            if (currentType == IGNITE_TYPE_STRING)
-                                buffer.PutInt16(SQL_TRUE);
-                            else
-                                buffer.PutInt16(SQL_FALSE);
-
-                            break;
-                        }
-
-                        case SEARCHABLE:
-                        {
-                            buffer.PutInt16(SQL_SEARCHABLE);
-
-                            break;
-                        }
-
-                        case UNSIGNED_ATTRIBUTE:
-                        {
-                            buffer.PutInt16(type_traits::BinaryTypeUnsigned(currentType));
-
-                            break;
-                        }
-
-                        case FIXED_PREC_SCALE:
-                        {
-                            buffer.PutInt16(SQL_FALSE);
-
-                            break;
-                        }
-
-                        case AUTO_UNIQUE_VALUE:
-                        {
-                            buffer.PutInt16(SQL_FALSE);
-
-                            break;
-                        }
-
-                        case LOCAL_TYPE_NAME:
-                        {
-                            buffer.PutNull();
-
-                            break;
-                        }
-
-                        case MINIMUM_SCALE:
-                        case MAXIMUM_SCALE:
-                        {
-                            buffer.PutInt16(type_traits::BinaryTypeDecimalDigits(currentType));
-
-                            break;
-                        }
-
-                        case SQL_DATETIME_SUB:
-                        {
-                            buffer.PutNull();
-
-                            break;
-                        }
-
-                        case NUM_PREC_RADIX:
-                        {
-                            buffer.PutInt32(type_traits::BinaryTypeNumPrecRadix(currentType));
-
-                            break;
-                        }
-
-                        case INTERVAL_PRECISION:
-                        {
-                            buffer.PutNull();
-
-                            break;
-                        }
-
-                        default:
-                            break;
-                    }
-                }
+                    GetColumn(it->first, it->second);
 
                 ++cursor;
+
+                return SQL_RESULT_SUCCESS;
+            }
+
+            SqlResult TypeInfoQuery::GetColumn(uint16_t columnIdx, app::ApplicationDataBuffer & buffer)
+            {
+                using namespace ignite::impl::binary;
+
+                if (!executed)
+                {
+                    diag.AddStatusRecord(SQL_STATE_HY010_SEQUENCE_ERROR, "Query was not executed.");
+
+                    return SQL_RESULT_ERROR;
+                }
+
+                if (cursor == types.end())
+                    return SQL_RESULT_NO_DATA;
+
+                int8_t currentType = *cursor;
+
+                switch (columnIdx)
+                {
+                    case TYPE_NAME:
+                    {
+                        buffer.PutString(type_traits::BinaryTypeToSqlTypeName(currentType));
+
+                        break;
+                    }
+
+                    case DATA_TYPE:
+                    case SQL_DATA_TYPE:
+                    {
+                        buffer.PutInt16(type_traits::BinaryToSqlType(currentType));
+
+                        break;
+                    }
+
+                    case COLUMN_SIZE:
+                    {
+                        buffer.PutInt32(type_traits::BinaryTypeColumnSize(currentType));
+
+                        break;
+                    }
+
+                    case LITERAL_PREFIX:
+                    {
+                        if (currentType == IGNITE_TYPE_STRING)
+                            buffer.PutString("'");
+                        else if (currentType == IGNITE_TYPE_BINARY)
+                            buffer.PutString("0x");
+                        else
+                            buffer.PutNull();
+
+                        break;
+                    }
+
+                    case LITERAL_SUFFIX:
+                    {
+                        if (currentType == IGNITE_TYPE_STRING)
+                            buffer.PutString("'");
+                        else
+                            buffer.PutNull();
+
+                        break;
+                    }
+
+                    case CREATE_PARAMS:
+                    {
+                        buffer.PutNull();
+
+                        break;
+                    }
+
+                    case NULLABLE:
+                    {
+                        buffer.PutInt32(type_traits::BinaryTypeNullability(currentType));
+
+                        break;
+                    }
+
+                    case CASE_SENSITIVE:
+                    {
+                        if (currentType == IGNITE_TYPE_STRING)
+                            buffer.PutInt16(SQL_TRUE);
+                        else
+                            buffer.PutInt16(SQL_FALSE);
+
+                        break;
+                    }
+
+                    case SEARCHABLE:
+                    {
+                        buffer.PutInt16(SQL_SEARCHABLE);
+
+                        break;
+                    }
+
+                    case UNSIGNED_ATTRIBUTE:
+                    {
+                        buffer.PutInt16(type_traits::BinaryTypeUnsigned(currentType));
+
+                        break;
+                    }
+
+                    case FIXED_PREC_SCALE:
+                    {
+                        buffer.PutInt16(SQL_FALSE);
+
+                        break;
+                    }
+
+                    case AUTO_UNIQUE_VALUE:
+                    {
+                        buffer.PutInt16(SQL_FALSE);
+
+                        break;
+                    }
+
+                    case LOCAL_TYPE_NAME:
+                    {
+                        buffer.PutNull();
+
+                        break;
+                    }
+
+                    case MINIMUM_SCALE:
+                    case MAXIMUM_SCALE:
+                    {
+                        buffer.PutInt16(type_traits::BinaryTypeDecimalDigits(currentType));
+
+                        break;
+                    }
+
+                    case SQL_DATETIME_SUB:
+                    {
+                        buffer.PutNull();
+
+                        break;
+                    }
+
+                    case NUM_PREC_RADIX:
+                    {
+                        buffer.PutInt32(type_traits::BinaryTypeNumPrecRadix(currentType));
+
+                        break;
+                    }
+
+                    case INTERVAL_PRECISION:
+                    {
+                        buffer.PutNull();
+
+                        break;
+                    }
+
+                    default:
+                        break;
+                }
 
                 return SQL_RESULT_SUCCESS;
             }

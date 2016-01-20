@@ -19,10 +19,11 @@
 #define _IGNITE_ODBC_DRIVER_ROW
 
 #include <stdint.h>
+#include <vector>
 
-#include "ignite/odbc/result_page.h"
-#include "ignite/odbc/common_types.h"
+#include "ignite/odbc/column.h"
 #include "ignite/odbc/app/application_data_buffer.h"
+
 
 namespace ignite
 {
@@ -46,8 +47,8 @@ namespace ignite
 
             /**
              * Get row size in columns.
+             *
              * @return Row size.
-             * @return True on success.
              */
             int32_t GetSize() const
             {
@@ -56,19 +57,15 @@ namespace ignite
 
             /**
              * Read column data and store it in application data buffer.
+             *
              * @param dataBuf Application data buffer.
              * @return True on success.
              */
-            bool ReadColumnToBuffer(app::ApplicationDataBuffer& dataBuf);
-
-            /**
-             * Skip columnt.
-             * @return True on success.
-             */
-            bool SkipColumn();
+            SqlResult ReadColumnToBuffer(uint16_t columnIdx, app::ApplicationDataBuffer& dataBuf);
 
             /**
              * Move to next row.
+             *
              * @return True on success.
              */
             bool MoveToNext();
@@ -77,20 +74,45 @@ namespace ignite
             IGNITE_NO_COPY_ASSIGNMENT(Row);
 
             /**
-             * Read column header and restores position if the column is of
-             * complex type.
-             * @return Column type header.
+             * Reinitialize row state using stream data.
+             * @note Stream must be positioned at the beginning of the row.
              */
-            int8_t ReadColumnHeader();
+            void Reinit();
 
-            /** Row size in columns. */
-            int32_t size;
+            /**
+             * Get columns by its index.
+             *
+             * Column indexing starts at 1.
+             *
+             * @note This operation is private because it's unsafe to use:
+             *       It is neccessary to ensure that column is discovered prior
+             *       to calling this method using EnsureColumnDiscovered().
+             *
+             * @param columnIdx Column index.
+             * @return Reference to specified column.
+             */
+            Column& GetColumn(uint16_t columnIdx)
+            {
+                return columns[columnIdx - 1];
+            }
+
+            /**
+             * Ensure that column data is discovered.
+             *
+             * @param columnIdx Column index.
+             * @return True if the column is discovered and false if it can not
+             * be discovered.
+             */
+            bool EnsureColumnDiscovered(uint16_t columnIdx);
+
+            /** Row position in current page. */
+            int32_t rowBeginPos;
 
             /** Current position in row. */
             int32_t pos;
 
-            /** Row position in current page. */
-            int32_t rowBeginPos;
+            /** Row size in columns. */
+            int32_t size;
 
             /** Memory that contains current row data. */
             ignite::impl::interop::InteropUnpooledMemory& pageData;
@@ -100,6 +122,9 @@ namespace ignite
 
             /** Data reader. */
             ignite::impl::binary::BinaryReaderImpl reader;
+
+            /** Columns. */
+            std::vector<Column> columns;
         };
     }
 }

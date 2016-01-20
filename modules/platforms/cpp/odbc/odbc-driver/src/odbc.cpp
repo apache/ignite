@@ -1262,6 +1262,34 @@ SQLRETURN SQL_API SQLEndTran(SQLSMALLINT    handleType,
     return result;
 }
 
+SQLRETURN SQL_API SQLGetData(SQLHSTMT       stmt,
+                             SQLUSMALLINT   colNum,
+                             SQLSMALLINT    targetType,
+                             SQLPOINTER     targetValue,
+                             SQLLEN         bufferLength,
+                             SQLLEN*        strLengthOrIndicator)
+{
+    using namespace ignite::odbc::type_traits;
+
+    using ignite::odbc::Statement;
+    using ignite::odbc::app::ApplicationDataBuffer;
+
+    LOG_MSG("SQLGetData called\n");
+
+    Statement *statement = reinterpret_cast<Statement*>(stmt);
+
+    if (!statement)
+        return SQL_INVALID_HANDLE;
+
+    IgniteSqlType driverType = ToDriverType(targetType);
+
+    ApplicationDataBuffer dataBuffer(driverType, targetValue, bufferLength, strLengthOrIndicator);
+
+    //statement->GetColumnData(colNum, dataBuffer);
+
+    return statement->GetDiagnosticRecords().GetReturnCode();
+}
+
 //
 // ==== Not implemented ====
 //
@@ -1319,17 +1347,6 @@ SQLRETURN SQL_API SQLGetConnectOption(SQLHDBC       conn,
                                       SQLPOINTER    value)
 {
     LOG_MSG("SQLGetConnectOption called\n");
-    return SQL_SUCCESS;
-}
-
-SQLRETURN SQL_API SQLGetData(SQLHSTMT       stmt,
-                             SQLUSMALLINT   colNum,
-                             SQLSMALLINT    targetType,
-                             SQLPOINTER     targetValue,
-                             SQLLEN         bufferLength,
-                             SQLLEN*        strLengthOrIndicator)
-{
-    LOG_MSG("SQLGetData called\n");
     return SQL_SUCCESS;
 }
 

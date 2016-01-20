@@ -57,9 +57,19 @@ namespace ignite
                 /**
                  * Fetch next result row to application buffers.
                  *
+                 * @param columnBindings Application buffers to put data to.
                  * @return Operation result.
                  */
                 virtual SqlResult FetchNextRow(app::ColumnBindingMap& columnBindings) = 0;
+
+                /**
+                 * Get data of the specified column in the result set.
+                 *
+                 * @param columnIdx Column index.
+                 * @param buffer Buffer to put column data to.
+                 * @return Operation result.
+                 */
+                virtual SqlResult GetColumn(uint16_t columnIdx, app::ApplicationDataBuffer& buffer) = 0;
 
                 /**
                  * Close query.

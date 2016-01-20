@@ -98,6 +98,18 @@ namespace ignite
                 return SQL_RESULT_NO_DATA;
             }
 
+            SqlResult ForeignKeysQuery::GetColumn(uint16_t columnIdx, app::ApplicationDataBuffer& buffer)
+            {
+                if (!executed)
+                {
+                    diag.AddStatusRecord(SQL_STATE_HY010_SEQUENCE_ERROR, "Query was not executed.");
+
+                    return SQL_RESULT_ERROR;
+                }
+
+                return SQL_RESULT_NO_DATA;
+            }
+
             SqlResult ForeignKeysQuery::Close()
             {
                 executed = false;

@@ -159,6 +159,25 @@ namespace ignite
             return paramBindOffset;
         }
 
+        void Statement::GetColumnData(uint16_t columnIdx, app::ApplicationDataBuffer& buffer)
+        {
+            IGNITE_ODBC_API_CALL(InternalGetColumnData(columnIdx, buffer));
+        }
+
+        SqlResult Statement::InternalGetColumnData(uint16_t columnIdx, app::ApplicationDataBuffer& buffer)
+        {
+            if (!currentQuery.get())
+            {
+                AddStatusRecord(SQL_STATE_24000_INVALID_CURSOR_STATE, "Cursor is not in the open state.");
+
+                return SQL_RESULT_ERROR;
+            }
+
+            SqlResult res = currentQuery->GetColumn(columnIdx, buffer);
+
+            return res;
+        }
+
         void Statement::PrepareSqlQuery(const std::string& query)
         {
             return PrepareSqlQuery(query.data(), query.size());
@@ -364,8 +383,6 @@ namespace ignite
             }
 
             SqlResult res = currentQuery->FetchNextRow(columnBindings);
-
-            LOG_MSG("Result: %d\n", res);
 
             if (res == SQL_RESULT_SUCCESS)
             {

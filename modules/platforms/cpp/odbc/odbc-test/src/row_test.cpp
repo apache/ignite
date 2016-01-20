@@ -33,7 +33,7 @@ using namespace ignite::odbc;
 std::string GetStrColumnValue(size_t rowIdx)
 {
     std::stringstream generator("Column 2 test string, row num: ");
-    generator << rowIdx;
+    generator << rowIdx << ". Some trailing bytes";
 
     return generator.str();
 }
@@ -92,11 +92,11 @@ void CheckRowData(Row& row, size_t rowIdx)
     BOOST_REQUIRE(row.GetSize() == 4);
 
     // Checking 1st column.
-    BOOST_REQUIRE(row.ReadColumnToBuffer(appLongBuf));
+    BOOST_REQUIRE(row.ReadColumnToBuffer(1, appLongBuf) == SQL_RESULT_SUCCESS);
     BOOST_REQUIRE(longBuf == rowIdx * 10);
 
     // Checking 2nd column.
-    BOOST_REQUIRE(row.ReadColumnToBuffer(appStrBuf));
+    BOOST_REQUIRE(row.ReadColumnToBuffer(2, appStrBuf) == SQL_RESULT_SUCCESS);
 
     std::string strReal(strBuf, static_cast<size_t>(reslen));
     std::string strExpected(GetStrColumnValue(rowIdx));
@@ -104,7 +104,7 @@ void CheckRowData(Row& row, size_t rowIdx)
     BOOST_REQUIRE(strReal == strExpected);
 
     // Checking 3rd column.
-    BOOST_REQUIRE(row.ReadColumnToBuffer(appGuidBuf));
+    BOOST_REQUIRE(row.ReadColumnToBuffer(3, appGuidBuf) == SQL_RESULT_SUCCESS);
 
     BOOST_REQUIRE(guidBuf.Data1 == 0x2b218f63UL);
     BOOST_REQUIRE(guidBuf.Data2 == 0x642aU);
@@ -120,7 +120,7 @@ void CheckRowData(Row& row, size_t rowIdx)
     BOOST_REQUIRE(guidBuf.Data4[7] == 0x98 + rowIdx);
 
     // Checking 4th column.
-    BOOST_REQUIRE(row.ReadColumnToBuffer(appBitBuf));
+    BOOST_REQUIRE(row.ReadColumnToBuffer(4, appBitBuf) == SQL_RESULT_SUCCESS);
     BOOST_REQUIRE(bitBuf == rowIdx % 2);
 }
 
@@ -144,26 +144,26 @@ BOOST_AUTO_TEST_CASE(TestRowMoveToNext)
     }
 }
 
-BOOST_AUTO_TEST_CASE(TestRowSkip)
-{
-    ignite::impl::interop::InteropUnpooledMemory mem(4096);
-
-    const size_t rowNum = 8;
-
-    FillMemWithData(mem, rowNum);
-
-    Row row(mem);
-
-    for (size_t i = 0; i < rowNum - 1; ++i)
-    {
-        BOOST_REQUIRE(row.GetSize() == 4);
-
-        for (int32_t j = 0; j < row.GetSize(); ++j)
-            BOOST_REQUIRE(row.SkipColumn());
-
-        BOOST_REQUIRE(row.MoveToNext());
-    }
-}
+//BOOST_AUTO_TEST_CASE(TestRowSkip)
+//{
+//    ignite::impl::interop::InteropUnpooledMemory mem(4096);
+//
+//    const size_t rowNum = 8;
+//
+//    FillMemWithData(mem, rowNum);
+//
+//    Row row(mem);
+//
+//    for (size_t i = 0; i < rowNum - 1; ++i)
+//    {
+//        BOOST_REQUIRE(row.GetSize() == 4);
+//
+//        for (int32_t j = 0; j < row.GetSize(); ++j)
+//            BOOST_REQUIRE(row.SkipColumn());
+//
+//        BOOST_REQUIRE(row.MoveToNext());
+//    }
+//}
 
 BOOST_AUTO_TEST_CASE(TestRowRead)
 {

@@ -121,49 +121,62 @@ namespace ignite
                 app::ColumnBindingMap::iterator it;
 
                 for (it = columnBindings.begin(); it != columnBindings.end(); ++it)
-                {
-                    uint16_t columnIdx = it->first;
-                    app::ApplicationDataBuffer& buffer = it->second;
-                    const meta::TableMeta& currentColumn = *cursor;
-
-                    switch (columnIdx)
-                    {
-                        case TABLE_CAT:
-                        {
-                            buffer.PutString(currentColumn.GetCatalogName());
-                            break;
-                        }
-
-                        case TABLE_SCHEM:
-                        {
-                            buffer.PutString(currentColumn.GetSchemaName());
-                            break;
-                        }
-
-                        case TABLE_NAME:
-                        {
-                            buffer.PutString(currentColumn.GetTableName());
-                            break;
-                        }
-
-                        case TABLE_TYPE:
-                        {
-                            buffer.PutString(currentColumn.GetTableType());
-                            break;
-                        }
-
-                        case REMARKS:
-                        {
-                            buffer.PutNull();
-                            break;
-                        }
-
-                        default:
-                            break;
-                    }
-                }
+                    GetColumn(it->first, it->second);
 
                 ++cursor;
+
+                return SQL_RESULT_SUCCESS;
+            }
+
+            SqlResult TableMetadataQuery::GetColumn(uint16_t columnIdx, app::ApplicationDataBuffer & buffer)
+            {
+                if (!executed)
+                {
+                    diag.AddStatusRecord(SQL_STATE_HY010_SEQUENCE_ERROR, "Query was not executed.");
+
+                    return SQL_RESULT_ERROR;
+                }
+
+                if (cursor == meta.end())
+                    return SQL_RESULT_NO_DATA;
+
+                const meta::TableMeta& currentColumn = *cursor;
+
+                switch (columnIdx)
+                {
+                    case TABLE_CAT:
+                    {
+                        buffer.PutString(currentColumn.GetCatalogName());
+                        break;
+                    }
+
+                    case TABLE_SCHEM:
+                    {
+                        buffer.PutString(currentColumn.GetSchemaName());
+                        break;
+                    }
+
+                    case TABLE_NAME:
+                    {
+                        buffer.PutString(currentColumn.GetTableName());
+                        break;
+                    }
+
+                    case TABLE_TYPE:
+                    {
+                        buffer.PutString(currentColumn.GetTableType());
+                        break;
+                    }
+
+                    case REMARKS:
+                    {
+                        buffer.PutNull();
+                        break;
+                    }
+
+                    default:
+                        break;
+                }
 
                 return SQL_RESULT_SUCCESS;
             }

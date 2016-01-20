@@ -139,6 +139,14 @@ namespace ignite
             size_t* GetParamBindOffsetPtr();
 
             /**
+             * Get value of the column in the result set.
+             *
+             * @param columnIdx Column index.
+             * @param buffer Buffer to put column data to.
+             */
+            void GetColumnData(uint16_t columnIdx, app::ApplicationDataBuffer& buffer);
+
+            /**
              * Prepare SQL query.
              *
              * @note Only SELECT queries are supported currently.
@@ -307,6 +315,15 @@ namespace ignite
 
         private:
             IGNITE_NO_COPY_ASSIGNMENT(Statement);
+
+            /**
+             * Get value of the column in the result set.
+             *
+             * @param columnIdx Column index.
+             * @param buffer Buffer to put column data to.
+             * @return Operation result.
+             */
+            SqlResult InternalGetColumnData(uint16_t columnIdx, app::ApplicationDataBuffer& buffer);
 
             /**
              * Close statement.

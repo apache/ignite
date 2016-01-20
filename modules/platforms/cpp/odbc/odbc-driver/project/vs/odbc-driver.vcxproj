@@ -152,6 +152,7 @@
     <ClCompile Include="..\..\os\win\src\system\socket_client.cpp" />
     <ClCompile Include="..\..\src\app\application_data_buffer.cpp" />
     <ClCompile Include="..\..\src\app\parameter.cpp" />
+    <ClCompile Include="..\..\src\column.cpp" />
     <ClCompile Include="..\..\src\common_types.cpp" />
     <ClCompile Include="..\..\src\config\configuration.cpp" />
     <ClCompile Include="..\..\src\config\connection_info.cpp" />
@@ -183,6 +184,7 @@
   <ItemGroup>
     <ClInclude Include="..\..\include\ignite\odbc\app\application_data_buffer.h" />
     <ClInclude Include="..\..\include\ignite\odbc\app\parameter.h" />
+    <ClInclude Include="..\..\include\ignite\odbc\column.h" />
     <ClInclude Include="..\..\include\ignite\odbc\common_types.h" />
     <ClInclude Include="..\..\include\ignite\odbc\config\configuration.h" />
     <ClInclude Include="..\..\include\ignite\odbc\config\connection_info.h" />
