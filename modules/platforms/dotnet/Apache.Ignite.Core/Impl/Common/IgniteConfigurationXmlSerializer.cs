@@ -354,6 +354,9 @@ namespace Apache.Ignite.Core.Impl.Common
             return obj.GetType().GetProperties().Where(p => !Equals(p.GetValue(obj, null), GetDefaultValue(p)));
         }
 
+        /// <summary>
+        /// Gets the default value for a property.
+        /// </summary>
         private static object GetDefaultValue(PropertyInfo property)
         {
             var attr = property.GetCustomAttributes(true).OfType<DefaultValueAttribute>().FirstOrDefault();

@@ -102,7 +102,6 @@ namespace Apache.Ignite.Core.Impl.Common
                 typeof (EventType).Name, s));
         }
 
-
         /// <summary>
         /// Converts the given value object to the specified type, using the specified context and culture information.
         /// </summary>
