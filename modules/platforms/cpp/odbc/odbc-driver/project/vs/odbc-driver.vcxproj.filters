@@ -112,6 +112,9 @@
     <ClCompile Include="..\..\src\column.cpp">
       <Filter>Code</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\src\query\special_columns_query.cpp">
+      <Filter>Code\query</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="module.def">
@@ -218,6 +221,9 @@
     </ClInclude>
     <ClInclude Include="..\..\include\ignite\odbc\column.h">
       <Filter>Code</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\ignite\odbc\query\special_columns_query.h">
+      <Filter>Code\query</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

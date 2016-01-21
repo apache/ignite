@@ -305,15 +305,15 @@ namespace ignite
             return currentQuery->Execute();
         }
 
-        void Statement::ExecuteGetSpecialColumnsQuery(int16_t type,
+        void Statement::ExecuteSpecialColumnsQuery(int16_t type,
             const std::string& catalog, const std::string& schema,
             const std::string& table, int16_t scope, int16_t nullable)
         {
-            IGNITE_ODBC_API_CALL(InternalExecuteGetSpecialColumnsQuery(type,
+            IGNITE_ODBC_API_CALL(InternalExecuteSpecialColumnsQuery(type,
                 catalog, schema, table, scope, nullable));
         }
 
-        SqlResult Statement::InternalExecuteGetSpecialColumnsQuery(int16_t type,
+        SqlResult Statement::InternalExecuteSpecialColumnsQuery(int16_t type,
             const std::string& catalog, const std::string& schema,
             const std::string& table, int16_t scope, int16_t nullable)
         {

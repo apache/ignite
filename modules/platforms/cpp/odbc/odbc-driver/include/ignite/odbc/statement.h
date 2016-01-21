@@ -245,7 +245,7 @@ namespace ignite
              * @param type Determines whether to return special columns that
              *             can have a NULL value.
              */
-            void ExecuteGetSpecialColumnsQuery(int16_t type,
+            void ExecuteSpecialColumnsQuery(int16_t type,
                 const std::string& catalog, const std::string& schema,
                 const std::string& table, int16_t scope, int16_t nullable);
 
@@ -450,11 +450,11 @@ namespace ignite
              * @param schema Schema name.
              * @param table Table name.
              * @param scope Minimum required scope of the rowid.
-             * @param type Determines whether to return special columns that
-             *             can have a NULL value.
+             * @param nullable Determines whether to return special columns
+             *                 that can have a NULL value.
              * @return Operation result.
              */
-            SqlResult InternalExecuteGetSpecialColumnsQuery(int16_t type,
+            SqlResult InternalExecuteSpecialColumnsQuery(int16_t type,
                 const std::string& catalog, const std::string& schema,
                 const std::string& table, int16_t scope, int16_t nullable);
 

@@ -1368,7 +1368,7 @@ SQLRETURN SQL_API SQLSpecialColumns(SQLHSTMT    stmt,
     LOG_MSG("schema: %s\n", schema.c_str());
     LOG_MSG("table: %s\n", table.c_str());
 
-    statement->ExecuteGetSpecialColumnsQuery(idType, catalog, schema, table, scope, nullable);
+    statement->ExecuteSpecialColumnsQuery(idType, catalog, schema, table, scope, nullable);
 
     return statement->GetDiagnosticRecords().GetReturnCode();
 }
