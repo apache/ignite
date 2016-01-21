@@ -64,20 +64,23 @@ namespace Apache.Ignite.Core.Impl.Common
             IgniteArgumentCheck.NotNull(writer, "writer");
             IgniteArgumentCheck.NotNullOrEmpty(rootElementName, "rootElementName");
 
-            // TODO: DefaultVlaueAttribute
-            Write(configuration, writer, rootElementName);
+            WriteElement(configuration, writer, rootElementName);
         }
 
-        private static void Write(object obj, XmlWriter writer, string rootElementName)
+        private static void WriteElement(object obj, XmlWriter writer, string rootElementName)
         {
             writer.WriteStartElement(rootElementName);
 
-            var props = GetNonDefaultProperties(obj);
-            // TODO
+            var props = GetNonDefaultProperties(obj).ToList();
 
             // 1. Write attributes
+            // TODO: Converter?
+            foreach (var prop in props.Where(p => IsBasicType(p.PropertyType)))
+                writer.WriteAttributeString(PropertyNameToXmlName(prop.Name), prop.GetValue(obj, null).ToString());
 
             // 2. Write elements
+            foreach (var prop in props.Where(p => !IsBasicType(p.PropertyType)))
+                WriteElement(prop.GetValue(obj, null), writer, PropertyNameToXmlName(prop.Name));
 
             writer.WriteEndElement();
         }
