@@ -29,7 +29,7 @@ namespace ignite
             /**
              * Special columns query.
              */
-            class SpecialColumnsQuery : Query
+            class SpecialColumnsQuery : public Query
             {
             public:
 

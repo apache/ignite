@@ -22,6 +22,7 @@
 #include "ignite/odbc/query/foreign_keys_query.h"
 #include "ignite/odbc/query/primary_keys_query.h"
 #include "ignite/odbc/query/type_info_query.h"
+#include "ignite/odbc/query/special_columns_query.h"
 #include "ignite/odbc/connection.h"
 #include "ignite/odbc/utility.h"
 #include "ignite/odbc/message.h"
@@ -317,7 +318,21 @@ namespace ignite
             const std::string& catalog, const std::string& schema,
             const std::string& table, int16_t scope, int16_t nullable)
         {
-            return SQL_RESULT_ERROR;
+            if (type != SQL_BEST_ROWID && type != SQL_ROWVER)
+            {
+                AddStatusRecord(SQL_STATE_HY097_COLUMN_TYPE_OUT_OF_RANGE,
+                    "An invalid IdentifierType value was specified.");
+
+                return SQL_RESULT_ERROR;
+            }
+
+            if (currentQuery.get())
+                currentQuery->Close();
+
+            currentQuery.reset(new query::SpecialColumnsQuery(*this, type,
+                catalog, schema, table, scope, nullable));
+
+            return currentQuery->Execute();
         }
 
         void Statement::ExecuteGetTypeInfoQuery(int16_t sqlType)

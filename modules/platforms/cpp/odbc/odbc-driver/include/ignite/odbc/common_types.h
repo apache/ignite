@@ -73,48 +73,49 @@ namespace ignite
             SQL_STATE_24000_INVALID_CURSOR_STATE,
 
             /**
-            * The driver was unable to establish a connection with the data
-            * source.
-            */
+             * The driver was unable to establish a connection with the data
+             * source.
+             */
             SQL_STATE_08001_CANNOT_CONNECT,
 
             /**
-            * The specified ConnectionHandle had already been used
-            * to establish a connection with a data source, and the connection
-            * was still open.
-            */
+             * The specified ConnectionHandle had already been used
+             * to establish a connection with a data source, and the connection
+             * was still open.
+             */
             SQL_STATE_08002_ALREADY_CONNECTED,
 
             /** The connection specified was not open. */
             SQL_STATE_08003_NOT_CONNECTED,
 
             /**
-            * An error occurred for which there was no specific SQLSTATE
-            * and for which no implementation-specific SQLSTATE was defined.
-            */
+             * An error occurred for which there was no specific SQLSTATE
+             * and for which no implementation-specific SQLSTATE was defined.
+             */
             SQL_STATE_HY000_GENERAL_ERROR,
 
             /**
-            * The driver was unable to allocate memory for the specified
-            * handle.
-            */
+             * The driver was unable to allocate memory for the specified
+             * handle.
+             */
             SQL_STATE_HY001_MEMORY_ALLOCATION,
 
-            /**
-            * Function sequence error.
-            */
+            /** Function sequence error. */
             SQL_STATE_HY010_SEQUENCE_ERROR,
 
+            /** Column type out of range. */
+            SQL_STATE_HY097_COLUMN_TYPE_OUT_OF_RANGE,
+
             /**
-            * The driver does not support the feature of ODBC behavior that
-            * the application requested.
-            */
+             * The driver does not support the feature of ODBC behavior that
+             * the application requested.
+             */
             SQL_STATE_HYC00_OPTIONAL_FEATURE_NOT_IMPLEMENTED,
 
             /**
-            * The connection timeout period expired before the data source
-            * responded to the request.
-            */
+             * The connection timeout period expired before the data source
+             * responded to the request.
+             */
             SQL_STATE_HYT01_CONNECTIOIN_TIMEOUT
         };
 
@@ -216,6 +217,8 @@ namespace ignite
          * @return Internal EnvironmentAttribute type value.
          */
         EnvironmentAttribute EnvironmentAttributeToInternal(int32_t attr);
+
+
     }
 }
 
