@@ -147,7 +147,7 @@ angular
             templateUrl: '/base.html'
         });
 
-    $urlRouterProvider.when('/', '/configuration/clusters');
+    $urlRouterProvider.when('/', '/login');
 
     $locationProvider.html5Mode(true);
 }])
