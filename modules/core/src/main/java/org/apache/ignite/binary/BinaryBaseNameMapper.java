@@ -111,4 +111,9 @@ public class BinaryBaseNameMapper implements BinaryNameMapper {
 
         return idx >= 0 ? clsName.substring(idx + 1) : clsName;
     }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return "BinaryBaseNameMapper [useSimpleName=" + useSimpleName + ']';
+    }
 }

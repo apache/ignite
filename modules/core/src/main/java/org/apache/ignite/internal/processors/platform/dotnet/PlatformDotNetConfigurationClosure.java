@@ -113,14 +113,14 @@ public class PlatformDotNetConfigurationClosure extends PlatformAbstractConfigur
             bCfg = new BinaryConfiguration();
 
             bCfg.setCompactFooter(false);
-            bCfg.setNameMapper(new BinaryBaseNameMapper());
+            bCfg.setNameMapper(new BinaryBaseNameMapper(true));
             bCfg.setIdMapper(new BinaryBaseIdMapper(true));
 
             igniteCfg.setBinaryConfiguration(bCfg);
 
             dotNetCfg0.warnings(Collections.singleton("Binary configuration is automatically initiated, " +
-                "note that binary name mapper is set to " + BinaryBaseNameMapper.class.getName()
-                + " and binary ID mapper is set to " + BinaryBaseIdMapper.class.getName()
+                "note that binary name mapper is set to " + bCfg.getNameMapper()
+                + " and binary ID mapper is set to " + bCfg.getIdMapper()
                 + " (other nodes must have the same binary name and ID mapper types)."));
         }
         else {
@@ -130,7 +130,7 @@ public class PlatformDotNetConfigurationClosure extends PlatformAbstractConfigur
                 bCfg.setNameMapper(new BinaryBaseNameMapper());
 
                 dotNetCfg0.warnings(Collections.singleton("Binary name mapper is automatically set to " +
-                    BinaryBaseNameMapper.class.getName()
+                    bCfg.getNameMapper()
                     + " (other nodes must have the same binary name mapper type)."));
             }
 
@@ -140,7 +140,7 @@ public class PlatformDotNetConfigurationClosure extends PlatformAbstractConfigur
                 bCfg.setIdMapper(new BinaryBaseIdMapper(true));
 
                 dotNetCfg0.warnings(Collections.singleton("Binary ID mapper is automatically set to " +
-                    BinaryBaseIdMapper.class.getName()
+                    bCfg.getIdMapper()
                     + " (other nodes must have the same binary ID mapper type)."));
             }
         }

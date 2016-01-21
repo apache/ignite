@@ -140,4 +140,9 @@ public class BinaryBaseIdMapper implements BinaryIdMapper {
 
         return h;
     }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return "BinaryBaseIdMapper [isLowerCase=" + isLowerCase + ']';
+    }
 }
