@@ -19,9 +19,9 @@ mixin ignite-form-field-tooltip(message)
 
 - var model = 'backupItem'
 
-form.panel.panel-default(bs-collapse ng-model='panel' name='time')
+.panel.panel-default
     .panel-heading(bs-collapse-toggle ng-click='__show__ = true')
-        i.fa(ng-class='panel === 0 ? "fa-chevron-circle-down" : "fa-chevron-circle-right"')
+        ignite-form-panel-chevron
         label Time configuration
         i.tipLabel.fa.fa-question-circle(bs-tooltip='"Time settings for CLOCK write ordering mode"')
         //- i.pull-right.fa.fa-undo(

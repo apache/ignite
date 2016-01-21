@@ -16,9 +16,9 @@
 
 - var model = 'backupItem.connector'
 
-form.panel.panel-default(bs-collapse ng-model='panel' name='connector')
+.panel.panel-default
     .panel-heading(bs-collapse-toggle ng-click='__show__ = true')
-        i.fa(ng-class='panel === 0 ? "fa-chevron-circle-down" : "fa-chevron-circle-right"')
+        ignite-form-panel-chevron
         label Connector configuration
         ignite-form-field-tooltip.tipLabel
             | REST access configuration

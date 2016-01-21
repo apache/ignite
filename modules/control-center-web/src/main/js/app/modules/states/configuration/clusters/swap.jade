@@ -16,9 +16,9 @@
 
 - var model = 'backupItem.swapSpaceSpi'
 
-form.panel.panel-default(bs-collapse ng-model='panel' name='swap')
+.panel.panel-default
     .panel-heading(bs-collapse-toggle ng-click='__show__ = true')
-        i.fa(ng-class='panel === 0 ? "fa-chevron-circle-down" : "fa-chevron-circle-right"')
+        ignite-form-panel-chevron
         label Swap
         i.tipLabel.fa.fa-question-circle(bs-tooltip='"Settings for overflow data to disk if it cannot fit in memory"')
         i.pull-right.fa.fa-undo(

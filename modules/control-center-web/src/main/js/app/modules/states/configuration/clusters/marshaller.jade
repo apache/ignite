@@ -16,9 +16,9 @@
 
 - var model = 'backupItem.marshaller'
 
-form.panel.panel-default(bs-collapse ng-model='panel' name='marshaller')
+.panel.panel-default
     .panel-heading(bs-collapse-toggle ng-click='__show__ = true')
-        i.fa(ng-class='panel === 0 ? "fa-chevron-circle-down" : "fa-chevron-circle-right"')
+        ignite-form-panel-chevron
         label Marshaller
         ignite-form-field-tooltip.tipLabel
             | Marshaller allows to marshal or unmarshal objects in grid#[br]

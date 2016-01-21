@@ -62,31 +62,32 @@ include ../includes/controls
                         i.btn.btn-primary.fa.fa-undo(id='undo-item' ng-disabled='!ui.inputForm.$dirty' ng-click='ui.inputForm.$dirty && resetAll()' bs-tooltip=undoTip data-placement='bottom' data-trigger='hover')
 
             hr
-            form.form-horizontal(name='ui.inputForm' ng-show='backupItem && tableVisibleRow(displayedRows, selectedItem)' novalidate unsaved-warning-form)
-                .panel-group(bs-collapse ng-model='panels.activePanels' data-allow-multiple='true' ng-click='triggerDigest = true')
-                    ignite-configuration-clusters-general
-                    .advanced-options
-                        i.fa(
-                            ng-click='__.advanced = !__.advanced'
-                            ng-class='__.advanced ? "fa-chevron-circle-down" : "fa-chevron-circle-right"')
-                        a(ng-click='__.advanced = !__.advanced') {{__.advanced ? 'Hide advanced settings...' : 'Show advanced settings...'}}
-                    div(ng-show='__.advanced')
-                        ignite-configuration-clusters-atomic
-                        ignite-configuration-clusters-binary
-                        ignite-configuration-clusters-communication
-                        ignite-configuration-clusters-connector
-                        ignite-configuration-clusters-deployment
-                        ignite-configuration-clusters-discovery
-                        ignite-configuration-clusters-events
-                        ignite-configuration-clusters-igfs
-                        ignite-configuration-clusters-marshaller
-                        ignite-configuration-clusters-metrics
-                        ignite-configuration-clusters-ssl
-                        ignite-configuration-clusters-swap
-                        ignite-configuration-clusters-time
-                        ignite-configuration-clusters-thread
-                        ignite-configuration-clusters-transactions
-
+            div(bs-collapse='' data-allow-multiple='true' ng-model='__.groups')
+                form.form-horizontal(name='ui.inputForm' ng-show='backupItem && tableVisibleRow(displayedRows, selectedItem)' novalidate unsaved-warning-form)
+                    .panel-group(ng-click='triggerDigest = true')
+                        ignite-configuration-clusters-general
                         .advanced-options
-                            i.fa.fa-chevron-circle-down(ng-click='__.advanced = !__.advanced')
-                            a(ng-click='__.advanced = !__.advanced') Hide advanced settings...
+                            i.fa(
+                                ng-click='__.advanced = !__.advanced'
+                                ng-class='__.advanced ? "fa-chevron-circle-down" : "fa-chevron-circle-right"')
+                            a(ng-click='__.advanced = !__.advanced') {{__.advanced ? 'Hide advanced settings...' : 'Show advanced settings...'}}
+                        div(ng-show='__.advanced')
+                            ignite-configuration-clusters-atomic
+                            ignite-configuration-clusters-binary
+                            ignite-configuration-clusters-communication
+                            ignite-configuration-clusters-connector
+                            ignite-configuration-clusters-deployment
+                            ignite-configuration-clusters-discovery
+                            ignite-configuration-clusters-events
+                            ignite-configuration-clusters-igfs
+                            ignite-configuration-clusters-marshaller
+                            ignite-configuration-clusters-metrics
+                            ignite-configuration-clusters-ssl
+                            ignite-configuration-clusters-swap
+                            ignite-configuration-clusters-time
+                            ignite-configuration-clusters-thread
+                            ignite-configuration-clusters-transactions
+
+                            .advanced-options
+                                i.fa.fa-chevron-circle-down(ng-click='__.advanced = !__.advanced')
+                                a(ng-click='__.advanced = !__.advanced') Hide advanced settings...

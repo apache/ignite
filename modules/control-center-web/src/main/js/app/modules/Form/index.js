@@ -38,6 +38,7 @@ import unique from './validator/unique.directive';
 import igniteFormFieldInputAutofocus from './field/input/autofocus.directive';
 import igniteFormFieldUp from './field/up.directive';
 import igniteFormFieldDown from './field/down.directive';
+import igniteFormPanelChevron from './panel/chevron.directive';
 
 angular
 .module('ignite-console.Form', [
@@ -65,6 +66,7 @@ angular
 .directive(...igniteFormFieldInputAutofocus)
 .directive(...igniteFormFieldUp)
 .directive(...igniteFormFieldDown)
+.directive(...igniteFormPanelChevron)
 // Generator of globally unique identifier.
 .factory('IgniteFormGUID', [() => {
     let guid = 0;

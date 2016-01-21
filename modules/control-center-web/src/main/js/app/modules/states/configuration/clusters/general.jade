@@ -16,9 +16,9 @@
 
 - var model = 'backupItem'
 
-form.panel.panel-default(bs-collapse name='general')
+.panel.panel-default
     .panel-heading(bs-collapse-toggle)
-        i.fa(ng-class='panel === 0 ? "fa-chevron-circle-down" : "fa-chevron-circle-right"')
+        ignite-form-panel-chevron
         label General
         //- i.pull-right.fa.fa-undo(
         //-     ng-show='!preview["general"].allDefaults' 

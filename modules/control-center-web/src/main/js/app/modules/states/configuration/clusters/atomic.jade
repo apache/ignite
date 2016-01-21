@@ -16,9 +16,9 @@
 
 - var model = 'backupItem.atomicConfiguration'
 
-form.panel.panel-default(bs-collapse ng-model='panel' name='atomics')
-    .panel-heading(bs-collapse-toggle ng-click='__show__ = true')
-        i.fa(ng-class='panel === 0 ? "fa-chevron-circle-down" : "fa-chevron-circle-right"')
+.panel.panel-default
+    .panel-heading(bs-collapse-toggle='' nsg-click='__show__ = true')
+        ignite-form-panel-chevron
         label Atomic configuration
         ignite-form-field-tooltip.tipLabel
             | Configuration for atomic data structures#[br]
@@ -26,10 +26,10 @@ form.panel.panel-default(bs-collapse ng-model='panel' name='atomics')
         i.pull-right.fa.fa-undo(
             ng-show='!preview["atomics"].allDefaults' 
             ng-click='#{model} = {}; $event.stopPropagation()' 
-            bs-tooltip 
+            bs-tooltip=''
             data-title='"Undo unsaved changes"')
-    .panel-collapse(role='tabpanel' bs-collapse-target id='atomics')
-        .panel-body(ng-if='__show__')
+    .panel-collapse(role='tabpanel' bs-collapse-target='' id='atomics')
+        .panel-body(nsg-if='__show__')
             .col-sm-6
                 .settings-row
                     ignite-form-field

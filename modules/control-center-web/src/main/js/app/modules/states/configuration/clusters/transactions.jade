@@ -19,9 +19,9 @@ mixin ignite-form-field-tooltip(message)
 
 - var model = 'backupItem.transactionConfiguration'
 
-form.panel.panel-default(bs-collapse ng-model='panel' name='transactions')
+.panel.panel-default
     .panel-heading(bs-collapse-toggle ng-click='__show__ = true')
-        i.fa(ng-class='panel === 0 ? "fa-chevron-circle-down" : "fa-chevron-circle-right"')
+        ignite-form-panel-chevron
         label Transactions
         i.tipLabel.fa.fa-question-circle(bs-tooltip='"Settings for transactions"')
         i.pull-right.fa.fa-undo(

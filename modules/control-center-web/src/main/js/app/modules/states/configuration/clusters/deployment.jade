@@ -24,9 +24,9 @@ mixin feedback(name, error, message)
         data-title='#{message}'
     )
 
-form.panel.panel-default(bs-collapse ng-model='panel' name='deployment')
+.panel.panel-default
     .panel-heading(bs-collapse-toggle ng-click='__show__ = true')
-        i.fa(ng-class='panel === 0 ? "fa-chevron-circle-down" : "fa-chevron-circle-right"')
+        ignite-form-panel-chevron
         label Class deployment
         ignite-form-field-tooltip.tipLabel
             | Task and resources deployment in cluster

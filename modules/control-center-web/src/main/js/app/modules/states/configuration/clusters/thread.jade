@@ -16,9 +16,9 @@
 
 - var model = 'backupItem'
 
-form.panel.panel-default(bs-collapse ng-model='panel' name='pools')
+.panel.panel-default
     .panel-heading(bs-collapse-toggle ng-click='__show__ = true')
-        i.fa(ng-class='panel === 0 ? "fa-chevron-circle-down" : "fa-chevron-circle-right"')
+        ignite-form-panel-chevron
         label Thread pools size
         i.tipLabel.fa.fa-question-circle(bs-tooltip='"Settings for node thread pools"')
         //- i.pull-right.fa.fa-undo(
