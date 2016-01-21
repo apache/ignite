@@ -17,8 +17,10 @@
 
 namespace Apache.Ignite.Core.Tests
 {
+    using System;
     using System.Configuration;
     using System.Linq;
+    using Apache.Ignite.Core.Impl.Common;
     using NUnit.Framework;
 
     /// <summary>
@@ -38,6 +40,8 @@ namespace Apache.Ignite.Core.Tests
         [Test]
         public void TestIgniteStart()
         {
+            Environment.SetEnvironmentVariable(Classpath.EnvIgniteNativeTestClasspath, "true");
+
             using (var ignite = Ignition.Start("igniteConfiguration"))
             {
                 
