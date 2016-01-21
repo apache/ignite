@@ -75,7 +75,10 @@ namespace Apache.Ignite.Core.Impl.Common
 
             if (col != null)
             {
-                var elementType = col.GetType().GetGenericArguments().Single();
+                var elementType = col.GetType().GetInterfaces()
+                    .Single(x => x.IsGenericType && x.GetGenericTypeDefinition() == typeof (ICollection<>))
+                    .GetGenericTypeDefinition();
+
                 var elementTypeName = PropertyNameToXmlName(elementType.Name);
 
                 foreach (var element in col)
