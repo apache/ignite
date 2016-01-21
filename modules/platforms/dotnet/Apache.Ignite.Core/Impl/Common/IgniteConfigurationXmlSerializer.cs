@@ -78,10 +78,11 @@ namespace Apache.Ignite.Core.Impl.Common
         private static void WriteElement(object obj, XmlWriter writer, string rootElementName, PropertyInfo property, 
             Type valueType)
         {
-            writer.WriteStartElement(rootElementName);
 
             if (valueType == typeof(IgniteConfiguration))
-                writer.WriteAttributeString(XmlnsAttribute, Schema);
+                writer.WriteStartElement(rootElementName, Schema);
+            else
+                writer.WriteStartElement(rootElementName);
 
             if (valueType.IsGenericType && valueType.GetGenericTypeDefinition() == typeof(ICollection<>))
             {
