@@ -93,14 +93,12 @@ namespace ignite
             {
                 case IGNITE_SQL_ENV_ATTR_ODBC_VERSION:
                 {
-                    int32_t* version = reinterpret_cast<int32_t*>(value);
+                    int32_t version = reinterpret_cast<int32_t>(value);
 
-                    if (*version != odbcVersion)
+                    if (version != odbcVersion)
                     {
                         AddStatusRecord(SQL_STATE_01S02_OPTION_VALUE_CHANGED,
                             "ODBC version is not supported.");
-
-                        *version = odbcVersion;
 
                         return SQL_RESULT_SUCCESS_WITH_INFO;
                     }
@@ -110,14 +108,12 @@ namespace ignite
 
                 case IGNITE_SQL_ENV_ATTR_OUTPUT_NTS:
                 {
-                    int32_t* nts = reinterpret_cast<int32_t*>(value);
+                    int32_t nts = reinterpret_cast<int32_t>(value);
 
-                    if (*nts != odbcNts)
+                    if (nts != odbcNts)
                     {
                         AddStatusRecord(SQL_STATE_01S02_OPTION_VALUE_CHANGED,
                             "Only null-termination of strings is supported.");
-
-                        *nts = odbcNts;
 
                         return SQL_RESULT_SUCCESS_WITH_INFO;
                     }
