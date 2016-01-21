@@ -46,12 +46,12 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.binary.BinaryIdMapper;
 import org.apache.ignite.binary.BinaryInvalidTypeException;
+import org.apache.ignite.binary.BinaryLowerCaseIdMapper;
 import org.apache.ignite.binary.BinaryNameMapper;
 import org.apache.ignite.binary.BinaryObjectException;
+import org.apache.ignite.binary.BinaryOriginalNameMapper;
 import org.apache.ignite.binary.BinaryReflectiveSerializer;
 import org.apache.ignite.binary.BinarySerializer;
-import org.apache.ignite.binary.BinaryLowerCaseIdMapper;
-import org.apache.ignite.binary.BinarySimpleNameMapper;
 import org.apache.ignite.binary.BinaryType;
 import org.apache.ignite.binary.BinaryTypeConfiguration;
 import org.apache.ignite.cache.CacheKeyConfiguration;
@@ -84,7 +84,7 @@ public class BinaryContext {
     private static final BinaryIdMapper DFLT_ID_MAPPER = new BinaryLowerCaseIdMapper();
 
     /** */
-    private static final BinaryNameMapper DFLT_NAME_MAPPER = new BinarySimpleNameMapper();
+    private static final BinaryNameMapper DFLT_NAME_MAPPER = new BinaryOriginalNameMapper();
 
     /** */
     private final ConcurrentMap<Class<?>, BinaryClassDescriptor> descByCls = new ConcurrentHashMap8<>();
