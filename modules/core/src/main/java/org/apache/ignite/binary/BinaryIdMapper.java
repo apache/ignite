@@ -33,23 +33,25 @@ package org.apache.ignite.binary;
  */
 public interface BinaryIdMapper {
     /**
-     * Gets type ID for provided class name.
+     * Gets type ID for provided type name.
      * <p>
      * If {@code 0} is returned, hash code of class simple name will be used.
      *
      * @param clsName Class name.
      * @return Type ID.
+     * @see BinaryNameMapper#typeName(String)
      */
     public int typeId(String clsName);
 
     /**
-     * Gets ID for provided field.
+     * Gets ID for provided field name.
      * <p>
      * If {@code 0} is returned, hash code of field name will be used.
      *
      * @param typeId Type ID.
      * @param fieldName Field name.
      * @return Field ID.
+     * @see BinaryNameMapper#fieldName(String)
      */
     public int fieldId(int typeId, String fieldName);
 }
