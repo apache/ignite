@@ -59,7 +59,7 @@
                                 </xs:complexType>
                             </xs:element>
                         </xs:sequence>
-                        <xs:attribute name="defaultKeepDeserialized" type="xs:string" />
+                        <xs:attribute name="defaultKeepDeserialized" type="xs:boolean" />
                     </xs:complexType>
                 </xs:element>
                 <xs:element name="cacheConfiguration" minOccurs="0">
@@ -116,7 +116,7 @@
                                                                                                     <xs:element name="indexField" maxOccurs="unbounded">
                                                                                                         <xs:complexType>
                                                                                                             <xs:attribute name="name" type="xs:string" use="required" />
-                                                                                                            <xs:attribute name="isDescending" type="xs:string" />
+                                                                                                            <xs:attribute name="isDescending" type="xs:boolean" />
                                                                                                         </xs:complexType>
                                                                                                     </xs:element>
                                                                                                 </xs:sequence>
@@ -141,34 +141,34 @@
                                     </xs:sequence>
                                     <xs:attribute name="name" type="xs:string" />
                                     <xs:attribute name="writeSynchronizationMode" type="xs:string" />
-                                    <xs:attribute name="evictSynchronized" type="xs:string" />
-                                    <xs:attribute name="evictSynchronizedKeyBufferSize" type="xs:unsignedInt" />
-                                    <xs:attribute name="evictSynchronizedConcurrencyLevel" type="xs:unsignedInt" />
+                                    <xs:attribute name="evictSynchronized" type="xs:boolean" />
+                                    <xs:attribute name="evictSynchronizedKeyBufferSize" type="xs:int" />
+                                    <xs:attribute name="evictSynchronizedConcurrencyLevel" type="xs:int" />
                                     <xs:attribute name="evictSynchronizedTimeout" type="xs:time" />
                                     <xs:attribute name="maxEvictionOverflowRatio" type="xs:decimal" />
-                                    <xs:attribute name="startSize" type="xs:unsignedInt" />
+                                    <xs:attribute name="startSize" type="xs:int" />
                                     <xs:attribute name="loadPreviousValue" type="xs:string" />
                                     <xs:attribute name="atomicityMode" type="xs:string" />
                                     <xs:attribute name="atomicWriteOrderMode" type="xs:string" />
-                                    <xs:attribute name="backups" type="xs:unsignedInt" />
+                                    <xs:attribute name="backups" type="xs:int" />
                                     <xs:attribute name="lockTimeout" type="xs:time" />
-                                    <xs:attribute name="invalidate" type="xs:string" />
+                                    <xs:attribute name="invalidate" type="xs:boolean" />
                                     <xs:attribute name="rebalanceMode" type="xs:string" />
-                                    <xs:attribute name="rebalanceBatchSize" type="xs:unsignedByte" />
-                                    <xs:attribute name="enableSwap" type="xs:string" />
-                                    <xs:attribute name="maxConcurrentAsyncOperations" type="xs:unsignedByte" />
-                                    <xs:attribute name="writeBehindEnabled" type="xs:string" />
-                                    <xs:attribute name="writeBehindFlushSize" type="xs:unsignedByte" />
-                                    <xs:attribute name="writeBehindFlushThreadCount" type="xs:unsignedByte" />
-                                    <xs:attribute name="writeBehindBatchSize" type="xs:unsignedByte" />
+                                    <xs:attribute name="rebalanceBatchSize" type="xs:int" />
+                                    <xs:attribute name="enableSwap" type="xs:boolean" />
+                                    <xs:attribute name="maxConcurrentAsyncOperations" type="xs:int" />
+                                    <xs:attribute name="writeBehindEnabled" type="xs:boolean" />
+                                    <xs:attribute name="writeBehindFlushSize" type="xs:int" />
+                                    <xs:attribute name="writeBehindFlushThreadCount" type="xs:int" />
+                                    <xs:attribute name="writeBehindBatchSize" type="xs:int" />
                                     <xs:attribute name="rebalanceTimeout" type="xs:time" />
-                                    <xs:attribute name="rebalanceDelay" type="xs:string" />
-                                    <xs:attribute name="rebalanceThrottle" type="xs:string" />
-                                    <xs:attribute name="offHeapMaxMemory" type="xs:unsignedShort" />
+                                    <xs:attribute name="rebalanceDelay" type="xs:time" />
+                                    <xs:attribute name="rebalanceThrottle" type="xs:time" />
+                                    <xs:attribute name="offHeapMaxMemory" type="xs:int" />
                                     <xs:attribute name="memoryMode" type="xs:string" />
                                     <xs:attribute name="longQueryWarningTimeout" type="xs:time" />
-                                    <xs:attribute name="sqlEscapeAll" type="xs:string" />
-                                    <xs:attribute name="sqlOnheapRowCacheSize" type="xs:unsignedShort" />
+                                    <xs:attribute name="sqlEscapeAll" type="xs:boolean" />
+                                    <xs:attribute name="sqlOnheapRowCacheSize" type="xs:int" />
                                 </xs:complexType>
                             </xs:element>
                         </xs:sequence>
@@ -216,10 +216,10 @@
                                     <xs:attribute name="type" type="xs:string" use="required" />
                                     <xs:attribute name="localAddress" type="xs:string" />
                                     <xs:attribute name="multicastGroup" type="xs:string" />
-                                    <xs:attribute name="multicastPort" type="xs:unsignedShort" />
-                                    <xs:attribute name="addressRequestAttempts" type="xs:unsignedByte" />
-                                    <xs:attribute name="responseTimeout" type="xs:string" />
-                                    <xs:attribute name="timeToLive" type="xs:unsignedByte" />
+                                    <xs:attribute name="multicastPort" type="xs:int" />
+                                    <xs:attribute name="addressRequestAttempts" type="xs:int" />
+                                    <xs:attribute name="responseTimeout" type="xs:time" />
+                                    <xs:attribute name="timeToLive" type="xs:byte" />
                                 </xs:complexType>
                             </xs:element>
                         </xs:sequence>
@@ -242,15 +242,15 @@
             <xs:attribute name="jvmDllPath" type="xs:string" />
             <xs:attribute name="igniteHome" type="xs:string" />
             <xs:attribute name="jvmClasspath" type="xs:string" />
-            <xs:attribute name="suppressWarnings" type="xs:string" />
-            <xs:attribute name="jvmInitialMemoryMb" type="xs:unsignedShort" />
-            <xs:attribute name="jvmMaxMemoryMb" type="xs:unsignedShort" />
-            <xs:attribute name="clientMode" type="xs:string" />
+            <xs:attribute name="suppressWarnings" type="xs:boolean" />
+            <xs:attribute name="jvmInitialMemoryMb" type="xs:int" />
+            <xs:attribute name="jvmMaxMemoryMb" type="xs:int" />
+            <xs:attribute name="clientMode" type="xs:boolean" />
             <xs:attribute name="metricsExpireTime" type="xs:time" />
-            <xs:attribute name="metricsHistorySize" type="xs:unsignedByte" />
+            <xs:attribute name="metricsHistorySize" type="xs:int" />
             <xs:attribute name="metricsLogFrequency" type="xs:string" />
             <xs:attribute name="metricsUpdateFrequency" type="xs:string" />
-            <xs:attribute name="networkSendRetryCount" type="xs:unsignedByte" />
+            <xs:attribute name="networkSendRetryCount" type="xs:int" />
             <xs:attribute name="networkSendRetryDelay" type="xs:time" />
             <xs:attribute name="networkTimeout" type="xs:time" />
             <xs:attribute name="workDirectory" type="xs:string" />
