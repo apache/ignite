@@ -1328,6 +1328,8 @@ consoleModule.controller('domainsController', function ($filter, $http, $timeout
                     $scope.selectItem(savedMeta);
 
                     $common.showInfo('Domain model "' + item.valueType + '" saved.');
+
+                    _checkShowValidPresentation();
                 })
                 .error(function (errMsg) {
                     $common.showError(errMsg);
@@ -1406,17 +1408,21 @@ consoleModule.controller('domainsController', function ($filter, $http, $timeout
                                     $scope.selectItem(undefined, undefined);
                             }
 
-                            if (!$scope.ui.showValid) {
-                                var validFilter = $filter('domainsValidation');
-
-                                $scope.ui.showValid = validFilter($scope.domains, false, true).length === 0;
-                            }
+                            _checkShowValidPresentation();
                         })
                         .error(function (errMsg) {
                             $common.showError(errMsg);
                         });
                 });
         };
+
+        function _checkShowValidPresentation() {
+            if (!$scope.ui.showValid) {
+                var validFilter = $filter('domainsValidation');
+
+                $scope.ui.showValid = validFilter($scope.domains, false, true).length === 0;
+            }
+        }
 
         // Remove all domain models from db.
         $scope.removeAllItems = function () {
