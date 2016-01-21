@@ -23,10 +23,12 @@ namespace Apache.Ignite.Core.Tests
     using System.Xml;
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Cache.Configuration;
+    using Apache.Ignite.Core.Cache.Store;
     using Apache.Ignite.Core.Discovery;
     using Apache.Ignite.Core.Events;
     using Apache.Ignite.Core.Impl.Common;
     using Apache.Ignite.Core.Lifecycle;
+    using Apache.Ignite.Core.Tests.Binary;
     using NUnit.Framework;
 
     /// <summary>
@@ -117,7 +119,82 @@ namespace Apache.Ignite.Core.Tests
         [Test]
         public void TestSerializeDeserialize()
         {
-            // TODO
+            var cfg = new IgniteConfiguration
+            {
+                GridName = "gridName",
+                JvmOptions = new[] {"1", "2"},
+                LocalHost = "localhost11",
+                JvmClasspath = "classpath",
+                Assemblies = new[] {"asm1", "asm2", "asm3"},
+                BinaryConfiguration = new BinaryConfiguration
+                {
+                    TypeConfigurations = new[]
+                    {
+                        new BinaryTypeConfiguration
+                        {
+                            IsEnum = true,
+                            KeepDeserialized = true,
+                            AffinityKeyFieldName = "affKeyFieldName",
+                            TypeName = "typeName",
+                            IdMapper = new IdMapper(),
+                            NameMapper = new NameMapper(),
+                            Serializer = new TestSerializer()
+                        }
+                    },
+                    DefaultIdMapper = new IdMapper(),
+                    DefaultKeepDeserialized = true,
+                    DefaultNameMapper = new NameMapper(),
+                    DefaultSerializer = new TestSerializer()
+                },
+                CacheConfiguration = new []
+                {
+                    new CacheConfiguration("cacheName")
+                    {
+                        AtomicWriteOrderMode = CacheAtomicWriteOrderMode.Primary,
+                        AtomicityMode = CacheAtomicityMode.Transactional,
+                        Backups = 15,
+                        CacheMode = CacheMode.Partitioned,
+                        CacheStoreFactory = new TetsCacheStoreFactory(),
+                        CopyOnRead = true,
+                        EagerTtl = true,
+                        EnableSwap = true,
+                        EvictSynchronized = true,
+                        EvictSynchronizedConcurrencyLevel = 13,
+                        EvictSynchronizedKeyBufferSize = 14,
+                        EvictSynchronizedTimeout = TimeSpan.FromMinutes(3),
+                        Invalidate = true,
+                        KeepBinaryInStore = true,
+                        LoadPreviousValue = true,
+                        LockTimeout = TimeSpan.FromSeconds(56),
+                        LongQueryWarningTimeout = TimeSpan.FromSeconds(99),
+                        MaxConcurrentAsyncOperations = 24,
+                        MaxEvictionOverflowRatio = 5.6F,
+                        MemoryMode = CacheMemoryMode.OffheapValues,
+                        OffHeapMaxMemory = 567,
+                        QueryEntities = new []
+                        {
+                            new QueryEntity
+                            {
+                                Fields = new []
+                                {
+                                    new QueryField("field", typeof(int))
+                                },
+                                Indexes = new[]
+                                {
+                                    new QueryIndex("field", true)
+                                },
+                                Aliases = new []
+                                {
+                                    new QueryAlias("field.field", "fld")
+                                },
+                                KeyType = typeof(string),
+                                ValueType = typeof(long)
+                            }, 
+                        }
+                    }, 
+                }
+
+            };
         }
 
         public class LifecycleBean : ILifecycleBean
@@ -145,9 +222,30 @@ namespace Apache.Ignite.Core.Tests
             }
         }
 
+        public class TestSerializer : IBinarySerializer
+        {
+            public void WriteBinary(object obj, IBinaryWriter writer)
+            {
+                throw new NotImplementedException();
+            }
+
+            public void ReadBinary(object obj, IBinaryReader reader)
+            {
+                throw new NotImplementedException();
+            }
+        }
+
         public class FooClass
         {
             // No-op.
+        }
+
+        public class TetsCacheStoreFactory : ICacheStoreFactory
+        {
+            public ICacheStore CreateInstance()
+            {
+                throw new NotImplementedException();
+            }
         }
     }
 }
