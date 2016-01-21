@@ -25,6 +25,10 @@
         SqlResult result = (__VA_ARGS__);           \
         diagnosticRecords.SetHeaderRecord(result)
 
+#define IGNITE_ODBC_API_CALL_ALWAYS_SUCCESS                     \
+        diagnosticRecords.Reset();                              \
+        diagnosticRecords.SetHeaderRecord(SQL_RESULT_SUCCESS)
+
 namespace ignite
 {
     namespace odbc

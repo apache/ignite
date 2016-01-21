@@ -45,31 +45,25 @@ namespace ignite
 
         void Statement::BindColumn(uint16_t columnIdx, const app::ApplicationDataBuffer& buffer)
         {
-            diagnosticRecords.Reset();
+            IGNITE_ODBC_API_CALL_ALWAYS_SUCCESS;
 
             columnBindings[columnIdx] = buffer;
 
             columnBindings[columnIdx].SetPtrToOffsetPtr(&columnBindOffset);
-
-            diagnosticRecords.SetHeaderRecord(SQL_RESULT_SUCCESS);
         }
 
         void Statement::UnbindColumn(uint16_t columnIdx)
         {
-            diagnosticRecords.Reset();
+            IGNITE_ODBC_API_CALL_ALWAYS_SUCCESS;
 
             columnBindings.erase(columnIdx);
-
-            diagnosticRecords.SetHeaderRecord(SQL_RESULT_SUCCESS);
         }
 
         void Statement::UnbindAllColumns()
         {
-            diagnosticRecords.Reset();
+            IGNITE_ODBC_API_CALL_ALWAYS_SUCCESS;
 
             columnBindings.clear();
-
-            diagnosticRecords.SetHeaderRecord(SQL_RESULT_SUCCESS);
         }
 
         void Statement::SetColumnBindOffsetPtr(size_t * ptr)
@@ -109,49 +103,39 @@ namespace ignite
 
         void Statement::BindParameter(uint16_t paramIdx, const app::Parameter& param)
         {
-            diagnosticRecords.Reset();
+            IGNITE_ODBC_API_CALL_ALWAYS_SUCCESS;
 
             paramBindings[paramIdx] = param;
 
             paramBindings[paramIdx].GetBuffer().SetPtrToOffsetPtr(&paramBindOffset);
-
-            diagnosticRecords.SetHeaderRecord(SQL_RESULT_SUCCESS);
         }
 
         void Statement::UnbindParameter(uint16_t paramIdx)
         {
-            diagnosticRecords.Reset();
+            IGNITE_ODBC_API_CALL_ALWAYS_SUCCESS;
 
             paramBindings.erase(paramIdx);
-
-            diagnosticRecords.SetHeaderRecord(SQL_RESULT_SUCCESS);
         }
 
         void Statement::UnbindAllParameters()
         {
-            diagnosticRecords.Reset();
+            IGNITE_ODBC_API_CALL_ALWAYS_SUCCESS;
 
             paramBindings.clear();
-
-            diagnosticRecords.SetHeaderRecord(SQL_RESULT_SUCCESS);
         }
 
         uint16_t Statement::GetParametersNumber()
         {
-            diagnosticRecords.Reset();
+            IGNITE_ODBC_API_CALL_ALWAYS_SUCCESS;
 
             return static_cast<uint16_t>(paramBindings.size());
-
-            diagnosticRecords.SetHeaderRecord(SQL_RESULT_SUCCESS);
         }
 
         void Statement::SetParamBindOffsetPtr(size_t* ptr)
         {
-            diagnosticRecords.Reset();
+            IGNITE_ODBC_API_CALL_ALWAYS_SUCCESS;
 
             paramBindOffset = ptr;
-
-            diagnosticRecords.SetHeaderRecord(SQL_RESULT_SUCCESS);
         }
 
         size_t * Statement::GetParamBindOffsetPtr()
