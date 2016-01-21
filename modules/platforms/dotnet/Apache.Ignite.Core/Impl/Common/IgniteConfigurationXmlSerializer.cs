@@ -63,6 +63,8 @@ namespace Apache.Ignite.Core.Impl.Common
             IgniteArgumentCheck.NotNull(configuration, "configuration");
             IgniteArgumentCheck.NotNull(writer, "writer");
             IgniteArgumentCheck.NotNullOrEmpty(rootElementName, "rootElementName");
+
+            // TODO: DefaultVlaueAttribute
         }
 
         /// <summary>
