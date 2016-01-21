@@ -27,16 +27,13 @@ import java.util.Date;
 import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.binary.BinaryCollectionFactory;
-import org.apache.ignite.binary.BinaryIdMapper;
 import org.apache.ignite.binary.BinaryInvalidTypeException;
 import org.apache.ignite.binary.BinaryMapFactory;
-import org.apache.ignite.binary.BinaryNameMapper;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.binary.BinaryRawReader;
 import org.apache.ignite.binary.BinaryReader;
 import org.apache.ignite.internal.binary.streams.BinaryInputStream;
-import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -116,11 +113,8 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Bina
     /** Footer end. */
     private final int footerLen;
 
-    /** Name mapper. */
-    private final BinaryNameMapper nameMapper;
-
-    /** ID mapper. */
-    private final BinaryIdMapper idMapper;
+    /** Mapper. */
+    private final BinaryInternalMapper mapper;
 
     /** Schema Id. */
     private final int schemaId;
@@ -251,17 +245,7 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Bina
                 dataStart = start + DFLT_HDR_LEN;
             }
 
-            if (userType) {
-                T2<BinaryNameMapper, BinaryIdMapper> mappers = ctx.userMappers(typeId);
-                
-                nameMapper = mappers.get1();
-                idMapper = mappers.get2();
-            }
-            else {
-                idMapper = BinaryContext.defaultIdMapper();
-                nameMapper = BinaryContext.defaultNameMapper();
-            }
-            
+            mapper = userType ? ctx.userTypeMapper(typeId) : BinaryContext.defaultMapper();
             schema = BinaryUtils.hasSchema(flags) ? getOrCreateSchema() : null;
         }
         else {
@@ -270,8 +254,7 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Bina
             rawOff = 0;
             footerStart = 0;
             footerLen = 0;
-            idMapper = null;
-            nameMapper = null;
+            mapper = null;
             schemaId = 0;
             userType = false;
             fieldIdLen = 0;
@@ -1668,7 +1651,7 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Bina
     private int fieldId(String name) {
         assert name != null;
 
-        return idMapper.fieldId(typeId, nameMapper.fieldName(name));
+        return mapper.fieldId(typeId, name);
     }
 
     /**

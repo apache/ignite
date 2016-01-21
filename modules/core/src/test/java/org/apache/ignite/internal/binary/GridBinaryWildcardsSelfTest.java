@@ -32,7 +32,6 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.binary.test.GridBinaryTestClass1;
 import org.apache.ignite.internal.binary.test.GridBinaryTestClass2;
 import org.apache.ignite.internal.util.IgniteUtils;
-import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.logger.NullLogger;
 import org.apache.ignite.marshaller.MarshallerContextTestImpl;
@@ -121,13 +120,13 @@ public class GridBinaryWildcardsSelfTest extends GridCommonAbstractTest {
 
         BinaryContext ctx = binaryContext(marsh);
 
-        Map<String, T2<BinaryNameMapper, BinaryIdMapper>> typeMappers = U.field(ctx, "cls2Mappers");
+        Map<String, org.apache.ignite.internal.binary.BinaryInternalMapper> typeMappers = U.field(ctx, "cls2Mappers");
 
         assertEquals(3, typeMappers.size());
 
-        assertEquals(300, typeMappers.get(CLASS1_FULL_NAME).get2().typeId(CLASS1_FULL_NAME));
-        assertEquals(400, typeMappers.get(CLASS2_FULL_NAME).get2().typeId(CLASS2_FULL_NAME));
-        assertEquals(500, typeMappers.get(INNER_CLASS_FULL_NAME).get2().typeId(INNER_CLASS_FULL_NAME));
+        assertEquals(300, typeMappers.get(CLASS1_FULL_NAME).idMapper().typeId(CLASS1_FULL_NAME));
+        assertEquals(400, typeMappers.get(CLASS2_FULL_NAME).idMapper().typeId(CLASS2_FULL_NAME));
+        assertEquals(500, typeMappers.get(INNER_CLASS_FULL_NAME).idMapper().typeId(INNER_CLASS_FULL_NAME));
     }
 
     /**
@@ -209,13 +208,13 @@ public class GridBinaryWildcardsSelfTest extends GridCommonAbstractTest {
 
         BinaryContext ctx = binaryContext(marsh);
 
-        Map<String, T2<BinaryNameMapper, BinaryIdMapper>> typeMappers = U.field(ctx, "cls2Mappers");
+        Map<String, org.apache.ignite.internal.binary.BinaryInternalMapper> typeMappers = U.field(ctx, "cls2Mappers");
 
         assertEquals(3, typeMappers.size());
 
-        assertEquals(300, typeMappers.get(CLASS1_FULL_NAME).get2().typeId(CLASS1_FULL_NAME));
-        assertEquals(400, typeMappers.get(CLASS2_FULL_NAME).get2().typeId(CLASS2_FULL_NAME));
-        assertEquals(500, typeMappers.get(INNER_CLASS_FULL_NAME).get2().typeId(INNER_CLASS_FULL_NAME));
+        assertEquals(300, typeMappers.get(CLASS1_FULL_NAME).idMapper().typeId(CLASS1_FULL_NAME));
+        assertEquals(400, typeMappers.get(CLASS2_FULL_NAME).idMapper().typeId(CLASS2_FULL_NAME));
+        assertEquals(500, typeMappers.get(INNER_CLASS_FULL_NAME).idMapper().typeId(INNER_CLASS_FULL_NAME));
     }
 
     /**
@@ -245,13 +244,13 @@ public class GridBinaryWildcardsSelfTest extends GridCommonAbstractTest {
 
         BinaryContext ctx = binaryContext(marsh);
 
-        Map<String, T2<BinaryNameMapper, BinaryIdMapper>> typeMappers = U.field(ctx, "cls2Mappers");
+        Map<String, org.apache.ignite.internal.binary.BinaryInternalMapper> typeMappers = U.field(ctx, "cls2Mappers");
 
         assertEquals(3, typeMappers.size());
 
-        assertEquals(300, typeMappers.get(CLASS1_FULL_NAME).get2().typeId(CLASS1_FULL_NAME));
-        assertEquals(400, typeMappers.get(CLASS2_FULL_NAME).get2().typeId(CLASS2_FULL_NAME));
-        assertEquals(500, typeMappers.get(INNER_CLASS_FULL_NAME).get2().typeId(INNER_CLASS_FULL_NAME));
+        assertEquals(300, typeMappers.get(CLASS1_FULL_NAME).idMapper().typeId(CLASS1_FULL_NAME));
+        assertEquals(400, typeMappers.get(CLASS2_FULL_NAME).idMapper().typeId(CLASS2_FULL_NAME));
+        assertEquals(500, typeMappers.get(INNER_CLASS_FULL_NAME).idMapper().typeId(INNER_CLASS_FULL_NAME));
     }
 
     /**
@@ -302,9 +301,9 @@ public class GridBinaryWildcardsSelfTest extends GridCommonAbstractTest {
         assertTrue(typeIds.containsKey(typeId(INNER_CLASS_FULL_NAME, nameMapper, mapper)));
         assertTrue(typeIds.containsKey(100));
 
-        Map<String, T2<BinaryNameMapper, BinaryIdMapper>> typeMappers = U.field(ctx, "cls2Mappers");
+        Map<String, org.apache.ignite.internal.binary.BinaryInternalMapper> typeMappers = U.field(ctx, "cls2Mappers");
 
-        assertEquals(100, typeMappers.get(CLASS2_FULL_NAME).get2().typeId(CLASS2_FULL_NAME));
+        assertEquals(100, typeMappers.get(CLASS2_FULL_NAME).idMapper().typeId(CLASS2_FULL_NAME));
     }
 
     /**
@@ -355,9 +354,9 @@ public class GridBinaryWildcardsSelfTest extends GridCommonAbstractTest {
         assertTrue(typeIds.containsKey(typeId(INNER_CLASS_FULL_NAME, nameMapper, mapper)));
         assertTrue(typeIds.containsKey("type2".hashCode()));
 
-        Map<String, T2<BinaryNameMapper, BinaryIdMapper>> typeMappers = U.field(ctx, "cls2Mappers");
+        Map<String, org.apache.ignite.internal.binary.BinaryInternalMapper> typeMappers = U.field(ctx, "cls2Mappers");
 
-        assertEquals("type2", typeMappers.get(CLASS2_FULL_NAME).get1().typeName(CLASS2_FULL_NAME));
+        assertEquals("type2", typeMappers.get(CLASS2_FULL_NAME).nameMapper().typeName(CLASS2_FULL_NAME));
     }
 
     /**
@@ -421,15 +420,15 @@ public class GridBinaryWildcardsSelfTest extends GridCommonAbstractTest {
 
         BinaryContext ctx = binaryContext(marsh);
 
-        Map<String, T2<BinaryNameMapper, BinaryIdMapper>> typeMappers = U.field(ctx, "cls2Mappers");
+        Map<String, org.apache.ignite.internal.binary.BinaryInternalMapper> typeMappers = U.field(ctx, "cls2Mappers");
 
         assertEquals(3, typeMappers.size());
 
-        assertFalse(((BinaryBaseNameMapper)typeMappers.get(CLASS1_FULL_NAME).get1()).getUseSimpleName());
-        assertEquals(300, typeMappers.get(CLASS1_FULL_NAME).get2().typeId(CLASS1_FULL_NAME));
+        assertFalse(((BinaryBaseNameMapper)typeMappers.get(CLASS1_FULL_NAME).nameMapper()).getUseSimpleName());
+        assertEquals(300, typeMappers.get(CLASS1_FULL_NAME).idMapper().typeId(CLASS1_FULL_NAME));
 
-        assertFalse(((BinaryBaseNameMapper)typeMappers.get(CLASS2_FULL_NAME).get1()).getUseSimpleName());
-        assertEquals(400, typeMappers.get(CLASS2_FULL_NAME).get2().typeId(CLASS2_FULL_NAME));
+        assertFalse(((BinaryBaseNameMapper)typeMappers.get(CLASS2_FULL_NAME).nameMapper()).getUseSimpleName());
+        assertEquals(400, typeMappers.get(CLASS2_FULL_NAME).idMapper().typeId(CLASS2_FULL_NAME));
     }
 
     /**
@@ -494,15 +493,15 @@ public class GridBinaryWildcardsSelfTest extends GridCommonAbstractTest {
 
         BinaryContext ctx = binaryContext(marsh);
 
-        Map<String, T2<BinaryNameMapper, BinaryIdMapper>> typeMappers = U.field(ctx, "cls2Mappers");
+        Map<String, org.apache.ignite.internal.binary.BinaryInternalMapper> typeMappers = U.field(ctx, "cls2Mappers");
 
         assertEquals(3, typeMappers.size());
 
-        assertFalse(((BinaryBaseNameMapper)typeMappers.get(CLASS1_FULL_NAME).get1()).getUseSimpleName());
-        assertEquals(300, typeMappers.get(CLASS1_FULL_NAME).get2().typeId(CLASS1_FULL_NAME));
+        assertFalse(((BinaryBaseNameMapper)typeMappers.get(CLASS1_FULL_NAME).nameMapper()).getUseSimpleName());
+        assertEquals(300, typeMappers.get(CLASS1_FULL_NAME).idMapper().typeId(CLASS1_FULL_NAME));
 
-        assertFalse(((BinaryBaseNameMapper)typeMappers.get(CLASS2_FULL_NAME).get1()).getUseSimpleName());
-        assertEquals(400, typeMappers.get(CLASS2_FULL_NAME).get2().typeId(CLASS2_FULL_NAME));
+        assertFalse(((BinaryBaseNameMapper)typeMappers.get(CLASS2_FULL_NAME).nameMapper()).getUseSimpleName());
+        assertEquals(400, typeMappers.get(CLASS2_FULL_NAME).idMapper().typeId(CLASS2_FULL_NAME));
     }
 
     /**
@@ -530,15 +529,15 @@ public class GridBinaryWildcardsSelfTest extends GridCommonAbstractTest {
 
         BinaryContext ctx = binaryContext(marsh);
 
-        Map<String, T2<BinaryNameMapper, BinaryIdMapper>> typeMappers = U.field(ctx, "cls2Mappers");
+        Map<String, org.apache.ignite.internal.binary.BinaryInternalMapper> typeMappers = U.field(ctx, "cls2Mappers");
 
         assertEquals(3, typeMappers.size());
 
-        assertFalse(((BinaryBaseNameMapper)typeMappers.get(CLASS1_FULL_NAME).get1()).getUseSimpleName());
-        assertEquals(300, typeMappers.get(CLASS1_FULL_NAME).get2().typeId(CLASS1_FULL_NAME));
+        assertFalse(((BinaryBaseNameMapper)typeMappers.get(CLASS1_FULL_NAME).nameMapper()).getUseSimpleName());
+        assertEquals(300, typeMappers.get(CLASS1_FULL_NAME).idMapper().typeId(CLASS1_FULL_NAME));
 
-        assertFalse(((BinaryBaseNameMapper)typeMappers.get(CLASS2_FULL_NAME).get1()).getUseSimpleName());
-        assertEquals(400, typeMappers.get(CLASS2_FULL_NAME).get2().typeId(CLASS2_FULL_NAME));
+        assertFalse(((BinaryBaseNameMapper)typeMappers.get(CLASS2_FULL_NAME).nameMapper()).getUseSimpleName());
+        assertEquals(400, typeMappers.get(CLASS2_FULL_NAME).idMapper().typeId(CLASS2_FULL_NAME));
     }
 
     /**
@@ -587,12 +586,12 @@ public class GridBinaryWildcardsSelfTest extends GridCommonAbstractTest {
 
         assertTrue(typeIds.containsKey(typeId(CLASS1_FULL_NAME, nameMapper, idMapper)));
 
-        Map<String, T2<BinaryNameMapper, BinaryIdMapper>> typeMappers = U.field(ctx, "cls2Mappers");
+        Map<String, org.apache.ignite.internal.binary.BinaryInternalMapper> typeMappers = U.field(ctx, "cls2Mappers");
 
         assertEquals(3, typeMappers.size());
 
-        assertEquals(nameMapper, typeMappers.get(CLASS2_FULL_NAME).get1());
-        assertEquals(100, typeMappers.get(CLASS2_FULL_NAME).get2().typeId(CLASS2_FULL_NAME));
+        assertEquals(nameMapper, typeMappers.get(CLASS2_FULL_NAME).nameMapper());
+        assertEquals(100, typeMappers.get(CLASS2_FULL_NAME).idMapper().typeId(CLASS2_FULL_NAME));
     }
 
     /**

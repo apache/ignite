@@ -27,8 +27,6 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
-import org.apache.ignite.binary.BinaryIdMapper;
-import org.apache.ignite.binary.BinaryNameMapper;
 import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.binary.BinaryRawWriter;
 import org.apache.ignite.binary.BinaryWriter;
@@ -45,10 +43,7 @@ class BinaryMetadataCollector implements BinaryWriter {
     private final String typeName;
 
     /** Name mapper. */
-    private final BinaryNameMapper nameMapper;
-
-    /** ID mapper. */
-    private final BinaryIdMapper idMapper;
+    private final BinaryInternalMapper mapper;
 
     /** Collected metadata. */
     private final Map<String, Integer> meta = new HashMap<>();
@@ -61,14 +56,12 @@ class BinaryMetadataCollector implements BinaryWriter {
      *
      * @param typeId Type ID.
      * @param typeName Type name.
-     * @param nameMapper Name mapper.
-     * @param idMapper ID mapper.
+     * @param mapper Name mapper.
      */
-    BinaryMetadataCollector(int typeId, String typeName, BinaryNameMapper nameMapper, BinaryIdMapper idMapper) {
+    BinaryMetadataCollector(int typeId, String typeName, BinaryInternalMapper mapper) {
         this.typeId = typeId;
         this.typeName = typeName;
-        this.nameMapper = nameMapper;
-        this.idMapper = idMapper;
+        this.mapper = mapper;
     }
 
     /**
@@ -277,6 +270,6 @@ class BinaryMetadataCollector implements BinaryWriter {
             );
         }
 
-        schemaBuilder.addField(idMapper.fieldId(typeId, nameMapper.fieldName(name)));
+        schemaBuilder.addField(mapper.fieldId(typeId, name));
     }
 }

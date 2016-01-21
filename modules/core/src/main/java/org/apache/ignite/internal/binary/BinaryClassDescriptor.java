@@ -34,8 +34,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.binary.BinaryIdMapper;
-import org.apache.ignite.binary.BinaryNameMapper;
 import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.binary.BinaryReflectiveSerializer;
 import org.apache.ignite.binary.BinarySerializer;
@@ -68,10 +66,7 @@ public class BinaryClassDescriptor {
     private final BinarySerializer serializer;
 
     /** ID mapper. */
-    private final BinaryIdMapper idMapper;
-
-    /** ID mapper. */
-    private final BinaryNameMapper nameMapper;
+    private final BinaryInternalMapper mapper;
 
     /** */
     private final BinaryWriteMode mode;
@@ -125,8 +120,7 @@ public class BinaryClassDescriptor {
      * @param typeId Type ID.
      * @param typeName Type name.
      * @param affKeyFieldName Affinity key field name.
-     * @param nameMapper Name mapper.
-     * @param idMapper ID mapper.
+     * @param mapper Mapper.
      * @param serializer Serializer.
      * @param metaDataEnabled Metadata enabled flag.
      * @param registered Whether typeId has been successfully registered by MarshallerContext or not.
@@ -139,16 +133,14 @@ public class BinaryClassDescriptor {
         int typeId,
         String typeName,
         @Nullable String affKeyFieldName,
-        @Nullable BinaryNameMapper nameMapper,
-        @Nullable BinaryIdMapper idMapper,
+        @Nullable BinaryInternalMapper mapper,
         @Nullable BinarySerializer serializer,
         boolean metaDataEnabled,
         boolean registered
     ) throws BinaryObjectException {
         assert ctx != null;
         assert cls != null;
-        assert nameMapper != null;
-        assert idMapper != null;
+        assert mapper != null;
 
         // If serializer is not defined at this point, then we have to user OptimizedMarshaller.
         useOptMarshaller = serializer == null;
@@ -164,8 +156,7 @@ public class BinaryClassDescriptor {
         this.typeName = typeName;
         this.affKeyFieldName = affKeyFieldName;
         this.serializer = serializer;
-        this.idMapper = idMapper;
-        this.nameMapper = nameMapper;
+        this.mapper = mapper;
         this.registered = registered;
 
         schemaReg = ctx.schemaRegistry(typeId);
@@ -280,7 +271,7 @@ public class BinaryClassDescriptor {
 
                             assert added : name;
 
-                            int fieldId = idMapper.fieldId(typeId, nameMapper.fieldName(name));
+                            int fieldId = this.mapper.fieldId(typeId, name);
 
                             if (!ids.add(fieldId))
                                 throw new BinaryObjectException("Duplicate field ID: " + name);
@@ -646,7 +637,7 @@ public class BinaryClassDescriptor {
                             if (schemaReg.schema(schemaId) == null) {
                                 // This is new schema, let's update metadata.
                                 BinaryMetadataCollector collector =
-                                    new BinaryMetadataCollector(typeId, typeName, nameMapper, idMapper);
+                                    new BinaryMetadataCollector(typeId, typeName, mapper);
 
                                 if (serializer != null)
                                     serializer.writeBinary(obj, collector);
