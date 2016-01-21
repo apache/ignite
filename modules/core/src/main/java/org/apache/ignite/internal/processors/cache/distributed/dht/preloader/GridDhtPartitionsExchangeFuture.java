@@ -172,7 +172,7 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
     private final Map<UUID, GridDhtPartitionsSingleMessage> singleMsgs = new ConcurrentHashMap8<>();
 
     /** Messages received from new coordinator. */
-    private final Map<UUID, GridDhtPartitionsFullMessage> fullMsgs = new HashMap<>();
+    private final Map<UUID, GridDhtPartitionsFullMessage> fullMsgs = new ConcurrentHashMap8<>();
 
     /** */
     @SuppressWarnings({"FieldCanBeLocal", "UnusedDeclaration"})
@@ -1267,10 +1267,7 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
             }
         }
 
-        if (cctx.isLocal())
-            return null;
-
-        if (cctx.config().getDataLossPolicy() == DataLossPolicy.FAIL_OPS) {
+        if (!cctx.isLocal() && cctx.config().getDataLossPolicy() == DataLossPolicy.FAIL_OPS) {
             Map<Integer, Boolean> partitionIsLost = cachesPartitionsLoss.get(cctx.cacheId());
 
             if (keys != null) {

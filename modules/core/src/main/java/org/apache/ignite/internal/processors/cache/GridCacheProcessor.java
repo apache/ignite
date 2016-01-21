@@ -2337,7 +2337,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             /** {@inheritDoc} */
             @Override public boolean onDone(@Nullable Object res, @Nullable Throwable err) {
                 // Make sure to remove future before completion.
-                pendingFuts.remove(resetMsg.id(), this);
+                pendingResets.remove(resetMsg.id(), this);
 
                 return super.onDone(res, err);
             }
