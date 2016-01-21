@@ -22,6 +22,7 @@ namespace Apache.Ignite.Core.Cache.Configuration
 {
     using System;
     using System.Collections.Generic;
+    using System.ComponentModel;
     using System.Diagnostics.CodeAnalysis;
     using System.Linq;
     using Apache.Ignite.Core.Binary;
@@ -128,7 +129,7 @@ namespace Apache.Ignite.Core.Cache.Configuration
         public const int DefaultSqlOnheapRowCacheSize = 10*1024;
 
         /// <summary> Default value for keep portable in store behavior .</summary>
-        public const bool DefaultKeepPortableInStore = true;
+        public const bool DefaultKeepVinaryInStore = true;
 
         /// <summary> Default value for 'copyOnRead' flag. </summary>
         public const bool DefaultCopyOnRead = true;
@@ -164,7 +165,7 @@ namespace Apache.Ignite.Core.Cache.Configuration
             EvictSynchronizedConcurrencyLevel = DefaultEvictSynchronizedConcurrencyLevel;
             EvictSynchronizedTimeout = DefaultEvictSynchronizedTimeout;
             Invalidate = DefaultInvalidate;
-            KeepBinaryInStore = DefaultKeepPortableInStore;
+            KeepBinaryInStore = DefaultKeepVinaryInStore;
             LoadPreviousValue = DefaultLoadPreviousValue;
             LockTimeout = DefaultLockTimeout;
             LongQueryWarningTimeout = DefaultLongQueryWarningTimeout;
@@ -323,11 +324,13 @@ namespace Apache.Ignite.Core.Cache.Configuration
         /// Note that it's not recommended to set this value to true if cache store is configured since it will allow 
         /// to significantly improve cache performance.
         /// </summary>
+        [DefaultValue(DefaultEvictSynchronized)]
         public bool EvictSynchronized { get; set; }
 
         /// <summary>
         /// Gets or sets size of the key buffer for synchronized evictions.
         /// </summary>
+        [DefaultValue(DefaultEvictSynchronizedKeyBufferSize)]
         public int EvictSynchronizedKeyBufferSize { get; set; }
 
         /// <summary>
@@ -338,11 +341,13 @@ namespace Apache.Ignite.Core.Cache.Configuration
         /// This value specifies how many concurrent synchronous eviction sessions should be allowed 
         /// before the system is forced to wait and let synchronous evictions catch up with the eviction policy.       
         /// </summary>
+        [DefaultValue(DefaultEvictSynchronizedConcurrencyLevel)]
         public int EvictSynchronizedConcurrencyLevel { get; set; }
 
         /// <summary>
         /// Gets or sets timeout for synchronized evictions
         /// </summary>
+        [DefaultValue(typeof(TimeSpan), "00:00:10")]
         public TimeSpan EvictSynchronizedTimeout { get; set; }
 
         /// <summary>
@@ -353,17 +358,20 @@ namespace Apache.Ignite.Core.Cache.Configuration
         /// Once queue size reaches specified value all required requests for all entries in the queue 
         /// are sent to remote nodes and the queue is cleared.
         /// </summary>
+        [DefaultValue(DefaultMaxEvictionOverflowRatio)]
         public float MaxEvictionOverflowRatio { get; set; }
 
         /// <summary>
         /// Gets or sets flag indicating whether expired cache entries will be eagerly removed from cache. 
         /// When set to false, expired entries will be removed on next entry access.        
         /// </summary>
+        [DefaultValue(DefaultEagerTtl)]
         public bool EagerTtl { get; set; }
 
         /// <summary>
         /// Gets or sets initial cache size which will be used to pre-create internal hash table after start.
         /// </summary>
+        [DefaultValue(DefaultStartSize)]
         public int StartSize { get; set; }
 
         /// <summary>
@@ -379,12 +387,14 @@ namespace Apache.Ignite.Core.Cache.Configuration
         /// <item><term><see cref="ICache{TK,TV}.GetAndPutIfAbsent"/></term></item>
         /// </list>     
         /// </summary>
+        [DefaultValue(DefaultLoadPreviousValue)]
         public bool LoadPreviousValue { get; set; }
 
         /// <summary>
         /// Gets or sets the flag indicating whether <see cref="ICacheStore"/> is working with binary objects 
         /// instead of deserialized objects.
         /// </summary>
+        [DefaultValue(DefaultKeepVinaryInStore)]
         public bool KeepBinaryInStore { get; set; }
 
         /// <summary>

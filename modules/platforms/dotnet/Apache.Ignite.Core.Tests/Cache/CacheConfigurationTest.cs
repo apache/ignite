@@ -146,7 +146,7 @@ namespace Apache.Ignite.Core.Tests.Cache
             Assert.AreEqual(CacheConfiguration.DefaultEvictSynchronizedConcurrencyLevel, cfg.EvictSynchronizedConcurrencyLevel);
             Assert.AreEqual(CacheConfiguration.DefaultEvictSynchronizedTimeout, cfg.EvictSynchronizedTimeout);
             Assert.AreEqual(CacheConfiguration.DefaultInvalidate, cfg.Invalidate);
-            Assert.AreEqual(CacheConfiguration.DefaultKeepPortableInStore, cfg.KeepBinaryInStore);
+            Assert.AreEqual(CacheConfiguration.DefaultKeepVinaryInStore, cfg.KeepBinaryInStore);
             Assert.AreEqual(CacheConfiguration.DefaultLoadPreviousValue, cfg.LoadPreviousValue);
             Assert.AreEqual(CacheConfiguration.DefaultLockTimeout, cfg.LockTimeout);
             Assert.AreEqual(CacheConfiguration.DefaultLongQueryWarningTimeout, cfg.LongQueryWarningTimeout);
