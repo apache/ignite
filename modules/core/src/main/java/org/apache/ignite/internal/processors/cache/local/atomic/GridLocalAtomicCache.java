@@ -73,6 +73,7 @@ import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteBiClosure;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.plugin.security.SecurityPermission;
 import org.apache.ignite.transactions.TransactionIsolation;
@@ -1084,9 +1085,9 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
         try {
             int size = locked.size();
 
-            Map<Object, Object> putMap = null;
+            Map<KeyCacheObject, CacheObject> putMap = null;
 
-            Collection<Object> rmvKeys = null;
+            Collection<KeyCacheObject> rmvKeys = null;
 
             List<CacheObject> writeVals = null;
 
@@ -1208,7 +1209,7 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
                             if (rmvKeys == null)
                                 rmvKeys = new ArrayList<>(size);
 
-                            rmvKeys.add(entry.key().value(ctx.cacheObjectContext(), false));
+                            rmvKeys.add(entry.key());
                         }
                         else {
                             if (intercept) {
@@ -1246,7 +1247,7 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
                                 writeVals = new ArrayList<>(size);
                             }
 
-                            putMap.put(CU.value(entry.key(), ctx, false), CU.value(updated, ctx, false));
+                            putMap.put(entry.key(), updated);
                             writeVals.add(updated);
                         }
                     }
@@ -1282,7 +1283,7 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
                             writeVals = new ArrayList<>(size);
                         }
 
-                        putMap.put(CU.value(entry.key(), ctx, false), CU.value(cacheVal, ctx, false));
+                        putMap.put(entry.key(), cacheVal);
                         writeVals.add(cacheVal);
                     }
                     else {
@@ -1313,7 +1314,7 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
                         if (rmvKeys == null)
                             rmvKeys = new ArrayList<>(size);
 
-                        rmvKeys.add(entry.key().value(ctx.cacheObjectContext(), false));
+                        rmvKeys.add(entry.key());
                     }
 
                     filtered.add(entry);
@@ -1373,8 +1374,8 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
         List<GridCacheEntryEx> entries,
         final GridCacheVersion ver,
         @Nullable List<CacheObject> writeVals,
-        @Nullable Map<Object, Object> putMap,
-        @Nullable Collection<Object> rmvKeys,
+        @Nullable Map<KeyCacheObject, CacheObject> putMap,
+        @Nullable Collection<KeyCacheObject> rmvKeys,
         @Nullable ExpiryPolicy expiryPlc,
         boolean keepBinary,
         @Nullable CachePartialUpdateCheckedException err,
@@ -1389,11 +1390,14 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
         try {
             if (putMap != null) {
                 try {
-                    ctx.store().putAll(null, F.viewReadOnly(putMap, new C1<Object, IgniteBiTuple<Object, GridCacheVersion>>() {
-                        @Override public IgniteBiTuple<Object, GridCacheVersion> apply(Object v) {
-                            return F.t(v, ver);
-                        }
-                    }));
+                    Map<? extends KeyCacheObject, IgniteBiTuple<? extends CacheObject, GridCacheVersion>> view = F.viewReadOnly(putMap,
+                        new C1<CacheObject, IgniteBiTuple<? extends CacheObject, GridCacheVersion>>() {
+                            @Override public IgniteBiTuple<? extends CacheObject, GridCacheVersion> apply(CacheObject val) {
+                                return F.t(val, ver);
+                            }
+                        });
+
+                    ctx.store().putAll(null, view);
                 }
                 catch (CacheStorePartialUpdateException e) {
                     storeErr = e;

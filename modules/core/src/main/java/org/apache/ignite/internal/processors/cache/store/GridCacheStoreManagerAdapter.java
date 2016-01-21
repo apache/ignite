@@ -37,6 +37,7 @@ import org.apache.ignite.cache.store.CacheStoreSessionListener;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.cache.CacheEntryImpl;
+import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.CacheStoreBalancingWrapper;
 import org.apache.ignite.internal.processors.cache.CacheStorePartialUpdateException;
 import org.apache.ignite.internal.processors.cache.GridCacheInternal;
@@ -60,7 +61,6 @@ import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiInClosure;
 import org.apache.ignite.lang.IgniteBiTuple;
-import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lifecycle.LifecycleAware;
 import org.apache.ignite.transactions.Transaction;
 import org.jetbrains.annotations.NotNull;
@@ -526,25 +526,25 @@ public abstract class GridCacheStoreManagerAdapter extends GridCacheManagerAdapt
     }
 
     /** {@inheritDoc} */
-    @Override public boolean put(@Nullable IgniteInternalTx tx, Object key, Object val, GridCacheVersion ver)
+    @Override public boolean put(@Nullable IgniteInternalTx tx, KeyCacheObject key, CacheObject val, GridCacheVersion ver)
         throws IgniteCheckedException {
         if (store != null) {
             // Never persist internal keys.
             if (key instanceof GridCacheInternal)
                 return true;
 
-            key = cctx.unwrapBinaryIfNeeded(key, !convertBinary());
-            val = cctx.unwrapBinaryIfNeeded(val, !convertBinary());
+            Object key0 = cctx.unwrapBinaryIfNeeded(key, !convertBinary());
+            Object val0 = cctx.unwrapBinaryIfNeeded(val, !convertBinary());
 
             if (log.isDebugEnabled())
-                log.debug("Storing value in cache store [key=" + key + ", val=" + val + ']');
+                log.debug("Storing value in cache store [key=" + key0 + ", val=" + val0 + ']');
 
             sessionInit0(tx);
 
             boolean threwEx = true;
 
             try {
-                store.write(new CacheEntryImpl<>(key, locStore ? F.t(val, ver) : val));
+                store.write(new CacheEntryImpl<>(key0, locStore ? F.t(val0, ver) : val0));
 
                 threwEx = false;
             }
@@ -562,7 +562,7 @@ public abstract class GridCacheStoreManagerAdapter extends GridCacheManagerAdapt
             }
 
             if (log.isDebugEnabled())
-                log.debug("Stored value in cache store [key=" + key + ", val=" + val + ']');
+                log.debug("Stored value in cache store [key=" + key0 + ", val=" + val0 + ']');
 
             return true;
         }
@@ -571,13 +571,16 @@ public abstract class GridCacheStoreManagerAdapter extends GridCacheManagerAdapt
     }
 
     /** {@inheritDoc} */
-    @Override public boolean putAll(@Nullable IgniteInternalTx tx, Map map) throws IgniteCheckedException {
+    @Override public boolean putAll(
+        @Nullable IgniteInternalTx tx,
+        Map<? extends KeyCacheObject, IgniteBiTuple<? extends CacheObject, GridCacheVersion>> map
+    ) throws IgniteCheckedException {
         if (F.isEmpty(map))
             return true;
 
         if (map.size() == 1) {
-            Map.Entry<Object, IgniteBiTuple<Object, GridCacheVersion>> e =
-                ((Map<Object, IgniteBiTuple<Object, GridCacheVersion>>)map).entrySet().iterator().next();
+            Map.Entry<? extends KeyCacheObject, IgniteBiTuple<? extends CacheObject, GridCacheVersion>> e =
+                ((Map<? extends KeyCacheObject, IgniteBiTuple<? extends CacheObject, GridCacheVersion>>)map).entrySet().iterator().next();
 
             return put(tx, e.getKey(), e.getValue().get1(), e.getValue().get2());
         }
@@ -630,23 +633,23 @@ public abstract class GridCacheStoreManagerAdapter extends GridCacheManagerAdapt
     }
 
     /** {@inheritDoc} */
-    @Override public boolean remove(@Nullable IgniteInternalTx tx, Object key) throws IgniteCheckedException {
+    @Override public boolean remove(@Nullable IgniteInternalTx tx, KeyCacheObject key) throws IgniteCheckedException {
         if (store != null) {
             // Never remove internal key from store as it is never persisted.
             if (key instanceof GridCacheInternal)
                 return false;
 
-            key = cctx.unwrapBinaryIfNeeded(key, !convertBinary());
+            Object key0 = cctx.unwrapBinaryIfNeeded(key, !convertBinary());
 
             if (log.isDebugEnabled())
-                log.debug("Removing value from cache store [key=" + key + ']');
+                log.debug("Removing value from cache store [key=" + key0 + ']');
 
             sessionInit0(tx);
 
             boolean threwEx = true;
 
             try {
-                store.delete(key);
+                store.delete(key0);
 
                 threwEx = false;
             }
@@ -664,7 +667,7 @@ public abstract class GridCacheStoreManagerAdapter extends GridCacheManagerAdapt
             }
 
             if (log.isDebugEnabled())
-                log.debug("Removed value from cache store [key=" + key + ']');
+                log.debug("Removed value from cache store [key=" + key0 + ']');
 
             return true;
         }
@@ -673,12 +676,15 @@ public abstract class GridCacheStoreManagerAdapter extends GridCacheManagerAdapt
     }
 
     /** {@inheritDoc} */
-    @Override public boolean removeAll(@Nullable IgniteInternalTx tx, Collection keys) throws IgniteCheckedException {
+    @Override public boolean removeAll(
+        @Nullable IgniteInternalTx tx,
+        Collection<? extends KeyCacheObject> keys
+    ) throws IgniteCheckedException {
         if (F.isEmpty(keys))
             return true;
 
         if (keys.size() == 1) {
-            Object key = keys.iterator().next();
+            KeyCacheObject key = keys.iterator().next();
 
             return remove(tx, key);
         }
@@ -1024,7 +1030,7 @@ public abstract class GridCacheStoreManagerAdapter extends GridCacheManagerAdapt
      */
     private class EntriesView extends AbstractCollection<Cache.Entry<?, ?>> {
         /** */
-        private final Map<?, IgniteBiTuple<?, GridCacheVersion>> map;
+        private final Map<? extends KeyCacheObject, IgniteBiTuple<? extends CacheObject, GridCacheVersion>> map;
 
         /** */
         private Set<Object> rmvd;
@@ -1035,7 +1041,7 @@ public abstract class GridCacheStoreManagerAdapter extends GridCacheManagerAdapt
         /**
          * @param map Map.
          */
-        private EntriesView(Map<?, IgniteBiTuple<?, GridCacheVersion>> map) {
+        private EntriesView(Map<? extends KeyCacheObject, IgniteBiTuple<? extends CacheObject, GridCacheVersion>> map) {
             assert map != null;
 
             this.map = map;

@@ -2145,11 +2145,14 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                     putMap;
 
                 try {
-                    ctx.store().putAll(null, F.viewReadOnly(storeMap, new C1<CacheObject, IgniteBiTuple<CacheObject, GridCacheVersion>>() {
-                        @Override public IgniteBiTuple<CacheObject, GridCacheVersion> apply(CacheObject v) {
-                            return F.t(v, ver);
-                        }
-                    }));
+                    Map<? extends KeyCacheObject, IgniteBiTuple<? extends CacheObject, GridCacheVersion>> view = F.viewReadOnly(storeMap,
+                        new C1<CacheObject, IgniteBiTuple<? extends CacheObject, GridCacheVersion>>() {
+                            @Override public IgniteBiTuple<? extends CacheObject, GridCacheVersion> apply(CacheObject val) {
+                                return F.t(val, ver);
+                            }
+                        });
+
+                    ctx.store().putAll(null, view);
                 }
                 catch (CacheStorePartialUpdateException e) {
                     storeErr = e;
