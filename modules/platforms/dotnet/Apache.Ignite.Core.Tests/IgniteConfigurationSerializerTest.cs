@@ -35,14 +35,14 @@ namespace Apache.Ignite.Core.Tests
     public class IgniteConfigurationSerializerTest
     {
         [Test]
-        public void Test()
+        public void TestPredefinedXml()
         {
             var xml = @"<igniteConfig workDirectory='c:' JvmMaxMemoryMb='1024' MetricsLogFrequency='0:0:10'>
                             <localHost>127.1.1.1</localHost>
                             <binaryConfiguration>
                                 <defaultNameMapper type='Apache.Ignite.Core.Tests.IgniteConfigurationSerializerTest+NameMapper, Apache.Ignite.Core.Tests' bar='testBar' />
                                 <types>
-                                    <type>Apache.Ignite.Core.Tests.IgniteConfigurationSerializerTest+Foo, Apache.Ignite.Core.Tests</type>
+                                    <type>Apache.Ignite.Core.Tests.IgniteConfigurationSerializerTest+FooClass, Apache.Ignite.Core.Tests</type>
                                 </types>
                             </binaryConfiguration>
                             <discoveryConfiguration joinTimeout='0:1:0'>
@@ -93,7 +93,7 @@ namespace Apache.Ignite.Core.Tests
             Assert.AreEqual(new[] { "-Xms1g", "-Xmx4g" }, cfg.JvmOptions);
             Assert.AreEqual(15, ((LifecycleBean) cfg.LifecycleBeans.Single()).Foo);
             Assert.AreEqual("testBar", ((NameMapper) cfg.BinaryConfiguration.DefaultNameMapper).Bar);
-            Assert.AreEqual(typeof(Foo), cfg.BinaryConfiguration.Types.Single());
+            Assert.AreEqual(typeof(FooClass), cfg.BinaryConfiguration.Types.Single());
             Assert.AreEqual(new[] {42, EventType.TaskFailed, EventType.JobFinished}, cfg.IncludedEventTypes);
 
             Assert.AreEqual("secondCache", cfg.CacheConfiguration.Last().Name);
@@ -139,7 +139,7 @@ namespace Apache.Ignite.Core.Tests
             }
         }
 
-        public class Foo
+        public class FooClass
         {
             // No-op.
         }
