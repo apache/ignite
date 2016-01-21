@@ -48,7 +48,7 @@ export default ['igniteFormFieldInputText', ['IgniteFormGUID', (guid) => {
             javaKeywords: '=',
             javaIdentifier: '=',
             javaPackageSpecified: '=',
-            javaBuildInClass: '=',
+            javaBuiltInClass: '=',
             javaPackageName: '=',
 
             autofocus: '=igniteFormFieldInputAutofocus'

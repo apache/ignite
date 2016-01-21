@@ -15,23 +15,12 @@
  * limitations under the License.
  */
 
-import JAVA_CLASSES from 'app/data/java-classes.json!';
-import JAVA_FULLNAME_CLASSES from 'app/data/java-fullname-classes.json!';
-
-export default ['javaBuildInClass', [() => {
+export default ['javaBuiltInClass', ['JavaTypes', (JavaTypes) => {
     const link = (scope, el, attrs, [ngModel]) => {
-        if (typeof attrs.javaBuildInClass === 'undefined' || !attrs.javaBuildInClass)
+        if (typeof attrs.javaBuiltInClass === 'undefined' || !attrs.javaBuiltInClass)
             return;
 
-        ngModel.$validators.javaBuildInClass = (value) => {
-            if (!value)
-                return true;
-
-            const jclasses = JAVA_CLASSES.filter((key) => value === key).length;
-            const jfclasses = JAVA_FULLNAME_CLASSES.filter((key) => value === key).length;
-
-            return !(jclasses || jfclasses);
-        };
+        ngModel.$validators.javaBuiltInClass = JavaTypes.isBuiltInClass;
     };
 
     return {

@@ -30,7 +30,7 @@ import igniteFormGroupAdd from './group/add.directive';
 // Validators.
 import javaKeywords from './validator/java-keywords.directive';
 import javaPackageSpecified from './validator/java-package-specified.directive';
-import javaBuildInClass from './validator/java-build-in-class.directive';
+import javaBuiltInClass from './validator/java-built-in-class.directive';
 import javaIdentifier from './validator/java-identifier.directive';
 import javaPackageName from './validator/java-package-name.directive';
 import unique from './validator/unique.directive';
@@ -58,7 +58,7 @@ angular
 // Validators.
 .directive(...javaKeywords)
 .directive(...javaPackageSpecified)
-.directive(...javaBuildInClass)
+.directive(...javaBuiltInClass)
 .directive(...javaIdentifier)
 .directive(...javaPackageName)
 .directive(...unique)
