@@ -22,6 +22,7 @@ import java.util.UUID;
 import java.util.concurrent.Callable;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.DataLossPolicy;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -38,7 +39,7 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.util.TestTcpCommunicationSpi;
 
 /**
- * Tests DataLossPolicy.FAIL_OPS.
+ * Tests {@link DataLossPolicy#FAIL_OPS}
  */
 public class GridCacheDataLossPolicySelfTest extends GridCommonAbstractTest {
     /** */
@@ -150,5 +151,34 @@ public class GridCacheDataLossPolicySelfTest extends GridCommonAbstractTest {
                 return jcache(1).containsKey(keyAfterLost);
             }
         }, 10000);
+    }
+
+    /**
+     * For case, when all nodes except client node have left the claster. Thus there is no an oldest node for the last
+     * client node.
+     *
+     * @throws Exception If failed.
+     */
+    public void testClientNodeWithoutOldest() throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration("testClientNodeWithoutOldest");
+
+        TcpDiscoverySpi disco = new TcpDiscoverySpi();
+        disco.setIpFinder(ipFinder);
+        cfg.setDiscoverySpi(disco);
+        cfg.setClientMode(true);
+        disco.setForceServerMode(true);
+
+        cfg.setCommunicationSpi(new TestTcpCommunicationSpi());
+
+        CacheConfiguration<Integer, Integer> cacheCfg = new CacheConfiguration<>();
+
+        cacheCfg.setCacheMode(CacheMode.PARTITIONED);
+        cacheCfg.setBackups(0);
+
+        cfg.setCacheConfiguration(cacheCfg);
+
+        cfg.getCacheConfiguration()[0].setDataLossPolicy(DataLossPolicy.FAIL_OPS);
+
+        Ignition.start(cfg);
     }
 }
