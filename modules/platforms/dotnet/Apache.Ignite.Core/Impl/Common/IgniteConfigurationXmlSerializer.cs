@@ -47,7 +47,7 @@ namespace Apache.Ignite.Core.Impl.Common
 
             var cfg = new IgniteConfiguration();
 
-            if (reader.Read())
+            if (reader.NodeType == XmlNodeType.Element || reader.Read())
                 ReadElement(reader, cfg);
 
             return cfg;
