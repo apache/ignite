@@ -20,6 +20,7 @@ package org.apache.ignite.internal.visor.node;
 import java.util.Collection;
 import java.util.concurrent.ConcurrentMap;
 import org.apache.ignite.IgniteFileSystem;
+import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.processors.cache.GridCacheProcessor;
 import org.apache.ignite.internal.processors.igfs.IgfsProcessorAdapter;
@@ -32,6 +33,7 @@ import org.apache.ignite.internal.visor.cache.VisorCacheV2;
 import org.apache.ignite.internal.visor.compute.VisorComputeMonitoringHolder;
 import org.apache.ignite.internal.visor.igfs.VisorIgfs;
 import org.apache.ignite.internal.visor.igfs.VisorIgfsEndpoint;
+import org.apache.ignite.lang.IgniteProductVersion;
 
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.isIgfsCache;
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.isSystemCache;
@@ -47,6 +49,9 @@ import static org.apache.ignite.internal.visor.util.VisorTaskUtils.log;
 public class VisorNodeDataCollectorJob extends VisorJob<VisorNodeDataCollectorTaskArg, VisorNodeDataCollectorJobResult> {
     /** */
     private static final long serialVersionUID = 0L;
+
+    /** */
+    private static final IgniteProductVersion VER_1_4_1 = IgniteProductVersion.fromString("1.4.1");
 
     /**
      * Create job with given argument.
@@ -131,7 +136,18 @@ public class VisorNodeDataCollectorJob extends VisorJob<VisorNodeDataCollectorTa
                     long start0 = U.currentTimeMillis();
 
                     try {
-                        VisorCache cache = new VisorCacheV2().from(ignite, cacheName, arg.sample());
+                        boolean compatibility = false;
+
+                        for (ClusterNode node : ignite.cluster().nodes()) {
+                            if (node.version().compareToIgnoreTimestamp(VER_1_4_1) <= 0) {
+                                compatibility = true;
+
+                                break;
+                            }
+                        }
+
+                        VisorCache cache = (compatibility ? new VisorCache() : new VisorCacheV2())
+                                .from(ignite, cacheName, arg.sample());
 
                         if (cache != null)
                             res.caches().add(cache);
