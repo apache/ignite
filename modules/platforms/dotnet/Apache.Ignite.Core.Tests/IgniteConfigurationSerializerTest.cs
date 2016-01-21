@@ -148,6 +148,7 @@ namespace Apache.Ignite.Core.Tests
 
             using (var xmlReader = XmlReader.Create(new StringReader(sb.ToString())))
             {
+                xmlReader.MoveToContent();
                 return IgniteConfigurationXmlSerializer.Deserialize(xmlReader);
             }
         }
