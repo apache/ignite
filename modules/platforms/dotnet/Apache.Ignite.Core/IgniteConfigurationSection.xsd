@@ -68,34 +68,34 @@
                             <xs:element name="cacheConfiguration" minOccurs="0" maxOccurs="unbounded">
                                 <xs:complexType>
                                     <xs:sequence>
-                                        <xs:element name="cacheStoreFactory">
+                                        <xs:element name="cacheStoreFactory" minOccurs="0" maxOccurs="1">
                                             <xs:complexType>
                                                 <xs:attribute name="type" type="xs:string" use="required" />
                                             </xs:complexType>
                                         </xs:element>
-                                        <xs:element name="queryEntities">
+                                        <xs:element name="queryEntities" minOccurs="0" maxOccurs="1">
                                             <xs:complexType>
                                                 <xs:sequence>
-                                                    <xs:element name="queryEntity">
+                                                    <xs:element name="queryEntity" minOccurs="0" maxOccurs="unbounded">
                                                         <xs:complexType>
                                                             <xs:sequence>
-                                                                <xs:element name="fields">
+                                                                <xs:element name="fields" minOccurs="0" maxOccurs="1">
                                                                     <xs:complexType>
                                                                         <xs:sequence>
-                                                                            <xs:element name="queryField">
+                                                                            <xs:element name="queryField" minOccurs="0" maxOccurs="unbounded">
                                                                                 <xs:complexType>
                                                                                     <xs:attribute name="name" type="xs:string" use="required" />
-                                                                                    <xs:attribute name="fieldType" type="xs:string" use="required" />
-                                                                                    <xs:attribute name="fieldTypeName" type="xs:string" use="required" />
+                                                                                    <xs:attribute name="fieldType" type="xs:string" />
+                                                                                    <xs:attribute name="fieldTypeName" type="xs:string" />
                                                                                 </xs:complexType>
                                                                             </xs:element>
                                                                         </xs:sequence>
                                                                     </xs:complexType>
                                                                 </xs:element>
-                                                                <xs:element name="aliases">
+                                                                <xs:element name="aliases" minOccurs="0" maxOccurs="1">
                                                                     <xs:complexType>
                                                                         <xs:sequence>
-                                                                            <xs:element name="queryAlias">
+                                                                            <xs:element name="queryAlias" minOccurs="0" maxOccurs="unbounded">
                                                                                 <xs:complexType>
                                                                                     <xs:attribute name="fullName" type="xs:string" use="required" />
                                                                                     <xs:attribute name="alias" type="xs:string" use="required" />
@@ -104,19 +104,19 @@
                                                                         </xs:sequence>
                                                                     </xs:complexType>
                                                                 </xs:element>
-                                                                <xs:element name="indexes">
+                                                                <xs:element name="indexes" minOccurs="0" maxOccurs="1">
                                                                     <xs:complexType>
                                                                         <xs:sequence>
-                                                                            <xs:element name="queryIndex">
+                                                                            <xs:element name="queryIndex" minOccurs="0" maxOccurs="unbounded">
                                                                                 <xs:complexType>
                                                                                     <xs:sequence>
-                                                                                        <xs:element name="fields">
+                                                                                        <xs:element name="fields" minOccurs="0" maxOccurs="1">
                                                                                             <xs:complexType>
                                                                                                 <xs:sequence>
-                                                                                                    <xs:element name="indexField">
+                                                                                                    <xs:element name="indexField" minOccurs="0" maxOccurs="unbounded">
                                                                                                         <xs:complexType>
                                                                                                             <xs:attribute name="name" type="xs:string" use="required" />
-                                                                                                            <xs:attribute name="isDescending" type="xs:string" use="required" />
+                                                                                                            <xs:attribute name="isDescending" type="xs:string" />
                                                                                                         </xs:complexType>
                                                                                                     </xs:element>
                                                                                                 </xs:sequence>
@@ -129,46 +129,46 @@
                                                                     </xs:complexType>
                                                                 </xs:element>
                                                             </xs:sequence>
-                                                            <xs:attribute name="keyTypeName" type="xs:string" use="required" />
-                                                            <xs:attribute name="keyType" type="xs:string" use="required" />
-                                                            <xs:attribute name="valueTypeName" type="xs:string" use="required" />
-                                                            <xs:attribute name="valueType" type="xs:string" use="required" />
+                                                            <xs:attribute name="keyTypeName" type="xs:string"/>
+                                                            <xs:attribute name="keyType" type="xs:string" />
+                                                            <xs:attribute name="valueTypeName" type="xs:string" />
+                                                            <xs:attribute name="valueType" type="xs:string" />
                                                         </xs:complexType>
                                                     </xs:element>
                                                 </xs:sequence>
                                             </xs:complexType>
                                         </xs:element>
                                     </xs:sequence>
-                                    <xs:attribute name="name" type="xs:string" use="required" />
-                                    <xs:attribute name="writeSynchronizationMode" type="xs:string" use="required" />
-                                    <xs:attribute name="evictSynchronized" type="xs:string" use="required" />
-                                    <xs:attribute name="evictSynchronizedKeyBufferSize" type="xs:unsignedByte" use="required" />
-                                    <xs:attribute name="evictSynchronizedConcurrencyLevel" type="xs:unsignedByte" use="required" />
-                                    <xs:attribute name="evictSynchronizedTimeout" type="xs:time" use="required" />
-                                    <xs:attribute name="maxEvictionOverflowRatio" type="xs:decimal" use="required" />
-                                    <xs:attribute name="startSize" type="xs:unsignedShort" use="required" />
-                                    <xs:attribute name="loadPreviousValue" type="xs:string" use="required" />
-                                    <xs:attribute name="atomicityMode" type="xs:string" use="required" />
-                                    <xs:attribute name="atomicWriteOrderMode" type="xs:string" use="required" />
-                                    <xs:attribute name="backups" type="xs:unsignedByte" use="required" />
-                                    <xs:attribute name="lockTimeout" type="xs:time" use="required" />
-                                    <xs:attribute name="invalidate" type="xs:string" use="required" />
-                                    <xs:attribute name="rebalanceMode" type="xs:string" use="required" />
-                                    <xs:attribute name="rebalanceBatchSize" type="xs:unsignedByte" use="required" />
-                                    <xs:attribute name="enableSwap" type="xs:string" use="required" />
-                                    <xs:attribute name="maxConcurrentAsyncOperations" type="xs:unsignedByte" use="required" />
-                                    <xs:attribute name="writeBehindEnabled" type="xs:string" use="required" />
-                                    <xs:attribute name="writeBehindFlushSize" type="xs:unsignedByte" use="required" />
-                                    <xs:attribute name="writeBehindFlushThreadCount" type="xs:unsignedByte" use="required" />
-                                    <xs:attribute name="writeBehindBatchSize" type="xs:unsignedByte" use="required" />
-                                    <xs:attribute name="rebalanceTimeout" type="xs:time" use="required" />
-                                    <xs:attribute name="rebalanceDelay" type="xs:string" use="required" />
-                                    <xs:attribute name="rebalanceThrottle" type="xs:string" use="required" />
-                                    <xs:attribute name="offHeapMaxMemory" type="xs:unsignedShort" use="required" />
-                                    <xs:attribute name="memoryMode" type="xs:string" use="required" />
-                                    <xs:attribute name="longQueryWarningTimeout" type="xs:time" use="required" />
-                                    <xs:attribute name="sqlEscapeAll" type="xs:string" use="required" />
-                                    <xs:attribute name="sqlOnheapRowCacheSize" type="xs:unsignedShort" use="required" />
+                                    <xs:attribute name="name" type="xs:string" />
+                                    <xs:attribute name="writeSynchronizationMode" type="xs:string" />
+                                    <xs:attribute name="evictSynchronized" type="xs:string" />
+                                    <xs:attribute name="evictSynchronizedKeyBufferSize" type="xs:unsignedByte" />
+                                    <xs:attribute name="evictSynchronizedConcurrencyLevel" type="xs:unsignedByte" />
+                                    <xs:attribute name="evictSynchronizedTimeout" type="xs:time" />
+                                    <xs:attribute name="maxEvictionOverflowRatio" type="xs:decimal" />
+                                    <xs:attribute name="startSize" type="xs:unsignedShort" />
+                                    <xs:attribute name="loadPreviousValue" type="xs:string" />
+                                    <xs:attribute name="atomicityMode" type="xs:string" />
+                                    <xs:attribute name="atomicWriteOrderMode" type="xs:string" />
+                                    <xs:attribute name="backups" type="xs:unsignedByte" />
+                                    <xs:attribute name="lockTimeout" type="xs:time" />
+                                    <xs:attribute name="invalidate" type="xs:string" />
+                                    <xs:attribute name="rebalanceMode" type="xs:string" />
+                                    <xs:attribute name="rebalanceBatchSize" type="xs:unsignedByte" />
+                                    <xs:attribute name="enableSwap" type="xs:string" />
+                                    <xs:attribute name="maxConcurrentAsyncOperations" type="xs:unsignedByte" />
+                                    <xs:attribute name="writeBehindEnabled" type="xs:string" />
+                                    <xs:attribute name="writeBehindFlushSize" type="xs:unsignedByte" />
+                                    <xs:attribute name="writeBehindFlushThreadCount" type="xs:unsignedByte" />
+                                    <xs:attribute name="writeBehindBatchSize" type="xs:unsignedByte" />
+                                    <xs:attribute name="rebalanceTimeout" type="xs:time" />
+                                    <xs:attribute name="rebalanceDelay" type="xs:string" />
+                                    <xs:attribute name="rebalanceThrottle" type="xs:string" />
+                                    <xs:attribute name="offHeapMaxMemory" type="xs:unsignedShort" />
+                                    <xs:attribute name="memoryMode" type="xs:string" />
+                                    <xs:attribute name="longQueryWarningTimeout" type="xs:time" />
+                                    <xs:attribute name="sqlEscapeAll" type="xs:string" />
+                                    <xs:attribute name="sqlOnheapRowCacheSize" type="xs:unsignedShort" />
                                 </xs:complexType>
                             </xs:element>
                         </xs:sequence>
