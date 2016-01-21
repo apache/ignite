@@ -503,6 +503,7 @@ namespace Apache.Ignite.Core.Cache.Configuration
         /// <summary>
         /// Gets or sets rebalance timeout.
         /// </summary>
+        [DefaultValue(typeof(TimeSpan), "00:00:10")]
         public TimeSpan RebalanceTimeout { get; set; }
 
         /// <summary>
@@ -533,27 +534,32 @@ namespace Apache.Ignite.Core.Cache.Configuration
         /// does not grow indefinitely.
         /// Any positive value specifies the limit of off-heap storage in bytes.
         /// </summary>
+        [DefaultValue(DefaultOffHeapMaxMemory)]
         public long OffHeapMaxMemory { get; set; }
 
         /// <summary>
         /// Gets or sets memory mode for cache.
         /// </summary>
+        [DefaultValue(DefaultMemoryMode)]
         public CacheMemoryMode MemoryMode { get; set; }
 
         /// <summary>
         /// Gets or sets flag indicating whether data can be read from backup.
         /// </summary>
+        [DefaultValue(DefaultReadFromBackup)]
         public bool ReadFromBackup { get; set; }
 
         /// <summary>
         /// Gets or sets flag indicating whether copy of of the value stored in cache should be created
         /// for cache operation implying return value. 
         /// </summary>
+        [DefaultValue(DefaultCopyOnRead)]
         public bool CopyOnRead { get; set; }
 
         /// <summary>
         /// Gets or sets the timeout after which long query warning will be printed.
         /// </summary>
+        [DefaultValue(typeof(TimeSpan), "00:00:03")]
         public TimeSpan LongQueryWarningTimeout { get; set; }
 
         /// <summary>
@@ -567,6 +573,7 @@ namespace Apache.Ignite.Core.Cache.Configuration
         /// Number of SQL rows which will be cached onheap to avoid deserialization on each SQL index access.
         /// This setting only makes sense when offheap is enabled for this cache.
         /// </summary>
+        [DefaultValue(DefaultSqlOnheapRowCacheSize)]
         public int SqlOnheapRowCacheSize { get; set; }
 
         /// <summary>
