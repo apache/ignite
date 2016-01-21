@@ -41,6 +41,8 @@ namespace Apache.Ignite.Core
         /// <param name="reader">The reader object, which reads from the configuration file.</param>
         protected override void DeserializeSection(XmlReader reader)
         {
+            IgniteArgumentCheck.NotNull(reader, "reader");
+
             IgniteConfiguration = IgniteConfigurationXmlSerializer.Deserialize(reader);
         }
 
@@ -55,6 +57,9 @@ namespace Apache.Ignite.Core
         /// </returns>
         protected override string SerializeSection(ConfigurationElement parentElement, string name, ConfigurationSaveMode saveMode)
         {
+            IgniteArgumentCheck.NotNull(parentElement, "parentElement");
+            IgniteArgumentCheck.NotNullOrEmpty(name, "name");
+
             if (IgniteConfiguration == null)
                 return string.Format("<{0} />", name);
 
