@@ -1338,6 +1338,41 @@ SQLRETURN SQL_API SQLGetEnvAttr(SQLHENV     env,
     return environment->GetDiagnosticRecords().GetReturnCode();
 }
 
+SQLRETURN SQL_API SQLSpecialColumns(SQLHSTMT    stmt,
+                                    SQLSMALLINT idType,
+                                    SQLCHAR*    catalogName,
+                                    SQLSMALLINT catalogNameLen,
+                                    SQLCHAR*    schemaName,
+                                    SQLSMALLINT schemaNameLen,
+                                    SQLCHAR*    tableName,
+                                    SQLSMALLINT tableNameLen,
+                                    SQLSMALLINT scope,
+                                    SQLSMALLINT nullable)
+{
+    using namespace ignite::odbc;
+
+    using ignite::utility::SqlStringToString;
+
+    LOG_MSG("SQLSpecialColumns called\n");
+
+    Statement *statement = reinterpret_cast<Statement*>(stmt);
+
+    if (!statement)
+        return SQL_INVALID_HANDLE;
+
+    std::string catalog = SqlStringToString(catalogName, catalogNameLen);
+    std::string schema = SqlStringToString(schemaName, schemaNameLen);
+    std::string table = SqlStringToString(tableName, tableNameLen);
+
+    LOG_MSG("catalog: %s\n", catalog.c_str());
+    LOG_MSG("schema: %s\n", schema.c_str());
+    LOG_MSG("table: %s\n", table.c_str());
+
+    statement->ExecuteGetSpecialColumnsQuery(idType, catalog, schema, table, scope, nullable);
+
+    return statement->GetDiagnosticRecords().GetReturnCode();
+}
+
 //
 // ==== Not implemented ====
 //
@@ -1442,21 +1477,6 @@ SQLRETURN SQL_API SQLSetStmtOption(SQLHSTMT     stmt,
                                    SQLULEN      value)
 {
     LOG_MSG("SQLSetStmtOption called\n");
-    return SQL_SUCCESS;
-}
-
-SQLRETURN SQL_API SQLSpecialColumns(SQLHSTMT    stmt,
-                                    SQLSMALLINT idType,
-                                    SQLCHAR*    catalogName,
-                                    SQLSMALLINT catalogNameLen,
-                                    SQLCHAR*    schemaName,
-                                    SQLSMALLINT schemaNameLen,
-                                    SQLCHAR*    tableName,
-                                    SQLSMALLINT tableNameLen,
-                                    SQLSMALLINT scope,
-                                    SQLSMALLINT nullable)
-{
-    LOG_MSG("SQLSpecialColumns called\n");
     return SQL_SUCCESS;
 }
 

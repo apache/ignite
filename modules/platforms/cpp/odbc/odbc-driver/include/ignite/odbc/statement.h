@@ -235,6 +235,21 @@ namespace ignite
                 const std::string& schema, const std::string& table);
 
             /**
+             * Get special columns.
+             *
+             * @param type Special column type.
+             * @param catalog Catalog name.
+             * @param schema Schema name.
+             * @param table Table name.
+             * @param scope Minimum required scope of the rowid.
+             * @param type Determines whether to return special columns that
+             *             can have a NULL value.
+             */
+            void ExecuteGetSpecialColumnsQuery(int16_t type,
+                const std::string& catalog, const std::string& schema,
+                const std::string& table, int16_t scope, int16_t nullable);
+
+            /**
              * Get type info.
              *
              * @param sqlType SQL type for which to return info or SQL_ALL_TYPES.
@@ -426,6 +441,22 @@ namespace ignite
              */
             SqlResult InternalExecuteGetPrimaryKeysQuery(const std::string& catalog,
                 const std::string& schema, const std::string& table);
+
+            /**
+             * Get special columns.
+             *
+             * @param type Special column type.
+             * @param catalog Catalog name.
+             * @param schema Schema name.
+             * @param table Table name.
+             * @param scope Minimum required scope of the rowid.
+             * @param type Determines whether to return special columns that
+             *             can have a NULL value.
+             * @return Operation result.
+             */
+            SqlResult InternalExecuteGetSpecialColumnsQuery(int16_t type,
+                const std::string& catalog, const std::string& schema,
+                const std::string& table, int16_t scope, int16_t nullable);
 
             /**
              * Get type info.

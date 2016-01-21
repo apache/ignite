@@ -321,6 +321,21 @@ namespace ignite
             return currentQuery->Execute();
         }
 
+        void Statement::ExecuteGetSpecialColumnsQuery(int16_t type,
+            const std::string& catalog, const std::string& schema,
+            const std::string& table, int16_t scope, int16_t nullable)
+        {
+            IGNITE_ODBC_API_CALL(InternalExecuteGetSpecialColumnsQuery(type,
+                catalog, schema, table, scope, nullable));
+        }
+
+        SqlResult Statement::InternalExecuteGetSpecialColumnsQuery(int16_t type,
+            const std::string& catalog, const std::string& schema,
+            const std::string& table, int16_t scope, int16_t nullable)
+        {
+            return SQL_RESULT_ERROR;
+        }
+
         void Statement::ExecuteGetTypeInfoQuery(int16_t sqlType)
         {
             IGNITE_ODBC_API_CALL(InternalExecuteGetTypeInfoQuery(sqlType));
