@@ -15,6 +15,8 @@
  * limitations under the License.
  */
 
+// ReSharper disable UnusedAutoPropertyAccessor.Global
+// ReSharper disable MemberCanBePrivate.Global
 namespace Apache.Ignite.Core.Tests
 {
     using System;
@@ -140,7 +142,9 @@ namespace Apache.Ignite.Core.Tests
 
         private static void CheckConfigsEqual(IgniteConfiguration x, IgniteConfiguration y)
         {
-            
+            Assert.AreEqual(x.GridName, y.GridName);
+
+            // TODO
         }
 
         private static IgniteConfiguration GetTestConfig()
@@ -300,12 +304,12 @@ namespace Apache.Ignite.Core.Tests
         {
             public void WriteBinary(object obj, IBinaryWriter writer)
             {
-                throw new NotImplementedException();
+                // No-op.
             }
 
             public void ReadBinary(object obj, IBinaryReader reader)
             {
-                throw new NotImplementedException();
+                // No-op.
             }
         }
 
@@ -318,7 +322,7 @@ namespace Apache.Ignite.Core.Tests
         {
             public ICacheStore CreateInstance()
             {
-                throw new NotImplementedException();
+                return null;
             }
         }
     }
