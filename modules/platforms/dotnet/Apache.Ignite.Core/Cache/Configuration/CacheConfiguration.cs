@@ -108,7 +108,7 @@ namespace Apache.Ignite.Core.Cache.Configuration
         public static readonly TimeSpan DefaultWriteBehindFlushFrequency = TimeSpan.FromMilliseconds(5000);
 
         /// <summary> Default count of flush threads for write-behind cache store. </summary>
-        public const int DefaultWriteFromBehindFlushThreadCount = 1;
+        public const int DefaultWriteBehindFlushThreadCount = 1;
 
         /// <summary> Default batch size for write-behind cache store. </summary>
         public const int DefaultWriteBehindBatchSize = 512;
@@ -185,7 +185,7 @@ namespace Apache.Ignite.Core.Cache.Configuration
             WriteBehindEnabled = DefaultWriteBehindEnabled;
             WriteBehindFlushFrequency = DefaultWriteBehindFlushFrequency;
             WriteBehindFlushSize = DefaultWriteBehindFlushSize;
-            WriteBehindFlushThreadCount= DefaultWriteFromBehindFlushThreadCount;
+            WriteBehindFlushThreadCount= DefaultWriteBehindFlushThreadCount;
         }
 
         /// <summary>
@@ -400,11 +400,13 @@ namespace Apache.Ignite.Core.Cache.Configuration
         /// <summary>
         /// Gets or sets caching mode to use.
         /// </summary>
+        [DefaultValue(DefaultCacheMode)]
         public CacheMode CacheMode { get; set; }
 
         /// <summary>
         /// Gets or sets cache atomicity mode.
         /// </summary>
+        [DefaultValue(DefaultAtomicityMode)]
         public CacheAtomicityMode AtomicityMode { get; set; }
 
         /// <summary>
@@ -416,48 +418,57 @@ namespace Apache.Ignite.Core.Cache.Configuration
         /// Gets or sets number of nodes used to back up single partition for 
         /// <see cref="Configuration.CacheMode.Partitioned"/> cache.
         /// </summary>
+        [DefaultValue(DefaultBackups)]
         public int Backups { get; set; }
 
         /// <summary>
         /// Gets or sets default lock acquisition timeout.
         /// </summary>
+        [DefaultValue(typeof(TimeSpan), "00:00:00")]
         public TimeSpan LockTimeout { get; set; }
 
         /// <summary>
         /// Invalidation flag. If true, values will be invalidated (nullified) upon commit in near cache.
         /// </summary>
+        [DefaultValue(DefaultInvalidate)]
         public bool Invalidate { get; set; }
 
         /// <summary>
         /// Gets or sets cache rebalance mode.
         /// </summary>
+        [DefaultValue(DefaultRebalanceMode)]
         public CacheRebalanceMode RebalanceMode { get; set; }
 
         /// <summary>
         /// Gets or sets size (in number bytes) to be loaded within a single rebalance message.
         /// Rebalancing algorithm will split total data set on every node into multiple batches prior to sending data.
         /// </summary>
+        [DefaultValue(DefaultRebalanceBatchSize)]
         public int RebalanceBatchSize { get; set; }
 
         /// <summary>
         /// Flag indicating whether Ignite should use swap storage by default.
         /// </summary>
+        [DefaultValue(DefaultEnableSwap)]
         public bool EnableSwap { get; set; }
 
         /// <summary>
         /// Gets or sets maximum number of allowed concurrent asynchronous operations, 0 for unlimited.
         /// </summary>
+        [DefaultValue(DefaultMaxConcurrentAsyncOperations)]
         public int MaxConcurrentAsyncOperations { get; set; }
 
         /// <summary>
         /// Flag indicating whether Ignite should use write-behind behaviour for the cache store.
         /// </summary>
+        [DefaultValue(DefaultWriteBehindEnabled)]
         public bool WriteBehindEnabled { get; set; }
 
         /// <summary>
         /// Maximum size of the write-behind cache. If cache size exceeds this value, all cached items are flushed 
         /// to the cache store and write cache is cleared.
         /// </summary>
+        [DefaultValue(DefaultWriteBehindFlushSize)]
         public int WriteBehindFlushSize { get; set; }
 
         /// <summary>
@@ -470,6 +481,7 @@ namespace Apache.Ignite.Core.Cache.Configuration
         /// Note that you cannot set both
         /// <see cref="WriteBehindFlushSize"/> and <see cref="WriteBehindFlushFrequency"/> to 0.
         /// </summary>
+        [DefaultValue(typeof(TimeSpan), "00:00:05")]
         public TimeSpan WriteBehindFlushFrequency { get; set; }
 
         /// <summary>
@@ -477,6 +489,7 @@ namespace Apache.Ignite.Core.Cache.Configuration
         /// value defined by <see cref="WriteBehindFlushSize"/>, or flush interval defined by 
         /// <see cref="WriteBehindFlushFrequency"/> is elapsed.
         /// </summary>
+        [DefaultValue(DefaultWriteBehindFlushThreadCount)]
         public int WriteBehindFlushThreadCount { get; set; }
 
         /// <summary>
@@ -484,6 +497,7 @@ namespace Apache.Ignite.Core.Cache.Configuration
         /// Store operations (get or remove) are combined in a batch of this size to be passed to 
         /// <see cref="ICacheStore.WriteAll"/> or <see cref="ICacheStore.DeleteAll"/> methods. 
         /// </summary>
+        [DefaultValue(DefaultWriteBehindBatchSize)]
         public int WriteBehindBatchSize { get; set; }
 
         /// <summary>
