@@ -24,8 +24,8 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import javax.cache.Cache;
+import org.apache.ignite.binary.BinaryBaseIdMapper;
 import org.apache.ignite.binary.BinaryOriginalNameMapper;
-import org.apache.ignite.binary.BinaryStraightIdMapper;
 import org.apache.ignite.cache.store.CacheStoreAdapter;
 import org.apache.ignite.configuration.BinaryConfiguration;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -59,7 +59,7 @@ public abstract class GridCacheBinaryStoreAbstractSelfTest extends GridCommonAbs
         BinaryConfiguration bCfg = new BinaryConfiguration();
 
         bCfg.setNameMapper(new BinaryOriginalNameMapper());
-        bCfg.setIdMapper(new BinaryStraightIdMapper());
+        bCfg.setIdMapper(new BinaryBaseIdMapper(false));
 
         bCfg.setClassNames(Arrays.asList(Key.class.getName(), Value.class.getName()));
 

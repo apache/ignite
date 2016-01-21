@@ -20,7 +20,7 @@ package org.apache.ignite.internal.processors.platform.dotnet;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.binary.BinaryIdMapper;
-import org.apache.ignite.binary.BinaryLowerCaseIdMapper;
+import org.apache.ignite.binary.BinaryBaseIdMapper;
 import org.apache.ignite.binary.BinaryNameMapper;
 import org.apache.ignite.binary.BinarySimpleNameMapper;
 import org.apache.ignite.configuration.BinaryConfiguration;
@@ -114,13 +114,13 @@ public class PlatformDotNetConfigurationClosure extends PlatformAbstractConfigur
 
             bCfg.setCompactFooter(false);
             bCfg.setNameMapper(new BinarySimpleNameMapper());
-            bCfg.setIdMapper(new BinaryLowerCaseIdMapper());
+            bCfg.setIdMapper(new BinaryBaseIdMapper(true));
 
             igniteCfg.setBinaryConfiguration(bCfg);
 
             dotNetCfg0.warnings(Collections.singleton("Binary configuration is automatically initiated, " +
                 "note that binary name mapper is set to " + BinarySimpleNameMapper.class.getName()
-                + " and binary ID mapper is set to " + BinaryLowerCaseIdMapper.class.getName()
+                + " and binary ID mapper is set to " + BinaryBaseIdMapper.class.getName()
                 + " (other nodes must have the same binary name and ID mapper types)."));
         }
         else {
@@ -137,10 +137,10 @@ public class PlatformDotNetConfigurationClosure extends PlatformAbstractConfigur
             BinaryIdMapper idMapper = bCfg.getIdMapper();
 
             if (idMapper == null) {
-                bCfg.setIdMapper(new BinaryLowerCaseIdMapper());
+                bCfg.setIdMapper(new BinaryBaseIdMapper(true));
 
                 dotNetCfg0.warnings(Collections.singleton("Binary ID mapper is automatically set to " +
-                    BinaryLowerCaseIdMapper.class.getName()
+                    BinaryBaseIdMapper.class.getName()
                     + " (other nodes must have the same binary ID mapper type)."));
             }
         }

@@ -17,7 +17,7 @@
 
 package org.apache.ignite.internal.binary;
 
-import org.apache.ignite.binary.BinaryLowerCaseIdMapper;
+import org.apache.ignite.binary.BinaryBaseIdMapper;
 import org.apache.ignite.binary.BinarySimpleNameMapper;
 import org.apache.ignite.configuration.BinaryConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -34,7 +34,7 @@ public class GridSimpleLowerCaseBinaryMappersBinaryMetaDataSelfTest
         BinaryConfiguration bCfg = cfg.getBinaryConfiguration();
 
         bCfg.setNameMapper(new BinarySimpleNameMapper());
-        bCfg.setIdMapper(new BinaryLowerCaseIdMapper());
+        bCfg.setIdMapper(new BinaryBaseIdMapper(true));
 
         return cfg;
     }

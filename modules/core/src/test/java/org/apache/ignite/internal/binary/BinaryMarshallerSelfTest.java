@@ -53,10 +53,10 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentSkipListSet;
 import junit.framework.Assert;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.binary.BinaryBaseIdMapper;
 import org.apache.ignite.binary.BinaryCollectionFactory;
 import org.apache.ignite.binary.BinaryField;
 import org.apache.ignite.binary.BinaryIdMapper;
-import org.apache.ignite.binary.BinaryLowerCaseIdMapper;
 import org.apache.ignite.binary.BinaryMapFactory;
 import org.apache.ignite.binary.BinaryNameMapper;
 import org.apache.ignite.binary.BinaryObject;
@@ -68,7 +68,6 @@ import org.apache.ignite.binary.BinaryRawWriter;
 import org.apache.ignite.binary.BinaryReader;
 import org.apache.ignite.binary.BinarySerializer;
 import org.apache.ignite.binary.BinarySimpleNameMapper;
-import org.apache.ignite.binary.BinaryStraightIdMapper;
 import org.apache.ignite.binary.BinaryType;
 import org.apache.ignite.binary.BinaryTypeConfiguration;
 import org.apache.ignite.binary.BinaryWriter;
@@ -1121,7 +1120,7 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
             }
         });
 
-        BinaryMarshaller marsh = binaryMarshaller(new BinarySimpleNameMapper(), new BinaryLowerCaseIdMapper(),
+        BinaryMarshaller marsh = binaryMarshaller(new BinarySimpleNameMapper(), new BinaryBaseIdMapper(true),
             Arrays.asList(innerClassType, publicClassType, typeWithCustomMapper));
 
         InnerMappedObject innerObj = new InnerMappedObject(10, "str1");
@@ -1487,7 +1486,7 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
             }
         });
 
-        BinaryMarshaller marsh = binaryMarshaller(new BinaryOriginalNameMapper(), new BinaryStraightIdMapper(),
+        BinaryMarshaller marsh = binaryMarshaller(new BinaryOriginalNameMapper(), new BinaryBaseIdMapper(false),
             Arrays.asList(
                 new BinaryTypeConfiguration(Key.class.getName()),
                 new BinaryTypeConfiguration("org.gridgain.NonExistentClass3"),
@@ -1568,9 +1567,9 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
         BinaryTypeConfiguration customType5 = new BinaryTypeConfiguration(DateClass1.class.getName());
 
         customType5.setNameMapper(new BinaryOriginalNameMapper());
-        customType5.setIdMapper(new BinaryStraightIdMapper());
+        customType5.setIdMapper(new BinaryBaseIdMapper(false));
 
-        BinaryMarshaller marsh = binaryMarshaller(new BinarySimpleNameMapper(), new BinaryLowerCaseIdMapper(),
+        BinaryMarshaller marsh = binaryMarshaller(new BinarySimpleNameMapper(), new BinaryBaseIdMapper(true),
             Arrays.asList(
                 new BinaryTypeConfiguration(Key.class.getName()),
                 new BinaryTypeConfiguration("org.gridgain.NonExistentClass3"),
@@ -1654,11 +1653,11 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
 
         BinaryTypeConfiguration customType5 = new BinaryTypeConfiguration(DateClass1.class.getName());
 
-        customType5.setIdMapper(new BinaryStraightIdMapper());
+        customType5.setIdMapper(new BinaryBaseIdMapper(false));
 
         BinaryTypeConfiguration customType6 = new BinaryTypeConfiguration(MyTestClass.class.getName());
 
-        customType6.setIdMapper(new BinaryLowerCaseIdMapper());
+        customType6.setIdMapper(new BinaryBaseIdMapper(true));
         customType6.setNameMapper(new BinarySimpleNameMapper());
 
         BinaryMarshaller marsh = binaryMarshaller(new BinaryOriginalNameMapper(), new BinaryIdMapper() {

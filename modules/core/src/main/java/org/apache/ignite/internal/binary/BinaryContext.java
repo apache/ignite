@@ -46,7 +46,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.binary.BinaryIdMapper;
 import org.apache.ignite.binary.BinaryInvalidTypeException;
-import org.apache.ignite.binary.BinaryLowerCaseIdMapper;
+import org.apache.ignite.binary.BinaryBaseIdMapper;
 import org.apache.ignite.binary.BinaryNameMapper;
 import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.binary.BinaryOriginalNameMapper;
@@ -81,7 +81,7 @@ public class BinaryContext {
     private static final ClassLoader dfltLdr = U.gridClassLoader();
 
     /** */
-    private static final BinaryIdMapper DFLT_ID_MAPPER = new BinaryLowerCaseIdMapper();
+    private static final BinaryIdMapper DFLT_ID_MAPPER = new BinaryBaseIdMapper(true);
 
     /** */
     private static final BinaryNameMapper DFLT_NAME_MAPPER = new BinaryOriginalNameMapper();
@@ -375,8 +375,8 @@ public class BinaryContext {
     private static BinaryIdMapper resolveIdMapper(@Nullable BinaryIdMapper mapper) {
         // TODO check.
         return mapper == null ? DFLT_ID_MAPPER :
-            (mapper instanceof BinaryLowerCaseIdMapper ? mapper :
-                new LowerCaseIdMapperWrapper(mapper));
+            (mapper instanceof BinaryBaseIdMapper ? mapper :
+                new BaseIdMapperWrapper(mapper));
     }
 
     /**
@@ -1194,7 +1194,7 @@ public class BinaryContext {
      * Wrapping ID mapper.
      */
     // TODO review it.
-    private static class LowerCaseIdMapperWrapper extends BinaryLowerCaseIdMapper {
+    private static class BaseIdMapperWrapper extends BinaryBaseIdMapper {
         /** Delegate. */
         private final BinaryIdMapper mapper;
 
@@ -1203,7 +1203,9 @@ public class BinaryContext {
          *
          * @param mapper Delegate.
          */
-        private LowerCaseIdMapperWrapper(BinaryIdMapper mapper) {
+        private BaseIdMapperWrapper(BinaryIdMapper mapper) {
+            super(true);
+            
             assert mapper != null;
 
             this.mapper = mapper;

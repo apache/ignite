@@ -23,9 +23,9 @@ import java.util.Collection;
 import java.util.Date;
 import java.util.HashMap;
 import org.apache.ignite.IgniteBinary;
+import org.apache.ignite.binary.BinaryBaseIdMapper;
 import org.apache.ignite.binary.BinaryNameMapper;
 import org.apache.ignite.binary.BinaryOriginalNameMapper;
-import org.apache.ignite.binary.BinaryStraightIdMapper;
 import org.apache.ignite.configuration.BinaryConfiguration;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -55,7 +55,7 @@ public class GridDefaultBinaryMappersBinaryMetaDataSelfTest extends GridCommonAb
         BinaryConfiguration bCfg = new BinaryConfiguration();
 
         bCfg.setNameMapper(new BinaryOriginalNameMapper());
-        bCfg.setIdMapper(new BinaryStraightIdMapper());
+        bCfg.setIdMapper(new BinaryBaseIdMapper(false));
 
         bCfg.setClassNames(Arrays.asList(TestObject1.class.getName(), TestObject2.class.getName()));
 

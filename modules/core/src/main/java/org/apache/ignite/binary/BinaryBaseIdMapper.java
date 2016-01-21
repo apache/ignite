@@ -18,14 +18,20 @@
 package org.apache.ignite.binary;
 
 /**
- * ID mapper that uses given strings in lower case to calculate type ID.
+ * Base ID mapper implementation.
  */
-public class BinaryLowerCaseIdMapper implements BinaryIdMapper {
+public class BinaryBaseIdMapper implements BinaryIdMapper {
+    /** Default lower case flag setting. */
+    public static final boolean DFLT_LOWER_CASE = true;
+
     /** Maximum lower-case character. */
     private static final char MAX_LOWER_CASE_CHAR = 0x7e;
 
     /** Cached lower-case characters. */
     private static final char[] LOWER_CASE_CHARS;
+
+    /** */
+    private boolean isLowerCase = DFLT_LOWER_CASE;
 
     /**
      * Static initializer.
@@ -38,6 +44,21 @@ public class BinaryLowerCaseIdMapper implements BinaryIdMapper {
     }
 
     /**
+     * Default constructor.
+     */
+    public BinaryBaseIdMapper() {
+    }
+
+    /**
+     * @param isLowerCase Whether to use strings in lower case or not.
+     * <p>
+     * Defaults to {@link #DFLT_LOWER_CASE}.
+     */
+    public BinaryBaseIdMapper(boolean isLowerCase) {
+        this.isLowerCase = isLowerCase;
+    }
+
+    /**
      * Get type ID.
      *
      * @param typeName Type name.
@@ -46,7 +67,15 @@ public class BinaryLowerCaseIdMapper implements BinaryIdMapper {
     public int typeId(String typeName) {
         assert typeName != null;
 
-        return lowerCaseHashCode(typeName, true);
+        int id = isLowerCase ? lowerCaseHashCode(typeName) : typeName.hashCode();
+
+        if (id != 0)
+            return id;
+        else {
+            throw new BinaryObjectException("Binary ID mapper resolved type ID to zero " +
+                "(either change type's name or use custom ID mapper) " +
+                "[name=" + typeName + ", isLowerCase=" + isLowerCase + "]");
+        }
     }
 
     /**
@@ -59,17 +88,42 @@ public class BinaryLowerCaseIdMapper implements BinaryIdMapper {
     public int fieldId(int typeId, String fieldName) {
         assert fieldName != null;
 
-        return lowerCaseHashCode(fieldName, false);
+        int id = isLowerCase ? lowerCaseHashCode(fieldName) : fieldName.hashCode();
+
+        if (id != 0)
+            return id;
+        else {
+            throw new BinaryObjectException("Binary ID mapper resolved field ID to zero " +
+                "(either change filed's name or use custom ID mapper) " +
+                "[name=" + fieldName + ", isLowerCase=" + isLowerCase + "]");
+        }
+    }
+
+    /**
+     * Gets whether to use strings in lower case or not.
+     *
+     * @return Whether to use strings in lower case or not.
+     */
+    public boolean isLowerCase() {
+        return isLowerCase;
+    }
+
+    /**
+     * Sets whether to use strings in lower case or not.
+     *
+     * @param isLowerCase Whether to use strings in lower case or not.
+     */
+    public void setLowerCase(boolean isLowerCase) {
+        this.isLowerCase = isLowerCase;
     }
 
     /**
      * Routine to calculate string hash code an
      *
      * @param str String.
-     * @param type {@code True} if this is type name, false otherwise.
      * @return Hash code for given string converted to lower case.
      */
-    private static int lowerCaseHashCode(String str, boolean type) {
+    private static int lowerCaseHashCode(String str) {
         int len = str.length();
 
         int h = 0;
@@ -82,13 +136,6 @@ public class BinaryLowerCaseIdMapper implements BinaryIdMapper {
             h = 31 * h + c;
         }
 
-        if (h != 0)
-            return h;
-        else {
-            String what = type ? "type" : "field";
-
-            throw new BinaryObjectException("Binary simple name ID mapper resolved " + what + " ID to zero " +
-                "(either change " + what + "'s name or use custom ID mapper) [name=" + str + ']');
-        }
+        return h;
     }
 }

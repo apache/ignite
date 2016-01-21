@@ -17,7 +17,7 @@
 
 package org.apache.ignite.internal.binary;
 
-import org.apache.ignite.binary.BinaryStraightIdMapper;
+import org.apache.ignite.binary.BinaryBaseIdMapper;
 import org.apache.ignite.binary.BinaryIdMapper;
 import org.apache.ignite.internal.binary.test.GridBinaryTestClass1;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
@@ -30,7 +30,7 @@ public class BinaryStraightIdMapperSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void test() throws Exception {
-        BinaryIdMapper mapper = new BinaryStraightIdMapper();
+        BinaryIdMapper mapper = new BinaryBaseIdMapper(false);
 
         assertEquals(GridBinaryTestClass1.class.getName().hashCode(),
             mapper.typeId(GridBinaryTestClass1.class.getName()));

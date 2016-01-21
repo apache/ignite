@@ -17,7 +17,7 @@
 
 package org.apache.ignite.internal.binary;
 
-import org.apache.ignite.binary.BinaryLowerCaseIdMapper;
+import org.apache.ignite.binary.BinaryBaseIdMapper;
 import org.apache.ignite.internal.binary.test.GridBinaryTestClass1;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
@@ -29,11 +29,11 @@ public class BinarySimpleNameIdMapperSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void test() throws Exception {
-        BinaryLowerCaseIdMapper mapper = new BinaryLowerCaseIdMapper();
+        BinaryBaseIdMapper mapper = new BinaryBaseIdMapper(true);
 
-        assertEquals(GridBinaryTestClass1.class.getName().toLowerCase().hashCode(), 
+        assertEquals(GridBinaryTestClass1.class.getName().toLowerCase().hashCode(),
             mapper.typeId(GridBinaryTestClass1.class.getName()));
-        assertEquals((GridBinaryTestClass1.class.getName() + "$InnerClass").toLowerCase().hashCode(), 
+        assertEquals((GridBinaryTestClass1.class.getName() + "$InnerClass").toLowerCase().hashCode(),
             mapper.typeId(GridBinaryTestClass1.class.getName() + "$InnerClass"));
     }
 }

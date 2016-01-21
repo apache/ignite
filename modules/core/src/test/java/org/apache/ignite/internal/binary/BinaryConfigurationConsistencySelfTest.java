@@ -23,7 +23,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.binary.BinaryReader;
 import org.apache.ignite.binary.BinarySerializer;
-import org.apache.ignite.binary.BinaryLowerCaseIdMapper;
+import org.apache.ignite.binary.BinaryBaseIdMapper;
 import org.apache.ignite.binary.BinaryTypeConfiguration;
 import org.apache.ignite.binary.BinaryWriter;
 import org.apache.ignite.configuration.BinaryConfiguration;
@@ -198,7 +198,7 @@ public class BinaryConfigurationConsistencySelfTest extends GridCommonAbstractTe
     private BinaryConfiguration customConfig(boolean compactFooter) {
         BinaryConfiguration c = new BinaryConfiguration();
 
-        c.setIdMapper(new BinaryLowerCaseIdMapper());
+        c.setIdMapper(new BinaryBaseIdMapper(true));
         c.setSerializer(new BinarySerializer() {
             @Override public void writeBinary(Object obj, BinaryWriter writer) throws BinaryObjectException {
                 // No-op.

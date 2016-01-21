@@ -34,7 +34,7 @@ import org.apache.ignite.binary.BinaryNameMapper;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.binary.BinaryObjectBuilder;
 import org.apache.ignite.binary.BinaryOriginalNameMapper;
-import org.apache.ignite.binary.BinaryStraightIdMapper;
+import org.apache.ignite.binary.BinaryBaseIdMapper;
 import org.apache.ignite.binary.BinaryType;
 import org.apache.ignite.binary.BinaryTypeConfiguration;
 import org.apache.ignite.configuration.BinaryConfiguration;
@@ -93,7 +93,7 @@ public class BinaryObjectBuilderDefaultMappersSelfTest extends GridCommonAbstrac
             new BinaryTypeConfiguration("org.test.MetaTest2"),
             customTypeCfg));
 
-        bCfg.setIdMapper(new BinaryStraightIdMapper());
+        bCfg.setIdMapper(new BinaryBaseIdMapper(false));
         bCfg.setNameMapper(new BinaryOriginalNameMapper());
 
         cfg.setBinaryConfiguration(bCfg);

@@ -21,13 +21,12 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Map;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.binary.BinaryBaseIdMapper;
 import org.apache.ignite.binary.BinaryIdMapper;
-import org.apache.ignite.binary.BinaryLowerCaseIdMapper;
 import org.apache.ignite.binary.BinaryNameMapper;
 import org.apache.ignite.binary.BinaryOriginalNameMapper;
 import org.apache.ignite.binary.BinarySerializer;
 import org.apache.ignite.binary.BinarySimpleNameMapper;
-import org.apache.ignite.binary.BinaryStraightIdMapper;
 import org.apache.ignite.binary.BinaryTypeConfiguration;
 import org.apache.ignite.configuration.BinaryConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -57,21 +56,21 @@ public class GridBinaryWildcardsSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testClassNamesFullNameMapper() throws Exception {
-        checkClassNames(new BinaryOriginalNameMapper(), new BinaryStraightIdMapper());
+        checkClassNames(new BinaryOriginalNameMapper(), new BinaryBaseIdMapper(false));
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testClassNamesSimpleNameMapper() throws Exception {
-        checkClassNames(new BinarySimpleNameMapper(), new BinaryLowerCaseIdMapper());
+        checkClassNames(new BinarySimpleNameMapper(), new BinaryBaseIdMapper(true));
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testClassNamesMixedMappers() throws Exception {
-        checkClassNames(new BinaryOriginalNameMapper(), new BinaryLowerCaseIdMapper());
+        checkClassNames(new BinaryOriginalNameMapper(), new BinaryBaseIdMapper(true));
     }
 
     /**
@@ -136,14 +135,14 @@ public class GridBinaryWildcardsSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testTypeConfigurationsSimpleNameIdMapper() throws Exception {
-        checkTypeConfigurations(new BinarySimpleNameMapper(), new BinaryLowerCaseIdMapper());
+        checkTypeConfigurations(new BinarySimpleNameMapper(), new BinaryBaseIdMapper(true));
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testTypeConfigurationsFullNameIdMapper() throws Exception {
-        checkTypeConfigurations(new BinaryOriginalNameMapper(), new BinaryStraightIdMapper());
+        checkTypeConfigurations(new BinaryOriginalNameMapper(), new BinaryBaseIdMapper(false));
     }
 
     /**
@@ -260,14 +259,14 @@ public class GridBinaryWildcardsSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testOverrideIdMapperSimpleNameMapper() throws Exception {
-        checkOverrideNameMapper(new BinarySimpleNameMapper(), new BinaryLowerCaseIdMapper());
+        checkOverrideNameMapper(new BinarySimpleNameMapper(), new BinaryBaseIdMapper(true));
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testOverrideIdMapperFullNameMapper() throws Exception {
-        checkOverrideNameMapper(new BinaryOriginalNameMapper(), new BinaryStraightIdMapper());
+        checkOverrideNameMapper(new BinaryOriginalNameMapper(), new BinaryBaseIdMapper(false));
     }
 
     /**
@@ -313,14 +312,14 @@ public class GridBinaryWildcardsSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testOverrideNameMapperSimpleNameMapper() throws Exception {
-        checkOverrideNameMapper(new BinarySimpleNameMapper(), new BinaryLowerCaseIdMapper());
+        checkOverrideNameMapper(new BinarySimpleNameMapper(), new BinaryBaseIdMapper(true));
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testOverrideNameMapperFullNameMapper() throws Exception {
-        checkOverrideNameMapper(new BinaryOriginalNameMapper(), new BinaryStraightIdMapper());
+        checkOverrideNameMapper(new BinaryOriginalNameMapper(), new BinaryBaseIdMapper(false));
     }
 
     /**
@@ -366,14 +365,14 @@ public class GridBinaryWildcardsSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testClassNamesJarFullNameMapper() throws Exception {
-        checkClassNamesJar(new BinaryOriginalNameMapper(), new BinaryStraightIdMapper());
+        checkClassNamesJar(new BinaryOriginalNameMapper(), new BinaryBaseIdMapper(false));
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testClassNamesJarSimpleNameMapper() throws Exception {
-        checkClassNamesJar(new BinarySimpleNameMapper(), new BinaryLowerCaseIdMapper());
+        checkClassNamesJar(new BinarySimpleNameMapper(), new BinaryBaseIdMapper(true));
     }
 
     /**
@@ -438,14 +437,14 @@ public class GridBinaryWildcardsSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testTypeConfigurationsJarSimpleNameMapper() throws Exception {
-        checkTypeConfigurationJar(new BinarySimpleNameMapper(), new BinaryLowerCaseIdMapper());
+        checkTypeConfigurationJar(new BinarySimpleNameMapper(), new BinaryBaseIdMapper(true));
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testTypeConfigurationsJarFullNameMapper() throws Exception {
-        checkTypeConfigurationJar(new BinaryOriginalNameMapper(), new BinaryStraightIdMapper());
+        checkTypeConfigurationJar(new BinaryOriginalNameMapper(), new BinaryBaseIdMapper(false));
     }
 
     /**
@@ -547,14 +546,14 @@ public class GridBinaryWildcardsSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testOverrideJarSimpleNameMapper() throws Exception {
-        checkOverrideJar(new BinarySimpleNameMapper(), new BinaryLowerCaseIdMapper());
+        checkOverrideJar(new BinarySimpleNameMapper(), new BinaryBaseIdMapper(true));
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testOverrideJarFullNameMapper() throws Exception {
-        checkOverrideJar(new BinaryOriginalNameMapper(), new BinaryStraightIdMapper());
+        checkOverrideJar(new BinaryOriginalNameMapper(), new BinaryBaseIdMapper(false));
     }
 
     /**
