@@ -20,6 +20,8 @@
 namespace Apache.Ignite.Core.Tests
 {
     using System;
+    using System.Collections;
+    using System.Collections.Generic;
     using System.IO;
     using System.Linq;
     using System.Text;
@@ -158,8 +160,56 @@ namespace Apache.Ignite.Core.Tests
         private static void CheckConfigsEqual(IgniteConfiguration x, IgniteConfiguration y)
         {
             Assert.AreEqual(x.GridName, y.GridName);
+            Assert.AreEqual(x.JvmOptions, y.JvmOptions);
+            Assert.AreEqual(x.LocalHost, y.LocalHost);
+            Assert.AreEqual(x.JvmClasspath, y.JvmClasspath);
+            Assert.AreEqual(x.Assemblies, y.Assemblies);
 
-            // TODO
+            AssertReflectionEqual(x, y);
+        }
+
+        private static void AssertReflectionEqual(object x, object y)
+        {
+            var type = x.GetType();
+
+            Assert.AreEqual(type, y.GetType());
+
+            if (type.IsValueType || type == typeof (string) || type.IsSubclassOf(typeof (Type)))
+            {
+                Assert.AreEqual(x, y);
+                return;
+            }
+
+            var props = type.GetProperties();
+
+            foreach (var propInfo in props)
+            {
+                var propType = propInfo.PropertyType;
+
+                var xVal = propInfo.GetValue(x, null);
+                var yVal = propInfo.GetValue(y, null);
+
+                if (xVal == null || yVal == null)
+                {
+                    Assert.IsNull(xVal);
+                    Assert.IsNull(yVal);
+                }
+                else if (propType != typeof(string) && propType.IsGenericType 
+                    && propType.GetGenericTypeDefinition() == typeof (ICollection<>))
+                {
+                    var xCol = ((IEnumerable) xVal).OfType<object>().ToList();
+                    var yCol = ((IEnumerable) yVal).OfType<object>().ToList();
+
+                    Assert.AreEqual(xCol.Count, yCol.Count);
+
+                    for (int i = 0; i < xCol.Count; i++)
+                        AssertReflectionEqual(xCol[i], yCol[i]);
+                }
+                else
+                {
+                    AssertReflectionEqual(xVal, yVal);
+                }
+            }
         }
 
         private static IgniteConfiguration GetTestConfig()
