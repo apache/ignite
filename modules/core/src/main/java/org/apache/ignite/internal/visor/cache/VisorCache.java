@@ -257,35 +257,36 @@ public class VisorCache implements Serializable {
      * Fill values that should be stored in history;
      *
      * @param c Source cache.
+     * @return Cache.
      */
-    protected void initHistory(VisorCache c) {
-        c.name = name;
-        c.mode = mode;
-        c.memorySize = memorySize;
-        c.indexesSize = indexesSize;
-        c.size = size;
-        c.nearSize = nearSize;
-        c.dhtSize = dhtSize;
-        c.primarySize = primarySize;
-        c.offHeapAllocatedSize = offHeapAllocatedSize;
-        c.offHeapEntriesCnt = offHeapEntriesCnt;
-        c.swapSize = swapSize;
-        c.swapKeys = swapKeys;
-        c.partitions = partitions;
-        c.primaryPartitions = Collections.emptyList();
-        c.backupPartitions = Collections.emptyList();
-        c.metrics = metrics;
+    protected VisorCache initHistory(VisorCache c) {
+        if (c != null) {
+            c.name = name;
+            c.mode = mode;
+            c.memorySize = memorySize;
+            c.indexesSize = indexesSize;
+            c.size = size;
+            c.nearSize = nearSize;
+            c.dhtSize = dhtSize;
+            c.primarySize = primarySize;
+            c.offHeapAllocatedSize = offHeapAllocatedSize;
+            c.offHeapEntriesCnt = offHeapEntriesCnt;
+            c.swapSize = swapSize;
+            c.swapKeys = swapKeys;
+            c.partitions = partitions;
+            c.primaryPartitions = Collections.emptyList();
+            c.backupPartitions = Collections.emptyList();
+            c.metrics = metrics;
+        }
+
+        return c;
     }
 
     /**
      * @return New instance suitable to store in history.
      */
     public VisorCache history() {
-        VisorCache c = new VisorCache();
-
-        initHistory(c);
-
-        return c;
+        return initHistory(new VisorCache());
     }
 
     /**
