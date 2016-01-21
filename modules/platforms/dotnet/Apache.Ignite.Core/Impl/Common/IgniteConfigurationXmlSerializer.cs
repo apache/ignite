@@ -74,12 +74,9 @@ namespace Apache.Ignite.Core.Impl.Common
         {
             writer.WriteStartElement(rootElementName);
 
-            var collectionIface = valueType.GetInterfaces()
-                .FirstOrDefault(x => x.IsGenericType && x.GetGenericTypeDefinition() == typeof (ICollection<>));
-
-            if (collectionIface != null)
+            if (valueType.IsGenericType && valueType.GetGenericTypeDefinition() == typeof(ICollection<>))
             {
-                var elementType = collectionIface.GetGenericArguments().Single();
+                var elementType = valueType.GetGenericArguments().Single();
 
                 var elementTypeName = PropertyNameToXmlName(elementType.Name);
 
