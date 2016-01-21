@@ -64,23 +64,45 @@ namespace Apache.Ignite.Core.Impl.Common
             IgniteArgumentCheck.NotNull(writer, "writer");
             IgniteArgumentCheck.NotNullOrEmpty(rootElementName, "rootElementName");
 
-            WriteElement(configuration, writer, rootElementName);
+            WriteElement(configuration, writer, rootElementName, typeof(IgniteConfiguration));
         }
 
-        private static void WriteElement(object obj, XmlWriter writer, string rootElementName)
+        private static void WriteElement(object obj, XmlWriter writer, string rootElementName, Type propertyType)
         {
             writer.WriteStartElement(rootElementName);
 
-            var props = GetNonDefaultProperties(obj).ToList();
+            var col = obj as ICollection;
 
-            // 1. Write attributes
-            // TODO: Converter?
-            foreach (var prop in props.Where(p => IsBasicType(p.PropertyType)))
-                writer.WriteAttributeString(PropertyNameToXmlName(prop.Name), prop.GetValue(obj, null).ToString());
+            if (col != null)
+            {
+                var elementType = col.GetType().GetGenericArguments().Single();
+                var elementTypeName = PropertyNameToXmlName(elementType.Name);
 
-            // 2. Write elements
-            foreach (var prop in props.Where(p => !IsBasicType(p.PropertyType)))
-                WriteElement(prop.GetValue(obj, null), writer, PropertyNameToXmlName(prop.Name));
+                foreach (var element in col)
+                    WriteElement(element, writer, elementTypeName, elementType);
+            }
+            else
+            {
+                var props = GetNonDefaultProperties(obj).ToList();
+
+                // Specify type for interfaces and abstract classes
+
+                // Write attributes
+                foreach (var prop in props.Where(p => IsBasicType(p.PropertyType)))
+                {
+                    var value = prop.GetValue(obj, null);
+                    var converter = GetConverter(prop, prop.PropertyType);
+                    var stringValue = (string) converter.ConvertTo(value, typeof (string));
+
+                    // ReSharper disable once AssignNullToNotNullAttribute
+                    writer.WriteAttributeString(PropertyNameToXmlName(prop.Name), stringValue);
+                }
+
+                // Write elements
+                foreach (var prop in props.Where(p => !IsBasicType(p.PropertyType)))
+                    WriteElement(prop.GetValue(obj, null), writer, PropertyNameToXmlName(prop.Name), prop.PropertyType);
+            }
+
 
             writer.WriteEndElement();
         }

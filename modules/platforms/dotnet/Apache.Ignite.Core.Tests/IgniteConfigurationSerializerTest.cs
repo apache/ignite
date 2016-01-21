@@ -146,7 +146,9 @@ namespace Apache.Ignite.Core.Tests
                 IgniteConfigurationXmlSerializer.Serialize(cfg, xmlWriter, "igniteConfig");
             }
 
-            using (var xmlReader = XmlReader.Create(new StringReader(sb.ToString())))
+            var xml = sb.ToString();
+
+            using (var xmlReader = XmlReader.Create(new StringReader(xml)))
             {
                 xmlReader.MoveToContent();
                 return IgniteConfigurationXmlSerializer.Deserialize(xmlReader);
