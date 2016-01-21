@@ -36,23 +36,32 @@ public class VisorCacheV2 extends VisorCache {
 
     /** {@inheritDoc} */
     @Override public VisorCache from(IgniteEx ignite, String cacheName, int sample) throws IgniteCheckedException {
-        super.from(ignite, cacheName, sample);
+        VisorCache c = super.from(ignite, cacheName, sample);
 
-        GridCacheAdapter ca = ignite.context().cache().internalCache(cacheName);
+        if (c != null && c instanceof VisorCacheV2) {
+            GridCacheAdapter ca = ignite.context().cache().internalCache(cacheName);
 
-        // Cache was not started.
-        if (ca != null && ca.context().started())
-            near = ca.context().isNear();
+            // Cache was not started.
+            if (ca != null && ca.context().started())
+                ((VisorCacheV2)c).near = ca.context().isNear();
+        }
 
-        return this;
+        return c;
     }
 
     /** {@inheritDoc} */
-    @Override public void initHistory(VisorCache c) {
+    @Override protected VisorCache initHistory(VisorCache c) {
         super.initHistory(c);
 
         if (c instanceof VisorCacheV2)
             ((VisorCacheV2) c).near = near;
+
+        return c;
+    }
+
+    /** {@inheritDoc} */
+    @Override public VisorCache history() {
+        return initHistory(new VisorCacheV2());
     }
 
     /**
