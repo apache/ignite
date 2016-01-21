@@ -42,12 +42,25 @@ namespace Apache.Ignite.Core.Impl.Common
         /// <returns>Resulting <see cref="IgniteConfiguration"/>.</returns>
         public static IgniteConfiguration Deserialize(XmlReader reader)
         {
+            IgniteArgumentCheck.NotNull(reader, "reader");
+
             var cfg = new IgniteConfiguration();
 
             if (reader.Read())
                 ReadElement(reader, cfg);
 
             return cfg;
+        }
+
+        /// <summary>
+        /// Serializes specified <see cref="IgniteConfiguration"/> to <see cref="XmlWriter"/>.
+        /// </summary>
+        /// <param name="configuration">The configuration.</param>
+        /// <param name="writer">The writer.</param>
+        public static void Serialize(IgniteConfiguration configuration, XmlWriter writer)
+        {
+            IgniteArgumentCheck.NotNull(configuration, "configuration");
+            IgniteArgumentCheck.NotNull(writer, "writer");
         }
 
         /// <summary>

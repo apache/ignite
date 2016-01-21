@@ -114,6 +114,12 @@ namespace Apache.Ignite.Core.Tests
             Assert.AreEqual(true, queryEntity.Indexes.Single().Fields.Single().IsDescending);
         }
 
+        [Test]
+        public void TestSerializeDeserialize()
+        {
+            // TODO
+        }
+
         public class LifecycleBean : ILifecycleBean
         {
             public int Foo { get; set; }
