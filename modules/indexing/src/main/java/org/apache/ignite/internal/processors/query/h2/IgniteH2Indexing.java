@@ -242,6 +242,9 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     /** */
     private GridReduceQueryExecutor rdcQryExec;
 
+    /** Index provider. */
+    private IgniteH2QueryIndexProvider idxProvider;
+
     /** space name -> schema name */
     private final Map<String, String> space2schema = new ConcurrentHashMap8<>();
 
@@ -1474,6 +1477,8 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             rdcQryExec.start(ctx, this);
         }
 
+        idxProvider = ctx.plugins().createComponent(IgniteH2QueryIndexProvider.class);
+
         // TODO https://issues.apache.org/jira/browse/IGNITE-2139
         // registerMBean(gridName, this, GridH2IndexingSpiMBean.class);
     }
@@ -1947,7 +1952,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
             ArrayList<Index> idxs = new ArrayList<>();
 
-            idxs.add(new GridH2TreeIndex("_key_PK", tbl, true, KEY_COL, VAL_COL, tbl.indexColumn(0, ASCENDING)));
+            idxs.add(createSortedIndex("_key_PK", tbl, true, KEY_COL, VAL_COL, tbl.indexColumn(0, ASCENDING)));
 
             if (type().valueClass() == String.class) {
                 try {
@@ -1987,7 +1992,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                     }
 
                     if (idx.type() == SORTED)
-                        idxs.add(new GridH2TreeIndex(name, tbl, false, KEY_COL, VAL_COL, cols));
+                        idxs.add(createSortedIndex(name, tbl, false, KEY_COL, VAL_COL, cols));
                     else if (idx.type() == GEO_SPATIAL)
                         idxs.add(createH2SpatialIndex(tbl, name, cols, KEY_COL, VAL_COL));
                     else
@@ -1996,6 +2001,22 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             }
 
             return idxs;
+        }
+
+        /**
+         * @param name Index name,
+         * @param tbl Table.
+         * @param pk Primary key flag.
+         * @param keyCol Key column.
+         * @param valCol Value column.
+         * @param cols Columns.
+         * @return Index.
+         */
+        private Index createSortedIndex(String name, GridH2Table tbl, boolean pk, int keyCol, int valCol, IndexColumn... cols) {
+            if (idxProvider != null)
+                return idxProvider.createIndex(name, tbl, pk, keyCol, valCol, cols);
+
+            return new GridH2TreeIndex(name, tbl, pk, keyCol, valCol, cols);
         }
 
         /**
