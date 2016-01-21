@@ -108,9 +108,6 @@ public class VisorCache implements Serializable {
     /** Cache partitions states. */
     private GridDhtPartitionMap2 partitionsMap;
 
-    /** Flag indicating that cache has near cache. */
-    private boolean near;
-
     /**
      * @param ignite Grid.
      * @param cacheName Cache name.
@@ -142,8 +139,6 @@ public class VisorCache implements Serializable {
         backupPartitions = Collections.emptyList();
 
         CacheConfiguration cfg = ca.configuration();
-
-        near = ca.context().isNear();
 
         mode = cfg.getCacheMode();
 
@@ -259,30 +254,39 @@ public class VisorCache implements Serializable {
     }
 
     /**
+     * Fill values that should be stored in history;
+     *
+     * @param c Source cache.
+     * @return Cache.
+     */
+    protected VisorCache initHistory(VisorCache c) {
+        if (c != null) {
+            c.name = name;
+            c.mode = mode;
+            c.memorySize = memorySize;
+            c.indexesSize = indexesSize;
+            c.size = size;
+            c.nearSize = nearSize;
+            c.dhtSize = dhtSize;
+            c.primarySize = primarySize;
+            c.offHeapAllocatedSize = offHeapAllocatedSize;
+            c.offHeapEntriesCnt = offHeapEntriesCnt;
+            c.swapSize = swapSize;
+            c.swapKeys = swapKeys;
+            c.partitions = partitions;
+            c.primaryPartitions = Collections.emptyList();
+            c.backupPartitions = Collections.emptyList();
+            c.metrics = metrics;
+        }
+
+        return c;
+    }
+
+    /**
      * @return New instance suitable to store in history.
      */
     public VisorCache history() {
-        VisorCache c = new VisorCache();
-
-        c.name = name;
-        c.mode = mode;
-        c.memorySize = memorySize;
-        c.indexesSize = indexesSize;
-        c.size = size;
-        c.nearSize = nearSize;
-        c.dhtSize = dhtSize;
-        c.primarySize = primarySize;
-        c.offHeapAllocatedSize = offHeapAllocatedSize;
-        c.offHeapEntriesCnt = offHeapEntriesCnt;
-        c.swapSize = swapSize;
-        c.swapKeys = swapKeys;
-        c.partitions = partitions;
-        c.primaryPartitions = Collections.emptyList();
-        c.backupPartitions = Collections.emptyList();
-        c.metrics = metrics;
-        c.near = near;
-
-        return c;
+        return initHistory(new VisorCache());
     }
 
     /**
@@ -409,13 +413,6 @@ public class VisorCache implements Serializable {
      */
     @Nullable public GridDhtPartitionMap2 partitionMap() {
         return partitionsMap;
-    }
-
-    /**
-     * @return {@code true} if cache has near cache.
-     */
-    public boolean near() {
-        return near;
     }
 
     /** {@inheritDoc} */

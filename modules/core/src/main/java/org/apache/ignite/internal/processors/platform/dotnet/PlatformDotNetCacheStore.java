@@ -224,37 +224,20 @@ public class PlatformDotNetCacheStore<K, V> implements CacheStore<K, V>, Platfor
     /** {@inheritDoc} */
     @SuppressWarnings({"NullableProblems", "unchecked"})
     @Override public void writeAll(final Collection<Cache.Entry<? extends K, ? extends V>> entries) {
+        assert entries != null;
         try {
             doInvoke(new IgniteInClosureX<BinaryRawWriterEx>() {
                 @Override public void applyx(BinaryRawWriterEx writer) throws IgniteCheckedException {
-                    Map<K, V> map = new AbstractMap<K, V>() {
-                        @Override public int size() {
-                            return entries.size();
-                        }
-
-                        @Override public Set<Entry<K, V>> entrySet() {
-                            return new AbstractSet<Entry<K, V>>() {
-                                @Override public Iterator<Entry<K, V>> iterator() {
-                                    return F.iterator(entries, new C1<Cache.Entry<? extends K, ? extends V>, Entry<K, V>>() {
-                                        private static final long serialVersionUID = 0L;
-
-                                        @Override public Entry<K, V> apply(Cache.Entry<? extends K, ? extends V> entry) {
-                                            return new GridMapEntry<>(entry.getKey(), entry.getValue());
-                                        }
-                                    }, true);
-                                }
-
-                                @Override public int size() {
-                                    return entries.size();
-                                }
-                            };
-                        }
-                    };
-
                     writer.writeByte(OP_PUT_ALL);
                     writer.writeLong(session());
                     writer.writeString(ses.cacheName());
-                    writer.writeMap(map);
+
+                    writer.writeInt(entries.size());
+
+                    for (Cache.Entry<? extends K, ? extends V> e : entries) {
+                        writer.writeObject(e.getKey());
+                        writer.writeObject(e.getValue());
+                    }
                 }
             }, null);
         }

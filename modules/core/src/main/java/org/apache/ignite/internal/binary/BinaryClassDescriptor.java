@@ -55,6 +55,9 @@ public class BinaryClassDescriptor {
     /** */
     public static final Unsafe UNSAFE = GridUnsafe.unsafe();
 
+    /** Apache Ignite base package name. */
+    private static final String OAI_PKG = "org.apache.ignite";
+
     /** */
     private final BinaryContext ctx;
 
@@ -173,11 +176,13 @@ public class BinaryClassDescriptor {
                 mode = serializer != null ? BinaryWriteMode.BINARY : BinaryUtils.mode(cls);
         }
 
-        if (useOptMarshaller && userType) {
-            U.quietAndWarn(ctx.log(), "Class \"" + cls.getName() + "\" cannot be written in binary format because " +
-                "it either implements Externalizable interface or have writeObject/readObject methods. Please " +
-                "ensure that all nodes have this class in classpath. To enable binary serialization either " +
-                "implement " + Binarylizable.class.getSimpleName() + " interface or set explicit serializer using " +
+        if (useOptMarshaller && userType && !cls.getName().startsWith(OAI_PKG)) {
+            U.quietAndWarn(ctx.log(), "Class \"" + cls.getName() + "\" cannot be serialized using " +
+                BinaryMarshaller.class.getSimpleName() + " because it either implements Externalizable interface " +
+                "or have writeObject/readObject methods. " + OptimizedMarshaller.class.getSimpleName() + " will be " +
+                "used instead and class instances will be deserialized on the server. Please ensure that all nodes " +
+                "have this class in classpath. To enable binary serialization either implement " +
+                Binarylizable.class.getSimpleName() + " interface or set explicit serializer using " +
                 "BinaryTypeConfiguration.setSerializer() method.");
         }
 
