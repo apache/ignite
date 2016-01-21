@@ -65,6 +65,21 @@ namespace Apache.Ignite.Core.Impl.Common
             IgniteArgumentCheck.NotNullOrEmpty(rootElementName, "rootElementName");
 
             // TODO: DefaultVlaueAttribute
+            Write(configuration, writer, rootElementName);
+        }
+
+        private static void Write(object obj, XmlWriter writer, string rootElementName)
+        {
+            writer.WriteStartElement(rootElementName);
+
+            var props = GetNonDefaultProperties(obj);
+            // TODO
+
+            // 1. Write attributes
+
+            // 2. Write elements
+
+            writer.WriteEndElement();
         }
 
         /// <summary>
@@ -294,6 +309,31 @@ namespace Apache.Ignite.Core.Impl.Common
                 throw new ConfigurationErrorsException("No converter for type " + propertyType);
 
             return converter;
+        }
+
+        /// <summary>
+        /// Gets properties with non-default value.
+        /// </summary>
+        private static IEnumerable<PropertyInfo> GetNonDefaultProperties(object obj)
+        {
+            Debug.Assert(obj != null);
+
+            return obj.GetType().GetProperties().Where(p => !Equals(p.GetValue(obj, null), GetDefaultValue(p)));
+        }
+
+        private static object GetDefaultValue(PropertyInfo property)
+        {
+            var attr = property.GetCustomAttributes(true).OfType<DefaultValueAttribute>().FirstOrDefault();
+
+            if (attr != null)
+                return attr.Value;
+
+            var propertyType = property.PropertyType;
+
+            if (propertyType.IsValueType)
+                return Activator.CreateInstance(propertyType);
+
+            return null;
         }
     }
 }
