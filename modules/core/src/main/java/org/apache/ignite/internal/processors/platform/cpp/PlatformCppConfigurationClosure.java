@@ -21,6 +21,8 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.binary.BinaryIdMapper;
 import org.apache.ignite.binary.BinaryLowerCaseIdMapper;
+import org.apache.ignite.binary.BinaryNameMapper;
+import org.apache.ignite.binary.BinarySimpleNameMapper;
 import org.apache.ignite.configuration.BinaryConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.PlatformConfiguration;
@@ -89,16 +91,27 @@ public class PlatformCppConfigurationClosure extends PlatformAbstractConfigurati
             bCfg = new BinaryConfiguration();
 
             bCfg.setCompactFooter(false);
+            bCfg.setNameMapper(new BinarySimpleNameMapper());
             bCfg.setIdMapper(new BinaryLowerCaseIdMapper());
 
             igniteCfg.setBinaryConfiguration(bCfg);
 
             cppCfg0.warnings(Collections.singleton("Binary configuration is automatically initiated, " +
-                "note that binary ID mapper is set to " +
-                BinaryLowerCaseIdMapper.class.getName()
-                + " (other nodes must have the same binary ID mapper type)."));
+                "note that binary name mapper is set to " + BinarySimpleNameMapper.class.getName()
+                + " and binary ID mapper is set to " + BinaryLowerCaseIdMapper.class.getName()
+                + " (other nodes must have the same binary name and ID mapper types)."));
         }
         else {
+            BinaryNameMapper nameMapper = bCfg.getNameMapper();
+
+            if (nameMapper == null) {
+                bCfg.setNameMapper(new BinarySimpleNameMapper());
+
+                cppCfg0.warnings(Collections.singleton("Binary name mapper is automatically set to " +
+                    BinarySimpleNameMapper.class.getName()
+                    + " (other nodes must have the same binary name mapper type)."));
+            }
+
             BinaryIdMapper idMapper = bCfg.getIdMapper();
 
             if (idMapper == null) {
