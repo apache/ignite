@@ -19,6 +19,7 @@ namespace Apache.Ignite.Core
 {
     using System;
     using System.Collections.Generic;
+    using System.ComponentModel;
     using System.Diagnostics;
     using System.Diagnostics.CodeAnalysis;
     using System.Linq;
@@ -241,12 +242,14 @@ namespace Apache.Ignite.Core
         /// Initial amount of memory in megabytes given to JVM. Maps to -Xms Java option.
         /// Defaults to <see cref="DefaultJvmInitMem"/>.
         /// </summary>
+        [DefaultValue(DefaultJvmInitMem)]
         public int JvmInitialMemoryMb { get; set; }
 
         /// <summary>
         /// Maximum amount of memory in megabytes given to JVM. Maps to -Xmx Java option.
         /// Defaults to <see cref="DefaultJvmMaxMem"/>.
         /// </summary>
+        [DefaultValue(DefaultJvmMaxMem)]
         public int JvmMaxMemoryMb { get; set; }
 
         /// <summary>
@@ -270,17 +273,20 @@ namespace Apache.Ignite.Core
         /// <summary>
         /// Gets or sets the time after which a certain metric value is considered expired.
         /// </summary>
+        [DefaultValue(typeof(TimeSpan), "10675199.02:48:05.4775807")]
         public TimeSpan MetricsExpireTime { get; set; }
 
         /// <summary>
         /// Gets or sets the number of metrics kept in history to compute totals and averages.
         /// </summary>
+        [DefaultValue(DefaultMetricsHistorySize)]
         public int MetricsHistorySize { get; set; }
 
         /// <summary>
         /// Gets or sets the frequency of metrics log print out.
         /// <see cref="TimeSpan.Zero"/> to disable metrics print out.
         /// </summary>
+        [DefaultValue(typeof(TimeSpan), "00:01:00")]
         public TimeSpan MetricsLogFrequency { get; set; }
 
         /// <summary>
@@ -288,21 +294,25 @@ namespace Apache.Ignite.Core
         /// <see cref="TimeSpan.Zero"/> to update metrics on job start/finish.
         /// Negative value to never update metrics.
         /// </summary>
+        [DefaultValue(typeof(TimeSpan), "00:00:02")]
         public TimeSpan MetricsUpdateFrequency { get; set; }
 
         /// <summary>
         /// Gets or sets the network send retry count.
         /// </summary>
+        [DefaultValue(DefaultNetworkSendRetryCount)]
         public int NetworkSendRetryCount { get; set; }
 
         /// <summary>
         /// Gets or sets the network send retry delay.
         /// </summary>
+        [DefaultValue(typeof(TimeSpan), "00:00:01")]
         public TimeSpan NetworkSendRetryDelay { get; set; }
 
         /// <summary>
         /// Gets or sets the network timeout.
         /// </summary>
+        [DefaultValue(typeof(TimeSpan), "00:00:05")]
         public TimeSpan NetworkTimeout { get; set; }
 
         /// <summary>

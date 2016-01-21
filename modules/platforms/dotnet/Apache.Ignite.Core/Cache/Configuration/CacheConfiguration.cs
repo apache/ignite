@@ -22,6 +22,7 @@ namespace Apache.Ignite.Core.Cache.Configuration
 {
     using System;
     using System.Collections.Generic;
+    using System.ComponentModel;
     using System.Diagnostics.CodeAnalysis;
     using System.Linq;
     using Apache.Ignite.Core.Binary;
@@ -107,7 +108,7 @@ namespace Apache.Ignite.Core.Cache.Configuration
         public static readonly TimeSpan DefaultWriteBehindFlushFrequency = TimeSpan.FromMilliseconds(5000);
 
         /// <summary> Default count of flush threads for write-behind cache store. </summary>
-        public const int DefaultWriteFromBehindFlushThreadCount = 1;
+        public const int DefaultWriteBehindFlushThreadCount = 1;
 
         /// <summary> Default batch size for write-behind cache store. </summary>
         public const int DefaultWriteBehindBatchSize = 512;
@@ -128,7 +129,7 @@ namespace Apache.Ignite.Core.Cache.Configuration
         public const int DefaultSqlOnheapRowCacheSize = 10*1024;
 
         /// <summary> Default value for keep portable in store behavior .</summary>
-        public const bool DefaultKeepPortableInStore = true;
+        public const bool DefaultKeepVinaryInStore = true;
 
         /// <summary> Default value for 'copyOnRead' flag. </summary>
         public const bool DefaultCopyOnRead = true;
@@ -164,7 +165,7 @@ namespace Apache.Ignite.Core.Cache.Configuration
             EvictSynchronizedConcurrencyLevel = DefaultEvictSynchronizedConcurrencyLevel;
             EvictSynchronizedTimeout = DefaultEvictSynchronizedTimeout;
             Invalidate = DefaultInvalidate;
-            KeepBinaryInStore = DefaultKeepPortableInStore;
+            KeepBinaryInStore = DefaultKeepVinaryInStore;
             LoadPreviousValue = DefaultLoadPreviousValue;
             LockTimeout = DefaultLockTimeout;
             LongQueryWarningTimeout = DefaultLongQueryWarningTimeout;
@@ -184,7 +185,7 @@ namespace Apache.Ignite.Core.Cache.Configuration
             WriteBehindEnabled = DefaultWriteBehindEnabled;
             WriteBehindFlushFrequency = DefaultWriteBehindFlushFrequency;
             WriteBehindFlushSize = DefaultWriteBehindFlushSize;
-            WriteBehindFlushThreadCount= DefaultWriteFromBehindFlushThreadCount;
+            WriteBehindFlushThreadCount= DefaultWriteBehindFlushThreadCount;
         }
 
         /// <summary>
@@ -323,11 +324,13 @@ namespace Apache.Ignite.Core.Cache.Configuration
         /// Note that it's not recommended to set this value to true if cache store is configured since it will allow 
         /// to significantly improve cache performance.
         /// </summary>
+        [DefaultValue(DefaultEvictSynchronized)]
         public bool EvictSynchronized { get; set; }
 
         /// <summary>
         /// Gets or sets size of the key buffer for synchronized evictions.
         /// </summary>
+        [DefaultValue(DefaultEvictSynchronizedKeyBufferSize)]
         public int EvictSynchronizedKeyBufferSize { get; set; }
 
         /// <summary>
@@ -338,11 +341,13 @@ namespace Apache.Ignite.Core.Cache.Configuration
         /// This value specifies how many concurrent synchronous eviction sessions should be allowed 
         /// before the system is forced to wait and let synchronous evictions catch up with the eviction policy.       
         /// </summary>
+        [DefaultValue(DefaultEvictSynchronizedConcurrencyLevel)]
         public int EvictSynchronizedConcurrencyLevel { get; set; }
 
         /// <summary>
         /// Gets or sets timeout for synchronized evictions
         /// </summary>
+        [DefaultValue(typeof(TimeSpan), "00:00:10")]
         public TimeSpan EvictSynchronizedTimeout { get; set; }
 
         /// <summary>
@@ -353,17 +358,20 @@ namespace Apache.Ignite.Core.Cache.Configuration
         /// Once queue size reaches specified value all required requests for all entries in the queue 
         /// are sent to remote nodes and the queue is cleared.
         /// </summary>
+        [DefaultValue(DefaultMaxEvictionOverflowRatio)]
         public float MaxEvictionOverflowRatio { get; set; }
 
         /// <summary>
         /// Gets or sets flag indicating whether expired cache entries will be eagerly removed from cache. 
         /// When set to false, expired entries will be removed on next entry access.        
         /// </summary>
+        [DefaultValue(DefaultEagerTtl)]
         public bool EagerTtl { get; set; }
 
         /// <summary>
         /// Gets or sets initial cache size which will be used to pre-create internal hash table after start.
         /// </summary>
+        [DefaultValue(DefaultStartSize)]
         public int StartSize { get; set; }
 
         /// <summary>
@@ -379,22 +387,26 @@ namespace Apache.Ignite.Core.Cache.Configuration
         /// <item><term><see cref="ICache{TK,TV}.GetAndPutIfAbsent"/></term></item>
         /// </list>     
         /// </summary>
+        [DefaultValue(DefaultLoadPreviousValue)]
         public bool LoadPreviousValue { get; set; }
 
         /// <summary>
         /// Gets or sets the flag indicating whether <see cref="ICacheStore"/> is working with binary objects 
         /// instead of deserialized objects.
         /// </summary>
+        [DefaultValue(DefaultKeepVinaryInStore)]
         public bool KeepBinaryInStore { get; set; }
 
         /// <summary>
         /// Gets or sets caching mode to use.
         /// </summary>
+        [DefaultValue(DefaultCacheMode)]
         public CacheMode CacheMode { get; set; }
 
         /// <summary>
         /// Gets or sets cache atomicity mode.
         /// </summary>
+        [DefaultValue(DefaultAtomicityMode)]
         public CacheAtomicityMode AtomicityMode { get; set; }
 
         /// <summary>
@@ -406,48 +418,57 @@ namespace Apache.Ignite.Core.Cache.Configuration
         /// Gets or sets number of nodes used to back up single partition for 
         /// <see cref="Configuration.CacheMode.Partitioned"/> cache.
         /// </summary>
+        [DefaultValue(DefaultBackups)]
         public int Backups { get; set; }
 
         /// <summary>
         /// Gets or sets default lock acquisition timeout.
         /// </summary>
+        [DefaultValue(typeof(TimeSpan), "00:00:00")]
         public TimeSpan LockTimeout { get; set; }
 
         /// <summary>
         /// Invalidation flag. If true, values will be invalidated (nullified) upon commit in near cache.
         /// </summary>
+        [DefaultValue(DefaultInvalidate)]
         public bool Invalidate { get; set; }
 
         /// <summary>
         /// Gets or sets cache rebalance mode.
         /// </summary>
+        [DefaultValue(DefaultRebalanceMode)]
         public CacheRebalanceMode RebalanceMode { get; set; }
 
         /// <summary>
         /// Gets or sets size (in number bytes) to be loaded within a single rebalance message.
         /// Rebalancing algorithm will split total data set on every node into multiple batches prior to sending data.
         /// </summary>
+        [DefaultValue(DefaultRebalanceBatchSize)]
         public int RebalanceBatchSize { get; set; }
 
         /// <summary>
         /// Flag indicating whether Ignite should use swap storage by default.
         /// </summary>
+        [DefaultValue(DefaultEnableSwap)]
         public bool EnableSwap { get; set; }
 
         /// <summary>
         /// Gets or sets maximum number of allowed concurrent asynchronous operations, 0 for unlimited.
         /// </summary>
+        [DefaultValue(DefaultMaxConcurrentAsyncOperations)]
         public int MaxConcurrentAsyncOperations { get; set; }
 
         /// <summary>
         /// Flag indicating whether Ignite should use write-behind behaviour for the cache store.
         /// </summary>
+        [DefaultValue(DefaultWriteBehindEnabled)]
         public bool WriteBehindEnabled { get; set; }
 
         /// <summary>
         /// Maximum size of the write-behind cache. If cache size exceeds this value, all cached items are flushed 
         /// to the cache store and write cache is cleared.
         /// </summary>
+        [DefaultValue(DefaultWriteBehindFlushSize)]
         public int WriteBehindFlushSize { get; set; }
 
         /// <summary>
@@ -460,6 +481,7 @@ namespace Apache.Ignite.Core.Cache.Configuration
         /// Note that you cannot set both
         /// <see cref="WriteBehindFlushSize"/> and <see cref="WriteBehindFlushFrequency"/> to 0.
         /// </summary>
+        [DefaultValue(typeof(TimeSpan), "00:00:05")]
         public TimeSpan WriteBehindFlushFrequency { get; set; }
 
         /// <summary>
@@ -467,6 +489,7 @@ namespace Apache.Ignite.Core.Cache.Configuration
         /// value defined by <see cref="WriteBehindFlushSize"/>, or flush interval defined by 
         /// <see cref="WriteBehindFlushFrequency"/> is elapsed.
         /// </summary>
+        [DefaultValue(DefaultWriteBehindFlushThreadCount)]
         public int WriteBehindFlushThreadCount { get; set; }
 
         /// <summary>
@@ -474,11 +497,13 @@ namespace Apache.Ignite.Core.Cache.Configuration
         /// Store operations (get or remove) are combined in a batch of this size to be passed to 
         /// <see cref="ICacheStore.WriteAll"/> or <see cref="ICacheStore.DeleteAll"/> methods. 
         /// </summary>
+        [DefaultValue(DefaultWriteBehindBatchSize)]
         public int WriteBehindBatchSize { get; set; }
 
         /// <summary>
         /// Gets or sets rebalance timeout.
         /// </summary>
+        [DefaultValue(typeof(TimeSpan), "00:00:10")]
         public TimeSpan RebalanceTimeout { get; set; }
 
         /// <summary>
@@ -509,27 +534,32 @@ namespace Apache.Ignite.Core.Cache.Configuration
         /// does not grow indefinitely.
         /// Any positive value specifies the limit of off-heap storage in bytes.
         /// </summary>
+        [DefaultValue(DefaultOffHeapMaxMemory)]
         public long OffHeapMaxMemory { get; set; }
 
         /// <summary>
         /// Gets or sets memory mode for cache.
         /// </summary>
+        [DefaultValue(DefaultMemoryMode)]
         public CacheMemoryMode MemoryMode { get; set; }
 
         /// <summary>
         /// Gets or sets flag indicating whether data can be read from backup.
         /// </summary>
+        [DefaultValue(DefaultReadFromBackup)]
         public bool ReadFromBackup { get; set; }
 
         /// <summary>
         /// Gets or sets flag indicating whether copy of of the value stored in cache should be created
         /// for cache operation implying return value. 
         /// </summary>
+        [DefaultValue(DefaultCopyOnRead)]
         public bool CopyOnRead { get; set; }
 
         /// <summary>
         /// Gets or sets the timeout after which long query warning will be printed.
         /// </summary>
+        [DefaultValue(typeof(TimeSpan), "00:00:03")]
         public TimeSpan LongQueryWarningTimeout { get; set; }
 
         /// <summary>
@@ -543,6 +573,7 @@ namespace Apache.Ignite.Core.Cache.Configuration
         /// Number of SQL rows which will be cached onheap to avoid deserialization on each SQL index access.
         /// This setting only makes sense when offheap is enabled for this cache.
         /// </summary>
+        [DefaultValue(DefaultSqlOnheapRowCacheSize)]
         public int SqlOnheapRowCacheSize { get; set; }
 
         /// <summary>

@@ -18,6 +18,7 @@
 namespace Apache.Ignite.Core.Discovery.Configuration
 {
     using System;
+    using System.ComponentModel;
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Impl.Binary;
 
@@ -86,21 +87,25 @@ namespace Apache.Ignite.Core.Discovery.Configuration
         /// <summary>
         /// Gets or sets the socket timeout.
         /// </summary>
+        [DefaultValue(typeof(TimeSpan), "00:00:05")]
         public TimeSpan SocketTimeout { get; set; }
-        
+
         /// <summary>
         /// Gets or sets the timeout for receiving acknowledgement for sent message.
         /// </summary>
+        [DefaultValue(typeof(TimeSpan), "00:00:05")]
         public TimeSpan AckTimeout { get; set; }
 
         /// <summary>
         /// Gets or sets the maximum timeout for receiving acknowledgement for sent message.
         /// </summary>
+        [DefaultValue(typeof(TimeSpan), "00:10:00")]
         public TimeSpan MaxAckTimeout { get; set; }
 
         /// <summary>
         /// Gets or sets the network timeout.
         /// </summary>
+        [DefaultValue(typeof(TimeSpan), "00:00:05")]
         public TimeSpan NetworkTimeout { get; set; }
         
         /// <summary>
