@@ -136,7 +136,7 @@ namespace Apache.Ignite.Core.Tests
         {
             var resCfg = SerializeDeserialize(cfg);
 
-            CheckConfigsEqual(cfg, resCfg);
+            AssertReflectionEqual(cfg, resCfg);
         }
 
         private static IgniteConfiguration SerializeDeserialize(IgniteConfiguration cfg)
@@ -155,17 +155,6 @@ namespace Apache.Ignite.Core.Tests
                 xmlReader.MoveToContent();
                 return IgniteConfigurationXmlSerializer.Deserialize(xmlReader);
             }
-        }
-
-        private static void CheckConfigsEqual(IgniteConfiguration x, IgniteConfiguration y)
-        {
-            Assert.AreEqual(x.GridName, y.GridName);
-            Assert.AreEqual(x.JvmOptions, y.JvmOptions);
-            Assert.AreEqual(x.LocalHost, y.LocalHost);
-            Assert.AreEqual(x.JvmClasspath, y.JvmClasspath);
-            Assert.AreEqual(x.Assemblies, y.Assemblies);
-
-            AssertReflectionEqual(x, y);
         }
 
         private static void AssertReflectionEqual(object x, object y)
