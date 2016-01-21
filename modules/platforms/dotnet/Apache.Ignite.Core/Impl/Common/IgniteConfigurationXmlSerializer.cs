@@ -35,6 +35,11 @@ namespace Apache.Ignite.Core.Impl.Common
         /** Attribute that specifies a type for abstract properties, such as IpFinder. */
         private const string TypeNameAttribute = "type";
 
+        /// <summary>
+        /// Deserializes <see cref="IgniteConfiguration"/> from specified <see cref="XmlReader"/>.
+        /// </summary>
+        /// <param name="reader">The reader.</param>
+        /// <returns>Resulting <see cref="IgniteConfiguration"/>.</returns>
         public static IgniteConfiguration Deserialize(XmlReader reader)
         {
             var cfg = new IgniteConfiguration();
@@ -45,11 +50,14 @@ namespace Apache.Ignite.Core.Impl.Common
             return cfg;
         }
 
+        /// <summary>
+        /// Reads the element.
+        /// </summary>
         private static void ReadElement(XmlReader reader, object target)
         {
-            // TODO: see http://referencesource.microsoft.com/#System.Configuration/System/Configuration/ConfigurationElement.cs
             var targetType = target.GetType();
 
+            // Read attributes
             while (reader.MoveToNextAttribute())
             {
                 var name = reader.Name;
@@ -58,6 +66,7 @@ namespace Apache.Ignite.Core.Impl.Common
                 SetProperty(target, name, val);
             }
 
+            // Read content
             reader.MoveToElement();
 
             while (reader.Read())
@@ -76,10 +85,8 @@ namespace Apache.Ignite.Core.Impl.Common
                 }
                 else if (propType.IsGenericType && propType.GetGenericTypeDefinition() == typeof (ICollection<>))
                 {
+                    // Collection
                     ReadCollection(reader, prop, target);
-                    // TODO: read collection
-                    // TODO: IncludedEventTypes!! We need an attribute that specifies a converter 
-                    // (so that user can say <includedEventTypes>SwapspaceAll, NodeJoined, 15</includedEventTypes>)
                 }
                 else
                 {
@@ -90,18 +97,16 @@ namespace Apache.Ignite.Core.Impl.Common
             }
         }
 
-        private static bool IsBasicType(Type propType)
-        {
-            return propType.IsValueType || propType == typeof (string) || propType == typeof(Type);
-        }
-
+        /// <summary>
+        /// Reads the nested object.
+        /// </summary>
         private static object ReadNestedObject(XmlReader reader, Type propType, string propName, Type targetType)
         {
             if (propType.IsAbstract || propType.IsInterface)
             {
                 var typeName = reader.GetAttribute(TypeNameAttribute);
 
-                var derivedTypes = GetDerivedTypes(propType);
+                var derivedTypes = GetConcreteDerivedTypes(propType);
 
                 propType = typeName == null
                     ? null
@@ -135,9 +140,11 @@ namespace Apache.Ignite.Core.Impl.Common
             return nestedVal;
         }
 
+        /// <summary>
+        /// Reads the collection.
+        /// </summary>
         private static void ReadCollection(XmlReader reader, PropertyInfo prop, object target)
         {
-            // TODO: dictionary?
             var elementType = prop.PropertyType.GetGenericArguments().Single();
 
             var listType = typeof (List<>).MakeGenericType(elementType);
@@ -168,6 +175,9 @@ namespace Apache.Ignite.Core.Impl.Common
             prop.SetValue(target, list, null);
         }
 
+        /// <summary>
+        /// Sets the property.
+        /// </summary>
         private static void SetProperty(object target, string propName, string propVal)
         {
             if (propName == TypeNameAttribute)
@@ -184,11 +194,17 @@ namespace Apache.Ignite.Core.Impl.Common
             property.SetValue(target, convertedVal, null);
         }
 
-        private static List<Type> GetDerivedTypes(Type type)
+        /// <summary>
+        /// Gets concrete derived types.
+        /// </summary>
+        private static List<Type> GetConcreteDerivedTypes(Type type)
         {
             return type.Assembly.GetTypes().Where(t => t.IsClass && !t.IsAbstract && t.IsSubclassOf(type)).ToList();
         }
 
+        /// <summary>
+        /// Gets specified property from a type or throws an exception.
+        /// </summary>
         private static PropertyInfo GetPropertyOrThrow(string propName, string propVal, Type type)
         {
             var property = type.GetProperty(XmlNameToPropertyName(propName));
@@ -202,25 +218,50 @@ namespace Apache.Ignite.Core.Impl.Common
             return property;
         }
 
+        /// <summary>
+        /// Converts an XML name to CLR name.
+        /// </summary>
         private static string XmlNameToPropertyName(string name)
         {
             Debug.Assert(name.Length > 0);
 
+            if (name == "int")
+                return "Int32";  // allow aliases
+
             return char.ToUpper(name[0]) + name.Substring(1);
         }
 
+        /// <summary>
+        /// Converts a CLR name to XML name.
+        /// </summary>
         private static string PropertyNameToXmlName(string name)
         {
             Debug.Assert(name.Length > 0);
 
             if (name == "Int32")
-                return "int"; // allow aliases
+                return "int";  // allow aliases
 
             return char.ToLower(name[0]) + name.Substring(1);
         }
 
+        /// <summary>
+        /// Determines whether specified type is a basic built-in type.
+        /// </summary>
+        private static bool IsBasicType(Type propertyType)
+        {
+            Debug.Assert(propertyType != null);
+
+            return propertyType.IsValueType || propertyType == typeof(string) || propertyType == typeof(Type);
+        }
+
+        /// <summary>
+        /// Gets converter for a property.
+        /// </summary>
         private static TypeConverter GetConverter(PropertyInfo property, Type propertyType)
         {
+            Debug.Assert(property != null);
+            Debug.Assert(propertyType != null);
+
             if (propertyType.IsEnum)
                 return new GenericEnumConverter(propertyType);
 
