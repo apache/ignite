@@ -1036,13 +1036,11 @@ $generatorJava.cacheStoreDataSource = function (storeFactory, res) {
 
         var beanClassName = $commonUtils.toJavaName(varType, dataSourceBean);
 
-        res.line('/** Helper class for datasource creation. */');
-        res.startBlock('public static class ' + beanClassName + ' {');
-        res.line('public static final ' + varType + ' INSTANCE = createInstance();');
+        res.line('public static final ' + varType + ' INSTANCE_' + dataSourceBean + ' = create' + dataSourceBean + '();');
 
         res.needEmptyLine = true;
 
-        res.startBlock('private static ' + varType + ' createInstance() {');
+        res.startBlock('private static ' + varType + ' create' + dataSourceBean + '() {');
         if (dialect === 'Oracle')
             res.startBlock('try {');
 
@@ -1053,8 +1051,6 @@ $generatorJava.cacheStoreDataSource = function (storeFactory, res) {
         switch (dialect) {
             case 'Generic':
                 res.line(varName + '.setJdbcUrl(props.getProperty("' + dataSourceBean + '.jdbc.url"));');
-                res.line(varName + '.setUser(props.getProperty("' + dataSourceBean + '.jdbc.username"));');
-                res.line(varName + '.setPassword(props.getProperty("' + dataSourceBean + '.jdbc.password"));');
 
                 break;
 
@@ -1092,7 +1088,6 @@ $generatorJava.cacheStoreDataSource = function (storeFactory, res) {
         }
 
         res.endBlock('}');
-        res.endBlock('}');
 
         res.needEmptyLine = true;
 
@@ -1108,6 +1103,8 @@ $generatorJava.clusterDataSources = function (caches, res) {
 
     var datasources = [];
 
+    var storeFound = false;
+
     _.forEach(caches, function (cache) {
         var factoryKind = cache.cacheStoreFactory.kind;
 
@@ -1119,11 +1116,23 @@ $generatorJava.clusterDataSources = function (caches, res) {
             if (beanClassName && !_.contains(datasources, beanClassName)) {
                 datasources.push(beanClassName);
 
-                if (factoryKind === 'CacheJdbcPojoStoreFactory' || factoryKind === 'CacheJdbcBlobStoreFactory')
+                if (factoryKind === 'CacheJdbcPojoStoreFactory' || factoryKind === 'CacheJdbcBlobStoreFactory') {
+                    if (!storeFound) {
+                        res.line('/** Helper class for datasource creation. */');
+                        res.startBlock('public static class DataSources {');
+
+                        storeFound = true;
+                    }
+
                     $generatorJava.cacheStoreDataSource(storeFactory, res);
+                }
             }
         }
     });
+
+    if (storeFound) {
+        res.endBlock('}');
+    }
 
     return res;
 };
@@ -1161,7 +1170,7 @@ $generatorJava.cacheStore = function (cache, domains, cacheVarName, res) {
 
                 var beanClassName = $generatorJava.dataSourceClassName(res, storeFactory);
 
-                res.line('setDataSource(' + beanClassName + '.INSTANCE);');
+                res.line('setDataSource(DataSources.INSTANCE_' + storeFactory.dataSourceBean + ');');
 
                 res.needEmptyLine = true;
 
@@ -1212,7 +1221,7 @@ $generatorJava.cacheStore = function (cache, domains, cacheVarName, res) {
 
                     beanClassName = $generatorJava.dataSourceClassName(res, storeFactory);
 
-                    res.line('setDataSource(' + beanClassName + '.INSTANCE);');
+                    res.line('setDataSource(DataSources.INSTANCE_' + storeFactory.dataSourceBean + ');');
 
                     res.needEmptyLine = true;
 
