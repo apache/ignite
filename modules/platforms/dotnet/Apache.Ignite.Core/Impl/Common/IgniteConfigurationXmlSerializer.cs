@@ -74,17 +74,16 @@ namespace Apache.Ignite.Core.Impl.Common
         {
             writer.WriteStartElement(rootElementName);
 
-            var col = obj as ICollection;
+            var collectionIface = valueType.GetInterfaces()
+                .FirstOrDefault(x => x.IsGenericType && x.GetGenericTypeDefinition() == typeof (ICollection<>));
 
-            if (col != null)
+            if (collectionIface != null)
             {
-                var elementType = col.GetType().GetInterfaces()
-                    .Single(x => x.IsGenericType && x.GetGenericTypeDefinition() == typeof (ICollection<>))
-                    .GetGenericArguments().Single();
+                var elementType = collectionIface.GetGenericArguments().Single();
 
                 var elementTypeName = PropertyNameToXmlName(elementType.Name);
 
-                foreach (var element in col)
+                foreach (var element in (ICollection) obj)
                     WriteElement(element, writer, elementTypeName, property, elementType);
             }
             else if (IsBasicType(valueType))
@@ -115,7 +114,6 @@ namespace Apache.Ignite.Core.Impl.Common
                     WriteElement(prop.GetValue(obj, null), writer, PropertyNameToXmlName(prop.Name), prop,
                         prop.PropertyType);
             }
-
 
             writer.WriteEndElement();
         }
