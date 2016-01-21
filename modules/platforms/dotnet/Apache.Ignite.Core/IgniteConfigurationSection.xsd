@@ -199,13 +199,13 @@
                         </xs:sequence>
                     </xs:complexType>
                 </xs:element>
-                <xs:element name="discoveryConfiguration">
+                <xs:element name="discoveryConfiguration" minOccurs="0" maxOccurs="1">
                     <xs:complexType>
                         <xs:sequence>
-                            <xs:element name="ipFinder">
+                            <xs:element name="ipFinder" minOccurs="0" maxOccurs="1">
                                 <xs:complexType>
                                     <xs:sequence>
-                                        <xs:element name="endPoints">
+                                        <xs:element name="endPoints" minOccurs="0" maxOccurs="1">
                                             <xs:complexType>
                                                 <xs:sequence>
                                                     <xs:element maxOccurs="unbounded" name="string" type="xs:string" />
@@ -214,23 +214,23 @@
                                         </xs:element>
                                     </xs:sequence>
                                     <xs:attribute name="type" type="xs:string" use="required" />
-                                    <xs:attribute name="localAddress" type="xs:string" use="required" />
-                                    <xs:attribute name="multicastGroup" type="xs:string" use="required" />
-                                    <xs:attribute name="multicastPort" type="xs:unsignedShort" use="required" />
-                                    <xs:attribute name="addressRequestAttempts" type="xs:unsignedByte" use="required" />
-                                    <xs:attribute name="responseTimeout" type="xs:string" use="required" />
-                                    <xs:attribute name="timeToLive" type="xs:unsignedByte" use="required" />
+                                    <xs:attribute name="localAddress" type="xs:string" />
+                                    <xs:attribute name="multicastGroup" type="xs:string" />
+                                    <xs:attribute name="multicastPort" type="xs:unsignedShort" />
+                                    <xs:attribute name="addressRequestAttempts" type="xs:unsignedByte" />
+                                    <xs:attribute name="responseTimeout" type="xs:string" />
+                                    <xs:attribute name="timeToLive" type="xs:unsignedByte" />
                                 </xs:complexType>
                             </xs:element>
                         </xs:sequence>
-                        <xs:attribute name="socketTimeout" type="xs:time" use="required" />
-                        <xs:attribute name="ackTimeout" type="xs:time" use="required" />
-                        <xs:attribute name="maxAckTimeout" type="xs:time" use="required" />
-                        <xs:attribute name="networkTimeout" type="xs:time" use="required" />
-                        <xs:attribute name="joinTimeout" type="xs:time" use="required" />
+                        <xs:attribute name="socketTimeout" type="xs:time" />
+                        <xs:attribute name="ackTimeout" type="xs:time" />
+                        <xs:attribute name="maxAckTimeout" type="xs:time" />
+                        <xs:attribute name="networkTimeout" type="xs:time" />
+                        <xs:attribute name="joinTimeout" type="xs:time" />
                     </xs:complexType>
                 </xs:element>
-                <xs:element name="includedEventTypes">
+                <xs:element name="includedEventTypes" minOccurs="0" maxOccurs="1">
                     <xs:complexType>
                         <xs:sequence>
                             <xs:element maxOccurs="unbounded" name="int" type="xs:string" />
@@ -238,23 +238,23 @@
                     </xs:complexType>
                 </xs:element>
             </xs:sequence>
-            <xs:attribute name="gridName" type="xs:string" use="required" />
-            <xs:attribute name="jvmDllPath" type="xs:string" use="required" />
-            <xs:attribute name="igniteHome" type="xs:string" use="required" />
-            <xs:attribute name="jvmClasspath" type="xs:string" use="required" />
-            <xs:attribute name="suppressWarnings" type="xs:string" use="required" />
-            <xs:attribute name="jvmInitialMemoryMb" type="xs:unsignedShort" use="required" />
-            <xs:attribute name="jvmMaxMemoryMb" type="xs:unsignedShort" use="required" />
-            <xs:attribute name="clientMode" type="xs:string" use="required" />
-            <xs:attribute name="metricsExpireTime" type="xs:time" use="required" />
-            <xs:attribute name="metricsHistorySize" type="xs:unsignedByte" use="required" />
-            <xs:attribute name="metricsLogFrequency" type="xs:string" use="required" />
-            <xs:attribute name="metricsUpdateFrequency" type="xs:string" use="required" />
-            <xs:attribute name="networkSendRetryCount" type="xs:unsignedByte" use="required" />
-            <xs:attribute name="networkSendRetryDelay" type="xs:time" use="required" />
-            <xs:attribute name="networkTimeout" type="xs:time" use="required" />
-            <xs:attribute name="workDirectory" type="xs:string" use="required" />
-            <xs:attribute name="localHost" type="xs:string" use="required" />
+            <xs:attribute name="gridName" type="xs:string" />
+            <xs:attribute name="jvmDllPath" type="xs:string" />
+            <xs:attribute name="igniteHome" type="xs:string" />
+            <xs:attribute name="jvmClasspath" type="xs:string" />
+            <xs:attribute name="suppressWarnings" type="xs:string" />
+            <xs:attribute name="jvmInitialMemoryMb" type="xs:unsignedShort" />
+            <xs:attribute name="jvmMaxMemoryMb" type="xs:unsignedShort" />
+            <xs:attribute name="clientMode" type="xs:string" />
+            <xs:attribute name="metricsExpireTime" type="xs:time" />
+            <xs:attribute name="metricsHistorySize" type="xs:unsignedByte" />
+            <xs:attribute name="metricsLogFrequency" type="xs:string" />
+            <xs:attribute name="metricsUpdateFrequency" type="xs:string" />
+            <xs:attribute name="networkSendRetryCount" type="xs:unsignedByte" />
+            <xs:attribute name="networkSendRetryDelay" type="xs:time" />
+            <xs:attribute name="networkTimeout" type="xs:time" />
+            <xs:attribute name="workDirectory" type="xs:string" />
+            <xs:attribute name="localHost" type="xs:string" />
         </xs:complexType>
     </xs:element>    
 </xs:schema>
