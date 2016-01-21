@@ -1903,6 +1903,13 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             }
             else {
                 for (DynamicCacheChangeRequest req : batch.requests()) {
+                    if (req.startCacheConfiguration() != null) {
+                        CacheConfiguration ccfg = req.startCacheConfiguration();
+
+                        if (ccfg.isStoreKeepBinary() == null)
+                            ccfg.setStoreKeepBinary(CacheConfiguration.DFLT_STORE_KEEP_BINARY);
+                    }
+
                     if (req.template()) {
                         CacheConfiguration ccfg = req.startCacheConfiguration();
 
