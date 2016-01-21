@@ -2094,6 +2094,10 @@ consoleModule.service('$agentDownload', [
             if (_modal.skipSingleError)
                 _modal.skipSingleError = false;
             else if (!_modal.$isShown) {
+                // Don't show missing node dialog on SQL demo enabling.
+                if (_modal.check.params && _modal.check.params.demo && timedOut)
+                    return;
+
                 $loading.finish('loading');
 
                 _modal.$promise.then(_modal.show);
