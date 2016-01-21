@@ -123,8 +123,22 @@ namespace Apache.Ignite.Core.Tests
         [Test]
         public void TestSerializeDeserialize()
         {
-            var cfg = GetTestConfig();
+            // Test default
+            CheckSerializeDeserialize(new IgniteConfiguration());
 
+            // Test custom
+            CheckSerializeDeserialize(GetTestConfig());
+        }
+
+        private static void CheckSerializeDeserialize(IgniteConfiguration cfg)
+        {
+            var resCfg = SerializeDeserialize(cfg);
+
+            CheckConfigsEqual(cfg, resCfg);
+        }
+
+        private static IgniteConfiguration SerializeDeserialize(IgniteConfiguration cfg)
+        {
             var sb = new StringBuilder();
 
             using (var xmlWriter = XmlWriter.Create(sb))
@@ -134,9 +148,7 @@ namespace Apache.Ignite.Core.Tests
 
             using (var xmlReader = XmlReader.Create(new StringReader(sb.ToString())))
             {
-                var resCfg = IgniteConfigurationXmlSerializer.Deserialize(xmlReader);
-
-                CheckConfigsEqual(cfg, resCfg);
+                return IgniteConfigurationXmlSerializer.Deserialize(xmlReader);
             }
         }
 
