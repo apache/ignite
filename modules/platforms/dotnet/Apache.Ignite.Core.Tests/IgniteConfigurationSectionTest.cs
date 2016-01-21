@@ -42,14 +42,16 @@ namespace Apache.Ignite.Core.Tests
         {
             Environment.SetEnvironmentVariable(Classpath.EnvIgniteNativeTestClasspath, "true");
 
-            using (var ignite = Ignition.Start("igniteConfiguration"))
+            using (var ignite = Ignition.StartFromConfiguration("igniteConfiguration"))
             {
-                
+                Assert.AreEqual("myGrid1", ignite.Name);
+                Assert.IsNotNull(ignite.GetCache<int, int>("cacheName"));
             }
 
-            using (var ignite = Ignition.Start("igniteConfiguration2"))
+            using (var ignite = Ignition.StartFromConfiguration("igniteConfiguration2"))
             {
-                
+                Assert.AreEqual("myGrid2", ignite.Name);
+                Assert.IsNotNull(ignite.GetCache<int, int>("cacheName2"));
             }
         }
     }
