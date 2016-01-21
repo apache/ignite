@@ -32,7 +32,7 @@ namespace Apache.Ignite.Core.Cache.Configuration
         private Type _type;
 
         /** */
-        private string _typeName;
+        private string _fieldTypeName;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="QueryField"/> class.
@@ -46,28 +46,28 @@ namespace Apache.Ignite.Core.Cache.Configuration
         /// Initializes a new instance of the <see cref="QueryField"/> class.
         /// </summary>
         /// <param name="name">Name.</param>
-        /// <param name="javaTypeName">Java type name.</param>
-        public QueryField(string name, string javaTypeName)
+        /// <param name="javaFieldTypeName">Java type name.</param>
+        public QueryField(string name, string javaFieldTypeName)
         {
             IgniteArgumentCheck.NotNullOrEmpty(name, "name");
-            IgniteArgumentCheck.NotNullOrEmpty(javaTypeName, "typeName");
+            IgniteArgumentCheck.NotNullOrEmpty(javaFieldTypeName, "typeName");
 
             Name = name;
-            TypeName = javaTypeName;
+            FieldTypeName = javaFieldTypeName;
         }
 
         /// <summary>
         /// Initializes a new instance of the <see cref="QueryField" /> class.
         /// </summary>
         /// <param name="name">Name.</param>
-        /// <param name="type">Type.</param>
-        public QueryField(string name, Type type)
+        /// <param name="fieldType">Type.</param>
+        public QueryField(string name, Type fieldType)
         {
             IgniteArgumentCheck.NotNullOrEmpty(name, "name");
-            IgniteArgumentCheck.NotNull(type, "type");
+            IgniteArgumentCheck.NotNull(fieldType, "type");
 
             Name = name;
-            Type = type;
+            FieldType = fieldType;
         }
 
         /// <summary>
@@ -78,14 +78,14 @@ namespace Apache.Ignite.Core.Cache.Configuration
         /// <summary>
         /// Gets or sets the type of the value.
         /// <para />
-        /// This is a shortcut for <see cref="TypeName"/>. Getter will return null for non-primitive types.
+        /// This is a shortcut for <see cref="FieldTypeName"/>. Getter will return null for non-primitive types.
         /// </summary>
-        public Type Type
+        public Type FieldType
         {
-            get { return _type ?? JavaTypes.GetDotNetType(TypeName); }
+            get { return _type ?? JavaTypes.GetDotNetType(FieldTypeName); }
             set
             {
-                TypeName = value == null
+                FieldTypeName = value == null
                     ? null
                     : (JavaTypes.GetJavaTypeName(value) ?? BinaryUtils.GetTypeName(value));
 
@@ -96,12 +96,12 @@ namespace Apache.Ignite.Core.Cache.Configuration
         /// <summary>
         /// Gets the Java type name.
         /// </summary>
-        public string TypeName
+        public string FieldTypeName
         {
-            get { return _typeName; }
+            get { return _fieldTypeName; }
             set
             {
-                _typeName = value;
+                _fieldTypeName = value;
                 _type = null;
             }
         }

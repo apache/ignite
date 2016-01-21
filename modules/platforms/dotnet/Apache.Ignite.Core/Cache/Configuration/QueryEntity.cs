@@ -183,7 +183,7 @@ namespace Apache.Ignite.Core.Cache.Configuration
                 foreach (var field in Fields)
                 {
                     writer.WriteString(field.Name);
-                    writer.WriteString(field.TypeName);
+                    writer.WriteString(field.FieldTypeName);
                 }
             }
             else

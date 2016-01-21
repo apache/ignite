@@ -335,7 +335,7 @@ namespace Apache.Ignite.Core.Tests.Cache
             Assert.IsNotNull(y);
 
             Assert.AreEqual(x.Name, y.Name);
-            Assert.AreEqual(x.TypeName, y.TypeName);
+            Assert.AreEqual(x.FieldTypeName, y.FieldTypeName);
         }
 
         /// <summary>
