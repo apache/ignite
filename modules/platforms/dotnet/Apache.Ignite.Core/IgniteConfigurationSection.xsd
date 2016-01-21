@@ -6,7 +6,7 @@
     xmlns:mstns="http://ignite.apache.org/schema/dotnet/IgniteConfigurationSection"
     xmlns:xs="http://www.w3.org/2001/XMLSchema">
 
-    <xs:element name="igniteConfig">
+    <xs:element name="igniteConfiguration">
         <xs:complexType>
             <xs:sequence>
                 <xs:element name="binaryConfiguration" minOccurs="0" maxOccurs="1">
