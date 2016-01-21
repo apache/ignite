@@ -132,6 +132,23 @@ namespace Apache.Ignite.Core.Tests
             CheckSerializeDeserialize(new IgniteConfiguration());
         }
 
+        [Test]
+        public void TestSchemaValidation()
+        {
+            var sb = new StringBuilder();
+
+            using (var xmlWriter = XmlWriter.Create(sb))
+            {
+                GetTestConfig().ToXml(xmlWriter, "igniteConfiguration");
+            }
+
+            var document = new XmlDocument();
+            document.Load(new StringReader(sb.ToString()));
+            document.Schemas.Add("", XmlReader.Create("IgniteConfigurationSection.xsd"));
+
+            document.Validate(null);
+        }
+
         private static void CheckSerializeDeserialize(IgniteConfiguration cfg)
         {
             var resCfg = SerializeDeserialize(cfg);
