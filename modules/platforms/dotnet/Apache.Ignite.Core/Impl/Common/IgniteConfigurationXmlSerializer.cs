@@ -188,7 +188,6 @@ namespace Apache.Ignite.Core.Impl.Common
 
             var converter = GetConverter(property, property.PropertyType);
 
-            // TODO: try-catch and wrap
             var convertedVal = converter.ConvertFromString(propVal);
 
             property.SetValue(target, convertedVal, null);
