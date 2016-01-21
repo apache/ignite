@@ -25,6 +25,7 @@ namespace Apache.Ignite.Core.Tests
     using Apache.Ignite.Core.Cache.Configuration;
     using Apache.Ignite.Core.Cache.Store;
     using Apache.Ignite.Core.Discovery;
+    using Apache.Ignite.Core.Discovery.Configuration;
     using Apache.Ignite.Core.Events;
     using Apache.Ignite.Core.Impl.Common;
     using Apache.Ignite.Core.Lifecycle;
@@ -146,7 +147,7 @@ namespace Apache.Ignite.Core.Tests
                     DefaultNameMapper = new NameMapper(),
                     DefaultSerializer = new TestSerializer()
                 },
-                CacheConfiguration = new []
+                CacheConfiguration = new[]
                 {
                     new CacheConfiguration("cacheName")
                     {
@@ -171,28 +172,67 @@ namespace Apache.Ignite.Core.Tests
                         MaxEvictionOverflowRatio = 5.6F,
                         MemoryMode = CacheMemoryMode.OffheapValues,
                         OffHeapMaxMemory = 567,
-                        QueryEntities = new []
+                        QueryEntities = new[]
                         {
                             new QueryEntity
                             {
-                                Fields = new []
+                                Fields = new[]
                                 {
-                                    new QueryField("field", typeof(int))
+                                    new QueryField("field", typeof (int))
                                 },
                                 Indexes = new[]
                                 {
                                     new QueryIndex("field", true)
                                 },
-                                Aliases = new []
+                                Aliases = new[]
                                 {
                                     new QueryAlias("field.field", "fld")
                                 },
-                                KeyType = typeof(string),
-                                ValueType = typeof(long)
-                            }, 
-                        }
-                    }, 
-                }
+                                KeyType = typeof (string),
+                                ValueType = typeof (long)
+                            },
+                        },
+                        ReadFromBackup = true,
+                        RebalanceBatchSize = 33,
+                        RebalanceDelay = TimeSpan.MaxValue,
+                        RebalanceMode = CacheRebalanceMode.Sync,
+                        RebalanceThrottle = TimeSpan.FromHours(44),
+                        RebalanceTimeout = TimeSpan.FromMinutes(8),
+                        SqlEscapeAll = true,
+                        SqlOnheapRowCacheSize = 679,
+                        StartSize = 1023,
+                        WriteBehindBatchSize = 45,
+                        WriteBehindEnabled = true,
+                        WriteBehindFlushFrequency = TimeSpan.FromSeconds(5),
+                        WriteBehindFlushSize = 66,
+                        WriteBehindFlushThreadCount = 2,
+                        WriteSynchronizationMode = CacheWriteSynchronizationMode.FullAsync
+                    }
+                },
+                ClientMode = true,
+                DiscoveryConfiguration = new DiscoveryConfiguration
+                {
+                    NetworkTimeout = TimeSpan.FromSeconds(1),
+                    SocketTimeout = TimeSpan.FromSeconds(2),
+                    AckTimeout = TimeSpan.FromSeconds(3),
+                    JoinTimeout = TimeSpan.FromSeconds(4),
+                    MaxAckTimeout = TimeSpan.FromSeconds(5),
+                    IpFinder = new MulticastIpFinder
+                    {
+                        TimeToLive = 110,
+                        MulticastGroup = "multicastGroup",
+                        AddressRequestAttempts = 10,
+                        MulticastPort = 987,
+                        ResponseTimeout = TimeSpan.FromDays(1),
+                        LocalAddress = "127.0.0.2",
+                        EndPoints = new[] {"", "abc"}
+                    }
+                },
+                IgniteHome = "igniteHome",
+                IncludedEventTypes = EventType.CacheQueryAll,
+                JvmDllPath = @"c:\jvm",
+                JvmInitialMemoryMb = 1024,
+                JvmMaxMemoryMb = 2048
 
             };
         }
