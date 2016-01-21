@@ -23,6 +23,7 @@ namespace Apache.Ignite.Core.Impl.Common
     using System.ComponentModel;
     using System.Configuration;
     using System.Diagnostics;
+    using System.Diagnostics.CodeAnalysis;
     using System.Linq;
     using System.Reflection;
     using System.Xml;
@@ -64,10 +65,12 @@ namespace Apache.Ignite.Core.Impl.Common
             IgniteArgumentCheck.NotNull(writer, "writer");
             IgniteArgumentCheck.NotNullOrEmpty(rootElementName, "rootElementName");
 
-            WriteElement(configuration, writer, rootElementName, typeof(IgniteConfiguration));
+            WriteElement(configuration, writer, rootElementName, null, typeof(IgniteConfiguration));
         }
 
-        private static void WriteElement(object obj, XmlWriter writer, string rootElementName, Type propertyType)
+        [SuppressMessage("ReSharper", "AssignNullToNotNullAttribute")]
+        private static void WriteElement(object obj, XmlWriter writer, string rootElementName, PropertyInfo property, 
+            Type valueType)
         {
             writer.WriteStartElement(rootElementName);
 
@@ -77,18 +80,25 @@ namespace Apache.Ignite.Core.Impl.Common
             {
                 var elementType = col.GetType().GetInterfaces()
                     .Single(x => x.IsGenericType && x.GetGenericTypeDefinition() == typeof (ICollection<>))
-                    .GetGenericTypeDefinition();
+                    .GetGenericArguments().Single();
 
                 var elementTypeName = PropertyNameToXmlName(elementType.Name);
 
                 foreach (var element in col)
-                    WriteElement(element, writer, elementTypeName, elementType);
+                    WriteElement(element, writer, elementTypeName, property, elementType);
+            }
+            else if (IsBasicType(valueType))
+            {
+                var converter = GetConverter(property, valueType);
+                var stringValue = (string)converter.ConvertTo(obj, typeof(string));
+                writer.WriteString(stringValue);
             }
             else
             {
                 var props = GetNonDefaultProperties(obj).ToList();
 
                 // Specify type for interfaces and abstract classes
+                // TODO
 
                 // Write attributes
                 foreach (var prop in props.Where(p => IsBasicType(p.PropertyType)))
@@ -96,14 +106,13 @@ namespace Apache.Ignite.Core.Impl.Common
                     var value = prop.GetValue(obj, null);
                     var converter = GetConverter(prop, prop.PropertyType);
                     var stringValue = (string) converter.ConvertTo(value, typeof (string));
-
-                    // ReSharper disable once AssignNullToNotNullAttribute
                     writer.WriteAttributeString(PropertyNameToXmlName(prop.Name), stringValue);
                 }
 
                 // Write elements
                 foreach (var prop in props.Where(p => !IsBasicType(p.PropertyType)))
-                    WriteElement(prop.GetValue(obj, null), writer, PropertyNameToXmlName(prop.Name), prop.PropertyType);
+                    WriteElement(prop.GetValue(obj, null), writer, PropertyNameToXmlName(prop.Name), prop,
+                        prop.PropertyType);
             }
 
 
