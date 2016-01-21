@@ -18,6 +18,7 @@
 namespace Apache.Ignite.Core.Discovery
 {
     using System;
+    using System.ComponentModel;
     using Apache.Ignite.Core.Binary;
 
     /// <summary>
@@ -69,17 +70,20 @@ namespace Apache.Ignite.Core.Discovery
         /// <summary>
         /// Gets or sets the port number which multicast messages are sent to.
         /// </summary>
+        [DefaultValue(DefaultMulticastPort)]
         public int MulticastPort { get; set; }
 
         /// <summary>
         /// Gets or sets the number of attempts to send multicast address request. IP finder re-sends
         /// request only in case if no reply for previous request is received.
         /// </summary>
+        [DefaultValue(DefaultAddressRequestAttempts)]
         public int AddressRequestAttempts { get; set; }
 
         /// <summary>
         /// Gets or sets the response timeout.
         /// </summary>
+        [DefaultValue(typeof(TimeSpan), "00:00:00.5")]
         public TimeSpan ResponseTimeout { get; set; }
 
         /// <summary>
