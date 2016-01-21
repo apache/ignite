@@ -143,8 +143,11 @@ namespace Apache.Ignite.Core.Tests
             }
 
             var document = new XmlDocument();
+
+            document.Schemas.Add("http://ignite.apache.org/schema/dotnet/IgniteConfigurationSection", 
+                XmlReader.Create("IgniteConfigurationSection.xsd"));
+
             document.Load(new StringReader(sb.ToString()));
-            document.Schemas.Add("", XmlReader.Create("IgniteConfigurationSection.xsd"));
 
             document.Validate(null);
         }
