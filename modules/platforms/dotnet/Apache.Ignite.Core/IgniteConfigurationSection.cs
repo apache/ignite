@@ -18,6 +18,7 @@
 namespace Apache.Ignite.Core
 {
     using System.Configuration;
+    using System.Text;
     using System.Xml;
     using Apache.Ignite.Core.Impl.Common;
 
@@ -54,8 +55,17 @@ namespace Apache.Ignite.Core
         /// </returns>
         protected override string SerializeSection(ConfigurationElement parentElement, string name, ConfigurationSaveMode saveMode)
         {
-            // TODO
-            return "";
+            if (IgniteConfiguration == null)
+                return string.Format("<{0} />", name);
+
+            var sb = new StringBuilder();
+
+            using (var xmlWriter = XmlWriter.Create(sb))
+            {
+                IgniteConfigurationXmlSerializer.Serialize(IgniteConfiguration, xmlWriter, name);
+
+                return sb.ToString();
+            }
         }
     }
 }

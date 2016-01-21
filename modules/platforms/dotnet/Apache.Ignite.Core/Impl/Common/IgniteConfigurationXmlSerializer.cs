@@ -53,14 +53,16 @@ namespace Apache.Ignite.Core.Impl.Common
         }
 
         /// <summary>
-        /// Serializes specified <see cref="IgniteConfiguration"/> to <see cref="XmlWriter"/>.
+        /// Serializes specified <see cref="IgniteConfiguration" /> to <see cref="XmlWriter" />.
         /// </summary>
         /// <param name="configuration">The configuration.</param>
         /// <param name="writer">The writer.</param>
-        public static void Serialize(IgniteConfiguration configuration, XmlWriter writer)
+        /// <param name="rootElementName">Name of the root element.</param>
+        public static void Serialize(IgniteConfiguration configuration, XmlWriter writer, string rootElementName)
         {
             IgniteArgumentCheck.NotNull(configuration, "configuration");
             IgniteArgumentCheck.NotNull(writer, "writer");
+            IgniteArgumentCheck.NotNullOrEmpty(rootElementName, "rootElementName");
         }
 
         /// <summary>
