@@ -36,6 +36,12 @@ namespace Apache.Ignite.Core.Impl.Common
         /** Attribute that specifies a type for abstract properties, such as IpFinder. */
         private const string TypeNameAttribute = "type";
 
+        /** Xmlns. */
+        private const string XmlnsAttribute = "xmlns";
+
+        /** Schema. */
+        private const string Schema = "http://ignite.apache.org/schema/dotnet/IgniteConfigurationSection";
+
         /// <summary>
         /// Deserializes <see cref="IgniteConfiguration"/> from specified <see cref="XmlReader"/>.
         /// </summary>
@@ -73,6 +79,9 @@ namespace Apache.Ignite.Core.Impl.Common
             Type valueType)
         {
             writer.WriteStartElement(rootElementName);
+
+            if (valueType == typeof(IgniteConfiguration))
+                writer.WriteAttributeString(XmlnsAttribute, Schema);
 
             if (valueType.IsGenericType && valueType.GetGenericTypeDefinition() == typeof(ICollection<>))
             {
@@ -245,7 +254,7 @@ namespace Apache.Ignite.Core.Impl.Common
         /// </summary>
         private static void SetProperty(object target, string propName, string propVal)
         {
-            if (propName == TypeNameAttribute)
+            if (propName == TypeNameAttribute || propName == XmlnsAttribute)
                 return;
 
             var type = target.GetType();
