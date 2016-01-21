@@ -1,15 +1,15 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <xs:schema id="IgniteConfigurationSection"
-    targetNamespace="http://tempuri.org/IgniteConfigurationSection.xsd"
+    targetNamespace="http://ignite.apache.org/schema/dotnet/IgniteConfigurationSection"
     elementFormDefault="qualified"
-    xmlns="http://tempuri.org/IgniteConfigurationSection.xsd"
-    xmlns:mstns="http://tempuri.org/IgniteConfigurationSection.xsd"
+    xmlns="http://ignite.apache.org/schema/dotnet/IgniteConfigurationSection"
+    xmlns:mstns="http://ignite.apache.org/schema/dotnet/IgniteConfigurationSection"
     xmlns:xs="http://www.w3.org/2001/XMLSchema">
 
     <xs:element name="igniteConfig">
         <xs:complexType>
             <xs:sequence>
-                <xs:element name="binaryConfiguration">
+                <xs:element name="binaryConfiguration" minOccurs="0" maxOccurs="1">
                     <xs:complexType>
                         <xs:sequence>
                             <xs:element name="typeConfigurations">
@@ -62,10 +62,10 @@
                         <xs:attribute name="defaultKeepDeserialized" type="xs:string" use="required" />
                     </xs:complexType>
                 </xs:element>
-                <xs:element name="cacheConfiguration">
+                <xs:element name="cacheConfiguration" minOccurs="0" maxOccurs="1">
                     <xs:complexType>
                         <xs:sequence>
-                            <xs:element name="cacheConfiguration">
+                            <xs:element name="cacheConfiguration" minOccurs="0" maxOccurs="unbounded">
                                 <xs:complexType>
                                     <xs:sequence>
                                         <xs:element name="cacheStoreFactory">
