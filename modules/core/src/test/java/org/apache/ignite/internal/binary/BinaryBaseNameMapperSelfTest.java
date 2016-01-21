@@ -17,20 +17,30 @@
 
 package org.apache.ignite.internal.binary;
 
-import org.apache.ignite.binary.BinaryNameMapper;
-import org.apache.ignite.binary.BinaryOriginalNameMapper;
+import org.apache.ignite.binary.BinaryBaseNameMapper;
 import org.apache.ignite.internal.binary.test.GridBinaryTestClass1;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 /**
  *
  */
-public class BinaryOriginalNameMapperSelfTest extends GridCommonAbstractTest {
+public class BinaryBaseNameMapperSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
-    public void test() throws Exception {
-        BinaryNameMapper mapper = new BinaryOriginalNameMapper();
+    public void testSimpleName() throws Exception {
+        BinaryBaseNameMapper mapper = new BinaryBaseNameMapper(true);
+
+        assertEquals("GridBinaryTestClass1", mapper.typeName(GridBinaryTestClass1.class.getName()));
+
+        assertEquals("InnerClass", mapper.typeName(GridBinaryTestClass1.class.getName() + "$InnerClass"));
+    }
+    
+    /**
+     * @throws Exception If failed.
+     */
+    public void testFullName() throws Exception {
+        BinaryBaseNameMapper mapper = new BinaryBaseNameMapper(false);
 
         assertEquals(GridBinaryTestClass1.class.getName(), mapper.typeName(GridBinaryTestClass1.class.getName()));
 

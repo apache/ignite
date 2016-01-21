@@ -17,17 +17,62 @@
 
 package org.apache.ignite.binary;
 
+import org.apache.ignite.internal.util.typedef.internal.A;
+
 /**
- *
+ * Base binary name mapper implementation.
  */
-public class BinarySimpleNameMapper implements BinaryNameMapper {
+public class BinaryBaseNameMapper implements BinaryNameMapper {
+    /** Default use simple name flag setting. */
+    public static final boolean DFLT_USE_SIMPLE_NAME = false;
+
+    /** */
+    private boolean useSimpleName = DFLT_USE_SIMPLE_NAME;
+
+    /**
+     * Default constructor.
+     */
+    public BinaryBaseNameMapper() {
+    }
+
+    /**
+     * @param useSimpleName Whether to use simple name of class or not.
+     * <p>
+     * Defaults to {@link #DFLT_USE_SIMPLE_NAME}.
+     */
+    public BinaryBaseNameMapper(boolean useSimpleName) {
+        this.useSimpleName = useSimpleName;
+    }
+
+    /**
+     * Gets whether to use simple name of class or not.
+     *
+     * @return Whether to use simple name of class or not.
+     */
+    public boolean getUseSimpleName() {
+        return useSimpleName;
+    }
+
+    /**
+     * Sets whether to use simple name of class or not.
+     *
+     * @param useSimpleName Whether to use simple name of class or not.
+     */
+    public void setLowerCase(boolean useSimpleName) {
+        this.useSimpleName = useSimpleName;
+    }
+
     /** {@inheritDoc} */
     @Override public String typeName(String clsName) {
-        return simpleName(clsName);
+        A.notNull(clsName, "clsName");
+
+        return useSimpleName ? simpleName(clsName) : clsName;
     }
 
     /** {@inheritDoc} */
     @Override public String fieldName(String fieldName) {
+        A.notNull(fieldName, "fieldName");
+
         return fieldName;
     }
 

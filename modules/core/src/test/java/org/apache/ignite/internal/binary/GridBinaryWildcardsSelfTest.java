@@ -24,9 +24,8 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.binary.BinaryBaseIdMapper;
 import org.apache.ignite.binary.BinaryIdMapper;
 import org.apache.ignite.binary.BinaryNameMapper;
-import org.apache.ignite.binary.BinaryOriginalNameMapper;
+import org.apache.ignite.binary.BinaryBaseNameMapper;
 import org.apache.ignite.binary.BinarySerializer;
-import org.apache.ignite.binary.BinarySimpleNameMapper;
 import org.apache.ignite.binary.BinaryTypeConfiguration;
 import org.apache.ignite.configuration.BinaryConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -56,21 +55,21 @@ public class GridBinaryWildcardsSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testClassNamesFullNameMapper() throws Exception {
-        checkClassNames(new BinaryOriginalNameMapper(), new BinaryBaseIdMapper(false));
+        checkClassNames(new BinaryBaseNameMapper(false), new BinaryBaseIdMapper(false));
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testClassNamesSimpleNameMapper() throws Exception {
-        checkClassNames(new BinarySimpleNameMapper(), new BinaryBaseIdMapper(true));
+        checkClassNames(new BinaryBaseNameMapper(), new BinaryBaseIdMapper(true));
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testClassNamesMixedMappers() throws Exception {
-        checkClassNames(new BinaryOriginalNameMapper(), new BinaryBaseIdMapper(true));
+        checkClassNames(new BinaryBaseNameMapper(false), new BinaryBaseIdMapper(true));
     }
 
     /**
@@ -135,14 +134,14 @@ public class GridBinaryWildcardsSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testTypeConfigurationsSimpleNameIdMapper() throws Exception {
-        checkTypeConfigurations(new BinarySimpleNameMapper(), new BinaryBaseIdMapper(true));
+        checkTypeConfigurations(new BinaryBaseNameMapper(), new BinaryBaseIdMapper(true));
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testTypeConfigurationsFullNameIdMapper() throws Exception {
-        checkTypeConfigurations(new BinaryOriginalNameMapper(), new BinaryBaseIdMapper(false));
+        checkTypeConfigurations(new BinaryBaseNameMapper(false), new BinaryBaseIdMapper(false));
     }
 
     /**
@@ -187,7 +186,7 @@ public class GridBinaryWildcardsSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testTypeConfigurationsWithGlobalMapper() throws Exception {
-        BinaryMarshaller marsh = binaryMarshaller(new BinaryOriginalNameMapper(), new BinaryIdMapper() {
+        BinaryMarshaller marsh = binaryMarshaller(new BinaryBaseNameMapper(false), new BinaryIdMapper() {
             @SuppressWarnings("IfMayBeConditional")
             @Override public int typeId(String clsName) {
                 if (clsName.endsWith("1"))
@@ -223,7 +222,7 @@ public class GridBinaryWildcardsSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testTypeConfigurationsWithNonGlobalMapper() throws Exception {
-        BinaryMarshaller marsh = binaryMarshaller(new BinarySimpleNameMapper(), new BinaryIdMapper() {
+        BinaryMarshaller marsh = binaryMarshaller(new BinaryBaseNameMapper(), new BinaryIdMapper() {
             @SuppressWarnings("IfMayBeConditional")
             @Override public int typeId(String clsName) {
                 if (clsName.endsWith("1"))
@@ -259,14 +258,14 @@ public class GridBinaryWildcardsSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testOverrideIdMapperSimpleNameMapper() throws Exception {
-        checkOverrideNameMapper(new BinarySimpleNameMapper(), new BinaryBaseIdMapper(true));
+        checkOverrideNameMapper(new BinaryBaseNameMapper(), new BinaryBaseIdMapper(true));
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testOverrideIdMapperFullNameMapper() throws Exception {
-        checkOverrideNameMapper(new BinaryOriginalNameMapper(), new BinaryBaseIdMapper(false));
+        checkOverrideNameMapper(new BinaryBaseNameMapper(false), new BinaryBaseIdMapper(false));
     }
 
     /**
@@ -312,14 +311,14 @@ public class GridBinaryWildcardsSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testOverrideNameMapperSimpleNameMapper() throws Exception {
-        checkOverrideNameMapper(new BinarySimpleNameMapper(), new BinaryBaseIdMapper(true));
+        checkOverrideNameMapper(new BinaryBaseNameMapper(), new BinaryBaseIdMapper(true));
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testOverrideNameMapperFullNameMapper() throws Exception {
-        checkOverrideNameMapper(new BinaryOriginalNameMapper(), new BinaryBaseIdMapper(false));
+        checkOverrideNameMapper(new BinaryBaseNameMapper(false), new BinaryBaseIdMapper(false));
     }
 
     /**
@@ -365,14 +364,14 @@ public class GridBinaryWildcardsSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testClassNamesJarFullNameMapper() throws Exception {
-        checkClassNamesJar(new BinaryOriginalNameMapper(), new BinaryBaseIdMapper(false));
+        checkClassNamesJar(new BinaryBaseNameMapper(false), new BinaryBaseIdMapper(false));
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testClassNamesJarSimpleNameMapper() throws Exception {
-        checkClassNamesJar(new BinarySimpleNameMapper(), new BinaryBaseIdMapper(true));
+        checkClassNamesJar(new BinaryBaseNameMapper(), new BinaryBaseIdMapper(true));
     }
 
     /**
@@ -401,7 +400,7 @@ public class GridBinaryWildcardsSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testClassNamesWithCustomMapperJar() throws Exception {
-        BinaryMarshaller marsh = binaryMarshaller(new BinaryOriginalNameMapper(), new BinaryIdMapper() {
+        BinaryMarshaller marsh = binaryMarshaller(new BinaryBaseNameMapper(false), new BinaryIdMapper() {
             @SuppressWarnings("IfMayBeConditional")
             @Override public int typeId(String clsName) {
                 if (clsName.endsWith("1"))
@@ -426,10 +425,10 @@ public class GridBinaryWildcardsSelfTest extends GridCommonAbstractTest {
 
         assertEquals(3, typeMappers.size());
 
-        assertTrue(typeMappers.get(CLASS1_FULL_NAME).get1() instanceof BinaryOriginalNameMapper);
+        assertFalse(((BinaryBaseNameMapper)typeMappers.get(CLASS1_FULL_NAME).get1()).getUseSimpleName());
         assertEquals(300, typeMappers.get(CLASS1_FULL_NAME).get2().typeId(CLASS1_FULL_NAME));
 
-        assertTrue(typeMappers.get(CLASS2_FULL_NAME).get1() instanceof BinaryOriginalNameMapper);
+        assertFalse(((BinaryBaseNameMapper)typeMappers.get(CLASS2_FULL_NAME).get1()).getUseSimpleName());
         assertEquals(400, typeMappers.get(CLASS2_FULL_NAME).get2().typeId(CLASS2_FULL_NAME));
     }
 
@@ -437,14 +436,14 @@ public class GridBinaryWildcardsSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testTypeConfigurationsJarSimpleNameMapper() throws Exception {
-        checkTypeConfigurationJar(new BinarySimpleNameMapper(), new BinaryBaseIdMapper(true));
+        checkTypeConfigurationJar(new BinaryBaseNameMapper(), new BinaryBaseIdMapper(true));
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testTypeConfigurationsJarFullNameMapper() throws Exception {
-        checkTypeConfigurationJar(new BinaryOriginalNameMapper(), new BinaryBaseIdMapper(false));
+        checkTypeConfigurationJar(new BinaryBaseNameMapper(false), new BinaryBaseIdMapper(false));
     }
 
     /**
@@ -474,7 +473,7 @@ public class GridBinaryWildcardsSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testTypeConfigurationsWithGlobalMapperJar() throws Exception {
-        BinaryMarshaller marsh = binaryMarshaller(new BinaryOriginalNameMapper(), new BinaryIdMapper() {
+        BinaryMarshaller marsh = binaryMarshaller(new BinaryBaseNameMapper(false), new BinaryIdMapper() {
             @SuppressWarnings("IfMayBeConditional")
             @Override public int typeId(String clsName) {
                 if (clsName.endsWith("1"))
@@ -499,10 +498,10 @@ public class GridBinaryWildcardsSelfTest extends GridCommonAbstractTest {
 
         assertEquals(3, typeMappers.size());
 
-        assertTrue(typeMappers.get(CLASS1_FULL_NAME).get1() instanceof BinaryOriginalNameMapper);
+        assertFalse(((BinaryBaseNameMapper)typeMappers.get(CLASS1_FULL_NAME).get1()).getUseSimpleName());
         assertEquals(300, typeMappers.get(CLASS1_FULL_NAME).get2().typeId(CLASS1_FULL_NAME));
 
-        assertTrue(typeMappers.get(CLASS2_FULL_NAME).get1() instanceof BinaryOriginalNameMapper);
+        assertFalse(((BinaryBaseNameMapper)typeMappers.get(CLASS2_FULL_NAME).get1()).getUseSimpleName());
         assertEquals(400, typeMappers.get(CLASS2_FULL_NAME).get2().typeId(CLASS2_FULL_NAME));
     }
 
@@ -510,7 +509,7 @@ public class GridBinaryWildcardsSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testTypeConfigurationsWithNonGlobalMapperJar() throws Exception {
-        BinaryMarshaller marsh = binaryMarshaller(new BinaryOriginalNameMapper(), new BinaryIdMapper() {
+        BinaryMarshaller marsh = binaryMarshaller(new BinaryBaseNameMapper(false), new BinaryIdMapper() {
             @SuppressWarnings("IfMayBeConditional")
             @Override public int typeId(String clsName) {
                 if (clsName.endsWith("1"))
@@ -535,10 +534,10 @@ public class GridBinaryWildcardsSelfTest extends GridCommonAbstractTest {
 
         assertEquals(3, typeMappers.size());
 
-        assertTrue(typeMappers.get(CLASS1_FULL_NAME).get1() instanceof BinaryOriginalNameMapper);
+        assertFalse(((BinaryBaseNameMapper)typeMappers.get(CLASS1_FULL_NAME).get1()).getUseSimpleName());
         assertEquals(300, typeMappers.get(CLASS1_FULL_NAME).get2().typeId(CLASS1_FULL_NAME));
 
-        assertTrue(typeMappers.get(CLASS2_FULL_NAME).get1() instanceof BinaryOriginalNameMapper);
+        assertFalse(((BinaryBaseNameMapper)typeMappers.get(CLASS2_FULL_NAME).get1()).getUseSimpleName());
         assertEquals(400, typeMappers.get(CLASS2_FULL_NAME).get2().typeId(CLASS2_FULL_NAME));
     }
 
@@ -546,14 +545,14 @@ public class GridBinaryWildcardsSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testOverrideJarSimpleNameMapper() throws Exception {
-        checkOverrideJar(new BinarySimpleNameMapper(), new BinaryBaseIdMapper(true));
+        checkOverrideJar(new BinaryBaseNameMapper(), new BinaryBaseIdMapper(true));
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testOverrideJarFullNameMapper() throws Exception {
-        checkOverrideJar(new BinaryOriginalNameMapper(), new BinaryBaseIdMapper(false));
+        checkOverrideJar(new BinaryBaseNameMapper(false), new BinaryBaseIdMapper(false));
     }
 
     /**

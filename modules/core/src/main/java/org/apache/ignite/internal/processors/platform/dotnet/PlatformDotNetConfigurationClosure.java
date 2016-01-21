@@ -22,7 +22,7 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.binary.BinaryIdMapper;
 import org.apache.ignite.binary.BinaryBaseIdMapper;
 import org.apache.ignite.binary.BinaryNameMapper;
-import org.apache.ignite.binary.BinarySimpleNameMapper;
+import org.apache.ignite.binary.BinaryBaseNameMapper;
 import org.apache.ignite.configuration.BinaryConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.PlatformConfiguration;
@@ -113,13 +113,13 @@ public class PlatformDotNetConfigurationClosure extends PlatformAbstractConfigur
             bCfg = new BinaryConfiguration();
 
             bCfg.setCompactFooter(false);
-            bCfg.setNameMapper(new BinarySimpleNameMapper());
+            bCfg.setNameMapper(new BinaryBaseNameMapper());
             bCfg.setIdMapper(new BinaryBaseIdMapper(true));
 
             igniteCfg.setBinaryConfiguration(bCfg);
 
             dotNetCfg0.warnings(Collections.singleton("Binary configuration is automatically initiated, " +
-                "note that binary name mapper is set to " + BinarySimpleNameMapper.class.getName()
+                "note that binary name mapper is set to " + BinaryBaseNameMapper.class.getName()
                 + " and binary ID mapper is set to " + BinaryBaseIdMapper.class.getName()
                 + " (other nodes must have the same binary name and ID mapper types)."));
         }
@@ -127,10 +127,10 @@ public class PlatformDotNetConfigurationClosure extends PlatformAbstractConfigur
             BinaryNameMapper nameMapper = bCfg.getNameMapper();
 
             if (nameMapper == null) {
-                bCfg.setNameMapper(new BinarySimpleNameMapper());
+                bCfg.setNameMapper(new BinaryBaseNameMapper());
 
                 dotNetCfg0.warnings(Collections.singleton("Binary name mapper is automatically set to " +
-                    BinarySimpleNameMapper.class.getName()
+                    BinaryBaseNameMapper.class.getName()
                     + " (other nodes must have the same binary name mapper type)."));
             }
 

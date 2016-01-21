@@ -18,6 +18,8 @@
 package org.apache.ignite.testsuites;
 
 import junit.framework.TestSuite;
+import org.apache.ignite.internal.binary.BinaryBaseIdMapperSelfTest;
+import org.apache.ignite.internal.binary.BinaryBaseNameMapperSelfTest;
 import org.apache.ignite.internal.binary.BinaryConfigurationConsistencySelfTest;
 import org.apache.ignite.internal.binary.BinaryEnumsSelfTest;
 import org.apache.ignite.internal.binary.BinaryFieldsHeapSelfTest;
@@ -28,10 +30,6 @@ import org.apache.ignite.internal.binary.BinaryMarshallerSelfTest;
 import org.apache.ignite.internal.binary.BinaryObjectBuilderAdditionalSelfTest;
 import org.apache.ignite.internal.binary.BinaryObjectBuilderDefaultMappersSelfTest;
 import org.apache.ignite.internal.binary.BinaryObjectBuilderSimpleNameLowerCaseMappersSelfTest;
-import org.apache.ignite.internal.binary.BinaryOriginalNameMapperSelfTest;
-import org.apache.ignite.internal.binary.BinarySimpleClassNameMapperSelfTest;
-import org.apache.ignite.internal.binary.BinarySimpleNameIdMapperSelfTest;
-import org.apache.ignite.internal.binary.BinaryStraightIdMapperSelfTest;
 import org.apache.ignite.internal.binary.GridBinaryAffinityKeySelfTest;
 import org.apache.ignite.internal.binary.GridBinaryMarshallerCtxDisabledSelfTest;
 import org.apache.ignite.internal.binary.GridBinaryWildcardsSelfTest;
@@ -77,10 +75,8 @@ public class IgniteBinaryObjectsTestSuite extends TestSuite {
     public static TestSuite suite() throws Exception {
         TestSuite suite = new TestSuite("Ignite Binary Objects Test Suite");
 
-        suite.addTestSuite(BinarySimpleNameIdMapperSelfTest.class);
-        suite.addTestSuite(BinaryStraightIdMapperSelfTest.class);
-        suite.addTestSuite(BinarySimpleClassNameMapperSelfTest.class);
-        suite.addTestSuite(BinaryOriginalNameMapperSelfTest.class);
+        suite.addTestSuite(BinaryBaseIdMapperSelfTest.class);
+        suite.addTestSuite(BinaryBaseNameMapperSelfTest.class);
 
         suite.addTestSuite(BinaryMarshallerSelfTest.class);
         suite.addTestSuite(BinaryConfigurationConsistencySelfTest.class);

@@ -17,6 +17,8 @@
 
 package org.apache.ignite.binary;
 
+import org.apache.ignite.internal.util.typedef.internal.A;
+
 /**
  * Base ID mapper implementation.
  */
@@ -65,7 +67,7 @@ public class BinaryBaseIdMapper implements BinaryIdMapper {
      * @return Type ID.
      */
     public int typeId(String typeName) {
-        assert typeName != null;
+        A.notNull(typeName, "typeName");
 
         int id = isLowerCase ? lowerCaseHashCode(typeName) : typeName.hashCode();
 
@@ -86,7 +88,7 @@ public class BinaryBaseIdMapper implements BinaryIdMapper {
      * @return Field ID.
      */
     public int fieldId(int typeId, String fieldName) {
-        assert fieldName != null;
+        A.notNull(fieldName, "fieldName");
 
         int id = isLowerCase ? lowerCaseHashCode(fieldName) : fieldName.hashCode();
 
