@@ -28,6 +28,7 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.visor.VisorJob;
 import org.apache.ignite.internal.visor.cache.VisorCache;
+import org.apache.ignite.internal.visor.cache.VisorCacheV2;
 import org.apache.ignite.internal.visor.compute.VisorComputeMonitoringHolder;
 import org.apache.ignite.internal.visor.igfs.VisorIgfs;
 import org.apache.ignite.internal.visor.igfs.VisorIgfsEndpoint;
@@ -130,7 +131,7 @@ public class VisorNodeDataCollectorJob extends VisorJob<VisorNodeDataCollectorTa
                     long start0 = U.currentTimeMillis();
 
                     try {
-                        VisorCache cache = new VisorCache().from(ignite, cacheName, arg.sample());
+                        VisorCache cache = new VisorCacheV2().from(ignite, cacheName, arg.sample());
 
                         if (cache != null)
                             res.caches().add(cache);

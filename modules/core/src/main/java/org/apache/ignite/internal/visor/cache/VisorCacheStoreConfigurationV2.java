@@ -15,35 +15,34 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.util.future;
+package org.apache.ignite.internal.visor.cache;
 
-import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.lang.IgniteReducer;
-import org.jetbrains.annotations.Nullable;
+import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.internal.IgniteEx;
 
 /**
- * Compound future with reducer which accepts and produces results of the same type.
+ * Data transfer object for cache store configuration properties.
  */
-public class GridCompoundIdentityFuture<T> extends GridCompoundFuture<T, T> {
+public class VisorCacheStoreConfigurationV2 extends VisorCacheStoreConfiguration {
     /** */
     private static final long serialVersionUID = 0L;
 
-    /**
-     *
-     */
-    public GridCompoundIdentityFuture() {
-        // No-op.
-    }
-
-    /**
-     * @param rdc Reducer.
-     */
-    public GridCompoundIdentityFuture(@Nullable IgniteReducer<T, T> rdc) {
-        super(rdc);
-    }
+    /** Keep binary in store flag. */
+    private boolean storeKeepBinary;
 
     /** {@inheritDoc} */
-    @Override public String toString() {
-        return S.toString(GridCompoundIdentityFuture.class, this, super.toString());
+    @Override public VisorCacheStoreConfiguration from(IgniteEx ignite, CacheConfiguration ccfg) {
+        super.from(ignite, ccfg);
+
+        storeKeepBinary = ccfg.isStoreKeepBinary();
+
+        return this;
+    }
+
+    /**
+     * @return Keep binary in store flag.
+     */
+    public boolean storeKeepBinary() {
+        return storeKeepBinary;
     }
 }
