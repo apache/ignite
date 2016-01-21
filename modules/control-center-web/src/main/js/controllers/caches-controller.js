@@ -379,33 +379,6 @@ consoleModule.controller('cachesController', [
                                 $scope.preview.statistics.allDefaults = $common.isEmptyString($scope.preview.statistics.xml);
                             }
                         }, true);
-
-                        $scope.$watchCollection('backupItem.domains', function (val) {
-                            if ($scope.selectedItemWatchGuard)
-                                $scope.selectedItemWatchGuard = false;
-                            else {
-                                var item = $scope.backupItem;
-
-                                var cacheStoreFactory = $common.isDefined(item) &&
-                                    $common.isDefined(item.cacheStoreFactory) &&
-                                    $common.isDefined(item.cacheStoreFactory.kind);
-
-                                if (val && !cacheStoreFactory) {
-                                    if (_.findIndex(cacheDomains(item), $common.domainForStoreConfigured) >= 0) {
-                                        item.cacheStoreFactory.kind = 'CacheJdbcPojoStoreFactory';
-
-                                        if (!item.readThrough && !item.writeThrough) {
-                                            item.readThrough = true;
-                                            item.writeThrough = true;
-                                        }
-
-                                        $timeout(function () {
-                                            $common.ensureActivePanel($scope.panels, 'store');
-                                        });
-                                    }
-                                }
-                            }
-                        });
                     })
                     .error(function (errMsg) {
                         $common.showError(errMsg);
@@ -629,8 +602,9 @@ consoleModule.controller('cachesController', [
         // Save cache.
         $scope.saveItem = function () {
             if ($scope.tableReset(true)) {
-
                 var item = $scope.backupItem;
+
+                angular.extend(item, $common.autoCacheStoreConfiguration(item, cacheDomains(item)));
 
                 if (validate(item))
                     save(item);

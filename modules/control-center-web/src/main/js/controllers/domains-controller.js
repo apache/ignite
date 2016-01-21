@@ -816,6 +816,7 @@ consoleModule.controller('domainsController', function ($filter, $http, $timeout
 
             var batch = [];
             var tables = [];
+            var checkedCaches = [];
             var dupCnt = 0;
 
             var containKey = true;
@@ -942,14 +943,28 @@ consoleModule.controller('domainsController', function ($filter, $http, $timeout
                                 newDomain.newCache.cacheStoreFactory = {
                                     kind: 'CacheJdbcPojoStoreFactory',
                                     CacheJdbcPojoStoreFactory: {
-                                        dataSourceBean: 'dataSource' + dialect,
+                                        dataSourceBean: newDomain.newCache.name + 'DS',
                                         dialect: dialect
                                     }
                                 };
                             }
                         }
-                        else if (table.cache !== IMPORT_DM_DO_NOT_GENERATE._id)
-                            newDomain.caches = [table.cache];
+                        else if (table.cache !== IMPORT_DM_DO_NOT_GENERATE._id) {
+                            var cacheId = table.cache;
+
+                            newDomain.caches = [cacheId];
+
+                            if (!_.contains(checkedCaches, cacheId)) {
+                                var cache = _.find($scope.caches, {value: cacheId}).cache;
+
+                                var change = $common.autoCacheStoreConfiguration(cache, [newDomain]);
+
+                                if (change)
+                                    newDomain.cacheStoreChanges = [{cacheId: cacheId, change: change}];
+
+                                checkedCaches.push(cacheId)
+                            }
+                        }
                     }
 
                     batch.push(newDomain);
@@ -1323,6 +1338,17 @@ consoleModule.controller('domainsController', function ($filter, $http, $timeout
         $scope.saveItem = function () {
             if ($scope.tableReset(true)) {
                 var item = $scope.backupItem;
+
+                item.cacheStoreChanges = [];
+
+                _.forEach(item.caches, function (cacheId) {
+                    var cache = _.find($scope.caches, {value: cacheId}).cache;
+
+                    var change = $common.autoCacheStoreConfiguration(cache, [item]);
+
+                    if (change)
+                        item.cacheStoreChanges.push({cacheId: cacheId, change: change});
+                });
 
                 if (validate(item))
                     save(item);

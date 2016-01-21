@@ -695,6 +695,15 @@ consoleModule.service('$common', [
             {value: 'H2', label: 'H2 database'}
         ];
 
+        function domainForStoreConfigured(domain) {
+            var isEmpty = !isDefined(domain) || (isEmptyString(domain.databaseSchema) &&
+                isEmptyString(domain.databaseTable) &&
+                isEmptyArray(domain.keyFields) &&
+                isEmptyArray(domain.valueFields));
+
+            return !isEmpty;
+        }
+
         return {
             getModel: getModel,
             joinTip: function (arr) {
@@ -788,14 +797,7 @@ consoleModule.service('$common', [
 
                 return !isEmpty;
             },
-            domainForStoreConfigured: function (domain) {
-                var isEmpty = !isDefined(domain) || (isEmptyString(domain.databaseSchema) &&
-                    isEmptyString(domain.databaseTable) &&
-                    isEmptyArray(domain.keyFields) &&
-                    isEmptyArray(domain.valueFields));
-
-                return !isEmpty;
-            },
+            domainForStoreConfigured: domainForStoreConfigured,
             /**
              * Cut class name by width in pixel or width in symbol count.
              *
@@ -1061,6 +1063,28 @@ consoleModule.service('$common', [
                 }));
 
                 return res;
+            },
+            autoCacheStoreConfiguration: function (cache, domains) {
+                var change;
+
+                var cacheStoreFactory = isDefined(cache.cacheStoreFactory) &&
+                    isDefined(cache.cacheStoreFactory.kind);
+
+                if (!cacheStoreFactory && _.findIndex(domains, domainForStoreConfigured) >= 0) {
+                    var dflt = !cache.readThrough && !cache.writeThrough;
+
+                    return {
+                        cacheStoreFactory: {
+                            kind: 'CacheJdbcPojoStoreFactory',
+                            CacheJdbcPojoStoreFactory: {
+                                dataSourceBean: cache.name + 'DS',
+                                dialect: 'Generic'
+                            }
+                        },
+                        readThrough: dflt || cache.readThrough,
+                        writeThrough: dflt || cache.writeThrough
+                    };
+                }
             }
         };
     }]);
