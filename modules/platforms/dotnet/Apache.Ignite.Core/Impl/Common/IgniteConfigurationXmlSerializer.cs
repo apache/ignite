@@ -80,7 +80,7 @@ namespace Apache.Ignite.Core.Impl.Common
 
                 var elementTypeName = PropertyNameToXmlName(elementType.Name);
 
-                foreach (var element in (ICollection) obj)
+                foreach (var element in (IEnumerable) obj)
                     WriteElement(element, writer, elementTypeName, property, elementType);
             }
             else if (IsBasicType(valueType))
