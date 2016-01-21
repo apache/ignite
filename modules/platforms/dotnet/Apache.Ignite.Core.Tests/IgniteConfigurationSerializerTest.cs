@@ -232,8 +232,17 @@ namespace Apache.Ignite.Core.Tests
                 IncludedEventTypes = EventType.CacheQueryAll,
                 JvmDllPath = @"c:\jvm",
                 JvmInitialMemoryMb = 1024,
-                JvmMaxMemoryMb = 2048
-
+                JvmMaxMemoryMb = 2048,
+                LifecycleBeans = new[] {new LifecycleBean(), new LifecycleBean() },
+                MetricsExpireTime = TimeSpan.FromSeconds(15),
+                MetricsHistorySize = 45,
+                MetricsLogFrequency = TimeSpan.FromDays(2),
+                MetricsUpdateFrequency = TimeSpan.MinValue,
+                NetworkSendRetryCount = 7,
+                NetworkSendRetryDelay = TimeSpan.FromSeconds(98),
+                NetworkTimeout = TimeSpan.FromMinutes(4),
+                SuppressWarnings = true,
+                WorkDirectory = @"c:\work"
             };
         }
 
