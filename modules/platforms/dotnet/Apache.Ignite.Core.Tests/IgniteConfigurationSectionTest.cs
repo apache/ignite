@@ -18,6 +18,7 @@
 namespace Apache.Ignite.Core.Tests
 {
     using System.Configuration;
+    using System.Linq;
     using NUnit.Framework;
 
     /// <summary>
@@ -31,6 +32,7 @@ namespace Apache.Ignite.Core.Tests
             var section = (IgniteConfigurationSection) ConfigurationManager.GetSection("igniteConfiguration");
 
             Assert.AreEqual("myGrid1", section.IgniteConfiguration.GridName);
+            Assert.AreEqual("cacheName", section.IgniteConfiguration.CacheConfiguration.Single().Name);
         }
 
         [Test]
