@@ -20,6 +20,7 @@ namespace Apache.Ignite.Core
 {
     using System;
     using System.Collections.Generic;
+    using System.Configuration;
     using System.Diagnostics;
     using System.Diagnostics.CodeAnalysis;
     using System.IO;
@@ -117,6 +118,25 @@ namespace Apache.Ignite.Core
         public static IIgnite Start(string springCfgPath)
         {
             return Start(new IgniteConfiguration {SpringConfigUrl = springCfgPath});
+        }
+
+        /// <summary>
+        /// Reads <see cref="IgniteConfiguration"/> from a <see cref="IgniteConfigurationSection"/> with specified name 
+        /// and starts Ignite.
+        /// </summary>
+        /// <param name="sectionName">Name of the section.</param>
+        /// <returns>Started Ignite.</returns>
+        public static IIgnite StartFromConfiguration(string sectionName)
+        {
+            IgniteArgumentCheck.NotNullOrEmpty(sectionName, "sectionName");
+
+            var section = ConfigurationManager.GetSection(sectionName) as IgniteConfigurationSection;
+
+            if (section == null)
+                throw new ConfigurationErrorsException(string.Format("Could not find {0} with name '{1}'",
+                    typeof (IgniteConfigurationSection).Name, sectionName));
+
+            return Start(section.IgniteConfiguration);
         }
 
         /// <summary>
