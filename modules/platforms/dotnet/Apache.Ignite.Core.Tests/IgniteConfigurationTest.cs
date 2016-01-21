@@ -19,8 +19,10 @@
 namespace Apache.Ignite.Core.Tests
 {
     using System;
+    using System.ComponentModel;
     using System.IO;
     using System.Linq;
+    using Apache.Ignite.Core.Cache.Configuration;
     using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Discovery;
     using Apache.Ignite.Core.Discovery.Configuration;
@@ -42,6 +44,15 @@ namespace Apache.Ignite.Core.Tests
         public void TestDefaultConfigurationProperties()
         {
             CheckDefaultProperties(new IgniteConfiguration());
+        }
+
+        [Test]
+        public void TestDefaultValueAttributes()
+        {
+            CheckDefaultValueAttributes(new IgniteConfiguration());
+            CheckDefaultValueAttributes(new DiscoveryConfiguration());
+            CheckDefaultValueAttributes(new CacheConfiguration());
+            CheckDefaultValueAttributes(new MulticastIpFinder());
         }
 
         [Test]
@@ -236,6 +247,24 @@ namespace Apache.Ignite.Core.Tests
             Assert.AreEqual(IgniteConfiguration.DefaultNetworkTimeout, cfg.NetworkTimeout);
             Assert.AreEqual(IgniteConfiguration.DefaultNetworkSendRetryCount, cfg.NetworkSendRetryCount);
             Assert.AreEqual(IgniteConfiguration.DefaultNetworkSendRetryDelay, cfg.NetworkSendRetryDelay);
+        }
+
+        private static void CheckDefaultValueAttributes(object obj)
+        {
+            var props = obj.GetType().GetProperties();
+
+            foreach (var prop in props)
+            {
+                var attr = prop.GetCustomAttributes(true).OfType<DefaultValueAttribute>().FirstOrDefault();
+                var propValue = prop.GetValue(obj, null);
+
+                if (attr != null)
+                    Assert.AreEqual(attr.Value, propValue);
+                else if (prop.PropertyType.IsValueType)
+                    Assert.AreEqual(Activator.CreateInstance(prop.PropertyType), propValue);
+                else
+                    Assert.IsNull(propValue);
+            }
         }
 
         private static IgniteConfiguration GetCustomConfig()
