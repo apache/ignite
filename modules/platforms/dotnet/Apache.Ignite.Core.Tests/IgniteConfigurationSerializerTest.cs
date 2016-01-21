@@ -123,11 +123,11 @@ namespace Apache.Ignite.Core.Tests
         [Test]
         public void TestSerializeDeserialize()
         {
-            // Test default
-            CheckSerializeDeserialize(new IgniteConfiguration());
-
             // Test custom
             CheckSerializeDeserialize(GetTestConfig());
+            
+            // Test default
+            CheckSerializeDeserialize(new IgniteConfiguration());
         }
 
         private static void CheckSerializeDeserialize(IgniteConfiguration cfg)
