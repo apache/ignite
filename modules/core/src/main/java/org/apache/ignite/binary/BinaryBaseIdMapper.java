@@ -20,7 +20,7 @@ package org.apache.ignite.binary;
 import org.apache.ignite.internal.util.typedef.internal.A;
 
 /**
- * Base ID mapper implementation.
+ * Base binary ID mapper implementation.
  */
 public class BinaryBaseIdMapper implements BinaryIdMapper {
     /** Default lower case flag setting. */
