@@ -18,17 +18,17 @@
                                         <xs:element name="binaryTypeConfiguration">
                                             <xs:complexType>
                                                 <xs:sequence>
-                                                    <xs:element name="nameMapper">
+                                                    <xs:element name="nameMapper" minOccurs="0" maxOccurs="1">
                                                         <xs:complexType>
                                                             <xs:attribute name="type" type="xs:string" use="required" />
                                                         </xs:complexType>
                                                     </xs:element>
-                                                    <xs:element name="idMapper">
+                                                    <xs:element name="idMapper" minOccurs="0" maxOccurs="1">
                                                         <xs:complexType>
                                                             <xs:attribute name="type" type="xs:string" use="required" />
                                                         </xs:complexType>
                                                     </xs:element>
-                                                    <xs:element name="serializer">
+                                                    <xs:element name="serializer" minOccurs="0" maxOccurs="1">
                                                         <xs:complexType>
                                                             <xs:attribute name="type" type="xs:string" use="required" />
                                                         </xs:complexType>
@@ -59,7 +59,7 @@
                                 </xs:complexType>
                             </xs:element>
                         </xs:sequence>
-                        <xs:attribute name="defaultKeepDeserialized" type="xs:string" use="required" />
+                        <xs:attribute name="defaultKeepDeserialized" type="xs:string" />
                     </xs:complexType>
                 </xs:element>
                 <xs:element name="cacheConfiguration" minOccurs="0" maxOccurs="1">
@@ -76,13 +76,13 @@
                                         <xs:element name="queryEntities" minOccurs="0" maxOccurs="1">
                                             <xs:complexType>
                                                 <xs:sequence>
-                                                    <xs:element name="queryEntity" minOccurs="0" maxOccurs="unbounded">
+                                                    <xs:element name="queryEntity" maxOccurs="unbounded">
                                                         <xs:complexType>
                                                             <xs:sequence>
                                                                 <xs:element name="fields" minOccurs="0" maxOccurs="1">
                                                                     <xs:complexType>
                                                                         <xs:sequence>
-                                                                            <xs:element name="queryField" minOccurs="0" maxOccurs="unbounded">
+                                                                            <xs:element name="queryField" maxOccurs="unbounded">
                                                                                 <xs:complexType>
                                                                                     <xs:attribute name="name" type="xs:string" use="required" />
                                                                                     <xs:attribute name="fieldType" type="xs:string" />
@@ -95,7 +95,7 @@
                                                                 <xs:element name="aliases" minOccurs="0" maxOccurs="1">
                                                                     <xs:complexType>
                                                                         <xs:sequence>
-                                                                            <xs:element name="queryAlias" minOccurs="0" maxOccurs="unbounded">
+                                                                            <xs:element name="queryAlias" maxOccurs="unbounded">
                                                                                 <xs:complexType>
                                                                                     <xs:attribute name="fullName" type="xs:string" use="required" />
                                                                                     <xs:attribute name="alias" type="xs:string" use="required" />
@@ -107,13 +107,13 @@
                                                                 <xs:element name="indexes" minOccurs="0" maxOccurs="1">
                                                                     <xs:complexType>
                                                                         <xs:sequence>
-                                                                            <xs:element name="queryIndex" minOccurs="0" maxOccurs="unbounded">
+                                                                            <xs:element name="queryIndex" maxOccurs="unbounded">
                                                                                 <xs:complexType>
                                                                                     <xs:sequence>
                                                                                         <xs:element name="fields" minOccurs="0" maxOccurs="1">
                                                                                             <xs:complexType>
                                                                                                 <xs:sequence>
-                                                                                                    <xs:element name="indexField" minOccurs="0" maxOccurs="unbounded">
+                                                                                                    <xs:element name="indexField" maxOccurs="unbounded">
                                                                                                         <xs:complexType>
                                                                                                             <xs:attribute name="name" type="xs:string" use="required" />
                                                                                                             <xs:attribute name="isDescending" type="xs:string" />
@@ -174,21 +174,21 @@
                         </xs:sequence>
                     </xs:complexType>
                 </xs:element>
-                <xs:element name="jvmOptions">
-                    <xs:complexType>
-                        <xs:sequence>
-                            <xs:element maxOccurs="unbounded" name="string" type="xs:unsignedByte" />
-                        </xs:sequence>
-                    </xs:complexType>
-                </xs:element>
-                <xs:element name="assemblies">
+                <xs:element name="jvmOptions" minOccurs="0" maxOccurs="1">
                     <xs:complexType>
                         <xs:sequence>
                             <xs:element maxOccurs="unbounded" name="string" type="xs:string" />
                         </xs:sequence>
                     </xs:complexType>
                 </xs:element>
-                <xs:element name="lifecycleBeans">
+                <xs:element name="assemblies" minOccurs="0" maxOccurs="1">
+                    <xs:complexType>
+                        <xs:sequence>
+                            <xs:element maxOccurs="unbounded" name="string" type="xs:string" />
+                        </xs:sequence>
+                    </xs:complexType>
+                </xs:element>
+                <xs:element name="lifecycleBeans" minOccurs="0" maxOccurs="1">
                     <xs:complexType>
                         <xs:sequence>
                             <xs:element maxOccurs="unbounded" name="iLifecycleBean">
