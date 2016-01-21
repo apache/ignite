@@ -85,11 +85,11 @@ namespace Apache.Ignite.Core.Cache.Configuration
             get { return _type ?? JavaTypes.GetDotNetType(TypeName); }
             set
             {
-                _type = value;
-
                 TypeName = value == null
                     ? null
                     : (JavaTypes.GetJavaTypeName(value) ?? BinaryUtils.GetTypeName(value));
+
+                _type = value;
             }
         }
 
