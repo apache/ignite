@@ -20,6 +20,7 @@ namespace Apache.Ignite.Core.Tests
     using System;
     using System.IO;
     using System.Linq;
+    using System.Text;
     using System.Xml;
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Cache.Configuration;
@@ -120,7 +121,31 @@ namespace Apache.Ignite.Core.Tests
         [Test]
         public void TestSerializeDeserialize()
         {
-            var cfg = new IgniteConfiguration
+            var cfg = GetTestConfig();
+
+            var sb = new StringBuilder();
+
+            using (var xmlWriter = XmlWriter.Create(sb))
+            {
+                IgniteConfigurationXmlSerializer.Serialize(cfg, xmlWriter);
+            }
+
+            using (var xmlReader = XmlReader.Create(new StringReader(sb.ToString())))
+            {
+                var resCfg = IgniteConfigurationXmlSerializer.Deserialize(xmlReader);
+
+                CheckConfigsEqual(cfg, resCfg);
+            }
+        }
+
+        private static void CheckConfigsEqual(IgniteConfiguration x, IgniteConfiguration y)
+        {
+            
+        }
+
+        private static IgniteConfiguration GetTestConfig()
+        {
+            return new IgniteConfiguration
             {
                 GridName = "gridName",
                 JvmOptions = new[] {"1", "2"},
