@@ -98,7 +98,8 @@ namespace Apache.Ignite.Core.Impl.Common
                 var props = GetNonDefaultProperties(obj).ToList();
 
                 // Specify type for interfaces and abstract classes
-                // TODO
+                if (valueType.IsAbstract)
+                    writer.WriteAttributeString(TypeNameAttribute, obj.GetType().AssemblyQualifiedName);
 
                 // Write attributes
                 foreach (var prop in props.Where(p => IsBasicType(p.PropertyType)))
@@ -171,7 +172,7 @@ namespace Apache.Ignite.Core.Impl.Common
         /// </summary>
         private static object ReadNestedObject(XmlReader reader, Type propType, string propName, Type targetType)
         {
-            if (propType.IsAbstract || propType.IsInterface)
+            if (propType.IsAbstract)
             {
                 var typeName = reader.GetAttribute(TypeNameAttribute);
 
