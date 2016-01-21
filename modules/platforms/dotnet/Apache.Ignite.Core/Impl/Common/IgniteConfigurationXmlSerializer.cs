@@ -95,7 +95,7 @@ namespace Apache.Ignite.Core.Impl.Common
 
                 // Specify type for interfaces and abstract classes
                 if (valueType.IsAbstract)
-                    writer.WriteAttributeString(TypeNameAttribute, obj.GetType().AssemblyQualifiedName);
+                    writer.WriteAttributeString(TypeNameAttribute, TypeStringConverter.Convert(obj.GetType()));
 
                 // Write attributes
                 foreach (var prop in props.Where(p => IsBasicType(p.PropertyType)))

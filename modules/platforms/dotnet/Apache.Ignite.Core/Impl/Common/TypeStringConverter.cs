@@ -92,8 +92,24 @@ namespace Apache.Ignite.Core.Impl.Common
         public override object ConvertTo(ITypeDescriptorContext context, CultureInfo culture, object value, 
             Type destinationType)
         {
+            return ConvertToString(value);
+        }
+
+        /// <summary>
+        /// Converts Type to string.
+        /// </summary>
+        /// <param name="value">The value to convert.</param>
+        /// <returns>Resulting string.</returns>
+        public static string Convert(object value)
+        {
             var type = value as Type;
-            return type == null ? null : type.AssemblyQualifiedName;
+            if (type == null)
+                return null;
+
+            if (type.Assembly == typeof (int).Assembly)
+                return type.FullName;
+
+            return type.AssemblyQualifiedName;
         }
     }
 }
