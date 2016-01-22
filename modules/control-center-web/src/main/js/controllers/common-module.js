@@ -2229,8 +2229,7 @@ consoleModule.controller('notebooks', ['$scope', '$modal', '$state', '$http', '$
     $scope.$root.rebuildDropdown = function() {
         $scope.notebookDropdown = [
             {text: 'Create new notebook', click: 'inputNotebookName()'},
-            {divider: true},
-            {text: 'SQL demo', sref: 'base.sql.demo'}
+            {divider: true}
         ];
 
         _.forEach($scope.$root.notebooks, function (notebook) {
@@ -2239,6 +2238,11 @@ consoleModule.controller('notebooks', ['$scope', '$modal', '$state', '$http', '$
                 sref: 'base.sql.notebook({noteId:"' + notebook._id + '"})'
             });
         });
+
+        if ($scope.$root.notebooks.length > 0)
+            $scope.notebookDropdown.push({divider: true});
+
+        $scope.notebookDropdown.push({text: 'SQL demo', sref: 'base.sql.demo', custom: true});
     };
 
     $scope.$root.reloadNotebooks = function() {

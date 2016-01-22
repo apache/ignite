@@ -552,6 +552,16 @@ button.form-control {
     }
 }
 
+.theme-line .sql-notebooks {
+    li.custom > a {
+        color: $brand-info;
+    }
+
+    li.custom > a:hover {
+        color: darken($brand-info, 15%);
+    }
+}
+
 .theme-line .paragraphs {
     .panel-group .panel + .panel {
         margin-top: 30px;
