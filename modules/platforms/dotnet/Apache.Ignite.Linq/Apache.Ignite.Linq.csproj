@@ -63,6 +63,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="CacheExtensions.cs" />
     <Compile Include="CacheQueryable.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>

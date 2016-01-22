@@ -31,9 +31,9 @@ namespace Apache.Ignite.Linq
     /// <summary>
     /// 
     /// </summary>
-    public class CacheQueryable<T> : QueryableBase<T>
+    public class CacheQueryable<TKey, TValue> : QueryableBase<ICacheEntry<TKey, TValue>>
     {
-        public CacheQueryable(ICache<object, object> cache)
+        public CacheQueryable(ICache<TKey, TValue> cache)
             : base(QueryParser.CreateDefault(), new CacheFieldsQueryExecutor(cache.QueryFields))
         {
 
@@ -44,6 +44,7 @@ namespace Apache.Ignite.Linq
         public CacheQueryable(IQueryProvider provider, Expression expression) : base(provider, expression)
         {
         }
+
     }
 
     public class CacheFieldsQueryExecutor : IQueryExecutor
