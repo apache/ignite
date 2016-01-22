@@ -667,8 +667,11 @@ public class BinaryContext {
 
         // perform put() instead of putIfAbsent() because "registered" flag might have been changed or class loader
         // might have reloaded described class.
-        if (IgniteUtils.detectClassLoader(cls).equals(dfltLdr))
+        if (IgniteUtils.detectClassLoader(cls).equals(dfltLdr)) {
             userTypes.put(typeId, desc);
+
+            U.debug(log, "Put in user types 1 [typeId" + typeId + ", desc=" + desc);
+        }
 
         descByCls.put(cls, desc);
 
@@ -917,8 +920,11 @@ public class BinaryContext {
             fieldsMeta = desc.fieldsMeta();
             schemas = desc.schema() != null ? Collections.singleton(desc.schema()) : null;
 
-            if (IgniteUtils.detectClassLoader(cls).equals(dfltLdr))
+            if (IgniteUtils.detectClassLoader(cls).equals(dfltLdr)) {
                 userTypes.put(id, desc);
+
+                U.debug(log, "Put in user types 2 [typeId" + id + ", desc=" + desc);
+            }
 
             descByCls.put(cls, desc);
         }
