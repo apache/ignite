@@ -25,6 +25,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
     using Apache.Ignite.Core.Cache.Expiry;
     using Apache.Ignite.Core.Cache.Query;
     using Apache.Ignite.Core.Cache.Query.Continuous;
+    using Apache.Ignite.Linq;
     using NUnit.Framework;
 
     /// <summary>
@@ -37,7 +38,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         {
             var cache = new CacheStub<int, QueryPerson>();
 
-            var res = cache.AsQueryable().Where(x => x.Value.Age > 20).ToList();
+            var res = cache.ToQueryable().Where(x => x.Value.Age > 20).ToList();
 
             Assert.IsNotNull(res);
 
