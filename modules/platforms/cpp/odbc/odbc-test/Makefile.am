@@ -25,22 +25,23 @@ AM_CXXFLAGS = -Wall -std=c++0x
 
 noinst_PROGRAMS = ignite-odbc-tests
 
-ignite_odbc_tests_SOURCES = src/teamcity_boost.cpp \
-                       src/teamcity_messages.cpp \
-                       src/parser_test.cpp \
-                       src/cursor_test.cpp \
-                       src/connection_info_test.cpp \
-                       src/application_data_buffer_test.cpp \
-                       src/configuration_test.cpp \
-                       src/row_test.cpp \
-                       src/utility_test.cpp \
-                       ../odbc-driver/src/cursor.cpp \
-                       ../odbc-driver/src/config/connection_info.cpp \
+ignite_odbc_tests_SOURCES = src/teamcity_boost.cpp                        \
+                       src/teamcity_messages.cpp                          \
+                       src/parser_test.cpp                                \
+                       src/cursor_test.cpp                                \
+                       src/connection_info_test.cpp                       \
+                       src/application_data_buffer_test.cpp               \
+                       src/configuration_test.cpp                         \
+                       src/row_test.cpp                                   \
+                       src/utility_test.cpp                               \
+                       ../odbc-driver/src/cursor.cpp                      \
+                       ../odbc-driver/src/config/connection_info.cpp      \
                        ../odbc-driver/src/app/application_data_buffer.cpp \
-                       ../odbc-driver/src/config/configuration.cpp \
-                       ../odbc-driver/src/row.cpp \
-                       ../odbc-driver/src/decimal.cpp \
-                       ../odbc-driver/src/utility.cpp \
+                       ../odbc-driver/src/config/configuration.cpp        \
+                       ../odbc-driver/src/row.cpp                         \
+                       ../odbc-driver/src/column.cpp                      \
+                       ../odbc-driver/src/decimal.cpp                     \
+                       ../odbc-driver/src/utility.cpp                     \
                        ../odbc-driver/src/result_page.cpp
 
 ignite_odbc_tests_LDFLAGS = -static-libtool-libs -L/usr/local/lib -lignite-binary -ldl
