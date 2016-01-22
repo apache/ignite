@@ -125,7 +125,7 @@ namespace Apache.Ignite.Core
         /// application configuration and starts Ignite.
         /// </summary>
         /// <returns>Started Ignite.</returns>
-        public static IIgnite StartFromConfiguration()
+        public static IIgnite StartFromApplicationConfiguration()
         {
             var cfg = ConfigurationManager.OpenExeConfiguration(ConfigurationUserLevel.None);
 
@@ -145,7 +145,7 @@ namespace Apache.Ignite.Core
         /// </summary>
         /// <param name="sectionName">Name of the section.</param>
         /// <returns>Started Ignite.</returns>
-        public static IIgnite StartFromConfiguration(string sectionName)
+        public static IIgnite StartFromApplicationConfiguration(string sectionName)
         {
             IgniteArgumentCheck.NotNullOrEmpty(sectionName, "sectionName");
 
