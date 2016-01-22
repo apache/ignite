@@ -75,6 +75,9 @@ public class CacheObjectImpl extends CacheObjectAdapter {
 
             Object val = ctx.processor().unmarshal(ctx, valBytes, ctx.kernalContext().config().getClassLoader());
 
+            // Inject resources.
+            ctx.kernalContext().resource().inject(null,val.getClass(),val);
+
             if (ctx.storeValue())
                 this.val = val;
 
