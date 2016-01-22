@@ -67,10 +67,10 @@
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-    <LinkIncremental>false</LinkIncremental>
     <TargetName>ignite.common</TargetName>
     <OutDir>$(SolutionDir)$(Platform)\$(Configuration)\</OutDir>
     <IntDir>$(Platform)\$(Configuration)\</IntDir>
+    <LinkIncremental>false</LinkIncremental>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <TargetName>ignite.common</TargetName>
@@ -79,8 +79,10 @@
     <LinkIncremental>false</LinkIncremental>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
-    <LinkIncremental>false</LinkIncremental>
     <TargetName>ignite.common</TargetName>
+    <OutDir>$(SolutionDir)$(Platform)\$(Configuration)\</OutDir>
+    <IntDir>$(Platform)\$(Configuration)\</IntDir>
+    <LinkIncremental>false</LinkIncremental>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <TargetName>ignite.common</TargetName>
@@ -181,6 +183,7 @@
   <ItemGroup>
     <ClInclude Include="..\..\include\ignite\common\concurrent.h" />
     <ClInclude Include="..\..\include\ignite\common\exports.h" />
+    <ClInclude Include="..\..\include\ignite\common\ignite_error.h" />
     <ClInclude Include="..\..\include\ignite\common\java.h" />
     <ClInclude Include="..\..\include\ignite\common\utils.h" />
     <ClInclude Include="..\..\os\win\include\ignite\common\common.h" />
@@ -190,8 +193,10 @@
   <ItemGroup>
     <ClCompile Include="..\..\os\win\src\common.cpp" />
     <ClCompile Include="..\..\os\win\src\concurrent_os.cpp" />
+    <ClCompile Include="..\..\os\win\src\utils.cpp" />
     <ClCompile Include="..\..\src\concurrent.cpp" />
     <ClCompile Include="..\..\src\exports.cpp" />
+    <ClCompile Include="..\..\src\ignite_error.cpp" />
     <ClCompile Include="..\..\src\java.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

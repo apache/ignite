@@ -24,13 +24,13 @@
 
 #include "ignite/impl/ignite_environment.h"
 #include "ignite/impl/ignite_impl.h"
-#include "ignite/impl/utils.h"
+#include <ignite/common/utils.h>
 #include "ignite/ignition.h"
 
 using namespace ignite::common::concurrent;
 using namespace ignite::common::java;
 using namespace ignite::impl;
-using namespace ignite::impl::utils;
+using namespace ignite::common::utils;
 
 namespace ignite
 {

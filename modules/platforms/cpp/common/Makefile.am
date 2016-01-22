@@ -25,10 +25,12 @@ AM_CXXFLAGS = -Wall -std=c++0x
 LIB_LDFLAGS = -no-undefined -version-info 1
 
 COMMON_SRC = os/linux/src/concurrent_os.cpp \
+             os/linux/src/common.cpp \
+             os/linux/src/utils.cpp \
+             src/ignite_error.cpp \
              src/concurrent.cpp \
              src/java.cpp \
-             src/exports.cpp \
-             os/linux/src/common.cpp
+             src/exports.cpp
 
 lib_LTLIBRARIES = libignite-common.la
 libignite_common_la_SOURCES = $(COMMON_SRC)

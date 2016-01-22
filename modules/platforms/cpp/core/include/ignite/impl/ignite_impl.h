@@ -23,7 +23,7 @@
 
 #include "ignite/impl/cache/cache_impl.h"
 #include "ignite/impl/ignite_environment.h"
-#include "ignite/impl/utils.h"
+#include <ignite/common/utils.h>
 
 namespace ignite 
 {
@@ -83,7 +83,7 @@ namespace ignite
                     return NULL;
                 }
 
-                char* name0 = utils::CopyChars(name);
+                char* name0 = common::utils::CopyChars(name);
 
                 return new cache::CacheImpl(name0, env, cacheJavaRef);
             }
@@ -108,7 +108,7 @@ namespace ignite
                     return NULL;
                 }
 
-                char* name0 = utils::CopyChars(name);
+                char* name0 = common::utils::CopyChars(name);
 
                 return new cache::CacheImpl(name0, env, cacheJavaRef);
             }
@@ -133,7 +133,7 @@ namespace ignite
                     return NULL;
                 }
 
-                char* name0 = utils::CopyChars(name);
+                char* name0 = common::utils::CopyChars(name);
 
                 return new cache::CacheImpl(name0, env, cacheJavaRef);
             }
