@@ -22,9 +22,11 @@ namespace Apache.Ignite.Core.Tests
     using System;
     using System.Collections;
     using System.Collections.Generic;
+    using System.Globalization;
     using System.IO;
     using System.Linq;
     using System.Text;
+    using System.Threading;
     using System.Xml;
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Cache.Configuration;
@@ -127,6 +129,9 @@ namespace Apache.Ignite.Core.Tests
         {
             // Test custom
             CheckSerializeDeserialize(GetTestConfig());
+
+            // Test custom with different culture to make sure numbers are serialized properly
+            RunWithCustomCulture(() => CheckSerializeDeserialize(GetTestConfig()));
             
             // Test default
             CheckSerializeDeserialize(new IgniteConfiguration());
@@ -347,6 +352,22 @@ namespace Apache.Ignite.Core.Tests
                 SuppressWarnings = true,
                 WorkDirectory = @"c:\work"
             };
+        }
+
+        private static void RunWithCustomCulture(Action action)
+        {
+            var oldCulture = Thread.CurrentThread.CurrentCulture;
+
+            try
+            {
+                Thread.CurrentThread.CurrentCulture = CultureInfo.GetCultureInfo("ru-RU");
+
+                action();
+            }
+            finally
+            {
+                Thread.CurrentThread.CurrentCulture = oldCulture;
+            }
         }
 
         public class LifecycleBean : ILifecycleBean
