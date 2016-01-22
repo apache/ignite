@@ -21,6 +21,7 @@ import java.util.Collection;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import javax.cache.expiry.ExpiryPolicy;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
@@ -53,6 +54,10 @@ public abstract class GridNearTxPrepareFutureAdapter extends
     /** Logger reference. */
     protected static final AtomicReference<IgniteLogger> logRef = new AtomicReference<>();
 
+    /** Error updater. */
+    protected static final AtomicReferenceFieldUpdater<GridNearTxPrepareFutureAdapter, Throwable> ERR_UPD =
+        AtomicReferenceFieldUpdater.newUpdater(GridNearTxPrepareFutureAdapter.class, Throwable.class, "err");
+
     /** */
     private static final IgniteReducer<GridNearTxPrepareResponse, IgniteInternalTx> REDUCER =
         new IgniteReducer<GridNearTxPrepareResponse, IgniteInternalTx>() {
@@ -81,7 +86,7 @@ public abstract class GridNearTxPrepareFutureAdapter extends
 
     /** Error. */
     @GridToStringExclude
-    protected AtomicReference<Throwable> err = new AtomicReference<>(null);
+    protected volatile Throwable err;
 
     /** Trackable flag. */
     protected boolean trackable = true;
@@ -165,6 +170,7 @@ public abstract class GridNearTxPrepareFutureAdapter extends
      * @param m Mapping.
      * @param res Response.
      */
+    @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
     protected final void onPrepareResponse(GridDistributedTxMapping m, GridNearTxPrepareResponse res) {
         if (res == null)
             return;

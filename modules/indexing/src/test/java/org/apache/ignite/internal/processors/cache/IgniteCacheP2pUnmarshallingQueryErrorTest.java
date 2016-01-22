@@ -24,9 +24,7 @@ import javax.cache.CacheException;
 import org.apache.ignite.cache.query.ScanQuery;
 import org.apache.ignite.cache.query.SqlQuery;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.lang.IgniteBiPredicate;
-import org.apache.ignite.marshaller.optimized.OptimizedMarshaller;
 
 /**
  * Checks behavior on exception while unmarshalling key.
@@ -76,22 +74,16 @@ public class IgniteCacheP2pUnmarshallingQueryErrorTest extends IgniteCacheP2pUnm
                 private void readObject(ObjectInputStream is) throws IOException {
                     throw new IOException();
                 }
+
+                private void writeObject(ObjectOutputStream os) throws IOException {
+                    // No-op.
+                }
             })).getAll();
 
-            assertTrue("Request unmarshalling failed, but error response was not sent.", binaryMarshaller());
+            fail();
         }
         catch (Exception e) {
-            assertFalse("Unexpected exception: " + e, binaryMarshaller());
+            // No-op.
         }
-    }
-
-    /**
-     * @return {@code True} if binary marshaller is configured.
-     */
-    private boolean binaryMarshaller() {
-        IgniteEx kernal = (IgniteEx)ignite(0);
-
-        return !OptimizedMarshaller.class.getSimpleName().equals(kernal.context().config().getMarshaller().getClass()
-            .getSimpleName());
     }
 }

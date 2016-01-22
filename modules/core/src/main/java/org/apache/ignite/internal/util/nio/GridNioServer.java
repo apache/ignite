@@ -41,8 +41,9 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.Queue;
 import java.util.Set;
+import java.util.concurrent.ConcurrentLinkedQueue;
+
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
@@ -65,7 +66,6 @@ import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 import org.apache.ignite.thread.IgniteThread;
 import org.jetbrains.annotations.Nullable;
-import org.jsr166.ConcurrentLinkedDeque8;
 import sun.nio.ch.DirectBuffer;
 
 import static org.apache.ignite.internal.util.nio.GridNioSessionMetaKey.ACK_CLOSURE;
@@ -1001,6 +1001,9 @@ public class GridNioServer<T> {
 
                         assert msg != null;
 
+                        if (writer != null)
+                            writer.setCurrentWriteClass(msg.getClass());
+
                         finished = msg.writeTo(buf, writer);
 
                         if (finished && writer != null)
@@ -1022,6 +1025,9 @@ public class GridNioServer<T> {
                         msg = req.directMessage();
 
                         assert msg != null;
+
+                        if (writer != null)
+                            writer.setCurrentWriteClass(msg.getClass());
 
                         finished = msg.writeTo(buf, writer);
 
@@ -1105,7 +1111,9 @@ public class GridNioServer<T> {
          */
         private void writeSslSystem(GridSelectorNioSessionImpl ses, WritableByteChannel sockCh)
             throws IOException {
-            ConcurrentLinkedDeque8<ByteBuffer> queue = ses.meta(BUF_SSL_SYSTEM_META_KEY);
+            ConcurrentLinkedQueue<ByteBuffer> queue = ses.meta(BUF_SSL_SYSTEM_META_KEY);
+
+            assert queue != null;
 
             ByteBuffer buf;
 
@@ -1167,6 +1175,9 @@ public class GridNioServer<T> {
 
                 assert msg != null;
 
+                if (writer != null)
+                    writer.setCurrentWriteClass(msg.getClass());
+
                 finished = msg.writeTo(buf, writer);
 
                 if (finished && writer != null)
@@ -1190,6 +1201,9 @@ public class GridNioServer<T> {
                 msg = req.directMessage();
 
                 assert msg != null;
+
+                if (writer != null)
+                    writer.setCurrentWriteClass(msg.getClass());
 
                 finished = msg.writeTo(buf, writer);
 
@@ -1244,7 +1258,7 @@ public class GridNioServer<T> {
      */
     private abstract class AbstractNioClientWorker extends GridWorker {
         /** Queue of change requests on this selector. */
-        private final Queue<NioOperationFuture> changeReqs = new ConcurrentLinkedDeque8<>();
+        private final ConcurrentLinkedQueue<NioOperationFuture> changeReqs = new ConcurrentLinkedQueue<>();
 
         /** Selector to select read events. */
         private Selector selector;
@@ -2105,7 +2119,7 @@ public class GridNioServer<T> {
         /** {@inheritDoc} */
         @Override public void onSessionOpened(GridNioSession ses) throws IgniteCheckedException {
             if (directMode && sslFilter != null)
-                ses.addMeta(BUF_SSL_SYSTEM_META_KEY, new ConcurrentLinkedDeque8<>());
+                ses.addMeta(BUF_SSL_SYSTEM_META_KEY, new ConcurrentLinkedQueue<>());
 
             proceedSessionOpened(ses);
         }
@@ -2126,7 +2140,9 @@ public class GridNioServer<T> {
                 boolean sslSys = sslFilter != null && msg instanceof ByteBuffer;
 
                 if (sslSys) {
-                    ConcurrentLinkedDeque8<ByteBuffer> queue = ses.meta(BUF_SSL_SYSTEM_META_KEY);
+                    ConcurrentLinkedQueue<ByteBuffer> queue = ses.meta(BUF_SSL_SYSTEM_META_KEY);
+
+                    assert queue != null;
 
                     queue.offer((ByteBuffer)msg);
 

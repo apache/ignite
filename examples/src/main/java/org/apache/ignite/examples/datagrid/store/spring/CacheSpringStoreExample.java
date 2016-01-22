@@ -99,6 +99,7 @@ public class CacheSpringStoreExample {
             cacheCfg.setReadThrough(true);
             cacheCfg.setWriteThrough(true);
 
+            // Auto-close cache at the end of the example.
             try (IgniteCache<Long, Person> cache = ignite.getOrCreateCache(cacheCfg)) {
                 // Make initial cache loading from persistent store. This is a
                 // distributed operation and will call CacheStore.loadCache(...)
@@ -108,6 +109,10 @@ public class CacheSpringStoreExample {
                 // Start transaction and execute several cache operations with
                 // read/write-through to persistent store.
                 executeTransaction(cache);
+            }
+            finally {
+                // Distributed cache could be removed from cluster only by #destroyCache() call.
+                ignite.destroyCache(CACHE_NAME);
             }
         }
     }

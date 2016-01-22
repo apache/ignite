@@ -57,7 +57,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
 
         #region NATIVE METHODS: PROCESSOR
 
-        internal static IUnmanagedTarget IgnitionStart(UnmanagedContext ctx, string cfgPath, string gridName,
+        internal static void IgnitionStart(UnmanagedContext ctx, string cfgPath, string gridName,
             bool clientMode)
         {
             using (var mem = IgniteManager.Memory.Allocate().GetStream())
@@ -69,10 +69,12 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
 
                 try
                 {
+                    // OnStart receives the same InteropProcessor as here (just as another GlobalRef) and stores it.
+                    // Release current reference immediately.
                     void* res = JNI.IgnitionStart(ctx.NativeContext, cfgPath0, gridName0, InteropFactoryId,
                         mem.SynchronizeOutput());
 
-                    return new UnmanagedTarget(ctx, res);
+                    JNI.Release(res);
                 }
                 finally
                 {
@@ -154,6 +156,20 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
                 void* res = JNI.ProcessorGetOrCreateCache(target.Context, target.Target, name0);
 
                 return target.ChangeTarget(res);
+            }
+            finally
+            {
+                Marshal.FreeHGlobal(new IntPtr(name0));
+            }
+        }
+
+        internal static void ProcessorDestroyCache(IUnmanagedTarget target, string name)
+        {
+            sbyte* name0 = IgniteUtils.StringToUtf8Unmanaged(name);
+
+            try
+            {
+                JNI.ProcessorDestroyCache(target.Context, target.Target, name0);
             }
             finally
             {
@@ -305,6 +321,21 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
             JNI.TargetListenFutForOp(target.Context, target.Target, futId, typ, opId);
         }
 
+        internal static IUnmanagedTarget TargetListenFutureAndGet(IUnmanagedTarget target, long futId, int typ)
+        {
+            var res = JNI.TargetListenFutAndGet(target.Context, target.Target, futId, typ);
+
+            return target.ChangeTarget(res);
+        }
+
+        internal static IUnmanagedTarget TargetListenFutureForOperationAndGet(IUnmanagedTarget target, long futId,
+            int typ, int opId)
+        {
+            var res = JNI.TargetListenFutForOpAndGet(target.Context, target.Target, futId, typ, opId);
+
+            return target.ChangeTarget(res);
+        }
+
         #endregion
 
         #region NATIVE METHODS: AFFINITY
@@ -440,9 +471,11 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
             JNI.ComputeWithTimeout(target.Context, target.Target, timeout);
         }
 
-        internal static void ComputeExecuteNative(IUnmanagedTarget target, long taskPtr, long topVer)
+        internal static IUnmanagedTarget ComputeExecuteNative(IUnmanagedTarget target, long taskPtr, long topVer)
         {
-            JNI.ComputeExecuteNative(target.Context, target.Target, taskPtr, topVer);
+            void* res = JNI.ComputeExecuteNative(target.Context, target.Target, taskPtr, topVer);
+
+            return target.ChangeTarget(res);
         }
 
         #endregion
@@ -814,6 +847,16 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         internal static void AtomicLongClose(IUnmanagedTarget target)
         {
             JNI.AtomicLongClose(target.Context, target.Target);
+        }
+
+        internal static bool ListenableCancel(IUnmanagedTarget target)
+        {
+            return JNI.ListenableCancel(target.Context, target.Target);
+        }
+
+        internal static bool ListenableIsCancelled(IUnmanagedTarget target)
+        {
+            return JNI.ListenableIsCancelled(target.Context, target.Target);
         }
 
         #endregion

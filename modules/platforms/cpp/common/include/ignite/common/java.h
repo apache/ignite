@@ -297,6 +297,7 @@ namespace ignite
                 jmethodID m_PlatformProcessor_cache;
                 jmethodID m_PlatformProcessor_createCache;
                 jmethodID m_PlatformProcessor_getOrCreateCache;
+                jmethodID m_PlatformProcessor_destroyCache;
                 jmethodID m_PlatformProcessor_affinity;
                 jmethodID m_PlatformProcessor_dataStreamer;
                 jmethodID m_PlatformProcessor_transactions;
@@ -318,6 +319,8 @@ namespace ignite
                 jmethodID m_PlatformTarget_inObjectStreamOutStream;
                 jmethodID m_PlatformTarget_listenFuture;
                 jmethodID m_PlatformTarget_listenFutureForOperation;
+                jmethodID m_PlatformTarget_listenFutureAndGet;
+                jmethodID m_PlatformTarget_listenFutureForOperationAndGet;
 
                 jclass c_PlatformTransactions;
                 jmethodID m_PlatformTransactions_txStart;
@@ -346,6 +349,10 @@ namespace ignite
                 jmethodID m_PlatformAtomicLong_compareAndSetAndGet;
                 jmethodID m_PlatformAtomicLong_isClosed;
                 jmethodID m_PlatformAtomicLong_close;
+
+                jclass c_PlatformListenable;
+                jmethodID m_PlatformListenable_cancel;
+                jmethodID m_PlatformListenable_isCancelled;
 
                 /**
                  * Constructor.
@@ -482,6 +489,8 @@ namespace ignite
                 jobject ProcessorCreateCache(jobject obj, const char* name, JniErrorInfo* errInfo);
                 jobject ProcessorGetOrCreateCache(jobject obj, const char* name);
                 jobject ProcessorGetOrCreateCache(jobject obj, const char* name, JniErrorInfo* errInfo);
+                void ProcessorDestroyCache(jobject obj, const char* name);
+                void ProcessorDestroyCache(jobject obj, const char* name, JniErrorInfo* errInfo);
                 jobject ProcessorAffinity(jobject obj, const char* name);
                 jobject ProcessorDataStreamer(jobject obj, const char* name, bool keepPortable);
                 jobject ProcessorTransactions(jobject obj);
@@ -501,6 +510,8 @@ namespace ignite
                 jobject TargetOutObject(jobject obj, int opType, JniErrorInfo* errInfo = NULL);
                 void TargetListenFuture(jobject obj, long long futId, int typ);
                 void TargetListenFutureForOperation(jobject obj, long long futId, int typ, int opId);
+                void* TargetListenFutureAndGet(jobject obj, long long futId, int typ);
+                void* TargetListenFutureForOperationAndGet(jobject obj, long long futId, int typ, int opId);
                 
                 int AffinityPartitions(jobject obj);
 
@@ -526,7 +537,7 @@ namespace ignite
 
                 void ComputeWithNoFailover(jobject obj);
                 void ComputeWithTimeout(jobject obj, long long timeout);
-                void ComputeExecuteNative(jobject obj, long long taskPtr, long long topVer);
+                void* ComputeExecuteNative(jobject obj, long long taskPtr, long long topVer);
 
                 void ContinuousQueryClose(jobject obj);
                 jobject ContinuousQueryGetInitialQueryCursor(jobject obj);
@@ -588,6 +599,9 @@ namespace ignite
                 long long AtomicLongCompareAndSetAndGet(jobject obj, long long expVal, long long newVal);
                 bool AtomicLongIsClosed(jobject obj);
                 void AtomicLongClose(jobject obj);
+
+                bool ListenableCancel(jobject obj);
+                bool ListenableIsCancelled(jobject obj);
 
                 jobject Acquire(jobject obj);
 

@@ -192,7 +192,14 @@ namespace Apache.Ignite.Core.Impl.Cache.Store
                         break;
 
                     case OpPutAll:
-                        _store.WriteAll(rawReader.ReadDictionary());
+                        var size = rawReader.ReadInt();
+
+                        var dict = new Hashtable(size);
+
+                        for (int i = 0; i < size; i++)
+                            dict[rawReader.ReadObject<object>()] = rawReader.ReadObject<object>();
+
+                        _store.WriteAll(dict);
 
                         break;
 
