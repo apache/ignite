@@ -54,6 +54,7 @@ import java.util.concurrent.ConcurrentSkipListSet;
 import junit.framework.Assert;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.binary.BinaryBaseIdMapper;
+import org.apache.ignite.binary.BinaryBaseNameMapper;
 import org.apache.ignite.binary.BinaryCollectionFactory;
 import org.apache.ignite.binary.BinaryField;
 import org.apache.ignite.binary.BinaryIdMapper;
@@ -62,7 +63,6 @@ import org.apache.ignite.binary.BinaryNameMapper;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.binary.BinaryObjectBuilder;
 import org.apache.ignite.binary.BinaryObjectException;
-import org.apache.ignite.binary.BinaryBaseNameMapper;
 import org.apache.ignite.binary.BinaryRawReader;
 import org.apache.ignite.binary.BinaryRawWriter;
 import org.apache.ignite.binary.BinaryReader;
@@ -1119,7 +1119,7 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
             }
         });
 
-        BinaryMarshaller marsh = binaryMarshaller(new BinaryBaseNameMapper(), new BinaryBaseIdMapper(true),
+        BinaryMarshaller marsh = binaryMarshaller(new BinaryBaseNameMapper(true), new BinaryBaseIdMapper(true),
             Arrays.asList(innerClassType, publicClassType, typeWithCustomMapper));
 
         InnerMappedObject innerObj = new InnerMappedObject(10, "str1");
@@ -1359,7 +1359,7 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
-    public void testTypeNamesDefaultIdMapper() throws Exception {
+    public void testTypeNamesSimpleNameMapper() throws Exception {
         BinaryTypeConfiguration customType1 = new BinaryTypeConfiguration(Value.class.getName());
 
         customType1.setIdMapper(new BinaryIdMapper() {
@@ -1408,7 +1408,8 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
             }
         });
 
-        BinaryMarshaller marsh = binaryMarshaller(Arrays.asList(
+        BinaryMarshaller marsh = binaryMarshaller(new BinaryBaseNameMapper(true), new BinaryBaseIdMapper(true),
+            Arrays.asList(
             new BinaryTypeConfiguration(Key.class.getName()),
             new BinaryTypeConfiguration("org.gridgain.NonExistentClass3"),
             new BinaryTypeConfiguration("NonExistentClass4"),
@@ -1568,7 +1569,7 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
         customType5.setNameMapper(new BinaryBaseNameMapper(false));
         customType5.setIdMapper(new BinaryBaseIdMapper(false));
 
-        BinaryMarshaller marsh = binaryMarshaller(new BinaryBaseNameMapper(), new BinaryBaseIdMapper(true),
+        BinaryMarshaller marsh = binaryMarshaller(new BinaryBaseNameMapper(true), new BinaryBaseIdMapper(true),
             Arrays.asList(
                 new BinaryTypeConfiguration(Key.class.getName()),
                 new BinaryTypeConfiguration("org.gridgain.NonExistentClass3"),
@@ -1657,7 +1658,7 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
         BinaryTypeConfiguration customType6 = new BinaryTypeConfiguration(MyTestClass.class.getName());
 
         customType6.setIdMapper(new BinaryBaseIdMapper(true));
-        customType6.setNameMapper(new BinaryBaseNameMapper());
+        customType6.setNameMapper(new BinaryBaseNameMapper(true));
 
         BinaryMarshaller marsh = binaryMarshaller(new BinaryBaseNameMapper(false), new BinaryIdMapper() {
             @Override public int typeId(String clsName) {
@@ -2534,8 +2535,11 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
-    public void testDuplicateName() throws Exception {
-        BinaryMarshaller marsh = binaryMarshaller();
+    public void testDuplicateNameSimpleNameMapper() throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-2395");
+
+        BinaryMarshaller marsh = binaryMarshaller(new BinaryBaseNameMapper(true),
+            new BinaryBaseIdMapper(true), null, null);
 
         Test1.Job job1 = new Test1().new Job();
         Test2.Job job2 = new Test2().new Job();
@@ -2552,6 +2556,21 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
         }
 
         assert false;
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testDuplicateNameFullNameMapper() throws Exception {
+        BinaryMarshaller marsh = binaryMarshaller(new BinaryBaseNameMapper(false),
+            new BinaryBaseIdMapper(false), null, null);
+
+        Test1.Job job1 = new Test1().new Job();
+        Test2.Job job2 = new Test2().new Job();
+
+        marsh.marshal(job1);
+
+        marsh.marshal(job2);
     }
 
     /**
