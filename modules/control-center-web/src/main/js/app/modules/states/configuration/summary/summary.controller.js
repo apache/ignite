@@ -18,8 +18,8 @@
 import JSZip from 'jszip';
 
 export default [
-    '$scope', '$http', '$common', '$loading', '$table', '$filter', 'ConfigurationSummaryResource', 'JavaTypes',
-    function($scope, $http, $common, $loading, $table, $filter, Resource, JavaTypes) {
+    '$scope', '$http', '$common', '$loading', '$table', '$filter', '$timeout', 'ConfigurationSummaryResource', 'JavaTypes',
+    function($scope, $http, $common, $loading, $table, $filter, $timeout, Resource, JavaTypes) {
         const ctrl = this;
         const igniteVersion = '1.5.0.final';
 
@@ -263,6 +263,34 @@ export default [
 
             // Download archive.
             saveAs(blob, cluster.name + '-configuration.zip');
+        };
+
+        $scope.openJdbcDownloadLinksVisible = function() {
+            return true; // TODO
+        };
+
+        $scope.openJdbcDownloadLinks = function() {
+            const refs = [
+                'http://www.oracle.com/technetwork/apps-tech/jdbc-112010-090769.html',
+                'http://www-01.ibm.com/support/docview.wss?uid=swg21363866',
+                'https://www.microsoft.com/en-us/download/details.aspx?id=11774'
+            ];
+
+            refs.forEach((ref) => {
+                $timeout(() => {
+                    const fake_link = document.createElement('a');
+
+                    fake_link.style.display = 'none';
+
+                    document.body.appendChild(fake_link);
+
+                    fake_link.setAttribute('href', ref);
+                    fake_link.setAttribute('target', '_blank');
+                    fake_link.click();
+
+                    document.body.removeChild(fake_link);
+                }, 100);
+            });
         };
     }
 ];
