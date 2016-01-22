@@ -53,6 +53,11 @@ namespace Apache.Ignite.Core.Tests
                 Assert.AreEqual("myGrid2", ignite.Name);
                 Assert.IsNotNull(ignite.GetCache<int, int>("cacheName2"));
             }
+
+            using (var ignite = Ignition.StartFromConfiguration())
+            {
+                Assert.IsTrue(ignite.Name.StartsWith("myGrid"));
+            }
         }
     }
 }

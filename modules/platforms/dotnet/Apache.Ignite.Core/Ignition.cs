@@ -121,8 +121,27 @@ namespace Apache.Ignite.Core
         }
 
         /// <summary>
-        /// Reads <see cref="IgniteConfiguration"/> from a <see cref="IgniteConfigurationSection"/> with specified name 
-        /// and starts Ignite.
+        /// Reads <see cref="IgniteConfiguration"/> from first <see cref="IgniteConfigurationSection"/> in the 
+        /// application configuration and starts Ignite.
+        /// </summary>
+        /// <returns>Started Ignite.</returns>
+        public static IIgnite StartFromConfiguration()
+        {
+            var cfg = ConfigurationManager.OpenExeConfiguration(ConfigurationUserLevel.None);
+
+            var section = cfg.Sections.OfType<IgniteConfigurationSection>().FirstOrDefault();
+
+            if (section == null)
+                throw new ConfigurationErrorsException(
+                    string.Format("Could not find {0} in current application configuration",
+                        typeof (IgniteConfigurationSection).Name));
+
+            return Start(section.IgniteConfiguration);
+        }
+
+        /// <summary>
+        /// Reads <see cref="IgniteConfiguration"/> from application configuration 
+        /// <see cref="IgniteConfigurationSection"/> with specified name and starts Ignite.
         /// </summary>
         /// <param name="sectionName">Name of the section.</param>
         /// <returns>Started Ignite.</returns>
