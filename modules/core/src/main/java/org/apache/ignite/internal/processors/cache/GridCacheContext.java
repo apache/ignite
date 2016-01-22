@@ -54,7 +54,7 @@ import org.apache.ignite.internal.managers.deployment.GridDeploymentManager;
 import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
 import org.apache.ignite.internal.managers.eventstorage.GridEventStorageManager;
 import org.apache.ignite.internal.managers.swapspace.GridSwapSpaceManager;
-import org.apache.ignite.internal.portable.BinaryMarshaller;
+import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.datastructures.CacheDataStructuresManager;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCacheAdapter;
@@ -111,6 +111,7 @@ import static org.apache.ignite.cache.CacheMemoryMode.OFFHEAP_VALUES;
 import static org.apache.ignite.cache.CacheRebalanceMode.NONE;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.PRIMARY_SYNC;
+import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionState.OWNING;
 
 /**
  * Cache context.
@@ -242,7 +243,7 @@ public class GridCacheContext<K, V> implements Externalizable {
     private boolean depEnabled;
 
     /** */
-    private boolean deferredDelete;
+    private boolean deferredDel;
 
     /**
      * Empty constructor required for {@link Externalizable}.
@@ -320,7 +321,7 @@ public class GridCacheContext<K, V> implements Externalizable {
         this.cacheType = cacheType;
         this.affNode = affNode;
         this.updatesAllowed = updatesAllowed;
-        this.depEnabled = ctx.deploy().enabled() && !cacheObjects().isPortableEnabled(cacheCfg);
+        this.depEnabled = ctx.deploy().enabled() && !cacheObjects().isBinaryEnabled(cacheCfg);
 
         /*
          * Managers in starting order!
@@ -512,7 +513,7 @@ public class GridCacheContext<K, V> implements Externalizable {
     public void cache(GridCacheAdapter<K, V> cache) {
         this.cache = cache;
 
-        deferredDelete = cache.isDht() || cache.isDhtAtomic() || cache.isColocated() ||
+        deferredDel = cache.isDht() || cache.isDhtAtomic() || cache.isColocated() ||
             (cache.isNear() && cache.configuration().getAtomicityMode() == ATOMIC);
     }
 
@@ -576,7 +577,7 @@ public class GridCacheContext<K, V> implements Externalizable {
      * @return {@code True} if entries should not be deleted from cache immediately.
      */
     public boolean deferredDelete() {
-        return deferredDelete;
+        return deferredDel;
     }
 
     /**
@@ -1434,6 +1435,13 @@ public class GridCacheContext<K, V> implements Externalizable {
     }
 
     /**
+     * @return {@code True} if store and read-through mode are enabled in configuration.
+     */
+    public boolean readThroughConfigured() {
+        return store().configured() && cacheCfg.isReadThrough();
+    }
+
+    /**
      * @return {@code True} if {@link CacheConfiguration#isLoadPreviousValue()} flag is set.
      */
     public boolean loadPreviousValue() {
@@ -1677,7 +1685,7 @@ public class GridCacheContext<K, V> implements Externalizable {
     }
 
     /**
-     * @return Portable processor.
+     * @return Binary processor.
      */
     public IgniteCacheObjectProcessor cacheObjects() {
         return kernalContext().cacheObjects();
@@ -1691,9 +1699,9 @@ public class GridCacheContext<K, V> implements Externalizable {
     }
 
     /**
-     * @return Keep portable flag.
+     * @return Keep binary flag.
      */
-    public boolean keepPortable() {
+    public boolean keepBinary() {
         CacheOperationContext opCtx = operationContextPerCall();
 
         return opCtx != null && opCtx.isKeepBinary();
@@ -1730,34 +1738,34 @@ public class GridCacheContext<K, V> implements Externalizable {
      * Unwraps collection.
      *
      * @param col Collection to unwrap.
-     * @param keepPortable Keep portable flag.
+     * @param keepBinary Keep binary flag.
      * @return Unwrapped collection.
      */
-    public Collection<Object> unwrapPortablesIfNeeded(Collection<Object> col, boolean keepPortable) {
-        return cacheObjCtx.unwrapPortablesIfNeeded(col, keepPortable);
+    public Collection<Object> unwrapBinariesIfNeeded(Collection<Object> col, boolean keepBinary) {
+        return cacheObjCtx.unwrapBinariesIfNeeded(col, keepBinary);
     }
 
     /**
      * Unwraps object for binary.
      *
      * @param o Object to unwrap.
-     * @param keepPortable Keep portable flag.
+     * @param keepBinary Keep binary flag.
      * @return Unwrapped object.
      */
-    public Object unwrapPortableIfNeeded(Object o, boolean keepPortable) {
-        return cacheObjCtx.unwrapPortableIfNeeded(o, keepPortable);
+    public Object unwrapBinaryIfNeeded(Object o, boolean keepBinary) {
+        return cacheObjCtx.unwrapBinaryIfNeeded(o, keepBinary);
     }
 
     /**
      * Unwraps object for binary.
      *
      * @param o Object to unwrap.
-     * @param keepPortable Keep portable flag.
+     * @param keepBinary Keep binary flag.
      * @param cpy Copy value flag.
      * @return Unwrapped object.
      */
-    public Object unwrapPortableIfNeeded(Object o, boolean keepPortable, boolean cpy) {
-        return cacheObjCtx.unwrapPortableIfNeeded(o, keepPortable, cpy);
+    public Object unwrapBinaryIfNeeded(Object o, boolean keepBinary, boolean cpy) {
+        return cacheObjCtx.unwrapBinaryIfNeeded(o, keepBinary, cpy);
     }
 
     /**
@@ -1772,7 +1780,7 @@ public class GridCacheContext<K, V> implements Externalizable {
                     CacheInvokeResult invokeRes = (CacheInvokeResult)res;
 
                     if (invokeRes.result() != null)
-                        res = CacheInvokeResult.fromResult(unwrapPortableIfNeeded(invokeRes.result(),
+                        res = CacheInvokeResult.fromResult(unwrapBinaryIfNeeded(invokeRes.result(),
                             keepBinary, false));
                 }
 
@@ -1872,7 +1880,7 @@ public class GridCacheContext<K, V> implements Externalizable {
      * @param val Value.
      * @param skipVals Skip values flag.
      * @param keepCacheObjects Keep cache objects flag.
-     * @param deserializePortable Deserialize portable flag.
+     * @param deserializeBinary Deserialize binary flag.
      * @param cpy Copy flag.
      */
     @SuppressWarnings("unchecked")
@@ -1881,15 +1889,15 @@ public class GridCacheContext<K, V> implements Externalizable {
         CacheObject val,
         boolean skipVals,
         boolean keepCacheObjects,
-        boolean deserializePortable,
+        boolean deserializeBinary,
         boolean cpy) {
         assert key != null;
         assert val != null || skipVals;
 
         if (!keepCacheObjects) {
-            Object key0 = unwrapPortableIfNeeded(key, !deserializePortable);
+            Object key0 = unwrapBinaryIfNeeded(key, !deserializeBinary);
 
-            Object val0 = skipVals ? true : unwrapPortableIfNeeded(val, !deserializePortable);
+            Object val0 = skipVals ? true : unwrapBinaryIfNeeded(val, !deserializeBinary);
 
             assert key0 != null : key;
             assert val0 != null : val;
@@ -1959,6 +1967,31 @@ public class GridCacheContext<K, V> implements Externalizable {
                 return toCacheKeyObject(key);
             }
         });
+    }
+
+    /**
+     * @param part Partition.
+     * @param affNodes Affinity nodes.
+     * @param topVer Topology version.
+     * @return {@code True} if cache 'get' operation is allowed to get entry locally.
+     */
+    public boolean allowFastLocalRead(int part, List<ClusterNode> affNodes, AffinityTopologyVersion topVer) {
+        return affinityNode() && rebalanceEnabled() && hasPartition(part, affNodes, topVer);
+    }
+
+    /**
+     * @param part Partition.
+     * @param affNodes Affinity nodes.
+     * @param topVer Topology version.
+     * @return {@code True} if partition is available locally.
+     */
+    private boolean hasPartition(int part, List<ClusterNode> affNodes, AffinityTopologyVersion topVer) {
+        assert affinityNode();
+
+        GridDhtPartitionTopology top = topology();
+
+        return (top.rebalanceFinished(topVer) && (isReplicated() || affNodes.contains(locNode)))
+            || (top.partitionState(localNodeId(), part) == OWNING);
     }
 
     /** {@inheritDoc} */

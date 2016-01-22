@@ -48,7 +48,6 @@ import org.apache.ignite.internal.processors.cache.distributed.near.GridNearLock
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearLockRequest;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearLockResponse;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
-import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxKey;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
@@ -170,7 +169,7 @@ public final class GridDhtColocatedLockFuture extends GridCompoundIdentityFuture
         CacheEntryPredicate[] filter,
         boolean skipStore,
         boolean keepBinary) {
-        super(cctx.kernalContext(), CU.boolReducer());
+        super(CU.boolReducer());
 
         assert keys != null;
 
@@ -596,12 +595,8 @@ public final class GridDhtColocatedLockFuture extends GridCompoundIdentityFuture
         AffinityTopologyVersion topVer = cctx.mvcc().lastExplicitLockTopologyVersion(threadId);
 
         // If there is another system transaction in progress, use it's topology version to prevent deadlock.
-        if (topVer == null && tx != null && tx.system()) {
-            IgniteInternalTx tx0 = cctx.tm().anyActiveThreadTx(tx);
-
-            if (tx0 != null)
-                topVer = tx0.topologyVersionSnapshot();
-        }
+        if (topVer == null && tx != null && tx.system())
+            topVer = cctx.tm().lockedTopologyVersion(Thread.currentThread().getId(), tx);
 
         if (topVer != null && tx != null)
             tx.topologyVersion(topVer);
@@ -980,7 +975,7 @@ public final class GridDhtColocatedLockFuture extends GridCompoundIdentityFuture
      * @throws IgniteCheckedException If failed.
      */
     private void proceedMapping() throws IgniteCheckedException {
-        boolean set = tx != null && cctx.shared().tm().setTxTopologyHint(tx);
+        boolean set = tx != null && cctx.shared().tm().setTxTopologyHint(tx.topologyVersionSnapshot());
 
         try {
             proceedMapping0();
@@ -1320,10 +1315,6 @@ public final class GridDhtColocatedLockFuture extends GridCompoundIdentityFuture
         /** Keys. */
         @GridToStringInclude
         private Collection<KeyCacheObject> keys;
-
-        /** Mappings to proceed. */
-        @GridToStringExclude
-        private Deque<GridNearLockMapping> mappings;
 
         /** */
         private boolean rcvRes;

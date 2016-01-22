@@ -109,7 +109,7 @@ public class GridDhtTxFinishResponse extends GridDistributedTxFinishResponse {
     @Override public void prepareMarshal(GridCacheSharedContext ctx) throws IgniteCheckedException {
         super.prepareMarshal(ctx);
 
-        if (checkCommittedErr != null)
+        if (checkCommittedErr != null && checkCommittedErrBytes == null)
             checkCommittedErrBytes = ctx.marshaller().marshal(checkCommittedErr);
     }
 
@@ -118,7 +118,7 @@ public class GridDhtTxFinishResponse extends GridDistributedTxFinishResponse {
         throws IgniteCheckedException {
         super.finishUnmarshal(ctx, ldr);
 
-        if (checkCommittedErrBytes != null)
+        if (checkCommittedErrBytes != null && checkCommittedErr == null)
             checkCommittedErr = ctx.marshaller().unmarshal(checkCommittedErrBytes, ldr);
     }
 

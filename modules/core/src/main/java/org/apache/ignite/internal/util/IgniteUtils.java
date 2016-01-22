@@ -2482,6 +2482,16 @@ public abstract class IgniteUtils {
     }
 
     /**
+     * Gets a hex string representation of the given long value.
+     *
+     * @param val Value to convert to string.
+     * @return Hex string.
+     */
+    public static String hexLong(long val) {
+        return new SB().appendHex(val).toString();
+    }
+
+    /**
      * Return byte value for certain character.
      *
      * @param ch Character
@@ -4243,11 +4253,11 @@ public abstract class IgniteUtils {
     /**
      * Mask component name to make sure that it is not {@code null}.
      *
-     * @param cacheName Component name to mask, possibly {@code null}.
+     * @param name Component name to mask, possibly {@code null}.
      * @return Component name.
      */
-    public static String maskName(@Nullable String cacheName) {
-        return cacheName == null ? "default" : cacheName;
+    public static String maskName(@Nullable String name) {
+        return name == null ? "default" : name;
     }
 
     /**
@@ -7667,6 +7677,22 @@ public abstract class IgniteUtils {
     }
 
     /**
+     * Gets object field offset.
+     *
+     * @param cls Object class.
+     * @param fieldName Field name.
+     * @return Field offset.
+     */
+    public static long fieldOffset(Class<?> cls, String fieldName) {
+        try {
+            return UNSAFE.objectFieldOffset(cls.getDeclaredField(fieldName));
+        }
+        catch (NoSuchFieldException e) {
+            throw new IllegalStateException(e);
+        }
+    }
+
+    /**
      * @param cls Class to check.
      * @return {@code True} if class is final.
      */
@@ -8208,15 +8234,15 @@ public abstract class IgniteUtils {
      * @return Hash value.
      */
     public static int hash(int h) {
-        // Apply base step of MurmurHash; see http://code.google.com/p/smhasher/
-        // Despite two multiplies, this is often faster than others
-        // with comparable bit-spread properties.
-        h ^= h >>> 16;
-        h *= 0x85ebca6b;
-        h ^= h >>> 13;
-        h *= 0xc2b2ae35;
+        // Spread bits to regularize both segment and index locations,
+        // using variant of single-word Wang/Jenkins hash.
+        h += (h <<  15) ^ 0xffffcd7d;
+        h ^= (h >>> 10);
+        h += (h <<   3);
+        h ^= (h >>>  6);
+        h += (h <<   2) + (h << 14);
 
-        return (h >>> 16) ^ h;
+        return h ^ (h >>> 16);
     }
 
     /**
@@ -9174,6 +9200,30 @@ public abstract class IgniteUtils {
     }
 
     /**
+     * @param cls The class to search.
+     * @param name Name of a field to get.
+     * @return Field or {@code null}.
+     */
+    @Nullable public static Field findNonPublicField(Class<?> cls, String name) {
+        while (cls != null) {
+            try {
+                Field fld = cls.getDeclaredField(name);
+
+                fld.setAccessible(true);
+
+                return fld;
+            }
+            catch (NoSuchFieldException e) {
+                // No-op.
+            }
+
+            cls = cls.getSuperclass();
+        }
+
+        return null;
+    }
+
+    /**
      * @param c Collection.
      * @param p Optional filters.
      * @return Resulting array list.
@@ -9272,6 +9322,9 @@ public abstract class IgniteUtils {
         assert out != null;
         assert buf != null;
         assert buf.hasArray();
+
+        if (writer != null)
+            writer.setCurrentWriteClass(msg.getClass());
 
         boolean finished = false;
         int cnt = 0;

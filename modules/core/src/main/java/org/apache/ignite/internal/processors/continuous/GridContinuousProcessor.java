@@ -192,9 +192,9 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
 
         ctx.discovery().setCustomEventListener(StartRoutineDiscoveryMessage.class,
             new CustomEventListener<StartRoutineDiscoveryMessage>() {
-                @Override public void onCustomEvent(ClusterNode snd,
-                    StartRoutineDiscoveryMessage msg,
-                    AffinityTopologyVersion topVer) {
+                @Override public void onCustomEvent(AffinityTopologyVersion topVer,
+                    ClusterNode snd,
+                    StartRoutineDiscoveryMessage msg) {
                     if (!snd.id().equals(ctx.localNodeId()) && !ctx.isStopping())
                         processStartRequest(snd, msg);
                 }
@@ -202,9 +202,9 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
 
         ctx.discovery().setCustomEventListener(StartRoutineAckDiscoveryMessage.class,
             new CustomEventListener<StartRoutineAckDiscoveryMessage>() {
-                @Override public void onCustomEvent(ClusterNode snd,
-                    StartRoutineAckDiscoveryMessage msg,
-                    AffinityTopologyVersion topVer) {
+                @Override public void onCustomEvent(AffinityTopologyVersion topVer,
+                    ClusterNode snd,
+                    StartRoutineAckDiscoveryMessage msg) {
                     StartFuture fut = startFuts.remove(msg.routineId());
 
                     if (fut != null) {
@@ -231,7 +231,7 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
                                     }
                                 }
 
-                                routine.handler().updateCounters(msg.updateCounters());
+                                routine.handler().updateCounters(topVer, msg.updateCounters());
                             }
 
                             fut.onRemoteRegistered();
@@ -249,9 +249,9 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
 
         ctx.discovery().setCustomEventListener(StopRoutineDiscoveryMessage.class,
             new CustomEventListener<StopRoutineDiscoveryMessage>() {
-                @Override public void onCustomEvent(ClusterNode snd,
-                    StopRoutineDiscoveryMessage msg,
-                    AffinityTopologyVersion topVer) {
+                @Override public void onCustomEvent(AffinityTopologyVersion topVer,
+                    ClusterNode snd,
+                    StopRoutineDiscoveryMessage msg) {
                     if (!snd.id().equals(ctx.localNodeId())) {
                         UUID routineId = msg.routineId();
 
@@ -269,9 +269,9 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
 
         ctx.discovery().setCustomEventListener(StopRoutineAckDiscoveryMessage.class,
             new CustomEventListener<StopRoutineAckDiscoveryMessage>() {
-                @Override public void onCustomEvent(ClusterNode snd,
-                    StopRoutineAckDiscoveryMessage msg,
-                    AffinityTopologyVersion topVer) {
+                @Override public void onCustomEvent(AffinityTopologyVersion topVer,
+                    ClusterNode snd,
+                    StopRoutineAckDiscoveryMessage msg) {
                     StopFuture fut = stopFuts.remove(msg.routineId());
 
                     if (fut != null)

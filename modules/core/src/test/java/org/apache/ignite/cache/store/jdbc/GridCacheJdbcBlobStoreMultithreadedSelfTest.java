@@ -168,7 +168,7 @@ public class GridCacheJdbcBlobStoreMultithreadedSelfTest extends GridCommonAbstr
                     Map<Integer, String> map = new TreeMap<>();
 
                     for (int j = 0; j < 10; j++)
-                        map.put(rnd.nextInt(1000), "value");
+                        map.put(j, "value");
 
                     IgniteCache<Object, Object> cache = jcache(rnd.nextInt(GRID_CNT));
 

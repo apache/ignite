@@ -142,7 +142,6 @@ public class WebSessionSelfTest extends GridCommonAbstractTest {
                     }
 
                     assert idx != -1;
-                    assert srv != null;
 
                     stopServer(srv);
 
@@ -181,7 +180,6 @@ public class WebSessionSelfTest extends GridCommonAbstractTest {
                 }
 
                 assert idx != -1;
-                assert srv != null;
 
                 int port = TEST_JETTY_PORT + idx;
 

@@ -18,6 +18,8 @@
 package org.apache.ignite.plugin.security;
 
 import java.net.InetSocketAddress;
+import java.util.Collections;
+import java.util.Map;
 import java.util.UUID;
 
 /**
@@ -31,10 +33,13 @@ public class AuthenticationContext {
     private UUID subjId;
 
     /** Credentials. */
-    private SecurityCredentials credentials;
+    private SecurityCredentials creds;
 
     /** Subject address. */
     private InetSocketAddress addr;
+
+    /** */
+    private Map<String, Object> nodeAttrs;
 
     /**
      * Gets subject type.
@@ -78,16 +83,16 @@ public class AuthenticationContext {
      * @return Security credentials.
      */
     public SecurityCredentials credentials() {
-        return credentials;
+        return creds;
     }
 
     /**
      * Sets security credentials.
      *
-     * @param credentials Security credentials.
+     * @param creds Security credentials.
      */
-    public void credentials(SecurityCredentials credentials) {
-        this.credentials = credentials;
+    public void credentials(SecurityCredentials creds) {
+        this.creds = creds;
     }
 
     /**
@@ -106,5 +111,23 @@ public class AuthenticationContext {
      */
     public void address(InetSocketAddress addr) {
         this.addr = addr;
+    }
+
+    /**
+     * Gets node attributes.
+     *
+     * @return Node attributes or empty map for {@link SecuritySubjectType#REMOTE_CLIENT}.
+     */
+    public Map<String, Object> nodeAttributes() {
+        return nodeAttrs != null ? nodeAttrs : Collections.<String, Object>emptyMap();
+    }
+
+    /**
+     * Sets node attributes.
+     *
+     * @param nodeAttrs Node attributes.
+     */
+    public void nodeAttributes(Map<String, Object> nodeAttrs) {
+        this.nodeAttrs = nodeAttrs;
     }
 }

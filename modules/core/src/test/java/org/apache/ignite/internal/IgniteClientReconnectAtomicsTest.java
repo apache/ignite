@@ -17,6 +17,8 @@
 
 package org.apache.ignite.internal;
 
+import java.util.Collection;
+import java.util.Collections;
 import java.util.concurrent.Callable;
 import java.util.concurrent.TimeUnit;
 import org.apache.ignite.Ignite;
@@ -42,6 +44,61 @@ public class IgniteClientReconnectAtomicsTest extends IgniteClientReconnectAbstr
     /** {@inheritDoc} */
     @Override protected int clientCount() {
         return 1;
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testAtomicsReconnectClusterRestart() throws Exception {
+        Ignite client = grid(serverCount());
+
+        assertTrue(client.cluster().localNode().isClient());
+
+        final IgniteAtomicLong atomicLong = client.atomicLong("atomicLong", 1L, true);
+        final IgniteAtomicReference<Integer> atomicRef = client.atomicReference("atomicRef", 1, true);
+        final IgniteAtomicStamped<Integer, Integer> atomicStamped = client.atomicStamped("atomicStamped", 1, 1, true);
+        final IgniteCountDownLatch latch = client.countDownLatch("latch", 1, true, true);
+        final IgniteAtomicSequence seq = client.atomicSequence("seq", 1L, true);
+
+        Ignite srv = grid(0);
+
+        reconnectServersRestart(log, client, Collections.singleton(srv), new Callable<Collection<Ignite>>() {
+            @Override public Collection<Ignite> call() throws Exception {
+                return Collections.singleton((Ignite)startGrid(0));
+            }
+        });
+
+        GridTestUtils.assertThrows(log, new Callable<Void>() {
+            @Override public Void call() throws Exception {
+                atomicStamped.compareAndSet(1, 1, 2, 2);
+
+                return null;
+            }
+        }, IllegalStateException.class, null);
+
+        GridTestUtils.assertThrows(log, new Callable<Void>() {
+            @Override public Void call() throws Exception {
+                atomicRef.compareAndSet(1, 2);
+
+                return null;
+            }
+        }, IllegalStateException.class, null);
+
+        GridTestUtils.assertThrows(log, new Callable<Void>() {
+            @Override public Void call() throws Exception {
+                atomicLong.incrementAndGet();
+
+                return null;
+            }
+        }, IllegalStateException.class, null);
+
+        GridTestUtils.assertThrows(log, new Callable<Void>() {
+            @Override public Void call() throws Exception {
+                seq.getAndAdd(1L);
+
+                return null;
+            }
+        }, IllegalStateException.class, null);
     }
 
     /**

@@ -151,13 +151,15 @@ public class GridDhtAtomicUpdateRequest extends GridCacheMessage implements Grid
     @GridDirectTransient
     private boolean onRes;
 
+    /** */
     @GridDirectTransient
     private List<Integer> partIds;
 
+    /** */
     @GridDirectTransient
-    private List<CacheObject> localPrevVals;
+    private List<CacheObject> locPrevVals;
 
-    /** Keep portable flag. */
+    /** Keep binary flag. */
     private boolean keepBinary;
 
     /**
@@ -213,7 +215,7 @@ public class GridDhtAtomicUpdateRequest extends GridCacheMessage implements Grid
 
         keys = new ArrayList<>();
         partIds = new ArrayList<>();
-        localPrevVals = new ArrayList<>();
+        locPrevVals = new ArrayList<>();
 
         if (forceTransformBackups) {
             entryProcessors = new ArrayList<>();
@@ -254,7 +256,7 @@ public class GridDhtAtomicUpdateRequest extends GridCacheMessage implements Grid
 
         partIds.add(partId);
 
-        localPrevVals.add(prevVal);
+        locPrevVals.add(prevVal);
 
         if (forceTransformBackups) {
             assert entryProcessor != null;
@@ -486,7 +488,7 @@ public class GridDhtAtomicUpdateRequest extends GridCacheMessage implements Grid
     }
 
     /**
-     * @return Keep portable flag.
+     * @return Keep binary flag.
      */
     public boolean keepBinary() {
         return keepBinary;
@@ -519,7 +521,7 @@ public class GridDhtAtomicUpdateRequest extends GridCacheMessage implements Grid
      * @return Value.
      */
     @Nullable public CacheObject localPreviousValue(int idx) {
-        return localPrevVals.get(idx);
+        return locPrevVals.get(idx);
     }
 
     /**
@@ -654,11 +656,14 @@ public class GridDhtAtomicUpdateRequest extends GridCacheMessage implements Grid
             if (!addDepInfo && ctx.deploymentEnabled())
                 addDepInfo = true;
 
-            invokeArgsBytes = marshalInvokeArguments(invokeArgs, cctx);
+            if (invokeArgsBytes == null)
+                invokeArgsBytes = marshalInvokeArguments(invokeArgs, cctx);
 
-            entryProcessorsBytes = marshalCollection(entryProcessors, cctx);
+            if (entryProcessorsBytes == null)
+                entryProcessorsBytes = marshalCollection(entryProcessors, cctx);
 
-            nearEntryProcessorsBytes = marshalCollection(nearEntryProcessors, cctx);
+            if (nearEntryProcessorsBytes == null)
+                nearEntryProcessorsBytes = marshalCollection(nearEntryProcessors, cctx);
         }
     }
 
@@ -679,13 +684,15 @@ public class GridDhtAtomicUpdateRequest extends GridCacheMessage implements Grid
         finishUnmarshalCacheObjects(prevVals, cctx, ldr);
 
         if (forceTransformBackups) {
-            entryProcessors = unmarshalCollection(entryProcessorsBytes, ctx, ldr);
+            if (entryProcessors == null)
+                entryProcessors = unmarshalCollection(entryProcessorsBytes, ctx, ldr);
 
-            invokeArgs = unmarshalInvokeArguments(invokeArgsBytes, ctx, ldr);
+            if (invokeArgs == null)
+                invokeArgs = unmarshalInvokeArguments(invokeArgsBytes, ctx, ldr);
+
+            if (nearEntryProcessors == null)
+                nearEntryProcessors = unmarshalCollection(nearEntryProcessorsBytes, ctx, ldr);
         }
-
-        if (forceTransformBackups)
-            nearEntryProcessors = unmarshalCollection(nearEntryProcessorsBytes, ctx, ldr);
     }
 
     /** {@inheritDoc} */

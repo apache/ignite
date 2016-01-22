@@ -96,22 +96,28 @@ public class GridTransactionalCacheQueueImpl<T> extends GridCacheQueueAdapter<T>
                 @Override public T call() throws Exception {
                     T retVal;
 
-                    try (IgniteInternalTx tx = cache.txStartEx(PESSIMISTIC, REPEATABLE_READ)) {
-                        Long idx = (Long)cache.invoke(queueKey, new PollProcessor(id)).get();
+                    while (true) {
+                        try (IgniteInternalTx tx = cache.txStartEx(PESSIMISTIC, REPEATABLE_READ)) {
+                            Long idx = (Long)cache.invoke(queueKey, new PollProcessor(id)).get();
 
-                        if (idx != null) {
-                            checkRemoved(idx);
+                            if (idx != null) {
+                                checkRemoved(idx);
 
-                            retVal = (T)cache.getAndRemove(itemKey(idx));
+                                retVal = (T)cache.getAndRemove(itemKey(idx));
 
-                            assert retVal != null : idx;
+                                if (retVal == null) { // Possible if data was lost.
+                                    tx.commit();
+
+                                    continue;
+                                }
+                            }
+                            else
+                                retVal = null;
+
+                            tx.commit();
+
+                            return retVal;
                         }
-                        else
-                            retVal = null;
-
-                        tx.commit();
-
-                        return retVal;
                     }
                 }
             }).call();
@@ -188,9 +194,7 @@ public class GridTransactionalCacheQueueImpl<T> extends GridCacheQueueAdapter<T>
                         if (idx != null) {
                             checkRemoved(idx);
 
-                            boolean rmv = cache.remove(itemKey(idx));
-
-                            assert rmv : idx;
+                            cache.remove(itemKey(idx));
                         }
 
                         tx.commit();
