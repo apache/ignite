@@ -168,6 +168,22 @@
             </activation>
             <build>
                 <plugins>
+                    <plugin><!-- skipping generates dependencies licenses -->
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-remote-resources-plugin</artifactId>
+                        <executions>
+                            <execution>
+                                <id>ignite-dependencies</id>
+                                <goals>
+                                    <goal>process</goal>
+                                </goals>
+                                <configuration>
+                                    <skip>true</skip>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+
                     <plugin>
                         <groupId>org.apache.maven.plugins</groupId>
                         <artifactId>maven-javadoc-plugin</artifactId>
@@ -912,22 +928,6 @@
                                     <directory>libs</directory>
                                 </fileset>
                             </filesets>
-                        </configuration>
-                    </execution>
-                </executions>
-            </plugin>
-
-            <plugin><!-- skipping generates dependencies licenses -->
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-remote-resources-plugin</artifactId>
-                <executions>
-                    <execution>
-                        <id>ignite-dependencies</id>
-                        <goals>
-                            <goal>process</goal>
-                        </goals>
-                        <configuration>
-                           <skip>true</skip>
                         </configuration>
                     </execution>
                 </executions>
