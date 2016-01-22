@@ -74,7 +74,9 @@ namespace Apache.Ignite.Core.Impl.Common
             WriteElement(configuration, writer, rootElementName, typeof(IgniteConfiguration));
         }
 
-        [SuppressMessage("ReSharper", "AssignNullToNotNullAttribute")]
+        /// <summary>
+        /// Writes new element.
+        /// </summary>
         private static void WriteElement(object obj, XmlWriter writer, string rootElementName, Type valueType, 
             PropertyInfo property = null)
         {
@@ -83,45 +85,67 @@ namespace Apache.Ignite.Core.Impl.Common
             else
                 writer.WriteStartElement(rootElementName);
 
-            if (valueType.IsGenericType && valueType.GetGenericTypeDefinition() == typeof(ICollection<>))
-            {
-                var elementType = valueType.GetGenericArguments().Single();
-
-                var elementTypeName = PropertyNameToXmlName(elementType.Name);
-
-                foreach (var element in (IEnumerable) obj)
-                    WriteElement(element, writer, elementTypeName, elementType, property);
-            }
-            else if (IsBasicType(valueType))
-            {
-                var converter = GetConverter(property, valueType);
-                var stringValue = (string)converter.ConvertTo(obj, typeof(string));
-                writer.WriteString(stringValue);
-            }
+            if (IsBasicType(valueType))
+                WriteBasicProperty(obj, writer, valueType, property);
+            else if (valueType.IsGenericType && valueType.GetGenericTypeDefinition() == typeof (ICollection<>))
+                WriteCollectionProperty(obj, writer, valueType, property);
             else
-            {
-                var props = GetNonDefaultProperties(obj).ToList();
-
-                // Specify type for interfaces and abstract classes
-                if (valueType.IsAbstract)
-                    writer.WriteAttributeString(TypeNameAttribute, TypeStringConverter.Convert(obj.GetType()));
-
-                // Write attributes
-                foreach (var prop in props.Where(p => IsBasicType(p.PropertyType)))
-                {
-                    var value = prop.GetValue(obj, null);
-                    var converter = GetConverter(prop, prop.PropertyType);
-                    var stringValue = (string) converter.ConvertTo(value, typeof (string));
-                    writer.WriteAttributeString(PropertyNameToXmlName(prop.Name), stringValue);
-                }
-
-                // Write elements
-                foreach (var prop in props.Where(p => !IsBasicType(p.PropertyType)))
-                    WriteElement(prop.GetValue(obj, null), writer, PropertyNameToXmlName(prop.Name),
-                        prop.PropertyType, prop);
-            }
+                WriteComplexProperty(obj, writer, valueType);
 
             writer.WriteEndElement();
+        }
+
+        /// <summary>
+        /// Writes the property of a basic type (primitives, strings, types).
+        /// </summary>
+        [SuppressMessage("ReSharper", "AssignNullToNotNullAttribute")]
+        private static void WriteBasicProperty(object obj, XmlWriter writer, Type valueType, PropertyInfo property)
+        {
+            var converter = GetConverter(property, valueType);
+
+            var stringValue = (string)converter.ConvertTo(obj, typeof(string));
+
+            writer.WriteString(stringValue);
+        }
+
+        /// <summary>
+        /// Writes the collection property.
+        /// </summary>
+        private static void WriteCollectionProperty(object obj, XmlWriter writer, Type valueType, PropertyInfo property)
+        {
+            var elementType = valueType.GetGenericArguments().Single();
+
+            var elementTypeName = PropertyNameToXmlName(elementType.Name);
+
+            foreach (var element in (IEnumerable)obj)
+                WriteElement(element, writer, elementTypeName, elementType, property);
+        }
+
+        /// <summary>
+        /// Writes the complex property (nested object).
+        /// </summary>
+        [SuppressMessage("ReSharper", "AssignNullToNotNullAttribute")]
+        private static void WriteComplexProperty(object obj, XmlWriter writer, Type valueType)
+        {
+            var props = GetNonDefaultProperties(obj).ToList();
+
+            // Specify type for interfaces and abstract classes
+            if (valueType.IsAbstract)
+                writer.WriteAttributeString(TypeNameAttribute, TypeStringConverter.Convert(obj.GetType()));
+
+            // Write attributes
+            foreach (var prop in props.Where(p => IsBasicType(p.PropertyType)))
+            {
+                var value = prop.GetValue(obj, null);
+                var converter = GetConverter(prop, prop.PropertyType);
+                var stringValue = (string) converter.ConvertTo(value, typeof (string));
+                writer.WriteAttributeString(PropertyNameToXmlName(prop.Name), stringValue);
+            }
+
+            // Write elements
+            foreach (var prop in props.Where(p => !IsBasicType(p.PropertyType)))
+                WriteElement(prop.GetValue(obj, null), writer, PropertyNameToXmlName(prop.Name),
+                    prop.PropertyType, prop);
         }
 
         /// <summary>
@@ -160,21 +184,20 @@ namespace Apache.Ignite.Core.Impl.Common
                 else if (propType.IsGenericType && propType.GetGenericTypeDefinition() == typeof (ICollection<>))
                 {
                     // Collection
-                    ReadCollection(reader, prop, target);
+                    ReadCollectionProperty(reader, prop, target);
                 }
                 else
                 {
                     // Nested object (complex property)
-                    var nestedVal = ReadNestedObject(reader, propType, prop.Name, targetType);
-                    prop.SetValue(target, nestedVal, null);
+                    prop.SetValue(target, ReadComplexProperty(reader, propType, prop.Name, targetType), null);
                 }
             }
         }
 
         /// <summary>
-        /// Reads the nested object.
+        /// Reads the complex property (nested object).
         /// </summary>
-        private static object ReadNestedObject(XmlReader reader, Type propType, string propName, Type targetType)
+        private static object ReadComplexProperty(XmlReader reader, Type propType, string propName, Type targetType)
         {
             if (propType.IsAbstract)
             {
@@ -217,7 +240,7 @@ namespace Apache.Ignite.Core.Impl.Common
         /// <summary>
         /// Reads the collection.
         /// </summary>
-        private static void ReadCollection(XmlReader reader, PropertyInfo prop, object target)
+        private static void ReadCollectionProperty(XmlReader reader, PropertyInfo prop, object target)
         {
             var elementType = prop.PropertyType.GetGenericArguments().Single();
 
@@ -242,7 +265,7 @@ namespace Apache.Ignite.Core.Impl.Common
 
                     list.Add(converter != null
                         ? converter.ConvertFromString(subReader.ReadString())
-                        : ReadNestedObject(subReader, elementType, prop.Name, target.GetType()));
+                        : ReadComplexProperty(subReader, elementType, prop.Name, target.GetType()));
                 }
             }
 
