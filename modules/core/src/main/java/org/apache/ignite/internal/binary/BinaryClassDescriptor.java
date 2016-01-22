@@ -40,6 +40,8 @@ import org.apache.ignite.binary.BinarySerializer;
 import org.apache.ignite.binary.Binarylizable;
 import org.apache.ignite.internal.processors.cache.CacheObjectImpl;
 import org.apache.ignite.internal.util.GridUnsafe;
+import org.apache.ignite.internal.util.tostring.GridToStringExclude;
+import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.marshaller.MarshallerExclusions;
 import org.apache.ignite.marshaller.optimized.OptimizedMarshaller;
@@ -57,6 +59,7 @@ public class BinaryClassDescriptor {
     private static final String OAI_PKG = "org.apache.ignite";
 
     /** */
+    @GridToStringExclude
     private final BinaryContext ctx;
 
     /** */
@@ -805,5 +808,10 @@ public class BinaryClassDescriptor {
         catch (IgniteCheckedException e) {
             throw new BinaryObjectException("Failed to get constructor for class: " + cls.getName(), e);
         }
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(BinaryClassDescriptor.class, this);
     }
 }

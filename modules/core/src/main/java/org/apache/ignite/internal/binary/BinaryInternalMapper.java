@@ -19,6 +19,7 @@ package org.apache.ignite.internal.binary;
 
 import org.apache.ignite.binary.BinaryIdMapper;
 import org.apache.ignite.binary.BinaryNameMapper;
+import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
  * Internal binary mapper.
@@ -79,5 +80,10 @@ public class BinaryInternalMapper {
      */
     public String typeName(String clsName) {
         return nameMapper.typeName(clsName);
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(BinaryInternalMapper.class, this);
     }
 }

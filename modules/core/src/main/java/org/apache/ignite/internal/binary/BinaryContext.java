@@ -66,6 +66,7 @@ import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.lang.GridMapEntry;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T2;
+import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.marshaller.MarshallerContext;
@@ -360,6 +361,13 @@ public class BinaryContext {
 
         addSystemClassAffinityKey(CollocatedSetItemKey.class);
         addSystemClassAffinityKey(CollocatedQueueItemKey.class);
+
+        SB sb = new SB(">>>>> userTypes:");
+
+        for (Map.Entry<Integer, BinaryClassDescriptor> entry : userTypes.entrySet())
+            sb.a("\n").a(entry.getKey()).a("=").a(entry.getValue());
+
+        U.debug(log, sb.toString());
     }
 
     /**
@@ -840,8 +848,6 @@ public class BinaryContext {
         boolean isEnum)
         throws BinaryObjectException {
         assert mapper != null;
-
-        U.debug(log, "Rgistering type clsname=" + clsName + ", mapper=" + mapper);
 
         Class<?> cls = null;
 
