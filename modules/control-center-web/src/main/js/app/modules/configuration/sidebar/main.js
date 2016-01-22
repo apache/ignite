@@ -25,7 +25,7 @@ angular
     const items = [
         { text: 'Clusters', sref: 'base.configuration.clusters' },
         { text: 'Caches', sref: 'base.configuration.caches' },
-        { text: 'Domain model', sref: 'base.configuration.domains' },
+        { text: 'Model', sref: 'base.configuration.domains' },
         { text: 'IGFS', sref: 'base.configuration.igfs' }
     ];
 
