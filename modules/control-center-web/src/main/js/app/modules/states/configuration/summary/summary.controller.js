@@ -277,19 +277,7 @@ export default [
             ];
 
             refs.forEach((ref) => {
-                $timeout(() => {
-                    const fake_link = document.createElement('a');
-
-                    fake_link.style.display = 'none';
-
-                    document.body.appendChild(fake_link);
-
-                    fake_link.setAttribute('href', ref);
-                    fake_link.setAttribute('target', '_blank');
-                    fake_link.click();
-
-                    document.body.removeChild(fake_link);
-                }, 100);
+                window.open(ref);
             });
         };
     }
