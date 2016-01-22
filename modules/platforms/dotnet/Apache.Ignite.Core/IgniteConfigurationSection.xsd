@@ -26,7 +26,7 @@
 
     <xs:element name="igniteConfiguration">
         <xs:complexType>
-            <xs:sequence>
+            <xs:choice minOccurs="0" maxOccurs="unbounded">
                 <xs:element name="binaryConfiguration" minOccurs="0">
                     <xs:complexType>
                         <xs:sequence>
@@ -255,7 +255,7 @@
                         </xs:sequence>
                     </xs:complexType>
                 </xs:element>
-            </xs:sequence>
+            </xs:choice>
             <xs:attribute name="gridName" type="xs:string" />
             <xs:attribute name="jvmDllPath" type="xs:string" />
             <xs:attribute name="igniteHome" type="xs:string" />
