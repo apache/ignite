@@ -103,7 +103,7 @@ namespace Apache.Ignite.Core.Impl.Common
         {
             var converter = GetConverter(property, valueType);
 
-            var stringValue = (string)converter.ConvertTo(obj, typeof(string));
+            var stringValue = converter.ConvertToInvariantString(obj);
 
             writer.WriteString(stringValue);
         }
@@ -136,9 +136,8 @@ namespace Apache.Ignite.Core.Impl.Common
             // Write attributes
             foreach (var prop in props.Where(p => IsBasicType(p.PropertyType)))
             {
-                var value = prop.GetValue(obj, null);
                 var converter = GetConverter(prop, prop.PropertyType);
-                var stringValue = (string) converter.ConvertTo(value, typeof (string));
+                var stringValue = converter.ConvertToInvariantString(prop.GetValue(obj, null));
                 writer.WriteAttributeString(PropertyNameToXmlName(prop.Name), stringValue);
             }
 
