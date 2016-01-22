@@ -15,16 +15,27 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.binary.noncompact;
+package org.apache.ignite.internal.binary;
 
-import org.apache.ignite.internal.binary.BinaryObjectBuilderSelfTest;
+import org.apache.ignite.binary.BinaryBaseIdMapper;
+import org.apache.ignite.binary.BinaryBaseNameMapper;
+import org.apache.ignite.configuration.BinaryConfiguration;
+import org.apache.ignite.configuration.IgniteConfiguration;
 
 /**
- * Binary builder test for objects with non-compact footer.
+ * Binary meta data test.
  */
-public class BinaryObjectBuilderNonCompactSelfTest extends BinaryObjectBuilderSelfTest {
+public class GridSimpleLowerCaseBinaryMappersBinaryMetaDataSelfTest
+    extends GridDefaultBinaryMappersBinaryMetaDataSelfTest {
     /** {@inheritDoc} */
-    @Override protected boolean compactFooter() {
-        return false;
+    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(gridName);
+
+        BinaryConfiguration bCfg = cfg.getBinaryConfiguration();
+
+        bCfg.setNameMapper(new BinaryBaseNameMapper());
+        bCfg.setIdMapper(new BinaryBaseIdMapper(true));
+
+        return cfg;
     }
 }
