@@ -1722,12 +1722,11 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                         if (res == null) {
                             try {
-                                res = pingNode(addr, null, null).get1() != null;
+                                res = pingNode(addr, null, null) != null;
                             }
                             catch (IgniteCheckedException e) {
                                 if (log.isDebugEnabled())
-                                    log.debug("Failed to ping node [addr=" + addr +
-                                        ", err=" + e.getMessage() + ']');
+                                    log.debug("Failed to ping node [addr=" + addr + ", err=" + e.getMessage() + ']');
 
                                 res = false;
                             }
