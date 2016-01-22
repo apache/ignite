@@ -33,7 +33,7 @@ namespace Apache.Ignite.Core
         /// <value>
         /// The ignite configuration.
         /// </value>
-        public IgniteConfiguration IgniteConfiguration { get; set; }
+        public IgniteConfiguration IgniteConfiguration { get; private set; }
 
         /// <summary>
         /// Reads XML from the configuration file.
