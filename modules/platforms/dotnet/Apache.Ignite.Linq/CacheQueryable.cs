@@ -34,9 +34,9 @@ namespace Apache.Ignite.Linq
     public class CacheQueryable<TKey, TValue> : QueryableBase<ICacheEntry<TKey, TValue>>
     {
         public CacheQueryable(ICache<TKey, TValue> cache)
-            : base(QueryParser.CreateDefault(), new CacheFieldsQueryExecutor(cache.QueryFields))
+            : base(new CacheQueryProvider<TKey, TValue>(cache))
         {
-
+            // No-op.
         }
 
         // This constructor is called indirectly by LINQ's query methods, just pass to base.
@@ -45,6 +45,25 @@ namespace Apache.Ignite.Linq
         {
         }
 
+        public CacheQueryable(CacheQueryProvider<TKey, TValue> provider) : base(provider)
+        {
+            // No-op.
+        }
+    }
+
+    public class CacheQueryProvider<TKey, TValue> : QueryProviderBase
+    {
+        private readonly ICache<TKey, TValue> _cache;
+
+        public CacheQueryProvider(ICache<TKey, TValue> cache) : base(Remotion.Linq.Parsing.Structure.QueryParser.CreateDefault(), new CacheFieldsQueryExecutor(cache.QueryFields))
+        {
+            _cache = cache;
+        }
+
+        public override IQueryable<T> CreateQuery<T>(Expression expression)
+        {
+            return new CacheQueryable<TKey, TValue>(this).Cast<T>();
+        }
     }
 
     public class CacheFieldsQueryExecutor : IQueryExecutor
