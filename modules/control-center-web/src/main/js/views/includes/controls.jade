@@ -380,7 +380,7 @@ mixin form-row-custom(lblClasses, fieldClasses, dataSource)
         div(ng-switch-when='dropdown-multiple' ng-hide=fieldHide)
             div(class=lblClasses)
                 label(ng-class=fieldRequiredClass) {{::field.label}}:
-                a.customize(ng-if='field.addLink' ng-href='{{field.addLink.ref}}&id={{backupItem._id}}') (add)
+                a.customize(ng-if='field.addLink' ui-sref='{{field.addLink.ref}}({id: backupItem._id})') (add)
             div(class=fieldClasses)
                 +tipField('field.tip')
                 .input-tip

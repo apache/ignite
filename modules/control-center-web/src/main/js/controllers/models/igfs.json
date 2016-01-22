@@ -27,7 +27,7 @@
             "Associate clusters with the current IGFS"
           ],
           "addLink": {
-            "ref": "/configuration/clusters?new"
+            "ref": "base.configuration.clusters"
           }
         },
         {

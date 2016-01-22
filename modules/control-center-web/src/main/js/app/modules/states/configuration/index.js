@@ -81,7 +81,7 @@ angular
         templateUrl: '/configuration/sidebar.html'
     })
     .state('base.configuration.clusters', {
-        url: '/clusters',
+        url: '/clusters/{id}',
         templateUrl: '/configuration/clusters.html',
         data: {
             loading: 'Loading clusters screen...'
@@ -93,7 +93,7 @@ angular
         }
     })
     .state('base.configuration.caches', {
-        url: '/caches',
+        url: '/caches/{id}',
         templateUrl: '/configuration/caches.html',
         data: {
             loading: 'Loading caches screen...'
@@ -105,7 +105,7 @@ angular
         }
     })
     .state('base.configuration.domains', {
-        url: '/domains',
+        url: '/domains/{id}',
         templateUrl: '/configuration/domains.html',
         data: {
             loading: 'Loading domain models screen...'
@@ -117,7 +117,7 @@ angular
         }
     })
     .state('base.configuration.igfs', {
-        url: '/igfs',
+        url: '/igfs/{id}',
         templateUrl: '/configuration/igfs.html',
         data: {
             loading: 'Loading IGFS screen...'

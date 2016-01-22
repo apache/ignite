@@ -313,8 +313,8 @@ consoleModule.controller('cachesController', [
 
                         $scope.ui.addGroups(data.general, data.advanced);
 
-                        if ($common.getQueryVariable('new'))
-                            $scope.createItem($common.getQueryVariable('id'));
+                        if ($state.params.id)
+                            $scope.createItem($state.params.id);
                         else {
                             var lastSelectedCache = angular.fromJson(sessionStorage.lastSelectedCache);
 

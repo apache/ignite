@@ -177,8 +177,8 @@ consoleModule.controller('igfsController', [
 
                             $scope.ui.addGroups(data.general, data.advanced);
 
-                            if ($common.getQueryVariable('new'))
-                                $scope.createItem($common.getQueryVariable('id'));
+                            if ($state.params.id)
+                                $scope.createItem($state.params.id);
                             else {
                                 var lastSelectedIgfs = angular.fromJson(sessionStorage.lastSelectedIgfs);
 

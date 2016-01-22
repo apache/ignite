@@ -40,7 +40,7 @@ form.panel.panel-default(name='general')
                 .settings-row
                     ignite-form-field
                         ignite-form-field-label
-                            | Caches: #[a(ui-sref='base.configuration.caches') (add)]
+                            | Caches: #[a(ui-sref='base.configuration.caches({id: #{model}._id})') (add)]
                         ignite-form-field-tooltip
                             | Select caches to start in cluster or add a new cache
                         ignite-form-field-dropdown(

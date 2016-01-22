@@ -272,8 +272,8 @@ consoleModule.controller('clustersController', function ($http, $timeout, $scope
                 });
 
                 // Load page descriptor.
-                if ($common.getQueryVariable('new'))
-                    $scope.createItem($common.getQueryVariable('id'));
+                if ($state.params.id)
+                    $scope.createItem($state.params.id);
                 else {
                     var lastSelectedCluster = angular.fromJson(sessionStorage.lastSelectedCluster);
 

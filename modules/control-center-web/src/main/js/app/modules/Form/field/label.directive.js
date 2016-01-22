@@ -18,7 +18,6 @@
 export default ['igniteFormFieldLabel', [() => {
     return {
         restrict: 'E',
-        scope: {},
         compile() {
             return {
                 post($scope, $element, $attrs, $ctrl, $transclude) {

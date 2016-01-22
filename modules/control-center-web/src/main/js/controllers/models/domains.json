@@ -19,7 +19,7 @@
             "Select caches to associate domain model with cache"
           ],
           "addLink": {
-            "ref": "/configuration/caches?new"
+            "ref": "base.configuration.caches"
           }
         },
         {

@@ -24,7 +24,7 @@
             "Associate clusters with the current cache"
           ],
           "addLink": {
-            "ref": "/configuration/clusters?new"
+            "ref": "base.configuration.clusters"
           }
         },
         {
@@ -39,7 +39,7 @@
             "Select domain models to describe types in cache"
           ],
           "addLink": {
-            "ref": "/configuration/domains?new"
+            "ref": "base.configuration.domains"
           }
         },
         {
