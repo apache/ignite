@@ -105,7 +105,7 @@ public class PlatformCppConfigurationClosure extends PlatformAbstractConfigurati
             BinaryNameMapper nameMapper = bCfg.getNameMapper();
 
             if (nameMapper == null) {
-                bCfg.setNameMapper(new BinaryBaseNameMapper());
+                bCfg.setNameMapper(new BinaryBaseNameMapper(true));
 
                 cppCfg0.warnings(Collections.singleton("Binary name mapper is automatically set to " +
                     bCfg.getNameMapper()
