@@ -28,6 +28,7 @@ namespace Apache.Ignite.Core.Tests
     using System.Text;
     using System.Threading;
     using System.Xml;
+    using System.Xml.Schema;
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Cache.Configuration;
     using Apache.Ignite.Core.Cache.Store;
@@ -144,10 +145,16 @@ namespace Apache.Ignite.Core.Tests
 
             RunWithCustomCulture(CheckSchemaValidation);
 
-            // TODO: Try invalid XML (duplicate elements)
+            // Check invalid xml
+            const string invalidXml =
+                @"<igniteConfiguration xmlns='http://ignite.apache.org/schema/dotnet/IgniteConfigurationSection'>
+                    <binaryConfiguration /><binaryConfiguration />
+                  </igniteConfiguration>";
+
+            Assert.Throws<XmlSchemaValidationException>(() => CheckSchemaValidation(invalidXml));
         }
 
-        public void CheckSchemaValidation()
+        public static void CheckSchemaValidation()
         {
             var sb = new StringBuilder();
 
@@ -156,12 +163,17 @@ namespace Apache.Ignite.Core.Tests
                 GetTestConfig().ToXml(xmlWriter, "igniteConfiguration");
             }
 
+            CheckSchemaValidation(sb.ToString());
+        }
+
+        public static void CheckSchemaValidation(string xml)
+        {
             var document = new XmlDocument();
 
             document.Schemas.Add("http://ignite.apache.org/schema/dotnet/IgniteConfigurationSection", 
                 XmlReader.Create("IgniteConfigurationSection.xsd"));
 
-            document.Load(new StringReader(sb.ToString()));
+            document.Load(new StringReader(xml));
 
             document.Validate(null);
         }
