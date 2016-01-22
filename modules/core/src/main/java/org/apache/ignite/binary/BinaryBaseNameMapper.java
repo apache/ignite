@@ -24,10 +24,10 @@ import org.apache.ignite.internal.util.typedef.internal.A;
  */
 public class BinaryBaseNameMapper implements BinaryNameMapper {
     /** Default use simple name flag setting. */
-    public static final boolean DFLT_USE_SIMPLE_NAME = false;
+    public static final boolean DFLT_SIMPLE_NAME = false;
 
     /** */
-    private boolean useSimpleName = DFLT_USE_SIMPLE_NAME;
+    private boolean isSimpleName = DFLT_SIMPLE_NAME;
 
     /**
      * Default constructor.
@@ -36,12 +36,12 @@ public class BinaryBaseNameMapper implements BinaryNameMapper {
     }
 
     /**
-     * @param useSimpleName Whether to use simple name of class or not.
+     * @param isSimpleName Whether to use simple name of class or not.
      * <p>
-     * Defaults to {@link #DFLT_USE_SIMPLE_NAME}.
+     * Defaults to {@link #DFLT_SIMPLE_NAME}.
      */
-    public BinaryBaseNameMapper(boolean useSimpleName) {
-        this.useSimpleName = useSimpleName;
+    public BinaryBaseNameMapper(boolean isSimpleName) {
+        this.isSimpleName = isSimpleName;
     }
 
     /**
@@ -49,24 +49,24 @@ public class BinaryBaseNameMapper implements BinaryNameMapper {
      *
      * @return Whether to use simple name of class or not.
      */
-    public boolean getUseSimpleName() {
-        return useSimpleName;
+    public boolean isSimpleName() {
+        return isSimpleName;
     }
 
     /**
      * Sets whether to use simple name of class or not.
      *
-     * @param useSimpleName Whether to use simple name of class or not.
+     * @param isSimpleName Whether to use simple name of class or not.
      */
-    public void setLowerCase(boolean useSimpleName) {
-        this.useSimpleName = useSimpleName;
+    public void setLowerCase(boolean isSimpleName) {
+        this.isSimpleName = isSimpleName;
     }
 
     /** {@inheritDoc} */
     @Override public String typeName(String clsName) {
         A.notNull(clsName, "clsName");
 
-        return useSimpleName ? simpleName(clsName) : clsName;
+        return isSimpleName ? simpleName(clsName) : clsName;
     }
 
     /** {@inheritDoc} */
@@ -116,13 +116,13 @@ public class BinaryBaseNameMapper implements BinaryNameMapper {
     @Override public boolean equals(Object o) {
         if (this == o)
             return true;
-        
+
         if (!(o instanceof BinaryBaseNameMapper))
             return false;
 
         BinaryBaseNameMapper mapper = (BinaryBaseNameMapper)o;
 
-        if (useSimpleName != mapper.useSimpleName)
+        if (isSimpleName != mapper.isSimpleName)
             return false;
 
         return true;
@@ -130,11 +130,11 @@ public class BinaryBaseNameMapper implements BinaryNameMapper {
 
     /** {@inheritDoc} */
     @Override public int hashCode() {
-        return (useSimpleName ? 1 : 0);
+        return (isSimpleName ? 1 : 0);
     }
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return "BinaryBaseNameMapper [useSimpleName=" + useSimpleName + ']';
+        return "BinaryBaseNameMapper [isSimpleName=" + isSimpleName + ']';
     }
 }

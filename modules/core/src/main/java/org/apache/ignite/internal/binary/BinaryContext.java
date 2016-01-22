@@ -378,7 +378,7 @@ public class BinaryContext {
             return DFLT_MAPPER;
 
         if (nameMapper != null && nameMapper instanceof BinaryBaseNameMapper
-            && ((BinaryBaseNameMapper)nameMapper).getUseSimpleName()
+            && ((BinaryBaseNameMapper)nameMapper).isSimpleName()
             && idMapper != null && idMapper instanceof BinaryBaseIdMapper
             && ((BinaryBaseIdMapper)idMapper).isLowerCase())
             return SIMPLE_NAME_LOWER_CASE_MAPPER;

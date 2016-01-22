@@ -424,10 +424,10 @@ public class GridBinaryWildcardsSelfTest extends GridCommonAbstractTest {
 
         assertEquals(3, typeMappers.size());
 
-        assertFalse(((BinaryBaseNameMapper)typeMappers.get(CLASS1_FULL_NAME).nameMapper()).getUseSimpleName());
+        assertFalse(((BinaryBaseNameMapper)typeMappers.get(CLASS1_FULL_NAME).nameMapper()).isSimpleName());
         assertEquals(300, typeMappers.get(CLASS1_FULL_NAME).idMapper().typeId(CLASS1_FULL_NAME));
 
-        assertFalse(((BinaryBaseNameMapper)typeMappers.get(CLASS2_FULL_NAME).nameMapper()).getUseSimpleName());
+        assertFalse(((BinaryBaseNameMapper)typeMappers.get(CLASS2_FULL_NAME).nameMapper()).isSimpleName());
         assertEquals(400, typeMappers.get(CLASS2_FULL_NAME).idMapper().typeId(CLASS2_FULL_NAME));
     }
 
@@ -497,10 +497,10 @@ public class GridBinaryWildcardsSelfTest extends GridCommonAbstractTest {
 
         assertEquals(3, typeMappers.size());
 
-        assertFalse(((BinaryBaseNameMapper)typeMappers.get(CLASS1_FULL_NAME).nameMapper()).getUseSimpleName());
+        assertFalse(((BinaryBaseNameMapper)typeMappers.get(CLASS1_FULL_NAME).nameMapper()).isSimpleName());
         assertEquals(300, typeMappers.get(CLASS1_FULL_NAME).idMapper().typeId(CLASS1_FULL_NAME));
 
-        assertFalse(((BinaryBaseNameMapper)typeMappers.get(CLASS2_FULL_NAME).nameMapper()).getUseSimpleName());
+        assertFalse(((BinaryBaseNameMapper)typeMappers.get(CLASS2_FULL_NAME).nameMapper()).isSimpleName());
         assertEquals(400, typeMappers.get(CLASS2_FULL_NAME).idMapper().typeId(CLASS2_FULL_NAME));
     }
 
@@ -533,10 +533,10 @@ public class GridBinaryWildcardsSelfTest extends GridCommonAbstractTest {
 
         assertEquals(3, typeMappers.size());
 
-        assertFalse(((BinaryBaseNameMapper)typeMappers.get(CLASS1_FULL_NAME).nameMapper()).getUseSimpleName());
+        assertFalse(((BinaryBaseNameMapper)typeMappers.get(CLASS1_FULL_NAME).nameMapper()).isSimpleName());
         assertEquals(300, typeMappers.get(CLASS1_FULL_NAME).idMapper().typeId(CLASS1_FULL_NAME));
 
-        assertFalse(((BinaryBaseNameMapper)typeMappers.get(CLASS2_FULL_NAME).nameMapper()).getUseSimpleName());
+        assertFalse(((BinaryBaseNameMapper)typeMappers.get(CLASS2_FULL_NAME).nameMapper()).isSimpleName());
         assertEquals(400, typeMappers.get(CLASS2_FULL_NAME).idMapper().typeId(CLASS2_FULL_NAME));
     }
 
