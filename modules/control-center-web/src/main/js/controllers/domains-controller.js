@@ -907,10 +907,10 @@ consoleModule.controller('domainsController', function ($filter, $http, $timeout
 
                     var dupSfx = (dup ? '_' + dupCnt : '');
 
-                    newDomain.keyType = valType + 'Key' + dupSfx;
 
                     newDomain.keyType = valType + 'Key' + dupSfx;
                     newDomain.valueType = valType + dupSfx;
+                    newDomain.queryMetadata = 'Configuration';
                     newDomain.databaseSchema = table.schema;
                     newDomain.databaseTable = tableName;
                     newDomain.fields = qryFields;
@@ -943,7 +943,7 @@ consoleModule.controller('domainsController', function ($filter, $http, $timeout
                                 newDomain.newCache.cacheStoreFactory = {
                                     kind: 'CacheJdbcPojoStoreFactory',
                                     CacheJdbcPojoStoreFactory: {
-                                        dataSourceBean: newDomain.newCache.name + 'DS',
+                                        dataSourceBean: 'ds' + dialect,
                                         dialect: dialect
                                     }
                                 };
@@ -1658,7 +1658,7 @@ consoleModule.controller('domainsController', function ($filter, $http, $timeout
                 var index = $scope.backupItem.indexes[indexIdx];
 
                 $table.tableState(field, -1, 'table-index-fields');
-                $table.tableFocusInvalidField('FieldName' + (index.indexType === 'SORTED' ? 'S' : ''), indexIdx);
+                $table.tableFocusInvalidField(-1, 'FieldName' + (index.indexType === 'SORTED' ? 'S' : '') + indexIdx);
 
                 field.newFieldName = null;
                 field.newDirection = true;
@@ -1741,6 +1741,8 @@ consoleModule.controller('domainsController', function ($filter, $http, $timeout
 
             $table.tableReset();
 
+            field.indexIdx = -1;
+
             if (curIdx < 0) {
                 if (index.fields)
                     index.fields.push(indexItemValue);
@@ -1760,8 +1762,6 @@ consoleModule.controller('domainsController', function ($filter, $http, $timeout
                         $scope.tableIndexNewItem(field, indexIdx);
                 }
             }
-
-            field.indexIdx = -1;
 
             return true;
         };

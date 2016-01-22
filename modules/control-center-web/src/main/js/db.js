@@ -127,6 +127,7 @@ var CacheSchema = new Schema({
 
     rebalanceMode: {type: String, enum: ['SYNC', 'ASYNC', 'NONE']},
     rebalanceBatchSize: Number,
+    rebalanceBatchesPrefetchCount: Number,
     rebalanceOrder: Number,
     rebalanceDelay: Number,
     rebalanceTimeout: Number,
@@ -185,6 +186,7 @@ var CacheSchema = new Schema({
     sqlOnheapRowCacheSize: Number,
     longQueryWarningTimeout: Number,
     sqlFunctionClasses: [String],
+    snapshotableIndex: Boolean,
     statisticsEnabled: Boolean,
     managementEnabled: Boolean,
     readFromBackup: Boolean,

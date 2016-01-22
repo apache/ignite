@@ -1834,6 +1834,7 @@
           "type": "number",
           "model": "rebalanceThreadPoolSize",
           "placeholder": 1,
+          "min": 1,
           "tip": [
             "Max count of threads can be used at rebalancing"
           ]

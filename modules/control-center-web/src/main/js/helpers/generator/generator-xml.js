@@ -764,6 +764,7 @@ $generatorXml.cacheQuery = function(cache, res) {
     $generatorXml.property(res, cache, 'sqlSchema');
     $generatorXml.property(res, cache, 'sqlOnheapRowCacheSize');
     $generatorXml.property(res, cache, 'longQueryWarningTimeout');
+    $generatorXml.property(res, cache, 'snapshotableIndex', null, false);
 
     var indexedTypes = _.filter(cache.domains, function (domain) {
         return domain.queryMetadata === 'Annotations'
@@ -922,13 +923,14 @@ $generatorXml.cacheRebalance = function(cache, res) {
         res = $generatorCommon.builder();
 
     if (cache.cacheMode !== 'LOCAL') {
-        $generatorXml.property(res, cache, 'rebalanceMode');
-        $generatorXml.property(res, cache, 'rebalanceThreadPoolSize');
-        $generatorXml.property(res, cache, 'rebalanceBatchSize');
-        $generatorXml.property(res, cache, 'rebalanceOrder');
-        $generatorXml.property(res, cache, 'rebalanceDelay');
-        $generatorXml.property(res, cache, 'rebalanceTimeout');
-        $generatorXml.property(res, cache, 'rebalanceThrottle');
+        $generatorXml.property(res, cache, 'rebalanceMode', null, 'ASYNC');
+        $generatorXml.property(res, cache, 'rebalanceThreadPoolSize', null, 1);
+        $generatorXml.property(res, cache, 'rebalanceBatchSize', null, 524288);
+        $generatorXml.property(res, cache, 'rebalanceBatchesPrefetchCount', null, 2);
+        $generatorXml.property(res, cache, 'rebalanceOrder', null, 0);
+        $generatorXml.property(res, cache, 'rebalanceDelay', null, 0);
+        $generatorXml.property(res, cache, 'rebalanceTimeout', null, 10000);
+        $generatorXml.property(res, cache, 'rebalanceThrottle', null, 0);
 
         res.needEmptyLine = true;
     }

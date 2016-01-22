@@ -985,6 +985,7 @@ $generatorJava.cacheQuery = function (cache, varName, res) {
     $generatorJava.property(res, varName, cache, 'sqlSchema');
     $generatorJava.property(res, varName, cache, 'sqlOnheapRowCacheSize');
     $generatorJava.property(res, varName, cache, 'longQueryWarningTimeout');
+    $generatorJava.property(res, varName, cache, 'snapshotableIndex', null, null, false);
 
     var indexedTypes = _.filter(cache.domains, function (domain) {
         return domain.queryMetadata === 'Annotations'
@@ -1300,13 +1301,14 @@ $generatorJava.cacheRebalance = function (cache, varName, res) {
         res = $generatorCommon.builder();
 
     if (cache.cacheMode !== 'LOCAL') {
-        $generatorJava.property(res, varName, cache, 'rebalanceMode', 'org.apache.ignite.cache.CacheRebalanceMode');
-        $generatorJava.property(res, varName, cache, 'rebalanceThreadPoolSize');
-        $generatorJava.property(res, varName, cache, 'rebalanceBatchSize');
-        $generatorJava.property(res, varName, cache, 'rebalanceOrder');
-        $generatorJava.property(res, varName, cache, 'rebalanceDelay');
-        $generatorJava.property(res, varName, cache, 'rebalanceTimeout');
-        $generatorJava.property(res, varName, cache, 'rebalanceThrottle');
+        $generatorJava.property(res, varName, cache, 'rebalanceMode', 'org.apache.ignite.cache.CacheRebalanceMode', null, 'ASYNC');
+        $generatorJava.property(res, varName, cache, 'rebalanceThreadPoolSize', null, null, 1);
+        $generatorJava.property(res, varName, cache, 'rebalanceBatchSize', null, null, 524288);
+        $generatorJava.property(res, varName, cache, 'rebalanceBatchesPrefetchCount', null, null, 2);
+        $generatorJava.property(res, varName, cache, 'rebalanceOrder', null, null, 0);
+        $generatorJava.property(res, varName, cache, 'rebalanceDelay', null, null, 0);
+        $generatorJava.property(res, varName, cache, 'rebalanceTimeout', null, null, 10000);
+        $generatorJava.property(res, varName, cache, 'rebalanceThrottle', null, null, 0);
 
         res.needEmptyLine = true;
     }

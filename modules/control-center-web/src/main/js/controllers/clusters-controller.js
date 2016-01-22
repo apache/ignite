@@ -660,6 +660,13 @@ consoleModule.controller('clustersController', function ($http, $timeout, $scope
                 }
             }
 
+            if (item.rebalanceThreadPoolSize && item.systemThreadPoolSize && item.systemThreadPoolSize <= item.rebalanceThreadPoolSize) {
+                $scope.ui.expanded = true;
+
+                return showPopoverMessage($scope.panels, 'pools', 'rebalanceThreadPoolSize',
+                    'Rebalance thread pool size exceed or equals System thread pool size');
+            }
+
             return true;
         }
 
