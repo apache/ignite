@@ -37,11 +37,14 @@ public class IgniteSinkTask extends SinkTask {
     /** Logger. */
     private static final Logger log = LoggerFactory.getLogger(IgniteSinkTask.class);
 
-    /** Ignite instance. */
-    private static Ignite ignite;
+    /** Flag for stopped state. */
+    private static volatile boolean stopped = true;
 
-    /** Data streamer. */
-    private static IgniteDataStreamer dataStreamer;
+    /** Ignite grid configuration file. */
+    private static String igniteConfigFile;
+
+    /** Cache name. */
+    private static String cacheName;
 
     /** {@inheritDoc} */
     @Override public String version() {
@@ -53,41 +56,23 @@ public class IgniteSinkTask extends SinkTask {
      *
      * @param props Task properties.
      */
-    private static synchronized void initializeIgnite(Map<String, String> props) {
-        if (ignite == null) {
-            ignite = Ignition.start(props.get(IgniteSinkConstants.CACHE_CFG_PATH));
-
-            dataStreamer = ignite.dataStreamer(props.get(IgniteSinkConstants.CACHE_NAME));
-
-            if (props.containsKey(IgniteSinkConstants.CACHE_ALLOW_OVERWRITE))
-                dataStreamer.allowOverwrite(Boolean.parseBoolean(props.get(IgniteSinkConstants.CACHE_ALLOW_OVERWRITE)));
-            if (props.containsKey(IgniteSinkConstants.CACHE_PER_NODE_DATA_SIZE))
-                dataStreamer.perNodeBufferSize(Integer.parseInt(props.get(IgniteSinkConstants.CACHE_PER_NODE_DATA_SIZE)));
-            if (props.containsKey(IgniteSinkConstants.CACHE_PER_NODE_PAR_OPS))
-                dataStreamer.perNodeParallelOperations(Integer.parseInt(props.get(IgniteSinkConstants.CACHE_PER_NODE_PAR_OPS)));
-        }
-    }
-
-    /**
-     * Finalizes grid client.
-     */
-    private static synchronized void finalizeIgnite() {
-        if (ignite != null) {
-            dataStreamer.close();
-            dataStreamer = null;
-
-            ignite.close();
-            ignite = null;
-        }
-    }
-
-    /**
-     * Creates cache.
-     *
-     * @param props Properties.
-     */
     @Override public void start(Map<String, String> props) {
-        initializeIgnite(props);
+        igniteConfigFile = props.get(IgniteSinkConstants.CACHE_CFG_PATH);
+        cacheName = props.get(IgniteSinkConstants.CACHE_NAME);
+
+        if (props.containsKey(IgniteSinkConstants.CACHE_ALLOW_OVERWRITE))
+            StreamerContext.getStreamer().allowOverwrite(
+                Boolean.parseBoolean(props.get(IgniteSinkConstants.CACHE_ALLOW_OVERWRITE)));
+
+        if (props.containsKey(IgniteSinkConstants.CACHE_PER_NODE_DATA_SIZE))
+            StreamerContext.getStreamer().perNodeBufferSize(
+                Integer.parseInt(props.get(IgniteSinkConstants.CACHE_PER_NODE_DATA_SIZE)));
+
+        if (props.containsKey(IgniteSinkConstants.CACHE_PER_NODE_PAR_OPS))
+            StreamerContext.getStreamer().perNodeParallelOperations(
+                Integer.parseInt(props.get(IgniteSinkConstants.CACHE_PER_NODE_PAR_OPS)));
+
+        stopped = false;
     }
 
     /**
@@ -95,12 +80,13 @@ public class IgniteSinkTask extends SinkTask {
      *
      * @param records Records to inject into grid.
      */
+    @SuppressWarnings("unchecked")
     @Override public void put(Collection<SinkRecord> records) {
         try {
             for (SinkRecord record : records) {
                 if (record.key() != null) {
-                    // Data is flushed asynchronously when CACHE_PER_NODE_DATA_SIZE is reached
-                    dataStreamer.addData(record.key(), record.value());
+                    // Data is flushed asynchronously when CACHE_PER_NODE_DATA_SIZE is reached.
+                    StreamerContext.getStreamer().addData(record.key(), record.value());
                 }
                 else {
                     log.error("Failed to stream a record with null key!");
@@ -110,6 +96,7 @@ public class IgniteSinkTask extends SinkTask {
         }
         catch (ConnectException e) {
             log.error("Failed adding record", e);
+
             throw new ConnectException(e);
         }
     }
@@ -120,14 +107,55 @@ public class IgniteSinkTask extends SinkTask {
      * @param offsets Offset information.
      */
     @Override public void flush(Map<TopicPartition, OffsetAndMetadata> offsets) {
-        if (dataStreamer != null)
-            dataStreamer.flush();
+        if (stopped)
+            return;
+
+        StreamerContext.getStreamer().flush();
     }
 
     /**
      * Stops the grid client.
      */
     @Override public void stop() {
-        finalizeIgnite();
+        if (stopped)
+            return;
+
+        stopped = true;
+
+        StreamerContext.getStreamer().close();
+        StreamerContext.getIgnite().close();
+    }
+
+    /**
+     * Streamer context initializing grid and data streamer instances on demand.
+     */
+    public static class StreamerContext {
+        /** Constructor. */
+        private StreamerContext() {
+        }
+
+        /** Instance holder. */
+        private static class Holder {
+            private static final Ignite IGNITE = Ignition.start(igniteConfigFile);
+            private static final IgniteDataStreamer STREAMER = IGNITE.dataStreamer(cacheName);
+        }
+
+        /**
+         * Obtains grid instance.
+         *
+         * @return Grid instance.
+         */
+        public static Ignite getIgnite() {
+            return Holder.IGNITE;
+        }
+
+        /**
+         * Obtains data streamer instance.
+         *
+         * @return Data streamer instance.
+         */
+        public static IgniteDataStreamer getStreamer() {
+            return Holder.STREAMER;
+        }
     }
 }

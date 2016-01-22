@@ -34,7 +34,6 @@ import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.stream.kafka.TestKafkaBroker;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.kafka.common.utils.Utils;
-import org.apache.kafka.connect.connector.ConnectorContext;
 import org.apache.kafka.connect.runtime.ConnectorConfig;
 import org.apache.kafka.connect.runtime.Herder;
 import org.apache.kafka.connect.runtime.Worker;
@@ -45,9 +44,10 @@ import org.apache.kafka.connect.runtime.standalone.StandaloneHerder;
 import org.apache.kafka.connect.storage.OffsetBackingStore;
 import org.apache.kafka.connect.util.Callback;
 import org.apache.kafka.connect.util.FutureCallback;
-import org.easymock.EasyMock;
 
 import static org.apache.ignite.events.EventType.EVT_CACHE_OBJECT_PUT;
+import static org.easymock.EasyMock.anyObject;
+import static org.easymock.EasyMock.mock;
 
 /**
  * Tests for {@link IgniteSinkConnector}.
@@ -77,16 +77,11 @@ public class IgniteSinkConnectorTest extends GridCommonAbstractTest {
     /** Workers' herder. */
     private Herder herder;
 
-    /** Configs for the worker. */
-    private WorkerConfig workerConfig;
-
-    /** Connector context. */
-    private ConnectorContext context;
-
     /** Ignite server node. */
     private Ignite grid;
 
     /** {@inheritDoc} */
+    @SuppressWarnings("unchecked")
     @Override protected void beforeTest() throws Exception {
         IgniteConfiguration cfg = loadConfiguration("modules/kafka/src/test/resources/example-ignite.xml");
 
@@ -99,12 +94,10 @@ public class IgniteSinkConnectorTest extends GridCommonAbstractTest {
         for (String topic : TOPICS)
             kafkaBroker.createTopic(topic, PARTITIONS, REPLICATION_FACTOR);
 
-        workerConfig = new StandaloneConfig(makeWorkerProps());
+        WorkerConfig workerConfig = new StandaloneConfig(makeWorkerProps());
 
-        context = EasyMock.mock(ConnectorContext.class);
-
-        OffsetBackingStore offsetBackingStore = EasyMock.mock(OffsetBackingStore.class);
-        offsetBackingStore.configure(EasyMock.anyObject(Map.class));
+        OffsetBackingStore offsetBackingStore = mock(OffsetBackingStore.class);
+        offsetBackingStore.configure(anyObject(Map.class));
 
         worker = new Worker(workerConfig, offsetBackingStore);
         worker.start();
@@ -161,7 +154,13 @@ public class IgniteSinkConnectorTest extends GridCommonAbstractTest {
 
         grid.events(grid.cluster().forCacheNodes(CACHE_NAME)).localListen(putLsnr, EVT_CACHE_OBJECT_PUT);
 
+        IgniteCache<String, String> cache = grid.cache(CACHE_NAME);
+
+        assertEquals(0, cache.size(CachePeekMode.PRIMARY));
+
         Map<String, String> keyValMap = new HashMap<>(EVENT_CNT * TOPICS.length);
+
+        // Produces events for the specified number of topics
         for (String topic : TOPICS)
             keyValMap.putAll(produceStream(topic));
 
@@ -169,8 +168,6 @@ public class IgniteSinkConnectorTest extends GridCommonAbstractTest {
         assertTrue(latch.await(10, TimeUnit.SECONDS));
 
         grid.events(grid.cluster().forCacheNodes(CACHE_NAME)).stopLocalListen(putLsnr);
-
-        IgniteCache<String, Integer> cache = grid.cache(CACHE_NAME);
 
         // Checks that each event was processed properly.
         for (Map.Entry<String, String> entry : keyValMap.entrySet())

@@ -69,7 +69,7 @@ public class IgniteSinkConnector extends SinkConnector {
     /**
      * Builds each config for <tt>maxTasks</tt> tasks.
      *
-     * @param maxTasks
+     * @param maxTasks Max number of tasks.
      * @return Task configs.
      */
     @Override public List<Map<String, String>> taskConfigs(int maxTasks) {
@@ -78,15 +78,14 @@ public class IgniteSinkConnector extends SinkConnector {
 
         taskProps.putAll(configProps);
 
-        for (int i = 0; i < maxTasks; i++) {
+        for (int i = 0; i < maxTasks; i++)
             taskConfigs.add(taskProps);
-        }
 
         return taskConfigs;
     }
 
     /** {@inheritDoc} */
     @Override public void stop() {
-        // Noop.
+        // No-op.
     }
 }
