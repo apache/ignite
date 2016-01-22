@@ -115,7 +115,7 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
     private static final Unsafe UNSAFE = GridUnsafe.unsafe();
 
     /** */
-    public static final IgniteProductVersion BINARY_CFG_CHECK_SINCE = IgniteProductVersion.fromString("1.5.4");
+    public static final IgniteProductVersion BINARY_CFG_CHECK_SINCE = IgniteProductVersion.fromString("1.5.6");
 
     /** */
     private final CountDownLatch startLatch = new CountDownLatch(1);

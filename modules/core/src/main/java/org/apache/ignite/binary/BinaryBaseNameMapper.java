@@ -113,6 +113,27 @@ public class BinaryBaseNameMapper implements BinaryNameMapper {
     }
 
     /** {@inheritDoc} */
+    @Override public boolean equals(Object o) {
+        if (this == o)
+            return true;
+        
+        if (!(o instanceof BinaryBaseNameMapper))
+            return false;
+
+        BinaryBaseNameMapper mapper = (BinaryBaseNameMapper)o;
+
+        if (useSimpleName != mapper.useSimpleName)
+            return false;
+
+        return true;
+    }
+
+    /** {@inheritDoc} */
+    @Override public int hashCode() {
+        return (useSimpleName ? 1 : 0);
+    }
+
+    /** {@inheritDoc} */
     @Override public String toString() {
         return "BinaryBaseNameMapper [useSimpleName=" + useSimpleName + ']';
     }

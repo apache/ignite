@@ -142,6 +142,27 @@ public class BinaryBaseIdMapper implements BinaryIdMapper {
     }
 
     /** {@inheritDoc} */
+    @Override public boolean equals(Object o) {
+        if (this == o)
+            return true;
+        
+        if (!(o instanceof BinaryBaseIdMapper))
+            return false;
+
+        BinaryBaseIdMapper mapper = (BinaryBaseIdMapper)o;
+
+        if (isLowerCase != mapper.isLowerCase)
+            return false;
+
+        return true;
+    }
+
+    /** {@inheritDoc} */
+    @Override public int hashCode() {
+        return (isLowerCase ? 1 : 0);
+    }
+
+    /** {@inheritDoc} */
     @Override public String toString() {
         return "BinaryBaseIdMapper [isLowerCase=" + isLowerCase + ']';
     }

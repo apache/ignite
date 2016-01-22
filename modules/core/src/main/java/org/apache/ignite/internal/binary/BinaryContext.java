@@ -330,6 +330,7 @@ public class BinaryContext {
 
                 BinaryInternalMapper mapper = resolveMapper(nameMapper, idMapper);
 
+                // Resolve serializer.
                 BinarySerializer serializer = globalSerializer;
 
                 if (typeCfg.getSerializer() != null)
@@ -804,7 +805,6 @@ public class BinaryContext {
      * @param id Type ID.
      * @return GridBinaryClassDescriptor.
      */
-    // TODO check
     public BinaryClassDescriptor registerPredefinedType(Class<?> cls, int id, String affFieldName) {
         String clsName = cls.getName();
 
@@ -816,7 +816,7 @@ public class BinaryContext {
             cls,
             false,
             id,
-            clsName, // TODO check
+            clsName,
             affFieldName,
             DFLT_MAPPER,
             new BinaryReflectiveSerializer(),
@@ -840,7 +840,8 @@ public class BinaryContext {
      * @param mapper ID mapper.
      * @param serializer Serializer.
      * @param affKeyFieldName Affinity key field name.
-     * @param isEnum If enum.     @throws BinaryObjectException In case of error.
+     * @param isEnum If enum.
+     * @throws BinaryObjectException In case of error.
      */
     @SuppressWarnings("ErrorNotRethrown")
     public void registerUserType(String clsName,
