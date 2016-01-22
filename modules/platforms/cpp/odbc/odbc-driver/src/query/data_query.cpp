@@ -96,10 +96,10 @@ namespace ignite
                 {
                     app::ColumnBindingMap::iterator it = columnBindings.find(i);
 
-                    SqlResult result;
+                    if (it == columnBindings.end())
+                        continue;
 
-                    if (it != columnBindings.end())
-                        result = row->ReadColumnToBuffer(i, it->second);
+                    SqlResult result = row->ReadColumnToBuffer(i, it->second);
 
                     if (result == SQL_RESULT_ERROR)
                     {
