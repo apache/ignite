@@ -176,7 +176,7 @@ public class MarshallerContextImpl extends MarshallerContextAdapter {
                     }
                 }
                 catch (IOException e) {
-                    U.dumpStack(log, "lalalala id=" + id + ", fileName=" + fileName);
+                    U.dumpStack(log, ">>>>> lalalala id=" + id + ", fileName=" + fileName);
 
                     throw new IgniteCheckedException("Failed to read class name from file [id=" + id +
                         ", file=" + file.getAbsolutePath() + ']', e);

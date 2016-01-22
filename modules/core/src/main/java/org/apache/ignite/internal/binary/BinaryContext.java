@@ -546,6 +546,8 @@ public class BinaryContext {
         // If the type hasn't been loaded by default class loader then we mustn't return the descriptor from here
         // giving a chance to a custom class loader to reload type's class.
         if (userType && ldr.equals(dfltLdr)) {
+            U.dumpStack(log, ">>>>> UserTypes: " + userTypes);
+
             desc = userTypes.get(typeId);
 
             if (desc != null)
@@ -819,6 +821,7 @@ public class BinaryContext {
      * @param id Type ID.
      * @return GridBinaryClassDescriptor.
      */
+    // TODO check
     public BinaryClassDescriptor registerPredefinedType(Class<?> cls, int id, String affFieldName) {
         String clsName = cls.getName();
 
@@ -830,7 +833,7 @@ public class BinaryContext {
             cls,
             false,
             id,
-            clsName,
+            clsName, // TODO check
             affFieldName,
             DFLT_MAPPER,
             new BinaryReflectiveSerializer(),
@@ -1076,7 +1079,7 @@ public class BinaryContext {
          * Add type descriptor.
          *
          * @param clsName Class name.
-         * @param mapper ID mapper.
+         * @param mapper Mapper.
          * @param serializer Serializer.
          * @param affKeyFieldName Affinity key field name.
          * @param isEnum Enum flag.
