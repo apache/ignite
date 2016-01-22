@@ -19,38 +19,24 @@
 //     ng-show='!preview["atomics"].allDefaults'
 //     ng-click='#{model} = {}; $event.stopPropagation()'
 
-const template = `<i ng-show='form.$dirty' class='fa fa-undo pull-right' ng-click='revert($event)'></i>`;
+// const template = `<form class='panel panel-default'></form>`;
 
-export default ['igniteFormRevert', ['$tooltip', ($tooltip) => {
+export default ['form', [() => {
     const link = (scope, $element, $attrs, [form]) => {
-        $tooltip($element, { title: 'Undo unsaved changes' });
+        const $form = $element.parent().closest('form');
 
-        scope.form = form;
-
-        scope.revert = (e) => {
-            e.stopPropagation();
-
-            for (const name in form.$defaults) {
-                if ({}.hasOwnProperty.call(form.$defaults, name) && form[name]) {
-                    form[name].$setViewValue(form.$defaults[name]);
-                    form[name].$setPristine();
-                    form[name].$render();
-                }
-            }
+        scope.$watch(() => {
+            return $form.hasClass('ng-pristine');
+        }, (value) => {
+            if (!value) return;
 
             form.$setPristine();
-        };
+        });
     };
 
     return {
         restrict: 'E',
-        scope: {
-            model: '=ngModel',
-            models: '=models'
-        },
-        template,
         link,
-        replace: true,
         require: ['^form']
     };
 }]];

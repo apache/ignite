@@ -51,7 +51,9 @@ form.panel.panel-default(name='binary')
                             data-ng-model='#{model}.serializer'
                         )
                 .settings-row
-                    ignite-form-group(data-label='Type configurations')
+                    ignite-form-group(name='typeConfigurations' ng-model='#{types}')
+                        ignite-form-field-label
+                            | Type configurations
                         ignite-form-group-tooltip
                             | Configuration properties for binary types
                         ignite-form-group-add(ng-click='#{types}.push({})')

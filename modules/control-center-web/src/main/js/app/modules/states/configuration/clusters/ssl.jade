@@ -22,12 +22,12 @@
 
 mixin feedback(field, error, message)
     i.fa.fa-exclamation-triangle.form-control-feedback(
-        ng-show='!form.$pristine && form.#{field}.$error.#{error}'
+        ng-show='!#{form}.$pristine && #{form}.#{field}.$error.#{error}'
         bs-tooltip
         data-title='#{message}'
     )
 
-form.panel.panel-default(name='sslContextFactory')
+form.panel.panel-default(name='#{form}')
     .panel-heading(bs-collapse-toggle ng-click='__show__ = true')
         ignite-form-panel-chevron
         label SSL configuration
@@ -111,7 +111,7 @@ form.panel.panel-default(name='sslContextFactory')
                         )
 
                 .settings-row
-                    ignite-form-group(ng-init='__ = {}; ___ = {}' name='trustManagers' ng-model='#{model}')
+                    ignite-form-group(ng-init='__ = {}; ___ = {}' name='trustManagers' ng-model='#{trust}')
                         ignite-form-field-label
                             | Trust managers
                         ignite-form-group-tooltip

@@ -19,12 +19,22 @@ import template from './datalist.jade!';
 
 export default ['igniteFormFieldInputDatalist', ['IgniteFormGUID', (guid) => {
     const link = (scope, $element, attrs, [form]) => {
-        const {id, name, value} = scope;
+        const {id, name} = scope;
 
         scope.id = id || guid();
 
         form.$defaults = form.$defaults || {};
-        form.$defaults[name] = _.cloneDeep(value);
+        form.$defaults[name] = _.cloneDeep(scope.value);
+
+        const setAsDefault = () => {
+            if (!form.$pristine) return;
+
+            form.$defaults = form.$defaults || {};
+            form.$defaults[name] = _.cloneDeep(scope.value);
+        };
+
+        scope.$watch(() => form.$pristine, setAsDefault);
+        scope.$watch('value', setAsDefault);
     };
 
     return {

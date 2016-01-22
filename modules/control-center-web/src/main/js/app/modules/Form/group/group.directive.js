@@ -21,10 +21,20 @@ export default ['igniteFormGroup', [() => {
     const controller = [function() { }];
 
     const link = (scope, el, attrs, [form]) => {
-        const {name, value} = scope;
+        const {name} = scope;
 
         form.$defaults = form.$defaults || {};
-        form.$defaults[name] = _.cloneDeep(value);
+        form.$defaults[name] = _.cloneDeep(scope.value);
+
+        const setAsDefault = () => {
+            if (!form.$pristine) return;
+
+            form.$defaults = form.$defaults || {};
+            form.$defaults[name] = _.cloneDeep(scope.value);
+        };
+
+        scope.$watch(() => form.$pristine, setAsDefault);
+        scope.$watch('value', setAsDefault);
     };
 
     return {
@@ -36,6 +46,7 @@ export default ['igniteFormGroup', [() => {
         bindToController: {
             label: '@'
         },
+        link,
         template,
         controller,
         controllerAs: 'group',

@@ -14,9 +14,6 @@
     See the License for the specific language governing permissions and
     limitations under the License.
 
-mixin ignite-form-field-tooltip(message)
-    i.tipField.fa.fa-question-circle(bs-tooltip='"#{message}"')
-
 - var model = 'backupItem'
 
 form.panel.panel-default(name='time')
@@ -30,8 +27,12 @@ form.panel.panel-default(name='time')
         .panel-body(ng-if='__show__')
             .col-sm-6
                 .settings-row
-                    ignite-form-field(data-label='Samples size')
-                        +ignite-form-field-tooltip('Number of samples used to synchronize clocks between different nodes<br/>Clock synchronization is used for cache version assignment in CLOCK order mode')
+                    ignite-form-field
+                        ignite-form-field-label
+                            | Samples size
+                        ignite-form-field-tooltip
+                            | Number of samples used to synchronize clocks between different nodes#[br]
+                            | Clock synchronization is used for cache version assignment in CLOCK order mode
                         ignite-form-field-input-number(
                             data-id='clockSyncSamples'
                             data-name='clockSyncSamples'
@@ -39,8 +40,12 @@ form.panel.panel-default(name='time')
                             data-placeholder='8'
                         )
                 .settings-row
-                    ignite-form-field(data-label='Frequency')
-                        +ignite-form-field-tooltip('Frequency at which clock is synchronized between nodes, in milliseconds<br/>Clock synchronization is used for cache version assignment in CLOCK order mode')
+                    ignite-form-field
+                        ignite-form-field-label
+                            | Frequency
+                        ignite-form-field-tooltip
+                            | Frequency at which clock is synchronized between nodes, in milliseconds#[br]
+                            | Clock synchronization is used for cache version assignment in CLOCK order mode
                         ignite-form-field-input-number(
                             data-id='clockSyncFrequency'
                             data-name='clockSyncFrequency'
@@ -48,8 +53,12 @@ form.panel.panel-default(name='time')
                             data-placeholder='120000'
                         )
                 .settings-row
-                    ignite-form-field(data-label='Port base')
-                        +ignite-form-field-tooltip('Time server provides clock synchronization between nodes<br/>Base UPD port number for grid time server. Time server will be started on one of free ports in range')
+                    ignite-form-field
+                        ignite-form-field-label
+                            | Port base
+                        ignite-form-field-tooltip
+                            | Time server provides clock synchronization between nodes#[br]
+                            | Base UPD port number for grid time server. Time server will be started on one of free ports in range
                         ignite-form-field-input-number(
                             data-id='timeServerPortBase'
                             data-name='timeServerPortBase'
@@ -58,8 +67,11 @@ form.panel.panel-default(name='time')
                             data-max='65535'
                         )
                 .settings-row
-                    ignite-form-field(data-label='Port range')
-                        +ignite-form-field-tooltip('Time server port range')
+                    ignite-form-field
+                        ignite-form-field-label
+                            | Port range
+                        ignite-form-field-tooltip
+                            | Time server port range
                         ignite-form-field-input-number(
                             data-id='timeServerPortRange'
                             data-name='timeServerPortRange'

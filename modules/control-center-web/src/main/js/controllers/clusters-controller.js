@@ -22,6 +22,18 @@ consoleModule.controller('clustersController', function ($http, $timeout, $scope
 
         var __original_value;
 
+        var blank = {
+            atomicConfiguration: {},
+            binaryConfiguration: {},
+            communication: {},
+            connector: {},
+            discovery: {},
+            marshaller: {},
+            sslContextFactory: {},
+            swapSpaceSpi: {},
+            transactionConfiguration: {}
+        };
+
         // Initialize the super class and extend it.
         angular.extend(this, $controller('save-remove', {$scope: $scope}));
 
@@ -405,6 +417,8 @@ consoleModule.controller('clustersController', function ($http, $timeout, $scope
                 else
                     $scope.backupItem = undefined;
 
+                $scope.backupItem = angular.extend({}, blank, $scope.backupItem);
+
                 __original_value = JSON.stringify($scope.backupItem);
 
                 if ($common.getQueryVariable('new'))
@@ -422,6 +436,8 @@ consoleModule.controller('clustersController', function ($http, $timeout, $scope
                     compactFooter: true
                 }
             };
+
+            newItem = angular.extend({},  blank, newItem);
 
             newItem.caches = id && _.find($scope.caches, {value: id}) ? [id] : [];
             newItem.igfss = id && _.find($scope.igfss, {value: id}) ? [id] : [];

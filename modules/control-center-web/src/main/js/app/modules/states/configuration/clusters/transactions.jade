@@ -30,8 +30,11 @@ form.panel.panel-default(name='transactionConfiguration')
         .panel-body(ng-if='__show__')
             .col-sm-6
                 .settings-row
-                    ignite-form-field(data-label='Concurrency')
-                        +ignite-form-field-tooltip('Cache transaction concurrency to use when one is not explicitly specified')
+                    ignite-form-field
+                        ignite-form-field-label
+                            | Concurrency
+                        ignite-form-field-tooltip
+                            | Cache transaction concurrency to use when one is not explicitly specified
                         ignite-form-field-dropdown(
                             data-id='defaultTxConcurrency'
                             data-name='defaultTxConcurrency'
@@ -43,8 +46,11 @@ form.panel.panel-default(name='transactionConfiguration')
                             data-placeholder='PESSIMISTIC'
                         )
                 .settings-row
-                    ignite-form-field(data-label='Isolation')
-                        +ignite-form-field-tooltip('Default transaction isolation')
+                    ignite-form-field
+                        ignite-form-field-label
+                            | Isolation
+                        ignite-form-field-tooltip
+                            | Default transaction isolation
                         ignite-form-field-dropdown(
                             data-id='transactionIsolation'
                             data-name='transactionIsolation'
@@ -57,8 +63,11 @@ form.panel.panel-default(name='transactionConfiguration')
                             data-placeholder='REPEATABLE_READ'
                         )
                 .settings-row
-                    ignite-form-field(data-label='Default timeout')
-                        +ignite-form-field-tooltip('Default transaction timeout')
+                    ignite-form-field
+                        ignite-form-field-label
+                            | Default timeout
+                        ignite-form-field-tooltip
+                            | Default transaction timeout
                         ignite-form-field-input-number(
                             data-id='defaultTxTimeout'
                             data-name='defaultTxTimeout'
@@ -66,8 +75,11 @@ form.panel.panel-default(name='transactionConfiguration')
                             data-placeholder='0'
                         )
                 .settings-row
-                    ignite-form-field(data-label='Pessimistic log cleanup delay')
-                        +ignite-form-field-tooltip('Delay, in milliseconds, after which pessimistic recovery entries will be cleaned up for failed node')
+                    ignite-form-field
+                        ignite-form-field-label
+                            | Pessimistic log cleanup delay
+                        ignite-form-field-tooltip
+                            | Delay, in milliseconds, after which pessimistic recovery entries will be cleaned up for failed node
                         ignite-form-field-input-number(
                             data-id='pessimisticTxLogLinger'
                             data-name='pessimisticTxLogLinger'
@@ -75,8 +87,11 @@ form.panel.panel-default(name='transactionConfiguration')
                             data-placeholder='10000'
                         )
                 .settings-row
-                    ignite-form-field(data-label='Pessimistic log size')
-                        +ignite-form-field-tooltip('Size of pessimistic transactions log stored on node in order to recover transaction commit if originating node has left grid before it has sent all messages to transaction nodes')
+                    ignite-form-field
+                        ignite-form-field-label
+                            | Pessimistic log size
+                        ignite-form-field-tooltip
+                            | Size of pessimistic transactions log stored on node in order to recover transaction commit if originating node has left grid before it has sent all messages to transaction nodes
                         ignite-form-field-input-number(
                             data-id='pessimisticTxLogSize'
                             data-name='pessimisticTxLogSize'
@@ -84,8 +99,11 @@ form.panel.panel-default(name='transactionConfiguration')
                             data-placeholder='0'
                         )
                 .settings-row
-                    ignite-form-field(data-label='Manager lookup')
-                        +ignite-form-field-tooltip('Class name of transaction manager finder for integration for JEE app servers')
+                    ignite-form-field
+                        ignite-form-field-label
+                            | Manager lookup
+                        ignite-form-field-tooltip 
+                            | Class name of transaction manager finder for integration for JEE app servers
                         ignite-form-field-input-text(
                             data-id='txManagerLookupClassName'
                             data-name='txManagerLookupClassName'

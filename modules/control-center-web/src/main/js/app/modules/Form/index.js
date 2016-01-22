@@ -18,6 +18,8 @@
 import angular from 'angular';
 // Form.
 import igniteFormRevert from './revert.directive';
+// Panel.
+import igniteFormPanel from './panel/panel.directive';
 // Field.
 import igniteFormField from './field/field.directive';
 import igniteFormFieldLabel from './field/label.directive';
@@ -50,6 +52,8 @@ angular
 ])
 // Form.
 .directive(...igniteFormRevert)
+// Panel.
+.directive(...igniteFormPanel)
 // Field.
 .directive(...igniteFormField)
 .directive(...igniteFormFieldLabel)

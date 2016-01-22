@@ -83,7 +83,7 @@ div
                 data-ng-model='#{model}.localAddress'
             )
     .details-row
-        ignite-form-group(ng-init='__ = {}; ___ = {}')
+        ignite-form-group(ng-init='__ = {}; ___ = {}' ng-model='#{addresses}' name='discoveryMulticastAddresses')
             ignite-form-field-label
                 | Addresses
             ignite-form-group-tooltip

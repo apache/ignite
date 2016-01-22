@@ -19,7 +19,7 @@
 - var form = 'general';
 
 div
-    ignite-form-group(ng-init='__ = {}; ___ = {}')
+    ignite-form-group(ng-init='__ = {}; ___ = {}' ng-model='#{addresses}' name='discoveryVmAddresses')
         ignite-form-field-label
             | Addresses
         ignite-form-group-tooltip

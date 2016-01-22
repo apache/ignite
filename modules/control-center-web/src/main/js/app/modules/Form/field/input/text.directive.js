@@ -20,7 +20,7 @@ import './text.css!';
 
 export default ['igniteFormFieldInputText', ['IgniteFormGUID', (guid) => {
     const link = (scope, el, attrs, [form, label]) => {
-        const {id, name, value} = scope;
+        const {id, name} = scope;
         const field = form[name];
 
         scope.form = form;
@@ -32,7 +32,17 @@ export default ['igniteFormFieldInputText', ['IgniteFormGUID', (guid) => {
         });
 
         form.$defaults = form.$defaults || {};
-        form.$defaults[name] = _.cloneDeep(value);
+        form.$defaults[name] = _.cloneDeep(scope.value);
+
+        const setAsDefault = () => {
+            if (!form.$pristine) return;
+
+            form.$defaults = form.$defaults || {};
+            form.$defaults[name] = _.cloneDeep(scope.value);
+        };
+
+        scope.$watch(() => form.$pristine, setAsDefault);
+        scope.$watch('value', setAsDefault);
     };
 
     return {

@@ -70,7 +70,7 @@ div
                 data-ng-required='true'
             )
     .details-row(ng-if='true')
-        ignite-form-group(ng-init='__ = {}; ___ = {}')
+        ignite-form-group(ng-init='__ = {}; ___ = {}' ng-model='#{regions}' name='generalDiscoveryCloudRegions')
             ignite-form-field-label
                 | Regions
             ignite-form-group-tooltip
@@ -151,7 +151,7 @@ div
             .group-content-empty(ng-if='!(#{regions}.length) && !__.add.length')
                 | Not defined
     .details-row(ng-if='true')
-         ignite-form-group(ng-init='__ = {}; ___ = {}')
+         ignite-form-group(ng-init='__ = {}; ___ = {}' ng-model='#{zones}' name='generalDiscoveryCloudZones')
             ignite-form-field-label
                 | Zones
             ignite-form-group-tooltip
