@@ -515,9 +515,9 @@ public class GridServiceProcessor extends GridProcessorAdapter {
      */
     @SuppressWarnings("unchecked")
     public IgniteInternalFuture<?> cancelAll() {
-        Collection<IgniteInternalFuture<?>> futs = new ArrayList<>();
-
         Iterator<Cache.Entry<Object, Object>> it = serviceEntries(ServiceDeploymentPredicate.INSTANCE);
+
+        GridCompoundFuture res = null;
 
         while (it.hasNext()) {
             Cache.Entry<Object, Object> e = it.next();
@@ -527,11 +527,20 @@ public class GridServiceProcessor extends GridProcessorAdapter {
 
             GridServiceDeployment dep = (GridServiceDeployment)e.getValue();
 
+            if (res == null)
+                res = new GridCompoundFuture<>();
+
             // Cancel each service separately.
-            futs.add(cancel(dep.configuration().getName()));
+            res.add(cancel(dep.configuration().getName()));
         }
 
-        return futs.isEmpty() ? new GridFinishedFuture<>() : new GridCompoundFuture(null, futs);
+        if (res != null) {
+            res.markInitialized();
+
+            return res;
+        }
+        else
+            return new GridFinishedFuture<>();
     }
 
     /**
