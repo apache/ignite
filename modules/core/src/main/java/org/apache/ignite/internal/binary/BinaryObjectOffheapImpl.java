@@ -124,6 +124,10 @@ public class BinaryObjectOffheapImpl extends BinaryObjectExImpl implements Exter
         return null;
     }
 
+    @Override public boolean putValue(ByteBuffer buf, CacheObjectContext ctx) throws IgniteCheckedException {
+        throw new UnsupportedOperationException("TODO implement");
+    }
+
     /** {@inheritDoc} */
     @Override public long offheapAddress() {
         return ptr;

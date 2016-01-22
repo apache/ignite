@@ -133,6 +133,19 @@ public final class BinaryObjectImpl extends BinaryObjectExImpl implements Extern
         return arr0;
     }
 
+    @Override public boolean putValue(ByteBuffer buf, CacheObjectContext ctx) throws IgniteCheckedException {
+        int len = length();
+
+        if (buf.remaining() < len + 5)
+            return false;
+
+        buf.put(cacheObjectType());
+        buf.putInt(len);
+        buf.put(arr, start, len);
+
+        return true;
+    }
+
     /** {@inheritDoc} */
     @Override public CacheObject prepareForCache(CacheObjectContext ctx) {
         if (detached())

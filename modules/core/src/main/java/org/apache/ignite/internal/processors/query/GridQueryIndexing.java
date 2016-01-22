@@ -30,6 +30,7 @@ import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.query.GridCacheTwoStepQuery;
+import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
 import org.apache.ignite.internal.util.lang.GridCloseableIterator;
 import org.apache.ignite.lang.IgniteBiTuple;
@@ -186,7 +187,7 @@ public interface GridQueryIndexing {
      * @throws IgniteCheckedException If failed.
      */
     public void store(@Nullable String spaceName, GridQueryTypeDescriptor type, CacheObject key, CacheObject val,
-        byte[] ver, long expirationTime) throws IgniteCheckedException;
+        GridCacheVersion ver, long expirationTime) throws IgniteCheckedException;
 
     /**
      * Removes index entry by key.
@@ -196,7 +197,7 @@ public interface GridQueryIndexing {
      * @param val Value.
      * @throws IgniteCheckedException If failed.
      */
-    public void remove(@Nullable String spaceName, CacheObject key, CacheObject val) throws IgniteCheckedException;
+    public void remove(@Nullable String spaceName, CacheObject key, CacheObject val, GridCacheVersion ver) throws IgniteCheckedException;
 
     /**
      * Will be called when entry with given key is swapped.

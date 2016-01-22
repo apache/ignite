@@ -75,6 +75,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
 import org.apache.ignite.internal.processors.cache.QueryCursorImpl;
 import org.apache.ignite.internal.processors.cache.query.GridCacheTwoStepQuery;
+import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.query.GridQueryFieldMetadata;
 import org.apache.ignite.internal.processors.query.GridQueryFieldsResult;
 import org.apache.ignite.internal.processors.query.GridQueryFieldsResultAdapter;
@@ -450,7 +451,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      * @param tblToUpdate Table to update.
      * @throws IgniteCheckedException In case of error.
      */
-    private void removeKey(@Nullable String spaceName, CacheObject key, TableDescriptor tblToUpdate)
+    private void removeKey(@Nullable String spaceName, CacheObject key, GridCacheVersion ver, TableDescriptor tblToUpdate)
         throws IgniteCheckedException {
         try {
             Collection<TableDescriptor> tbls = tables(schema(spaceName));
@@ -459,7 +460,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
             for (TableDescriptor tbl : tbls) {
                 if (tbl != tblToUpdate && tbl.type().keyClass().isAssignableFrom(keyCls)) {
-                    if (tbl.tbl.update(key, null, 0, true)) {
+                    if (tbl.tbl.update(key, null, ver, 0, true)) {
                         if (tbl.luceneIdx != null)
                             tbl.luceneIdx.remove(key);
 
@@ -512,10 +513,10 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
     /** {@inheritDoc} */
     @Override public void store(@Nullable String spaceName, GridQueryTypeDescriptor type, CacheObject k, CacheObject v,
-        byte[] ver, long expirationTime) throws IgniteCheckedException {
+        GridCacheVersion ver, long expirationTime) throws IgniteCheckedException {
         TableDescriptor tbl = tableDescriptor(spaceName, type);
 
-        removeKey(spaceName, k, tbl);
+        removeKey(spaceName, k, ver, tbl);
 
         if (tbl == null)
             return; // Type was rejected.
@@ -523,7 +524,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         if (expirationTime == 0)
             expirationTime = Long.MAX_VALUE;
 
-        tbl.tbl.update(k, v, expirationTime, false);
+        tbl.tbl.update(k, v, ver, expirationTime, false);
 
         if (tbl.luceneIdx != null)
             tbl.luceneIdx.store(k, v, ver, expirationTime);
@@ -574,7 +575,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     }
 
     /** {@inheritDoc} */
-    @Override public void remove(@Nullable String spaceName, CacheObject key, CacheObject val) throws IgniteCheckedException {
+    @Override public void remove(@Nullable String spaceName, CacheObject key, CacheObject val, GridCacheVersion ver) throws IgniteCheckedException {
         if (log.isDebugEnabled())
             log.debug("Removing key from cache query index [locId=" + nodeId + ", key=" + key + ", val=" + val + ']');
 
@@ -586,7 +587,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         for (TableDescriptor tbl : tables(schema(spaceName))) {
             if (tbl.type().keyClass().isAssignableFrom(keyCls)
                 && (val == null || tbl.type().valueClass().isAssignableFrom(valCls))) {
-                if (tbl.tbl.update(key, val, 0, true)) {
+                if (tbl.tbl.update(key, val, ver, 0, true)) {
                     if (tbl.luceneIdx != null)
                         tbl.luceneIdx.remove(key);
 

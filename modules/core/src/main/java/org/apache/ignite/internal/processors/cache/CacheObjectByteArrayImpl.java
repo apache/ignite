@@ -75,6 +75,18 @@ public class CacheObjectByteArrayImpl implements CacheObject, Externalizable {
     }
 
     /** {@inheritDoc} */
+    @Override public boolean putValue(ByteBuffer buf, CacheObjectContext ctx) throws IgniteCheckedException {
+        if (buf.remaining() < val.length + 5)
+            return false;
+
+        buf.put(cacheObjectType());
+        buf.putInt(val.length);
+        buf.put(val);
+
+        return true;
+    }
+
+    /** {@inheritDoc} */
     @Override public byte cacheObjectType() {
         return TYPE_BYTE_ARR;
     }

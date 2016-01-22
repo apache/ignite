@@ -31,6 +31,7 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.CacheObjectContext;
+import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.query.GridQueryFieldsResult;
 import org.apache.ignite.internal.processors.query.GridQueryIndexDescriptor;
 import org.apache.ignite.internal.processors.query.GridQueryIndexType;
@@ -228,50 +229,50 @@ public abstract class GridIndexingSpiAbstractSelfTest extends GridCommonAbstract
         assertFalse(spi.query(typeBA.space(), "select * from B.A", Collections.emptySet(), typeBA, null).hasNext());
 
         // Nothing to remove.
-        spi.remove("A", key(1), aa(1, "", 10));
-        spi.remove("B", key(1), ba(1, "", 10, true));
+        spi.remove("A", key(1), aa(1, "", 10), null);
+        spi.remove("B", key(1), ba(1, "", 10, true), null);
 
-        spi.store(typeAA.space(), typeAA, key(1), aa(1, "Vasya", 10), "v1".getBytes(), 0);
+        spi.store(typeAA.space(), typeAA, key(1), aa(1, "Vasya", 10), new GridCacheVersion(), 0);
 
         assertEquals(1, spi.size(typeAA.space(), typeAA, null));
         assertEquals(0, spi.size(typeAB.space(), typeAB, null));
         assertEquals(0, spi.size(typeBA.space(), typeBA, null));
 
         spi.store(typeAB.space(), typeAB, key(1), ab(1, "Vasya", 20, "Some text about Vasya goes here."),
-            "v2".getBytes(), 0);
+            new GridCacheVersion(), 0);
 
         // In one space all keys must be unique.
         assertEquals(0, spi.size(typeAA.space(), typeAA, null));
         assertEquals(1, spi.size(typeAB.space(), typeAB, null));
         assertEquals(0, spi.size(typeBA.space(), typeBA, null));
 
-        spi.store(typeBA.space(), typeBA, key(1), ba(2, "Petya", 25, true), "v3".getBytes(), 0);
+        spi.store(typeBA.space(), typeBA, key(1), ba(2, "Petya", 25, true), new GridCacheVersion(), 0);
 
         // No replacement because of different space.
         assertEquals(0, spi.size(typeAA.space(), typeAA, null));
         assertEquals(1, spi.size(typeAB.space(), typeAB, null));
         assertEquals(1, spi.size(typeBA.space(), typeBA, null));
 
-        spi.store(typeBA.space(), typeBA, key(1), ba(2, "Kolya", 25, true), "v4".getBytes(), 0);
+        spi.store(typeBA.space(), typeBA, key(1), ba(2, "Kolya", 25, true), new GridCacheVersion(), 0);
 
         // Replacement in the same table.
         assertEquals(0, spi.size(typeAA.space(), typeAA, null));
         assertEquals(1, spi.size(typeAB.space(), typeAB, null));
         assertEquals(1, spi.size(typeBA.space(), typeBA, null));
 
-        spi.store(typeAA.space(), typeAA, key(2), aa(2, "Valera", 19), "v5".getBytes(), 0);
+        spi.store(typeAA.space(), typeAA, key(2), aa(2, "Valera", 19), new GridCacheVersion(), 0);
 
         assertEquals(1, spi.size(typeAA.space(), typeAA, null));
         assertEquals(1, spi.size(typeAB.space(), typeAB, null));
         assertEquals(1, spi.size(typeBA.space(), typeBA, null));
 
-        spi.store(typeAA.space(), typeAA, key(3), aa(3, "Borya", 18), "v6".getBytes(), 0);
+        spi.store(typeAA.space(), typeAA, key(3), aa(3, "Borya", 18), new GridCacheVersion(), 0);
 
         assertEquals(2, spi.size(typeAA.space(), typeAA, null));
         assertEquals(1, spi.size(typeAB.space(), typeAB, null));
         assertEquals(1, spi.size(typeBA.space(), typeBA, null));
 
-        spi.store(typeAB.space(), typeAB, key(4), ab(4, "Vitalya", 20, "Very Good guy"), "v7".getBytes(), 0);
+        spi.store(typeAB.space(), typeAB, key(4), ab(4, "Vitalya", 20, "Very Good guy"), new GridCacheVersion(), 0);
 
         assertEquals(2, spi.size(typeAA.space(), typeAA, null));
         assertEquals(2, spi.size(typeAB.space(), typeAB, null));
@@ -333,13 +334,13 @@ public abstract class GridIndexingSpiAbstractSelfTest extends GridCommonAbstract
         assertFalse(fieldsRes.iterator().hasNext());
 
         // Remove
-        spi.remove(typeAA.space(), key(2), aa(2, "Valera", 19));
+        spi.remove(typeAA.space(), key(2), aa(2, "Valera", 19), null);
 
         assertEquals(1, spi.size(typeAA.space(), typeAA, null));
         assertEquals(2, spi.size(typeAB.space(), typeAB, null));
         assertEquals(1, spi.size(typeBA.space(), typeBA, null));
 
-        spi.remove(typeBA.space(), key(1), ba(2, "Kolya", 25, true));
+        spi.remove(typeBA.space(), key(1), ba(2, "Kolya", 25, true), null);
 
         assertEquals(1, spi.size(typeAA.space(), typeAA, null));
         assertEquals(2, spi.size(typeAB.space(), typeAB, null));
@@ -378,7 +379,7 @@ public abstract class GridIndexingSpiAbstractSelfTest extends GridCommonAbstract
         spi.unregisterType(typeBA.space(), typeBA);
 
         // Should not store but should not fail as well.
-        spi.store(typeAA.space(), typeAA, key(10), aa(1, "Fail", 100500), "v220".getBytes(), 0);
+        spi.store(typeAA.space(), typeAA, key(10), aa(1, "Fail", 100500), new GridCacheVersion(), 0);
 
         assertEquals(-1, spi.size(typeAA.space(), typeAA, null));
     }
@@ -581,6 +582,11 @@ public abstract class GridIndexingSpiAbstractSelfTest extends GridCommonAbstract
         /** {@inheritDoc} */
         @Override public byte[] valueBytes(CacheObjectContext ctx) throws IgniteCheckedException {
             return Utils.serialize(val, null);
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean putValue(ByteBuffer buf, CacheObjectContext ctx) throws IgniteCheckedException {
+            return false;
         }
 
         /** {@inheritDoc} */

@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.cacheobject;
 
+import java.nio.ByteBuffer;
 import org.apache.ignite.IgniteBinary;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
@@ -150,6 +151,13 @@ public interface IgniteCacheObjectProcessor extends GridProcessor {
      * @return Cache object.
      */
     public CacheObject toCacheObject(CacheObjectContext ctx, byte type, byte[] bytes);
+
+    /**
+     * @param ctx Cache context.
+     * @param buf Buffer to read from.
+     * @return Cache object.
+     */
+    public CacheObject toCacheObject(CacheObjectContext ctx, ByteBuffer buf);
 
     /**
      * @param ctx Context.

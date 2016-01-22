@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache;
 
+import java.nio.ByteBuffer;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.jetbrains.annotations.Nullable;
@@ -47,6 +48,8 @@ public interface CacheObject extends Message {
      * @throws IgniteCheckedException If failed.
      */
     public byte[] valueBytes(CacheObjectContext ctx) throws IgniteCheckedException;
+
+    public boolean putValue(ByteBuffer buf, CacheObjectContext ctx) throws IgniteCheckedException;
 
     /**
      * @return Object type.
