@@ -1190,13 +1190,8 @@ public class BinaryContext {
      */
     private static class BinaryInternalMapperWrapper extends BinaryInternalMapper {
         /** */
-        private static final BinaryBaseNameMapper SIMPLE_NAME_MAPPER = new BinaryBaseNameMapper(true);
-
-        /** */
-        private static final BinaryBaseIdMapper LOWER_CASE_MAPPER = new BinaryBaseIdMapper(true);
-
-        /** Delegate. */
-        private final BinaryInternalMapper mapper;
+        private static final BinaryInternalMapper SIMPLE_NAME_LOWER_CASE_MAPPER =
+            new BinaryInternalMapper(new BinaryBaseNameMapper(true), new BinaryBaseIdMapper(true));
 
         /**
          * Constructor.
@@ -1204,40 +1199,21 @@ public class BinaryContext {
          * @param mapper Delegate.
          */
         private BinaryInternalMapperWrapper(BinaryInternalMapper mapper) {
-            super(SIMPLE_NAME_MAPPER, LOWER_CASE_MAPPER);
-
-            assert mapper != null;
-
-            this.mapper = mapper;
+            super(mapper.nameMapper(), mapper.idMapper());
         }
 
         /** {@inheritDoc} */
         @Override public int typeId(String typeName) {
-            int id = mapper.typeId(typeName);
+            int id = super.typeId(typeName);
 
-            return id != 0 ? id : super.typeId(typeName);
+            return id != 0 ? id : SIMPLE_NAME_LOWER_CASE_MAPPER.typeId(typeName);
         }
 
         /** {@inheritDoc} */
         @Override public int fieldId(int typeId, String fieldName) {
-            int id = mapper.fieldId(typeId, fieldName);
+            int id = super.fieldId(typeId, fieldName);
 
-            return id != 0 ? id : super.fieldId(typeId, fieldName);
-        }
-
-        /** {@inheritDoc} */
-        @Override public String typeName(String clsName) {
-            return mapper.typeName(clsName);
-        }
-
-        /** {@inheritDoc} */
-        @Override public BinaryNameMapper nameMapper() {
-            return mapper.nameMapper();
-        }
-
-        /** {@inheritDoc} */
-        @Override public BinaryIdMapper idMapper() {
-            return mapper.idMapper();
+            return id != 0 ? id : SIMPLE_NAME_LOWER_CASE_MAPPER.fieldId(typeId, fieldName);
         }
     }
 }
