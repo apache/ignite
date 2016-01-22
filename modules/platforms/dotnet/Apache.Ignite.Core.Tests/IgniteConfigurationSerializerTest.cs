@@ -140,6 +140,13 @@ namespace Apache.Ignite.Core.Tests
         [Test]
         public void TestSchemaValidation()
         {
+            CheckSchemaValidation();
+
+            RunWithCustomCulture(CheckSchemaValidation);
+        }
+
+        public void CheckSchemaValidation()
+        {
             var sb = new StringBuilder();
 
             using (var xmlWriter = XmlWriter.Create(sb))
@@ -356,11 +363,17 @@ namespace Apache.Ignite.Core.Tests
 
         private static void RunWithCustomCulture(Action action)
         {
+            RunWithCulture(action, CultureInfo.InvariantCulture);
+            RunWithCulture(action, CultureInfo.GetCultureInfo("ru-RU"));
+        }
+
+        private static void RunWithCulture(Action action, CultureInfo cultureInfo)
+        {
             var oldCulture = Thread.CurrentThread.CurrentCulture;
 
             try
             {
-                Thread.CurrentThread.CurrentCulture = CultureInfo.GetCultureInfo("ru-RU");
+                Thread.CurrentThread.CurrentCulture = cultureInfo;
 
                 action();
             }

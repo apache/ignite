@@ -263,7 +263,7 @@ namespace Apache.Ignite.Core.Impl.Common
                                 PropertyNameToXmlName(elementType.Name), subReader.Name));
 
                     list.Add(converter != null
-                        ? converter.ConvertFromString(subReader.ReadString())
+                        ? converter.ConvertFromInvariantString(subReader.ReadString())
                         : ReadComplexProperty(subReader, elementType, prop.Name, target.GetType()));
                 }
             }
@@ -284,7 +284,7 @@ namespace Apache.Ignite.Core.Impl.Common
 
             var converter = GetConverter(property, property.PropertyType);
 
-            var convertedVal = converter.ConvertFromString(propVal);
+            var convertedVal = converter.ConvertFromInvariantString(propVal);
 
             property.SetValue(target, convertedVal, null);
         }
