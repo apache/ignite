@@ -16,16 +16,13 @@
 
 - var model = 'backupItem.swapSpaceSpi'
 
-.panel.panel-default
+form.panel.panel-default(name='swapSpaceSpi')
     .panel-heading(bs-collapse-toggle ng-click='__show__ = true')
         ignite-form-panel-chevron
         label Swap
-        i.tipLabel.fa.fa-question-circle(bs-tooltip='"Settings for overflow data to disk if it cannot fit in memory"')
-        i.pull-right.fa.fa-undo(
-            ng-show='!preview["swap"].allDefaults' 
-            ng-click='#{model} = {}; $event.stopPropagation()' 
-            bs-tooltip 
-            data-title='"Undo unsaved changes"')
+        ignite-form-field-tooltip.tipLabel
+            | Settings for overflow data to disk if it cannot fit in memory
+        ignite-form-revert
     .panel-collapse(role='tabpanel' bs-collapse-target id='swap')
         .panel-body(ng-if='__show__')
             .col-sm-6

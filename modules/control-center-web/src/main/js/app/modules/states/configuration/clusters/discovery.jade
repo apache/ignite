@@ -16,17 +16,13 @@
 
 - var model = 'backupItem.discovery'
 
-.panel.panel-default
+form.panel.panel-default(name='discovery')
     .panel-heading(bs-collapse-toggle ng-click='__show__ = true')
         ignite-form-panel-chevron
         label Discovery
         ignite-form-field-tooltip.tipLabel
             | Discovery properties configuration
-        i.pull-right.fa.fa-undo(
-            ng-show='!preview["pools"].allDefaults' 
-            ng-click='#{model} = {}; $event.stopPropagation()' 
-            bs-tooltip 
-            data-title='"Undo unsaved changes"')
+        ignite-form-revert
     .panel-collapse(role='tabpanel' bs-collapse-target id='discovery')
         .panel-body(ng-if='__show__')
             .col-sm-6

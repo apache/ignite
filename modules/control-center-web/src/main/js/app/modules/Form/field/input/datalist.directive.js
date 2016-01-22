@@ -18,10 +18,13 @@
 import template from './datalist.jade!';
 
 export default ['igniteFormFieldInputDatalist', ['IgniteFormGUID', (guid) => {
-    const link = (scope) => {
-        const {id} = scope;
+    const link = (scope, $element, attrs, [form]) => {
+        const {id, name, value} = scope;
 
         scope.id = id || guid();
+
+        form.$defaults = form.$defaults || {};
+        form.$defaults[name] = _.cloneDeep(value);
     };
 
     return {
@@ -33,7 +36,7 @@ export default ['igniteFormFieldInputDatalist', ['IgniteFormGUID', (guid) => {
             disabled: '=ngDisabled',
 
             options: '=',
-            ngModel: '='
+            value: '=ngModel'
         },
         link,
         template,

@@ -19,16 +19,13 @@ mixin ignite-form-field-tooltip(message)
 
 - var model = 'backupItem.transactionConfiguration'
 
-.panel.panel-default
+form.panel.panel-default(name='transactionConfiguration')
     .panel-heading(bs-collapse-toggle ng-click='__show__ = true')
         ignite-form-panel-chevron
         label Transactions
-        i.tipLabel.fa.fa-question-circle(bs-tooltip='"Settings for transactions"')
-        i.pull-right.fa.fa-undo(
-            ng-show='!preview["transactions"].allDefaults' 
-            ng-click='#{model} = {}; $event.stopPropagation()' 
-            bs-tooltip 
-            data-title='"Undo unsaved changes"')
+        ignite-form-field-tooltip.tipLabel
+            | Settings for transactions
+        ignite-form-revert
     .panel-collapse(role='tabpanel' bs-collapse-target id='transactions')
         .panel-body(ng-if='__show__')
             .col-sm-6

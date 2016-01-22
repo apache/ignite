@@ -18,7 +18,7 @@
 - var enabled = 'backupItem.sslEnabled'
 - var model = cluster + '.sslContextFactory'
 - var trust = model + '.trustManagers'
-- var form = 'sslConfiguration'
+- var form = 'sslContextFactory'
 
 mixin feedback(field, error, message)
     i.fa.fa-exclamation-triangle.form-control-feedback(
@@ -27,16 +27,13 @@ mixin feedback(field, error, message)
         data-title='#{message}'
     )
 
-.panel.panel-default
+form.panel.panel-default(name='sslContextFactory')
     .panel-heading(bs-collapse-toggle ng-click='__show__ = true')
         ignite-form-panel-chevron
         label SSL configuration
-        i.tipLabel.fa.fa-question-circle(bs-tooltip='"Settings for SSL configuration"')
-        i.pull-right.fa.fa-undo(
-            ng-show='!preview["sslConfiguration"].allDefaults' 
-            ng-click='#{model} = {}; $event.stopPropagation()' 
-            bs-tooltip 
-            data-title='"Undo unsaved changes"')
+        ignite-form-field-tooltip.tipLabel
+            | Settings for SSL configuration
+        ignite-form-revert
     .panel-collapse(role='tabpanel' bs-collapse-target id='sslConfiguration')
         .panel-body(ng-if='__show__')
             .col-sm-6
@@ -114,7 +111,7 @@ mixin feedback(field, error, message)
                         )
 
                 .settings-row
-                    ignite-form-group(ng-init='__ = {}; ___ = {}')
+                    ignite-form-group(ng-init='__ = {}; ___ = {}' name='trustManagers' ng-model='#{model}')
                         ignite-form-field-label
                             | Trust managers
                         ignite-form-group-tooltip

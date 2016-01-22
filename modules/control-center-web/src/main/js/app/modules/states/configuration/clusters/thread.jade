@@ -16,16 +16,13 @@
 
 - var model = 'backupItem'
 
-.panel.panel-default
+form.panel.panel-default(name='thread')
     .panel-heading(bs-collapse-toggle ng-click='__show__ = true')
         ignite-form-panel-chevron
         label Thread pools size
-        i.tipLabel.fa.fa-question-circle(bs-tooltip='"Settings for node thread pools"')
-        //- i.pull-right.fa.fa-undo(
-            ng-show='!preview["pools"].allDefaults' 
-            ng-click='#{model} = {}; $event.stopPropagation()' 
-            bs-tooltip 
-            data-title='"Undo unsaved changes"')
+        ignite-form-field-tooltip.tipLabel
+            | Settings for node thread pools
+        ignite-form-revert
     .panel-collapse(role='tabpanel' bs-collapse-target id='pools')
         .panel-body(ng-if='__show__')
             .col-sm-6

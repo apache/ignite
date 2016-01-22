@@ -20,7 +20,7 @@ import './text.css!';
 
 export default ['igniteFormFieldInputText', ['IgniteFormGUID', (guid) => {
     const link = (scope, el, attrs, [form, label]) => {
-        const {id, name} = scope;
+        const {id, name, value} = scope;
         const field = form[name];
 
         scope.form = form;
@@ -30,6 +30,9 @@ export default ['igniteFormFieldInputText', ['IgniteFormGUID', (guid) => {
         scope.$watch('required', (required) => {
             label.required = required || false;
         });
+
+        form.$defaults = form.$defaults || {};
+        form.$defaults[name] = _.cloneDeep(value);
     };
 
     return {
@@ -42,7 +45,7 @@ export default ['igniteFormFieldInputText', ['IgniteFormGUID', (guid) => {
             required: '=ngRequired',
             disabled: '=ngDisabled',
 
-            ngModel: '=',
+            value: '=ngModel',
             ngBlur: '&',
 
             javaKeywords: '=',

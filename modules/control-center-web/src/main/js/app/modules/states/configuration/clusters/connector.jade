@@ -16,17 +16,13 @@
 
 - var model = 'backupItem.connector'
 
-.panel.panel-default
+form.panel.panel-default(name='connector')
     .panel-heading(bs-collapse-toggle ng-click='__show__ = true')
         ignite-form-panel-chevron
         label Connector configuration
         ignite-form-field-tooltip.tipLabel
             | REST access configuration
-        i.pull-right.fa.fa-undo(
-            ng-show='!preview["connector"].allDefaults' 
-            ng-click='#{model} = {}; $event.stopPropagation()' 
-            bs-tooltip 
-            data-title='"Undo unsaved changes"')
+        ignite-form-revert
     .panel-collapse(role='tabpanel' bs-collapse-target id='connector')
         .panel-body(ng-if='__show__')
             .col-sm-6

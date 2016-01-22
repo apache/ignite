@@ -16,17 +16,13 @@
 
 - var model = 'backupItem.communication'
 
-.panel.panel-default
+form.panel.panel-default(name='communication')
     .panel-heading(bs-collapse-toggle ng-click='__show__ = true')
         ignite-form-panel-chevron
         label Communication
         ignite-form-field-tooltip.tipLabel
             | Cluster communication network properties
-        //- i.pull-right.fa.fa-undo(
-        //-     ng-show='!preview["communication"].allDefaults' 
-        //-     ng-click='#{model} = {}; $event.stopPropagation()' 
-        //-     bs-tooltip 
-        //-     data-title='"Undo unsaved changes"')
+        ignite-form-revert
     .panel-collapse(role='tabpanel' bs-collapse-target id='communication')
         .panel-body(ng-if='__show__')
             .col-sm-6

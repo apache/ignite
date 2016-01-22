@@ -17,17 +17,13 @@
 - var model = 'backupItem.binaryConfiguration'
 - var types = model + '.typeConfigurations'
 
-.panel.panel-default
+form.panel.panel-default(name='binary')
     .panel-heading(bs-collapse-toggle ng-click='__show__ = true')
         ignite-form-panel-chevron
         label Binary configuration
         ignite-form-field-tooltip.tipLabel
             | Configuration for Ignite Binary Objects
-        //i.pull-right.fa.fa-undo(
-            ng-show='!preview["binary"].allDefaults' 
-            ng-click='#{model} = {}; $event.stopPropagation()' 
-            bs-tooltip 
-            data-title='"Undo unsaved changes"')
+        ignite-form-revert
     .panel-collapse(role='tabpanel' bs-collapse-target id='binary')
         .panel-body(ng-if='__show__')
             .col-sm-6

@@ -16,6 +16,9 @@
  */
 
 import angular from 'angular';
+// Form.
+import igniteFormRevert from './revert.directive';
+// Field.
 import igniteFormField from './field/field.directive';
 import igniteFormFieldLabel from './field/label.directive';
 import igniteFormFieldTooltip from './field/tooltip.directive';
@@ -24,6 +27,7 @@ import igniteFormFieldInputNumber from './field/input/number.directive';
 import igniteFormFieldInputText from './field/input/text.directive';
 import igniteFormFieldInputCheckbox from './field/input/checkbox.directive';
 import igniteFormFieldInputDatalist from './field/input/datalist.directive';
+// Group.
 import igniteFormGroup from './group/group.directive';
 import igniteFormGroupTooltip from './group/tooltip.directive';
 import igniteFormGroupAdd from './group/add.directive';
@@ -44,6 +48,9 @@ angular
 .module('ignite-console.Form', [
 
 ])
+// Form.
+.directive(...igniteFormRevert)
+// Field.
 .directive(...igniteFormField)
 .directive(...igniteFormFieldLabel)
 .directive(...igniteFormFieldTooltip)
@@ -52,6 +59,7 @@ angular
 .directive(...igniteFormFieldInputText)
 .directive(...igniteFormFieldInputCheckbox)
 .directive(...igniteFormFieldInputDatalist)
+// Group.
 .directive(...igniteFormGroup)
 .directive(...igniteFormGroupTooltip)
 .directive(...igniteFormGroupAdd)

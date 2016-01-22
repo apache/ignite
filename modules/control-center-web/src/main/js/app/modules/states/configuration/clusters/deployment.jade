@@ -24,17 +24,13 @@ mixin feedback(name, error, message)
         data-title='#{message}'
     )
 
-.panel.panel-default
+form.panel.panel-default(name='deployment')
     .panel-heading(bs-collapse-toggle ng-click='__show__ = true')
         ignite-form-panel-chevron
         label Class deployment
         ignite-form-field-tooltip.tipLabel
             | Task and resources deployment in cluster
-        //- i.pull-right.fa.fa-undo(
-        //-     ng-show='!preview["pools"].allDefaults' 
-        //-     ng-click='#{model} = {}; $event.stopPropagation()' 
-        //-     bs-tooltip 
-        //-     data-title='"Undo unsaved changes"')
+        ignite-form-revert
     .panel-collapse(role='tabpanel' bs-collapse-target id='deployment')
         .panel-body(ng-if='__show__')
             .col-sm-6

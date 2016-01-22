@@ -16,17 +16,13 @@
 
 - var model = 'backupItem'
 
-.panel.panel-default
+form.panel.panel-default(name='events')
     .panel-heading(bs-collapse-toggle ng-click='__show__ = true')
         ignite-form-panel-chevron
         label Events
         ignite-form-field-tooltip.tipLabel
             | Grid events are used for notification about what happens within the grid
-        //- i.pull-right.fa.fa-undo(
-            ng-show='!preview["pools"].allDefaults' 
-            ng-click='#{model} = {}; $event.stopPropagation()' 
-            bs-tooltip 
-            data-title='"Undo unsaved changes"')
+        ignite-form-revert
     .panel-collapse(role='tabpanel' bs-collapse-target id='events')
         .panel-body(ng-if='__show__')
             .col-sm-6

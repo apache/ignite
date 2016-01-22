@@ -20,21 +20,25 @@ import template from './dropdown.jade!';
 export default ['igniteFormFieldDropdown', ['IgniteFormGUID', (guid) => {
     const controller = () => {};
 
-    const link = (scope) => {
-        const {id} = scope;
+    const link = (scope, $element, attrs, [form]) => {
+        const {id, name, value} = scope;
 
         scope.id = id || guid();
+
+        form.$defaults = form.$defaults || {};
+        form.$defaults[name] = _.cloneDeep(value);
     };
 
     return {
         restrict: 'E',
         scope: {
-            id: '@'
+            id: '@',
+            name: '@',
+            value: '=ngModel'
         },
         bindToController: {
-            name: '@',
+            value: '=ngModel',
             placeholder: '@',
-            ngModel: '=',
             options: '=',
             ngDisabled: '=',
             multiple: '='

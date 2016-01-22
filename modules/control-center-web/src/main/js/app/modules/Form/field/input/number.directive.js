@@ -19,11 +19,14 @@ import template from './number.jade!';
 
 export default ['igniteFormFieldInputNumber', ['IgniteFormGUID', (guid) => {
     const link = (scope, el, attrs, [form, label]) => {
-        const {id, name} = scope;
+        const {id, name, value} = scope;
         const field = form[name];
 
         scope.field = field;
         label.for = scope.id = id || guid();
+
+        form.$defaults = form.$defaults || {};
+        form.$defaults[name] = _.cloneDeep(value);
     };
 
     return {
@@ -37,7 +40,7 @@ export default ['igniteFormFieldInputNumber', ['IgniteFormGUID', (guid) => {
 
             min: '@',
             max: '@',
-            ngModel: '='
+            value: '=ngModel'
         },
         link,
         template,

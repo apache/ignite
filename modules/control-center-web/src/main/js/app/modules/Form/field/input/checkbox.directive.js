@@ -19,13 +19,16 @@ import template from './checkbox.jade!';
 
 export default ['igniteFormFieldInputCheckbox', ['IgniteFormGUID', (guid) => {
     const link = (scope, el, attrs, [form, label]) => {
-        const {id, name} = scope;
+        const {id, name, ngModel} = scope;
         const field = form[name];
 
         scope.field = field;
         label.for = scope.id = id || guid();
 
         label.type = 'internal';
+
+        form.$defaults = form.$defaults || {};
+        form.$defaults[name] = _.cloneDeep(ngModel);
     };
 
     return {

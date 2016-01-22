@@ -20,9 +20,19 @@ import template from './group.jade!';
 export default ['igniteFormGroup', [() => {
     const controller = [function() { }];
 
+    const link = (scope, el, attrs, [form]) => {
+        const {name, value} = scope;
+
+        form.$defaults = form.$defaults || {};
+        form.$defaults[name] = _.cloneDeep(value);
+    };
+
     return {
         restrict: 'E',
-        scope: {},
+        scope: {
+            name: '@',
+            value: '=ngModel'
+        },
         bindToController: {
             label: '@'
         },

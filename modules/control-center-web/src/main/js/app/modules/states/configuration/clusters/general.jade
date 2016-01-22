@@ -16,15 +16,11 @@
 
 - var model = 'backupItem'
 
-.panel.panel-default
+form.panel.panel-default(name='general')
     .panel-heading(bs-collapse-toggle)
         ignite-form-panel-chevron
         label General
-        //- i.pull-right.fa.fa-undo(
-        //-     ng-show='!preview["general"].allDefaults' 
-        //-     ng-click='#{model} = {}; $event.stopPropagation()' 
-        //-     bs-tooltip 
-        //-     data-title='"Undo unsaved changes"')
+        ignite-form-revert
     .panel-collapse(role='tabpanel' bs-collapse-target id='general')
         .panel-body
             .col-sm-6
