@@ -17,11 +17,12 @@
 
 package org.apache.ignite.internal.processors.cache;
 
+import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteException;
-import org.apache.ignite.internal.IgniteKernal;
-import org.apache.ignite.internal.processors.cache.portable.CacheObjectBinaryProcessorImpl;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.binary.BinaryObject;
+import org.apache.ignite.internal.IgniteKernal;
+import org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl;
+import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
  *
@@ -30,22 +31,32 @@ public class CacheDefaultBinaryAffinityKeyMapper extends GridCacheDefaultAffinit
     /** */
     private static final long serialVersionUID = 0L;
 
+    /** */
+    private CacheObjectBinaryProcessorImpl proc;
+
     /** {@inheritDoc} */
     @Override public Object affinityKey(Object key) {
-        IgniteKernal kernal = (IgniteKernal)ignite;
-
-        CacheObjectBinaryProcessorImpl proc = (CacheObjectBinaryProcessorImpl)kernal.context().cacheObjects();
-
         try {
-            key = proc.toPortable(key);
+            key = proc.toBinary(key);
         }
         catch (IgniteException e) {
-            U.error(log, "Failed to marshal key to portable: " + key, e);
+            U.error(log, "Failed to marshal key to binary: " + key, e);
         }
 
         if (key instanceof BinaryObject)
             return proc.affinityKey((BinaryObject)key);
         else
             return super.affinityKey(key);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void ignite(Ignite ignite) {
+        super.ignite(ignite);
+
+        if (ignite != null) {
+            IgniteKernal kernal = (IgniteKernal)ignite;
+
+            proc = (CacheObjectBinaryProcessorImpl)kernal.context().cacheObjects();
+        }
     }
 }

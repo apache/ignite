@@ -46,7 +46,6 @@ import org.apache.ignite.internal.processors.cache.distributed.GridDistributedCa
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCacheEntry;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTopologyFuture;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTransactionalCacheAdapter;
-import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxKey;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
@@ -56,8 +55,10 @@ import org.apache.ignite.internal.util.future.GridEmbeddedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
+import org.apache.ignite.internal.util.typedef.C1;
 import org.apache.ignite.internal.util.typedef.C2;
 import org.apache.ignite.internal.util.typedef.CI1;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -163,6 +164,7 @@ public final class GridNearLockFuture extends GridCompoundIdentityFuture<Boolean
      * @param accessTtl TTL for read operation.
      * @param filter Filter.
      * @param skipStore skipStore
+     * @param keepBinary Keep binary flag.
      */
     public GridNearLockFuture(
         GridCacheContext<?, ?> cctx,
@@ -175,7 +177,7 @@ public final class GridNearLockFuture extends GridCompoundIdentityFuture<Boolean
         CacheEntryPredicate[] filter,
         boolean skipStore,
         boolean keepBinary) {
-        super(cctx.kernalContext(), CU.boolReducer());
+        super(CU.boolReducer());
 
         assert keys != null;
 
@@ -678,7 +680,22 @@ public final class GridNearLockFuture extends GridCompoundIdentityFuture<Boolean
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(GridNearLockFuture.class, this, "inTx", inTx(), "super", super.toString());
+        Collection<String> futs = F.viewReadOnly(futures(), new C1<IgniteInternalFuture<?>, String>() {
+            @Override public String apply(IgniteInternalFuture<?> f) {
+                if (isMini(f)) {
+                    MiniFuture m = (MiniFuture)f;
+
+                    return "[node=" + m.node().id() + ", loc=" + m.node().isLocal() + ", done=" + f.isDone() + "]";
+                }
+                else
+                    return "[loc=true, done=" + f.isDone() + "]";
+            }
+        });
+
+        return S.toString(GridNearLockFuture.class, this,
+            "innerFuts", futs,
+            "inTx", inTx(),
+            "super", super.toString());
     }
 
     /**
@@ -700,15 +717,13 @@ public final class GridNearLockFuture extends GridCompoundIdentityFuture<Boolean
      */
     void map() {
         // Obtain the topology version to use.
-        AffinityTopologyVersion topVer = cctx.mvcc().lastExplicitLockTopologyVersion(Thread.currentThread().getId());
+        long threadId = Thread.currentThread().getId();
+
+        AffinityTopologyVersion topVer = cctx.mvcc().lastExplicitLockTopologyVersion(threadId);
 
         // If there is another system transaction in progress, use it's topology version to prevent deadlock.
-        if (topVer == null && tx != null && tx.system()) {
-            IgniteInternalTx tx0 = cctx.tm().anyActiveThreadTx(tx);
-
-            if (tx0 != null)
-                topVer = tx0.topologyVersionSnapshot();
-        }
+        if (topVer == null && tx != null && tx.system())
+            topVer = cctx.tm().lockedTopologyVersion(threadId, tx);
 
         if (topVer != null && tx != null)
             tx.topologyVersion(topVer);
@@ -1078,7 +1093,7 @@ public final class GridNearLockFuture extends GridCompoundIdentityFuture<Boolean
      * @throws IgniteCheckedException If failed.
      */
     private void proceedMapping() throws IgniteCheckedException {
-        boolean set = tx != null && cctx.shared().tm().setTxTopologyHint(tx);
+        boolean set = tx != null && cctx.shared().tm().setTxTopologyHint(tx.topologyVersionSnapshot());
 
         try {
             proceedMapping0();
@@ -1273,8 +1288,6 @@ public final class GridNearLockFuture extends GridCompoundIdentityFuture<Boolean
                     cctx.io().send(node, req, cctx.ioPolicy());
                 }
                 catch (ClusterTopologyCheckedException ex) {
-                    assert fut != null;
-
                     fut.onResult(ex);
                 }
             }
@@ -1288,8 +1301,6 @@ public final class GridNearLockFuture extends GridCompoundIdentityFuture<Boolean
                             cctx.io().send(node, req, cctx.ioPolicy());
                         }
                         catch (ClusterTopologyCheckedException ex) {
-                            assert fut != null;
-
                             fut.onResult(ex);
                         }
                         catch (IgniteCheckedException e) {

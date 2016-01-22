@@ -120,7 +120,7 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
         boolean skipTx,
         @Nullable UUID subjId,
         String taskName,
-        final boolean deserializePortable,
+        final boolean deserializeBinary,
         final boolean skipVals,
         boolean canRemap
     ) {
@@ -143,7 +143,7 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
                 @Override public IgniteInternalFuture<Map<K, V>> op(IgniteTxLocalAdapter tx) {
                     return tx.getAllAsync(ctx,
                         ctx.cacheKeysView(keys),
-                        deserializePortable,
+                        deserializeBinary,
                         skipVals,
                         false,
                         skipStore);
@@ -158,7 +158,7 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
             forcePrimary,
             subjId,
             taskName,
-            deserializePortable,
+            deserializeBinary,
             skipVals ? null : opCtx != null ? opCtx.expiry() : null,
             skipVals,
             skipStore,
@@ -169,7 +169,7 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
      * @param tx Transaction.
      * @param keys Keys to load.
      * @param readThrough Read through flag.
-     * @param deserializePortable Deserialize portable flag.
+     * @param deserializeBinary Deserialize binary flag.
      * @param expiryPlc Expiry policy.
      * @param skipVals Skip values flag.
      * @param needVer If {@code true} returns values as tuples containing value and version.
@@ -178,7 +178,7 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
     IgniteInternalFuture<Map<K, V>> txLoadAsync(GridNearTxLocal tx,
         @Nullable Collection<KeyCacheObject> keys,
         boolean readThrough,
-        boolean deserializePortable,
+        boolean deserializeBinary,
         @Nullable IgniteCacheExpiryPolicy expiryPlc,
         boolean skipVals,
         boolean needVer) {
@@ -191,7 +191,7 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
             tx,
             CU.subjectId(tx, ctx.shared()),
             tx.resolveTaskName(),
-            deserializePortable,
+            deserializeBinary,
             expiryPlc,
             skipVals,
             /*can remap*/true,

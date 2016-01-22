@@ -122,6 +122,23 @@ public class TcpDiscoveryMulticastIpFinder extends TcpDiscoveryVmIpFinder {
     @GridToStringExclude
     private Collection<AddressSender> addrSnds;
 
+    /** */
+    @GridToStringExclude
+    private InetAddress mcastAddr;
+
+    /** */
+    @GridToStringExclude
+    private Set<InetAddress> reqItfs;
+
+    /** */
+    private boolean firstReq;
+
+    /** */
+    private boolean mcastErr;
+
+    @GridToStringExclude
+    private Set<InetSocketAddress> locNodeAddrs;
+
     /**
      * Constructs new IP finder.
      */
@@ -300,8 +317,6 @@ public class TcpDiscoveryMulticastIpFinder extends TcpDiscoveryVmIpFinder {
 
         boolean clientMode = discoveryClientMode();
 
-        InetAddress mcastAddr;
-
         try {
             mcastAddr = InetAddress.getByName(mcastGrp);
         }
@@ -325,7 +340,7 @@ public class TcpDiscoveryMulticastIpFinder extends TcpDiscoveryVmIpFinder {
 
         addrSnds = new ArrayList<>(locAddrs.size());
 
-        Set<InetAddress> reqItfs = new HashSet<>(locAddrs.size()); // Interfaces used to send requests.
+        reqItfs = new HashSet<>(locAddrs.size()); // Interfaces used to send requests.
 
         for (String locAddr : locAddrs) {
             InetAddress addr;
@@ -356,9 +371,9 @@ public class TcpDiscoveryMulticastIpFinder extends TcpDiscoveryVmIpFinder {
             }
         }
 
-        boolean mcastErr = false;
-
         if (!clientMode) {
+            locNodeAddrs = new HashSet<>(addrs);
+
             if (addrSnds.isEmpty()) {
                 try {
                     // Create non-bound socket if local host is loopback or failed to create sockets explicitly
@@ -393,13 +408,67 @@ public class TcpDiscoveryMulticastIpFinder extends TcpDiscoveryVmIpFinder {
             else
                 mcastErr = true;
         }
-        else
+        else {
             assert addrSnds.isEmpty() : addrSnds;
 
-        Collection<InetSocketAddress> ret;
+            locNodeAddrs = Collections.emptySet();
+        }
+    }
 
+    /** {@inheritDoc} */
+    @Override public void onSpiContextInitialized(IgniteSpiContext spiCtx) throws IgniteSpiException {
+        super.onSpiContextInitialized(spiCtx);
+
+        spiCtx.registerPort(mcastPort, UDP);
+    }
+
+    /** {@inheritDoc} */
+    @Override public synchronized Collection<InetSocketAddress> getRegisteredAddresses() {
+        if (mcastAddr != null && reqItfs != null) {
+            Collection<InetSocketAddress> ret;
+
+            if (reqItfs.size() > 1)
+                ret = requestAddresses(reqItfs);
+            else {
+                T2<Collection<InetSocketAddress>, Boolean> res = requestAddresses(mcastAddr, F.first(reqItfs));
+
+                ret = res.get1();
+
+                mcastErr |= res.get2();
+            }
+
+            if (ret.isEmpty()) {
+                if (mcastErr && firstReq) {
+                    if (getRegisteredAddresses().isEmpty()) {
+                        InetSocketAddress addr = new InetSocketAddress("localhost", TcpDiscoverySpi.DFLT_PORT);
+
+                        U.quietAndWarn(log, "TcpDiscoveryMulticastIpFinder failed to initialize multicast, " +
+                            "will use default address: " + addr);
+
+                        registerAddresses(Collections.singleton(addr));
+                    }
+                    else
+                        U.quietAndWarn(log, "TcpDiscoveryMulticastIpFinder failed to initialize multicast, " +
+                            "will use pre-configured addresses.");
+                }
+            }
+            else
+                registerAddresses(ret);
+
+            firstReq = false;
+        }
+
+        return super.getRegisteredAddresses();
+    }
+
+
+    /**
+     * @param reqItfs Interfaces used to send requests.
+     * @return Addresses.
+     */
+    private Collection<InetSocketAddress> requestAddresses(Set<InetAddress> reqItfs) {
         if (reqItfs.size() > 1) {
-            ret = new HashSet<>();
+            Collection<InetSocketAddress> ret = new HashSet<>();
 
             Collection<AddressReceiver> rcvrs = new ArrayList<>();
 
@@ -425,39 +494,14 @@ public class TcpDiscoveryMulticastIpFinder extends TcpDiscoveryVmIpFinder {
                     break;
                 }
             }
+
+            return ret;
         }
         else {
             T2<Collection<InetSocketAddress>, Boolean> res = requestAddresses(mcastAddr, F.first(reqItfs));
 
-            ret = res.get1();
-
-            mcastErr |= res.get2();
+            return res.get1();
         }
-
-        if (ret.isEmpty()) {
-            if (mcastErr) {
-                if (getRegisteredAddresses().isEmpty()) {
-                    InetSocketAddress addr = new InetSocketAddress("localhost", TcpDiscoverySpi.DFLT_PORT);
-
-                    U.quietAndWarn(log, "TcpDiscoveryMulticastIpFinder failed to initialize multicast, " +
-                        "will use default address: " + addr);
-
-                    registerAddresses(Collections.singleton(addr));
-                }
-                else
-                    U.quietAndWarn(log, "TcpDiscoveryMulticastIpFinder failed to initialize multicast, " +
-                        "will use pre-configured addresses.");
-            }
-        }
-        else
-            registerAddresses(ret);
-    }
-
-    /** {@inheritDoc} */
-    @Override public void onSpiContextInitialized(IgniteSpiContext spiCtx) throws IgniteSpiException {
-        super.onSpiContextInitialized(spiCtx);
-
-        spiCtx.registerPort(mcastPort, UDP);
     }
 
     /**
@@ -571,7 +615,7 @@ public class TcpDiscoveryMulticastIpFinder extends TcpDiscoveryVmIpFinder {
                     U.close(sock);
                 }
 
-                if (!rmtAddrs.isEmpty())
+                if (rmtAddrs.size() > locNodeAddrs.size())
                     break;
 
                 if (i < addrReqAttempts - 1) // Wait some time before re-sending address request.

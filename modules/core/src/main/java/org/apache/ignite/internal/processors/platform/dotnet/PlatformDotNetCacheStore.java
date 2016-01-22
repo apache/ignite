@@ -21,8 +21,8 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.store.CacheStore;
 import org.apache.ignite.cache.store.CacheStoreSession;
 import org.apache.ignite.internal.GridKernalContext;
-import org.apache.ignite.internal.portable.BinaryRawReaderEx;
-import org.apache.ignite.internal.portable.BinaryRawWriterEx;
+import org.apache.ignite.internal.binary.BinaryRawReaderEx;
+import org.apache.ignite.internal.binary.BinaryRawWriterEx;
 import org.apache.ignite.internal.processors.platform.PlatformContext;
 import org.apache.ignite.internal.processors.platform.cache.store.PlatformCacheStore;
 import org.apache.ignite.internal.processors.platform.cache.store.PlatformCacheStoreCallback;
@@ -224,37 +224,20 @@ public class PlatformDotNetCacheStore<K, V> implements CacheStore<K, V>, Platfor
     /** {@inheritDoc} */
     @SuppressWarnings({"NullableProblems", "unchecked"})
     @Override public void writeAll(final Collection<Cache.Entry<? extends K, ? extends V>> entries) {
+        assert entries != null;
         try {
             doInvoke(new IgniteInClosureX<BinaryRawWriterEx>() {
                 @Override public void applyx(BinaryRawWriterEx writer) throws IgniteCheckedException {
-                    Map<K, V> map = new AbstractMap<K, V>() {
-                        @Override public int size() {
-                            return entries.size();
-                        }
-
-                        @Override public Set<Entry<K, V>> entrySet() {
-                            return new AbstractSet<Entry<K, V>>() {
-                                @Override public Iterator<Entry<K, V>> iterator() {
-                                    return F.iterator(entries, new C1<Cache.Entry<? extends K, ? extends V>, Entry<K, V>>() {
-                                        private static final long serialVersionUID = 0L;
-
-                                        @Override public Entry<K, V> apply(Cache.Entry<? extends K, ? extends V> entry) {
-                                            return new GridMapEntry<>(entry.getKey(), entry.getValue());
-                                        }
-                                    }, true);
-                                }
-
-                                @Override public int size() {
-                                    return entries.size();
-                                }
-                            };
-                        }
-                    };
-
                     writer.writeByte(OP_PUT_ALL);
                     writer.writeLong(session());
                     writer.writeString(ses.cacheName());
-                    writer.writeMap(map);
+
+                    writer.writeInt(entries.size());
+
+                    for (Cache.Entry<? extends K, ? extends V> e : entries) {
+                        writer.writeObject(e.getKey());
+                        writer.writeObject(e.getValue());
+                    }
                 }
             }, null);
         }
@@ -318,10 +301,10 @@ public class PlatformDotNetCacheStore<K, V> implements CacheStore<K, V>, Platfor
      * Initialize the store.
      *
      * @param ctx Context.
-     * @param convertPortable Convert portable flag.
+     * @param convertBinary Convert binary flag.
      * @throws org.apache.ignite.IgniteCheckedException
      */
-    public void initialize(GridKernalContext ctx, boolean convertPortable) throws IgniteCheckedException {
+    public void initialize(GridKernalContext ctx, boolean convertBinary) throws IgniteCheckedException {
         A.notNull(typName, "typName");
 
         platformCtx = PlatformUtils.platformContext(ctx.grid());
@@ -331,7 +314,7 @@ public class PlatformDotNetCacheStore<K, V> implements CacheStore<K, V>, Platfor
 
             BinaryRawWriterEx writer = platformCtx.writer(out);
 
-            write(writer, convertPortable);
+            write(writer, convertBinary);
 
             out.synchronize();
 
@@ -343,11 +326,11 @@ public class PlatformDotNetCacheStore<K, V> implements CacheStore<K, V>, Platfor
      * Write store data to a stream.
      *
      * @param writer Writer.
-     * @param convertPortable Convert portable flag.
+     * @param convertBinary Convert binary flag.
      */
-    protected void write(BinaryRawWriterEx writer, boolean convertPortable) {
+    protected void write(BinaryRawWriterEx writer, boolean convertBinary) {
         writer.writeString(typName);
-        writer.writeBoolean(convertPortable);
+        writer.writeBoolean(convertBinary);
         writer.writeMap(props);
     }
 

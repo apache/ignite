@@ -33,6 +33,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheValueConsistencyTran
 import org.apache.ignite.internal.processors.cache.GridCacheValueConsistencyTransactionalSelfTest;
 import org.apache.ignite.internal.processors.cache.GridCacheVersionSelfTest;
 import org.apache.ignite.internal.processors.cache.IgniteCacheInterceptorSelfTestSuite;
+import org.apache.ignite.internal.processors.cache.IgniteCacheScanPredicateDeploymentSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.CacheAsyncOperationsTest;
 import org.apache.ignite.internal.processors.cache.distributed.GridCacheMixedModeSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.IgniteTxGetAfterStopTest;
@@ -51,6 +52,7 @@ import org.apache.ignite.internal.processors.cache.distributed.near.GridCachePut
 import org.apache.ignite.internal.processors.cache.distributed.near.IgniteTxReentryNearSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.rebalancing.GridCacheRabalancingDelayedPartitionMapExchangeSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.rebalancing.GridCacheRebalancingAsyncSelfTest;
+import org.apache.ignite.internal.processors.cache.distributed.rebalancing.GridCacheRebalancingSyncCheckDataTest;
 import org.apache.ignite.internal.processors.cache.distributed.rebalancing.GridCacheRebalancingSyncSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.rebalancing.GridCacheRebalancingUnmarshallingFailedSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.replicated.GridCacheDaemonNodeReplicatedSelfTest;
@@ -126,6 +128,7 @@ public class IgniteCacheTestSuite3 extends TestSuite {
         suite.addTestSuite(GridCacheConditionalDeploymentSelfTest.class);
         suite.addTestSuite(GridCacheAtomicEntryProcessorDeploymentSelfTest.class);
         suite.addTestSuite(GridCacheTransactionalEntryProcessorDeploymentSelfTest.class);
+        suite.addTestSuite(IgniteCacheScanPredicateDeploymentSelfTest.class);
 
         suite.addTestSuite(GridCachePutArrayValueSelfTest.class);
         suite.addTestSuite(GridCacheReplicatedUnswapAdvancedSelfTest.class);
@@ -140,6 +143,7 @@ public class IgniteCacheTestSuite3 extends TestSuite {
 
         suite.addTestSuite(GridCacheOrderedPreloadingSelfTest.class);
         suite.addTestSuite(GridCacheRebalancingSyncSelfTest.class);
+        suite.addTestSuite(GridCacheRebalancingSyncCheckDataTest.class);
         suite.addTestSuite(GridCacheRebalancingUnmarshallingFailedSelfTest.class);
         suite.addTestSuite(GridCacheRebalancingAsyncSelfTest.class);
         suite.addTestSuite(GridCacheRabalancingDelayedPartitionMapExchangeSelfTest.class);

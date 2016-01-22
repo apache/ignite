@@ -206,14 +206,17 @@ public class DataStreamProcessorSelfTest extends GridCommonAbstractTest {
     @SuppressWarnings("ErrorNotRethrown")
     private void checkDataStreamer() throws Exception {
         try {
-            Ignite g1 = startGrid(1);
-
             useCache = true;
 
-            Ignite g2 = startGrid(2);
+            Ignite igniteWithCache = startGrid(2);
+
             startGrid(3);
 
-            final IgniteDataStreamer<Integer, Integer> ldr = g1.dataStreamer(null);
+            useCache = false;
+
+            Ignite igniteWithoutCache = startGrid(1);
+
+            final IgniteDataStreamer<Integer, Integer> ldr = igniteWithoutCache.dataStreamer(null);
 
             ldr.receiver(DataStreamerCacheUpdaters.<Integer, Integer>batchedSorted());
 
@@ -255,7 +258,7 @@ public class DataStreamProcessorSelfTest extends GridCommonAbstractTest {
 
             assertEquals(total, s2 + s3);
 
-            final IgniteDataStreamer<Integer, Integer> rmvLdr = g2.dataStreamer(null);
+            final IgniteDataStreamer<Integer, Integer> rmvLdr = igniteWithCache.dataStreamer(null);
 
             rmvLdr.receiver(DataStreamerCacheUpdaters.<Integer, Integer>batchedSorted());
 
@@ -443,15 +446,17 @@ public class DataStreamProcessorSelfTest extends GridCommonAbstractTest {
             // Start all required nodes.
             int idx = 1;
 
-            for (int i = 0; i < nodesCntNoCache; i++)
-                startGrid(idx++);
-
             useCache = true;
 
             for (int i = 0; i < nodesCntCache; i++)
                 startGrid(idx++);
 
-            Ignite g1 = grid(1);
+            useCache = false;
+
+            for (int i = 0; i < nodesCntNoCache; i++)
+                startGrid(idx++);
+
+            Ignite g1 = grid(idx - 1);
 
             // Get and configure loader.
             final IgniteDataStreamer<Integer, Integer> ldr = g1.dataStreamer(null);
