@@ -143,6 +143,8 @@ namespace Apache.Ignite.Core.Tests
             CheckSchemaValidation();
 
             RunWithCustomCulture(CheckSchemaValidation);
+
+            // TODO: Try invalid XML (duplicate elements)
         }
 
         public void CheckSchemaValidation()

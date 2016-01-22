@@ -26,16 +26,16 @@
 
     <xs:element name="igniteConfiguration">
         <xs:complexType>
-            <xs:choice minOccurs="0" maxOccurs="unbounded">
+            <xs:all>
                 <xs:element name="binaryConfiguration" minOccurs="0">
                     <xs:complexType>
-                        <xs:sequence>
+                        <xs:all>
                             <xs:element name="typeConfigurations" minOccurs="0">
                                 <xs:complexType>
                                     <xs:sequence>
                                         <xs:element name="binaryTypeConfiguration">
                                             <xs:complexType>
-                                                <xs:sequence>
+                                                <xs:all>
                                                     <xs:element name="nameMapper" minOccurs="0">
                                                         <xs:complexType>
                                                             <xs:attribute name="type" type="xs:string" use="required" />
@@ -51,7 +51,7 @@
                                                             <xs:attribute name="type" type="xs:string" use="required" />
                                                         </xs:complexType>
                                                     </xs:element>
-                                                </xs:sequence>
+                                                </xs:all>
                                                 <xs:attribute name="typeName" type="xs:string" />
                                                 <xs:attribute name="affinityKeyFieldName" type="xs:string" />
                                                 <xs:attribute name="keepDeserialized" type="xs:string" />
@@ -76,7 +76,7 @@
                                     <xs:attribute name="type" type="xs:string" use="required" />
                                 </xs:complexType>
                             </xs:element>
-                        </xs:sequence>
+                        </xs:all>
                         <xs:attribute name="defaultKeepDeserialized" type="xs:boolean" />
                     </xs:complexType>
                 </xs:element>
@@ -85,7 +85,7 @@
                         <xs:sequence>
                             <xs:element name="cacheConfiguration" maxOccurs="unbounded">
                                 <xs:complexType>
-                                    <xs:sequence>
+                                    <xs:all>
                                         <xs:element name="cacheStoreFactory" minOccurs="0">
                                             <xs:complexType>
                                                 <xs:attribute name="type" type="xs:string" use="required" />
@@ -96,7 +96,7 @@
                                                 <xs:sequence>
                                                     <xs:element name="queryEntity" maxOccurs="unbounded">
                                                         <xs:complexType>
-                                                            <xs:sequence>
+                                                            <xs:all>
                                                                 <xs:element name="fields" minOccurs="0">
                                                                     <xs:complexType>
                                                                         <xs:sequence>
@@ -128,7 +128,7 @@
                                                                             <xs:element name="queryIndex" maxOccurs="unbounded">
                                                                                 <xs:complexType>
                                                                                     <xs:sequence>
-                                                                                        <xs:element name="fields" minOccurs="0">
+                                                                                        <xs:element name="fields" minOccurs="1">
                                                                                             <xs:complexType>
                                                                                                 <xs:sequence>
                                                                                                     <xs:element name="indexField" maxOccurs="unbounded">
@@ -141,12 +141,14 @@
                                                                                             </xs:complexType>
                                                                                         </xs:element>
                                                                                     </xs:sequence>
+                                                                                    <xs:attribute name="name" type="xs:string" />
+                                                                                    <xs:attribute name="indexType" type="xs:string" />
                                                                                 </xs:complexType>
                                                                             </xs:element>
                                                                         </xs:sequence>
                                                                     </xs:complexType>
                                                                 </xs:element>
-                                                            </xs:sequence>
+                                                            </xs:all>
                                                             <xs:attribute name="keyTypeName" type="xs:string"/>
                                                             <xs:attribute name="keyType" type="xs:string" />
                                                             <xs:attribute name="valueTypeName" type="xs:string" />
@@ -156,7 +158,7 @@
                                                 </xs:sequence>
                                             </xs:complexType>
                                         </xs:element>
-                                    </xs:sequence>
+                                    </xs:all>
                                     <xs:attribute name="name" type="xs:string" />
                                     <xs:attribute name="writeSynchronizationMode" type="xs:string" />
                                     <xs:attribute name="evictSynchronized" type="xs:boolean" />
@@ -255,7 +257,7 @@
                         </xs:sequence>
                     </xs:complexType>
                 </xs:element>
-            </xs:choice>
+            </xs:all>
             <xs:attribute name="gridName" type="xs:string" />
             <xs:attribute name="jvmDllPath" type="xs:string" />
             <xs:attribute name="igniteHome" type="xs:string" />
