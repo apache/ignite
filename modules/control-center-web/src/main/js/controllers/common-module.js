@@ -586,9 +586,7 @@ consoleModule.service('$common', [
             }
         }
 
-        function showPopoverMessage(panels, panelId, id, message) {
-            popoverShown = false;
-
+        function showPopoverMessage(panels, panelId, id, message, showTime) {
             ensureActivePanel(panels, panelId, id);
 
             var el = $('body').find('#' + id);
@@ -602,7 +600,7 @@ consoleModule.service('$common', [
 
             $timeout(function () { newPopover.$promise.then(newPopover.show); }, 400);
 
-            $timeout(function () { newPopover.hide(); }, 5000);
+            $timeout(function () { newPopover.hide(); }, showTime ? showTime : 5000);
 
             return false;
         }
@@ -887,9 +885,7 @@ consoleModule.service('$common', [
 
                 return false;
             },
-            showPopoverMessage: function (panels, panelId, id, message) {
-                return showPopoverMessage(panels, panelId, id, message);
-            },
+            showPopoverMessage: showPopoverMessage,
             hidePopover: function () {
                 if (popover)
                     popover.hide();

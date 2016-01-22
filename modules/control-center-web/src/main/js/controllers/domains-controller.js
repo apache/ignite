@@ -907,7 +907,6 @@ consoleModule.controller('domainsController', function ($filter, $http, $timeout
 
                     var dupSfx = (dup ? '_' + dupCnt : '');
 
-
                     newDomain.keyType = valType + 'Key' + dupSfx;
                     newDomain.valueType = valType + dupSfx;
                     newDomain.queryMetadata = 'Configuration';
