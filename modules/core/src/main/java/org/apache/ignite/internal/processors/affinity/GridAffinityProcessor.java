@@ -891,9 +891,7 @@ public class GridAffinityProcessor extends GridProcessorAdapter {
          * @return Affinity info for current topology version.
          * @throws IgniteCheckedException If failed.
          */
-        @Nullable private AffinityInfo cache() throws IgniteCheckedException {
-            ctx.discovery().topologyVersionEx();
-
+        private AffinityInfo cache() throws IgniteCheckedException {
             AffinityInfo aff = affinityCache(cacheName, ctx.discovery().topologyVersionEx());
 
             if (aff == null)
