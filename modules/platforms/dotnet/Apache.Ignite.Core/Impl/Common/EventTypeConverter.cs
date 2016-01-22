@@ -85,7 +85,7 @@ namespace Apache.Ignite.Core.Impl.Common
         /// <param name="culture">The <see cref="CultureInfo" /> to use as the current culture.</param>
         /// <param name="value">The <see cref="Object" /> to convert.</param>
         /// <returns>
-        /// An <see cref="Object" /> that represents the converted value.
+        /// An <see cref="object" /> that represents the converted value.
         /// </returns>
         public override object ConvertFrom(ITypeDescriptorContext context, CultureInfo culture, object value)
         {
@@ -114,7 +114,7 @@ namespace Apache.Ignite.Core.Impl.Common
         /// The <see cref="Type" /> to convert the <paramref name="value" /> parameter to.
         /// </param>
         /// <returns>
-        /// An <see cref="Object" /> that represents the converted value.
+        /// An <see cref="object" /> that represents the converted value.
         /// </returns>
         public override object ConvertTo(ITypeDescriptorContext context, CultureInfo culture, object value,
             Type destinationType)
