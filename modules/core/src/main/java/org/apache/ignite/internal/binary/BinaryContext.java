@@ -371,7 +371,11 @@ public class BinaryContext {
         for (Map.Entry<Integer, BinaryClassDescriptor> entry : userTypes.entrySet())
             sb.a("\n").a(entry.getKey()).a("=").a(entry.getValue());
 
+        if (userTypes.isEmpty())
+            sb.a(" EMPTY!!!!!!!!!!!");
+
         U.debug(log, sb.toString());
+        U.debug(sb.toString());
     }
 
     /**
