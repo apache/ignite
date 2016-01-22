@@ -702,6 +702,30 @@ consoleModule.service('$common', [
             return !isEmpty;
         }
 
+        var DS_CHECK_SUCCESS = { checked: true };
+
+        function compareDataSources(firstCache, secondCache) {
+            var firstDs = extractDataSource(firstCache);
+            var secondDs = extractDataSource(secondCache);
+
+            if (firstDs && secondDs) {
+                var firstDB = firstDs.dialect || firstDs.database;
+                var secondDB = secondDs.dialect || secondDs.database;
+
+                if (firstDs.dataSourceBean === secondDs.dataSourceBean && firstDB !== secondDB) {
+                    return {
+                        checked: false,
+                        firstCache: firstCache,
+                        firstDB: firstDB,
+                        secondCache: secondCache,
+                        secondDB: secondDB
+                    };
+                }
+            }
+
+            return DS_CHECK_SUCCESS;
+        }
+
         return {
             getModel: getModel,
             joinTip: function (arr) {
@@ -1027,42 +1051,35 @@ consoleModule.service('$common', [
 
                 return found ? found.label : undefined;
             },
-            checkCachesDataSources: function (caches) {
-                var res = { checked: true };
+            checkCachesDataSources: function (caches, checkCacheExt) {
+                var res = DS_CHECK_SUCCESS;
 
-                res.checked = !isDefined(_.find(caches, function (curCache, curIx) {
-                    return _.find(caches, function (checkCache, checkIx) {
-                        if (checkIx < curIx) {
-                            var curDs = extractDataSource(curCache);
-                            var checkDs = extractDataSource(checkCache);
+                _.find(caches, function (curCache, curIx) {
+                    if (isDefined(checkCacheExt)) {
+                        if (!isDefined(checkCacheExt._id) || checkCacheExt.id != curCache._id) {
+                            res = compareDataSources(checkCacheExt, curCache);
 
-                            if (curDs && checkDs) {
-                                var curDB = curDs.dialect || curDs.database;
-                                var checkDB = checkDs.dialect || checkDs.database;
-
-                                if (curDs.dataSourceBean === checkDs.dataSourceBean && curDB !== checkDB) {
-                                    res = {
-                                        checked: false,
-                                        firstCache: checkCache,
-                                        firstDB: checkDB,
-                                        secondCache: curCache,
-                                        secondDB: curDB
-                                    };
-
-                                    return true;
-                                }
-                            }
+                            return !res.checked;
                         }
 
                         return false;
-                    });
-                }));
+                    }
+                    else {
+                        return _.find(caches, function (checkCache, checkIx) {
+                            if (checkIx < curIx) {
+                                res = compareDataSources(checkCache, curCache);
+
+                                return !res.checked;
+                            }
+
+                            return false;
+                        });
+                    }
+                });
 
                 return res;
             },
             autoCacheStoreConfiguration: function (cache, domains) {
-                var change;
-
                 var cacheStoreFactory = isDefined(cache.cacheStoreFactory) &&
                     isDefined(cache.cacheStoreFactory.kind);
 
@@ -1126,7 +1143,7 @@ consoleModule.service('$unsavedChangesGuard', function ($rootScope) {
                 window.onbeforeunload = null;
             });
 
-            var unbind = $rootScope.$on('$stateChangeStart', function(event, toState, toParams, fromState, fromParams) {
+            var unbind = $rootScope.$on('$stateChangeStart', function(event) {
                 if ($scope.ui && $scope.ui.isDirty()) {
                     if (!confirm('You have unsaved changes.\n\nAre you sure you want to discard them?')) {
                         event.preventDefault();

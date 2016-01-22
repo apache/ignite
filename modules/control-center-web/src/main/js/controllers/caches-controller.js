@@ -467,16 +467,16 @@ consoleModule.controller('cachesController', [
 
                 caches.push($scope.backupItem);
 
-                checkRes = $common.checkCachesDataSources(caches);
+                checkRes = $common.checkCachesDataSources(caches, $scope.backupItem);
 
                 return !checkRes.checked;
             });
 
             if (!checkRes.checked) {
-                return showPopoverMessage($scope.panels, 'store', checkRes.secondCache.cacheStoreFactory.kind === 'CacheJdbcPojoStoreFactory' ? 'dialect' : 'database',
-                    'Found caches "' + checkRes.firstCache.name + '" and "' + checkRes.secondCache.name + '" in cluster "' + failCluster.label + '" ' +
+                return showPopoverMessage($scope.panels, 'store', checkRes.firstCache.cacheStoreFactory.kind === 'CacheJdbcPojoStoreFactory' ? 'dialect' : 'database',
+                    'Found cache "' + checkRes.secondCache.name + '" in cluster "' + failCluster.label + '" ' +
                     'with the same data source bean name "' + checkRes.firstCache.cacheStoreFactory[checkRes.firstCache.cacheStoreFactory.kind].dataSourceBean +
-                    '" and different configured databases: "' + $common.cacheStoreJdbcDialectsLabel(checkRes.firstDB) + '" in "' + checkRes.firstCache.name + '" and "' +
+                    '" and different database: "' + $common.cacheStoreJdbcDialectsLabel(checkRes.firstDB) + '" in current cache and "' +
                     $common.cacheStoreJdbcDialectsLabel(checkRes.secondDB) + '" in "' + checkRes.secondCache.name + '"', 10000);
             }
 
