@@ -1970,6 +1970,12 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                                     "[entry=" + this + ", newVer=" + newVer + ']');
                         }
 
+                        // Previously value was assigned on preload and wasn't processed by DR.
+                        if (ATOMIC_VER_COMPARATOR.compare(ver, newVer, ignoreTime) == 0 &&
+                            cctx.config().getAtomicWriteOrderMode() == CacheAtomicWriteOrderMode.CLOCK) {
+                            drReplicate(drType, rawGetOrUnmarshalUnlocked(false), newVer);
+                        }
+
                         if (!cctx.isNear()) {
                             CacheObject evtVal;
 
@@ -2002,14 +2008,8 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                                 || !context().userCache(), partition(), primary, false, updateCntr0, topVer);
                         }
 
-                        CacheObject val = rawGetOrUnmarshalUnlocked(false);
-
-                        // Previously value was assigned on preload and wasn't processed by DR.
-                        if (ATOMIC_VER_COMPARATOR.compare(ver, newVer, ignoreTime) == 0 && drType != DR_PRELOAD)
-                            drReplicate(drType, val, newVer);
-
                         return new GridCacheUpdateAtomicResult(false,
-                            retval ? val : null,
+                            retval ? rawGetOrUnmarshalUnlocked(false) : null,
                             null,
                             invokeRes,
                             CU.TTL_ETERNAL,
