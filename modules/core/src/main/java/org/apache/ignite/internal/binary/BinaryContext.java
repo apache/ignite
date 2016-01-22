@@ -841,6 +841,8 @@ public class BinaryContext {
         throws BinaryObjectException {
         assert mapper != null;
 
+        U.debug(log, "Rgistering type clsname=" + clsName + ", mapper=" + mapper);
+
         Class<?> cls = null;
 
         try {
