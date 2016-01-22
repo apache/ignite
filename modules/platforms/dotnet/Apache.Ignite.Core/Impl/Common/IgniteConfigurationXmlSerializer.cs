@@ -71,16 +71,15 @@ namespace Apache.Ignite.Core.Impl.Common
             IgniteArgumentCheck.NotNull(writer, "writer");
             IgniteArgumentCheck.NotNullOrEmpty(rootElementName, "rootElementName");
 
-            WriteElement(configuration, writer, rootElementName, null, typeof(IgniteConfiguration));
+            WriteElement(configuration, writer, rootElementName, typeof(IgniteConfiguration));
         }
 
         [SuppressMessage("ReSharper", "AssignNullToNotNullAttribute")]
-        private static void WriteElement(object obj, XmlWriter writer, string rootElementName, PropertyInfo property, 
-            Type valueType)
+        private static void WriteElement(object obj, XmlWriter writer, string rootElementName, Type valueType, 
+            PropertyInfo property = null)
         {
-
             if (valueType == typeof(IgniteConfiguration))
-                writer.WriteStartElement(rootElementName, Schema);
+                writer.WriteStartElement(rootElementName, Schema);  // write xmlns for the root element
             else
                 writer.WriteStartElement(rootElementName);
 
@@ -91,7 +90,7 @@ namespace Apache.Ignite.Core.Impl.Common
                 var elementTypeName = PropertyNameToXmlName(elementType.Name);
 
                 foreach (var element in (IEnumerable) obj)
-                    WriteElement(element, writer, elementTypeName, property, elementType);
+                    WriteElement(element, writer, elementTypeName, elementType, property);
             }
             else if (IsBasicType(valueType))
             {
@@ -118,8 +117,8 @@ namespace Apache.Ignite.Core.Impl.Common
 
                 // Write elements
                 foreach (var prop in props.Where(p => !IsBasicType(p.PropertyType)))
-                    WriteElement(prop.GetValue(obj, null), writer, PropertyNameToXmlName(prop.Name), prop,
-                        prop.PropertyType);
+                    WriteElement(prop.GetValue(obj, null), writer, PropertyNameToXmlName(prop.Name),
+                        prop.PropertyType, prop);
             }
 
             writer.WriteEndElement();
