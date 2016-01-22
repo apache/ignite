@@ -167,7 +167,8 @@ public class GridServiceProcessor extends GridProcessorAdapter {
         cache = ctx.cache().utilityCache();
 
         if (!ctx.clientNode())
-            ctx.event().addLocalEventListener(topLsnr,
+            ctx.event().addLocalEventListener(
+                topLsnr,
                 EVT_NODE_JOINED,
                 EVT_NODE_LEFT,
                 EVT_NODE_FAILED,
