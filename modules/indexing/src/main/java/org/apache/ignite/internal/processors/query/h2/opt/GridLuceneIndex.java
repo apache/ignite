@@ -25,6 +25,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.CacheObjectContext;
+import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.query.GridQueryIndexDescriptor;
 import org.apache.ignite.internal.processors.query.GridQueryIndexType;
 import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
@@ -161,7 +162,7 @@ public class GridLuceneIndex implements Closeable {
      * @param expires Expiration time.
      * @throws IgniteCheckedException If failed.
      */
-    public void store(CacheObject k, CacheObject v, byte[] ver, long expires) throws IgniteCheckedException {
+    public void store(CacheObject k, CacheObject v, GridCacheVersion ver, long expires) throws IgniteCheckedException {
         CacheObjectContext coctx = objectContext();
 
         Object key = k.isPlatformType() ? k.value(coctx, false) : k;
@@ -201,7 +202,7 @@ public class GridLuceneIndex implements Closeable {
             if (type.valueClass() != String.class)
                 doc.add(new Field(VAL_FIELD_NAME, v.valueBytes(coctx)));
 
-            doc.add(new Field(VER_FIELD_NAME, ver));
+            doc.add(new Field(VER_FIELD_NAME, ver.toString().getBytes()));
 
             doc.add(new Field(EXPIRATION_TIME_FIELD_NAME, DateTools.timeToString(expires,
                 DateTools.Resolution.MILLISECOND), Field.Store.YES, Field.Index.NOT_ANALYZED));

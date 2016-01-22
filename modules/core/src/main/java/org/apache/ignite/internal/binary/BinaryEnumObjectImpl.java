@@ -207,6 +207,11 @@ public class BinaryEnumObjectImpl implements BinaryObjectEx, Externalizable, Cac
     }
 
     /** {@inheritDoc} */
+    @Override public boolean putValue(ByteBuffer buf, CacheObjectContext ctx) throws IgniteCheckedException {
+        throw new UnsupportedOperationException("TODO implement.");
+    }
+
+    /** {@inheritDoc} */
     @Override public byte cacheObjectType() {
         return TYPE_BINARY;
     }

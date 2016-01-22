@@ -530,7 +530,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                         return val;
                     }
                     else
-                        clearIndex(e.value());
+                        clearIndex(e.value(), e.version());
                 }
             }
         }
@@ -788,7 +788,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                         releaseSwap();
 
                         // Previous value is guaranteed to be null
-                        clearIndex(null);
+                        clearIndex(null, ver);
                     }
                     else {
                         // Read and remove swap entry.
@@ -1026,7 +1026,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                             deletedUnlocked(false);
                     }
                     else {
-                        clearIndex(old);
+                        clearIndex(old, ver);
 
                         if (cctx.deferredDelete() && !isInternal() && !detached() && !deletedUnlocked())
                             deletedUnlocked(true);
@@ -1323,7 +1323,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
             // Clear indexes inside of synchronization since indexes
             // can be updated without actually holding entry lock.
-            clearIndex(old);
+            clearIndex(old, ver);
 
             boolean hadValPtr = hasOffHeapPointer();
 
@@ -1513,7 +1513,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                 if (old != null)
                     updateIndex(old, expireTime, ver, null);
                 else
-                    clearIndex(null);
+                    clearIndex(null, ver);
 
                 update(old, expireTime, ttl, ver);
             }
@@ -1697,7 +1697,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
                 // Update index inside synchronization since it can be updated
                 // in load methods without actually holding entry lock.
-                clearIndex(old);
+                clearIndex(old, this.ver);
 
                 update(null, CU.TTL_ETERNAL, CU.EXPIRE_TIME_ETERNAL, ver);
 
@@ -2055,7 +2055,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                 if (oldVal != null)
                     updateIndex(oldVal, initExpireTime, ver, null);
                 else
-                    clearIndex(null);
+                    clearIndex(null, ver);
 
                 update(oldVal, initExpireTime, initTtl, ver);
 
@@ -2331,7 +2331,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
                 // Update index inside synchronization since it can be updated
                 // in load methods without actually holding entry lock.
-                clearIndex(oldVal);
+                clearIndex(oldVal, ver);
 
                 if (hadVal) {
                     assert !deletedUnlocked();
@@ -2612,7 +2612,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                 if (log.isDebugEnabled())
                     log.debug("Entry has been marked obsolete: " + this);
 
-                clearIndex(val);
+                clearIndex(val, ver);
 
                 releaseSwap();
 
@@ -2793,7 +2793,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
             releaseSwap();
 
-            clearIndex(val);
+            clearIndex(val, ver);
 
             onInvalidate();
         }
@@ -3120,7 +3120,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
             if (delta <= 0) {
                 releaseSwap();
 
-                clearIndex(saveValueForIndexUnlocked());
+                clearIndex(saveValueForIndexUnlocked(), ver);
 
                 return true;
             }
@@ -3577,7 +3577,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                         }
                     }
 
-                    clearIndex(expiredVal);
+                    clearIndex(expiredVal, ver);
 
                     releaseSwap();
 
@@ -3750,14 +3750,14 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
      * @param prevVal Previous value (if needed for index update).
      * @throws IgniteCheckedException If failed.
      */
-    protected void clearIndex(CacheObject prevVal) throws IgniteCheckedException {
+    protected void clearIndex(CacheObject prevVal, GridCacheVersion prevVer) throws IgniteCheckedException {
         assert Thread.holdsLock(this);
 
         try {
             GridCacheQueryManager<?, ?> qryMgr = cctx.queries();
 
             if (qryMgr.enabled())
-                qryMgr.remove(key(), prevVal);
+                qryMgr.remove(key(), prevVal, prevVer);
         }
         catch (IgniteCheckedException e) {
             throw new GridCacheIndexUpdateException(e);
@@ -3916,7 +3916,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                             }
                         }
                         else
-                            clearIndex(prev);
+                            clearIndex(prev, ver);
 
                         // Nullify value after swap.
                         value(null);
@@ -3970,7 +3970,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                                 }
                             }
                             else
-                                clearIndex(prevVal);
+                                clearIndex(prevVal, ver);
 
                             // Nullify value after swap.
                             value(null);

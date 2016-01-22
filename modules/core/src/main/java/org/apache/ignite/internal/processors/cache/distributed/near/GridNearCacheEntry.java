@@ -451,7 +451,7 @@ public class GridNearCacheEntry extends GridDistributedCacheEntry {
     }
 
     /** {@inheritDoc} */
-    @Override protected void clearIndex(CacheObject val) {
+    @Override protected void clearIndex(CacheObject val, GridCacheVersion ver) {
         // No-op.
     }
 

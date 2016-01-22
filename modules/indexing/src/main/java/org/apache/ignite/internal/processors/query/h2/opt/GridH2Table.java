@@ -31,6 +31,7 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.processors.cache.CacheObject;
+import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.offheap.unsafe.GridUnsafeMemory;
 import org.h2.api.TableEngine;
 import org.h2.command.ddl.CreateTableData;
@@ -331,9 +332,11 @@ public class GridH2Table extends TableBase {
      * @return {@code true} If operation succeeded.
      * @throws IgniteCheckedException If failed.
      */
-    public boolean update(CacheObject key, CacheObject val, long expirationTime, boolean rmv)
+    public boolean update(CacheObject key, CacheObject val, GridCacheVersion ver, long expirationTime, boolean rmv)
         throws IgniteCheckedException {
         assert desc != null;
+
+        // TODO use version here.
 
         GridH2Row row = desc.createRow(key, val, expirationTime);
 

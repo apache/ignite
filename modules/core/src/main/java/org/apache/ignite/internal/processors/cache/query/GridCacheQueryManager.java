@@ -403,7 +403,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
             return; // Ignore index update when node is stopping.
 
         try {
-            qryProc.store(space, key, val, CU.versionToBytes(ver), expirationTime);
+            qryProc.store(space, key, val, ver, expirationTime);
         }
         finally {
             invalidateResultCache();
@@ -418,7 +418,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
      * @throws IgniteCheckedException Thrown in case of any errors.
      */
     @SuppressWarnings("SimplifiableIfStatement")
-    public void remove(CacheObject key, CacheObject val) throws IgniteCheckedException {
+    public void remove(CacheObject key, CacheObject val, GridCacheVersion ver) throws IgniteCheckedException {
         assert key != null;
 
         if (!GridQueryProcessor.isEnabled(cctx.config()) && !(key instanceof GridCacheInternal))
@@ -428,7 +428,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
             return; // Ignore index update when node is stopping.
 
         try {
-            qryProc.remove(space, key, val);
+            qryProc.remove(space, key, val, ver);
         }
         finally {
             invalidateResultCache();

@@ -22,6 +22,7 @@ import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import java.nio.ByteBuffer;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.GridDirectTransient;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -66,6 +67,18 @@ public abstract class CacheObjectAdapter implements CacheObject, Externalizable 
     /** {@inheritDoc} */
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
         valBytes = U.readByteArray(in);
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean putValue(ByteBuffer buf, CacheObjectContext ctx) throws IgniteCheckedException {
+        if (buf.remaining() < valBytes.length + 5)
+            return false;
+
+        buf.put(cacheObjectType());
+        buf.putInt(valBytes.length);
+        buf.put(valBytes);
+
+        return true;
     }
 
     /** {@inheritDoc} */

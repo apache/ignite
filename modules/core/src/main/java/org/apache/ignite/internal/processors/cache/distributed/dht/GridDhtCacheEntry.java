@@ -577,7 +577,7 @@ public class GridDhtCacheEntry extends GridDistributedCacheEntry {
                 if (log.isDebugEnabled())
                     log.debug("Entry has been marked obsolete: " + this);
 
-                clearIndex(prev);
+                clearIndex(prev, ver);
 
                 // Give to GC.
                 update(null, 0L, 0L, ver);
