@@ -816,7 +816,7 @@ public class BinaryContext {
             cls,
             false,
             id,
-            clsName, // TODO check
+            SIMPLE_NAME_LOWER_CASE_MAPPER.typeName(clsName), // TODO check
             affFieldName,
             DFLT_MAPPER,
             new BinaryReflectiveSerializer(),
