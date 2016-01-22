@@ -67,7 +67,7 @@ void PrintResultSet(SQLHSTMT stmt)
         if (!SQL_SUCCEEDED(ret))
             break;
 
-        for (int i = 0; i < columns.size(); ++i)
+        for (size_t i = 0; i < columns.size(); ++i)
             std::cout << std::setw(16) << columns[i].buffer << " ";
 
         std::cout << std::endl;
