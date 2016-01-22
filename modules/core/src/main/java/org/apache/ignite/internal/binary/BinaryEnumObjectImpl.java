@@ -27,6 +27,7 @@ import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.CacheObjectContext;
 import org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl;
 import org.apache.ignite.internal.util.typedef.internal.SB;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 import org.jetbrains.annotations.Nullable;
@@ -111,6 +112,8 @@ public class BinaryEnumObjectImpl implements BinaryObjectEx, Externalizable, Cac
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
     @Override public <T> T deserialize() throws BinaryObjectException {
+        U.debug(getClass() + ".deserialize() [typeId=" + typeId + ", clsName=" + clsName + ']');
+
         Class cls = BinaryUtils.resolveClass(ctx, typeId, clsName, null, true);
 
         return BinaryEnumCache.get(cls, ord);
