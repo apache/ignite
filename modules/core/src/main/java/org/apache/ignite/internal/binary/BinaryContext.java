@@ -86,6 +86,10 @@ public class BinaryContext {
         new BinaryInternalMapper(new BinaryBaseNameMapper(false), new BinaryBaseIdMapper(true));
 
     /** */
+    private static final BinaryInternalMapper SIMPLE_NAME_LOWER_CASE_MAPPER =
+        new BinaryInternalMapper(new BinaryBaseNameMapper(true), new BinaryBaseIdMapper(true));
+
+    /** */
     private final ConcurrentMap<Class<?>, BinaryClassDescriptor> descByCls = new ConcurrentHashMap8<>();
 
     /** Holds classes loaded by default class loader only. */
@@ -376,18 +380,23 @@ public class BinaryContext {
      * @return Mapper.
      */
     private BinaryInternalMapper resolveMapper(BinaryNameMapper nameMapper, BinaryIdMapper idMapper) {
+        if ((nameMapper == null || (DFLT_MAPPER.nameMapper().equals(nameMapper)))
+            && (idMapper == null || DFLT_MAPPER.idMapper().equals(idMapper)))
+            return DFLT_MAPPER;
+
+        if (nameMapper != null && nameMapper instanceof BinaryBaseNameMapper
+            && ((BinaryBaseNameMapper)nameMapper).getUseSimpleName()
+            && idMapper != null && idMapper instanceof BinaryBaseIdMapper
+            && ((BinaryBaseIdMapper)idMapper).isLowerCase())
+            return SIMPLE_NAME_LOWER_CASE_MAPPER;
+
         if (nameMapper == null)
             nameMapper = DFLT_MAPPER.nameMapper();
 
         if (idMapper == null)
             idMapper = DFLT_MAPPER.idMapper();
 
-        boolean notNeedToWrap = nameMapper instanceof BinaryBaseNameMapper && ((BinaryBaseNameMapper)nameMapper).getUseSimpleName() &&
-            idMapper instanceof BinaryBaseIdMapper && ((BinaryBaseIdMapper)idMapper).isLowerCase();
-
-        BinaryInternalMapper mapper = new BinaryInternalMapper(nameMapper, idMapper);
-
-        return notNeedToWrap ? mapper : new BinaryInternalMapperWrapper(mapper);
+        return new BinaryInternalMapperWrapper(nameMapper, idMapper);
     }
 
     /**
@@ -1197,17 +1206,12 @@ public class BinaryContext {
      * Wrapps mapper.
      */
     private static class BinaryInternalMapperWrapper extends BinaryInternalMapper {
-        /** */
-        private static final BinaryInternalMapper SIMPLE_NAME_LOWER_CASE_MAPPER =
-            new BinaryInternalMapper(new BinaryBaseNameMapper(true), new BinaryBaseIdMapper(true));
-
         /**
-         * Constructor.
-         *
-         * @param mapper Delegate.
+         * @param nameMapper Name mapper.
+         * @param idMapper Id mapper.
          */
-        private BinaryInternalMapperWrapper(BinaryInternalMapper mapper) {
-            super(mapper.nameMapper(), mapper.idMapper());
+        BinaryInternalMapperWrapper(BinaryNameMapper nameMapper, BinaryIdMapper idMapper) {
+            super(nameMapper, idMapper);
         }
 
         /** {@inheritDoc} */
