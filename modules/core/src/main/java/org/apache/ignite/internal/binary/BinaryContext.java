@@ -374,11 +374,12 @@ public class BinaryContext {
         if (idMapper == null)
             idMapper = DFLT_MAPPER.idMapper();
 
-        boolean custom = !(nameMapper instanceof BinaryBaseNameMapper) || !(idMapper instanceof BinaryBaseIdMapper);
+        boolean notNeedToWrap = nameMapper instanceof BinaryBaseNameMapper && ((BinaryBaseNameMapper)nameMapper).getUseSimpleName() &&
+            idMapper instanceof BinaryBaseIdMapper && ((BinaryBaseIdMapper)idMapper).isLowerCase();
 
         BinaryInternalMapper mapper = new BinaryInternalMapper(nameMapper, idMapper);
 
-        return custom ? new BinaryInternalMapperWrapper(mapper) : mapper;
+        return notNeedToWrap ? mapper : new BinaryInternalMapperWrapper(mapper);
     }
 
     /**
@@ -1222,6 +1223,21 @@ public class BinaryContext {
             int id = mapper.fieldId(typeId, fieldName);
 
             return id != 0 ? id : super.fieldId(typeId, fieldName);
+        }
+
+        /** {@inheritDoc} */
+        @Override public String typeName(String clsName) {
+            return mapper.typeName(clsName);
+        }
+
+        /** {@inheritDoc} */
+        @Override public BinaryNameMapper nameMapper() {
+            return mapper.nameMapper();
+        }
+
+        /** {@inheritDoc} */
+        @Override public BinaryIdMapper idMapper() {
+            return mapper.idMapper();
         }
     }
 }
