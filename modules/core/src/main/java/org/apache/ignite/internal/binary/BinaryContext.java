@@ -44,12 +44,12 @@ import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.binary.BinaryBaseIdMapper;
+import org.apache.ignite.binary.BinaryBaseNameMapper;
 import org.apache.ignite.binary.BinaryIdMapper;
 import org.apache.ignite.binary.BinaryInvalidTypeException;
-import org.apache.ignite.binary.BinaryBaseIdMapper;
 import org.apache.ignite.binary.BinaryNameMapper;
 import org.apache.ignite.binary.BinaryObjectException;
-import org.apache.ignite.binary.BinaryBaseNameMapper;
 import org.apache.ignite.binary.BinaryReflectiveSerializer;
 import org.apache.ignite.binary.BinarySerializer;
 import org.apache.ignite.binary.BinaryType;
@@ -66,7 +66,6 @@ import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.lang.GridMapEntry;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T2;
-import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.marshaller.MarshallerContext;
@@ -365,17 +364,6 @@ public class BinaryContext {
 
         addSystemClassAffinityKey(CollocatedSetItemKey.class);
         addSystemClassAffinityKey(CollocatedQueueItemKey.class);
-
-        SB sb = new SB(">>>>> userTypes:");
-
-        for (Map.Entry<Integer, BinaryClassDescriptor> entry : userTypes.entrySet())
-            sb.a("\n").a(entry.getKey()).a("=").a(entry.getValue());
-
-        if (userTypes.isEmpty())
-            sb.a(" EMPTY!!!!!!!!!!!");
-
-        U.debug(log, sb.toString());
-        U.debug(sb.toString());
     }
 
     /**
@@ -546,8 +534,6 @@ public class BinaryContext {
         // If the type hasn't been loaded by default class loader then we mustn't return the descriptor from here
         // giving a chance to a custom class loader to reload type's class.
         if (userType && ldr.equals(dfltLdr)) {
-            U.dumpStack(log, ">>>>> UserTypes: " + userTypes);
-
             desc = userTypes.get(typeId);
 
             if (desc != null)
@@ -669,11 +655,8 @@ public class BinaryContext {
 
         // perform put() instead of putIfAbsent() because "registered" flag might have been changed or class loader
         // might have reloaded described class.
-        if (IgniteUtils.detectClassLoader(cls).equals(dfltLdr)) {
+        if (IgniteUtils.detectClassLoader(cls).equals(dfltLdr))
             userTypes.put(typeId, desc);
-
-            U.debug(log, "Put in user types 1 [typeId" + typeId + ", desc=" + desc);
-        }
 
         descByCls.put(cls, desc);
 
@@ -923,11 +906,8 @@ public class BinaryContext {
             fieldsMeta = desc.fieldsMeta();
             schemas = desc.schema() != null ? Collections.singleton(desc.schema()) : null;
 
-            if (IgniteUtils.detectClassLoader(cls).equals(dfltLdr)) {
+            if (IgniteUtils.detectClassLoader(cls).equals(dfltLdr))
                 userTypes.put(id, desc);
-
-                U.debug(log, "Put in user types 2 [typeId" + id + ", desc=" + desc);
-            }
 
             descByCls.put(cls, desc);
         }
