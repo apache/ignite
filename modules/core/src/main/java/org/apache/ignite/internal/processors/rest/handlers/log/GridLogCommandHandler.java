@@ -28,6 +28,8 @@ import java.nio.file.InvalidPathException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Collection;
+import java.util.UUID;
+
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
@@ -53,7 +55,7 @@ public class GridLogCommandHandler extends GridRestCommandHandlerAdapter {
     /**
      * Default log file name *
      */
-    private static final String DEFAULT_LOG_PATH = "work/log/ignite.log";
+    private final String DEFAULT_LOG_PATH = getDefaultLogPath();
 
     /**
      * Default log file start line number *
@@ -172,5 +174,9 @@ public class GridLogCommandHandler extends GridRestCommandHandlerAdapter {
         }
 
         return content.toString();
+    }
+
+    public String getDefaultLogPath() {
+       return log.fileName() == null ? "work/log/ignite.log" : log.fileName();
     }
 }
