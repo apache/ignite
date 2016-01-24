@@ -163,10 +163,13 @@ public class GridLogCommandHandler extends GridRestCommandHandlerAdapter {
         try (BufferedReader reader =  new BufferedReader(new FileReader(logFile))) {
             String line;
 
-            while (from <= to && (line = reader.readLine()) != null) {
-                content.append(line);
+            int start = 0;
 
-                from++;
+            while (start <= to && (line = reader.readLine()) != null) {
+                if (start >= from)
+                    content.append(line);
+
+                start++;
             }
         }
         catch (IOException e) {

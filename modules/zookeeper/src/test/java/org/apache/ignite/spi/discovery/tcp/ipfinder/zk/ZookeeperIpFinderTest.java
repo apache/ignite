@@ -116,9 +116,8 @@ public class ZookeeperIpFinderTest extends GridCommonAbstractTest {
 
         // first node => configure with zkUrl; second node => configure with CuratorFramework; third and subsequent
         // shall be configured through system property
-        if (gridName.equals(getTestGridName(0))) {
+        if (gridName.equals(getTestGridName(0)))
             zkIpFinder.setZkConnectionString(zkCluster.getConnectString());
-        }
         else if (gridName.equals(getTestGridName(1))) {
             zkIpFinder.setCurator(CuratorFrameworkFactory.newClient(zkCluster.getConnectString(),
                 new ExponentialBackoffRetry(100, 5)));
@@ -357,7 +356,7 @@ public class ZookeeperIpFinderTest extends GridCommonAbstractTest {
         // stop all grids
         stopAllGrids();
 
-        GridTestUtils.waitForCondition(new GridAbsPredicate() {
+        boolean wait = GridTestUtils.waitForCondition(new GridAbsPredicate() {
             @Override public boolean apply() {
                 try {
                     return zkCurator.getChildren().forPath(SERVICES_IGNITE_ZK_PATH).size() == 0;
@@ -370,20 +369,22 @@ public class ZookeeperIpFinderTest extends GridCommonAbstractTest {
             }
         }, 5000);
 
+        assertTrue(wait);
+
         // check that all nodes are gone in ZK
         assertEquals(0, zkCurator.getChildren().forPath(SERVICES_IGNITE_ZK_PATH).size());
     }
 
     /**
      * @param ignite Node.
-     * @param joinEventCount Expected events number.
+     * @param joinEvtCnt Expected events number.
      * @return Events latch.
      */
-    private CountDownLatch expectJoinEvents(Ignite ignite, int joinEventCount) {
-        final CountDownLatch latch = new CountDownLatch(joinEventCount);
+    private CountDownLatch expectJoinEvents(Ignite ignite, int joinEvtCnt) {
+        final CountDownLatch latch = new CountDownLatch(joinEvtCnt);
 
         ignite.events().remoteListen(new IgniteBiPredicate<UUID, Event>() {
-            @Override public boolean apply(UUID uuid, Event event) {
+            @Override public boolean apply(UUID uuid, Event evt) {
                 latch.countDown();
                 return true;
             }
