@@ -16,8 +16,6 @@
  */
 package org.apache.ignite.internal.processors.rest.handlers.log;
 
-import java.io.File;
-import java.io.FileReader;
 import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -32,13 +30,6 @@ import org.apache.ignite.internal.processors.rest.GridRestResponse;
 import org.apache.ignite.internal.processors.rest.request.GridRestLogRequest;
 import org.apache.ignite.testframework.junits.GridTestKernalContext;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.junit.After;
-import org.junit.AfterClass;
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.mockito.Mock;
-import org.mockito.Mockito;
-import org.mockito.internal.exceptions.ExceptionIncludingMockitoWarnings;
 
 /**
  * REST log command handler tests.
