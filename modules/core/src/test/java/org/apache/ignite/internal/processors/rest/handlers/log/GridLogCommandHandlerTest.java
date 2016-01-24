@@ -45,6 +45,10 @@ import org.mockito.internal.exceptions.ExceptionIncludingMockitoWarnings;
  */
 public class GridLogCommandHandlerTest extends GridCommonAbstractTest {
 
+    /**
+     * Create test.log file
+     * @throws Exception If file is not created.
+     */
     public void logSetUp() throws Exception {
         List<String> lines = Arrays.asList("[22:01:30,329][INFO ][grid-load-test-thread-12][GridDeploymentLocalStore] ",
                 "[22:01:30,329][INFO ][grid-load-test-thread-18][GridDeploymentLocalStore] Removed undeployed class: \n",
@@ -54,10 +58,19 @@ public class GridLogCommandHandlerTest extends GridCommonAbstractTest {
         Files.write(file, lines, Charset.forName("UTF-8"));
     }
 
+    /**
+     * Delete test.log file
+     * @throws Exception If file is not deleted.
+     */
     public void logTearDown() throws Exception {
         Path file = Paths.get("test.log");
         Files.delete(file);
     }
+
+    /**
+     * Create ignite.log file in specified path
+     * @throws Exception If file is not deleted.
+     */
     public void logSetUp(String igniteHome) throws Exception {
         List<String> lines = Arrays.asList("[22:01:30,329][INFO ][grid-load-test-thread-12][GridDeploymentLocalStore] ",
                 "[22:01:30,329][INFO ][grid-load-test-thread-18][GridDeploymentLocalStore] Removed undeployed class: \n",
@@ -69,10 +82,15 @@ public class GridLogCommandHandlerTest extends GridCommonAbstractTest {
         Files.write(file, lines, Charset.forName("UTF-8"));
     }
 
+    /**
+     * Delete ignite.log file in specified path
+     * @throws Exception If file is not deleted.
+     */
     public void logTearDown(String igniteHome) throws Exception {
         Path file = Paths.get(igniteHome+"work/log/"+"ignite.log");
         Files.delete(file);
     }
+
     /**
      * @throws Exception If failed.
      */

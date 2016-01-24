@@ -172,6 +172,12 @@ public class GridLogCommandHandler extends GridRestCommandHandlerAdapter {
         return content.toString();
     }
 
+    /**
+     * Gets name of the file being logged to if one is configured or
+     * ignite.log filename in IgniteHome/work/log dir otherwise.
+     *
+     * @return log file name
+     */
     public String getDefaultLogPath() {
        return log.fileName() == null ? ctx.config().getIgniteHome() + "/" + "work/log/ignite.log" : log.fileName();
     }
