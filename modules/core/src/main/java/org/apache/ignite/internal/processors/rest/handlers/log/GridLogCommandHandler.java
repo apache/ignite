@@ -17,14 +17,17 @@
 package org.apache.ignite.internal.processors.rest.handlers.log;
 
 import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileReader;
 import java.io.IOException;
+import java.net.URI;
 import java.nio.charset.Charset;
 import java.nio.file.Files;
+import java.nio.file.InvalidPathException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.ArrayList;
 import java.util.Collection;
-import java.util.List;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
@@ -44,7 +47,7 @@ import static org.apache.ignite.internal.processors.rest.GridRestCommand.LOG;
 public class GridLogCommandHandler extends GridRestCommandHandlerAdapter {
     /**
      * Supported commands.
-    */
+     */
     private static final Collection<GridRestCommand> SUPPORTED_COMMANDS = U.sealList(LOG);
 
     /**
@@ -69,88 +72,105 @@ public class GridLogCommandHandler extends GridRestCommandHandlerAdapter {
         super(ctx);
     }
 
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public Collection<GridRestCommand> supportedCommands() {
+    /** {@inheritDoc} */
+    @Override public Collection<GridRestCommand> supportedCommands() {
         return SUPPORTED_COMMANDS;
     }
 
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public IgniteInternalFuture<GridRestResponse> handleAsync(GridRestRequest req) {
+    /** {@inheritDoc} */
+    @Override public IgniteInternalFuture<GridRestResponse> handleAsync(GridRestRequest req) {
         assert req != null;
+
         if (req.command() == LOG) {
             if (log.isDebugEnabled())
                 log.debug("Handling log REST request: " + req);
-            GridRestLogRequest req0 = (GridRestLogRequest) req;
-            try {
-                validateRange(req0);
-            } catch (IgniteCheckedException e){
-                return new GridFinishedFuture<>(new GridRestResponse(GridRestResponse.STATUS_FAILED, e.getMessage()));
-            }
-            int from = DEFAULT_FROM;
+
+            GridRestLogRequest req0 = (GridRestLogRequest)req;
+
+            if (req0.from() < -1 || req0.to() < -1)
+                return new GridFinishedFuture<>(new GridRestResponse(GridRestResponse.STATUS_FAILED,
+                    "One of the request parameters is invalid [from=" + req0.from() + ", to=" + req0.to() + ']'));
+
+            int from;
+
             if (req0.from() != -1) {
+                if (req0.to() == -1)
+                    return new GridFinishedFuture<>(new GridRestResponse(GridRestResponse.STATUS_FAILED,
+                        "Request parameter 'to' is not set."));
+
                 from = req0.from();
             }
-            int to = DEFAULT_TO;
+            else
+                from = DEFAULT_FROM;
+
+
+            int to;
+
             if (req0.to() != -1) {
+                if (req0.from() == -1)
+                    return new GridFinishedFuture<>(new GridRestResponse(GridRestResponse.STATUS_FAILED,
+                        "Request parameter 'from' is not set."));
+
                 to = req0.to();
             }
-            String path = DEFAULT_LOG_PATH;
-            if (from >= to) {
+            else
+                to = DEFAULT_TO;
+
+            if (from >= to)
                 return new GridFinishedFuture<>(new GridRestResponse(GridRestResponse.STATUS_FAILED,
-                        "Log file start from cannot be greater than to"));
+                    "Request parameter 'from' must be less than 'to'."));
+
+            File logFile;
+
+            try {
+                if (req0.path() != null)
+                    logFile = new File(req0.path());
+                else
+                    logFile = new File(ctx.config().getIgniteHome() + "/" + DEFAULT_LOG_PATH);
             }
-            Path filePath = getPath(req0, path);
-                try {
-                   String content = getContent(from, to, filePath);
-                   return new GridFinishedFuture<>(new GridRestResponse(content));
-                } catch (IgniteCheckedException e) {
-                   return new GridFinishedFuture<>(new GridRestResponse(GridRestResponse.STATUS_FAILED, e.getMessage()));
-                }
+            catch (InvalidPathException e) {
+                return new GridFinishedFuture<>(new GridRestResponse(GridRestResponse.STATUS_FAILED,
+                    "Incorrect path to a log file [msg=" + e.getMessage() + ']'));
+            }
+
+            try {
+                String content = readLog(from, to, logFile);
+
+                return new GridFinishedFuture<>(new GridRestResponse(content));
+            }
+            catch (IgniteCheckedException e) {
+                return new GridFinishedFuture<>(new GridRestResponse(GridRestResponse.STATUS_FAILED, e.getMessage()));
+            }
         }
+
         return new GridFinishedFuture<>();
     }
 
-    private void validateRange(GridRestLogRequest req0) throws IgniteCheckedException {
-        if((req0.from() != -1 && req0.to() == -1)||
-                (req0.from() == -1 && req0.to() != -1)){
-            throw new IgniteCheckedException("Both from and to need to be provided");
-        }
-    }
-
-    private Path getPath(GridRestLogRequest req0, String path) {
-        Path filePath;
-        if (req0.path() != null) {
-            path = req0.path();
-            filePath = Paths.get(path);
-        } else {
-            filePath = Paths.get(ctx.config().getIgniteHome() + "/" + path);
-
-        }
-        return filePath;
-    }
-
-    private String getContent(int from, int to, Path filePath) throws IgniteCheckedException {
+    /**
+     * Reads content from a log file.
+     *
+     * @param from Start position.
+     * @param to End position.
+     * @param logFile Log file.
+     * @return Content that is read.
+     * @throws IgniteCheckedException If failed.
+     */
+    private String readLog(int from, int to, File logFile) throws IgniteCheckedException {
         StringBuilder content = new StringBuilder();
-        try (BufferedReader reader = Files.newBufferedReader(filePath, Charset.defaultCharset())) {
-            String line = null;
-            int start = from;
-            while ((line = reader.readLine()) != null
-                    && from < to) {
-                if (start >= from) {
-                    content.append(line);
-                    start++;
-                }
+
+        try (BufferedReader reader =  new BufferedReader(new FileReader(logFile))) {
+            String line;
+
+            while (from <= to && (line = reader.readLine()) != null) {
+                content.append(line);
+
                 from++;
             }
-        } catch (IOException e) {
+        }
+        catch (IOException e) {
             throw new IgniteCheckedException(e);
         }
+
         return content.toString();
     }
 }

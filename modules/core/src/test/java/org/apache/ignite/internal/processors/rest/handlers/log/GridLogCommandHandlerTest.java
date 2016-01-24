@@ -17,99 +17,130 @@
 package org.apache.ignite.internal.processors.rest.handlers.log;
 
 import java.util.Collection;
-
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.rest.GridRestCommand;
 import org.apache.ignite.internal.processors.rest.GridRestResponse;
 import org.apache.ignite.internal.processors.rest.request.GridRestLogRequest;
-import org.apache.ignite.internal.processors.rest.request.GridRestRequest;
 import org.apache.ignite.testframework.junits.GridTestKernalContext;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
+/**
+ * REST log command handler tests.
+ */
 public class GridLogCommandHandlerTest extends GridCommonAbstractTest {
-
+    /**
+     * @throws Exception If failed.
+     */
     public void testSupportedCommands() throws Exception {
-        GridLogCommandHandler gridLogCommandHandler = new GridLogCommandHandler(super.newContext());
-        Collection<GridRestCommand> commandCollection = gridLogCommandHandler.supportedCommands();
-        assertTrue(commandCollection.contains(GridRestCommand.LOG));
+        GridLogCommandHandler cmdHandler = new GridLogCommandHandler(newContext());
+
+        Collection<GridRestCommand> commands = cmdHandler.supportedCommands();
+
+        assertEquals(1, commands.size());
+        assertTrue(commands.contains(GridRestCommand.LOG));
     }
 
+    /**
+     * @throws Exception If failed.
+     */
     public void testUnSupportedCommands() throws Exception {
-        GridLogCommandHandler gridLogCommandHandler = new GridLogCommandHandler(super.newContext());
-        Collection<GridRestCommand> commandCollection = gridLogCommandHandler.supportedCommands();
-        assertFalse(commandCollection.contains(GridRestCommand.VERSION));
+        GridLogCommandHandler cmdHandler = new GridLogCommandHandler(newContext());
+
+        Collection<GridRestCommand> commands = cmdHandler.supportedCommands();
+
+        assertEquals(1, commands.size());
+        assertFalse(commands.contains(GridRestCommand.VERSION));
     }
 
+    /**
+     * @throws Exception If failed.
+     */
     public void testHandleAsync() throws Exception {
-        GridTestKernalContext ctx = super.newContext();
-        GridLogCommandHandler gridLogCommandHandler = new GridLogCommandHandler(ctx);
-        GridRestLogRequest gridLogRestRequest = new GridRestLogRequest();
-        gridLogRestRequest.to(5);
-        gridLogRestRequest.from(2);
-        gridLogRestRequest.path(getClass().getResource("/Test").getFile());
-        GridRestRequest gridRestRequest = (GridRestLogRequest) gridLogRestRequest;
-        gridRestRequest.command(GridRestCommand.LOG);
-        IgniteInternalFuture<GridRestResponse> gridRestResponse = gridLogCommandHandler.handleAsync(gridRestRequest);
-        assertEquals(0, gridRestResponse.result().getSuccessStatus());
-        assertNotNull(gridRestResponse.result().getResponse());
-        assertEquals(null, gridRestResponse.result().getError());
+        GridLogCommandHandler cmdHandler = new GridLogCommandHandler(newContext());
+        GridRestLogRequest req = new GridRestLogRequest();
+
+        req.to(5);
+        req.from(2);
+
+        req.path(getClass().getResource("/test.log").getFile());
+
+        IgniteInternalFuture<GridRestResponse> resp = cmdHandler.handleAsync(req);
+
+        assertNull(resp.result().getError());
+        assertEquals(GridRestResponse.STATUS_SUCCESS, resp.result().getSuccessStatus());
+        assertNotNull(resp.result().getResponse());
     }
 
+    /**
+     * @throws Exception If failed.
+     */
     public void testHandleAsyncFromAndToNotSet() throws Exception {
-        GridTestKernalContext ctx = super.newContext();
-        GridLogCommandHandler gridLogCommandHandler = new GridLogCommandHandler(ctx);
-        GridRestLogRequest gridLogRestRequest = new GridRestLogRequest();
-        gridLogRestRequest.path(getClass().getResource("/Test").getFile());
-        GridRestRequest gridRestRequest = (GridRestLogRequest) gridLogRestRequest;
-        gridRestRequest.command(GridRestCommand.LOG);
-        IgniteInternalFuture<GridRestResponse> gridRestResponse = gridLogCommandHandler.handleAsync(gridRestRequest);
-        assertEquals(0, gridRestResponse.result().getSuccessStatus());
-        assertNotNull(gridRestResponse.result().getResponse());
-        assertEquals(null, gridRestResponse.result().getError());
+        GridLogCommandHandler cmdHandler = new GridLogCommandHandler(newContext());
+        GridRestLogRequest req = new GridRestLogRequest();
+
+        req.path(getClass().getResource("/test.log").getFile());
+
+        IgniteInternalFuture<GridRestResponse> resp = cmdHandler.handleAsync(req);
+
+        assertNull(resp.result().getError());
+        assertEquals(GridRestResponse.STATUS_SUCCESS, resp.result().getSuccessStatus());
+        assertNotNull(resp.result().getResponse());
     }
 
+    /**
+     * @throws Exception If failed.
+     */
     public void testHandleAsyncPathNotSet() throws Exception {
-        GridTestKernalContext ctx = super.newContext();
+        GridTestKernalContext ctx = newContext();
         ctx.config().setIgniteHome(getClass().getResource("/").getFile());
-        GridLogCommandHandler gridLogCommandHandler = new GridLogCommandHandler(ctx);
-        GridRestLogRequest gridLogRestRequest = new GridRestLogRequest();
-        gridLogRestRequest.to(5);
-        gridLogRestRequest.from(2);
-        GridRestRequest gridRestRequest = (GridRestLogRequest) gridLogRestRequest;
-        gridRestRequest.command(GridRestCommand.LOG);
-        IgniteInternalFuture<GridRestResponse> gridRestResponse = gridLogCommandHandler.handleAsync(gridRestRequest);
-        assertEquals(0, gridRestResponse.result().getSuccessStatus());
-        assertNotNull(gridRestResponse.result().getResponse());
-        assertEquals(null, gridRestResponse.result().getError());
+
+        GridLogCommandHandler cmdHandler = new GridLogCommandHandler(ctx);
+        GridRestLogRequest req = new GridRestLogRequest();
+
+        req.to(5);
+        req.from(2);
+
+        IgniteInternalFuture<GridRestResponse> resp = cmdHandler.handleAsync(req);
+
+        assertNull(resp.result().getError());
+        assertEquals(GridRestResponse.STATUS_SUCCESS, resp.result().getSuccessStatus());
+        assertNotNull(resp.result().getResponse());
     }
 
+    /**
+     * @throws Exception If failed.
+     */
     public void testHandleAsyncFromGreaterThanTo() throws Exception {
-        GridTestKernalContext ctx = super.newContext();
-        GridLogCommandHandler gridLogCommandHandler = new GridLogCommandHandler(ctx);
-        GridRestLogRequest gridLogRestRequest = new GridRestLogRequest();
-        gridLogRestRequest.to(2);
-        gridLogRestRequest.from(5);
-        gridLogRestRequest.path(getClass().getResource("/Test").getFile());
-        GridRestRequest gridRestRequest = (GridRestLogRequest) gridLogRestRequest;
-        gridRestRequest.command(GridRestCommand.LOG);
-        IgniteInternalFuture<GridRestResponse> gridRestResponse = gridLogCommandHandler.handleAsync(gridRestRequest);
-        assertEquals(1, gridRestResponse.result().getSuccessStatus());
-        assertNull(gridRestResponse.result().getResponse());
-        assertEquals("Log file start from cannot be greater than to", gridRestResponse.result().getError());
+        GridLogCommandHandler cmdHandler = new GridLogCommandHandler(newContext());
+        GridRestLogRequest req = new GridRestLogRequest();
+
+        req.to(2);
+        req.from(5);
+        req.path(getClass().getResource("/test.log").getFile());
+
+
+        IgniteInternalFuture<GridRestResponse> resp = cmdHandler.handleAsync(req);
+
+        assertEquals("Request parameter 'from' must be less than 'to'.", resp.result().getError());
+        assertEquals(GridRestResponse.STATUS_FAILED, resp.result().getSuccessStatus());
+        assertNull(resp.result().getResponse());
     }
 
+    /**
+     * @throws Exception If failed.
+     */
     public void testHandleAsyncFromEqualTo() throws Exception {
-        GridTestKernalContext ctx = super.newContext();
-        GridLogCommandHandler gridLogCommandHandler = new GridLogCommandHandler(ctx);
-        GridRestLogRequest gridLogRestRequest = new GridRestLogRequest();
-        gridLogRestRequest.to(2);
-        gridLogRestRequest.from(2);
-        gridLogRestRequest.path(getClass().getResource("/Test").getFile());
-        GridRestRequest gridRestRequest = (GridRestLogRequest) gridLogRestRequest;
-        gridRestRequest.command(GridRestCommand.LOG);
-        IgniteInternalFuture<GridRestResponse> gridRestResponse = gridLogCommandHandler.handleAsync(gridRestRequest);
-        assertEquals(1, gridRestResponse.result().getSuccessStatus());
-        assertNull(gridRestResponse.result().getResponse());
-        assertEquals("Log file start from cannot be greater than to", gridRestResponse.result().getError());
+        GridLogCommandHandler cmdHandler = new GridLogCommandHandler(newContext());
+        GridRestLogRequest req = new GridRestLogRequest();
+
+        req.to(2);
+        req.from(2);
+        req.path(getClass().getResource("/test.log").getFile());
+
+        IgniteInternalFuture<GridRestResponse> resp = cmdHandler.handleAsync(req);
+
+        assertEquals("Request parameter 'from' must be less than 'to'.", resp.result().getError());
+        assertEquals(GridRestResponse.STATUS_FAILED, resp.result().getSuccessStatus());
+        assertNull(resp.result().getResponse());
     }
 }

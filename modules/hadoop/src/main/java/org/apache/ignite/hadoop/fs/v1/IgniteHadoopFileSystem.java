@@ -32,7 +32,9 @@ import org.apache.hadoop.security.UserGroupInformation;
 import org.apache.hadoop.util.Progressable;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.configuration.FileSystemConfiguration;
 import org.apache.ignite.hadoop.fs.HadoopFileSystemFactory;
+import org.apache.ignite.hadoop.fs.IgniteHadoopIgfsSecondaryFileSystem;
 import org.apache.ignite.igfs.IgfsBlockLocation;
 import org.apache.ignite.igfs.IgfsException;
 import org.apache.ignite.igfs.IgfsFile;
@@ -335,7 +337,10 @@ public class IgniteHadoopFileSystem extends FileSystem {
                     throw new IOException("Failed to get secondary file system factory.", e);
                 }
 
-                assert factory != null;
+                if (factory == null)
+                    throw new IOException("Failed to get secondary file system factory (did you set " +
+                        IgniteHadoopIgfsSecondaryFileSystem.class.getName() + " as \"secondaryFIleSystem\" in " +
+                        FileSystemConfiguration.class.getName() + "?)");
 
                 if (factory instanceof LifecycleAware)
                     ((LifecycleAware) factory).start();

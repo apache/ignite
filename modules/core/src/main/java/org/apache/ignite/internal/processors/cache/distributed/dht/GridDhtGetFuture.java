@@ -137,7 +137,7 @@ public final class GridDhtGetFuture<K, V> extends GridCompoundIdentityFuture<Col
         @Nullable IgniteCacheExpiryPolicy expiryPlc,
         boolean skipVals
     ) {
-        super(cctx.kernalContext(), CU.<GridCacheEntryInfo>collectionsReducer());
+        super(CU.<GridCacheEntryInfo>collectionsReducer());
 
         assert reader != null;
         assert !F.isEmpty(keys);
