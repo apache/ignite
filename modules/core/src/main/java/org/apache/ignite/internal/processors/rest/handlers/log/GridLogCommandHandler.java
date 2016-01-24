@@ -18,17 +18,10 @@ package org.apache.ignite.internal.processors.rest.handlers.log;
 
 import java.io.BufferedReader;
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.FileReader;
 import java.io.IOException;
-import java.net.URI;
-import java.nio.charset.Charset;
-import java.nio.file.Files;
 import java.nio.file.InvalidPathException;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.Collection;
-import java.util.UUID;
 
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.GridKernalContext;
@@ -128,7 +121,7 @@ public class GridLogCommandHandler extends GridRestCommandHandlerAdapter {
                 if (req0.path() != null)
                     logFile = new File(req0.path());
                 else
-                    logFile = new File(ctx.config().getIgniteHome() + "/" + DEFAULT_LOG_PATH);
+                    logFile = new File(DEFAULT_LOG_PATH);
             }
             catch (InvalidPathException e) {
                 return new GridFinishedFuture<>(new GridRestResponse(GridRestResponse.STATUS_FAILED,
@@ -180,6 +173,6 @@ public class GridLogCommandHandler extends GridRestCommandHandlerAdapter {
     }
 
     public String getDefaultLogPath() {
-       return log.fileName() == null ? "work/log/ignite.log" : log.fileName();
+       return log.fileName() == null ? ctx.config().getIgniteHome() + "/" + "work/log/ignite.log" : log.fileName();
     }
 }
