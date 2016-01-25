@@ -45,12 +45,12 @@ public class OdbcTcpNioListener extends GridNioServerListenerAdapter<OdbcRequest
 
     /** {@inheritDoc} */
     @Override public void onConnected(GridNioSession ses) {
-        System.out.println("Driver connected");
+        log.debug("Driver connected");
     }
 
     /** {@inheritDoc} */
     @Override public void onDisconnected(GridNioSession ses, @Nullable Exception e) {
-        System.out.println("Driver disconnected");
+        log.debug("Driver disconnected");
 
         if (e != null) {
             if (e instanceof RuntimeException)
@@ -64,7 +64,7 @@ public class OdbcTcpNioListener extends GridNioServerListenerAdapter<OdbcRequest
     @Override public void onMessage(GridNioSession ses, OdbcRequest msg) {
         assert msg != null;
 
-        System.out.println("Query: " + msg.command());
+        log.debug("Query: " + msg.command());
 
         OdbcResponse res;
 
@@ -78,7 +78,7 @@ public class OdbcTcpNioListener extends GridNioServerListenerAdapter<OdbcRequest
                     "Failed to process client request: " + e.getMessage());
         }
 
-        System.out.println("Resulting success status: " + res.status());
+        log.debug("Resulting success status: " + res.status());
 
         GridNioFuture<?> sf = ses.send(res);
 

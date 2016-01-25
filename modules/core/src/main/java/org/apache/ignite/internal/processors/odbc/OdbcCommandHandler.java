@@ -36,10 +36,10 @@ import static org.apache.ignite.internal.processors.odbc.OdbcRequest.*;
  * SQL query handler.
  */
 public class OdbcCommandHandler {
-    /** Kernal context. */
+    /** Kernel context. */
     protected final GridKernalContext ctx;
 
-    /** Log. */
+    /** Logger. */
     protected final IgniteLogger log;
 
     /** Query ID sequence. */
@@ -112,12 +112,15 @@ public class OdbcCommandHandler {
      * @param meta Internal query field metadata.
      * @return Odbc query field metadata.
      */
-    private static Collection<OdbcColumnMeta> convertMetadata(Collection<GridQueryFieldMetadata> meta) {
+    private static Collection<OdbcColumnMeta> convertMetadata(Collection<?> meta) {
         List<OdbcColumnMeta> res = new ArrayList<>();
 
         if (meta != null) {
-            for (GridQueryFieldMetadata info : meta)
-                res.add(new OdbcColumnMeta(info));
+            for (Object info : meta) {
+                assert info instanceof GridQueryFieldMetadata;
+
+                res.add(new OdbcColumnMeta((GridQueryFieldMetadata)info));
+            }
         }
 
         return res;
@@ -176,9 +179,9 @@ public class OdbcCommandHandler {
 
             qryCurs.put(qryId, new IgniteBiTuple<>(qryCur, cur));
 
-            List<GridQueryFieldMetadata> fieldsMeta = ((QueryCursorImpl) qryCur).fieldsMeta();
+            List<?> fieldsMeta = ((QueryCursorImpl) qryCur).fieldsMeta();
 
-            System.out.println("Field meta: " + fieldsMeta);
+            log.debug("Field meta: " + fieldsMeta);
 
             OdbcQueryExecuteResult res = new OdbcQueryExecuteResult(qryId, convertMetadata(fieldsMeta));
 

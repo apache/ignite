@@ -17,6 +17,7 @@
 package org.apache.ignite.internal.processors.odbc;
 
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.binary.*;
 import org.apache.ignite.internal.binary.streams.BinaryHeapInputStream;
@@ -47,13 +48,18 @@ public class OdbcParser implements GridNioParser {
     /** Marshaller. */
     private final GridBinaryMarshaller marsh;
 
+    /** Logger. */
+    protected final IgniteLogger log;
+
     /**
-     * @param context Kernel context.
+     * @param ctx Kernel context.
      */
-    public OdbcParser(GridKernalContext context) {
-        CacheObjectBinaryProcessorImpl cacheObjProc = (CacheObjectBinaryProcessorImpl)context.cacheObjects();
+    public OdbcParser(GridKernalContext ctx) {
+        CacheObjectBinaryProcessorImpl cacheObjProc = (CacheObjectBinaryProcessorImpl)ctx.cacheObjects();
 
         marsh = cacheObjProc.marshaller();
+
+        log = ctx.log(getClass());
     }
 
     /**
@@ -127,7 +133,7 @@ public class OdbcParser implements GridNioParser {
         assert msg != null;
         assert msg instanceof OdbcResponse;
 
-        System.out.println("Encoding query processing result");
+        log.debug("Encoding query processing result");
 
         BinaryRawWriterEx writer = marsh.writer(new BinaryHeapOutputStream(INIT_CAP));
 
@@ -171,10 +177,10 @@ public class OdbcParser implements GridNioParser {
                 String sql = reader.readString();
                 int argsNum = reader.readInt();
 
-                System.out.println("Message EXECUTE_SQL_QUERY:");
-                System.out.println("cache: " + cache);
-                System.out.println("query: " + sql);
-                System.out.println("argsNum: " + argsNum);
+                log.debug("Message EXECUTE_SQL_QUERY:");
+                log.debug("cache: " + cache);
+                log.debug("query: " + sql);
+                log.debug("argsNum: " + argsNum);
 
                 Object[] params = new Object[argsNum];
 
@@ -191,9 +197,9 @@ public class OdbcParser implements GridNioParser {
                 long queryId = reader.readLong();
                 int pageSize = reader.readInt();
 
-                System.out.println("Message FETCH_SQL_QUERY:");
-                System.out.println("queryId: " + queryId);
-                System.out.println("pageSize: " + pageSize);
+                log.debug("Message FETCH_SQL_QUERY:");
+                log.debug("queryId: " + queryId);
+                log.debug("pageSize: " + pageSize);
 
                 res = new OdbcQueryFetchRequest(queryId, pageSize);
 
@@ -204,8 +210,8 @@ public class OdbcParser implements GridNioParser {
 
                 long queryId = reader.readLong();
 
-                System.out.println("Message CLOSE_SQL_QUERY:");
-                System.out.println("queryId: " + queryId);
+                log.debug("Message CLOSE_SQL_QUERY:");
+                log.debug("queryId: " + queryId);
 
                 res = new OdbcQueryCloseRequest(queryId);
 
@@ -218,10 +224,10 @@ public class OdbcParser implements GridNioParser {
                 String table = reader.readString();
                 String column = reader.readString();
 
-                System.out.println("Message GET_COLUMNS_META:");
-                System.out.println("cache: " + cache);
-                System.out.println("table: " + table);
-                System.out.println("column: " + column);
+                log.debug("Message GET_COLUMNS_META:");
+                log.debug("cache: " + cache);
+                log.debug("table: " + table);
+                log.debug("column: " + column);
 
                 res = new OdbcQueryGetColumnsMetaRequest(cache, table, column);
 
@@ -235,11 +241,11 @@ public class OdbcParser implements GridNioParser {
                 String table = reader.readString();
                 String tableType = reader.readString();
 
-                System.out.println("Message GET_COLUMNS_META:");
-                System.out.println("catalog: " + catalog);
-                System.out.println("schema: " + schema);
-                System.out.println("table: " + table);
-                System.out.println("tableType: " + tableType);
+                log.debug("Message GET_COLUMNS_META:");
+                log.debug("catalog: " + catalog);
+                log.debug("schema: " + schema);
+                log.debug("table: " + table);
+                log.debug("tableType: " + tableType);
 
                 res = new OdbcQueryGetTablesMetaRequest(catalog, schema, table, tableType);
 
@@ -277,7 +283,7 @@ public class OdbcParser implements GridNioParser {
         if (res0 instanceof OdbcQueryExecuteResult) {
             OdbcQueryExecuteResult res = (OdbcQueryExecuteResult) res0;
 
-            System.out.println("Resulting query ID: " + res.getQueryId());
+            log.debug("Resulting query ID: " + res.getQueryId());
 
             writer.writeLong(res.getQueryId());
 
@@ -294,7 +300,7 @@ public class OdbcParser implements GridNioParser {
         else if (res0 instanceof OdbcQueryFetchResult) {
             OdbcQueryFetchResult res = (OdbcQueryFetchResult) res0;
 
-            System.out.println("Resulting query ID: " + res.queryId());
+            log.debug("Resulting query ID: " + res.queryId());
 
             writer.writeLong(res.queryId());
 
@@ -323,7 +329,7 @@ public class OdbcParser implements GridNioParser {
         else if (res0 instanceof OdbcQueryCloseResult) {
             OdbcQueryCloseResult res = (OdbcQueryCloseResult) res0;
 
-            System.out.println("Resulting query ID: " + res.getQueryId());
+            log.debug("Resulting query ID: " + res.getQueryId());
 
             writer.writeLong(res.getQueryId());
 

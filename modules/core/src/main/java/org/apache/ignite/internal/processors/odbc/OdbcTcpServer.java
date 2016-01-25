@@ -76,7 +76,7 @@ public class OdbcTcpServer {
             int port = cfg.getPort();
 
             if (startTcpServer(host, port, listener, parser, cfg)) {
-                System.out.println("ODBC Server has started on TCP port " + port);
+                log.debug("ODBC Server has started on TCP port " + port);
 
                 return;
             }
