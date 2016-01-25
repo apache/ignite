@@ -722,7 +722,7 @@ public class BinaryContext {
      * @return Type ID.
      */
     public int typeId(String typeName) {
-        Integer id = predefinedTypeNames.get(typeName);
+        Integer id = predefinedTypeNames.get(SIMPLE_NAME_LOWER_CASE_MAPPER.typeName(typeName));
 
         if (id != null)
             return id;
@@ -806,25 +806,25 @@ public class BinaryContext {
      * @return GridBinaryClassDescriptor.
      */
     public BinaryClassDescriptor registerPredefinedType(Class<?> cls, int id, String affFieldName) {
-        String clsName = cls.getName();
+        String simpleClsName = SIMPLE_NAME_LOWER_CASE_MAPPER.typeName(cls.getName());
 
         if (id == 0)
-            id = DFLT_MAPPER.typeId(clsName);
+            id = SIMPLE_NAME_LOWER_CASE_MAPPER.typeId(simpleClsName);
 
         BinaryClassDescriptor desc = new BinaryClassDescriptor(
             this,
             cls,
             false,
             id,
-            clsName,
+            simpleClsName,
             affFieldName,
-            DFLT_MAPPER,
+            SIMPLE_NAME_LOWER_CASE_MAPPER,
             new BinaryReflectiveSerializer(),
             false,
             true /* registered */
         );
 
-        predefinedTypeNames.put(clsName, id);
+        predefinedTypeNames.put(simpleClsName, id);
         predefinedTypes.put(id, desc);
 
         descByCls.put(cls, desc);
