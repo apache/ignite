@@ -51,7 +51,7 @@ namespace Apache.Ignite.Linq.Impl
 
         public IEnumerable<T> ExecuteCollection<T>(QueryModel queryModel)
         {
-            var queryData = new QueryData(); // TODO: Generate
+            var queryData = new QueryData {QueryText = "test"}; // TODO: Generate
 
             //var query = new SqlFieldsQuery(queryData.QueryText, queryData.Parameters);
 
