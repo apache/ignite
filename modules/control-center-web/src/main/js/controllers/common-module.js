@@ -2255,7 +2255,7 @@ consoleModule.controller('notebooks', ['$scope', '$modal', '$state', '$http', '$
         if ($scope.$root.notebooks.length > 0)
             $scope.notebookDropdown.push({divider: true});
 
-        $scope.notebookDropdown.push({text: 'SQL demo', sref: 'base.sql.demo', custom: true});
+        $scope.notebookDropdown.push({text: 'Demo', sref: 'base.sql.demo', custom: true});
     };
 
     $scope.$root.reloadNotebooks = function() {

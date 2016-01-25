@@ -200,6 +200,10 @@ ul.navbar-nav, .sidebar-nav {
             margin-right: 0;
         }
     }
+
+    li.divider {
+        margin: 3px 0;
+    }
 }
 
 .theme-line .border-left .sidebar-nav {
@@ -559,6 +563,7 @@ button.form-control {
 .theme-line .sql-notebooks {
     li.custom > a {
         color: $brand-info;
+        font-weight: bold;
     }
 
     li.custom > a:hover {
