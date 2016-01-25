@@ -166,11 +166,8 @@ namespace Apache.Ignite.Linq.Impl
         protected override Expression VisitMember(MemberExpression expression)
         {
             // Field hierarchy is flattened, append as is, do not call Visit.
-            // TODO: Look up field name in CacheConfiguration!
-            // TODO: Validate (non-sql fields must throw).
+            // TODO: Look up QueryFieldAttribute
             var fieldName = expression.Member.Name;
-
-            //_cacheConfig.QueryEntities.
 
             _resultBuilder.Append(fieldName);
 
