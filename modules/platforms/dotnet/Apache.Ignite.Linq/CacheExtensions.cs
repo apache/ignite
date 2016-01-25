@@ -19,6 +19,7 @@ namespace Apache.Ignite.Linq
 {
     using System.Linq;
     using Apache.Ignite.Core.Cache;
+    using Apache.Ignite.Linq.Impl;
 
     /// <summary>
     /// Extensions methods for <see cref="ICache{TK,TV}"/>.
