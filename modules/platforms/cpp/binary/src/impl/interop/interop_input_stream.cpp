@@ -17,8 +17,9 @@
 
 #include <cstring>
 
-#include "ignite/impl/interop//interop_input_stream.h"
 #include <ignite/common/ignite_error.h>
+
+#include "ignite/impl/interop//interop_input_stream.h"
 
 /**
  * Common macro to read a single value.

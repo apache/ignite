@@ -14,8 +14,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include "ignite/impl/binary/binary_reader_impl.h"
+
 #include "ignite/binary/binary_reader.h"
+#include "ignite/impl/binary/binary_reader_impl.h"
 
 using namespace ignite::impl::binary;
 
