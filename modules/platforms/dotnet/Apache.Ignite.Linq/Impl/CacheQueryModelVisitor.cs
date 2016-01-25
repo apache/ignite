@@ -67,13 +67,17 @@ namespace Apache.Ignite.Linq.Impl
 
             builder.AppendFormat("from {0} ", typeof (TValue).Name);
 
-            foreach (var whereClause in _where)
+            for (int i = 0; i < _where.Count; i++)
             {
+                var whereClause = _where[i];
+
                 var whereSql = GetSqlExpression(whereClause.Predicate);
 
                 parameters.AddRange(whereSql.Parameters);
 
-                builder.AppendFormat("where {0} ", whereSql.QueryText);
+                builder.Append(i > 0 ? "and" : "where");
+
+                builder.AppendFormat(" {0} ", whereSql.QueryText);
             }
 
             return new QueryData(builder.ToString().TrimEnd(), parameters);
