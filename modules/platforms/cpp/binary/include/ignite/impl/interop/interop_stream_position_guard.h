@@ -18,8 +18,6 @@
 #ifndef _IGNITE_IMPL_INTEROP_STREAM_POSITION_GUARD
 #define _IGNITE_IMPL_INTEROP_OUTPUT_POSITION_GUARD
 
-#include <cstddef>
-
 #include "ignite/impl/interop/interop_memory.h"
 
 namespace ignite
@@ -62,7 +60,7 @@ namespace ignite
                  */
                 void Release()
                 {
-                    stream = NULL;
+                    stream = 0;
                 }
 
             private:
