@@ -17,20 +17,6 @@
 
 package org.apache.ignite.internal.binary;
 
-import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.binary.BinaryIdMapper;
-import org.apache.ignite.binary.BinaryObjectException;
-import org.apache.ignite.binary.BinaryReflectiveSerializer;
-import org.apache.ignite.binary.BinarySerializer;
-import org.apache.ignite.binary.Binarylizable;
-import org.apache.ignite.internal.processors.cache.CacheObjectImpl;
-import org.apache.ignite.internal.util.GridUnsafe;
-import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.marshaller.MarshallerExclusions;
-import org.apache.ignite.marshaller.optimized.OptimizedMarshaller;
-import org.jetbrains.annotations.Nullable;
-import sun.misc.Unsafe;
-
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
@@ -47,6 +33,20 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.binary.BinaryObjectException;
+import org.apache.ignite.binary.BinaryReflectiveSerializer;
+import org.apache.ignite.binary.BinarySerializer;
+import org.apache.ignite.binary.Binarylizable;
+import org.apache.ignite.internal.processors.cache.CacheObjectImpl;
+import org.apache.ignite.internal.util.GridUnsafe;
+import org.apache.ignite.internal.util.tostring.GridToStringExclude;
+import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.marshaller.MarshallerExclusions;
+import org.apache.ignite.marshaller.optimized.OptimizedMarshaller;
+import org.jetbrains.annotations.Nullable;
+import sun.misc.Unsafe;
 
 /**
  * Binary class descriptor.
@@ -59,6 +59,7 @@ public class BinaryClassDescriptor {
     private static final String OAI_PKG = "org.apache.ignite";
 
     /** */
+    @GridToStringExclude
     private final BinaryContext ctx;
 
     /** */
@@ -68,7 +69,7 @@ public class BinaryClassDescriptor {
     private final BinarySerializer serializer;
 
     /** ID mapper. */
-    private final BinaryIdMapper idMapper;
+    private final BinaryInternalMapper mapper;
 
     /** */
     private final BinaryWriteMode mode;
@@ -122,7 +123,7 @@ public class BinaryClassDescriptor {
      * @param typeId Type ID.
      * @param typeName Type name.
      * @param affKeyFieldName Affinity key field name.
-     * @param idMapper ID mapper.
+     * @param mapper Mapper.
      * @param serializer Serializer.
      * @param metaDataEnabled Metadata enabled flag.
      * @param registered Whether typeId has been successfully registered by MarshallerContext or not.
@@ -135,14 +136,14 @@ public class BinaryClassDescriptor {
         int typeId,
         String typeName,
         @Nullable String affKeyFieldName,
-        @Nullable BinaryIdMapper idMapper,
+        @Nullable BinaryInternalMapper mapper,
         @Nullable BinarySerializer serializer,
         boolean metaDataEnabled,
         boolean registered
     ) throws BinaryObjectException {
         assert ctx != null;
         assert cls != null;
-        assert idMapper != null;
+        assert mapper != null;
 
         // If serializer is not defined at this point, then we have to user OptimizedMarshaller.
         useOptMarshaller = serializer == null;
@@ -158,7 +159,7 @@ public class BinaryClassDescriptor {
         this.typeName = typeName;
         this.affKeyFieldName = affKeyFieldName;
         this.serializer = serializer;
-        this.idMapper = idMapper;
+        this.mapper = mapper;
         this.registered = registered;
 
         schemaReg = ctx.schemaRegistry(typeId);
@@ -273,7 +274,7 @@ public class BinaryClassDescriptor {
 
                             assert added : name;
 
-                            int fieldId = idMapper.fieldId(typeId, name);
+                            int fieldId = this.mapper.fieldId(typeId, name);
 
                             if (!ids.add(fieldId))
                                 throw new BinaryObjectException("Duplicate field ID: " + name);
@@ -639,7 +640,7 @@ public class BinaryClassDescriptor {
                             if (schemaReg.schema(schemaId) == null) {
                                 // This is new schema, let's update metadata.
                                 BinaryMetadataCollector collector =
-                                    new BinaryMetadataCollector(typeId, typeName, idMapper);
+                                    new BinaryMetadataCollector(typeId, typeName, mapper);
 
                                 if (serializer != null)
                                     serializer.writeBinary(obj, collector);
@@ -807,5 +808,10 @@ public class BinaryClassDescriptor {
         catch (IgniteCheckedException e) {
             throw new BinaryObjectException("Failed to get constructor for class: " + cls.getName(), e);
         }
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(BinaryClassDescriptor.class, this);
     }
 }
