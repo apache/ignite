@@ -116,7 +116,7 @@ namespace Apache.Ignite.Linq.Impl
         /// </summary>
         private QueryData GetSqlExpression(Expression expression)
         {
-            return CacheQueryExpressionVisitor.GetSqlExpression(_cache, expression);
+            return CacheQueryExpressionVisitor.GetSqlExpression(expression);
         }
     }
 }

@@ -21,10 +21,8 @@ using System.Text;
 namespace Apache.Ignite.Linq.Impl
 {
     using System.Collections.Generic;
-    using System.Diagnostics;
     using System.Linq;
     using System.Linq.Expressions;
-    using Apache.Ignite.Core.Cache;
     using Apache.Ignite.Core.Cache.Configuration;
     using Remotion.Linq.Clauses.Expressions;
     using Remotion.Linq.Parsing;
@@ -32,34 +30,8 @@ namespace Apache.Ignite.Linq.Impl
     /// <summary>
     /// Expression visitor, transforms query subexpressions (such as Where clauses) to SQL.
     /// </summary>
-    internal static class CacheQueryExpressionVisitor
+    internal class CacheQueryExpressionVisitor : ThrowingExpressionVisitor
     {
-        /// <summary>
-        /// Gets the SQL statement.
-        /// </summary>
-        /// <typeparam name="TKey">The type of the key.</typeparam>
-        /// <typeparam name="TValue">The type of the value.</typeparam>
-        /// <param name="cache">The cache.</param>
-        /// <param name="linqExpression">The linq expression.</param>
-        /// <returns>SQL statement for the expression.</returns>
-        public static QueryData GetSqlExpression<TKey, TValue>(ICache<TKey, TValue> cache, Expression linqExpression)
-        {
-            var visitor = new CacheQueryExpressionVisitor<TKey, TValue>(cache);
-
-            visitor.Visit(linqExpression);
-
-            return visitor.GetSqlExpression();
-        }
-    }
-
-    /// <summary>
-    /// Expression visitor, transforms query subexpressions (such as Where clauses) to SQL.
-    /// </summary>
-    internal class CacheQueryExpressionVisitor<TKey, TValue> : ThrowingExpressionVisitor
-    {
-        /** */
-        private readonly ICache<TKey, TValue> _cache;
-
         /** */
         private readonly StringBuilder _resultBuilder = new StringBuilder();
 
@@ -67,14 +39,17 @@ namespace Apache.Ignite.Linq.Impl
         private readonly List<object> _parameters = new List<object>();
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="CacheQueryExpressionVisitor{TKey, TValue}"/> class.
+        /// Gets the SQL statement.
         /// </summary>
-        /// <param name="cache">The cache.</param>
-        public CacheQueryExpressionVisitor(ICache<TKey, TValue> cache)
+        /// <param name="linqExpression">The linq expression.</param>
+        /// <returns>SQL statement for the expression.</returns>
+        public static QueryData GetSqlExpression(Expression linqExpression)
         {
-            Debug.Assert(cache != null);
+            var visitor = new CacheQueryExpressionVisitor();
 
-            _cache = cache;
+            visitor.Visit(linqExpression);
+
+            return visitor.GetSqlExpression();
         }
 
         /// <summary>
