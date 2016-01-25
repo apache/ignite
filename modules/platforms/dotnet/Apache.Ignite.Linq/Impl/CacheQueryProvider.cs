@@ -22,15 +22,35 @@ namespace Apache.Ignite.Linq.Impl
     using Apache.Ignite.Core.Cache;
     using Remotion.Linq;
 
+    /// <summary>
+    /// Cache query provider.
+    /// </summary>
+    /// <typeparam name="TKey">The type of the key.</typeparam>
+    /// <typeparam name="TValue">The type of the value.</typeparam>
     internal class CacheQueryProvider<TKey, TValue> : QueryProviderBase
     {
-        private readonly ICache<TKey, TValue> _cache;
-
-        public CacheQueryProvider(ICache<TKey, TValue> cache) : base(Remotion.Linq.Parsing.Structure.QueryParser.CreateDefault(), new CacheQueryExecutor<TKey, TValue>(cache))
+        /// <summary>
+        /// Initializes a new instance of the <see cref="CacheQueryProvider{TKey, TValue}"/> class.
+        /// </summary>
+        /// <param name="cache">The cache.</param>
+        public CacheQueryProvider(ICache<TKey, TValue> cache) 
+            : base(Remotion.Linq.Parsing.Structure.QueryParser.CreateDefault(), 
+                  new CacheQueryExecutor<TKey, TValue>(cache))
         {
-            _cache = cache;
+            // No-op.
         }
 
+        /// <summary>
+        /// Constructs an <see cref="T:System.Linq.IQueryable`1" /> object that can evaluate the query 
+        /// represented by a specified expression tree. This method is
+        /// called by the standard query operators defined by the <see cref="T:System.Linq.Queryable" /> class.
+        /// </summary>
+        /// <typeparam name="T">Element type.</typeparam>
+        /// <param name="expression">An expression tree that represents a LINQ query.</param>
+        /// <returns>
+        /// An <see cref="T:System.Linq.IQueryable`1" /> that can evaluate the query represented 
+        /// by the specified expression tree.
+        /// </returns>
         public override IQueryable<T> CreateQuery<T>(Expression expression)
         {
             return (IQueryable<T>) new CacheQueryable<TKey, TValue>(this, expression);
