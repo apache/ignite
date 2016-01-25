@@ -39,12 +39,20 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         {
             var cache = new CacheStub<int, QueryPerson>();
 
-            var res = cache.ToQueryable().Where(x => x.Value.Age > 20 && x.Value.Name.Contains("john")).ToList();
+            var res =
+                cache.ToQueryable()
+                    .Where(
+                        x =>
+                            (x.Value.Age > 20 && x.Value.Name.Contains("john")) ||
+                            (x.Value.Age < 15 && x.Value.Name == "bob"))
+                    .ToList();
 
             Assert.IsNotNull(res);
 
-            Assert.AreEqual("((Age > ?) and (Name like '%' + ? + '%'))", cache.LastQuery);
-            Assert.AreEqual(new object[] {20, "john"}, cache.LastQueryArgs);
+            Assert.AreEqual("(((Age > ?) and (Name like '%' + ? + '%')) or ((Age < ?) and (Name = ?)))",
+                cache.LastQuery);
+
+            Assert.AreEqual(new object[] {20, "john", 15, "bob"}, cache.LastQueryArgs);
         }
 
         private class CacheStub<TKey, TValue> : ICache<TKey, TValue>
