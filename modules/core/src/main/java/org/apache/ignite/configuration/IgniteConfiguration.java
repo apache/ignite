@@ -411,7 +411,7 @@ public class IgniteConfiguration {
     /** Client access configuration. */
     private ConnectorConfiguration connectorCfg = new ConnectorConfiguration();
 
-    /** Client access configuration. */
+    /** ODBC configuration. */
     private OdbcConfiguration odbcCfg = new OdbcConfiguration();
 
     /** Warmup closure. Will be invoked before actual grid start. */
@@ -481,7 +481,6 @@ public class IgniteConfiguration {
         cacheKeyCfg = cfg.getCacheKeyConfiguration();
         cacheSanityCheckEnabled = cfg.isCacheSanityCheckEnabled();
         connectorCfg = cfg.getConnectorConfiguration();
-        odbcCfg = cfg.getOdbcConfiguration();
         classLdr = cfg.getClassLoader();
         clientMode = cfg.isClientMode();
         clockSyncFreq = cfg.getClockSyncFrequency();
@@ -514,6 +513,7 @@ public class IgniteConfiguration {
         mgmtPoolSize = cfg.getManagementThreadPoolSize();
         netTimeout = cfg.getNetworkTimeout();
         nodeId = cfg.getNodeId();
+        odbcCfg = cfg.getOdbcConfiguration();
         p2pEnabled = cfg.isPeerClassLoadingEnabled();
         p2pLocClsPathExcl = cfg.getPeerClassLoadingLocalClassPathExclude();
         p2pMissedCacheSize = cfg.getPeerClassLoadingMissedResourcesCacheSize();

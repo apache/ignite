@@ -17,10 +17,6 @@
 
 package org.apache.ignite.configuration;
 
-import org.apache.ignite.ssl.SslContextFactory;
-
-import javax.cache.configuration.Factory;
-import javax.net.ssl.SSLContext;
 import java.net.Socket;
 
 /**
@@ -82,8 +78,8 @@ public class OdbcConfiguration {
     public OdbcConfiguration(OdbcConfiguration cfg) {
         assert cfg != null;
 
-        idleTimeout = cfg.getIdleTimeout();
         directBuf = cfg.isDirectBuffer();
+        idleTimeout = cfg.getIdleTimeout();
         noDelay = cfg.isNoDelay();
         port = cfg.getPort();
         rcvBufSize = cfg.getReceiveBufferSize();
