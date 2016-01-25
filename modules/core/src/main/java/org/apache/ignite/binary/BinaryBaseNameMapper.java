@@ -33,6 +33,7 @@ public class BinaryBaseNameMapper implements BinaryNameMapper {
      * Default constructor.
      */
     public BinaryBaseNameMapper() {
+        // No-op.
     }
 
     /**

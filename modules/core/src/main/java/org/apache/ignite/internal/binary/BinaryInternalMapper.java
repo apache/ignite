@@ -31,16 +31,21 @@ public class BinaryInternalMapper {
     /** */
     private final BinaryIdMapper idMapper;
 
+    /** */
+    private boolean checkOnZeroId;
+
     /**
      * @param nameMapper Name mapper.
      * @param idMapper Id mapper.
+     * @param checkOnZeroId Whether checks on zero id or not.
      */
-    public BinaryInternalMapper(BinaryNameMapper nameMapper, BinaryIdMapper idMapper) {
+    public BinaryInternalMapper(BinaryNameMapper nameMapper, BinaryIdMapper idMapper, boolean checkOnZeroId) {
         assert nameMapper != null;
         assert idMapper != null;
 
         this.nameMapper = nameMapper;
         this.idMapper = idMapper;
+        this.checkOnZeroId = checkOnZeroId;
     }
 
     /**
@@ -62,7 +67,12 @@ public class BinaryInternalMapper {
      * @return Type ID.
      */
     public int typeId(String clsName) {
-        return idMapper.typeId(nameMapper.typeName(clsName));
+        int id = idMapper.typeId(nameMapper.typeName(clsName));
+
+        if (!checkOnZeroId)
+            return id;
+
+        return id != 0 ? id : BinaryContext.SIMPLE_NAME_LOWER_CASE_MAPPER.typeId(clsName);
     }
 
     /**
@@ -71,7 +81,12 @@ public class BinaryInternalMapper {
      * @return Field ID.
      */
     public int fieldId(int typeId, String fieldName) {
-        return idMapper.fieldId(typeId, nameMapper.fieldName(fieldName));
+        int id = idMapper.fieldId(typeId, nameMapper.fieldName(fieldName));
+
+        if (!checkOnZeroId)
+            return id;
+
+        return id != 0 ? id : BinaryContext.SIMPLE_NAME_LOWER_CASE_MAPPER.fieldId(typeId, fieldName);
     }
 
     /**

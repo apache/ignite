@@ -82,11 +82,11 @@ public class BinaryContext {
 
     /** */
     private static final BinaryInternalMapper DFLT_MAPPER =
-        new BinaryInternalMapper(new BinaryBaseNameMapper(false), new BinaryBaseIdMapper(true));
+        new BinaryInternalMapper(new BinaryBaseNameMapper(false), new BinaryBaseIdMapper(true), false);
 
     /** */
-    private static final BinaryInternalMapper SIMPLE_NAME_LOWER_CASE_MAPPER =
-        new BinaryInternalMapper(new BinaryBaseNameMapper(true), new BinaryBaseIdMapper(true));
+    static final BinaryInternalMapper SIMPLE_NAME_LOWER_CASE_MAPPER =
+        new BinaryInternalMapper(new BinaryBaseNameMapper(true), new BinaryBaseIdMapper(true), false);
 
     /** */
     private final ConcurrentMap<Class<?>, BinaryClassDescriptor> descByCls = new ConcurrentHashMap8<>();
@@ -389,7 +389,7 @@ public class BinaryContext {
         if (idMapper == null)
             idMapper = DFLT_MAPPER.idMapper();
 
-        return new BinaryInternalMapperWrapper(nameMapper, idMapper);
+        return new BinaryInternalMapper(nameMapper, idMapper, true);
     }
 
     /**
@@ -1193,33 +1193,6 @@ public class BinaryContext {
          */
         public boolean registered() {
             return registered;
-        }
-    }
-
-    /**
-     * Wrapps mapper.
-     */
-    private static class BinaryInternalMapperWrapper extends BinaryInternalMapper {
-        /**
-         * @param nameMapper Name mapper.
-         * @param idMapper Id mapper.
-         */
-        BinaryInternalMapperWrapper(BinaryNameMapper nameMapper, BinaryIdMapper idMapper) {
-            super(nameMapper, idMapper);
-        }
-
-        /** {@inheritDoc} */
-        @Override public int typeId(String typeName) {
-            int id = super.typeId(typeName);
-
-            return id != 0 ? id : SIMPLE_NAME_LOWER_CASE_MAPPER.typeId(typeName);
-        }
-
-        /** {@inheritDoc} */
-        @Override public int fieldId(int typeId, String fieldName) {
-            int id = super.fieldId(typeId, fieldName);
-
-            return id != 0 ? id : SIMPLE_NAME_LOWER_CASE_MAPPER.fieldId(typeId, fieldName);
         }
     }
 }

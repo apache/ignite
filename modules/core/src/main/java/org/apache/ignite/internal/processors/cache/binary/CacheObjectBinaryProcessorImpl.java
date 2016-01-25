@@ -232,8 +232,8 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
                 if (bCfg != null) {
                     Map<String, Object> map = new HashMap<>();
 
-                    map.put("globIdMapper", bCfg.getIdMapper() != null ? bCfg.getIdMapper().getClass() : (byte)0);
-                    map.put("globSerializer", bCfg.getSerializer() != null ? bCfg.getSerializer().getClass() : (byte)0);
+                    map.put("globIdMapper", bCfg.getIdMapper() != null ? bCfg.getIdMapper().getClass().getName() : null);
+                    map.put("globSerializer", bCfg.getSerializer() != null ? bCfg.getSerializer().getClass() : null);
                     map.put("compactFooter", bCfg.isCompactFooter());
 
                     if (bCfg.getTypeConfigurations() != null) {
