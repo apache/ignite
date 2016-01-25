@@ -25,11 +25,14 @@ consoleModule.controller('domainsController', function ($filter, $http, $timeout
 
         $scope.ui = $common.formUI();
 
+        var IMPORT_DM_NEW_CACHE = 1;
+        var IMPORT_DM_ASSOCIATE_CACHE = 2;
+
+        $scope.ui.importCommonAction = IMPORT_DM_NEW_CACHE;
         $scope.ui.packageName = $commonUtils.toJavaPackageName($scope.$root.user.email.replace('@', '.')
             .split('.').reverse().join('.') + '.model');
         $scope.ui.builtinKeys = true;
         $scope.ui.usePrimitives = true;
-        $scope.ui.generateCaches = true;
         $scope.ui.generatedCachesClusters = [];
 
         $scope.removeDemoDropdown = [{
@@ -594,18 +597,38 @@ consoleModule.controller('domainsController', function ($filter, $http, $timeout
             }
         };
 
-        var IMPORT_DM_NEW_CACHE = {
-            label: 'New cache',
-            value: -1
-        };
+        $scope.importCommonActions = [
+            {label: 'Create new cache by template', value: 1},
+            {label: 'Associate with existing cache', value: 2}
+        ];
 
-        var IMPORT_DM_DO_NOT_GENERATE = {
-            label: 'Do not generate',
-            value: -2
-        };
+        // TODO $scope.$watch();
 
-        $scope.ui.dfltTableCache = IMPORT_DM_NEW_CACHE.value;
-        $scope.ui.dfltTableTemplate = DFLT_PARTITIONED_CACHE.value;
+        var zzz = [];
+
+        $scope.importCommonCachesOrTemplates = function () {
+            zzz.length = 0;
+
+            if ($scope.ui.importCommonAction == IMPORT_DM_NEW_CACHE) {
+                zzz.push(DFLT_PARTITIONED_CACHE);
+                zzz.push(DFLT_REPLICATED_CACHE);
+            }
+
+            if (!$common.isEmptyArray($scope.caches)) {
+                if (zzz.length > 0)
+                    zzz.push(null);
+
+                _.forEach($scope.caches, function (cache) {
+                    zzz.push(cache);
+                });
+
+                $timeout(function() {
+                    $scope.ui.importCommonCacheOrTemplate = zzz.length > 0 ? zzz[0].value : null;
+                });
+            }
+
+            return zzz;
+        };
 
         /**
          * Load list of database tables.
@@ -626,19 +649,6 @@ consoleModule.controller('domainsController', function ($filter, $http, $timeout
 
             $http.post('/api/v1/agent/tables', preset)
                 .success(function (tables) {
-                    $scope.importCaches = [IMPORT_DM_NEW_CACHE, IMPORT_DM_DO_NOT_GENERATE];
-
-                    $scope.importCacheTemplates = [DFLT_PARTITIONED_CACHE, DFLT_REPLICATED_CACHE];
-
-                    if (!$common.isEmptyArray($scope.caches)) {
-                        $scope.importCaches.push(null);
-                        $scope.importCacheTemplates.push(null);
-
-                        _.forEach($scope.caches, function (cache) {
-                            $scope.importCaches.push(cache);
-                            $scope.importCacheTemplates.push(cache);
-                        });
-                    }
 
                     _.forEach(tables, function (tbl, idx) {
                         tbl.id = idx;
@@ -663,10 +673,6 @@ consoleModule.controller('domainsController', function ($filter, $http, $timeout
                     $loading.finish('importDomainFromDb');
                 });
         }
-
-        $scope.dfltTableTemplateVisible = function () {
-            return $scope.ui.dfltTableCache === IMPORT_DM_NEW_CACHE.value;
-        };
 
         $scope.applyDefaults = function () {
             _.forEach($scope.importDomain.displayedTables, function (table) {
@@ -702,14 +708,15 @@ consoleModule.controller('domainsController', function ($filter, $http, $timeout
         };
 
         $scope.dbTableCache = function (tbl) {
-            return _.find($scope.importCaches, {value: tbl.cache}).label;
+            return 'TODO'; //  _.find($scope.importCaches, {value: tbl.cache}).label;
         };
 
         $scope.dbTableTemplate = function (tbl) {
-            if (tbl.cache === IMPORT_DM_NEW_CACHE.value)
-                return _.find($scope.importCacheTemplates, {value: tbl.template}).label;
-
-            return '';
+            return 'TODO';
+            //if (tbl.cache === IMPORT_DM_NEW_CACHE.value)
+            //    return _.find($scope.importCacheTemplates, {value: tbl.template}).label;
+            //
+            //return '';
         };
 
         /**
@@ -923,46 +930,44 @@ consoleModule.controller('domainsController', function ($filter, $http, $timeout
                         newDomain.keyType = newDomain.keyFields[0].jdbcType.javaType;
 
                     // Prepare caches for generation.
-                    if ($scope.ui.generateCaches && table.cache !== IMPORT_DM_DO_NOT_GENERATE.value) {
-                        if (table.cache === IMPORT_DM_NEW_CACHE.value) {
-                            var template = _.find($scope.importCacheTemplates, {value: table.template});
+                    if (table.cache === IMPORT_DM_NEW_CACHE.value) {
+                        var template = _.find($scope.importCacheTemplates, {value: table.template});
 
-                            newDomain.newCache = angular.copy(template ? template.cache : DFLT_PARTITIONED_CACHE.cache);
+                        newDomain.newCache = angular.copy(template ? template.cache : DFLT_PARTITIONED_CACHE.cache);
 
-                            delete newDomain.newCache._id;
-                            newDomain.newCache.name = typeName + 'Cache';
-                            newDomain.newCache.clusters = $scope.ui.generatedCachesClusters;
-                            newDomain.newCache.demo = $scope.importDomain.demo;
+                        delete newDomain.newCache._id;
+                        newDomain.newCache.name = typeName + 'Cache';
+                        newDomain.newCache.clusters = $scope.ui.generatedCachesClusters;
+                        newDomain.newCache.demo = $scope.importDomain.demo;
 
-                            // POJO store factory is not defined in template.
-                            if (!newDomain.newCache.cacheStoreFactory ||
-                                newDomain.newCache.cacheStoreFactory.kind !== 'CacheJdbcPojoStoreFactory') {
-                                var dialect = $scope.importDomain.demo ? 'H2' : $scope.selectedPreset.db;
+                        // POJO store factory is not defined in template.
+                        if (!newDomain.newCache.cacheStoreFactory ||
+                            newDomain.newCache.cacheStoreFactory.kind !== 'CacheJdbcPojoStoreFactory') {
+                            var dialect = $scope.importDomain.demo ? 'H2' : $scope.selectedPreset.db;
 
-                                newDomain.newCache.cacheStoreFactory = {
-                                    kind: 'CacheJdbcPojoStoreFactory',
-                                    CacheJdbcPojoStoreFactory: {
-                                        dataSourceBean: 'ds' + dialect,
-                                        dialect: dialect
-                                    }
-                                };
-                            }
+                            newDomain.newCache.cacheStoreFactory = {
+                                kind: 'CacheJdbcPojoStoreFactory',
+                                CacheJdbcPojoStoreFactory: {
+                                    dataSourceBean: 'ds' + dialect,
+                                    dialect: dialect
+                                }
+                            };
                         }
-                        else if (table.cache !== IMPORT_DM_DO_NOT_GENERATE._id) {
-                            var cacheId = table.cache;
+                    }
+                    else {
+                        var cacheId = table.cache;
 
-                            newDomain.caches = [cacheId];
+                        newDomain.caches = [cacheId];
 
-                            if (!_.contains(checkedCaches, cacheId)) {
-                                var cache = _.find($scope.caches, {value: cacheId}).cache;
+                        if (!_.contains(checkedCaches, cacheId)) {
+                            var cache = _.find($scope.caches, {value: cacheId}).cache;
 
-                                var change = $common.autoCacheStoreConfiguration(cache, [newDomain]);
+                            var change = $common.autoCacheStoreConfiguration(cache, [newDomain]);
 
-                                if (change)
-                                    newDomain.cacheStoreChanges = [{cacheId: cacheId, change: change}];
+                            if (change)
+                                newDomain.cacheStoreChanges = [{cacheId: cacheId, change: change}];
 
-                                checkedCaches.push(cacheId)
-                            }
+                            checkedCaches.push(cacheId)
                         }
                     }
 
