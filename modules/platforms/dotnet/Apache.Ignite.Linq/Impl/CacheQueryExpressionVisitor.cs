@@ -24,6 +24,7 @@ namespace Apache.Ignite.Linq.Impl
     using System.Diagnostics;
     using System.Linq.Expressions;
     using Apache.Ignite.Core.Cache;
+    using Apache.Ignite.Core.Cache.Configuration;
     using Remotion.Linq.Clauses.Expressions;
     using Remotion.Linq.Parsing;
 
@@ -59,6 +60,9 @@ namespace Apache.Ignite.Linq.Impl
         private readonly ICache<TKey, TValue> _cache;
 
         /** */
+        private readonly CacheConfiguration _cacheConfig;
+
+        /** */
         private readonly StringBuilder _resultBuilder = new StringBuilder();
 
         /** */
@@ -73,6 +77,7 @@ namespace Apache.Ignite.Linq.Impl
             Debug.Assert(cache != null);
 
             _cache = cache;
+            _cacheConfig = cache.GetConfiguration();
         }
 
         /// <summary>
