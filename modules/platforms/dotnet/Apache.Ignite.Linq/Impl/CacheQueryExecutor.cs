@@ -17,6 +17,7 @@
 
 namespace Apache.Ignite.Linq.Impl
 {
+    using System;
     using System.Collections.Generic;
     using System.Diagnostics;
     using System.Linq;
@@ -69,7 +70,7 @@ namespace Apache.Ignite.Linq.Impl
         /** <inheritdoc /> */
         public IEnumerable<T> ExecuteCollection<T>(QueryModel queryModel)
         {
-            ValidateCache();
+            ValidateCacheConfiguration();
 
             // Check for empty query
             if (queryModel.IsIdentityQuery() && queryModel.ResultOperators.Count == 0)
@@ -84,15 +85,23 @@ namespace Apache.Ignite.Linq.Impl
             return (IEnumerable<T>) _cache.Query(query);
         }
 
-        private void ValidateCache()
+        private void ValidateCacheConfiguration()
         {
             var config = _cache.GetConfiguration();
 
             if (config.QueryEntities == null || config.QueryEntities.Count == 0)
+            {
                 throw new CacheException(string.Format("Cache '{0}' is not configured for queries.",
                     _cache.Name ?? "null"));
+            }
 
-            // TODO
+            if (!config.QueryEntities.Any(
+                e => _queryTypeName.Equals(e.ValueTypeName, StringComparison.InvariantCultureIgnoreCase) ||
+                     _queryTypeName.Equals(e.KeyTypeName, StringComparison.InvariantCultureIgnoreCase)))
+            {
+                throw new CacheException(string.Format("Cache '{0}' does not have query entity '{1}' configured.",
+                    _cache.Name ?? "null", _queryTypeName));
+            }
         }
     }
 }
