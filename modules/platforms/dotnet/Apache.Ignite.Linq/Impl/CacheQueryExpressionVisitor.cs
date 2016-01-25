@@ -86,6 +86,7 @@ namespace Apache.Ignite.Linq.Impl
         /** <inheritdoc /> */
         protected override Expression VisitQuerySourceReference(QuerySourceReferenceExpression expression)
         {
+            // TODO: Key/Value direct queries?
             _resultBuilder.Append(expression.ReferencedQuerySource.ItemName);
             return expression;
         }

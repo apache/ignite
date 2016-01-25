@@ -18,8 +18,10 @@
 namespace Apache.Ignite.Linq.Impl
 {
     using System;
+    using System.Collections.Generic;
     using System.Diagnostics;
     using System.Linq.Expressions;
+    using System.Text;
     using Apache.Ignite.Core.Cache;
     using Remotion.Linq;
     using Remotion.Linq.Clauses;
@@ -48,7 +50,7 @@ namespace Apache.Ignite.Linq.Impl
     internal class CacheQueryModelVisitor<TKey, TValue> : QueryModelVisitorBase
     {
         private readonly ICache<TKey, TValue> _cache;
-        private WhereClause _where;
+        private readonly List<WhereClause> _where = new List<WhereClause>();
         private SelectClause _select;
 
         public CacheQueryModelVisitor(ICache<TKey, TValue> cache)
@@ -60,14 +62,21 @@ namespace Apache.Ignite.Linq.Impl
 
         public QueryData GetQuery()
         {
-            // Support only WHERE for now
-            return _where == null ? null : GetSqlExpression(_where.Predicate);
+            var builder = new StringBuilder();
+            var parameters = new List<object>();
 
-            //var sql = _where == null ? null : GetSqlExpression(_where.Predicate);
+            builder.AppendFormat("from {0} ", typeof (TValue).Name);
 
-            //var isFieldsQuery = _select.Selector.Type != typeof (ICacheEntry<TKey, TValue>);
+            foreach (var whereClause in _where)
+            {
+                var whereSql = GetSqlExpression(whereClause.Predicate);
 
-            //return new QueryData(sql.QueryText, sql.Parameters, isFieldsQuery);
+                parameters.AddRange(whereSql.Parameters);
+
+                builder.AppendFormat("where {0} ", whereSql.QueryText);
+            }
+
+            return new QueryData(builder.ToString().TrimEnd(), parameters);
         }
 
         /** <inheritdoc /> */
@@ -75,7 +84,7 @@ namespace Apache.Ignite.Linq.Impl
         {
             base.VisitWhereClause(whereClause, queryModel, index);
 
-            _where = whereClause;
+            _where.Add(whereClause);
         }
 
         /** <inheritdoc /> */

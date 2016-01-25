@@ -49,7 +49,8 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
 
             Assert.IsNotNull(res);
 
-            Assert.AreEqual("(((Age > ?) and (Name like '%' + ? + '%')) or ((Age < ?) and (Name = ?)))",
+            Assert.AreEqual("from QueryPerson where " +
+                            "(((Age > ?) and (Name like '%' + ? + '%')) or ((Age < ?) and (Name = ?)))",
                 cache.LastQuery);
 
             Assert.AreEqual(new object[] {20, "john", 15, "bob"}, cache.LastQueryArgs);
