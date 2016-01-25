@@ -40,6 +40,7 @@ export default [
         $scope.panelExpanded = $common.panelExpanded;
         $scope.tableVisibleRow = $table.tableVisibleRow;
         $scope.widthIsSufficient = $common.widthIsSufficient;
+        $scope.dialects = {};
 
         $scope.projectStructureOptions = {
             nodeChildren: 'children',

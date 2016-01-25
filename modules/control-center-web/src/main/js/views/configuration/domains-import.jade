@@ -140,24 +140,23 @@ mixin td-ellipses-lbl(w, lbl)
                                                     input(type='checkbox' ng-model='table.use' ng-change='selectTable()')
                                                 +td-ellipses-lbl('130px', '{{::table.schema}}')
                                                 +td-ellipses-lbl('160px', '{{::table.tbl}}')
-                                                td(width='160px' style='min-width: 160px; max-width: 160px')
+                                                td(colspan='2' width='288px' style='min-width: 160px; max-width: 160px')
                                                     div.td-ellipsis
-                                                        a(ng-if='!table.editCache' ng-click='startEditDbTableCache(table)') {{dbTableCache(table)}}
-                                                        button.select-toggle.form-control(ng-if='table.editCache' bs-select ng-model='table.cache' data-container='false' bs-options='item.value as item.label for item in importCaches')
-                                                td(width='128px' style='min-width: 128px; max-width: 128px')
-                                                    div.td-ellipsis
-                                                        a(ng-if='!table.editTemplate' ng-click='startEditDbTableTemplate(table)') {{dbTableTemplate(table)}}
-                                                        button.select-toggle.form-control(ng-if='table.editTemplate' bs-select ng-model='table.template' style='max-width: 110px' data-container='false' bs-options='item.value as item.label for item in importCacheTemplates')
+                                                        a(ng-if='!table.edit' ng-click='startEditDbTableCache(table)') {{tableActionView(table)}}
+                                                        div(style='display: flex' ng-if='table.edit')
+                                                            button.select-toggle.form-control(style='width: 35%; margin-right: 5px' bs-select ng-model='table.action' data-container='false' bs-options='item.value as item.label for item in importCurrentActions')
+                                                            button.select-toggle.form-control(ng-if='table.action==1' style='width: 65%; margin-right: 0' bs-select ng-model='table.template' data-container='false' bs-options='item.value as item.label for item in importCurrentTemplates')
+                                                            button.select-toggle.form-control(ng-if='table.action==2' style='width: 65%; margin-right: 0' bs-select ng-model='table.cache' data-container='false' bs-options='item.value as item.label for item in importCurrentCaches')
                                                 td
                 .settings-row
-                    label Defaults for tables
+                    label Defaults to be applied for filtered tables
                     i.tipLabel.fa.fa-question-circle(bs-tooltip='' data-title='Select and apply options for caches generation')
                 .settings-row
                     .col-sm-11
                         .col-sm-6(style='padding-right: 5px')
                             button.select-toggle.form-control(bs-select ng-model='ui.importCommonAction' data-container='false' bs-options='item.value as item.label for item in importCommonActions')
                         .col-sm-6(style='padding-left: 5px; padding-right: 5px')
-                            button.select-toggle.form-control(bs-select ng-model='ui.importCommonCacheOrTemplate' data-container='false' bs-options='item.value as item.label for item in importCommonCachesOrTemplates()')
+                            button.select-toggle.form-control(bs-select ng-model='ui.importCommonCacheOrTemplate' data-container='false' bs-options='item.value as item.label for item in importCommonCachesOrTemplates')
                     .col-sm-1(style='padding-left: 5px')
                         button.btn.btn-primary(ng-click='applyDefaults()') Apply
             .import-domain-model-wizard-page(ng-show='importDomain.action == "options"' style='margin-bottom: 176px')
