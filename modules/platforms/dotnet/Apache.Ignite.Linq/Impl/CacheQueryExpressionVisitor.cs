@@ -60,9 +60,6 @@ namespace Apache.Ignite.Linq.Impl
         private readonly ICache<TKey, TValue> _cache;
 
         /** */
-        private readonly CacheConfiguration _cacheConfig;
-
-        /** */
         private readonly StringBuilder _resultBuilder = new StringBuilder();
 
         /** */
@@ -77,7 +74,6 @@ namespace Apache.Ignite.Linq.Impl
             Debug.Assert(cache != null);
 
             _cache = cache;
-            _cacheConfig = cache.GetConfiguration();
         }
 
         /// <summary>
