@@ -30,19 +30,20 @@ import static org.apache.ignite.internal.binary.GridBinaryMarshaller.UNREGISTERE
  */
 public class OdbcColumnMeta {
     /** Cache name. */
-    private String schemaName;
+    private final String schemaName;
 
     /** Table name. */
-    private String tableName;
+    private final String tableName;
 
     /** Column name. */
-    private String columnName;
+    private final String columnName;
 
     /** Data type. */
-    private Class<?> dataType;
+    private final Class<?> dataType;
 
     /**
      * Add quotation marks at the beginning and end of the string.
+     *
      * @param str Input string.
      * @return String surrounded with quotation marks.
      */
@@ -74,16 +75,19 @@ public class OdbcColumnMeta {
         this.tableName = info.typeName();
         this.columnName = info.fieldName();
 
+        Class<?> type;
         try {
-            this.dataType = Class.forName(info.fieldTypeName());
+            type = Class.forName(info.fieldTypeName());
         }
         catch (Exception ignored) {
-            this.dataType = Object.class;
+            type = Object.class;
         }
+
+        this.dataType = type;
     }
 
-    @Override
-    public boolean equals(Object o)
+    /** {@inheritDoc} */
+    @Override public boolean equals(Object o)
     {
         if (!(o instanceof OdbcColumnMeta))
             return false;
@@ -98,6 +102,7 @@ public class OdbcColumnMeta {
 
     /**
      * Write in a binary format.
+     *
      * @param writer Binary writer.
      * @param ctx Portable context.
      * @throws IOException

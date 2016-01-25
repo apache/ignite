@@ -31,7 +31,6 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.Collection;
 
-
 /**
  * ODBC protocol parser.
  */
@@ -40,30 +39,30 @@ public class OdbcParser implements GridNioParser {
     private static final int INIT_CAP = 1024;
 
     /** Length in bytes of the remaining message part. */
-    int leftToReceive = 0;
+    private int leftToReceive = 0;
 
     /** Already received bytes of current message. */
-    ByteBuffer currentMessage = null;
-
-    /** Context. */
-    protected final GridKernalContext ctx;
+    private ByteBuffer currentMessage = null;
 
     /** Marshaller. */
     private final GridBinaryMarshaller marsh;
 
-    OdbcParser(GridKernalContext context) {
-        ctx = context;
-
-        CacheObjectBinaryProcessorImpl cacheObjProc = (CacheObjectBinaryProcessorImpl)ctx.cacheObjects();
+    /**
+     * @param context Kernel context.
+     */
+    public OdbcParser(GridKernalContext context) {
+        CacheObjectBinaryProcessorImpl cacheObjProc = (CacheObjectBinaryProcessorImpl)context.cacheObjects();
 
         marsh = cacheObjProc.marshaller();
     }
 
     /**
-     * Process data chunk and try to construct new message using stored and freshly received data.
+     * Process data chunk and try to construct new message using stored and
+     * freshly received data.
+     *
      * @param buf Fresh data buffer.
-     * @return Instance of the {@link BinaryReaderExImpl} positioned to read from the beginning of the message on
-     * success and null otherwise.
+     * @return Instance of the {@link BinaryReaderExImpl} positioned to read
+     *     from the beginning of the message on success and null otherwise.
      */
     private BinaryRawReaderEx tryConstructMessage(ByteBuffer buf) {
         if (leftToReceive != 0) {
@@ -88,16 +87,19 @@ public class OdbcParser implements GridNioParser {
         }
 
         // Receiving new message
-        // Getting message length. It's in the first four bytes of the message.
         BinaryInputStream stream = new BinaryHeapInputStream(buf.array());
 
         BinaryReaderExImpl reader = new BinaryReaderExImpl(null, stream, null);
 
+        // Getting message length. It's in the first four bytes of the message.
         int messageLen = reader.readInt();
+
+        // Just skipping int here to sync position.
         buf.getInt();
 
         int remaining = buf.remaining();
 
+        // Checking if we have not entire message in buffer.
         if (messageLen > remaining) {
             leftToReceive = messageLen - remaining;
 
@@ -151,6 +153,7 @@ public class OdbcParser implements GridNioParser {
 
     /**
      * Read ODBC request from the raw data using provided {@link BinaryReaderExImpl} instance.
+     *
      * @param ses Current session.
      * @param reader Reader positioned to read the request.
      * @return Instance of the {@link OdbcRequest}.
@@ -163,6 +166,7 @@ public class OdbcParser implements GridNioParser {
 
         switch (cmd) {
             case OdbcRequest.EXECUTE_SQL_QUERY: {
+
                 String cache = reader.readString();
                 String sql = reader.readString();
                 int argsNum = reader.readInt();
@@ -178,10 +182,12 @@ public class OdbcParser implements GridNioParser {
                     params[i] = reader.readObjectDetached();
 
                 res = new OdbcQueryExecuteRequest(cache, sql, params);
+
                 break;
             }
 
             case OdbcRequest.FETCH_SQL_QUERY: {
+
                 long queryId = reader.readLong();
                 int pageSize = reader.readInt();
 
@@ -190,20 +196,24 @@ public class OdbcParser implements GridNioParser {
                 System.out.println("pageSize: " + pageSize);
 
                 res = new OdbcQueryFetchRequest(queryId, pageSize);
+
                 break;
             }
 
             case OdbcRequest.CLOSE_SQL_QUERY: {
+
                 long queryId = reader.readLong();
 
                 System.out.println("Message CLOSE_SQL_QUERY:");
                 System.out.println("queryId: " + queryId);
 
                 res = new OdbcQueryCloseRequest(queryId);
+
                 break;
             }
 
             case OdbcRequest.GET_COLUMNS_META: {
+
                 String cache = reader.readString();
                 String table = reader.readString();
                 String column = reader.readString();
@@ -214,10 +224,12 @@ public class OdbcParser implements GridNioParser {
                 System.out.println("column: " + column);
 
                 res = new OdbcQueryGetColumnsMetaRequest(cache, table, column);
+
                 break;
             }
 
             case OdbcRequest.GET_TABLES_META: {
+
                 String catalog = reader.readString();
                 String schema = reader.readString();
                 String table = reader.readString();
@@ -230,6 +242,7 @@ public class OdbcParser implements GridNioParser {
                 System.out.println("tableType: " + tableType);
 
                 res = new OdbcQueryGetTablesMetaRequest(catalog, schema, table, tableType);
+
                 break;
             }
 
@@ -243,6 +256,7 @@ public class OdbcParser implements GridNioParser {
 
     /**
      * Write ODBC response using provided {@link BinaryRawWriterEx} instance.
+     *
      * @param ses Current session.
      * @param writer Writer.
      * @param rsp ODBC response that should be written.
@@ -250,15 +264,15 @@ public class OdbcParser implements GridNioParser {
      */
     private void writeResponse(GridNioSession ses, BinaryRawWriterEx writer, OdbcResponse rsp) throws IOException {
         // Writing status
-        writer.writeByte((byte)rsp.getSuccessStatus());
+        writer.writeByte((byte)rsp.status());
 
-        if (rsp.getSuccessStatus() != OdbcResponse.STATUS_SUCCESS) {
-            writer.writeString(rsp.getError());
+        if (rsp.status() != OdbcResponse.STATUS_SUCCESS) {
+            writer.writeString(rsp.error());
 
             return;
         }
 
-        Object res0 = rsp.getResponse();
+        Object res0 = rsp.response();
 
         if (res0 instanceof OdbcQueryExecuteResult) {
             OdbcQueryExecuteResult res = (OdbcQueryExecuteResult) res0;
@@ -276,25 +290,27 @@ public class OdbcParser implements GridNioParser {
             for (OdbcColumnMeta meta : metas)
                 meta.writeBinary(writer, marsh.context());
 
-        } else if (res0 instanceof OdbcQueryFetchResult) {
+        }
+        else if (res0 instanceof OdbcQueryFetchResult) {
             OdbcQueryFetchResult res = (OdbcQueryFetchResult) res0;
 
-            System.out.println("Resulting query ID: " + res.getQueryId());
+            System.out.println("Resulting query ID: " + res.queryId());
 
-            writer.writeLong(res.getQueryId());
+            writer.writeLong(res.queryId());
 
-            Collection<?> items0 = res.getItems();
+            Collection<?> items0 = res.items();
 
             assert items0 != null;
 
-            Collection<Collection<Object>> items = (Collection<Collection<Object>>)items0;
+            writer.writeBoolean(res.last());
 
-            writer.writeBoolean(res.getLast());
+            writer.writeInt(items0.size());
 
-            writer.writeInt(items.size());
+            for (Object row0 : items0) {
+                if (row0 != null) {
 
-            for (Collection<Object> row : items) {
-                if (row != null) {
+                    Collection<?> row = (Collection<?>)row0;
+
                     writer.writeInt(row.size());
 
                     for (Object obj : row) {
@@ -303,17 +319,19 @@ public class OdbcParser implements GridNioParser {
                     }
                 }
             }
-        } else if (res0 instanceof OdbcQueryCloseResult) {
+        }
+        else if (res0 instanceof OdbcQueryCloseResult) {
             OdbcQueryCloseResult res = (OdbcQueryCloseResult) res0;
 
             System.out.println("Resulting query ID: " + res.getQueryId());
 
             writer.writeLong(res.getQueryId());
 
-        } else if (res0 instanceof OdbcQueryGetColumnsMetaResult) {
+        }
+        else if (res0 instanceof OdbcQueryGetColumnsMetaResult) {
             OdbcQueryGetColumnsMetaResult res = (OdbcQueryGetColumnsMetaResult) res0;
 
-            Collection<OdbcColumnMeta> columnsMeta = res.getMeta();
+            Collection<OdbcColumnMeta> columnsMeta = res.meta();
 
             assert columnsMeta != null;
 
@@ -322,10 +340,11 @@ public class OdbcParser implements GridNioParser {
             for (OdbcColumnMeta columnMeta : columnsMeta)
                 columnMeta.writeBinary(writer, marsh.context());
 
-        } else if (res0 instanceof OdbcQueryGetTablesMetaResult) {
+        }
+        else if (res0 instanceof OdbcQueryGetTablesMetaResult) {
             OdbcQueryGetTablesMetaResult res = (OdbcQueryGetTablesMetaResult) res0;
 
-            Collection<OdbcTableMeta> tablesMeta = res.getMeta();
+            Collection<OdbcTableMeta> tablesMeta = res.meta();
 
             assert tablesMeta != null;
 
@@ -334,8 +353,8 @@ public class OdbcParser implements GridNioParser {
             for (OdbcTableMeta tableMeta : tablesMeta)
                 tableMeta.writeBinary(writer);
 
-        } else {
-            throw new IOException("Failed to serialize response packet (unknown response type) [ses=" + ses + "]");
         }
+        else
+            throw new IOException("Failed to serialize response packet (unknown response type) [ses=" + ses + "]");
     }
 }

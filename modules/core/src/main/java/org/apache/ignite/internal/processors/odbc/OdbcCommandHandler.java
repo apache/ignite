@@ -90,32 +90,27 @@ public class OdbcCommandHandler {
     }
 
     /**
-     * @param qryCurs Query cursors.
      * @param cur Current cursor.
      * @param req Sql fetch request.
      * @param qryId Query id.
      * @return Query result with items.
      */
-    private static OdbcQueryFetchResult createQueryResult(
-            ConcurrentHashMap<Long, IgniteBiTuple<QueryCursor, Iterator>> qryCurs,
-            Iterator cur, OdbcQueryFetchRequest req, Long qryId) {
-        OdbcQueryFetchResult res = new OdbcQueryFetchResult(qryId);
+    private static OdbcQueryFetchResult createQueryResult(Iterator cur, OdbcQueryFetchRequest req, Long qryId) {
 
         List<Object> items = new ArrayList<>();
 
         for (int i = 0; i < req.pageSize() && cur.hasNext(); ++i)
             items.add(cur.next());
 
-        res.setItems(items);
-
-        res.setLast(!cur.hasNext());
-
-        return res;
+        return new OdbcQueryFetchResult(qryId, items, !cur.hasNext());
     }
 
     /**
+     * Convert metadata in collection from {@link GridQueryFieldMetadata} to
+     * {@link OdbcColumnMeta}.
+     *
      * @param meta Internal query field metadata.
-     * @return Rest query field metadata.
+     * @return Odbc query field metadata.
      */
     private static Collection<OdbcColumnMeta> convertMetadata(Collection<GridQueryFieldMetadata> meta) {
         List<OdbcColumnMeta> res = new ArrayList<>();
@@ -142,6 +137,7 @@ public class OdbcCommandHandler {
 
     /**
      * Remove quotation marks at the beginning and end of the string if present.
+     *
      * @param str Input string.
      * @return String without leading and trailing quotation marks.
      */
@@ -153,12 +149,14 @@ public class OdbcCommandHandler {
     }
 
     /**
+     * {@link OdbcQueryExecuteRequest} command handler.
+     *
      * @param req Execute query request.
      * @param qryCurs Queries cursors.
      * @return Response.
      */
     private OdbcResponse executeQuery(OdbcQueryExecuteRequest req,
-                                          ConcurrentHashMap<Long, IgniteBiTuple<QueryCursor, Iterator>> qryCurs) {
+                                      ConcurrentHashMap<Long, IgniteBiTuple<QueryCursor, Iterator>> qryCurs) {
         long qryId = qryIdGen.getAndIncrement();
 
         try {
@@ -194,12 +192,14 @@ public class OdbcCommandHandler {
     }
 
     /**
+     * {@link OdbcQueryCloseRequest} command handler.
+     *
      * @param req Execute query request.
      * @param qryCurs Queries cursors.
      * @return Response.
      */
     private OdbcResponse closeQuery(OdbcQueryCloseRequest req,
-                                        ConcurrentHashMap<Long, IgniteBiTuple<QueryCursor, Iterator>> qryCurs) {
+                                    ConcurrentHashMap<Long, IgniteBiTuple<QueryCursor, Iterator>> qryCurs) {
         try {
             QueryCursor cur = qryCurs.get(req.queryId()).get1();
 
@@ -223,12 +223,14 @@ public class OdbcCommandHandler {
     }
 
     /**
+     * {@link OdbcQueryFetchRequest} command handler.
+     *
      * @param req Execute query request.
      * @param qryCurs Queries cursors.
      * @return Response.
      */
     private OdbcResponse fetchQuery(OdbcQueryFetchRequest req,
-                                        ConcurrentHashMap<Long, IgniteBiTuple<QueryCursor, Iterator>> qryCurs) {
+                                    ConcurrentHashMap<Long, IgniteBiTuple<QueryCursor, Iterator>> qryCurs) {
         try {
             Iterator cur = qryCurs.get(req.queryId()).get2();
 
@@ -236,7 +238,7 @@ public class OdbcCommandHandler {
                 return new OdbcResponse(OdbcResponse.STATUS_FAILED,
                         "Failed to find query with ID: " + req.queryId());
 
-            OdbcQueryFetchResult res = createQueryResult(qryCurs, cur, req, req.queryId());
+            OdbcQueryFetchResult res = createQueryResult(cur, req, req.queryId());
 
             return new OdbcResponse(res);
         }
@@ -248,6 +250,8 @@ public class OdbcCommandHandler {
     }
 
     /**
+     * {@link OdbcQueryGetColumnsMetaRequest} command handler.
+     *
      * @param req Get columns metadata request.
      * @return Response.
      */
@@ -299,6 +303,8 @@ public class OdbcCommandHandler {
     }
 
     /**
+     * {@link OdbcQueryGetTablesMetaRequest} command handler.
+     *
      * @param req Get tables metadata request.
      * @return Response.
      */

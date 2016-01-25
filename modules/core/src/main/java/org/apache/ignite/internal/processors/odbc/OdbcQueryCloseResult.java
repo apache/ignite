@@ -17,11 +17,11 @@
 package org.apache.ignite.internal.processors.odbc;
 
 /**
- * Query result.
+ * ODBC query result.
  */
 public class OdbcQueryCloseResult {
     /** Query ID. */
-    private long queryId;
+    private final long queryId;
 
     /**
      * @param queryId Query ID.

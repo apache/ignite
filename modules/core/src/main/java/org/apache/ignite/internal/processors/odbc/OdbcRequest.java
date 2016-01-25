@@ -36,7 +36,7 @@ public class OdbcRequest {
     public static final int GET_TABLES_META = 5;
 
     /** Command. */
-    private int cmd;
+    private final int cmd;
 
     /**
      * @param cmd Command type.
@@ -50,12 +50,5 @@ public class OdbcRequest {
      */
     public int command() {
         return cmd;
-    }
-
-    /**
-     * @param cmd Command.
-     */
-    public void command(int cmd) {
-        this.cmd = cmd;
     }
 }

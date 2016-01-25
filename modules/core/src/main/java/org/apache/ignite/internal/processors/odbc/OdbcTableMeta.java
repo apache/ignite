@@ -25,19 +25,20 @@ import java.io.IOException;
  */
 public class OdbcTableMeta {
     /** Catalog name. */
-    private String catalog;
+    private final String catalog;
 
     /** Schema name. */
-    private String schema;
+    private final String schema;
 
     /** Table name. */
-    private String table;
+    private final String table;
 
     /** Table type. */
-    private String tableType;
+    private final String tableType;
 
     /**
      * Add quotation marks at the beginning and end of the string.
+     *
      * @param str Input string.
      * @return String surrounded with quotation marks.
      */
@@ -61,8 +62,8 @@ public class OdbcTableMeta {
         this.tableType = tableType;
     }
 
-    @Override
-    public boolean equals(Object o)
+    /** {@inheritDoc} */
+    @Override public boolean equals(Object o)
     {
         if (!(o instanceof OdbcTableMeta))
             return false;
@@ -77,6 +78,7 @@ public class OdbcTableMeta {
 
     /**
      * Write in a binary format.
+     *
      * @param writer Binary writer.
      * @throws IOException
      */

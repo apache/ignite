@@ -21,10 +21,10 @@ package org.apache.ignite.internal.processors.odbc;
  */
 public class OdbcQueryFetchRequest extends OdbcRequest {
     /** Query ID. */
-    private long queryId;
+    private final long queryId;
 
     /** Page size - maximum number of rows to return. */
-    private Integer pageSize;
+    private final int pageSize;
 
     /**
      * @param queryId Query ID.
@@ -32,14 +32,8 @@ public class OdbcQueryFetchRequest extends OdbcRequest {
      */
     public OdbcQueryFetchRequest(long queryId, int pageSize) {
         super(FETCH_SQL_QUERY);
-        this.queryId = queryId;
-        this.pageSize = pageSize;
-    }
 
-    /**
-     * @param pageSize Page size.
-     */
-    public void pageSize(Integer pageSize) {
+        this.queryId = queryId;
         this.pageSize = pageSize;
     }
 
@@ -48,13 +42,6 @@ public class OdbcQueryFetchRequest extends OdbcRequest {
      */
     public int pageSize() {
         return pageSize;
-    }
-
-    /**
-     * @param queryId Query ID.
-     */
-    public void cacheName(long queryId) {
-        this.queryId = queryId;
     }
 
     /**

@@ -21,16 +21,16 @@ package org.apache.ignite.internal.processors.odbc;
  */
 public class OdbcQueryGetTablesMetaRequest extends OdbcRequest {
     /** Catalog search pattern. */
-    private String catalog;
+    private final String catalog;
 
     /** Schema search pattern. */
-    private String schema;
+    private final String schema;
 
     /** Table search pattern. */
-    private String table;
+    private final String table;
 
     /** Table type search pattern. */
-    private String tableType;
+    private final String tableType;
 
     /**
      * @param catalog Catalog search pattern.
@@ -48,24 +48,10 @@ public class OdbcQueryGetTablesMetaRequest extends OdbcRequest {
     }
 
     /**
-     * @param catalog Catalog search pattern.
-     */
-    public void catalog(String catalog) {
-        this.catalog = catalog;
-    }
-
-    /**
      * @return catalog search pattern.
      */
     public String catalog() {
         return catalog;
-    }
-
-    /**
-     * @param schema Schema search pattern.
-     */
-    public void schema(String schema) {
-        this.schema = schema;
     }
 
     /**
@@ -76,24 +62,10 @@ public class OdbcQueryGetTablesMetaRequest extends OdbcRequest {
     }
 
     /**
-     * @param table Schema search pattern.
-     */
-    public void table(String table) {
-        this.table = table;
-    }
-
-    /**
      * @return Table search pattern.
      */
     public String table() {
         return table;
-    }
-
-    /**
-     * @param tableType Table type search pattern.
-     */
-    public void tableType(String tableType) {
-        this.tableType = tableType;
     }
 
     /**

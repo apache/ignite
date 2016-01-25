@@ -21,20 +21,14 @@ package org.apache.ignite.internal.processors.odbc;
  */
 public class OdbcQueryCloseRequest extends OdbcRequest {
     /** Query ID. */
-    private long queryId;
+    private final long queryId;
 
     /**
      * @param queryId Query ID.
      */
     public OdbcQueryCloseRequest(long queryId) {
         super(CLOSE_SQL_QUERY);
-        this.queryId = queryId;
-    }
 
-    /**
-     * @param queryId Query ID.
-     */
-    public void cacheName(long queryId) {
         this.queryId = queryId;
     }
 

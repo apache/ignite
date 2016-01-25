@@ -16,8 +16,6 @@
  */
 package org.apache.ignite.internal.processors.odbc;
 
-import org.apache.ignite.internal.processors.odbc.OdbcColumnMeta;
-
 import java.util.Collection;
 
 /**
@@ -25,16 +23,16 @@ import java.util.Collection;
  */
 public class OdbcQueryExecuteResult {
     /** Query ID. */
-    private long queryId;
+    private final long queryId;
 
     /** Fields metadata. */
-    private Collection<OdbcColumnMeta> columnsMeta;
+    private final Collection<OdbcColumnMeta> columnsMeta;
 
     /**
      * @param queryId Query ID.
      * @param columnsMeta Columns metadata.
      */
-    public OdbcQueryExecuteResult(long queryId, Collection<OdbcColumnMeta> columnsMeta){
+    public OdbcQueryExecuteResult(long queryId, Collection<OdbcColumnMeta> columnsMeta) {
         this.queryId = queryId;
         this.columnsMeta = columnsMeta;
     }

@@ -24,15 +24,19 @@ import org.apache.ignite.internal.IgniteInternalFuture;
  */
 public interface OdbcProtocolHandler {
     /**
+     * Handle request.
+     *
      * @param req Request.
      * @return Response.
      * @throws IgniteCheckedException In case of error.
      */
-    public OdbcResponse handle(OdbcRequest req) throws IgniteCheckedException;
+    OdbcResponse handle(OdbcRequest req) throws IgniteCheckedException;
 
     /**
+     * Handle request asynchronously.
+     *
      * @param req Request.
      * @return Future.
      */
-    public IgniteInternalFuture<OdbcResponse> handleAsync(OdbcRequest req);
+    IgniteInternalFuture<OdbcResponse> handleAsync(OdbcRequest req);
 }

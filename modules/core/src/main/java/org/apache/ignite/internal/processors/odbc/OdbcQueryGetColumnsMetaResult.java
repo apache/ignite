@@ -16,8 +16,6 @@
  */
 package org.apache.ignite.internal.processors.odbc;
 
-import org.apache.ignite.internal.processors.odbc.OdbcColumnMeta;
-
 import java.util.Collection;
 
 /**
@@ -25,7 +23,7 @@ import java.util.Collection;
  */
 public class OdbcQueryGetColumnsMetaResult {
     /** Query result rows. */
-    private Collection<OdbcColumnMeta> meta;
+    private final Collection<OdbcColumnMeta> meta;
 
     /**
      * @param meta Column metadata.
@@ -37,7 +35,7 @@ public class OdbcQueryGetColumnsMetaResult {
     /**
      * @return Query result rows.
      */
-    public Collection<OdbcColumnMeta> getMeta() {
+    public Collection<OdbcColumnMeta> meta() {
         return meta;
     }
 }

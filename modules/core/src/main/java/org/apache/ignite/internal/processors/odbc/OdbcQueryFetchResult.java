@@ -23,53 +23,43 @@ import java.util.Collection;
  */
 public class OdbcQueryFetchResult {
     /** Query ID. */
-    private long queryId;
+    private final long queryId;
 
     /** Query result rows. */
-    private Collection<?> items = null;
+    private final Collection<?> items;
 
     /** Flag indicating the query has no unfetched results. */
-    private boolean last = false;
+    private final boolean last;
 
     /**
      * @param queryId Query ID.
+     * @param items Query result rows.
+     * @param last Flag indicating the query has no unfetched results.
      */
-    public OdbcQueryFetchResult(long queryId){
+    public OdbcQueryFetchResult(long queryId, Collection<?> items, boolean last){
         this.queryId = queryId;
+        this.items = items;
+        this.last = last;
     }
 
     /**
      * @return Query ID.
      */
-    public long getQueryId() {
+    public long queryId() {
         return queryId;
-    }
-
-    /**
-     * @param items Query result rows.
-     */
-    public void setItems(Collection<?> items) {
-        this.items = items;
     }
 
     /**
      * @return Query result rows.
      */
-    public Collection<?> getItems() {
+    public Collection<?> items() {
         return items;
-    }
-
-    /**
-     * @param last Flag indicating the query has no unfetched results.
-     */
-    public void setLast(boolean last) {
-        this.last = last;
     }
 
     /**
      * @return Flag indicating the query has no unfetched results.
      */
-    public boolean getLast() {
+    public boolean last() {
         return last;
     }
 }

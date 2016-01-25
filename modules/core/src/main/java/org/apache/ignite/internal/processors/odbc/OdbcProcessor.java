@@ -40,10 +40,12 @@ public class OdbcProcessor extends GridProcessorAdapter {
 
     /** Protocol handler. */
     private final OdbcProtocolHandler protoHnd = new OdbcProtocolHandler() {
+        /** {@inheritDoc} */
         @Override public OdbcResponse handle(OdbcRequest req) throws IgniteCheckedException {
             return handle0(req);
         }
 
+        /** {@inheritDoc} */
         @Override public IgniteInternalFuture<OdbcResponse> handleAsync(OdbcRequest req) {
             return new GridFinishedFuture<>(
                     new IgniteCheckedException("Failed to handle request (asynchronous handling is not implemented)."));
@@ -51,6 +53,8 @@ public class OdbcProcessor extends GridProcessorAdapter {
     };
 
     /**
+     * Handle request.
+     *
      * @param req Request.
      * @return Response.
      */
@@ -71,8 +75,10 @@ public class OdbcProcessor extends GridProcessorAdapter {
     }
 
     /**
+     * Handle request.
+     *
      * @param req Request.
-     * @return Future.
+     * @return Response.
      */
     private OdbcResponse handleRequest(final OdbcRequest req) throws IgniteCheckedException {
         if (log.isDebugEnabled())
@@ -149,6 +155,8 @@ public class OdbcProcessor extends GridProcessorAdapter {
     }
 
     /**
+     * Check if the ODBC is enabled.
+     *
      * @return Whether or not ODBC is enabled.
      */
     public boolean isOdbcEnabled() {

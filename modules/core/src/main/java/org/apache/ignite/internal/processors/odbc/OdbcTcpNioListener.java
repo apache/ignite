@@ -18,7 +18,6 @@ package org.apache.ignite.internal.processors.odbc;
 
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.util.nio.GridNioFuture;
 import org.apache.ignite.internal.util.nio.GridNioServerListenerAdapter;
 import org.apache.ignite.internal.util.nio.GridNioSession;
@@ -29,32 +28,28 @@ import org.jetbrains.annotations.Nullable;
  * Listener for ODBC driver connection.
  */
 public class OdbcTcpNioListener extends GridNioServerListenerAdapter<OdbcRequest> {
-    /** Server. */
-    private OdbcTcpServer srv;
-
     /** Logger. */
-    protected final IgniteLogger log;
-
-    /** Context. */
-    protected final GridKernalContext ctx;
+    private final IgniteLogger log;
 
     /** Protocol handler. */
-    private OdbcProtocolHandler hnd;
+    private final OdbcProtocolHandler hnd;
 
-    OdbcTcpNioListener(IgniteLogger log, OdbcTcpServer srv, GridKernalContext ctx, OdbcProtocolHandler hnd) {
+    /**
+     * @param log Logger.
+     * @param hnd Protocol handler.
+     */
+    OdbcTcpNioListener(IgniteLogger log, OdbcProtocolHandler hnd) {
         this.log = log;
-        this.srv = srv;
-        this.ctx = ctx;
         this.hnd = hnd;
     }
 
-    @Override
-    public void onConnected(GridNioSession ses) {
+    /** {@inheritDoc} */
+    @Override public void onConnected(GridNioSession ses) {
         System.out.println("Driver connected");
     }
 
-    @Override
-    public void onDisconnected(GridNioSession ses, @Nullable Exception e) {
+    /** {@inheritDoc} */
+    @Override public void onDisconnected(GridNioSession ses, @Nullable Exception e) {
         System.out.println("Driver disconnected");
 
         if (e != null) {
@@ -65,8 +60,8 @@ public class OdbcTcpNioListener extends GridNioServerListenerAdapter<OdbcRequest
         }
     }
 
-    @Override
-    public void onMessage(GridNioSession ses, OdbcRequest msg) {
+    /** {@inheritDoc} */
+    @Override public void onMessage(GridNioSession ses, OdbcRequest msg) {
         assert msg != null;
 
         System.out.println("Query: " + msg.command());
@@ -83,7 +78,7 @@ public class OdbcTcpNioListener extends GridNioServerListenerAdapter<OdbcRequest
                     "Failed to process client request: " + e.getMessage());
         }
 
-        System.out.println("Resulting success status: " + res.getSuccessStatus());
+        System.out.println("Resulting success status: " + res.status());
 
         GridNioFuture<?> sf = ses.send(res);
 
@@ -91,7 +86,8 @@ public class OdbcTcpNioListener extends GridNioServerListenerAdapter<OdbcRequest
         if (sf.isDone()) {
             try {
                 sf.get();
-            } catch (Exception e) {
+            }
+            catch (Exception e) {
                 U.error(log, "Failed to process client request [ses=" + ses + ", msg=" + msg + ']', e);
             }
         }
