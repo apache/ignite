@@ -39,6 +39,8 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         public CacheLinqTest() : base("config\\cache-query.xml")
         {
             // No-op.
+
+            // TODO: Start cache with in-code config, test attributes
         }
 
         public override void TestSetUp()
