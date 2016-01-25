@@ -49,7 +49,7 @@ import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.events.DiscoveryCustomEvent;
 import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
-import org.apache.ignite.internal.processors.cache.distributed.ResetLostPartitionMessage;
+import org.apache.ignite.internal.processors.cache.distributed.ResetLostPartsMessage;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridClientPartitionTopology;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionTopology;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTopologyFuture;
@@ -241,15 +241,15 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                         }
                     }
 
-                    if (customEvt.customMessage() instanceof ResetLostPartitionMessage) {
-                        final ResetLostPartitionMessage resetMsg = (ResetLostPartitionMessage)customEvt.customMessage();
+                    if (customEvt.customMessage() instanceof ResetLostPartsMessage) {
+                        final ResetLostPartsMessage resetMsg = (ResetLostPartsMessage)customEvt.customMessage();
 
                         exchId = exchangeId(n.id(), affinityTopologyVersion(e), e.type());
                         exchFut = exchangeFuture(exchId, e, null, resetMsg.getCacheIds());
 
                         exchFut.listen(new CI1<IgniteInternalFuture<?>>() {
                             @Override public void apply(IgniteInternalFuture<?> fut) {
-                                cctx.cache().completeResetPartitionsFuture(resetMsg);
+                                cctx.cache().completeResetPartsFuture(resetMsg);
                             }
                         });
                     }
@@ -855,7 +855,8 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
      * @return Exchange future.
      */
     GridDhtPartitionsExchangeFuture exchangeFuture(GridDhtPartitionExchangeId exchId,
-        @Nullable DiscoveryEvent discoEvt, @Nullable Collection<DynamicCacheChangeRequest> reqs, @Nullable  int[] cacheIds) {
+        @Nullable DiscoveryEvent discoEvt, @Nullable Collection<DynamicCacheChangeRequest> reqs,
+        @Nullable  int[] cacheIds) {
         GridDhtPartitionsExchangeFuture fut;
 
         GridDhtPartitionsExchangeFuture old = exchFuts.addx(

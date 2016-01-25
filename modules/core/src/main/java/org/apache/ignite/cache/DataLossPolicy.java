@@ -17,11 +17,17 @@
 
 package org.apache.ignite.cache;
 
+import java.util.Set;
+import org.apache.ignite.Ignite;
 import org.apache.ignite.events.EventType;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * Cache policies for a lost partition.
+ * Cache policies for a lost partition. Those policies are used for a non-local cache when cache loose some of it's
+ * partitions due to node failure. Lost partition - is a partition without an owning node. Such partitions are
+ * detected during topology update, and corresponding {@link EventType#EVT_CACHE_REBALANCE_PART_DATA_LOST} is thrown.
+ * Data loss policy is set per cache in {@link org.apache.ignite.configuration.CacheConfiguration}
+ * and cannot be changed after a cache startup.
  */
 public enum DataLossPolicy {
     /**
@@ -31,8 +37,10 @@ public enum DataLossPolicy {
     NOOP,
 
     /**
-     * Specifies failing operation policy for a lost partition. In this mode all requests for keys from a lost partition
-     * fail with an exception until partition state is reset.
+     * Specifies failing operation policy for a lost partition. In this mode all lost partitions are set to a lost state
+     * and all requests for keys from a lost partition are failed with an exception until partition state is reset.
+     * Partition state could be reset by invocation of {@link Ignite#resetLostParts(Set)}.
+     *
      */
     FAIL_OPS;
 

@@ -288,7 +288,7 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     private CacheAtomicWriteOrderMode atomicWriteOrderMode;
 
     /** Cache data loss policy. */
-    private DataLossPolicy dataLossPolicy = DataLossPolicy.NOOP;
+    private DataLossPolicy dataLossPlc = DataLossPolicy.NOOP;
 
     /** Number of backups for cache. */
     private int backups = DFLT_BACKUPS;
@@ -431,7 +431,7 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
         affMapper = cc.getAffinityMapper();
         atomicityMode = cc.getAtomicityMode();
         atomicWriteOrderMode = cc.getAtomicWriteOrderMode();
-        dataLossPolicy = cc.getDataLossPolicy();
+        dataLossPlc = cc.getDataLossPolicy();
         backups = cc.getBackups();
         cacheLoaderFactory = cc.getCacheLoaderFactory();
         cacheMode = cc.getCacheMode();
@@ -1056,7 +1056,7 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
      * @return Cache policy for a lost partition.
      */
     public DataLossPolicy getDataLossPolicy() {
-        return dataLossPolicy;
+        return dataLossPlc;
     }
 
     /**
@@ -1069,7 +1069,7 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
      * @return {@code this} for chaining.
      */
     public CacheConfiguration<K, V> setDataLossPolicy(DataLossPolicy dataLossPolicy) {
-        this.dataLossPolicy = dataLossPolicy;
+        this.dataLossPlc = dataLossPolicy;
 
         return this;
     }

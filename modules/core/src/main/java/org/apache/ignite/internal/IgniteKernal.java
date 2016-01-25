@@ -41,7 +41,6 @@ import java.util.ListIterator;
 import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
-import java.util.Timer;
 import java.util.UUID;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ThreadPoolExecutor;
@@ -2592,7 +2591,9 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteFuture<?> resetLostPartitions(Set<String> cacheNames) {
+    @Override public IgniteFuture<?> resetLostParts(Set<String> cacheNames) {
+        A.notEmpty(cacheNames, "cacheNames");
+
         return new IgniteFutureImpl<>(ctx.cache().resetLostPartitions(cacheNames));
     }
 

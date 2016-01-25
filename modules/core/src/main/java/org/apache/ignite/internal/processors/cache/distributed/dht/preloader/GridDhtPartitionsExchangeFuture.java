@@ -195,7 +195,7 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
     private volatile Map<Integer, Boolean> cacheValidRes;
 
     /** Partitions' validation results. True if lost. cacheId -> (partitionId -> isLost). */
-    private volatile Map<Integer, Map<Integer, Boolean>> cachesPartitionsLoss = new HashMap<>();
+    private Map<Integer, Map<Integer, Boolean>> cachesPartsLoss = new HashMap<>();
 
     /** Skip preload flag. */
     private boolean skipPreload;
@@ -550,9 +550,10 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
                     for (int cacheId : resetLostCacheIds) {
                         GridCacheContext cacheCtx = cctx.cacheContext(cacheId);
 
-                        for (GridDhtLocalPartition localPartition : cacheCtx.topology().localPartitions())
+                        for (GridDhtLocalPartition localPartition : cacheCtx.topology().localPartitions()) {
                             if (localPartition.state() == GridDhtPartitionState.LOST)
                                 cacheCtx.topology().own(localPartition);
+                        }
                     }
 
                 if (!F.isEmpty(reqs)) {
@@ -1055,7 +1056,8 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
                     GridDhtPartitionFullMap locMap = cacheCtx.topology().partitionMap(true);
 
                     if (useOldApi)
-                        locMap = new GridDhtPartitionFullMap(locMap.nodeId(), locMap.nodeOrder(), locMap.updateSequence(), locMap);
+                        locMap = new GridDhtPartitionFullMap(locMap.nodeId(), locMap.nodeOrder(),
+                            locMap.updateSequence(), locMap);
 
                     m.addFullPartitionsMap(cacheCtx.cacheId(), locMap);
 
@@ -1121,8 +1123,7 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
     /**
      * Checking each partition for an existing of an owning node.
      */
-    private void processLostPartitions() {
-
+    private void processLostParts() {
         // Collect all owned partitions for caches.
         for (GridCacheContext cacheContext : cctx.cacheContexts()) {
             if (cacheContext.isLocal())
@@ -1131,19 +1132,20 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
             int cacheId = cacheContext.cacheId();
             GridDhtPartitionFullMap partitionFullMap = cacheContext.topology().partitionMap(false);
 
-            if (!cachesPartitionsLoss.containsKey(cacheId))
-                cachesPartitionsLoss.put(cacheId, new HashMap<Integer, Boolean>());
+            if (!cachesPartsLoss.containsKey(cacheId))
+                cachesPartsLoss.put(cacheId, new HashMap<Integer, Boolean>());
 
-            Map<Integer, Boolean> currentCacheLoss = cachesPartitionsLoss.get(cacheId);
+            Map<Integer, Boolean> currentCacheLoss = cachesPartsLoss.get(cacheId);
 
             for (GridDhtPartitionMap2 nodePartitions : partitionFullMap.values()) {
-                for (Map.Entry<Integer, GridDhtPartitionState> partitionState : nodePartitions.entrySet())
+                for (Map.Entry<Integer, GridDhtPartitionState> partitionState : nodePartitions.entrySet()) {
                     if (partitionState.getValue() == GridDhtPartitionState.OWNING)
                         currentCacheLoss.put(partitionState.getKey(), false);
+                }
             }
         }
 
-        for (Map.Entry<Integer, Map<Integer, Boolean>> cachePartitions : cachesPartitionsLoss.entrySet()) {
+        for (Map.Entry<Integer, Map<Integer, Boolean>> cachePartitions : cachesPartsLoss.entrySet()) {
             GridCacheContext cacheContext = cctx.cacheContext(cachePartitions.getKey());
             int amountOfPartitions = cacheContext.affinity().partitions();
 
@@ -1208,7 +1210,7 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
 
         if (oldestNode.get() != null)
             // Check for the lost partition have to be complete under the lock, thus it precedes super.onDone.
-            processLostPartitions();
+            processLostParts();
 
         if (super.onDone(res, err) && !dummy && !forcePreload) {
             if (log.isDebugEnabled())
@@ -1268,16 +1270,19 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
         }
 
         if (!cctx.isLocal() && cctx.config().getDataLossPolicy() == DataLossPolicy.FAIL_OPS) {
-            Map<Integer, Boolean> partitionIsLost = cachesPartitionsLoss.get(cctx.cacheId());
+            Map<Integer, Boolean> partitionIsLost = cachesPartsLoss.get(cctx.cacheId());
 
             if (keys != null) {
-                for (Object k : keys)
+                for (Object k : keys) {
                     if (partitionIsLost.get(cctx.affinity().partition(k)))
                         return new IgniteCheckedException("Failed to perform cache operation " +
                             "(lost partition): " + cctx.name());
+                }
 
                 return null;
             }
+
+            assert key != null;
 
             if (partitionIsLost.get(cctx.affinity().partition(key)))
                 return new IgniteCheckedException("Failed to perform cache operation " +
@@ -1479,8 +1484,8 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
 
                     if (snd == null) {
                         if (log.isDebugEnabled())
-                            log.debug("Sender node left grid, will ignore message from unexpected node [nodeId=" + nodeId +
-                                ", exchId=" + msg.exchangeId() + ']');
+                            log.debug("Sender node left grid, will ignore message from unexpected node [nodeId="
+                                + nodeId + ", exchId=" + msg.exchangeId() + ']');
 
                         return;
                     }

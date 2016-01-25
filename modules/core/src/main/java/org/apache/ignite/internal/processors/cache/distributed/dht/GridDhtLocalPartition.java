@@ -385,7 +385,7 @@ public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition>,
      * @return {@code True} if reserved.
      */
     @Override public boolean reserve() {
-        while (!Thread.currentThread().isInterrupted()) {
+        while (true) {
             int reservations = state.getStamp();
 
             GridDhtPartitionState s = state.getReference();
@@ -396,15 +396,13 @@ public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition>,
             if (state.compareAndSet(s, s, reservations, reservations + 1))
                 return true;
         }
-
-        return false;
     }
 
     /**
      * Releases previously reserved partition.
      */
     @Override public void release() {
-        while (!Thread.currentThread().isInterrupted()) {
+        while (true) {
             int reservations = state.getStamp();
 
             if (reservations == 0)
@@ -427,7 +425,7 @@ public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition>,
      * @return {@code True} if transitioned to OWNING state.
      */
     boolean own() {
-        while (!Thread.currentThread().isInterrupted()) {
+        while (true) {
             int reservations = state.getStamp();
 
             GridDhtPartitionState s = state.getReference();
@@ -450,15 +448,13 @@ public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition>,
                 return true;
             }
         }
-
-        return false;
     }
 
     /**
      * @return {@code true} if switched to {@link GridDhtPartitionState#LOST} state.
      */
     boolean loose() {
-        while (!Thread.currentThread().isInterrupted()) {
+        while (true) {
             int reservations = state.getStamp();
 
             GridDhtPartitionState s = state.getReference();
@@ -481,8 +477,6 @@ public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition>,
                 return true;
             }
         }
-
-        return false;
     }
 
     /**
@@ -490,7 +484,7 @@ public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition>,
      * @return Future to signal that this node is no longer an owner or backup.
      */
     IgniteInternalFuture<?> rent(boolean updateSeq) {
-        while (!Thread.currentThread().isInterrupted()) {
+        while (true) {
             int reservations = state.getStamp();
 
             GridDhtPartitionState s = state.getReference();
@@ -519,9 +513,12 @@ public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition>,
      * @param updateSeq Update sequence.
      */
     void tryEvictAsync(boolean updateSeq) {
+        GridDhtPartitionState currentState = state.getReference();
+
         if (map.isEmpty() && !GridQueryProcessor.isEnabled(cctx.config()) &&
-            state.getReference() == RENTING && state.getStamp() == 0 &&
-            tryEvictState(state)) {
+            state.getStamp() == 0 &&
+            (currentState == RENTING || currentState == LOST) &&
+            tryEvictState(state, currentState)) {
             if (log.isDebugEnabled())
                 log.debug("Evicted partition: " + this);
 
@@ -558,14 +555,19 @@ public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition>,
      *
      */
     public void tryEvict() {
-        if (state.getReference() != RENTING || state.getStamp() != 0 || groupReserved())
+        if (state.getStamp() != 0 || groupReserved())
+            return;
+
+        GridDhtPartitionState currentState = state.getReference();
+
+        if (currentState != RENTING && currentState != LOST)
             return;
 
         // Attempt to evict partition entries from cache.
         clearAll();
 
         // We should also evict partition that has been lost.
-        if (map.isEmpty() && tryEvictState(state)) {
+        if (map.isEmpty() && tryEvictState(state, currentState)) {
             if (log.isDebugEnabled())
                 log.debug("Evicted partition: " + this);
 
@@ -836,10 +838,12 @@ public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition>,
      * Holds logic for changing state to evicted.
      *
      * @param state to be evicted.
+     * @param from current state to be evicted from.
      * @return true if state has been evicted successfully. False otherwise.
      */
-    private static boolean tryEvictState(AtomicStampedReference<GridDhtPartitionState> state) {
-        return (state.compareAndSet(RENTING, EVICTED, 0, 0) || state.compareAndSet(LOST, EVICTED, 0, 0));
+    private static boolean tryEvictState(AtomicStampedReference<GridDhtPartitionState> state,
+                                         GridDhtPartitionState from) {
+        return (state.compareAndSet(from, EVICTED, 0, 0));
     }
 
     /** {@inheritDoc} */

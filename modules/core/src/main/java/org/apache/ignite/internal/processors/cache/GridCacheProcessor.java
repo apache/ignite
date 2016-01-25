@@ -74,7 +74,7 @@ import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.datastructures.CacheDataStructuresManager;
-import org.apache.ignite.internal.processors.cache.distributed.ResetLostPartitionMessage;
+import org.apache.ignite.internal.processors.cache.distributed.ResetLostPartsMessage;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCache;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCacheAdapter;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionState;
@@ -1774,10 +1774,10 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             fut.onDone();
     }
 
-    public void completeResetPartitionsFuture(ResetLostPartitionMessage msg) {
+    public void completeResetPartsFuture(ResetLostPartsMessage msg) {
         GridFutureAdapter fut = pendingResets.get(msg.id());
 
-        if (fut != null )
+        if (fut != null)
             fut.onDone();
     }
 
@@ -2318,11 +2318,12 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     }
 
     /**
+     * This method creates and sends request for resetting lost partitions.
+     *
      * @param cacheNames Caches' names for resetting.
      * @return Future that will be completed when caches are reset.
      */
     public IgniteInternalFuture<?> resetLostPartitions(Set<String> cacheNames) {
-
         checkEmptyTransactions();
 
         Exception err = null;
@@ -2332,16 +2333,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         for (String cacheName : cacheNames)
             cacheIds[i++] = CU.cacheId(cacheName);
 
-        final ResetLostPartitionMessage resetMsg = new ResetLostPartitionMessage(cacheIds);
-        GridFutureAdapter<?> res = new GridFutureAdapter() {
-            /** {@inheritDoc} */
-            @Override public boolean onDone(@Nullable Object res, @Nullable Throwable err) {
-                // Make sure to remove future before completion.
-                pendingResets.remove(resetMsg.id(), this);
-
-                return super.onDone(res, err);
-            }
-        };
+        final ResetLostPartsMessage resetMsg = new ResetLostPartsMessage(cacheIds);
+        GridFutureAdapter<?> res = new ResetLostPartsFuture(resetMsg);
 
         try {
             ctx.discovery().sendCustomEvent(resetMsg);
@@ -2490,8 +2483,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     public boolean onCustomEvent(DiscoveryCustomMessage msg,
         AffinityTopologyVersion topVer) {
 
-        if (msg instanceof ResetLostPartitionMessage)
-            return onPartitionResetRequested((ResetLostPartitionMessage)msg, topVer);
+        if (msg instanceof ResetLostPartsMessage)
+            return onPartitionResetRequested((ResetLostPartsMessage)msg, topVer);
 
         if (msg instanceof DynamicCacheChangeBatch)
             return onCacheChangeRequested((DynamicCacheChangeBatch)msg, topVer);
@@ -2504,7 +2497,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      * @param topVer Current topology version.
      * @return {@code True} if minor topology version should be increased.
      */
-    private boolean onPartitionResetRequested(ResetLostPartitionMessage msg, AffinityTopologyVersion topVer) {
+    private boolean onPartitionResetRequested(ResetLostPartsMessage msg, AffinityTopologyVersion topVer) {
         if (F.isEmpty(msg.getCacheIds()))
             return false;
 
@@ -2515,15 +2508,15 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                 continue;
 
             for (GridDhtPartitionMap2 nodePartitions : cacheContext.topology().partitionMap(false).values()) {
-                for (Map.Entry<Integer, GridDhtPartitionState> partitionState : nodePartitions.entrySet())
+                for (Map.Entry<Integer, GridDhtPartitionState> partitionState : nodePartitions.entrySet()) {
                     if (partitionState.getValue() == GridDhtPartitionState.LOST)
                         return true;
+                }
             }
         }
 
         return false;
     }
-
 
     /**
      * @param batch Change request batch.
@@ -3582,6 +3575,37 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         /** {@inheritDoc} */
         @Override public String toString() {
             return S.toString(DynamicCacheStartFuture.class, this);
+        }
+    }
+
+    /**
+     * This future allows to be notified on done of reset partition request.
+     */
+    @SuppressWarnings("ExternalizableWithoutPublicNoArgConstructor")
+    private class ResetLostPartsFuture extends GridFutureAdapter<Object> {
+
+        /** Reset message. */
+        @GridToStringInclude
+        private final ResetLostPartsMessage message;
+
+        /**
+         * @param message Reset lost partition message.
+         */
+        private ResetLostPartsFuture(ResetLostPartsMessage message) {
+            this.message = message;
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean onDone(@Nullable Object res, @Nullable Throwable err) {
+            // Make sure to remove future before completion.
+            pendingResets.remove(message.id(), this);
+
+            return super.onDone(res, err);
+        }
+
+        /** {@inheritDoc} */
+        @Override public String toString() {
+            return S.toString(ResetLostPartsFuture.class, this);
         }
     }
 

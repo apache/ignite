@@ -18,13 +18,14 @@
 package org.apache.ignite.internal.processors.cache.distributed;
 
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
+import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.Nullable;
 
 /**
  * Message for resetting lost state of a cache partitions.
  */
-public class ResetLostPartitionMessage implements DiscoveryCustomMessage {
+public class ResetLostPartsMessage implements DiscoveryCustomMessage {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -34,7 +35,12 @@ public class ResetLostPartitionMessage implements DiscoveryCustomMessage {
     /** Caches' ids for resetting. */
     private final int[] cacheIds;
 
-    public ResetLostPartitionMessage(int[] cacheIds) {
+    /**
+     * Creates message with specified array of cache ids.
+     *
+     * @param cacheIds array of cache ids. Should not be null or empty.
+     */
+    public ResetLostPartsMessage(int[] cacheIds) {
         this.cacheIds = cacheIds;
     }
 
@@ -58,5 +64,10 @@ public class ResetLostPartitionMessage implements DiscoveryCustomMessage {
     /** {@inheritDoc} */
     @Override public boolean isMutable() {
         return false;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(ResetLostPartsMessage.class, this);
     }
 }

@@ -294,10 +294,10 @@ public class IgniteSpringBean implements Ignite, DisposableBean, InitializingBea
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteFuture<?> resetLostPartitions(Set<String> cacheNames) {
+    @Override public IgniteFuture<?> resetLostParts(Set<String> cacheNames) {
         assert g != null;
 
-        return g.resetLostPartitions(cacheNames);
+        return g.resetLostParts(cacheNames);
     }
 
     /** {@inheritDoc} */

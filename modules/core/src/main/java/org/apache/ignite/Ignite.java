@@ -323,10 +323,11 @@ public interface Ignite extends AutoCloseable {
      * Resets state for the lost partitions. New affinity nodes will own partitions with lost data.
      *
      * @param cacheNames Set of the cache names for the lost partition resetting. If some cache hasn't lost any
-     *                   partition but included in this list, then this cache will be skipped.
+     *                   partition but included in this list, then this cache will be skipped. Set shouldn't be null
+     *                   or empty.
      * @return Future that will be completed when resetting is finished.
      */
-    public IgniteFuture<?> resetLostPartitions(Set<String> cacheNames);
+    public IgniteFuture<?> resetLostParts(Set<String> cacheNames);
 
     /**
      * Stops dynamically started cache.

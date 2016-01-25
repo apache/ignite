@@ -41,10 +41,10 @@ public class GridDhtPartitionsFullMessage extends GridDhtPartitionsAbstractMessa
     /** */
     private static final long serialVersionUID = 0L;
 
-    /** cacheId -> GridDhtPartitionFullMap */
+    /** */
     @GridToStringInclude
     @GridDirectTransient
-    private Map<Integer, GridDhtPartitionFullMap> parts;
+    private Map<Integer, GridDhtPartitionFullMap> cacheIdsToParts;
 
     /** */
     private byte[] partsBytes;
@@ -86,7 +86,7 @@ public class GridDhtPartitionsFullMessage extends GridDhtPartitionsAbstractMessa
      * @return Local partitions.
      */
     public Map<Integer, GridDhtPartitionFullMap> partitions() {
-        return parts;
+        return cacheIdsToParts;
     }
 
     /**
@@ -94,11 +94,11 @@ public class GridDhtPartitionsFullMessage extends GridDhtPartitionsAbstractMessa
      * @param fullMap Full partitions map.
      */
     public void addFullPartitionsMap(int cacheId, GridDhtPartitionFullMap fullMap) {
-        if (parts == null)
-            parts = new HashMap<>();
+        if (cacheIdsToParts == null)
+            cacheIdsToParts = new HashMap<>();
 
-        if (!parts.containsKey(cacheId))
-            parts.put(cacheId, fullMap);
+        if (!cacheIdsToParts.containsKey(cacheId))
+            cacheIdsToParts.put(cacheId, fullMap);
     }
 
     /**
@@ -131,8 +131,8 @@ public class GridDhtPartitionsFullMessage extends GridDhtPartitionsAbstractMessa
     @Override public void prepareMarshal(GridCacheSharedContext ctx) throws IgniteCheckedException {
         super.prepareMarshal(ctx);
 
-        if (parts != null && partsBytes == null)
-            partsBytes = ctx.marshaller().marshal(parts);
+        if (cacheIdsToParts != null && partsBytes == null)
+            partsBytes = ctx.marshaller().marshal(cacheIdsToParts);
 
         if (partCntrs != null && partCntrsBytes == null)
             partCntrsBytes = ctx.marshaller().marshal(partCntrs);
@@ -156,11 +156,11 @@ public class GridDhtPartitionsFullMessage extends GridDhtPartitionsAbstractMessa
     @Override public void finishUnmarshal(GridCacheSharedContext ctx, ClassLoader ldr) throws IgniteCheckedException {
         super.finishUnmarshal(ctx, ldr);
 
-        if (partsBytes != null && parts == null)
-            parts = ctx.marshaller().unmarshal(partsBytes, ldr);
+        if (partsBytes != null && cacheIdsToParts == null)
+            cacheIdsToParts = ctx.marshaller().unmarshal(partsBytes, ldr);
 
-        if (parts == null)
-            parts = new HashMap<>();
+        if (cacheIdsToParts == null)
+            cacheIdsToParts = new HashMap<>();
 
         if (partCntrsBytes != null && partCntrs == null)
             partCntrs = ctx.marshaller().unmarshal(partCntrsBytes, ldr);
@@ -259,7 +259,7 @@ public class GridDhtPartitionsFullMessage extends GridDhtPartitionsAbstractMessa
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(GridDhtPartitionsFullMessage.class, this, "partCnt", parts != null ? parts.size() : 0,
-            "super", super.toString());
+        return S.toString(GridDhtPartitionsFullMessage.class, this, "partCnt",
+            cacheIdsToParts != null ? cacheIdsToParts.size() : 0, "super", super.toString());
     }
 }
