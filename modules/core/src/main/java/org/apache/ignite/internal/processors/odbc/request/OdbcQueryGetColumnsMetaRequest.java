@@ -19,7 +19,7 @@ package org.apache.ignite.internal.processors.odbc.request;
 /**
  * ODBC query get columns meta request.
  */
-public class QueryGetColumnsMetaRequest extends GridOdbcRequest {
+public class OdbcQueryGetColumnsMetaRequest extends OdbcRequest {
     /** Cache name. */
     private String cacheName;
 
@@ -32,7 +32,7 @@ public class QueryGetColumnsMetaRequest extends GridOdbcRequest {
     /**
      * @param cacheName Cache name.
      */
-    public QueryGetColumnsMetaRequest(String cacheName, String tableName, String columnName) {
+    public OdbcQueryGetColumnsMetaRequest(String cacheName, String tableName, String columnName) {
         super(GET_COLUMNS_META);
 
         this.cacheName = cacheName;

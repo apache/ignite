@@ -23,7 +23,7 @@ import org.jetbrains.annotations.Nullable;
 /**
  * ODBC protocol response.
  */
-public class GridOdbcResponse {
+public class OdbcResponse {
 
     /** Command succeeded. */
     public static final int STATUS_SUCCESS = 0;
@@ -47,7 +47,7 @@ public class GridOdbcResponse {
      *
      * @param obj Response object.
      */
-    public GridOdbcResponse(Object obj) {
+    public OdbcResponse(Object obj) {
         successStatus = STATUS_SUCCESS;
         this.obj = obj;
     }
@@ -58,7 +58,7 @@ public class GridOdbcResponse {
      * @param status Response status.
      * @param err Error, {@code null} if success is {@code true}.
      */
-    public GridOdbcResponse(int status, @Nullable String err) {
+    public OdbcResponse(int status, @Nullable String err) {
         assert status != STATUS_SUCCESS;
 
         successStatus = status;
@@ -102,6 +102,6 @@ public class GridOdbcResponse {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(GridOdbcResponse.class, this);
+        return S.toString(OdbcResponse.class, this);
     }
 }

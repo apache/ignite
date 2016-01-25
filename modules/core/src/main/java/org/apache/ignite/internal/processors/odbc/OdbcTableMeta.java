@@ -23,7 +23,7 @@ import java.io.IOException;
 /**
  * ODBC table-related metadata.
  */
-public class GridOdbcTableMeta {
+public class OdbcTableMeta {
     /** Catalog name. */
     private String catalog;
 
@@ -54,7 +54,7 @@ public class GridOdbcTableMeta {
      * @param table Table name.
      * @param tableType Table type.
      */
-    public GridOdbcTableMeta(String catalog, String schema, String table, String tableType) {
+    public OdbcTableMeta(String catalog, String schema, String table, String tableType) {
         this.catalog = catalog;
         this.schema = AddQuotationMarksIfNeeded(schema);
         this.table = table;
@@ -64,10 +64,10 @@ public class GridOdbcTableMeta {
     @Override
     public boolean equals(Object o)
     {
-        if (!(o instanceof GridOdbcTableMeta))
+        if (!(o instanceof OdbcTableMeta))
             return false;
 
-        GridOdbcTableMeta another = (GridOdbcTableMeta)o;
+        OdbcTableMeta another = (OdbcTableMeta)o;
 
         return catalog.equals(another.catalog) &&
                schema.equals(another.schema) &&

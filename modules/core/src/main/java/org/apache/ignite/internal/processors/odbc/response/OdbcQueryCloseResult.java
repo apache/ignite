@@ -14,48 +14,26 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.ignite.internal.processors.odbc.request;
+package org.apache.ignite.internal.processors.odbc.response;
 
 /**
- * ODBC command request.
+ * Query result.
  */
-public class GridOdbcRequest {
-    /** Execute sql query. */
-    public static final int EXECUTE_SQL_QUERY = 1;
-
-    /** Fetch query results. */
-    public static final int FETCH_SQL_QUERY = 2;
-
-    /** Close query. */
-    public static final int CLOSE_SQL_QUERY = 3;
-
-    /** Get columns meta query. */
-    public static final int GET_COLUMNS_META = 4;
-
-    /** Get columns meta query. */
-    public static final int GET_TABLES_META = 5;
-
-    /** Command. */
-    private int cmd;
+public class OdbcQueryCloseResult {
+    /** Query ID. */
+    private long queryId;
 
     /**
-     * @param cmd Command type.
+     * @param queryId Query ID.
      */
-    public GridOdbcRequest(int cmd) {
-        this.cmd = cmd;
+    public OdbcQueryCloseResult(long queryId){
+        this.queryId = queryId;
     }
 
     /**
-     * @return Command.
+     * @return Query ID.
      */
-    public int command() {
-        return cmd;
-    }
-
-    /**
-     * @param cmd Command.
-     */
-    public void command(int cmd) {
-        this.cmd = cmd;
+    public long getQueryId() {
+        return queryId;
     }
 }

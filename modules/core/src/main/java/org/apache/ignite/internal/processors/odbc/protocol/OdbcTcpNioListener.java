@@ -19,9 +19,9 @@ package org.apache.ignite.internal.processors.odbc.protocol;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.GridKernalContext;
-import org.apache.ignite.internal.processors.odbc.GridOdbcProtocolHandler;
-import org.apache.ignite.internal.processors.odbc.request.GridOdbcRequest;
-import org.apache.ignite.internal.processors.odbc.response.GridOdbcResponse;
+import org.apache.ignite.internal.processors.odbc.OdbcProtocolHandler;
+import org.apache.ignite.internal.processors.odbc.request.OdbcRequest;
+import org.apache.ignite.internal.processors.odbc.response.OdbcResponse;
 import org.apache.ignite.internal.util.nio.GridNioFuture;
 import org.apache.ignite.internal.util.nio.GridNioServerListenerAdapter;
 import org.apache.ignite.internal.util.nio.GridNioSession;
@@ -31,9 +31,9 @@ import org.jetbrains.annotations.Nullable;
 /**
  * Listener for ODBC driver connection.
  */
-public class GridTcpOdbcNioListener extends GridNioServerListenerAdapter<GridOdbcRequest> {
+public class OdbcTcpNioListener extends GridNioServerListenerAdapter<OdbcRequest> {
     /** Server. */
-    private GridTcpOdbcServer srv;
+    private OdbcTcpServer srv;
 
     /** Logger. */
     protected final IgniteLogger log;
@@ -42,9 +42,9 @@ public class GridTcpOdbcNioListener extends GridNioServerListenerAdapter<GridOdb
     protected final GridKernalContext ctx;
 
     /** Protocol handler. */
-    private GridOdbcProtocolHandler hnd;
+    private OdbcProtocolHandler hnd;
 
-    GridTcpOdbcNioListener(IgniteLogger log, GridTcpOdbcServer srv, GridKernalContext ctx, GridOdbcProtocolHandler hnd) {
+    OdbcTcpNioListener(IgniteLogger log, OdbcTcpServer srv, GridKernalContext ctx, OdbcProtocolHandler hnd) {
         this.log = log;
         this.srv = srv;
         this.ctx = ctx;
@@ -69,12 +69,12 @@ public class GridTcpOdbcNioListener extends GridNioServerListenerAdapter<GridOdb
     }
 
     @Override
-    public void onMessage(GridNioSession ses, GridOdbcRequest msg) {
+    public void onMessage(GridNioSession ses, OdbcRequest msg) {
         assert msg != null;
 
         System.out.println("Query: " + msg.command());
 
-        GridOdbcResponse res;
+        OdbcResponse res;
 
         try {
             res = hnd.handle(msg);
@@ -82,7 +82,7 @@ public class GridTcpOdbcNioListener extends GridNioServerListenerAdapter<GridOdb
         catch (IgniteCheckedException e) {
             U.error(log, "Failed to process client request: " + msg, e);
 
-            res = new GridOdbcResponse(GridOdbcResponse.STATUS_FAILED,
+            res = new OdbcResponse(OdbcResponse.STATUS_FAILED,
                     "Failed to process client request: " + e.getMessage());
         }
 

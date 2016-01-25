@@ -22,8 +22,8 @@ import org.apache.ignite.configuration.ConnectorConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.OdbcConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
-import org.apache.ignite.internal.processors.odbc.GridOdbcProtocolHandler;
-import org.apache.ignite.internal.processors.odbc.request.GridOdbcRequest;
+import org.apache.ignite.internal.processors.odbc.OdbcProtocolHandler;
+import org.apache.ignite.internal.processors.odbc.request.OdbcRequest;
 import org.apache.ignite.internal.util.nio.*;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.IgnitePortProtocol;
@@ -35,13 +35,13 @@ import java.nio.ByteOrder;
 /**
  * TCP server that handles communication with ODBC driver.
  */
-public class GridTcpOdbcServer {
+public class OdbcTcpServer {
 
     /** Server. */
-    private GridNioServer<GridOdbcRequest> srv;
+    private GridNioServer<OdbcRequest> srv;
 
     /** NIO server listener. */
-    private GridNioServerListener<GridOdbcRequest> lsnr;
+    private GridNioServerListener<OdbcRequest> lsnr;
 
     /** Logger. */
     protected final IgniteLogger log;
@@ -60,7 +60,7 @@ public class GridTcpOdbcServer {
         return "ODBC server";
     }
 
-    public GridTcpOdbcServer(GridKernalContext ctx) {
+    public OdbcTcpServer(GridKernalContext ctx) {
         assert ctx != null;
         assert ctx.config().getConnectorConfiguration() != null;
 
@@ -70,14 +70,14 @@ public class GridTcpOdbcServer {
     }
 
     @SuppressWarnings("BusyWait")
-    public void start(final GridOdbcProtocolHandler hnd) throws IgniteCheckedException {
+    public void start(final OdbcProtocolHandler hnd) throws IgniteCheckedException {
         OdbcConfiguration cfg = ctx.config().getOdbcConfiguration();
 
         assert cfg != null;
 
-        lsnr = new GridTcpOdbcNioListener(log, this, ctx, hnd);
+        lsnr = new OdbcTcpNioListener(log, this, ctx, hnd);
 
-        GridNioParser parser = new GridOdbcParser(ctx);
+        GridNioParser parser = new OdbcParser(ctx);
 
         try {
             host = resolveOdbcTcpHost(ctx.config());
@@ -147,7 +147,7 @@ public class GridTcpOdbcServer {
      * @return {@code True} if server successfully started, {@code false} if port is used and
      *      server was unable to start.
      */
-    private boolean startTcpServer(InetAddress hostAddr, int port, GridNioServerListener<GridOdbcRequest> lsnr,
+    private boolean startTcpServer(InetAddress hostAddr, int port, GridNioServerListener<OdbcRequest> lsnr,
                                    GridNioParser parser, OdbcConfiguration cfg) {
         try {
             GridNioFilter codec = new GridNioCodecFilter(parser, log, false);
@@ -156,7 +156,7 @@ public class GridTcpOdbcServer {
 
             filters = new GridNioFilter[] { codec };
 
-            srv = GridNioServer.<GridOdbcRequest>builder()
+            srv = GridNioServer.<OdbcRequest>builder()
                     .address(hostAddr)
                     .port(port)
                     .listener(lsnr)

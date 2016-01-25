@@ -28,7 +28,7 @@ import static org.apache.ignite.internal.binary.GridBinaryMarshaller.UNREGISTERE
 /**
  * ODBC column-related metadata.
  */
-public class GridOdbcColumnMeta {
+public class OdbcColumnMeta {
     /** Cache name. */
     private String schemaName;
 
@@ -59,7 +59,7 @@ public class GridOdbcColumnMeta {
      * @param columnName Column name.
      * @param dataType Data type.
      */
-    public GridOdbcColumnMeta(String schemaName, String tableName, String columnName, Class<?> dataType) {
+    public OdbcColumnMeta(String schemaName, String tableName, String columnName, Class<?> dataType) {
         this.schemaName = AddQuotationMarksIfNeeded(schemaName);
         this.tableName = tableName;
         this.columnName = columnName;
@@ -69,7 +69,7 @@ public class GridOdbcColumnMeta {
     /**
      * @param info Field metadata.
      */
-    public GridOdbcColumnMeta(GridQueryFieldMetadata info) {
+    public OdbcColumnMeta(GridQueryFieldMetadata info) {
         this.schemaName = AddQuotationMarksIfNeeded(info.schemaName());
         this.tableName = info.typeName();
         this.columnName = info.fieldName();
@@ -85,10 +85,10 @@ public class GridOdbcColumnMeta {
     @Override
     public boolean equals(Object o)
     {
-        if (!(o instanceof GridOdbcColumnMeta))
+        if (!(o instanceof OdbcColumnMeta))
             return false;
 
-        GridOdbcColumnMeta another = (GridOdbcColumnMeta)o;
+        OdbcColumnMeta another = (OdbcColumnMeta)o;
 
         return schemaName.equals(another.schemaName) &&
                tableName.equals(another.tableName)   &&

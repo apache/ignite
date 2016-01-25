@@ -14,27 +14,42 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.ignite.internal.processors.odbc;
+package org.apache.ignite.internal.processors.odbc.response;
 
-import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.internal.IgniteInternalFuture;
-import org.apache.ignite.internal.processors.odbc.request.GridOdbcRequest;
-import org.apache.ignite.internal.processors.odbc.response.GridOdbcResponse;
+import org.apache.ignite.internal.processors.odbc.OdbcColumnMeta;
+
+import java.util.Collection;
 
 /**
- * ODBC command protocol handler.
+ * Query execute result.
  */
-public interface GridOdbcProtocolHandler {
-    /**
-     * @param req Request.
-     * @return Response.
-     * @throws IgniteCheckedException In case of error.
-     */
-    public GridOdbcResponse handle(GridOdbcRequest req) throws IgniteCheckedException;
+public class OdbcQueryExecuteResult {
+    /** Query ID. */
+    private long queryId;
+
+    /** Fields metadata. */
+    private Collection<OdbcColumnMeta> columnsMeta;
 
     /**
-     * @param req Request.
-     * @return Future.
+     * @param queryId Query ID.
+     * @param columnsMeta Columns metadata.
      */
-    public IgniteInternalFuture<GridOdbcResponse> handleAsync(GridOdbcRequest req);
+    public OdbcQueryExecuteResult(long queryId, Collection<OdbcColumnMeta> columnsMeta){
+        this.queryId = queryId;
+        this.columnsMeta = columnsMeta;
+    }
+
+    /**
+     * @return Query ID.
+     */
+    public long getQueryId() {
+        return queryId;
+    }
+
+    /**
+     * @return Columns metadata.
+     */
+    public Collection<OdbcColumnMeta> getColumnsMetadata() {
+        return columnsMeta;
+    }
 }

@@ -19,7 +19,7 @@ package org.apache.ignite.internal.processors.odbc.request;
 /**
  * ODBC query execute request.
  */
-public class QueryExecuteRequest extends GridOdbcRequest {
+public class OdbcQueryExecuteRequest extends OdbcRequest {
     /** Cache name. */
     private String cacheName;
 
@@ -34,7 +34,7 @@ public class QueryExecuteRequest extends GridOdbcRequest {
      * @param sqlQry SQL query.
      * @param args Arguments list.
      */
-    public QueryExecuteRequest(String cacheName, String sqlQry, Object[] args) {
+    public OdbcQueryExecuteRequest(String cacheName, String sqlQry, Object[] args) {
         super(EXECUTE_SQL_QUERY);
         this.cacheName = cacheName;
         this.sqlQry = sqlQry;

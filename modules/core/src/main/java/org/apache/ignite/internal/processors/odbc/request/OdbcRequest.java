@@ -17,50 +17,45 @@
 package org.apache.ignite.internal.processors.odbc.request;
 
 /**
- * ODBC query fetch request.
+ * ODBC command request.
  */
-public class QueryFetchRequest extends GridOdbcRequest {
-    /** Query ID. */
-    private long queryId;
+public class OdbcRequest {
+    /** Execute sql query. */
+    public static final int EXECUTE_SQL_QUERY = 1;
 
-    /** Page size - maximum number of rows to return. */
-    private Integer pageSize;
+    /** Fetch query results. */
+    public static final int FETCH_SQL_QUERY = 2;
+
+    /** Close query. */
+    public static final int CLOSE_SQL_QUERY = 3;
+
+    /** Get columns meta query. */
+    public static final int GET_COLUMNS_META = 4;
+
+    /** Get columns meta query. */
+    public static final int GET_TABLES_META = 5;
+
+    /** Command. */
+    private int cmd;
 
     /**
-     * @param queryId Query ID.
-     * @param pageSize Page size.
+     * @param cmd Command type.
      */
-    public QueryFetchRequest(long queryId, int pageSize) {
-        super(FETCH_SQL_QUERY);
-        this.queryId = queryId;
-        this.pageSize = pageSize;
+    public OdbcRequest(int cmd) {
+        this.cmd = cmd;
     }
 
     /**
-     * @param pageSize Page size.
+     * @return Command.
      */
-    public void pageSize(Integer pageSize) {
-        this.pageSize = pageSize;
+    public int command() {
+        return cmd;
     }
 
     /**
-     * @return Page size.
+     * @param cmd Command.
      */
-    public int pageSize() {
-        return pageSize;
-    }
-
-    /**
-     * @param queryId Query ID.
-     */
-    public void cacheName(long queryId) {
-        this.queryId = queryId;
-    }
-
-    /**
-     * @return Query ID.
-     */
-    public long queryId() {
-        return queryId;
+    public void command(int cmd) {
+        this.cmd = cmd;
     }
 }

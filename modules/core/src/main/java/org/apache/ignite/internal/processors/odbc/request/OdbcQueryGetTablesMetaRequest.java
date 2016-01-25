@@ -19,7 +19,7 @@ package org.apache.ignite.internal.processors.odbc.request;
 /**
  * ODBC query get tables meta request.
  */
-public class QueryGetTablesMetaRequest extends GridOdbcRequest {
+public class OdbcQueryGetTablesMetaRequest extends OdbcRequest {
     /** Catalog search pattern. */
     private String catalog;
 
@@ -38,7 +38,7 @@ public class QueryGetTablesMetaRequest extends GridOdbcRequest {
      * @param table Table search pattern.
      * @param tableType Table type search pattern.
      */
-    public QueryGetTablesMetaRequest(String catalog, String schema, String table, String tableType) {
+    public OdbcQueryGetTablesMetaRequest(String catalog, String schema, String table, String tableType) {
         super(GET_TABLES_META);
 
         this.catalog = catalog;

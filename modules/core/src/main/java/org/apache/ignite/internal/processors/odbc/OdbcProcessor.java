@@ -21,9 +21,9 @@ import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
-import org.apache.ignite.internal.processors.odbc.protocol.GridTcpOdbcServer;
-import org.apache.ignite.internal.processors.odbc.request.GridOdbcRequest;
-import org.apache.ignite.internal.processors.odbc.response.GridOdbcResponse;
+import org.apache.ignite.internal.processors.odbc.protocol.OdbcTcpServer;
+import org.apache.ignite.internal.processors.odbc.request.OdbcRequest;
+import org.apache.ignite.internal.processors.odbc.response.OdbcResponse;
 import org.apache.ignite.internal.util.GridSpinReadWriteLock;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.marshaller.Marshaller;
@@ -31,23 +31,23 @@ import org.apache.ignite.marshaller.Marshaller;
 /**
  * ODBC processor.
  */
-public class GridOdbcProcessor extends GridProcessorAdapter {
+public class OdbcProcessor extends GridProcessorAdapter {
     /** OBCD TCP Server. */
-    private GridTcpOdbcServer srv;
+    private OdbcTcpServer srv;
 
     /** Busy lock. */
     private final GridSpinReadWriteLock busyLock = new GridSpinReadWriteLock();
 
     /** Command handler. */
-    private GridOdbcCommandHandler handler;
+    private OdbcCommandHandler handler;
 
     /** Protocol handler. */
-    private final GridOdbcProtocolHandler protoHnd = new GridOdbcProtocolHandler() {
-        @Override public GridOdbcResponse handle(GridOdbcRequest req) throws IgniteCheckedException {
+    private final OdbcProtocolHandler protoHnd = new OdbcProtocolHandler() {
+        @Override public OdbcResponse handle(OdbcRequest req) throws IgniteCheckedException {
             return handle0(req);
         }
 
-        @Override public IgniteInternalFuture<GridOdbcResponse> handleAsync(GridOdbcRequest req) {
+        @Override public IgniteInternalFuture<OdbcResponse> handleAsync(OdbcRequest req) {
             return new GridFinishedFuture<>(
                     new IgniteCheckedException("Failed to handle request (asynchronous handling is not implemented)."));
         }
@@ -57,11 +57,11 @@ public class GridOdbcProcessor extends GridProcessorAdapter {
      * @param req Request.
      * @return Response.
      */
-    private GridOdbcResponse handle0(final GridOdbcRequest req) throws IgniteCheckedException {
+    private OdbcResponse handle0(final OdbcRequest req) throws IgniteCheckedException {
         if (!busyLock.tryReadLock())
             throw new IgniteCheckedException("Failed to handle request (received request while stopping grid).");
 
-        GridOdbcResponse rsp = null;
+        OdbcResponse rsp = null;
 
         try {
             rsp = handleRequest(req);
@@ -77,11 +77,11 @@ public class GridOdbcProcessor extends GridProcessorAdapter {
      * @param req Request.
      * @return Future.
      */
-    private GridOdbcResponse handleRequest(final GridOdbcRequest req) throws IgniteCheckedException {
+    private OdbcResponse handleRequest(final OdbcRequest req) throws IgniteCheckedException {
         if (log.isDebugEnabled())
             log.debug("Received request from client: " + req);
 
-        GridOdbcResponse rsp;
+        OdbcResponse rsp;
 
         try {
             rsp = handler == null ? null : handler.handle(req);
@@ -93,7 +93,7 @@ public class GridOdbcProcessor extends GridProcessorAdapter {
             if (log.isDebugEnabled())
                 log.debug("Failed to handle request [req=" + req + ", e=" + e + "]");
 
-            rsp = new GridOdbcResponse(GridOdbcResponse.STATUS_FAILED, e.getMessage());
+            rsp = new OdbcResponse(OdbcResponse.STATUS_FAILED, e.getMessage());
         }
 
         return rsp;
@@ -102,10 +102,10 @@ public class GridOdbcProcessor extends GridProcessorAdapter {
     /**
      * @param ctx Kernal context.
      */
-    public GridOdbcProcessor(GridKernalContext ctx) {
+    public OdbcProcessor(GridKernalContext ctx) {
         super(ctx);
 
-        srv = new GridTcpOdbcServer(ctx);
+        srv = new OdbcTcpServer(ctx);
     }
 
     /** {@inheritDoc} */
@@ -119,7 +119,7 @@ public class GridOdbcProcessor extends GridProcessorAdapter {
                         "(ODBC may only be used with BinaryMarshaller).");
 
             // Register handler.
-            handler = new GridOdbcCommandHandler(ctx);
+            handler = new OdbcCommandHandler(ctx);
 
             srv.start(protoHnd);
         }

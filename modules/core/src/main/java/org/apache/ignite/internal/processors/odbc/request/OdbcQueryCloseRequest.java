@@ -14,42 +14,34 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.ignite.internal.processors.odbc.response;
-
-import org.apache.ignite.internal.processors.odbc.GridOdbcColumnMeta;
-
-import java.util.Collection;
+package org.apache.ignite.internal.processors.odbc.request;
 
 /**
- * Query execute result.
+ * ODBC query close request.
  */
-public class QueryExecuteResult {
+public class OdbcQueryCloseRequest extends OdbcRequest {
     /** Query ID. */
     private long queryId;
 
-    /** Fields metadata. */
-    private Collection<GridOdbcColumnMeta> columnsMeta;
+    /**
+     * @param queryId Query ID.
+     */
+    public OdbcQueryCloseRequest(long queryId) {
+        super(CLOSE_SQL_QUERY);
+        this.queryId = queryId;
+    }
 
     /**
      * @param queryId Query ID.
-     * @param columnsMeta Columns metadata.
      */
-    public QueryExecuteResult(long queryId,Collection<GridOdbcColumnMeta> columnsMeta){
+    public void cacheName(long queryId) {
         this.queryId = queryId;
-        this.columnsMeta = columnsMeta;
     }
 
     /**
      * @return Query ID.
      */
-    public long getQueryId() {
+    public long queryId() {
         return queryId;
-    }
-
-    /**
-     * @return Columns metadata.
-     */
-    public Collection<GridOdbcColumnMeta> getColumnsMetadata() {
-        return columnsMeta;
     }
 }

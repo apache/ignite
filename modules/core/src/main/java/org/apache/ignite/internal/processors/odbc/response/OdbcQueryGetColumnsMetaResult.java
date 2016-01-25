@@ -16,24 +16,28 @@
  */
 package org.apache.ignite.internal.processors.odbc.response;
 
+import org.apache.ignite.internal.processors.odbc.OdbcColumnMeta;
+
+import java.util.Collection;
+
 /**
- * Query result.
+ * Query get columns meta result.
  */
-public class QueryCloseResult {
-    /** Query ID. */
-    private long queryId;
+public class OdbcQueryGetColumnsMetaResult {
+    /** Query result rows. */
+    private Collection<OdbcColumnMeta> meta;
 
     /**
-     * @param queryId Query ID.
+     * @param meta Column metadata.
      */
-    public QueryCloseResult(long queryId){
-        this.queryId = queryId;
+    public OdbcQueryGetColumnsMetaResult(Collection<OdbcColumnMeta> meta) {
+        this.meta = meta;
     }
 
     /**
-     * @return Query ID.
+     * @return Query result rows.
      */
-    public long getQueryId() {
-        return queryId;
+    public Collection<OdbcColumnMeta> getMeta() {
+        return meta;
     }
 }

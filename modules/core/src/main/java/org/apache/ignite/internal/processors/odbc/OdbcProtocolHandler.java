@@ -14,30 +14,27 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.ignite.internal.processors.odbc.response;
+package org.apache.ignite.internal.processors.odbc;
 
-import org.apache.ignite.internal.processors.odbc.GridOdbcTableMeta;
-
-import java.util.Collection;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.processors.odbc.request.OdbcRequest;
+import org.apache.ignite.internal.processors.odbc.response.OdbcResponse;
 
 /**
- * Query get columns meta result.
+ * ODBC command protocol handler.
  */
-public class QueryGetTablesMetaResult {
-    /** Query result rows. */
-    private Collection<GridOdbcTableMeta> meta;
+public interface OdbcProtocolHandler {
+    /**
+     * @param req Request.
+     * @return Response.
+     * @throws IgniteCheckedException In case of error.
+     */
+    public OdbcResponse handle(OdbcRequest req) throws IgniteCheckedException;
 
     /**
-     * @param meta Column metadata.
+     * @param req Request.
+     * @return Future.
      */
-    public QueryGetTablesMetaResult(Collection<GridOdbcTableMeta> meta) {
-        this.meta = meta;
-    }
-
-    /**
-     * @return Query result rows.
-     */
-    public Collection<GridOdbcTableMeta> getMeta() {
-        return meta;
-    }
+    public IgniteInternalFuture<OdbcResponse> handleAsync(OdbcRequest req);
 }
