@@ -30,6 +30,9 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         /** Cache name. */
         private const string CacheName = "cache";
 
+        /** */
+        private const int DataSize = 100;
+
         /// <summary>
         /// Initializes a new instance of the <see cref="CacheLinqTest"/> class.
         /// </summary>
@@ -44,22 +47,43 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
 
             var cache = GetCache();
 
-            for (var i = 0; i < 100; i++)
+            for (var i = 0; i < DataSize; i++)
                 cache.Put(i, new QueryPerson("Person_" + i, i));
         }
 
         [Test]
-        public void Test()
+        public void TestEmptyQuery()
         {
             var cache = GetCache();
 
-            var query = cache.ToQueryable()
-                .Where(x => x.Value.Age < 30 && x.Value.Age > 20)
-                .Where(x => x.Value.Name.Contains("Person"));
+            var results = cache.ToQueryable().ToArray();
 
-            var result = query.ToArray();
+            Assert.AreEqual(DataSize, results.Length);
+        }
 
-            Assert.AreEqual(10, result.Length);
+        [Test]
+        public void TestWhere()
+        {
+            var cache = GetCache();
+
+            Assert.AreEqual(9, cache.ToQueryable()
+                .Where(x => x.Value.Age < 10).ToArray().Length);
+
+            Assert.AreEqual(19, cache.ToQueryable()
+                .Where(x => x.Value.Age > 10 && x.Value.Age < 30).ToArray().Length);
+
+            Assert.AreEqual(20, cache.ToQueryable()
+                .Where(x => x.Value.Age > 10).Where(x => x.Value.Age < 30 || x.Value.Age == 50).ToArray().Length);
+        }
+
+        [Test]
+        public void TestStrings()
+        {
+            var cache = GetCache();
+
+            var result = cache.ToQueryable().Where(x => x.Value.Name.Contains("Person")).ToArray();
+
+            Assert.AreEqual(DataSize, result.Length);
         }
 
         private ICache<int, QueryPerson> GetCache()
