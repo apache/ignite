@@ -84,7 +84,21 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
 
             public CacheConfiguration GetConfiguration()
             {
-                throw new NotImplementedException();
+                return new CacheConfiguration()
+                {
+                    QueryEntities = new[]
+                    {
+                        new QueryEntity
+                        {
+                            ValueType = typeof (QueryPerson),
+                            Fields = new[]
+                            {
+                                new QueryField("Name", typeof (string)),
+                                new QueryField("Age", typeof (int))
+                            }
+                        }
+                    }
+                };
             }
 
             public bool IsEmpty()
