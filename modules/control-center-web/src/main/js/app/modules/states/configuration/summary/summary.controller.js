@@ -189,16 +189,10 @@ export default [
 
             _.forEach(cluster.caches, (cache) => {
                 if (cache.cacheStoreFactory) {
-                    //const store = cache.cacheStoreFactory[cache.cacheStoreFactory.kind];
-                    //
-                    //if (store && store.dialect)
-                    //    $scope.dialects[store.dialect] = true;
+                    const store = cache.cacheStoreFactory[cache.cacheStoreFactory.kind];
 
-                    if (cache.cacheStoreFactory.kind === 'CacheJdbcPojoStoreFactory')
-                        $scope.dialects[cache.cacheStoreFactory.CacheJdbcPojoStoreFactory.dialect] = true;
-
-                    if (cache.cacheStoreFactory.kind === 'CacheJdbcBlobStoreFactory')
-                        $scope.dialects[cache.cacheStoreFactory.CacheJdbcBlobStoreFactory.database] = true;
+                    if (store && store.dialect)
+                        $scope.dialects[store.dialect] = true;
                 }
 
                 _.forEach(cache.domains, (domain) => {

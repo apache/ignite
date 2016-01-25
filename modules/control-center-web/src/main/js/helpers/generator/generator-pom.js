@@ -75,16 +75,11 @@ $generatorPom.pom = function (cluster, igniteVersion, mvnRepositories, res) {
     var dialect = {};
 
     _.forEach(caches, function (cache) {
-        if (cache.cacheStoreFactory && cache.cacheStoreFactory.kind === 'CacheJdbcPojoStoreFactory') {
-            if (cache.cacheStoreFactory.CacheJdbcPojoStoreFactory) {
-                dialect[cache.cacheStoreFactory.CacheJdbcPojoStoreFactory.dialect] = true;
-            }
-        }
+        if (cache.cacheStoreFactory && cache.cacheStoreFactory.kind) {
+            const storeFactory = cache.cacheStoreFactory[cache.cacheStoreFactory.kind];
 
-        if (cache.cacheStoreFactory && cache.cacheStoreFactory.kind === 'CacheJdbcBlobStoreFactory') {
-            if (cache.cacheStoreFactory.CacheJdbcBlobStoreFactory && cache.cacheStoreFactory.CacheJdbcBlobStoreFactory.connectVia === 'DataSource') {
-                dialect[cache.cacheStoreFactory.CacheJdbcBlobStoreFactory.database] = true;
-            }
+            if (storeFactory.dialect && (!storeFactory.connectVia || storeFactory.connectVia === 'DataSource'))
+                dialect[storeFactory.dialect] = true;
         }
     });
 

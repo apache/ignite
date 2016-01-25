@@ -1024,18 +1024,14 @@ $generatorJava.cacheQuery = function (cache, varName, res) {
  * @param res Resulting output with generated code.
  */
 $generatorJava.cacheStoreDataSource = function (storeFactory, res) {
-    var dialect = storeFactory.dialect || (storeFactory.connectVia === 'DataSource' ? storeFactory.database : undefined);
+    var dialect = storeFactory.connectVia ? (storeFactory.connectVia === 'DataSource' ? storeFactory.dialect : undefined) : storeFactory.dialect;
 
     if (dialect) {
         var varName = 'dataSource';
 
         var dataSourceBean = storeFactory.dataSourceBean;
 
-        var dsClsName = $generatorCommon.dataSourceClassName(dialect);
-
-        var varType = res.importClass(dsClsName);
-
-        var beanClassName = $commonUtils.toJavaName(varType, dataSourceBean);
+        var varType = res.importClass($generatorCommon.dataSourceClassName(dialect));
 
         res.line('public static final ' + varType + ' INSTANCE_' + dataSourceBean + ' = create' + dataSourceBean + '();');
 
@@ -1169,8 +1165,6 @@ $generatorJava.cacheStore = function (cache, domains, cacheVarName, res) {
                 res.line('/** {@inheritDoc} */');
                 res.startBlock('@Override public ' + res.importClass('org.apache.ignite.cache.store.jdbc.CacheJdbcPojoStore') + ' create() {');
 
-                var beanClassName = $generatorJava.dataSourceClassName(res, storeFactory);
-
                 res.line('setDataSource(DataSources.INSTANCE_' + storeFactory.dataSourceBean + ');');
 
                 res.needEmptyLine = true;
@@ -1219,8 +1213,6 @@ $generatorJava.cacheStore = function (cache, domains, cacheVarName, res) {
 
                     res.line('/** {@inheritDoc} */');
                     res.startBlock('@Override public ' + res.importClass('org.apache.ignite.cache.store.jdbc.CacheJdbcBlobStore') + ' create() {');
-
-                    beanClassName = $generatorJava.dataSourceClassName(res, storeFactory);
 
                     res.line('setDataSource(DataSources.INSTANCE_' + storeFactory.dataSourceBean + ');');
 
@@ -2480,7 +2472,7 @@ $generatorJava.cluster = function (cluster, pkg, javaClass, clientNearCfg) {
  * @returns {*} Data source class name.
  */
 $generatorJava.dataSourceClassName = function (res, storeFactory) {
-    var dialect = storeFactory.dialect || (storeFactory.connectVia === 'DataSource' ? storeFactory.database : undefined);
+    var dialect = storeFactory.connectVia ? (storeFactory.connectVia === 'DataSource' ? storeFactory.dialect : undefined) : storeFactory.dialect;
 
     if (dialect) {
         var dataSourceBean = storeFactory.dataSourceBean;

@@ -280,7 +280,7 @@ $generatorXml.clusterGeneral = function (cluster, res) {
 
                 if (d.S3) {
                     if (d.S3.bucketName)
-                        res.line('<property name="bucketName" value="' + $generatorXml.escape(d.S3.bucketName) + '" />');
+                        res.line('<property name="bucketName" value="' + $generatorXml.escape(d.S3.bucketName) + '"/>');
                 }
 
                 res.endBlock('</bean>');
@@ -852,7 +852,7 @@ $generatorXml.cacheStore = function(cache, domains, res) {
                 else {
                     $generatorXml.property(res, storeFactory, 'connectionUrl');
                     $generatorXml.property(res, storeFactory, 'user');
-                    res.line('<property name="password" value="${ds.' + storeFactory.user + '.password}" />');
+                    res.line('<property name="password" value="${ds.' + storeFactory.user + '.password}"/>');
                 }
 
                 $generatorXml.property(res, storeFactory, 'initSchema');
@@ -868,14 +868,14 @@ $generatorXml.cacheStore = function(cache, domains, res) {
             else
                 $generatorXml.beanProperty(res, storeFactory, 'cacheStoreFactory', $generatorCommon.STORE_FACTORIES[factoryKind], true);
 
-            if (storeFactory.dataSourceBean && (storeFactory.dialect || (storeFactory.connectVia === 'DataSource' ? storeFactory.database : undefined))) {
+            if (storeFactory.dataSourceBean && (storeFactory.connectVia ? (storeFactory.connectVia === 'DataSource' ? storeFactory.dialect : undefined) : storeFactory.dialect)) {
                 if (_.findIndex(res.datasources, function (ds) {
                         return ds.dataSourceBean === storeFactory.dataSourceBean;
                     }) < 0) {
                     res.datasources.push({
                         dataSourceBean: storeFactory.dataSourceBean,
-                        className: $generatorCommon.DATA_SOURCES[storeFactory.dialect || storeFactory.database],
-                        dialect: storeFactory.dialect || storeFactory.database
+                        className: $generatorCommon.DATA_SOURCES[storeFactory.dialect],
+                        dialect: storeFactory.dialect
                     });
                 }
             }
@@ -1470,29 +1470,29 @@ $generatorXml.generateDataSources = function (datasources, res) {
 
             switch (item.dialect) {
                 case 'Generic':
-                    res.line('<property name="jdbcUrl" value="${' + beanId + '.jdbc.url}" />');
+                    res.line('<property name="jdbcUrl" value="${' + beanId + '.jdbc.url}"/>');
 
                     break;
 
                 case 'DB2':
-                    res.line('<property name="serverName" value="${' + beanId + '.jdbc.server_name}" />');
-                    res.line('<property name="portNumber" value="${' + beanId + '.jdbc.port_number}" />');
-                    res.line('<property name="databaseName" value="${' + beanId + '.jdbc.database_name}" />');
-                    res.line('<property name="driverType" value="${' + beanId + '.jdbc.driver_type}" />');
+                    res.line('<property name="serverName" value="${' + beanId + '.jdbc.server_name}"/>');
+                    res.line('<property name="portNumber" value="${' + beanId + '.jdbc.port_number}"/>');
+                    res.line('<property name="databaseName" value="${' + beanId + '.jdbc.database_name}"/>');
+                    res.line('<property name="driverType" value="${' + beanId + '.jdbc.driver_type}"/>');
 
                     break;
 
                 case 'PostgreSQL':
-                    res.line('<property name="url" value="${' + beanId + '.jdbc.url}" />');
+                    res.line('<property name="url" value="${' + beanId + '.jdbc.url}"/>');
 
                     break;
 
                 default:
-                    res.line('<property name="URL" value="${' + beanId + '.jdbc.url}" />');
+                    res.line('<property name="URL" value="${' + beanId + '.jdbc.url}"/>');
             }
 
-            res.line('<property name="user" value="${' + beanId + '.jdbc.username}" />');
-            res.line('<property name="password" value="${' + beanId + '.jdbc.password}" />');
+            res.line('<property name="user" value="${' + beanId + '.jdbc.username}"/>');
+            res.line('<property name="password" value="${' + beanId + '.jdbc.password}"/>');
 
             res.endBlock('</bean>');
 

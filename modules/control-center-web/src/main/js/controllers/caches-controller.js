@@ -473,7 +473,7 @@ consoleModule.controller('cachesController', [
             });
 
             if (!checkRes.checked) {
-                return showPopoverMessage($scope.panels, 'store', checkRes.firstCache.cacheStoreFactory.kind === 'CacheJdbcPojoStoreFactory' ? 'dialect' : 'database',
+                return showPopoverMessage($scope.panels, 'store', checkRes.firstCache.cacheStoreFactory.kind === 'CacheJdbcPojoStoreFactory' ? 'pojoDialect' : 'blobDialect',
                     'Found cache "' + checkRes.secondCache.name + '" in cluster "' + failCluster.label + '" ' +
                     'with the same data source bean name "' + checkRes.firstCache.cacheStoreFactory[checkRes.firstCache.cacheStoreFactory.kind].dataSourceBean +
                     '" and different database: "' + $common.cacheStoreJdbcDialectsLabel(checkRes.firstDB) + '" in current cache and "' +
@@ -509,7 +509,7 @@ consoleModule.controller('cachesController', [
                         return false;
 
                     if (!storeFactory.dialect)
-                        return showPopoverMessage($scope.panels, 'store', 'dialect',
+                        return showPopoverMessage($scope.panels, 'store', 'pojoDialect',
                             'Dialect should not be empty');
 
                     if (!checkDataSources())
@@ -534,8 +534,8 @@ consoleModule.controller('cachesController', [
                         if (!$common.isValidJavaIdentifier('Data source bean', storeFactory.dataSourceBean, 'dataSourceBean', $scope.panels, 'store'))
                             return false;
 
-                        if (!storeFactory.database)
-                            return showPopoverMessage($scope.panels, 'store', 'database',
+                        if (!storeFactory.dialect)
+                            return showPopoverMessage($scope.panels, 'store', 'blobDialect',
                                 'Database should not be empty');
 
                         if (!checkDataSources())

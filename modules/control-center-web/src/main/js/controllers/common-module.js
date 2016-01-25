@@ -709,8 +709,8 @@ consoleModule.service('$common', [
             var secondDs = extractDataSource(secondCache);
 
             if (firstDs && secondDs) {
-                var firstDB = firstDs.dialect || firstDs.database;
-                var secondDB = secondDs.dialect || secondDs.database;
+                var firstDB = firstDs.dialect;
+                var secondDB = secondDs.dialect;
 
                 if (firstDs.dataSourceBean === secondDs.dataSourceBean && firstDB !== secondDB) {
                     return {

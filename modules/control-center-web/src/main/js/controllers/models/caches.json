@@ -424,7 +424,7 @@
                 },
                 {
                   "label": "Dialect",
-                  "id": "dialect",
+                  "id": "pojoDialect",
                   "type": "dropdown",
                   "path": "cacheStoreFactory.CacheJdbcPojoStoreFactory",
                   "model": "dialect",
@@ -473,7 +473,7 @@
                   "path": "cacheStoreFactory.CacheJdbcBlobStoreFactory",
                   "model": "connectionUrl",
                   "required": true,
-                  "hide": "backupItem.cacheStoreFactory.CacheJdbcBlobStoreFactory.connectVia == 'DataSource'",
+                  "hide": "backupItem.cacheStoreFactory.CacheJdbcBlobStoreFactory.connectVia !== 'URL'",
                   "tip": [
                     "URL for database access, for example: jdbc:h2:mem:myDatabase"
                   ]
@@ -485,7 +485,7 @@
                   "path": "cacheStoreFactory.CacheJdbcBlobStoreFactory",
                   "model": "user",
                   "required": true,
-                  "hide": "backupItem.cacheStoreFactory.CacheJdbcBlobStoreFactory.connectVia == 'DataSource'",
+                  "hide": "backupItem.cacheStoreFactory.CacheJdbcBlobStoreFactory.connectVia !== 'URL'",
                   "tip": [
                     "User name for database access"
                   ]
@@ -493,7 +493,7 @@
                 {
                   "label": "Note, password will be generated as stubs.",
                   "type": "label",
-                  "hide": "backupItem.cacheStoreFactory.CacheJdbcBlobStoreFactory.connectVia == 'DataSource'"
+                  "hide": "backupItem.cacheStoreFactory.CacheJdbcBlobStoreFactory.connectVia !== 'URL'"
                 },
                 {
                   "label": "Data source bean name",
@@ -503,21 +503,21 @@
                   "model": "dataSourceBean",
                   "required": true,
                   "placeholder": "Bean name in Spring context",
-                  "hide": "backupItem.cacheStoreFactory.CacheJdbcBlobStoreFactory.connectVia == 'URL'",
+                  "hide": "backupItem.cacheStoreFactory.CacheJdbcBlobStoreFactory.connectVia  !== 'DataSource'",
                   "tip": [
                     "Name of the data source bean in Spring context"
                   ]
                 },
                 {
                   "label": "Database",
-                  "id": "database",
+                  "id": "blobDialect",
                   "type": "dropdown",
                   "path": "cacheStoreFactory.CacheJdbcBlobStoreFactory",
-                  "model": "database",
+                  "model": "dialect",
                   "required": true,
                   "placeholder": "Choose database",
                   "items": "cacheStoreJdbcDialects",
-                  "hide": "backupItem.cacheStoreFactory.CacheJdbcBlobStoreFactory.connectVia == 'URL'",
+                  "hide": "backupItem.cacheStoreFactory.CacheJdbcBlobStoreFactory.connectVia  !== 'DataSource'",
                   "tip": [
                     "Database:",
                     "<ul>",

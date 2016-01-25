@@ -150,7 +150,7 @@ var CacheSchema = new Schema({
             connectionUrl: String,
             user: String,
             dataSourceBean: String,
-            database: {
+            dialect: {
                 type: String,
                 enum: ['Generic', 'Oracle', 'DB2', 'SQLServer', 'MySQL', 'PostgreSQL', 'H2']
             },

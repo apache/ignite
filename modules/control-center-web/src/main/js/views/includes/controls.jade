@@ -153,7 +153,7 @@ mixin details-row(lblClasses, fieldClasses)
     - var customValidators = {'ng-attr-ipaddress': '{{detail.ipaddress}}'}
 
     div(ng-switch='detail.type')
-        div(ng-switch-when='label')
+        div(ng-switch-when='label' ng-hide=detailHide)
             label {{::detail.label}}
         div.checkbox(ng-switch-when='check' ng-hide=detailHide)
             label(id='{{::detail.id}}')
