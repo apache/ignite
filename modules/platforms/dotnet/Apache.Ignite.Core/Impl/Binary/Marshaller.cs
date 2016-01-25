@@ -88,10 +88,16 @@ namespace Apache.Ignite.Core.Impl.Binary
                 foreach (BinaryTypeConfiguration typeCfg in typeCfgs)
                     AddUserType(cfg, typeCfg, typeResolver, dfltSerializer);
 
-            ICollection<string> types = cfg.Types;
+            var typeNames = cfg.TypeNames;
+
+            if (typeNames != null)
+                foreach (string typeName in typeNames)
+                    AddUserType(cfg, new BinaryTypeConfiguration(typeName), typeResolver, dfltSerializer);
+
+            var types = cfg.Types;
 
             if (types != null)
-                foreach (string type in types)
+                foreach (var type in cfg.Types)
                     AddUserType(cfg, new BinaryTypeConfiguration(type), typeResolver, dfltSerializer);
 
             if (cfg.DefaultSerializer == null)
@@ -104,6 +110,14 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// Gets or sets the backing grid.
         /// </summary>
         public Ignite Ignite { get; set; }
+
+        /// <summary>
+        /// Gets the binary configuration.
+        /// </summary>
+        public BinaryConfiguration BinaryConfiguration
+        {
+            get { return _cfg; }
+        }
 
         /// <summary>
         /// Marshal object.

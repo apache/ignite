@@ -102,11 +102,30 @@ public class PlatformDotNetCacheStore<K, V> implements CacheStore<K, V>, Platfor
     /** Properties. */
     private Map<String, ?> props;
 
+    /** Native factory. */
+    private final Object nativeFactory;
+
     /** Interop processor. */
     protected PlatformContext platformCtx;
 
     /** Pointer to native store. */
     protected long ptr;
+
+    /**
+     * Default ctor.
+     */
+    public PlatformDotNetCacheStore() {
+        nativeFactory = null;
+    }
+
+    /**
+     * Native factory ctor.
+     */
+    public PlatformDotNetCacheStore(Object nativeFactory) {
+        assert nativeFactory != null;
+
+        this.nativeFactory = nativeFactory;
+    }
 
     /**
      * Gets .NET class name.
@@ -175,7 +194,7 @@ public class PlatformDotNetCacheStore<K, V> implements CacheStore<K, V>, Platfor
                     writer.writeByte(OP_LOAD_ALL);
                     writer.writeLong(session());
                     writer.writeString(ses.cacheName());
-                    writer.writeCollection((Collection) keys);
+                    writer.writeCollection((Collection)keys);
                 }
             }, new LoadAllCallback<>(platformCtx, loaded));
 
@@ -305,7 +324,8 @@ public class PlatformDotNetCacheStore<K, V> implements CacheStore<K, V>, Platfor
      * @throws org.apache.ignite.IgniteCheckedException
      */
     public void initialize(GridKernalContext ctx, boolean convertBinary) throws IgniteCheckedException {
-        A.notNull(typName, "typName");
+        A.ensure(typName != null || nativeFactory != null,
+                "Either typName or nativeFactory must be set in PlatformDotNetCacheStore");
 
         platformCtx = PlatformUtils.platformContext(ctx.grid());
 
@@ -329,9 +349,13 @@ public class PlatformDotNetCacheStore<K, V> implements CacheStore<K, V>, Platfor
      * @param convertBinary Convert binary flag.
      */
     protected void write(BinaryRawWriterEx writer, boolean convertBinary) {
-        writer.writeString(typName);
         writer.writeBoolean(convertBinary);
-        writer.writeMap(props);
+        writer.writeObjectDetached(nativeFactory);
+
+        if (nativeFactory == null) {
+            writer.writeString(typName);
+            writer.writeMap(props);
+        }
     }
 
     /**

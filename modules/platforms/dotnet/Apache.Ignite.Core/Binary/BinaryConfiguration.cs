@@ -17,6 +17,7 @@
 
 namespace Apache.Ignite.Core.Binary
 {
+    using System;
     using System.Collections.Generic;
     using System.Diagnostics.CodeAnalysis;
 
@@ -34,25 +35,12 @@ namespace Apache.Ignite.Core.Binary
         }
 
         /// <summary>
-        /// Copying constructor.
+        /// Initializes a new instance of the <see cref="BinaryConfiguration"/> class.
         /// </summary>
-        /// <param name="cfg">Configuration to copy.</param>
-        public BinaryConfiguration(BinaryConfiguration cfg)
+        /// <param name="binaryTypes">Binary types to register.</param>
+        public BinaryConfiguration(params Type[] binaryTypes)
         {
-            DefaultIdMapper = cfg.DefaultIdMapper;
-            DefaultNameMapper = cfg.DefaultNameMapper;
-            DefaultKeepDeserialized = cfg.DefaultKeepDeserialized;
-            DefaultSerializer = cfg.DefaultSerializer;
-
-            Types = cfg.Types != null ? new List<string>(cfg.Types) : null;
-
-            if (cfg.TypeConfigurations != null)
-            {
-                TypeConfigurations = new List<BinaryTypeConfiguration>(cfg.TypeConfigurations.Count);
-
-                foreach (BinaryTypeConfiguration typeCfg in cfg.TypeConfigurations)
-                    TypeConfigurations.Add(new BinaryTypeConfiguration(typeCfg));
-            }
+            Types = binaryTypes;
         }
 
         /// <summary>
@@ -65,7 +53,13 @@ namespace Apache.Ignite.Core.Binary
         /// Binarizable types. Shorthand for creating <see cref="BinaryTypeConfiguration"/>.
         /// </summary>
         [SuppressMessage("Microsoft.Usage", "CA2227:CollectionPropertiesShouldBeReadOnly")]
-        public ICollection<string> Types { get; set; }
+        public ICollection<string> TypeNames { get; set; }
+
+        /// <summary>
+        /// Binarizable types. Shorthand for creating <see cref="BinaryTypeConfiguration"/>.
+        /// </summary>
+        [SuppressMessage("Microsoft.Usage", "CA2227:CollectionPropertiesShouldBeReadOnly")]
+        public ICollection<Type> Types { get; set; }
 
         /// <summary>
         /// Default name mapper.

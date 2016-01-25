@@ -1642,10 +1642,10 @@ namespace Apache.Ignite.Core.Impl.Binary
                 {
                     int typesCnt = reader.ReadInt();
 
-                    cfg.Types = new List<string>(typesCnt);
+                    cfg.TypeNames = new List<string>(typesCnt);
 
                     for (int i = 0; i < typesCnt; i++)
-                        cfg.Types.Add(reader.ReadString());
+                        cfg.TypeNames.Add(reader.ReadString());
                 }
 
                 // Read the rest.
