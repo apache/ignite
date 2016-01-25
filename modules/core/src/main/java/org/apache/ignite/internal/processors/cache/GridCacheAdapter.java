@@ -99,7 +99,6 @@ import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.transactions.IgniteTxHeuristicCheckedException;
 import org.apache.ignite.internal.transactions.IgniteTxRollbackCheckedException;
 import org.apache.ignite.internal.util.F0;
-import org.apache.ignite.internal.util.GridLeanMap;
 import org.apache.ignite.internal.util.future.GridEmbeddedFuture;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
@@ -1633,7 +1632,8 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
      * @param needVer If {@code true} returns values as tuples containing value and version.
      * @return Future.
      */
-    public final <K1, V1> IgniteInternalFuture<Map<K1, V1>> getAllAsync0(@Nullable final Collection<KeyCacheObject> keys,
+    public final <K1, V1> IgniteInternalFuture<Map<K1, V1>> getAllAsync0(
+        @Nullable final Collection<KeyCacheObject> keys,
         final boolean readThrough,
         boolean checkTx,
         @Nullable final UUID subjId,
@@ -1644,7 +1644,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
         final boolean keepCacheObjects,
         boolean canRemap,
         final boolean needVer
-        ) {
+    ) {
         if (F.isEmpty(keys))
             return new GridFinishedFuture<>(Collections.<K1, V1>emptyMap());
 
@@ -1663,11 +1663,12 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
 
         if (tx == null || tx.implicit()) {
             try {
-                final AffinityTopologyVersion topVer = tx == null
-                    ? (canRemap ? ctx.affinity().affinityTopologyVersion(): ctx.shared().exchange().readyAffinityVersion())
-                    : tx.topologyVersion();
+                final AffinityTopologyVersion topVer = tx == null ?
+                    (canRemap ?
+                        ctx.affinity().affinityTopologyVersion() : ctx.shared().exchange().readyAffinityVersion()) :
+                        tx.topologyVersion();
 
-                final Map<K1, V1> map = new GridLeanMap<>(keys.size());
+                final Map<K1, V1> map = U.newHashMap(keys.size());
 
                 final boolean storeEnabled = !skipVals && readThrough && ctx.readThrough();
 
@@ -1703,7 +1704,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
                                     GridCacheVersion ver = entry.version();
 
                                     if (misses == null)
-                                        misses = new GridLeanMap<>();
+                                        misses = new HashMap<>();
 
                                     misses.put(key, ver);
                                 }

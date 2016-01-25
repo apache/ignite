@@ -137,7 +137,7 @@ public final class GridDhtGetFuture<K, V> extends GridCompoundIdentityFuture<Col
         @Nullable IgniteCacheExpiryPolicy expiryPlc,
         boolean skipVals
     ) {
-        super(CU.<GridCacheEntryInfo>collectionsReducer());
+        super(CU.<GridCacheEntryInfo>collectionsReducer(keys.size()));
 
         assert reader != null;
         assert !F.isEmpty(keys);
@@ -209,60 +209,72 @@ public final class GridDhtGetFuture<K, V> extends GridCompoundIdentityFuture<Col
     private void map(final Map<KeyCacheObject, Boolean> keys) {
         GridDhtFuture<Object> fut = cctx.dht().dhtPreloader().request(keys.keySet(), topVer);
 
-        if (!F.isEmpty(fut.invalidPartitions())) {
-            if (retries == null)
-                retries = new HashSet<>();
+        if (fut != null) {
+            if (F.isEmpty(fut.invalidPartitions())) {
+                if (retries == null)
+                    retries = new HashSet<>();
 
-            retries.addAll(fut.invalidPartitions());
-        }
+                retries.addAll(fut.invalidPartitions());
+            }
 
-        add(new GridEmbeddedFuture<>(
-            new IgniteBiClosure<Object, Exception, Collection<GridCacheEntryInfo>>() {
-                @Override public Collection<GridCacheEntryInfo> apply(Object o, Exception e) {
-                    if (e != null) { // Check error first.
-                        if (log.isDebugEnabled())
-                            log.debug("Failed to request keys from preloader [keys=" + keys + ", err=" + e + ']');
+            add(new GridEmbeddedFuture<>(
+                new IgniteBiClosure<Object, Exception, Collection<GridCacheEntryInfo>>() {
+                    @Override public Collection<GridCacheEntryInfo> apply(Object o, Exception e) {
+                        if (e != null) { // Check error first.
+                            if (log.isDebugEnabled())
+                                log.debug("Failed to request keys from preloader [keys=" + keys + ", err=" + e + ']');
 
-                        onDone(e);
+                            onDone(e);
+                        }
+                        else
+                            map0(keys);
+
+                        // Finish this one.
+                        return Collections.emptyList();
                     }
+                },
+                fut));
+        }
+        else
+            map0(keys);
+    }
 
-                    Map<KeyCacheObject, Boolean> mappedKeys = null;
 
-                    // Assign keys to primary nodes.
-                    for (Map.Entry<KeyCacheObject, Boolean> key : keys.entrySet()) {
-                        int part = cctx.affinity().partition(key.getKey());
+    /**
+     * @param keys Keys to map.
+     */
+    private void map0(Map<KeyCacheObject, Boolean> keys) {
+        Map<KeyCacheObject, Boolean> mappedKeys = null;
 
-                        if (retries == null || !retries.contains(part)) {
-                            if (!map(key.getKey(), parts)) {
-                                if (retries == null)
-                                    retries = new HashSet<>();
+        // Assign keys to primary nodes.
+        for (Map.Entry<KeyCacheObject, Boolean> key : keys.entrySet()) {
+            int part = cctx.affinity().partition(key.getKey());
 
-                                retries.add(part);
+            if (retries == null || !retries.contains(part)) {
+                if (!map(key.getKey(), parts)) {
+                    if (retries == null)
+                        retries = new HashSet<>();
 
-                                if (mappedKeys == null) {
-                                    mappedKeys = U.newLinkedHashMap(keys.size());
+                    retries.add(part);
 
-                                    for (Map.Entry<KeyCacheObject, Boolean> key1 : keys.entrySet()) {
-                                        if (key1.getKey() == key.getKey())
-                                            break;
+                    if (mappedKeys == null) {
+                        mappedKeys = U.newLinkedHashMap(keys.size());
 
-                                        mappedKeys.put(key.getKey(), key1.getValue());
-                                    }
-                                }
-                            }
-                            else if (mappedKeys != null)
-                                mappedKeys.put(key.getKey(), key.getValue());
+                        for (Map.Entry<KeyCacheObject, Boolean> key1 : keys.entrySet()) {
+                            if (key1.getKey() == key.getKey())
+                                break;
+
+                            mappedKeys.put(key.getKey(), key1.getValue());
                         }
                     }
-
-                    // Add new future.
-                    add(getAsync(mappedKeys == null ? keys : mappedKeys));
-
-                    // Finish this one.
-                    return Collections.emptyList();
                 }
-            },
-            fut));
+                else if (mappedKeys != null)
+                    mappedKeys.put(key.getKey(), key.getValue());
+            }
+        }
+
+        // Add new future.
+        add(getAsync(mappedKeys == null ? keys : mappedKeys));
     }
 
     /**
@@ -420,37 +432,63 @@ public final class GridDhtGetFuture<K, V> extends GridCompoundIdentityFuture<Col
             );
         }
 
+        if (fut.isDone()) {
+            if (fut.error() != null)
+                onDone(fut.error());
+            else {
+                Map<KeyCacheObject, T2<CacheObject, GridCacheVersion>> map = null;
+
+                try {
+                    map = fut.get();
+                }
+                catch (IgniteCheckedException e) {
+                    assert false; // Should never happen.
+                }
+
+                return new GridFinishedFuture<>(toEntryInfos(map));
+            }
+        }
+
         return new GridEmbeddedFuture<>(
             new C2<Map<KeyCacheObject, T2<CacheObject, GridCacheVersion>>, Exception, Collection<GridCacheEntryInfo>>() {
-                @Override public Collection<GridCacheEntryInfo> apply(Map<KeyCacheObject, T2<CacheObject, GridCacheVersion>> map, Exception e) {
+                @Override public Collection<GridCacheEntryInfo> apply(
+                    Map<KeyCacheObject, T2<CacheObject, GridCacheVersion>> map, Exception e
+                ) {
                     if (e != null) {
                         onDone(e);
 
                         return Collections.emptyList();
                     }
-                    else {
-                        Collection<GridCacheEntryInfo> infos = new ArrayList<>(map.size());
-
-                        for (Map.Entry<KeyCacheObject, T2<CacheObject, GridCacheVersion>> entry : map.entrySet()) {
-                            T2<CacheObject, GridCacheVersion> val = entry.getValue();
-
-                            assert val != null;
-
-                            GridCacheEntryInfo info = new GridCacheEntryInfo();
-
-                            info.cacheId(cctx.cacheId());
-                            info.key(entry.getKey());
-                            info.value(skipVals ? null : val.get1());
-                            info.version(val.get2());
-
-                            infos.add(info);
-                        }
-
-                        return infos;
-                    }
+                    else
+                        return toEntryInfos(map);
                 }
             },
             fut);
+    }
+
+    /**
+     * @param map Map to convert.
+     * @return List of infos.
+     */
+    private Collection<GridCacheEntryInfo> toEntryInfos(Map<KeyCacheObject, T2<CacheObject, GridCacheVersion>> map) {
+        Collection<GridCacheEntryInfo> infos = new ArrayList<>(map.size());
+
+        for (Map.Entry<KeyCacheObject, T2<CacheObject, GridCacheVersion>> entry : map.entrySet()) {
+            T2<CacheObject, GridCacheVersion> val = entry.getValue();
+
+            assert val != null;
+
+            GridCacheEntryInfo info = new GridCacheEntryInfo();
+
+            info.cacheId(cctx.cacheId());
+            info.key(entry.getKey());
+            info.value(skipVals ? null : val.get1());
+            info.version(val.get2());
+
+            infos.add(info);
+        }
+
+        return infos;
     }
 
     /**
