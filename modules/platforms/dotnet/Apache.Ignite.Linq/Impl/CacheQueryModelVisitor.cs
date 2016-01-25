@@ -24,7 +24,7 @@ namespace Apache.Ignite.Linq.Impl
     using Remotion.Linq.Clauses.ResultOperators;
 
     /// <summary>
-    /// Query visitor.
+    /// Query visitor, transforms LINQ expression to SQL.
     /// </summary>
     internal class CacheQueryModelVisitor : QueryModelVisitorBase
     {
@@ -71,9 +71,9 @@ namespace Apache.Ignite.Linq.Impl
                 throw new NotSupportedException("TODO");  // Min, max, etc
         }
 
-        private static string GetSqlExpression(Expression predicate)
+        private static string GetSqlExpression(Expression expression)
         {
-            return string.Format("[{0}]", predicate);
+            return CacheQueryExpressionVisitor.GetSqlStatement(expression);
         }
     }
 }
