@@ -44,11 +44,6 @@ namespace Apache.Ignite.Linq
         public CacheQueryable(IQueryProvider provider, Expression expression) : base(provider, expression)
         {
         }
-
-        public CacheQueryable(CacheQueryProvider<TKey, TValue> provider) : base(provider)
-        {
-            // No-op.
-        }
     }
 
     public class CacheQueryProvider<TKey, TValue> : QueryProviderBase
@@ -62,7 +57,7 @@ namespace Apache.Ignite.Linq
 
         public override IQueryable<T> CreateQuery<T>(Expression expression)
         {
-            return new CacheQueryable<TKey, TValue>(this).Cast<T>();
+            return (IQueryable<T>) new CacheQueryable<TKey, TValue>(this, expression);
         }
     }
 
@@ -94,7 +89,7 @@ namespace Apache.Ignite.Linq
             var query = new SqlFieldsQuery(queryData.QueryText, queryData.Parameters);
 
             // TODO: This will fail, need to map fields to T, which is anonymous class
-            return _executor(query).OfType<T>();
+            return (IEnumerable<T>) _executor(query);
         }
     }
 
