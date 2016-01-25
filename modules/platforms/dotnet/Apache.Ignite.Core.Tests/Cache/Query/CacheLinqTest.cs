@@ -53,7 +53,11 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         {
             var cache = GetCache();
 
-            var result = cache.ToQueryable().Where(x => x.Value.Age < 10).ToArray();
+            var query = cache.ToQueryable()
+                .Where(x => x.Value.Age < 30 && x.Value.Age > 20)
+                .Where(x => x.Value.Name.Contains("Person"));
+
+            var result = query.ToArray();
 
             Assert.AreEqual(10, result.Length);
         }
