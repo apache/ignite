@@ -21,6 +21,11 @@ namespace Apache.Ignite.Linq.Impl
 
     internal class QueryData
     {
+        public QueryData(string queryText)
+        {
+            QueryText = queryText;
+        }
+
         public ICollection<object> Parameters { get; set; }
 
         public string QueryText { get; set; }

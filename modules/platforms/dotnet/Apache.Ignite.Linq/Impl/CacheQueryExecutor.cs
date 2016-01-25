@@ -51,13 +51,12 @@ namespace Apache.Ignite.Linq.Impl
 
         public IEnumerable<T> ExecuteCollection<T>(QueryModel queryModel)
         {
-            var queryData = new QueryData {QueryText = "test"}; // TODO: Generate
+            var queryData = CacheQueryModelVisitor.GenerateQuery(queryModel);
 
             //var query = new SqlFieldsQuery(queryData.QueryText, queryData.Parameters);
 
             var query = new SqlQuery(typeof(T), queryData.QueryText, queryData.Parameters);
 
-            // TODO: This will fail, need to map fields to T, which is anonymous class
             return (IEnumerable<T>) _cache.Query(query);
         }
     }

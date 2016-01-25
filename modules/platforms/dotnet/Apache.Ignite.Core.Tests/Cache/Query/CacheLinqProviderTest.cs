@@ -17,6 +17,7 @@
 
 namespace Apache.Ignite.Core.Tests.Cache.Query
 {
+    using System;
     using System.Collections;
     using System.Collections.Generic;
     using System.Linq;
@@ -43,6 +44,8 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
             Assert.IsNotNull(res);
 
             Assert.IsNotNullOrEmpty(cache.LastQuery);
+
+            Console.WriteLine(cache.LastQuery);
         }
 
         private class CacheStub<TKey, TValue> : ICache<TKey, TValue>
