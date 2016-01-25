@@ -161,6 +161,7 @@ namespace Apache.Ignite.Linq.Impl
         protected override Expression VisitMember(MemberExpression expression)
         {
             // Field hierarchy is flattened, append as is, do not call Visit.
+            // TODO: Look up field name in CacheConfiguration!
             _resultBuilder.Append(expression.Member.Name);
 
             return expression;
@@ -179,7 +180,7 @@ namespace Apache.Ignite.Linq.Impl
         /** <inheritdoc /> */
         protected override Expression VisitMethodCall(MethodCallExpression expression)
         {
-            // TODO: Other methods
+            // TODO: Other methods - StartsWith, ToLower, ToUpper, ToLowerInvariant, ToUpperInvariant
             var supportedMethod = typeof(string).GetMethod("Contains");
             if (expression.Method.Equals(supportedMethod))
             {
