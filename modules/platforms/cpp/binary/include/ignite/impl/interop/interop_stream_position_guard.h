@@ -18,7 +18,6 @@
 #ifndef _IGNITE_IMPL_INTEROP_STREAM_POSITION_GUARD
 #define _IGNITE_IMPL_INTEROP_OUTPUT_POSITION_GUARD
 
-/// TODO: Consider replacing NULL with 0 and removing header.
 #include <cstddef>
 
 #include "ignite/impl/interop/interop_memory.h"
