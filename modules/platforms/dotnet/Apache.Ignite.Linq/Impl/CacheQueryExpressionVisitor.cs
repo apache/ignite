@@ -20,24 +20,34 @@ using System.Text;
 
 namespace Apache.Ignite.Linq.Impl
 {
+    using System.Collections.Generic;
     using System.Diagnostics;
     using System.Linq.Expressions;
     using Apache.Ignite.Core.Cache;
     using Remotion.Linq.Clauses.Expressions;
     using Remotion.Linq.Parsing;
 
-    internal class CacheQueryExpressionVisitor
+    /// <summary>
+    /// Expression visitor, transforms query subexpressions (such as Where clauses) to SQL.
+    /// </summary>
+    internal static class CacheQueryExpressionVisitor
     {
-        public static string GetSqlStatement<TKey, TValue>(ICache<TKey, TValue> cache, Expression linqExpression)
+        /// <summary>
+        /// Gets the SQL statement.
+        /// </summary>
+        /// <typeparam name="TKey">The type of the key.</typeparam>
+        /// <typeparam name="TValue">The type of the value.</typeparam>
+        /// <param name="cache">The cache.</param>
+        /// <param name="linqExpression">The linq expression.</param>
+        /// <returns>SQL statement for the expression.</returns>
+        public static QueryData GetSqlExpression<TKey, TValue>(ICache<TKey, TValue> cache, Expression linqExpression)
         {
             var visitor = new CacheQueryExpressionVisitor<TKey, TValue>(cache);
 
             visitor.Visit(linqExpression);
 
-            return visitor.GetSql();
+            return visitor.GetSqlExpression();
         }
-
-
     }
 
     /// <summary>
@@ -45,9 +55,14 @@ namespace Apache.Ignite.Linq.Impl
     /// </summary>
     internal class CacheQueryExpressionVisitor<TKey, TValue> : ThrowingExpressionVisitor
     {
+        /** */
         private readonly ICache<TKey, TValue> _cache;
 
+        /** */
         private readonly StringBuilder _resultBuilder = new StringBuilder();
+
+        /** */
+        private readonly List<object> _parameters = new List<object>();
 
         public CacheQueryExpressionVisitor(ICache<TKey, TValue> cache)
         {
@@ -56,9 +71,9 @@ namespace Apache.Ignite.Linq.Impl
             _cache = cache;
         }
 
-        public string GetSql()
+        public QueryData GetSqlExpression()
         {
-            return _resultBuilder.ToString();
+            return new QueryData(_resultBuilder.ToString(), _parameters);
         }
 
         protected override Expression VisitQuerySourceReference(QuerySourceReferenceExpression expression)
@@ -134,13 +149,6 @@ namespace Apache.Ignite.Linq.Impl
 
         protected override Expression VisitMember(MemberExpression expression)
         {
-            /*if (expression.Member.DeclaringType != typeof (ICacheEntry<TKey, TValue>))
-            {
-                Visit(expression.Expression);
-
-                _resultBuilder.AppendFormat(".{0}", expression.Member.Name);
-            }*/
-
             // Field hierarchy is flattened, append as is, do not call Visit.
             _resultBuilder.Append(expression.Member.Name);
 
@@ -149,9 +157,9 @@ namespace Apache.Ignite.Linq.Impl
 
         protected override Expression VisitConstant(ConstantExpression expression)
         {
-            // TODO: Maintain parameter order somehow
-
             _resultBuilder.Append("?");
+
+            _parameters.Add(expression.Value);
 
             return expression;
         }
@@ -164,9 +172,9 @@ namespace Apache.Ignite.Linq.Impl
             {
                 _resultBuilder.Append("(");
                 Visit(expression.Object);
-                _resultBuilder.Append(" like '%'+");
+                _resultBuilder.Append(" like '%' + ");
                 Visit(expression.Arguments[0]);
-                _resultBuilder.Append("+'%')");
+                _resultBuilder.Append(" + '%')");
                 return expression;
             }
 

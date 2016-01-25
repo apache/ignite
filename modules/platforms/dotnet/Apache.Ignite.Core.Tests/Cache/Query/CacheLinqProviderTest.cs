@@ -35,7 +35,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
     public class CacheLinqProviderTest
     {
         [Test]
-        public void Test()
+        public void TestWhere()
         {
             var cache = new CacheStub<int, QueryPerson>();
 
@@ -43,18 +43,21 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
 
             Assert.IsNotNull(res);
 
-            Assert.IsNotNullOrEmpty(cache.LastQuery);
+            Assert.AreEqual("((Age > ?) and (Name like '%' + ? + '%'))", cache.LastQuery);
+            Assert.AreEqual(new object[] {20, "john"}, cache.LastQueryArgs);
 
             Console.WriteLine(cache.LastQuery);
+            Console.WriteLine(cache.LastQueryArgs);
         }
 
         private class CacheStub<TKey, TValue> : ICache<TKey, TValue>
         {
             public string LastQuery { get; private set; }
+            public object[] LastQueryArgs { get; private set; }
 
             public IEnumerator<ICacheEntry<TKey, TValue>> GetEnumerator()
             {
-                throw new System.NotImplementedException();
+                throw new NotImplementedException();
             }
 
             IEnumerator IEnumerable.GetEnumerator()
@@ -64,323 +67,326 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
 
             public string Name
             {
-                get { throw new System.NotImplementedException(); }
+                get { throw new NotImplementedException(); }
             }
 
             public IIgnite Ignite
             {
-                get { throw new System.NotImplementedException(); }
+                get { throw new NotImplementedException(); }
             }
 
             public bool IsEmpty()
             {
-                throw new System.NotImplementedException();
+                throw new NotImplementedException();
             }
 
             public bool IsKeepBinary
             {
-                get { throw new System.NotImplementedException(); }
+                get { throw new NotImplementedException(); }
             }
 
             public ICache<TKey, TValue> WithSkipStore()
             {
-                throw new System.NotImplementedException();
+                throw new NotImplementedException();
             }
 
             public ICache<TKey, TValue> WithExpiryPolicy(IExpiryPolicy plc)
             {
-                throw new System.NotImplementedException();
+                throw new NotImplementedException();
             }
 
             public ICache<TK1, TV1> WithKeepBinary<TK1, TV1>()
             {
-                throw new System.NotImplementedException();
+                throw new NotImplementedException();
             }
 
             public void LoadCache(ICacheEntryFilter<TKey, TValue> p, params object[] args)
             {
-                throw new System.NotImplementedException();
+                throw new NotImplementedException();
             }
 
             public Task LoadCacheAsync(ICacheEntryFilter<TKey, TValue> p, params object[] args)
             {
-                throw new System.NotImplementedException();
+                throw new NotImplementedException();
             }
 
             public void LocalLoadCache(ICacheEntryFilter<TKey, TValue> p, params object[] args)
             {
-                throw new System.NotImplementedException();
+                throw new NotImplementedException();
             }
 
             public Task LocalLoadCacheAsync(ICacheEntryFilter<TKey, TValue> p, params object[] args)
             {
-                throw new System.NotImplementedException();
+                throw new NotImplementedException();
             }
 
             public bool ContainsKey(TKey key)
             {
-                throw new System.NotImplementedException();
+                throw new NotImplementedException();
             }
 
             public Task<bool> ContainsKeyAsync(TKey key)
             {
-                throw new System.NotImplementedException();
+                throw new NotImplementedException();
             }
 
             public bool ContainsKeys(IEnumerable<TKey> keys)
             {
-                throw new System.NotImplementedException();
+                throw new NotImplementedException();
             }
 
             public Task<bool> ContainsKeysAsync(IEnumerable<TKey> keys)
             {
-                throw new System.NotImplementedException();
+                throw new NotImplementedException();
             }
 
             public TValue LocalPeek(TKey key, params CachePeekMode[] modes)
             {
-                throw new System.NotImplementedException();
+                throw new NotImplementedException();
             }
 
             public bool TryLocalPeek(TKey key, out TValue value, params CachePeekMode[] modes)
             {
-                throw new System.NotImplementedException();
+                throw new NotImplementedException();
             }
 
             public TValue this[TKey key]
             {
-                get { throw new System.NotImplementedException(); }
-                set { throw new System.NotImplementedException(); }
+                get { throw new NotImplementedException(); }
+                set { throw new NotImplementedException(); }
             }
 
             public TValue Get(TKey key)
             {
-                throw new System.NotImplementedException();
+                throw new NotImplementedException();
             }
 
             public Task<TValue> GetAsync(TKey key)
             {
-                throw new System.NotImplementedException();
+                throw new NotImplementedException();
             }
 
             public bool TryGet(TKey key, out TValue value)
             {
-                throw new System.NotImplementedException();
+                throw new NotImplementedException();
             }
 
             public Task<CacheResult<TValue>> TryGetAsync(TKey key)
             {
-                throw new System.NotImplementedException();
+                throw new NotImplementedException();
             }
 
             public IDictionary<TKey, TValue> GetAll(IEnumerable<TKey> keys)
             {
-                throw new System.NotImplementedException();
+                throw new NotImplementedException();
             }
 
             public Task<IDictionary<TKey, TValue>> GetAllAsync(IEnumerable<TKey> keys)
             {
-                throw new System.NotImplementedException();
+                throw new NotImplementedException();
             }
 
             public void Put(TKey key, TValue val)
             {
-                throw new System.NotImplementedException();
+                throw new NotImplementedException();
             }
 
             public Task PutAsync(TKey key, TValue val)
             {
-                throw new System.NotImplementedException();
+                throw new NotImplementedException();
             }
 
             public CacheResult<TValue> GetAndPut(TKey key, TValue val)
             {
-                throw new System.NotImplementedException();
+                throw new NotImplementedException();
             }
 
             public Task<CacheResult<TValue>> GetAndPutAsync(TKey key, TValue val)
             {
-                throw new System.NotImplementedException();
+                throw new NotImplementedException();
             }
 
             public CacheResult<TValue> GetAndReplace(TKey key, TValue val)
             {
-                throw new System.NotImplementedException();
+                throw new NotImplementedException();
             }
 
             public Task<CacheResult<TValue>> GetAndReplaceAsync(TKey key, TValue val)
             {
-                throw new System.NotImplementedException();
+                throw new NotImplementedException();
             }
 
             public CacheResult<TValue> GetAndRemove(TKey key)
             {
-                throw new System.NotImplementedException();
+                throw new NotImplementedException();
             }
 
             public Task<CacheResult<TValue>> GetAndRemoveAsync(TKey key)
             {
-                throw new System.NotImplementedException();
+                throw new NotImplementedException();
             }
 
             public bool PutIfAbsent(TKey key, TValue val)
             {
-                throw new System.NotImplementedException();
+                throw new NotImplementedException();
             }
 
             public Task<bool> PutIfAbsentAsync(TKey key, TValue val)
             {
-                throw new System.NotImplementedException();
+                throw new NotImplementedException();
             }
 
             public CacheResult<TValue> GetAndPutIfAbsent(TKey key, TValue val)
             {
-                throw new System.NotImplementedException();
+                throw new NotImplementedException();
             }
 
             public Task<CacheResult<TValue>> GetAndPutIfAbsentAsync(TKey key, TValue val)
             {
-                throw new System.NotImplementedException();
+                throw new NotImplementedException();
             }
 
             public bool Replace(TKey key, TValue val)
             {
-                throw new System.NotImplementedException();
+                throw new NotImplementedException();
             }
 
             public Task<bool> ReplaceAsync(TKey key, TValue val)
             {
-                throw new System.NotImplementedException();
+                throw new NotImplementedException();
             }
 
             public bool Replace(TKey key, TValue oldVal, TValue newVal)
             {
-                throw new System.NotImplementedException();
+                throw new NotImplementedException();
             }
 
             public Task<bool> ReplaceAsync(TKey key, TValue oldVal, TValue newVal)
             {
-                throw new System.NotImplementedException();
+                throw new NotImplementedException();
             }
 
             public void PutAll(IDictionary<TKey, TValue> vals)
             {
-                throw new System.NotImplementedException();
+                throw new NotImplementedException();
             }
 
             public Task PutAllAsync(IDictionary<TKey, TValue> vals)
             {
-                throw new System.NotImplementedException();
+                throw new NotImplementedException();
             }
 
             public void LocalEvict(IEnumerable<TKey> keys)
             {
-                throw new System.NotImplementedException();
+                throw new NotImplementedException();
             }
 
             public void Clear()
             {
-                throw new System.NotImplementedException();
+                throw new NotImplementedException();
             }
 
             public Task ClearAsync()
             {
-                throw new System.NotImplementedException();
+                throw new NotImplementedException();
             }
 
             public void Clear(TKey key)
             {
-                throw new System.NotImplementedException();
+                throw new NotImplementedException();
             }
 
             public Task ClearAsync(TKey key)
             {
-                throw new System.NotImplementedException();
+                throw new NotImplementedException();
             }
 
             public void ClearAll(IEnumerable<TKey> keys)
             {
-                throw new System.NotImplementedException();
+                throw new NotImplementedException();
             }
 
             public Task ClearAllAsync(IEnumerable<TKey> keys)
             {
-                throw new System.NotImplementedException();
+                throw new NotImplementedException();
             }
 
             public void LocalClear(TKey key)
             {
-                throw new System.NotImplementedException();
+                throw new NotImplementedException();
             }
 
             public void LocalClearAll(IEnumerable<TKey> keys)
             {
-                throw new System.NotImplementedException();
+                throw new NotImplementedException();
             }
 
             public bool Remove(TKey key)
             {
-                throw new System.NotImplementedException();
+                throw new NotImplementedException();
             }
 
             public Task<bool> RemoveAsync(TKey key)
             {
-                throw new System.NotImplementedException();
+                throw new NotImplementedException();
             }
 
             public bool Remove(TKey key, TValue val)
             {
-                throw new System.NotImplementedException();
+                throw new NotImplementedException();
             }
 
             public Task<bool> RemoveAsync(TKey key, TValue val)
             {
-                throw new System.NotImplementedException();
+                throw new NotImplementedException();
             }
 
             public void RemoveAll(IEnumerable<TKey> keys)
             {
-                throw new System.NotImplementedException();
+                throw new NotImplementedException();
             }
 
             public Task RemoveAllAsync(IEnumerable<TKey> keys)
             {
-                throw new System.NotImplementedException();
+                throw new NotImplementedException();
             }
 
             public void RemoveAll()
             {
-                throw new System.NotImplementedException();
+                throw new NotImplementedException();
             }
 
             public Task RemoveAllAsync()
             {
-                throw new System.NotImplementedException();
+                throw new NotImplementedException();
             }
 
             public int GetLocalSize(params CachePeekMode[] modes)
             {
-                throw new System.NotImplementedException();
+                throw new NotImplementedException();
             }
 
             public int GetSize(params CachePeekMode[] modes)
             {
-                throw new System.NotImplementedException();
+                throw new NotImplementedException();
             }
 
             public Task<int> GetSizeAsync(params CachePeekMode[] modes)
             {
-                throw new System.NotImplementedException();
+                throw new NotImplementedException();
             }
 
             public void LocalPromote(IEnumerable<TKey> keys)
             {
-                throw new System.NotImplementedException();
+                throw new NotImplementedException();
             }
 
             public IQueryCursor<ICacheEntry<TKey, TValue>> Query(QueryBase qry)
             {
-                LastQuery = ((SqlQuery) qry).Sql;
+                var sqlQuery = (SqlQuery) qry;
+
+                LastQuery = sqlQuery.Sql;
+                LastQueryArgs = sqlQuery.Arguments;
 
                 return new CursorStub<ICacheEntry<TKey, TValue>>();
             }
@@ -388,73 +394,74 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
             public IQueryCursor<IList> QueryFields(SqlFieldsQuery qry)
             {
                 LastQuery = qry.Sql;
+                LastQueryArgs = qry.Arguments;
 
                 return new CursorStub<IList>();
             }
 
             public IContinuousQueryHandle QueryContinuous(ContinuousQuery<TKey, TValue> qry)
             {
-                throw new System.NotImplementedException();
+                throw new NotImplementedException();
             }
 
             public IContinuousQueryHandle<ICacheEntry<TKey, TValue>> QueryContinuous(ContinuousQuery<TKey, TValue> qry, QueryBase initialQry)
             {
-                throw new System.NotImplementedException();
+                throw new NotImplementedException();
             }
 
             public IEnumerable<ICacheEntry<TKey, TValue>> GetLocalEntries(params CachePeekMode[] peekModes)
             {
-                throw new System.NotImplementedException();
+                throw new NotImplementedException();
             }
 
             public TRes Invoke<TArg, TRes>(TKey key, ICacheEntryProcessor<TKey, TValue, TArg, TRes> processor, TArg arg)
             {
-                throw new System.NotImplementedException();
+                throw new NotImplementedException();
             }
 
             public Task<TRes> InvokeAsync<TArg, TRes>(TKey key, ICacheEntryProcessor<TKey, TValue, TArg, TRes> processor, TArg arg)
             {
-                throw new System.NotImplementedException();
+                throw new NotImplementedException();
             }
 
             public IDictionary<TKey, ICacheEntryProcessorResult<TRes>> InvokeAll<TArg, TRes>(IEnumerable<TKey> keys, ICacheEntryProcessor<TKey, TValue, TArg, TRes> processor, TArg arg)
             {
-                throw new System.NotImplementedException();
+                throw new NotImplementedException();
             }
 
             public Task<IDictionary<TKey, ICacheEntryProcessorResult<TRes>>> InvokeAllAsync<TArg, TRes>(IEnumerable<TKey> keys, ICacheEntryProcessor<TKey, TValue, TArg, TRes> processor, TArg arg)
             {
-                throw new System.NotImplementedException();
+                throw new NotImplementedException();
             }
 
             public ICacheLock Lock(TKey key)
             {
-                throw new System.NotImplementedException();
+                throw new NotImplementedException();
             }
 
             public ICacheLock LockAll(IEnumerable<TKey> keys)
             {
-                throw new System.NotImplementedException();
+                throw new NotImplementedException();
             }
 
             public bool IsLocalLocked(TKey key, bool byCurrentThread)
             {
-                throw new System.NotImplementedException();
+                throw new NotImplementedException();
             }
 
             public ICacheMetrics GetMetrics()
             {
-                throw new System.NotImplementedException();
+                throw new NotImplementedException();
             }
 
             public Task Rebalance()
             {
-                throw new System.NotImplementedException();
+                throw new NotImplementedException();
             }
 
             public ICache<TKey, TValue> WithNoRetries()
             {
-                throw new System.NotImplementedException();
+                throw new NotImplementedException();
             }
         }
 

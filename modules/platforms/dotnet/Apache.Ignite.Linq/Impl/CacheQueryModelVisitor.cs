@@ -23,9 +23,6 @@ namespace Apache.Ignite.Linq.Impl
     using Apache.Ignite.Core.Cache;
     using Remotion.Linq;
     using Remotion.Linq.Clauses;
-    using Remotion.Linq.Clauses.ResultOperators;
-
-
 
     /// <summary>
     /// Query visitor, transforms LINQ expression to SQL.
@@ -45,15 +42,14 @@ namespace Apache.Ignite.Linq.Impl
 
         public QueryData GetQuery()
         {
-            var sql = _where == null ? null : GetSqlExpression(_where.Predicate);
+            // Support only WHERE for now
+            return _where == null ? null : GetSqlExpression(_where.Predicate);
 
-            if (_select.Selector.Type == typeof (ICacheEntry<TKey, TValue>))
-            {
-                // Full entry query
-                return new QueryData(sql);
-            }
+            //var sql = _where == null ? null : GetSqlExpression(_where.Predicate);
 
-            return new QueryData(sql) {IsFieldsQuery = true};
+            //var isFieldsQuery = _select.Selector.Type != typeof (ICacheEntry<TKey, TValue>);
+
+            //return new QueryData(sql.QueryText, sql.Parameters, isFieldsQuery);
         }
 
         public override void VisitWhereClause(WhereClause whereClause, QueryModel queryModel, int index)
@@ -83,14 +79,9 @@ namespace Apache.Ignite.Linq.Impl
                 throw new NotSupportedException("TODO");  // Min, max, etc
         }
 
-        private string GetSqlExpression(Expression expression)
+        private QueryData GetSqlExpression(Expression expression)
         {
-            return CacheQueryExpressionVisitor.GetSqlStatement(_cache, expression);
-        }
-
-        private string GetCacheName(MainFromClause fromClause)
-        {
-            return "CacheNameTODO";
+            return CacheQueryExpressionVisitor.GetSqlExpression(_cache, expression);
         }
     }
 

@@ -19,17 +19,55 @@ namespace Apache.Ignite.Linq.Impl
 {
     using System.Collections.Generic;
 
+    /// <summary>
+    /// Query data DTO.
+    /// </summary>
     internal class QueryData
     {
-        public QueryData(string queryText)
+        /** */
+        private readonly ICollection<object> _parameters;
+        
+        /** */
+        private readonly string _queryText;
+        
+        /** */
+        private readonly bool _isFieldsQuery;
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="QueryData"/> class.
+        /// </summary>
+        /// <param name="queryText">The query text.</param>
+        /// <param name="parameters">The parameters.</param>
+        /// <param name="isFieldsQuery">Fields query flag.</param>
+        public QueryData(string queryText, ICollection<object> parameters, bool isFieldsQuery = false)
         {
-            QueryText = queryText;
+            _queryText = queryText;
+            _parameters = parameters;
+            _isFieldsQuery = isFieldsQuery;
         }
 
-        public ICollection<object> Parameters { get; set; }
+        /// <summary>
+        /// Gets the parameters.
+        /// </summary>
+        public ICollection<object> Parameters
+        {
+            get { return _parameters; }
+        }
 
-        public string QueryText { get; set; }
+        /// <summary>
+        /// Gets the query text.
+        /// </summary>
+        public string QueryText
+        {
+            get { return _queryText; }
+        }
 
-        public bool IsFieldsQuery { get; set; }
+        /// <summary>
+        /// Gets a value indicating whether this instance is fields query.
+        /// </summary>
+        public bool IsFieldsQuery
+        {
+            get { return _isFieldsQuery; }
+        }
     }
 }
