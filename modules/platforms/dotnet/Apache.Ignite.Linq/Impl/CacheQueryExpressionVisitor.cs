@@ -64,6 +64,10 @@ namespace Apache.Ignite.Linq.Impl
         /** */
         private readonly List<object> _parameters = new List<object>();
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="CacheQueryExpressionVisitor{TKey, TValue}"/> class.
+        /// </summary>
+        /// <param name="cache">The cache.</param>
         public CacheQueryExpressionVisitor(ICache<TKey, TValue> cache)
         {
             Debug.Assert(cache != null);
@@ -71,17 +75,22 @@ namespace Apache.Ignite.Linq.Impl
             _cache = cache;
         }
 
+        /// <summary>
+        /// Gets the SQL expression.
+        /// </summary>
         public QueryData GetSqlExpression()
         {
             return new QueryData(_resultBuilder.ToString(), _parameters);
         }
 
+        /** <inheritdoc /> */
         protected override Expression VisitQuerySourceReference(QuerySourceReferenceExpression expression)
         {
             _resultBuilder.Append(expression.ReferencedQuerySource.ItemName);
             return expression;
         }
 
+        /** <inheritdoc /> */
         protected override Expression VisitBinary(BinaryExpression expression)
         {
             _resultBuilder.Append("(");
@@ -147,6 +156,7 @@ namespace Apache.Ignite.Linq.Impl
             return expression;
         }
 
+        /** <inheritdoc /> */
         protected override Expression VisitMember(MemberExpression expression)
         {
             // Field hierarchy is flattened, append as is, do not call Visit.
@@ -155,6 +165,7 @@ namespace Apache.Ignite.Linq.Impl
             return expression;
         }
 
+        /** <inheritdoc /> */
         protected override Expression VisitConstant(ConstantExpression expression)
         {
             _resultBuilder.Append("?");
@@ -164,6 +175,7 @@ namespace Apache.Ignite.Linq.Impl
             return expression;
         }
 
+        /** <inheritdoc /> */
         protected override Expression VisitMethodCall(MethodCallExpression expression)
         {
             // TODO: Other methods
@@ -181,7 +193,7 @@ namespace Apache.Ignite.Linq.Impl
             return base.VisitMethodCall(expression); // throws
         }
 
-        // Called when a LINQ expression type is not handled above.
+        /** <inheritdoc /> */
         protected override Exception CreateUnhandledItemException<T>(T unhandledItem, string visitMethod)
         {
             return new NotSupportedException(

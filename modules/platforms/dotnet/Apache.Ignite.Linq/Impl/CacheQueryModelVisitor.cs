@@ -27,6 +27,24 @@ namespace Apache.Ignite.Linq.Impl
     /// <summary>
     /// Query visitor, transforms LINQ expression to SQL.
     /// </summary>
+    internal class CacheQueryModelVisitor
+    {
+        /// <summary>
+        /// Generates the query.
+        /// </summary>
+        public static QueryData GenerateQuery<TKey, TValue>(QueryModel queryModel, ICache<TKey, TValue> cache)
+        {
+            var visitor = new CacheQueryModelVisitor<TKey, TValue>(cache);
+
+            visitor.VisitQueryModel(queryModel);
+
+            return visitor.GetQuery();
+        }
+    }
+
+    /// <summary>
+    /// Query visitor, transforms LINQ expression to SQL.
+    /// </summary>
     internal class CacheQueryModelVisitor<TKey, TValue> : QueryModelVisitorBase
     {
         private readonly ICache<TKey, TValue> _cache;
@@ -52,23 +70,24 @@ namespace Apache.Ignite.Linq.Impl
             //return new QueryData(sql.QueryText, sql.Parameters, isFieldsQuery);
         }
 
+        /** <inheritdoc /> */
         public override void VisitWhereClause(WhereClause whereClause, QueryModel queryModel, int index)
         {
             base.VisitWhereClause(whereClause, queryModel, index);
 
             _where = whereClause;
-            //Query += " Where " + GetSqlExpression(whereClause.Predicate);
         }
 
+        /** <inheritdoc /> */
         public override void VisitSelectClause(SelectClause selectClause, QueryModel queryModel)
         {
             base.VisitSelectClause(selectClause, queryModel);
 
             _select = selectClause;
 
-            //Query += " Select " + GetSqlExpression(selectClause.Selector);
         }
 
+        /** <inheritdoc /> */
         public override void VisitResultOperator(ResultOperatorBase resultOperator, QueryModel queryModel, int index)
         {
             //base.VisitResultOperator(resultOperator, queryModel, index);
@@ -79,21 +98,12 @@ namespace Apache.Ignite.Linq.Impl
                 throw new NotSupportedException("TODO");  // Min, max, etc
         }
 
+        /// <summary>
+        /// Gets the SQL expression.
+        /// </summary>
         private QueryData GetSqlExpression(Expression expression)
         {
             return CacheQueryExpressionVisitor.GetSqlExpression(_cache, expression);
-        }
-    }
-
-    internal class CacheQueryModelVisitor
-    {
-        public static QueryData GenerateQuery<TKey, TValue>(QueryModel queryModel, ICache<TKey, TValue> cache)
-        {
-            var visitor = new CacheQueryModelVisitor<TKey, TValue>(cache);
-
-            visitor.VisitQueryModel(queryModel);
-
-            return visitor.GetQuery();
         }
     }
 }

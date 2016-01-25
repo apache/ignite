@@ -31,8 +31,13 @@ namespace Apache.Ignite.Linq.Impl
     /// <typeparam name="TValue">The type of the value.</typeparam>
     internal class CacheQueryExecutor<TKey, TValue> : IQueryExecutor
     {
+        /** */
         private readonly ICache<TKey, TValue> _cache;
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="CacheQueryExecutor{TKey, TValue}"/> class.
+        /// </summary>
+        /// <param name="cache">The cache.</param>
         public CacheQueryExecutor(ICache<TKey, TValue> cache)
         {
             IgniteArgumentCheck.NotNull(cache, "cache");
@@ -40,16 +45,21 @@ namespace Apache.Ignite.Linq.Impl
             _cache = cache;
         }
 
+        /** <inheritdoc /> */
         public T ExecuteScalar<T>(QueryModel queryModel)
         {
+            // TODO
             throw new System.NotImplementedException();
         }
 
+        /** <inheritdoc /> */
         public T ExecuteSingle<T>(QueryModel queryModel, bool returnDefaultWhenEmpty)
         {
+            // TODO
             throw new System.NotImplementedException();
         }
 
+        /** <inheritdoc /> */
         public IEnumerable<T> ExecuteCollection<T>(QueryModel queryModel)
         {
             var queryData = CacheQueryModelVisitor.GenerateQuery(queryModel, _cache);
