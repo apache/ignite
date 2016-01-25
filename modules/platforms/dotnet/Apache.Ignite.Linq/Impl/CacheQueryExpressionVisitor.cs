@@ -138,6 +138,8 @@ namespace Apache.Ignite.Linq.Impl
         protected override Expression VisitMember(MemberExpression expression)
         {
             // Field hierarchy is flattened, append as is, do not call Visit.
+            // TODO: Aliases? How do they work? See java.
+
             var queryFieldAttr =
                 expression.Member.GetCustomAttributes(true).OfType<QueryFieldAttribute>().FirstOrDefault();
 
