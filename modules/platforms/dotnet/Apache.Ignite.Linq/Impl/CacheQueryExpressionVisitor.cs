@@ -22,6 +22,7 @@ namespace Apache.Ignite.Linq.Impl
 {
     using System.Collections.Generic;
     using System.Diagnostics;
+    using System.Linq;
     using System.Linq.Expressions;
     using Apache.Ignite.Core.Cache;
     using Apache.Ignite.Core.Cache.Configuration;
@@ -162,8 +163,10 @@ namespace Apache.Ignite.Linq.Impl
         protected override Expression VisitMember(MemberExpression expression)
         {
             // Field hierarchy is flattened, append as is, do not call Visit.
-            // TODO: Look up QueryFieldAttribute
-            var fieldName = expression.Member.Name;
+            var queryFieldAttr =
+                expression.Member.GetCustomAttributes(true).OfType<QueryFieldAttribute>().FirstOrDefault();
+
+            var fieldName = queryFieldAttr == null ? expression.Member.Name : queryFieldAttr.Name;
 
             _resultBuilder.Append(fieldName);
 
