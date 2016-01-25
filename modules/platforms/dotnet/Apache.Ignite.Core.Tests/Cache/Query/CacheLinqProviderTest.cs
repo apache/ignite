@@ -23,6 +23,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
     using System.Linq;
     using System.Threading.Tasks;
     using Apache.Ignite.Core.Cache;
+    using Apache.Ignite.Core.Cache.Configuration;
     using Apache.Ignite.Core.Cache.Expiry;
     using Apache.Ignite.Core.Cache.Query;
     using Apache.Ignite.Core.Cache.Query.Continuous;
@@ -79,6 +80,11 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
             public IIgnite Ignite
             {
                 get { throw new NotImplementedException(); }
+            }
+
+            public CacheConfiguration GetConfiguration()
+            {
+                throw new NotImplementedException();
             }
 
             public bool IsEmpty()
