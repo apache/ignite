@@ -27,16 +27,25 @@ namespace Apache.Ignite.Linq.Impl
     /// </summary>
     internal class CacheQueryable<TKey, TValue> : QueryableBase<ICacheEntry<TKey, TValue>>
     {
+        /// <summary>
+        /// Initializes a new instance of the <see cref="CacheQueryable{TKey, TValue}"/> class.
+        /// </summary>
+        /// <param name="cache">The cache.</param>
         public CacheQueryable(ICache<TKey, TValue> cache)
             : base(new CacheQueryProvider<TKey, TValue>(cache))
         {
             // No-op.
         }
 
-        // This constructor is called indirectly by LINQ's query methods, just pass to base.
-        // TODO: ???
+        /// <summary>
+        /// Initializes a new instance of the <see cref="CacheQueryable{TKey, TValue}"/> class.
+        /// </summary>
+        /// <param name="provider">The provider used to execute the query represented by this queryable 
+        /// and to construct new queries.</param>
+        /// <param name="expression">The expression representing the query.</param>
         public CacheQueryable(IQueryProvider provider, Expression expression) : base(provider, expression)
         {
+            // No-op.
         }
     }
 }
