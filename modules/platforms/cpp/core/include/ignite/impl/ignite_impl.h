@@ -20,10 +20,10 @@
 
 #include <ignite/common/concurrent.h>
 #include <ignite/common/java.h>
+#include <ignite/common/utils.h>
 
 #include "ignite/impl/cache/cache_impl.h"
 #include "ignite/impl/ignite_environment.h"
-#include <ignite/common/utils.h>
 
 namespace ignite 
 {
