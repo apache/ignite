@@ -181,12 +181,26 @@ export default [
 
             $scope.cluster = cluster;
             $scope.selectedItem = cluster;
+            $scope.dialects = {};
 
             sessionStorage.summarySelectedId = $scope.clusters.indexOf(cluster);
 
             javaFolder.children = [javaConfigFolder, javaStartupFolder];
 
             _.forEach(cluster.caches, (cache) => {
+                if (cache.cacheStoreFactory) {
+                    //const store = cache.cacheStoreFactory[cache.cacheStoreFactory.kind];
+                    //
+                    //if (store && store.dialect)
+                    //    $scope.dialects[store.dialect] = true;
+
+                    if (cache.cacheStoreFactory.kind === 'CacheJdbcPojoStoreFactory')
+                        $scope.dialects[cache.cacheStoreFactory.CacheJdbcPojoStoreFactory.dialect] = true;
+
+                    if (cache.cacheStoreFactory.kind === 'CacheJdbcBlobStoreFactory')
+                        $scope.dialects[cache.cacheStoreFactory.CacheJdbcBlobStoreFactory.database] = true;
+                }
+
                 _.forEach(cache.domains, (domain) => {
                     if (!$common.isEmptyArray(domain.keyFields)) {
                         if (!JavaTypes.isBuiltInClass(domain.keyType))
@@ -265,20 +279,29 @@ export default [
             saveAs(blob, cluster.name + '-configuration.zip');
         };
 
-        $scope.openJdbcDownloadLinksVisible = function() {
-            return true; // TODO
+        /**
+         * @returns {boolean} 'true' if at least one proprietary JDBC driver is configured for cache store.
+         */
+        $scope.downloadJdbcDriversVisible = function() {
+            const dialects = $scope.dialects;
+
+            return !!(dialects.Oracle || dialects.DB2 || dialects.SQLServer);
         };
 
-        $scope.openJdbcDownloadLinks = function() {
-            const refs = [
-                'http://www.oracle.com/technetwork/apps-tech/jdbc-112010-090769.html',
-                'http://www-01.ibm.com/support/docview.wss?uid=swg21363866',
-                'https://www.microsoft.com/en-us/download/details.aspx?id=11774'
-            ];
+        /**
+         * Open download proprietary JDBC driver pages.
+         */
+        $scope.downloadJdbcDrivers = function() {
+            const dialects = $scope.dialects;
 
-            refs.forEach((ref) => {
-                window.open(ref);
-            });
+            if (dialects.Oracle)
+                window.open('http://www.oracle.com/technetwork/apps-tech/jdbc-112010-090769.html');
+
+            if (dialects.DB2)
+                window.open('http://www-01.ibm.com/support/docview.wss?uid=swg21363866');
+
+            if (dialects.SQLServer)
+                window.open('https://www.microsoft.com/en-us/download/details.aspx?id=11774');
         };
     }
 ];

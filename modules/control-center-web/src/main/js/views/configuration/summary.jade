@@ -68,7 +68,7 @@ mixin ignite-form-field-tooltip(message)
                         div(bs-popover data-template-url='/configuration/summary-project-structure.html', data-placement='bottom', data-trigger='click' data-auto-close='true')
                             i.fa.fa-sitemap
                             label.tipLabel Project structure
-                    button.btn.btn-primary(id='proprietary-jdbc-drivers' ng-click='openJdbcDownloadLinks()' bs-tooltip='' data-title='Open JDBC drivers download pages' data-placement='bottom') Download JDBC drivers
+                    button.btn.btn-primary(id='proprietary-jdbc-drivers' ng-if='downloadJdbcDriversVisible()' ng-click='downloadJdbcDrivers()' bs-tooltip='' data-title='Open proprietary JDBC drivers download pages' data-placement='bottom') Download JDBC drivers
                     hr
                 .panel-group(bs-collapse ng-init='panels.activePanels=[0,1]' ng-model='panels.activePanels' data-allow-multiple='true')
                     .panel.panel-default
