@@ -134,19 +134,23 @@ namespace Apache.Ignite.Linq.Impl
 
         protected override Expression VisitMember(MemberExpression expression)
         {
-            // Ignore ICacheEntry.Key and ICacheEntry.Value subexpressions because SQL can refer directly to the fields
-            if (expression.Member.DeclaringType != typeof (ICacheEntry<TKey, TValue>))
+            /*if (expression.Member.DeclaringType != typeof (ICacheEntry<TKey, TValue>))
             {
                 Visit(expression.Expression);
-            }
 
-            _resultBuilder.AppendFormat(".{0}", expression.Member.Name);
+                _resultBuilder.AppendFormat(".{0}", expression.Member.Name);
+            }*/
+
+            // Field hierarchy is flattened, append as is, do not call Visit.
+            _resultBuilder.Append(expression.Member.Name);
 
             return expression;
         }
 
         protected override Expression VisitConstant(ConstantExpression expression)
         {
+            // TODO: Maintain parameter order somehow
+
             _resultBuilder.Append("?");
 
             return expression;

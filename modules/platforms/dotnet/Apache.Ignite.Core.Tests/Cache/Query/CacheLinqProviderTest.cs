@@ -39,7 +39,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         {
             var cache = new CacheStub<int, QueryPerson>();
 
-            var res = cache.ToQueryable().Where(x => x.Value.Age > 20).ToList();
+            var res = cache.ToQueryable().Where(x => x.Value.Age > 20 && x.Value.Name.Contains("john")).ToList();
 
             Assert.IsNotNull(res);
 
