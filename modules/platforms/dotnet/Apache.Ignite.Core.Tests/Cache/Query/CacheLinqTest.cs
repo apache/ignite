@@ -38,14 +38,24 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
             // No-op.
         }
 
+        public override void TestSetUp()
+        {
+            base.TestSetUp();
+
+            var cache = GetCache();
+
+            for (var i = 0; i < 100; i++)
+                cache.Put(i, new QueryPerson("Person_" + i, i));
+        }
+
         [Test]
         public void Test()
         {
             var cache = GetCache();
 
-            var result = cache.ToQueryable().Where(x => x.Value.Age > 10).ToArray();
+            var result = cache.ToQueryable().Where(x => x.Value.Age < 10).ToArray();
 
-            Assert.IsTrue(result.Any());
+            Assert.AreEqual(9, result.Length);
         }
 
         private ICache<int, QueryPerson> GetCache()
