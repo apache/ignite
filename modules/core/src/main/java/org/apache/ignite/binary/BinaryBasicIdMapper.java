@@ -22,7 +22,7 @@ import org.apache.ignite.internal.util.typedef.internal.A;
 /**
  * Base binary ID mapper implementation.
  */
-public class BinaryBaseIdMapper implements BinaryIdMapper {
+public class BinaryBasicIdMapper implements BinaryIdMapper {
     /** Default lower case flag setting. */
     public static final boolean DFLT_LOWER_CASE = true;
 
@@ -48,7 +48,7 @@ public class BinaryBaseIdMapper implements BinaryIdMapper {
     /**
      * Default constructor.
      */
-    public BinaryBaseIdMapper() {
+    public BinaryBasicIdMapper() {
     }
 
     /**
@@ -56,7 +56,7 @@ public class BinaryBaseIdMapper implements BinaryIdMapper {
      * <p>
      * Defaults to {@link #DFLT_LOWER_CASE}.
      */
-    public BinaryBaseIdMapper(boolean isLowerCase) {
+    public BinaryBasicIdMapper(boolean isLowerCase) {
         this.isLowerCase = isLowerCase;
     }
 
@@ -145,11 +145,11 @@ public class BinaryBaseIdMapper implements BinaryIdMapper {
     @Override public boolean equals(Object o) {
         if (this == o)
             return true;
-        
-        if (!(o instanceof BinaryBaseIdMapper))
+
+        if (!(o instanceof BinaryBasicIdMapper))
             return false;
 
-        BinaryBaseIdMapper mapper = (BinaryBaseIdMapper)o;
+        BinaryBasicIdMapper mapper = (BinaryBasicIdMapper)o;
 
         if (isLowerCase != mapper.isLowerCase)
             return false;

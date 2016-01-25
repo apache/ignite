@@ -44,8 +44,8 @@ import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.binary.BinaryBaseIdMapper;
-import org.apache.ignite.binary.BinaryBaseNameMapper;
+import org.apache.ignite.binary.BinaryBasicIdMapper;
+import org.apache.ignite.binary.BinaryBasicNameMapper;
 import org.apache.ignite.binary.BinaryIdMapper;
 import org.apache.ignite.binary.BinaryInvalidTypeException;
 import org.apache.ignite.binary.BinaryNameMapper;
@@ -82,11 +82,11 @@ public class BinaryContext {
 
     /** */
     private static final BinaryInternalMapper DFLT_MAPPER =
-        new BinaryInternalMapper(new BinaryBaseNameMapper(false), new BinaryBaseIdMapper(true), false);
+        new BinaryInternalMapper(new BinaryBasicNameMapper(false), new BinaryBasicIdMapper(true), false);
 
     /** */
     static final BinaryInternalMapper SIMPLE_NAME_LOWER_CASE_MAPPER =
-        new BinaryInternalMapper(new BinaryBaseNameMapper(true), new BinaryBaseIdMapper(true), false);
+        new BinaryInternalMapper(new BinaryBasicNameMapper(true), new BinaryBasicIdMapper(true), false);
 
     /** */
     private final ConcurrentMap<Class<?>, BinaryClassDescriptor> descByCls = new ConcurrentHashMap8<>();
@@ -377,10 +377,10 @@ public class BinaryContext {
             && (idMapper == null || DFLT_MAPPER.idMapper().equals(idMapper)))
             return DFLT_MAPPER;
 
-        if (nameMapper != null && nameMapper instanceof BinaryBaseNameMapper
-            && ((BinaryBaseNameMapper)nameMapper).isSimpleName()
-            && idMapper != null && idMapper instanceof BinaryBaseIdMapper
-            && ((BinaryBaseIdMapper)idMapper).isLowerCase())
+        if (nameMapper != null && nameMapper instanceof BinaryBasicNameMapper
+            && ((BinaryBasicNameMapper)nameMapper).isSimpleName()
+            && idMapper != null && idMapper instanceof BinaryBasicIdMapper
+            && ((BinaryBasicIdMapper)idMapper).isLowerCase())
             return SIMPLE_NAME_LOWER_CASE_MAPPER;
 
         if (nameMapper == null)

@@ -22,7 +22,7 @@ import org.apache.ignite.internal.util.typedef.internal.A;
 /**
  * Base binary name mapper implementation.
  */
-public class BinaryBaseNameMapper implements BinaryNameMapper {
+public class BinaryBasicNameMapper implements BinaryNameMapper {
     /** Default use simple name flag setting. */
     public static final boolean DFLT_SIMPLE_NAME = false;
 
@@ -32,7 +32,7 @@ public class BinaryBaseNameMapper implements BinaryNameMapper {
     /**
      * Default constructor.
      */
-    public BinaryBaseNameMapper() {
+    public BinaryBasicNameMapper() {
         // No-op.
     }
 
@@ -41,7 +41,7 @@ public class BinaryBaseNameMapper implements BinaryNameMapper {
      * <p>
      * Defaults to {@link #DFLT_SIMPLE_NAME}.
      */
-    public BinaryBaseNameMapper(boolean isSimpleName) {
+    public BinaryBasicNameMapper(boolean isSimpleName) {
         this.isSimpleName = isSimpleName;
     }
 
@@ -118,10 +118,10 @@ public class BinaryBaseNameMapper implements BinaryNameMapper {
         if (this == o)
             return true;
 
-        if (!(o instanceof BinaryBaseNameMapper))
+        if (!(o instanceof BinaryBasicNameMapper))
             return false;
 
-        BinaryBaseNameMapper mapper = (BinaryBaseNameMapper)o;
+        BinaryBasicNameMapper mapper = (BinaryBasicNameMapper)o;
 
         if (isSimpleName != mapper.isSimpleName)
             return false;

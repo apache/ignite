@@ -20,9 +20,9 @@ package org.apache.ignite.internal.processors.platform.cpp;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.binary.BinaryIdMapper;
-import org.apache.ignite.binary.BinaryBaseIdMapper;
+import org.apache.ignite.binary.BinaryBasicIdMapper;
 import org.apache.ignite.binary.BinaryNameMapper;
-import org.apache.ignite.binary.BinaryBaseNameMapper;
+import org.apache.ignite.binary.BinaryBasicNameMapper;
 import org.apache.ignite.configuration.BinaryConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.PlatformConfiguration;
@@ -91,8 +91,8 @@ public class PlatformCppConfigurationClosure extends PlatformAbstractConfigurati
             bCfg = new BinaryConfiguration();
 
             bCfg.setCompactFooter(false);
-            bCfg.setNameMapper(new BinaryBaseNameMapper(true));
-            bCfg.setIdMapper(new BinaryBaseIdMapper(true));
+            bCfg.setNameMapper(new BinaryBasicNameMapper(true));
+            bCfg.setIdMapper(new BinaryBasicIdMapper(true));
 
             igniteCfg.setBinaryConfiguration(bCfg);
 
@@ -105,7 +105,7 @@ public class PlatformCppConfigurationClosure extends PlatformAbstractConfigurati
             BinaryNameMapper nameMapper = bCfg.getNameMapper();
 
             if (nameMapper == null) {
-                bCfg.setNameMapper(new BinaryBaseNameMapper(true));
+                bCfg.setNameMapper(new BinaryBasicNameMapper(true));
 
                 cppCfg0.warnings(Collections.singleton("Binary name mapper is automatically set to " +
                     bCfg.getNameMapper()
@@ -115,7 +115,7 @@ public class PlatformCppConfigurationClosure extends PlatformAbstractConfigurati
             BinaryIdMapper idMapper = bCfg.getIdMapper();
 
             if (idMapper == null) {
-                bCfg.setIdMapper(new BinaryBaseIdMapper(true));
+                bCfg.setIdMapper(new BinaryBasicIdMapper(true));
 
                 cppCfg0.warnings(Collections.singleton("Binary ID mapper is automatically set to " +
                     bCfg.getIdMapper()

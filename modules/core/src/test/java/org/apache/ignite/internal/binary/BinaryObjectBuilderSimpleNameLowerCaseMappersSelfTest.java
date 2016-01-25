@@ -17,8 +17,8 @@
 
 package org.apache.ignite.internal.binary;
 
-import org.apache.ignite.binary.BinaryBaseIdMapper;
-import org.apache.ignite.binary.BinaryBaseNameMapper;
+import org.apache.ignite.binary.BinaryBasicIdMapper;
+import org.apache.ignite.binary.BinaryBasicNameMapper;
 import org.apache.ignite.configuration.BinaryConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 
@@ -33,8 +33,8 @@ public class BinaryObjectBuilderSimpleNameLowerCaseMappersSelfTest extends Binar
 
         BinaryConfiguration bCfg = cfg.getBinaryConfiguration();
 
-        bCfg.setIdMapper(new BinaryBaseIdMapper(true));
-        bCfg.setNameMapper(new BinaryBaseNameMapper());
+        bCfg.setIdMapper(new BinaryBasicIdMapper(true));
+        bCfg.setNameMapper(new BinaryBasicNameMapper());
 
         return cfg;
     }

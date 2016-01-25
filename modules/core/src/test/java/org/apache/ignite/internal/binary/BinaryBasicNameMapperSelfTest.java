@@ -17,35 +17,34 @@
 
 package org.apache.ignite.internal.binary;
 
-import org.apache.ignite.binary.BinaryBaseIdMapper;
+import org.apache.ignite.binary.BinaryBasicNameMapper;
 import org.apache.ignite.internal.binary.test.GridBinaryTestClass1;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 /**
  *
  */
-public class BinaryBaseIdMapperSelfTest extends GridCommonAbstractTest {
+public class BinaryBasicNameMapperSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
-    public void testLowerCase() throws Exception {
-        BinaryBaseIdMapper mapper = new BinaryBaseIdMapper(true);
+    public void testSimpleName() throws Exception {
+        BinaryBasicNameMapper mapper = new BinaryBasicNameMapper(true);
 
-        assertEquals(GridBinaryTestClass1.class.getName().toLowerCase().hashCode(),
-            mapper.typeId(GridBinaryTestClass1.class.getName()));
-        assertEquals((GridBinaryTestClass1.class.getName() + "$InnerClass").toLowerCase().hashCode(),
-            mapper.typeId(GridBinaryTestClass1.class.getName() + "$InnerClass"));
+        assertEquals("GridBinaryTestClass1", mapper.typeName(GridBinaryTestClass1.class.getName()));
+
+        assertEquals("InnerClass", mapper.typeName(GridBinaryTestClass1.class.getName() + "$InnerClass"));
     }
 
     /**
      * @throws Exception If failed.
      */
-    public void testDefaultCase() throws Exception {
-        BinaryBaseIdMapper mapper = new BinaryBaseIdMapper(false);
+    public void testFullName() throws Exception {
+        BinaryBasicNameMapper mapper = new BinaryBasicNameMapper(false);
 
-        assertEquals(GridBinaryTestClass1.class.getName().hashCode(),
-            mapper.typeId(GridBinaryTestClass1.class.getName()));
-        assertEquals((GridBinaryTestClass1.class.getName() + "$InnerClass").hashCode(),
-            mapper.typeId(GridBinaryTestClass1.class.getName() + "$InnerClass"));
+        assertEquals(GridBinaryTestClass1.class.getName(), mapper.typeName(GridBinaryTestClass1.class.getName()));
+
+        assertEquals(GridBinaryTestClass1.class.getName() + "$InnerClass",
+            mapper.typeName(GridBinaryTestClass1.class.getName() + "$InnerClass"));
     }
 }

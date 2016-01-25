@@ -16,8 +16,8 @@
  */
 package org.apache.ignite.internal.processors.cache.binary;
 
-import org.apache.ignite.binary.BinaryBaseIdMapper;
-import org.apache.ignite.binary.BinaryBaseNameMapper;
+import org.apache.ignite.binary.BinaryBasicIdMapper;
+import org.apache.ignite.binary.BinaryBasicNameMapper;
 import org.apache.ignite.configuration.BinaryConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 
@@ -32,8 +32,8 @@ public class GridCacheBinaryStoreBinariesSimpleNameMappersSelfTest
 
         BinaryConfiguration bCfg = cfg.getBinaryConfiguration();
 
-        bCfg.setNameMapper(new BinaryBaseNameMapper());
-        bCfg.setIdMapper(new BinaryBaseIdMapper(true));
+        bCfg.setNameMapper(new BinaryBasicNameMapper());
+        bCfg.setIdMapper(new BinaryBasicIdMapper(true));
 
         return cfg;
     }

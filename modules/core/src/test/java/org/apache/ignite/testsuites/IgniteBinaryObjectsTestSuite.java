@@ -18,8 +18,8 @@
 package org.apache.ignite.testsuites;
 
 import junit.framework.TestSuite;
-import org.apache.ignite.internal.binary.BinaryBaseIdMapperSelfTest;
-import org.apache.ignite.internal.binary.BinaryBaseNameMapperSelfTest;
+import org.apache.ignite.internal.binary.BinaryBasicIdMapperSelfTest;
+import org.apache.ignite.internal.binary.BinaryBasicNameMapperSelfTest;
 import org.apache.ignite.internal.binary.BinaryConfigurationConsistencySelfTest;
 import org.apache.ignite.internal.binary.BinaryEnumsSelfTest;
 import org.apache.ignite.internal.binary.BinaryFieldsHeapSelfTest;
@@ -75,8 +75,8 @@ public class IgniteBinaryObjectsTestSuite extends TestSuite {
     public static TestSuite suite() throws Exception {
         TestSuite suite = new TestSuite("Ignite Binary Objects Test Suite");
 
-        suite.addTestSuite(BinaryBaseIdMapperSelfTest.class);
-        suite.addTestSuite(BinaryBaseNameMapperSelfTest.class);
+        suite.addTestSuite(BinaryBasicIdMapperSelfTest.class);
+        suite.addTestSuite(BinaryBasicNameMapperSelfTest.class);
 
         suite.addTestSuite(BinaryMarshallerSelfTest.class);
         suite.addTestSuite(BinaryConfigurationConsistencySelfTest.class);
