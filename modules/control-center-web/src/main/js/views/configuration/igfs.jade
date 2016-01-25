@@ -19,24 +19,27 @@ include ../includes/controls
 .docs-header
     h1 Create and Configure IGFS
 .docs-body(ng-controller='igfsController')
-    ignite-callout
+    ignite-information(data-title='Configure IGFS only if you going to use In-memory File System')
+        p Ignite File System (IGFS) is an in-memory file system allowing work with files and directories over existing cache infrastructure.
+        p IGFS can either work as purely in-memory file system, or delegate to another file system (e.g. various Hadoop file system implementations) acting as a caching layer (see #[a(href='https://apacheignite.readme.io/docs/secondary-file-system' target='_blank') secondary file system]  for more detail).
+        p In addition IGFS provides API to execute map-reduce tasks over file system data.
+    //-- ignite-callout
         ignite-callout-cel(data-title='On This Screen')
             li Configure IGFS file systems
             li
                 ignite-dialog More info
                     ignite-dialog-title IGFS screen
-                    ignite-dialog-content 
+                    ignite-dialog-content
                         | Manage your IGFS file systems on current screen.#[br]
                         | IGFS can be assigned to specified #[a(ui-sref='base.configuration.clusters') clusters].#[br]
                         | Generated cluster with IGFS available on #[a(ui-sref='base.configuration.summary') summary] screen.
-                    
+
         ignite-callout-cel(data-title='Next Steps')
             li Continue to #[a(ui-sref='base.configuration.summary') Summary]
             li Back to #[a(ui-sref='base.configuration.clusters') Clusters]
 
     div(dw-loading='loadingIgfsScreen' dw-loading-options='{text: "Loading IGFS screen...", className: "page-loading-overlay"}')
         div(ng-show='ui.ready')
-            hr
             +main-table('IGFS', 'igfss', 'igfsName', 'selectItem(row)', '{{$index + 1}}) {{row.name}}', 'name')
             .padding-top-dflt(bs-affix)
                 .panel-tip-container(data-placement='bottom' bs-tooltip='' data-title='Create new IGFS')

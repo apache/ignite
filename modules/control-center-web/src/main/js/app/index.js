@@ -82,6 +82,7 @@ import './modules/terms/main';
 import igniteLoading from './directives/loading/loading.directive';
 import igniteCallout from './directives/callout/callout.directive';
 import igniteCalloutCel from './directives/callout/callout-cel.directive';
+import igniteInformation from './directives/information/information.directive';
 import igniteUiAceXml from './directives/ui-ace-xml/ui-ace-xml.directive';
 import igniteUiAceJava from './directives/ui-ace-java/ui-ace-java.directive';
 import igniteUiAcePom from './directives/ui-ace-pom/ui-ace-pom.directive';
@@ -124,6 +125,7 @@ angular
 .directive(...igniteLoading)
 .directive(...igniteCallout)
 .directive(...igniteCalloutCel)
+.directive(...igniteInformation)
 .directive(...igniteUiAceXml)
 .directive(...igniteUiAceJava)
 .directive(...igniteUiAcePom)
