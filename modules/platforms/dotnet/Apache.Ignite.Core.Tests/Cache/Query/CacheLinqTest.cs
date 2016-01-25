@@ -19,6 +19,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
 {
     using System.Linq;
     using Apache.Ignite.Core.Cache;
+    using Apache.Ignite.Core.Cache.Query;
     using Apache.Ignite.Linq;
     using NUnit.Framework;
 
@@ -51,6 +52,12 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
 
             for (var i = 0; i < DataSize; i++)
                 cache.Put(i, new QueryPerson("Person_" + i, i));
+        }
+
+        // TODO: DELME
+        public object TestSql(string sql, params object[] args)
+        {
+            return GetCache().Query(new SqlQuery(typeof (QueryPerson), sql, args)).ToArray();
         }
 
         [Test]
