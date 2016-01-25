@@ -14,42 +14,48 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.ignite.internal.processors.odbc.response;
-
-import org.apache.ignite.internal.processors.odbc.OdbcColumnMeta;
-
-import java.util.Collection;
+package org.apache.ignite.internal.processors.odbc;
 
 /**
- * Query execute result.
+ * ODBC command request.
  */
-public class OdbcQueryExecuteResult {
-    /** Query ID. */
-    private long queryId;
+public class OdbcRequest {
+    /** Execute sql query. */
+    public static final int EXECUTE_SQL_QUERY = 1;
 
-    /** Fields metadata. */
-    private Collection<OdbcColumnMeta> columnsMeta;
+    /** Fetch query results. */
+    public static final int FETCH_SQL_QUERY = 2;
+
+    /** Close query. */
+    public static final int CLOSE_SQL_QUERY = 3;
+
+    /** Get columns meta query. */
+    public static final int GET_COLUMNS_META = 4;
+
+    /** Get columns meta query. */
+    public static final int GET_TABLES_META = 5;
+
+    /** Command. */
+    private int cmd;
 
     /**
-     * @param queryId Query ID.
-     * @param columnsMeta Columns metadata.
+     * @param cmd Command type.
      */
-    public OdbcQueryExecuteResult(long queryId, Collection<OdbcColumnMeta> columnsMeta){
-        this.queryId = queryId;
-        this.columnsMeta = columnsMeta;
+    public OdbcRequest(int cmd) {
+        this.cmd = cmd;
     }
 
     /**
-     * @return Query ID.
+     * @return Command.
      */
-    public long getQueryId() {
-        return queryId;
+    public int command() {
+        return cmd;
     }
 
     /**
-     * @return Columns metadata.
+     * @param cmd Command.
      */
-    public Collection<OdbcColumnMeta> getColumnsMetadata() {
-        return columnsMeta;
+    public void command(int cmd) {
+        this.cmd = cmd;
     }
 }

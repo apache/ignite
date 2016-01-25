@@ -16,23 +16,28 @@
  */
 package org.apache.ignite.internal.processors.odbc;
 
-import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.processors.odbc.OdbcColumnMeta;
+
+import java.util.Collection;
 
 /**
- * ODBC command protocol handler.
+ * Query get columns meta result.
  */
-public interface OdbcProtocolHandler {
-    /**
-     * @param req Request.
-     * @return Response.
-     * @throws IgniteCheckedException In case of error.
-     */
-    public OdbcResponse handle(OdbcRequest req) throws IgniteCheckedException;
+public class OdbcQueryGetColumnsMetaResult {
+    /** Query result rows. */
+    private Collection<OdbcColumnMeta> meta;
 
     /**
-     * @param req Request.
-     * @return Future.
+     * @param meta Column metadata.
      */
-    public IgniteInternalFuture<OdbcResponse> handleAsync(OdbcRequest req);
+    public OdbcQueryGetColumnsMetaResult(Collection<OdbcColumnMeta> meta) {
+        this.meta = meta;
+    }
+
+    /**
+     * @return Query result rows.
+     */
+    public Collection<OdbcColumnMeta> getMeta() {
+        return meta;
+    }
 }

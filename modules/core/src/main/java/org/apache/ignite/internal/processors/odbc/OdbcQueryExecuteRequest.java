@@ -14,30 +14,59 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.ignite.internal.processors.odbc.request;
+package org.apache.ignite.internal.processors.odbc;
 
 /**
- * ODBC query get columns meta request.
+ * ODBC query execute request.
  */
-public class OdbcQueryGetColumnsMetaRequest extends OdbcRequest {
+public class OdbcQueryExecuteRequest extends OdbcRequest {
     /** Cache name. */
     private String cacheName;
 
-    /** Table name. */
-    private String tableName;
+    /** Sql query. */
+    private String sqlQry;
 
-    /** Column name. */
-    private String columnName;
+    /** Sql query arguments. */
+    private Object[] args;
 
     /**
      * @param cacheName Cache name.
+     * @param sqlQry SQL query.
+     * @param args Arguments list.
      */
-    public OdbcQueryGetColumnsMetaRequest(String cacheName, String tableName, String columnName) {
-        super(GET_COLUMNS_META);
-
+    public OdbcQueryExecuteRequest(String cacheName, String sqlQry, Object[] args) {
+        super(EXECUTE_SQL_QUERY);
         this.cacheName = cacheName;
-        this.tableName = tableName;
-        this.columnName = columnName;
+        this.sqlQry = sqlQry;
+        this.args = args;
+    }
+
+    /**
+     * @param sqlQry Sql query.
+     */
+    public void sqlQuery(String sqlQry) {
+        this.sqlQry = sqlQry;
+    }
+
+    /**
+     * @return Sql query.
+     */
+    public String sqlQuery() {
+        return sqlQry;
+    }
+
+    /**
+     * @param args Sql query arguments.
+     */
+    public void arguments(Object[] args) {
+        this.args = args;
+    }
+
+    /**
+     * @return Sql query arguments.
+     */
+    public Object[] arguments() {
+        return args;
     }
 
     /**
@@ -52,33 +81,5 @@ public class OdbcQueryGetColumnsMetaRequest extends OdbcRequest {
      */
     public String cacheName() {
         return cacheName;
-    }
-
-    /**
-     * @param tableName Table name.
-     */
-    public void tableName(String tableName) {
-        this.tableName = tableName;
-    }
-
-    /**
-     * @return Table name.
-     */
-    public String tableName() {
-        return tableName;
-    }
-
-    /**
-     * @param columnName Column name.
-     */
-    public void columnName(String columnName) {
-        this.columnName = columnName;
-    }
-
-    /**
-     * @return Column name.
-     */
-    public String columnName() {
-        return columnName;
     }
 }

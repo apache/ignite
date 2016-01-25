@@ -14,62 +14,53 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.ignite.internal.processors.odbc.response;
-
-import java.util.Collection;
+package org.apache.ignite.internal.processors.odbc;
 
 /**
- * Query fetch result.
+ * ODBC query fetch request.
  */
-public class OdbcQueryFetchResult {
+public class OdbcQueryFetchRequest extends OdbcRequest {
     /** Query ID. */
     private long queryId;
 
-    /** Query result rows. */
-    private Collection<?> items = null;
+    /** Page size - maximum number of rows to return. */
+    private Integer pageSize;
 
-    /** Flag indicating the query has no unfetched results. */
-    private boolean last = false;
+    /**
+     * @param queryId Query ID.
+     * @param pageSize Page size.
+     */
+    public OdbcQueryFetchRequest(long queryId, int pageSize) {
+        super(FETCH_SQL_QUERY);
+        this.queryId = queryId;
+        this.pageSize = pageSize;
+    }
+
+    /**
+     * @param pageSize Page size.
+     */
+    public void pageSize(Integer pageSize) {
+        this.pageSize = pageSize;
+    }
+
+    /**
+     * @return Page size.
+     */
+    public int pageSize() {
+        return pageSize;
+    }
 
     /**
      * @param queryId Query ID.
      */
-    public OdbcQueryFetchResult(long queryId){
+    public void cacheName(long queryId) {
         this.queryId = queryId;
     }
 
     /**
      * @return Query ID.
      */
-    public long getQueryId() {
+    public long queryId() {
         return queryId;
-    }
-
-    /**
-     * @param items Query result rows.
-     */
-    public void setItems(Collection<?> items) {
-        this.items = items;
-    }
-
-    /**
-     * @return Query result rows.
-     */
-    public Collection<?> getItems() {
-        return items;
-    }
-
-    /**
-     * @param last Flag indicating the query has no unfetched results.
-     */
-    public void setLast(boolean last) {
-        this.last = last;
-    }
-
-    /**
-     * @return Flag indicating the query has no unfetched results.
-     */
-    public boolean getLast() {
-        return last;
     }
 }

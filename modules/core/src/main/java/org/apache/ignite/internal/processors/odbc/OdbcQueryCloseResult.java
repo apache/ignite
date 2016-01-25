@@ -14,30 +14,26 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.ignite.internal.processors.odbc.response;
-
-import org.apache.ignite.internal.processors.odbc.OdbcColumnMeta;
-
-import java.util.Collection;
+package org.apache.ignite.internal.processors.odbc;
 
 /**
- * Query get columns meta result.
+ * Query result.
  */
-public class OdbcQueryGetColumnsMetaResult {
-    /** Query result rows. */
-    private Collection<OdbcColumnMeta> meta;
+public class OdbcQueryCloseResult {
+    /** Query ID. */
+    private long queryId;
 
     /**
-     * @param meta Column metadata.
+     * @param queryId Query ID.
      */
-    public OdbcQueryGetColumnsMetaResult(Collection<OdbcColumnMeta> meta) {
-        this.meta = meta;
+    public OdbcQueryCloseResult(long queryId){
+        this.queryId = queryId;
     }
 
     /**
-     * @return Query result rows.
+     * @return Query ID.
      */
-    public Collection<OdbcColumnMeta> getMeta() {
-        return meta;
+    public long getQueryId() {
+        return queryId;
     }
 }

@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.ignite.internal.processors.odbc.request;
+package org.apache.ignite.internal.processors.odbc;
 
 /**
  * ODBC query get tables meta request.

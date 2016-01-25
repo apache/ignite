@@ -14,34 +14,62 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.ignite.internal.processors.odbc.request;
+package org.apache.ignite.internal.processors.odbc;
+
+import java.util.Collection;
 
 /**
- * ODBC query close request.
+ * Query fetch result.
  */
-public class OdbcQueryCloseRequest extends OdbcRequest {
+public class OdbcQueryFetchResult {
     /** Query ID. */
     private long queryId;
 
-    /**
-     * @param queryId Query ID.
-     */
-    public OdbcQueryCloseRequest(long queryId) {
-        super(CLOSE_SQL_QUERY);
-        this.queryId = queryId;
-    }
+    /** Query result rows. */
+    private Collection<?> items = null;
+
+    /** Flag indicating the query has no unfetched results. */
+    private boolean last = false;
 
     /**
      * @param queryId Query ID.
      */
-    public void cacheName(long queryId) {
+    public OdbcQueryFetchResult(long queryId){
         this.queryId = queryId;
     }
 
     /**
      * @return Query ID.
      */
-    public long queryId() {
+    public long getQueryId() {
         return queryId;
+    }
+
+    /**
+     * @param items Query result rows.
+     */
+    public void setItems(Collection<?> items) {
+        this.items = items;
+    }
+
+    /**
+     * @return Query result rows.
+     */
+    public Collection<?> getItems() {
+        return items;
+    }
+
+    /**
+     * @param last Flag indicating the query has no unfetched results.
+     */
+    public void setLast(boolean last) {
+        this.last = last;
+    }
+
+    /**
+     * @return Flag indicating the query has no unfetched results.
+     */
+    public boolean getLast() {
+        return last;
     }
 }

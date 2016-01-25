@@ -14,26 +14,34 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.ignite.internal.processors.odbc.response;
+package org.apache.ignite.internal.processors.odbc;
 
 /**
- * Query result.
+ * ODBC query close request.
  */
-public class OdbcQueryCloseResult {
+public class OdbcQueryCloseRequest extends OdbcRequest {
     /** Query ID. */
     private long queryId;
 
     /**
      * @param queryId Query ID.
      */
-    public OdbcQueryCloseResult(long queryId){
+    public OdbcQueryCloseRequest(long queryId) {
+        super(CLOSE_SQL_QUERY);
+        this.queryId = queryId;
+    }
+
+    /**
+     * @param queryId Query ID.
+     */
+    public void cacheName(long queryId) {
         this.queryId = queryId;
     }
 
     /**
      * @return Query ID.
      */
-    public long getQueryId() {
+    public long queryId() {
         return queryId;
     }
 }
