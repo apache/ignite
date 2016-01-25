@@ -55,7 +55,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
 
             var result = cache.ToQueryable().Where(x => x.Value.Age < 10).ToArray();
 
-            Assert.AreEqual(9, result.Length);
+            Assert.AreEqual(10, result.Length);
         }
 
         private ICache<int, QueryPerson> GetCache()

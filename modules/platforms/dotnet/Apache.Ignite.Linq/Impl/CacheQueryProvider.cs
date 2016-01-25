@@ -30,12 +30,13 @@ namespace Apache.Ignite.Linq.Impl
     internal class CacheQueryProvider<TKey, TValue> : QueryProviderBase
     {
         /// <summary>
-        /// Initializes a new instance of the <see cref="CacheQueryProvider{TKey, TValue}"/> class.
+        /// Initializes a new instance of the <see cref="CacheQueryProvider{TKey, TValue}" /> class.
         /// </summary>
         /// <param name="cache">The cache.</param>
-        public CacheQueryProvider(ICache<TKey, TValue> cache) 
+        /// <param name="queryTypeName">Name of the query type.</param>
+        public CacheQueryProvider(ICache<TKey, TValue> cache, string queryTypeName) 
             : base(Remotion.Linq.Parsing.Structure.QueryParser.CreateDefault(), 
-                  new CacheQueryExecutor<TKey, TValue>(cache))
+                  new CacheQueryExecutor<TKey, TValue>(cache, queryTypeName))
         {
             // No-op.
         }

@@ -18,6 +18,7 @@
 namespace Apache.Ignite.Linq.Impl
 {
     using System.Collections.Generic;
+    using System.Diagnostics;
     using System.Linq;
     using Apache.Ignite.Core.Cache;
     using Apache.Ignite.Core.Cache.Query;
@@ -34,15 +35,21 @@ namespace Apache.Ignite.Linq.Impl
         /** */
         private readonly ICache<TKey, TValue> _cache;
 
+        /** */
+        private readonly string _queryTypeName;
+
         /// <summary>
-        /// Initializes a new instance of the <see cref="CacheQueryExecutor{TKey, TValue}"/> class.
+        /// Initializes a new instance of the <see cref="CacheQueryExecutor{TKey, TValue}" /> class.
         /// </summary>
         /// <param name="cache">The cache.</param>
-        public CacheQueryExecutor(ICache<TKey, TValue> cache)
+        /// <param name="queryTypeName">Name of the query type.</param>
+        public CacheQueryExecutor(ICache<TKey, TValue> cache, string queryTypeName)
         {
-            IgniteArgumentCheck.NotNull(cache, "cache");
+            Debug.Assert(cache != null);
+            Debug.Assert(!string.IsNullOrEmpty(queryTypeName));
 
             _cache = cache;
+            _queryTypeName = queryTypeName;
         }
 
         /** <inheritdoc /> */
@@ -66,7 +73,7 @@ namespace Apache.Ignite.Linq.Impl
 
             //var query = new SqlFieldsQuery(queryData.QueryText, queryData.Parameters);
 
-            var query = new SqlQuery(typeof(T), queryData.QueryText, queryData.Parameters.ToArray());
+            var query = new SqlQuery(_queryTypeName, queryData.QueryText, queryData.Parameters.ToArray());
 
             return (IEnumerable<T>) _cache.Query(query);
         }

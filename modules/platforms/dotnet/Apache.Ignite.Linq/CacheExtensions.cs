@@ -39,7 +39,27 @@ namespace Apache.Ignite.Linq
         /// <returns><see cref="IQueryable{T}"/> instance over this cache.</returns>
         public static IQueryable<ICacheEntry<TKey, TValue>> ToQueryable<TKey, TValue>(this ICache<TKey, TValue> cache)
         {
-            return new CacheQueryable<TKey, TValue>(cache);
+            return cache.ToQueryable(typeof (TValue).Name);
+        }
+
+        /// <summary>
+        /// Gets an <see cref="IQueryable{T}" /> instance over this cache.
+        /// <para />
+        /// Resulting query will be translated to cache SQL query and executed over the cache instance
+        /// via either <see cref="ICache{TK,TV}.Query" /> or <see cref="ICache{TK,TV}.QueryFields" />,
+        /// depending on requested result.
+        /// </summary>
+        /// <typeparam name="TKey">The type of the key.</typeparam>
+        /// <typeparam name="TValue">The type of the value.</typeparam>
+        /// <param name="cache">The cache.</param>
+        /// <param name="queryTypeName">Name of the query type.</param>
+        /// <returns>
+        ///   <see cref="IQueryable{T}" /> instance over this cache.
+        /// </returns>
+        public static IQueryable<ICacheEntry<TKey, TValue>> ToQueryable<TKey, TValue>(this ICache<TKey, TValue> cache, 
+            string queryTypeName)
+        {
+            return new CacheQueryable<TKey, TValue>(cache, queryTypeName);
         }
     }
 }
