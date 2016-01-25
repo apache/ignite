@@ -45,9 +45,6 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
 
             Assert.AreEqual("((Age > ?) and (Name like '%' + ? + '%'))", cache.LastQuery);
             Assert.AreEqual(new object[] {20, "john"}, cache.LastQueryArgs);
-
-            Console.WriteLine(cache.LastQuery);
-            Console.WriteLine(cache.LastQueryArgs);
         }
 
         private class CacheStub<TKey, TValue> : ICache<TKey, TValue>

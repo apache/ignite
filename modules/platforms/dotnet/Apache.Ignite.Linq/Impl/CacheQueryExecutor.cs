@@ -18,6 +18,7 @@
 namespace Apache.Ignite.Linq.Impl
 {
     using System.Collections.Generic;
+    using System.Linq;
     using Apache.Ignite.Core.Cache;
     using Apache.Ignite.Core.Cache.Query;
     using Apache.Ignite.Core.Impl.Common;
@@ -55,7 +56,7 @@ namespace Apache.Ignite.Linq.Impl
 
             //var query = new SqlFieldsQuery(queryData.QueryText, queryData.Parameters);
 
-            var query = new SqlQuery(typeof(T), queryData.QueryText, queryData.Parameters);
+            var query = new SqlQuery(typeof(T), queryData.QueryText, queryData.Parameters.ToArray());
 
             return (IEnumerable<T>) _cache.Query(query);
         }
