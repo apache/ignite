@@ -18,62 +18,91 @@
 namespace Apache.Ignite.Linq.Impl
 {
     using System;
+    using System.Diagnostics;
     using System.Linq.Expressions;
+    using Apache.Ignite.Core.Cache;
     using Remotion.Linq;
     using Remotion.Linq.Clauses;
     using Remotion.Linq.Clauses.ResultOperators;
 
+
+
     /// <summary>
     /// Query visitor, transforms LINQ expression to SQL.
     /// </summary>
-    internal class CacheQueryModelVisitor : QueryModelVisitorBase
+    internal class CacheQueryModelVisitor<TKey, TValue> : QueryModelVisitorBase
     {
-        public static QueryData GenerateQuery(QueryModel queryModel)
-        {
-            var visitor = new CacheQueryModelVisitor();
+        private readonly ICache<TKey, TValue> _cache;
+        private WhereClause _where;
+        private SelectClause _select;
 
-            visitor.Query = "";
-            visitor.VisitQueryModel(queryModel);
-            
-            return new QueryData(visitor.Query);
+        public CacheQueryModelVisitor(ICache<TKey, TValue> cache)
+        {
+            Debug.Assert(cache != null);
+
+            _cache = cache;
         }
 
-        public string Query { get; set; }
-
-        public override void VisitMainFromClause(MainFromClause fromClause, QueryModel queryModel)
+        public QueryData GetQuery()
         {
-            base.VisitMainFromClause(fromClause, queryModel);
+            var sql = _where == null ? null : GetSqlExpression(_where.Predicate);
 
-            Query += " From " + fromClause.ItemName;
+            if (_select.Selector.Type == typeof (ICacheEntry<TKey, TValue>))
+            {
+                // Full entry query
+                return new QueryData(sql);
+            }
+
+            return new QueryData(sql) {IsFieldsQuery = true};
         }
 
         public override void VisitWhereClause(WhereClause whereClause, QueryModel queryModel, int index)
         {
             base.VisitWhereClause(whereClause, queryModel, index);
 
-            Query += " Where " + GetSqlExpression(whereClause.Predicate);
+            _where = whereClause;
+            //Query += " Where " + GetSqlExpression(whereClause.Predicate);
         }
 
         public override void VisitSelectClause(SelectClause selectClause, QueryModel queryModel)
         {
             base.VisitSelectClause(selectClause, queryModel);
 
-            Query += " Select " + GetSqlExpression(selectClause.Selector);
+            _select = selectClause;
+
+            //Query += " Select " + GetSqlExpression(selectClause.Selector);
         }
 
         public override void VisitResultOperator(ResultOperatorBase resultOperator, QueryModel queryModel, int index)
         {
-            base.VisitResultOperator(resultOperator, queryModel, index);
+            //base.VisitResultOperator(resultOperator, queryModel, index);
 
-            if (resultOperator is CountResultOperator)
-                Query += " Select " + "cast(count({0}) as int";
-            else
+            //if (resultOperator is CountResultOperator)
+            //    Query += " Select " + "cast(count({0}) as int";
+            //else
                 throw new NotSupportedException("TODO");  // Min, max, etc
         }
 
-        private static string GetSqlExpression(Expression expression)
+        private string GetSqlExpression(Expression expression)
         {
-            return CacheQueryExpressionVisitor.GetSqlStatement(expression);
+            return CacheQueryExpressionVisitor.GetSqlStatement(_cache, expression);
+        }
+
+        private string GetCacheName(MainFromClause fromClause)
+        {
+            return "CacheNameTODO";
+        }
+    }
+
+    internal class CacheQueryModelVisitor
+    {
+        public static QueryData GenerateQuery<TKey, TValue>(QueryModel queryModel, ICache<TKey, TValue> cache)
+        {
+            var visitor = new CacheQueryModelVisitor<TKey, TValue>(cache);
+
+            visitor.VisitQueryModel(queryModel);
+
+            return visitor.GetQuery();
         }
     }
 }

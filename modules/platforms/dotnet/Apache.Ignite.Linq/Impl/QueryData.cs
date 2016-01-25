@@ -29,5 +29,7 @@ namespace Apache.Ignite.Linq.Impl
         public ICollection<object> Parameters { get; set; }
 
         public string QueryText { get; set; }
+
+        public bool IsFieldsQuery { get; set; }
     }
 }
