@@ -23,7 +23,7 @@ namespace Apache.Ignite.Linq.Impl
     using Remotion.Linq;
 
     /// <summary>
-    /// 
+    /// <see cref="IQueryable{T}"/> implementation for <see cref="ICache{TK,TV}"/>.
     /// </summary>
     internal class CacheQueryable<TKey, TValue> : QueryableBase<ICacheEntry<TKey, TValue>>
     {
