@@ -84,6 +84,22 @@ namespace Apache.Ignite.Linq.Impl
                     _resultBuilder.Append(" / ");
                     break;
 
+                case ExpressionType.GreaterThan:
+                    _resultBuilder.Append(" > ");
+                    break;
+
+                case ExpressionType.GreaterThanOrEqual:
+                    _resultBuilder.Append(" >= ");
+                    break;
+
+                case ExpressionType.LessThan:
+                    _resultBuilder.Append(" < ");
+                    break;
+
+                case ExpressionType.LessThanOrEqual:
+                    _resultBuilder.Append(" <= ");
+                    break;
+
                 default:
                     base.VisitBinary(expression);
                     break;
