@@ -24,9 +24,10 @@ export default ['igniteFormFieldUp', ['$tooltip', ($tooltip) => {
         $tooltip($element, { title: 'Move item up' });
 
         scope.up = () => {
-            const i = scope.models.indexOf(scope.model);
-            scope.models.splice(i, 1);
-            scope.models.splice(i - 1, 0, scope.model);
+            const idx = scope.models.indexOf(scope.model);
+
+            scope.models.splice(idx, 1);
+            scope.models.splice(idx - 1, 0, scope.model);
         };
     };
 

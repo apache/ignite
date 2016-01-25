@@ -15,18 +15,12 @@
  * limitations under the License.
  */
 
-import JAVA_KEYWORDS from 'app/data/java-keywords.json!';
-
-export default ['javaKeywords', [() => {
+export default ['javaKeywords', ['JavaTypes', (JavaTypes) => {
     const link = (scope, el, attrs, [ngModel]) => {
         if (typeof attrs.javaKeywords === 'undefined' || !attrs.javaKeywords)
             return;
 
-        ngModel.$validators.javaKeywords = (value) => {
-            const keywords = JAVA_KEYWORDS.filter((key) => value && !!~value.indexOf(key));
-
-            return !keywords.length;
-        };
+        ngModel.$validators.javaKeywords = JavaTypes.nonKeywords;
     };
 
     return {

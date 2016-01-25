@@ -15,16 +15,12 @@
  * limitations under the License.
  */
 
-export default ['javaIdentifier', [() => {
+export default ['javaIdentifier', ['JavaTypes', (JavaTypes) => {
     const link = (scope, el, attrs, [ngModel]) => {
-        if (typeof attrs.javaIdentifier === 'undefined' || !attrs.javaIdentifier)
+        if (typeof attrs.validIdentifier === 'undefined' || !attrs.validIdentifier)
             return;
 
-        ngModel.$validators.javaIdentifier = (value) => {
-            const regexp = /^(([a-zA-Z_$][a-zA-Z0-9_$]*)\.)*([a-zA-Z_$][a-zA-Z0-9_$]*)$/igm;
-
-            return value === '' || regexp.test(value);
-        };
+        ngModel.$validators.javaIdentifier = JavaTypes.validIdentifier;
     };
 
     return {

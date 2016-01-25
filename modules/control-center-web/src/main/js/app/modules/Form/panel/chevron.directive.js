@@ -32,8 +32,10 @@ export default ['igniteFormPanelChevron', [() => {
             }, [])[0];
 
             $scope.isOpen = false;
+
             const active = bsCollapseCtrl.$activeIndexes();
-            if ((active instanceof Array) && active.indexOf(index) !== -1)
+
+            if ((active instanceof Array) && active.indexOf(index) !== -1 || active === index)
                 $scope.isOpen = true;
         });
     };

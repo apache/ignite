@@ -35,6 +35,7 @@ import clustersConnector from './clusters/connector.directive';
 import clustersCommunication from './clusters/communication.directive';
 import clustersBinary from './clusters/binary.directive';
 import clustersAtomic from './clusters/atomic.directive';
+
 import clustersGeneral from './clusters/general.directive';
 import generalDiscoveryCloud from './clusters/general/discovery/cloud.directive';
 import generalDiscoveryGoogle from './clusters/general/discovery/google.directive';
@@ -81,8 +82,11 @@ angular
         templateUrl: '/configuration/sidebar.html'
     })
     .state('base.configuration.clusters', {
-        url: '/clusters/{id}',
+        url: '/clusters',
         templateUrl: '/configuration/clusters.html',
+        params: {
+            id: null
+        },
         data: {
             loading: 'Loading clusters screen...'
         },
@@ -93,8 +97,11 @@ angular
         }
     })
     .state('base.configuration.caches', {
-        url: '/caches/{id}',
+        url: '/caches',
         templateUrl: '/configuration/caches.html',
+        params: {
+            id: null
+        },
         data: {
             loading: 'Loading caches screen...'
         },
@@ -105,8 +112,11 @@ angular
         }
     })
     .state('base.configuration.domains', {
-        url: '/domains/{id}',
+        url: '/domains',
         templateUrl: '/configuration/domains.html',
+        params: {
+            id: null
+        },
         data: {
             loading: 'Loading domain models screen...'
         },
@@ -117,8 +127,11 @@ angular
         }
     })
     .state('base.configuration.igfs', {
-        url: '/igfs/{id}',
+        url: '/igfs',
         templateUrl: '/configuration/igfs.html',
+        params: {
+            id: null
+        },
         data: {
             loading: 'Loading IGFS screen...'
         },

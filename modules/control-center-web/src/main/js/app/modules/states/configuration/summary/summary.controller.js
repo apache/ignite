@@ -189,7 +189,7 @@ export default [
             _.forEach(cluster.caches, (cache) => {
                 _.forEach(cache.domains, (domain) => {
                     if (!$common.isEmptyArray(domain.keyFields)) {
-                        if (!JavaTypes.isBuiltInClass(domain.keyType))
+                        if (JavaTypes.nonBuiltInClass(domain.keyType))
                             addChildren(domain.keyType);
 
                         addChildren(domain.valueType);
@@ -251,7 +251,7 @@ export default [
             zip.file('jdbc-drivers/README.txt', $generatorReadme.readmeJdbc().asString());
 
             for (const pojo of ctrl.data.pojos) {
-                if (pojo.keyClass && !JavaTypes.isBuiltInClass(pojo.keyType))
+                if (pojo.keyClass && JavaTypes.nonBuiltInClass(pojo.keyType))
                     zip.file(srcPath + pojo.keyType.replace(/\./g, '/') + '.java', pojo.keyClass);
 
                 zip.file(srcPath + pojo.valueType.replace(/\./g, '/') + '.java', pojo.valueClass);

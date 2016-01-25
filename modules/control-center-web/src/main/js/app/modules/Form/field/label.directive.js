@@ -23,6 +23,7 @@ export default ['igniteFormFieldLabel', [() => {
                 post($scope, $element, $attrs, $ctrl, $transclude) {
                     $transclude($scope, function(clone) {
                         const $label = $element.parent().parent().find('label');
+
                         $label.append(clone);
                     });
                 }

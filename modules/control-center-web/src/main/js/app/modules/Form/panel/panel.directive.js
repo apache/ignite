@@ -15,12 +15,6 @@
  * limitations under the License.
  */
 
-// i.pull-right.fa.fa-undo(
-//     ng-show='!preview["atomics"].allDefaults'
-//     ng-click='#{model} = {}; $event.stopPropagation()'
-
-// const template = `<form class='panel panel-default'></form>`;
-
 export default ['form', [() => {
     const link = (scope, $element, $attrs, [form]) => {
         const $form = $element.parent().closest('form');
@@ -28,7 +22,8 @@ export default ['form', [() => {
         scope.$watch(() => {
             return $form.hasClass('ng-pristine');
         }, (value) => {
-            if (!value) return;
+            if (!value)
+                return;
 
             form.$setPristine();
         });

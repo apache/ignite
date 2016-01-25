@@ -23,6 +23,8 @@ import JAVA_CLASSES from 'app/data/java-classes.json!';
 // Java built-in full class names.
 import JAVA_FULLNAME_CLASSES from 'app/data/java-fullname-classes.json!';
 
+import JAVA_KEYWORDS from 'app/data/java-keywords.json!';
+
 angular
     .module('ignite-console.JavaTypes', [])
     .provider('JavaTypes', function() {
@@ -30,10 +32,35 @@ angular
             return {
                 /**
                  * @param cls Class name to check.
-                 * @returns 'true' if given class name is a Java built-in type.
+                 * @returns boolean 'true' if given class name non a Java built-in type.
                  */
-                isBuiltInClass(cls) {
-                    return _.contains(JAVA_CLASSES, cls) || _.contains(JAVA_FULLNAME_CLASSES, cls);
+                nonBuiltInClass(cls) {
+                    return !(_.contains(JAVA_CLASSES, cls) || _.contains(JAVA_FULLNAME_CLASSES, cls));
+                },
+                /**
+                 * @param value text to check.
+                 * @returns boolean 'true' if given text is valid Java identifier.
+                 */
+                validIdentifier(value) {
+                    const regexp = /^(([a-zA-Z_$][a-zA-Z0-9_$]*)\.)*([a-zA-Z_$][a-zA-Z0-9_$]*)$/igm;
+
+                    return value === '' || regexp.test(value);
+                },
+                /**
+                 * @param value text to check.
+                 * @returns boolean 'true' if given text is valid Java package.
+                 */
+                validPackage(value) {
+                    const regexp = /^(([a-zA-Z_$][a-zA-Z0-9_$]*)\.)*([a-zA-Z_$][a-zA-Z0-9_$]*(\.[*]|[*])?)$/igm;
+
+                    return value === '' || regexp.test(value);
+                },
+                /**
+                 * @param value text to check.
+                 * @returns boolean 'true' if given text non Java keyword.
+                 */
+                nonKeywords(value) {
+                    return !JAVA_KEYWORDS.contains(value);
                 }
             };
         }];

@@ -15,16 +15,12 @@
  * limitations under the License.
  */
 
-export default ['javaPackageName', [() => {
+export default ['javaPackageName', ['JavaTypes', (JavaTypes) => {
     const link = (scope, el, attrs, [ngModel]) => {
         if (typeof attrs.javaPackageName === 'undefined' || !attrs.javaPackageName)
             return;
 
-        ngModel.$validators.javaPackageName = (value) => {
-            const regexp = /^(([a-zA-Z_$][a-zA-Z0-9_$]*)\.)*([a-zA-Z_$][a-zA-Z0-9_$]*(\.[*]|[*])?)$/igm;
-
-            return value === '' || regexp.test(value);
-        };
+        ngModel.$validators.javaPackageName = JavaTypes.validPackage;
     };
 
     return {

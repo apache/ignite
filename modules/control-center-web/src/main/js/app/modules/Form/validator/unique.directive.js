@@ -24,7 +24,7 @@ export default ['igniteUnique', ['$parse', ($parse) => {
             const arr = $parse(attrs.igniteUnique)(scope);
 
             // Return true in case if array not exist, array empty, or value is unique.
-            return !(arr && (arr.length > 0) && !!~arr.indexOf(value));
+            return !arr || !arr.length || !~arr.indexOf(value);
         };
     };
 

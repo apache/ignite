@@ -19,12 +19,12 @@ const template = `<i class='tipField fa fa-question-circle'></i>`;
 
 export default ['igniteFormFieldTooltip', ['$tooltip', ($tooltip) => {
     const link = ($scope, $element, $attrs, $ctrls, $transclude) => {
-        const content = Array.prototype.slice
-        .apply($transclude($scope))
-        .reduce((html, el) => html += el.outerHTML, '');
+        const content = Array.prototype.slice.apply($transclude($scope))
+            .reduce((html, el) => html += el.outerHTML, '');
 
         $tooltip($element, { title: content });
 
+        // TODO cleanup css styles.
         if ($element.hasClass('tipLabel'))
             $element.removeClass('tipField');
 

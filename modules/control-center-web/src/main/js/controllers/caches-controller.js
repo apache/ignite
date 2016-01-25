@@ -460,8 +460,7 @@ consoleModule.controller('cachesController', [
                 readFromBackup: true,
                 copyOnRead: true,
                 clusters: id && _.find($scope.clusters, {value: id})
-                    ? [id]
-                    : _.map($scope.clusters, function (cluster) { return cluster.value; }),
+                    ? [id] : _.map($scope.clusters, function (cluster) { return cluster.value; }),
                 domains: id && _.find($scope.domains, { value: id }) ? [id] : [],
                 cacheStoreFactory: {CacheJdbcBlobStoreFactory: {connectVia: 'DataSource'}}
             };

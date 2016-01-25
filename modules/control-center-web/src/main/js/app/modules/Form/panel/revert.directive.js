@@ -15,10 +15,6 @@
  * limitations under the License.
  */
 
-// i.pull-right.fa.fa-undo(
-//     ng-show='!preview["atomics"].allDefaults'
-//     ng-click='#{model} = {}; $event.stopPropagation()'
-
 const template = `<i ng-show='form.$dirty' class='fa fa-undo pull-right' ng-click='revert($event)'></i>`;
 
 export default ['igniteFormRevert', ['$tooltip', ($tooltip) => {
