@@ -70,6 +70,9 @@ namespace Apache.Ignite.Core.Impl.Cache
         /** Async instance. */
         private readonly Lazy<CacheImpl<TK, TV>> _asyncInstance;
 
+        /** Configuration. */
+        private readonly Lazy<CacheConfiguration> _configuration;
+
         /// <summary>
         /// Constructor.
         /// </summary>
@@ -90,6 +93,10 @@ namespace Apache.Ignite.Core.Impl.Cache
             _flagNoRetries = flagNoRetries;
 
             _asyncInstance = new Lazy<CacheImpl<TK, TV>>(() => new CacheImpl<TK, TV>(this));
+
+            _configuration = new Lazy<CacheConfiguration>(
+                () => DoInOp((int) CacheOp.GetConfig,
+                    stream => new CacheConfiguration(Marshaller.StartUnmarshal(stream))));
         }
 
         /// <summary>
@@ -155,7 +162,7 @@ namespace Apache.Ignite.Core.Impl.Cache
         /** <inheritDoc /> */
         public CacheConfiguration GetConfiguration()
         {
-            return DoInOp((int) CacheOp.GetConfig, stream => new CacheConfiguration(Marshaller.StartUnmarshal(stream)));
+            return _configuration.Value;
         }
 
         /** <inheritDoc /> */
