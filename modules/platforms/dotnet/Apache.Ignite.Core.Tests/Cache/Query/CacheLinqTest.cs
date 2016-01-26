@@ -19,14 +19,14 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
 {
     using System.Linq;
     using Apache.Ignite.Core.Cache;
-    using Apache.Ignite.Core.Cache.Query;
+    using Apache.Ignite.Core.Cache.Configuration;
     using Apache.Ignite.Linq;
     using NUnit.Framework;
 
     /// <summary>
     /// Tests LINQ queries.
     /// </summary>
-    public class CacheLinqTest : IgniteTestBase
+    public class CacheLinqTest
     {
         /** Cache name. */
         private const string CacheName = "cache";
@@ -34,24 +34,25 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         /** */
         private const int DataSize = 100;
 
-        /// <summary>
-        /// Initializes a new instance of the <see cref="CacheLinqTest"/> class.
-        /// </summary>
-        public CacheLinqTest() : base("config\\cache-query.xml")
+        [TestFixtureSetUp]
+        public void FixtureSetUp()
         {
-            // No-op.
-
-            // TODO: Start cache with in-code config, test attributes
-        }
-
-        public override void TestSetUp()
-        {
-            base.TestSetUp();
+            Ignition.Start(new IgniteConfiguration
+            {
+                JvmClasspath = TestUtils.CreateTestClasspath(),
+                JvmOptions = TestUtils.TestJavaOptions()
+            });
 
             var cache = GetCache();
 
             for (var i = 0; i < DataSize; i++)
-                cache.Put(i, new QueryPerson("Person_" + i, i));
+                cache.Put(i, new LinqPerson(i, "Person_" + i));
+        }
+
+        [TestFixtureTearDown]
+        public void FixtureTearDown()
+        {
+            Ignition.StopAll(true);
         }
 
         [Test]
@@ -90,9 +91,25 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
             Assert.AreEqual(DataSize, result.Length);
         }
 
-        private ICache<int, QueryPerson> GetCache()
+        private static ICache<int, LinqPerson> GetCache()
         {
-            return Grid.GetCache<int, QueryPerson>(CacheName);
+            return Ignition.GetIgnite().GetOrCreateCache<int, LinqPerson>(
+                new CacheConfiguration(CacheName, typeof (LinqPerson)));
+        }
+
+        public class LinqPerson
+        {
+            public LinqPerson(int age, string name)
+            {
+                Age = age;
+                Name = name;
+            }
+
+            [QueryField]
+            public int Age { get; set; }
+
+            [QueryField]
+            public string Name { get; set; }
         }
     }
 }
