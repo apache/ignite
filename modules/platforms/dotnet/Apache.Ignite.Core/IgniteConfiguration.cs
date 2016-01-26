@@ -27,10 +27,11 @@
     using System.Linq;
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Cache.Configuration;
-    using Apache.Ignite.Core.Discovery.Configuration;
+    using Apache.Ignite.Core.Discovery;
     using Apache.Ignite.Core.Events;
     using Apache.Ignite.Core.Impl;
     using Apache.Ignite.Core.Impl.Binary;
+    using Apache.Ignite.Core.Impl.Common;
     using Apache.Ignite.Core.Lifecycle;
     using BinaryReader = Apache.Ignite.Core.Impl.Binary.BinaryReader;
     using BinaryWriter = Apache.Ignite.Core.Impl.Binary.BinaryWriter;
@@ -108,6 +109,8 @@
         /// <param name="configuration">The configuration to copy.</param>
         public IgniteConfiguration(IgniteConfiguration configuration)
         {
+            IgniteArgumentCheck.NotNull(configuration, "configuration");
+
             CopyLocalProperties(configuration);
 
             using (var stream = IgniteManager.Memory.Allocate().GetStream())
@@ -188,13 +191,18 @@
             }
 
             // Discovery config
-            var disco = DiscoveryConfiguration;
+            var disco = DiscoverySpi;
 
             if (disco != null)
             {
                 writer.WriteBoolean(true);
 
-                disco.Write(writer);
+                var tcpDisco = disco as TcpDiscoverySpi;
+
+                if (tcpDisco == null)
+                    throw new InvalidOperationException("Unsupported discovery SPI: " + disco.GetType());
+
+                tcpDisco.Write(writer);
             }
             else
                 writer.WriteBoolean(false);
@@ -227,7 +235,7 @@
                 CacheConfiguration.Add(new CacheConfiguration(r));
 
             // Discovery config
-            DiscoveryConfiguration = r.ReadBoolean() ? new DiscoveryConfiguration(r) : null;
+            DiscoverySpi = r.ReadBoolean() ? new TcpDiscoverySpi(r) : null;
         }
 
         /// <summary>
@@ -260,7 +268,9 @@
         private void CopyLocalProperties(IgniteConfiguration cfg)
         {
             GridName = cfg.GridName;
-            BinaryConfiguration = new BinaryConfiguration(cfg.BinaryConfiguration);
+            BinaryConfiguration = cfg.BinaryConfiguration == null
+                ? null
+                : new BinaryConfiguration(cfg.BinaryConfiguration);
             JvmClasspath = cfg.JvmClasspath;
             JvmOptions = cfg.JvmOptions;
             Assemblies = cfg.Assemblies;
@@ -357,10 +367,10 @@
         public int JvmMaxMemoryMb { get; set; }
 
         /// <summary>
-        /// Gets or sets the discovery configuration.
-        /// Null for default configuration.
+        /// Gets or sets the discovery service provider.
+        /// Null for default discovery.
         /// </summary>
-        public DiscoveryConfiguration DiscoveryConfiguration { get; set; }
+        public IDiscoverySpi DiscoverySpi { get; set; }
 
         /// <summary>
         /// Gets or sets a value indicating whether node should start in client mode.

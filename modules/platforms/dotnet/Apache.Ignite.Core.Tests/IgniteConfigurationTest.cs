@@ -25,7 +25,6 @@ namespace Apache.Ignite.Core.Tests
     using Apache.Ignite.Core.Cache.Configuration;
     using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Discovery;
-    using Apache.Ignite.Core.Discovery.Configuration;
     using Apache.Ignite.Core.Events;
     using NUnit.Framework;
 
@@ -50,7 +49,7 @@ namespace Apache.Ignite.Core.Tests
         public void TestDefaultValueAttributes()
         {
             CheckDefaultValueAttributes(new IgniteConfiguration());
-            CheckDefaultValueAttributes(new DiscoveryConfiguration());
+            CheckDefaultValueAttributes(new TcpDiscoverySpi());
             CheckDefaultValueAttributes(new CacheConfiguration());
             CheckDefaultValueAttributes(new MulticastIpFinder());
         }
@@ -64,8 +63,8 @@ namespace Apache.Ignite.Core.Tests
             {
                 var resCfg = ignite.GetConfiguration();
 
-                var disco = cfg.DiscoveryConfiguration;
-                var resDisco = resCfg.DiscoveryConfiguration;
+                var disco = (TcpDiscoverySpi) cfg.DiscoverySpi;
+                var resDisco = (TcpDiscoverySpi) resCfg.DiscoverySpi;
 
                 Assert.AreEqual(disco.NetworkTimeout, resDisco.NetworkTimeout);
                 Assert.AreEqual(disco.AckTimeout, resDisco.AckTimeout);
@@ -140,8 +139,8 @@ namespace Apache.Ignite.Core.Tests
         {
             var cfg = new IgniteConfiguration
             {
-                DiscoveryConfiguration =
-                    new DiscoveryConfiguration
+                DiscoverySpi =
+                    new TcpDiscoverySpi
                     {
                         AckTimeout = TimeSpan.FromDays(2),
                         MaxAckTimeout = TimeSpan.MaxValue,
@@ -170,8 +169,8 @@ namespace Apache.Ignite.Core.Tests
         {
             var cfg = new IgniteConfiguration
             {
-                DiscoveryConfiguration =
-                    new DiscoveryConfiguration
+                DiscoverySpi =
+                    new TcpDiscoverySpi
                     {
                         AckTimeout = TimeSpan.FromMilliseconds(-5),
                         JoinTimeout = TimeSpan.MinValue,
@@ -207,8 +206,8 @@ namespace Apache.Ignite.Core.Tests
         {
             var cfg = new IgniteConfiguration
             {
-                DiscoveryConfiguration =
-                    new DiscoveryConfiguration
+                DiscoverySpi =
+                    new TcpDiscoverySpi
                     {
                         IpFinder = ipFinder
                     },
@@ -228,7 +227,7 @@ namespace Apache.Ignite.Core.Tests
                 }
 
                 // Start with incompatible endpoint and check that there are 2 topologies
-                cfg.DiscoveryConfiguration.IpFinder = ipFinder2;
+                ((TcpDiscoverySpi) cfg.DiscoverySpi).IpFinder = ipFinder2;
 
                 using (var ignite2 = Ignition.Start(cfg))
                 {
@@ -271,7 +270,7 @@ namespace Apache.Ignite.Core.Tests
         {
             return new IgniteConfiguration
             {
-                DiscoveryConfiguration = new DiscoveryConfiguration
+                DiscoverySpi = new TcpDiscoverySpi
                 {
                     NetworkTimeout = TimeSpan.FromSeconds(1),
                     AckTimeout = TimeSpan.FromSeconds(2),

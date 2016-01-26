@@ -21,6 +21,7 @@ namespace Apache.Ignite.Core.Binary
     using System.Collections.Generic;
     using System.Diagnostics.CodeAnalysis;
     using System.Linq;
+    using Apache.Ignite.Core.Impl.Common;
 
     /// <summary>
     /// Binary type configuration.
@@ -41,6 +42,8 @@ namespace Apache.Ignite.Core.Binary
         /// <param name="cfg">The binary configuration to copy.</param>
         public BinaryConfiguration(BinaryConfiguration cfg)
         {
+            IgniteArgumentCheck.NotNull(cfg, "cfg");
+
             DefaultIdMapper = cfg.DefaultIdMapper;
             DefaultNameMapper = cfg.DefaultNameMapper;
             DefaultKeepDeserialized = cfg.DefaultKeepDeserialized;
