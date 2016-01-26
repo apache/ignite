@@ -317,7 +317,7 @@ public class GridDistributedTxPrepareRequest extends GridDistributedBaseMessage 
         if (reads != null)
             marshalTx(reads, ctx);
 
-        if (dhtVers != null) {
+        if (dhtVers != null && dhtVerKeys == null) {
             for (IgniteTxKey key : dhtVers.keySet()) {
                 GridCacheContext cctx = ctx.cacheContext(key.cacheId());
 

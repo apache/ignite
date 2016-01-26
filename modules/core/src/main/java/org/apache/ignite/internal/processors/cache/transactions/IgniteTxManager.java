@@ -619,17 +619,19 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
                 return topVer;
         }
 
-        for (GridCacheContext cacheCtx : cctx.cache().context().cacheContexts()) {
-            if (!cacheCtx.systemTx())
-                continue;
+        if (!sysThreadMap.isEmpty()) {
+            for (GridCacheContext cacheCtx : cctx.cache().context().cacheContexts()) {
+                if (!cacheCtx.systemTx())
+                    continue;
 
-            tx = sysThreadMap.get(new TxThreadKey(threadId, cacheCtx.cacheId()));
+                tx = sysThreadMap.get(new TxThreadKey(threadId, cacheCtx.cacheId()));
 
-            if (tx != null && tx != ignore) {
-                AffinityTopologyVersion topVer = tx.topologyVersionSnapshot();
+                if (tx != null && tx != ignore) {
+                    AffinityTopologyVersion topVer = tx.topologyVersionSnapshot();
 
-                if (topVer != null)
-                    return topVer;
+                    if (topVer != null)
+                        return topVer;
+                }
             }
         }
 
@@ -1062,6 +1064,8 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
         // 1. Make sure that committed version has been recorded.
         if (!((committed != null && committed) || tx.writeSet().isEmpty() || tx.isSystemInvalidate())) {
             uncommitTx(tx);
+
+            tx.errorWhenCommitting();
 
             throw new IgniteException("Missing commit version (consider increasing " +
                 IGNITE_MAX_COMPLETED_TX_COUNT + " system property) [ver=" + tx.xidVersion() +
@@ -1613,6 +1617,24 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
         resFut.onDone(committed);
 
         return resFut;
+    }
+
+    /**
+     * @param nearVer Near version.
+     * @return Finish future for related remote transactions.
+     */
+    @SuppressWarnings("unchecked")
+    public IgniteInternalFuture<?> remoteTxFinishFuture(GridCacheVersion nearVer) {
+        GridCompoundFuture<Void, Void> fut = new GridCompoundFuture<>();
+
+        for (final IgniteInternalTx tx : txs()) {
+            if (!tx.local() && nearVer.equals(tx.nearXidVersion()))
+                fut.add((IgniteInternalFuture) tx.finishFuture());
+        }
+
+        fut.markInitialized();
+
+        return fut;
     }
 
     /**

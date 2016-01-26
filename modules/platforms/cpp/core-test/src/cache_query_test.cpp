@@ -24,6 +24,7 @@
 #include <boost/test/unit_test.hpp>
 
 #include <ignite/common/utils.h>
+
 #include "ignite/cache/cache.h"
 #include "ignite/cache/query/query_cursor.h"
 #include "ignite/cache/query/query_sql.h"

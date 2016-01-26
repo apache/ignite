@@ -165,7 +165,8 @@ public class GridDhtAtomicUpdateResponse extends GridCacheMessage implements Gri
 
         prepareMarshalCacheObjects(nearEvicted, cctx);
 
-        errBytes = ctx.marshaller().marshal(err);
+        if (errBytes == null)
+            errBytes = ctx.marshaller().marshal(err);
     }
 
     /** {@inheritDoc} */
@@ -178,7 +179,8 @@ public class GridDhtAtomicUpdateResponse extends GridCacheMessage implements Gri
 
         finishUnmarshalCacheObjects(nearEvicted, cctx, ldr);
 
-        err = ctx.marshaller().unmarshal(errBytes, ldr);
+        if (errBytes != null && err == null)
+            err = ctx.marshaller().unmarshal(errBytes, ldr);
     }
 
     /** {@inheritDoc} */

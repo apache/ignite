@@ -22,7 +22,6 @@ import java.util.UUID;
 import java.util.concurrent.Callable;
 import java.util.concurrent.TimeUnit;
 import org.apache.ignite.IgniteCache;
-import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.affinity.Affinity;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -41,6 +40,9 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.util.TestTcpCommunicationSpi;
 import org.eclipse.jetty.util.ConcurrentHashSet;
+
+import static org.apache.ignite.cache.CacheMode.PARTITIONED;
+import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 
 /**
  *
@@ -76,8 +78,9 @@ public class GridCachePartitionNotLoadedEventSelfTest extends GridCommonAbstract
 
         CacheConfiguration<Integer, Integer> cacheCfg = new CacheConfiguration<>();
 
-        cacheCfg.setCacheMode(CacheMode.PARTITIONED);
+        cacheCfg.setCacheMode(PARTITIONED);
         cacheCfg.setBackups(backupCnt);
+        cacheCfg.setWriteSynchronizationMode(FULL_SYNC);
 
         cfg.setCacheConfiguration(cacheCfg);
 

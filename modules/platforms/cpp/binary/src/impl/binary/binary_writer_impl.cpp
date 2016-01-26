@@ -15,9 +15,10 @@
  * limitations under the License.
  */
 
+#include <ignite/common/ignite_error.h>
+
 #include "ignite/impl/binary/binary_writer_impl.h"
 #include "ignite/impl/interop/interop_stream_position_guard.h"
-#include <ignite/common/ignite_error.h>
 
 using namespace ignite::impl::interop;
 using namespace ignite::impl::binary;

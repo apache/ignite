@@ -238,6 +238,12 @@ namespace Apache.Ignite.Core.Impl
         }
 
         /** <inheritdoc /> */
+        public void DestroyCache(string name)
+        {
+            _ignite.DestroyCache(name);
+        }
+
+        /** <inheritdoc /> */
 
         public IClusterNode GetLocalNode()
         {
