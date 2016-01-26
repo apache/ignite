@@ -35,12 +35,6 @@
     <version>1.5.1.final-SNAPSHOT</version>
     <url>http://ignite.apache.org</url>
 
-    <properties>
-        <kafka.version>0.9.0.0</kafka.version>
-        <curator.version>2.9.1</curator.version>
-        <easymock.version>3.4</easymock.version>
-    </properties>
-
     <dependencies>
         <dependency>
             <groupId>org.apache.ignite</groupId>
