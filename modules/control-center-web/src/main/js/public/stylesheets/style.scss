@@ -1767,18 +1767,17 @@ treecontrol.tree-classic {
     }
 
     li {
-        padding-left: 17px;
+        padding-left: 15px;
     }
 
-
-    li.tree-expanded i.fa, li.tree-collapsed i.fa, li.tree-leaf i.fa {
+    li.tree-expanded i.tree-branch-head.fa, li.tree-collapsed i.tree-branch-head.fa, li.tree-leaf i.tree-branch-head.fa, .tree-label i.fa {
         background: none no-repeat;
         padding: 1px 5px 1px 1px;
     }
 
     li.tree-leaf i.tree-leaf-head {
-        background: none no-repeat;
-        padding: 0;
+        background: none no-repeat !important;
+        padding: 0 !important;
     }
 
     li .tree-selected {

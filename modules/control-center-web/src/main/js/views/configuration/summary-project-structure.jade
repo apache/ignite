@@ -19,7 +19,7 @@
         treecontrol.tree-classic(tree-model='projectStructure' options='projectStructureOptions' expanded-nodes='projectStructureExpanded')
             span(ng-switch='' on='node.type')
                 span(ng-switch-when='folder')
-                    label {{node.title ? node.title : node.name}}
+                    label {{node.name}}
                 span(ng-switch-when='file')
                     i.fa.fa-file-text-o
                     label {{node.name}}
