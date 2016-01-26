@@ -12,20 +12,31 @@ import javax.cache.Cache;
 import java.util.List;
 
 public class IgniteSqlTests extends GridCommonAbstractTest {
-    /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
-
-        cfg.setPeerClassLoadingEnabled(false);
-
-        CacheConfiguration ccfg = new CacheConfiguration("sqlCache").setIndexedTypes(Integer.class, QueryPerson.class);
-
-        cfg.setCacheConfiguration(ccfg);
-
-        return cfg;
+        return super.getConfiguration(gridName)
+            .setCacheConfiguration(new CacheConfiguration("sqlCache")
+                .setIndexedTypes(Integer.class, QueryPerson.class));
     }
 
-    public void testQueries() throws Exception {
+    public void testSimpleQuery() throws Exception {
+        IgniteCache<Integer, QueryPerson> c = getCache();
+
+        List<Cache.Entry<Integer, QueryPerson>> results =
+            c.query(new SqlQuery<Integer, QueryPerson>("QueryPerson", "Age > 10")).getAll();
+
+        assert results.size() == 1;
+    }
+
+    public void testKeyQuery() throws Exception {
+        IgniteCache<Integer, QueryPerson> c = getCache();
+
+        List<Cache.Entry<Integer, QueryPerson>> results =
+            c.query(new SqlQuery<Integer, QueryPerson>("QueryPerson", "_key < 10")).getAll();
+
+        assert results.size() == 1;
+    }
+
+    private IgniteCache<Integer, QueryPerson> getCache() throws Exception {
         Ignite i = startGrid();
 
         IgniteCache<Integer, QueryPerson> c = i.cache("sqlCache");
@@ -35,13 +46,7 @@ public class IgniteSqlTests extends GridCommonAbstractTest {
         p.Name = "vasya";
 
         c.put(1, p);
-
-        List<Cache.Entry<Integer, QueryPerson>> results =
-            c.query(new SqlQuery<Integer, QueryPerson>("QueryPerson", "Age > 10")).getAll();
-
-        assert results.size() == 1;
-
-        stopAllGrids();
+        return c;
     }
 
     public static class QueryPerson {
