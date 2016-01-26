@@ -42,8 +42,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
             {
                 JvmClasspath = TestUtils.CreateTestClasspath(),
                 JvmOptions = TestUtils.TestJavaOptions(),
-                BinaryConfiguration = new BinaryConfiguration(typeof(LinqPerson)),
-                CacheConfiguration = new[] { new CacheConfiguration(CacheName, typeof(LinqPerson)) }
+                BinaryConfiguration = new BinaryConfiguration(typeof(LinqPerson))
             });
 
             var cache = GetCache();
@@ -98,7 +97,8 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
 
         private static ICache<int, LinqPerson> GetCache()
         {
-            return Ignition.GetIgnite().GetCache<int, LinqPerson>(CacheName);
+            return Ignition.GetIgnite()
+                    .GetOrCreateCache<int, LinqPerson>(new CacheConfiguration(CacheName, typeof (LinqPerson)));
         }
 
         public class LinqPerson : IBinarizable
