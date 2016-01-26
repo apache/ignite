@@ -20,7 +20,6 @@ namespace Apache.Ignite.Core
 {
     using System;
     using System.Collections.Generic;
-    using System.Diagnostics;
     using System.Diagnostics.CodeAnalysis;
     using System.IO;
     using System.Linq;
@@ -261,69 +260,7 @@ namespace Apache.Ignite.Core
             _startup.Marshaller = new Marshaller(cfg.BinaryConfiguration);
 
             // 3. Send configuration details to Java
-            WriteConfiguration(outStream, cfg);
-        }
-
-        /// <summary>
-        /// Writes the configuration.
-        /// </summary>
-        /// <param name="outStream">The out stream.</param>
-        /// <param name="cfg">The CFG.</param>
-        private static void WriteConfiguration(PlatformMemoryStream outStream, IgniteConfiguration cfg)
-        {
-            Debug.Assert(outStream != null && cfg != null);
-
-            if (!string.IsNullOrEmpty(cfg.SpringConfigUrl))
-            {
-                // Do not write details when there is Spring config.
-                outStream.WriteBool(false);
-                return;
-            }
-
-            outStream.WriteBool(true);  // details are present
-
-            var writer = _startup.Marshaller.StartMarshal(outStream);
-
-            // Simple properties
-            writer.WriteBoolean(cfg.ClientMode);
-            writer.WriteLong((long) cfg.MetricsExpireTime.TotalMilliseconds);
-            writer.WriteLong((long) cfg.MetricsLogFrequency.TotalMilliseconds);
-
-            var metricsUpdateFreq = (long) cfg.MetricsUpdateFrequency.TotalMilliseconds;
-            writer.WriteLong(metricsUpdateFreq >= 0 ? metricsUpdateFreq : -1);
-
-            writer.WriteInt(cfg.MetricsHistorySize);
-            writer.WriteInt(cfg.NetworkSendRetryCount);
-            writer.WriteLong((long) cfg.NetworkSendRetryDelay.TotalMilliseconds);
-            writer.WriteLong((long) cfg.NetworkTimeout.TotalMilliseconds);
-            writer.WriteIntArray(cfg.IncludedEventTypes == null ? null : cfg.IncludedEventTypes.ToArray());
-            writer.WriteString(cfg.WorkDirectory);
-            writer.WriteString(cfg.LocalHost);
-
-            // Cache config
-            var caches = cfg.CacheConfiguration;
-
-            if (caches == null)
-                outStream.WriteInt(0);
-            else
-            {
-                outStream.WriteInt(caches.Count);
-
-                foreach (var cache in caches)
-                    cache.Write(writer);
-            }
-
-            // Discovery config
-            var disco = cfg.DiscoveryConfiguration;
-
-            if (disco != null)
-            {
-                outStream.WriteBool(true);
-
-                disco.Write(writer);
-            }
-            else
-                outStream.WriteBool(false);
+            cfg.Write(_startup.Marshaller.StartMarshal(outStream));
         }
 
         /// <summary>

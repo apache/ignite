@@ -15,7 +15,8 @@
  * limitations under the License.
  */
 
-namespace Apache.Ignite.Core
+#pragma warning disable 618  // deprecated SpringConfigUrl
+ namespace Apache.Ignite.Core
 {
     using System;
     using System.Collections.Generic;
@@ -99,6 +100,18 @@ namespace Apache.Ignite.Core
         }
 
         /// <summary>
+        /// Initializes a new instance of the <see cref="IgniteConfiguration"/> class.
+        /// </summary>
+        /// <param name="configuration">The configuration to copy.</param>
+        public IgniteConfiguration(IgniteConfiguration configuration)
+        {
+            using (var stream = IgniteManager.Memory.Allocate().GetStream())
+            {
+                configuration.Write(new Marshaller(configuration.BinaryConfiguration).StartMarshal(stream));
+            }
+        }
+
+        /// <summary>
         /// Initializes a new instance of the <see cref="IgniteConfiguration"/> class from a reader.
         /// </summary>
         /// <param name="binaryReader">The binary reader.</param>
@@ -107,6 +120,64 @@ namespace Apache.Ignite.Core
             Read(binaryReader);
         }
 
+        /// <summary>
+        /// Writes this instance to a stream configuration.
+        /// </summary>
+        /// <param name="writer">The writer.</param>
+        internal void Write(BinaryWriter writer)
+        {
+            Debug.Assert(writer != null);
+
+            if (!string.IsNullOrEmpty(SpringConfigUrl))
+            {
+                // Do not write details when there is Spring config.
+                writer.WriteBoolean(false);
+                return;
+            }
+
+            writer.WriteBoolean(true);  // details are present
+
+            // Simple properties
+            writer.WriteBoolean(ClientMode);
+            writer.WriteLong((long)MetricsExpireTime.TotalMilliseconds);
+            writer.WriteLong((long)MetricsLogFrequency.TotalMilliseconds);
+
+            var metricsUpdateFreq = (long)MetricsUpdateFrequency.TotalMilliseconds;
+            writer.WriteLong(metricsUpdateFreq >= 0 ? metricsUpdateFreq : -1);
+
+            writer.WriteInt(MetricsHistorySize);
+            writer.WriteInt(NetworkSendRetryCount);
+            writer.WriteLong((long)NetworkSendRetryDelay.TotalMilliseconds);
+            writer.WriteLong((long)NetworkTimeout.TotalMilliseconds);
+            writer.WriteIntArray(IncludedEventTypes == null ? null : IncludedEventTypes.ToArray());
+            writer.WriteString(WorkDirectory);
+            writer.WriteString(LocalHost);
+
+            // Cache config
+            var caches = CacheConfiguration;
+
+            if (caches == null)
+                writer.WriteInt(0);
+            else
+            {
+                writer.WriteInt(caches.Count);
+
+                foreach (var cache in caches)
+                    cache.Write(writer);
+            }
+
+            // Discovery config
+            var disco = DiscoveryConfiguration;
+
+            if (disco != null)
+            {
+                writer.WriteBoolean(true);
+
+                disco.Write(writer);
+            }
+            else
+                writer.WriteBoolean(false);
+        }
         /// <summary>
         /// Reads data from specified reader into current instance.
         /// </summary>
