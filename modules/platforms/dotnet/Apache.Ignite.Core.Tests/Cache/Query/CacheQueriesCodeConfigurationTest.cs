@@ -133,12 +133,12 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
                 JvmClasspath = TestUtils.CreateTestClasspath(),
                 BinaryConfiguration = new BinaryConfiguration(
                     typeof (AttributeQueryPerson), typeof (AttributeQueryAddress)),
-                CacheConfiguration = new[] {new CacheConfiguration(CacheName, typeof (AttributeQueryPerson))}
             };
 
             using (var ignite = Ignition.Start(cfg))
             {
-                var cache = ignite.GetOrCreateCache<int, AttributeQueryPerson>(CacheName);
+                var cache = ignite.GetOrCreateCache<int, AttributeQueryPerson>(new CacheConfiguration(CacheName,
+                        typeof (AttributeQueryPerson)));
 
                 Assert.IsNotNull(cache);
 

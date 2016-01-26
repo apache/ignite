@@ -252,7 +252,7 @@ public class PlatformProcessorImpl extends GridProcessorAdapter implements Platf
 
         IgniteCacheProxy cache = (IgniteCacheProxy)ctx.grid().createCache(cfg);
 
-        return new PlatformCache(platformCtx, cache, false);
+        return new PlatformCache(platformCtx, cache.keepBinary(), false);
     }
 
     /** {@inheritDoc} */
@@ -262,7 +262,7 @@ public class PlatformProcessorImpl extends GridProcessorAdapter implements Platf
 
         IgniteCacheProxy cache = (IgniteCacheProxy)ctx.grid().getOrCreateCache(cfg);
 
-        return new PlatformCache(platformCtx, cache, false);
+        return new PlatformCache(platformCtx, cache.keepBinary(), false);
     }
 
     /** {@inheritDoc} */
