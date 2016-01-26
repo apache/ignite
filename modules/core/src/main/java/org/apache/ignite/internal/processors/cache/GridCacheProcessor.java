@@ -1903,12 +1903,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             }
             else {
                 for (DynamicCacheChangeRequest req : batch.requests()) {
-                    if (req.startCacheConfiguration() != null) {
-                        CacheConfiguration ccfg = req.startCacheConfiguration();
-
-                        if (ccfg.isStoreKeepBinary() == null)
-                            ccfg.setStoreKeepBinary(CacheConfiguration.DFLT_STORE_KEEP_BINARY);
-                    }
+                    initReceivedCacheConfiguration(req);
 
                     if (req.template()) {
                         CacheConfiguration ccfg = req.startCacheConfiguration();
@@ -2000,6 +1995,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         for (DynamicCacheChangeRequest req : batch.requests()) {
             assert !req.template() : req;
+
+            initReceivedCacheConfiguration(req);
 
             String name = req.cacheName();
 
@@ -2449,6 +2446,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         boolean incMinorTopVer = false;
 
         for (DynamicCacheChangeRequest req : batch.requests()) {
+            initReceivedCacheConfiguration(req);
+
             if (req.template()) {
                 CacheConfiguration ccfg = req.startCacheConfiguration();
 
@@ -2590,6 +2589,18 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         }
 
         return incMinorTopVer;
+    }
+
+    /**
+     * @param req Cache change request.
+     */
+    private void initReceivedCacheConfiguration(DynamicCacheChangeRequest req) {
+        if (req.startCacheConfiguration() != null) {
+            CacheConfiguration ccfg = req.startCacheConfiguration();
+
+            if (ccfg.isStoreKeepBinary() == null)
+                ccfg.setStoreKeepBinary(CacheConfiguration.DFLT_STORE_KEEP_BINARY);
+        }
     }
 
     /**
