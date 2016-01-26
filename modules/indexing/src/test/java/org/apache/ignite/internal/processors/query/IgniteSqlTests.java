@@ -18,8 +18,6 @@ public class IgniteSqlTests extends GridCommonAbstractTest {
 
         cfg.setPeerClassLoadingEnabled(false);
 
-        cfg.setIgniteHome("c:\\w\\incubator-ignite");
-
         CacheConfiguration ccfg = new CacheConfiguration("sqlCache").setIndexedTypes(Integer.class, QueryPerson.class);
 
         cfg.setCacheConfiguration(ccfg);

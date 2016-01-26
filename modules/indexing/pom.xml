@@ -105,6 +105,11 @@
             <version>2.2.5</version>
             <scope>compile</scope>
         </dependency>
+        <dependency>
+            <groupId>org.ow2.asm</groupId>
+            <artifactId>asm-all</artifactId>
+            <version>4.2</version>
+        </dependency>
     </dependencies>
 
     <build>
