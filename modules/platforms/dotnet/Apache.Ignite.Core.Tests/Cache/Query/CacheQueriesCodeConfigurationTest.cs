@@ -164,7 +164,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
                     Assert.AreEqual(1, cursor.GetAll().Single().Key);
                 }
 
-                using (var cursor = cache.Query(new TextQuery(typeof(AttributeQueryPerson), "Pine")))
+                using (var cursor = cache.Query(new TextQuery(typeof(AttributeQueryPerson), "Pin*")))
                 {
                     Assert.AreEqual(1, cursor.GetAll().Single().Key);
                 }
