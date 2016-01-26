@@ -55,6 +55,26 @@ namespace Apache.Ignite.Core.Cache.Configuration
         }
 
         /// <summary>
+        /// Initializes a new instance of the <see cref="QueryEntity"/> class.
+        /// </summary>
+        /// <param name="valueType">Type of the cache entry value.</param>
+        public QueryEntity(Type valueType)
+        {
+            ValueType = valueType;
+        }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="QueryEntity"/> class.
+        /// </summary>
+        /// <param name="keyType">Type of the key.</param>
+        /// <param name="valueType">Type of the value.</param>
+        public QueryEntity(Type keyType, Type valueType)
+        {
+            KeyType = keyType;
+            ValueType = valueType;
+        }
+
+        /// <summary>
         /// Gets or sets key Java type name.
         /// </summary>
         public string KeyTypeName
