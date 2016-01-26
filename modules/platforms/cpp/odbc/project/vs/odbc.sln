@@ -1,8 +1,6 @@
 ﻿
-Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 14
-VisualStudioVersion = 14.0.23107.0
-MinimumVisualStudioVersion = 10.0.40219.1
+Microsoft Visual Studio Solution File, Format Version 11.00
+# Visual Studio 2010
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "odbc-driver", "..\..\odbc-driver\project\vs\odbc-driver.vcxproj", "{12F77E12-38FE-42D3-B1DA-7E5979362961}"
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "odbc-test", "..\..\odbc-test\project\vs\odbc-test.vcxproj", "{309BEA40-495D-463F-98D5-4657F03F6D8F}"
