@@ -27,7 +27,7 @@ namespace Apache.Ignite.Core.Discovery
     /// When TCP discovery starts this finder sends multicast request and waits
     /// for some time when others nodes reply to this request with messages containing their addresses
     /// </summary>
-    public class MulticastIpFinder : StaticIpFinder
+    public class TcpDiscoveryMulticastIpFinder : TcpDiscoveryStaticIpFinder
     {
         /// <summary>
         /// Default multicast port.
@@ -45,9 +45,9 @@ namespace Apache.Ignite.Core.Discovery
         public static readonly TimeSpan DefaultResponseTimeout = TimeSpan.FromMilliseconds(500);
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="MulticastIpFinder"/> class.
+        /// Initializes a new instance of the <see cref="TcpDiscoveryMulticastIpFinder"/> class.
         /// </summary>
-        public MulticastIpFinder()
+        public TcpDiscoveryMulticastIpFinder()
         {
             MulticastPort = DefaultMulticastPort;
             AddressRequestAttempts = DefaultAddressRequestAttempts;
@@ -93,10 +93,10 @@ namespace Apache.Ignite.Core.Discovery
         public byte? TimeToLive { get; set; }
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="MulticastIpFinder"/> class.
+        /// Initializes a new instance of the <see cref="TcpDiscoveryMulticastIpFinder"/> class.
         /// </summary>
         /// <param name="reader">The reader.</param>
-        internal MulticastIpFinder(IBinaryRawReader reader) : base(reader)
+        internal TcpDiscoveryMulticastIpFinder(IBinaryRawReader reader) : base(reader)
         {
             LocalAddress = reader.ReadString();
             MulticastGroup = reader.ReadString();

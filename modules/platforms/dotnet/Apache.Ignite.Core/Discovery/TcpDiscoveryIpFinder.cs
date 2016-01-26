@@ -22,7 +22,7 @@ namespace Apache.Ignite.Core.Discovery
     /// <summary>
     /// Base IpFinder class.
     /// </summary>
-    public abstract class IpFinder
+    public abstract class TcpDiscoveryIpFinder : ITcpDiscoveryIpFinder
     {
         /** */
         protected const byte TypeCodeVmIpFinder = 1;
@@ -31,10 +31,10 @@ namespace Apache.Ignite.Core.Discovery
         protected const byte TypeCodeMulticastIpFinder = 2;
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="IpFinder"/> class.
+        /// Initializes a new instance of the <see cref="TcpDiscoveryIpFinder"/> class.
         /// Prevents user-defined implementations.
         /// </summary>
-        protected internal IpFinder()
+        protected internal TcpDiscoveryIpFinder()
         {
             // No-op.
         }
@@ -56,17 +56,17 @@ namespace Apache.Ignite.Core.Discovery
         /// <summary>
         /// Reads the instance.
         /// </summary>
-        internal static IpFinder ReadInstance(IBinaryRawReader reader)
+        internal static TcpDiscoveryIpFinder ReadInstance(IBinaryRawReader reader)
         {
             var code = reader.ReadByte();
 
             switch (code)
             {
                 case TypeCodeVmIpFinder:
-                    return new StaticIpFinder(reader);
+                    return new TcpDiscoveryStaticIpFinder(reader);
 
                 case TypeCodeMulticastIpFinder:
-                    return new MulticastIpFinder(reader);
+                    return new TcpDiscoveryMulticastIpFinder(reader);
 
                 default:
                     return null;

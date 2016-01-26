@@ -51,7 +51,7 @@ namespace Apache.Ignite.Core.Tests
             CheckDefaultValueAttributes(new IgniteConfiguration());
             CheckDefaultValueAttributes(new TcpDiscoverySpi());
             CheckDefaultValueAttributes(new CacheConfiguration());
-            CheckDefaultValueAttributes(new MulticastIpFinder());
+            CheckDefaultValueAttributes(new TcpDiscoveryMulticastIpFinder());
         }
 
         [Test]
@@ -72,8 +72,8 @@ namespace Apache.Ignite.Core.Tests
                 Assert.AreEqual(disco.SocketTimeout, resDisco.SocketTimeout);
                 Assert.AreEqual(disco.JoinTimeout, resDisco.JoinTimeout);
 
-                var ip = (StaticIpFinder) disco.IpFinder;
-                var resIp = (StaticIpFinder) resDisco.IpFinder;
+                var ip = (TcpDiscoveryStaticIpFinder) disco.IpFinder;
+                var resIp = (TcpDiscoveryStaticIpFinder) resDisco.IpFinder;
 
                 // There can be extra IPv6 endpoints
                 Assert.AreEqual(ip.EndPoints, resIp.EndPoints.Take(2).Select(x => x.Trim('/')).ToArray());
@@ -185,10 +185,10 @@ namespace Apache.Ignite.Core.Tests
         [Test]
         public void TestStaticIpFinder()
         {
-            TestIpFinders(new StaticIpFinder
+            TestIpFinders(new TcpDiscoveryStaticIpFinder
             {
                 EndPoints = new[] {"127.0.0.1:47500"}
-            }, new StaticIpFinder
+            }, new TcpDiscoveryStaticIpFinder
             {
                 EndPoints = new[] {"127.0.0.1:47501"}
             });
@@ -198,11 +198,11 @@ namespace Apache.Ignite.Core.Tests
         public void TestMulticastIpFinder()
         {
             TestIpFinders(
-                new MulticastIpFinder {MulticastGroup = "228.111.111.222", MulticastPort = 54522},
-                new MulticastIpFinder {MulticastGroup = "228.111.111.223", MulticastPort = 54522});
+                new TcpDiscoveryMulticastIpFinder {MulticastGroup = "228.111.111.222", MulticastPort = 54522},
+                new TcpDiscoveryMulticastIpFinder {MulticastGroup = "228.111.111.223", MulticastPort = 54522});
         }
 
-        private static void TestIpFinders(IpFinder ipFinder, IpFinder ipFinder2)
+        private static void TestIpFinders(TcpDiscoveryIpFinder ipFinder, TcpDiscoveryIpFinder ipFinder2)
         {
             var cfg = new IgniteConfiguration
             {
@@ -277,7 +277,7 @@ namespace Apache.Ignite.Core.Tests
                     MaxAckTimeout = TimeSpan.FromSeconds(3),
                     SocketTimeout = TimeSpan.FromSeconds(4),
                     JoinTimeout = TimeSpan.FromSeconds(5),
-                    IpFinder = new StaticIpFinder
+                    IpFinder = new TcpDiscoveryStaticIpFinder
                     {
                         EndPoints = new[] { "127.0.0.1:47500", "127.0.0.1:47501" }
                     }
