@@ -348,7 +348,7 @@ namespace Apache.Ignite.Core.Cache.Configuration
             /// <param name="groups">The groups.</param>
             public QueryIndexEx(string fieldName, bool isDescending, QueryIndexType indexType, 
                 ICollection<string> groups) 
-                : base(fieldName, isDescending, indexType)
+                : base(isDescending, indexType, fieldName)
             {
                 IndexGroups = groups;
             }

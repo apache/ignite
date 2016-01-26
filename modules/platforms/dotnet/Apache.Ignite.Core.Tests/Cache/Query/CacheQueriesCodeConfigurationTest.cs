@@ -64,7 +64,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
                                 },
                                 Indexes = new[]
                                 {
-                                    new QueryIndex("Name", false, QueryIndexType.FullText), new QueryIndex("Age")
+                                    new QueryIndex(false, QueryIndexType.FullText, "Name"), new QueryIndex("Age")
                                 }
                             }
                         }
