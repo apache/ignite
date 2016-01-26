@@ -58,7 +58,7 @@ namespace Apache.Ignite.Core.Tests
         [Test]
         public void TestAllConfigurationProperties()
         {
-            var cfg = GetCustomConfig();
+            var cfg = new IgniteConfiguration(GetCustomConfig());
 
             using (var ignite = Ignition.Start(cfg))
             {

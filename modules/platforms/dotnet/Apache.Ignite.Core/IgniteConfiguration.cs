@@ -23,6 +23,7 @@
     using System.ComponentModel;
     using System.Diagnostics;
     using System.Diagnostics.CodeAnalysis;
+    using System.IO;
     using System.Linq;
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Cache.Configuration;
@@ -31,6 +32,8 @@
     using Apache.Ignite.Core.Impl;
     using Apache.Ignite.Core.Impl.Binary;
     using Apache.Ignite.Core.Lifecycle;
+    using BinaryReader = Apache.Ignite.Core.Impl.Binary.BinaryReader;
+    using BinaryWriter = Apache.Ignite.Core.Impl.Binary.BinaryWriter;
 
     /// <summary>
     /// Grid configuration.
@@ -107,7 +110,15 @@
         {
             using (var stream = IgniteManager.Memory.Allocate().GetStream())
             {
-                configuration.Write(new Marshaller(configuration.BinaryConfiguration).StartMarshal(stream));
+                var marsh = new Marshaller(configuration.BinaryConfiguration);
+
+                configuration.Write(marsh.StartMarshal(stream));
+
+                stream.SynchronizeOutput();
+
+                stream.Seek(0, SeekOrigin.Begin);
+
+                Read(marsh.StartUnmarshal(stream));
             }
         }
 
