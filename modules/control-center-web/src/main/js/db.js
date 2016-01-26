@@ -74,7 +74,7 @@ exports.Space = mongoose.model('Space', new Schema({
 var DomainModelSchema = new Schema({
     space: {type: ObjectId, ref: 'Space'},
     caches: [{type: ObjectId, ref: 'Cache'}],
-    queryMetadata: {type: String, enum: ['Annotations', 'Config']},
+    queryMetadata: {type: String, enum: ['Annotations', 'Configuration']},
     kind: {type: String, enum: ['query', 'store', 'both']},
     databaseSchema: String,
     databaseTable: String,
@@ -127,6 +127,7 @@ var CacheSchema = new Schema({
 
     rebalanceMode: {type: String, enum: ['SYNC', 'ASYNC', 'NONE']},
     rebalanceBatchSize: Number,
+    rebalanceBatchesPrefetchCount: Number,
     rebalanceOrder: Number,
     rebalanceDelay: Number,
     rebalanceTimeout: Number,
@@ -149,7 +150,7 @@ var CacheSchema = new Schema({
             connectionUrl: String,
             user: String,
             dataSourceBean: String,
-            database: {
+            dialect: {
                 type: String,
                 enum: ['Generic', 'Oracle', 'DB2', 'SQLServer', 'MySQL', 'PostgreSQL', 'H2']
             },
@@ -185,6 +186,7 @@ var CacheSchema = new Schema({
     sqlOnheapRowCacheSize: Number,
     longQueryWarningTimeout: Number,
     sqlFunctionClasses: [String],
+    snapshotableIndex: Boolean,
     statisticsEnabled: Boolean,
     managementEnabled: Boolean,
     readFromBackup: Boolean,

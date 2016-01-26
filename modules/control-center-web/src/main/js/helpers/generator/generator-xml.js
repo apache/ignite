@@ -143,10 +143,15 @@ $generatorXml.beanProperty = function (res, bean, beanPropName, desc, createBean
     var props = desc.fields;
 
     if (bean && $commonUtils.hasProperty(bean, props)) {
-        res.startSafeBlock();
+        if (!createBeanAlthoughNoProps)
+            res.startSafeBlock();
 
         res.emptyLineIfNeeded();
         res.startBlock('<property name="' + beanPropName + '">');
+
+        if (createBeanAlthoughNoProps)
+            res.startSafeBlock();
+
         res.startBlock('<bean class="' + desc.className + '">');
 
         var hasData = false;
@@ -211,16 +216,23 @@ $generatorXml.beanProperty = function (res, bean, beanPropName, desc, createBean
         });
 
         res.endBlock('</bean>');
+
+        if (createBeanAlthoughNoProps && !hasData) {
+            res.rollbackSafeBlock();
+
+            res.line('<bean class="' + desc.className + '"/>');
+        }
+
         res.endBlock('</property>');
 
-        if (!hasData)
+        if (!createBeanAlthoughNoProps && !hasData)
             res.rollbackSafeBlock();
     }
     else if (createBeanAlthoughNoProps) {
         res.emptyLineIfNeeded();
-        res.line('<property name="' + beanPropName + '">');
-        res.line('    <bean class="' + desc.className + '"/>');
-        res.line('</property>');
+        res.startBlock('<property name="' + beanPropName + '">');
+        res.line('<bean class="' + desc.className + '"/>');
+        res.endBlock('</property>');
     }
 };
 
@@ -280,7 +292,7 @@ $generatorXml.clusterGeneral = function (cluster, res) {
 
                 if (d.S3) {
                     if (d.S3.bucketName)
-                        res.line('<property name="bucketName" value="' + $generatorXml.escape(d.S3.bucketName) + '" />');
+                        res.line('<property name="bucketName" value="' + $generatorXml.escape(d.S3.bucketName) + '"/>');
                 }
 
                 res.endBlock('</bean>');
@@ -764,6 +776,7 @@ $generatorXml.cacheQuery = function(cache, res) {
     $generatorXml.property(res, cache, 'sqlSchema');
     $generatorXml.property(res, cache, 'sqlOnheapRowCacheSize');
     $generatorXml.property(res, cache, 'longQueryWarningTimeout');
+    $generatorXml.property(res, cache, 'snapshotableIndex', null, false);
 
     var indexedTypes = _.filter(cache.domains, function (domain) {
         return domain.queryMetadata === 'Annotations'
@@ -851,7 +864,7 @@ $generatorXml.cacheStore = function(cache, domains, res) {
                 else {
                     $generatorXml.property(res, storeFactory, 'connectionUrl');
                     $generatorXml.property(res, storeFactory, 'user');
-                    res.line('<property name="password" value="${ds.' + storeFactory.user + '.password}" />');
+                    res.line('<property name="password" value="${ds.' + storeFactory.user + '.password}"/>');
                 }
 
                 $generatorXml.property(res, storeFactory, 'initSchema');
@@ -867,14 +880,14 @@ $generatorXml.cacheStore = function(cache, domains, res) {
             else
                 $generatorXml.beanProperty(res, storeFactory, 'cacheStoreFactory', $generatorCommon.STORE_FACTORIES[factoryKind], true);
 
-            if (storeFactory.dataSourceBean && (storeFactory.dialect || (storeFactory.connectVia === 'DataSource' ? storeFactory.database : undefined))) {
+            if (storeFactory.dataSourceBean && (storeFactory.connectVia ? (storeFactory.connectVia === 'DataSource' ? storeFactory.dialect : undefined) : storeFactory.dialect)) {
                 if (_.findIndex(res.datasources, function (ds) {
                         return ds.dataSourceBean === storeFactory.dataSourceBean;
                     }) < 0) {
                     res.datasources.push({
                         dataSourceBean: storeFactory.dataSourceBean,
-                        className: $generatorCommon.DATA_SOURCES[storeFactory.dialect || storeFactory.database],
-                        dialect: storeFactory.dialect || storeFactory.database
+                        className: $generatorCommon.DATA_SOURCES[storeFactory.dialect],
+                        dialect: storeFactory.dialect
                     });
                 }
             }
@@ -922,13 +935,14 @@ $generatorXml.cacheRebalance = function(cache, res) {
         res = $generatorCommon.builder();
 
     if (cache.cacheMode !== 'LOCAL') {
-        $generatorXml.property(res, cache, 'rebalanceMode');
-        $generatorXml.property(res, cache, 'rebalanceThreadPoolSize');
-        $generatorXml.property(res, cache, 'rebalanceBatchSize');
-        $generatorXml.property(res, cache, 'rebalanceOrder');
-        $generatorXml.property(res, cache, 'rebalanceDelay');
-        $generatorXml.property(res, cache, 'rebalanceTimeout');
-        $generatorXml.property(res, cache, 'rebalanceThrottle');
+        $generatorXml.property(res, cache, 'rebalanceMode', null, 'ASYNC');
+        $generatorXml.property(res, cache, 'rebalanceThreadPoolSize', null, 1);
+        $generatorXml.property(res, cache, 'rebalanceBatchSize', null, 524288);
+        $generatorXml.property(res, cache, 'rebalanceBatchesPrefetchCount', null, 2);
+        $generatorXml.property(res, cache, 'rebalanceOrder', null, 0);
+        $generatorXml.property(res, cache, 'rebalanceDelay', null, 0);
+        $generatorXml.property(res, cache, 'rebalanceTimeout', null, 10000);
+        $generatorXml.property(res, cache, 'rebalanceThrottle', null, 0);
 
         res.needEmptyLine = true;
     }
@@ -1468,29 +1482,29 @@ $generatorXml.generateDataSources = function (datasources, res) {
 
             switch (item.dialect) {
                 case 'Generic':
-                    res.line('<property name="jdbcUrl" value="${' + beanId + '.jdbc.url}" />');
+                    res.line('<property name="jdbcUrl" value="${' + beanId + '.jdbc.url}"/>');
 
                     break;
 
                 case 'DB2':
-                    res.line('<property name="serverName" value="${' + beanId + '.jdbc.server_name}" />');
-                    res.line('<property name="portNumber" value="${' + beanId + '.jdbc.port_number}" />');
-                    res.line('<property name="databaseName" value="${' + beanId + '.jdbc.database_name}" />');
-                    res.line('<property name="driverType" value="${' + beanId + '.jdbc.driver_type}" />');
+                    res.line('<property name="serverName" value="${' + beanId + '.jdbc.server_name}"/>');
+                    res.line('<property name="portNumber" value="${' + beanId + '.jdbc.port_number}"/>');
+                    res.line('<property name="databaseName" value="${' + beanId + '.jdbc.database_name}"/>');
+                    res.line('<property name="driverType" value="${' + beanId + '.jdbc.driver_type}"/>');
 
                     break;
 
                 case 'PostgreSQL':
-                    res.line('<property name="url" value="${' + beanId + '.jdbc.url}" />');
+                    res.line('<property name="url" value="${' + beanId + '.jdbc.url}"/>');
 
                     break;
 
                 default:
-                    res.line('<property name="URL" value="${' + beanId + '.jdbc.url}" />');
+                    res.line('<property name="URL" value="${' + beanId + '.jdbc.url}"/>');
             }
 
-            res.line('<property name="user" value="${' + beanId + '.jdbc.username}" />');
-            res.line('<property name="password" value="${' + beanId + '.jdbc.password}" />');
+            res.line('<property name="user" value="${' + beanId + '.jdbc.username}"/>');
+            res.line('<property name="password" value="${' + beanId + '.jdbc.password}"/>');
 
             res.endBlock('</bean>');
 

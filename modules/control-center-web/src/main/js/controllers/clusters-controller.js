@@ -480,8 +480,8 @@ consoleModule.controller('clustersController', function ($http, $timeout, $scope
                 return showPopoverMessage($scope.panels, 'general', 'caches',
                     'Found caches "' + checkRes.firstCache.name + '" and "' + checkRes.secondCache.name + '" ' +
                     'with the same data source bean name "' + checkRes.firstCache.cacheStoreFactory[checkRes.firstCache.cacheStoreFactory.kind].dataSourceBean +
-                    '" and different configured databases: "' + $common.cacheStoreJdbcDialectsLabel(checkRes.firstDB) + '" in "' + checkRes.firstCache.name + '" and "' +
-                    $common.cacheStoreJdbcDialectsLabel(checkRes.secondDB) + '" in "' + checkRes.secondCache.name + '"');
+                    '" and different databases: "' + $common.cacheStoreJdbcDialectsLabel(checkRes.firstDB) + '" in "' + checkRes.firstCache.name + '" and "' +
+                    $common.cacheStoreJdbcDialectsLabel(checkRes.secondDB) + '" in "' + checkRes.secondCache.name + '"', 10000);
             }
 
             var b = item.binaryConfiguration;
@@ -670,6 +670,13 @@ consoleModule.controller('clustersController', function ($http, $timeout, $scope
                         }
                     }
                 }
+            }
+
+            if (item.rebalanceThreadPoolSize && item.systemThreadPoolSize && item.systemThreadPoolSize <= item.rebalanceThreadPoolSize) {
+                $scope.ui.expanded = true;
+
+                return showPopoverMessage($scope.panels, 'pools', 'rebalanceThreadPoolSize',
+                    'Rebalance thread pool size exceed or equals System thread pool size');
             }
 
             return true;

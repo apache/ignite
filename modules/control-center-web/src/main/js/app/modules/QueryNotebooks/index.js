@@ -26,6 +26,19 @@ angular
             name: 'SQL demo',
             paragraphs: [
                 {
+                    name: 'Query with refresh rate',
+                    cacheName: 'CarCache',
+                    pageSize: 50,
+                    query: 'SELECT count(*)\nFROM "CarCache".Car',
+                    result: 'bar',
+                    timeLineSpan: '1',
+                    rate: {
+                        value: 3,
+                        unit: 1000,
+                        installed: true
+                    }
+                },
+                {
                     name: 'Simple query',
                     cacheName: 'CarCache',
                     pageSize: 50,
@@ -49,19 +62,6 @@ angular
                         value: 30,
                         unit: 1000,
                         installed: false
-                    }
-                },
-                {
-                    name: 'Query with refresh rate',
-                    cacheName: 'CarCache',
-                    pageSize: 50,
-                    query: 'SELECT count(*)\nFROM "CarCache".Car',
-                    result: 'line',
-                    timeLineSpan: '1',
-                    rate: {
-                        value: 3,
-                        unit: 1000,
-                        installed: true
                     }
                 }
             ],

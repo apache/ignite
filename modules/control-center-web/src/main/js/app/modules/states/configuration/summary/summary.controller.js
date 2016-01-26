@@ -18,8 +18,8 @@
 import JSZip from 'jszip';
 
 export default [
-    '$scope', '$http', '$common', '$loading', '$table', '$filter', 'ConfigurationSummaryResource', 'JavaTypes',
-    function($scope, $http, $common, $loading, $table, $filter, Resource, JavaTypes) {
+    '$scope', '$http', '$common', '$loading', '$table', '$filter', '$timeout', 'ConfigurationSummaryResource', 'JavaTypes',
+    function($scope, $http, $common, $loading, $table, $filter, $timeout, Resource, JavaTypes) {
         const ctrl = this;
         const igniteVersion = '1.5.0.final';
 
@@ -40,6 +40,7 @@ export default [
         $scope.panelExpanded = $common.panelExpanded;
         $scope.tableVisibleRow = $table.tableVisibleRow;
         $scope.widthIsSufficient = $common.widthIsSufficient;
+        $scope.dialects = {};
 
         $scope.projectStructureOptions = {
             nodeChildren: 'children',
@@ -47,13 +48,15 @@ export default [
             injectClasses: {
                 iExpanded: 'fa fa-folder-open-o',
                 iCollapsed: 'fa fa-folder-o'
+            },
+            equality: (node1, node2) => {
+                return node1 === node2;
             }
         };
 
         const javaConfigFolder = {
             type: 'folder',
-            name: 'src-config',
-            title: 'config',
+            name: 'config',
             children: [
                 { type: 'file', name: 'ClientConfigurationFactory.java' },
                 { type: 'file', name: 'ServerConfigurationFactory.java' }
@@ -77,8 +80,7 @@ export default [
             children: [
                 {
                     type: 'folder',
-                    name: 'src-config',
-                    title: 'config',
+                    name: 'config',
                     children: [
                         javaConfigFolder,
                         javaStartupFolder
@@ -131,44 +133,44 @@ export default [
         $scope.tabsServer = { activeTab: 0 };
         $scope.tabsClient = { activeTab: 0 };
 
-        function findFolder(node, name) {
-            if (node.name === name)
+        /**
+         *
+         * @param {Object} node - Tree node.
+         * @param {string[]} path - Path to find.
+         * @returns {Object} Tree node.
+         */
+        function getOrCreateFolder(node, path) {
+            if (_.isEmpty(path))
                 return node;
 
-            if (node.children) {
-                let folder = null;
+            const leaf = path.shift();
 
-                for (let i = 0; folder === null && i < node.children.length; i++)
-                    folder = findFolder(node.children[i], name);
+            let children = null;
 
-                return folder;
+            if (!_.isEmpty(node.children)) {
+                children = _.find(node.children, {name: leaf});
+
+                if (children)
+                    return getOrCreateFolder(children, path);
             }
 
-            return null;
+            children = {type: 'folder', name: leaf, children: []};
+
+            node.children.push(children);
+
+            node.children = _.sortByOrder(node.children, ['type', 'name'], ['desc', 'asc']);
+
+            return getOrCreateFolder(children, path);
         }
 
-        function addChildren(fullClsName) {
-            const parts = fullClsName.split('.');
+        function addClass(fullClsName) {
+            const path = fullClsName.split('.');
 
-            const shortClsName = parts.pop() + '.java';
+            const shortClsName = path.pop() + '.java';
 
-            let lastFolder = javaFolder;
+            const folder = getOrCreateFolder(javaFolder, path);
 
-            _.forEach(parts, (part) => {
-                const folder = findFolder(javaFolder, part);
-
-                if (!folder) {
-                    const newLastFolder = {type: 'folder', name: part, children: []};
-
-                    lastFolder.children.push(newLastFolder);
-
-                    lastFolder = newLastFolder;
-                }
-                else
-                    lastFolder = folder;
-            });
-
-            lastFolder.children.push({type: 'file', name: shortClsName});
+            folder.children.push({type: 'file', name: shortClsName});
         }
 
         $scope.selectItem = (cluster) => {
@@ -181,18 +183,26 @@ export default [
 
             $scope.cluster = cluster;
             $scope.selectedItem = cluster;
+            $scope.dialects = {};
 
             sessionStorage.summarySelectedId = $scope.clusters.indexOf(cluster);
 
             javaFolder.children = [javaConfigFolder, javaStartupFolder];
 
             _.forEach(cluster.caches, (cache) => {
+                if (cache.cacheStoreFactory) {
+                    const store = cache.cacheStoreFactory[cache.cacheStoreFactory.kind];
+
+                    if (store && store.dialect)
+                        $scope.dialects[store.dialect] = true;
+                }
+
                 _.forEach(cache.domains, (domain) => {
                     if (!$common.isEmptyArray(domain.keyFields)) {
                         if (JavaTypes.nonBuiltInClass(domain.keyType))
-                            addChildren(domain.keyType);
+                            addClass(domain.keyType);
 
-                        addChildren(domain.valueType);
+                        addClass(domain.valueType);
                     }
                 });
             });
@@ -263,6 +273,31 @@ export default [
 
             // Download archive.
             saveAs(blob, cluster.name + '-configuration.zip');
+        };
+
+        /**
+         * @returns {boolean} 'true' if at least one proprietary JDBC driver is configured for cache store.
+         */
+        $scope.downloadJdbcDriversVisible = function() {
+            const dialects = $scope.dialects;
+
+            return !!(dialects.Oracle || dialects.DB2 || dialects.SQLServer);
+        };
+
+        /**
+         * Open download proprietary JDBC driver pages.
+         */
+        $scope.downloadJdbcDrivers = function() {
+            const dialects = $scope.dialects;
+
+            if (dialects.Oracle)
+                window.open('http://www.oracle.com/technetwork/apps-tech/jdbc-112010-090769.html');
+
+            if (dialects.DB2)
+                window.open('http://www-01.ibm.com/support/docview.wss?uid=swg21363866');
+
+            if (dialects.SQLServer)
+                window.open('https://www.microsoft.com/en-us/download/details.aspx?id=11774');
         };
     }
 ];

@@ -28,7 +28,7 @@ header#header.header
                     a.dropdown-toggle(data-toggle='dropdown' bs-dropdown='sidebar.items' data-placement='bottom-right') Configuration
                         span.caret
 
-                li(ng-class='{active: $state.includes("base.sql")}' ng-controller='notebooks')
+                li.sql-notebooks(ng-class='{active: $state.includes("base.sql")}' ng-controller='notebooks')
                     a.dropdown-toggle(data-toggle='dropdown' bs-dropdown='notebookDropdown' data-placement='bottom-left') SQL
                         span.caret
 

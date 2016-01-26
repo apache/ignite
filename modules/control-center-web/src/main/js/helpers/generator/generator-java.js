@@ -320,7 +320,7 @@ $generatorJava.beanProperty = function (res, varName, bean, beanPropName, beanVa
                             break;
 
                         case 'enum':
-                            $generatorJava.property(res, beanVarName, bean, propName, descr.enumClass, descr.setterName);
+                            $generatorJava.property(res, beanVarName, bean, propName, descr.enumClass, descr.setterName, descr.dflt);
                             break;
 
                         case 'float':
@@ -985,6 +985,7 @@ $generatorJava.cacheQuery = function (cache, varName, res) {
     $generatorJava.property(res, varName, cache, 'sqlSchema');
     $generatorJava.property(res, varName, cache, 'sqlOnheapRowCacheSize');
     $generatorJava.property(res, varName, cache, 'longQueryWarningTimeout');
+    $generatorJava.property(res, varName, cache, 'snapshotableIndex', null, null, false);
 
     var indexedTypes = _.filter(cache.domains, function (domain) {
         return domain.queryMetadata === 'Annotations'
@@ -1023,26 +1024,20 @@ $generatorJava.cacheQuery = function (cache, varName, res) {
  * @param res Resulting output with generated code.
  */
 $generatorJava.cacheStoreDataSource = function (storeFactory, res) {
-    var dialect = storeFactory.dialect || (storeFactory.connectVia === 'DataSource' ? storeFactory.database : undefined);
+    var dialect = storeFactory.connectVia ? (storeFactory.connectVia === 'DataSource' ? storeFactory.dialect : undefined) : storeFactory.dialect;
 
     if (dialect) {
         var varName = 'dataSource';
 
         var dataSourceBean = storeFactory.dataSourceBean;
 
-        var dsClsName = $generatorCommon.dataSourceClassName(dialect);
+        var varType = res.importClass($generatorCommon.dataSourceClassName(dialect));
 
-        var varType = res.importClass(dsClsName);
-
-        var beanClassName = $commonUtils.toJavaName(varType, dataSourceBean);
-
-        res.line('/** Helper class for datasource creation. */');
-        res.startBlock('public static class ' + beanClassName + ' {');
-        res.line('public static final ' + varType + ' INSTANCE = createInstance();');
+        res.line('public static final ' + varType + ' INSTANCE_' + dataSourceBean + ' = create' + dataSourceBean + '();');
 
         res.needEmptyLine = true;
 
-        res.startBlock('private static ' + varType + ' createInstance() {');
+        res.startBlock('private static ' + varType + ' create' + dataSourceBean + '() {');
         if (dialect === 'Oracle')
             res.startBlock('try {');
 
@@ -1053,8 +1048,6 @@ $generatorJava.cacheStoreDataSource = function (storeFactory, res) {
         switch (dialect) {
             case 'Generic':
                 res.line(varName + '.setJdbcUrl(props.getProperty("' + dataSourceBean + '.jdbc.url"));');
-                res.line(varName + '.setUser(props.getProperty("' + dataSourceBean + '.jdbc.username"));');
-                res.line(varName + '.setPassword(props.getProperty("' + dataSourceBean + '.jdbc.password"));');
 
                 break;
 
@@ -1092,7 +1085,6 @@ $generatorJava.cacheStoreDataSource = function (storeFactory, res) {
         }
 
         res.endBlock('}');
-        res.endBlock('}');
 
         res.needEmptyLine = true;
 
@@ -1108,6 +1100,8 @@ $generatorJava.clusterDataSources = function (caches, res) {
 
     var datasources = [];
 
+    var storeFound = false;
+
     _.forEach(caches, function (cache) {
         var factoryKind = cache.cacheStoreFactory.kind;
 
@@ -1119,11 +1113,23 @@ $generatorJava.clusterDataSources = function (caches, res) {
             if (beanClassName && !_.contains(datasources, beanClassName)) {
                 datasources.push(beanClassName);
 
-                if (factoryKind === 'CacheJdbcPojoStoreFactory' || factoryKind === 'CacheJdbcBlobStoreFactory')
+                if (factoryKind === 'CacheJdbcPojoStoreFactory' || factoryKind === 'CacheJdbcBlobStoreFactory') {
+                    if (!storeFound) {
+                        res.line('/** Helper class for datasource creation. */');
+                        res.startBlock('public static class DataSources {');
+
+                        storeFound = true;
+                    }
+
                     $generatorJava.cacheStoreDataSource(storeFactory, res);
+                }
             }
         }
     });
+
+    if (storeFound) {
+        res.endBlock('}');
+    }
 
     return res;
 };
@@ -1159,9 +1165,7 @@ $generatorJava.cacheStore = function (cache, domains, cacheVarName, res) {
                 res.line('/** {@inheritDoc} */');
                 res.startBlock('@Override public ' + res.importClass('org.apache.ignite.cache.store.jdbc.CacheJdbcPojoStore') + ' create() {');
 
-                var beanClassName = $generatorJava.dataSourceClassName(res, storeFactory);
-
-                res.line('setDataSource(' + beanClassName + '.INSTANCE);');
+                res.line('setDataSource(DataSources.INSTANCE_' + storeFactory.dataSourceBean + ');');
 
                 res.needEmptyLine = true;
 
@@ -1210,9 +1214,7 @@ $generatorJava.cacheStore = function (cache, domains, cacheVarName, res) {
                     res.line('/** {@inheritDoc} */');
                     res.startBlock('@Override public ' + res.importClass('org.apache.ignite.cache.store.jdbc.CacheJdbcBlobStore') + ' create() {');
 
-                    beanClassName = $generatorJava.dataSourceClassName(res, storeFactory);
-
-                    res.line('setDataSource(' + beanClassName + '.INSTANCE);');
+                    res.line('setDataSource(DataSources.INSTANCE_' + storeFactory.dataSourceBean + ');');
 
                     res.needEmptyLine = true;
 
@@ -1291,13 +1293,14 @@ $generatorJava.cacheRebalance = function (cache, varName, res) {
         res = $generatorCommon.builder();
 
     if (cache.cacheMode !== 'LOCAL') {
-        $generatorJava.property(res, varName, cache, 'rebalanceMode', 'org.apache.ignite.cache.CacheRebalanceMode');
-        $generatorJava.property(res, varName, cache, 'rebalanceThreadPoolSize');
-        $generatorJava.property(res, varName, cache, 'rebalanceBatchSize');
-        $generatorJava.property(res, varName, cache, 'rebalanceOrder');
-        $generatorJava.property(res, varName, cache, 'rebalanceDelay');
-        $generatorJava.property(res, varName, cache, 'rebalanceTimeout');
-        $generatorJava.property(res, varName, cache, 'rebalanceThrottle');
+        $generatorJava.property(res, varName, cache, 'rebalanceMode', 'org.apache.ignite.cache.CacheRebalanceMode', null, 'ASYNC');
+        $generatorJava.property(res, varName, cache, 'rebalanceThreadPoolSize', null, null, 1);
+        $generatorJava.property(res, varName, cache, 'rebalanceBatchSize', null, null, 524288);
+        $generatorJava.property(res, varName, cache, 'rebalanceBatchesPrefetchCount', null, null, 2);
+        $generatorJava.property(res, varName, cache, 'rebalanceOrder', null, null, 0);
+        $generatorJava.property(res, varName, cache, 'rebalanceDelay', null, null, 0);
+        $generatorJava.property(res, varName, cache, 'rebalanceTimeout', null, null, 10000);
+        $generatorJava.property(res, varName, cache, 'rebalanceThrottle', null, null, 0);
 
         res.needEmptyLine = true;
     }
@@ -2469,7 +2472,7 @@ $generatorJava.cluster = function (cluster, pkg, javaClass, clientNearCfg) {
  * @returns {*} Data source class name.
  */
 $generatorJava.dataSourceClassName = function (res, storeFactory) {
-    var dialect = storeFactory.dialect || (storeFactory.connectVia === 'DataSource' ? storeFactory.database : undefined);
+    var dialect = storeFactory.connectVia ? (storeFactory.connectVia === 'DataSource' ? storeFactory.dialect : undefined) : storeFactory.dialect;
 
     if (dialect) {
         var dataSourceBean = storeFactory.dataSourceBean;

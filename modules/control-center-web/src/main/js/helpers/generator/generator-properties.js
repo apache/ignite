@@ -52,7 +52,7 @@ $generatorProperties.dataSourcesProperties = function (cluster, res) {
             if (cache.cacheStoreFactory && cache.cacheStoreFactory.kind) {
                 var storeFactory = cache.cacheStoreFactory[cache.cacheStoreFactory.kind];
 
-                var dialect = storeFactory.dialect || (storeFactory.connectVia === 'DataSource' ? storeFactory.database : undefined);
+                var dialect = storeFactory.connectVia ? (storeFactory.connectVia === 'DataSource' ? storeFactory.dialect : undefined): storeFactory.dialect;
 
                 if (dialect) {
                     if (!res) {

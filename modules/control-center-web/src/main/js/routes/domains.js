@@ -76,6 +76,8 @@ function _saveDomainModel(domain, savedDomains, callback) {
     var domainId = domain._id;
     var caches = domain.caches;
 
+    var cacheStoreChanges = domain.cacheStoreChanges;
+
     if (domainId)
         db.DomainModel.update({_id: domain._id}, domain, {upsert: true}, function (err) {
             if (err)
@@ -91,7 +93,7 @@ function _saveDomainModel(domain, savedDomains, callback) {
                             else {
                                 savedDomains.push(domain);
 
-                                callback();
+                                _updateCacheStore(cacheStoreChanges, callback);
                             }
                         });
                 });
@@ -115,12 +117,27 @@ function _saveDomainModel(domain, savedDomains, callback) {
                         else {
                             savedDomains.push(domain);
 
-                            callback();
+                            _updateCacheStore(cacheStoreChanges, callback);
                         }
                     });
                 }
             });
         });
+}
+
+function _updateCacheStore(cacheStoreChanges, callback) {
+    if (cacheStoreChanges && cacheStoreChanges.length > 0) {
+        async.forEachOf(cacheStoreChanges, function (change, idx, callback) {
+            db.Cache.update({_id: {$eq: change.cacheId}}, change.change, {}, function (err) {
+                if (err)
+                    callback(err);
+                else
+                    callback();
+            });
+        }, callback);
+    }
+    else
+        callback();
 }
 
 function _save(domains, res) {
@@ -164,7 +181,7 @@ function _save(domains, res) {
                 _saveDomainModel(domain, savedDomains, callback);
         }, function (err) {
             if (err)
-                res.status(500).send(err);
+                res.status(500).send(err.message);
             else
                 res.send({ savedDomains: savedDomains, generatedCaches: generatedCaches });
         });

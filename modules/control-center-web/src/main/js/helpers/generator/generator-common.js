@@ -442,13 +442,9 @@ $generatorCommon.IGFS_IPC_CONFIGURATION = {
 // Check that cache has datasource.
 $generatorCommon.cacheHasDatasource = function (cache) {
     if (cache.cacheStoreFactory && cache.cacheStoreFactory.kind) {
-        var factoryKind = cache.cacheStoreFactory.kind;
+        var storeFactory = cache.cacheStoreFactory[cache.cacheStoreFactory.kind];
 
-        var storeFactory = cache.cacheStoreFactory[factoryKind];
-
-        if (storeFactory && (storeFactory.dialect || storeFactory.database)) {
-            return true;
-        }
+        return !!(storeFactory && (storeFactory.connectVia ? (storeFactory.connectVia === 'DataSource' ? storeFactory.dialect : false) : storeFactory.dialect));
     }
 
     return false;

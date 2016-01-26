@@ -19,6 +19,7 @@
 @import "bootstrap-custom";
 
 @import "./../../app/directives/callout/callout.scss";
+@import "./../../app/directives/information/information.scss";
 
 $logo-path: "/images/logo.png";
 $input-height: 28px;
@@ -199,6 +200,10 @@ ul.navbar-nav, .sidebar-nav {
             margin-left: 5px;
             margin-right: 0;
         }
+    }
+
+    li.divider {
+        margin: 3px 0;
     }
 }
 
@@ -435,8 +440,12 @@ h1, h2, h3, h4, h5, h6 {
     margin-bottom: 0;
 }
 
-button, a.btn {
+button, .btn {
     margin-right: 5px;
+}
+
+i.btn {
+    margin-right: 0;
 }
 
 .btn {
@@ -549,6 +558,17 @@ button.form-control {
             font-size: $font-size-base;
             margin-right: 5px;
         }
+    }
+}
+
+.theme-line .sql-notebooks {
+    li.custom > a {
+        color: $brand-info;
+        font-weight: bold;
+    }
+
+    li.custom > a:hover {
+        color: darken($brand-info, 15%);
     }
 }
 
@@ -1747,18 +1767,17 @@ treecontrol.tree-classic {
     }
 
     li {
-        padding-left: 17px;
+        padding-left: 15px;
     }
 
-
-    li.tree-expanded i.fa, li.tree-collapsed i.fa, li.tree-leaf i.fa {
+    li.tree-expanded i.tree-branch-head.fa, li.tree-collapsed i.tree-branch-head.fa, li.tree-leaf i.tree-branch-head.fa, .tree-label i.fa {
         background: none no-repeat;
         padding: 1px 5px 1px 1px;
     }
 
     li.tree-leaf i.tree-leaf-head {
-        background: none no-repeat;
-        padding: 0;
+        background: none no-repeat !important;
+        padding: 0 !important;
     }
 
     li .tree-selected {

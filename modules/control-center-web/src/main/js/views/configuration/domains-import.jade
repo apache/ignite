@@ -126,10 +126,8 @@ mixin td-ellipses-lbl(w, lbl)
                                 label Schema
                             th(width='160px')
                                 label Table name
-                            th(width='160px')
-                                label(ng-show='ui.generateCaches') Cache
-                            th(width='128px')
-                                label(ng-show='ui.generateCaches') Template
+                            th(colspan=2 width='288px')
+                                label Cache
                             th
                     tbody
                         tr
@@ -142,32 +140,25 @@ mixin td-ellipses-lbl(w, lbl)
                                                     input(type='checkbox' ng-model='table.use' ng-change='selectTable()')
                                                 +td-ellipses-lbl('130px', '{{::table.schema}}')
                                                 +td-ellipses-lbl('160px', '{{::table.tbl}}')
-                                                td(width='160px' style='min-width: 160px; max-width: 160px')
-                                                    div.td-ellipsis(ng-show='ui.generateCaches')
-                                                        a(ng-if='!table.editCache' ng-click='startEditDbTableCache(table)') {{dbTableCache(table)}}
-                                                        button.select-toggle.form-control(ng-if='table.editCache' bs-select ng-model='table.cache' data-container='false' bs-options='item.value as item.label for item in importCaches')
-                                                td(width='128px' style='min-width: 128px; max-width: 128px')
-                                                    div.td-ellipsis(ng-show='ui.generateCaches')
-                                                        a(ng-if='!table.editTemplate' ng-click='startEditDbTableTemplate(table)') {{dbTableTemplate(table)}}
-                                                        button.select-toggle.form-control(ng-if='table.editTemplate' bs-select ng-model='table.template' style='max-width: 110px' data-container='false' bs-options='item.value as item.label for item in importCacheTemplates')
+                                                td(colspan='2' width='288px' style='min-width: 160px; max-width: 160px')
+                                                    div.td-ellipsis
+                                                        a(ng-if='!table.edit' ng-click='startEditDbTableCache(table)') {{tableActionView(table)}}
+                                                        div(style='display: flex' ng-if='table.edit')
+                                                            button.select-toggle.form-control(style='width: 35%; margin-right: 5px' bs-select ng-model='table.action' data-container='false' bs-options='item.value as item.shortLabel for item in importActions')
+                                                            button.select-toggle.form-control(style='width: 65%; margin-right: 0' bs-select ng-model='table.cacheOrTemplate' data-container='false' bs-options='item.value as item.label for item in table.cachesOrTemplates')
+                                                            //- button.select-toggle.form-control(ng-if='table.action==2' style='width: 65%; margin-right: 0' bs-select ng-model='table.cache' data-container='false' bs-options='item.value as item.label for item in importCurrentCaches')
                                                 td
                 .settings-row
-                    .checkbox
-                        label
-                            input(id='importGenerateCaches' type='checkbox' ng-model='ui.generateCaches')
-                            | Generate caches
-                        i.tipLabel.fa.fa-question-circle(bs-tooltip='' data-title='Separate cache will be generated for each loaded table')
-                    div
-                        .col-xs-5.col-sm-5.col-md-5
-                            label(style='float: left; line-height: 28px; margin-right: 10px') Cache:
-                            .input-tip
-                                button.select-toggle.form-control(bs-select ng-model='ui.dfltTableCache' ng-disabled='!ui.generateCaches' data-container='false' bs-options='item.value as item.label for item in importCaches')
-                        .col-xs-5.col-sm-5.col-md-5(ng-show='dfltTableTemplateVisible()')
-                            label(style='float: left; line-height: 28px; margin: 0 10px') Template:
-                            .input-tip
-                                button.select-toggle.form-control(bs-select ng-model='ui.dfltTableTemplate' ng-disabled='!ui.generateCaches' data-container='false' bs-options='item.value as item.label for item in importCacheTemplates')
-                        .col-xs-2.col-sm-2.col-md-2
-                            button.btn.btn-primary(style="margin: 0 0 0 5px" ng-disabled='!ui.generateCaches' ng-click='applyDefaults()') Apply
+                    label Defaults to be applied for filtered tables
+                    i.tipLabel.fa.fa-question-circle(bs-tooltip='' data-title='Select and apply options for caches generation')
+                .settings-row
+                    .col-sm-11
+                        .col-sm-6(style='padding-right: 5px')
+                            button.select-toggle.form-control(bs-select ng-model='importCommon.action' data-container='false' bs-options='item.value as item.label for item in importActions')
+                        .col-sm-6(style='padding-left: 5px; padding-right: 5px')
+                            button.select-toggle.form-control(bs-select ng-model='importCommon.cacheOrTemplate' data-container='false' bs-options='item.value as item.label for item in importCommon.cachesOrTemplates')
+                    .col-sm-1(style='padding-left: 5px')
+                        button.btn.btn-primary(ng-click='applyDefaults()') Apply
             .import-domain-model-wizard-page(ng-show='importDomain.action == "options"' style='margin-bottom: 176px')
                 form.form-horizontal(name='optionsForm' novalidate)
                     .settings-row
@@ -195,7 +186,7 @@ mixin td-ellipses-lbl(w, lbl)
                         .col-xs-9.col-sm-10.col-md-10
                             i.tipField.fa.fa-question-circle(bs-tooltip='' data-title='Choose clusters that will be associated with generated caches')
                             .input-tip
-                                button.select-toggle.form-control(id='generatedCachesClusters' bs-select ng-model='ui.generatedCachesClusters' ng-disabled='!ui.generateCaches' ng-class='{placeholder: !(ui.generatedCachesClusters && ui.generatedCachesClusters.length > 0)}' data-container='false' data-multiple='1' placeholder='Choose clusters for generated caches' bs-options='item.value as item.label for item in clusters')
+                                button.select-toggle.form-control(id='generatedCachesClusters' bs-select ng-model='ui.generatedCachesClusters' ng-class='{placeholder: !(ui.generatedCachesClusters && ui.generatedCachesClusters.length > 0)}' data-container='false' data-multiple='1' placeholder='Choose clusters for generated caches' bs-options='item.value as item.label for item in clusters')
             .modal-footer
                 label(ng-hide='importDomain.action == "drivers" || (importDomain.action == "connect" && importDomain.demo)').labelField {{importDomain.info}}
                 a.btn.btn-primary(ng-hide='importDomain.action == "drivers" || importDomain.action == "connect"' ng-click='importDomainPrev()' bs-tooltip='' data-title='{{prevTooltipText()}}' data-placement='bottom') Prev

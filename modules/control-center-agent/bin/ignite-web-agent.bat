@@ -15,4 +15,11 @@
 :: limitations under the License.
 ::
 
-java -jar ignite-web-agent-${version}.jar %*
+::
+:: JVM options. See http://java.sun.com/javase/technologies/hotspot/vmoptions.jsp for more details.
+::
+:: ADD YOUR/CHANGE ADDITIONAL OPTIONS HERE
+::
+if "%JVM_OPTS%" == "" set JVM_OPTS=-Xms1g -Xmx1g -server -XX:+AggressiveOpts -XX:MaxPermSize=256m
+
+java %JVM_OPTS% -jar ignite-web-agent-${version}.jar %*

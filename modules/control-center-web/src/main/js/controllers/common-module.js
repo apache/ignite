@@ -586,9 +586,7 @@ consoleModule.service('$common', [
             }
         }
 
-        function showPopoverMessage(panels, panelId, id, message) {
-            popoverShown = false;
-
+        function showPopoverMessage(panels, panelId, id, message, showTime) {
             ensureActivePanel(panels, panelId, id);
 
             var el = $('body').find('#' + id);
@@ -602,7 +600,7 @@ consoleModule.service('$common', [
 
             $timeout(function () { newPopover.$promise.then(newPopover.show); }, 400);
 
-            $timeout(function () { newPopover.hide(); }, 5000);
+            $timeout(function () { newPopover.hide(); }, showTime ? showTime : 5000);
 
             return false;
         }
@@ -694,6 +692,39 @@ consoleModule.service('$common', [
             {value: 'PostgreSQL', label: 'PostgreSQL'},
             {value: 'H2', label: 'H2 database'}
         ];
+
+        function domainForStoreConfigured(domain) {
+            var isEmpty = !isDefined(domain) || (isEmptyString(domain.databaseSchema) &&
+                isEmptyString(domain.databaseTable) &&
+                isEmptyArray(domain.keyFields) &&
+                isEmptyArray(domain.valueFields));
+
+            return !isEmpty;
+        }
+
+        var DS_CHECK_SUCCESS = { checked: true };
+
+        function compareDataSources(firstCache, secondCache) {
+            var firstDs = extractDataSource(firstCache);
+            var secondDs = extractDataSource(secondCache);
+
+            if (firstDs && secondDs) {
+                var firstDB = firstDs.dialect;
+                var secondDB = secondDs.dialect;
+
+                if (firstDs.dataSourceBean === secondDs.dataSourceBean && firstDB !== secondDB) {
+                    return {
+                        checked: false,
+                        firstCache: firstCache,
+                        firstDB: firstDB,
+                        secondCache: secondCache,
+                        secondDB: secondDB
+                    };
+                }
+            }
+
+            return DS_CHECK_SUCCESS;
+        }
 
         return {
             getModel: getModel,
@@ -788,14 +819,7 @@ consoleModule.service('$common', [
 
                 return !isEmpty;
             },
-            domainForStoreConfigured: function (domain) {
-                var isEmpty = !isDefined(domain) || (isEmptyString(domain.databaseSchema) &&
-                    isEmptyString(domain.databaseTable) &&
-                    isEmptyArray(domain.keyFields) &&
-                    isEmptyArray(domain.valueFields));
-
-                return !isEmpty;
-            },
+            domainForStoreConfigured: domainForStoreConfigured,
             /**
              * Cut class name by width in pixel or width in symbol count.
              *
@@ -885,9 +909,7 @@ consoleModule.service('$common', [
 
                 return false;
             },
-            showPopoverMessage: function (panels, panelId, id, message) {
-                return showPopoverMessage(panels, panelId, id, message);
-            },
+            showPopoverMessage: showPopoverMessage,
             hidePopover: function () {
                 if (popover)
                     popover.hide();
@@ -1029,38 +1051,53 @@ consoleModule.service('$common', [
 
                 return found ? found.label : undefined;
             },
-            checkCachesDataSources: function (caches) {
-                var res = { checked: true };
+            checkCachesDataSources: function (caches, checkCacheExt) {
+                var res = DS_CHECK_SUCCESS;
 
-                res.checked = !isDefined(_.find(caches, function (curCache, curIx) {
-                    return _.find(caches, function (checkCache, checkIx) {
-                        if (checkIx < curIx) {
-                            var curDs = extractDataSource(curCache);
-                            var checkDs = extractDataSource(checkCache);
+                _.find(caches, function (curCache, curIx) {
+                    if (isDefined(checkCacheExt)) {
+                        if (!isDefined(checkCacheExt._id) || checkCacheExt.id != curCache._id) {
+                            res = compareDataSources(checkCacheExt, curCache);
 
-                            if (curDs && checkDs) {
-                                var curDB = curDs.dialect || curDs.database;
-                                var checkDB = checkDs.dialect || checkDs.database;
-
-                                if (curDs.dataSourceBean === checkDs.dataSourceBean && curDB !== checkDB) {
-                                    res = {
-                                        checked: false,
-                                        firstCache: checkCache,
-                                        firstDB: checkDB,
-                                        secondCache: curCache,
-                                        secondDB: curDB
-                                    };
-
-                                    return true;
-                                }
-                            }
+                            return !res.checked;
                         }
 
                         return false;
-                    });
-                }));
+                    }
+                    else {
+                        return _.find(caches, function (checkCache, checkIx) {
+                            if (checkIx < curIx) {
+                                res = compareDataSources(checkCache, curCache);
+
+                                return !res.checked;
+                            }
+
+                            return false;
+                        });
+                    }
+                });
 
                 return res;
+            },
+            autoCacheStoreConfiguration: function (cache, domains) {
+                var cacheStoreFactory = isDefined(cache.cacheStoreFactory) &&
+                    isDefined(cache.cacheStoreFactory.kind);
+
+                if (!cacheStoreFactory && _.findIndex(domains, domainForStoreConfigured) >= 0) {
+                    var dflt = !cache.readThrough && !cache.writeThrough;
+
+                    return {
+                        cacheStoreFactory: {
+                            kind: 'CacheJdbcPojoStoreFactory',
+                            CacheJdbcPojoStoreFactory: {
+                                dataSourceBean: cache.name + 'DS',
+                                dialect: 'Generic'
+                            }
+                        },
+                        readThrough: dflt || cache.readThrough,
+                        writeThrough: dflt || cache.writeThrough
+                    };
+                }
             }
         };
     }]);
@@ -1106,7 +1143,7 @@ consoleModule.service('$unsavedChangesGuard', function ($rootScope) {
                 window.onbeforeunload = null;
             });
 
-            var unbind = $rootScope.$on('$stateChangeStart', function(event, toState, toParams, fromState, fromParams) {
+            var unbind = $rootScope.$on('$stateChangeStart', function(event) {
                 if ($scope.ui && $scope.ui.isDirty()) {
                     if (!confirm('You have unsaved changes.\n\nAre you sure you want to discard them?')) {
                         event.preventDefault();
@@ -2070,14 +2107,20 @@ consoleModule.service('$agentDownload', [
             if (_modal.skipSingleError)
                 _modal.skipSingleError = false;
             else if (!_modal.$isShown) {
+                // Don't show missing node dialog on SQL demo enabling.
+                if (_modal.check.params && _modal.check.params.demo && timedOut)
+                    return;
+
                 $loading.finish('loading');
 
                 _modal.$promise.then(_modal.show);
             }
 
-            scope.nodeFailedConnection = status !== 500 || timedOut;
+            var nodeError = _.includes([401, 403, 500], status);
 
-            if (status !== 404)
+            scope.nodeFailedConnection = nodeError || timedOut;
+
+            if (nodeError)
                 $common.showError(errMsg, 'top-right', 'body', true);
         }
 
@@ -2199,8 +2242,7 @@ consoleModule.controller('notebooks', ['$scope', '$modal', '$state', '$http', '$
     $scope.$root.rebuildDropdown = function() {
         $scope.notebookDropdown = [
             {text: 'Create new notebook', click: 'inputNotebookName()'},
-            {divider: true},
-            {text: 'SQL demo', sref: 'base.sql.demo'}
+            {divider: true}
         ];
 
         _.forEach($scope.$root.notebooks, function (notebook) {
@@ -2209,6 +2251,11 @@ consoleModule.controller('notebooks', ['$scope', '$modal', '$state', '$http', '$
                 sref: 'base.sql.notebook({noteId:"' + notebook._id + '"})'
             });
         });
+
+        if ($scope.$root.notebooks.length > 0)
+            $scope.notebookDropdown.push({divider: true});
+
+        $scope.notebookDropdown.push({text: 'Demo', sref: 'base.sql.demo', custom: true});
     };
 
     $scope.$root.reloadNotebooks = function() {

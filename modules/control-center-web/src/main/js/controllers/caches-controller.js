@@ -379,33 +379,6 @@ consoleModule.controller('cachesController', [
                                 $scope.preview.statistics.allDefaults = $common.isEmptyString($scope.preview.statistics.xml);
                             }
                         }, true);
-
-                        $scope.$watchCollection('backupItem.domains', function (val) {
-                            if ($scope.selectedItemWatchGuard)
-                                $scope.selectedItemWatchGuard = false;
-                            else {
-                                var item = $scope.backupItem;
-
-                                var cacheStoreFactory = $common.isDefined(item) &&
-                                    $common.isDefined(item.cacheStoreFactory) &&
-                                    $common.isDefined(item.cacheStoreFactory.kind);
-
-                                if (val && !cacheStoreFactory) {
-                                    if (_.findIndex(cacheDomains(item), $common.domainForStoreConfigured) >= 0) {
-                                        item.cacheStoreFactory.kind = 'CacheJdbcPojoStoreFactory';
-
-                                        if (!item.readThrough && !item.writeThrough) {
-                                            item.readThrough = true;
-                                            item.writeThrough = true;
-                                        }
-
-                                        $timeout(function () {
-                                            $common.ensureActivePanel($scope.panels, 'store');
-                                        });
-                                    }
-                                }
-                            }
-                        });
                     })
                     .error(function (errMsg) {
                         $common.showError(errMsg);
@@ -493,17 +466,17 @@ consoleModule.controller('cachesController', [
 
                 caches.push($scope.backupItem);
 
-                checkRes = $common.checkCachesDataSources(caches);
+                checkRes = $common.checkCachesDataSources(caches, $scope.backupItem);
 
                 return !checkRes.checked;
             });
 
             if (!checkRes.checked) {
-                return showPopoverMessage($scope.panels, 'store', checkRes.secondCache.cacheStoreFactory.kind === 'CacheJdbcPojoStoreFactory' ? 'dialect' : 'database',
-                    'Found caches "' + checkRes.firstCache.name + '" and "' + checkRes.secondCache.name + '" in cluster "' + failCluster.label + '" ' +
+                return showPopoverMessage($scope.panels, 'store', checkRes.firstCache.cacheStoreFactory.kind === 'CacheJdbcPojoStoreFactory' ? 'pojoDialect' : 'blobDialect',
+                    'Found cache "' + checkRes.secondCache.name + '" in cluster "' + failCluster.label + '" ' +
                     'with the same data source bean name "' + checkRes.firstCache.cacheStoreFactory[checkRes.firstCache.cacheStoreFactory.kind].dataSourceBean +
-                    '" and different configured databases: "' + $common.cacheStoreJdbcDialectsLabel(checkRes.firstDB) + '" in "' + checkRes.firstCache.name + '" and "' +
-                    $common.cacheStoreJdbcDialectsLabel(checkRes.secondDB) + '" in "' + checkRes.secondCache.name + '"');
+                    '" and different database: "' + $common.cacheStoreJdbcDialectsLabel(checkRes.firstDB) + '" in current cache and "' +
+                    $common.cacheStoreJdbcDialectsLabel(checkRes.secondDB) + '" in "' + checkRes.secondCache.name + '"', 10000);
             }
 
             return true;
@@ -535,7 +508,7 @@ consoleModule.controller('cachesController', [
                         return false;
 
                     if (!storeFactory.dialect)
-                        return showPopoverMessage($scope.panels, 'store', 'dialect',
+                        return showPopoverMessage($scope.panels, 'store', 'pojoDialect',
                             'Dialect should not be empty');
 
                     if (!checkDataSources())
@@ -560,8 +533,8 @@ consoleModule.controller('cachesController', [
                         if (!$common.isValidJavaIdentifier('Data source bean', storeFactory.dataSourceBean, 'dataSourceBean', $scope.panels, 'store'))
                             return false;
 
-                        if (!storeFactory.database)
-                            return showPopoverMessage($scope.panels, 'store', 'database',
+                        if (!storeFactory.dialect)
+                            return showPopoverMessage($scope.panels, 'store', 'blobDialect',
                                 'Database should not be empty');
 
                         if (!checkDataSources())
@@ -628,8 +601,9 @@ consoleModule.controller('cachesController', [
         // Save cache.
         $scope.saveItem = function () {
             if ($scope.tableReset(true)) {
-
                 var item = $scope.backupItem;
+
+                angular.extend(item, $common.autoCacheStoreConfiguration(item, cacheDomains(item)));
 
                 if (validate(item))
                     save(item);
