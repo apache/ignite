@@ -246,14 +246,14 @@ import java.util.Map;
             return;  // there is no config
 
         cfg.setClientMode(in.readBoolean());
+        cfg.setIncludeEventTypes(in.readIntArray());
         cfg.setMetricsExpireTime(in.readLong());
+        cfg.setMetricsHistorySize(in.readInt());
         cfg.setMetricsLogFrequency(in.readLong());
         cfg.setMetricsUpdateFrequency(in.readLong());
-        cfg.setMetricsHistorySize(in.readInt());
         cfg.setNetworkSendRetryCount(in.readInt());
         cfg.setNetworkSendRetryDelay(in.readLong());
         cfg.setNetworkTimeout(in.readLong());
-        cfg.setIncludeEventTypes(in.readIntArray());
         cfg.setWorkDirectory(in.readString());
         cfg.setLocalHost(in.readString());
 

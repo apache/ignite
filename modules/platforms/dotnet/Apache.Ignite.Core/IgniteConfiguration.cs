@@ -108,17 +108,19 @@
         /// <param name="configuration">The configuration to copy.</param>
         public IgniteConfiguration(IgniteConfiguration configuration)
         {
+            CopyLocalProperties(configuration);
+
             using (var stream = IgniteManager.Memory.Allocate().GetStream())
             {
                 var marsh = new Marshaller(configuration.BinaryConfiguration);
 
-                configuration.Write0(marsh.StartMarshal(stream));
+                configuration.WriteCore(marsh.StartMarshal(stream));
 
                 stream.SynchronizeOutput();
 
                 stream.Seek(0, SeekOrigin.Begin);
 
-                Read(marsh.StartUnmarshal(stream));
+                ReadCore(marsh.StartUnmarshal(stream));
             }
         }
 
@@ -148,28 +150,27 @@
 
             writer.WriteBoolean(true);  // details are present
 
-            Write0(writer);
+            WriteCore(writer);
         }
 
         /// <summary>
         /// Writes this instance to a writer.
         /// </summary>
         /// <param name="writer">The writer.</param>
-        private void Write0(BinaryWriter writer)
+        private void WriteCore(BinaryWriter writer)
         {
             // Simple properties
             writer.WriteBoolean(ClientMode);
-            writer.WriteLong((long) MetricsExpireTime.TotalMilliseconds);
-            writer.WriteLong((long) MetricsLogFrequency.TotalMilliseconds);
+            writer.WriteIntArray(IncludedEventTypes == null ? null : IncludedEventTypes.ToArray());
 
+            writer.WriteLong((long) MetricsExpireTime.TotalMilliseconds);
+            writer.WriteInt(MetricsHistorySize);
+            writer.WriteLong((long) MetricsLogFrequency.TotalMilliseconds);
             var metricsUpdateFreq = (long) MetricsUpdateFrequency.TotalMilliseconds;
             writer.WriteLong(metricsUpdateFreq >= 0 ? metricsUpdateFreq : -1);
-
-            writer.WriteInt(MetricsHistorySize);
             writer.WriteInt(NetworkSendRetryCount);
             writer.WriteLong((long) NetworkSendRetryDelay.TotalMilliseconds);
             writer.WriteLong((long) NetworkTimeout.TotalMilliseconds);
-            writer.WriteIntArray(IncludedEventTypes == null ? null : IncludedEventTypes.ToArray());
             writer.WriteString(WorkDirectory);
             writer.WriteString(LocalHost);
 
@@ -202,13 +203,10 @@
         /// <summary>
         /// Reads data from specified reader into current instance.
         /// </summary>
-        /// <param name="binaryReader">The binary reader.</param>
-        private void Read(BinaryReader binaryReader)
+        /// <param name="r">The binary reader.</param>
+        private void ReadCore(BinaryReader r)
         {
-            var r = binaryReader;
-
             // Simple properties
-            GridName = r.ReadString();
             ClientMode = r.ReadBoolean();
             IncludedEventTypes = r.ReadIntArray();
 
@@ -230,6 +228,19 @@
 
             // Discovery config
             DiscoveryConfiguration = r.ReadBoolean() ? new DiscoveryConfiguration(r) : null;
+        }
+
+        /// <summary>
+        /// Reads data from specified reader into current instance.
+        /// </summary>
+        /// <param name="binaryReader">The binary reader.</param>
+        private void Read(BinaryReader binaryReader)
+        {
+            var r = binaryReader;
+
+            CopyLocalProperties(r.Marshaller.Ignite.Configuration);
+
+            ReadCore(r);
 
             // Misc
             IgniteHome = r.ReadString();
@@ -237,27 +248,24 @@
             JvmInitialMemoryMb = (int) (r.ReadLong()/1024/2014);
             JvmMaxMemoryMb = (int) (r.ReadLong()/1024/2014);
 
-
             // Local data (not from reader)
             JvmDllPath = Process.GetCurrentProcess().Modules.OfType<ProcessModule>()
                 .Single(x => string.Equals(x.ModuleName, IgniteUtils.FileJvmDll, StringComparison.OrdinalIgnoreCase))
                 .FileName;
+        }
 
-            var marsh = r.Marshaller;
-
-            var origCfg = marsh.Ignite.Configuration;
-
-            BinaryConfiguration = marsh.BinaryConfiguration;
-
-            JvmClasspath = origCfg.JvmClasspath;
-
-            JvmOptions = origCfg.JvmOptions;
-
-            Assemblies = origCfg.Assemblies;
-
-            SuppressWarnings = origCfg.SuppressWarnings;
-
-            LifecycleBeans = origCfg.LifecycleBeans;
+        /// <summary>
+        /// Copies the local properties (properties that are not written in Write method).
+        /// </summary>
+        private void CopyLocalProperties(IgniteConfiguration cfg)
+        {
+            GridName = cfg.GridName;
+            BinaryConfiguration = cfg.BinaryConfiguration;
+            JvmClasspath = cfg.JvmClasspath;
+            JvmOptions = cfg.JvmOptions;
+            Assemblies = cfg.Assemblies;
+            SuppressWarnings = cfg.SuppressWarnings;
+            LifecycleBeans = cfg.LifecycleBeans;
         }
 
         /// <summary>
