@@ -195,7 +195,7 @@ namespace Apache.Ignite.Core.Cache.Configuration
         /// <param name="name">Cache name.</param>
         /// <param name="queryTypes">
         /// Collection of types to be registered as query entities. These types should use 
-        /// <see cref="QueryFieldAttribute"/> to configure query fields and properties.
+        /// <see cref="QuerySqlFieldAttribute"/> to configure query fields and properties.
         /// </param>
         public CacheConfiguration(string name, params Type[] queryTypes) : this(name)
         {

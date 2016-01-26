@@ -73,7 +73,7 @@ namespace Apache.Ignite.Core.Cache.Configuration
         /// This is a shortcut for <see cref="KeyTypeName"/>. Getter will return null for non-primitive types.
         /// <para />
         /// Setting this property will overwrite <see cref="Fields"/> and <see cref="Indexes"/> according to
-        /// <see cref="QueryFieldAttribute"/>, if any.
+        /// <see cref="QuerySqlFieldAttribute"/>, if any.
         /// </summary>
         public Type KeyType
         {
@@ -109,7 +109,7 @@ namespace Apache.Ignite.Core.Cache.Configuration
         /// This is a shortcut for <see cref="ValueTypeName"/>. Getter will return null for non-primitive types.
         /// <para />
         /// Setting this property will overwrite <see cref="Fields"/> and <see cref="Indexes"/> according to
-        /// <see cref="QueryFieldAttribute"/>, if any.
+        /// <see cref="QuerySqlFieldAttribute"/>, if any.
         /// </summary>
         public Type ValueType
         {
@@ -267,7 +267,7 @@ namespace Apache.Ignite.Core.Cache.Configuration
         }
 
         /// <summary>
-        /// Scans specified type for occurences of <see cref="QueryFieldAttribute"/>.
+        /// Scans specified type for occurences of <see cref="QuerySqlFieldAttribute"/>.
         /// </summary>
         /// <param name="type">The type.</param>
         /// <param name="fields">The fields.</param>
@@ -288,17 +288,28 @@ namespace Apache.Ignite.Core.Cache.Configuration
 
             foreach (var memberInfo in GetFieldsAndProperties(type))
             {
-                foreach (var attr in memberInfo.Key.GetCustomAttributes(true).OfType<QueryFieldAttribute>())
+                foreach (var attr in memberInfo.Key.GetCustomAttributes(true).OfType<QuerySqlFieldAttribute>())
                 {
                     var columnName = attr.Name ?? memberInfo.Key.Name;
 
-                    if (parentPropName != null)
-                        columnName = parentPropName + "." + columnName;
+                    // TODO: Dot notation is not supported! WTF is going on here?
+                    //if (parentPropName != null)
+                    //    columnName = parentPropName + "." + columnName;
 
                     fields.Add(new QueryField(columnName, memberInfo.Value));
 
                     if (attr.IsIndexed)
-                        indexes.Add(new QueryIndexEx(columnName, attr.IsDescending, attr.IndexType, attr.IndexGroups));
+                        indexes.Add(new QueryIndexEx(columnName, attr.IsDescending, QueryIndexType.Sorted,
+                            attr.IndexGroups));
+
+                    ScanAttributes(memberInfo.Value, fields, indexes, columnName, visitedTypes);
+                }
+
+                foreach (var attr in memberInfo.Key.GetCustomAttributes(true).OfType<QueryTextFieldAttribute>())
+                {
+                    var columnName = attr.Name ?? memberInfo.Key.Name;
+
+                    indexes.Add(new QueryIndexEx(columnName, false, QueryIndexType.FullText, null));
 
                     ScanAttributes(memberInfo.Value, fields, indexes, columnName, visitedTypes);
                 }

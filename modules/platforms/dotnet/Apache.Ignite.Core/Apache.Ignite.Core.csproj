@@ -65,6 +65,7 @@
     <Compile Include="Cache\CachePartialUpdateException.cs" />
     <Compile Include="Cache\CachePeekMode.cs" />
     <Compile Include="Cache\Configuration\QueryAlias.cs" />
+    <Compile Include="Cache\Configuration\QueryTextFieldAttribute.cs" />
     <Compile Include="Cache\Event\CacheEntryEventType.cs" />
     <Compile Include="Cache\Event\ICacheEntryEvent.cs" />
     <Compile Include="Cache\Event\ICacheEntryEventFilter.cs" />
@@ -144,7 +145,7 @@
     <Compile Include="Cache\Configuration\QueryField.cs" />
     <Compile Include="Cache\Configuration\QueryIndex.cs" />
     <Compile Include="Cache\Configuration\QueryIndexType.cs" />
-    <Compile Include="Cache\Configuration\QueryFieldAttribute.cs" />
+    <Compile Include="Cache\Configuration\QuerySqlFieldAttribute.cs" />
     <Compile Include="Discovery\StaticIpFinder.cs" />
     <Compile Include="Compute\Package-Info.cs" />
     <Compile Include="Datastream\IDataStreamer.cs" />
