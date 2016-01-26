@@ -1500,7 +1500,7 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
         BinaryContext ctx = binaryContext(marsh);
 
         // Full name hashCode.
-        assertEquals("notconfiguredclass".hashCode(), ctx.typeId("NotConfiguredClass"));
+        assertEquals("NotConfiguredClass".hashCode(), ctx.typeId("NotConfiguredClass"));
         assertEquals(Key.class.getName().hashCode(), ctx.typeId(Key.class.getName()));
         assertEquals("org.gridgain.NonExistentClass3".hashCode(), ctx.typeId("org.gridgain.NonExistentClass3"));
         assertEquals("NonExistentClass4".hashCode(), ctx.typeId("NonExistentClass4"));

@@ -113,7 +113,7 @@ public class BinaryContext {
     private final ConcurrentMap<Integer, String> affKeyFieldNames = new ConcurrentHashMap8<>(0);
 
     /** Maps className to mapper */
-    private final Map<String, BinaryInternalMapper> cls2Mappers = new ConcurrentHashMap8<>(0);
+    private final ConcurrentMap<String, BinaryInternalMapper> cls2Mappers = new ConcurrentHashMap8<>(0);
 
     /** */
     private BinaryMetadataHandler metaHnd;
@@ -372,7 +372,7 @@ public class BinaryContext {
      * @param idMapper ID mapper.
      * @return Mapper.
      */
-    private BinaryInternalMapper resolveMapper(BinaryNameMapper nameMapper, BinaryIdMapper idMapper) {
+    private static BinaryInternalMapper resolveMapper(BinaryNameMapper nameMapper, BinaryIdMapper idMapper) {
         if ((nameMapper == null || (DFLT_MAPPER.nameMapper().equals(nameMapper)))
             && (idMapper == null || DFLT_MAPPER.idMapper().equals(idMapper)))
             return DFLT_MAPPER;
@@ -591,7 +591,7 @@ public class BinaryContext {
                 clsName.hashCode(),
                 clsName,
                 null,
-                DFLT_MAPPER,
+                SIMPLE_NAME_LOWER_CASE_MAPPER,
                 null,
                 false,
                 true /* registered */
@@ -752,9 +752,9 @@ public class BinaryContext {
      * @return Instance of ID mapper.
      */
     public BinaryInternalMapper userTypeMapper(int typeId) {
-        BinaryInternalMapper mappers = typeId2Mapper.get(typeId);
+        BinaryInternalMapper mapper = typeId2Mapper.get(typeId);
 
-        return mappers != null ? mappers : DFLT_MAPPER;
+        return mapper != null ? mapper : SIMPLE_NAME_LOWER_CASE_MAPPER;
     }
 
     /**
@@ -762,9 +762,64 @@ public class BinaryContext {
      * @return Instance of ID mapper.
      */
     private BinaryInternalMapper userTypeMapper(String clsName) {
-        BinaryInternalMapper mappers = cls2Mappers.get(clsName);
+        BinaryInternalMapper mapper = cls2Mappers.get(clsName);
 
-        return mappers != null ? mappers : DFLT_MAPPER;
+        if (mapper != null)
+            return mapper;
+
+        mapper = resolveMapper(clsName, igniteCfg.getBinaryConfiguration());
+
+        BinaryInternalMapper prevMap = cls2Mappers.putIfAbsent(clsName, mapper);
+
+//        assert prevMap == null : "Failed to get user type mapper [clsName=" + clsName + ", newMapper=" + mapper
+//            + ", prevMap=" + prevMap + "]";
+
+        prevMap = typeId2Mapper.putIfAbsent(mapper.typeId(clsName), mapper);
+
+        return mapper;
+    }
+
+    /**
+     * @param typeName Type name.
+     * @param cfg Binary configuration.
+     * @return Mapper according to configuration.
+     */
+    private static BinaryInternalMapper resolveMapper(String typeName, BinaryConfiguration cfg) {
+        assert typeName != null;
+
+        BinaryIdMapper globalIdMapper = cfg.getIdMapper();
+        BinaryNameMapper globalNameMapper = cfg.getNameMapper();
+
+        Collection<BinaryTypeConfiguration> typeCfgs = cfg.getTypeConfigurations();
+
+        if (typeCfgs != null) {
+            for (BinaryTypeConfiguration typeCfg : typeCfgs) {
+                String clsName = typeCfg.getTypeName();
+
+                // Pattern.
+                if (clsName != null && clsName.endsWith(".*")) {
+                    String pkgName = clsName.substring(0, clsName.length() - 2);
+                    String typePkgName = typeName.substring(0, typeName.lastIndexOf('.'));
+
+                    if (pkgName.equals(typePkgName)) {
+                        // Resolve mapper.
+                        BinaryIdMapper idMapper = globalIdMapper;
+
+                        if (typeCfg.getIdMapper() != null)
+                            idMapper = typeCfg.getIdMapper();
+
+                        BinaryNameMapper nameMapper = globalNameMapper;
+
+                        if (typeCfg.getNameMapper() != null)
+                            nameMapper = typeCfg.getNameMapper();
+
+                        return resolveMapper(nameMapper, idMapper);
+                    }
+                }
+            }
+        }
+
+        return resolveMapper(globalNameMapper, globalIdMapper);
     }
 
     /**
