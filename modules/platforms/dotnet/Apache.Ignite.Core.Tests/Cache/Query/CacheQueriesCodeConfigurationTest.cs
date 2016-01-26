@@ -40,7 +40,6 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         [Test]
         public void TestQueryEntityConfiguration()
         {
-
             var cfg = new IgniteConfiguration
             {
                 JvmOptions = TestUtils.TestJavaOptions(),
@@ -48,25 +47,18 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
                 BinaryConfiguration = new BinaryConfiguration(typeof (QueryPerson)),
                 CacheConfiguration = new[]
                 {
-                    new CacheConfiguration
+                    new CacheConfiguration(CacheName, new QueryEntity(typeof (int), typeof (QueryPerson))
                     {
-                        Name = CacheName,
-                        QueryEntities = new[]
+                        Fields = new[]
                         {
-                            new QueryEntity(typeof(int), typeof(QueryPerson))
-                            {
-                                Fields = new[]
-                                {
-                                    new QueryField("Name", typeof (string)),
-                                    new QueryField("Age", typeof (int))
-                                },
-                                Indexes = new[]
-                                {
-                                    new QueryIndex(false, QueryIndexType.FullText, "Name"), new QueryIndex("Age")
-                                }
-                            }
+                            new QueryField("Name", typeof (string)),
+                            new QueryField("Age", typeof (int))
+                        },
+                        Indexes = new[]
+                        {
+                            new QueryIndex(false, QueryIndexType.FullText, "Name"), new QueryIndex("Age")
                         }
-                    }
+                    })
                 }
             };
 
