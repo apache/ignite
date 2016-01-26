@@ -87,10 +87,6 @@ public class BinaryObjectBuilderDefaultMappersSelfTest extends GridCommonAbstrac
             new BinaryTypeConfiguration(Key.class.getName()),
             new BinaryTypeConfiguration(Value.class.getName()),
             new BinaryTypeConfiguration("org.gridgain.grid.internal.util.binary.mutabletest.*"),
-            // TODO the following 3 lines must be deleted when IGNITE-2395 will be fixed.
-            new BinaryTypeConfiguration("Class"),
-            new BinaryTypeConfiguration("org.test.MetaTest"),
-            new BinaryTypeConfiguration("org.test.MetaTest2"),
             customTypeCfg));
 
         bCfg.setIdMapper(new BinaryBasicIdMapper(false));
