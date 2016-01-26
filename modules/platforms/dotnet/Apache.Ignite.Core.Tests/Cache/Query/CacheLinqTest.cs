@@ -95,6 +95,16 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         }
 
         [Test]
+        public void TestFieldsQuery()
+        {
+            var cache = GetCache();
+
+            var results = cache.ToQueryable().Where(x => x.Key == 5).Select(x => x.Value.Age).ToArray();
+
+            Assert.AreEqual(new[] {5}, results);
+        }
+
+        [Test]
         [Ignore("Contains does not work for some reason")]
         public void TestStrings()
         {
