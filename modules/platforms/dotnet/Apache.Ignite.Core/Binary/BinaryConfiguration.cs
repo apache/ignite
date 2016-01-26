@@ -53,7 +53,6 @@ namespace Apache.Ignite.Core.Binary
                 ? null
                 : cfg.TypeConfigurations.Select(x => new BinaryTypeConfiguration(x)).ToList();
 
-
             TypeNames = cfg.TypeNames == null ? null : cfg.TypeNames.ToList();
             Types = cfg.Types == null ? null : cfg.Types.ToList();
         }
