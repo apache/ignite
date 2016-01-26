@@ -98,6 +98,33 @@ public class BinaryInternalMapper {
     }
 
     /** {@inheritDoc} */
+    @Override public boolean equals(Object o) {
+        if (this == o)
+            return true;
+
+        if (!(o instanceof BinaryInternalMapper))
+            return false;
+
+        BinaryInternalMapper mapper = (BinaryInternalMapper)o;
+
+        return checkOnZeroId == mapper.checkOnZeroId 
+            && idMapper.equals(mapper.idMapper) 
+            && nameMapper.equals(mapper.nameMapper);
+
+    }
+
+    /** {@inheritDoc} */
+    @Override public int hashCode() {
+        int res = nameMapper.hashCode();
+        
+        res = 31 * res + idMapper.hashCode();
+        
+        res = 31 * res + (checkOnZeroId ? 1 : 0);
+        
+        return res;
+    }
+
+    /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(BinaryInternalMapper.class, this);
     }

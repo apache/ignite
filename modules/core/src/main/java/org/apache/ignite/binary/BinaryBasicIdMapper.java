@@ -151,10 +151,8 @@ public class BinaryBasicIdMapper implements BinaryIdMapper {
 
         BinaryBasicIdMapper mapper = (BinaryBasicIdMapper)o;
 
-        if (isLowerCase != mapper.isLowerCase)
-            return false;
+        return isLowerCase == mapper.isLowerCase;
 
-        return true;
     }
 
     /** {@inheritDoc} */

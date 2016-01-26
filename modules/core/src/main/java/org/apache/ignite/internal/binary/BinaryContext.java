@@ -43,6 +43,7 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.binary.BinaryBasicIdMapper;
 import org.apache.ignite.binary.BinaryBasicNameMapper;
@@ -771,21 +772,29 @@ public class BinaryContext {
 
         BinaryInternalMapper prevMap = cls2Mappers.putIfAbsent(clsName, mapper);
 
-//        assert prevMap == null : "Failed to get user type mapper [clsName=" + clsName + ", newMapper=" + mapper
-//            + ", prevMap=" + prevMap + "]";
+        if (prevMap != null && mapper.equals(prevMap))
+            throw new IgniteException("Different mappers [clsName=" + clsName + ", newMapper=" + mapper
+            + ", prevMap=" + prevMap + "]");
 
         prevMap = typeId2Mapper.putIfAbsent(mapper.typeId(clsName), mapper);
+
+        if (prevMap != null && mapper.equals(prevMap))
+            throw new IgniteException("Different mappers [clsName=" + clsName + ", newMapper=" + mapper
+                + ", prevMap=" + prevMap + "]");
 
         return mapper;
     }
 
     /**
-     * @param typeName Type name.
+     * @param clsName Type name.
      * @param cfg Binary configuration.
      * @return Mapper according to configuration.
      */
-    private static BinaryInternalMapper resolveMapper(String typeName, BinaryConfiguration cfg) {
-        assert typeName != null;
+    private static BinaryInternalMapper resolveMapper(String clsName, BinaryConfiguration cfg) {
+        assert clsName != null;
+
+        if (cfg == null)
+            return DFLT_MAPPER;
 
         BinaryIdMapper globalIdMapper = cfg.getIdMapper();
         BinaryNameMapper globalNameMapper = cfg.getNameMapper();
@@ -794,26 +803,31 @@ public class BinaryContext {
 
         if (typeCfgs != null) {
             for (BinaryTypeConfiguration typeCfg : typeCfgs) {
-                String clsName = typeCfg.getTypeName();
+                String typeCfgName = typeCfg.getTypeName();
 
                 // Pattern.
-                if (clsName != null && clsName.endsWith(".*")) {
-                    String pkgName = clsName.substring(0, clsName.length() - 2);
-                    String typePkgName = typeName.substring(0, typeName.lastIndexOf('.'));
+                if (typeCfgName != null && typeCfgName.endsWith(".*")) {
+                    String pkgName = typeCfgName.substring(0, typeCfgName.length() - 2);
 
-                    if (pkgName.equals(typePkgName)) {
-                        // Resolve mapper.
-                        BinaryIdMapper idMapper = globalIdMapper;
+                    int dotIndex = clsName.lastIndexOf('.');
 
-                        if (typeCfg.getIdMapper() != null)
-                            idMapper = typeCfg.getIdMapper();
+                    if (dotIndex > 0) {
+                        String typePkgName = clsName.substring(0, dotIndex);
 
-                        BinaryNameMapper nameMapper = globalNameMapper;
+                        if (pkgName.equals(typePkgName)) {
+                            // Resolve mapper.
+                            BinaryIdMapper idMapper = globalIdMapper;
 
-                        if (typeCfg.getNameMapper() != null)
-                            nameMapper = typeCfg.getNameMapper();
+                            if (typeCfg.getIdMapper() != null)
+                                idMapper = typeCfg.getIdMapper();
 
-                        return resolveMapper(nameMapper, idMapper);
+                            BinaryNameMapper nameMapper = globalNameMapper;
+
+                            if (typeCfg.getNameMapper() != null)
+                                nameMapper = typeCfg.getNameMapper();
+
+                            return resolveMapper(nameMapper, idMapper);
+                        }
                     }
                 }
             }
