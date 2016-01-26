@@ -19,9 +19,10 @@ namespace Apache.Ignite.Core.Discovery
 {
     /// <summary>
     /// Represents a discovery service provider interface.
+    /// Only predefined implementation is supported now: <see cref="TcpDiscoverySpi"/>.
     /// </summary>
     public interface IDiscoverySpi
     {
-        // TODO: ???
+        // No-op.
     }
 }
