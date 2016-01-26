@@ -288,13 +288,14 @@ namespace Apache.Ignite.Core.Cache.Configuration
 
             foreach (var memberInfo in GetFieldsAndProperties(type))
             {
-                foreach (var attr in memberInfo.Key.GetCustomAttributes(true).OfType<QuerySqlFieldAttribute>())
+                var customAttributes = memberInfo.Key.GetCustomAttributes(true);
+
+                foreach (var attr in customAttributes.OfType<QuerySqlFieldAttribute>())
                 {
                     var columnName = attr.Name ?? memberInfo.Key.Name;
 
-                    // TODO: Dot notation is not supported! WTF is going on here?
-                    //if (parentPropName != null)
-                    //    columnName = parentPropName + "." + columnName;
+                    if (parentPropName != null)
+                        columnName = parentPropName + "." + columnName;
 
                     fields.Add(new QueryField(columnName, memberInfo.Value));
 
@@ -305,9 +306,14 @@ namespace Apache.Ignite.Core.Cache.Configuration
                     ScanAttributes(memberInfo.Value, fields, indexes, columnName, visitedTypes);
                 }
 
-                foreach (var attr in memberInfo.Key.GetCustomAttributes(true).OfType<QueryTextFieldAttribute>())
+                foreach (var attr in customAttributes.OfType<QueryTextFieldAttribute>())
                 {
                     var columnName = attr.Name ?? memberInfo.Key.Name;
+
+                    if (parentPropName != null)
+                        columnName = parentPropName + "." + columnName;
+
+                    fields.Add(new QueryField(columnName, memberInfo.Value));
 
                     indexes.Add(new QueryIndexEx(columnName, false, QueryIndexType.FullText, null));
 

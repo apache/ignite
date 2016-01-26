@@ -107,14 +107,14 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
 
             CollectionAssert.AreEquivalent(new[]
             {
-                "SqlField", "IndexedField1", "FullTextField", "Inner", "Inner.Foo",
+                "SqlField", "IndexedField1", "FullTextField", "Inner", "Foo",
                 "GroupIndex1", "GroupIndex2", "GroupIndex3"
             }, fields.Select(x => x.Name));
 
             var idx = qe.Indexes.ToArray();
 
-            Assert.AreEqual(QueryIndexType.FullText, idx[0].IndexType);
-            Assert.AreEqual(QueryIndexType.FullText, idx[1].IndexType);
+            Assert.AreEqual(QueryIndexType.Sorted, idx[0].IndexType);
+            Assert.AreEqual(QueryIndexType.Sorted, idx[1].IndexType);
             Assert.AreEqual(QueryIndexType.Sorted, idx[2].IndexType);
             Assert.AreEqual(QueryIndexType.FullText, idx[3].IndexType);
 
