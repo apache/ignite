@@ -7,7 +7,7 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\..\src\odbcexample.cpp">
+    <ClCompile Include="..\..\src\odbc_example.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

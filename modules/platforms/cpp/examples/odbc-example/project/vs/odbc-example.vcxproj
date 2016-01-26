@@ -11,7 +11,7 @@
     </ProjectConfiguration>
   </ItemGroup>
   <PropertyGroup Label="Globals">
-    <ProjectGuid>{34935DEC-80FC-4168-AA52-3DBFF4F79B6B}</ProjectGuid>
+    <ProjectGuid>{56839DFF-6C03-416B-BC5F-DDC6EBF8512D}</ProjectGuid>
     <Keyword>Win32Proj</Keyword>
     <RootNamespace>igniteexamples</RootNamespace>
   </PropertyGroup>
@@ -81,7 +81,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="..\..\src\odbcexample.cpp" />
+    <ClCompile Include="..\..\src\odbc_example.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
