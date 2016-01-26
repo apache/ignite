@@ -755,7 +755,10 @@ public class BinaryContext {
     public BinaryInternalMapper userTypeMapper(int typeId) {
         BinaryInternalMapper mapper = typeId2Mapper.get(typeId);
 
-        return mapper != null ? mapper : SIMPLE_NAME_LOWER_CASE_MAPPER;
+        if (mapper == null)
+            throw new IgniteException("Failed to get mapper for user typeId:" + typeId);
+
+        return mapper;
     }
 
     /**
