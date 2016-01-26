@@ -109,10 +109,10 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
                 Name = name;
             }
 
-            [QueryField(Name = "age1")]
+            [QuerySqlField(Name = "age1")]
             public int Age { get; set; }
 
-            [QueryField]
+            [QuerySqlField]
             public string Name { get; set; }
 
             public void WriteBinary(IBinaryWriter writer)
