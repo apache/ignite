@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-namespace Apache.Ignite.Core.Discovery.Configuration
+namespace Apache.Ignite.Core.Discovery
 {
     using System;
     using System.ComponentModel;
@@ -23,9 +23,9 @@ namespace Apache.Ignite.Core.Discovery.Configuration
     using Apache.Ignite.Core.Impl.Binary;
 
     /// <summary>
-    /// Node discovery configuration.
+    /// TCP discover service provider.
     /// </summary>
-    public class DiscoveryConfiguration
+    public class TcpDiscoverySpi : IDiscoverySpi
     {
         /// <summary>
         /// Default socket timeout.
@@ -53,9 +53,9 @@ namespace Apache.Ignite.Core.Discovery.Configuration
         public readonly TimeSpan DefaultJoinTimeout = TimeSpan.Zero;
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="DiscoveryConfiguration"/> class.
+        /// Initializes a new instance of the <see cref="TcpDiscoverySpi"/> class.
         /// </summary>
-        public DiscoveryConfiguration()
+        public TcpDiscoverySpi()
         {
             SocketTimeout = DefaultSocketTimeout;
             AckTimeout = DefaultAckTimeout;
@@ -65,12 +65,12 @@ namespace Apache.Ignite.Core.Discovery.Configuration
         }
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="DiscoveryConfiguration"/> class.
+        /// Initializes a new instance of the <see cref="TcpDiscoverySpi"/> class.
         /// </summary>
         /// <param name="reader">The reader.</param>
-        internal DiscoveryConfiguration(BinaryReader reader)
+        internal TcpDiscoverySpi(BinaryReader reader)
         {
-            IpFinder = reader.ReadBoolean() ? IpFinder.ReadInstance(reader) : null;
+            IpFinder = reader.ReadBoolean() ? TcpDiscoveryIpFinder.ReadInstance(reader) : null;
 
             SocketTimeout = reader.ReadLongAsTimespan();
             AckTimeout = reader.ReadLongAsTimespan();
@@ -82,7 +82,7 @@ namespace Apache.Ignite.Core.Discovery.Configuration
         /// <summary>
         /// Gets or sets the IP finder which defines how nodes will find each other on the network.
         /// </summary>
-        public IpFinder IpFinder { get; set; }
+        public ITcpDiscoveryIpFinder IpFinder { get; set; }
 
         /// <summary>
         /// Gets or sets the socket timeout.
@@ -124,7 +124,12 @@ namespace Apache.Ignite.Core.Discovery.Configuration
             {
                 writer.WriteBoolean(true);
 
-                IpFinder.Write(writer);
+                var finder = ipFinder as TcpDiscoveryIpFinder;
+
+                if (finder == null)
+                    throw new InvalidOperationException("Unsupported IP finder: " + ipFinder.GetType());
+
+                finder.Write(writer);
             }
             else
                 writer.WriteBoolean(false);

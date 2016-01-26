@@ -25,7 +25,7 @@ namespace Apache.Ignite.Core.Cache.Configuration
     /// Using this attribute is an alternative to <see cref="QueryEntity.Fields"/> in <see cref="CacheConfiguration"/>.
     /// </summary>
     [AttributeUsage(AttributeTargets.Field | AttributeTargets.Property)]
-    public sealed class QueryFieldAttribute : Attribute
+    public sealed class QuerySqlFieldAttribute : Attribute
     {
         /// <summary>
         /// Gets or sets the sql field name.
@@ -39,12 +39,6 @@ namespace Apache.Ignite.Core.Cache.Configuration
         /// but makes select operations faster.
         /// </summary>
         public bool IsIndexed { get; set; }
-
-        /// <summary>
-        /// Gets or sets the type of the index.
-        /// Applicable when <see cref="IsIndexed"/> is <c>true</c>.
-        /// </summary>
-        public QueryIndexType IndexType { get; set; }
 
         /// <summary>
         /// Gets or sets a value indicating whether index for this field should be descending.

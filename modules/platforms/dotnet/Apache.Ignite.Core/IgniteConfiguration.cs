@@ -15,21 +15,26 @@
  * limitations under the License.
  */
 
-namespace Apache.Ignite.Core
+#pragma warning disable 618  // deprecated SpringConfigUrl
+ namespace Apache.Ignite.Core
 {
     using System;
     using System.Collections.Generic;
     using System.ComponentModel;
     using System.Diagnostics;
     using System.Diagnostics.CodeAnalysis;
+    using System.IO;
     using System.Linq;
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Cache.Configuration;
-    using Apache.Ignite.Core.Discovery.Configuration;
+    using Apache.Ignite.Core.Discovery;
     using Apache.Ignite.Core.Events;
     using Apache.Ignite.Core.Impl;
     using Apache.Ignite.Core.Impl.Binary;
+    using Apache.Ignite.Core.Impl.Common;
     using Apache.Ignite.Core.Lifecycle;
+    using BinaryReader = Apache.Ignite.Core.Impl.Binary.BinaryReader;
+    using BinaryWriter = Apache.Ignite.Core.Impl.Binary.BinaryWriter;
 
     /// <summary>
     /// Grid configuration.
@@ -99,6 +104,30 @@ namespace Apache.Ignite.Core
         }
 
         /// <summary>
+        /// Initializes a new instance of the <see cref="IgniteConfiguration"/> class.
+        /// </summary>
+        /// <param name="configuration">The configuration to copy.</param>
+        public IgniteConfiguration(IgniteConfiguration configuration)
+        {
+            IgniteArgumentCheck.NotNull(configuration, "configuration");
+
+            CopyLocalProperties(configuration);
+
+            using (var stream = IgniteManager.Memory.Allocate().GetStream())
+            {
+                var marsh = new Marshaller(configuration.BinaryConfiguration);
+
+                configuration.WriteCore(marsh.StartMarshal(stream));
+
+                stream.SynchronizeOutput();
+
+                stream.Seek(0, SeekOrigin.Begin);
+
+                ReadCore(marsh.StartUnmarshal(stream));
+            }
+        }
+
+        /// <summary>
         /// Initializes a new instance of the <see cref="IgniteConfiguration"/> class from a reader.
         /// </summary>
         /// <param name="binaryReader">The binary reader.</param>
@@ -108,27 +137,84 @@ namespace Apache.Ignite.Core
         }
 
         /// <summary>
+        /// Writes this instance to a writer.
+        /// </summary>
+        /// <param name="writer">The writer.</param>
+        internal void Write(BinaryWriter writer)
+        {
+            Debug.Assert(writer != null);
+
+            if (!string.IsNullOrEmpty(SpringConfigUrl))
+            {
+                // Do not write details when there is Spring config.
+                writer.WriteBoolean(false);
+                return;
+            }
+
+            writer.WriteBoolean(true);  // details are present
+
+            WriteCore(writer);
+        }
+
+        /// <summary>
+        /// Writes this instance to a writer.
+        /// </summary>
+        /// <param name="writer">The writer.</param>
+        private void WriteCore(BinaryWriter writer)
+        {
+            // Simple properties
+            writer.WriteBoolean(ClientMode);
+            writer.WriteIntArray(IncludedEventTypes == null ? null : IncludedEventTypes.ToArray());
+
+            writer.WriteLong((long) MetricsExpireTime.TotalMilliseconds);
+            writer.WriteInt(MetricsHistorySize);
+            writer.WriteLong((long) MetricsLogFrequency.TotalMilliseconds);
+            var metricsUpdateFreq = (long) MetricsUpdateFrequency.TotalMilliseconds;
+            writer.WriteLong(metricsUpdateFreq >= 0 ? metricsUpdateFreq : -1);
+            writer.WriteInt(NetworkSendRetryCount);
+            writer.WriteLong((long) NetworkSendRetryDelay.TotalMilliseconds);
+            writer.WriteLong((long) NetworkTimeout.TotalMilliseconds);
+            writer.WriteString(WorkDirectory);
+            writer.WriteString(LocalHost);
+
+            // Cache config
+            var caches = CacheConfiguration;
+
+            if (caches == null)
+                writer.WriteInt(0);
+            else
+            {
+                writer.WriteInt(caches.Count);
+
+                foreach (var cache in caches)
+                    cache.Write(writer);
+            }
+
+            // Discovery config
+            var disco = DiscoverySpi;
+
+            if (disco != null)
+            {
+                writer.WriteBoolean(true);
+
+                var tcpDisco = disco as TcpDiscoverySpi;
+
+                if (tcpDisco == null)
+                    throw new InvalidOperationException("Unsupported discovery SPI: " + disco.GetType());
+
+                tcpDisco.Write(writer);
+            }
+            else
+                writer.WriteBoolean(false);
+        }
+
+        /// <summary>
         /// Reads data from specified reader into current instance.
         /// </summary>
-        /// <param name="binaryReader">The binary reader.</param>
-        private void Read(BinaryReader binaryReader)
+        /// <param name="r">The binary reader.</param>
+        private void ReadCore(BinaryReader r)
         {
-            var r = binaryReader;
-
-            GridName = r.ReadString();
-
-            var cacheCfgCount = r.ReadInt();
-            CacheConfiguration = new List<CacheConfiguration>(cacheCfgCount);
-            for (int i = 0; i < cacheCfgCount; i++)
-                CacheConfiguration.Add(new CacheConfiguration(r));
-
-            IgniteHome = r.ReadString();
-
-            JvmInitialMemoryMb = (int) (r.ReadLong()/1024/2014);
-            JvmMaxMemoryMb = (int) (r.ReadLong()/1024/2014);
-
-            DiscoveryConfiguration = r.ReadBoolean() ? new DiscoveryConfiguration(r) : null;
-
+            // Simple properties
             ClientMode = r.ReadBoolean();
             IncludedEventTypes = r.ReadIntArray();
 
@@ -142,26 +228,54 @@ namespace Apache.Ignite.Core
             WorkDirectory = r.ReadString();
             LocalHost = r.ReadString();
 
+            // Cache config
+            var cacheCfgCount = r.ReadInt();
+            CacheConfiguration = new List<CacheConfiguration>(cacheCfgCount);
+            for (int i = 0; i < cacheCfgCount; i++)
+                CacheConfiguration.Add(new CacheConfiguration(r));
+
+            // Discovery config
+            DiscoverySpi = r.ReadBoolean() ? new TcpDiscoverySpi(r) : null;
+        }
+
+        /// <summary>
+        /// Reads data from specified reader into current instance.
+        /// </summary>
+        /// <param name="binaryReader">The binary reader.</param>
+        private void Read(BinaryReader binaryReader)
+        {
+            var r = binaryReader;
+
+            CopyLocalProperties(r.Marshaller.Ignite.Configuration);
+
+            ReadCore(r);
+
+            // Misc
+            IgniteHome = r.ReadString();
+
+            JvmInitialMemoryMb = (int) (r.ReadLong()/1024/2014);
+            JvmMaxMemoryMb = (int) (r.ReadLong()/1024/2014);
+
             // Local data (not from reader)
             JvmDllPath = Process.GetCurrentProcess().Modules.OfType<ProcessModule>()
                 .Single(x => string.Equals(x.ModuleName, IgniteUtils.FileJvmDll, StringComparison.OrdinalIgnoreCase))
                 .FileName;
+        }
 
-            var marsh = r.Marshaller;
-
-            var origCfg = marsh.Ignite.Configuration;
-
-            BinaryConfiguration = marsh.BinaryConfiguration;
-
-            JvmClasspath = origCfg.JvmClasspath;
-
-            JvmOptions = origCfg.JvmOptions;
-
-            Assemblies = origCfg.Assemblies;
-
-            SuppressWarnings = origCfg.SuppressWarnings;
-
-            LifecycleBeans = origCfg.LifecycleBeans;
+        /// <summary>
+        /// Copies the local properties (properties that are not written in Write method).
+        /// </summary>
+        private void CopyLocalProperties(IgniteConfiguration cfg)
+        {
+            GridName = cfg.GridName;
+            BinaryConfiguration = cfg.BinaryConfiguration == null
+                ? null
+                : new BinaryConfiguration(cfg.BinaryConfiguration);
+            JvmClasspath = cfg.JvmClasspath;
+            JvmOptions = cfg.JvmOptions;
+            Assemblies = cfg.Assemblies;
+            SuppressWarnings = cfg.SuppressWarnings;
+            LifecycleBeans = cfg.LifecycleBeans;
         }
 
         /// <summary>
@@ -253,10 +367,10 @@ namespace Apache.Ignite.Core
         public int JvmMaxMemoryMb { get; set; }
 
         /// <summary>
-        /// Gets or sets the discovery configuration.
-        /// Null for default configuration.
+        /// Gets or sets the discovery service provider.
+        /// Null for default discovery.
         /// </summary>
-        public DiscoveryConfiguration DiscoveryConfiguration { get; set; }
+        public IDiscoverySpi DiscoverySpi { get; set; }
 
         /// <summary>
         /// Gets or sets a value indicating whether node should start in client mode.

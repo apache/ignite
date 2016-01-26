@@ -25,7 +25,6 @@ namespace Apache.Ignite.Core.Tests
     using Apache.Ignite.Core.Cache.Configuration;
     using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Discovery;
-    using Apache.Ignite.Core.Discovery.Configuration;
     using Apache.Ignite.Core.Events;
     using NUnit.Framework;
 
@@ -50,22 +49,22 @@ namespace Apache.Ignite.Core.Tests
         public void TestDefaultValueAttributes()
         {
             CheckDefaultValueAttributes(new IgniteConfiguration());
-            CheckDefaultValueAttributes(new DiscoveryConfiguration());
+            CheckDefaultValueAttributes(new TcpDiscoverySpi());
             CheckDefaultValueAttributes(new CacheConfiguration());
-            CheckDefaultValueAttributes(new MulticastIpFinder());
+            CheckDefaultValueAttributes(new TcpDiscoveryMulticastIpFinder());
         }
 
         [Test]
         public void TestAllConfigurationProperties()
         {
-            var cfg = GetCustomConfig();
+            var cfg = new IgniteConfiguration(GetCustomConfig());
 
             using (var ignite = Ignition.Start(cfg))
             {
                 var resCfg = ignite.GetConfiguration();
 
-                var disco = cfg.DiscoveryConfiguration;
-                var resDisco = resCfg.DiscoveryConfiguration;
+                var disco = (TcpDiscoverySpi) cfg.DiscoverySpi;
+                var resDisco = (TcpDiscoverySpi) resCfg.DiscoverySpi;
 
                 Assert.AreEqual(disco.NetworkTimeout, resDisco.NetworkTimeout);
                 Assert.AreEqual(disco.AckTimeout, resDisco.AckTimeout);
@@ -73,8 +72,8 @@ namespace Apache.Ignite.Core.Tests
                 Assert.AreEqual(disco.SocketTimeout, resDisco.SocketTimeout);
                 Assert.AreEqual(disco.JoinTimeout, resDisco.JoinTimeout);
 
-                var ip = (StaticIpFinder) disco.IpFinder;
-                var resIp = (StaticIpFinder) resDisco.IpFinder;
+                var ip = (TcpDiscoveryStaticIpFinder) disco.IpFinder;
+                var resIp = (TcpDiscoveryStaticIpFinder) resDisco.IpFinder;
 
                 // There can be extra IPv6 endpoints
                 Assert.AreEqual(ip.EndPoints, resIp.EndPoints.Take(2).Select(x => x.Trim('/')).ToArray());
@@ -140,8 +139,8 @@ namespace Apache.Ignite.Core.Tests
         {
             var cfg = new IgniteConfiguration
             {
-                DiscoveryConfiguration =
-                    new DiscoveryConfiguration
+                DiscoverySpi =
+                    new TcpDiscoverySpi
                     {
                         AckTimeout = TimeSpan.FromDays(2),
                         MaxAckTimeout = TimeSpan.MaxValue,
@@ -170,8 +169,8 @@ namespace Apache.Ignite.Core.Tests
         {
             var cfg = new IgniteConfiguration
             {
-                DiscoveryConfiguration =
-                    new DiscoveryConfiguration
+                DiscoverySpi =
+                    new TcpDiscoverySpi
                     {
                         AckTimeout = TimeSpan.FromMilliseconds(-5),
                         JoinTimeout = TimeSpan.MinValue,
@@ -186,10 +185,10 @@ namespace Apache.Ignite.Core.Tests
         [Test]
         public void TestStaticIpFinder()
         {
-            TestIpFinders(new StaticIpFinder
+            TestIpFinders(new TcpDiscoveryStaticIpFinder
             {
                 EndPoints = new[] {"127.0.0.1:47500"}
-            }, new StaticIpFinder
+            }, new TcpDiscoveryStaticIpFinder
             {
                 EndPoints = new[] {"127.0.0.1:47501"}
             });
@@ -199,16 +198,16 @@ namespace Apache.Ignite.Core.Tests
         public void TestMulticastIpFinder()
         {
             TestIpFinders(
-                new MulticastIpFinder {MulticastGroup = "228.111.111.222", MulticastPort = 54522},
-                new MulticastIpFinder {MulticastGroup = "228.111.111.223", MulticastPort = 54522});
+                new TcpDiscoveryMulticastIpFinder {MulticastGroup = "228.111.111.222", MulticastPort = 54522},
+                new TcpDiscoveryMulticastIpFinder {MulticastGroup = "228.111.111.223", MulticastPort = 54522});
         }
 
-        private static void TestIpFinders(IpFinder ipFinder, IpFinder ipFinder2)
+        private static void TestIpFinders(TcpDiscoveryIpFinder ipFinder, TcpDiscoveryIpFinder ipFinder2)
         {
             var cfg = new IgniteConfiguration
             {
-                DiscoveryConfiguration =
-                    new DiscoveryConfiguration
+                DiscoverySpi =
+                    new TcpDiscoverySpi
                     {
                         IpFinder = ipFinder
                     },
@@ -228,7 +227,7 @@ namespace Apache.Ignite.Core.Tests
                 }
 
                 // Start with incompatible endpoint and check that there are 2 topologies
-                cfg.DiscoveryConfiguration.IpFinder = ipFinder2;
+                ((TcpDiscoverySpi) cfg.DiscoverySpi).IpFinder = ipFinder2;
 
                 using (var ignite2 = Ignition.Start(cfg))
                 {
@@ -271,14 +270,14 @@ namespace Apache.Ignite.Core.Tests
         {
             return new IgniteConfiguration
             {
-                DiscoveryConfiguration = new DiscoveryConfiguration
+                DiscoverySpi = new TcpDiscoverySpi
                 {
                     NetworkTimeout = TimeSpan.FromSeconds(1),
                     AckTimeout = TimeSpan.FromSeconds(2),
                     MaxAckTimeout = TimeSpan.FromSeconds(3),
                     SocketTimeout = TimeSpan.FromSeconds(4),
                     JoinTimeout = TimeSpan.FromSeconds(5),
-                    IpFinder = new StaticIpFinder
+                    IpFinder = new TcpDiscoveryStaticIpFinder
                     {
                         EndPoints = new[] { "127.0.0.1:47500", "127.0.0.1:47501" }
                     }

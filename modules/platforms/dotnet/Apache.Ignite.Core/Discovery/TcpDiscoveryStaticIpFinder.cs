@@ -23,7 +23,7 @@ namespace Apache.Ignite.Core.Discovery
     /// <summary>
     /// IP Finder which works only with pre-configured list of IP addresses.
     /// </summary>
-    public class StaticIpFinder : IpFinder
+    public class TcpDiscoveryStaticIpFinder : TcpDiscoveryIpFinder
     {
         /// <summary>
         /// Gets or sets the end points.
@@ -31,18 +31,18 @@ namespace Apache.Ignite.Core.Discovery
         public ICollection<string> EndPoints { get; set; }
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="StaticIpFinder"/> class.
+        /// Initializes a new instance of the <see cref="TcpDiscoveryStaticIpFinder"/> class.
         /// </summary>
-        public StaticIpFinder()
+        public TcpDiscoveryStaticIpFinder()
         {
             // No-op.
         }
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="StaticIpFinder"/> class.
+        /// Initializes a new instance of the <see cref="TcpDiscoveryStaticIpFinder"/> class.
         /// </summary>
         /// <param name="reader">The reader.</param>
-        internal StaticIpFinder(IBinaryRawReader reader)
+        internal TcpDiscoveryStaticIpFinder(IBinaryRawReader reader)
         {
             var count = reader.ReadInt();
 

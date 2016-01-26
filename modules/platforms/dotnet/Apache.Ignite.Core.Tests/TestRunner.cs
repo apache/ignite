@@ -1,4 +1,4 @@
-﻿/*
+﻿﻿/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -32,9 +32,9 @@ namespace Apache.Ignite.Core.Tests
             Debug.Listeners.Add(new TextWriterTraceListener(Console.Out));
             Debug.AutoFlush = true;
 
-            TestOne(typeof(CacheLinqTest), "TestSql");
+            //TestOne(typeof(ContinuousQueryAtomiclBackupTest), "TestInitialQuery");
 
-            //TestAll(typeof (CacheLinqTest));
+            TestAll(typeof (CacheQueriesCodeConfigurationTest));
             //TestAllInAssembly();
         }
 

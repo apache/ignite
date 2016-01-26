@@ -246,14 +246,14 @@ import java.util.Map;
             return;  // there is no config
 
         cfg.setClientMode(in.readBoolean());
+        cfg.setIncludeEventTypes(in.readIntArray());
         cfg.setMetricsExpireTime(in.readLong());
+        cfg.setMetricsHistorySize(in.readInt());
         cfg.setMetricsLogFrequency(in.readLong());
         cfg.setMetricsUpdateFrequency(in.readLong());
-        cfg.setMetricsHistorySize(in.readInt());
         cfg.setNetworkSendRetryCount(in.readInt());
         cfg.setNetworkSendRetryDelay(in.readLong());
         cfg.setNetworkTimeout(in.readLong());
-        cfg.setIncludeEventTypes(in.readIntArray());
         cfg.setWorkDirectory(in.readString());
         cfg.setLocalHost(in.readString());
 
@@ -519,7 +519,17 @@ import java.util.Map;
         assert w != null;
         assert cfg != null;
 
-        w.writeString(cfg.getGridName());
+        w.writeBoolean(cfg.isClientMode());
+        w.writeIntArray(cfg.getIncludeEventTypes());
+        w.writeLong(cfg.getMetricsExpireTime());
+        w.writeInt(cfg.getMetricsHistorySize());
+        w.writeLong(cfg.getMetricsLogFrequency());
+        w.writeLong(cfg.getMetricsUpdateFrequency());
+        w.writeInt(cfg.getNetworkSendRetryCount());
+        w.writeLong(cfg.getNetworkSendRetryDelay());
+        w.writeLong(cfg.getNetworkTimeout());
+        w.writeString(cfg.getWorkDirectory());
+        w.writeString(cfg.getLocalHost());
 
         CacheConfiguration[] cacheCfg = cfg.getCacheConfiguration();
 
@@ -532,25 +542,12 @@ import java.util.Map;
         else
             w.writeInt(0);
 
+        writeDiscoveryConfiguration(w, cfg.getDiscoverySpi());
+
         w.writeString(cfg.getIgniteHome());
 
         w.writeLong(ManagementFactory.getMemoryMXBean().getHeapMemoryUsage().getInit());
         w.writeLong(ManagementFactory.getMemoryMXBean().getHeapMemoryUsage().getMax());
-
-        writeDiscoveryConfiguration(w, cfg.getDiscoverySpi());
-
-        w.writeBoolean(cfg.isClientMode());
-
-        w.writeIntArray(cfg.getIncludeEventTypes());
-        w.writeLong(cfg.getMetricsExpireTime());
-        w.writeInt(cfg.getMetricsHistorySize());
-        w.writeLong(cfg.getMetricsLogFrequency());
-        w.writeLong(cfg.getMetricsUpdateFrequency());
-        w.writeInt(cfg.getNetworkSendRetryCount());
-        w.writeLong(cfg.getNetworkSendRetryDelay());
-        w.writeLong(cfg.getNetworkTimeout());
-        w.writeString(cfg.getWorkDirectory());
-        w.writeString(cfg.getLocalHost());
     }
 
     /**

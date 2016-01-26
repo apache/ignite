@@ -308,7 +308,7 @@ namespace Apache.Ignite.Core.Tests.Cache
         /// <summary>
         /// Asserts that two configurations have the same properties.
         /// </summary>
-        private static void AssertConfigsAreEqual(ICollection<IndexField> x, ICollection<IndexField> y)
+        private static void AssertConfigsAreEqual(ICollection<QueryIndexField> x, ICollection<QueryIndexField> y)
         {
             if (x == null)
             {
@@ -363,7 +363,7 @@ namespace Apache.Ignite.Core.Tests.Cache
         /// <summary>
         /// Asserts that two configurations have the same properties.
         /// </summary>
-        private static void AssertConfigsAreEqual(IndexField x, IndexField y)
+        private static void AssertConfigsAreEqual(QueryIndexField x, QueryIndexField y)
         {
             Assert.IsNotNull(x);
             Assert.IsNotNull(y);
@@ -431,7 +431,7 @@ namespace Apache.Ignite.Core.Tests.Cache
                         Indexes = new[]
                         {
                             new QueryIndex("name") {Name = "index1" },
-                            new QueryIndex(new IndexField("location", true))
+                            new QueryIndex(new QueryIndexField("location", true))
                             {
                                 Name= "index2",
                                 IndexType = QueryIndexType.FullText
@@ -443,7 +443,7 @@ namespace Apache.Ignite.Core.Tests.Cache
         }
 
         [Serializable]
-        private class CacheStoreFactoryTest : ICacheStoreFactory
+        private class CacheStoreFactoryTest : IFactory<ICacheStore>
         {
             public int TestProperty { get; set; }
 

@@ -15,20 +15,15 @@
  * limitations under the License.
  */
 
-namespace Apache.Ignite.Core.Cache.Store
+namespace Apache.Ignite.Core.Discovery
 {
-    using System;
-
     /// <summary>
-    /// Factory that produces <see cref="ICacheStore"/> instances.
-    /// Implementation can be passed over the wire and thus should be marked with <see cref="SerializableAttribute"/>.
+    /// Represents an IP finder for <see cref="TcpDiscoverySpi"/>.
+    /// Only predefined implementations are supported now: 
+    /// <see cref="TcpDiscoveryStaticIpFinder"/>, <see cref="TcpDiscoveryMulticastIpFinder"/>.
     /// </summary>
-    public interface ICacheStoreFactory
+    public interface ITcpDiscoveryIpFinder
     {
-        /// <summary>
-        /// Creates an instance of the cache store.
-        /// </summary>
-        /// <returns>New instance of the cache store.</returns>
-        ICacheStore CreateInstance();
+        // No-op.
     }
 }

@@ -64,7 +64,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
                                 },
                                 Indexes = new[]
                                 {
-                                    new QueryIndex("Name", false, QueryIndexType.FullText), new QueryIndex("Age")
+                                    new QueryIndex(false, QueryIndexType.FullText, "Name"), new QueryIndex("Age")
                                 }
                             }
                         }
@@ -113,8 +113,8 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
 
             var idx = qe.Indexes.ToArray();
 
-            Assert.AreEqual(QueryIndexType.FullText, idx[0].IndexType);
-            Assert.AreEqual(QueryIndexType.FullText, idx[1].IndexType);
+            Assert.AreEqual(QueryIndexType.Sorted, idx[0].IndexType);
+            Assert.AreEqual(QueryIndexType.Sorted, idx[1].IndexType);
             Assert.AreEqual(QueryIndexType.Sorted, idx[2].IndexType);
             Assert.AreEqual(QueryIndexType.FullText, idx[3].IndexType);
 
@@ -163,6 +163,11 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
                 {
                     Assert.AreEqual(1, cursor.GetAll().Single().Key);
                 }
+
+                using (var cursor = cache.Query(new TextQuery(typeof(AttributeQueryPerson), "Pin*")))
+                {
+                    Assert.AreEqual(1, cursor.GetAll().Single().Key);
+                }
             }
         }
 
@@ -174,59 +179,58 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
                 Age = age;
             }
 
-            [QueryField(IsIndexed = true, IndexType = QueryIndexType.FullText)]
+            [QueryTextField]
             public string Name { get; set; }
 
-            [QueryField]
+            [QuerySqlField]
             public int Age { get; set; }
 
-            [QueryField]
+            [QuerySqlField]
             public AttributeQueryAddress Address { get; set; }
         }
 
         private class AttributeQueryAddress
         {
-            [QueryField]
+            [QuerySqlField]
             public string Country { get; set; }
 
-            [QueryField]
+            [QueryTextField]
             public string Street { get; set; }
         }
 
         private class RecursiveQuery
         {
-            [QueryField]
+            [QuerySqlField]
             public RecursiveQuery Inner { get; set; }
         }
 
         private class AttributeTest
         {
-            [QueryField]
+            [QuerySqlField]
             public double SqlField { get; set; }
 
-            [QueryField(IsIndexed = true, Name = "IndexedField1")]
+            [QuerySqlField(IsIndexed = true, Name = "IndexedField1")]
             public int IndexedField { get; set; }
 
-            [QueryField(IndexType = QueryIndexType.FullText, IsIndexed = true)]
+            [QueryTextField]
             public string FullTextField { get; set; }
 
-            [QueryField]
+            [QuerySqlField]
             public AttributeTestInner Inner { get; set; }
 
-            [QueryField(IsIndexed = true, IndexGroups = new [] {"group1", "group2"}, 
-                IndexType = QueryIndexType.FullText)]
+            [QuerySqlField(IsIndexed = true, IndexGroups = new[] {"group1", "group2"})]
             public string GroupIndex1 { get; set; }
 
-            [QueryField(IsIndexed = true, IndexGroups = new [] {"group1"}, IndexType = QueryIndexType.FullText)]
+            [QuerySqlField(IsIndexed = true, IndexGroups = new[] {"group1"})]
             public string GroupIndex2 { get; set; }
 
-            [QueryField(IsIndexed = true, IndexGroups = new [] {"group2"}, IndexType = QueryIndexType.FullText)]
+            [QuerySqlField(IsIndexed = true, IndexGroups = new[] {"group2"})]
             public string GroupIndex3 { get; set; }
         }
 
         private class AttributeTestInner
         {
-            [QueryField]
+            [QuerySqlField]
             public string Foo { get; set; }
         }
     }

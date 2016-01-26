@@ -22,21 +22,21 @@ namespace Apache.Ignite.Core.Cache.Configuration
     /// <summary>
     /// Represents an indexed field.
     /// </summary>
-    public class IndexField
+    public class QueryIndexField
     {
         /// <summary>
-        /// Initializes a new instance of the <see cref="IndexField"/> class.
+        /// Initializes a new instance of the <see cref="QueryIndexField"/> class.
         /// </summary>
-        public IndexField()
+        public QueryIndexField()
         {
             // No-op.
         }
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="IndexField"/> class.
+        /// Initializes a new instance of the <see cref="QueryIndexField"/> class.
         /// </summary>
         /// <param name="name">The name.</param>
-        public IndexField(string name)
+        public QueryIndexField(string name)
         {
             IgniteArgumentCheck.NotNullOrEmpty(name, "name");
 
@@ -44,11 +44,11 @@ namespace Apache.Ignite.Core.Cache.Configuration
         }
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="IndexField"/> class.
+        /// Initializes a new instance of the <see cref="QueryIndexField"/> class.
         /// </summary>
         /// <param name="name">The name.</param>
         /// <param name="isDescending">Sort direction.</param>
-        public IndexField(string name, bool isDescending) : this (name)
+        public QueryIndexField(string name, bool isDescending) : this (name)
         {
             IsDescending = isDescending;
         }
