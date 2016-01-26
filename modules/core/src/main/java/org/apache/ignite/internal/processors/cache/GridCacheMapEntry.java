@@ -1201,7 +1201,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                     val,
                     val != null,
                     evtOld,
-                    evtOld != null || hasValueUnlocked(),
+                    evtOld != null,
                     subjId, null, taskName,
                     keepBinary);
             }
