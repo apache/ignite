@@ -111,10 +111,10 @@ public class OdbcTcpServer {
     private InetAddress resolveOdbcTcpHost(IgniteConfiguration cfg) throws IOException {
         String host = null;
 
-        ConnectorConfiguration connectionCfg = cfg.getConnectorConfiguration();
+        OdbcConfiguration odbcCfg = cfg.getOdbcConfiguration();
 
-        if (connectionCfg != null)
-            host = connectionCfg.getHost();
+        if (odbcCfg != null)
+            host = odbcCfg.getHost();
 
         if (host == null)
             host = cfg.getLocalHost();

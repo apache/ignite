@@ -41,6 +41,9 @@ public class OdbcConfiguration {
     /** TCP port. */
     private int port = DFLT_TCP_PORT;
 
+    /** TCP host. */
+    private String host;
+
     /** TCP no delay flag. */
     private boolean noDelay = DFLT_TCP_NODELAY;
 
@@ -82,6 +85,7 @@ public class OdbcConfiguration {
         idleTimeout = cfg.getIdleTimeout();
         noDelay = cfg.isNoDelay();
         port = cfg.getPort();
+        host = cfg.getHost();
         rcvBufSize = cfg.getReceiveBufferSize();
         selectorCnt = cfg.getSelectorCount();
         sndBufSize = cfg.getSendBufferSize();
@@ -106,6 +110,31 @@ public class OdbcConfiguration {
      */
     public void setPort(int port) {
         this.port = port;
+    }
+
+    /**
+     * Gets host for TCP ODBC server. This can be either an
+     * IP address or a domain name.
+     * <p>
+     * If not defined, system-wide local address will be used
+     * (see {@link IgniteConfiguration#getLocalHost()}.
+     * <p>
+     * You can also use {@code 0.0.0.0} value to bind to all
+     * locally-available IP addresses.
+     *
+     * @return TCP host.
+     */
+    public String getHost() {
+        return host;
+    }
+
+    /**
+     * Sets host for TCP ODBC server.
+     *
+     * @param host TCP host.
+     */
+    public void setHost(String host) {
+        this.host = host;
     }
 
     /**
