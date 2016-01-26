@@ -112,11 +112,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
                 {
                     QueryEntities = new[]
                     {
-                        new QueryEntity
-                        {
-                            KeyType = typeof (int),
-                            ValueType = typeof (LinqPerson)
-                        }
+                        new QueryEntity(typeof (int), typeof (LinqPerson))
                     }
                 });
         }
