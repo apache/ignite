@@ -85,6 +85,16 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         }
 
         [Test]
+        public void TestKeyQuery()
+        {
+            var cache = GetCache();
+
+            Assert.AreEqual(15, cache.ToQueryable().Where(x => x.Key < 15).ToArray().Length);
+
+            // TODO: Test string key with LOWER or something
+        }
+
+        [Test]
         [Ignore("Contains does not work for some reason")]
         public void TestStrings()
         {
@@ -98,7 +108,17 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         private static ICache<int, LinqPerson> GetCache()
         {
             return Ignition.GetIgnite()
-                    .GetOrCreateCache<int, LinqPerson>(new CacheConfiguration(CacheName, typeof (LinqPerson)));
+                .GetOrCreateCache<int, LinqPerson>(new CacheConfiguration(CacheName)
+                {
+                    QueryEntities = new[]
+                    {
+                        new QueryEntity
+                        {
+                            KeyType = typeof (int),
+                            ValueType = typeof (LinqPerson)
+                        }
+                    }
+                });
         }
 
         public class LinqPerson : IBinarizable
