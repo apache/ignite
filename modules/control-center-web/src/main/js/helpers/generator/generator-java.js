@@ -320,7 +320,7 @@ $generatorJava.beanProperty = function (res, varName, bean, beanPropName, beanVa
                             break;
 
                         case 'enum':
-                            $generatorJava.property(res, beanVarName, bean, propName, descr.enumClass, descr.setterName);
+                            $generatorJava.property(res, beanVarName, bean, propName, descr.enumClass, descr.setterName, descr.dflt);
                             break;
 
                         case 'float':

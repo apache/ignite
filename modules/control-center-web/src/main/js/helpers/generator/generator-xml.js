@@ -143,10 +143,15 @@ $generatorXml.beanProperty = function (res, bean, beanPropName, desc, createBean
     var props = desc.fields;
 
     if (bean && $commonUtils.hasProperty(bean, props)) {
-        res.startSafeBlock();
+        if (!createBeanAlthoughNoProps)
+            res.startSafeBlock();
 
         res.emptyLineIfNeeded();
         res.startBlock('<property name="' + beanPropName + '">');
+
+        if (createBeanAlthoughNoProps)
+            res.startSafeBlock();
+
         res.startBlock('<bean class="' + desc.className + '">');
 
         var hasData = false;
@@ -211,16 +216,23 @@ $generatorXml.beanProperty = function (res, bean, beanPropName, desc, createBean
         });
 
         res.endBlock('</bean>');
+
+        if (createBeanAlthoughNoProps && !hasData) {
+            res.rollbackSafeBlock();
+
+            res.line('<bean class="' + desc.className + '"/>');
+        }
+
         res.endBlock('</property>');
 
-        if (!hasData)
+        if (!createBeanAlthoughNoProps && !hasData)
             res.rollbackSafeBlock();
     }
     else if (createBeanAlthoughNoProps) {
         res.emptyLineIfNeeded();
-        res.line('<property name="' + beanPropName + '">');
-        res.line('    <bean class="' + desc.className + '"/>');
-        res.line('</property>');
+        res.startBlock('<property name="' + beanPropName + '">');
+        res.line('<bean class="' + desc.className + '"/>');
+        res.endBlock('</property>');
     }
 };
 
