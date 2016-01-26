@@ -520,6 +520,17 @@ import java.util.Map;
         assert cfg != null;
 
         w.writeString(cfg.getGridName());
+        w.writeBoolean(cfg.isClientMode());
+        w.writeIntArray(cfg.getIncludeEventTypes());
+        w.writeLong(cfg.getMetricsExpireTime());
+        w.writeInt(cfg.getMetricsHistorySize());
+        w.writeLong(cfg.getMetricsLogFrequency());
+        w.writeLong(cfg.getMetricsUpdateFrequency());
+        w.writeInt(cfg.getNetworkSendRetryCount());
+        w.writeLong(cfg.getNetworkSendRetryDelay());
+        w.writeLong(cfg.getNetworkTimeout());
+        w.writeString(cfg.getWorkDirectory());
+        w.writeString(cfg.getLocalHost());
 
         CacheConfiguration[] cacheCfg = cfg.getCacheConfiguration();
 
@@ -532,25 +543,12 @@ import java.util.Map;
         else
             w.writeInt(0);
 
+        writeDiscoveryConfiguration(w, cfg.getDiscoverySpi());
+
         w.writeString(cfg.getIgniteHome());
 
         w.writeLong(ManagementFactory.getMemoryMXBean().getHeapMemoryUsage().getInit());
         w.writeLong(ManagementFactory.getMemoryMXBean().getHeapMemoryUsage().getMax());
-
-        writeDiscoveryConfiguration(w, cfg.getDiscoverySpi());
-
-        w.writeBoolean(cfg.isClientMode());
-
-        w.writeIntArray(cfg.getIncludeEventTypes());
-        w.writeLong(cfg.getMetricsExpireTime());
-        w.writeInt(cfg.getMetricsHistorySize());
-        w.writeLong(cfg.getMetricsLogFrequency());
-        w.writeLong(cfg.getMetricsUpdateFrequency());
-        w.writeInt(cfg.getNetworkSendRetryCount());
-        w.writeLong(cfg.getNetworkSendRetryDelay());
-        w.writeLong(cfg.getNetworkTimeout());
-        w.writeString(cfg.getWorkDirectory());
-        w.writeString(cfg.getLocalHost());
     }
 
     /**

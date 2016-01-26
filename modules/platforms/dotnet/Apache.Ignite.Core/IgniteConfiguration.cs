@@ -112,7 +112,7 @@
             {
                 var marsh = new Marshaller(configuration.BinaryConfiguration);
 
-                configuration.Write(marsh.StartMarshal(stream));
+                configuration.Write0(marsh.StartMarshal(stream));
 
                 stream.SynchronizeOutput();
 
@@ -132,7 +132,7 @@
         }
 
         /// <summary>
-        /// Writes this instance to a stream configuration.
+        /// Writes this instance to a writer.
         /// </summary>
         /// <param name="writer">The writer.</param>
         internal void Write(BinaryWriter writer)
@@ -148,18 +148,27 @@
 
             writer.WriteBoolean(true);  // details are present
 
+            Write0(writer);
+        }
+
+        /// <summary>
+        /// Writes this instance to a writer.
+        /// </summary>
+        /// <param name="writer">The writer.</param>
+        private void Write0(BinaryWriter writer)
+        {
             // Simple properties
             writer.WriteBoolean(ClientMode);
-            writer.WriteLong((long)MetricsExpireTime.TotalMilliseconds);
-            writer.WriteLong((long)MetricsLogFrequency.TotalMilliseconds);
+            writer.WriteLong((long) MetricsExpireTime.TotalMilliseconds);
+            writer.WriteLong((long) MetricsLogFrequency.TotalMilliseconds);
 
-            var metricsUpdateFreq = (long)MetricsUpdateFrequency.TotalMilliseconds;
+            var metricsUpdateFreq = (long) MetricsUpdateFrequency.TotalMilliseconds;
             writer.WriteLong(metricsUpdateFreq >= 0 ? metricsUpdateFreq : -1);
 
             writer.WriteInt(MetricsHistorySize);
             writer.WriteInt(NetworkSendRetryCount);
-            writer.WriteLong((long)NetworkSendRetryDelay.TotalMilliseconds);
-            writer.WriteLong((long)NetworkTimeout.TotalMilliseconds);
+            writer.WriteLong((long) NetworkSendRetryDelay.TotalMilliseconds);
+            writer.WriteLong((long) NetworkTimeout.TotalMilliseconds);
             writer.WriteIntArray(IncludedEventTypes == null ? null : IncludedEventTypes.ToArray());
             writer.WriteString(WorkDirectory);
             writer.WriteString(LocalHost);
@@ -189,6 +198,7 @@
             else
                 writer.WriteBoolean(false);
         }
+
         /// <summary>
         /// Reads data from specified reader into current instance.
         /// </summary>
@@ -197,20 +207,8 @@
         {
             var r = binaryReader;
 
+            // Simple properties
             GridName = r.ReadString();
-
-            var cacheCfgCount = r.ReadInt();
-            CacheConfiguration = new List<CacheConfiguration>(cacheCfgCount);
-            for (int i = 0; i < cacheCfgCount; i++)
-                CacheConfiguration.Add(new CacheConfiguration(r));
-
-            IgniteHome = r.ReadString();
-
-            JvmInitialMemoryMb = (int) (r.ReadLong()/1024/2014);
-            JvmMaxMemoryMb = (int) (r.ReadLong()/1024/2014);
-
-            DiscoveryConfiguration = r.ReadBoolean() ? new DiscoveryConfiguration(r) : null;
-
             ClientMode = r.ReadBoolean();
             IncludedEventTypes = r.ReadIntArray();
 
@@ -223,6 +221,22 @@
             NetworkTimeout = r.ReadLongAsTimespan();
             WorkDirectory = r.ReadString();
             LocalHost = r.ReadString();
+
+            // Cache config
+            var cacheCfgCount = r.ReadInt();
+            CacheConfiguration = new List<CacheConfiguration>(cacheCfgCount);
+            for (int i = 0; i < cacheCfgCount; i++)
+                CacheConfiguration.Add(new CacheConfiguration(r));
+
+            // Discovery config
+            DiscoveryConfiguration = r.ReadBoolean() ? new DiscoveryConfiguration(r) : null;
+
+            // Misc
+            IgniteHome = r.ReadString();
+
+            JvmInitialMemoryMb = (int) (r.ReadLong()/1024/2014);
+            JvmMaxMemoryMb = (int) (r.ReadLong()/1024/2014);
+
 
             // Local data (not from reader)
             JvmDllPath = Process.GetCurrentProcess().Modules.OfType<ProcessModule>()
