@@ -31,7 +31,7 @@ public class IgniteSqlTests extends GridCommonAbstractTest {
         IgniteCache<Integer, QueryPerson> c = getCache();
 
         List<Cache.Entry<Integer, QueryPerson>> results =
-            c.query(new SqlQuery<Integer, QueryPerson>("QueryPerson", "_key < 10")).getAll();
+            c.query(new SqlQuery<Integer, QueryPerson>("QueryPerson", "_key < ?").setArgs(10)).getAll();
 
         assert results.size() == 1;
     }
