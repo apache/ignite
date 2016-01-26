@@ -54,21 +54,6 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
                 cache.Put(i, new QueryPerson("Person_" + i, i));
         }
 
-        // TODO: DELME
-        public object TestSql0(string sql, params object[] args)
-        {
-            return GetCache().Query(new SqlQuery(typeof (QueryPerson), sql, args)).ToArray();
-        }
-
-        [Test]
-        public void TestSql()
-        {
-            var res1 = TestSql0("_key > ?", 10);
-            var res2 = TestSql0("_val.Age > ?", 10);
-            Assert.IsNotNull(res1);
-            Assert.IsNotNull(res2);
-        }
-
         [Test]
         public void TestEmptyQuery()
         {
