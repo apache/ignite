@@ -260,7 +260,7 @@
         private void CopyLocalProperties(IgniteConfiguration cfg)
         {
             GridName = cfg.GridName;
-            BinaryConfiguration = cfg.BinaryConfiguration;
+            BinaryConfiguration = new BinaryConfiguration(cfg.BinaryConfiguration);
             JvmClasspath = cfg.JvmClasspath;
             JvmOptions = cfg.JvmOptions;
             Assemblies = cfg.Assemblies;

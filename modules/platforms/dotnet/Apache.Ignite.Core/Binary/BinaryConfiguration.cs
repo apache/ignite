@@ -20,6 +20,7 @@ namespace Apache.Ignite.Core.Binary
     using System;
     using System.Collections.Generic;
     using System.Diagnostics.CodeAnalysis;
+    using System.Linq;
 
     /// <summary>
     /// Binary type configuration.
@@ -27,11 +28,31 @@ namespace Apache.Ignite.Core.Binary
     public class BinaryConfiguration
     {
         /// <summary>
-        /// Constructor.
+        /// Initializes a new instance of the <see cref="BinaryConfiguration"/> class.
         /// </summary>
         public BinaryConfiguration()
         {
             DefaultKeepDeserialized = true;
+        }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="BinaryConfiguration" /> class.
+        /// </summary>
+        /// <param name="cfg">The binary configuration to copy.</param>
+        public BinaryConfiguration(BinaryConfiguration cfg)
+        {
+            DefaultIdMapper = cfg.DefaultIdMapper;
+            DefaultNameMapper = cfg.DefaultNameMapper;
+            DefaultKeepDeserialized = cfg.DefaultKeepDeserialized;
+            DefaultSerializer = cfg.DefaultSerializer;
+
+            TypeConfigurations = cfg.TypeConfigurations == null
+                ? null
+                : cfg.TypeConfigurations.Select(x => new BinaryTypeConfiguration(x)).ToList();
+
+
+            TypeNames = cfg.TypeNames.ToList();
+            Types = cfg.Types.ToList();
         }
 
         /// <summary>
