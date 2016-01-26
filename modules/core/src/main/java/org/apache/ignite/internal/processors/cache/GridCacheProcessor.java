@@ -3419,7 +3419,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         if (objProc instanceof CacheObjectBinaryProcessorImpl) {
             GridBinaryMarshaller binMarsh = ((CacheObjectBinaryProcessorImpl)objProc).marshaller();
 
-            oldCtx = binMarsh.pushContext();
+            oldCtx = binMarsh == null ? null : binMarsh.pushContext();
         }
 
         try {
