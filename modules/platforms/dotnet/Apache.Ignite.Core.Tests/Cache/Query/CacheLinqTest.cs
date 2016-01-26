@@ -108,13 +108,8 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         private static ICache<int, LinqPerson> GetCache()
         {
             return Ignition.GetIgnite()
-                .GetOrCreateCache<int, LinqPerson>(new CacheConfiguration(CacheName)
-                {
-                    QueryEntities = new[]
-                    {
-                        new QueryEntity(typeof (int), typeof (LinqPerson))
-                    }
-                });
+                .GetOrCreateCache<int, LinqPerson>(new CacheConfiguration(CacheName,
+                    new QueryEntity(typeof (int), typeof (LinqPerson))));
         }
 
         public class LinqPerson : IBinarizable
