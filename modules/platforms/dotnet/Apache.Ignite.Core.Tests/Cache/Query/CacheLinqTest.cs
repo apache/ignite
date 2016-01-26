@@ -101,7 +101,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
             return Ignition.GetIgnite().GetCache<int, LinqPerson>(CacheName);
         }
 
-        public class LinqPerson
+        public class LinqPerson : IBinarizable
         {
             public LinqPerson(int age, string name)
             {
@@ -109,11 +109,23 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
                 Name = name;
             }
 
-            [QueryField]
+            [QueryField(Name = "age1")]
             public int Age { get; set; }
 
             [QueryField]
             public string Name { get; set; }
+
+            public void WriteBinary(IBinaryWriter writer)
+            {
+                writer.WriteInt("age1", Age);
+                writer.WriteString("name", Name);
+            }
+
+            public void ReadBinary(IBinaryReader reader)
+            {
+                Age = reader.ReadInt("age1");
+                Name = reader.ReadString("name");
+            }
         }
     }
 }
