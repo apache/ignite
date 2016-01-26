@@ -143,7 +143,9 @@ namespace Apache.Ignite.Linq.Impl
             var queryFieldAttr =
                 expression.Member.GetCustomAttributes(true).OfType<QueryFieldAttribute>().FirstOrDefault();
 
-            var fieldName = queryFieldAttr == null ? expression.Member.Name : queryFieldAttr.Name;
+            var fieldName = (queryFieldAttr == null || string.IsNullOrEmpty(queryFieldAttr.Name))
+                ? expression.Member.Name
+                : queryFieldAttr.Name;
 
             _resultBuilder.Append(fieldName);
 
