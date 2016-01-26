@@ -18,6 +18,7 @@
 namespace Apache.Ignite.Core.Tests.Cache.Query
 {
     using System.Linq;
+    using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Cache;
     using Apache.Ignite.Core.Cache.Configuration;
     using Apache.Ignite.Linq;
@@ -40,7 +41,8 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
             Ignition.Start(new IgniteConfiguration
             {
                 JvmClasspath = TestUtils.CreateTestClasspath(),
-                JvmOptions = TestUtils.TestJavaOptions()
+                JvmOptions = TestUtils.TestJavaOptions(),
+                BinaryConfiguration = new BinaryConfiguration(typeof(LinqPerson))
             });
 
             var cache = GetCache();
