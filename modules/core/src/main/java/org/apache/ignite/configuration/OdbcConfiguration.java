@@ -151,7 +151,7 @@ public class OdbcConfiguration {
     }
 
     /**
-     * Sets whether {@code TCP_NODELAY} option should be set for all accepted client connections.
+     * Sets whether {@code TCP_NODELAY} option should be set for all accepted ODBC client connections.
      *
      * @param noDelay {@code True} if option should be enabled.
      * @see #isNoDelay()
@@ -165,6 +165,8 @@ public class OdbcConfiguration {
      * that is allocated and accessed using native system calls, without using JVM heap. Enabling direct
      * buffer <em>may</em> improve performance and avoid memory issues (long GC pauses due to huge buffer
      * size).
+     * <p/>
+     * If not specified, default value is {@link #DFLT_TCP_DIRECT_BUF}.
      *
      * @return Whether direct buffer should be used.
      */
@@ -184,6 +186,8 @@ public class OdbcConfiguration {
 
     /**
      * Gets ODBC TCP server send buffer size.
+     * <p/>
+     * If not specified, default value is {@link #DFLT_SOCK_BUF_SIZE}.
      *
      * @return ODBC TCP server send buffer size (0 for default).
      */
@@ -203,6 +207,8 @@ public class OdbcConfiguration {
 
     /**
      * Gets ODBC TCP server receive buffer size.
+     * <p/>
+     * If not specified, default value is {@link #DFLT_SOCK_BUF_SIZE}.
      *
      * @return ODBC TCP server receive buffer size (0 for default).
      */
@@ -261,10 +267,12 @@ public class OdbcConfiguration {
     }
 
     /**
-     * Gets idle timeout for ODBC server.
+     * Gets idle timeout for ODBC TCP server.
      * <p>
      * This setting is used to reject half-opened sockets. If no packets
      * come within idle timeout, the connection is closed.
+     * <p/>
+     * If not specified, default value is {@link #DFLT_IDLE_TIMEOUT}.
      *
      * @return Idle timeout in milliseconds.
      */
@@ -273,7 +281,7 @@ public class OdbcConfiguration {
     }
 
     /**
-     * Sets idle timeout for ODBC server.
+     * Sets idle timeout for ODBC TCP server.
      *
      * @param idleTimeout Idle timeout in milliseconds.
      * @see #getIdleTimeout()
