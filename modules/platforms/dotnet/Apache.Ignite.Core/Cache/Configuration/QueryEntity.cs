@@ -294,7 +294,7 @@ namespace Apache.Ignite.Core.Cache.Configuration
                 {
                     var columnName = attr.Name ?? memberInfo.Key.Name;
 
-                    // Dot notations is required for nested SQL fields
+                    // Dot notation is required for nested SQL fields
                     if (parentPropName != null)
                         columnName = parentPropName + "." + columnName;
 
@@ -311,10 +311,13 @@ namespace Apache.Ignite.Core.Cache.Configuration
                 {
                     var columnName = attr.Name ?? memberInfo.Key.Name;
 
-                    // No dot notation for FullText fields
-                    fields.Add(new QueryField(columnName, memberInfo.Value));
-
+                    // No dot notation for FullText index names
                     indexes.Add(new QueryIndexEx(columnName, false, QueryIndexType.FullText, null));
+
+                    if (parentPropName != null)
+                        columnName = parentPropName + "." + columnName;
+
+                    fields.Add(new QueryField(columnName, memberInfo.Value));
 
                     ScanAttributes(memberInfo.Value, fields, indexes, columnName, visitedTypes);
                 }
