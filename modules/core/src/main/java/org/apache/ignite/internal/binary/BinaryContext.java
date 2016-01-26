@@ -566,7 +566,8 @@ public class BinaryContext {
         if (desc == null) {
             desc = registerClassDescriptor(cls, deserialize);
 
-            assert desc.typeId() == typeId;
+            assert desc.typeId() == typeId : "Duplicate typeId [typeId=" + typeId + ", cls=" + cls
+                + ", desc=" + desc + "]";
         }
 
         return desc;
