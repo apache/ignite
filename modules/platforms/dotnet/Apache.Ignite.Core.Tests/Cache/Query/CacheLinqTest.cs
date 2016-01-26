@@ -102,6 +102,8 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
             var results = cache.ToQueryable().Where(x => x.Key == 5).Select(x => x.Value.Age).ToArray();
 
             Assert.AreEqual(new[] {5}, results);
+
+            // TODO: Test scalar, test single value
         }
 
         [Test]
