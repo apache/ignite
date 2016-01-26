@@ -206,6 +206,16 @@ namespace Apache.Ignite.Core.Cache.Configuration
         /// <summary>
         /// Initializes a new instance of the <see cref="CacheConfiguration"/> class.
         /// </summary>
+        /// <param name="name">Cache name.</param>
+        /// <param name="queryEntities">Query entities.</param>
+        public CacheConfiguration(string name, params QueryEntity[] queryEntities) : this(name)
+        {
+            QueryEntities = queryEntities;
+        }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="CacheConfiguration"/> class.
+        /// </summary>
         /// <param name="reader">The reader.</param>
         internal CacheConfiguration(IBinaryRawReader reader)
         {
