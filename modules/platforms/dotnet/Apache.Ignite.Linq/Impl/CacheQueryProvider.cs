@@ -29,6 +29,12 @@ namespace Apache.Ignite.Linq.Impl
     /// <typeparam name="TValue">The type of the value.</typeparam>
     internal class CacheQueryProvider<TKey, TValue> : QueryProviderBase
     {
+        /** */
+        private readonly ICache<TKey, TValue> _cache;
+
+        /** */
+        private readonly string _queryTypeName;
+
         /// <summary>
         /// Initializes a new instance of the <see cref="CacheQueryProvider{TKey, TValue}" /> class.
         /// </summary>
@@ -38,7 +44,8 @@ namespace Apache.Ignite.Linq.Impl
             : base(Remotion.Linq.Parsing.Structure.QueryParser.CreateDefault(), 
                   new CacheQueryExecutor<TKey, TValue>(cache, queryTypeName))
         {
-            // No-op.
+            _cache = cache;
+            _queryTypeName = queryTypeName;
         }
 
         /// <summary>
@@ -54,6 +61,14 @@ namespace Apache.Ignite.Linq.Impl
         /// </returns>
         public override IQueryable<T> CreateQuery<T>(Expression expression)
         {
+            if (typeof (T) != typeof (ICacheEntry<TKey, TValue>))
+            {
+                // TODO: Special executor??
+                var fieldsProvider = new CacheFieldsQueryProvider(q => _cache.QueryFields(q), QueryParser, Executor);
+
+                return fieldsProvider.CreateQuery<T>(expression);
+            }
+
             return (IQueryable<T>) new CacheQueryable<TKey, TValue>(this, expression);
         }
     }
