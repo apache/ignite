@@ -772,13 +772,13 @@ public class BinaryContext {
 
         BinaryInternalMapper prevMap = cls2Mappers.putIfAbsent(clsName, mapper);
 
-        if (prevMap != null && mapper.equals(prevMap))
+        if (prevMap != null && !mapper.equals(prevMap))
             throw new IgniteException("Different mappers [clsName=" + clsName + ", newMapper=" + mapper
             + ", prevMap=" + prevMap + "]");
 
         prevMap = typeId2Mapper.putIfAbsent(mapper.typeId(clsName), mapper);
 
-        if (prevMap != null && mapper.equals(prevMap))
+        if (prevMap != null && !mapper.equals(prevMap))
             throw new IgniteException("Different mappers [clsName=" + clsName + ", newMapper=" + mapper
                 + ", prevMap=" + prevMap + "]");
 
