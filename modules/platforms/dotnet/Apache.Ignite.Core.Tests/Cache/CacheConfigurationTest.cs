@@ -20,6 +20,7 @@ namespace Apache.Ignite.Core.Tests.Cache
     using System;
     using System.Collections.Generic;
     using System.Linq;
+    using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Cache.Configuration;
     using Apache.Ignite.Core.Cache.Store;
     using Apache.Ignite.Core.Common;
@@ -52,7 +53,8 @@ namespace Apache.Ignite.Core.Tests.Cache
                 },
                 JvmClasspath = TestUtils.CreateTestClasspath(),
                 JvmOptions = TestUtils.TestJavaOptions(),
-                GridName = CacheName
+                GridName = CacheName,
+                BinaryConfiguration = new BinaryConfiguration(typeof(Entity))
             };
 
             _ignite = Ignition.Start(cfg);
@@ -90,11 +92,15 @@ namespace Apache.Ignite.Core.Tests.Cache
             var cacheName = Guid.NewGuid().ToString();
             var cfg = GetCustomCacheConfiguration(cacheName);
 
-            var cache = _ignite.CreateCache<int, int>(cfg);
+            var cache = _ignite.CreateCache<int, Entity>(cfg);
             AssertConfigsAreEqual(cfg, cache.GetConfiguration());
 
             // Can't create existing cache
             Assert.Throws<IgniteException>(() => _ignite.CreateCache<int, int>(cfg));
+            
+            // Check put-get
+            cache[1] = new Entity { Foo = 1 };
+            Assert.AreEqual(1, cache[1].Foo);
         }
 
         [Test]
@@ -103,11 +109,15 @@ namespace Apache.Ignite.Core.Tests.Cache
             var cacheName = Guid.NewGuid().ToString();
             var cfg = GetCustomCacheConfiguration(cacheName);
 
-            var cache = _ignite.GetOrCreateCache<int, int>(cfg);
+            var cache = _ignite.GetOrCreateCache<int, Entity>(cfg);
             AssertConfigsAreEqual(cfg, cache.GetConfiguration());
 
-            var cache2 = _ignite.GetOrCreateCache<int, int>(cfg);
+            var cache2 = _ignite.GetOrCreateCache<int, Entity>(cfg);
             AssertConfigsAreEqual(cfg, cache2.GetConfiguration());
+
+            // Check put-get
+            cache[1] = new Entity { Foo = 1 };
+            Assert.AreEqual(1, cache[1].Foo);
         }
 
         [Test]
@@ -461,6 +471,11 @@ namespace Apache.Ignite.Core.Tests.Cache
             {
                 // No-op.
             }
+        }
+
+        private class Entity
+        {
+            public int Foo { get; set; }
         }
     }
 }
