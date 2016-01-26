@@ -1,6 +1,9 @@
-﻿Microsoft Visual Studio Solution File, Format Version 11.00
-# Visual Studio 2010
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ignite-examples", "ignite-examples.vcxproj", "{34935DEC-80FC-4168-AA52-3DBFF4F79B6B}"
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio 14
+VisualStudioVersion = 14.0.23107.0
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "putgetexample", "..\..\putgetexample\project\vs\putgetexample.vcxproj", "{34935DEC-80FC-4168-AA52-3DBFF4F79B6B}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
