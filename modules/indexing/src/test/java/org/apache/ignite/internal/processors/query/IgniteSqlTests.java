@@ -13,14 +13,16 @@ import java.util.List;
 
 public class IgniteSqlTests extends GridCommonAbstractTest {
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration() throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration();
+    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(gridName);
 
         cfg.setPeerClassLoadingEnabled(false);
 
         cfg.setIgniteHome("c:\\w\\incubator-ignite");
 
-        cfg.setCacheConfiguration(new CacheConfiguration("sqlCache").setIndexedTypes(QueryPerson.class));
+        CacheConfiguration ccfg = new CacheConfiguration("sqlCache").setIndexedTypes(Integer.class, QueryPerson.class);
+
+        cfg.setCacheConfiguration(ccfg);
 
         return cfg;
     }
@@ -28,7 +30,7 @@ public class IgniteSqlTests extends GridCommonAbstractTest {
     public void testQueries() throws Exception {
         Ignite i = startGrid();
 
-        IgniteCache<Integer, QueryPerson> c = i.getOrCreateCache("sqlCache");
+        IgniteCache<Integer, QueryPerson> c = i.cache("sqlCache");
 
         QueryPerson p = new QueryPerson();
         p.Age = 20;
