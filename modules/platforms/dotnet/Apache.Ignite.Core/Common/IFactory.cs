@@ -15,20 +15,20 @@
  * limitations under the License.
  */
 
-namespace Apache.Ignite.Core.Cache.Store
+namespace Apache.Ignite.Core.Common
 {
     using System;
 
     /// <summary>
-    /// Factory that produces <see cref="ICacheStore"/> instances.
+    /// Factory that produces instances of a specific type.
     /// Implementation can be passed over the wire and thus should be marked with <see cref="SerializableAttribute"/>.
     /// </summary>
-    public interface ICacheStoreFactory
+    public interface IFactory<out T>
     {
         /// <summary>
         /// Creates an instance of the cache store.
         /// </summary>
         /// <returns>New instance of the cache store.</returns>
-        ICacheStore CreateInstance();
+        T CreateInstance();
     }
 }

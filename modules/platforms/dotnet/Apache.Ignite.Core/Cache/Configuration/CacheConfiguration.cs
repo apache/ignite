@@ -28,6 +28,7 @@ namespace Apache.Ignite.Core.Cache.Configuration
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Cache;
     using Apache.Ignite.Core.Cache.Store;
+    using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Impl.Binary;
 
     /// <summary>
@@ -244,7 +245,7 @@ namespace Apache.Ignite.Core.Cache.Configuration
             WriteBehindFlushSize = reader.ReadInt();
             WriteBehindFlushThreadCount = reader.ReadInt();
             WriteSynchronizationMode = (CacheWriteSynchronizationMode) reader.ReadInt();
-            CacheStoreFactory = reader.ReadObject<ICacheStoreFactory>();
+            CacheStoreFactory = reader.ReadObject<IFactory<ICacheStore>>();
 
             var count = reader.ReadInt();
             QueryEntities = count == 0 ? null : Enumerable.Range(0, count).Select(x => new QueryEntity(reader)).ToList();
@@ -579,7 +580,7 @@ namespace Apache.Ignite.Core.Cache.Configuration
         /// <summary>
         /// Gets or sets the factory for underlying persistent storage for read-through and write-through operations.
         /// </summary>
-        public ICacheStoreFactory CacheStoreFactory { get; set; }
+        public IFactory<ICacheStore> CacheStoreFactory { get; set; }
 
         /// <summary>
         /// Gets or sets the query entity configuration.

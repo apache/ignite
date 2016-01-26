@@ -443,7 +443,7 @@ namespace Apache.Ignite.Core.Tests.Cache
         }
 
         [Serializable]
-        private class CacheStoreFactoryTest : ICacheStoreFactory
+        private class CacheStoreFactoryTest : IFactory<ICacheStore>
         {
             public int TestProperty { get; set; }
 
