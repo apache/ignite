@@ -49,6 +49,8 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
 
             for (var i = 0; i < DataSize; i++)
                 cache.Put(i, new LinqPerson(i, "Person_" + i));
+
+            Assert.AreEqual(1, cache[1].Age);
         }
 
         [TestFixtureTearDown]
