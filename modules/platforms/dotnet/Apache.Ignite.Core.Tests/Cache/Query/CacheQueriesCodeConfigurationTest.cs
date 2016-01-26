@@ -107,7 +107,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
 
             CollectionAssert.AreEquivalent(new[]
             {
-                "SqlField", "IndexedField1", "FullTextField", "Inner", "Foo",
+                "SqlField", "IndexedField1", "FullTextField", "Inner", "Inner.Foo",
                 "GroupIndex1", "GroupIndex2", "GroupIndex3"
             }, fields.Select(x => x.Name));
 
@@ -163,6 +163,11 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
                 {
                     Assert.AreEqual(1, cursor.GetAll().Single().Key);
                 }
+
+                using (var cursor = cache.Query(new TextQuery(typeof(AttributeQueryPerson), "Pine")))
+                {
+                    Assert.AreEqual(1, cursor.GetAll().Single().Key);
+                }
             }
         }
 
@@ -189,7 +194,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
             [QuerySqlField]
             public string Country { get; set; }
 
-            [QuerySqlField]
+            [QueryTextField]
             public string Street { get; set; }
         }
 
