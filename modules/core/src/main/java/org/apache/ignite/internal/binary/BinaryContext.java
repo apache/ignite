@@ -960,7 +960,8 @@ public class BinaryContext {
     @SuppressWarnings("ResultOfMethodCallIgnored")
     public static String typeName(String clsName) {
         assert clsName != null;
-
+        return clsName;
+        /*
         int idx = clsName.lastIndexOf('$');
 
         if (idx == clsName.length() - 1)
@@ -988,6 +989,7 @@ public class BinaryContext {
             idx = clsName.lastIndexOf('.');
 
         return idx >= 0 ? clsName.substring(idx + 1) : clsName;
+        */
     }
 
     /**
