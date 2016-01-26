@@ -53,10 +53,8 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
                         Name = CacheName,
                         QueryEntities = new[]
                         {
-                            new QueryEntity
+                            new QueryEntity(typeof(int), typeof(QueryPerson))
                             {
-                                KeyType = typeof (int),
-                                ValueType = typeof (QueryPerson),
                                 Fields = new[]
                                 {
                                     new QueryField("Name", typeof (string)),
@@ -97,7 +95,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         public void TestAttributeConfiguration()
         {
             // ReSharper disable once ObjectCreationAsStatement
-            Assert.Throws<InvalidOperationException>(() => new QueryEntity {ValueType = typeof (RecursiveQuery)});
+            Assert.Throws<InvalidOperationException>(() => new QueryEntity(typeof (RecursiveQuery)));
 
             var qe = new QueryEntity {ValueType = typeof(AttributeTest) };
 
