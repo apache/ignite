@@ -519,7 +519,6 @@ import java.util.Map;
         assert w != null;
         assert cfg != null;
 
-        w.writeString(cfg.getGridName());
         w.writeBoolean(cfg.isClientMode());
         w.writeIntArray(cfg.getIncludeEventTypes());
         w.writeLong(cfg.getMetricsExpireTime());
