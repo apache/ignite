@@ -1202,6 +1202,7 @@ label {
 .input-tip {
     display: block;
     overflow: hidden;
+    position: relative;
 }
 
 .labelHeader {
@@ -1381,7 +1382,6 @@ input.ng-dirty.ng-invalid, button.ng-dirty.ng-invalid {
 .form-control-feedback {
     display: inline-block;
     color: $brand-primary;
-    right: 18px;
     line-height: $input-height;
     pointer-events: initial;
 }

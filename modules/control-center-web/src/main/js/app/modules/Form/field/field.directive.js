@@ -16,16 +16,22 @@
  */
 
 import template from './field.jade!';
+import './field.css!';
 
 export default ['igniteFormField', [() => {
-    const controller = () => {};
+    const controller = [function() {
+        const ctrl = this;
+
+        ctrl.type = ctrl.type || 'external';
+    }];
 
     return {
         restrict: 'E',
         scope: {},
         bindToController: {
             for: '@',
-            label: '@'
+            label: '@',
+            type: '@'
         },
         template,
         controller,

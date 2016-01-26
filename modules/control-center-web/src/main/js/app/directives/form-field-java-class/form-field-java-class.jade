@@ -1,0 +1,35 @@
+mixin feedback(error, message)
+    i.fa.fa-exclamation-triangle.form-control-feedback(
+        ng-show='!form[name].$pristine && form[name].$error.#{error}'
+        bs-tooltip
+        data-title='#{message}'
+    )
+
+div
+    ignite-form-field-input-text(
+        data-id='{{ id }}'
+        data-name='{{ name }}'
+        data-placeholder='Enter fully qualified class name'
+
+        data-ng-model='ngModel'
+        data-ng-required='required || false'
+        data-ng-disabled='disabled || false'
+
+        data-java-keywords='true'
+        data-java-identifier='true'
+        data-java-package-specified='true'
+        data-java-built-in-class='true'
+        
+        data-ignite-unique='unique'
+        data-ignite-form-field-input-autofocus='autofocus || false '
+
+        on-enter='onEnter()'
+        data-ng-blur='ngBlur()'
+    )
+        span(ng-transclude)
+
+        +feedback('javaIdentifier', 'Trust manager is invalid!')
+        +feedback('required', 'Trust manager could not be empty!')
+        +feedback('javaKeywords', 'Trust manager could not contains reserved java keyword: ""!')
+        +feedback('javaBuiltInClass', 'Trust manager should not be the Java built-in class!')
+        +feedback('javaPackageSpecified', 'Trust manager does not have package specified!')

@@ -23,8 +23,7 @@ include ../includes/controls
         ignite-callout-cel(data-title='On This Screen')
             li Configure Clusters
             li Link Clusters to Caches
-            li 
-                ignite-dialog More info
+            li: ignite-dialog More info
                     ignite-dialog-title Clusters screen
                     ignite-dialog-content 
                         | Manage your clusters on current screen.#[br]
@@ -37,16 +36,58 @@ include ../includes/controls
     div(dw-loading='loadingClustersScreen' dw-loading-options='{text: "Loading clusters screen...", className: "page-loading-overlay"}')
         div(ng-show='ui.ready')
             hr
+
             +main-table('clusters', 'clusters', 'clusterName', 'selectItem(row)', '{{$index + 1}}) {{row.label}}', 'label')
             .padding-top-dflt(bs-affix)
                 .panel-tip-container(data-placement='bottom' bs-tooltip='' data-title='Create new cluster')
                     button.btn.btn-primary(id='new-item' ng-click='createItem()') Add cluster
-                +save-remove-buttons('cluster')
-                hr
-            form.form-horizontal(name='ui.inputForm' ng-show='backupItem && tableVisibleRow(displayedRows, selectedItem)' novalidate unsaved-warning-form)
-                .panel-group(bs-collapse ng-model='panels.activePanels' data-allow-multiple='true' ng-click='triggerDigest = true')
-                    +groups('general', 'backupItem')
-                    div(ng-show='ui.expanded')
-                        +advanced-options
-                        +groups('advanced', 'backupItem')
-                +advanced-options
+
+                -var objectName = 'cluster'
+                -var removeTip = '"Remove current ' + objectName + '"'
+                -var cloneTip = '"Clone current ' + objectName + '"'
+                -var undoTip = '"Undo all changes for current ' + objectName + '"'
+
+                div(ng-show='tableVisibleRow(displayedRows, selectedItem)' style='display: inline-block;')
+                    .panel-tip-container(ng-hide='!backupItem || backupItem._id')
+                        a.btn.btn-primary(ng-disabled='!ui.inputForm.$dirty' ng-click='ui.inputForm.$dirty && saveItem()' bs-tooltip='' data-title='{{saveBtnTipText(ui.inputForm.$dirty, "#{objectName}")}}' data-placement='bottom' data-trigger='hover') Save
+                    .panel-tip-container(ng-show='backupItem._id')
+                        a.btn.btn-primary(id='save-item' ng-disabled='!ui.inputForm.$dirty' ng-click='ui.inputForm.$dirty && saveItem()' bs-tooltip='' data-title='{{saveBtnTipText(ui.inputForm.$dirty, "#{objectName}")}}' data-placement='bottom' data-trigger='hover') Save
+                    .panel-tip-container(ng-show='backupItem._id')
+                        a.btn.btn-primary(id='clone-item' ng-click='cloneItem()' bs-tooltip=cloneTip data-placement='bottom' data-trigger='hover') Clone
+                    .btn-group.panel-tip-container(ng-show='backupItem._id')
+                        button.btn.btn-primary(id='remove-item' ng-click='removeItem()' bs-tooltip=removeTip data-placement='bottom' data-trigger='hover') Remove
+                        button.btn.dropdown-toggle.btn-primary(id='remove-item-dropdown' data-toggle='dropdown' data-container='body' bs-dropdown='removeDropdown' data-placement='bottom-right')
+                            span.caret
+                    .panel-tip-container(ng-show='backupItem')
+                        i.btn.btn-primary.fa.fa-undo(id='undo-item' ng-disabled='!ui.inputForm.$dirty' ng-click='ui.inputForm.$dirty && resetAll()' bs-tooltip=undoTip data-placement='bottom' data-trigger='hover')
+
+            hr
+            div(bs-collapse='' data-allow-multiple='true' ng-model='__.groups')
+                form.form-horizontal(name='ui.inputForm' ng-show='backupItem && tableVisibleRow(displayedRows, selectedItem)' novalidate unsaved-warning-form)
+                    .panel-group(ng-click='triggerDigest = true')
+                        ignite-configuration-clusters-general
+                        .advanced-options
+                            i.fa(
+                                ng-click='__.advanced = !__.advanced'
+                                ng-class='__.advanced ? "fa-chevron-circle-down" : "fa-chevron-circle-right"')
+                            a(ng-click='__.advanced = !__.advanced') {{__.advanced ? 'Hide advanced settings...' : 'Show advanced settings...'}}
+                        div(ng-show='__.advanced')
+                            ignite-configuration-clusters-atomic
+                            ignite-configuration-clusters-binary
+                            ignite-configuration-clusters-communication
+                            ignite-configuration-clusters-connector
+                            ignite-configuration-clusters-deployment
+                            ignite-configuration-clusters-discovery
+                            ignite-configuration-clusters-events
+                            ignite-configuration-clusters-igfs
+                            ignite-configuration-clusters-marshaller
+                            ignite-configuration-clusters-metrics
+                            ignite-configuration-clusters-ssl
+                            ignite-configuration-clusters-swap
+                            ignite-configuration-clusters-time
+                            ignite-configuration-clusters-thread
+                            ignite-configuration-clusters-transactions
+
+                            .advanced-options
+                                i.fa.fa-chevron-circle-down(ng-click='__.advanced = !__.advanced')
+                                a(ng-click='__.advanced = !__.advanced') Hide advanced settings...

@@ -1,0 +1,236 @@
+//-
+    Licensed to the Apache Software Foundation (ASF) under one or more
+    contributor license agreements.  See the NOTICE file distributed with
+    this work for additional information regarding copyright ownership.
+    The ASF licenses this file to You under the Apache License, Version 2.0
+    (the "License"); you may not use this file except in compliance with
+    the License.  You may obtain a copy of the License at
+
+         http://www.apache.org/licenses/LICENSE-2.0
+
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
+
+- var cluster = 'backupItem'
+- var enabled = 'backupItem.sslEnabled'
+- var model = cluster + '.sslContextFactory'
+- var trust = model + '.trustManagers'
+- var form = 'sslContextFactory'
+
+mixin feedback(field, error, message)
+    i.fa.fa-exclamation-triangle.form-control-feedback(
+        ng-show='!#{form}.$pristine && #{form}.#{field}.$error.#{error}'
+        bs-tooltip
+        data-title='#{message}'
+    )
+
+form.panel.panel-default(name='#{form}')
+    .panel-heading(bs-collapse-toggle ng-click='__show__ = true')
+        ignite-form-panel-chevron
+        label SSL configuration
+        ignite-form-field-tooltip.tipLabel
+            | Settings for SSL configuration
+        ignite-form-revert
+    .panel-collapse(role='tabpanel' bs-collapse-target id='sslConfiguration')
+        .panel-body(ng-if='__show__')
+            .col-sm-6
+                .settings-row
+                    ignite-form-field.checkbox
+                        ignite-form-field-input-checkbox(
+                            data-id='sslEnabled'
+                            data-name='sslEnabled'
+                            data-ng-model='#{enabled}'
+                        )
+                        | Enabled
+                        ignite-form-field-tooltip
+                            | Flag indicating whether to configure SSL configuration
+                
+                .settings-row
+                    ignite-form-field
+                        ignite-form-field-label
+                            | Algorithm to create a key manager:
+                        ignite-form-field-tooltip
+                            | Sets key manager algorithm that will be used to create a key manager,#[br]
+                            | Notice that in most cased default value suites well, however, on Android platform this value need to be set to X509
+                        ignite-form-field-input-datalist(
+                            data-id='keyAlgorithm'
+                            data-name='keyAlgorithm'
+                            data-options="['SumX509', 'X509']"
+                            data-ng-model='#{model}.keyAlgorithm'
+                            data-placeholder='SumX509'
+                            data-ng-disabled='!#{enabled}'
+                        )
+
+                .settings-row
+                    ignite-form-field
+                        ignite-form-field-label
+                            | Key store file:
+                        ignite-form-field-tooltip
+                            | Path to the key store file,#[br]
+                            | This is a mandatory parameter since ssl context could not be initialized without key manager
+                        ignite-form-field-input-text(
+                            data-id='keyStoreFilePath'
+                            data-name='keyStoreFilePath'
+                            data-ng-model='#{model}.keyStoreFilePath'
+                            data-placeholder='Path to the key store file'
+                            data-ng-required='true'
+                            data-ng-disabled='!#{enabled}'
+                        )
+
+                .settings-row
+                    ignite-form-field
+                        ignite-form-field-label
+                            | Key store type:
+                        ignite-form-field-tooltip
+                            | Key store type used in context initialization
+                        ignite-form-field-input-datalist(
+                            data-id='keyStoreType'
+                            data-name='keyStoreType'
+                            data-options="['JKS', 'PCKS11', 'PCKS12']"
+                            data-ng-model='#{model}.keyStoreType'
+                            data-placeholder='JKS'
+                            data-ng-disabled='!#{enabled}'
+                        )
+
+                .settings-row
+                    ignite-form-field
+                        ignite-form-field-label
+                            | Protocol:
+                        ignite-form-field-tooltip
+                            | Protocol for secure transport
+                        ignite-form-field-input-datalist(
+                            data-id='protocol'
+                            data-name='protocol'
+                            data-options="['TSL', 'SSL']"
+                            data-ng-model='#{model}.protocol'
+                            data-placeholder='TSL'
+                            data-ng-disabled='!#{enabled}'
+                        )
+
+                .settings-row
+                    ignite-form-group(ng-init='__ = {}; ___ = {}' name='trustManagers' ng-model='#{trust}')
+                        ignite-form-field-label
+                            | Trust managers
+                        ignite-form-group-tooltip
+                            | Pre-configured trust managers
+                        ignite-form-group-add(ng-show='#{enabled}' ng-click='(__.add = [{}])')
+                            | Add new trust manager.
+
+                        - var field = 'edit'
+                        - var valid = form + '.' + field + '.$valid'
+                        - var save = trust + '[$index] = ' + field
+
+                        .group-content(ng-if='#{trust}.length')
+                            ignite-form-field(ng-repeat='model in #{trust} track by $index' type='internal' ng-init='')
+                                .indexField
+                                    | {{ $index+1 }}) 
+                                i.tipField.fa.fa-remove(
+                                    ng-show='#{enabled}'
+                                    ng-hide='___.edit'
+                                    bs-tooltip='"Remove trust manager"'
+                                    ng-click='#{enabled} && (#{trust}.splice(#{trust}.indexOf(model), 1))'
+                                )
+                                span(ng-hide='___.edit')
+                                    a.labelFormField(ng-click='#{enabled} && (___.edit = true)') {{ model }}
+                                span(ng-if='___.edit' ng-init='#{field} = model')
+                                    ignite-form-field-java-class(
+                                        data-name='#{field}'
+                                        data-ng-model='#{field}'
+                                        data-ng-required='true'
+                                        data-ignite-unique='#{trust}'
+                                        data-ignite-form-field-input-autofocus='true'
+                                        on-enter='#{valid} && (#{save}); #{valid} && (___.edit = false);'
+                                        ng-blur='#{valid} && (#{save}); (___.edit = false)'
+                                    )
+                                        i.fa.fa-floppy-o(
+                                            ng-show='#{valid}'
+                                            ng-click='#{valid} && (#{save}); #{valid} && (___.edit = false);'
+                                            bs-tooltip 
+                                            data-title='Click icon or press [Enter] to save item' 
+                                        )
+
+                                        i.fa.fa-exclamation-triangle.form-control-feedback(
+                                            ng-show='!#{form}.#{field}.$pristine && #{form}.#{field}.$error.igniteUnique'
+                                            bs-tooltip
+                                            data-title='Such trust manager already exists!'
+                                        )
+
+                        - var field = 'new'
+                        - var valid = form + '.' + field + '.$valid'
+                        - var push = trust + '.push(' + field + ')'
+
+                        .group-content(ng-repeat='field in __.add')
+                            ignite-form-field(type='internal')
+                                ignite-form-field-java-class(
+                                    data-name='#{field}'
+                                    data-ng-model='#{field}'
+                                    data-ng-required='true'
+                                    data-ignite-unique='#{trust}'
+                                    data-ignite-form-field-input-autofocus='true'
+                                    on-enter='#{valid} && #{push}; #{valid} && (stopblur = true) && (__.add = [{}])'
+                                    ng-blur='#{valid} && #{push}; !stopblur && (__.add = [])'
+                                )
+                                    i.fa.fa-floppy-o(
+                                        ng-show='#{valid}'
+                                        ng-click='#{valid} && #{push}; #{valid} && (__.add = [])'
+                                        bs-tooltip 
+                                        data-title='Click icon or press [Enter] to save item' 
+                                    )
+
+                                    i.fa.fa-exclamation-triangle.form-control-feedback(
+                                        ng-show='!#{form}.#{field}.$pristine && #{form}.#{field}.$error.igniteUnique'
+                                        bs-tooltip
+                                        data-title='Such trust manager already exists!'
+                                    )
+
+                        .group-content-empty(ng-if='!(#{trust}.length) && !__.add.length')
+                            | Not defined
+
+                .settings-row(ng-if='!#{trust}.length')
+                    ignite-form-field
+                        ignite-form-field-label
+                            | Trust store file:
+                        ignite-form-field-tooltip
+                            | Path to the trust store file
+                        ignite-form-field-input-text(
+                            data-id='trustStoreFilePath'
+                            data-name='trustStoreFilePath'
+                            data-ng-model='#{model}.trustStoreFilePath'
+                            data-placeholder='Path to the trust store file'
+                            data-ng-disabled='!#{enabled}'
+                        )
+
+                .settings-row(ng-if='!#{trust}.length')
+                    ignite-form-field
+                        ignite-form-field-label
+                            | Trust store type:
+                        ignite-form-field-tooltip
+                            | Trust store type used in context initialization
+                        ignite-form-field-input-datalist(
+                            data-id='trustStoreType'
+                            data-name='trustStoreType'
+                            data-options="['JKS', 'PCKS11', 'PCKS12']"
+                            data-ng-model='#{model}.trustStoreType'
+                            data-placeholder='JKS'
+                            data-ng-disabled='!#{enabled}'
+                        )                        
+ 
+            .col-sm-6
+                .preview-panel(ng-init='mode = false')
+                    .preview-legend
+                        a(ng-class='{active: !mode, inactive: mode}' ng-click='mode = false') XML
+                        | &nbsp;
+                        a(ng-class='{active: mode, inactive: !mode}' ng-click='mode = true') Java
+                    .preview-content(
+                        ng-if='!preview["sslConfiguration"].allDefaults && mode'
+                        ui-ace='{onLoad: previewInit, onChange: previewChanged, mode: "java", rendererOptions: {minLines: group.previewMinLines || 3}}' 
+                        ng-model='preview["sslConfiguration"].java')
+                    .preview-content(
+                        ng-if='!preview["sslConfiguration"].allDefaults && !mode'
+                        ui-ace='{onLoad: previewInit, onChange: previewChanged, mode: "xml", rendererOptions: {minLines: group.previewMinLines || 3}}' 
+                        ng-model='preview["sslConfiguration"].xml')
+                    .preview-content-empty(ng-if='preview["sslConfiguration"].allDefaults')
+                        label All Defaults

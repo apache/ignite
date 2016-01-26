@@ -1,0 +1,92 @@
+//-
+    Licensed to the Apache Software Foundation (ASF) under one or more
+    contributor license agreements.  See the NOTICE file distributed with
+    this work for additional information regarding copyright ownership.
+    The ASF licenses this file to You under the Apache License, Version 2.0
+    (the "License"); you may not use this file except in compliance with
+    the License.  You may obtain a copy of the License at
+
+         http://www.apache.org/licenses/LICENSE-2.0
+
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
+
+- var model = 'backupItem'
+
+form.panel.panel-default(name='metrics')
+    .panel-heading(bs-collapse-toggle ng-click='__show__ = true')
+        ignite-form-panel-chevron
+        label Metrics
+        ignite-form-field-tooltip.tipLabel
+            | Cluster runtime metrics settings
+        ignite-form-revert
+    .panel-collapse(role='tabpanel' bs-collapse-target id='metrics')
+        .panel-body(ng-if='__show__')
+            .col-sm-6
+                .settings-row
+                    ignite-form-field(data-label='Elapsed time')
+                        ignite-form-field-tooltip
+                            |Time in milliseconds after which a certain metric value is considered expired
+                        ignite-form-field-input-number(
+                            data-id='metricsExpireTime'
+                            data-name='metricsExpireTime'
+                            data-ng-model='#{model}.metricsExpireTime'
+                            data-min='1'
+                            data-placeholder='Long.MAX_VALUE'
+                        )
+
+                .settings-row
+                    ignite-form-field(data-label='History size')
+                        ignite-form-field-tooltip
+                            | Number of metrics kept in history to compute totals and averages
+                        ignite-form-field-input-number(
+                            data-id='metricsHistorySize'
+                            data-name='metricsHistorySize'
+                            data-ng-model='#{model}.metricsHistorySize'
+                            data-placeholder='10000'
+                        )
+
+                .settings-row
+                    ignite-form-field(data-label='Log frequency')
+                        ignite-form-field-tooltip
+                            | Frequency of metrics log print out. To disable set to 0
+                        ignite-form-field-input-number(
+                            data-id='metricsLogFrequency'
+                            data-name='metricsLogFrequency'
+                            data-ng-model='#{model}.metricsLogFrequency'
+                            data-placeholder='60000'
+                        )
+
+                .settings-row
+                    ignite-form-field(data-label='Update frequency')
+                        ignite-form-field-tooltip
+                            | Job metrics update frequency in milliseconds
+                            ul
+                                li If set to -1 job metrics are never updated
+                                li If set to 0 job metrics are updated on each job start and finish
+                                li Positive value defines the actual update frequency
+                        ignite-form-field-input-number(
+                            data-id='metricsUpdateFrequency'
+                            data-name='metricsUpdateFrequency'
+                            data-ng-model='#{model}.metricsUpdateFrequency'
+                            data-placeholder='60000'
+                        )
+            .col-sm-6
+                .preview-panel(ng-init='mode = false')
+                    .preview-legend
+                        a(ng-class='{active: !mode, inactive: mode}' ng-click='mode = false') XML
+                        | &nbsp;
+                        a(ng-class='{active: mode, inactive: !mode}' ng-click='mode = true') Java
+                    .preview-content(
+                        ng-if='!preview["metrics"].allDefaults && mode'
+                        ui-ace='{onLoad: previewInit, onChange: previewChanged, mode: "java", rendererOptions: {minLines: group.previewMinLines || 3}}' 
+                        ng-model='preview["metrics"].java')
+                    .preview-content(
+                        ng-if='!preview["metrics"].allDefaults && !mode'
+                        ui-ace='{onLoad: previewInit, onChange: previewChanged, mode: "xml", rendererOptions: {minLines: group.previewMinLines || 3}}' 
+                        ng-model='preview["metrics"].xml')
+                    .preview-content-empty(ng-if='preview["metrics"].allDefaults')
+                        label All Defaults            

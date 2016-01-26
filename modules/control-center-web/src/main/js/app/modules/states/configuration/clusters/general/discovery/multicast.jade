@@ -1,0 +1,177 @@
+//-
+    Licensed to the Apache Software Foundation (ASF) under one or more
+    contributor license agreements.  See the NOTICE file distributed with
+    this work for additional information regarding copyright ownership.
+    The ASF licenses this file to You under the Apache License, Version 2.0
+    (the "License"); you may not use this file except in compliance with
+    the License.  You may obtain a copy of the License at
+
+         http://www.apache.org/licenses/LICENSE-2.0
+
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
+
+- var model = 'backupItem.discovery.Multicast';
+- var addresses = model + '.addresses';
+- var form = 'general';
+
+div
+    .details-row
+        ignite-form-field
+            ignite-form-field-label
+                | IP address:
+            ignite-form-field-tooltip
+                | IP address of multicast group
+            ignite-form-field-input-text(
+                data-id='multicastGroup'
+                data-name='multicastGroup'
+                data-ng-model='#{model}.multicastGroup'
+                data-placeholder='228.1.2.4'
+            )
+    .details-row
+        ignite-form-field
+            ignite-form-field-label
+                | Port number:
+            ignite-form-field-tooltip
+                | Port number which multicast messages are sent to
+            ignite-form-field-input-number(
+                data-id='multicastPort'
+                data-name='multicastPort'
+                data-ng-model='#{model}.multicastPort'
+                data-max='65535'
+                data-placeholder='47400'
+            )
+    .details-row
+        ignite-form-field
+            ignite-form-field-label
+                | Waits for reply:
+            ignite-form-field-tooltip
+                | Time in milliseconds IP finder waits for reply to multicast address request
+            ignite-form-field-input-number(
+                data-id='responseWaitTime'
+                data-name='responseWaitTime'
+                data-ng-model='#{model}.responseWaitTime'
+                data-placeholder='500'
+            )
+    .details-row
+        ignite-form-field
+            ignite-form-field-label
+                | Attempts count:
+            ignite-form-field-tooltip
+                | Number of attempts to send multicast address request#[br]
+                | IP finder re-sends request only in case if no reply for previous request is received
+            ignite-form-field-input-number(
+                data-id='addressRequestAttempts'
+                data-name='addressRequestAttempts'
+                data-ng-model='#{model}.addressRequestAttempts'
+                data-placeholder='2'
+            )
+    .details-row
+        ignite-form-field
+            ignite-form-field-label
+                | Local address:
+            ignite-form-field-tooltip
+                | Local host address used by this IP finder#[br]
+                | If provided address is non-loopback then multicast socket is bound to this interface#[br]
+                | If local address is not set or is any local address then IP finder creates multicast sockets for all found non-loopback addresses
+            ignite-form-field-input-text(
+                data-id='localAddress'
+                data-name='localAddress'
+                data-ng-model='#{model}.localAddress'
+            )
+    .details-row
+        ignite-form-group(ng-init='__ = {}; ___ = {}' ng-model='#{addresses}' name='discoveryMulticastAddresses')
+            ignite-form-field-label
+                | Addresses
+            ignite-form-group-tooltip
+                | Addresses may be represented as follows:#[br]
+                ul: li IP address (e.g. 127.0.0.1, 9.9.9.9, etc)
+                    li IP address and port (e.g. 127.0.0.1:47500, 9.9.9.9:47501, etc)
+                    li IP address and port range (e.g. 127.0.0.1:47500..47510, 9.9.9.9:47501..47504, etc)
+                    li Hostname (e.g. host1.com, host2, etc)
+                    li Hostname and port (e.g. host1.com:47500, host2:47502, etc)
+                    li Hostname and port range (e.g. host1.com:47500..47510, host2:47502..47508, etc)
+                | If port is 0 or not provided then default port will be used (depends on discovery SPI configuration)#[br]
+                | If port range is provided (e.g. host:port1..port2) the following should be considered:#[br]
+                ul: li port1 < port2 should be true
+                    li Both port1 and port2 should be greater than 0
+            ignite-form-group-add(ng-click='__.add = [{}]')
+                | Add new address.
+
+            - var field = 'edit'
+            - var valid = form + '.' + field + '.$valid'
+            - var save = addresses + '[$index] = ' + field
+
+            .group-content(ng-if='#{addresses}.length')
+                ignite-form-field(ng-repeat='model in #{addresses} track by $index' type='internal' ng-init='')
+                    .indexField
+                        | {{ $index+1 }}) 
+                    i.tipField.fa.fa-remove(
+                        ng-hide='___.edit'
+                        bs-tooltip='"Remove address"'
+                        ng-click='#{addresses}.splice(#{addresses}.indexOf(model), 1)'
+                    )
+
+                    ignite-form-field-down(ng-if='!$last' data-ng-model='model' data-models='#{addresses}')
+                    ignite-form-field-up(ng-if='!$first' data-ng-model='model' data-models='#{addresses}')
+
+                    span(ng-hide='___.edit')
+                        a.labelFormField(ng-click='___.edit = true') {{ model }}
+                    span(ng-if='___.edit' ng-init='#{field} = model')
+                        ignite-form-field-input-text(
+                            data-name='#{field}'
+                            data-ng-model='#{field}'
+                            data-ng-required='true'
+                            data-placeholder='IP address:port'
+                            data-ignite-unique='#{addresses}'
+                            data-ignite-form-field-input-autofocus='true'
+                            on-enter='#{valid} && (#{save}); #{valid} && (___.edit = false);'
+                            ng-blur='#{valid} && (#{save}); (___.edit = false)'
+                        )
+                            i.fa.fa-floppy-o(
+                                ng-show='#{valid}'
+                                ng-click='#{valid} && (#{save}); #{valid} && (___.edit = false);'
+                                bs-tooltip 
+                                data-title='Click icon or press [Enter] to save item' 
+                            )
+
+                            i.fa.fa-exclamation-triangle.form-control-feedback(
+                                ng-show='!#{form}.#{field}.$pristine && #{form}.#{field}.$error.igniteUnique'
+                                bs-tooltip
+                                data-title='Such IP address already exists!'
+                            )
+
+            - var field = 'new'
+            - var valid = form + '.' + field + '.$valid'
+            - var push = addresses + '.push(' + field + ')'
+
+            .group-content(ng-repeat='field in __.add')
+                ignite-form-field(type='internal')
+                    ignite-form-field-input-text(
+                        data-name='#{field}'
+                        data-ng-model='#{field}'
+                        data-ng-required='true'
+                        data-placeholder='IP address:port'
+                        data-ignite-unique='#{addresses}'
+                        data-ignite-form-field-input-autofocus='true'
+                        on-enter='#{valid} && #{push}; #{valid} && (stopblur = true) && (__.add = [{}])'
+                        ng-blur='#{valid} && #{push}; !stopblur && (__.add = [])'
+                    )
+                        i.fa.fa-floppy-o(
+                            ng-show='#{valid}'
+                            ng-click='#{valid} && #{push}; #{valid} && (__.add = [])'
+                            bs-tooltip 
+                            data-title='Click icon or press [Enter] to save item' 
+                        )
+
+                        i.fa.fa-exclamation-triangle.form-control-feedback(
+                            ng-show='!#{form}.#{field}.$pristine && #{form}.#{field}.$error.igniteUnique'
+                            bs-tooltip
+                            data-title='Such IP address already exists!'
+                        )
+            
+            .group-content-empty(ng-if='!(#{addresses}.length) && !__.add.length')
+                | Not defined

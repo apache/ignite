@@ -14,6 +14,13 @@
     See the License for the specific language governing permissions and
     limitations under the License.
 
-div.col-xs-8.col-sm-8.col-md-6
-    label.col-xs-6.col-sm-6.col-md-6(for='{{::field.for}}') {{::field.label}}:
-    div.col-xs-6.col-sm-6.col-md-6(ng-transclude='')
+div
+    div(ng-if='field.type == "external"')
+        label.col-xs-4.col-sm-4.col-md-4(
+            for='{{::field.for}}'
+            class='{{ field.required ? "required" : "" }}'
+        ) 
+            span(ng-if='field.label') {{::field.label}}:
+        .col-xs-8.col-sm-8.col-md-8(ng-transclude='')
+    div(ng-if='field.type == "internal"')
+        label.col-xs-12.col-sm-12.col-md-12(ng-transclude)       

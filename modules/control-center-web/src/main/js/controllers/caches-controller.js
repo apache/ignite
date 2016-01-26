@@ -313,8 +313,8 @@ consoleModule.controller('cachesController', [
 
                         $scope.ui.addGroups(data.general, data.advanced);
 
-                        if ($common.getQueryVariable('new'))
-                            $scope.createItem($common.getQueryVariable('id'));
+                        if ($state.params.id)
+                            $scope.createItem($state.params.id);
                         else {
                             var lastSelectedCache = angular.fromJson(sessionStorage.lastSelectedCache);
 
@@ -433,8 +433,7 @@ consoleModule.controller('cachesController', [
                 readFromBackup: true,
                 copyOnRead: true,
                 clusters: id && _.find($scope.clusters, {value: id})
-                    ? [id]
-                    : _.map($scope.clusters, function (cluster) { return cluster.value; }),
+                    ? [id] : _.map($scope.clusters, function (cluster) { return cluster.value; }),
                 domains: id && _.find($scope.domains, { value: id }) ? [id] : [],
                 cacheStoreFactory: {CacheJdbcBlobStoreFactory: {connectVia: 'DataSource'}}
             };

@@ -1,0 +1,314 @@
+//-
+    Licensed to the Apache Software Foundation (ASF) under one or more
+    contributor license agreements.  See the NOTICE file distributed with
+    this work for additional information regarding copyright ownership.
+    The ASF licenses this file to You under the Apache License, Version 2.0
+    (the "License"); you may not use this file except in compliance with
+    the License.  You may obtain a copy of the License at
+
+         http://www.apache.org/licenses/LICENSE-2.0
+
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
+
+- var model = 'backupItem.discovery'
+
+form.panel.panel-default(name='discovery')
+    .panel-heading(bs-collapse-toggle ng-click='__show__ = true')
+        ignite-form-panel-chevron
+        label Discovery
+        ignite-form-field-tooltip.tipLabel
+            | Discovery properties configuration
+        ignite-form-revert
+    .panel-collapse(role='tabpanel' bs-collapse-target id='discovery')
+        .panel-body(ng-if='__show__')
+            .col-sm-6
+                .settings-row
+                   ignite-form-field
+                        ignite-form-field-label
+                            | Local address:
+                        ignite-form-field-tooltip
+                            | Local address
+                        ignite-form-field-input-text(
+                            data-id='discoLocalAddress'
+                            data-name='discoLocalAddress'
+                            data-ng-model='#{model}.localAddress'
+                            data-placeholder='228.1.2.4'
+                        )
+                .settings-row
+                    ignite-form-field
+                        ignite-form-field-label
+                            | Local port:
+                        ignite-form-field-tooltip
+                            | Local port which node uses
+                        ignite-form-field-input-number(
+                            data-id='discoLocalPort'
+                            data-name='discoLocalPort'
+                            data-ng-model='#{model}.localPort'
+                            data-min='1024'
+                            data-max='65535'
+                            data-placeholder='47500'
+                        )
+                .settings-row
+                    ignite-form-field
+                        ignite-form-field-label
+                            | Local port range:
+                        ignite-form-field-tooltip
+                            | Local port range
+                        ignite-form-field-input-number(
+                            data-id='discoLocalPortRange'
+                            data-name='discoLocalPortRange'
+                            data-ng-model='#{model}.localPortRange'
+                            data-placeholder='100'
+                        )
+                .settings-row
+                   ignite-form-field
+                        ignite-form-field-label
+                            | Address resolver:
+                        ignite-form-field-tooltip
+                            | Class name of resolution between external and internal addresses provider
+                        ignite-form-field-java-class(
+                            data-id='discoAddressResolver'
+                            data-name='discoAddressResolver'
+                            data-ng-model='#{model}.addressResolver'
+                            data-ng-required='!!#{model}.addressResolver'
+                        )
+                .settings-row
+                    ignite-form-field
+                        ignite-form-field-label
+                            | Socket timeout:
+                        ignite-form-field-tooltip
+                            | Socket operations timeout
+                        ignite-form-field-input-number(
+                            data-id='socketTimeout'
+                            data-name='socketTimeout'
+                            data-ng-model='#{model}.socketTimeout'
+                            data-placeholder='5000'
+                        )
+                .settings-row
+                    ignite-form-field
+                        ignite-form-field-label
+                            | Acknowledgement timeout:
+                        ignite-form-field-tooltip
+                            | Message acknowledgement timeout
+                        ignite-form-field-input-number(
+                            data-id='ackTimeout'
+                            data-name='ackTimeout'
+                            data-ng-model='#{model}.ackTimeout'
+                            data-placeholder='5000'
+                        )
+                .settings-row
+                    ignite-form-field
+                        ignite-form-field-label
+                            | Max acknowledgement timeout:
+                        ignite-form-field-tooltip
+                            | Maximum message acknowledgement timeout
+                        ignite-form-field-input-number(
+                            data-id='maxAckTimeout'
+                            data-name='maxAckTimeout'
+                            data-ng-model='#{model}.maxAckTimeout'
+                            data-placeholder='600000'
+                        )
+                .settings-row
+                    ignite-form-field
+                        ignite-form-field-label
+                            | Network timeout:
+                        ignite-form-field-tooltip
+                            | Network timeout
+                        ignite-form-field-input-number(
+                            data-id='networkTimeout'
+                            data-name='networkTimeout'
+                            data-ng-model='#{model}.networkTimeout'
+                            data-placeholder='5000'
+                        )
+                .settings-row
+                    ignite-form-field
+                        ignite-form-field-label
+                            | Join timeout:
+                        ignite-form-field-tooltip
+                            | Join timeout
+                        ignite-form-field-input-number(
+                            data-id='joinTimeout'
+                            data-name='joinTimeout'
+                            data-ng-model='#{model}.joinTimeout'
+                            data-placeholder='0'
+                        )
+                .settings-row
+                    ignite-form-field
+                        ignite-form-field-label
+                            | Thread priority:
+                        ignite-form-field-tooltip
+                            | Thread priority for all threads started by SPI
+                        ignite-form-field-input-number(
+                            data-id='threadPriority'
+                            data-name='threadPriority'
+                            data-ng-model='#{model}.threadPriority'
+                            data-placeholder='10'
+                        )
+                .settings-row
+                    ignite-form-field
+                        ignite-form-field-label
+                            | Heartbeat frequency:
+                        ignite-form-field-tooltip
+                            | Heartbeat messages issuing frequency
+                        ignite-form-field-input-number(
+                            data-id='heartbeatFrequency'
+                            data-name='heartbeatFrequency'
+                            data-ng-model='#{model}.heartbeatFrequency'
+                            data-placeholder='2000'
+                        )
+                .settings-row
+                    ignite-form-field
+                        ignite-form-field-label
+                            | Max heartbeats miss w/o init:
+                        ignite-form-field-tooltip
+                            | Max heartbeats count node can miss without initiating status check
+                        ignite-form-field-input-number(
+                            data-id='maxMissedHeartbeats'
+                            data-name='maxMissedHeartbeats'
+                            data-ng-model='#{model}.maxMissedHeartbeats'
+                            data-placeholder='1'
+                        )
+                .settings-row
+                    ignite-form-field
+                        ignite-form-field-label
+                            | Max heartbeats miss w/o failing client node:
+                        ignite-form-field-tooltip
+                            | Max heartbeats count node can miss without failing client node
+                        ignite-form-field-input-number(
+                            data-id='maxMissedClientHeartbeats'
+                            data-name='maxMissedClientHeartbeats'
+                            data-ng-model='#{model}.maxMissedClientHeartbeats'
+                            data-placeholder='5'
+                        )
+                .settings-row
+                    ignite-form-field
+                        ignite-form-field-label
+                            | Topology history:
+                        ignite-form-field-tooltip
+                            | Size of topology snapshots history
+                        ignite-form-field-input-number(
+                            data-id='topHistorySize'
+                            data-name='topHistorySize'
+                            data-ng-model='#{model}.topHistorySize'
+                            data-placeholder='1000'
+                        )
+                .settings-row
+                   ignite-form-field
+                        ignite-form-field-label
+                            | Discovery listener:
+                        ignite-form-field-tooltip
+                            | Grid discovery listener
+                        ignite-form-field-java-class(
+                            data-id='discoListener'
+                            data-name='discoListener'
+                            data-ng-model='#{model}.listener'
+                        )
+                .settings-row
+                   ignite-form-field
+                        ignite-form-field-label
+                            | Data exchange:
+                        ignite-form-field-tooltip
+                            | Class name of handler for initial data exchange between Ignite nodes
+                        ignite-form-field-java-class(
+                            data-id='dataExchange'
+                            data-name='dataExchange'
+                            data-ng-model='#{model}.dataExchange'
+                        )
+                .settings-row
+                   ignite-form-field
+                        ignite-form-field-label
+                            | Metrics provider:
+                        ignite-form-field-tooltip
+                            | Class name of metric provider to discovery SPI
+                        ignite-form-field-java-class(
+                            data-id='metricsProvider'
+                            data-name='metricsProvider'
+                            data-ng-model='#{model}.metricsProvider'
+                        )
+                .settings-row
+                    ignite-form-field
+                        ignite-form-field-label
+                            | Reconnect count:
+                        ignite-form-field-tooltip
+                            | Reconnect attempts count
+                        ignite-form-field-input-number(
+                            data-id='discoReconnectCount'
+                            data-name='discoReconnectCount'
+                            data-ng-model='#{model}.reconnectCount'
+                            data-placeholder='10'
+                        )
+                .settings-row
+                    ignite-form-field
+                        ignite-form-field-label
+                            | Statistics frequency:
+                        ignite-form-field-tooltip
+                            | Statistics print frequency
+                        ignite-form-field-input-number(
+                            data-id='statisticsPrintFrequency'
+                            data-name='statisticsPrintFrequency'
+                            data-ng-model='#{model}.statisticsPrintFrequency'
+                            data-placeholder='0'
+                        )
+                .settings-row
+                    ignite-form-field
+                        ignite-form-field-label
+                            | IP finder clean frequency:
+                        ignite-form-field-tooltip
+                            | IP finder clean frequency
+                        ignite-form-field-input-number(
+                            data-id='ipFinderCleanFrequency'
+                            data-name='ipFinderCleanFrequency'
+                            data-ng-model='#{model}.ipFinderCleanFrequency'
+                            data-placeholder='60000'
+                        )
+                .settings-row
+                    ignite-form-field
+                        ignite-form-field-label
+                            | Node authenticator:
+                        ignite-form-field-tooltip
+                            | Node authenticator
+                        ignite-form-field-java-class(
+                            data-id='authenticator'
+                            data-name='authenticator'
+                            data-ng-model='#{model}.authenticator'
+                        )
+                .settings-row
+                    ignite-form-field.checkbox
+                        ignite-form-field-input-checkbox(
+                            data-id='forceServerMode'
+                            data-name='forceServerMode'
+                            data-ng-model='#{model}.forceServerMode'
+                        )
+                        | Force server mode
+                        ignite-form-field-tooltip
+                            | Force server mode
+                .settings-row
+                    ignite-form-field.checkbox
+                        ignite-form-field-input-checkbox(
+                            data-id='clientReconnectDisabled'
+                            data-name='clientReconnectDisabled'
+                            data-ng-model='#{model}.clientReconnectDisabled'
+                        )
+                        | Client reconnect disabled
+                        ignite-form-field-tooltip
+                            | Client reconnect disabled
+            .col-sm-6
+                .preview-panel(ng-init='mode = false')
+                    .preview-legend
+                        a(ng-class='{active: !mode, inactive: mode}' ng-click='mode = false') XML
+                        | &nbsp;
+                        a(ng-class='{active: mode, inactive: !mode}' ng-click='mode = true') Java
+                    .preview-content(
+                        ng-if='!preview["discovery"].allDefaults && mode'
+                        ui-ace='{onLoad: previewInit, onChange: previewChanged, mode: "java", rendererOptions: {minLines: group.previewMinLines || 3}}' 
+                        ng-model='preview["discovery"].java')
+                    .preview-content(
+                        ng-if='!preview["discovery"].allDefaults && !mode'
+                        ui-ace='{onLoad: previewInit, onChange: previewChanged, mode: "xml", rendererOptions: {minLines: group.previewMinLines || 3}}' 
+                        ng-model='preview["discovery"].xml')
+                    .preview-content-empty(ng-if='preview["discovery"].allDefaults')
+                        label All Defaults

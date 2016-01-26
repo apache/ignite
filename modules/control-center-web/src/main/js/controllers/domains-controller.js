@@ -1157,8 +1157,8 @@ consoleModule.controller('domainsController', function ($filter, $http, $timeout
 
                         $scope.ui.groups = data.domainModel;
 
-                        if ($common.getQueryVariable('new'))
-                            $scope.createItem($common.getQueryVariable('id'));
+                        if ($state.params.id)
+                            $scope.createItem($state.params.id);
                         else
                             restoreSelection();
 

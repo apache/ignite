@@ -17,12 +17,15 @@
 .input-tip
     input.form-control(
         id='{{ id }}'
-        name='{{ name }}' 
-        placeholder='{{ placeholder }}' 
-        type='number' 
-        min='0' 
-        max='Number.MAX_VALUE' 
-        ng-model='ngModel'
+        name='{{ name }}'
+        placeholder='{{ placeholder }}'
+        type='number'
+        min='{{ min || 0 }}'
+        max='{{ max || Number.MAX_VALUE }}'
+
+        data-ng-model='value'
+        data-ng-required='required || false'
+        data-ng-disabled='disabled || false'
     )
 
     i.fa.fa-exclamation-triangle.form-control-feedback(

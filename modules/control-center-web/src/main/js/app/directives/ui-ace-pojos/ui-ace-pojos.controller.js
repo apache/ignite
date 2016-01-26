@@ -50,7 +50,7 @@ export default ['$scope', 'IgniteUiAceOnLoad', 'JavaTypes', function($scope, onL
         const classes = ctrl.classes = [];
 
         _.forEach(ctrl.pojos, (pojo) => {
-            if (pojo.keyType && !JavaTypes.isBuiltInClass(pojo.keyType))
+            if (pojo.keyType && JavaTypes.nonBuiltInClass(pojo.keyType))
                 classes.push(pojo.keyType);
 
             classes.push(pojo.valueType);
@@ -64,7 +64,7 @@ export default ['$scope', 'IgniteUiAceOnLoad', 'JavaTypes', function($scope, onL
 
         const keyType = ctrl.pojos[0].keyType;
 
-        ctrl.class = ctrl.class || (JavaTypes.isBuiltInClass(keyType) ? null : keyType) || ctrl.pojos[0].valueType;
+        ctrl.class = ctrl.class || (JavaTypes.nonBuiltInClass(keyType) ? keyType : null) || ctrl.pojos[0].valueType;
     };
 
     // Update pojos data.

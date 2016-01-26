@@ -24,6 +24,19 @@ export default ['igniteFormFieldInputNumber', ['IgniteFormGUID', (guid) => {
 
         scope.field = field;
         label.for = scope.id = id || guid();
+
+        form.$defaults = form.$defaults || {};
+        form.$defaults[name] = _.cloneDeep(scope.value);
+
+        const setAsDefault = () => {
+            if (!form.$pristine) return;
+
+            form.$defaults = form.$defaults || {};
+            form.$defaults[name] = _.cloneDeep(scope.value);
+        };
+
+        scope.$watch(() => form.$pristine, setAsDefault);
+        scope.$watch('value', setAsDefault);
     };
 
     return {
@@ -32,7 +45,12 @@ export default ['igniteFormFieldInputNumber', ['IgniteFormGUID', (guid) => {
             id: '@',
             name: '@',
             placeholder: '@',
-            ngModel: '='
+            required: '=ngRequired',
+            disabled: '=ngDisabled',
+
+            min: '@',
+            max: '@',
+            value: '=ngModel'
         },
         link,
         template,

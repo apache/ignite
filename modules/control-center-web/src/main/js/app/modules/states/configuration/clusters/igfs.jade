@@ -1,0 +1,59 @@
+//-
+    Licensed to the Apache Software Foundation (ASF) under one or more
+    contributor license agreements.  See the NOTICE file distributed with
+    this work for additional information regarding copyright ownership.
+    The ASF licenses this file to You under the Apache License, Version 2.0
+    (the "License"); you may not use this file except in compliance with
+    the License.  You may obtain a copy of the License at
+
+         http://www.apache.org/licenses/LICENSE-2.0
+
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
+
+- var model = 'backupItem'
+
+form.panel.panel-default(name='igfs')
+    .panel-heading(bs-collapse-toggle ng-click='__show__ = true')
+        ignite-form-panel-chevron
+        label IGFS
+        ignite-form-field-tooltip.tipLabel
+            | IGFS (Ignite In-Memory File System) configurations
+        ignite-form-revert
+    .panel-collapse(role='tabpanel' bs-collapse-target id='igfs')
+        .panel-body(ng-if='__show__')
+            .col-sm-6
+                .settings-row
+                    ignite-form-field
+                        ignite-form-field-label
+                            | IGFS: #[a(ui-sref='base.configuration.igfs') (add)]
+                        ignite-form-field-tooltip
+                            | Select IGFS to start in cluster or add a new IGFS
+                        ignite-form-field-dropdown(
+                            data-id='igfss'
+                            data-name='igfss'
+                            data-options="igfss"
+                            data-multiple='true'
+                            data-ng-model='#{model}.igfss'
+                            data-ng-disabled='!igfss.length'
+                            data-placeholder='{{ igfss.length ? "Choose IGFS": "No IGFS configured" }}'
+                        )
+            .col-sm-6
+                .preview-panel(ng-init='mode = false')
+                    .preview-legend
+                        a(ng-class='{active: !mode, inactive: mode}' ng-click='mode = false') XML
+                        | &nbsp;
+                        a(ng-class='{active: mode, inactive: !mode}' ng-click='mode = true') Java
+                    .preview-content(
+                        ng-if='!preview["igfs"].allDefaults && mode'
+                        ui-ace='{onLoad: previewInit, onChange: previewChanged, mode: "java", rendererOptions: {minLines: group.previewMinLines || 3}}' 
+                        ng-model='preview["igfs"].java')
+                    .preview-content(
+                        ng-if='!preview["igfs"].allDefaults && !mode'
+                        ui-ace='{onLoad: previewInit, onChange: previewChanged, mode: "xml", rendererOptions: {minLines: group.previewMinLines || 3}}' 
+                        ng-model='preview["igfs"].xml')
+                    .preview-content-empty(ng-if='preview["igfs"].allDefaults')
+                        label All Defaults

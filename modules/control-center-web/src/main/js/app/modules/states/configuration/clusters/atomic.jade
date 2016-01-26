@@ -1,0 +1,86 @@
+//-
+    Licensed to the Apache Software Foundation (ASF) under one or more
+    contributor license agreements.  See the NOTICE file distributed with
+    this work for additional information regarding copyright ownership.
+    The ASF licenses this file to You under the Apache License, Version 2.0
+    (the "License"); you may not use this file except in compliance with
+    the License.  You may obtain a copy of the License at
+
+         http://www.apache.org/licenses/LICENSE-2.0
+
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
+
+- var model = 'backupItem.atomicConfiguration'
+
+form.panel.panel-default(name='atomic')
+    .panel-heading(bs-collapse-toggle='' ng-click='__show__ = true')
+        ignite-form-panel-chevron
+        label Atomic configuration
+        ignite-form-field-tooltip.tipLabel
+            | Configuration for atomic data structures#[br]
+            | Atomics are distributed across the cluster, essentially enabling performing atomic operations (such as increment-and-get or compare-and-set) with the same globally-visible value
+        ignite-form-revert 
+    .panel-collapse(role='tabpanel' bs-collapse-target='' id='atomics')
+        .panel-body(ng-if='__show__')
+            .col-sm-6
+                .settings-row
+                    ignite-form-field
+                        ignite-form-field-label
+                            | Cache mode:
+                        ignite-form-field-tooltip
+                            | Cache modes:#[br]
+                            ul: li Partitioned - in this mode the overall key set will be divided into partitions and all partitions will be split equally between participating nodes
+                                li Replicated - in this mode all the keys are distributed to all participating nodes
+                                li Local - in this mode caches residing on different grid nodes will not know about each other
+                        ignite-form-field-dropdown(
+                            data-id='cacheMode'
+                            data-name='cacheMode'
+                            data-options="cacheModes"
+                            data-ng-model='#{model}.cacheMode'
+                            data-placeholder='PARTITIONED'
+                        )
+                .settings-row
+                    ignite-form-field
+                        ignite-form-field-label
+                            | Sequence reserve:
+                        ignite-form-field-tooltip
+                            | Default number of sequence values reserved for IgniteAtomicSequence instances#[br]
+                            | After a certain number has been reserved, consequent increments of sequence will happen locally, without communication with other nodes, until the next reservation has to be made
+                        ignite-form-field-input-number(
+                            data-id='atomicSequenceReserveSize'
+                            data-name='atomicSequenceReserveSize'
+                            data-ng-model='#{model}.atomicSequenceReserveSize'
+                            data-placeholder='1000'
+                        )
+                .settings-row(ng-if='!(#{model}.cacheMode && #{model}.cacheMode != "PARTITIONED")')
+                    ignite-form-field
+                        ignite-form-field-label
+                            | Backups:
+                        ignite-form-field-tooltip
+                            | Number of backup nodes
+                        ignite-form-field-input-number(
+                            data-id='backups'
+                            data-name='backups'
+                            data-ng-model='#{model}.backups'
+                            data-placeholder='0'
+                        )
+            .col-sm-6
+                .preview-panel(ng-init='mode = false')
+                    .preview-legend
+                        a(ng-class='{active: !mode, inactive: mode}' ng-click='mode = false') XML
+                        | &nbsp;
+                        a(ng-class='{active: mode, inactive: !mode}' ng-click='mode = true') Java
+                    .preview-content(
+                        ng-if='!preview["atomics"].allDefaults && mode'
+                        ui-ace='{onLoad: previewInit, onChange: previewChanged, mode: "java", rendererOptions: {minLines: group.previewMinLines || 3}}' 
+                        ng-model='preview["atomics"].java')
+                    .preview-content(
+                        ng-if='!preview["atomics"].allDefaults && !mode'
+                        ui-ace='{onLoad: previewInit, onChange: previewChanged, mode: "xml", rendererOptions: {minLines: group.previewMinLines || 3}}' 
+                        ng-model='preview["atomics"].xml')
+                    .preview-content-empty(ng-if='preview["atomics"].allDefaults')
+                        label All Defaults

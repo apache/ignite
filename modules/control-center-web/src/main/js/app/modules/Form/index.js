@@ -16,17 +16,73 @@
  */
 
 import angular from 'angular';
+
+// Panel.
+import igniteFormPanel from './panel/panel.directive';
+import igniteFormPanelChevron from './panel/chevron.directive';
+import igniteFormRevert from './panel/revert.directive';
+
+// Field.
 import igniteFormField from './field/field.directive';
+import igniteFormFieldLabel from './field/label.directive';
+import igniteFormFieldTooltip from './field/tooltip.directive';
 import igniteFormFieldDropdown from './field/dropdown.directive';
 import igniteFormFieldInputNumber from './field/input/number.directive';
+import igniteFormFieldInputText from './field/input/text.directive';
+import igniteFormFieldInputCheckbox from './field/input/checkbox.directive';
+import igniteFormFieldInputDatalist from './field/input/datalist.directive';
+
+// Group.
+import igniteFormGroup from './group/group.directive';
+import igniteFormGroupAdd from './group/add.directive';
+import igniteFormGroupTooltip from './group/tooltip.directive';
+
+// Validators.
+import javaKeywords from './validator/java-keywords.directive';
+import javaPackageSpecified from './validator/java-package-specified.directive';
+import javaBuiltInClass from './validator/java-built-in-class.directive';
+import javaIdentifier from './validator/java-identifier.directive';
+import javaPackageName from './validator/java-package-name.directive';
+import unique from './validator/unique.directive';
+
+// Helpers.
+import igniteFormFieldInputAutofocus from './field/input/autofocus.directive';
+import igniteFormFieldUp from './field/up.directive';
+import igniteFormFieldDown from './field/down.directive';
 
 angular
 .module('ignite-console.Form', [
 
 ])
+// Panel.
+.directive(...igniteFormPanel)
+.directive(...igniteFormPanelChevron)
+.directive(...igniteFormRevert)
+// Field.
 .directive(...igniteFormField)
+.directive(...igniteFormFieldLabel)
+.directive(...igniteFormFieldTooltip)
 .directive(...igniteFormFieldDropdown)
 .directive(...igniteFormFieldInputNumber)
+.directive(...igniteFormFieldInputText)
+.directive(...igniteFormFieldInputCheckbox)
+.directive(...igniteFormFieldInputDatalist)
+// Group.
+.directive(...igniteFormGroup)
+.directive(...igniteFormGroupAdd)
+.directive(...igniteFormGroupTooltip)
+// Validators.
+.directive(...javaKeywords)
+.directive(...javaPackageSpecified)
+.directive(...javaBuiltInClass)
+.directive(...javaIdentifier)
+.directive(...javaPackageName)
+.directive(...unique)
+// Helpers.
+.directive(...igniteFormFieldInputAutofocus)
+.directive(...igniteFormFieldUp)
+.directive(...igniteFormFieldDown)
+// Generator of globally unique identifier.
 .factory('IgniteFormGUID', [() => {
     let guid = 0;
 

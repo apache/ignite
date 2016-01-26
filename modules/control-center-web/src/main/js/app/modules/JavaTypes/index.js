@@ -17,34 +17,50 @@
 
 import angular from 'angular';
 
+// Java built-in short class names.
+import JAVA_CLASSES from 'app/data/java-classes.json!';
+
+// Java built-in full class names.
+import JAVA_FULLNAME_CLASSES from 'app/data/java-fullname-classes.json!';
+
+import JAVA_KEYWORDS from 'app/data/java-keywords.json!';
+
 angular
     .module('ignite-console.JavaTypes', [])
     .provider('JavaTypes', function() {
-        // Java built-in short class names.
-        const _classes = [
-            'BigDecimal', 'Boolean', 'Byte', 'Date', 'Double', 'Float', 'Integer', 'Long', 'Short', 'String', 'Time', 'Timestamp', 'UUID'
-        ];
-
-        // TODO use later const _types = [
-        //    'BigDecimal', 'boolean', 'Boolean', 'byte', 'Byte', 'Date', 'double', 'Double', 'float', 'Float',
-        //    'int', 'Integer', 'long', 'Long', 'short', 'Short', 'String', 'Time', 'Timestamp', 'UUID'
-        // ];
-
-        // Java built-in full class names.
-        const _fullNameClasses = [
-            'java.math.BigDecimal', 'java.lang.Boolean', 'java.lang.Byte', 'java.sql.Date', 'java.lang.Double',
-            'java.lang.Float', 'java.lang.Integer', 'java.lang.Long', 'java.lang.Short', 'java.lang.String',
-            'java.sql.Time', 'java.sql.Timestamp', 'java.util.UUID'
-        ];
-
         this.$get = [function() {
             return {
                 /**
                  * @param cls Class name to check.
-                 * @returns 'true' if given class name is a Java built-in type.
+                 * @returns boolean 'true' if given class name non a Java built-in type.
                  */
-                isBuiltInClass(cls) {
-                    return _.contains(_classes, cls) || _.contains(_fullNameClasses, cls);
+                nonBuiltInClass(cls) {
+                    return !(_.contains(JAVA_CLASSES, cls) || _.contains(JAVA_FULLNAME_CLASSES, cls));
+                },
+                /**
+                 * @param value text to check.
+                 * @returns boolean 'true' if given text is valid Java identifier.
+                 */
+                validIdentifier(value) {
+                    const regexp = /^(([a-zA-Z_$][a-zA-Z0-9_$]*)\.)*([a-zA-Z_$][a-zA-Z0-9_$]*)$/igm;
+
+                    return value === '' || regexp.test(value);
+                },
+                /**
+                 * @param value text to check.
+                 * @returns boolean 'true' if given text is valid Java package.
+                 */
+                validPackage(value) {
+                    const regexp = /^(([a-zA-Z_$][a-zA-Z0-9_$]*)\.)*([a-zA-Z_$][a-zA-Z0-9_$]*(\.[*]|[*])?)$/igm;
+
+                    return value === '' || regexp.test(value);
+                },
+                /**
+                 * @param value text to check.
+                 * @returns boolean 'true' if given text non Java keyword.
+                 */
+                nonKeywords(value) {
+                    return !JAVA_KEYWORDS.contains(value);
                 }
             };
         }];

@@ -20,10 +20,58 @@ import angular from 'angular';
 import ConfigurationSummaryCtrl from './summary/summary.controller';
 import ConfigurationSummaryResource from './summary/summary.resource';
 
+import clustersTransactions from './clusters/transactions.directive';
+import clustersThread from './clusters/thread.directive';
+import clustersTime from './clusters/time.directive';
+import clustersSwap from './clusters/swap.directive';
+import clustersSsl from './clusters/ssl.directive';
+import clustersMetrics from './clusters/metrics.directive';
+import clustersMarshaller from './clusters/marshaller.directive';
+import clustersIgfs from './clusters/igfs.directive';
+import clustersEvents from './clusters/events.directive';
+import clustersDiscovery from './clusters/discovery.directive';
+import clustersDeployment from './clusters/deployment.directive';
+import clustersConnector from './clusters/connector.directive';
+import clustersCommunication from './clusters/communication.directive';
+import clustersBinary from './clusters/binary.directive';
+import clustersAtomic from './clusters/atomic.directive';
+
+import clustersGeneral from './clusters/general.directive';
+import generalDiscoveryCloud from './clusters/general/discovery/cloud.directive';
+import generalDiscoveryGoogle from './clusters/general/discovery/google.directive';
+import generalDiscoveryJdbc from './clusters/general/discovery/jdbc.directive';
+import generalDiscoveryMulticast from './clusters/general/discovery/multicast.directive';
+import generalDiscoveryS3 from './clusters/general/discovery/s3.directive';
+import generalDiscoveryShared from './clusters/general/discovery/shared.directive';
+import generalDiscoveryVm from './clusters/general/discovery/vm.directive';
+
 angular
 .module('ignite-console.states.configuration', [
     'ui.router'
 ])
+.directive(...clustersTransactions)
+.directive(...clustersThread)
+.directive(...clustersTime)
+.directive(...clustersSwap)
+.directive(...clustersSsl)
+.directive(...clustersMetrics)
+.directive(...clustersMarshaller)
+.directive(...clustersIgfs)
+.directive(...clustersEvents)
+.directive(...clustersDiscovery)
+.directive(...clustersDeployment)
+.directive(...clustersConnector)
+.directive(...clustersCommunication)
+.directive(...clustersBinary)
+.directive(...clustersAtomic)
+.directive(...clustersGeneral)
+.directive(...generalDiscoveryCloud)
+.directive(...generalDiscoveryGoogle)
+.directive(...generalDiscoveryJdbc)
+.directive(...generalDiscoveryMulticast)
+.directive(...generalDiscoveryS3)
+.directive(...generalDiscoveryShared)
+.directive(...generalDiscoveryVm)
 // Services.
 .service(...ConfigurationSummaryResource)
 .config(['$stateProvider', function($stateProvider) {
@@ -36,6 +84,9 @@ angular
     .state('base.configuration.clusters', {
         url: '/clusters',
         templateUrl: '/configuration/clusters.html',
+        params: {
+            id: null
+        },
         data: {
             loading: 'Loading clusters screen...'
         },
@@ -48,6 +99,9 @@ angular
     .state('base.configuration.caches', {
         url: '/caches',
         templateUrl: '/configuration/caches.html',
+        params: {
+            id: null
+        },
         data: {
             loading: 'Loading caches screen...'
         },
@@ -60,6 +114,9 @@ angular
     .state('base.configuration.domains', {
         url: '/domains',
         templateUrl: '/configuration/domains.html',
+        params: {
+            id: null
+        },
         data: {
             loading: 'Loading domain models screen...'
         },
@@ -72,6 +129,9 @@ angular
     .state('base.configuration.igfs', {
         url: '/igfs',
         templateUrl: '/configuration/igfs.html',
+        params: {
+            id: null
+        },
         data: {
             loading: 'Loading IGFS screen...'
         },
