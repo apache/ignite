@@ -755,10 +755,7 @@ public class BinaryContext {
     public BinaryInternalMapper userTypeMapper(int typeId) {
         BinaryInternalMapper mapper = typeId2Mapper.get(typeId);
 
-        if (mapper == null)
-            throw new IgniteException("Failed to get mapper for user typeId: " + typeId);
-
-        return mapper;
+        return mapper != null ? mapper : SIMPLE_NAME_LOWER_CASE_MAPPER;
     }
 
     /**
@@ -1009,9 +1006,9 @@ public class BinaryContext {
     public BinaryFieldImpl createField(int typeId, String fieldName) {
         BinarySchemaRegistry schemaReg = schemaRegistry(typeId);
 
-        BinaryInternalMapper mappers = userTypeMapper(typeId);
+        BinaryInternalMapper mapper = userTypeMapper(typeId);
 
-        int fieldId = mappers.fieldId(typeId, fieldName);
+        int fieldId = mapper.fieldId(typeId, fieldName);
 
         return new BinaryFieldImpl(typeId, schemaReg, fieldName, fieldId);
     }
