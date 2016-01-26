@@ -17,6 +17,8 @@
 
 namespace Apache.Ignite.Core.Cache
 {
+    using Apache.Ignite.Core.Cache.Configuration;
+
     /// <summary>
     /// Cache entry interface.
     /// </summary>
@@ -27,11 +29,13 @@ namespace Apache.Ignite.Core.Cache
         /// <summary>
         /// Gets the key.
         /// </summary>
+        [QuerySqlField(Name = "_key")]
         TK Key { get; }
 
         /// <summary>
         /// Gets the value.
         /// </summary>
+        [QuerySqlField(Name = "_val")]
         TV Value { get; }
     }
 }

@@ -24,7 +24,6 @@ namespace Apache.Ignite.Linq.Impl
     using System.Linq;
     using System.Linq.Expressions;
     using Apache.Ignite.Core.Cache.Configuration;
-    using Remotion.Linq.Clauses.Expressions;
     using Remotion.Linq.Parsing;
 
     /// <summary>
@@ -55,17 +54,9 @@ namespace Apache.Ignite.Linq.Impl
         /// <summary>
         /// Gets the SQL expression.
         /// </summary>
-        public QueryData GetSqlExpression()
+        private QueryData GetSqlExpression()
         {
             return new QueryData(_resultBuilder.ToString(), _parameters);
-        }
-
-        /** <inheritdoc /> */
-        protected override Expression VisitQuerySourceReference(QuerySourceReferenceExpression expression)
-        {
-            // TODO: Key/Value direct queries?
-            _resultBuilder.Append(expression.ReferencedQuerySource.ItemName);
-            return expression;
         }
 
         /** <inheritdoc /> */
@@ -143,7 +134,7 @@ namespace Apache.Ignite.Linq.Impl
             var queryFieldAttr =
                 expression.Member.GetCustomAttributes(true).OfType<QuerySqlFieldAttribute>().FirstOrDefault();
 
-            var fieldName = (queryFieldAttr == null || string.IsNullOrEmpty(queryFieldAttr.Name))
+            var fieldName = queryFieldAttr == null || string.IsNullOrEmpty(queryFieldAttr.Name)
                 ? expression.Member.Name
                 : queryFieldAttr.Name;
 
