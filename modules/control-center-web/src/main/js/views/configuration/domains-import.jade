@@ -144,9 +144,9 @@ mixin td-ellipses-lbl(w, lbl)
                                                     div.td-ellipsis
                                                         a(ng-if='!table.edit' ng-click='startEditDbTableCache(table)') {{tableActionView(table)}}
                                                         div(style='display: flex' ng-if='table.edit')
-                                                            button.select-toggle.form-control(style='width: 35%; margin-right: 5px' bs-select ng-model='table.action' data-container='false' bs-options='item.value as item.label for item in importCurrentActions')
-                                                            button.select-toggle.form-control(ng-if='table.action==1' style='width: 65%; margin-right: 0' bs-select ng-model='table.template' data-container='false' bs-options='item.value as item.label for item in importCurrentTemplates')
-                                                            button.select-toggle.form-control(ng-if='table.action==2' style='width: 65%; margin-right: 0' bs-select ng-model='table.cache' data-container='false' bs-options='item.value as item.label for item in importCurrentCaches')
+                                                            button.select-toggle.form-control(style='width: 35%; margin-right: 5px' bs-select ng-model='table.action' data-container='false' bs-options='item.value as item.shortLabel for item in importActions')
+                                                            button.select-toggle.form-control(style='width: 65%; margin-right: 0' bs-select ng-model='table.cacheOrTemplate' data-container='false' bs-options='item.value as item.label for item in table.cachesOrTemplates')
+                                                            //- button.select-toggle.form-control(ng-if='table.action==2' style='width: 65%; margin-right: 0' bs-select ng-model='table.cache' data-container='false' bs-options='item.value as item.label for item in importCurrentCaches')
                                                 td
                 .settings-row
                     label Defaults to be applied for filtered tables
@@ -154,9 +154,9 @@ mixin td-ellipses-lbl(w, lbl)
                 .settings-row
                     .col-sm-11
                         .col-sm-6(style='padding-right: 5px')
-                            button.select-toggle.form-control(bs-select ng-model='ui.importCommonAction' data-container='false' bs-options='item.value as item.label for item in importCommonActions')
+                            button.select-toggle.form-control(bs-select ng-model='importCommon.action' data-container='false' bs-options='item.value as item.label for item in importActions')
                         .col-sm-6(style='padding-left: 5px; padding-right: 5px')
-                            button.select-toggle.form-control(bs-select ng-model='ui.importCommonCacheOrTemplate' data-container='false' bs-options='item.value as item.label for item in importCommonCachesOrTemplates')
+                            button.select-toggle.form-control(bs-select ng-model='importCommon.cacheOrTemplate' data-container='false' bs-options='item.value as item.label for item in importCommon.cachesOrTemplates')
                     .col-sm-1(style='padding-left: 5px')
                         button.btn.btn-primary(ng-click='applyDefaults()') Apply
             .import-domain-model-wizard-page(ng-show='importDomain.action == "options"' style='margin-bottom: 176px')
