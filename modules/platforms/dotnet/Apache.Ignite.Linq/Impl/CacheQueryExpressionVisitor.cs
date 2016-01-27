@@ -23,6 +23,7 @@ namespace Apache.Ignite.Linq.Impl
     using System.Collections.Generic;
     using System.Linq;
     using System.Linq.Expressions;
+    using System.Reflection;
     using Apache.Ignite.Core.Cache.Configuration;
     using Remotion.Linq.Parsing;
 
@@ -36,6 +37,17 @@ namespace Apache.Ignite.Linq.Impl
 
         /** */
         private readonly List<object> _parameters = new List<object>();
+
+        /** */
+        private static readonly MethodInfo StringContains = typeof (string).GetMethod("Contains");
+
+        /** */
+        private static readonly MethodInfo StringStartsWith = typeof (string).GetMethod("StartsWith",
+            new[] {typeof (string)});
+
+        /** */
+        private static readonly MethodInfo StringEndsWith = typeof (string).GetMethod("EndsWith",
+            new[] {typeof (string)});
 
         /// <summary>
         /// Gets the SQL statement.
@@ -156,21 +168,37 @@ namespace Apache.Ignite.Linq.Impl
         /** <inheritdoc /> */
         protected override Expression VisitMethodCall(MethodCallExpression expression)
         {
-            // TODO: Other methods - StartsWith, ToLower, ToUpper, ToLowerInvariant, ToUpperInvariant
-            var supportedMethod = typeof(string).GetMethod("Contains");
-            if (expression.Method.Equals(supportedMethod))
-            {
-                _resultBuilder.Append("(");
-                Visit(expression.Object);
-                _resultBuilder.Append(" like ?) ");
-                _parameters.Add(string.Format("%{0}%", GetConstantValue(expression)));
+            if (expression.Method == StringContains)
+                return VisitSqlLike(expression, "%{0}%");
 
-                return expression;
-            }
+            if (expression.Method == StringStartsWith)
+                return VisitSqlLike(expression, "{0}%");
+
+            if (expression.Method == StringEndsWith)
+                return VisitSqlLike(expression, "%{0}");
 
             return base.VisitMethodCall(expression); // throws
         }
 
+        /// <summary>
+        /// Visits the SQL like expression.
+        /// </summary>
+        private Expression VisitSqlLike(MethodCallExpression expression, string likeFormat)
+        {
+            _resultBuilder.Append("(");
+
+            Visit(expression.Object);
+
+            _resultBuilder.Append(" like ?) ");
+
+            _parameters.Add(string.Format(likeFormat, GetConstantValue(expression)));
+
+            return expression;
+        }
+
+        /// <summary>
+        /// Gets the single constant value.
+        /// </summary>
         private static object GetConstantValue(MethodCallExpression expression)
         {
             var arg = expression.Arguments[0] as ConstantExpression;
@@ -179,8 +207,7 @@ namespace Apache.Ignite.Linq.Impl
                 throw new NotSupportedException("Only constant expression is supported inside Contains call: " +
                                                 expression);
 
-            var argValue = arg.Value;
-            return argValue;
+            return arg.Value;
         }
 
         /** <inheritdoc /> */
