@@ -47,30 +47,23 @@ namespace Apache.Ignite.Linq.Impl
             return visitor.GetQuery();
         }
 
-        public QueryData GetQuery()
+        /// <summary>
+        /// Gets the query.
+        /// </summary>
+        /// <returns>Query data.</returns>
+        private QueryData GetQuery()
         {
             var builder = new StringBuilder();
-            var parameters = new List<object>();
 
             Debug.Assert(!string.IsNullOrEmpty(_tableName));
             builder.AppendFormat("from {0} ", _tableName);
 
-            for (int i = 0; i < _where.Count; i++)
-            {
-                var whereClause = _where[i];
-
-                var whereSql = GetSqlExpression(whereClause.Predicate);
-
-                parameters.AddRange(whereSql.Parameters);
-
-                builder.Append(i > 0 ? "and" : "where");
-
-                builder.AppendFormat(" {0} ", whereSql.QueryText);
-            }
+            var parameters = ProcessWhereClauses(builder, _where);
 
             return new QueryData(builder.ToString().TrimEnd(), parameters);
         }
 
+        /** <inheritdoc /> */
         public override void VisitMainFromClause(MainFromClause fromClause, QueryModel queryModel)
         {
             base.VisitMainFromClause(fromClause, queryModel);
@@ -112,9 +105,29 @@ namespace Apache.Ignite.Linq.Impl
         }
 
         /// <summary>
+        /// Processes where clauses.
+        /// </summary>
+        /// <param name="builder">The builder.</param>
+        /// <param name="whereClauses">The where clauses.</param>
+        /// <returns>Parameter values.</returns>
+        private static List<object> ProcessWhereClauses(StringBuilder builder, List<WhereClause> whereClauses)
+        {
+            var parameters = new List<object>(whereClauses.Count);
+            for (var i = 0; i < whereClauses.Count; i++)
+            {
+                var whereSql = GetSqlExpression(whereClauses[i].Predicate);
+                parameters.AddRange(whereSql.Parameters);
+
+                builder.Append(i > 0 ? "and" : "where");
+                builder.AppendFormat(" {0} ", whereSql.QueryText);
+            }
+            return parameters;
+        }
+
+        /// <summary>
         /// Gets the SQL expression.
         /// </summary>
-        private QueryData GetSqlExpression(Expression expression)
+        private static QueryData GetSqlExpression(Expression expression)
         {
             return CacheQueryExpressionVisitor.GetSqlExpression(expression);
         }
