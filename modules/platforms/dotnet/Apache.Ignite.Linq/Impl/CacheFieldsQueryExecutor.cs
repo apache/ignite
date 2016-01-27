@@ -47,13 +47,15 @@ namespace Apache.Ignite.Linq.Impl
         /** <inheritdoc /> */
         public T ExecuteScalar<T>(QueryModel queryModel)
         {
-            throw new System.NotImplementedException();
+            return ExecuteSingle<T>(queryModel, false);
         }
 
         /** <inheritdoc /> */
         public T ExecuteSingle<T>(QueryModel queryModel, bool returnDefaultWhenEmpty)
         {
-            throw new System.NotImplementedException();
+            var collection = ExecuteCollection<T>(queryModel);
+
+            return returnDefaultWhenEmpty ? collection.SingleOrDefault() : collection.Single();
         }
 
         /** <inheritdoc /> */
