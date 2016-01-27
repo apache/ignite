@@ -107,7 +107,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         }
 
         [Test]
-        public void TestFieldsQuery()
+        public void TestSignleFieldQuery()
         {
             var cache = GetCache();
 
@@ -118,8 +118,16 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
             // Single value
             Assert.AreEqual(3, cache.ToQueryable().Where(x => x.Key == 3).Select(x => x.Value.Age).FirstOrDefault());
             Assert.AreEqual(0, cache.ToQueryable().Where(x => x.Key < 0).Select(x => x.Value.Age).FirstOrDefault());
+        }
 
-            // TODO: Multiple fields
+        [Test]
+        public void TestMultiFieldQuery()
+        {
+            var cache = GetCache();
+
+            var data = cache.ToQueryable().Where(x => x.Key < 5).Select(x => new {x.Key, x.Value.Age}).ToArray();
+
+            Assert.AreEqual(4, data.Length);
         }
 
         [Test]
