@@ -55,9 +55,6 @@ public class BinaryClassDescriptor {
     /** */
     public static final Unsafe UNSAFE = GridUnsafe.unsafe();
 
-    /** Apache Ignite base package name. */
-    private static final String OAI_PKG = "org.apache.ignite";
-
     /** */
     @GridToStringExclude
     private final BinaryContext ctx;
@@ -177,7 +174,7 @@ public class BinaryClassDescriptor {
                 mode = serializer != null ? BinaryWriteMode.BINARY : BinaryUtils.mode(cls);
         }
 
-        if (useOptMarshaller && userType && !cls.getName().startsWith(OAI_PKG)) {
+        if (useOptMarshaller && userType && !U.isIgnite(cls) && !U.isJdk(cls)) {
             U.quietAndWarn(ctx.log(), "Class \"" + cls.getName() + "\" cannot be serialized using " +
                 BinaryMarshaller.class.getSimpleName() + " because it either implements Externalizable interface " +
                 "or have writeObject/readObject methods. " + OptimizedMarshaller.class.getSimpleName() + " will be " +
