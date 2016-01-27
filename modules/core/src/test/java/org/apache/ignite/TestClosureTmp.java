@@ -28,7 +28,6 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
-import org.apache.ignite.internal.processors.cache.GridCacheProcessor;
 import org.apache.ignite.internal.processors.cache.IgniteCacheAbstractTest;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
@@ -76,8 +75,9 @@ public class TestClosureTmp extends GridCommonAbstractTest {
         CountDownLatch gridStartedLatch = new CountDownLatch(1);
         CountDownLatch gotExceptionLatch = new CountDownLatch(1);
 
-        GridCacheProcessor.gridStartedLatchStatic = gridStartedLatch;
-        GridCacheProcessor.gotExceptionLatchStatic = gotExceptionLatch;
+        // Enable it to use the test.
+//        GridCacheProcessor.gridStartedLatchStatic = gridStartedLatch;
+//        GridCacheProcessor.gotExceptionLatchStatic = gotExceptionLatch;
 
         IgniteInternalFuture<Long> future = GridTestUtils.runMultiThreadedAsync(new Callable<Object>() {
             @Override public Object call() throws Exception {

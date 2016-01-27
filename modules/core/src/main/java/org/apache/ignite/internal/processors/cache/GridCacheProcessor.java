@@ -192,20 +192,11 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     /** */
     private Map<UUID, DynamicCacheChangeBatch> clientReconnectReqs;
 
-    public static CountDownLatch gridStartedLatchStatic;
-    public static CountDownLatch gotExceptionLatchStatic;
-
-    public CountDownLatch gridStartedLatch;
-    public CountDownLatch gotExceptionLatch;
-
     /**
      * @param ctx Kernal context.
      */
     public GridCacheProcessor(GridKernalContext ctx) {
         super(ctx);
-
-        gridStartedLatch = gridStartedLatchStatic;
-        gotExceptionLatch = gotExceptionLatchStatic;
 
         caches = new ConcurrentHashMap<>();
         jCacheProxies = new ConcurrentHashMap<>();
@@ -786,8 +777,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
                     startCache(cache);
 
-                    sleep();
-
                     jCacheProxies.put(maskNull(name), new IgniteCacheProxy(ctx, cache, null, false));
                 }
             }
@@ -1076,18 +1065,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         if (log.isInfoEnabled())
             log.info("Started cache [name=" + U.maskName(cfg.getName()) + ", mode=" + cfg.getCacheMode() + ']');
-    }
-
-    private void sleep() {
-        if (gridStartedLatch != null) {
-            gridStartedLatch.countDown();
-            try {
-                gotExceptionLatch.await();
-            }
-            catch (InterruptedException e) {
-                e.printStackTrace();
-            }
-        }
     }
 
     /**
