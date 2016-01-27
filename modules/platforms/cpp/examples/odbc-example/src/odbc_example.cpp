@@ -39,6 +39,17 @@ using namespace cache;
 
 using namespace examples;
 
+/**
+ * This example populates cache with sample data and runs several SQL queries
+ * over this data using system ODBC API and Apache Ignite ODBC driver.
+ *
+ * To run this example you should first install ODBC driver as described in
+ * README file for the ODBC driver project.
+ *
+ * After all pre-requirements are fulfilled just build project as described
+ * in README and run resulting file.
+ */
+
 /** Read buffer size. */
 enum { ODBC_BUFFER_SIZE = 1024 };
 
