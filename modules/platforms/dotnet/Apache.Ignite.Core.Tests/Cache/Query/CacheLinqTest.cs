@@ -150,9 +150,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         {
             var cache = GetCache();
 
-            var result = cache.ToQueryable().Where(x => x.Value.Name.Contains("Person")).ToArray();
-
-            Assert.AreEqual(DataSize, result.Length);
+            Assert.AreEqual(DataSize, cache.ToQueryable().Count(x => x.Value.Name.Contains("erson")));
         }
 
         private static ICache<int, LinqPerson> GetCache()
