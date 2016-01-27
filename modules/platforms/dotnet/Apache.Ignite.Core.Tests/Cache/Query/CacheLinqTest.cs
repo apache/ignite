@@ -40,6 +40,9 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         /** */
         private bool _runDbConsole;
 
+        /** */
+        private int _testField;
+
         [TestFixtureSetUp]
         public void FixtureSetUp()
         {
@@ -133,16 +136,31 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
             foreach (var t in data)
                 Assert.AreEqual(t.Age, t.Key);
 
-            // Test method call
+            // Test static method call
             var person = cache.ToQueryable().Where(x => x.Key == 13)
-                .Select(x => FooMethod(x.Value.Age, x.Value.Name)).ToArray().Single();
+                .Select(x => CreatePersonStatic(x.Value.Age, x.Value.Name)).ToArray().Single();
 
             Assert.AreEqual(13, person.Age);
+            
+            // Test instance method call
+            _testField = DateTime.Now.Second;
+
+            var person2 = cache.ToQueryable().Where(x => x.Key == 13)
+                .Select(x => CreatePersonInstance(x.Value.Name)).ToArray().Single();
+
+            Assert.AreEqual(_testField, person2.Age);
+
+            // Test lambda/delegate
         }
 
-        private static LinqPerson FooMethod(int age, string name)
+        private static LinqPerson CreatePersonStatic(int age, string name)
         {
             return new LinqPerson(age, name);
+        }
+
+        private LinqPerson CreatePersonInstance(string name)
+        {
+            return new LinqPerson(_testField, name);
         }
 
         [Test]
