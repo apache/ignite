@@ -67,6 +67,7 @@ namespace Apache.Ignite.Linq.Impl
                     throw new NotSupportedException("TODO: " + resultOperator); // Min, max, etc
             }
 
+            // TODO: Check for NewExpression?
             resultBuilder.Append(GetSqlExpression(queryModel.SelectClause.Selector).QueryText);
 
             resultBuilder.Append(')', parenCount);

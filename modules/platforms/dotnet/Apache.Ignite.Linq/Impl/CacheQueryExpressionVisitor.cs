@@ -172,6 +172,24 @@ namespace Apache.Ignite.Linq.Impl
         }
 
         /** <inheritdoc /> */
+        protected override Expression VisitNew(NewExpression expression)
+        {
+            var first = true;
+
+            foreach (var e in expression.Arguments)
+            {
+                if (!first)
+                    _resultBuilder.Append(", ");
+
+                first = false;
+
+                Visit(e);
+            }
+
+            return expression;
+        }
+
+        /** <inheritdoc /> */
         protected override Exception CreateUnhandledItemException<T>(T unhandledItem, string visitMethod)
         {
             return new NotSupportedException(
