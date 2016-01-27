@@ -17,7 +17,9 @@
 
 namespace Apache.Ignite.Core.Tests.Cache.Query
 {
+    using System;
     using System.Linq;
+    using System.Threading;
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Cache;
     using Apache.Ignite.Core.Cache.Configuration;
@@ -35,9 +37,17 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         /** */
         private const int DataSize = 100;
 
+        /** */
+        private bool _runDbConsole;
+
         [TestFixtureSetUp]
         public void FixtureSetUp()
         {
+            _runDbConsole = false;  // set to true to open H2 console
+
+            if (_runDbConsole)
+                Environment.SetEnvironmentVariable("IGNITE_H2_DEBUG_CONSOLE", "true");
+
             Ignition.Start(new IgniteConfiguration
             {
                 JvmClasspath = TestUtils.CreateTestClasspath(),
@@ -56,6 +66,8 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         [TestFixtureTearDown]
         public void FixtureTearDown()
         {
+            if (_runDbConsole)
+                Thread.Sleep(Timeout.Infinite);
             Ignition.StopAll(true);
         }
 
