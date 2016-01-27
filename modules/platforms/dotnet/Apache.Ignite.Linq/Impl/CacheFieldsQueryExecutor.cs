@@ -59,7 +59,7 @@ namespace Apache.Ignite.Linq.Impl
         /** <inheritdoc /> */
         public IEnumerable<T> ExecuteCollection<T>(QueryModel queryModel)
         {
-            var queryData = CacheQueryModelVisitor.GenerateQuery(queryModel);
+            var queryData = CacheFieldsQueryModelVisitor.GenerateQuery(queryModel);
 
             var query = new SqlFieldsQuery(queryData.QueryText, queryData.Parameters);
 

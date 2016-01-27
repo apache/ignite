@@ -72,6 +72,7 @@
     <Compile Include="CacheExtensions.cs" />
     <Compile Include="Impl\CacheFieldsQueryable.cs" />
     <Compile Include="Impl\CacheFieldsQueryExecutor.cs" />
+    <Compile Include="Impl\CacheFieldsQueryModelVisitor.cs" />
     <Compile Include="Impl\CacheFieldsQueryProvider.cs" />
     <Compile Include="Impl\CacheQueryable.cs" />
     <Compile Include="Impl\CacheQueryExecutor.cs" />

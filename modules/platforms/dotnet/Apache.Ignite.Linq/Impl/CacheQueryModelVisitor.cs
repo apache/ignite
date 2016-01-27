@@ -54,9 +54,17 @@ namespace Apache.Ignite.Linq.Impl
         /// Gets the query.
         /// </summary>
         /// <returns>Query data.</returns>
-        private QueryData GetQuery()
+        protected QueryData GetQuery()
         {
-            return new QueryData(_builder.ToString().TrimEnd(), _parameters);
+            return new QueryData(Builder.ToString().TrimEnd(), _parameters);
+        }
+
+        /// <summary>
+        /// Gets the builder.
+        /// </summary>
+        protected StringBuilder Builder
+        {
+            get { return _builder; }
         }
 
         /** <inheritdoc /> */
@@ -71,7 +79,7 @@ namespace Apache.Ignite.Linq.Impl
 
             var tableName = cacheEntryType.GetGenericArguments()[1].Name;
 
-            _builder.AppendFormat("from {0} ", tableName);
+            Builder.AppendFormat("from {0} ", tableName);
         }
 
         /** <inheritdoc /> */
@@ -81,20 +89,10 @@ namespace Apache.Ignite.Linq.Impl
 
             var whereSql = GetSqlExpression(whereClause.Predicate);
 
-            _builder.Append(_parameters.Any() ? "and" : "where");
-            _builder.AppendFormat(" {0} ", whereSql.QueryText);
+            Builder.Append(_parameters.Any() ? "and" : "where");
+            Builder.AppendFormat(" {0} ", whereSql.QueryText);
 
             _parameters.AddRange(whereSql.Parameters);
-        }
-
-        /** <inheritdoc /> */
-        public override void VisitSelectClause(SelectClause selectClause, QueryModel queryModel)
-        {
-            base.VisitSelectClause(selectClause, queryModel);
-
-            // TODO
-            // Only queries starting with 'SELECT *' are supported or use SqlFieldsQuery instead: select _key, _val from LinqPerson where (age1 < ?)
-            //_builder.Append("select _key, _val");
         }
 
         /** <inheritdoc /> */
@@ -111,7 +109,7 @@ namespace Apache.Ignite.Linq.Impl
         /// <summary>
         /// Gets the SQL expression.
         /// </summary>
-        private static QueryData GetSqlExpression(Expression expression)
+        protected static QueryData GetSqlExpression(Expression expression)
         {
             return CacheQueryExpressionVisitor.GetSqlExpression(expression);
         }
