@@ -97,7 +97,7 @@ public class ClientTcpSslAuthenticationSelfTest extends GridCommonAbstractTest {
     private GridClientImpl createClient() throws Exception {
         GridClientConfiguration cfg = new GridClientConfiguration();
 
-        cfg.setServers(Arrays.asList(U.getLocalHost().getHostAddress() + ":" + REST_TCP_PORT));
+        cfg.setServers(U.asList(U.getLocalHost().getHostAddress() + ":" + REST_TCP_PORT));
         cfg.setBalancer(new GridClientRoundRobinBalancer());
 
         GridSslBasicContextFactory factory = (GridSslBasicContextFactory)GridTestUtils.sslContextFactory();

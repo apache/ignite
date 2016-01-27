@@ -1107,7 +1107,7 @@ public class IgniteHadoopFileSystem extends FileSystem {
 
                 if (LOG.isDebugEnabled())
                     LOG.debug("Fetched file locations [path=" + path + ", fetchTime=" +
-                        (System.currentTimeMillis() - now) + ", locations=" + Arrays.asList(arr) + ']');
+                        (System.currentTimeMillis() - now) + ", locations=" + U.asList(arr) + ']');
 
                 return arr;
             }
@@ -1257,7 +1257,7 @@ public class IgniteHadoopFileSystem extends FileSystem {
             @Override public String toString() {
                 try {
                     return "BlockLocation [offset=" + getOffset() + ", length=" + getLength() +
-                        ", hosts=" + Arrays.asList(getHosts()) + ", names=" + Arrays.asList(getNames()) + ']';
+                        ", hosts=" + U.asList(getHosts()) + ", names=" + U.asList(getNames()) + ']';
                 }
                 catch (IOException e) {
                     throw new RuntimeException(e);

@@ -153,7 +153,7 @@ import org.jetbrains.annotations.Nullable;
  *
  * DeploymentSpi deploymentSpi = new UriDeploymentSpi();
  *
- * deploymentSpi.setUriList(Arrays.asList("file:///home/username/ignite/work/my_deployment/file"));
+ * deploymentSpi.setUriList(U.asList("file:///home/username/ignite/work/my_deployment/file"));
  *
  * cfg.setDeploymentSpi(deploymentSpi);
  *
@@ -266,7 +266,7 @@ import org.jetbrains.annotations.Nullable;
  * IgniteConfiguration cfg = new IgniteConfiguration();
  *
  * // Set URIs.
- * deploySpi.setUriList(Arrays.asList("http://www.site.com/tasks",
+ * deploySpi.setUriList(U.asList("http://www.site.com/tasks",
  *     "file://freq=20000@localhost/c:/Program files/gg-deployment"));
  *
  * // Override temporary directory path.

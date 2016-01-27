@@ -40,6 +40,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Random;
 import java.util.UUID;
+
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cluster.ClusterGroup;
@@ -144,7 +145,7 @@ public class IgniteUtilsSelfTest extends GridCommonAbstractTest {
      */
     public void testByteArray2String() throws Exception {
         assertEquals("{0x0A,0x14,0x1E,0x28,0x32,0x3C,0x46,0x50,0x5A}",
-            U.byteArray2String(new byte[]{10, 20, 30, 40, 50, 60, 70, 80, 90}, "0x%02X", ",0x%02X"));
+            U.byteArray2String(new byte[] {10, 20, 30, 40, 50, 60, 70, 80, 90}, "0x%02X", ",0x%02X"));
     }
 
     /**
@@ -323,7 +324,7 @@ public class IgniteUtilsSelfTest extends GridCommonAbstractTest {
 
             arr = new SelfReferencedJob[] {this, this};
 
-            col = Arrays.asList(this, this, this);
+            col = U.asList(this, this, this);
 
             GridTestKernalContext ctx = newContext();
 
@@ -589,14 +590,15 @@ public class IgniteUtilsSelfTest extends GridCommonAbstractTest {
      *
      */
     public void testUnique() {
-        int[][][] arrays = new int[][][]{
-            new int[][]{EMPTY, EMPTY, EMPTY},
-            new int[][]{new int[]{1, 2, 3}, EMPTY, new int[]{1, 2, 3}},
-            new int[][]{new int[]{1, 2, 3}, new int[]{1, 2, 3}, new int[]{1, 2, 3}},
-            new int[][]{new int[]{1, 2, 3}, new int[]{1, 3}, new int[]{1, 2, 3}},
-            new int[][]{new int[]{1, 2, 30, 40, 50}, new int[]{2, 40}, new int[]{1, 2, 30, 40, 50}},
-            new int[][]{new int[]{-100, -13, 1, 2, 5, 30, 40, 50}, new int[]{1, 2, 6, 100, 113},
-                new int[]{-100, -13, 1, 2, 5, 6, 30, 40, 50, 100, 113}}
+        int[][][] arrays = new int[][][] {
+            new int[][] {EMPTY, EMPTY, EMPTY},
+            new int[][] {new int[] {1, 2, 3}, EMPTY, new int[] {1, 2, 3}},
+            new int[][] {new int[] {1, 2, 3}, new int[] {1, 2, 3}, new int[] {1, 2, 3}},
+            new int[][] {new int[] {1, 2, 3}, new int[] {1, 3}, new int[] {1, 2, 3}},
+            new int[][] {new int[] {1, 2, 30, 40, 50}, new int[] {2, 40}, new int[] {1, 2, 30, 40, 50}},
+            new int[][] {
+                new int[] {-100, -13, 1, 2, 5, 30, 40, 50}, new int[] {1, 2, 6, 100, 113},
+                new int[] {-100, -13, 1, 2, 5, 6, 30, 40, 50, 100, 113}}
         };
 
         for (int[][] a : arrays) {
@@ -605,40 +607,40 @@ public class IgniteUtilsSelfTest extends GridCommonAbstractTest {
             assertArrayEquals(a[2], U.unique(a[1], a[1].length, a[0], a[0].length));
         }
 
-        assertArrayEquals(new int[]{1, 2, 3, 4}, U.unique(new int[]{1, 2, 3, 8}, 3, new int[]{2, 4, 5}, 2));
-        assertArrayEquals(new int[]{2, 4}, U.unique(new int[]{1, 2, 3, 8}, 0, new int[]{2, 4, 5}, 2));
-        assertArrayEquals(new int[]{1, 2, 4, 5}, U.unique(new int[]{1, 2, 3, 8}, 2, new int[]{2, 4, 5, 6}, 3));
-        assertArrayEquals(new int[]{1, 2}, U.unique(new int[]{1, 2, 3, 8}, 2, new int[]{2, 4, 5, 6}, 0));
+        assertArrayEquals(new int[] {1, 2, 3, 4}, U.unique(new int[] {1, 2, 3, 8}, 3, new int[] {2, 4, 5}, 2));
+        assertArrayEquals(new int[] {2, 4}, U.unique(new int[] {1, 2, 3, 8}, 0, new int[] {2, 4, 5}, 2));
+        assertArrayEquals(new int[] {1, 2, 4, 5}, U.unique(new int[] {1, 2, 3, 8}, 2, new int[] {2, 4, 5, 6}, 3));
+        assertArrayEquals(new int[] {1, 2}, U.unique(new int[] {1, 2, 3, 8}, 2, new int[] {2, 4, 5, 6}, 0));
     }
 
     /**
      *
      */
     public void testDifference() {
-        int[][][] arrays = new int[][][]{
-            new int[][]{EMPTY, EMPTY, EMPTY},
-            new int[][]{new int[]{1, 2, 3}, EMPTY, new int[]{1, 2, 3}},
-            new int[][]{EMPTY, new int[]{1, 2, 3}, EMPTY},
-            new int[][]{new int[]{1, 2, 3}, new int[]{1, 2, 3}, EMPTY},
-            new int[][]{new int[]{-100, -50, 1, 2, 3}, new int[]{-50, -1, 1, 3}, new int[]{-100, 2}},
-            new int[][]{new int[]{-100, 1, 2, 30, 40, 50}, new int[]{2, 40}, new int[]{-100, 1, 30, 50}},
-            new int[][]{new int[]{-1, 1, 2, 30, 40, 50}, new int[]{1, 2, 100, 113}, new int[]{-1, 30, 40, 50}}
+        int[][][] arrays = new int[][][] {
+            new int[][] {EMPTY, EMPTY, EMPTY},
+            new int[][] {new int[] {1, 2, 3}, EMPTY, new int[] {1, 2, 3}},
+            new int[][] {EMPTY, new int[] {1, 2, 3}, EMPTY},
+            new int[][] {new int[] {1, 2, 3}, new int[] {1, 2, 3}, EMPTY},
+            new int[][] {new int[] {-100, -50, 1, 2, 3}, new int[] {-50, -1, 1, 3}, new int[] {-100, 2}},
+            new int[][] {new int[] {-100, 1, 2, 30, 40, 50}, new int[] {2, 40}, new int[] {-100, 1, 30, 50}},
+            new int[][] {new int[] {-1, 1, 2, 30, 40, 50}, new int[] {1, 2, 100, 113}, new int[] {-1, 30, 40, 50}}
         };
 
         for (int[][] a : arrays)
             assertArrayEquals(a[2], U.difference(a[0], a[0].length, a[1], a[1].length));
 
-        assertArrayEquals(new int[]{1, 2}, U.difference(new int[]{1, 2, 30, 40, 50}, 3, new int[]{30, 40}, 2));
-        assertArrayEquals(EMPTY, U.difference(new int[]{1, 2, 30, 40, 50}, 0, new int[]{30, 40}, 2));
-        assertArrayEquals(new int[]{1, 2, 40}, U.difference(new int[]{1, 2, 30, 40, 50}, 4, new int[]{30, 40}, 1));
-        assertArrayEquals(new int[]{1, 2, 30, 40}, U.difference(new int[]{1, 2, 30, 40, 50}, 4, new int[]{30, 40}, 0));
+        assertArrayEquals(new int[] {1, 2}, U.difference(new int[] {1, 2, 30, 40, 50}, 3, new int[] {30, 40}, 2));
+        assertArrayEquals(EMPTY, U.difference(new int[] {1, 2, 30, 40, 50}, 0, new int[] {30, 40}, 2));
+        assertArrayEquals(new int[] {1, 2, 40}, U.difference(new int[] {1, 2, 30, 40, 50}, 4, new int[] {30, 40}, 1));
+        assertArrayEquals(new int[] {1, 2, 30, 40}, U.difference(new int[] {1, 2, 30, 40, 50}, 4, new int[] {30, 40}, 0));
     }
 
     /**
      *
      */
     public void testCopyIfExceeded() {
-        int[][] arrays = new int[][]{new int[]{13, 14, 17, 11}, new int[]{13}, EMPTY};
+        int[][] arrays = new int[][] {new int[] {13, 14, 17, 11}, new int[] {13}, EMPTY};
 
         for (int[] a : arrays) {
             int[] b = Arrays.copyOf(a, a.length);
@@ -656,17 +658,17 @@ public class IgniteUtilsSelfTest extends GridCommonAbstractTest {
      */
     public void testIsIncreasingArray() {
         assertTrue(U.isIncreasingArray(EMPTY, 0));
-        assertTrue(U.isIncreasingArray(new int[]{Integer.MIN_VALUE, -10, 1, 13, Integer.MAX_VALUE}, 5));
-        assertTrue(U.isIncreasingArray(new int[]{1, 2, 3, -1, 5}, 0));
-        assertTrue(U.isIncreasingArray(new int[]{1, 2, 3, -1, 5}, 3));
-        assertFalse(U.isIncreasingArray(new int[]{1, 2, 3, -1, 5}, 4));
-        assertFalse(U.isIncreasingArray(new int[]{1, 2, 3, -1, 5}, 5));
-        assertFalse(U.isIncreasingArray(new int[]{1, 2, 3, 3, 5}, 4));
-        assertTrue(U.isIncreasingArray(new int[]{1, -1}, 1));
-        assertFalse(U.isIncreasingArray(new int[]{1, -1}, 2));
-        assertTrue(U.isIncreasingArray(new int[]{13, 13, 13}, 1));
-        assertFalse(U.isIncreasingArray(new int[]{13, 13, 13}, 2));
-        assertFalse(U.isIncreasingArray(new int[]{13, 13, 13}, 3));
+        assertTrue(U.isIncreasingArray(new int[] {Integer.MIN_VALUE, -10, 1, 13, Integer.MAX_VALUE}, 5));
+        assertTrue(U.isIncreasingArray(new int[] {1, 2, 3, -1, 5}, 0));
+        assertTrue(U.isIncreasingArray(new int[] {1, 2, 3, -1, 5}, 3));
+        assertFalse(U.isIncreasingArray(new int[] {1, 2, 3, -1, 5}, 4));
+        assertFalse(U.isIncreasingArray(new int[] {1, 2, 3, -1, 5}, 5));
+        assertFalse(U.isIncreasingArray(new int[] {1, 2, 3, 3, 5}, 4));
+        assertTrue(U.isIncreasingArray(new int[] {1, -1}, 1));
+        assertFalse(U.isIncreasingArray(new int[] {1, -1}, 2));
+        assertTrue(U.isIncreasingArray(new int[] {13, 13, 13}, 1));
+        assertFalse(U.isIncreasingArray(new int[] {13, 13, 13}, 2));
+        assertFalse(U.isIncreasingArray(new int[] {13, 13, 13}, 3));
     }
 
     /**
@@ -674,17 +676,17 @@ public class IgniteUtilsSelfTest extends GridCommonAbstractTest {
      */
     public void testIsNonDecreasingArray() {
         assertTrue(U.isNonDecreasingArray(EMPTY, 0));
-        assertTrue(U.isNonDecreasingArray(new int[]{Integer.MIN_VALUE, -10, 1, 13, Integer.MAX_VALUE}, 5));
-        assertTrue(U.isNonDecreasingArray(new int[]{1, 2, 3, -1, 5}, 0));
-        assertTrue(U.isNonDecreasingArray(new int[]{1, 2, 3, -1, 5}, 3));
-        assertFalse(U.isNonDecreasingArray(new int[]{1, 2, 3, -1, 5}, 4));
-        assertFalse(U.isNonDecreasingArray(new int[]{1, 2, 3, -1, 5}, 5));
-        assertTrue(U.isNonDecreasingArray(new int[]{1, 2, 3, 3, 5}, 4));
-        assertTrue(U.isNonDecreasingArray(new int[]{1, -1}, 1));
-        assertFalse(U.isNonDecreasingArray(new int[]{1, -1}, 2));
-        assertTrue(U.isNonDecreasingArray(new int[]{13, 13, 13}, 1));
-        assertTrue(U.isNonDecreasingArray(new int[]{13, 13, 13}, 2));
-        assertTrue(U.isNonDecreasingArray(new int[]{13, 13, 13}, 3));
+        assertTrue(U.isNonDecreasingArray(new int[] {Integer.MIN_VALUE, -10, 1, 13, Integer.MAX_VALUE}, 5));
+        assertTrue(U.isNonDecreasingArray(new int[] {1, 2, 3, -1, 5}, 0));
+        assertTrue(U.isNonDecreasingArray(new int[] {1, 2, 3, -1, 5}, 3));
+        assertFalse(U.isNonDecreasingArray(new int[] {1, 2, 3, -1, 5}, 4));
+        assertFalse(U.isNonDecreasingArray(new int[] {1, 2, 3, -1, 5}, 5));
+        assertTrue(U.isNonDecreasingArray(new int[] {1, 2, 3, 3, 5}, 4));
+        assertTrue(U.isNonDecreasingArray(new int[] {1, -1}, 1));
+        assertFalse(U.isNonDecreasingArray(new int[] {1, -1}, 2));
+        assertTrue(U.isNonDecreasingArray(new int[] {13, 13, 13}, 1));
+        assertTrue(U.isNonDecreasingArray(new int[] {13, 13, 13}, 2));
+        assertTrue(U.isNonDecreasingArray(new int[] {13, 13, 13}, 3));
     }
 
     /**
@@ -712,7 +714,6 @@ public class IgniteUtilsSelfTest extends GridCommonAbstractTest {
         assertTrue(ips.get(ips.size() - 2).getAddress().isLoopbackAddress());
         assertTrue(ips.get(ips.size() - 1).isUnresolved());
     }
-
 
     public void testMD5Calculation() throws Exception {
         String md5 = U.calculateMD5(new ByteArrayInputStream("Corrupted information.".getBytes()));
@@ -751,18 +752,54 @@ public class IgniteUtilsSelfTest extends GridCommonAbstractTest {
     }
 
     @Documented @Retention(RetentionPolicy.RUNTIME) @Target(ElementType.TYPE)
-    private @interface Ann1 {}
+    private @interface Ann1 {
+    }
 
     @Documented @Retention(RetentionPolicy.RUNTIME) @Target(ElementType.TYPE)
-    private @interface Ann2 {}
+    private @interface Ann2 {
+    }
 
-    private static class A1 implements I3, I5 {}
-    private static class A2 extends A1 {}
-    private static class A3 implements I5 {}
+    private static class A1 implements I3, I5 {
+    }
 
-    @Ann1 private interface I1 {}
-    private interface I2 extends I1 {}
-    private interface I3 extends I2 {}
-    @Ann2 private interface I4 {}
-    private interface I5 extends I4 {}
+    private static class A2 extends A1 {
+    }
+
+    private static class A3 implements I5 {
+    }
+
+    @Ann1 private interface I1 {
+    }
+
+    private interface I2 extends I1 {
+    }
+
+    private interface I3 extends I2 {
+    }
+
+    @Ann2 private interface I4 {
+    }
+
+    private interface I5 extends I4 {
+    }
+
+    public void testAsList() {
+        List list = U.asList("a");
+        assert list.getClass().getName().contains("Singleton");
+
+        list = U.asList(new String[] {"a"});
+        assert list.getClass().getName().contains("Singleton");
+
+        list = U.asList("a", "b");
+        assert list.getClass().getName().contains("Doubleton");
+
+        list = U.asList(new String[] {"a", "b"});
+        assert list.getClass().getName().contains("Doubleton");
+
+        list = U.asList("a", "b", "c");
+        assert !list.getClass().getName().contains("Singleton") && !list.getClass().getName().contains("Doubleton");
+
+        list = U.asList(new String[] {"a", "b", "c"});
+        assert !list.getClass().getName().contains("Singleton") && !list.getClass().getName().contains("Doubleton");
+    }
 }

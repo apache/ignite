@@ -26,6 +26,7 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
@@ -175,7 +176,7 @@ public class GridCacheMvccSelfTest extends GridCommonAbstractTest {
 
         entry.orderCompleted(
             new GridCacheVersion(1, 0, 2, 0, 0),
-            Arrays.asList(new GridCacheVersion(1, 0, 3, 4, 0), ver2, new GridCacheVersion(1, 0, 5, 6, 0)),
+            U.asList(new GridCacheVersion(1, 0, 3, 4, 0), ver2, new GridCacheVersion(1, 0, 5, 6, 0)),
             Collections.<GridCacheVersion>emptyList()
         );
 
@@ -208,7 +209,7 @@ public class GridCacheMvccSelfTest extends GridCommonAbstractTest {
         // Check order.
         checkOrder(cands, ver1, ver2, ver5, ver3, ver4);
 
-        entry.orderCompleted(ver3, Arrays.asList(ver2, ver5), Collections.<GridCacheVersion>emptyList());
+        entry.orderCompleted(ver3, U.asList(ver2, ver5), Collections.<GridCacheVersion>emptyList());
 
         cands = entry.remoteMvccSnapshot();
 
@@ -542,8 +543,8 @@ public class GridCacheMvccSelfTest extends GridCommonAbstractTest {
         // No reordering happens.
         checkOrder(entry.remoteMvccSnapshot(), ver1, ver2, ver3, ver4, ver5, ver7, ver8, ver6);
 
-        List<GridCacheVersion> committed = Arrays.asList(ver4, ver7);
-        List<GridCacheVersion> rolledback = Arrays.asList(ver6);
+        List<GridCacheVersion> committed = U.asList(ver4, ver7);
+        List<GridCacheVersion> rolledback = U.asList(ver6);
 
         entry.orderCompleted(ver2, committed, rolledback);
 
@@ -589,7 +590,7 @@ public class GridCacheMvccSelfTest extends GridCommonAbstractTest {
         entry.addRemote(node2, 6, ver6, 0, false, true);
         entry.addRemote(node2, 7, ver7, 0, false, true);
 
-        List<GridCacheVersion> committed = Arrays.asList(ver4, ver6, ver2);
+        List<GridCacheVersion> committed = U.asList(ver4, ver6, ver2);
 
         entry.orderCompleted(ver2, committed, Collections.<GridCacheVersion>emptyList());
 
@@ -631,7 +632,7 @@ public class GridCacheMvccSelfTest extends GridCommonAbstractTest {
         entry.addRemote(node2, 6, ver6, 0, false, true);
         entry.addRemote(node2, 7, ver7, 0, false, true);
 
-        List<GridCacheVersion> completed = Arrays.asList(ver4, ver6);
+        List<GridCacheVersion> completed = U.asList(ver4, ver6);
 
         entry.orderCompleted(ver2, completed, Collections.<GridCacheVersion>emptyList());
 
@@ -675,7 +676,7 @@ public class GridCacheMvccSelfTest extends GridCommonAbstractTest {
         entry.addRemote(node2, 4, ver4, 0, false, false);
         entry.addRemote(node1, 5, ver5, 0, false, false);
 
-        List<GridCacheVersion> committed = Arrays.asList(ver6, ver7);
+        List<GridCacheVersion> committed = U.asList(ver6, ver7);
 
         entry.orderCompleted(ver4, committed, Collections.<GridCacheVersion>emptyList());
 
@@ -716,7 +717,7 @@ public class GridCacheMvccSelfTest extends GridCommonAbstractTest {
         entry.addRemote(node2, 6, ver6, 0, false, false);
         entry.addRemote(node2, 7, ver7, 0, false, false);
 
-        List<GridCacheVersion> committed = Arrays.asList(ver4, ver6, ver3);
+        List<GridCacheVersion> committed = U.asList(ver4, ver6, ver3);
 
         entry.orderCompleted(ver1, committed, Collections.<GridCacheVersion>emptyList());
 
@@ -756,7 +757,7 @@ public class GridCacheMvccSelfTest extends GridCommonAbstractTest {
         entry.addRemote(node2, 4, ver4, 0, false, false);
         entry.addRemote(node1, 5, ver5, 0, false, false);
 
-        List<GridCacheVersion> committed = Arrays.asList(ver6, ver7);
+        List<GridCacheVersion> committed = U.asList(ver6, ver7);
 
         entry.orderCompleted(ver1, committed, Collections.<GridCacheVersion>emptyList());
 
@@ -795,7 +796,7 @@ public class GridCacheMvccSelfTest extends GridCommonAbstractTest {
         entry.addRemote(node2, 4, ver4, 0, false, false);
         entry.addRemote(node1, 5, ver5, 0, false, false);
 
-        List<GridCacheVersion> committed = Arrays.asList(ver6, ver7);
+        List<GridCacheVersion> committed = U.asList(ver6, ver7);
 
         entry.orderCompleted(ver5, committed, Collections.<GridCacheVersion>emptyList());
 
@@ -836,7 +837,7 @@ public class GridCacheMvccSelfTest extends GridCommonAbstractTest {
         entry.addRemote(node2, 6, ver6, 0, false, true);
         entry.addRemote(node2, 7, ver7, 0, false, true);
 
-        List<GridCacheVersion> committed = Arrays.asList(ver6, ver4);
+        List<GridCacheVersion> committed = U.asList(ver6, ver4);
 
         entry.orderCompleted(ver2, committed, Collections.<GridCacheVersion>emptyList());
 
@@ -874,7 +875,7 @@ public class GridCacheMvccSelfTest extends GridCommonAbstractTest {
         entry.addRemote(node1, 3, ver3, 0, false, true);
         entry.addRemote(node2, 4, ver4, 0, false, true);
 
-        List<GridCacheVersion> committed = Arrays.asList(ver6, ver5, ver7);
+        List<GridCacheVersion> committed = U.asList(ver6, ver5, ver7);
 
         entry.orderCompleted(ver2, committed, Collections.<GridCacheVersion>emptyList());
 
@@ -912,7 +913,7 @@ public class GridCacheMvccSelfTest extends GridCommonAbstractTest {
         entry.addRemote(node2, 6, ver6, 0, false, true);
         entry.addRemote(node2, 7, ver7, 0, false, true);
 
-        List<GridCacheVersion> committed = Arrays.asList(ver4, ver6, ver3);
+        List<GridCacheVersion> committed = U.asList(ver4, ver6, ver3);
 
         entry.orderCompleted(ver1, committed, Collections.<GridCacheVersion>emptyList());
 
@@ -953,7 +954,7 @@ public class GridCacheMvccSelfTest extends GridCommonAbstractTest {
         entry.addRemote(node1, 6, ver6, 0, false, true);
         entry.addRemote(node1, 7, ver7, 0, false, true);
 
-        List<GridCacheVersion> committed = Arrays.asList(ver2, ver3);
+        List<GridCacheVersion> committed = U.asList(ver2, ver3);
 
         entry.orderCompleted(ver1, committed, Collections.<GridCacheVersion>emptyList());
 
@@ -992,7 +993,7 @@ public class GridCacheMvccSelfTest extends GridCommonAbstractTest {
         entry.addRemote(node1, 3, ver3, 0, false, true);
         entry.addRemote(node2, 4, ver4, 0, false, true);
 
-        List<GridCacheVersion> committed = Arrays.asList(ver6, ver7);
+        List<GridCacheVersion> committed = U.asList(ver6, ver7);
 
         entry.orderCompleted(ver5, committed, Collections.<GridCacheVersion>emptyList());
 
@@ -1053,7 +1054,7 @@ public class GridCacheMvccSelfTest extends GridCommonAbstractTest {
 
         entry.orderCompleted(
             ver2 /*local version.*/,
-            Arrays.asList(new GridCacheVersion(1, 0, 1, 2, 0), ver3, new GridCacheVersion(1, 0, 5, 6, 0)),
+            U.asList(new GridCacheVersion(1, 0, 1, 2, 0), ver3, new GridCacheVersion(1, 0, 5, 6, 0)),
             Collections.<GridCacheVersion>emptyList()
         );
 

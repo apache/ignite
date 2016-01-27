@@ -30,6 +30,7 @@ import org.apache.ignite.compute.ComputeJobResult;
 import org.apache.ignite.compute.ComputeTaskFuture;
 import org.apache.ignite.compute.ComputeTaskSplitAdapter;
 import org.apache.ignite.internal.util.typedef.CI1;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.resources.JobContextResource;
@@ -156,7 +157,7 @@ public class GridMergeSortLoadTask extends ComputeTaskSplitAdapter<int[], int[]>
         System.arraycopy(arr, 0, a1, 0, len1);
         System.arraycopy(arr, len1, a2, 0, len2);
 
-        return Arrays.asList(a1, a2);
+        return U.asList(a1, a2);
     }
 
     /**

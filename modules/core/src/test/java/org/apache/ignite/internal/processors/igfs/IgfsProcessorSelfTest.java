@@ -405,7 +405,7 @@ public class IgfsProcessorSelfTest extends IgfsCommonAbstractTest {
 
         assertEquals(Collections.<IgfsPath>emptyList(), igfs.listPaths(path("/A2")));
 
-        assertEquals(Arrays.asList(path("/A"), path("/A1"), path("/A2")), sorted(igfs.listPaths(path("/"))));
+        assertEquals(U.asList(path("/A"), path("/A1"), path("/A2")), sorted(igfs.listPaths(path("/"))));
 
         // Delete root when it is not empty:
         igfs.delete(path("/"), true);
@@ -517,7 +517,7 @@ public class IgfsProcessorSelfTest extends IgfsCommonAbstractTest {
         // "I like to move it, move it..."
         //
 
-        Collection<IgniteBiTuple<String, String>> chain = Arrays.asList(
+        Collection<IgniteBiTuple<String, String>> chain = U.asList(
             F.t("/A/B1/C1", "/A/B1/C2"),
             F.t("/A/B1", "/A/B2"),
             F.t("/A", "/Q"),
@@ -576,9 +576,9 @@ public class IgfsProcessorSelfTest extends IgfsCommonAbstractTest {
         }
 
         // List items.
-        assertEquals(Arrays.asList(path("/A")), sorted(igfs.listPaths(root)));
-        assertEquals(Arrays.asList(path("/A/B1")), sorted(igfs.listPaths(path("/A"))));
-        assertEquals(Arrays.asList(path("/A/B1/C1")), sorted(igfs.listPaths(path("/A/B1"))));
+        assertEquals(U.asList(path("/A")), sorted(igfs.listPaths(root)));
+        assertEquals(U.asList(path("/A/B1")), sorted(igfs.listPaths(path("/A"))));
+        assertEquals(U.asList(path("/A/B1/C1")), sorted(igfs.listPaths(path("/A/B1"))));
 
         String text = "Test long number: " + rnd.nextLong();
 
@@ -632,7 +632,7 @@ public class IgfsProcessorSelfTest extends IgfsCommonAbstractTest {
         igfs.mkdirs(path("/A/B1/C1"));
 
         // Error - path points to directory.
-        for (String path : Arrays.asList("/A", "/A/B1", "/A/B1/C1")) {
+        for (String path : U.asList("/A", "/A/B1", "/A/B1/C1")) {
             assertCreateFails(path, false, "Failed to create file (path points to an existing directory)");
             assertCreateFails(path, true, "Failed to create file (path points to an existing directory)");
             assertAppendFails(path, false, "Failed to open file (path points to an existing directory)");
@@ -644,7 +644,7 @@ public class IgfsProcessorSelfTest extends IgfsCommonAbstractTest {
         String text2 = "Test long number #2: " + rnd.nextLong();
 
         // Error - parent does not exist.
-        for (String path : Arrays.asList("/A/a", "/A/B1/a", "/A/B1/C1/a")) {
+        for (String path : U.asList("/A/a", "/A/B1/a", "/A/B1/C1/a")) {
             // Error - file doesn't exist.
             assertOpenFails(path, "File not found");
             assertAppendFails(path, false, "File not found");
@@ -982,6 +982,6 @@ public class IgfsProcessorSelfTest extends IgfsCommonAbstractTest {
         Arrays.sort(item);
         Collections.sort(names);
 
-        assertEquals(Arrays.asList(item), names);
+        assertEquals(U.asList(item), names);
     }
 }

@@ -128,7 +128,7 @@ class JdbcUtils {
         map.put("cache", cacheName);
         map.put("sql", sql);
         map.put("timeout", timeout);
-        map.put("args", args != null ? Arrays.asList(args) : Collections.emptyList());
+        map.put("args", args != null ? U.asList(args) : Collections.emptyList());
         map.put("pageSize", pageSize);
         map.put("maxRows", maxRows);
 

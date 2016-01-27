@@ -46,7 +46,7 @@ public class ClusterGroupHostsSelfTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        Collection<String> hostNames = Arrays.asList("h_1", "h_2", "h_3");
+        Collection<String> hostNames = U.asList("h_1", "h_2", "h_3");
 
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 

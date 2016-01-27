@@ -50,7 +50,7 @@ public class IgniteKarafFeaturesInstallationTest extends AbstractIgniteKarafTest
      */
     @Configuration
     public Option[] config() {
-        List<Option> options = new ArrayList<>(Arrays.asList(baseConfig()));
+        List<Option> options = new ArrayList<>(U.asList(baseConfig()));
 
         options.add(KarafDistributionOption.features(CAMEL_REPO_URI));
 
@@ -95,6 +95,6 @@ public class IgniteKarafFeaturesInstallationTest extends AbstractIgniteKarafTest
      * @return Features list.
      */
     @Override protected List<String> featuresToInstall() {
-        return Arrays.asList("ignite-all", "ignite-hibernate");
+        return U.asList("ignite-all", "ignite-hibernate");
     }
 }

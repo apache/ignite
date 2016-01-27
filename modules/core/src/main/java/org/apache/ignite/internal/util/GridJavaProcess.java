@@ -137,7 +137,7 @@ public final class GridJavaProcess {
         gjProc.procKilledC = procKilledC;
 
         List<String> procParams = params == null || params.isEmpty() ?
-            Collections.<String>emptyList() : Arrays.asList(params.split(" "));
+            Collections.<String>emptyList() : U.asList(params.split(" "));
 
         List<String> procCommands = new ArrayList<>();
 

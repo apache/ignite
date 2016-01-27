@@ -75,14 +75,14 @@ public class CacheClientBinaryQueryExample {
             orgCacheCfg.setCacheMode(CacheMode.PARTITIONED);
             orgCacheCfg.setName(ORGANIZATION_CACHE_NAME);
 
-            orgCacheCfg.setQueryEntities(Arrays.asList(createOrganizationQueryEntity()));
+            orgCacheCfg.setQueryEntities(U.asList(createOrganizationQueryEntity()));
 
             CacheConfiguration<EmployeeKey, Employee> employeeCacheCfg = new CacheConfiguration<>();
 
             employeeCacheCfg.setCacheMode(CacheMode.PARTITIONED);
             employeeCacheCfg.setName(EMPLOYEE_CACHE_NAME);
 
-            employeeCacheCfg.setQueryEntities(Arrays.asList(createEmployeeQueryEntity()));
+            employeeCacheCfg.setQueryEntities(U.asList(createEmployeeQueryEntity()));
 
             try (IgniteCache<Integer, Organization> orgCache = ignite.getOrCreateCache(orgCacheCfg);
                  IgniteCache<EmployeeKey, Employee> employeeCache = ignite.getOrCreateCache(employeeCacheCfg)
@@ -146,7 +146,7 @@ public class CacheClientBinaryQueryExample {
 
         employeeEntity.setFields(fields);
 
-        employeeEntity.setIndexes(Arrays.asList(
+        employeeEntity.setIndexes(U.asList(
             new QueryIndex("name"),
             new QueryIndex("salary"),
             new QueryIndex("zip"),
@@ -175,7 +175,7 @@ public class CacheClientBinaryQueryExample {
 
         organizationEntity.setFields(fields);
 
-        organizationEntity.setIndexes(Arrays.asList(
+        organizationEntity.setIndexes(U.asList(
             new QueryIndex("name")
         ));
 
@@ -284,49 +284,49 @@ public class CacheClientBinaryQueryExample {
             "James Wilson",
             12500,
             new Address("1096 Eddy Street, San Francisco, CA", 94109),
-            Arrays.asList("Human Resources", "Customer Service")
+            U.asList("Human Resources", "Customer Service")
         ));
 
         employeeCache.put(new EmployeeKey(2, 1), new Employee(
             "Daniel Adams",
             11000,
             new Address("184 Fidler Drive, San Antonio, TX", 78130),
-            Arrays.asList("Development", "QA")
+            U.asList("Development", "QA")
         ));
 
         employeeCache.put(new EmployeeKey(3, 1), new Employee(
             "Cristian Moss",
             12500,
             new Address("667 Jerry Dove Drive, Florence, SC", 29501),
-            Arrays.asList("Logistics")
+            U.asList("Logistics")
         ));
 
         employeeCache.put(new EmployeeKey(4, 2), new Employee(
             "Allison Mathis",
             25300,
             new Address("2702 Freedom Lane, San Francisco, CA", 94109),
-            Arrays.asList("Development")
+            U.asList("Development")
         ));
 
         employeeCache.put(new EmployeeKey(5, 2), new Employee(
             "Breana Robbin",
             6500,
             new Address("3960 Sundown Lane, Austin, TX", 78130),
-            Arrays.asList("Sales")
+            U.asList("Sales")
         ));
 
         employeeCache.put(new EmployeeKey(6, 2), new Employee(
             "Philip Horsley",
             19800,
             new Address("2803 Elsie Drive, Sioux Falls, SD", 57104),
-            Arrays.asList("Sales")
+            U.asList("Sales")
         ));
 
         employeeCache.put(new EmployeeKey(7, 2), new Employee(
             "Brian Peters",
             10600,
             new Address("1407 Pearlman Avenue, Boston, MA", 12110),
-            Arrays.asList("Development", "QA")
+            U.asList("Development", "QA")
         ));
     }
 }

@@ -23,6 +23,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Random;
 import junit.framework.TestCase;
+import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
  * Tests for {@link GridNioDelimitedBuffer}.
@@ -84,7 +85,7 @@ public class GridNioDelimitedBufferSelfTest extends TestCase {
     public void testDelim() throws Exception {
         byte[] delim = "aabb".getBytes(ASCII);
 
-        List<String> strs = Arrays.asList("za", "zaa", "zaab", "zab", "zaabaababbbbabaab");
+        List<String> strs = U.asList("za", "zaa", "zaab", "zab", "zaabaababbbbabaab");
 
         int buffSize = 0;
 

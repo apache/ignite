@@ -290,7 +290,7 @@ public class GridJobMasterLeaveAwareSelfTest extends GridCommonAbstractTest {
             @Override public IgniteFuture<?> applyx(ClusterGroup grid) {
                 IgniteCompute comp = compute(grid).withAsync();
 
-                comp.apply(new TestClosure(), Arrays.asList("arg1", "arg2"));
+                comp.apply(new TestClosure(), U.asList("arg1", "arg2"));
 
                 return comp.future();
             }
@@ -306,7 +306,7 @@ public class GridJobMasterLeaveAwareSelfTest extends GridCommonAbstractTest {
                 IgniteCompute comp = compute(grid).withAsync();
 
                 comp.apply(new TestClosure(),
-                    Arrays.asList("arg1", "arg2"),
+                    U.asList("arg1", "arg2"),
                     new IgniteReducer<Void, Object>() {
                         @Override public boolean collect(@Nullable Void aVoid) {
                             return true;
@@ -345,7 +345,7 @@ public class GridJobMasterLeaveAwareSelfTest extends GridCommonAbstractTest {
             @Override public IgniteFuture<?> applyx(ClusterGroup prj) {
                 IgniteCompute comp = compute(prj).withAsync();
 
-                comp.run(Arrays.asList(new TestRunnable(), new TestRunnable()));
+                comp.run(U.asList(new TestRunnable(), new TestRunnable()));
 
                 return comp.future();
             }
@@ -375,7 +375,7 @@ public class GridJobMasterLeaveAwareSelfTest extends GridCommonAbstractTest {
             @Override public IgniteFuture<?> applyx(ClusterGroup prj) {
                 IgniteCompute comp = compute(prj).withAsync();
 
-                comp.call(Arrays.asList(new TestCallable(), new TestCallable()));
+                comp.call(U.asList(new TestCallable(), new TestCallable()));
 
                 return comp.future();
             }
@@ -391,7 +391,7 @@ public class GridJobMasterLeaveAwareSelfTest extends GridCommonAbstractTest {
                 IgniteCompute comp = compute(prj).withAsync();
 
                 comp.call(
-                    Arrays.asList(new TestCallable(), new TestCallable()),
+                    U.asList(new TestCallable(), new TestCallable()),
                     new IgniteReducer<Void, Object>() {
                         @Override public boolean collect(@Nullable Void aVoid) {
                             return true;

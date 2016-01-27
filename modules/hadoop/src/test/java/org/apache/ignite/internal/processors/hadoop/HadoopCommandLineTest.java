@@ -289,7 +289,7 @@ public class HadoopCommandLineTest extends GridCommonAbstractTest {
         List<String> cmd = new ArrayList<>();
 
         cmd.add(hadoopHome + "/bin/hadoop");
-        cmd.addAll(Arrays.asList(args));
+        cmd.addAll(U.asList(args));
 
         procBuilder.command(cmd);
 

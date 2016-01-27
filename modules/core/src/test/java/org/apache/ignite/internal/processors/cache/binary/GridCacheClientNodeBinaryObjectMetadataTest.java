@@ -31,6 +31,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.internal.processors.cache.GridCacheAbstractSelfTest;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
@@ -67,7 +68,7 @@ public class GridCacheClientNodeBinaryObjectMetadataTest extends GridCacheAbstra
 
         BinaryConfiguration bCfg = new BinaryConfiguration();
 
-        bCfg.setClassNames(Arrays.asList(TestObject1.class.getName(), TestObject2.class.getName()));
+        bCfg.setClassNames(U.asList(TestObject1.class.getName(), TestObject2.class.getName()));
 
         BinaryTypeConfiguration typeCfg = new BinaryTypeConfiguration();
 
@@ -77,7 +78,7 @@ public class GridCacheClientNodeBinaryObjectMetadataTest extends GridCacheAbstra
 
         cfg.setCacheKeyConfiguration(keyCfg);
 
-        bCfg.setTypeConfigurations(Arrays.asList(typeCfg));
+        bCfg.setTypeConfigurations(U.asList(typeCfg));
 
         cfg.setBinaryConfiguration(bCfg);
 

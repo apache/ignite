@@ -26,6 +26,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.util.typedef.C1;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteCallable;
 import org.apache.ignite.lang.IgniteRunnable;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
@@ -139,7 +140,7 @@ public class GridProjectionLocalJobMultipleArgumentsSelfTest extends GridCommonA
      * @throws Exception If failed.
      */
     public void testCallWithProducer() throws Exception {
-        Collection<Integer> args = Arrays.asList(1, 2, 3);
+        Collection<Integer> args = U.asList(1, 2, 3);
 
         Collection<Integer> res = grid().compute().apply(new C1<Integer, Integer>() {
             @Override public Integer apply(Integer arg) {

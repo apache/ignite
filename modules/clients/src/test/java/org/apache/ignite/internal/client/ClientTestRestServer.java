@@ -72,7 +72,7 @@ public class ClientTestRestServer {
             node.setNodeId(UUID.randomUUID());
             node.setConsistentId("127.0.0.1:" + port);
             node.setTcpPort(port);
-            node.setTcpAddresses(Arrays.asList("127.0.0.1"));
+            node.setTcpAddresses(U.asList("127.0.0.1"));
 
             top.add(node);
         }

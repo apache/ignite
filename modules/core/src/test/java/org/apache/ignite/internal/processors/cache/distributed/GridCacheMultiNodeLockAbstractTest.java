@@ -33,6 +33,7 @@ import org.apache.ignite.events.Event;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCacheAdapter;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearCacheAdapter;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
@@ -333,8 +334,8 @@ public abstract class GridCacheMultiNodeLockAbstractTest extends GridCommonAbstr
         IgniteCache<Integer, String> cache1 = ignite1.cache(null);
         IgniteCache<Integer, String> cache2 = ignite2.cache(null);
 
-        Collection<Integer> keys1 = Arrays.asList(1, 2, 3);
-        Collection<Integer> keys2 = Arrays.asList(2, 3, 4);
+        Collection<Integer> keys1 = U.asList(1, 2, 3);
+        Collection<Integer> keys2 = U.asList(2, 3, 4);
 
         Lock lock1_1 = cache1.lockAll(keys1);
         Lock lock2_2 = cache2.lockAll(keys2);
@@ -589,7 +590,7 @@ public abstract class GridCacheMultiNodeLockAbstractTest extends GridCommonAbstr
          * @param keys Keys.
          */
         UnlockListener(CountDownLatch latch, Integer... keys) {
-            this(latch, Arrays.asList(keys));
+            this(latch, U.asList(keys));
         }
 
         /**

@@ -62,7 +62,7 @@ public class ComputeClosureExample {
                 },
 
                 // Job parameters. Ignite will create as many jobs as there are parameters.
-                Arrays.asList("Count characters using closure".split(" "))
+                U.asList("Count characters using closure".split(" "))
             );
 
             int sum = 0;

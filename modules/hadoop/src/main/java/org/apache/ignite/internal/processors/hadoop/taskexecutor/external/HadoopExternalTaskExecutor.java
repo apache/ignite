@@ -323,8 +323,8 @@ public class HadoopExternalTaskExecutor extends HadoopTaskExecutorAdapter {
     private HadoopExternalTaskMetadata buildTaskMeta() {
         HadoopExternalTaskMetadata meta = new HadoopExternalTaskMetadata();
 
-        meta.classpath(Arrays.asList(System.getProperty("java.class.path").split(File.pathSeparator)));
-        meta.jvmOptions(Arrays.asList("-Xmx1g", "-ea", "-XX:+UseConcMarkSweepGC", "-XX:+CMSClassUnloadingEnabled",
+        meta.classpath(U.asList(System.getProperty("java.class.path").split(File.pathSeparator)));
+        meta.jvmOptions(U.asList("-Xmx1g", "-ea", "-XX:+UseConcMarkSweepGC", "-XX:+CMSClassUnloadingEnabled",
             "-DIGNITE_HOME=" + U.getIgniteHome()));
 
         return meta;

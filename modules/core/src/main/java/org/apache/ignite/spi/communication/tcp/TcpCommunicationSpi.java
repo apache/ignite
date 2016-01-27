@@ -1439,7 +1439,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
             IgniteBiTuple<Collection<String>, Collection<String>> addrs = U.resolveLocalAddresses(locHost);
 
             Collection<InetSocketAddress> extAddrs = addrRslvr == null ? null :
-                U.resolveAddresses(addrRslvr, F.flat(Arrays.asList(addrs.get1(), addrs.get2())), boundTcpPort);
+                U.resolveAddresses(addrRslvr, F.flat(U.asList(addrs.get1(), addrs.get2())), boundTcpPort);
 
             return F.asMap(
                 createSpiAttributeName(ATTR_ADDRS), addrs.get1(),

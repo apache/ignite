@@ -501,7 +501,7 @@ public class ClusterGroupAdapter implements ClusterGroupEx, Externalizable {
     @Override public final ClusterGroup forOthers(ClusterNode node, ClusterNode... nodes) {
         A.notNull(node, "node");
 
-        return forOthers(F.concat(false, node.id(), F.nodeIds(Arrays.asList(nodes))));
+        return forOthers(F.concat(false, node.id(), F.nodeIds(U.asList(nodes))));
     }
 
     /** {@inheritDoc} */

@@ -63,41 +63,41 @@ public class GridifySetToXXXNonSpringAopSelfTest extends GridCommonAbstractTest 
 
             GridifySetToSetTarget target = new GridifySetToSetTarget();
 
-            Collection<Long> primesInSet = target.findPrimes(Arrays.asList(2L, 3L, 4L, 6L));
+            Collection<Long> primesInSet = target.findPrimes(U.asList(2L, 3L, 4L, 6L));
 
             info(">>> Prime numbers in set '" + primesInSet + "'.");
 
-            primesInSet = target.findPrimesWithoutSplitSize(Arrays.asList(2L, 3L, 4L, 6L));
+            primesInSet = target.findPrimesWithoutSplitSize(U.asList(2L, 3L, 4L, 6L));
 
             info(">>> Prime numbers w/o splitsize in set '" + primesInSet + "'.");
 
-            primesInSet = target.findPrimesWithoutSplitSizeAndThreshold(Arrays.asList(2L, 3L, 4L, 6L));
+            primesInSet = target.findPrimesWithoutSplitSizeAndThreshold(U.asList(2L, 3L, 4L, 6L));
 
             info(">>> Prime numbers w/o splitsize and threshold in set '" + primesInSet + "'.");
 
-            primesInSet = target.findPrimesInListWithoutSplitSizeAndThreshold(Arrays.asList(2L, 3L, 4L, 6L));
+            primesInSet = target.findPrimesInListWithoutSplitSizeAndThreshold(U.asList(2L, 3L, 4L, 6L));
 
             info(">>> Prime numbers in list w/o splitsize and threshold in set '" + primesInSet + "'.");
 
             primesInSet = target.findPrimesInArrayListWithoutSplitSizeAndThreshold(
-                new ArrayList<>(Arrays.asList(2L, 3L, 4L, 6L)));
+                new ArrayList<>(U.asList(2L, 3L, 4L, 6L)));
 
             info(">>> Prime numbers in arraylist w/o splitsize and threshold in set '" + primesInSet + "'.");
 
             Long[] primesInArr = target.findPrimesInArray(new Long[]{2L, 3L, 4L, 6L});
 
-            info(">>> Prime numbers in array '" + Arrays.asList(primesInArr) + "'.");
+            info(">>> Prime numbers in array '" + U.asList(primesInArr) + "'.");
 
             long[] primesInPrimArr = target.findPrimesInPrimitiveArray(new long[]{2L, 3L, 4L, 6L});
 
             info(">>> Prime numbers in primitive array '" + primesInPrimArr + "'.");
 
-            Iterator<Long> primesInIter = target.findPrimesWithIterator(Arrays.asList(2L, 3L, 4L, 6L).iterator());
+            Iterator<Long> primesInIter = target.findPrimesWithIterator(U.asList(2L, 3L, 4L, 6L).iterator());
 
             info(">>> Prime numbers in iterator '" + convert(primesInIter) + "'.");
 
             Enumeration<Long> primesInEnum = target.findPrimesWithEnumeration(
-                new MathEnumerationAdapter<>(Arrays.asList(2L, 3L, 4L, 6L)));
+                new MathEnumerationAdapter<>(U.asList(2L, 3L, 4L, 6L)));
 
             info(">>> Prime numbers in enumeration '" + convert(primesInEnum) + "'.");
         }
@@ -119,27 +119,27 @@ public class GridifySetToXXXNonSpringAopSelfTest extends GridCommonAbstractTest 
 
             GridifySetToValueTarget target = new GridifySetToValueTarget();
 
-            Long max = target.findMaximum(Arrays.asList(2L, 3L, 4L, 6L));
+            Long max = target.findMaximum(U.asList(2L, 3L, 4L, 6L));
 
             info(">>> Maximum in collection '" + max + "'.");
 
-            max = target.findMaximumInList(Arrays.asList(2L, 3L, 4L, 6L));
+            max = target.findMaximumInList(U.asList(2L, 3L, 4L, 6L));
 
             info(">>> Maximum in list '" + max + "'.");
 
-            max = target.findMaximumWithoutSplitSize(Arrays.asList(2L, 3L, 4L, 6L));
+            max = target.findMaximumWithoutSplitSize(U.asList(2L, 3L, 4L, 6L));
 
             info(">>> Maximum w/o splitsize in collection '" + max + "'.");
 
-            max = target.findMaximumWithoutSplitSizeAndThreshold(Arrays.asList(2L, 3L, 4L, 6L));
+            max = target.findMaximumWithoutSplitSizeAndThreshold(U.asList(2L, 3L, 4L, 6L));
 
             info(">>> Maximum w/o splitsize and threshold in collection '" + max + "'.");
 
-            max = target.findMaximumInIterator(Arrays.asList(2L, 3L, 4L, 6L).iterator());
+            max = target.findMaximumInIterator(U.asList(2L, 3L, 4L, 6L).iterator());
 
             info(">>> Maximum in iterator '" + max + "'.");
 
-            max = target.findMaximumInEnumeration(new MathEnumerationAdapter<>(Arrays.asList(2L, 3L, 4L, 6L)));
+            max = target.findMaximumInEnumeration(new MathEnumerationAdapter<>(U.asList(2L, 3L, 4L, 6L)));
 
             info(">>> Maximum in enumeration '" + max + "'.");
         }

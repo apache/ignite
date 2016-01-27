@@ -306,7 +306,7 @@ public class HadoopSetup {
         if (!folder.exists())
             exit("Folder '" + folder.getAbsolutePath() + "' is not found.", null);
 
-        jarFiles.addAll(Arrays.asList(folder.listFiles(IGNITE_JARS)));
+        jarFiles.addAll(U.asList(folder.listFiles(IGNITE_JARS)));
     }
 
     /**

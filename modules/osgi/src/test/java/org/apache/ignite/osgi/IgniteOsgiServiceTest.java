@@ -65,7 +65,7 @@ public class IgniteOsgiServiceTest extends AbstractIgniteKarafTest {
      */
     @Configuration
     public Option[] bundleDelegatingConfig() {
-        List<Option> options = new ArrayList<>(Arrays.asList(baseConfig()));
+        List<Option> options = new ArrayList<>(U.asList(baseConfig()));
 
         // Add bundles we require.
         options.add(
@@ -126,6 +126,6 @@ public class IgniteOsgiServiceTest extends AbstractIgniteKarafTest {
      * @return Features.
      */
     @Override protected List<String> featuresToInstall() {
-        return Arrays.asList("ignite-core");
+        return U.asList("ignite-core");
     }
 }

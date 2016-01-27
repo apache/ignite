@@ -23,6 +23,7 @@ import junit.framework.TestCase;
 import org.apache.ignite.igfs.IgfsMode;
 import org.apache.ignite.igfs.IgfsPath;
 import org.apache.ignite.internal.util.typedef.T2;
+import org.apache.ignite.internal.util.typedef.internal.U;
 
 import static org.apache.ignite.igfs.IgfsMode.DUAL_SYNC;
 import static org.apache.ignite.igfs.IgfsMode.PRIMARY;
@@ -37,7 +38,7 @@ public class IgfsModeResolverSelfTest extends TestCase {
 
     /** {@inheritDoc} */
     @Override protected void setUp() throws Exception {
-        resolver = new IgfsModeResolver(DUAL_SYNC, Arrays.asList(
+        resolver = new IgfsModeResolver(DUAL_SYNC, U.asList(
             new T2<>(new IgfsPath("/a/b/"), PRIMARY),
             new T2<>(new IgfsPath("/a/b/c/d"), PROXY)));
     }

@@ -40,6 +40,7 @@ import org.apache.ignite.internal.client.impl.connection.GridClientConnection;
 import org.apache.ignite.internal.client.impl.connection.GridClientConnectionResetException;
 import org.apache.ignite.internal.client.util.GridClientUtils;
 import org.apache.ignite.internal.util.typedef.internal.A;
+import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
  * Data projection that serves one cache instance and handles communication errors.
@@ -91,7 +92,7 @@ public class GridClientDataImpl extends GridClientAbstractProjection<GridClientD
             pinnedNodes.add(node);
 
         if (nodes != null && nodes.length != 0)
-            pinnedNodes.addAll(Arrays.asList(nodes));
+            pinnedNodes.addAll(U.asList(nodes));
 
         return createProjection(pinnedNodes.isEmpty() ? null : pinnedNodes,
             null, null, new GridClientDataFactory(flags));
@@ -365,7 +366,7 @@ public class GridClientDataImpl extends GridClientAbstractProjection<GridClientD
         EnumSet<GridClientCacheFlag> flagSet = this.flags == null || this.flags.isEmpty() ?
             EnumSet.noneOf(GridClientCacheFlag.class) : EnumSet.copyOf(this.flags);
 
-        flagSet.addAll(Arrays.asList(flags));
+        flagSet.addAll(U.asList(flags));
 
         return createProjection(nodes, filter, balancer, new GridClientDataFactory(flagSet));
     }
@@ -377,7 +378,7 @@ public class GridClientDataImpl extends GridClientAbstractProjection<GridClientD
 
         EnumSet<GridClientCacheFlag> flagSet = EnumSet.copyOf(this.flags);
 
-        flagSet.removeAll(Arrays.asList(flags));
+        flagSet.removeAll(U.asList(flags));
 
         return createProjection(nodes, filter, balancer, new GridClientDataFactory(flagSet));
     }

@@ -30,6 +30,7 @@ import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.internal.util.GridConsistentHash;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.common.GridCommonTest;
 
@@ -134,7 +135,7 @@ public class GridConsistentHashSelfTest extends GridCommonAbstractTest {
         boolean fail = false;
 
         for (UUID exp : nodes) {
-            UUID act = hash.node(0, Arrays.asList(exp));
+            UUID act = hash.node(0, U.asList(exp));
 
             if (exp.equals(act))
                 info("Validation succeed [exp=" + exp + ", act=" + act + ']');

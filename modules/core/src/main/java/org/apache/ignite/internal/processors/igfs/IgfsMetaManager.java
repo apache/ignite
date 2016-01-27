@@ -628,7 +628,7 @@ public class IgfsMetaManager extends IgfsManager {
 
         Arrays.sort(fileIds);
 
-        return lockIds(Arrays.asList(fileIds));
+        return lockIds(U.asList(fileIds));
     }
 
     /**

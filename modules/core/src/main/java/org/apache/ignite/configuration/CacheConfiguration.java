@@ -2186,7 +2186,7 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
 
                 txtIdx.setIndexType(QueryIndexType.FULLTEXT);
 
-                txtIdx.setFieldNames(Arrays.asList(_VAL), true);
+                txtIdx.setFieldNames(U.asList(_VAL), true);
             }
             else
                 txtIdx.getFields().put(_VAL, true);

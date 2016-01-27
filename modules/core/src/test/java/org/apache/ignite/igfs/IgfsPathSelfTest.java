@@ -24,6 +24,7 @@ import java.net.URI;
 import java.util.Arrays;
 import java.util.concurrent.Callable;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.marshaller.optimized.OptimizedMarshaller;
 import org.apache.ignite.testframework.GridTestUtils;
@@ -52,7 +53,7 @@ public class IgfsPathSelfTest extends GridCommonAbstractTest {
         validateParent("/", null);
 
         assertEquals(new IgfsPath("/a/s/d/f-2"), path.suffix("-2"));
-        assertEquals(Arrays.asList("a", "s", "d", "f"), path.components());
+        assertEquals(U.asList("a", "s", "d", "f"), path.components());
         assertEquals(4, path.depth());
         assertEquals(3, path.parent().depth());
         assertEquals("f", path.name());

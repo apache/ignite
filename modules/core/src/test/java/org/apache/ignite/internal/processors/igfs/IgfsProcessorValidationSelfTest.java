@@ -26,6 +26,7 @@ import org.apache.ignite.igfs.IgfsGroupDataBlocksKeyMapper;
 import org.apache.ignite.internal.processors.cache.GridCacheDefaultAffinityKeyMapper;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
@@ -120,8 +121,8 @@ public class IgfsProcessorValidationSelfTest extends IgfsCommonAbstractTest {
     private <T> T[] concat(T[] first, T[] second, Class<?> cls) {
         Collection<T> res = new ArrayList<>();
 
-        res.addAll(Arrays.asList(first));
-        res.addAll(Arrays.asList(second));
+        res.addAll(U.asList(first));
+        res.addAll(U.asList(second));
 
         return res.toArray((T[]) Array.newInstance(cls, res.size()));
     }

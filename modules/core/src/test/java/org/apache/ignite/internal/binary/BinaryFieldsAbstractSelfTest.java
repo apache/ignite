@@ -57,7 +57,7 @@ public abstract class BinaryFieldsAbstractSelfTest extends GridCommonAbstractTes
 
         bCfg.setCompactFooter(compactFooter());
 
-        bCfg.setTypeConfigurations(Arrays.asList(
+        bCfg.setTypeConfigurations(U.asList(
             new BinaryTypeConfiguration(TestObject.class.getName()),
             new BinaryTypeConfiguration(TestOuterObject.class.getName()),
             new BinaryTypeConfiguration(TestInnerObject.class.getName())

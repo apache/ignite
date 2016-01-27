@@ -387,7 +387,7 @@ public abstract class ClientAbstractMultiNodeSelfTest extends GridCommonAbstract
         cfg.setTopologyRefreshFrequency(TOP_REFRESH_FREQ);
 
         cfg.setProtocol(protocol());
-        cfg.setServers(Arrays.asList(serverAddress()));
+        cfg.setServers(U.asList(serverAddress()));
         cfg.setSslContextFactory(sslContextFactory());
 
         GridClientDataConfiguration loc = new GridClientDataConfiguration();
@@ -403,7 +403,7 @@ public abstract class ClientAbstractMultiNodeSelfTest extends GridCommonAbstract
         GridClientDataConfiguration replicatedAsync = new GridClientDataConfiguration();
         replicatedAsync.setName(REPLICATED_ASYNC_CACHE_NAME);
 
-        cfg.setDataConfigurations(Arrays.asList(loc, partitioned, replicated, replicatedAsync));
+        cfg.setDataConfigurations(U.asList(loc, partitioned, replicated, replicatedAsync));
 
         return cfg;
     }

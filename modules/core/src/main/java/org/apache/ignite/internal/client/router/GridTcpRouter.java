@@ -35,7 +35,7 @@ import java.util.UUID;
  * cfg.setHost("router.appdomain.com");
  * cfg.setPort(11211);
  *
- * cfg.setServers(Arrays.asList(
+ * cfg.setServers(U.asList(
  *     "node1.appdomain.com:11211",
  *     "node2.appdomain.com:11211"));
  *

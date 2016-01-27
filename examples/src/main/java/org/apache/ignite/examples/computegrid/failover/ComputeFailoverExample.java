@@ -93,7 +93,7 @@ public class ComputeFailoverExample {
 
             this.phrase = phrase;
 
-            List<String> words = Arrays.asList(phrase.split(" "));
+            List<String> words = U.asList(phrase.split(" "));
 
             final String cpKey = checkpointKey();
 

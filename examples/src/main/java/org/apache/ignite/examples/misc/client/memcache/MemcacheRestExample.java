@@ -123,6 +123,6 @@ public class MemcacheRestExample {
         assert host != null;
         assert port > 0;
 
-        return new MemcachedClient(new BinaryConnectionFactory(), Arrays.asList(new InetSocketAddress(host, port)));
+        return new MemcachedClient(new BinaryConnectionFactory(), U.asList(new InetSocketAddress(host, port)));
     }
 }

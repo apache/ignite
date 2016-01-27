@@ -160,7 +160,7 @@ public abstract class GridRestProtocolAdapter implements GridRestProtocol {
                 U.resolveLocalAddresses(host) : null;
 
             return port > 0 ?
-                Arrays.asList(
+                U.asList(
                     F.<String, Object>t(getAddressPropertyName(), addrs.get1()),
                     F.<String, Object>t(getHostNamePropertyName(), addrs.get2()),
                     F.<String, Object>t(getPortPropertyName(), port)

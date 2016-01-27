@@ -279,7 +279,7 @@ public class IgniteCacheQueryMultiThreadedSelfTest extends GridCommonAbstractTes
             c.put(i, String.valueOf(rnd.nextInt(valCnt)));
 
             if (evictsEnabled() && rnd.nextBoolean())
-                c.localEvict(Arrays.asList(i));
+                c.localEvict(U.asList(i));
         }
 
         final AtomicBoolean done = new AtomicBoolean();
@@ -296,7 +296,7 @@ public class IgniteCacheQueryMultiThreadedSelfTest extends GridCommonAbstractTes
                             break;
                         case 1:
                             if (evictsEnabled())
-                                c.localEvict(Arrays.asList(rnd.nextInt(keyCnt)));
+                                c.localEvict(U.asList(rnd.nextInt(keyCnt)));
 
                             break;
                         case 2:
@@ -354,7 +354,7 @@ public class IgniteCacheQueryMultiThreadedSelfTest extends GridCommonAbstractTes
             c.put(i, (long)rnd.nextInt(valCnt));
 
             if (evictsEnabled() && rnd.nextBoolean())
-                c.localEvict(Arrays.asList(i));
+                c.localEvict(U.asList(i));
         }
 
         final AtomicBoolean done = new AtomicBoolean();
@@ -373,7 +373,7 @@ public class IgniteCacheQueryMultiThreadedSelfTest extends GridCommonAbstractTes
                             break;
                         case 1:
                             if (evictsEnabled())
-                                c.localEvict(Arrays.asList(key));
+                                c.localEvict(U.asList(key));
 
                             break;
                         case 2:
@@ -428,7 +428,7 @@ public class IgniteCacheQueryMultiThreadedSelfTest extends GridCommonAbstractTes
             c.put(i, rnd.nextBoolean() ? (long)rnd.nextInt(valCnt) : String.valueOf(rnd.nextInt(valCnt)));
 
             if (evictsEnabled() && rnd.nextBoolean())
-                c.localEvict(Arrays.asList(i));
+                c.localEvict(U.asList(i));
         }
 
         final AtomicBoolean done = new AtomicBoolean();
@@ -448,7 +448,7 @@ public class IgniteCacheQueryMultiThreadedSelfTest extends GridCommonAbstractTes
                             break;
                         case 1:
                             if (evictsEnabled())
-                                c.localEvict(Arrays.asList(key));
+                                c.localEvict(U.asList(key));
 
                             break;
                         case 2:
@@ -502,7 +502,7 @@ public class IgniteCacheQueryMultiThreadedSelfTest extends GridCommonAbstractTes
             c.put(i, new TestValue(rnd.nextInt(valCnt)));
 
             if (evictsEnabled() && rnd.nextBoolean())
-                c.localEvict(Arrays.asList(i));
+                c.localEvict(U.asList(i));
         }
 
         final AtomicBoolean done = new AtomicBoolean();
@@ -521,7 +521,7 @@ public class IgniteCacheQueryMultiThreadedSelfTest extends GridCommonAbstractTes
                             break;
                         case 1:
                             if (evictsEnabled())
-                                c.localEvict(Arrays.asList(key));
+                                c.localEvict(U.asList(key));
 
                             break;
                         case 2:
@@ -568,7 +568,7 @@ public class IgniteCacheQueryMultiThreadedSelfTest extends GridCommonAbstractTes
         for (int i = 0; i < keyCnt; i++) {
             c.put(i, i);
 
-            c.localEvict(Arrays.asList(i));
+            c.localEvict(U.asList(i));
         }
 
         final AtomicInteger cnt = new AtomicInteger();
@@ -631,7 +631,7 @@ public class IgniteCacheQueryMultiThreadedSelfTest extends GridCommonAbstractTes
         for (int i = 0; i < keyCnt; i++) {
             c.put(i, i);
 
-            c.localEvict(Arrays.asList(i));
+            c.localEvict(U.asList(i));
         }
 
         final AtomicInteger cnt = new AtomicInteger();

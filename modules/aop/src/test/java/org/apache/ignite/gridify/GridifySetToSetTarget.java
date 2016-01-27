@@ -142,7 +142,7 @@ public class GridifySetToSetTarget implements GridifySetToSetTargetInterface, Se
      */
     private Long[] findPrimesInArray0(Long[] input) {
         System.out.println(">>>");
-        System.out.println("Find primes in array: " + Arrays.asList(input));
+        System.out.println("Find primes in array: " + U.asList(input));
         System.out.println(">>>");
 
         Collection<Long> res = new ArrayList<>();

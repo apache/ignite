@@ -155,7 +155,7 @@ public final class IgfsPath implements Comparable<IgfsPath>, Externalizable {
         assert path.length() >= 1 : "Path expected to be absolute: " + path;
 
         // Path is short-living object, so we don't need to cache component's resolution result.
-        return path.length() == 1 ? Collections.<String>emptyList() : Arrays.asList(path.substring(1).split(SLASH));
+        return path.length() == 1 ? Collections.<String>emptyList() : U.asList(path.substring(1).split(SLASH));
     }
 
     /**

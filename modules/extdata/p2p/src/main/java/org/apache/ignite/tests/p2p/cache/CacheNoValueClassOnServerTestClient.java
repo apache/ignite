@@ -49,7 +49,7 @@ public class CacheNoValueClassOnServerTestClient {
 
         TcpDiscoveryVmIpFinder ipFinder = new TcpDiscoveryVmIpFinder();
 
-        ipFinder.setAddresses(Arrays.asList("127.0.0.1:47500..47509"));
+        ipFinder.setAddresses(U.asList("127.0.0.1:47500..47509"));
 
         disco.setIpFinder(ipFinder);
 

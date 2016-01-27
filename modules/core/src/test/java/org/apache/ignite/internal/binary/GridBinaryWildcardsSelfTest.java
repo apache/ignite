@@ -41,7 +41,7 @@ public class GridBinaryWildcardsSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testClassNames() throws Exception {
-        BinaryMarshaller marsh = binaryMarshaller(Arrays.asList(
+        BinaryMarshaller marsh = binaryMarshaller(U.asList(
             new BinaryTypeConfiguration("org.apache.ignite.internal.binary.test.*"),
             new BinaryTypeConfiguration("unknown.*")
         ));
@@ -77,7 +77,7 @@ public class GridBinaryWildcardsSelfTest extends GridCommonAbstractTest {
             @Override public int fieldId(int typeId, String fieldName) {
                 return 0;
             }
-        }, Arrays.asList(
+        }, U.asList(
             new BinaryTypeConfiguration("org.apache.ignite.internal.binary.test.*"),
             new BinaryTypeConfiguration("unknown.*")
         ));
@@ -97,7 +97,7 @@ public class GridBinaryWildcardsSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testTypeConfigurations() throws Exception {
-        BinaryMarshaller marsh = binaryMarshaller(Arrays.asList(
+        BinaryMarshaller marsh = binaryMarshaller(U.asList(
             new BinaryTypeConfiguration("org.apache.ignite.internal.binary.test.*"),
             new BinaryTypeConfiguration("unknown.*")
         ));
@@ -133,7 +133,7 @@ public class GridBinaryWildcardsSelfTest extends GridCommonAbstractTest {
             @Override public int fieldId(int typeId, String fieldName) {
                 return 0;
             }
-        }, Arrays.asList(
+        }, U.asList(
             new BinaryTypeConfiguration("org.apache.ignite.internal.binary.test.*"),
             new BinaryTypeConfiguration("unknown.*")
         ));
@@ -169,7 +169,7 @@ public class GridBinaryWildcardsSelfTest extends GridCommonAbstractTest {
             @Override public int fieldId(int typeId, String fieldName) {
                 return 0;
             }
-        }, Arrays.asList(
+        }, U.asList(
             new BinaryTypeConfiguration("org.apache.ignite.internal.binary.test.*"),
             new BinaryTypeConfiguration("unknown.*")
         ));
@@ -202,7 +202,7 @@ public class GridBinaryWildcardsSelfTest extends GridCommonAbstractTest {
             }
         });
 
-        BinaryMarshaller marsh = binaryMarshaller(Arrays.asList(
+        BinaryMarshaller marsh = binaryMarshaller(U.asList(
             new BinaryTypeConfiguration("org.apache.ignite.internal.binary.test.*"),
             typeCfg));
 
@@ -225,7 +225,7 @@ public class GridBinaryWildcardsSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testClassNamesJar() throws Exception {
-        BinaryMarshaller marsh = binaryMarshaller(Arrays.asList(
+        BinaryMarshaller marsh = binaryMarshaller(U.asList(
             new BinaryTypeConfiguration("org.apache.ignite.internal.binary.test.*"),
             new BinaryTypeConfiguration("unknown.*")
         ));
@@ -258,7 +258,7 @@ public class GridBinaryWildcardsSelfTest extends GridCommonAbstractTest {
             @Override public int fieldId(int typeId, String fieldName) {
                 return 0;
             }
-        }, Arrays.asList(
+        }, U.asList(
             new BinaryTypeConfiguration("org.apache.ignite.internal.binary.test.*"),
             new BinaryTypeConfiguration("unknown.*")
         ));
@@ -277,7 +277,7 @@ public class GridBinaryWildcardsSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testTypeConfigurationsJar() throws Exception {
-        BinaryMarshaller marsh = binaryMarshaller(Arrays.asList(
+        BinaryMarshaller marsh = binaryMarshaller(U.asList(
             new BinaryTypeConfiguration("org.apache.ignite.internal.binary.test.*"),
             new BinaryTypeConfiguration("unknown.*")
         ));
@@ -310,7 +310,7 @@ public class GridBinaryWildcardsSelfTest extends GridCommonAbstractTest {
             @Override public int fieldId(int typeId, String fieldName) {
                 return 0;
             }
-        }, Arrays.asList(
+        }, U.asList(
             new BinaryTypeConfiguration("org.apache.ignite.internal.binary.test.*"),
             new BinaryTypeConfiguration("unknown.*")
         ));
@@ -343,7 +343,7 @@ public class GridBinaryWildcardsSelfTest extends GridCommonAbstractTest {
             @Override public int fieldId(int typeId, String fieldName) {
                 return 0;
             }
-        }, Arrays.asList(
+        }, U.asList(
             new BinaryTypeConfiguration("org.apache.ignite.internal.binary.test.*"),
             new BinaryTypeConfiguration("unknown.*")
         ));
@@ -375,7 +375,7 @@ public class GridBinaryWildcardsSelfTest extends GridCommonAbstractTest {
             }
         });
 
-        BinaryMarshaller marsh = binaryMarshaller(Arrays.asList(
+        BinaryMarshaller marsh = binaryMarshaller(U.asList(
             new BinaryTypeConfiguration("org.apache.ignite.internal.binary.test.*"),
             typeCfg));
 

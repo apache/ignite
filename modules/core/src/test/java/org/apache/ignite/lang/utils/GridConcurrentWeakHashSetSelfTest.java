@@ -78,7 +78,7 @@ public class GridConcurrentWeakHashSetSelfTest extends GridCommonAbstractTest {
 
         assert set.isEmpty();
 
-        Collection<Integer> c1 = Arrays.asList(1, 3, 5, 7, 9);
+        Collection<Integer> c1 = U.asList(1, 3, 5, 7, 9);
 
         int cnt = 0;
 

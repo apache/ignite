@@ -31,6 +31,7 @@ import org.apache.ignite.igfs.IgfsGroupDataBlocksKeyMapper;
 import org.apache.ignite.igfs.IgfsPath;
 import org.apache.ignite.internal.util.typedef.C1;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
@@ -156,11 +157,11 @@ public class IgfsMetaManagerSelfTest extends IgfsCommonAbstractTest {
 
         assertEquals(2, mgr.directoryListing(ROOT_ID).size());
 
-        for (IgniteBiTuple<IgniteUuid, String> tup: Arrays.asList(F.t(dir.id(), "dir"), F.t(file.id(), "file"))) {
+        for (IgniteBiTuple<IgniteUuid, String> tup: U.asList(F.t(dir.id(), "dir"), F.t(file.id(), "file"))) {
             IgniteUuid fileId = tup.get1();
             String fileName = tup.get2();
 
-            for (Map<String, String> props : Arrays.asList(null, Collections.<String, String>emptyMap()))
+            for (Map<String, String> props : U.asList(null, Collections.<String, String>emptyMap()))
                 expectsUpdatePropertiesFail(fileId, props, AssertionError.class, "Expects not-empty file's properties");
 
             String key1 = UUID.randomUUID().toString();
@@ -236,7 +237,7 @@ public class IgfsMetaManagerSelfTest extends IgfsCommonAbstractTest {
         // Test empty structure.
         assertEmpty(mgr.directoryListing(ROOT_ID));
         assertEquals(rootInfo, mgr.info(ROOT_ID));
-        assertEquals(F.asMap(ROOT_ID, rootInfo), mgr.infos(Arrays.asList(ROOT_ID)));
+        assertEquals(F.asMap(ROOT_ID, rootInfo), mgr.infos(U.asList(ROOT_ID)));
 
         // Directories:
         IgfsFileInfo a = mkdirsAndGetInfo("/a");
@@ -259,13 +260,13 @@ public class IgfsMetaManagerSelfTest extends IgfsCommonAbstractTest {
             "k", new IgfsListingEntry(k)), mgr.directoryListing(b.id()));
 
         // Validate empty files listings.
-        for (IgfsFileInfo info : Arrays.asList(f1, f2, f3))
+        for (IgfsFileInfo info : U.asList(f1, f2, f3))
             assertEmpty(mgr.directoryListing(info.id()));
 
         // Validate 'file info' operations.
-        for (IgfsFileInfo info : Arrays.asList(rootInfo, a, b, f1, f2, f3)) {
+        for (IgfsFileInfo info : U.asList(rootInfo, a, b, f1, f2, f3)) {
             assertEquals(info, mgr.info(info.id()));
-            assertEquals(F.asMap(info.id(), info), mgr.infos(Arrays.asList(info.id())));
+            assertEquals(F.asMap(info.id(), info), mgr.infos(U.asList(info.id())));
         }
 
         // Validate 'file ID' operations.
@@ -288,16 +289,16 @@ public class IgfsMetaManagerSelfTest extends IgfsCommonAbstractTest {
         assertNull(mgr.fileId(a.id(), "f5"));
         assertNull(mgr.fileId(b.id(), "f6"));
 
-        assertEquals(Arrays.asList(ROOT_ID), mgr.fileIds(new IgfsPath("/")));
-        assertEquals(Arrays.asList(ROOT_ID, a.id()), mgr.fileIds(new IgfsPath("/a")));
-        assertEquals(Arrays.asList(ROOT_ID, a.id(), b.id()), mgr.fileIds(new IgfsPath("/a/b")));
-        assertEquals(Arrays.asList(ROOT_ID, f1.id()), mgr.fileIds(new IgfsPath("/f1")));
-        assertEquals(Arrays.asList(ROOT_ID, a.id(), f2.id()), mgr.fileIds(new IgfsPath("/a/f2")));
-        assertEquals(Arrays.asList(ROOT_ID, a.id(), b.id(), f3.id()), mgr.fileIds(new IgfsPath("/a/b/f3")));
-        assertEquals(Arrays.asList(ROOT_ID, null), mgr.fileIds(new IgfsPath("/f4")));
-        assertEquals(Arrays.asList(ROOT_ID, a.id(), null), mgr.fileIds(new IgfsPath("/a/f5")));
-        assertEquals(Arrays.asList(ROOT_ID, a.id(), b.id(), null), mgr.fileIds(new IgfsPath("/a/b/f6")));
-        assertEquals(Arrays.asList(ROOT_ID, null, null, null, null), mgr.fileIds(new IgfsPath("/f7/a/b/f6")));
+        assertEquals(U.asList(ROOT_ID), mgr.fileIds(new IgfsPath("/")));
+        assertEquals(U.asList(ROOT_ID, a.id()), mgr.fileIds(new IgfsPath("/a")));
+        assertEquals(U.asList(ROOT_ID, a.id(), b.id()), mgr.fileIds(new IgfsPath("/a/b")));
+        assertEquals(U.asList(ROOT_ID, f1.id()), mgr.fileIds(new IgfsPath("/f1")));
+        assertEquals(U.asList(ROOT_ID, a.id(), f2.id()), mgr.fileIds(new IgfsPath("/a/f2")));
+        assertEquals(U.asList(ROOT_ID, a.id(), b.id(), f3.id()), mgr.fileIds(new IgfsPath("/a/b/f3")));
+        assertEquals(U.asList(ROOT_ID, null), mgr.fileIds(new IgfsPath("/f4")));
+        assertEquals(U.asList(ROOT_ID, a.id(), null), mgr.fileIds(new IgfsPath("/a/f5")));
+        assertEquals(U.asList(ROOT_ID, a.id(), b.id(), null), mgr.fileIds(new IgfsPath("/a/b/f6")));
+        assertEquals(U.asList(ROOT_ID, null, null, null, null), mgr.fileIds(new IgfsPath("/f7/a/b/f6")));
 
         // One of participated files does not exist in cache.
         expectsRenameFail("/b8", "/b2", "Failed to perform move because some path component was not found.");

@@ -44,7 +44,7 @@ public class GridTaskUriDeploymentDeadlockSelfTest extends GridCommonAbstractTes
         UriDeploymentSpi deploymentSpi = new UriDeploymentSpi();
 
         deploymentSpi.setUriList(
-            Arrays.asList(U.resolveIgniteUrl("modules/extdata/uri/target/resources/").toURI().toString()));
+            U.asList(U.resolveIgniteUrl("modules/extdata/uri/target/resources/").toURI().toString()));
 
         if (gridName.endsWith("2")) {
             // Delay deployment for 2nd grid only.

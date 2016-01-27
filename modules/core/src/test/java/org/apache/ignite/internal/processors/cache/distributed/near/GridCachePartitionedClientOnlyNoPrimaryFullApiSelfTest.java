@@ -24,6 +24,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.util.typedef.X;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 
@@ -50,7 +51,7 @@ public class GridCachePartitionedClientOnlyNoPrimaryFullApiSelfTest extends Grid
      *
      */
     public void testMapKeysToNodes() {
-        grid(0).affinity(null).mapKeysToNodes(Arrays.asList("1", "2"));
+        grid(0).affinity(null).mapKeysToNodes(U.asList("1", "2"));
     }
 
     /**

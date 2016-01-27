@@ -98,7 +98,7 @@ import org.jclouds.location.reference.LocationConstants;
  * ipFinder.setIdentity(accountId);
  * ipFinder.setCredential(accountKey);
  * ipFinder.setRegions(Collections.<String>emptyList().add("us-east-1"));
- * ipFinder.setZones(Arrays.asList("us-east-1b", "us-east-1e"));
+ * ipFinder.setZones(U.asList("us-east-1b", "us-east-1e"));
  * </pre>
  * <h2 class="header">Spring Example</h2>
  * TcpDiscoveryCloudIpFinder can be configured from Spring XML configuration file:

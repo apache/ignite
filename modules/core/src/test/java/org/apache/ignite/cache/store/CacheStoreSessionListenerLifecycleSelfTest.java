@@ -29,6 +29,7 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lifecycle.LifecycleAware;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
@@ -83,7 +84,7 @@ public class CacheStoreSessionListenerLifecycleSelfTest extends GridCommonAbstra
             stopGrid();
         }
 
-        assertEqualsCollections(Arrays.asList("Shared 1 START", "Shared 2 START", "Shared 1 STOP", "Shared 2 STOP"),
+        assertEqualsCollections(U.asList("Shared 1 START", "Shared 2 START", "Shared 1 STOP", "Shared 2 STOP"),
             evts);
     }
 
@@ -118,7 +119,7 @@ public class CacheStoreSessionListenerLifecycleSelfTest extends GridCommonAbstra
             stopGrid();
         }
 
-        assertEqualsCollections(Arrays.asList(
+        assertEqualsCollections(U.asList(
             "Shared 1 START",
             "Shared 2 START",
 
@@ -189,7 +190,7 @@ public class CacheStoreSessionListenerLifecycleSelfTest extends GridCommonAbstra
             stopGrid();
         }
 
-        assertEqualsCollections(Arrays.asList(
+        assertEqualsCollections(U.asList(
             "Shared 1 START",
             "Shared 2 START",
             "cache-0 1 START",
@@ -257,7 +258,7 @@ public class CacheStoreSessionListenerLifecycleSelfTest extends GridCommonAbstra
             stopGrid();
         }
 
-        assertEqualsCollections(Arrays.asList(
+        assertEqualsCollections(U.asList(
             "Shared 1 START",
             "Shared 2 START",
             "cache-0 1 START",

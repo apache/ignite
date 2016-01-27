@@ -43,6 +43,7 @@ import org.apache.ignite.internal.util.lang.GridAbsClosure;
 import org.apache.ignite.internal.util.lang.GridAbsClosureX;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.X;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.mxbean.IgniteMXBean;
@@ -646,7 +647,7 @@ public abstract class GridCheckpointManagerAbstractSelfTest extends GridCommonAb
         @Override protected Collection<? extends ComputeJob> split(int gridSize, Object arg) {
             assert gridSize == 2;
 
-            return Arrays.asList(
+            return U.asList(
                 new GridMultiNodeTestCheckpointProducerJob(),
                 new GridMultiNodeTestCheckpointConsumerJob()
             );
