@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cache.distributed.dht;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
@@ -82,7 +83,7 @@ public final class GridDhtGetFuture<K, V> extends GridCompoundIdentityFuture<Col
     private Map<KeyCacheObject, Boolean> keys;
 
     /** Reserved partitions. */
-    private Collection<GridDhtLocalPartition> parts = new HashSet<>();
+    private int[] parts;
 
     /** Future ID. */
     private IgniteUuid futId;
@@ -194,8 +195,8 @@ public final class GridDhtGetFuture<K, V> extends GridCompoundIdentityFuture<Col
     @Override public boolean onDone(Collection<GridCacheEntryInfo> res, Throwable err) {
         if (super.onDone(res, err)) {
             // Release all partitions reserved by this future.
-            for (GridDhtLocalPartition part : parts)
-                part.release();
+            if (parts != null)
+                cctx.topology().releasePartitions(parts);
 
             return true;
         }
@@ -239,7 +240,6 @@ public final class GridDhtGetFuture<K, V> extends GridCompoundIdentityFuture<Col
             map0(keys);
     }
 
-
     /**
      * @param keys Keys to map.
      */
@@ -251,7 +251,7 @@ public final class GridDhtGetFuture<K, V> extends GridCompoundIdentityFuture<Col
             int part = cctx.affinity().partition(key.getKey());
 
             if (retries == null || !retries.contains(part)) {
-                if (!map(key.getKey(), parts)) {
+                if (!map(key.getKey())) {
                     if (retries == null)
                         retries = new HashSet<>();
 
@@ -274,15 +274,28 @@ public final class GridDhtGetFuture<K, V> extends GridCompoundIdentityFuture<Col
         }
 
         // Add new future.
-        add(getAsync(mappedKeys == null ? keys : mappedKeys));
+        IgniteInternalFuture<Collection<GridCacheEntryInfo>> fut = getAsync(mappedKeys == null ? keys : mappedKeys);
+
+        // Optimization to avoid going through compound future,
+        // if getAsync() has been completed and no other futures added to this
+        // compound future.
+        if (fut.isDone() && futuresSize() == 0) {
+            if (fut.error() != null)
+                onDone(fut.error());
+            else
+                onDone(fut.result());
+
+            return;
+        }
+
+        add(fut);
     }
 
     /**
      * @param key Key.
-     * @param parts Parts to map.
      * @return {@code True} if mapped.
      */
-    private boolean map(KeyCacheObject key, Collection<GridDhtLocalPartition> parts) {
+    private boolean map(KeyCacheObject key) {
         GridDhtLocalPartition part = topVer.topologyVersion() > 0 ?
             cache().topology().localPartition(cctx.affinity().partition(key), topVer, true) :
             cache().topology().localPartition(key, false);
@@ -290,10 +303,12 @@ public final class GridDhtGetFuture<K, V> extends GridCompoundIdentityFuture<Col
         if (part == null)
             return false;
 
-        if (!parts.contains(part)) {
+        if (parts == null || !F.contains(parts, part.id())) {
             // By reserving, we make sure that partition won't be unloaded while processed.
             if (part.reserve()) {
-                parts.add(part);
+                parts = parts == null ? new int[1] : Arrays.copyOf(parts, parts.length + 1);
+
+                parts[parts.length - 1] = part.id();
 
                 return true;
             }

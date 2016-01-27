@@ -403,6 +403,7 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
 
         try {
             demandLock.readLock().lock();
+
             try {
                 demander.handleSupplyMessage(idx, id, s);
             }
@@ -698,7 +699,9 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
      */
     @SuppressWarnings( {"unchecked", "RedundantCast"})
     @Override public GridDhtFuture<Object> request(Collection<KeyCacheObject> keys, AffinityTopologyVersion topVer) {
-        if (rebalanceFuture().isDone())
+        if (cctx.rebalanceEnabled() &&
+            rebalanceFuture().isDone() &&
+            Boolean.TRUE.equals(rebalanceFuture().result()))
             return null;
 
         final GridDhtForceKeysFuture<?, ?> fut = new GridDhtForceKeysFuture<>(cctx, topVer, keys, this);
