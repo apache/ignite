@@ -14,6 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.apache.ignite.internal.processors.odbc;
 
 import org.apache.ignite.IgniteCheckedException;
@@ -31,12 +32,4 @@ public interface OdbcProtocolHandler {
      * @throws IgniteCheckedException In case of error.
      */
     OdbcResponse handle(OdbcRequest req) throws IgniteCheckedException;
-
-    /**
-     * Handle request asynchronously.
-     *
-     * @param req Request.
-     * @return Future.
-     */
-    IgniteInternalFuture<OdbcResponse> handleAsync(OdbcRequest req);
 }

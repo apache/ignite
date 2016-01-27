@@ -16,7 +16,14 @@
  */
 package org.apache.ignite.internal.processors.rest.handlers.log;
 
+import java.nio.charset.Charset;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.Arrays;
 import java.util.Collection;
+import java.util.List;
+
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.rest.GridRestCommand;
 import org.apache.ignite.internal.processors.rest.GridRestResponse;
@@ -28,6 +35,45 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
  * REST log command handler tests.
  */
 public class GridLogCommandHandlerTest extends GridCommonAbstractTest {
+    /** */
+    private String igniteHome = System.getProperty("user.dir");
+
+    /** {@inheritDoc} */
+    @Override protected void beforeTestsStarted() throws Exception {
+        super.beforeTestsStarted();
+
+        List<String> lines = Arrays.asList("[22:01:30,329][INFO ][grid-load-test-thread-12][GridDeploymentLocalStore] ",
+            "[22:01:30,329][INFO ][grid-load-test-thread-18][GridDeploymentLocalStore] Removed undeployed class: \n",
+            "[22:01:30,329][INFO ][grid-load-test-thread-18][GridDeploymentLocalStore] Task locally undeployed: \n"
+        );
+
+        Path file = Paths.get("test.log");
+        Files.write(file, lines, Charset.forName("UTF-8"));
+
+        lines = Arrays.asList("[22:01:30,329][INFO ][grid-load-test-thread-12][GridDeploymentLocalStore] ",
+            "[22:01:30,329][INFO ][grid-load-test-thread-18][GridDeploymentLocalStore] Removed undeployed class: \n",
+            "[22:01:30,329][INFO ][grid-load-test-thread-18][GridDeploymentLocalStore] Task locally undeployed: \n"
+        );
+
+        Path dir = Paths.get(igniteHome + "/work/log");
+        Files.createDirectories(dir);
+
+        file = Paths.get(igniteHome + "/work/log/" + "ignite.log");
+        Files.write(file, lines, Charset.forName("UTF-8"));
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void afterTestsStopped() throws Exception {
+        Path file = Paths.get("test.log");
+        Files.delete(file);
+
+        Files.delete(Paths.get(igniteHome + "/work/log/" + "ignite.log"));
+        Files.delete(Paths.get(igniteHome + "/work/log/"));
+        Files.delete(Paths.get(igniteHome + "/work/"));
+
+        super.afterTestsStopped();
+    }
+
     /**
      * @throws Exception If failed.
      */
@@ -62,8 +108,7 @@ public class GridLogCommandHandlerTest extends GridCommonAbstractTest {
         req.to(5);
         req.from(2);
 
-        req.path(getClass().getResource("/test.log").getFile());
-
+        req.path("test.log");
         IgniteInternalFuture<GridRestResponse> resp = cmdHandler.handleAsync(req);
 
         assertNull(resp.result().getError());
@@ -78,7 +123,7 @@ public class GridLogCommandHandlerTest extends GridCommonAbstractTest {
         GridLogCommandHandler cmdHandler = new GridLogCommandHandler(newContext());
         GridRestLogRequest req = new GridRestLogRequest();
 
-        req.path(getClass().getResource("/test.log").getFile());
+        req.path("test.log");
 
         IgniteInternalFuture<GridRestResponse> resp = cmdHandler.handleAsync(req);
 
@@ -92,7 +137,7 @@ public class GridLogCommandHandlerTest extends GridCommonAbstractTest {
      */
     public void testHandleAsyncPathNotSet() throws Exception {
         GridTestKernalContext ctx = newContext();
-        ctx.config().setIgniteHome(getClass().getResource("/").getFile());
+        ctx.config().setIgniteHome(igniteHome);
 
         GridLogCommandHandler cmdHandler = new GridLogCommandHandler(ctx);
         GridRestLogRequest req = new GridRestLogRequest();
@@ -116,8 +161,7 @@ public class GridLogCommandHandlerTest extends GridCommonAbstractTest {
 
         req.to(2);
         req.from(5);
-        req.path(getClass().getResource("/test.log").getFile());
-
+        req.path("test.log");
 
         IgniteInternalFuture<GridRestResponse> resp = cmdHandler.handleAsync(req);
 
@@ -135,7 +179,7 @@ public class GridLogCommandHandlerTest extends GridCommonAbstractTest {
 
         req.to(2);
         req.from(2);
-        req.path(getClass().getResource("/test.log").getFile());
+        req.path("test.log");
 
         IgniteInternalFuture<GridRestResponse> resp = cmdHandler.handleAsync(req);
 

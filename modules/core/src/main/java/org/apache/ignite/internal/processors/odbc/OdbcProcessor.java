@@ -14,15 +14,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.apache.ignite.internal.processors.odbc;
 
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.GridKernalContext;
-import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
 import org.apache.ignite.internal.util.GridSpinReadWriteLock;
-import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.marshaller.Marshaller;
 
 /**
@@ -44,12 +43,6 @@ public class OdbcProcessor extends GridProcessorAdapter {
         @Override public OdbcResponse handle(OdbcRequest req) throws IgniteCheckedException {
             return handle0(req);
         }
-
-        /** {@inheritDoc} */
-        @Override public IgniteInternalFuture<OdbcResponse> handleAsync(OdbcRequest req) {
-            return new GridFinishedFuture<>(
-                    new IgniteCheckedException("Failed to handle request (asynchronous handling is not implemented)."));
-        }
     };
 
     /**
@@ -62,44 +55,30 @@ public class OdbcProcessor extends GridProcessorAdapter {
         if (!busyLock.tryReadLock())
             throw new IgniteCheckedException("Failed to handle request (received request while stopping grid).");
 
-        OdbcResponse rsp = null;
-
         try {
-            rsp = handleRequest(req);
+            if (log.isDebugEnabled())
+                log.debug("Received request from client: " + req);
+
+            OdbcResponse rsp;
+
+            try {
+                rsp = handler == null ? null : handler.handle(req);
+
+                if (rsp == null)
+                    throw new IgniteCheckedException("Failed to find registered handler for command: " + req.command());
+            }
+            catch (Exception e) {
+                if (log.isDebugEnabled())
+                    log.debug("Failed to handle request [req=" + req + ", e=" + e + "]");
+
+                rsp = new OdbcResponse(OdbcResponse.STATUS_FAILED, e.getMessage());
+            }
+
+            return rsp;
         }
         finally {
             busyLock.readUnlock();
         }
-
-        return rsp;
-    }
-
-    /**
-     * Handle request.
-     *
-     * @param req Request.
-     * @return Response.
-     */
-    private OdbcResponse handleRequest(final OdbcRequest req) throws IgniteCheckedException {
-        if (log.isDebugEnabled())
-            log.debug("Received request from client: " + req);
-
-        OdbcResponse rsp;
-
-        try {
-            rsp = handler == null ? null : handler.handle(req);
-
-            if (rsp == null)
-                throw new IgniteCheckedException("Failed to find registered handler for command: " + req.command());
-        }
-        catch (Exception e) {
-            if (log.isDebugEnabled())
-                log.debug("Failed to handle request [req=" + req + ", e=" + e + "]");
-
-            rsp = new OdbcResponse(OdbcResponse.STATUS_FAILED, e.getMessage());
-        }
-
-        return rsp;
     }
 
     /**
@@ -114,12 +93,10 @@ public class OdbcProcessor extends GridProcessorAdapter {
     /** {@inheritDoc} */
     @Override public void start() throws IgniteCheckedException {
         if (isOdbcEnabled()) {
-
             Marshaller marsh = ctx.config().getMarshaller();
 
             if (marsh != null && !(marsh instanceof BinaryMarshaller))
-                throw new IgniteCheckedException("Failed to start processor " +
-                        "(ODBC may only be used with BinaryMarshaller).");
+                throw new IgniteCheckedException("ODBC may only be used with BinaryMarshaller.");
 
             // Register handler.
             handler = new OdbcCommandHandler(ctx);
@@ -138,7 +115,6 @@ public class OdbcProcessor extends GridProcessorAdapter {
     /** {@inheritDoc} */
     @Override public void onKernalStart() throws IgniteCheckedException {
         if (isOdbcEnabled()) {
-
             if (log.isDebugEnabled())
                 log.debug("ODBC processor started.");
         }

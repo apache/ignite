@@ -18,16 +18,11 @@ package org.apache.ignite.internal.processors.rest.handlers.log;
 
 import java.io.BufferedReader;
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.FileReader;
 import java.io.IOException;
-import java.net.URI;
-import java.nio.charset.Charset;
-import java.nio.file.Files;
 import java.nio.file.InvalidPathException;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.Collection;
+
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
@@ -49,11 +44,6 @@ public class GridLogCommandHandler extends GridRestCommandHandlerAdapter {
      * Supported commands.
      */
     private static final Collection<GridRestCommand> SUPPORTED_COMMANDS = U.sealList(LOG);
-
-    /**
-     * Default log file name *
-     */
-    private static final String DEFAULT_LOG_PATH = "work/log/ignite.log";
 
     /**
      * Default log file start line number *
@@ -126,7 +116,9 @@ public class GridLogCommandHandler extends GridRestCommandHandlerAdapter {
                 if (req0.path() != null)
                     logFile = new File(req0.path());
                 else
-                    logFile = new File(ctx.config().getIgniteHome() + "/" + DEFAULT_LOG_PATH);
+                    logFile = new File(log.fileName() == null ?
+                        ctx.config().getIgniteHome() + "/" + "work/log/ignite.log" :
+                        log.fileName());
             }
             catch (InvalidPathException e) {
                 return new GridFinishedFuture<>(new GridRestResponse(GridRestResponse.STATUS_FAILED,

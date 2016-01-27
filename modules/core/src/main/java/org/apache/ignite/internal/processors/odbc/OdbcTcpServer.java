@@ -14,11 +14,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.apache.ignite.internal.processors.odbc;
 
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.configuration.ConnectorConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.OdbcConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
@@ -108,7 +108,7 @@ public class OdbcTcpServer {
      * @return Host address.
      * @throws IOException If failed to resolve host.
      */
-    private InetAddress resolveOdbcTcpHost(IgniteConfiguration cfg) throws IOException {
+    private static InetAddress resolveOdbcTcpHost(IgniteConfiguration cfg) throws IOException {
         String host = null;
 
         OdbcConfiguration odbcCfg = cfg.getOdbcConfiguration();
@@ -134,7 +134,7 @@ public class OdbcTcpServer {
      *      server was unable to start.
      */
     private boolean startTcpServer(InetAddress hostAddr, int port, GridNioServerListener<OdbcRequest> listener,
-                                   GridNioParser parser, OdbcConfiguration cfg) {
+        GridNioParser parser, OdbcConfiguration cfg) {
         try {
             GridNioFilter codec = new GridNioCodecFilter(parser, log, false);
 
