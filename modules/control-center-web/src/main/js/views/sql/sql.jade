@@ -41,19 +41,12 @@ mixin chart-settings(mdl)
             +result-toolbar
 
 .row
-    ignite-callout
-        ignite-callout-cel(data-title='With SQL notebook you can')
+    ignite-information(data-title='With SQL notebook you can')
+        ul
             li Create any number of queries
             li Execute and explain SQL queries
             li Execute scan queries
             li View data in tabular form and as charts
-
-        ignite-callout-cel(data-title='To execute SQL you need')
-            li Start Apache Ignite Cluster with caches
-            li Populate caches with data
-            li Start Apache Ignite Web Agent
-            li Create query, enter some SQL and execute it
-
     ignite-loading
         .docs-content(ng-controller='sqlController')
             hr
@@ -160,8 +153,7 @@ mixin chart-settings(mdl)
                                         div(ng-show='paragraph.queryExecute()')
                                             +chart-settings
                                             div(ng-show='paragraph.chartColumns.length > 0 && !paragraph.chartColumnsConfigured()')
-                                                .sql-empty-result Cannot display chart. Please configure axis using&nbsp
-                                                    b Chart settings
+                                                .sql-empty-result Cannot display chart. Please configure axis using #[b Chart settings]
                                             div(ng-show='paragraph.chartColumns.length == 0')
                                                 .sql-empty-result Cannot display chart. Result set must contain Java build-in type columns. Please change query and execute it again.
                                             div(ng-show='paragraph.chartColumnsConfigured()')

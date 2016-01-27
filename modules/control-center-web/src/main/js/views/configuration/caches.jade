@@ -19,23 +19,11 @@ include ../includes/controls
 .docs-header
     h1 Create and Configure Ignite Caches
 .docs-body(ng-controller='cachesController')
-    ignite-callout
-        ignite-callout-cel(data-title='On This Screen')
-            li Configure Caches
-            li Link Domain model to Caches
-            li Link Caches to Clusters
-            li
-                ignite-dialog More info
-                    ignite-dialog-title Caches screen
-                    ignite-dialog-content 
-                        | Caches can be linked with specified #[a(ui-sref='base.configuration.clusters') clusters] and #[a(ui-sref='base.configuration.domains') domain model].#[br]
-                        | Generated cluster with caches configuration available on #[a(ui-sref='base.configuration.summary') summary] screen.
-                    
-        ignite-callout-cel(data-title='Next Steps')
-            li Continue to #[a(ui-sref='base.configuration.domains') Domain model]
-            li Continue to #[a(ui-sref='base.configuration.summary') Summary]
-            li Back to #[a(ui-sref='base.configuration.clusters') Clusters]
-
+    ignite-information(data-title='On this screen you can')
+        ul
+            li Configure caches
+            li Associate domain model with caches
+            li Preview XML and Java code for cache configuration
     div(dw-loading='loadingCachesScreen' dw-loading-options='{text: "Loading caches screen...", className: "page-loading-overlay"}')
         div(ng-show='ui.ready')
             hr

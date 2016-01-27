@@ -25,36 +25,15 @@ mixin ignite-form-field-tooltip(message)
 .docs-header
     h1 Configurations Summary
 .docs-body
-    ignite-callout
-        ignite-callout-cel(data-title='On This Screen')
-            li Download Project
-            li Preview generated XML, Java and Docker files
-            li
-                ignite-dialog More info
-                    ignite-dialog-title Summary screen
-                    ignite-dialog-content 
-                        | On this screen you can preview:
-                        | <ul>
-                        | <li>XML configurations for server and client nodes</li>
-                        | <li>Java classes with server and client nodes configuration from code</li>
-                        | <li>POJO classes generated for configured domain model</li>
-                        | <li>Maven pom.xml for generated project</li>
-                        | <li>Dockerfile for server node</li>
-                        | </ul>
-                        | Also you can:
-                        | <ul>
-                        | <li>Read #[a(href='https://apacheignite.readme.io/docs' target='_blank') Ignite Documentation]</li>
-                        | <li>Download #[a(href='https://ignite.apache.org/download.cgi#binaries' target='_blank') Ignite Binary Release]</li>
-                        | </ul>
-
-        ignite-callout-cel(data-title='Next Steps')
-            li Deploy Ignite Servers
-            li Connect Ignite Clients
-            li Analyze with SQL
-
+    ignite-information(data-title='On this screen you can preview')
+        ul
+            li XML configurations for server and client nodes
+            li Java classes with server and client nodes configuration from code
+            li POJO classes generated for configured domain model
+            li Maven pom.xml for generated project
+            li Dockerfile for server node
     ignite-loading
         hr
-
         .padding-dflt(ng-if='!clusters || clusters.length == 0')
             | You have no clusters configured. Please configure them #[a(ui-sref='base.configuration.clusters') here].
 

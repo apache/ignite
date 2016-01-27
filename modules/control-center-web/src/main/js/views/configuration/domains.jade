@@ -19,22 +19,12 @@ include ../includes/controls
 .docs-header
     h1 Create and Configure Domain Models
 .docs-body(ng-controller='domainsController')
-    ignite-callout
-        ignite-callout-cel(data-title='On This Screen')
-            li Manually enter Domain models
-            li Import Domain models from Database
-            li
-                ignite-dialog More info
-                    ignite-dialog-title Domain model screen
-                    ignite-dialog-content 
-                        | Domain models can be assigned to specified #[a(ui-sref='base.configuration.caches') caches].#[br]
-                        | Generated cluster with caches and domain models configuration available on #[a(ui-sref='base.configuration.summary') summary] screen.
-                    
-        ignite-callout-cel(data-title='Next Steps')
-            li Continue to #[a(ui-sref='base.configuration.summary') Summary]
-            li Back to #[a(ui-sref='base.configuration.caches') Caches]
-            li Back to #[a(ui-sref='base.configuration.clusters') Clusters]
-                        
+    ignite-information(data-title='On this screen you can')
+        ul
+            li Manually enter domain model descriptions
+            li Import Domain model from database
+            li Associate domain model with caches
+            li Preview XML and Java code for cluster configuration
     div(dw-loading='loadingDomainModelsScreen' dw-loading-options='{text: "Loading domain models screen...", className: "page-loading-overlay"}')
         div(ng-show='ui.ready')
             hr
