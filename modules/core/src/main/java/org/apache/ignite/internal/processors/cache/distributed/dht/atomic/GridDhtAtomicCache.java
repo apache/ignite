@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cache.distributed.dht.atomic;
 
 import java.io.Externalizable;
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -30,8 +31,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.locks.ReentrantReadWriteLock;
 import javax.cache.expiry.ExpiryPolicy;
 import javax.cache.processor.EntryProcessor;
 import javax.cache.processor.EntryProcessorResult;
@@ -77,7 +76,6 @@ import org.apache.ignite.internal.processors.cache.distributed.near.GridNearSing
 import org.apache.ignite.internal.processors.cache.dr.GridCacheDrExpirationInfo;
 import org.apache.ignite.internal.processors.cache.dr.GridCacheDrInfo;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxLocalEx;
-import org.apache.ignite.internal.processors.cache.transactions.IgniteTxManager;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersionConflictContext;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersionEx;
@@ -3014,15 +3012,14 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
     /**
      * Deferred response buffer.
      */
-    private class DeferredResponseBuffer extends ReentrantReadWriteLock implements GridTimeoutObject {
+    private class DeferredResponseBuffer implements GridTimeoutObject, Serializable {
         /** */
         private static final long serialVersionUID = 0L;
 
-        /** Filled atomic flag. */
-        private AtomicBoolean guard = new AtomicBoolean(false);
-
         /** Response versions. */
-        private Collection<GridCacheVersion> respVers = new ConcurrentLinkedDeque8<>();
+        private final Collection<GridCacheVersion> respVers = new ArrayList<>();
+
+        private volatile boolean finished = false;
 
         /** Node ID. */
         private final UUID nodeId;
@@ -3055,21 +3052,15 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
         }
 
         /** {@inheritDoc} */
-        @Override public void onTimeout() {
-            if (guard.compareAndSet(false, true)) {
-                ctx.closures().runLocalSafe(new Runnable() {
-                    @Override public void run() {
-                        writeLock().lock();
+        @Override public synchronized void onTimeout() {
+            if (finished)
+                return;
 
-                        try {
-                            finish();
-                        }
-                        finally {
-                            writeLock().unlock();
-                        }
-                    }
-                });
-            }
+            ctx.closures().runLocalSafe(new Runnable() {
+                @Override public void run() {
+                    finish();
+                }
+            });
         }
 
         /**
@@ -3078,36 +3069,16 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
          * @param ver Version to send.
          * @return {@code True} if response was handled, {@code false} if this buffer is filled and cannot be used.
          */
-        public boolean addResponse(GridCacheVersion ver) {
-            readLock().lock();
+        public synchronized boolean addResponse(GridCacheVersion ver) {
+            if (finished)
+                return false;
 
-            boolean snd = false;
+            respVers.add(ver);
 
-            try {
-                if (guard.get())
-                    return false;
+            if (respVers.size() > DEFERRED_UPDATE_RESPONSE_BUFFER_SIZE) {
+                finish();
 
-                respVers.add(ver);
-
-                if  (respVers.size() > DEFERRED_UPDATE_RESPONSE_BUFFER_SIZE && guard.compareAndSet(false, true))
-                    snd = true;
-            }
-            finally {
-                readLock().unlock();
-            }
-
-            if (snd) {
-                // Wait all threads in read lock to finish.
-                writeLock().lock();
-
-                try {
-                    finish();
-
-                    ctx.time().removeTimeoutObject(this);
-                }
-                finally {
-                    writeLock().unlock();
-                }
+                ctx.time().removeTimeoutObject(this);
             }
 
             return true;
@@ -3116,7 +3087,9 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
         /**
          * Sends deferred notification message and removes this buffer from pending responses map.
          */
-        private void finish() {
+        private synchronized void finish() {
+            finished = true;
+
             GridDhtAtomicDeferredUpdateResponse msg = new GridDhtAtomicDeferredUpdateResponse(ctx.cacheId(),
                 respVers, ctx.deploymentEnabled());
 
