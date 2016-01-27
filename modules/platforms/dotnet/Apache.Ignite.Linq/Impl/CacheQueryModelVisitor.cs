@@ -20,6 +20,7 @@ namespace Apache.Ignite.Linq.Impl
     using System;
     using System.Collections.Generic;
     using System.Diagnostics;
+    using System.Linq;
     using System.Linq.Expressions;
     using System.Text;
     using Apache.Ignite.Core.Cache;
@@ -31,9 +32,11 @@ namespace Apache.Ignite.Linq.Impl
     /// </summary>
     internal class CacheQueryModelVisitor : QueryModelVisitorBase
     {
-        private readonly List<WhereClause> _where = new List<WhereClause>();
-        private SelectClause _select;
-        private string _tableName;
+        /** */
+        private readonly StringBuilder _builder = new StringBuilder();
+
+        /** */
+        private readonly List<object> _parameters = new List<object>();
 
         /// <summary>
         /// Generates the query.
@@ -53,14 +56,7 @@ namespace Apache.Ignite.Linq.Impl
         /// <returns>Query data.</returns>
         private QueryData GetQuery()
         {
-            var builder = new StringBuilder();
-
-            Debug.Assert(!string.IsNullOrEmpty(_tableName));
-            builder.AppendFormat("from {0} ", _tableName);
-
-            var parameters = ProcessWhereClauses(builder, _where);
-
-            return new QueryData(builder.ToString().TrimEnd(), parameters);
+            return new QueryData(_builder.ToString().TrimEnd(), _parameters);
         }
 
         /** <inheritdoc /> */
@@ -73,7 +69,9 @@ namespace Apache.Ignite.Linq.Impl
             Debug.Assert(cacheEntryType.IsGenericType);
             Debug.Assert(cacheEntryType.GetGenericTypeDefinition() == typeof(ICacheEntry<,>));
 
-            _tableName = cacheEntryType.GetGenericArguments()[1].Name;
+            var tableName = cacheEntryType.GetGenericArguments()[1].Name;
+
+            _builder.AppendFormat("from {0} ", tableName);
         }
 
         /** <inheritdoc /> */
@@ -81,7 +79,12 @@ namespace Apache.Ignite.Linq.Impl
         {
             base.VisitWhereClause(whereClause, queryModel, index);
 
-            _where.Add(whereClause);
+            var whereSql = GetSqlExpression(whereClause.Predicate);
+
+            _builder.Append(_parameters.Any() ? "and" : "where");
+            _builder.AppendFormat(" {0} ", whereSql.QueryText);
+
+            _parameters.AddRange(whereSql.Parameters);
         }
 
         /** <inheritdoc /> */
@@ -89,7 +92,7 @@ namespace Apache.Ignite.Linq.Impl
         {
             base.VisitSelectClause(selectClause, queryModel);
 
-            _select = selectClause;
+            //_select = selectClause;
 
         }
 
@@ -102,26 +105,6 @@ namespace Apache.Ignite.Linq.Impl
             //    Query += " Select " + "cast(count({0}) as int";
             //else
                 throw new NotSupportedException("TODO");  // Min, max, etc
-        }
-
-        /// <summary>
-        /// Processes where clauses.
-        /// </summary>
-        /// <param name="builder">The builder.</param>
-        /// <param name="whereClauses">The where clauses.</param>
-        /// <returns>Parameter values.</returns>
-        private static List<object> ProcessWhereClauses(StringBuilder builder, List<WhereClause> whereClauses)
-        {
-            var parameters = new List<object>(whereClauses.Count);
-            for (var i = 0; i < whereClauses.Count; i++)
-            {
-                var whereSql = GetSqlExpression(whereClauses[i].Predicate);
-                parameters.AddRange(whereSql.Parameters);
-
-                builder.Append(i > 0 ? "and" : "where");
-                builder.AppendFormat(" {0} ", whereSql.QueryText);
-            }
-            return parameters;
         }
 
         /// <summary>
