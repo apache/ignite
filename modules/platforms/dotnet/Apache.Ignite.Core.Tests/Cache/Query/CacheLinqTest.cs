@@ -125,12 +125,21 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         {
             var cache = GetCache();
 
+            // Test anonymous type (ctor invoke)
             var data = cache.ToQueryable().Where(x => x.Key < 5).Select(x => new {x.Key, x.Value.Age}).ToArray();
 
             Assert.AreEqual(5, data.Length);
 
             foreach (var t in data)
                 Assert.AreEqual(t.Age, t.Key);
+
+            // Test method call
+            Func<string, int, LinqPerson> method = (name, age) => new LinqPerson(age, name);
+
+            var person = cache.ToQueryable().Where(x => x.Key == 13)
+                .Select(x => method(x.Value.Name, x.Value.Age)).ToArray().Single();
+
+            Assert.AreEqual(13, person.Age);
         }
 
         [Test]
