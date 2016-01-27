@@ -318,7 +318,12 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                     if (keyCls == null)
                         keyCls = Object.class;
 
-                    desc.name(meta.getSimpleValueType());
+                    String simpleValType = meta.getSimpleValueType();
+
+                    if (simpleValType == null)
+                        simpleValType = typeName(meta.getValueType());
+
+                    desc.name(simpleValType);
 
                     if (binaryEnabled && !keyOrValMustDeserialize) {
                         // Safe to check null.

@@ -132,7 +132,7 @@ public abstract class CacheDistributedGetFutureAdapter<K, V> extends GridCompoun
         boolean needVer,
         boolean keepCacheObjects
     ) {
-        super(cctx.kernalContext(), CU.<K, V>mapsReducer(keys.size()));
+        super(CU.<K, V>mapsReducer(keys.size()));
 
         assert !F.isEmpty(keys);
 
