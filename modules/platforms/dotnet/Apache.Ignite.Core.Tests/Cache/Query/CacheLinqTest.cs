@@ -139,14 +139,13 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
             var cache = GetCache();
 
             Assert.AreEqual(DataSize - 1, cache.ToQueryable().Max(x => x.Value.Age));
+            Assert.AreEqual(0, cache.ToQueryable().Min(x => x.Value.Age));
 
             Assert.AreEqual(21,
                 cache.ToQueryable().Where(x => x.Key > 5 && x.Value.Age < 9).Select(x => x.Value.Age).Sum());
 
             Assert.AreEqual(DataSize, cache.ToQueryable().Count());
             Assert.AreEqual(DataSize, cache.ToQueryable().Count(x => x.Key < DataSize));
-
-            // TODO: Other funcs
         }
 
         [Test]
