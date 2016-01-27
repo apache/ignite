@@ -22,7 +22,7 @@ namespace Apache.Ignite.Linq.Impl
     using System.Collections.Generic;
     using System.Diagnostics;
     using System.Linq;
-    using System.Reflection;
+    using System.Linq.Expressions;
     using Apache.Ignite.Core.Cache.Query;
     using Remotion.Linq;
 
@@ -35,12 +35,13 @@ namespace Apache.Ignite.Linq.Impl
         private readonly Func<SqlFieldsQuery, IQueryCursor<IList>> _executorFunc;
 
         /** */
-        private string _tableName;
+        private readonly string _tableName;
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="CacheFieldsQueryExecutor"/> class.
+        /// Initializes a new instance of the <see cref="CacheFieldsQueryExecutor" /> class.
         /// </summary>
         /// <param name="executorFunc">The executor function.</param>
+        /// <param name="tableName">Name of the table.</param>
         public CacheFieldsQueryExecutor(Func<SqlFieldsQuery, IQueryCursor<IList>> executorFunc, string tableName)
         {
             Debug.Assert(executorFunc != null);
@@ -70,26 +71,36 @@ namespace Apache.Ignite.Linq.Impl
 
             var query = new SqlFieldsQuery(queryData.QueryText, queryData.Parameters.ToArray());
 
-            // TODO: choose convert functor based on model
-            return _executorFunc(query).Select(Convert<T>);
-        }
+            var queryCursor = _executorFunc(query);
 
-        private static T Convert<T>(IList fields)
-        {
-            if (fields.Count == 0)
-                throw new InvalidOperationException("Fields query returned empty field set");
+            var newExpr = queryModel.SelectClause.Selector as NewExpression;
 
-            if (fields.Count == 1)
+            if (newExpr != null)
             {
-                var f = fields[0];
+                // TODO: Compile Func<IList, T>
+                var ctor = newExpr.Constructor;
 
-                if (f is T)
-                    return (T) f;
-
-                return (T) System.Convert.ChangeType(fields[0], typeof (T));
+                return queryCursor.Select(fields => (T) ctor.Invoke(fields.Cast<object>().ToArray()));
             }
 
-            return (T) Activator.CreateInstance(typeof (T), fields.OfType<object>().ToArray());
+            return queryCursor.Select(ConvertSingleField<T>);
+        }
+
+        /// <summary>
+        /// Converts the single field from the list to specified type.
+        /// </summary>
+        private static T ConvertSingleField<T>(IList fields)
+        {
+            if (fields.Count != 1)
+                throw new InvalidOperationException("Single-field query returned unexpected number of values: " +
+                                                    fields.Count);
+
+            var f = fields[0];
+
+            if (f is T)
+                return (T) f;
+
+            return (T) Convert.ChangeType(fields[0], typeof (T));
         }
     }
 }

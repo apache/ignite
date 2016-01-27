@@ -39,7 +39,7 @@ namespace Apache.Ignite.Linq.Impl
             var resultBuilder = new StringBuilder("select ");
             int parenCount = 0;
 
-            foreach (var resultOperator in queryModel.ResultOperators)  // TODO: Reverse?
+            foreach (var resultOperator in queryModel.ResultOperators)
             {
                 if (resultOperator is CountResultOperator)
                 {
@@ -64,7 +64,7 @@ namespace Apache.Ignite.Linq.Impl
                 else if (resultOperator is FirstResultOperator)
                     visitor.Builder.Append("limit 1 ");
                 else
-                    throw new NotSupportedException("TODO: " + resultOperator); // Min, max, etc
+                    throw new NotSupportedException("Operator is not supported: " + resultOperator);
             }
 
             resultBuilder.Append(GetSqlExpression(queryModel.SelectClause.Selector).QueryText);
