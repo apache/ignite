@@ -98,7 +98,9 @@ copy "$(ProjectDir)..\..\..\..\project\vs\$(Platform)\$(Configuration)\ignite.co
     <ClCompile Include="..\..\src\odbc_example.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\..\include\ignite\examples\person.h" />
+    <ClInclude Include="..\..\..\include\ignite\examples\address.h" />
+    <ClInclude Include="..\..\..\include\ignite\examples\organization.h" />
+    <ClInclude Include="..\..\..\include\ignite\examples\person.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

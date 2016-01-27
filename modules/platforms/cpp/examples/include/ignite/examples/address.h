@@ -26,17 +26,16 @@ namespace ignite
     {
         struct Address 
         {
-            Address()
+            Address() : street(), zip(0)
             {
-                street = "";
-                zip = 0;
+                // No-op.
             }
             
             Address(std::string street, int zip) : street(street), zip(zip) 
             {
                 // No-op.
             }
-            
+
             std::string ToString() 
             {
                 std::ostringstream oss;
@@ -45,10 +44,10 @@ namespace ignite
 
                 return oss.str();
             }
-            
+
             std::string street;
             int zip;
-        };    
+        };
     }
 }
 
@@ -99,11 +98,11 @@ namespace ignite
             {
                 std::string street = reader.ReadString("street");
                 int zip = reader.ReadInt32("zip");
-                
+
                 return ignite::examples::Address(street, zip);
             }
-        };    
-    }    
+        };
+    }
 }
 
 #endif

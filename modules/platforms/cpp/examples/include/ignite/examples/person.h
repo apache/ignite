@@ -30,14 +30,13 @@ namespace ignite
     {
         struct Person
         {
-            Person() : id(0), orgId(0), salary(.0)
+            Person() : orgId(0), salary(.0)
             {
                 // No-op.
             }
 
-            Person(int64_t id, int64_t orgId, const std::string& firstName,
+            Person(int64_t orgId, const std::string& firstName,
                 const std::string& lastName, const std::string& resume, double salary) :
-                id(id),
                 orgId(orgId),
                 firstName(firstName),
                 lastName(lastName),
@@ -51,8 +50,7 @@ namespace ignite
             {
                 std::ostringstream oss;
 
-                oss << "Person [id=" + id
-                    << ", orgId=" << orgId 
+                oss << "Person [orgId=" << orgId
                     << ", lastName=" << lastName
                     << ", firstName=" << firstName
                     << ", salary=" << salary
@@ -61,7 +59,6 @@ namespace ignite
                 return oss.str();
             }
 
-            int64_t id;
             int64_t orgId;
             std::string firstName;
             std::string lastName;
@@ -88,7 +85,6 @@ namespace ignite
 
             void Write(BinaryWriter& writer, ignite::examples::Person obj)
             {
-                writer.WriteInt64("id", obj.id);
                 writer.WriteInt64("orgId", obj.orgId);
                 writer.WriteString("firstName", obj.firstName);
                 writer.WriteString("lastName", obj.lastName);
@@ -98,14 +94,13 @@ namespace ignite
 
             ignite::examples::Person Read(BinaryReader& reader)
             {
-                int64_t id = reader.ReadInt64("id");
                 int64_t orgId = reader.ReadInt64("orgId");
                 std::string firstName = reader.ReadString("firstName");
                 std::string lastName = reader.ReadString("lastName");
                 std::string resume = reader.ReadString("resume");
                 double salary = reader.ReadDouble("salary");
 
-                return ignite::examples::Person(id, orgId, firstName, lastName, resume, salary);
+                return ignite::examples::Person(orgId, firstName, lastName, resume, salary);
             }
 
         IGNITE_BINARY_TYPE_END

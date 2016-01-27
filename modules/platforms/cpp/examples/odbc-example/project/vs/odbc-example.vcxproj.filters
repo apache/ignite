@@ -15,7 +15,13 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\..\include\ignite\examples\person.h">
+    <ClInclude Include="..\..\..\include\ignite\examples\address.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\include\ignite\examples\organization.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\include\ignite\examples\person.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

@@ -32,6 +32,7 @@
 #include "ignite/ignition.h"
 
 #include "ignite/examples/person.h"
+#include "ignite/examples/organization.h"
 
 using namespace ignite;
 using namespace cache;
@@ -170,7 +171,7 @@ void GetDataWithOdbc(const std::string& cacheName, const std::string& hostName,
 }
 
 /**
- * Populate cache with sample data.
+ * Populate Person cache with sample data.
  * 
  * @param cache Cache instance.
  */
@@ -178,12 +179,29 @@ void Populate(Cache<int64_t, Person>& cache)
 {
     std::map<int64_t, Person> persons;
 
-    persons[1] = Person(1, 1, "John", "Doe", "Master Degree.", 2200.0);
-    persons[2] = Person(2, 1, "Jane", "Doe", "Bachelor Degree.", 1300.0);
-    persons[3] = Person(3, 1, "John", "Smith", "Bachelor Degree.", 1700.0);
-    persons[4] = Person(4, 1, "Jane", "Smith", "Master Degree.", 2500.0);
+    int64_t key = 0;
+    persons[++key] = Person(1, "John", "Doe", "Master Degree.", 2200.0);
+    persons[++key] = Person(2, "Jane", "Doe", "Bachelor Degree.", 1300.0);
+    persons[++key] = Person(1, "John", "Smith", "Bachelor Degree.", 1700.0);
+    persons[++key] = Person(2, "Jane", "Smith", "Master Degree.", 2500.0);
 
     cache.PutAll(persons);
+}
+
+/**
+ * Populate Organization cache with sample data.
+ * 
+ * @param cache Cache instance.
+ */
+void Populate(Cache<int64_t, Organization>& cache)
+{
+    std::map<int64_t, Organization> orgs;
+
+    int64_t key = 0;
+    orgs[++key] = Organization("Microsoft", Address("1096 Eddy Street, San Francisco, CA", 94109));
+    orgs[++key] = Organization("Red Cross", Address("184 Fidler Drive, San Antonio, TX", 78205));
+
+    cache.PutAll(orgs);
 }
 
 /**
@@ -209,13 +227,19 @@ int main()
         std::cout << ">>> Cache ODBC example started." << std::endl;
         std::cout << std::endl;
 
-        // Get cache instance.
-        Cache<int64_t, Person> cache = grid.GetCache<int64_t, Person>("Person");
+        // Get Person cache instance.
+        Cache<int64_t, Person> personCache = grid.GetCache<int64_t, Person>("Person");
 
-        // Clear cache.
-        cache.Clear();
+        // Get Organization cache instance.
+        Cache<int64_t, Organization> orgCache = grid.GetCache<int64_t, Organization>("Organization");
 
-        Populate(cache);
+        // Clear caches.
+        personCache.Clear();
+        orgCache.Clear();
+
+        // Populate caches.
+        Populate(personCache);
+        Populate(orgCache);
 
         std::cout << std::endl;
         std::cout << ">>> Getting list of persons:" << std::endl;
@@ -226,6 +250,11 @@ int main()
         std::cout << ">>> Getting average salary by degree:" << std::endl;
 
         GetDataWithOdbc("Person", "localhost", "11443", "SELECT resume, AVG(salary) FROM Person GROUP BY resume");
+
+        std::cout << std::endl;
+        std::cout << ">>> Getting people with organizations:" << std::endl;
+
+        GetDataWithOdbc("Person", "localhost", "11443", "SELECT firstName, lastName, Organization.name FROM Person INNER JOIN \"Organization\".Organization ON Person.orgId = Organization._KEY");
 
         // Stop node.
         Ignition::StopAll(false);
