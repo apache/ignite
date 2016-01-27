@@ -57,7 +57,7 @@ namespace Apache.Ignite.Linq.Impl
         /// Initializes a new instance of the <see cref="CacheQueryModelVisitor"/> class.
         /// </summary>
         /// <param name="tableName">Name of the table.</param>
-        private CacheQueryModelVisitor(string tableName)
+        protected CacheQueryModelVisitor(string tableName)
         {
             Debug.Assert(!string.IsNullOrEmpty(tableName));
 

@@ -33,15 +33,19 @@ namespace Apache.Ignite.Linq.Impl
         /** */
         private readonly Func<SqlFieldsQuery, IQueryCursor<IList>> _executorFunc;
 
+        /** */
+        private string _tableName;
+
         /// <summary>
         /// Initializes a new instance of the <see cref="CacheFieldsQueryExecutor"/> class.
         /// </summary>
         /// <param name="executorFunc">The executor function.</param>
-        public CacheFieldsQueryExecutor(Func<SqlFieldsQuery, IQueryCursor<IList>> executorFunc)
+        public CacheFieldsQueryExecutor(Func<SqlFieldsQuery, IQueryCursor<IList>> executorFunc, string tableName)
         {
             Debug.Assert(executorFunc != null);
 
             _executorFunc = executorFunc;
+            _tableName = tableName;
         }
 
         /** <inheritdoc /> */
@@ -61,7 +65,7 @@ namespace Apache.Ignite.Linq.Impl
         /** <inheritdoc /> */
         public IEnumerable<T> ExecuteCollection<T>(QueryModel queryModel)
         {
-            var queryData = CacheFieldsQueryModelVisitor.GenerateQuery(queryModel);
+            var queryData = CacheFieldsQueryModelVisitor.GenerateQuery(queryModel, _tableName);
 
             var query = new SqlFieldsQuery(queryData.QueryText, queryData.Parameters.ToArray());
 

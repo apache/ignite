@@ -28,11 +28,20 @@ namespace Apache.Ignite.Linq.Impl
     internal class CacheFieldsQueryModelVisitor : CacheQueryModelVisitor
     {
         /// <summary>
+        /// Initializes a new instance of the <see cref="CacheFieldsQueryModelVisitor"/> class.
+        /// </summary>
+        /// <param name="tableName">Name of the table.</param>
+        public CacheFieldsQueryModelVisitor(string tableName) : base(tableName)
+        {
+            // No-op.
+        }
+
+        /// <summary>
         /// Generates the query.
         /// </summary>
-        public new static QueryData GenerateQuery(QueryModel queryModel)
+        public new static QueryData GenerateQuery(QueryModel queryModel, string tableName)
         {
-            var visitor = new CacheFieldsQueryModelVisitor();
+            var visitor = new CacheFieldsQueryModelVisitor(tableName);
 
             visitor.VisitQueryModel(queryModel);
 

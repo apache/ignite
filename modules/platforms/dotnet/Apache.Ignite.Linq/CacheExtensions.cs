@@ -52,14 +52,14 @@ namespace Apache.Ignite.Linq
         /// <typeparam name="TKey">The type of the key.</typeparam>
         /// <typeparam name="TValue">The type of the value.</typeparam>
         /// <param name="cache">The cache.</param>
-        /// <param name="queryTypeName">Name of the query type.</param>
+        /// <param name="tableName">Name of the query type.</param>
         /// <returns>
         ///   <see cref="IQueryable{T}" /> instance over this cache.
         /// </returns>
         public static IQueryable<ICacheEntry<TKey, TValue>> ToQueryable<TKey, TValue>(this ICache<TKey, TValue> cache, 
-            string queryTypeName)
+            string tableName)
         {
-            return new CacheQueryable<TKey, TValue>(cache, queryTypeName);
+            return new CacheQueryable<TKey, TValue>(cache, tableName);
         }
     }
 }

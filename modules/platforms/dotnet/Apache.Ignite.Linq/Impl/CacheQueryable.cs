@@ -31,9 +31,9 @@ namespace Apache.Ignite.Linq.Impl
         /// Initializes a new instance of the <see cref="CacheQueryable{TKey, TValue}" /> class.
         /// </summary>
         /// <param name="cache">The cache.</param>
-        /// <param name="queryTypeName">Name of the query type.</param>
-        public CacheQueryable(ICache<TKey, TValue> cache, string queryTypeName)
-            : base(new CacheQueryProvider<TKey, TValue>(cache, queryTypeName))
+        /// <param name="tableName">Name of the query type.</param>
+        public CacheQueryable(ICache<TKey, TValue> cache, string tableName)
+            : base(new CacheQueryProvider<TKey, TValue>(cache, tableName))
         {
             // No-op.
         }
