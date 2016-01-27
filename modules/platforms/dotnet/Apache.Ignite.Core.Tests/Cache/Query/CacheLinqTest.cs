@@ -94,8 +94,8 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         {
             var cache = GetCache();
 
-            Assert.AreEqual(10, cache.ToQueryable()
-                .Where(x => x.Value.Age < 10).ToArray().Length);
+            var queryable = cache.ToQueryable().Where(x => x.Value.Age < 10);
+            Assert.AreEqual(10, queryable.ToArray().Length);
 
             Assert.AreEqual(10, cache.ToQueryable()
                 .Where(x => x.Value.Address.Zip < 10).ToArray().Length);

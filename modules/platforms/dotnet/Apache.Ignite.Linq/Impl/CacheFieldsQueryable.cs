@@ -17,6 +17,7 @@
 
 namespace Apache.Ignite.Linq.Impl
 {
+    using System;
     using System.Linq;
     using System.Linq.Expressions;
     using Apache.Ignite.Core.Cache;
@@ -25,7 +26,7 @@ namespace Apache.Ignite.Linq.Impl
     /// <summary>
     /// Fields <see cref="IQueryable{T}"/> implementation for <see cref="ICache{TK,TV}"/>.
     /// </summary>
-    internal class CacheFieldsQueryable<T> : QueryableBase<T>
+    internal class CacheFieldsQueryable<T> : QueryableBase<T>, ICacheQueryable
     {
         /// <summary>
         /// Initializes a new instance of the <see cref="CacheQueryable{TKey, TValue}"/> class.
@@ -36,6 +37,13 @@ namespace Apache.Ignite.Linq.Impl
         public CacheFieldsQueryable(IQueryProvider provider, Expression expression) : base(provider, expression)
         {
             // No-op.
+        }
+
+        /** <inheritdoc /> */
+        public string ToTraceString()
+        {
+            // TODO
+            throw new NotImplementedException();
         }
     }
 }
