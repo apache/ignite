@@ -21,6 +21,7 @@ namespace Apache.Ignite.Linq.Impl
     using System.Linq.Expressions;
     using Apache.Ignite.Core.Cache;
     using Remotion.Linq;
+    using Remotion.Linq.Clauses.StreamedData;
 
     /// <summary>
     /// Cache query provider.
@@ -33,7 +34,7 @@ namespace Apache.Ignite.Linq.Impl
         private readonly ICache<TKey, TValue> _cache;
 
         /** */
-        private string _tableName;
+        private readonly string _tableName;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="CacheQueryProvider{TKey, TValue}" /> class.
@@ -48,28 +49,32 @@ namespace Apache.Ignite.Linq.Impl
             _tableName = tableName;
         }
 
-        /// <summary>
-        /// Constructs an <see cref="T:System.Linq.IQueryable`1" /> object that can evaluate the query 
-        /// represented by a specified expression tree. This method is
-        /// called by the standard query operators defined by the <see cref="T:System.Linq.Queryable" /> class.
-        /// </summary>
-        /// <typeparam name="T">Element type.</typeparam>
-        /// <param name="expression">An expression tree that represents a LINQ query.</param>
-        /// <returns>
-        /// An <see cref="T:System.Linq.IQueryable`1" /> that can evaluate the query represented 
-        /// by the specified expression tree.
-        /// </returns>
+        /** <inheritdoc /> */
         public override IQueryable<T> CreateQuery<T>(Expression expression)
         {
             if (typeof (T) != typeof (ICacheEntry<TKey, TValue>))
-            {
-                var fieldsProvider = new CacheFieldsQueryProvider(QueryParser, 
-                    new CacheFieldsQueryExecutor(q => _cache.QueryFields(q), _tableName));
-
-                return fieldsProvider.CreateQuery<T>(expression);
-            }
+                return GetFieldsProvider().CreateQuery<T>(expression);
 
             return (IQueryable<T>) new CacheQueryable<TKey, TValue>(this, expression);
+        }
+
+        /** <inheritdoc /> */
+        public override IStreamedData Execute(Expression expression)
+        {
+            if (expression.NodeType != ExpressionType.Constant &&
+                expression.Type != typeof (IQueryable<ICacheEntry<TKey, TValue>>))
+                return GetFieldsProvider().Execute(expression);
+
+            return base.Execute(expression);
+        }
+
+        /// <summary>
+        /// Gets the fields provider.
+        /// </summary>
+        private CacheFieldsQueryProvider GetFieldsProvider()
+        {
+            return new CacheFieldsQueryProvider(QueryParser,
+                new CacheFieldsQueryExecutor(q => _cache.QueryFields(q), _tableName));
         }
     }
 }

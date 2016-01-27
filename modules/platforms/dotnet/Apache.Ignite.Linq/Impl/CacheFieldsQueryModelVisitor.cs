@@ -70,7 +70,7 @@ namespace Apache.Ignite.Linq.Impl
             else if (resultOperator is SumResultOperator)
                 Builder.Insert(0, "sum (").Append(") ");
             else
-                throw new NotSupportedException("TODO"); // Min, max, etc
+                throw new NotSupportedException("TODO: " + resultOperator); // Min, max, etc
         }
     }
 }
