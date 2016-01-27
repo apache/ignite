@@ -200,8 +200,6 @@ int main()
 
     cfg.springCfgPath = "platforms/cpp/examples/odbc-example/config/example-cache.xml";
 
-    //cfg.jvmOpts.push_back("-DIGNITE_QUIET=false");
-
     try
     {
         // Start a node.
