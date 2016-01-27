@@ -22,6 +22,7 @@ namespace Apache.Ignite.Linq.Impl
     using System.Collections.Generic;
     using System.Diagnostics;
     using System.Linq;
+    using System.Reflection;
     using Apache.Ignite.Core.Cache.Query;
     using Remotion.Linq;
 
@@ -69,7 +70,7 @@ namespace Apache.Ignite.Linq.Impl
 
             var query = new SqlFieldsQuery(queryData.QueryText, queryData.Parameters.ToArray());
 
-            // TODO
+            // TODO: choose convert functor based on model
             return _executorFunc(query).Select(Convert<T>);
         }
 
@@ -88,7 +89,7 @@ namespace Apache.Ignite.Linq.Impl
                 return (T) System.Convert.ChangeType(fields[0], typeof (T));
             }
 
-            throw new NotSupportedException("TODO");
+            return (T) Activator.CreateInstance(typeof (T), fields.OfType<object>().ToArray());
         }
     }
 }

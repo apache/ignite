@@ -127,7 +127,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
 
             var data = cache.ToQueryable().Where(x => x.Key < 5).Select(x => new {x.Key, x.Value.Age}).ToArray();
 
-            Assert.AreEqual(4, data.Length);
+            Assert.AreEqual(5, data.Length);
         }
 
         [Test]
