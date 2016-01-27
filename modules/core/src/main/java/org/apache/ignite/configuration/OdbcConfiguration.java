@@ -82,10 +82,10 @@ public class OdbcConfiguration {
         assert cfg != null;
 
         directBuf = cfg.isDirectBuffer();
+        host = cfg.getHost();
         idleTimeout = cfg.getIdleTimeout();
         noDelay = cfg.isNoDelay();
         port = cfg.getPort();
-        host = cfg.getHost();
         rcvBufSize = cfg.getReceiveBufferSize();
         selectorCnt = cfg.getSelectorCount();
         sndBufSize = cfg.getSendBufferSize();
