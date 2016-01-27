@@ -229,9 +229,6 @@
                     <exclude>**/*.java</exclude>
                 </excludes>
             </testResource>
-            <testResource>
-                <directory>src/test/resources</directory>
-            </testResource>
         </testResources>
 
         <plugins>
