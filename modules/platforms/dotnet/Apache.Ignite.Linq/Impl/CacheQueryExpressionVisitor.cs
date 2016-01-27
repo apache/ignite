@@ -162,13 +162,25 @@ namespace Apache.Ignite.Linq.Impl
             {
                 _resultBuilder.Append("(");
                 Visit(expression.Object);
-                _resultBuilder.Append(" like '%' + ");
-                Visit(expression.Arguments[0]);
-                _resultBuilder.Append(" + '%')");
+                _resultBuilder.Append(" like ?) ");
+                _parameters.Add(string.Format("%{0}%", GetConstantValue(expression)));
+
                 return expression;
             }
 
             return base.VisitMethodCall(expression); // throws
+        }
+
+        private static object GetConstantValue(MethodCallExpression expression)
+        {
+            var arg = expression.Arguments[0] as ConstantExpression;
+
+            if (arg == null)
+                throw new NotSupportedException("Only constant expression is supported inside Contains call: " +
+                                                expression);
+
+            var argValue = arg.Value;
+            return argValue;
         }
 
         /** <inheritdoc /> */
