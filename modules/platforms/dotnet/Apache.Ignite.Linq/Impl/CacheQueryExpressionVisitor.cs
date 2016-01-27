@@ -255,7 +255,27 @@ namespace Apache.Ignite.Linq.Impl
             return expression;
         }
 
-        private void VisitArguments(ReadOnlyCollection<Expression> arguments)
+        /** <inheritdoc /> */
+        protected override Expression VisitInvocation(InvocationExpression expression)
+        {
+            VisitArguments(expression.Arguments);
+
+            return expression;
+        }
+
+        /** <inheritdoc /> */
+        protected override Exception CreateUnhandledItemException<T>(T unhandledItem, string visitMethod)
+        {
+            return new NotSupportedException(
+                string.Format("The expression '{0}' (type: {1}) is not supported by this LINQ provider.",
+                    unhandledItem, typeof (T)));
+        }
+
+        /// <summary>
+        /// Visits multiple arguments.
+        /// </summary>
+        /// <param name="arguments">The arguments.</param>
+        private void VisitArguments(IEnumerable<Expression> arguments)
         {
             var first = true;
 
@@ -268,14 +288,6 @@ namespace Apache.Ignite.Linq.Impl
 
                 Visit(e);
             }
-        }
-
-        /** <inheritdoc /> */
-        protected override Exception CreateUnhandledItemException<T>(T unhandledItem, string visitMethod)
-        {
-            return new NotSupportedException(
-                string.Format("The expression '{0}' (type: {1}) is not supported by this LINQ provider.",
-                    unhandledItem, typeof (T)));
         }
     }
 }

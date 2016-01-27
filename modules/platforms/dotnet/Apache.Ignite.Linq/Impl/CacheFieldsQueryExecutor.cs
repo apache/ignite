@@ -103,6 +103,21 @@ namespace Apache.Ignite.Linq.Impl
                 return fields => (T) methodExpr.Method.Invoke(target, fields.Cast<object>().ToArray());
             }
 
+            var invokeExpr = selectorExpression as InvocationExpression;
+
+            if (invokeExpr != null)
+            {
+                // TODO: Compile
+                var targetExpr = invokeExpr.Expression as ConstantExpression;
+
+                if (targetExpr == null)
+                    throw new NotSupportedException("Delegate expression is not supported: " + invokeExpr);
+
+                var del = (Delegate) targetExpr.Value;
+
+                return fields => (T) del.DynamicInvoke(fields.Cast<object>().ToArray());
+            }
+
             return ConvertSingleField<T>;
         }
 
