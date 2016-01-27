@@ -181,9 +181,13 @@ void Populate(Cache<int64_t, Person>& cache)
 
     int64_t key = 0;
     persons[++key] = Person(1, "John", "Doe", "Master Degree.", 2200.0);
-    persons[++key] = Person(2, "Jane", "Doe", "Bachelor Degree.", 1300.0);
-    persons[++key] = Person(1, "John", "Smith", "Bachelor Degree.", 1700.0);
+    persons[++key] = Person(1, "Jane", "Doe", "Bachelor Degree.", 1300.0);
+    persons[++key] = Person(2, "John", "Smith", "Bachelor Degree.", 1700.0);
     persons[++key] = Person(2, "Jane", "Smith", "Master Degree.", 2500.0);
+    persons[++key] = Person(2, "John", "Roe", "Bachelor Degree.", 1500.0);
+    persons[++key] = Person(2, "Jane", "Roe", "Bachelor Degree.", 1000.0);
+    persons[++key] = Person(1, "Richard", "Miles", "Master Degree.", 2400.0);
+    persons[++key] = Person(2, "Mary", "Major", "Bachelor Degree.", 900.0);
 
     cache.PutAll(persons);
 }
@@ -244,17 +248,21 @@ int main()
         std::cout << std::endl;
         std::cout << ">>> Getting list of persons:" << std::endl;
 
-        GetDataWithOdbc("Person", "localhost", "11443", "SELECT firstName, lastName, resume, salary FROM Person");
+        GetDataWithOdbc("Person", "localhost", "11443",
+            "SELECT firstName, lastName, resume, salary FROM Person");
 
         std::cout << std::endl;
         std::cout << ">>> Getting average salary by degree:" << std::endl;
 
-        GetDataWithOdbc("Person", "localhost", "11443", "SELECT resume, AVG(salary) FROM Person GROUP BY resume");
+        GetDataWithOdbc("Person", "localhost", "11443",
+            "SELECT resume, AVG(salary) FROM Person GROUP BY resume");
 
         std::cout << std::endl;
         std::cout << ">>> Getting people with organizations:" << std::endl;
 
-        GetDataWithOdbc("Person", "localhost", "11443", "SELECT firstName, lastName, Organization.name FROM Person INNER JOIN \"Organization\".Organization ON Person.orgId = Organization._KEY");
+        GetDataWithOdbc("Person", "localhost", "11443",
+            "SELECT firstName, lastName, Organization.name FROM Person "
+            "INNER JOIN \"Organization\".Organization ON Person.orgId = Organization._KEY");
 
         // Stop node.
         Ignition::StopAll(false);
