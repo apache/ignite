@@ -18,14 +18,14 @@
 ACLOCAL_AMFLAGS = "-Im4"
 
 SUBDIRS = .
-DIST_SUBDIRS = . include
+DIST_SUBDIRS = .
 
-AM_CPPFLAGS = -I$(srcdir)/include -I$(JAVA_HOME)/include -I$(JAVA_HOME)/include/linux -DIGNITE_IMPL
+AM_CPPFLAGS = -I$(srcdir)/../include -I$(JAVA_HOME)/include -I$(JAVA_HOME)/include/linux -DIGNITE_IMPL
 AM_CXXFLAGS = -Wall -std=c++0x
 
 noinst_PROGRAMS = ignite-putgetexample
 
-ignite_putgetexample_SOURCES = src/putgetexample.cpp
+ignite_putgetexample_SOURCES = src/putget_example.cpp
 
 ignite_putgetexample_LDFLAGS = -static-libtool-libs -L/usr/local/lib -lignite
 

@@ -20,12 +20,12 @@ ACLOCAL_AMFLAGS = "-Im4"
 SUBDIRS = .
 DIST_SUBDIRS = .
 
-AM_CPPFLAGS = -I$(JAVA_HOME)/include -I$(JAVA_HOME)/include/linux -DIGNITE_IMPL
+AM_CPPFLAGS = -I$(srcdir)/../include -I$(JAVA_HOME)/include -I$(JAVA_HOME)/include/linux -DIGNITE_IMPL
 AM_CXXFLAGS = -Wall -std=c++0x
 
 noinst_PROGRAMS = ignite-odbcexample
 
-ignite_odbcexample_SOURCES = src/odbcexample.cpp
+ignite_odbcexample_SOURCES = src/odbc_example.cpp
 
 ignite_odbcexample_LDFLAGS = -static-libtool-libs -L/usr/local/lib -lodbc
 
