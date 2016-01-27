@@ -71,6 +71,8 @@ namespace Apache.Ignite.Linq.Impl
 
             var query = new SqlFieldsQuery(queryData.QueryText, queryData.Parameters.ToArray());
 
+            Debug.WriteLine("Fields Query: " + queryData.QueryText);
+
             var queryCursor = _executorFunc(query);
 
             var selector = GetResultSelector<T>(queryModel.SelectClause.Selector);

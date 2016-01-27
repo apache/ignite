@@ -76,6 +76,8 @@ namespace Apache.Ignite.Linq.Impl
 
             var query = new SqlQuery(_queryTypeName, queryData.QueryText, queryData.Parameters.ToArray());
 
+            Debug.WriteLine("SQL Query: " + queryData.QueryText);
+
             return (IEnumerable<T>) _cache.Query(query);
         }
     }
