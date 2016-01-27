@@ -735,7 +735,7 @@ consoleModule.service('$common', [
                 var lines = _.map(arr, function (line) {
                     var rtrimmed = line.replace(/\s+$/g, '');
 
-                    if (rtrimmed.indexOf('>', this.length - 1) === -1)
+                    if (arr.length > 1 && rtrimmed.indexOf('>', rtrimmed.length - 1) === -1)
                         rtrimmed = rtrimmed + '<br/>';
 
                     return rtrimmed;

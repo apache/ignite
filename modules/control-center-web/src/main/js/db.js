@@ -403,6 +403,8 @@ var ClusterSchema = new Schema({
         port: Number,
         portRange: Number,
         idleTimeout: Number,
+        idleQueryCursorTimeout: Number,
+        idleQueryCursorCheckFrequency: Number,
         receiveBufferSize: Number,
         sendBufferSize: Number,
         directBuffer: Boolean,

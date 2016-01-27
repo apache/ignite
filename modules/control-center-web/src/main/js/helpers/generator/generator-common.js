@@ -386,6 +386,8 @@ $generatorCommon.CONNECTOR_CONFIGURATION = {
         port: {dflt: 11211},
         portRange: {dflt: 100},
         idleTimeout: {dflt: 7000},
+        idleQueryCursorTimeout: {dflt: 600000},
+        idleQueryCursorCheckFrequency: {dflt: 60000},
         receiveBufferSize: {dflt: 32768},
         sendBufferSize: {dflt: 32768},
         sendQueueLimit: {dflt: 0},
