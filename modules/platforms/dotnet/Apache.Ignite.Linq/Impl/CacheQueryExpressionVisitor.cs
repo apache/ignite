@@ -25,6 +25,7 @@ namespace Apache.Ignite.Linq.Impl
     using System.Linq.Expressions;
     using System.Reflection;
     using Apache.Ignite.Core.Cache.Configuration;
+    using Remotion.Linq.Clauses.Expressions;
     using Remotion.Linq.Parsing;
 
     /// <summary>
@@ -133,6 +134,14 @@ namespace Apache.Ignite.Linq.Impl
 
             Visit(expression.Right);
             _resultBuilder.Append(")");
+
+            return expression;
+        }
+
+        /** <inheritdoc /> */
+        protected override Expression VisitQuerySourceReference(QuerySourceReferenceExpression expression)
+        {
+            _resultBuilder.Append("*");
 
             return expression;
         }
