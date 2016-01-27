@@ -17,8 +17,10 @@
 
 namespace Apache.Ignite.Linq.Impl
 {
+    using System;
     using Remotion.Linq;
     using Remotion.Linq.Clauses;
+    using Remotion.Linq.Clauses.ResultOperators;
 
     /// <summary>
     /// Fields query visitor, respects "SELECT" clause.
@@ -47,6 +49,19 @@ namespace Apache.Ignite.Linq.Impl
             var selectSql = GetSqlExpression(selectClause.Selector);
 
             Builder.Insert(0, string.Format("select {0} ", selectSql.QueryText));
+        }
+
+        /** <inheritdoc /> */
+        public override void VisitResultOperator(ResultOperatorBase resultOperator, QueryModel queryModel, int index)
+        {
+            base.VisitResultOperator(resultOperator, queryModel, index);
+
+            if (resultOperator is CountResultOperator)
+                Builder.Insert(0, "count (").Append(") ");
+            else if (resultOperator is SumResultOperator)
+                Builder.Insert(0, "sum (").Append(") ");
+            else
+                throw new NotSupportedException("TODO"); // Min, max, etc
         }
     }
 }

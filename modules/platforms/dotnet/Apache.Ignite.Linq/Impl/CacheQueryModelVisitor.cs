@@ -95,17 +95,6 @@ namespace Apache.Ignite.Linq.Impl
             _parameters.AddRange(whereSql.Parameters);
         }
 
-        /** <inheritdoc /> */
-        public override void VisitResultOperator(ResultOperatorBase resultOperator, QueryModel queryModel, int index)
-        {
-            //base.VisitResultOperator(resultOperator, queryModel, index);
-
-            //if (resultOperator is CountResultOperator)
-            //    Query += " Select " + "cast(count({0}) as int";
-            //else
-                throw new NotSupportedException("TODO");  // Min, max, etc
-        }
-
         /// <summary>
         /// Gets the SQL expression.
         /// </summary>
