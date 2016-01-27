@@ -23,7 +23,6 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Cache;
     using Apache.Ignite.Core.Cache.Configuration;
-    using Apache.Ignite.Core.Cache.Query;
     using Apache.Ignite.Linq;
     using NUnit.Framework;
 
@@ -112,11 +111,24 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         {
             var cache = GetCache();
 
-            var results = cache.ToQueryable().Where(x => x.Key == 5).Select(x => x.Value.Age).ToArray();
+            // Multiple values
+            Assert.AreEqual(new[] {0, 1, 2},
+                cache.ToQueryable().Where(x => x.Key < 3).Select(x => x.Value.Age).ToArray());
 
-            Assert.AreEqual(new[] {5}, results);
+            // Single value
+            Assert.AreEqual(3, cache.ToQueryable().Where(x => x.Key == 3).Select(x => x.Value.Age).FirstOrDefault());
 
-            // TODO: Test scalar, test single value
+            // TODO: Multiple fields
+        }
+
+        [Test]
+        public void TestScalarQuery()
+        {
+            var cache = GetCache();
+
+            Assert.AreEqual(DataSize - 1, cache.ToQueryable().Max(x => x.Value.Age));
+
+            // TODO: Other funcs
         }
 
         [Test]
