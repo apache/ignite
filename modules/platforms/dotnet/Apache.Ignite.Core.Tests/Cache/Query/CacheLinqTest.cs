@@ -99,8 +99,8 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
             Assert.AreEqual(19, cache.ToQueryable()
                 .Where(x => x.Value.Age > 10 && x.Value.Age < 30).ToArray().Length);
 
-            Assert.AreEqual(20, cache.ToQueryable()
-                .Where(x => x.Value.Age > 10).Where(x => x.Value.Age < 30 || x.Value.Age == 50).ToArray().Length);
+            Assert.AreEqual(20, cache
+                .ToQueryable().Where(x => x.Value.Age > 10).Count(x => x.Value.Age < 30 || x.Value.Age == 50));
         }
 
         [Test]
@@ -109,12 +109,13 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
             var cache = GetCache();
 
             Assert.AreEqual(15, cache.ToQueryable().Where(x => x.Key < 15).ToArray().Length);
+            Assert.AreEqual(15, cache.ToQueryable().Where(x => -x.Key > -15).ToArray().Length);
 
             // TODO: Test string key with LOWER or something
         }
 
         [Test]
-        public void TestSignleFieldQuery()
+        public void TestSingleFieldQuery()
         {
             var cache = GetCache();
 

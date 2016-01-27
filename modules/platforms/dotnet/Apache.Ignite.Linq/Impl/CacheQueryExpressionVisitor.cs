@@ -21,7 +21,6 @@ using System.Text;
 namespace Apache.Ignite.Linq.Impl
 {
     using System.Collections.Generic;
-    using System.Collections.ObjectModel;
     using System.Linq;
     using System.Linq.Expressions;
     using System.Reflection;
@@ -80,6 +79,31 @@ namespace Apache.Ignite.Linq.Impl
         }
 
         /** <inheritdoc /> */
+        protected override Expression VisitUnary(UnaryExpression expression)
+        {
+            _resultBuilder.Append("(");
+
+            switch (expression.NodeType)
+            {
+                case ExpressionType.Negate:
+                    _resultBuilder.Append("-");
+                    break;
+                case ExpressionType.Not:
+                    _resultBuilder.Append("not ");
+                    break;
+                default:
+                    return base.VisitUnary(expression);
+            }
+
+            Visit(expression.Operand);
+
+            _resultBuilder.Append(")");
+
+            return expression;
+        }
+
+        /** <inheritdoc /> */
+
         protected override Expression VisitBinary(BinaryExpression expression)
         {
             _resultBuilder.Append("(");
@@ -146,6 +170,7 @@ namespace Apache.Ignite.Linq.Impl
         }
 
         /** <inheritdoc /> */
+
         protected override Expression VisitQuerySourceReference(QuerySourceReferenceExpression expression)
         {
             _resultBuilder.Append("*");
@@ -154,17 +179,15 @@ namespace Apache.Ignite.Linq.Impl
         }
 
         /** <inheritdoc /> */
+
         protected override Expression VisitMember(MemberExpression expression)
         {
             // Field hierarchy is flattened, append as is, do not call Visit.
             // TODO: Aliases? How do they work? See email.
 
-            var queryFieldAttr =
-                expression.Member.GetCustomAttributes(true).OfType<QuerySqlFieldAttribute>().FirstOrDefault();
+            var queryFieldAttr = expression.Member.GetCustomAttributes(true).OfType<QuerySqlFieldAttribute>().FirstOrDefault();
 
-            var fieldName = queryFieldAttr == null || string.IsNullOrEmpty(queryFieldAttr.Name)
-                ? expression.Member.Name
-                : queryFieldAttr.Name;
+            var fieldName = queryFieldAttr == null || string.IsNullOrEmpty(queryFieldAttr.Name) ? expression.Member.Name : queryFieldAttr.Name;
 
             _resultBuilder.Append(fieldName);
 
@@ -172,6 +195,7 @@ namespace Apache.Ignite.Linq.Impl
         }
 
         /** <inheritdoc /> */
+
         protected override Expression VisitConstant(ConstantExpression expression)
         {
             _resultBuilder.Append("?");
@@ -182,6 +206,7 @@ namespace Apache.Ignite.Linq.Impl
         }
 
         /** <inheritdoc /> */
+
         protected override Expression VisitMethodCall(MethodCallExpression expression)
         {
             if (expression.Method == StringContains)
@@ -241,13 +266,13 @@ namespace Apache.Ignite.Linq.Impl
             var arg = expression.Arguments[0] as ConstantExpression;
 
             if (arg == null)
-                throw new NotSupportedException("Only constant expression is supported inside Contains call: " +
-                                                expression);
+                throw new NotSupportedException("Only constant expression is supported inside Contains call: " + expression);
 
             return arg.Value;
         }
 
         /** <inheritdoc /> */
+
         protected override Expression VisitNew(NewExpression expression)
         {
             VisitArguments(expression.Arguments);
@@ -256,6 +281,7 @@ namespace Apache.Ignite.Linq.Impl
         }
 
         /** <inheritdoc /> */
+
         protected override Expression VisitInvocation(InvocationExpression expression)
         {
             VisitArguments(expression.Arguments);
@@ -264,11 +290,10 @@ namespace Apache.Ignite.Linq.Impl
         }
 
         /** <inheritdoc /> */
+
         protected override Exception CreateUnhandledItemException<T>(T unhandledItem, string visitMethod)
         {
-            return new NotSupportedException(
-                string.Format("The expression '{0}' (type: {1}) is not supported by this LINQ provider.",
-                    unhandledItem, typeof (T)));
+            return new NotSupportedException(string.Format("The expression '{0}' (type: {1}) is not supported by this LINQ provider.", unhandledItem, typeof (T)));
         }
 
         /// <summary>
