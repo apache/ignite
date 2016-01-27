@@ -25,29 +25,48 @@
         http://www.springframework.org/schema/beans/spring-beans.xsd
         http://www.springframework.org/schema/util
         http://www.springframework.org/schema/util/spring-util.xsd">
-    <bean id="grid.cfg" class="org.apache.ignite.configuration.IgniteConfiguration">
-        <!-- Set to true to enable distributed class loading for examples, default is false. -->
-        <property name="peerClassLoadingEnabled" value="true"/>
+    <bean id="ignite.cfg" class="org.apache.ignite.configuration.IgniteConfiguration">
 
         <property name="cacheConfiguration">
             <list>
-                <!--
-                    Partitioned cache example configuration with binary objects enabled.
-                -->
                 <bean class="org.apache.ignite.configuration.CacheConfiguration">
-                    <property name="atomicityMode" value="ATOMIC"/>
-                    <property name="backups" value="1"/>
+					<property name="name" value="Person"/>
+					<property name="cacheMode" value="PARTITIONED"/>
+					<property name="atomicityMode" value="TRANSACTIONAL"/>
+					<property name="writeSynchronizationMode" value="FULL_SYNC"/>
+			
+					<!-- Configure type metadata to enable queries. -->
+					<property name="typeMetadata">
+						<list>
+							<bean class="org.apache.ignite.cache.CacheTypeMetadata">
+								<property name="keyType" value="java.lang.Long"/>
+								<property name="valueType" value="Person"/>
+								<property name="ascendingFields">
+									<map>
+										<entry key="id" value="java.lang.Long"/>
+									</map>
+								</property>
+								<property name="queryFields">
+									<map>
+										<entry key="orgId" value="java.lang.Long"/>
+										<entry key="firstName" value="java.lang.String"/>
+										<entry key="lastName" value="java.lang.String"/>
+										<entry key="resume" value="java.lang.String"/>
+										<entry key="salary" value="java.lang.Double"/>
+									</map>
+								</property>
+                                <property name="textFields">
+                                    <list>
+                                        <value>firstName</value>
+                                        <value>lastName</value>
+                                        <value>resume</value>
+                                    </list>
+                                </property>
+							</bean>
+						</list>
+					</property>
                 </bean>
-
-                <!--
-                    Partitioned cache example configuration.
-                -->
-                <bean class="org.apache.ignite.configuration.CacheConfiguration">
-                    <property name="name" value="tx"/>
-                    <property name="atomicityMode" value="TRANSACTIONAL"/>
-                    <property name="backups" value="1"/>
-                </bean>
-            </list>
+			</list>
         </property>
 
         <!-- Explicitly configure TCP discovery SPI to provide list of initial nodes. -->

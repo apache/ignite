@@ -28,15 +28,25 @@
 #include <string>
 #include <sstream>
 
+#include "ignite/ignite.h"
+#include "ignite/ignition.h"
+
+#include "ignite/examples/person.h"
+
+using namespace ignite;
+using namespace cache;
+
+using namespace examples;
+
 /** Read buffer size. */
-enum { BUFFER_SIZE = 1024 };
+enum { ODBC_BUFFER_SIZE = 1024 };
 
 /**
  * Represents simple string buffer.
  */
-struct StringBuffer
+struct OdbcStringBuffer
 {
-    SQLCHAR buffer[BUFFER_SIZE];
+    SQLCHAR buffer[ODBC_BUFFER_SIZE];
     SQLLEN reallen;
 };
 
@@ -45,20 +55,18 @@ struct StringBuffer
  *
  * @param stmt Statement.
  */
-void PrintResultSet(SQLHSTMT stmt)
+void PrintOdbcResultSet(SQLHSTMT stmt)
 {
     SQLSMALLINT columnsCnt = 0;
 
     // Getting number of columns in result set.
     SQLNumResultCols(stmt, &columnsCnt);
 
-    std::vector<StringBuffer> columns(columnsCnt);
+    std::vector<OdbcStringBuffer> columns(columnsCnt);
 
     // Binding colums.
     for (SQLSMALLINT i = 0; i < columnsCnt; ++i)
-        SQLBindCol(stmt, i + 1, SQL_CHAR, columns[i].buffer, BUFFER_SIZE, &columns[i].reallen);
-
-    std::cout << "Result set:" << std::endl;
+        SQLBindCol(stmt, i + 1, SQL_CHAR, columns[i].buffer, ODBC_BUFFER_SIZE, &columns[i].reallen);
 
     while (true)
     {
@@ -67,8 +75,10 @@ void PrintResultSet(SQLHSTMT stmt)
         if (!SQL_SUCCEEDED(ret))
             break;
 
+        std::cout << ">>> ";
+
         for (size_t i = 0; i < columns.size(); ++i)
-            std::cout << std::setw(16) << columns[i].buffer << " ";
+            std::cout << std::setw(16) << std::left << columns[i].buffer << " ";
 
         std::cout << std::endl;
     }
@@ -81,25 +91,25 @@ void PrintResultSet(SQLHSTMT stmt)
  * @param handle Handle.
  * @return Error message.
  */
-std::string GetErrorMessage(SQLSMALLINT handleType, SQLHANDLE handle)
+std::string GetOdbcErrorMessage(SQLSMALLINT handleType, SQLHANDLE handle)
 {
     SQLCHAR sqlstate[7] = {};
     SQLINTEGER nativeCode;
 
-    SQLCHAR message[BUFFER_SIZE];
+    SQLCHAR message[ODBC_BUFFER_SIZE];
     SQLSMALLINT reallen = 0;
 
-    SQLGetDiagRec(handleType, handle, 1, sqlstate, &nativeCode, message, BUFFER_SIZE, &reallen);
+    SQLGetDiagRec(handleType, handle, 1, sqlstate, &nativeCode, message, ODBC_BUFFER_SIZE, &reallen);
 
-    return std::string(reinterpret_cast<char*>(sqlstate)) + ": " + std::string(reinterpret_cast<char*>(message), reallen);
+    return std::string(reinterpret_cast<char*>(sqlstate)) + ": " +
+        std::string(reinterpret_cast<char*>(message), reallen);
 }
 
 /**
- * Program entry point.
- *
- * @return Exit code.
+ * Fetch cache data using ODBC interface.
  */
-int main() 
+void GetDataWithOdbc(const std::string& cacheName, const std::string& hostName,
+    const std::string& port, const std::string& query)
 {
     SQLHENV env;
 
@@ -114,85 +124,39 @@ int main()
     // Allocate a connection handle
     SQLAllocHandle(SQL_HANDLE_DBC, env, &dbc);
 
-    std::string cacheName;
-    std::string hostName;
-    std::string port;
-
-    // Reading hostname.
-    std::cout << "Hostname [localhost]: ";
-    std::getline(std::cin, hostName);
-
-    // Fallback to default value.
-    if (hostName.empty())
-        hostName = "localhost";
-
-    // Reading port.
-    std::cout << "Port [11443]: ";
-    std::getline(std::cin, port);
-
-    // Fallback to default value.
-    if (port.empty())
-        port = "11443";
-
-    // Reading cache name.
-    std::cout << "Cache name: ";
-    std::getline(std::cin, cacheName);
-
     // Combining connect string
     std::string connectStr = "DRIVER={Apache Ignite};"
-                             "SERVER=" + hostName + ";"
-                             "PORT=" + port + ";"
-                             "CACHE=" + cacheName;
+        "SERVER=" + hostName + ";"
+        "PORT=" + port + ";"
+        "CACHE=" + cacheName;
 
-    SQLCHAR outstr[BUFFER_SIZE];
+    SQLCHAR outstr[ODBC_BUFFER_SIZE];
     SQLSMALLINT outstrlen;
 
-    std::cout << "Trying to connect using following connection string: \""
-              << connectStr << "\"" << std::endl;
-
+    // Connecting to ODBC server.
     SQLRETURN ret = SQLDriverConnect(dbc, NULL, reinterpret_cast<SQLCHAR*>(&connectStr[0]),
         static_cast<SQLSMALLINT>(connectStr.size()), outstr, sizeof(outstr), &outstrlen, SQL_DRIVER_COMPLETE);
 
     if (!SQL_SUCCEEDED(ret))
     {
-        std::cerr << "Failed to connect: " << GetErrorMessage(SQL_HANDLE_DBC, dbc) << std::endl;
+        std::cerr << "Failed to connect: " << GetOdbcErrorMessage(SQL_HANDLE_DBC, dbc) << std::endl;
 
-        return -1;
+        return;
     }
-
-    std::cout << "Connected" << std::endl;
-    std::cout << "Returned connection string was: " << outstr << std::endl;
 
     SQLHSTMT stmt;
 
     // Allocate a statement handle
     SQLAllocHandle(SQL_HANDLE_STMT, dbc, &stmt);
 
-    while (true)
-    {
-        std::string query;
+    std::vector<SQLCHAR> buf(query.begin(), query.end());
 
-        // Reading query.
-        std::cout << "SQL query (Empty input to exit) : ";
-        std::getline(std::cin, query);
+    ret = SQLExecDirect(stmt, &buf[0], static_cast<SQLSMALLINT>(buf.size()));
 
-        if (query.empty())
-            break;
-
-        ret = SQLExecDirect(stmt, reinterpret_cast<SQLCHAR*>(&query[0]), static_cast<SQLSMALLINT>(query.size()));
-
-        if (!SQL_SUCCEEDED(ret))
-        {
-            std::cerr << "Failed to execute query: " << GetErrorMessage(SQL_HANDLE_STMT, stmt) << std::endl;
-
-            continue;
-        }
-
-        // Printing result.
-        PrintResultSet(stmt);
-    }
-
-    std::cout << "Disconnecting" << std::endl;
+    if (SQL_SUCCEEDED(ret))
+        PrintOdbcResultSet(stmt);
+    else
+        std::cerr << "Failed to execute query: " << GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt) << std::endl;
 
     // Releasing statement handle.
     SQLFreeHandle(SQL_HANDLE_STMT, stmt);
@@ -203,4 +167,81 @@ int main()
     // Releasing allocated handles.
     SQLFreeHandle(SQL_HANDLE_DBC, dbc);
     SQLFreeHandle(SQL_HANDLE_ENV, env);
+}
+
+/**
+ * Populate cache with sample data.
+ * 
+ * @param cache Cache instance.
+ */
+void Populate(Cache<int64_t, Person>& cache)
+{
+    std::map<int64_t, Person> persons;
+
+    persons[1] = Person(1, 1, "John", "Doe", "Master Degree.", 2200.0);
+    persons[2] = Person(2, 1, "Jane", "Doe", "Bachelor Degree.", 1300.0);
+    persons[3] = Person(3, 1, "John", "Smith", "Bachelor Degree.", 1700.0);
+    persons[4] = Person(4, 1, "Jane", "Smith", "Master Degree.", 2500.0);
+
+    cache.PutAll(persons);
+}
+
+/**
+ * Program entry point.
+ *
+ * @return Exit code.
+ */
+int main() 
+{
+    IgniteConfiguration cfg;
+
+    cfg.jvmInitMem = 512;
+    cfg.jvmMaxMem = 512;
+
+    cfg.springCfgPath = "platforms/cpp/examples/odbc-example/config/example-cache.xml";
+
+    //cfg.jvmOpts.push_back("-DIGNITE_QUIET=false");
+
+    try
+    {
+        // Start a node.
+        Ignite grid = Ignition::Start(cfg);
+
+        std::cout << std::endl;
+        std::cout << ">>> Cache ODBC example started." << std::endl;
+        std::cout << std::endl;
+
+        // Get cache instance.
+        Cache<int64_t, Person> cache = grid.GetCache<int64_t, Person>("Person");
+
+        // Clear cache.
+        cache.Clear();
+
+        Populate(cache);
+
+        std::cout << std::endl;
+        std::cout << ">>> Getting list of persons:" << std::endl;
+
+        GetDataWithOdbc("Person", "localhost", "11443", "SELECT firstName, lastName, resume, salary FROM Person");
+
+        std::cout << std::endl;
+        std::cout << ">>> Getting average salary by degree:" << std::endl;
+
+        GetDataWithOdbc("Person", "localhost", "11443", "SELECT resume, AVG(salary) FROM Person GROUP BY resume");
+
+        // Stop node.
+        Ignition::StopAll(false);
+    }
+    catch (IgniteError& err)
+    {
+        std::cout << "An error occurred: " << err.GetText() << std::endl;
+    }
+
+    std::cout << std::endl;
+    std::cout << ">>> Example finished, press any key to exit ..." << std::endl;
+    std::cout << std::endl;
+
+    std::cin.get();
+
+    return 0;
 }
