@@ -17,12 +17,8 @@
 
 namespace Apache.Ignite.Linq.Impl
 {
-    using System;
-    using System.Collections;
-    using System.Diagnostics;
     using System.Linq;
     using System.Linq.Expressions;
-    using Apache.Ignite.Core.Cache.Query;
     using Remotion.Linq;
     using Remotion.Linq.Parsing.Structure;
 
@@ -31,13 +27,11 @@ namespace Apache.Ignite.Linq.Impl
     /// </summary>
     internal class CacheFieldsQueryProvider : QueryProviderBase
     {
-        private readonly Func<SqlFieldsQuery, IQueryCursor<IList>> _fieldsQueryExecutor;
+        //  TODO: Do we even need this class?
 
-        public CacheFieldsQueryProvider(Func<SqlFieldsQuery, IQueryCursor<IList>> fieldsQueryExecutor, IQueryParser queryParser, IQueryExecutor executor) : base(queryParser, executor)
+        public CacheFieldsQueryProvider(IQueryParser queryParser, IQueryExecutor executor) : base(queryParser, executor)
         {
-            Debug.Assert(fieldsQueryExecutor != null);
-
-            _fieldsQueryExecutor = fieldsQueryExecutor;
+            // No-op.
         }
 
         public override IQueryable<T> CreateQuery<T>(Expression expression)

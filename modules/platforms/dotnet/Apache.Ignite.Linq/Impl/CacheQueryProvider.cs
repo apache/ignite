@@ -32,9 +32,6 @@ namespace Apache.Ignite.Linq.Impl
         /** */
         private readonly ICache<TKey, TValue> _cache;
 
-        /** */
-        private readonly string _queryTypeName;
-
         /// <summary>
         /// Initializes a new instance of the <see cref="CacheQueryProvider{TKey, TValue}" /> class.
         /// </summary>
@@ -45,7 +42,6 @@ namespace Apache.Ignite.Linq.Impl
                   new CacheQueryExecutor<TKey, TValue>(cache, queryTypeName))
         {
             _cache = cache;
-            _queryTypeName = queryTypeName;
         }
 
         /// <summary>
@@ -63,8 +59,8 @@ namespace Apache.Ignite.Linq.Impl
         {
             if (typeof (T) != typeof (ICacheEntry<TKey, TValue>))
             {
-                // TODO: Special executor??
-                var fieldsProvider = new CacheFieldsQueryProvider(q => _cache.QueryFields(q), QueryParser, Executor);
+                var fieldsProvider = new CacheFieldsQueryProvider(QueryParser, 
+                    new CacheFieldsQueryExecutor(q => _cache.QueryFields(q)));
 
                 return fieldsProvider.CreateQuery<T>(expression);
             }
