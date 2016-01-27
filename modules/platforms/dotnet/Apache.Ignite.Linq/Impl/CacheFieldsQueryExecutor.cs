@@ -70,7 +70,25 @@ namespace Apache.Ignite.Linq.Impl
             var query = new SqlFieldsQuery(queryData.QueryText, queryData.Parameters.ToArray());
 
             // TODO
-            return _executorFunc(query).Select(x => (T) x[0]);
+            return _executorFunc(query).Select(Convert<T>);
+        }
+
+        private static T Convert<T>(IList fields)
+        {
+            if (fields.Count == 0)
+                throw new InvalidOperationException("Fields query returned empty field set");
+
+            if (fields.Count == 1)
+            {
+                var f = fields[0];
+
+                if (f is T)
+                    return (T) f;
+
+                return (T) System.Convert.ChangeType(fields[0], typeof (T));
+            }
+
+            throw new NotSupportedException("TODO");
         }
     }
 }
