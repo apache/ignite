@@ -1080,8 +1080,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
     private void sleep() {
         if (gridStartedLatch != null) {
-            U.dumpStack(">>>>> sleep");
-
             gridStartedLatch.countDown();
             try {
                 gotExceptionLatch.await();

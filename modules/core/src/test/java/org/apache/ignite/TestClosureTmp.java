@@ -59,6 +59,12 @@ public class TestClosureTmp extends GridCommonAbstractTest {
         return config;
     }
 
+    @Override protected void afterTest() throws Exception {
+        super.afterTest();
+
+        stopAllGrids();
+    }
+
     /**
      * @throws Exception If failed.
      */
