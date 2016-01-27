@@ -53,8 +53,6 @@ namespace Apache.Ignite.Linq.Impl
         {
             base.VisitSelectClause(selectClause, queryModel);
 
-            // Only queries starting with 'SELECT *' are supported or use SqlFieldsQuery instead: select _key, _val from LinqPerson where (age1 < ?)
-
             var selectSql = GetSqlExpression(selectClause.Selector);
 
             Builder.Insert(0, string.Format("select {0} ", selectSql.QueryText));
@@ -69,6 +67,8 @@ namespace Apache.Ignite.Linq.Impl
                 Builder.Insert(0, "count (").Append(") ");
             else if (resultOperator is SumResultOperator)
                 Builder.Insert(0, "sum (").Append(") ");
+            else if (resultOperator is FirstResultOperator)
+                Builder.Append("LIMIT 1 ");
             else
                 throw new NotSupportedException("TODO: " + resultOperator); // Min, max, etc
         }
