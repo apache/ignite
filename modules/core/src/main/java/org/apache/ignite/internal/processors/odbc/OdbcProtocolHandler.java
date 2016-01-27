@@ -32,12 +32,4 @@ public interface OdbcProtocolHandler {
      * @throws IgniteCheckedException In case of error.
      */
     OdbcResponse handle(OdbcRequest req) throws IgniteCheckedException;
-
-    /**
-     * Handle request asynchronously.
-     *
-     * @param req Request.
-     * @return Future.
-     */
-    IgniteInternalFuture<OdbcResponse> handleAsync(OdbcRequest req);
 }
