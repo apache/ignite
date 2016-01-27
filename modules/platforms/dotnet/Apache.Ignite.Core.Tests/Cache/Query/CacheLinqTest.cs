@@ -156,6 +156,9 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
             Assert.AreEqual(DataSize, cache.ToQueryable().Count(x => x.Value.Name.Contains("erson")));
             Assert.AreEqual(11, cache.ToQueryable().Count(x => x.Value.Name.StartsWith("Person_9")));
             Assert.AreEqual(1, cache.ToQueryable().Count(x => x.Value.Name.EndsWith("_99")));
+
+            Assert.AreEqual(DataSize, cache.ToQueryable().Count(x => x.Value.Name.ToLower().StartsWith("person")));
+            Assert.AreEqual(DataSize, cache.ToQueryable().Count(x => x.Value.Name.ToUpper().StartsWith("PERSON")));
         }
 
         private static ICache<int, LinqPerson> GetCache()
