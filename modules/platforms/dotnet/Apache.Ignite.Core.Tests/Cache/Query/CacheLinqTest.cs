@@ -55,13 +55,17 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
             {
                 JvmClasspath = TestUtils.CreateTestClasspath(),
                 JvmOptions = TestUtils.TestJavaOptions(),
-                BinaryConfiguration = new BinaryConfiguration(typeof(LinqPerson))
+                BinaryConfiguration =
+                    new BinaryConfiguration(typeof (LinqPerson), typeof (LinqOrganization), typeof (LinqAddress))
             });
 
             var cache = GetCache();
 
             for (var i = 0; i < DataSize; i++)
-                cache.Put(i, new LinqPerson(i, "Person_" + i));
+                cache.Put(i, new LinqPerson(i, "Person_" + i)
+                {
+                    LinqAddress = new LinqAddress {Zip = i, Street = "Street " + i}
+                });
 
             Assert.AreEqual(1, cache[1].Age);
         }
@@ -219,6 +223,12 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
             [QuerySqlField]
             public string Name { get; set; }
 
+            [QuerySqlField]
+            public LinqAddress LinqAddress { get; set; }
+
+            [QuerySqlField]
+            public int Organizationid { get; set; }
+
             public void WriteBinary(IBinaryWriter writer)
             {
                 writer.WriteInt("age1", Age);
@@ -230,6 +240,24 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
                 Age = reader.ReadInt("age1");
                 Name = reader.ReadString("name");
             }
+        }
+
+        public class LinqAddress
+        {
+            [QuerySqlField]
+            public int Zip { get; set; }
+
+            [QuerySqlField]
+            public string Street { get; set; }
+        }
+
+        public class LinqOrganization
+        {
+            [QuerySqlField]
+            public int Id { get; set; }
+
+            [QuerySqlField]
+            public string Name { get; set; }
         }
     }
 }
