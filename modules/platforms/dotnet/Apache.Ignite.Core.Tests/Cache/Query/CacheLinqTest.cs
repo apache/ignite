@@ -110,8 +110,6 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
 
             Assert.AreEqual(15, cache.ToQueryable().Where(x => x.Key < 15).ToArray().Length);
             Assert.AreEqual(15, cache.ToQueryable().Where(x => -x.Key > -15).ToArray().Length);
-
-            // TODO: Test string key with LOWER or something
         }
 
         [Test]
