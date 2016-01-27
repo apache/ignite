@@ -33,6 +33,7 @@ namespace Apache.Ignite.Linq.Impl
     {
         private readonly List<WhereClause> _where = new List<WhereClause>();
         private SelectClause _select;
+        private string _tableName;
 
         /// <summary>
         /// Generates the query.
@@ -51,7 +52,8 @@ namespace Apache.Ignite.Linq.Impl
             var builder = new StringBuilder();
             var parameters = new List<object>();
 
-            //builder.AppendFormat("from {0} ", typeof (TValue).Name);
+            Debug.Assert(!string.IsNullOrEmpty(_tableName));
+            builder.AppendFormat("from {0} ", _tableName);
 
             for (int i = 0; i < _where.Count; i++)
             {
@@ -67,6 +69,18 @@ namespace Apache.Ignite.Linq.Impl
             }
 
             return new QueryData(builder.ToString().TrimEnd(), parameters);
+        }
+
+        public override void VisitMainFromClause(MainFromClause fromClause, QueryModel queryModel)
+        {
+            base.VisitMainFromClause(fromClause, queryModel);
+
+            var cacheEntryType = fromClause.ItemType;
+
+            Debug.Assert(cacheEntryType.IsGenericType);
+            Debug.Assert(cacheEntryType.GetGenericTypeDefinition() == typeof(ICacheEntry<,>));
+
+            _tableName = cacheEntryType.GetGenericArguments()[1].Name;
         }
 
         /** <inheritdoc /> */
