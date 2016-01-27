@@ -60,7 +60,7 @@ angular
                  * @returns boolean 'true' if given text non Java keyword.
                  */
                 nonKeywords(value) {
-                    return !JAVA_KEYWORDS.contains(value);
+                    return !_.contains(JAVA_KEYWORDS, value);
                 }
             };
         }];
