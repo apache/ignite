@@ -117,6 +117,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
 
             // Single value
             Assert.AreEqual(3, cache.ToQueryable().Where(x => x.Key == 3).Select(x => x.Value.Age).FirstOrDefault());
+            Assert.AreEqual(0, cache.ToQueryable().Where(x => x.Key < 0).Select(x => x.Value.Age).FirstOrDefault());
 
             // TODO: Multiple fields
         }
