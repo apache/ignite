@@ -92,8 +92,9 @@ namespace Apache.Ignite.Linq.Impl
         {
             base.VisitSelectClause(selectClause, queryModel);
 
-            //_select = selectClause;
-
+            // TODO
+            // Only queries starting with 'SELECT *' are supported or use SqlFieldsQuery instead: select _key, _val from LinqPerson where (age1 < ?)
+            //_builder.Append("select _key, _val");
         }
 
         /** <inheritdoc /> */
