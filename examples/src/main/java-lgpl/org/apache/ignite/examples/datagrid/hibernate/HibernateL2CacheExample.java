@@ -90,7 +90,7 @@ public class HibernateL2CacheExample {
 
     /** Entity names for stats output. */
     private static final List<String> ENTITY_NAMES =
-        U.asList(User.class.getName(), Post.class.getName(), User.class.getName() + ".posts");
+        Arrays.asList(User.class.getName(), Post.class.getName(), User.class.getName() + ".posts");
 
     /** Caches' names. */
     private static final String UPDATE_TIMESTAMPS_CACHE_NAME = "org.hibernate.cache.spi.UpdateTimestampsCache";

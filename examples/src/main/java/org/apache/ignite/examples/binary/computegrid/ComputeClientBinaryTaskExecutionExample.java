@@ -25,7 +25,6 @@ import org.apache.ignite.Ignition;
 import org.apache.ignite.examples.model.Address;
 import org.apache.ignite.examples.model.Employee;
 import org.apache.ignite.binary.BinaryObject;
-import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
  * This example demonstrates use of binary objects with task execution.
@@ -97,56 +96,56 @@ public class ComputeClientBinaryTaskExecutionExample {
             "James Wilson",
             12500,
             new Address("1096 Eddy Street, San Francisco, CA", 94109),
-            U.asList("Human Resources", "Customer Service")
+            Arrays.asList("Human Resources", "Customer Service")
         ));
 
         employees.add(new Employee(
             "Daniel Adams",
             11000,
             new Address("184 Fidler Drive, San Antonio, TX", 78205),
-            U.asList("Development", "QA")
+            Arrays.asList("Development", "QA")
         ));
 
         employees.add(new Employee(
             "Cristian Moss",
             12500,
             new Address("667 Jerry Dove Drive, Florence, SC", 29501),
-            U.asList("Logistics")
+            Arrays.asList("Logistics")
         ));
 
         employees.add(new Employee(
             "Allison Mathis",
             25300,
             new Address("2702 Freedom Lane, Hornitos, CA", 95325),
-            U.asList("Development")
+            Arrays.asList("Development")
         ));
 
         employees.add(new Employee(
             "Breana Robbin",
             6500,
             new Address("3960 Sundown Lane, Austin, TX", 78758),
-            U.asList("Sales")
+            Arrays.asList("Sales")
         ));
 
         employees.add(new Employee(
             "Philip Horsley",
             19800,
             new Address("2803 Elsie Drive, Sioux Falls, SD", 57104),
-            U.asList("Sales")
+            Arrays.asList("Sales")
         ));
 
         employees.add(new Employee(
             "Brian Peters",
             10600,
             new Address("1407 Pearlman Avenue, Boston, MA", 12110),
-            U.asList("Development", "QA")
+            Arrays.asList("Development", "QA")
         ));
 
         employees.add(new Employee(
             "Jack Yang",
             12900,
             new Address("4425 Parrish Avenue Smithsons Valley, TX", 78130),
-            U.asList("Sales")
+            Arrays.asList("Sales")
         ));
 
         return employees;

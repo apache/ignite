@@ -62,7 +62,7 @@ public class ComputeReducerExample {
                 },
 
                 // Job parameters. Ignite will create as many jobs as there are parameters.
-                U.asList("Count characters using reducer".split(" ")),
+                Arrays.asList("Count characters using reducer".split(" ")),
 
                 // Reducer to process results as they come.
                 new IgniteReducer<Integer, Integer>() {
