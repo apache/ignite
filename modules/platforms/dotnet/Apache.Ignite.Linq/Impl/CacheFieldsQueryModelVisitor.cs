@@ -18,8 +18,8 @@
 namespace Apache.Ignite.Linq.Impl
 {
     using System;
+    using System.Text;
     using Remotion.Linq;
-    using Remotion.Linq.Clauses;
     using Remotion.Linq.Clauses.ResultOperators;
 
     /// <summary>
@@ -27,15 +27,6 @@ namespace Apache.Ignite.Linq.Impl
     /// </summary>
     internal class CacheFieldsQueryModelVisitor : CacheQueryModelVisitor
     {
-        /// <summary>
-        /// Initializes a new instance of the <see cref="CacheFieldsQueryModelVisitor"/> class.
-        /// </summary>
-        /// <param name="tableName">Name of the table.</param>
-        public CacheFieldsQueryModelVisitor(string tableName) : base(tableName)
-        {
-            // No-op.
-        }
-
         /// <summary>
         /// Generates the query.
         /// </summary>
@@ -45,32 +36,55 @@ namespace Apache.Ignite.Linq.Impl
 
             visitor.VisitQueryModel(queryModel);
 
-            return visitor.GetQuery();
+            var resultBuilder = new StringBuilder("select ");
+            int parenCount = 0;
+
+            foreach (var resultOperator in queryModel.ResultOperators)  // TODO: Reverse?
+            {
+                if (resultOperator is CountResultOperator)
+                {
+                    resultBuilder.Append("count (");
+                    parenCount++;
+                }
+                else if (resultOperator is SumResultOperator)
+                {
+                    resultBuilder.Append("sum (");
+                    parenCount++;
+                }
+                else if (resultOperator is MinResultOperator)
+                {
+                    resultBuilder.Append("min (");
+                    parenCount++;
+                }
+                else if (resultOperator is MaxResultOperator)
+                {
+                    resultBuilder.Append("max (");
+                    parenCount++;
+                }
+                else if (resultOperator is FirstResultOperator)
+                    visitor.Builder.Append("limit 1 ");
+                else
+                    throw new NotSupportedException("TODO: " + resultOperator); // Min, max, etc
+            }
+
+            resultBuilder.Append(GetSqlExpression(queryModel.SelectClause.Selector).QueryText);
+
+            resultBuilder.Append(')', parenCount);
+
+            var queryData = visitor.GetQuery();
+
+            var queryText = resultBuilder.Append(" ").Append(queryData.QueryText).ToString();
+
+            return new QueryData(queryText, queryData.Parameters, true);
         }
 
-        /** <inheritdoc /> */
-        public override void VisitSelectClause(SelectClause selectClause, QueryModel queryModel)
+        /// <summary>
+        /// Initializes a new instance of the <see cref="CacheFieldsQueryModelVisitor"/> class.
+        /// </summary>
+        /// <param name="tableName">Name of the table.</param>
+        private CacheFieldsQueryModelVisitor(string tableName) : base(tableName)
         {
-            base.VisitSelectClause(selectClause, queryModel);
-
-            var selectSql = GetSqlExpression(selectClause.Selector);
-
-            Builder.Insert(0, string.Format("select {0} ", selectSql.QueryText));
-        }
-
-        /** <inheritdoc /> */
-        public override void VisitResultOperator(ResultOperatorBase resultOperator, QueryModel queryModel, int index)
-        {
-            base.VisitResultOperator(resultOperator, queryModel, index);
-
-            if (resultOperator is CountResultOperator)
-                Builder.Insert(0, "count (").Append(") ");
-            else if (resultOperator is SumResultOperator)
-                Builder.Insert(0, "sum (").Append(") ");
-            else if (resultOperator is FirstResultOperator)
-                Builder.Append("LIMIT 1 ");
-            else
-                throw new NotSupportedException("TODO: " + resultOperator); // Min, max, etc
+            // No-op.
         }
     }
 }

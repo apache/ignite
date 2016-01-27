@@ -39,7 +39,7 @@ namespace Apache.Ignite.Linq.Impl
         private readonly List<object> _parameters = new List<object>();
 
         /** */
-        private string _tableName;
+        private readonly string _tableName;
 
         /// <summary>
         /// Generates the query.
@@ -68,7 +68,7 @@ namespace Apache.Ignite.Linq.Impl
         /// Gets the query.
         /// </summary>
         /// <returns>Query data.</returns>
-        protected QueryData GetQuery()
+        protected virtual QueryData GetQuery()
         {
             return new QueryData(Builder.ToString().TrimEnd(), _parameters);
         }
