@@ -14,26 +14,40 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.ignite.internal.processors.odbc.response;
+package org.apache.ignite.internal.processors.odbc;
 
 /**
- * Query result.
+ * ODBC query fetch request.
  */
-public class QueryCloseResult {
+public class OdbcQueryFetchRequest extends OdbcRequest {
     /** Query ID. */
-    private long queryId;
+    private final long queryId;
+
+    /** Page size - maximum number of rows to return. */
+    private final int pageSize;
 
     /**
      * @param queryId Query ID.
+     * @param pageSize Page size.
      */
-    public QueryCloseResult(long queryId){
+    public OdbcQueryFetchRequest(long queryId, int pageSize) {
+        super(FETCH_SQL_QUERY);
+
         this.queryId = queryId;
+        this.pageSize = pageSize;
+    }
+
+    /**
+     * @return Page size.
+     */
+    public int pageSize() {
+        return pageSize;
     }
 
     /**
      * @return Query ID.
      */
-    public long getQueryId() {
+    public long queryId() {
         return queryId;
     }
 }

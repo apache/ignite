@@ -23,21 +23,22 @@ import java.io.IOException;
 /**
  * ODBC table-related metadata.
  */
-public class GridOdbcTableMeta {
+public class OdbcTableMeta {
     /** Catalog name. */
-    private String catalog;
+    private final String catalog;
 
     /** Schema name. */
-    private String schema;
+    private final String schema;
 
     /** Table name. */
-    private String table;
+    private final String table;
 
     /** Table type. */
-    private String tableType;
+    private final String tableType;
 
     /**
      * Add quotation marks at the beginning and end of the string.
+     *
      * @param str Input string.
      * @return String surrounded with quotation marks.
      */
@@ -54,20 +55,20 @@ public class GridOdbcTableMeta {
      * @param table Table name.
      * @param tableType Table type.
      */
-    public GridOdbcTableMeta(String catalog, String schema, String table, String tableType) {
+    public OdbcTableMeta(String catalog, String schema, String table, String tableType) {
         this.catalog = catalog;
         this.schema = AddQuotationMarksIfNeeded(schema);
         this.table = table;
         this.tableType = tableType;
     }
 
-    @Override
-    public boolean equals(Object o)
+    /** {@inheritDoc} */
+    @Override public boolean equals(Object o)
     {
-        if (!(o instanceof GridOdbcTableMeta))
+        if (!(o instanceof OdbcTableMeta))
             return false;
 
-        GridOdbcTableMeta another = (GridOdbcTableMeta)o;
+        OdbcTableMeta another = (OdbcTableMeta)o;
 
         return catalog.equals(another.catalog) &&
                schema.equals(another.schema) &&
@@ -77,6 +78,7 @@ public class GridOdbcTableMeta {
 
     /**
      * Write in a binary format.
+     *
      * @param writer Binary writer.
      * @throws IOException
      */

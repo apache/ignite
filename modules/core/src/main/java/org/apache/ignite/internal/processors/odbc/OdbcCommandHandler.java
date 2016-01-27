@@ -22,8 +22,6 @@ import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.cache.QueryCursorImpl;
-import org.apache.ignite.internal.processors.odbc.request.*;
-import org.apache.ignite.internal.processors.odbc.response.*;
 import org.apache.ignite.internal.processors.query.GridQueryFieldMetadata;
 import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
 import org.apache.ignite.lang.IgniteBiTuple;
@@ -32,16 +30,16 @@ import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
 
-import static org.apache.ignite.internal.processors.odbc.request.GridOdbcRequest.*;
+import static org.apache.ignite.internal.processors.odbc.OdbcRequest.*;
 
 /**
  * SQL query handler.
  */
-public class GridOdbcCommandHandler {
-    /** Kernal context. */
+public class OdbcCommandHandler {
+    /** Kernel context. */
     protected final GridKernalContext ctx;
 
-    /** Log. */
+    /** Logger. */
     protected final IgniteLogger log;
 
     /** Query ID sequence. */
@@ -53,7 +51,7 @@ public class GridOdbcCommandHandler {
     /**
      * @param ctx Context.
      */
-    public GridOdbcCommandHandler(GridKernalContext ctx) {
+    public OdbcCommandHandler(GridKernalContext ctx) {
         this.ctx = ctx;
 
         log = ctx.log(getClass());
@@ -63,28 +61,28 @@ public class GridOdbcCommandHandler {
      * @param req Request.
      * @return Response.
      */
-    public GridOdbcResponse handle(GridOdbcRequest req) {
+    public OdbcResponse handle(OdbcRequest req) {
         assert req != null;
 
         switch (req.command()) {
             case EXECUTE_SQL_QUERY: {
-                return executeQuery((QueryExecuteRequest)req, qryCurs);
+                return executeQuery((OdbcQueryExecuteRequest)req, qryCurs);
             }
 
             case FETCH_SQL_QUERY: {
-                return fetchQuery((QueryFetchRequest)req, qryCurs);
+                return fetchQuery((OdbcQueryFetchRequest)req, qryCurs);
             }
 
             case CLOSE_SQL_QUERY: {
-                return closeQuery((QueryCloseRequest)req, qryCurs);
+                return closeQuery((OdbcQueryCloseRequest)req, qryCurs);
             }
 
             case GET_COLUMNS_META: {
-                return getColumnsMeta((QueryGetColumnsMetaRequest) req);
+                return getColumnsMeta((OdbcQueryGetColumnsMetaRequest) req);
             }
 
             case GET_TABLES_META: {
-                return getTablesMeta((QueryGetTablesMetaRequest) req);
+                return getTablesMeta((OdbcQueryGetTablesMetaRequest) req);
             }
         }
 
@@ -92,39 +90,37 @@ public class GridOdbcCommandHandler {
     }
 
     /**
-     * @param qryCurs Query cursors.
      * @param cur Current cursor.
      * @param req Sql fetch request.
      * @param qryId Query id.
      * @return Query result with items.
      */
-    private static QueryFetchResult createQueryResult(
-            ConcurrentHashMap<Long, IgniteBiTuple<QueryCursor, Iterator>> qryCurs,
-            Iterator cur, QueryFetchRequest req, Long qryId) {
-        QueryFetchResult res = new QueryFetchResult(qryId);
+    private static OdbcQueryFetchResult createQueryResult(Iterator cur, OdbcQueryFetchRequest req, Long qryId) {
 
         List<Object> items = new ArrayList<>();
 
         for (int i = 0; i < req.pageSize() && cur.hasNext(); ++i)
             items.add(cur.next());
 
-        res.setItems(items);
-
-        res.setLast(!cur.hasNext());
-
-        return res;
+        return new OdbcQueryFetchResult(qryId, items, !cur.hasNext());
     }
 
     /**
+     * Convert metadata in collection from {@link GridQueryFieldMetadata} to
+     * {@link OdbcColumnMeta}.
+     *
      * @param meta Internal query field metadata.
-     * @return Rest query field metadata.
+     * @return Odbc query field metadata.
      */
-    private static Collection<GridOdbcColumnMeta> convertMetadata(Collection<GridQueryFieldMetadata> meta) {
-        List<GridOdbcColumnMeta> res = new ArrayList<>();
+    private static Collection<OdbcColumnMeta> convertMetadata(Collection<?> meta) {
+        List<OdbcColumnMeta> res = new ArrayList<>();
 
         if (meta != null) {
-            for (GridQueryFieldMetadata info : meta)
-                res.add(new GridOdbcColumnMeta(info));
+            for (Object info : meta) {
+                assert info instanceof GridQueryFieldMetadata;
+
+                res.add(new OdbcColumnMeta((GridQueryFieldMetadata)info));
+            }
         }
 
         return res;
@@ -144,6 +140,7 @@ public class GridOdbcCommandHandler {
 
     /**
      * Remove quotation marks at the beginning and end of the string if present.
+     *
      * @param str Input string.
      * @return String without leading and trailing quotation marks.
      */
@@ -155,12 +152,14 @@ public class GridOdbcCommandHandler {
     }
 
     /**
+     * {@link OdbcQueryExecuteRequest} command handler.
+     *
      * @param req Execute query request.
      * @param qryCurs Queries cursors.
      * @return Response.
      */
-    private GridOdbcResponse executeQuery(QueryExecuteRequest req,
-                                          ConcurrentHashMap<Long, IgniteBiTuple<QueryCursor, Iterator>> qryCurs) {
+    private OdbcResponse executeQuery(OdbcQueryExecuteRequest req,
+                                      ConcurrentHashMap<Long, IgniteBiTuple<QueryCursor, Iterator>> qryCurs) {
         long qryId = qryIdGen.getAndIncrement();
 
         try {
@@ -171,7 +170,7 @@ public class GridOdbcCommandHandler {
             IgniteCache<Object, Object> cache = ctx.grid().cache(req.cacheName());
 
             if (cache == null)
-                return new GridOdbcResponse(GridOdbcResponse.STATUS_FAILED,
+                return new OdbcResponse(OdbcResponse.STATUS_FAILED,
                         "Failed to find cache with name: " + req.cacheName());
 
             QueryCursor qryCur = cache.query(qry);
@@ -180,82 +179,88 @@ public class GridOdbcCommandHandler {
 
             qryCurs.put(qryId, new IgniteBiTuple<>(qryCur, cur));
 
-            List<GridQueryFieldMetadata> fieldsMeta = ((QueryCursorImpl) qryCur).fieldsMeta();
+            List<?> fieldsMeta = ((QueryCursorImpl) qryCur).fieldsMeta();
 
-            System.out.println("Field meta: " + fieldsMeta);
+            log.debug("Field meta: " + fieldsMeta);
 
-            QueryExecuteResult res = new QueryExecuteResult(qryId, convertMetadata(fieldsMeta));
+            OdbcQueryExecuteResult res = new OdbcQueryExecuteResult(qryId, convertMetadata(fieldsMeta));
 
-            return new GridOdbcResponse(res);
+            return new OdbcResponse(res);
         }
         catch (Exception e) {
             qryCurs.remove(qryId);
 
-            return new GridOdbcResponse(GridOdbcResponse.STATUS_FAILED, e.getMessage());
+            return new OdbcResponse(OdbcResponse.STATUS_FAILED, e.getMessage());
         }
     }
 
     /**
+     * {@link OdbcQueryCloseRequest} command handler.
+     *
      * @param req Execute query request.
      * @param qryCurs Queries cursors.
      * @return Response.
      */
-    private GridOdbcResponse closeQuery(QueryCloseRequest req,
-                                        ConcurrentHashMap<Long, IgniteBiTuple<QueryCursor, Iterator>> qryCurs) {
+    private OdbcResponse closeQuery(OdbcQueryCloseRequest req,
+                                    ConcurrentHashMap<Long, IgniteBiTuple<QueryCursor, Iterator>> qryCurs) {
         try {
             QueryCursor cur = qryCurs.get(req.queryId()).get1();
 
             if (cur == null)
-                return new GridOdbcResponse(GridOdbcResponse.STATUS_FAILED,
+                return new OdbcResponse(OdbcResponse.STATUS_FAILED,
                         "Failed to find query with ID: " + req.queryId());
 
             cur.close();
 
             qryCurs.remove(req.queryId());
 
-            QueryCloseResult res = new QueryCloseResult(req.queryId());
+            OdbcQueryCloseResult res = new OdbcQueryCloseResult(req.queryId());
 
-            return new GridOdbcResponse(res);
+            return new OdbcResponse(res);
         }
         catch (Exception e) {
             qryCurs.remove(req.queryId());
 
-            return new GridOdbcResponse(GridOdbcResponse.STATUS_FAILED, e.getMessage());
+            return new OdbcResponse(OdbcResponse.STATUS_FAILED, e.getMessage());
         }
     }
 
     /**
+     * {@link OdbcQueryFetchRequest} command handler.
+     *
      * @param req Execute query request.
      * @param qryCurs Queries cursors.
      * @return Response.
      */
-    private GridOdbcResponse fetchQuery(QueryFetchRequest req,
-                                        ConcurrentHashMap<Long, IgniteBiTuple<QueryCursor, Iterator>> qryCurs) {
+    private OdbcResponse fetchQuery(OdbcQueryFetchRequest req,
+                                    ConcurrentHashMap<Long, IgniteBiTuple<QueryCursor, Iterator>> qryCurs) {
         try {
             Iterator cur = qryCurs.get(req.queryId()).get2();
 
             if (cur == null)
-                return new GridOdbcResponse(GridOdbcResponse.STATUS_FAILED,
+                return new OdbcResponse(OdbcResponse.STATUS_FAILED,
                         "Failed to find query with ID: " + req.queryId());
 
-            QueryFetchResult res = createQueryResult(qryCurs, cur, req, req.queryId());
+            OdbcQueryFetchResult res = createQueryResult(cur, req, req.queryId());
 
-            return new GridOdbcResponse(res);
+            return new OdbcResponse(res);
         }
         catch (Exception e) {
             qryCurs.remove(req.queryId());
 
-            return new GridOdbcResponse(GridOdbcResponse.STATUS_FAILED, e.getMessage());
+            return new OdbcResponse(OdbcResponse.STATUS_FAILED, e.getMessage());
         }
     }
 
     /**
+     * {@link OdbcQueryGetColumnsMetaRequest} command handler.
+     *
      * @param req Get columns metadata request.
      * @return Response.
      */
-    private GridOdbcResponse getColumnsMeta(QueryGetColumnsMetaRequest req) {
+    private OdbcResponse getColumnsMeta(OdbcQueryGetColumnsMetaRequest req) {
         try {
-            List<GridOdbcColumnMeta> meta = new ArrayList<>();
+            List<OdbcColumnMeta> meta = new ArrayList<>();
 
             String cacheName;
             String tableName;
@@ -284,29 +289,31 @@ public class GridOdbcCommandHandler {
                     if (!matches(field.getKey(), req.columnName()))
                         continue;
 
-                    GridOdbcColumnMeta columnMeta = new GridOdbcColumnMeta(req.cacheName(),
+                    OdbcColumnMeta columnMeta = new OdbcColumnMeta(req.cacheName(),
                             table.name(), field.getKey(), field.getValue());
 
                     if (!meta.contains(columnMeta))
                         meta.add(columnMeta);
                 }
             }
-            QueryGetColumnsMetaResult res = new QueryGetColumnsMetaResult(meta);
+            OdbcQueryGetColumnsMetaResult res = new OdbcQueryGetColumnsMetaResult(meta);
 
-            return new GridOdbcResponse(res);
+            return new OdbcResponse(res);
         }
         catch (Exception e) {
-            return new GridOdbcResponse(GridOdbcResponse.STATUS_FAILED, e.getMessage());
+            return new OdbcResponse(OdbcResponse.STATUS_FAILED, e.getMessage());
         }
     }
 
     /**
+     * {@link OdbcQueryGetTablesMetaRequest} command handler.
+     *
      * @param req Get tables metadata request.
      * @return Response.
      */
-    private GridOdbcResponse getTablesMeta(QueryGetTablesMetaRequest req) {
+    private OdbcResponse getTablesMeta(OdbcQueryGetTablesMetaRequest req) {
         try {
-            List<GridOdbcTableMeta> meta = new ArrayList<>();
+            List<OdbcTableMeta> meta = new ArrayList<>();
 
             String realSchema = RemoveQuotationMarksIfNeeded(req.schema());
 
@@ -319,19 +326,19 @@ public class GridOdbcCommandHandler {
                 if (!matches("TABLE", req.tableType()))
                     continue;
 
-                GridOdbcTableMeta tableMeta = new GridOdbcTableMeta(req.catalog(), req.schema(),
+                OdbcTableMeta tableMeta = new OdbcTableMeta(req.catalog(), req.schema(),
                         table.name(), "TABLE");
 
                 if (!meta.contains(tableMeta))
                     meta.add(tableMeta);
             }
 
-            QueryGetTablesMetaResult res = new QueryGetTablesMetaResult(meta);
+            OdbcQueryGetTablesMetaResult res = new OdbcQueryGetTablesMetaResult(meta);
 
-            return new GridOdbcResponse(res);
+            return new OdbcResponse(res);
         }
         catch (Exception e) {
-            return new GridOdbcResponse(GridOdbcResponse.STATUS_FAILED, e.getMessage());
+            return new OdbcResponse(OdbcResponse.STATUS_FAILED, e.getMessage());
         }
     }
 }

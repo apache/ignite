@@ -28,21 +28,22 @@ import static org.apache.ignite.internal.binary.GridBinaryMarshaller.UNREGISTERE
 /**
  * ODBC column-related metadata.
  */
-public class GridOdbcColumnMeta {
+public class OdbcColumnMeta {
     /** Cache name. */
-    private String schemaName;
+    private final String schemaName;
 
     /** Table name. */
-    private String tableName;
+    private final String tableName;
 
     /** Column name. */
-    private String columnName;
+    private final String columnName;
 
     /** Data type. */
-    private Class<?> dataType;
+    private final Class<?> dataType;
 
     /**
      * Add quotation marks at the beginning and end of the string.
+     *
      * @param str Input string.
      * @return String surrounded with quotation marks.
      */
@@ -59,7 +60,7 @@ public class GridOdbcColumnMeta {
      * @param columnName Column name.
      * @param dataType Data type.
      */
-    public GridOdbcColumnMeta(String schemaName, String tableName, String columnName, Class<?> dataType) {
+    public OdbcColumnMeta(String schemaName, String tableName, String columnName, Class<?> dataType) {
         this.schemaName = AddQuotationMarksIfNeeded(schemaName);
         this.tableName = tableName;
         this.columnName = columnName;
@@ -69,26 +70,29 @@ public class GridOdbcColumnMeta {
     /**
      * @param info Field metadata.
      */
-    public GridOdbcColumnMeta(GridQueryFieldMetadata info) {
+    public OdbcColumnMeta(GridQueryFieldMetadata info) {
         this.schemaName = AddQuotationMarksIfNeeded(info.schemaName());
         this.tableName = info.typeName();
         this.columnName = info.fieldName();
 
+        Class<?> type;
         try {
-            this.dataType = Class.forName(info.fieldTypeName());
+            type = Class.forName(info.fieldTypeName());
         }
         catch (Exception ignored) {
-            this.dataType = Object.class;
+            type = Object.class;
         }
+
+        this.dataType = type;
     }
 
-    @Override
-    public boolean equals(Object o)
+    /** {@inheritDoc} */
+    @Override public boolean equals(Object o)
     {
-        if (!(o instanceof GridOdbcColumnMeta))
+        if (!(o instanceof OdbcColumnMeta))
             return false;
 
-        GridOdbcColumnMeta another = (GridOdbcColumnMeta)o;
+        OdbcColumnMeta another = (OdbcColumnMeta)o;
 
         return schemaName.equals(another.schemaName) &&
                tableName.equals(another.tableName)   &&
@@ -98,6 +102,7 @@ public class GridOdbcColumnMeta {
 
     /**
      * Write in a binary format.
+     *
      * @param writer Binary writer.
      * @param ctx Portable context.
      * @throws IOException

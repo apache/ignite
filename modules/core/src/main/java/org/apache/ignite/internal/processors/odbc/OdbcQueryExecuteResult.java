@@ -14,30 +14,40 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.ignite.internal.processors.odbc.response;
-
-import org.apache.ignite.internal.processors.odbc.GridOdbcTableMeta;
+package org.apache.ignite.internal.processors.odbc;
 
 import java.util.Collection;
 
 /**
- * Query get columns meta result.
+ * Query execute result.
  */
-public class QueryGetTablesMetaResult {
-    /** Query result rows. */
-    private Collection<GridOdbcTableMeta> meta;
+public class OdbcQueryExecuteResult {
+    /** Query ID. */
+    private final long queryId;
+
+    /** Fields metadata. */
+    private final Collection<OdbcColumnMeta> columnsMeta;
 
     /**
-     * @param meta Column metadata.
+     * @param queryId Query ID.
+     * @param columnsMeta Columns metadata.
      */
-    public QueryGetTablesMetaResult(Collection<GridOdbcTableMeta> meta) {
-        this.meta = meta;
+    public OdbcQueryExecuteResult(long queryId, Collection<OdbcColumnMeta> columnsMeta) {
+        this.queryId = queryId;
+        this.columnsMeta = columnsMeta;
     }
 
     /**
-     * @return Query result rows.
+     * @return Query ID.
      */
-    public Collection<GridOdbcTableMeta> getMeta() {
-        return meta;
+    public long getQueryId() {
+        return queryId;
+    }
+
+    /**
+     * @return Columns metadata.
+     */
+    public Collection<OdbcColumnMeta> getColumnsMetadata() {
+        return columnsMeta;
     }
 }

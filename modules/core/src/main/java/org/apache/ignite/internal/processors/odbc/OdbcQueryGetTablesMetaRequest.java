@@ -14,23 +14,23 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.ignite.internal.processors.odbc.request;
+package org.apache.ignite.internal.processors.odbc;
 
 /**
  * ODBC query get tables meta request.
  */
-public class QueryGetTablesMetaRequest extends GridOdbcRequest {
+public class OdbcQueryGetTablesMetaRequest extends OdbcRequest {
     /** Catalog search pattern. */
-    private String catalog;
+    private final String catalog;
 
     /** Schema search pattern. */
-    private String schema;
+    private final String schema;
 
     /** Table search pattern. */
-    private String table;
+    private final String table;
 
     /** Table type search pattern. */
-    private String tableType;
+    private final String tableType;
 
     /**
      * @param catalog Catalog search pattern.
@@ -38,20 +38,13 @@ public class QueryGetTablesMetaRequest extends GridOdbcRequest {
      * @param table Table search pattern.
      * @param tableType Table type search pattern.
      */
-    public QueryGetTablesMetaRequest(String catalog, String schema, String table, String tableType) {
+    public OdbcQueryGetTablesMetaRequest(String catalog, String schema, String table, String tableType) {
         super(GET_TABLES_META);
 
         this.catalog = catalog;
         this.schema = schema;
         this.table = table;
         this.tableType = tableType;
-    }
-
-    /**
-     * @param catalog Catalog search pattern.
-     */
-    public void catalog(String catalog) {
-        this.catalog = catalog;
     }
 
     /**
@@ -62,13 +55,6 @@ public class QueryGetTablesMetaRequest extends GridOdbcRequest {
     }
 
     /**
-     * @param schema Schema search pattern.
-     */
-    public void schema(String schema) {
-        this.schema = schema;
-    }
-
-    /**
      * @return Schema search pattern.
      */
     public String schema() {
@@ -76,24 +62,10 @@ public class QueryGetTablesMetaRequest extends GridOdbcRequest {
     }
 
     /**
-     * @param table Schema search pattern.
-     */
-    public void table(String table) {
-        this.table = table;
-    }
-
-    /**
      * @return Table search pattern.
      */
     public String table() {
         return table;
-    }
-
-    /**
-     * @param tableType Table type search pattern.
-     */
-    public void tableType(String tableType) {
-        this.tableType = tableType;
     }
 
     /**

@@ -1,5 +1,5 @@
 
-LIBRARY   odbc-driver
+LIBRARY   odbc
 EXPORTS
 	ConfigDSN
 	SQLAllocConnect

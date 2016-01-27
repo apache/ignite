@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.ignite.internal.processors.odbc.protocol;
+package org.apache.ignite.internal.processors.odbc;
 
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
@@ -22,8 +22,6 @@ import org.apache.ignite.configuration.ConnectorConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.OdbcConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
-import org.apache.ignite.internal.processors.odbc.GridOdbcProtocolHandler;
-import org.apache.ignite.internal.processors.odbc.request.GridOdbcRequest;
 import org.apache.ignite.internal.util.nio.*;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.IgnitePortProtocol;
@@ -35,32 +33,20 @@ import java.nio.ByteOrder;
 /**
  * TCP server that handles communication with ODBC driver.
  */
-public class GridTcpOdbcServer {
-
+public class OdbcTcpServer {
     /** Server. */
-    private GridNioServer<GridOdbcRequest> srv;
-
-    /** NIO server listener. */
-    private GridNioServerListener<GridOdbcRequest> lsnr;
+    private GridNioServer<OdbcRequest> srv;
 
     /** Logger. */
-    protected final IgniteLogger log;
+    private final IgniteLogger log;
 
     /** Context. */
-    protected final GridKernalContext ctx;
+    private final GridKernalContext ctx;
 
-    /** Host used by this protocol. */
-    protected InetAddress host;
-
-    /** Port used by this protocol. */
-    protected int port;
-
-    /** */
-    public String name() {
-        return "ODBC server";
-    }
-
-    public GridTcpOdbcServer(GridKernalContext ctx) {
+    /**
+     * @param ctx Kernel context.
+     */
+    public OdbcTcpServer(GridKernalContext ctx) {
         assert ctx != null;
         assert ctx.config().getConnectorConfiguration() != null;
 
@@ -69,44 +55,44 @@ public class GridTcpOdbcServer {
         log = ctx.log(getClass());
     }
 
-    @SuppressWarnings("BusyWait")
-    public void start(final GridOdbcProtocolHandler hnd) throws IgniteCheckedException {
+    /**
+     * Start ODBC TCP server.
+     *
+     * @param hnd ODBC protocol handler.
+     * @throws IgniteCheckedException
+     */
+    public void start(final OdbcProtocolHandler hnd) throws IgniteCheckedException {
         OdbcConfiguration cfg = ctx.config().getOdbcConfiguration();
 
         assert cfg != null;
 
-        lsnr = new GridTcpOdbcNioListener(log, this, ctx, hnd);
+        GridNioServerListener<OdbcRequest> listener = new OdbcTcpNioListener(log, hnd);
 
-        GridNioParser parser = new GridOdbcParser(ctx);
+        GridNioParser parser = new OdbcParser(ctx);
 
         try {
-            host = resolveOdbcTcpHost(ctx.config());
+            InetAddress host = resolveOdbcTcpHost(ctx.config());
 
-            int odbcPort = cfg.getPort();
+            int port = cfg.getPort();
 
-            if (startTcpServer(host, odbcPort, lsnr, parser, cfg)) {
-                port = odbcPort;
-
-                System.out.println("ODBC Server has started on TCP port " + port);
+            if (startTcpServer(host, port, listener, parser, cfg)) {
+                log.debug("ODBC Server has started on TCP port " + port);
 
                 return;
             }
 
-            U.warn(log, "Failed to start " + name() + " (possibly all ports in range are in use) " +
-                    "[odbcPort=" + odbcPort + ", host=" + host + ']');
+            U.warn(log, "Failed to start ODBC server (possibly all ports in range are in use) " +
+                    "[port=" + port + ", host=" + host + ']');
         }
         catch (IOException e) {
-            U.warn(log, "Failed to start " + name() + " on port " + port + ": " + e.getMessage(),
-                    "Failed to start " + name() + " on port " + port + ". " +
-                            "Check restTcpHost configuration property.");
+            U.warn(log, "Failed to start ODBC server: " + e.getMessage(),
+                    "Failed to start ODBC server. Check odbcTcpHost configuration property.");
         }
     }
 
-    /** */
-    public void onKernalStart() {
-    }
-
-    /** */
+    /**
+     * Stop ODBC TCP server.
+     */
     public void stop() {
         if (srv != null) {
             ctx.ports().deregisterPorts(getClass());
@@ -125,10 +111,10 @@ public class GridTcpOdbcServer {
     private InetAddress resolveOdbcTcpHost(IgniteConfiguration cfg) throws IOException {
         String host = null;
 
-        ConnectorConfiguration connectionCfg = cfg.getConnectorConfiguration();
+        OdbcConfiguration odbcCfg = cfg.getOdbcConfiguration();
 
-        if (connectionCfg != null)
-            host = connectionCfg.getHost();
+        if (odbcCfg != null)
+            host = odbcCfg.getHost();
 
         if (host == null)
             host = cfg.getLocalHost();
@@ -141,13 +127,13 @@ public class GridTcpOdbcServer {
      *
      * @param hostAddr Host on which server should be bound.
      * @param port Port on which server should be bound.
-     * @param lsnr Server message listener.
+     * @param listener Server message listener.
      * @param parser Server message parser.
      * @param cfg Configuration for other parameters.
      * @return {@code True} if server successfully started, {@code false} if port is used and
      *      server was unable to start.
      */
-    private boolean startTcpServer(InetAddress hostAddr, int port, GridNioServerListener<GridOdbcRequest> lsnr,
+    private boolean startTcpServer(InetAddress hostAddr, int port, GridNioServerListener<OdbcRequest> listener,
                                    GridNioParser parser, OdbcConfiguration cfg) {
         try {
             GridNioFilter codec = new GridNioCodecFilter(parser, log, false);
@@ -156,10 +142,10 @@ public class GridTcpOdbcServer {
 
             filters = new GridNioFilter[] { codec };
 
-            srv = GridNioServer.<GridOdbcRequest>builder()
+            srv = GridNioServer.<OdbcRequest>builder()
                     .address(hostAddr)
                     .port(port)
-                    .listener(lsnr)
+                    .listener(listener)
                     .logger(log)
                     .selectorCount(cfg.getSelectorCount())
                     .gridName(ctx.gridName())
@@ -183,7 +169,7 @@ public class GridTcpOdbcServer {
         }
         catch (IgniteCheckedException e) {
             if (log.isDebugEnabled())
-                log.debug("Failed to start " + name() + " on port " + port + ": " + e.getMessage());
+                log.debug("Failed to start ODBC server on port " + port + ": " + e.getMessage());
 
             return false;
         }

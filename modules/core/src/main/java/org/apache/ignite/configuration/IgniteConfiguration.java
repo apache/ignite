@@ -2284,14 +2284,18 @@ public class IgniteConfiguration {
     }
 
     /**
-     * @return Odbc configuration.
+     * Gets configuration for ODBC.
+     *
+     * @return ODBC configuration.
      */
     public OdbcConfiguration getOdbcConfiguration() {
         return odbcCfg;
     }
 
     /**
-     * @param odbcCfg Odbc configuration.
+     * Sets configuration for ODBC.
+     *
+     * @param odbcCfg ODBC configuration.
      * @return {@code this} for chaining.
      */
     public IgniteConfiguration setOdbcConfiguration(OdbcConfiguration odbcCfg) {

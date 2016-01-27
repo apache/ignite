@@ -14,42 +14,41 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.ignite.internal.processors.odbc.response;
-
-import org.apache.ignite.internal.processors.odbc.GridOdbcColumnMeta;
-
-import java.util.Collection;
+package org.apache.ignite.internal.processors.odbc;
 
 /**
- * Query execute result.
+ * ODBC command request.
  */
-public class QueryExecuteResult {
-    /** Query ID. */
-    private long queryId;
+public class OdbcRequest {
+    /** Execute sql query. */
+    public static final int EXECUTE_SQL_QUERY = 1;
 
-    /** Fields metadata. */
-    private Collection<GridOdbcColumnMeta> columnsMeta;
+    /** Fetch query results. */
+    public static final int FETCH_SQL_QUERY = 2;
+
+    /** Close query. */
+    public static final int CLOSE_SQL_QUERY = 3;
+
+    /** Get columns meta query. */
+    public static final int GET_COLUMNS_META = 4;
+
+    /** Get columns meta query. */
+    public static final int GET_TABLES_META = 5;
+
+    /** Command. */
+    private final int cmd;
 
     /**
-     * @param queryId Query ID.
-     * @param columnsMeta Columns metadata.
+     * @param cmd Command type.
      */
-    public QueryExecuteResult(long queryId,Collection<GridOdbcColumnMeta> columnsMeta){
-        this.queryId = queryId;
-        this.columnsMeta = columnsMeta;
+    public OdbcRequest(int cmd) {
+        this.cmd = cmd;
     }
 
     /**
-     * @return Query ID.
+     * @return Command.
      */
-    public long getQueryId() {
-        return queryId;
-    }
-
-    /**
-     * @return Columns metadata.
-     */
-    public Collection<GridOdbcColumnMeta> getColumnsMetadata() {
-        return columnsMeta;
+    public int command() {
+        return cmd;
     }
 }

@@ -14,38 +14,32 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.ignite.internal.processors.odbc.request;
+package org.apache.ignite.internal.processors.odbc;
 
 /**
  * ODBC query execute request.
  */
-public class QueryExecuteRequest extends GridOdbcRequest {
+public class OdbcQueryExecuteRequest extends OdbcRequest {
     /** Cache name. */
-    private String cacheName;
+    private final String cacheName;
 
     /** Sql query. */
-    private String sqlQry;
+    private final String sqlQry;
 
     /** Sql query arguments. */
-    private Object[] args;
+    private final Object[] args;
 
     /**
      * @param cacheName Cache name.
      * @param sqlQry SQL query.
      * @param args Arguments list.
      */
-    public QueryExecuteRequest(String cacheName, String sqlQry, Object[] args) {
+    public OdbcQueryExecuteRequest(String cacheName, String sqlQry, Object[] args) {
         super(EXECUTE_SQL_QUERY);
+
         this.cacheName = cacheName;
         this.sqlQry = sqlQry;
         this.args = args;
-    }
-
-    /**
-     * @param sqlQry Sql query.
-     */
-    public void sqlQuery(String sqlQry) {
-        this.sqlQry = sqlQry;
     }
 
     /**
@@ -56,24 +50,10 @@ public class QueryExecuteRequest extends GridOdbcRequest {
     }
 
     /**
-     * @param args Sql query arguments.
-     */
-    public void arguments(Object[] args) {
-        this.args = args;
-    }
-
-    /**
      * @return Sql query arguments.
      */
     public Object[] arguments() {
         return args;
-    }
-
-    /**
-     * @param cacheName Cache name.
-     */
-    public void cacheName(String cacheName) {
-        this.cacheName = cacheName;
     }
 
     /**

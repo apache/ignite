@@ -14,48 +14,28 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.ignite.internal.processors.odbc.request;
+package org.apache.ignite.internal.processors.odbc;
+
+import java.util.Collection;
 
 /**
- * ODBC command request.
+ * Query get columns meta result.
  */
-public class GridOdbcRequest {
-    /** Execute sql query. */
-    public static final int EXECUTE_SQL_QUERY = 1;
-
-    /** Fetch query results. */
-    public static final int FETCH_SQL_QUERY = 2;
-
-    /** Close query. */
-    public static final int CLOSE_SQL_QUERY = 3;
-
-    /** Get columns meta query. */
-    public static final int GET_COLUMNS_META = 4;
-
-    /** Get columns meta query. */
-    public static final int GET_TABLES_META = 5;
-
-    /** Command. */
-    private int cmd;
+public class OdbcQueryGetColumnsMetaResult {
+    /** Query result rows. */
+    private final Collection<OdbcColumnMeta> meta;
 
     /**
-     * @param cmd Command type.
+     * @param meta Column metadata.
      */
-    public GridOdbcRequest(int cmd) {
-        this.cmd = cmd;
+    public OdbcQueryGetColumnsMetaResult(Collection<OdbcColumnMeta> meta) {
+        this.meta = meta;
     }
 
     /**
-     * @return Command.
+     * @return Query result rows.
      */
-    public int command() {
-        return cmd;
-    }
-
-    /**
-     * @param cmd Command.
-     */
-    public void command(int cmd) {
-        this.cmd = cmd;
+    public Collection<OdbcColumnMeta> meta() {
+        return meta;
     }
 }

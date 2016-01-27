@@ -14,37 +14,32 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.ignite.internal.processors.odbc.request;
+package org.apache.ignite.internal.processors.odbc;
 
 /**
  * ODBC query get columns meta request.
  */
-public class QueryGetColumnsMetaRequest extends GridOdbcRequest {
+public class OdbcQueryGetColumnsMetaRequest extends OdbcRequest {
     /** Cache name. */
-    private String cacheName;
+    private final String cacheName;
 
     /** Table name. */
-    private String tableName;
+    private final String tableName;
 
     /** Column name. */
-    private String columnName;
+    private final String columnName;
 
     /**
      * @param cacheName Cache name.
+     * @param tableName Table name.
+     * @param columnName Column name.
      */
-    public QueryGetColumnsMetaRequest(String cacheName, String tableName, String columnName) {
+    public OdbcQueryGetColumnsMetaRequest(String cacheName, String tableName, String columnName) {
         super(GET_COLUMNS_META);
 
         this.cacheName = cacheName;
         this.tableName = tableName;
         this.columnName = columnName;
-    }
-
-    /**
-     * @param cacheName Cache name.
-     */
-    public void cacheName(String cacheName) {
-        this.cacheName = cacheName;
     }
 
     /**
@@ -55,24 +50,10 @@ public class QueryGetColumnsMetaRequest extends GridOdbcRequest {
     }
 
     /**
-     * @param tableName Table name.
-     */
-    public void tableName(String tableName) {
-        this.tableName = tableName;
-    }
-
-    /**
      * @return Table name.
      */
     public String tableName() {
         return tableName;
-    }
-
-    /**
-     * @param columnName Column name.
-     */
-    public void columnName(String columnName) {
-        this.columnName = columnName;
     }
 
     /**
