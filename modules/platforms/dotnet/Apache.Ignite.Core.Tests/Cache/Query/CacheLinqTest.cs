@@ -145,12 +145,19 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
             // Test instance method call
             _testField = DateTime.Now.Second;
 
-            var person2 = cache.ToQueryable().Where(x => x.Key == 13)
+            var person2 = cache.ToQueryable().Where(x => x.Key == 14)
                 .Select(x => CreatePersonInstance(x.Value.Name)).ToArray().Single();
 
             Assert.AreEqual(_testField, person2.Age);
 
             // Test lambda/delegate
+            Func<int, LinqPerson> func = x => new LinqPerson(x, _testField.ToString());
+
+            var person3 = cache.ToQueryable().Where(x => x.Key == 15)
+                .Select(x => func(x.Key)).ToArray().Single();
+
+            Assert.AreEqual(15, person3.Age);
+            Assert.AreEqual(_testField.ToString(), person3.Name);
         }
 
         private static LinqPerson CreatePersonStatic(int age, string name)
