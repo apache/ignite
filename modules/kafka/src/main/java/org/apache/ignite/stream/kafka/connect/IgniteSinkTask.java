@@ -57,8 +57,12 @@ public class IgniteSinkTask extends SinkTask {
      * @param props Task properties.
      */
     @Override public void start(Map<String, String> props) {
-        igniteConfigFile = props.get(IgniteSinkConstants.CACHE_CFG_PATH);
+        // Each task has the same parameters -- avoid setting more than once.
+        if (cacheName != null)
+            return;
+
         cacheName = props.get(IgniteSinkConstants.CACHE_NAME);
+        igniteConfigFile = props.get(IgniteSinkConstants.CACHE_CFG_PATH);
 
         if (props.containsKey(IgniteSinkConstants.CACHE_ALLOW_OVERWRITE))
             StreamerContext.getStreamer().allowOverwrite(
