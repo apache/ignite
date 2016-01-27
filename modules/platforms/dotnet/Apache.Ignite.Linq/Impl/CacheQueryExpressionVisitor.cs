@@ -50,6 +50,12 @@ namespace Apache.Ignite.Linq.Impl
         private static readonly MethodInfo StringEndsWith = typeof (string).GetMethod("EndsWith",
             new[] {typeof (string)});
 
+        /** */
+        private static readonly MethodInfo StringToLower = typeof (string).GetMethod("ToLower", new Type[0]);
+
+        /** */
+        private static readonly MethodInfo StringToUpper = typeof (string).GetMethod("ToUpper", new Type[0]);
+
         /// <summary>
         /// Gets the SQL statement.
         /// </summary>
@@ -185,6 +191,26 @@ namespace Apache.Ignite.Linq.Impl
 
             if (expression.Method == StringEndsWith)
                 return VisitSqlLike(expression, "%{0}");
+
+            if (expression.Method == StringToLower)
+            {
+                _resultBuilder.Append("lower(");
+                Visit(expression.Object);
+                _resultBuilder.Append(")");
+
+                return expression;
+            }
+
+            if (expression.Method == StringToUpper)
+            {
+                _resultBuilder.Append("upper(");
+                Visit(expression.Object);
+                _resultBuilder.Append(")");
+
+                return expression;
+            }
+
+            // TODO: More functions, see http://www.h2database.com/html/functions.html
 
             return base.VisitMethodCall(expression); // throws
         }
