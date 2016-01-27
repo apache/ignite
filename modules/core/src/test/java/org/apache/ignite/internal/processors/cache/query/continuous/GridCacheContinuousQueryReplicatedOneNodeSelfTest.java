@@ -38,6 +38,7 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 /**
  * Test for replicated cache with one node.
  */
+@SuppressWarnings("Duplicates")
 public class GridCacheContinuousQueryReplicatedOneNodeSelfTest extends GridCommonAbstractTest {
     /** IP finder. */
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
@@ -80,6 +81,20 @@ public class GridCacheContinuousQueryReplicatedOneNodeSelfTest extends GridCommo
     /**
      * @throws Exception If failed.
      */
+    public void testLocalOneNode() throws Exception {
+        doTestOneNode(true);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testDistributedOneNode() throws Exception {
+        doTestOneNode(false);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
     private void doTest(boolean loc) throws Exception {
         try {
             IgniteCache<String, Integer> cache = startGrid(0).cache(null);
@@ -105,6 +120,47 @@ public class GridCacheContinuousQueryReplicatedOneNodeSelfTest extends GridCommo
             startGrid(1);
 
             awaitPartitionMapExchange();
+
+            for (int i = 0; i < 10; i++)
+                cache.put("key" + i, i);
+
+            assert latch.await(5000, TimeUnit.MILLISECONDS);
+
+            assertEquals(10, cnt.get());
+        }
+        finally {
+            stopAllGrids();
+        }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    private void doTestOneNode(boolean loc) throws Exception {
+        try {
+            IgniteCache<String, Integer> cache = startGrid(0).cache(null);
+
+            ContinuousQuery<String, Integer> qry = new ContinuousQuery<>();
+
+            final AtomicInteger cnt = new AtomicInteger();
+            final CountDownLatch latch = new CountDownLatch(10);
+
+            for (int i = 0; i < 10; i++)
+                cache.put("key" + i, i);
+
+            cache.clear();
+
+            qry.setLocalListener(new CacheEntryUpdatedListener<String, Integer>() {
+                @Override public void onUpdated(Iterable<CacheEntryEvent<? extends String, ? extends Integer>> evts)
+                        throws CacheEntryListenerException {
+                    for (CacheEntryEvent<? extends String, ? extends Integer> evt : evts) {
+                        cnt.incrementAndGet();
+                        latch.countDown();
+                    }
+                }
+            });
+
+            cache.query(qry.setLocal(loc));
 
             for (int i = 0; i < 10; i++)
                 cache.put("key" + i, i);
