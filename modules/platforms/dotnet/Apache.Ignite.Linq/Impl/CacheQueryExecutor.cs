@@ -17,13 +17,11 @@
 
 namespace Apache.Ignite.Linq.Impl
 {
-    using System;
     using System.Collections.Generic;
     using System.Diagnostics;
     using System.Linq;
     using Apache.Ignite.Core.Cache;
     using Apache.Ignite.Core.Cache.Query;
-    using Apache.Ignite.Core.Impl.Common;
     using Remotion.Linq;
 
     /// <summary>
@@ -56,15 +54,15 @@ namespace Apache.Ignite.Linq.Impl
         /** <inheritdoc /> */
         public T ExecuteScalar<T>(QueryModel queryModel)
         {
-            // TODO
-            throw new System.NotImplementedException();
+            return ExecuteSingle<T>(queryModel, false);
         }
 
         /** <inheritdoc /> */
         public T ExecuteSingle<T>(QueryModel queryModel, bool returnDefaultWhenEmpty)
         {
-            // TODO
-            throw new System.NotImplementedException();
+            var collection = ExecuteCollection<T>(queryModel);
+
+            return returnDefaultWhenEmpty ? collection.SingleOrDefault() : collection.Single();
         }
 
         /** <inheritdoc /> */
@@ -74,7 +72,7 @@ namespace Apache.Ignite.Linq.Impl
             if (queryModel.IsIdentityQuery() && queryModel.ResultOperators.Count == 0)
                 return (IEnumerable<T>) _cache;
 
-            var queryData = CacheQueryModelVisitor.GenerateQuery(queryModel);
+            var queryData = CacheQueryModelVisitor.GenerateQuery(queryModel, _queryTypeName);
 
             var query = new SqlQuery(_queryTypeName, queryData.QueryText, queryData.Parameters.ToArray());
 

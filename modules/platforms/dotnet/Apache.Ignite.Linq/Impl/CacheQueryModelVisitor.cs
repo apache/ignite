@@ -38,16 +38,30 @@ namespace Apache.Ignite.Linq.Impl
         /** */
         private readonly List<object> _parameters = new List<object>();
 
+        /** */
+        private string _tableName;
+
         /// <summary>
         /// Generates the query.
         /// </summary>
-        public static QueryData GenerateQuery(QueryModel queryModel)
+        public static QueryData GenerateQuery(QueryModel queryModel, string tableName)
         {
-            var visitor = new CacheQueryModelVisitor();
+            var visitor = new CacheQueryModelVisitor(tableName);
 
             visitor.VisitQueryModel(queryModel);
 
             return visitor.GetQuery();
+        }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="CacheQueryModelVisitor"/> class.
+        /// </summary>
+        /// <param name="tableName">Name of the table.</param>
+        private CacheQueryModelVisitor(string tableName)
+        {
+            Debug.Assert(!string.IsNullOrEmpty(tableName));
+
+            _tableName = tableName;
         }
 
         /// <summary>
@@ -72,14 +86,7 @@ namespace Apache.Ignite.Linq.Impl
         {
             base.VisitMainFromClause(fromClause, queryModel);
 
-            var cacheEntryType = fromClause.ItemType;
-
-            Debug.Assert(cacheEntryType.IsGenericType);
-            Debug.Assert(cacheEntryType.GetGenericTypeDefinition() == typeof(ICacheEntry<,>));
-
-            var tableName = cacheEntryType.GetGenericArguments()[1].Name;
-
-            Builder.AppendFormat("from {0} ", tableName);
+            Builder.AppendFormat("from {0} ", _tableName);
         }
 
         /** <inheritdoc /> */
