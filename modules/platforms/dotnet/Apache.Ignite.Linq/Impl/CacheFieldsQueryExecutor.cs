@@ -73,17 +73,37 @@ namespace Apache.Ignite.Linq.Impl
 
             var queryCursor = _executorFunc(query);
 
-            var newExpr = queryModel.SelectClause.Selector as NewExpression;
+            var selector = GetResultSelector<T>(queryModel.SelectClause.Selector);
+
+            return queryCursor.Select(selector);
+        }
+
+        /// <summary>
+        /// Gets the result selector.
+        /// </summary>
+        private static Func<IList, T> GetResultSelector<T>(Expression selectorExpression)
+        {
+            var newExpr = selectorExpression as NewExpression;
 
             if (newExpr != null)
             {
                 // TODO: Compile Func<IList, T>
-                var ctor = newExpr.Constructor;
-
-                return queryCursor.Select(fields => (T) ctor.Invoke(fields.Cast<object>().ToArray()));
+                return fields => (T)newExpr.Constructor.Invoke(fields.Cast<object>().ToArray());
             }
 
-            return queryCursor.Select(ConvertSingleField<T>);
+            var methodExpr = selectorExpression as MethodCallExpression;
+
+            if (methodExpr != null)
+            {
+                // TODO: Compile Func<IList, T>
+                var targetExpr = methodExpr.Object as ConstantExpression;
+
+                object target = targetExpr == null ? null : targetExpr.Value;
+
+                return fields => (T) methodExpr.Method.Invoke(target, fields.Cast<object>().ToArray());
+            }
+
+            return ConvertSingleField<T>;
         }
 
         /// <summary>

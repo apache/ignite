@@ -21,6 +21,7 @@ using System.Text;
 namespace Apache.Ignite.Linq.Impl
 {
     using System.Collections.Generic;
+    using System.Collections.ObjectModel;
     using System.Linq;
     using System.Linq.Expressions;
     using System.Reflection;
@@ -210,9 +211,10 @@ namespace Apache.Ignite.Linq.Impl
                 return expression;
             }
 
-            // TODO: More functions, see http://www.h2database.com/html/functions.html
+            // Attempt to postpone method call until query result materialization
+            VisitArguments(expression.Arguments);
 
-            return base.VisitMethodCall(expression); // throws
+            return expression;
         }
 
         /// <summary>
@@ -248,9 +250,16 @@ namespace Apache.Ignite.Linq.Impl
         /** <inheritdoc /> */
         protected override Expression VisitNew(NewExpression expression)
         {
+            VisitArguments(expression.Arguments);
+
+            return expression;
+        }
+
+        private void VisitArguments(ReadOnlyCollection<Expression> arguments)
+        {
             var first = true;
 
-            foreach (var e in expression.Arguments)
+            foreach (var e in arguments)
             {
                 if (!first)
                     _resultBuilder.Append(", ");
@@ -259,8 +268,6 @@ namespace Apache.Ignite.Linq.Impl
 
                 Visit(e);
             }
-
-            return expression;
         }
 
         /** <inheritdoc /> */

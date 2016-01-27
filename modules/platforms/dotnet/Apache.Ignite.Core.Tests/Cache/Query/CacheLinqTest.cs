@@ -134,12 +134,15 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
                 Assert.AreEqual(t.Age, t.Key);
 
             // Test method call
-            Func<string, int, LinqPerson> method = (name, age) => new LinqPerson(age, name);
-
             var person = cache.ToQueryable().Where(x => x.Key == 13)
-                .Select(x => method(x.Value.Name, x.Value.Age)).ToArray().Single();
+                .Select(x => FooMethod(x.Value.Age, x.Value.Name)).ToArray().Single();
 
             Assert.AreEqual(13, person.Age);
+        }
+
+        private static LinqPerson FooMethod(int age, string name)
+        {
+            return new LinqPerson(age, name);
         }
 
         [Test]
