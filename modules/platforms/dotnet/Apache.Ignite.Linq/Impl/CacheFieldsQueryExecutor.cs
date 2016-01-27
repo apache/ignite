@@ -21,6 +21,7 @@ namespace Apache.Ignite.Linq.Impl
     using System.Collections;
     using System.Collections.Generic;
     using System.Diagnostics;
+    using System.Linq;
     using Apache.Ignite.Core.Cache.Query;
     using Remotion.Linq;
 
@@ -58,7 +59,12 @@ namespace Apache.Ignite.Linq.Impl
         /** <inheritdoc /> */
         public IEnumerable<T> ExecuteCollection<T>(QueryModel queryModel)
         {
-            throw new System.NotImplementedException();
+            var queryData = CacheQueryModelVisitor.GenerateQuery(queryModel);
+
+            var query = new SqlFieldsQuery(queryData.QueryText, queryData.Parameters);
+
+            // TODO
+            return _executorFunc(query).Select(x => (T) x[0]);
         }
     }
 }

@@ -74,9 +74,7 @@ namespace Apache.Ignite.Linq.Impl
             if (queryModel.IsIdentityQuery() && queryModel.ResultOperators.Count == 0)
                 return (IEnumerable<T>) _cache;
 
-            var queryData = CacheQueryModelVisitor.GenerateQuery(queryModel, _cache);
-
-            //var query = new SqlFieldsQuery(queryData.QueryText, queryData.Parameters);
+            var queryData = CacheQueryModelVisitor.GenerateQuery(queryModel);
 
             var query = new SqlQuery(_queryTypeName, queryData.QueryText, queryData.Parameters.ToArray());
 

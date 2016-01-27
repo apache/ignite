@@ -29,35 +29,21 @@ namespace Apache.Ignite.Linq.Impl
     /// <summary>
     /// Query visitor, transforms LINQ expression to SQL.
     /// </summary>
-    internal class CacheQueryModelVisitor
+    internal class CacheQueryModelVisitor : QueryModelVisitorBase
     {
+        private readonly List<WhereClause> _where = new List<WhereClause>();
+        private SelectClause _select;
+
         /// <summary>
         /// Generates the query.
         /// </summary>
-        public static QueryData GenerateQuery<TKey, TValue>(QueryModel queryModel, ICache<TKey, TValue> cache)
+        public static QueryData GenerateQuery(QueryModel queryModel)
         {
-            var visitor = new CacheQueryModelVisitor<TKey, TValue>(cache);
+            var visitor = new CacheQueryModelVisitor();
 
             visitor.VisitQueryModel(queryModel);
 
             return visitor.GetQuery();
-        }
-    }
-
-    /// <summary>
-    /// Query visitor, transforms LINQ expression to SQL.
-    /// </summary>
-    internal class CacheQueryModelVisitor<TKey, TValue> : QueryModelVisitorBase
-    {
-        private readonly ICache<TKey, TValue> _cache;
-        private readonly List<WhereClause> _where = new List<WhereClause>();
-        private SelectClause _select;
-
-        public CacheQueryModelVisitor(ICache<TKey, TValue> cache)
-        {
-            Debug.Assert(cache != null);
-
-            _cache = cache;
         }
 
         public QueryData GetQuery()
@@ -65,7 +51,7 @@ namespace Apache.Ignite.Linq.Impl
             var builder = new StringBuilder();
             var parameters = new List<object>();
 
-            builder.AppendFormat("from {0} ", typeof (TValue).Name);
+            //builder.AppendFormat("from {0} ", typeof (TValue).Name);
 
             for (int i = 0; i < _where.Count; i++)
             {
