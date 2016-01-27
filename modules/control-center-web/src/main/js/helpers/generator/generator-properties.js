@@ -54,13 +54,15 @@ $generatorProperties.dataSourcesProperties = function (cluster, res) {
 
                 var dialect = storeFactory.connectVia ? (storeFactory.connectVia === 'DataSource' ? storeFactory.dialect : undefined): storeFactory.dialect;
 
+                var connectViaUrl = cache.cacheStoreFactory.kind === 'CacheJdbcBlobStoreFactory' && storeFactory.connectVia === 'URL';
+
+                if (!res && (dialect || connectViaUrl)) {
+                    res = $generatorCommon.builder();
+
+                    res.line('# ' + $generatorCommon.mainComment());
+                }
+
                 if (dialect) {
-                    if (!res) {
-                        res = $generatorCommon.builder();
-
-                        res.line('# ' + $generatorCommon.mainComment());
-                    }
-
                     var beanId = storeFactory.dataSourceBean;
 
                     var dsClsName = $generatorCommon.dataSourceClassName(dialect);
@@ -99,9 +101,8 @@ $generatorProperties.dataSourcesProperties = function (cluster, res) {
                     }
                 }
 
-                if (cache.cacheStoreFactory.kind === 'CacheJdbcBlobStoreFactory' && storeFactory.connectVia === 'URL') {
+                if (connectViaUrl)
                     res.line('ds.' + storeFactory.user + '.password=YOUR_PASSWORD');
-                }
             }
         });
     }
