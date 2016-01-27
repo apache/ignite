@@ -61,7 +61,7 @@ namespace Apache.Ignite.Linq.Impl
         {
             var queryData = CacheFieldsQueryModelVisitor.GenerateQuery(queryModel);
 
-            var query = new SqlFieldsQuery(queryData.QueryText, queryData.Parameters);
+            var query = new SqlFieldsQuery(queryData.QueryText, queryData.Parameters.ToArray());
 
             // TODO
             return _executorFunc(query).Select(x => (T) x[0]);
