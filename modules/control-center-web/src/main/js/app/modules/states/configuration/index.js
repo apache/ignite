@@ -19,6 +19,7 @@ import angular from 'angular';
 
 import ConfigurationSummaryCtrl from './summary/summary.controller';
 import ConfigurationSummaryResource from './summary/summary.resource';
+import summaryTabs from './summary/summary-tabs.directive';
 
 import clustersTransactions from './clusters/transactions.directive';
 import clustersThread from './clusters/thread.directive';
@@ -49,6 +50,7 @@ angular
 .module('ignite-console.states.configuration', [
     'ui.router'
 ])
+.directive(...summaryTabs)
 .directive(...clustersTransactions)
 .directive(...clustersThread)
 .directive(...clustersTime)

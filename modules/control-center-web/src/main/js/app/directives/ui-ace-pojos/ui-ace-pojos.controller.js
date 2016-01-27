@@ -15,11 +15,8 @@
  * limitations under the License.
  */
 
-export default ['$scope', 'IgniteUiAceOnLoad', 'JavaTypes', function($scope, onLoad, JavaTypes) {
+export default ['$scope', 'JavaTypes', function($scope, JavaTypes) {
     const ctrl = this;
-
-    // Scope methods.
-    $scope.onLoad = onLoad;
 
     // Watchers definition.
     // Watcher clean instance data if instance to cluster caches was change

@@ -15,37 +15,30 @@
  * limitations under the License.
  */
 
-import template from './ui-ace-xml.jade!';
-import controller from './ui-ace-xml.controller';
+export default ['summaryTabs', [() => {
+    const link = (scope, $element, $attrs, [igniteUiAce]) => {
+        igniteUiAce.onLoad = (editor) => {
+            editor.setReadOnly(true);
+            editor.setOption('highlightActiveLine', false);
+            editor.setAutoScrollEditorIntoView(true);
+            editor.$blockScrolling = Infinity;
 
-export default ['igniteUiAceXml', [() => {
-    const link = ($scope, $el, {clusterCfg}, [igniteUiAce]) => {
-        if (typeof clusterCfg !== 'undefined') {
-            $scope.$watch('cfg', (cfg) => {
-                if (typeof cfg !== 'undefined')
-                    return;
+            const renderer = editor.renderer;
 
-                $scope.cfg = {};
-            });
-        }
+            renderer.setHighlightGutterLine(false);
+            renderer.setShowPrintMargin(false);
+            renderer.setOption('fontFamily', 'monospace');
+            renderer.setOption('fontSize', '12px');
+            renderer.setOption('minLines', '25');
+            renderer.setOption('maxLines', '25');
 
-        if (igniteUiAce.onLoad)
-            $scope.onLoad = igniteUiAce.onLoad;
-
-        if (igniteUiAce.onChange)
-            $scope.onChange = igniteUiAce.onChange;
+            editor.setTheme('ace/theme/chrome');
+        };
     };
 
     return {
-        restrict: 'E',
-        scope: {
-            cluster: '=',
-            cfg: '=clusterCfg'
-        },
+        restrict: 'C',
         link,
-        template,
-        controller,
-        controllerAs: 'ctrl',
-        require: ['?^igniteUiAce']
+        require: ['^igniteUiAce']
     };
 }]];

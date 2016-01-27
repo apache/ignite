@@ -15,21 +15,11 @@
  * limitations under the License.
  */
 
-export default ['$scope', function($scope) {
-    const ctrl = this;
+export default ['igniteUiAce', [() => {
+    const controller = () => {};
 
-    // Watchers definition.
-    const clusterWatcher = (value) => {
-        delete ctrl.data;
-
-        if (!value)
-            return;
-
-        // TODO IGNITE-2052: need move $generatorXml to services.
-        ctrl.data = $generatorXml.cluster($scope.cluster, $scope.cfg);
+    return {
+        restrict: 'E',
+        controller
     };
-
-    // Setup watchers.
-    $scope.$watch('cfg', clusterWatcher, true);
-    $scope.$watch('cluster', clusterWatcher);
-}];
+}]];

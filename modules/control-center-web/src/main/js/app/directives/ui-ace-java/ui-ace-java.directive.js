@@ -19,7 +19,7 @@ import template from './ui-ace-java.jade!';
 import controller from './ui-ace-java.controller';
 
 export default ['igniteUiAceJava', [() => {
-    const link = ($scope, $el, {clusterCfg}) => {
+    const link = ($scope, $el, {clusterCfg}, [igniteUiAce]) => {
         if (typeof clusterCfg !== 'undefined') {
             $scope.$watch('cfg', (cfg) => {
                 if (typeof cfg !== 'undefined')
@@ -28,6 +28,12 @@ export default ['igniteUiAceJava', [() => {
                 $scope.cfg = {};
             });
         }
+
+        if (igniteUiAce.onLoad)
+            $scope.onLoad = igniteUiAce.onLoad;
+
+        if (igniteUiAce.onChange)
+            $scope.onChange = igniteUiAce.onChange;
     };
 
     return {
@@ -39,6 +45,7 @@ export default ['igniteUiAceJava', [() => {
         link,
         template,
         controller,
-        controllerAs: 'ctrl'
+        controllerAs: 'ctrl',
+        require: ['?^igniteUiAce']
     };
 }]];

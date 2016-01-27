@@ -83,6 +83,7 @@ import igniteLoading from './directives/loading/loading.directive';
 import igniteCallout from './directives/callout/callout.directive';
 import igniteCalloutCel from './directives/callout/callout-cel.directive';
 import igniteInformation from './directives/information/information.directive';
+import igniteUiAce from './directives/ui-ace/ui-ace.directive';
 import igniteUiAceXml from './directives/ui-ace-xml/ui-ace-xml.directive';
 import igniteUiAceJava from './directives/ui-ace-java/ui-ace-java.directive';
 import igniteUiAcePom from './directives/ui-ace-pom/ui-ace-pom.directive';
@@ -91,7 +92,6 @@ import igniteUiAcePojos from './directives/ui-ace-pojos/ui-ace-pojos.directive';
 import igniteFormFieldJavaClass from './directives/form-field-java-class/form-field-java-class.directive';
 
 // Services.
-import IgniteUiAceOnLoad from './services/UiAceOnLoad/service';
 
 // Filters.
 import hasPojo from './filters/hasPojo/hasPojo.filter';
@@ -127,6 +127,7 @@ angular
 .directive(...igniteCallout)
 .directive(...igniteCalloutCel)
 .directive(...igniteInformation)
+.directive(...igniteUiAce)
 .directive(...igniteUiAceXml)
 .directive(...igniteUiAceJava)
 .directive(...igniteUiAcePom)
@@ -134,7 +135,6 @@ angular
 .directive(...igniteUiAcePojos)
 .directive(...igniteFormFieldJavaClass)
 // Services.
-.service(...IgniteUiAceOnLoad)
 // Filters.
 .filter(...hasPojo)
 .config(['$stateProvider', '$locationProvider', '$urlRouterProvider', function($stateProvider, $locationProvider, $urlRouterProvider) {

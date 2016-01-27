@@ -19,6 +19,14 @@ import template from './ui-ace-docker.jade!';
 import controller from './ui-ace-docker.controller';
 
 export default ['igniteUiAceDocker', [() => {
+    const link = ($scope, $el, $attrs, [igniteUiAce]) => {
+        if (igniteUiAce.onLoad)
+            $scope.onLoad = igniteUiAce.onLoad;
+
+        if (igniteUiAce.onChange)
+            $scope.onChange = igniteUiAce.onChange;
+    };
+
     return {
         restrict: 'E',
         scope: {
@@ -29,8 +37,10 @@ export default ['igniteUiAceDocker', [() => {
             cluster: '=',
             data: '=ngModel'
         },
+        link,
         template,
         controller,
-        controllerAs: 'ctrl'
+        controllerAs: 'ctrl',
+        require: ['?^igniteUiAce']
     };
 }]];

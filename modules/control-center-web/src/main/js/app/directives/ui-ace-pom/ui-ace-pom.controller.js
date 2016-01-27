@@ -18,11 +18,8 @@
 // TODO IGNITE-2055: use set version.
 const igniteVersion = '1.5.0.final';
 
-export default ['$scope', 'IgniteUiAceOnLoad', function($scope, onLoad) {
+export default ['$scope', function($scope) {
     const ctrl = this;
-
-    // Scope methods.
-    $scope.onLoad = onLoad;
 
     // Watchers definition.
     const clusterWatcher = (value) => {

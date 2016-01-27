@@ -15,11 +15,8 @@
  * limitations under the License.
  */
 
-export default ['$scope', 'IgniteUiAceOnLoad', function($scope, onLoad) {
+export default ['$scope', function($scope) {
     const ctrl = this;
-
-    // Scope methods.
-    $scope.onLoad = onLoad;
 
     // Watchers definition.
     const clusterWatcher = () => {

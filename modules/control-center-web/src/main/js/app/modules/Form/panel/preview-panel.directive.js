@@ -15,22 +15,29 @@
  * limitations under the License.
  */
 
-export default ['IgniteUiAceOnLoad', () => {
-    return (editor) => {
-        editor.setReadOnly(true);
-        editor.setOption('highlightActiveLine', false);
-        editor.setAutoScrollEditorIntoView(true);
-        editor.$blockScrolling = Infinity;
+export default ['previewPanel', [() => {
+    const link = (scope, $element, $attrs, [igniteUiAce]) => {
+        igniteUiAce.onLoad = (preview) => {
+            preview.setReadOnly(true);
+            preview.setOption('highlightActiveLine', false);
+            preview.setAutoScrollEditorIntoView(true);
+            preview.$blockScrolling = Infinity;
+            preview.attractAttention = false;
 
-        const renderer = editor.renderer;
+            const renderer = preview.renderer;
 
-        renderer.setHighlightGutterLine(false);
-        renderer.setShowPrintMargin(false);
-        renderer.setOption('fontFamily', 'monospace');
-        renderer.setOption('fontSize', '12px');
-        renderer.setOption('minLines', '25');
-        renderer.setOption('maxLines', '25');
+            renderer.setHighlightGutterLine(false);
+            renderer.setShowPrintMargin(false);
+            renderer.setOption('fontSize', '10px');
+            renderer.setOption('maxLines', '50');
 
-        editor.setTheme('ace/theme/chrome');
+            preview.setTheme('ace/theme/chrome');
+        };
     };
-}];
+
+    return {
+        restrict: 'C',
+        link,
+        require: ['^igniteUiAce']
+    };
+}]];
