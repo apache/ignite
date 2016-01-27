@@ -64,7 +64,8 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
             for (var i = 0; i < DataSize; i++)
                 cache.Put(i, new LinqPerson(i, "Person_" + i)
                 {
-                    LinqAddress = new LinqAddress {Zip = i, Street = "Street " + i}
+                    Address = new LinqAddress {Zip = i, Street = "Street " + i},
+                    OrganizationId = i % 2
                 });
 
             Assert.AreEqual(1, cache[1].Age);
@@ -95,6 +96,9 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
 
             Assert.AreEqual(10, cache.ToQueryable()
                 .Where(x => x.Value.Age < 10).ToArray().Length);
+
+            Assert.AreEqual(10, cache.ToQueryable()
+                .Where(x => x.Value.Address.Zip < 10).ToArray().Length);
 
             Assert.AreEqual(19, cache.ToQueryable()
                 .Where(x => x.Value.Age > 10 && x.Value.Age < 30).ToArray().Length);
@@ -223,10 +227,10 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
             public string Name { get; set; }
 
             [QuerySqlField]
-            public LinqAddress LinqAddress { get; set; }
+            public LinqAddress Address { get; set; }
 
             [QuerySqlField]
-            public int Organizationid { get; set; }
+            public int OrganizationId { get; set; }
 
             public void WriteBinary(IBinaryWriter writer)
             {
