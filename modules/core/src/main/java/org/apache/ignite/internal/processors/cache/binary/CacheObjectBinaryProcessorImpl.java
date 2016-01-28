@@ -40,6 +40,7 @@ import javax.cache.processor.MutableEntry;
 import org.apache.ignite.IgniteBinary;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.binary.BinaryBasicNameMapper;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.binary.BinaryObjectBuilder;
 import org.apache.ignite.binary.BinaryObjectException;
@@ -333,6 +334,25 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
         metaBuf.clear();
 
         startLatch.countDown();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void onKernalStart() throws IgniteCheckedException {
+        super.onKernalStart();
+
+        BinaryConfiguration bcfg = binaryCtx.configuration().getBinaryConfiguration();
+
+        if (binaryContext().configuration().getMarshaller() instanceof BinaryMarshaller && (
+            bcfg == null
+                || !(bcfg.getNameMapper() instanceof BinaryBasicNameMapper)
+                || !((BinaryBasicNameMapper)bcfg.getNameMapper()).isSimpleName()
+        )) {
+            for (ClusterNode rmtNode : ctx.discovery().remoteNodes()) {
+                if (rmtNode.version().compareTo(BINARY_CFG_CHECK_SINCE) < 0)
+                    throw new IgniteCheckedException("Failed to start node with old nodes in topology, with "
+                        + BinaryMarshaller.class.getSimpleName() + " and not simple name mapper.");
+            }
+        }
     }
 
     /** {@inheritDoc} */
