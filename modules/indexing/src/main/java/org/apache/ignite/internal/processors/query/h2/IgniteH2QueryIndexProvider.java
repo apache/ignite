@@ -34,5 +34,5 @@ public interface IgniteH2QueryIndexProvider {
      * @param cols Index columns.
      * @return Created index.
      */
-    public Index createIndex(String name, GridH2Table tbl, boolean pk, int keyCol, int valCol, IndexColumn... cols);
+    public Index createIndex(int cacheId, String name, GridH2Table tbl, boolean pk, int keyCol, int valCol, IndexColumn... cols);
 }
