@@ -51,8 +51,8 @@ div
                     ng-click='#{addresses}.splice(#{addresses}.indexOf(model), 1)'
                 )
 
-                ignite-form-field-down(ng-if='!$last' data-ng-model='model' data-models='#{addresses}')
-                ignite-form-field-up(ng-if='!$first' data-ng-model='model' data-models='#{addresses}')
+                ignite-form-field-down(ng-if='!$last' ng-hide='___.edit' data-ng-model='model' data-models='#{addresses}')
+                ignite-form-field-up(ng-if='!$first' ng-hide='___.edit' data-ng-model='model' data-models='#{addresses}')
                 
                 span(ng-hide='___.edit')
                     a.labelFormField(ng-click='___.edit = true') {{ model }}

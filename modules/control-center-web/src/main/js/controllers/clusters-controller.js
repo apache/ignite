@@ -724,17 +724,21 @@ consoleModule.controller('clustersController', function ($http, $timeout, $scope
 
         // Copy cluster with new name.
         $scope.cloneItem = function () {
-            if ($scope.tableReset(true)) {
-                if (validate($scope.backupItem))
-                    $clone.confirm($scope.backupItem.name, _clusterNames()).then(function (newName) {
-                        var item = angular.copy($scope.backupItem);
+            function cloneItem() {
+                if ($scope.tableReset(true)) {
+                    if (validate($scope.backupItem))
+                        $clone.confirm($scope.backupItem.name, _clusterNames()).then(function (newName) {
+                            var item = angular.copy($scope.backupItem);
 
-                        delete item._id;
-                        item.name = newName;
+                            delete item._id;
+                            item.name = newName;
 
-                        save(item);
-                    });
+                            save(item);
+                        });
+                }
             }
+
+            $common.confirmUnsavedChanges($scope.backupItem && $scope.ui.inputForm.$dirty, cloneItem);
         };
 
         // Remove cluster from db.
