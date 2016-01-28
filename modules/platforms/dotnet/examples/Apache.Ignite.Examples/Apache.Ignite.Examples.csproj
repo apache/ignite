@@ -63,6 +63,7 @@
     <Compile Include="Datagrid\QueryExample.cs" />
     <Compile Include="Datagrid\StoreExample.cs" />
     <Compile Include="Datagrid\TransactionExample.cs" />
+    <Compile Include="Events\LambdaEventsExample.cs" />
     <Compile Include="Events\EventsExample.cs" />
     <Compile Include="Messaging\MessagingExample.cs" />
     <Compile Include="Misc\LifecycleExample.cs" />
