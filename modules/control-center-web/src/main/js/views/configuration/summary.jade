@@ -72,12 +72,12 @@ mixin ignite-form-field-tooltip(message)
                             label Client
 
                         .panel-collapse(id='client' role='tabpanel' bs-collapse-target)
-                            form(name='clientForm')
+                            form(name='clientForm' novalidate)
                                 - var nearCfg = 'ctrl.cluster.clientNearCfg'
                                 - var nearCfgEvictionPolicy = nearCfg + '.nearEvictionPolicy[' + nearCfg + '.nearEvictionPolicy.kind]'
 
                                 .details-row
-                                    ignite-form-field.col-xs-8.col-sm-8.col-md-6(data-label='Near cache start size')
+                                    ignite-form-field.col-xs-8.col-sm-8.col-md-7(data-label='Near cache start size')
                                         +ignite-form-field-tooltip("Initial cache size for near cache which will be used to pre-create internal hash table after start")
                                         ignite-form-field-input-number(
                                             data-name='nearStartSize'
@@ -86,7 +86,7 @@ mixin ignite-form-field-tooltip(message)
                                         )
 
                                 .details-row
-                                    ignite-form-field.col-xs-8.col-sm-8.col-md-6(data-label='Near cache eviction policy')
+                                    ignite-form-field.col-xs-8.col-sm-8.col-md-7(data-label='Near cache eviction policy')
                                         +ignite-form-field-tooltip("Cache expiration policy")
                                         ignite-form-field-dropdown(
                                             data-name='evictionPolicies'
@@ -109,7 +109,7 @@ mixin ignite-form-field-tooltip(message)
                                         ) Show settings
 
                                 .details-row
-                                    .panel-details.col-xs-12.col-sm-12.col-md-6(ng-if='ctrl.__form.expanded && #{nearCfg}.nearEvictionPolicy.kind')
+                                    .panel-details.col-xs-12.col-sm-12.col-md-7(ng-if='ctrl.__form.expanded && #{nearCfg}.nearEvictionPolicy.kind')
                                         .details-row
                                             ignite-form-field(data-label='Batch size')
                                                 +ignite-form-field-tooltip("Number of entries to remove on shrink")
