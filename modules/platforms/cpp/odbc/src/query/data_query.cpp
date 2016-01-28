@@ -67,7 +67,7 @@ namespace ignite
                     return SQL_RESULT_ERROR;
                 }
 
-                if (!cursor->HasNext())
+                if (!cursor->HasData())
                     return SQL_RESULT_NO_DATA;
 
                 if (cursor->NeedDataUpdate())
@@ -77,7 +77,7 @@ namespace ignite
                     if (result != SQL_RESULT_SUCCESS)
                         return result;
 
-                    if (!cursor->HasNext())
+                    if (!cursor->HasData())
                         return SQL_RESULT_NO_DATA;
                 }
                 else
@@ -157,13 +157,13 @@ namespace ignite
 
             bool DataQuery::DataAvailable() const
             {
-                return cursor.get() && cursor->HasNext();
+                return cursor.get() && cursor->HasData();
             }
 
             int64_t DataQuery::AffectedRows() const
             {
-                // We are only support SELECT statements so we should not
-                // return anything particullar.
+                // We are only support SELECT statements so we can not
+                // affect any row.
                 return 0;
             }
 

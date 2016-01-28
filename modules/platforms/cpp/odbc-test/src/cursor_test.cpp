@@ -76,16 +76,18 @@ void CheckCursorNeedUpdate(Cursor& cursor)
 {
     BOOST_REQUIRE(cursor.NeedDataUpdate());
 
-    BOOST_REQUIRE(cursor.HasNext());
+    BOOST_REQUIRE(cursor.HasData());
 
     BOOST_REQUIRE(!cursor.Increment());
+
+    BOOST_REQUIRE(!cursor.GetRow());
 }
 
 void CheckCursorReady(Cursor& cursor)
 {
     BOOST_REQUIRE(!cursor.NeedDataUpdate());
 
-    BOOST_REQUIRE(cursor.HasNext());
+    BOOST_REQUIRE(cursor.HasData());
 
     BOOST_REQUIRE(cursor.GetRow());
 }
@@ -94,11 +96,11 @@ void CheckCursorEnd(Cursor& cursor)
 {
     BOOST_REQUIRE(!cursor.NeedDataUpdate());
 
-    BOOST_REQUIRE(!cursor.HasNext());
+    BOOST_REQUIRE(!cursor.HasData());
 
     BOOST_REQUIRE(!cursor.Increment());
 
-    BOOST_REQUIRE(cursor.GetRow());
+    BOOST_REQUIRE(!cursor.GetRow());
 }
 
 BOOST_AUTO_TEST_SUITE(CursorTestSuite)
