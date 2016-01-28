@@ -73,7 +73,6 @@ namespace Apache.Ignite.Examples.Compute
                 LambdaCompute.BroadcastConsoleMessage(ignite.GetCompute(), "Hello Node!");
 
                 Console.WriteLine(">>> Check all nodes for hello message output.");
-                Console.WriteLine();
             }
 
             Console.WriteLine();
