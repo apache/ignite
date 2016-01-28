@@ -24,6 +24,8 @@ export default ['igniteFormFieldJavaClass', ['IgniteFormGUID', (guid) => {
 
         scope.form = form;
         scope.field = field;
+        scope.label = label;
+
         label.for = scope.id = id || guid();
 
         scope.$watch('required', (required) => {
