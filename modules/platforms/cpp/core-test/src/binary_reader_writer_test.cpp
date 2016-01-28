@@ -70,7 +70,7 @@ void CheckPrimitive(T val)
     int32_t footerBegin = in.ReadInt32(IGNITE_OFFSET_SCHEMA_OR_RAW_OFF);
     int32_t footerEnd = footerBegin + 5;
 
-    BinaryReaderImpl readerImpl(&in, &idRslvr, 0, true, idRslvr.GetTypeId(), 0, 100, 100, footerBegin, footerEnd, OFFSET_TYPE_1_BYTE);
+    BinaryReaderImpl readerImpl(&in, &idRslvr, 0, true, idRslvr.GetTypeId(), 0, 100, 100, footerBegin, footerEnd, OFFSET_TYPE_ONE_BYTE);
     BinaryReader reader(&readerImpl);
 
     try
@@ -150,7 +150,7 @@ void CheckPrimitiveArray(T dflt, T val1, T val2)
         int32_t footerBegin = in.ReadInt32(IGNITE_OFFSET_SCHEMA_OR_RAW_OFF);
         int32_t footerEnd = footerBegin + 5;
 
-        BinaryReaderImpl readerImpl(&in, &idRslvr, 0, true, idRslvr.GetTypeId(), 0, 100, 100, footerBegin, footerEnd, OFFSET_TYPE_1_BYTE);
+        BinaryReaderImpl readerImpl(&in, &idRslvr, 0, true, idRslvr.GetTypeId(), 0, 100, 100, footerBegin, footerEnd, OFFSET_TYPE_ONE_BYTE);
         BinaryReader reader(&readerImpl);
 
         in.Position(IGNITE_DFLT_HDR_LEN);
@@ -183,7 +183,7 @@ void CheckPrimitiveArray(T dflt, T val1, T val2)
         int32_t footerBegin = in.ReadInt32(IGNITE_OFFSET_SCHEMA_OR_RAW_OFF);
         int32_t footerEnd = footerBegin + 5;
 
-        BinaryReaderImpl readerImpl(&in, &idRslvr, 0, true, idRslvr.GetTypeId(), 0, 100, 100, footerBegin, footerEnd, OFFSET_TYPE_1_BYTE);
+        BinaryReaderImpl readerImpl(&in, &idRslvr, 0, true, idRslvr.GetTypeId(), 0, 100, 100, footerBegin, footerEnd, OFFSET_TYPE_ONE_BYTE);
         BinaryReader reader(&readerImpl);
 
         in.Position(IGNITE_DFLT_HDR_LEN);
@@ -220,7 +220,7 @@ void CheckPrimitiveArray(T dflt, T val1, T val2)
         int32_t footerBegin = in.ReadInt32(IGNITE_OFFSET_SCHEMA_OR_RAW_OFF);
         int32_t footerEnd = footerBegin + 5;
 
-        BinaryReaderImpl readerImpl(&in, &idRslvr, 0, true, idRslvr.GetTypeId(), 0, 100, 100, footerBegin, footerEnd, OFFSET_TYPE_1_BYTE);
+        BinaryReaderImpl readerImpl(&in, &idRslvr, 0, true, idRslvr.GetTypeId(), 0, 100, 100, footerBegin, footerEnd, OFFSET_TYPE_ONE_BYTE);
         BinaryReader reader(&readerImpl);
 
         in.Position(IGNITE_DFLT_HDR_LEN);
@@ -260,7 +260,7 @@ void CheckPrimitiveArray(T dflt, T val1, T val2)
         int32_t footerBegin = in.ReadInt32(IGNITE_OFFSET_SCHEMA_OR_RAW_OFF);
         int32_t footerEnd = footerBegin + 5;
 
-        BinaryReaderImpl readerImpl(&in, &idRslvr, 0, true, idRslvr.GetTypeId(), 0, 100, 100, footerBegin, footerEnd, OFFSET_TYPE_1_BYTE);
+        BinaryReaderImpl readerImpl(&in, &idRslvr, 0, true, idRslvr.GetTypeId(), 0, 100, 100, footerBegin, footerEnd, OFFSET_TYPE_ONE_BYTE);
         BinaryReader reader(&readerImpl);
 
         in.Position(IGNITE_DFLT_HDR_LEN);
@@ -512,7 +512,7 @@ void CheckCollectionEmpty(CollectionType* colType)
     int32_t footerBegin = in.ReadInt32(IGNITE_OFFSET_SCHEMA_OR_RAW_OFF);
     int32_t footerEnd = footerBegin + 5 * 2;
 
-    BinaryReaderImpl readerImpl(&in, &idRslvr, 0, true, idRslvr.GetTypeId(), 0, 100, 100, footerBegin, footerEnd, OFFSET_TYPE_1_BYTE);
+    BinaryReaderImpl readerImpl(&in, &idRslvr, 0, true, idRslvr.GetTypeId(), 0, 100, 100, footerBegin, footerEnd, OFFSET_TYPE_ONE_BYTE);
     BinaryReader reader(&readerImpl);
 
     in.Position(IGNITE_DFLT_HDR_LEN);
@@ -602,7 +602,7 @@ void CheckCollection(CollectionType* colType)
     int32_t footerBegin = in.ReadInt32(IGNITE_OFFSET_SCHEMA_OR_RAW_OFF);
     int32_t footerEnd = footerBegin + 5 * 2;
 
-    BinaryReaderImpl readerImpl(&in, &idRslvr, 0, true, idRslvr.GetTypeId(), 0, 100, 100, footerBegin, footerEnd, OFFSET_TYPE_1_BYTE);
+    BinaryReaderImpl readerImpl(&in, &idRslvr, 0, true, idRslvr.GetTypeId(), 0, 100, 100, footerBegin, footerEnd, OFFSET_TYPE_ONE_BYTE);
     BinaryReader reader(&readerImpl);
 
     in.Position(IGNITE_DFLT_HDR_LEN);
@@ -679,7 +679,7 @@ void CheckCollectionIterators(CollectionType* colType)
     int32_t footerBegin = in.ReadInt32(IGNITE_OFFSET_SCHEMA_OR_RAW_OFF);
     int32_t footerEnd = footerBegin + 5 * 2;
 
-    BinaryReaderImpl readerImpl(&in, &idRslvr, 0, true, idRslvr.GetTypeId(), 0, 100, 100, footerBegin, footerEnd, OFFSET_TYPE_1_BYTE);
+    BinaryReaderImpl readerImpl(&in, &idRslvr, 0, true, idRslvr.GetTypeId(), 0, 100, 100, footerBegin, footerEnd, OFFSET_TYPE_ONE_BYTE);
     BinaryReader reader(&readerImpl);
 
     in.Position(IGNITE_DFLT_HDR_LEN);
@@ -755,7 +755,7 @@ void CheckMapEmpty(MapType* mapType)
     int32_t footerBegin = in.ReadInt32(IGNITE_OFFSET_SCHEMA_OR_RAW_OFF);
     int32_t footerEnd = footerBegin + 5 * 2;
 
-    BinaryReaderImpl readerImpl(&in, &idRslvr, 0, true, idRslvr.GetTypeId(), 0, 100, 100, footerBegin, footerEnd, OFFSET_TYPE_1_BYTE);
+    BinaryReaderImpl readerImpl(&in, &idRslvr, 0, true, idRslvr.GetTypeId(), 0, 100, 100, footerBegin, footerEnd, OFFSET_TYPE_ONE_BYTE);
     BinaryReader reader(&readerImpl);
 
     in.Position(IGNITE_DFLT_HDR_LEN);
@@ -848,7 +848,7 @@ void CheckMap(MapType* mapType)
     int32_t footerBegin = in.ReadInt32(IGNITE_OFFSET_SCHEMA_OR_RAW_OFF);
     int32_t footerEnd = footerBegin + 5 * 2;
 
-    BinaryReaderImpl readerImpl(&in, &idRslvr, 0, true, idRslvr.GetTypeId(), 0, 100, 100, footerBegin, footerEnd, OFFSET_TYPE_1_BYTE);
+    BinaryReaderImpl readerImpl(&in, &idRslvr, 0, true, idRslvr.GetTypeId(), 0, 100, 100, footerBegin, footerEnd, OFFSET_TYPE_ONE_BYTE);
     BinaryReader reader(&readerImpl);
 
     in.Position(IGNITE_DFLT_HDR_LEN);
@@ -1030,7 +1030,7 @@ BOOST_AUTO_TEST_CASE(TestGuidNull)
     int32_t footerBegin = in.ReadInt32(IGNITE_OFFSET_SCHEMA_OR_RAW_OFF);
     int32_t footerEnd = footerBegin + 5;
 
-    BinaryReaderImpl readerImpl(&in, &idRslvr, 0, true, idRslvr.GetTypeId(), 0, 100, 100, footerBegin, footerEnd, OFFSET_TYPE_1_BYTE);
+    BinaryReaderImpl readerImpl(&in, &idRslvr, 0, true, idRslvr.GetTypeId(), 0, 100, 100, footerBegin, footerEnd, OFFSET_TYPE_ONE_BYTE);
     BinaryReader reader(&readerImpl);
     
     in.Position(IGNITE_DFLT_HDR_LEN);
@@ -1115,7 +1115,7 @@ BOOST_AUTO_TEST_CASE(TestString) {
     int32_t footerBegin = in.ReadInt32(IGNITE_OFFSET_SCHEMA_OR_RAW_OFF);
     int32_t footerEnd = footerBegin + 5 * 5;
 
-    BinaryReaderImpl readerImpl(&in, &idRslvr, 0, true, idRslvr.GetTypeId(), 0, 100, 100, footerBegin, footerEnd, OFFSET_TYPE_1_BYTE);
+    BinaryReaderImpl readerImpl(&in, &idRslvr, 0, true, idRslvr.GetTypeId(), 0, 100, 100, footerBegin, footerEnd, OFFSET_TYPE_ONE_BYTE);
     BinaryReader reader(&readerImpl);
 
     in.Position(IGNITE_DFLT_HDR_LEN);
@@ -1193,7 +1193,7 @@ BOOST_AUTO_TEST_CASE(TestStringArrayNull)
     int32_t footerBegin = in.ReadInt32(IGNITE_OFFSET_SCHEMA_OR_RAW_OFF);
     int32_t footerEnd = footerBegin + 5 * 2;
 
-    BinaryReaderImpl readerImpl(&in, &idRslvr, 0, true, idRslvr.GetTypeId(), 0, 100, 100, footerBegin, footerEnd, OFFSET_TYPE_1_BYTE);
+    BinaryReaderImpl readerImpl(&in, &idRslvr, 0, true, idRslvr.GetTypeId(), 0, 100, 100, footerBegin, footerEnd, OFFSET_TYPE_ONE_BYTE);
     BinaryReader reader(&readerImpl);
 
     in.Position(IGNITE_DFLT_HDR_LEN);
@@ -1310,7 +1310,7 @@ BOOST_AUTO_TEST_CASE(TestStringArrayEmpty)
     int32_t footerBegin = in.ReadInt32(IGNITE_OFFSET_SCHEMA_OR_RAW_OFF);
     int32_t footerEnd = footerBegin + 5 * 2;
 
-    BinaryReaderImpl readerImpl(&in, &idRslvr, 0, true, idRslvr.GetTypeId(), 0, 100, 100, footerBegin, footerEnd, OFFSET_TYPE_1_BYTE);
+    BinaryReaderImpl readerImpl(&in, &idRslvr, 0, true, idRslvr.GetTypeId(), 0, 100, 100, footerBegin, footerEnd, OFFSET_TYPE_ONE_BYTE);
     BinaryReader reader(&readerImpl);
 
     in.Position(IGNITE_DFLT_HDR_LEN);
@@ -1437,7 +1437,7 @@ BOOST_AUTO_TEST_CASE(TestStringArray)
     int32_t footerBegin = in.ReadInt32(IGNITE_OFFSET_SCHEMA_OR_RAW_OFF);
     int32_t footerEnd = footerBegin + 5 * 2;
 
-    BinaryReaderImpl readerImpl(&in, &idRslvr, 0, true, idRslvr.GetTypeId(), 0, 100, 100, footerBegin, footerEnd, OFFSET_TYPE_1_BYTE);
+    BinaryReaderImpl readerImpl(&in, &idRslvr, 0, true, idRslvr.GetTypeId(), 0, 100, 100, footerBegin, footerEnd, OFFSET_TYPE_ONE_BYTE);
     BinaryReader reader(&readerImpl);
 
     in.Position(IGNITE_DFLT_HDR_LEN);
@@ -1551,7 +1551,7 @@ BOOST_AUTO_TEST_CASE(TestObject)
     int32_t footerBegin = in.ReadInt32(IGNITE_OFFSET_SCHEMA_OR_RAW_OFF);
     int32_t footerEnd = footerBegin + 5 * 3;
 
-    BinaryReaderImpl readerImpl(&in, &idRslvr, 0, true, idRslvr.GetTypeId(), 0, 100, 100, footerBegin, footerEnd, OFFSET_TYPE_1_BYTE);
+    BinaryReaderImpl readerImpl(&in, &idRslvr, 0, true, idRslvr.GetTypeId(), 0, 100, 100, footerBegin, footerEnd, OFFSET_TYPE_ONE_BYTE);
     BinaryReader reader(&readerImpl);
 
     in.Position(IGNITE_DFLT_HDR_LEN); 
@@ -1595,7 +1595,7 @@ BOOST_AUTO_TEST_CASE(TestNestedObject)
     int32_t footerBegin = in.ReadInt32(IGNITE_OFFSET_SCHEMA_OR_RAW_OFF);
     int32_t footerEnd = footerBegin + 5 * 3;
 
-    BinaryReaderImpl readerImpl(&in, &idRslvr, 0, true, idRslvr.GetTypeId(), 0, 100, 100, footerBegin, footerEnd, OFFSET_TYPE_1_BYTE);
+    BinaryReaderImpl readerImpl(&in, &idRslvr, 0, true, idRslvr.GetTypeId(), 0, 100, 100, footerBegin, footerEnd, OFFSET_TYPE_ONE_BYTE);
     BinaryReader reader(&readerImpl);
 
     in.Position(IGNITE_DFLT_HDR_LEN);
@@ -1637,7 +1637,7 @@ BOOST_AUTO_TEST_CASE(TestArrayNull)
     int32_t footerBegin = in.ReadInt32(IGNITE_OFFSET_SCHEMA_OR_RAW_OFF);
     int32_t footerEnd = footerBegin + 5 * 2;
 
-    BinaryReaderImpl readerImpl(&in, &idRslvr, 0, true, idRslvr.GetTypeId(), 0, 100, 100, footerBegin, footerEnd, OFFSET_TYPE_1_BYTE);
+    BinaryReaderImpl readerImpl(&in, &idRslvr, 0, true, idRslvr.GetTypeId(), 0, 100, 100, footerBegin, footerEnd, OFFSET_TYPE_ONE_BYTE);
     BinaryReader reader(&readerImpl);
 
     in.Position(IGNITE_DFLT_HDR_LEN);
@@ -1713,7 +1713,7 @@ BOOST_AUTO_TEST_CASE(TestArrayEmpty)
     int32_t footerBegin = in.ReadInt32(IGNITE_OFFSET_SCHEMA_OR_RAW_OFF);
     int32_t footerEnd = footerBegin + 5 * 2;
 
-    BinaryReaderImpl readerImpl(&in, &idRslvr, 0, true, idRslvr.GetTypeId(), 0, 100, 100, footerBegin, footerEnd, OFFSET_TYPE_1_BYTE);
+    BinaryReaderImpl readerImpl(&in, &idRslvr, 0, true, idRslvr.GetTypeId(), 0, 100, 100, footerBegin, footerEnd, OFFSET_TYPE_ONE_BYTE);
     BinaryReader reader(&readerImpl);
 
     in.Position(IGNITE_DFLT_HDR_LEN);
@@ -1797,7 +1797,7 @@ BOOST_AUTO_TEST_CASE(TestArray)
     int32_t footerBegin = in.ReadInt32(IGNITE_OFFSET_SCHEMA_OR_RAW_OFF);
     int32_t footerEnd = footerBegin + 5 * 2;
 
-    BinaryReaderImpl readerImpl(&in, &idRslvr, 0, true, idRslvr.GetTypeId(), 0, 100, 100, footerBegin, footerEnd, OFFSET_TYPE_1_BYTE);
+    BinaryReaderImpl readerImpl(&in, &idRslvr, 0, true, idRslvr.GetTypeId(), 0, 100, 100, footerBegin, footerEnd, OFFSET_TYPE_ONE_BYTE);
     BinaryReader reader(&readerImpl);
 
     in.Position(IGNITE_DFLT_HDR_LEN);
@@ -1858,7 +1858,7 @@ BOOST_AUTO_TEST_CASE(TestCollectionNull)
     int32_t footerBegin = in.ReadInt32(IGNITE_OFFSET_SCHEMA_OR_RAW_OFF);
     int32_t footerEnd = footerBegin + 5 * 2;
 
-    BinaryReaderImpl readerImpl(&in, &idRslvr, 0, true, idRslvr.GetTypeId(), 0, 100, 100, footerBegin, footerEnd, OFFSET_TYPE_1_BYTE);
+    BinaryReaderImpl readerImpl(&in, &idRslvr, 0, true, idRslvr.GetTypeId(), 0, 100, 100, footerBegin, footerEnd, OFFSET_TYPE_ONE_BYTE);
     BinaryReader reader(&readerImpl);
 
     in.Position(IGNITE_DFLT_HDR_LEN);
@@ -1891,7 +1891,7 @@ BOOST_AUTO_TEST_CASE(TestCollectionEmpty)
 
 BOOST_AUTO_TEST_CASE(TestCollectionEmptyTyped)
 {
-    CollectionType typ = IGNITE_COLLECTION_CONCURRENT_SKIP_LIST_SET;
+    CollectionType typ = IGNITE_COLLECTION_LINKED_HASH_SET;
 
     CheckCollectionEmpty(&typ);
 }
@@ -1903,7 +1903,7 @@ BOOST_AUTO_TEST_CASE(TestCollection)
 
 BOOST_AUTO_TEST_CASE(testCollectionTyped)
 {
-    CollectionType typ = IGNITE_COLLECTION_CONCURRENT_SKIP_LIST_SET;
+    CollectionType typ = IGNITE_COLLECTION_LINKED_HASH_SET;
 
     CheckCollection(&typ);
 }
@@ -1915,7 +1915,7 @@ BOOST_AUTO_TEST_CASE(TestCollectionIterators)
 
 BOOST_AUTO_TEST_CASE(TestCollectionIteratorsTyped)
 {
-    CollectionType typ = IGNITE_COLLECTION_CONCURRENT_SKIP_LIST_SET;
+    CollectionType typ = IGNITE_COLLECTION_LINKED_HASH_SET;
 
     CheckCollectionIterators(&typ);
 }
@@ -1944,7 +1944,7 @@ BOOST_AUTO_TEST_CASE(TestMapNull)
     int32_t footerBegin = in.ReadInt32(IGNITE_OFFSET_SCHEMA_OR_RAW_OFF);
     int32_t footerEnd = footerBegin + 5 * 2;
 
-    BinaryReaderImpl readerImpl(&in, &idRslvr, 0, true, idRslvr.GetTypeId(), 0, 100, 100, footerBegin, footerEnd, OFFSET_TYPE_1_BYTE);
+    BinaryReaderImpl readerImpl(&in, &idRslvr, 0, true, idRslvr.GetTypeId(), 0, 100, 100, footerBegin, footerEnd, OFFSET_TYPE_ONE_BYTE);
     BinaryReader reader(&readerImpl);
 
     in.Position(IGNITE_DFLT_HDR_LEN);
@@ -1980,7 +1980,7 @@ BOOST_AUTO_TEST_CASE(TestMapEmpty)
 
 BOOST_AUTO_TEST_CASE(TestMapEmptyTyped)
 {
-    MapType typ = IGNITE_MAP_CONCURRENT_HASH_MAP;
+    MapType typ = IGNITE_MAP_LINKED_HASH_MAP;
 
     CheckMapEmpty(&typ);
 }
@@ -1992,7 +1992,7 @@ BOOST_AUTO_TEST_CASE(TestMap)
 
 BOOST_AUTO_TEST_CASE(TestMapTyped)
 {
-    MapType typ = IGNITE_MAP_CONCURRENT_HASH_MAP;
+    MapType typ = IGNITE_MAP_LINKED_HASH_MAP;
 
     CheckMap(&typ);
 }
@@ -2035,7 +2035,7 @@ BOOST_AUTO_TEST_CASE(TestRawMode)
     int32_t footerBegin = in.ReadInt32(IGNITE_OFFSET_SCHEMA_OR_RAW_OFF);
     int32_t footerEnd = footerBegin;
 
-    BinaryReaderImpl readerImpl(&in, &idRslvr, 0, true, idRslvr.GetTypeId(), 0, 1000, footerBegin, footerBegin, footerEnd, OFFSET_TYPE_1_BYTE);
+    BinaryReaderImpl readerImpl(&in, &idRslvr, 0, true, idRslvr.GetTypeId(), 0, 1000, footerBegin, footerBegin, footerEnd, OFFSET_TYPE_ONE_BYTE);
     BinaryReader reader(&readerImpl);
     
     in.Position(IGNITE_DFLT_HDR_LEN);
@@ -2091,10 +2091,10 @@ BOOST_AUTO_TEST_CASE(TestFieldSeek)
     int32_t rawOff;
     int32_t footerBegin;
 
-    if (flags & IGNITE_BINARY_FLAG_RAW_ONLY)
-        footerBegin = len;
-    else
+    if (flags & IGNITE_BINARY_FLAG_HAS_SCHEMA)
         footerBegin = schemaOrRawOff;
+    else
+        footerBegin = len;
 
     int32_t trailingBytes = (len - footerBegin) % 8;
 
@@ -2105,14 +2105,14 @@ BOOST_AUTO_TEST_CASE(TestFieldSeek)
     else
         rawOff = schemaOrRawOff;
 
-    bool usrType = flags & IGNITE_BINARY_FLAG_USER_OBJECT;
+    bool usrType = flags & IGNITE_BINARY_FLAG_USER_TYPE;
 
     footerBegin += pos;
     footerEnd += pos;
 
     BinaryReaderImpl readerImpl(&in, &idRslvr, pos, usrType, 
                                   typeId, hashCode, len, rawOff, 
-                                  footerBegin, footerEnd, OFFSET_TYPE_1_BYTE);
+                                  footerBegin, footerEnd, OFFSET_TYPE_ONE_BYTE);
 
     BinaryReader reader(&readerImpl);
 
@@ -2243,7 +2243,7 @@ BOOST_AUTO_TEST_CASE(TestSchemaOffset2ByteFields)
     int32_t footerBegin = in.ReadInt32(IGNITE_OFFSET_SCHEMA_OR_RAW_OFF);
     int32_t footerEnd = footerBegin + 6 * fieldsNum;
 
-    BinaryReaderImpl readerImpl(&in, &idRslvr, 0, true, idRslvr.GetTypeId(), 0, 100, 100, footerBegin, footerEnd, OFFSET_TYPE_2_BYTE);
+    BinaryReaderImpl readerImpl(&in, &idRslvr, 0, true, idRslvr.GetTypeId(), 0, 100, 100, footerBegin, footerEnd, OFFSET_TYPE_TWO_BYTES);
     BinaryReader reader(&readerImpl);
 
     in.Position(IGNITE_DFLT_HDR_LEN);
@@ -2288,7 +2288,7 @@ BOOST_AUTO_TEST_CASE(TestSchemaOffset4ByteFields)
     int32_t footerBegin = in.ReadInt32(IGNITE_OFFSET_SCHEMA_OR_RAW_OFF);
     int32_t footerEnd = footerBegin + 8 * fieldsNum;
 
-    BinaryReaderImpl readerImpl(&in, &idRslvr, 0, true, idRslvr.GetTypeId(), 0, 100, 100, footerBegin, footerEnd, OFFSET_TYPE_4_BYTE);
+    BinaryReaderImpl readerImpl(&in, &idRslvr, 0, true, idRslvr.GetTypeId(), 0, 100, 100, footerBegin, footerEnd, OFFSET_TYPE_FOUR_BYTES);
     BinaryReader reader(&readerImpl);
 
     in.Position(IGNITE_DFLT_HDR_LEN);
@@ -2328,7 +2328,7 @@ BOOST_AUTO_TEST_CASE(TestSchemaOffset2ByteArray)
     int32_t footerBegin = in.ReadInt32(IGNITE_OFFSET_SCHEMA_OR_RAW_OFF);
     int32_t footerEnd = footerBegin + 6 * 2;
 
-    BinaryReaderImpl readerImpl(&in, &idRslvr, 0, true, idRslvr.GetTypeId(), 0, 100, 100, footerBegin, footerEnd, OFFSET_TYPE_2_BYTE);
+    BinaryReaderImpl readerImpl(&in, &idRslvr, 0, true, idRslvr.GetTypeId(), 0, 100, 100, footerBegin, footerEnd, OFFSET_TYPE_TWO_BYTES);
     BinaryReader reader(&readerImpl);
 
     in.Position(IGNITE_DFLT_HDR_LEN);
@@ -2362,7 +2362,7 @@ BOOST_AUTO_TEST_CASE(TestSchemaOffset4ByteArray)
     int32_t footerBegin = in.ReadInt32(IGNITE_OFFSET_SCHEMA_OR_RAW_OFF);
     int32_t footerEnd = footerBegin + 8 * 2;
 
-    BinaryReaderImpl readerImpl(&in, &idRslvr, 0, true, idRslvr.GetTypeId(), 0, 100, 100, footerBegin, footerEnd, OFFSET_TYPE_4_BYTE);
+    BinaryReaderImpl readerImpl(&in, &idRslvr, 0, true, idRslvr.GetTypeId(), 0, 100, 100, footerBegin, footerEnd, OFFSET_TYPE_FOUR_BYTES);
     BinaryReader reader(&readerImpl);
 
     in.Position(IGNITE_DFLT_HDR_LEN);

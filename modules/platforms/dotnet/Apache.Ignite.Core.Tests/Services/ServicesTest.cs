@@ -102,7 +102,7 @@ namespace Apache.Ignite.Core.Tests.Services
         /// Tests deployment.
         /// </summary>
         [Test]
-        public void TestDeploy([Values(true, false)] bool portable)
+        public void TestDeploy([Values(true, false)] bool binarizable)
         {
             var cfg = new ServiceConfiguration
             {
@@ -110,7 +110,7 @@ namespace Apache.Ignite.Core.Tests.Services
                 MaxPerNodeCount = 3,
                 TotalCount = 3,
                 NodeFilter = new NodeFilter {NodeId = Grid1.GetCluster().GetLocalNode().Id},
-                Service = portable ? new TestIgniteServicePortable() : new TestIgniteServiceSerializable()
+                Service = binarizable ? new TestIgniteServiceBinarizable() : new TestIgniteServiceSerializable()
             };
 
             Services.Deploy(cfg);
@@ -161,7 +161,7 @@ namespace Apache.Ignite.Core.Tests.Services
         [Test]
         public void TestDeployKeyAffinitySingleton()
         {
-            var svc = new TestIgniteServicePortable();
+            var svc = new TestIgniteServiceBinarizable();
 
             Services.DeployKeyAffinitySingleton(SvcName, svc, CacheName, AffKey);
 
@@ -176,13 +176,13 @@ namespace Apache.Ignite.Core.Tests.Services
         /// Tests key affinity singleton deployment.
         /// </summary>
         [Test]
-        public void TestDeployKeyAffinitySingletonPortable()
+        public void TestDeployKeyAffinitySingletonBinarizable()
         {
             var services = Services.WithKeepBinary();
 
-            var svc = new TestIgniteServicePortable();
+            var svc = new TestIgniteServiceBinarizable();
 
-            var affKey = new PortableObject {Val = AffKey};
+            var affKey = new BinarizableObject {Val = AffKey};
 
             services.DeployKeyAffinitySingleton(SvcName, svc, CacheName, affKey);
 
@@ -213,15 +213,15 @@ namespace Apache.Ignite.Core.Tests.Services
         {
             for (var i = 0; i < 10; i++)
             {
-                Services.DeployNodeSingleton(SvcName + i, new TestIgniteServicePortable());
+                Services.DeployNodeSingleton(SvcName + i, new TestIgniteServiceBinarizable());
                 Assert.IsNotNull(Services.GetService<ITestIgniteService>(SvcName + i));
             }
 
             Services.Cancel(SvcName + 0);
-            Services.Cancel(SvcName + 1);
+            AssertNoService(SvcName + 0);
 
-            Assert.IsNull(Services.GetService<ITestIgniteService>(SvcName + 0));
-            Assert.IsNull(Services.GetService<ITestIgniteService>(SvcName + 1));
+            Services.Cancel(SvcName + 1);
+            AssertNoService(SvcName + 1);
 
             for (var i = 2; i < 10; i++)
                 Assert.IsNotNull(Services.GetService<ITestIgniteService>(SvcName + i));
@@ -229,14 +229,14 @@ namespace Apache.Ignite.Core.Tests.Services
             Services.CancelAll();
 
             for (var i = 0; i < 10; i++)
-                Assert.IsNull(Services.GetService<ITestIgniteService>(SvcName + i));
+                AssertNoService(SvcName + i);
         }
 
         /// <summary>
         /// Tests service proxy.
         /// </summary>
         [Test]
-        public void TestGetServiceProxy([Values(true, false)] bool portable)
+        public void TestGetServiceProxy([Values(true, false)] bool binarizable)
         {
             // Test proxy without a service
             var prx = Services.GetServiceProxy<ITestIgniteService>(SvcName);
@@ -247,8 +247,8 @@ namespace Apache.Ignite.Core.Tests.Services
             Assert.AreEqual("Failed to find deployed service: " + SvcName, ex.Message);
 
             // Deploy to grid2 & grid3
-            var svc = portable
-                ? new TestIgniteServicePortable {TestProperty = 17}
+            var svc = binarizable
+                ? new TestIgniteServiceBinarizable {TestProperty = 17}
                 : new TestIgniteServiceSerializable {TestProperty = 17};
 
             Grid1.GetCluster().ForNodeIds(Grid2.GetCluster().GetLocalNode().Id, Grid3.GetCluster().GetLocalNode().Id).GetServices()
@@ -300,7 +300,7 @@ namespace Apache.Ignite.Core.Tests.Services
         [Test]
         public void TestDuckTyping([Values(true, false)] bool local)
         {
-            var svc = new TestIgniteServicePortable {TestProperty = 33};
+            var svc = new TestIgniteServiceBinarizable {TestProperty = 33};
 
             // Deploy locally or to the remote node
             var nodeId = (local ? Grid1 : Grid2).GetCluster().GetLocalNode().Id;
@@ -358,12 +358,12 @@ namespace Apache.Ignite.Core.Tests.Services
         }
 
         /// <summary>
-        /// Tests the client portable flag.
+        /// Tests the client binary flag.
         /// </summary>
         [Test]
-        public void TestWithKeepPortableClient()
+        public void TestWithKeepBinaryClient()
         {
-            var svc = new TestIgniteServicePortable();
+            var svc = new TestIgniteServiceBinarizable();
 
             // Deploy to grid2
             Grid1.GetCluster().ForNodeIds(Grid2.GetCluster().GetLocalNode().Id).GetServices().WithKeepBinary()
@@ -372,22 +372,22 @@ namespace Apache.Ignite.Core.Tests.Services
             // Get proxy
             var prx = Services.WithKeepBinary().GetServiceProxy<ITestIgniteService>(SvcName);
 
-            var obj = new PortableObject {Val = 11};
+            var obj = new BinarizableObject {Val = 11};
 
             var res = (IBinaryObject) prx.Method(obj);
-            Assert.AreEqual(11, res.Deserialize<PortableObject>().Val);
+            Assert.AreEqual(11, res.Deserialize<BinarizableObject>().Val);
 
             res = (IBinaryObject) prx.Method(Grid1.GetBinary().ToBinary<IBinaryObject>(obj));
-            Assert.AreEqual(11, res.Deserialize<PortableObject>().Val);
+            Assert.AreEqual(11, res.Deserialize<BinarizableObject>().Val);
         }
         
         /// <summary>
-        /// Tests the server portable flag.
+        /// Tests the server binary flag.
         /// </summary>
         [Test]
-        public void TestWithKeepPortableServer()
+        public void TestWithKeepBinaryServer()
         {
-            var svc = new TestIgniteServicePortable();
+            var svc = new TestIgniteServiceBinarizable();
 
             // Deploy to grid2
             Grid1.GetCluster().ForNodeIds(Grid2.GetCluster().GetLocalNode().Id).GetServices().WithServerKeepBinary()
@@ -396,22 +396,22 @@ namespace Apache.Ignite.Core.Tests.Services
             // Get proxy
             var prx = Services.WithServerKeepBinary().GetServiceProxy<ITestIgniteService>(SvcName);
 
-            var obj = new PortableObject { Val = 11 };
+            var obj = new BinarizableObject { Val = 11 };
 
-            var res = (PortableObject) prx.Method(obj);
+            var res = (BinarizableObject) prx.Method(obj);
             Assert.AreEqual(11, res.Val);
 
-            res = (PortableObject)prx.Method(Grid1.GetBinary().ToBinary<IBinaryObject>(obj));
+            res = (BinarizableObject)prx.Method(Grid1.GetBinary().ToBinary<IBinaryObject>(obj));
             Assert.AreEqual(11, res.Val);
         }
 
         /// <summary>
-        /// Tests server and client portable flag.
+        /// Tests server and client binary flag.
         /// </summary>
         [Test]
-        public void TestWithKeepPortableBoth()
+        public void TestWithKeepBinaryBoth()
         {
-            var svc = new TestIgniteServicePortable();
+            var svc = new TestIgniteServiceBinarizable();
 
             // Deploy to grid2
             Grid1.GetCluster().ForNodeIds(Grid2.GetCluster().GetLocalNode().Id).GetServices().WithKeepBinary().WithServerKeepBinary()
@@ -420,13 +420,13 @@ namespace Apache.Ignite.Core.Tests.Services
             // Get proxy
             var prx = Services.WithKeepBinary().WithServerKeepBinary().GetServiceProxy<ITestIgniteService>(SvcName);
 
-            var obj = new PortableObject { Val = 11 };
+            var obj = new BinarizableObject { Val = 11 };
 
             var res = (IBinaryObject)prx.Method(obj);
-            Assert.AreEqual(11, res.Deserialize<PortableObject>().Val);
+            Assert.AreEqual(11, res.Deserialize<BinarizableObject>().Val);
 
             res = (IBinaryObject)prx.Method(Grid1.GetBinary().ToBinary<IBinaryObject>(obj));
-            Assert.AreEqual(11, res.Deserialize<PortableObject>().Val);
+            Assert.AreEqual(11, res.Deserialize<BinarizableObject>().Val);
         }
 
         /// <summary>
@@ -477,14 +477,13 @@ namespace Apache.Ignite.Core.Tests.Services
             Services.CancelAll();
 
             // Cancellation failed, but service is removed.
-            foreach (var grid in Grids)
-                Assert.IsNull(grid.GetServices().GetService<ITestIgniteService>(SvcName));
+            AssertNoService();
         }
 
         [Test]
         public void TestMarshalExceptionOnRead()
         {
-            var svc = new TestIgniteServicePortableErr();
+            var svc = new TestIgniteServiceBinarizableErr();
 
             var ex = Assert.Throws<IgniteException>(() => Services.DeployMultiple(SvcName, svc, Grids.Length, 1));
             Assert.AreEqual("Expected exception", ex.Message);
@@ -497,7 +496,7 @@ namespace Apache.Ignite.Core.Tests.Services
         [Test]
         public void TestMarshalExceptionOnWrite()
         {
-            var svc = new TestIgniteServicePortableErr {ThrowOnWrite = true};
+            var svc = new TestIgniteServiceBinarizableErr {ThrowOnWrite = true};
 
             var ex = Assert.Throws<Exception>(() => Services.DeployMultiple(SvcName, svc, Grids.Length, 1));
             Assert.AreEqual("Expected exception", ex.Message);
@@ -570,12 +569,24 @@ namespace Apache.Ignite.Core.Tests.Services
                 {
                     TypeConfigurations = new List<BinaryTypeConfiguration>
                     {
-                        new BinaryTypeConfiguration(typeof(TestIgniteServicePortable)),
-                        new BinaryTypeConfiguration(typeof(TestIgniteServicePortableErr)),
-                        new BinaryTypeConfiguration(typeof(PortableObject))
+                        new BinaryTypeConfiguration(typeof(TestIgniteServiceBinarizable)),
+                        new BinaryTypeConfiguration(typeof(TestIgniteServiceBinarizableErr)),
+                        new BinaryTypeConfiguration(typeof(BinarizableObject))
                     }
                 }
             };
+        }
+
+        /// <summary>
+        /// Asserts that there is no service on any grid with given name.
+        /// </summary>
+        /// <param name="name">The name.</param>
+        private void AssertNoService(string name = SvcName)
+        {
+            foreach (var grid in Grids)
+                Assert.IsTrue(
+                    TestUtils.WaitForCondition(() => grid.GetServices()
+                        .GetService<ITestIgniteService>(name) == null, 5000));
         }
 
         /// <summary>
@@ -734,11 +745,11 @@ namespace Apache.Ignite.Core.Tests.Services
 
                 if (context.AffinityKey != null && !(context.AffinityKey is int))
                 {
-                    var portableObject = context.AffinityKey as IBinaryObject;
+                    var binaryObj = context.AffinityKey as IBinaryObject;
                     
-                    var key = portableObject != null
-                        ? portableObject.Deserialize<PortableObject>()
-                        : (PortableObject) context.AffinityKey;
+                    var key = binaryObj != null
+                        ? binaryObj.Deserialize<BinarizableObject>()
+                        : (BinarizableObject) context.AffinityKey;
 
                     Assert.AreEqual(AffKey, key.Val);
                 }
@@ -751,9 +762,9 @@ namespace Apache.Ignite.Core.Tests.Services
         }
 
         /// <summary>
-        /// Test portable service.
+        /// Test binary service.
         /// </summary>
-        private class TestIgniteServicePortable : TestIgniteServiceSerializable, IBinarizable
+        private class TestIgniteServiceBinarizable : TestIgniteServiceSerializable, IBinarizable
         {
             /** <inheritdoc /> */
             public void WriteBinary(IBinaryWriter writer)
@@ -769,9 +780,9 @@ namespace Apache.Ignite.Core.Tests.Services
         }
 
         /// <summary>
-        /// Test portable service with exceptions in marshalling.
+        /// Test binary service with exceptions in marshalling.
         /// </summary>
-        private class TestIgniteServicePortableErr : TestIgniteServiceSerializable, IBinarizable
+        private class TestIgniteServiceBinarizableErr : TestIgniteServiceSerializable, IBinarizable
         {
             /** */
             public bool ThrowOnWrite { get; set; }
@@ -813,9 +824,9 @@ namespace Apache.Ignite.Core.Tests.Services
         }
 
         /// <summary>
-        /// Portable object.
+        /// Binary object.
         /// </summary>
-        private class PortableObject
+        private class BinarizableObject
         {
             public int Val { get; set; }
         }

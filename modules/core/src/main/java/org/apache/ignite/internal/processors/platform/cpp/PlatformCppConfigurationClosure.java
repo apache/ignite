@@ -19,13 +19,14 @@ package org.apache.ignite.internal.processors.platform.cpp;
 
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.configuration.BinaryConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.PlatformConfiguration;
 import org.apache.ignite.internal.processors.platform.PlatformAbstractConfigurationClosure;
 import org.apache.ignite.internal.processors.platform.memory.PlatformMemoryManagerImpl;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.marshaller.Marshaller;
-import org.apache.ignite.marshaller.portable.PortableMarshaller;
+import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.platform.cpp.PlatformCppConfiguration;
 
 import java.util.Collections;
@@ -71,14 +72,28 @@ public class PlatformCppConfigurationClosure extends PlatformAbstractConfigurati
         Marshaller marsh = igniteCfg.getMarshaller();
 
         if (marsh == null) {
-            igniteCfg.setMarshaller(new PortableMarshaller());
+            igniteCfg.setMarshaller(new BinaryMarshaller());
 
             cppCfg0.warnings(Collections.singleton("Marshaller is automatically set to " +
-                PortableMarshaller.class.getName() + " (other nodes must have the same marshaller type)."));
+                BinaryMarshaller.class.getName() + " (other nodes must have the same marshaller type)."));
         }
-        else if (!(marsh instanceof PortableMarshaller))
-            throw new IgniteException("Unsupported marshaller (only " + PortableMarshaller.class.getName() +
+        else if (!(marsh instanceof BinaryMarshaller))
+            throw new IgniteException("Unsupported marshaller (only " + BinaryMarshaller.class.getName() +
                 " can be used when running Apache Ignite C++): " + marsh.getClass().getName());
+
+        BinaryConfiguration bCfg = igniteCfg.getBinaryConfiguration();
+
+        if (bCfg == null) {
+            bCfg = new BinaryConfiguration();
+
+            bCfg.setCompactFooter(false);
+
+            igniteCfg.setBinaryConfiguration(bCfg);
+        }
+
+        if (bCfg.isCompactFooter())
+            throw new IgniteException("Unsupported " + BinaryMarshaller.class.getName() +
+                " \"compactFooter\" flag: must be false when running Apache Ignite C++.");
 
         // Set Ignite home so that marshaller context works.
         String ggHome = igniteCfg.getIgniteHome();

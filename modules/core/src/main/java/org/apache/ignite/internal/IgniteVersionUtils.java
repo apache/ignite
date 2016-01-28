@@ -47,13 +47,16 @@ public class IgniteVersionUtils {
     public static final String ACK_VER_STR;
 
     /** Copyright blurb. */
-    public static final String COPYRIGHT = "2015 Copyright(C) Apache Software Foundation";
+    public static final String COPYRIGHT = "2016 Copyright(C) Apache Software Foundation";
 
     /**
      * Static initializer.
      */
     static {
-        VER_STR = IgniteProperties.get("ignite.version");
+        VER_STR = IgniteProperties.get("ignite.version")
+            .replace(".a", "-a") // Backward compatibility fix.
+            .replace(".b", "-b")
+            .replace(".final", "-final");
 
         BUILD_TSTAMP = Long.valueOf(IgniteProperties.get("ignite.build"));
         BUILD_TSTAMP_STR = new SimpleDateFormat("yyyyMMdd").format(new Date(BUILD_TSTAMP * 1000));

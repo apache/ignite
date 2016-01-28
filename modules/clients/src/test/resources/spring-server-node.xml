@@ -123,12 +123,12 @@
                         </bean>
                     </property>
 
-                    <property name="portableEnabled" value="true"/>
+                    <property name="binaryEnabled" value="true"/>
 
                     <property name="typeMetadata">
                         <list>
                             <bean class="org.apache.ignite.cache.CacheTypeMetadata">
-                                <property name="valueType" value="GridPortablePerson"/>
+                                <property name="valueType" value="GridBinaryPerson"/>
                                 <property name="ascendingFields">
                                     <map>
                                         <entry key="age" value="java.lang.Integer"/>
@@ -146,7 +146,7 @@
                                 </property>
                             </bean>
                             <bean class="org.apache.ignite.cache.CacheTypeMetadata">
-                                <property name="valueType" value="GridImplicitPortablePerson"/>
+                                <property name="valueType" value="GridImplicitBinaryPerson"/>
                                 <property name="ascendingFields">
                                     <map>
                                         <entry key="age" value="java.lang.Integer"/>
@@ -159,7 +159,7 @@
                                 </property>
                             </bean>
                             <bean class="org.apache.ignite.cache.CacheTypeMetadata">
-                                <property name="valueType" value="GridNoDefPortablePerson"/>
+                                <property name="valueType" value="GridNoDefBinaryPerson"/>
                                 <property name="ascendingFields">
                                     <map>
                                         <entry key="age" value="java.lang.Integer"/>

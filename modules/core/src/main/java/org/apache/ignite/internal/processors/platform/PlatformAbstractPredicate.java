@@ -26,7 +26,7 @@ import java.io.ObjectOutput;
  * Base interop predicate. Delegates apply to native platform.
  */
 public abstract class PlatformAbstractPredicate implements Externalizable {
-    /** .Net portable predicate */
+    /** .Net binary predicate */
     protected Object pred;
 
     /** Pointer to deployed predicate. */
@@ -45,7 +45,7 @@ public abstract class PlatformAbstractPredicate implements Externalizable {
     /**
      * Constructor.
      *
-     * @param pred .Net portable predicate.
+     * @param pred .Net binary predicate.
      * @param ptr Pointer to predicate in the native platform.
      * @param ctx Kernal context.
      */

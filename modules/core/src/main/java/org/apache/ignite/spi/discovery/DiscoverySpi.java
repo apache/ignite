@@ -104,6 +104,7 @@ public interface DiscoverySpi extends IgniteSpi {
      * Sets a handler for initial data exchange between Ignite nodes.
      *
      * @param exchange Discovery data exchange handler.
+     * @return {@code this} for chaining.
      */
     public TcpDiscoverySpi setDataExchange(DiscoverySpiDataExchange exchange);
 
@@ -113,6 +114,7 @@ public interface DiscoverySpi extends IgniteSpi {
      * dynamic metrics between nodes.
      *
      * @param metricsProvider Provider of metrics data.
+     * @return {@code this} for chaining.
      */
     public TcpDiscoverySpi setMetricsProvider(DiscoveryMetricsProvider metricsProvider);
 

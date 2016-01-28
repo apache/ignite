@@ -27,9 +27,8 @@ namespace Apache.Ignite.Core.Impl.Binary.Metadata
     internal class BinaryType : IBinaryType
     {
         /** Empty metadata. */
-        [SuppressMessage("Microsoft.Security", "CA2104:DoNotDeclareReadOnlyMutableReferenceTypes")]
-        public static readonly BinaryType EmptyMeta =
-            new BinaryType(BinaryUtils.TypeObject, BinaryTypeNames.TypeNameObject, null, null);
+        public static readonly BinaryType Empty =
+            new BinaryType(BinaryUtils.TypeObject, BinaryTypeNames.TypeNameObject, null, null, false);
 
         /** Empty dictionary. */
         private static readonly IDictionary<string, int> EmptyDict = new Dictionary<string, int>();
@@ -37,82 +36,76 @@ namespace Apache.Ignite.Core.Impl.Binary.Metadata
         /** Empty list. */
         private static readonly ICollection<string> EmptyList = new List<string>().AsReadOnly();
 
+        /** Type name map. */
+        private static readonly string[] TypeNames = new string[byte.MaxValue];
+
         /** Fields. */
         private readonly IDictionary<string, int> _fields;
+
+        /** Enum flag. */
+        private readonly bool _isEnum;
+
+        /** Type id. */
+        private readonly int _typeId;
+
+        /** Type name. */
+        private readonly string _typeName;
+
+        /** Aff key field name. */
+        private readonly string _affinityKeyFieldName;
+
+        /// <summary>
+        /// Initializes the <see cref="BinaryType"/> class.
+        /// </summary>
+        [SuppressMessage("Microsoft.Performance", "CA1810:InitializeReferenceTypeStaticFieldsInline",
+            Justification = "Readability.")]
+        static BinaryType()
+        {
+            TypeNames[BinaryUtils.TypeBool] = BinaryTypeNames.TypeNameBool;
+            TypeNames[BinaryUtils.TypeByte] = BinaryTypeNames.TypeNameByte;
+            TypeNames[BinaryUtils.TypeShort] = BinaryTypeNames.TypeNameShort;
+            TypeNames[BinaryUtils.TypeChar] = BinaryTypeNames.TypeNameChar;
+            TypeNames[BinaryUtils.TypeInt] = BinaryTypeNames.TypeNameInt;
+            TypeNames[BinaryUtils.TypeLong] = BinaryTypeNames.TypeNameLong;
+            TypeNames[BinaryUtils.TypeFloat] = BinaryTypeNames.TypeNameFloat;
+            TypeNames[BinaryUtils.TypeDouble] = BinaryTypeNames.TypeNameDouble;
+            TypeNames[BinaryUtils.TypeDecimal] = BinaryTypeNames.TypeNameDecimal;
+            TypeNames[BinaryUtils.TypeString] = BinaryTypeNames.TypeNameString;
+            TypeNames[BinaryUtils.TypeGuid] = BinaryTypeNames.TypeNameGuid;
+            TypeNames[BinaryUtils.TypeTimestamp] = BinaryTypeNames.TypeNameTimestamp;
+            TypeNames[BinaryUtils.TypeEnum] = BinaryTypeNames.TypeNameEnum;
+            TypeNames[BinaryUtils.TypeObject] = BinaryTypeNames.TypeNameObject;
+            TypeNames[BinaryUtils.TypeArrayBool] = BinaryTypeNames.TypeNameArrayBool;
+            TypeNames[BinaryUtils.TypeArrayByte] = BinaryTypeNames.TypeNameArrayByte;
+            TypeNames[BinaryUtils.TypeArrayShort] = BinaryTypeNames.TypeNameArrayShort;
+            TypeNames[BinaryUtils.TypeArrayChar] = BinaryTypeNames.TypeNameArrayChar;
+            TypeNames[BinaryUtils.TypeArrayInt] = BinaryTypeNames.TypeNameArrayInt;
+            TypeNames[BinaryUtils.TypeArrayLong] = BinaryTypeNames.TypeNameArrayLong;
+            TypeNames[BinaryUtils.TypeArrayFloat] = BinaryTypeNames.TypeNameArrayFloat;
+            TypeNames[BinaryUtils.TypeArrayDouble] = BinaryTypeNames.TypeNameArrayDouble;
+            TypeNames[BinaryUtils.TypeArrayDecimal] = BinaryTypeNames.TypeNameArrayDecimal;
+            TypeNames[BinaryUtils.TypeArrayString] = BinaryTypeNames.TypeNameArrayString;
+            TypeNames[BinaryUtils.TypeArrayGuid] = BinaryTypeNames.TypeNameArrayGuid;
+            TypeNames[BinaryUtils.TypeArrayTimestamp] = BinaryTypeNames.TypeNameArrayTimestamp;
+            TypeNames[BinaryUtils.TypeArrayEnum] = BinaryTypeNames.TypeNameArrayEnum;
+            TypeNames[BinaryUtils.TypeArray] = BinaryTypeNames.TypeNameArrayObject;
+            TypeNames[BinaryUtils.TypeCollection] = BinaryTypeNames.TypeNameCollection;
+            TypeNames[BinaryUtils.TypeDictionary] = BinaryTypeNames.TypeNameMap;
+        }
 
         /// <summary>
         /// Get type name by type ID.
         /// </summary>
         /// <param name="typeId">Type ID.</param>
         /// <returns>Type name.</returns>
-        private static string ConvertTypeName(int typeId)
+        private static string GetTypeName(int typeId)
         {
-            switch (typeId)
-            {
-                case BinaryUtils.TypeBool:
-                    return BinaryTypeNames.TypeNameBool;
-                case BinaryUtils.TypeByte:
-                    return BinaryTypeNames.TypeNameByte;
-                case BinaryUtils.TypeShort:
-                    return BinaryTypeNames.TypeNameShort;
-                case BinaryUtils.TypeChar:
-                    return BinaryTypeNames.TypeNameChar;
-                case BinaryUtils.TypeInt:
-                    return BinaryTypeNames.TypeNameInt;
-                case BinaryUtils.TypeLong:
-                    return BinaryTypeNames.TypeNameLong;
-                case BinaryUtils.TypeFloat:
-                    return BinaryTypeNames.TypeNameFloat;
-                case BinaryUtils.TypeDouble:
-                    return BinaryTypeNames.TypeNameDouble;
-                case BinaryUtils.TypeDecimal:
-                    return BinaryTypeNames.TypeNameDecimal;
-                case BinaryUtils.TypeString:
-                    return BinaryTypeNames.TypeNameString;
-                case BinaryUtils.TypeGuid:
-                    return BinaryTypeNames.TypeNameGuid;
-                case BinaryUtils.TypeTimestamp:
-                    return BinaryTypeNames.TypeNameTimestamp;
-                case BinaryUtils.TypeEnum:
-                    return BinaryTypeNames.TypeNameEnum;
-                case BinaryUtils.TypeBinary:
-                case BinaryUtils.TypeObject:
-                    return BinaryTypeNames.TypeNameObject;
-                case BinaryUtils.TypeArrayBool:
-                    return BinaryTypeNames.TypeNameArrayBool;
-                case BinaryUtils.TypeArrayByte:
-                    return BinaryTypeNames.TypeNameArrayByte;
-                case BinaryUtils.TypeArrayShort:
-                    return BinaryTypeNames.TypeNameArrayShort;
-                case BinaryUtils.TypeArrayChar:
-                    return BinaryTypeNames.TypeNameArrayChar;
-                case BinaryUtils.TypeArrayInt:
-                    return BinaryTypeNames.TypeNameArrayInt;
-                case BinaryUtils.TypeArrayLong:
-                    return BinaryTypeNames.TypeNameArrayLong;
-                case BinaryUtils.TypeArrayFloat:
-                    return BinaryTypeNames.TypeNameArrayFloat;
-                case BinaryUtils.TypeArrayDouble:
-                    return BinaryTypeNames.TypeNameArrayDouble;
-                case BinaryUtils.TypeArrayDecimal:
-                    return BinaryTypeNames.TypeNameArrayDecimal;
-                case BinaryUtils.TypeArrayString:
-                    return BinaryTypeNames.TypeNameArrayString;
-                case BinaryUtils.TypeArrayGuid:
-                    return BinaryTypeNames.TypeNameArrayGuid;
-                case BinaryUtils.TypeArrayTimestamp:
-                    return BinaryTypeNames.TypeNameArrayTimestamp;
-                case BinaryUtils.TypeArrayEnum:
-                    return BinaryTypeNames.TypeNameArrayEnum;
-                case BinaryUtils.TypeArray:
-                    return BinaryTypeNames.TypeNameArrayObject;
-                case BinaryUtils.TypeCollection:
-                    return BinaryTypeNames.TypeNameCollection;
-                case BinaryUtils.TypeDictionary:
-                    return BinaryTypeNames.TypeNameMap;
-                default:
-                    throw new BinaryObjectException("Invalid type ID: " + typeId);
-            }
+            var typeName = (typeId >= 0 && typeId < TypeNames.Length) ? TypeNames[typeId] : null;
+
+            if (typeName != null)
+                return typeName;
+
+            throw new BinaryObjectException("Invalid type ID: " + typeId);
         }
 
         /// <summary>
@@ -121,10 +114,22 @@ namespace Apache.Ignite.Core.Impl.Binary.Metadata
         /// <param name="reader">The reader.</param>
         public BinaryType(IBinaryRawReader reader)
         {
-            TypeId = reader.ReadInt();
-            TypeName = reader.ReadString();
-            AffinityKeyFieldName = reader.ReadString();
+            _typeId = reader.ReadInt();
+            _typeName = reader.ReadString();
+            _affinityKeyFieldName = reader.ReadString();
             _fields = reader.ReadDictionaryAsGeneric<string, int>();
+            _isEnum = reader.ReadBoolean();
+        }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="BinaryType"/> class.
+        /// </summary>
+        /// <param name="desc">Descriptor.</param>
+        /// <param name="fields">Fields.</param>
+        public BinaryType(IBinaryTypeDescriptor desc, IDictionary<string, int> fields = null) 
+            : this (desc.TypeId, desc.TypeName, fields, desc.AffinityKeyFieldName, desc.IsEnum)
+        {
+            // No-op.
         }
 
         /// <summary>
@@ -134,25 +139,33 @@ namespace Apache.Ignite.Core.Impl.Binary.Metadata
         /// <param name="typeName">Type name.</param>
         /// <param name="fields">Fields.</param>
         /// <param name="affKeyFieldName">Affinity key field name.</param>
+        /// <param name="isEnum">Enum flag.</param>
         public BinaryType(int typeId, string typeName, IDictionary<string, int> fields,
-            string affKeyFieldName)
+            string affKeyFieldName, bool isEnum)
         {
-            TypeId = typeId;
-            TypeName = typeName;
-            AffinityKeyFieldName = affKeyFieldName;
+            _typeId = typeId;
+            _typeName = typeName;
+            _affinityKeyFieldName = affKeyFieldName;
             _fields = fields;
+            _isEnum = isEnum;
         }
 
         /// <summary>
         /// Type ID.
         /// </summary>
         /// <returns></returns>
-        public int TypeId { get; private set; }
+        public int TypeId
+        {
+            get { return _typeId; }
+        }
 
         /// <summary>
         /// Gets type name.
         /// </summary>
-        public string TypeName { get; private set; }
+        public string TypeName
+        {
+            get { return _typeName; }
+        }
 
         /// <summary>
         /// Gets field names for that type.
@@ -177,7 +190,7 @@ namespace Apache.Ignite.Core.Impl.Binary.Metadata
 
                 _fields.TryGetValue(fieldName, out typeId);
 
-                return ConvertTypeName(typeId);
+                return GetTypeName(typeId);
             }
             
             return null;
@@ -186,13 +199,22 @@ namespace Apache.Ignite.Core.Impl.Binary.Metadata
         /// <summary>
         /// Gets optional affinity key field name.
         /// </summary>
-        public string AffinityKeyFieldName { get; private set; }
+        public string AffinityKeyFieldName
+        {
+            get { return _affinityKeyFieldName; }
+        }
+
+        /** <inheritdoc /> */
+        public bool IsEnum
+        {
+            get { return _isEnum; }
+        }
 
         /// <summary>
         /// Gets fields map.
         /// </summary>
         /// <returns>Fields map.</returns>
-        public IDictionary<string, int> FieldsMap()
+        public IDictionary<string, int> GetFieldsMap()
         {
             return _fields ?? EmptyDict;
         }

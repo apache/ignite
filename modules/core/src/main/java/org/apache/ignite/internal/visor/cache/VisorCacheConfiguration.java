@@ -28,6 +28,7 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.jetbrains.annotations.Nullable;
+import org.apache.ignite.lang.IgniteProductVersion;
 
 import static org.apache.ignite.internal.visor.util.VisorTaskUtils.compactClass;
 
@@ -38,19 +39,22 @@ public class VisorCacheConfiguration implements Serializable {
     /** */
     private static final long serialVersionUID = 0L;
 
+    /** */
+    private static final IgniteProductVersion VER_1_4_1 = IgniteProductVersion.fromString("1.4.1");
+
     /** Cache name. */
     private String name;
 
     /** Cache mode. */
     private CacheMode mode;
 
-    /** Cache atomicity mode */
+    /** Cache atomicity mode. */
     private CacheAtomicityMode atomicityMode;
 
     /** Cache atomicity write ordering mode. */
     private CacheAtomicWriteOrderMode atomicWriteOrderMode;
 
-    /** Eager ttl flag */
+    /** Eager ttl flag. */
     private boolean eagerTtl;
 
     /** Write synchronization mode. */
@@ -68,7 +72,7 @@ public class VisorCacheConfiguration implements Serializable {
     /** Off-heap max memory. */
     private long offHeapMaxMemory;
 
-    /** Max concurrent async operations */
+    /** Max concurrent async operations. */
     private int maxConcurrentAsyncOps;
 
     /** Memory mode. */
@@ -89,10 +93,10 @@ public class VisorCacheConfiguration implements Serializable {
     /** Near cache config. */
     private VisorCacheNearConfiguration nearCfg;
 
-    /** Default config */
+    /** Default config. */
     private VisorCacheDefaultConfiguration dfltCfg;
 
-    /** Store config */
+    /** Store config. */
     private VisorCacheStoreConfiguration storeCfg;
 
     /** Collection of type metadata. */
@@ -138,7 +142,7 @@ public class VisorCacheConfiguration implements Serializable {
         maxConcurrentAsyncOps = ccfg.getMaxConcurrentAsyncOperations();
         memoryMode = ccfg.getMemoryMode();
         interceptor = compactClass(ccfg.getInterceptor());
-        typeMeta = VisorCacheTypeMetadata.list(ccfg.getTypeMetadata());
+        typeMeta = VisorCacheTypeMetadata.list(ccfg.getQueryEntities(), ccfg.getCacheStoreFactory(), ccfg.getTypeMetadata());
         statisticsEnabled = ccfg.isStatisticsEnabled();
         mgmtEnabled = ccfg.isManagementEnabled();
         ldrFactory = compactClass(ccfg.getCacheLoaderFactory());
@@ -151,8 +155,21 @@ public class VisorCacheConfiguration implements Serializable {
         evictCfg = VisorCacheEvictionConfiguration.from(ccfg);
         nearCfg = VisorCacheNearConfiguration.from(ccfg);
         dfltCfg = VisorCacheDefaultConfiguration.from(ccfg);
-        storeCfg = VisorCacheStoreConfiguration.from(ignite, ccfg);
-        qryCfg = VisorCacheQueryConfiguration.from(ccfg);
+
+        boolean compatibility = false;
+
+        for (org.apache.ignite.cluster.ClusterNode node : ignite.cluster().nodes()) {
+            if (node.version().compareToIgnoreTimestamp(VER_1_4_1) <= 0) {
+                compatibility = true;
+
+                break;
+            }
+        }
+
+        storeCfg = (compatibility ? new VisorCacheStoreConfiguration() : new VisorCacheStoreConfigurationV2())
+                .from(ignite, ccfg);
+
+        qryCfg = (compatibility ? new VisorCacheQueryConfiguration() : new VisorCacheQueryConfigurationV2()).from(ccfg);
 
         return this;
     }

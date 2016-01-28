@@ -20,6 +20,7 @@
 ::
 
 @echo off
+Setlocal EnableDelayedExpansion
 
 if "%OS%" == "Windows_NT"  setlocal
 
@@ -118,8 +119,8 @@ if %ERRORLEVEL% neq 0 (
 ::
 :: Process 'restart'.
 ::
-set RANDOM_NUMBER_COMMAND="%JAVA_HOME%\bin\java.exe" -cp %CP% org.apache.ignite.startup.cmdline.CommandLineRandomNumberGenerator
-for /f "usebackq tokens=*" %%i in (`"%RANDOM_NUMBER_COMMAND%"`) do set RANDOM_NUMBER=%%i
+set RANDOM_NUMBER_COMMAND="!JAVA_HOME!\bin\java.exe" -cp %CP% org.apache.ignite.startup.cmdline.CommandLineRandomNumberGenerator
+for /f "usebackq tokens=*" %%i in (`!RANDOM_NUMBER_COMMAND!`) do set RANDOM_NUMBER=%%i
 
 set RESTART_SUCCESS_FILE="%IGNITE_HOME%\work\ignite_success_%RANDOM_NUMBER%"
 set RESTART_SUCCESS_OPT=-DIGNITE_SUCCESS_FILE=%RESTART_SUCCESS_FILE%
@@ -132,7 +133,7 @@ set RESTART_SUCCESS_OPT=-DIGNITE_SUCCESS_FILE=%RESTART_SUCCESS_FILE%
 :: This is executed if -nojmx is not specified
 ::
 if not "%NO_JMX%" == "1" (
-    for /F "tokens=*" %%A in ('""%JAVA_HOME%\bin\java" -cp %CP% org.apache.ignite.internal.util.portscanner.GridJmxPortFinder"') do (
+    for /F "tokens=*" %%A in ('""!JAVA_HOME!\bin\java" -cp %CP% org.apache.ignite.internal.util.portscanner.GridJmxPortFinder"') do (
         set JMX_PORT=%%A
     )
 )

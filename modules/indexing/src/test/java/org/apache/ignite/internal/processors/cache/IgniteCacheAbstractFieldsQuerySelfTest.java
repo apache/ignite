@@ -41,6 +41,7 @@ import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteKernal;
+import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.processors.cache.query.GridCacheSqlIndexMetadata;
 import org.apache.ignite.internal.processors.cache.query.GridCacheSqlMetadata;
 import org.apache.ignite.internal.processors.datastructures.GridCacheAtomicLongValue;
@@ -83,6 +84,9 @@ public abstract class IgniteCacheAbstractFieldsQuerySelfTest extends GridCommonA
 
     /** Flag indicating if starting node should have cache. */
     protected boolean hasCache;
+
+    /** Whether BinaryMarshaller is set. */
+    protected boolean binaryMarshaller;
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
@@ -206,6 +210,11 @@ public abstract class IgniteCacheAbstractFieldsQuerySelfTest extends GridCommonA
     }
 
     /** {@inheritDoc} */
+    @Override protected void beforeTest() throws Exception {
+        binaryMarshaller = grid(0).configuration().getMarshaller() instanceof BinaryMarshaller;
+    }
+
+    /** {@inheritDoc} */
     @Override protected void afterTestsStopped() throws Exception {
         stopAllGrids();
     }
@@ -249,31 +258,56 @@ public abstract class IgniteCacheAbstractFieldsQuerySelfTest extends GridCommonA
                     assert types.contains("String");
                     assert types.contains("Integer");
 
-                    assert AffinityKey.class.getName().equals(meta.keyClass("Person"));
+                    if (binaryMarshaller) {
+                        assert Object.class.getName().equals(meta.keyClass("Person"));
+                        assert Object.class.getName().equals(meta.valueClass("Person"));
+                        assert Object.class.getName().equals(meta.valueClass("Organization"));
+                    }
+                    else {
+                        assert AffinityKey.class.getName().equals(meta.keyClass("Person"));
+                        assert Person.class.getName().equals(meta.valueClass("Person"));
+                        assert Organization.class.getName().equals(meta.valueClass("Organization"));
+                    }
+
                     assert String.class.getName().equals(meta.keyClass("Organization"));
                     assert String.class.getName().equals(meta.keyClass("String"));
-
-                    assert Person.class.getName().equals(meta.valueClass("Person"));
-                    assert Organization.class.getName().equals(meta.valueClass("Organization"));
                     assert String.class.getName().equals(meta.valueClass("String"));
 
                     Map<String, String> fields = meta.fields("Person");
 
                     assert fields != null;
                     assert fields.size() == 5;
-                    assert AffinityKey.class.getName().equals(fields.get("_KEY"));
-                    assert Person.class.getName().equals(fields.get("_VAL"));
+
+                    if (binaryMarshaller) {
+                        assert Object.class.getName().equals(fields.get("_KEY"));
+                        assert Object.class.getName().equals(fields.get("_VAL"));
+                        assert Integer.class.getName().equals(fields.get("AGE"));
+                        assert Integer.class.getName().equals(fields.get("ORGID"));
+                    }
+                    else {
+                        assert AffinityKey.class.getName().equals(fields.get("_KEY"));
+                        assert Person.class.getName().equals(fields.get("_VAL"));
+                        assert int.class.getName().equals(fields.get("AGE"));
+                        assert int.class.getName().equals(fields.get("ORGID"));
+                    }
+
                     assert String.class.getName().equals(fields.get("NAME"));
-                    assert int.class.getName().equals(fields.get("AGE"));
-                    assert int.class.getName().equals(fields.get("ORGID"));
 
                     fields = meta.fields("Organization");
 
                     assert fields != null;
-                    assert fields.size() == 4;
+                    assertEquals("Fields: " + fields, 5, fields.size());
+
+                    if (binaryMarshaller) {
+                        assert Object.class.getName().equals(fields.get("_VAL"));
+                        assert Integer.class.getName().equals(fields.get("ID"));
+                    }
+                    else {
+                        assert Organization.class.getName().equals(fields.get("_VAL"));
+                        assert int.class.getName().equals(fields.get("ID"));
+                    }
+
                     assert String.class.getName().equals(fields.get("_KEY"));
-                    assert Organization.class.getName().equals(fields.get("_VAL"));
-                    assert int.class.getName().equals(fields.get("ID"));
                     assert String.class.getName().equals(fields.get("NAME"));
 
                     fields = meta.fields("String");
@@ -545,7 +579,7 @@ public abstract class IgniteCacheAbstractFieldsQuerySelfTest extends GridCommonA
         int cnt = 0;
 
         for (List<?> row : res) {
-            assert row.size() == 9;
+            assertEquals(10, row.size());
 
             if (cnt == 0) {
                 assert new AffinityKey<>("p1", "o1").equals(row.get(0));
@@ -809,6 +843,23 @@ public abstract class IgniteCacheAbstractFieldsQuerySelfTest extends GridCommonA
     }
 
     /**
+     * @throws Exception If failed.
+     */
+    public void testMethodAnnotationWithoutGet() throws Exception {
+        if (!binaryMarshaller) {
+            QueryCursor<List<?>> qry = grid(0).cache(null)
+                .query(new SqlFieldsQuery("select methodField from Organization where methodField='name-A'")
+                    .setPageSize(10));
+
+            List<List<?>> flds = qry.getAll();
+
+            assertEquals(1, flds.size());
+
+            assertEquals("name-A", flds.get(0).get(0));
+        }
+    }
+
+    /**
      * @param cacheName Cache name.
      * @throws Exception If failed.
      */
@@ -993,6 +1044,14 @@ public abstract class IgniteCacheAbstractFieldsQuerySelfTest extends GridCommonA
 
             this.id = id;
             this.name = name;
+        }
+
+        /**
+         * @return Generated method value.
+         */
+        @QuerySqlField
+        public String methodField() {
+            return "name-" + name;
         }
 
         /** {@inheritDoc} */

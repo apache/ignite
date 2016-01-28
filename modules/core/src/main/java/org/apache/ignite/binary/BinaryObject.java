@@ -22,7 +22,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.TreeMap;
-import org.apache.ignite.marshaller.portable.PortableMarshaller;
 
 /**
  * Wrapper for binary object in binary format. Once an object is defined as binary,
@@ -46,9 +45,7 @@ import org.apache.ignite.marshaller.portable.PortableMarshaller;
  * String field = val.field("myFieldName");
  * </pre>
  * Alternatively, if we have class definitions in the classpath, we may choose to work with deserialized
- * typed objects at all times. In this case we do incur the deserialization cost. However, if
- * {@link PortableMarshaller#isKeepDeserialized()} is {@code true} then Ignite will only deserialize on the first access
- * and will cache the deserialized object, so it does not have to be deserialized again:
+ * typed objects at all times. In this case we do incur the deserialization cost.
  * <pre name=code class=java>
  * IgniteCache&lt;MyKey.class, MyValue.class&gt; cache = grid.cache(null);
  *
@@ -97,18 +94,11 @@ import org.apache.ignite.marshaller.portable.PortableMarshaller;
  * <h1 class="header">Binary Type Metadata</h1>
  * Even though Ignite binary protocol only works with hash codes for type and field names
  * to achieve better performance, Ignite provides metadata for all binary types which
- * can be queried ar runtime via any of the {@link org.apache.ignite.IgniteBinary#metadata(Class)}
+ * can be queried ar runtime via any of the {@link org.apache.ignite.IgniteBinary#type(Class)}
  * methods. Having metadata also allows for proper formatting of {@code BinaryObject.toString()} method,
  * even when binary objects are kept in binary format only, which may be necessary for audit reasons.
  */
 public interface BinaryObject extends Serializable, Cloneable {
-    /**
-     * Gets binary object type ID.
-     *
-     * @return Type ID.
-     */
-    public int typeId();
-
     /**
      * Gets type information for this binary object.
      *
@@ -123,27 +113,16 @@ public interface BinaryObject extends Serializable, Cloneable {
      * @param fieldName Field name.
      * @return Field value.
      * @throws BinaryObjectException In case of any other error.
-     * TODO ignite-1282 remove.
      */
     public <F> F field(String fieldName) throws BinaryObjectException;
 
     /**
-     * Checks whether field is set.
-     ** TODO ignite-1282 remove.
+     * Checks whether field exists in the object.
      *
      * @param fieldName Field name.
-     * @return {@code true} if field is set.
+     * @return {@code True} if field exists.
      */
     public boolean hasField(String fieldName);
-
-    /**
-     * Gets field descriptor.
-     *
-     * @param fieldName Field name.
-     * @return Field descriptor.
-     * @throws BinaryObjectException If failed.
-     */
-    public BinaryField fieldDescriptor(String fieldName) throws BinaryObjectException;
 
     /**
      * Gets fully deserialized instance of binary object.
@@ -160,4 +139,27 @@ public interface BinaryObject extends Serializable, Cloneable {
      * @return Copy of this binary object.
      */
     public BinaryObject clone() throws CloneNotSupportedException;
+
+    /**
+     * Creates a new {@link BinaryObjectBuilder} based on this binary object. The following code
+     * <pre name=code class=java>
+     * BinaryObjectBuilder builder = binaryObject.toBuilder();
+     * </pre>
+     * is equivalent to
+     * <pre name=code class=java>
+     * BinaryObjectBuilder builder = ignite.binary().builder(binaryObject);
+     * </pre>
+     *
+     * @return Binary object builder.
+     * @throws BinaryObjectException If builder cannot be created.
+     */
+    public BinaryObjectBuilder toBuilder() throws BinaryObjectException;
+
+    /**
+     * Get ordinal for this enum object. Use {@link BinaryType#isEnum()} to check if object is of enum type.
+     *
+     * @return Ordinal.
+     * @throws BinaryObjectException If object is not enum.
+     */
+    public int enumOrdinal() throws BinaryObjectException;
 }

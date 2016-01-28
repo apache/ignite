@@ -451,8 +451,11 @@ public class GridMapQueryExecutor {
             int i = 0;
 
             for (GridCacheSqlQuery qry : qrys) {
-                ResultSet rs = h2.executeSqlQueryWithTimer(req.space(), h2.connectionForSpace(req.space()), qry.query(),
-                    F.asList(qry.parameters()));
+                ResultSet rs = h2.executeSqlQueryWithTimer(req.space(),
+                    h2.connectionForSpace(req.space()),
+                    qry.query(),
+                    F.asList(qry.parameters()),
+                    true);
 
                 if (ctx.event().isRecordable(EVT_CACHE_QUERY_EXECUTED)) {
                     ctx.event().record(new CacheQueryExecutedEvent<>(
@@ -820,17 +823,7 @@ public class GridMapQueryExecutor {
 
             closed = true;
 
-            Statement stmt;
-
-            try {
-                stmt = rs.getStatement();
-            }
-            catch (SQLException e) {
-                throw new IllegalStateException(e); // Must not happen.
-            }
-
             U.close(rs, log);
-            U.close(stmt, log);
         }
     }
 

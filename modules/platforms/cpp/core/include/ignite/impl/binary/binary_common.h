@@ -21,7 +21,7 @@
 #include <stdint.h>
 
 namespace ignite
-{    
+{
     namespace impl
     {
         namespace binary
@@ -164,19 +164,25 @@ namespace ignite
             /** Read/write map. */
             const int32_t IGNITE_BINARY_MODE_MAP = 3;
 
-            /** User object flag. */
-            const int16_t IGNITE_BINARY_FLAG_USER_OBJECT = 0x0001;
+            /** User type flag. */
+            const int16_t IGNITE_BINARY_FLAG_USER_TYPE = 0x0001;
 
-            /** Raw only flag. */
-            const int16_t IGNITE_BINARY_FLAG_RAW_ONLY = 0x0002;
+            /** Flag: schema exists. */
+            const int16_t IGNITE_BINARY_FLAG_HAS_SCHEMA = 0x0002;
+
+            /** Flag indicating that object has raw data. */
+            const int16_t IGNITE_BINARY_FLAG_HAS_RAW = 0x0004;
 
             /** Flag indicating that schema field offset is one byte long. */
-            const int16_t IGNITE_BINARY_FLAG_OFFSET_1_BYTE = 0x0004;
+            const int16_t IGNITE_BINARY_FLAG_OFFSET_ONE_BYTE = 0x0008;
 
             /** Flag indicating that schema field offset is two byte long. */
-            const int16_t IGNITE_BINARY_FLAG_OFFSET_2_BYTE = 0x0008;
+            const int16_t IGNITE_BINARY_FLAG_OFFSET_TWO_BYTES = 0x0010;
+
+            /** Flag: compact footer, no field IDs. */
+            const int16_t IGNITE_BINARY_FLAG_COMPACT_FOOTER = 0x0020;
         }
-    }    
+    }
 }
 
 #endif

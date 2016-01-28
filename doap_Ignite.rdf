@@ -1,0 +1,67 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl"?>
+<rdf:RDF xml:lang="en"
+         xmlns="http://usefulinc.com/ns/doap#" 
+         xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#" 
+         xmlns:asfext="http://projects.apache.org/ns/asfext#"
+         xmlns:foaf="http://xmlns.com/foaf/0.1/">
+<!--
+    Licensed to the Apache Software Foundation (ASF) under one or more
+    contributor license agreements.  See the NOTICE file distributed with
+    this work for additional information regarding copyright ownership.
+    The ASF licenses this file to You under the Apache License, Version 2.0
+    (the "License"); you may not use this file except in compliance with
+    the License.  You may obtain a copy of the License at
+   
+         http://www.apache.org/licenses/LICENSE-2.0
+   
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
+-->
+  <Project rdf:about="http://ignite.apache.org">
+    <created>2014-10-01</created>
+    <license rdf:resource="http://spdx.org/licenses/Apache-2.0" />
+    <name>Apache Ignite</name>
+    <homepage rdf:resource="http://ignite.apache.org" />
+    <asfext:pmc rdf:resource="http://ignite.apache.org" />
+    <shortdesc>Apache Ignite is an In-Memory Data Fabric providing in-memory data caching, partitioning, processing, and querying components.</shortdesc>
+    <description>Apache Ignite In-Memory Data Fabric is designed to deliver uncompromised performance for a wide set of in-memory computing use cases from high performance computing, to the industry most advanced data grid, in-memory SQL, in-memory file system, streaming, and more.</description>
+    <bug-database rdf:resource="https://issues.apache.org/jira/browse/IGNITE" />
+    <mailing-list rdf:resource="https://ignite.apache.org/community/resources.html#mail-lists" />
+    <download-page rdf:resource="https://ignite.apache.org/download" />
+
+    <programming-language>Java</programming-language>
+    <programming-language>C#</programming-language>
+    <programming-language>C++</programming-language>
+    <programming-language>Node.JS</programming-language>
+    <programming-language>SQL</programming-language>
+    <programming-language>JDBC</programming-language>
+    <programming-language>ODBC</programming-language>
+
+    <category rdf:resource="http://projects.apache.org/category/big-data" />
+    <category rdf:resource="http://projects.apache.org/category/network-server" />
+    <category rdf:resource="http://projects.apache.org/category/network-client" />
+
+    <repository>
+      <GitRepository>
+        <location rdf:resource="https://git-wip-us.apache.org/repos/asf/ignite"/>
+        <browse rdf:resource="https://git-wip-us.apache.org/repos/asf/ignite"/>
+      </GitRepository>
+    </repository>
+    <maintainer>
+      <foaf:Person>
+        <foaf:name>Dmitriy Setrakyan</foaf:name>
+          <foaf:mbox rdf:resource="mailto:dsetrakyan@apache.org"/>
+      </foaf:Person>
+    </maintainer>
+    <asfext:implements><asfext:Standard>
+      <asfext:title>JCACHE - Java Temporary Caching API</asfext:title>
+      <asfext:body>JCP</asfext:body>
+      <asfext:id>107</asfext:id>
+      <asfext:url rdf:resource="https://jcp.org/en/jsr/detail?id=107"/>
+    </asfext:Standard></asfext:implements>
+  </Project>
+</rdf:RDF>

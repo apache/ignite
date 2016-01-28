@@ -113,7 +113,8 @@ public abstract class GridCacheStoreManagerAdapter extends GridCacheManagerAdapt
 
         store = cacheStoreWrapper(ctx, cfgStore, cfg);
 
-        singleThreadGate = store == null ? null : new CacheStoreBalancingWrapper<>(store);
+        singleThreadGate = store == null ? null : new CacheStoreBalancingWrapper<>(store,
+            cfg.getStoreConcurrentLoadAllThreshold());
 
         ThreadLocal<SessionData> sesHolder0 = null;
 
@@ -189,12 +190,24 @@ public abstract class GridCacheStoreManagerAdapter extends GridCacheManagerAdapt
 
         CacheConfiguration cfg = cctx.config();
 
-        if (cfgStore != null && !cfg.isWriteThrough() && !cfg.isReadThrough()) {
-            U.quietAndWarn(log,
-                "Persistence store is configured, but both read-through and write-through are disabled. This " +
-                "configuration makes sense if the store implements loadCache method only. If this is the " +
-                "case, ignore this warning. Otherwise, fix the configuration for cache: " + cfg.getName(),
-                "Persistence store is configured, but both read-through and write-through are disabled.");
+        if (cfgStore != null) {
+            if (!cfg.isWriteThrough() && !cfg.isReadThrough()) {
+                U.quietAndWarn(log,
+                    "Persistence store is configured, but both read-through and write-through are disabled. This " +
+                    "configuration makes sense if the store implements loadCache method only. If this is the " +
+                    "case, ignore this warning. Otherwise, fix the configuration for the cache: " + cfg.getName(),
+                    "Persistence store is configured, but both read-through and write-through are disabled " +
+                    "for cache: " + cfg.getName());
+            }
+
+            if (!cfg.isWriteThrough() && cfg.isWriteBehindEnabled()) {
+                U.quietAndWarn(log,
+                    "To enable write-behind mode for the cache store it's also required to set " +
+                    "CacheConfiguration.setWriteThrough(true) property, otherwise the persistence " +
+                    "store will be never updated. Consider fixing configuration for the cache: " + cfg.getName(),
+                    "Write-behind mode for the cache store also requires CacheConfiguration.setWriteThrough(true) " +
+                    "property. Fix configuration for the cache: " + cfg.getName());
+            }
         }
 
         sesLsnrs = CU.startStoreSessionListeners(cctx.kernalContext(), cfg.getCacheStoreSessionListenerFactories());
@@ -270,7 +283,7 @@ public abstract class GridCacheStoreManagerAdapter extends GridCacheManagerAdapt
                 // Never load internal keys from store as they are never persisted.
                 return null;
 
-            Object storeKey = cctx.unwrapPortableIfNeeded(key, !convertPortable());
+            Object storeKey = cctx.unwrapBinaryIfNeeded(key, !convertBinary());
 
             if (log.isDebugEnabled())
                 log.debug("Loading value from store for key: " + storeKey);
@@ -397,7 +410,7 @@ public abstract class GridCacheStoreManagerAdapter extends GridCacheManagerAdapt
             Collection<Object> keys0 = F.viewReadOnly(keys,
                 new C1<KeyCacheObject, Object>() {
                     @Override public Object apply(KeyCacheObject key) {
-                        return cctx.unwrapPortableIfNeeded(key, !convertPortable());
+                        return cctx.unwrapBinaryIfNeeded(key, !convertBinary());
                     }
                 });
 
@@ -520,8 +533,8 @@ public abstract class GridCacheStoreManagerAdapter extends GridCacheManagerAdapt
             if (key instanceof GridCacheInternal)
                 return true;
 
-            key = cctx.unwrapPortableIfNeeded(key, !convertPortable());
-            val = cctx.unwrapPortableIfNeeded(val, !convertPortable());
+            key = cctx.unwrapBinaryIfNeeded(key, !convertBinary());
+            val = cctx.unwrapBinaryIfNeeded(val, !convertBinary());
 
             if (log.isDebugEnabled())
                 log.debug("Storing value in cache store [key=" + key + ", val=" + val + ']');
@@ -623,7 +636,7 @@ public abstract class GridCacheStoreManagerAdapter extends GridCacheManagerAdapt
             if (key instanceof GridCacheInternal)
                 return false;
 
-            key = cctx.unwrapPortableIfNeeded(key, !convertPortable());
+            key = cctx.unwrapBinaryIfNeeded(key, !convertBinary());
 
             if (log.isDebugEnabled())
                 log.debug("Removing value from cache store [key=" + key + ']');
@@ -671,7 +684,7 @@ public abstract class GridCacheStoreManagerAdapter extends GridCacheManagerAdapt
         }
 
         if (store != null) {
-            Collection<Object> keys0 = cctx.unwrapPortablesIfNeeded(keys, !convertPortable());
+            Collection<Object> keys0 = cctx.unwrapBinariesIfNeeded(keys, !convertBinary());
 
             if (log.isDebugEnabled())
                 log.debug("Removing values from cache store [keys=" + keys0 + ']');
@@ -758,7 +771,7 @@ public abstract class GridCacheStoreManagerAdapter extends GridCacheManagerAdapt
         assert e != null;
 
         if (e.getMessage() != null) {
-            throw new IgniteCheckedException("Cache store must work with portable objects if binary are " +
+            throw new IgniteCheckedException("Cache store must work with binary objects if binary are " +
                 "enabled for cache [cacheName=" + cctx.namex() + ']', e);
         }
         else
@@ -1080,8 +1093,8 @@ public abstract class GridCacheStoreManagerAdapter extends GridCacheManagerAdapt
 
                         Object v = locStore ? e.getValue() : e.getValue().get1();
 
-                        k = cctx.unwrapPortableIfNeeded(k, !convertPortable());
-                        v = cctx.unwrapPortableIfNeeded(v, !convertPortable());
+                        k = cctx.unwrapBinaryIfNeeded(k, !convertBinary());
+                        v = cctx.unwrapBinaryIfNeeded(v, !convertBinary());
 
                         if (rmvd != null && rmvd.contains(k))
                             continue;

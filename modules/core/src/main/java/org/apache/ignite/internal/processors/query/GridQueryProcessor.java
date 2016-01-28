@@ -17,34 +17,13 @@
 
 package org.apache.ignite.internal.processors.query;
 
-import java.lang.reflect.AccessibleObject;
-import java.lang.reflect.Field;
-import java.lang.reflect.Member;
-import java.lang.reflect.Method;
-import java.math.BigDecimal;
-import java.sql.Time;
-import java.sql.Timestamp;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.TreeSet;
-import java.util.UUID;
-import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.ExecutorService;
-import javax.cache.Cache;
-import javax.cache.CacheException;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.binary.BinaryField;
+import org.apache.ignite.binary.BinaryObject;
+import org.apache.ignite.binary.BinaryType;
+import org.apache.ignite.binary.Binarylizable;
 import org.apache.ignite.cache.CacheTypeMetadata;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.QueryIndex;
@@ -54,15 +33,16 @@ import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.SqlQuery;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.events.CacheQueryExecutedEvent;
-import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
 import org.apache.ignite.internal.processors.cache.CacheEntryImpl;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.CacheObjectContext;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.QueryCursorImpl;
+import org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl;
 import org.apache.ignite.internal.processors.cache.query.CacheQueryFuture;
 import org.apache.ignite.internal.processors.cache.query.CacheQueryType;
 import org.apache.ignite.internal.processors.cache.query.GridCacheTwoStepQuery;
@@ -85,6 +65,31 @@ import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.spi.indexing.IndexingQueryFilter;
 import org.jetbrains.annotations.Nullable;
 import org.jsr166.ConcurrentHashMap8;
+
+import javax.cache.Cache;
+import javax.cache.CacheException;
+import java.lang.reflect.AccessibleObject;
+import java.lang.reflect.Field;
+import java.lang.reflect.Member;
+import java.lang.reflect.Method;
+import java.math.BigDecimal;
+import java.sql.Time;
+import java.sql.Timestamp;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.TreeSet;
+import java.util.UUID;
+import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.ExecutorService;
 
 import static org.apache.ignite.events.EventType.EVT_CACHE_QUERY_EXECUTED;
 import static org.apache.ignite.internal.IgniteComponentType.INDEXING;
@@ -192,6 +197,12 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         idx.registerCache(ccfg);
 
         try {
+            List<Class<?>> mustDeserializeClss = null;
+
+            boolean binaryEnabled = ctx.cacheObjects().isBinaryEnabled(ccfg);
+
+            CacheObjectContext coCtx = binaryEnabled ? ctx.cacheObjects().contextForCache(ccfg) : null;
+
             if (!F.isEmpty(ccfg.getQueryEntities())) {
                 for (QueryEntity qryEntity : ccfg.getQueryEntities()) {
                     if (F.isEmpty(qryEntity.getValueType()))
@@ -201,14 +212,23 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
                     // Key and value classes still can be available if they are primitive or JDK part.
                     // We need that to set correct types for _key and _val columns.
-                    Class<?> keyCls = U.classForName(qryEntity.getKeyType(), Object.class);
+                    Class<?> keyCls = U.classForName(qryEntity.getKeyType(), null);
                     Class<?> valCls = U.classForName(qryEntity.getValueType(), null);
 
-                    String simpleValType = valCls == null ? qryEntity.getValueType() : typeName(valCls);
+                    // If local node has the classes and they are externalizable, we must use reflection properties.
+                    boolean keyMustDeserialize = mustDeserializeBinary(keyCls);
+                    boolean valMustDeserialize = mustDeserializeBinary(valCls);
+
+                    boolean keyOrValMustDeserialize = keyMustDeserialize || valMustDeserialize;
+
+                    if (keyCls == null)
+                        keyCls = Object.class;
+
+                    String simpleValType = valCls == null ? typeName(qryEntity.getValueType()) : typeName(valCls);
 
                     desc.name(simpleValType);
 
-                    if (ctx.cacheObjects().isPortableEnabled(ccfg)) {
+                    if (binaryEnabled && !keyOrValMustDeserialize) {
                         // Safe to check null.
                         if (SQL_TYPES.contains(valCls))
                             desc.valueClass(valCls);
@@ -221,15 +241,34 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                             desc.keyClass(Object.class);
                     }
                     else {
+                        if (keyCls == null)
+                            throw new IgniteCheckedException("Failed to find key class in the node classpath " +
+                                "(use default marshaller to enable binary objects): " + qryEntity.getKeyType());
+
+                        if (valCls == null)
+                            throw new IgniteCheckedException("Failed to find value class in the node classpath " +
+                                "(use default marshaller to enable binary objects) : " + qryEntity.getValueType());
+
                         desc.valueClass(valCls);
                         desc.keyClass(keyCls);
+                    }
+
+                    if (binaryEnabled && keyOrValMustDeserialize) {
+                        if (mustDeserializeClss == null)
+                            mustDeserializeClss = new ArrayList<>();
+
+                        if (keyMustDeserialize)
+                            mustDeserializeClss.add(keyCls);
+
+                        if (valMustDeserialize)
+                            mustDeserializeClss.add(valCls);
                     }
 
                     TypeId typeId;
                     TypeId altTypeId = null;
 
-                    if (valCls == null || ctx.cacheObjects().isPortableEnabled(ccfg)) {
-                        processPortableMeta(qryEntity, desc);
+                    if (valCls == null || (binaryEnabled && !keyOrValMustDeserialize)) {
+                        processBinaryMeta(qryEntity, desc);
 
                         typeId = new TypeId(ccfg.getName(), ctx.cacheObjects().typeId(qryEntity.getValueType()));
 
@@ -237,7 +276,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                             altTypeId = new TypeId(ccfg.getName(), valCls);
                     }
                     else {
-                        processClassMeta(qryEntity, desc);
+                        processClassMeta(qryEntity, desc, coCtx);
 
                         typeId = new TypeId(ccfg.getName(), valCls);
                         altTypeId = new TypeId(ccfg.getName(), ctx.cacheObjects().typeId(qryEntity.getValueType()));
@@ -259,16 +298,34 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                     if (F.isEmpty(meta.getValueType()))
                         throw new IgniteCheckedException("Value type is not set: " + meta);
 
+                    if (meta.getQueryFields().isEmpty() && meta.getAscendingFields().isEmpty() &&
+                        meta.getDescendingFields().isEmpty() && meta.getGroups().isEmpty())
+                        continue;
+
                     TypeDescriptor desc = new TypeDescriptor();
 
                     // Key and value classes still can be available if they are primitive or JDK part.
                     // We need that to set correct types for _key and _val columns.
-                    Class<?> keyCls = U.classForName(meta.getKeyType(), Object.class);
+                    Class<?> keyCls = U.classForName(meta.getKeyType(), null);
                     Class<?> valCls = U.classForName(meta.getValueType(), null);
 
-                    desc.name(meta.getSimpleValueType());
+                    // If local node has the classes and they are externalizable, we must use reflection properties.
+                    boolean keyMustDeserialize = mustDeserializeBinary(keyCls);
+                    boolean valMustDeserialize = mustDeserializeBinary(valCls);
 
-                    if (ctx.cacheObjects().isPortableEnabled(ccfg)) {
+                    boolean keyOrValMustDeserialize = keyMustDeserialize || valMustDeserialize;
+
+                    if (keyCls == null)
+                        keyCls = Object.class;
+
+                    String simpleValType = meta.getSimpleValueType();
+
+                    if (simpleValType == null)
+                        simpleValType = typeName(meta.getValueType());
+
+                    desc.name(simpleValType);
+
+                    if (binaryEnabled && !keyOrValMustDeserialize) {
                         // Safe to check null.
                         if (SQL_TYPES.contains(valCls))
                             desc.valueClass(valCls);
@@ -285,11 +342,22 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                         desc.keyClass(keyCls);
                     }
 
+                    if (binaryEnabled && keyOrValMustDeserialize) {
+                        if (mustDeserializeClss == null)
+                            mustDeserializeClss = new ArrayList<>();
+
+                        if (keyMustDeserialize)
+                            mustDeserializeClss.add(keyCls);
+
+                        if (valMustDeserialize)
+                            mustDeserializeClss.add(valCls);
+                    }
+
                     TypeId typeId;
                     TypeId altTypeId = null;
 
-                    if (valCls == null || ctx.cacheObjects().isPortableEnabled(ccfg)) {
-                        processPortableMeta(meta, desc);
+                    if (valCls == null || (binaryEnabled && !keyOrValMustDeserialize)) {
+                        processBinaryMeta(meta, desc);
 
                         typeId = new TypeId(ccfg.getName(), ctx.cacheObjects().typeId(meta.getValueType()));
 
@@ -297,7 +365,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                             altTypeId = new TypeId(ccfg.getName(), valCls);
                     }
                     else {
-                        processClassMeta(meta, desc);
+                        processClassMeta(meta, desc, coCtx);
 
                         typeId = new TypeId(ccfg.getName(), valCls);
                         altTypeId = new TypeId(ccfg.getName(), ctx.cacheObjects().typeId(meta.getValueType()));
@@ -314,12 +382,37 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             }
 
             // Indexed types must be translated to CacheTypeMetadata in CacheConfiguration.
+
+            if (mustDeserializeClss != null) {
+                U.quietAndWarn(log, "Some classes in query configuration cannot be written in binary format " +
+                    "because they either implement Externalizable interface or have writeObject/readObject methods. " +
+                    "Instances of these classes will be deserialized in order to build indexes. Please ensure that " +
+                    "all nodes have these classes in classpath. To enable binary serialization either implement " +
+                    Binarylizable.class.getSimpleName() + " interface or set explicit serializer using " +
+                    "BinaryTypeConfiguration.setSerializer() method: " + mustDeserializeClss);
+            }
         }
         catch (IgniteCheckedException | RuntimeException e) {
             idx.unregisterCache(ccfg);
 
             throw e;
         }
+    }
+
+    /**
+     * Check whether type still must be deserialized when binary marshaller is set.
+     *
+     * @param cls Class.
+     * @return {@code True} if will be deserialized.
+     */
+    private boolean mustDeserializeBinary(Class cls) {
+        if (cls != null && ctx.config().getMarshaller() instanceof BinaryMarshaller) {
+            CacheObjectBinaryProcessorImpl proc0 = (CacheObjectBinaryProcessorImpl)ctx.cacheObjects();
+
+            return proc0.binaryContext().mustDeserialize(cls);
+        }
+        else
+            return false;
     }
 
     /**
@@ -573,9 +666,9 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
             TypeId id;
 
-            boolean portableVal = ctx.cacheObjects().isPortableObject(val);
+            boolean binaryVal = ctx.cacheObjects().isBinaryObject(val);
 
-            if (portableVal) {
+            if (binaryVal) {
                 int typeId = ctx.cacheObjects().typeId(val);
 
                 id = new TypeId(space, typeId);
@@ -591,12 +684,12 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             if (desc == null || !desc.registered())
                 return;
 
-            if (!portableVal && !desc.valueClass().isAssignableFrom(valCls))
+            if (!binaryVal && !desc.valueClass().isAssignableFrom(valCls))
                 throw new IgniteCheckedException("Failed to update index due to class name conflict" +
                     "(multiple classes with same simple name are stored in the same cache) " +
                     "[expCls=" + desc.valueClass().getName() + ", actualCls=" + valCls.getName() + ']');
 
-            if (!ctx.cacheObjects().isPortableObject(key)) {
+            if (!ctx.cacheObjects().isBinaryObject(key)) {
                 Class<?> keyCls = key.value(coctx, false).getClass();
 
                 if (!desc.keyClass().isAssignableFrom(keyCls))
@@ -684,7 +777,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                     return idx.queryTwoStep(
                         cctx,
                         qry,
-                        cctx.keepPortable());
+                        cctx.keepBinary());
                 }
             }, false);
         }
@@ -753,7 +846,11 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      * @param qry Query.
      * @return Cursor.
      */
-    public <K, V> Iterator<Cache.Entry<K, V>> queryLocal(final GridCacheContext<?, ?> cctx, final SqlQuery qry) {
+    public <K, V> Iterator<Cache.Entry<K, V>> queryLocal(
+        final GridCacheContext<?, ?> cctx,
+        final SqlQuery qry,
+        final boolean keepBinary
+    ) {
         if (!busyLock.enterBusy())
             throw new IllegalStateException("Failed to execute query (grid is stopping).");
 
@@ -799,8 +896,8 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                                 IgniteBiTuple<K, V> t = i.next();
 
                                 return new CacheEntryImpl<>(
-                                    t.getKey(),
-                                    t.getValue());
+                                    (K)cctx.unwrapBinaryIfNeeded(t.getKey(), keepBinary, false),
+                                    (V)cctx.unwrapBinaryIfNeeded(t.getValue(), keepBinary, false));
                             }
 
                             @Override public void remove() {
@@ -857,7 +954,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             throw new IllegalStateException("Failed to execute query (grid is stopping).");
 
         try {
-            final boolean keepPortable = cctx.keepPortable();
+            final boolean keepBinary = cctx.keepBinary();
 
             return executeQuery(cctx, new IgniteOutClosureX<QueryCursor<List<?>>>() {
                 @Override public QueryCursor<List<?>> applyx() throws IgniteCheckedException {
@@ -872,7 +969,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
                     QueryCursorImpl<List<?>> cursor = new QueryCursorImpl<>(new Iterable<List<?>>() {
                         @Override public Iterator<List<?>> iterator() {
-                            return new GridQueryCacheObjectsIterator(res.iterator(), cctx, keepPortable);
+                            return new GridQueryCacheObjectsIterator(res.iterator(), cctx, keepBinary);
                         }
                     });
 
@@ -966,6 +1063,30 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         }
 
         return typeName;
+    }
+
+    /**
+     * Gets type name by class.
+     *
+     * @param clsName Class name.
+     * @return Type name.
+     */
+    public static String typeName(String clsName) {
+        int packageEnd = clsName.lastIndexOf('.');
+
+        if (packageEnd >= 0 && packageEnd < clsName.length() - 1)
+            clsName = clsName.substring(packageEnd + 1);
+
+        if (clsName.endsWith("[]")) {
+            clsName = clsName.substring(0, clsName.length() - 2) + "_array";
+        }
+
+        int parentEnd = clsName.lastIndexOf('$');
+
+        if (parentEnd >= 0)
+            clsName = clsName.substring(parentEnd + 1);
+
+        return clsName;
     }
 
     /**
@@ -1153,9 +1274,10 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      *
      * @param meta Type metadata.
      * @param d Type descriptor.
+     * @param coCtx Cache object context.
      * @throws IgniteCheckedException If failed.
      */
-    private void processClassMeta(CacheTypeMetadata meta, TypeDescriptor d)
+    private void processClassMeta(CacheTypeMetadata meta, TypeDescriptor d, CacheObjectContext coCtx)
         throws IgniteCheckedException {
         Map<String,String> aliases = meta.getAliases();
 
@@ -1169,13 +1291,13 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         assert valCls != null;
 
         for (Map.Entry<String, Class<?>> entry : meta.getAscendingFields().entrySet())
-            addToIndex(d, keyCls, valCls, entry.getKey(), entry.getValue(), 0, IndexType.ASC, null, aliases);
+            addToIndex(d, keyCls, valCls, entry.getKey(), entry.getValue(), 0, IndexType.ASC, null, aliases, coCtx);
 
         for (Map.Entry<String, Class<?>> entry : meta.getDescendingFields().entrySet())
-            addToIndex(d, keyCls, valCls, entry.getKey(), entry.getValue(), 0, IndexType.DESC, null, aliases);
+            addToIndex(d, keyCls, valCls, entry.getKey(), entry.getValue(), 0, IndexType.DESC, null, aliases, coCtx);
 
         for (String txtField : meta.getTextFields())
-            addToIndex(d, keyCls, valCls, txtField, String.class, 0, IndexType.TEXT, null, aliases);
+            addToIndex(d, keyCls, valCls, txtField, String.class, 0, IndexType.TEXT, null, aliases, coCtx);
 
         Map<String, LinkedHashMap<String, IgniteBiTuple<Class<?>, Boolean>>> grps = meta.getGroups();
 
@@ -1194,7 +1316,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                         descending = false;
 
                     addToIndex(d, keyCls, valCls, idxField.getKey(), idxField.getValue().get1(), order,
-                        descending ? IndexType.DESC : IndexType.ASC, idxName, aliases);
+                        descending ? IndexType.DESC : IndexType.ASC, idxName, aliases, coCtx);
 
                     order++;
                 }
@@ -1207,7 +1329,8 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                 valCls,
                 entry.getKey(),
                 entry.getValue(),
-                aliases);
+                aliases,
+                coCtx);
 
             d.addProperty(prop, false);
         }
@@ -1234,7 +1357,8 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         int idxOrder,
         IndexType idxType,
         String idxName,
-        Map<String,String> aliases
+        Map<String,String> aliases,
+        CacheObjectContext coCtx
     ) throws IgniteCheckedException {
         String propName;
         Class<?> propCls;
@@ -1249,7 +1373,8 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                 valCls,
                 pathStr,
                 resType,
-                aliases);
+                aliases,
+                coCtx);
 
             d.addProperty(prop, false);
 
@@ -1272,13 +1397,13 @@ public class GridQueryProcessor extends GridProcessorAdapter {
     }
 
     /**
-     * Processes declarative metadata for portable object.
+     * Processes declarative metadata for binary object.
      *
      * @param meta Declared metadata.
      * @param d Type descriptor.
      * @throws IgniteCheckedException If failed.
      */
-    private void processPortableMeta(CacheTypeMetadata meta, TypeDescriptor d)
+    private void processBinaryMeta(CacheTypeMetadata meta, TypeDescriptor d)
         throws IgniteCheckedException {
         Map<String,String> aliases = meta.getAliases();
 
@@ -1286,7 +1411,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             aliases = Collections.emptyMap();
 
         for (Map.Entry<String, Class<?>> entry : meta.getAscendingFields().entrySet()) {
-            PortableProperty prop = buildPortableProperty(entry.getKey(), entry.getValue(), aliases);
+            BinaryProperty prop = buildBinaryProperty(entry.getKey(), entry.getValue(), aliases);
 
             d.addProperty(prop, false);
 
@@ -1298,7 +1423,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         }
 
         for (Map.Entry<String, Class<?>> entry : meta.getDescendingFields().entrySet()) {
-            PortableProperty prop = buildPortableProperty(entry.getKey(), entry.getValue(), aliases);
+            BinaryProperty prop = buildBinaryProperty(entry.getKey(), entry.getValue(), aliases);
 
             d.addProperty(prop, false);
 
@@ -1310,7 +1435,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         }
 
         for (String txtIdx : meta.getTextFields()) {
-            PortableProperty prop = buildPortableProperty(txtIdx, String.class, aliases);
+            BinaryProperty prop = buildBinaryProperty(txtIdx, String.class, aliases);
 
             d.addProperty(prop, false);
 
@@ -1328,7 +1453,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                 int order = 0;
 
                 for (Map.Entry<String, IgniteBiTuple<Class<?>, Boolean>> idxField : idxFields.entrySet()) {
-                    PortableProperty prop = buildPortableProperty(idxField.getKey(), idxField.getValue().get1(), aliases);
+                    BinaryProperty prop = buildBinaryProperty(idxField.getKey(), idxField.getValue().get1(), aliases);
 
                     d.addProperty(prop, false);
 
@@ -1342,7 +1467,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         }
 
         for (Map.Entry<String, Class<?>> entry : meta.getQueryFields().entrySet()) {
-            PortableProperty prop = buildPortableProperty(entry.getKey(), entry.getValue(), aliases);
+            BinaryProperty prop = buildBinaryProperty(entry.getKey(), entry.getValue(), aliases);
 
             if (!d.props.containsKey(prop.name()))
                 d.addProperty(prop, false);
@@ -1350,20 +1475,20 @@ public class GridQueryProcessor extends GridProcessorAdapter {
     }
 
     /**
-     * Processes declarative metadata for portable object.
+     * Processes declarative metadata for binary object.
      *
      * @param qryEntity Declared metadata.
      * @param d Type descriptor.
      * @throws IgniteCheckedException If failed.
      */
-    private void processPortableMeta(QueryEntity qryEntity, TypeDescriptor d) throws IgniteCheckedException {
+    private void processBinaryMeta(QueryEntity qryEntity, TypeDescriptor d) throws IgniteCheckedException {
         Map<String,String> aliases = qryEntity.getAliases();
 
         if (aliases == null)
             aliases = Collections.emptyMap();
 
         for (Map.Entry<String, String> entry : qryEntity.getFields().entrySet()) {
-            PortableProperty prop = buildPortableProperty(entry.getKey(), U.classForName(entry.getValue(), Object.class), aliases);
+            BinaryProperty prop = buildBinaryProperty(entry.getKey(), U.classForName(entry.getValue(), Object.class), aliases);
 
             d.addProperty(prop, false);
         }
@@ -1372,13 +1497,17 @@ public class GridQueryProcessor extends GridProcessorAdapter {
     }
 
     /**
-     * Processes declarative metadata for portable object.
+     * Processes declarative metadata for binary object.
      *
      * @param qryEntity Declared metadata.
      * @param d Type descriptor.
      * @throws IgniteCheckedException If failed.
      */
-    private void processClassMeta(QueryEntity qryEntity, TypeDescriptor d) throws IgniteCheckedException {
+    private void processClassMeta(
+        QueryEntity qryEntity,
+        TypeDescriptor d,
+        CacheObjectContext coCtx
+    ) throws IgniteCheckedException {
         Map<String,String> aliases = qryEntity.getAliases();
 
         if (aliases == null)
@@ -1390,7 +1519,8 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                 d.valueClass(),
                 entry.getKey(),
                 U.classForName(entry.getValue(), Object.class),
-                aliases);
+                aliases,
+                coCtx);
 
 
             d.addProperty(prop, false);
@@ -1453,18 +1583,18 @@ public class GridQueryProcessor extends GridProcessorAdapter {
     }
 
     /**
-     * Builds portable object property.
+     * Builds binary object property.
      *
      * @param pathStr String representing path to the property. May contains dots '.' to identify
      *      nested fields.
      * @param resType Result type.
      * @param aliases Aliases.
-     * @return Portable property.
+     * @return Binary property.
      */
-    private PortableProperty buildPortableProperty(String pathStr, Class<?> resType, Map<String,String> aliases) {
+    private BinaryProperty buildBinaryProperty(String pathStr, Class<?> resType, Map<String,String> aliases) {
         String[] path = pathStr.split("\\.");
 
-        PortableProperty res = null;
+        BinaryProperty res = null;
 
         StringBuilder fullName = new StringBuilder();
 
@@ -1476,7 +1606,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
             String alias = aliases.get(fullName.toString());
 
-            res = new PortableProperty(prop, res, resType, alias);
+            res = new BinaryProperty(prop, res, resType, alias);
         }
 
         return res;
@@ -1492,16 +1622,17 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      * @throws IgniteCheckedException If failed.
      */
     private static ClassProperty buildClassProperty(Class<?> keyCls, Class<?> valCls, String pathStr, Class<?> resType,
-        Map<String,String> aliases) throws IgniteCheckedException {
+        Map<String,String> aliases, CacheObjectContext coCtx) throws IgniteCheckedException {
         ClassProperty res = buildClassProperty(
             true,
             keyCls,
             pathStr,
             resType,
-            aliases);
+            aliases,
+            coCtx);
 
-        if (res == null) // We check key before value consistently with PortableProperty.
-            res = buildClassProperty(false, valCls, pathStr, resType, aliases);
+        if (res == null) // We check key before value consistently with BinaryProperty.
+            res = buildClassProperty(false, valCls, pathStr, resType, aliases, coCtx);
 
         if (res == null)
             throw new IgniteCheckedException("Failed to initialize property '" + pathStr + "' for " +
@@ -1520,7 +1651,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      * @return Property instance corresponding to the given path.
      */
     static ClassProperty buildClassProperty(boolean key, Class<?> cls, String pathStr, Class<?> resType,
-        Map<String,String> aliases) {
+        Map<String,String> aliases, CacheObjectContext coCtx) {
         String[] path = pathStr.split("\\.");
 
         ClassProperty res = null;
@@ -1535,25 +1666,41 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
             String alias = aliases.get(fullName.toString());
 
-            ClassProperty tmp;
+            StringBuilder bld = new StringBuilder("get");
+
+            bld.append(prop);
+
+            bld.setCharAt(3, Character.toUpperCase(bld.charAt(3)));
+
+            ClassProperty tmp = null;
 
             try {
-                StringBuilder bld = new StringBuilder("get");
-
-                bld.append(prop);
-
-                bld.setCharAt(3, Character.toUpperCase(bld.charAt(3)));
-
-                tmp = new ClassProperty(cls.getMethod(bld.toString()), key, alias);
+                tmp = new ClassProperty(cls.getMethod(bld.toString()), key, alias, coCtx);
             }
             catch (NoSuchMethodException ignore) {
+                // No-op.
+            }
+
+            if (tmp == null) {
                 try {
-                    tmp = new ClassProperty(cls.getDeclaredField(prop), key, alias);
+                    tmp = new ClassProperty(cls.getDeclaredField(prop), key, alias, coCtx);
                 }
                 catch (NoSuchFieldException ignored) {
-                    return null;
+                    // No-op.
                 }
             }
+
+            if (tmp == null) {
+                try {
+                    tmp = new ClassProperty(cls.getMethod(prop), key, alias, coCtx);
+                }
+                catch (NoSuchMethodException ignored) {
+                    // No-op.
+                }
+            }
+
+            if (tmp == null)
+                return null;
 
             tmp.parent(res);
 
@@ -1667,34 +1814,9 @@ public class GridQueryProcessor extends GridProcessorAdapter {
     }
 
     /**
-     *
-     */
-    private abstract static class Property {
-        /**
-         * Gets this property value from the given object.
-         *
-         * @param key Key.
-         * @param val Value.
-         * @return Property value.
-         * @throws IgniteCheckedException If failed.
-         */
-        public abstract Object value(Object key, Object val) throws IgniteCheckedException;
-
-        /**
-         * @return Property name.
-         */
-        public abstract String name();
-
-        /**
-         * @return Class member type.
-         */
-        public abstract Class<?> type();
-    }
-
-    /**
      * Description of type property.
      */
-    private static class ClassProperty extends Property {
+    private static class ClassProperty extends GridQueryProperty {
         /** */
         private final Member member;
 
@@ -1710,12 +1832,15 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         /** */
         private boolean key;
 
+        /** */
+        private CacheObjectContext coCtx;
+
         /**
          * Constructor.
          *
          * @param member Element.
          */
-        ClassProperty(Member member, boolean key, String name) {
+        ClassProperty(Member member, boolean key, String name, @Nullable CacheObjectContext coCtx) {
             this.member = member;
             this.key = key;
 
@@ -1726,11 +1851,13 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             ((AccessibleObject) member).setAccessible(true);
 
             field = member instanceof Field;
+
+            this.coCtx = coCtx;
         }
 
         /** {@inheritDoc} */
         @Override public Object value(Object key, Object val) throws IgniteCheckedException {
-            Object x = this.key ? key : val;
+            Object x = unwrap(this.key ? key : val);
 
             if (parent != null)
                 x = parent.value(key, val);
@@ -1753,6 +1880,16 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             catch (Exception e) {
                 throw new IgniteCheckedException(e);
             }
+        }
+
+        /**
+         * Unwraps cache object, if needed.
+         *
+         * @param o Object to unwrap.
+         * @return Unwrapped object.
+         */
+        private Object unwrap(Object o) {
+            return coCtx == null ? o : o instanceof CacheObject ? ((CacheObject)o).value(coCtx, false) : o;
         }
 
         /** {@inheritDoc} */
@@ -1789,7 +1926,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
     /**
      *
      */
-    private class PortableProperty extends Property {
+    private class BinaryProperty extends GridQueryProperty {
         /** Property name. */
         private String propName;
 
@@ -1797,7 +1934,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         private String alias;
 
         /** Parent property. */
-        private PortableProperty parent;
+        private BinaryProperty parent;
 
         /** Result class. */
         private Class<?> type;
@@ -1808,6 +1945,9 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         /** Binary field to speed-up deserialization. */
         private volatile BinaryField field;
 
+        /** Flag indicating that we already tried to take a field. */
+        private volatile boolean fieldTaken;
+
         /**
          * Constructor.
          *
@@ -1815,7 +1955,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
          * @param parent Parent property.
          * @param type Result type.
          */
-        private PortableProperty(String propName, PortableProperty parent, Class<?> type, String alias) {
+        private BinaryProperty(String propName, BinaryProperty parent, Class<?> type, String alias) {
             this.propName = propName;
             this.alias = F.isEmpty(alias) ? propName : alias;
             this.parent = parent;
@@ -1832,15 +1972,15 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                 if (obj == null)
                     return null;
 
-                if (!ctx.cacheObjects().isPortableObject(obj))
-                    throw new IgniteCheckedException("Non-portable object received as a result of property extraction " +
+                if (!ctx.cacheObjects().isBinaryObject(obj))
+                    throw new IgniteCheckedException("Non-binary object received as a result of property extraction " +
                         "[parent=" + parent + ", propName=" + propName + ", obj=" + obj + ']');
             }
             else {
                 int isKeyProp0 = isKeyProp;
 
                 if (isKeyProp0 == 0) {
-                    // Key is allowed to be a non-portable object here.
+                    // Key is allowed to be a non-binary object here.
                     // We check key before value consistently with ClassProperty.
                     if (key instanceof BinaryObject && ((BinaryObject)key).hasField(propName))
                         isKeyProp = isKeyProp0 = 1;
@@ -1861,7 +2001,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
             BinaryObject obj0 = (BinaryObject)obj;
 
-            return binaryField(obj0).value(obj0);
+            return fieldValue(obj0);
         }
 
         /**
@@ -1873,16 +2013,37 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         private BinaryField binaryField(BinaryObject obj) {
             BinaryField field0 = field;
 
-            if (field0 == null)
-            {
-                field0 = obj.fieldDescriptor(propName);
+            if (field0 == null && !fieldTaken) {
+                BinaryType type = obj.type();
 
-                assert field0 != null;
+                if (type != null) {
+                    field0 = type.field(propName);
 
-                field = field0;
+                    assert field0 != null;
+
+                    field = field0;
+                }
+
+                fieldTaken = true;
             }
 
             return field0;
+        }
+
+        /**
+         * Gets field value for the given binary object.
+         *
+         * @param obj Binary object.
+         * @return Field value.
+         */
+        @SuppressWarnings("IfMayBeConditional")
+        private Object fieldValue(BinaryObject obj) {
+            BinaryField field = binaryField(obj);
+
+            if (field != null)
+                return field.value(obj);
+            else
+                return obj.field(propName);
         }
 
         /** {@inheritDoc} */
@@ -1909,7 +2070,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
         /** */
         @GridToStringExclude
-        private final Map<String, Property> props = new HashMap<>();
+        private final Map<String, GridQueryProperty> props = new HashMap<>();
 
         /** */
         @GridToStringInclude
@@ -1964,11 +2125,16 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         }
 
         /** {@inheritDoc} */
+        @Override public GridQueryProperty property(String name) {
+            return props.get(name);
+        }
+
+        /** {@inheritDoc} */
         @SuppressWarnings("unchecked")
         @Override public <T> T value(String field, Object key, Object val) throws IgniteCheckedException {
             assert field != null;
 
-            Property prop = props.get(field);
+            GridQueryProperty prop = props.get(field);
 
             if (prop == null)
                 throw new IgniteCheckedException("Failed to find field '" + field + "' in type '" + name + "'.");
@@ -2067,7 +2233,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
          * @param failOnDuplicate Fail on duplicate flag.
          * @throws IgniteCheckedException In case of error.
          */
-        public void addProperty(Property prop, boolean failOnDuplicate) throws IgniteCheckedException {
+        public void addProperty(GridQueryProperty prop, boolean failOnDuplicate) throws IgniteCheckedException {
             String name = prop.name();
 
             if (props.put(name, prop) != null && failOnDuplicate)

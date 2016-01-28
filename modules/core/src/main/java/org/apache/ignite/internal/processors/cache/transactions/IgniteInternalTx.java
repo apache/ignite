@@ -160,6 +160,12 @@ public interface IgniteInternalTx extends AutoCloseable, GridTimeoutObject {
     public long timeout(long timeout);
 
     /**
+     * Changes transaction state from COMMITTING to MARKED_ROLLBACK.
+     * Must be called only from thread committing transaction.
+     */
+    public void errorWhenCommitting();
+
+    /**
      * Modify the transaction associated with the current thread such that the
      * only possible outcome of the transaction is to roll back the
      * transaction.
@@ -275,9 +281,9 @@ public interface IgniteInternalTx extends AutoCloseable, GridTimeoutObject {
     public boolean implicitSingle();
 
     /**
-     * @return Collection of cache IDs involved in this transaction.
+     * @return Transaction state.
      */
-    public Collection<Integer> activeCacheIds();
+    public IgniteTxState txState();
 
     /**
      * @return {@code true} or {@code false} if the deployment is enabled or disabled for all active caches involved
@@ -536,9 +542,8 @@ public interface IgniteInternalTx extends AutoCloseable, GridTimeoutObject {
 
     /**
      * @param commitVer Commit version.
-     * @return {@code True} if version was set.
      */
-    public boolean commitVersion(GridCacheVersion commitVer);
+    public void commitVersion(GridCacheVersion commitVer);
 
     /**
      * @return End version (a.k.a. <tt>'tnc'</tt> or <tt>'transaction number counter'</tt>)
@@ -668,14 +673,6 @@ public interface IgniteInternalTx extends AutoCloseable, GridTimeoutObject {
      * @return {@code True} if serializable.
      */
     public boolean serializable();
-
-    /**
-     * Checks whether given key has been removed within transaction.
-     *
-     * @param key Key to check.
-     * @return {@code True} if key has been removed.
-     */
-    public boolean removed(IgniteTxKey key);
 
     /**
      * Gets allowed remaining time for this transaction.

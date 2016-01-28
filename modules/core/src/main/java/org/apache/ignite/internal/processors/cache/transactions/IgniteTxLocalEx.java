@@ -64,7 +64,7 @@ public interface IgniteTxLocalEx extends IgniteInternalTx {
     /**
      * @param cacheCtx Cache context.
      * @param keys Keys to get.
-     * @param deserializePortable Deserialize portable flag.
+     * @param deserializeBinary Deserialize binary flag.
      * @param skipVals Skip values flag.
      * @param keepCacheObjects Keep cache objects
      * @param skipStore Skip store flag.
@@ -73,7 +73,7 @@ public interface IgniteTxLocalEx extends IgniteInternalTx {
     public <K, V> IgniteInternalFuture<Map<K, V>> getAllAsync(
         GridCacheContext cacheCtx,
         Collection<KeyCacheObject> keys,
-        boolean deserializePortable,
+        boolean deserializeBinary,
         boolean skipVals,
         boolean keepCacheObjects,
         boolean skipStore);
@@ -93,9 +93,37 @@ public interface IgniteTxLocalEx extends IgniteInternalTx {
 
     /**
      * @param cacheCtx Cache context.
+     * @param key Key.
+     * @param val Value.
+     * @param retval Return value flag.
+     * @param filter Filter.
+     * @return Future for put operation.
+     */
+    public <K, V> IgniteInternalFuture<GridCacheReturn> putAsync(
+        GridCacheContext cacheCtx,
+        K key,
+        V val,
+        boolean retval,
+        CacheEntryPredicate[] filter);
+
+    /**
+     * @param cacheCtx Cache context.
+     * @param key Key.
+     * @param entryProcessor Entry processor.
+     * @param invokeArgs Optional arguments for entry processor.
+     * @return Operation future.
+     */
+    public <K, V> IgniteInternalFuture<GridCacheReturn> invokeAsync(
+        GridCacheContext cacheCtx,
+        K key,
+        EntryProcessor<K, V, Object> entryProcessor,
+        Object... invokeArgs);
+
+    /**
+     * @param cacheCtx Cache context.
      * @param map Entry processors map.
      * @param invokeArgs Optional arguments for entry processor.
-     * @return Transform operation future.
+     * @return Operation future.
      */
     public <K, V, T> IgniteInternalFuture<GridCacheReturn> invokeAsync(
         GridCacheContext cacheCtx,

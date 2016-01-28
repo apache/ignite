@@ -67,6 +67,13 @@ public class PlatformComputeBroadcastTask extends ComputeTaskAdapter<Object, Col
 
         /** {@inheritDoc} */
         @Nullable @Override public Object execute() {
+            try {
+                Thread.sleep(50); // Short sleep for cancellation tests.
+            }
+            catch (InterruptedException ignored) {
+                // No-op.
+            }
+
             return ignite.cluster().localNode().id();
         }
     }

@@ -34,17 +34,53 @@ import org.apache.ignite.resources.SpringApplicationContextResource;
  *
  * <h2 class="header">Spring Example</h2>
  * <pre name="code" class="xml">
- *     &lt;bean id= "simpleDataSource" class="org.h2.jdbcx.JdbcDataSource"/&gt;
+ *     &lt;bean id= "myDataSource" class="org.h2.jdbcx.JdbcDataSource"/&gt;
  *
  *     &lt;bean id="ignite.cfg" class="org.apache.ignite.configuration.IgniteConfiguration"&gt;
  *          ...
  *          &lt;property name="cacheConfiguration"&gt;
  *               &lt;list&gt;
  *                  &lt;bean class="org.apache.ignite.configuration.CacheConfiguration"&gt;
+ *                      &lt;property name="name" value="myCache" /&gt;
  *                      ...
  *                      &lt;property name="cacheStoreFactory"&gt;
  *                          &lt;bean class="org.apache.ignite.cache.store.jdbc.CacheJdbcPojoStoreFactory"&gt;
- *                              &lt;property name="dataSourceBean" value = "simpleDataSource" /&gt;
+ *                              &lt;property name="dataSourceBean" value="myDataSource" /&gt;
+ *                              &lt;property name="types"&gt;
+ *                                  &lt;list&gt;
+ *                                      &lt;bean class="org.apache.ignite.cache.store.jdbc.JdbcType"&gt;
+ *                                          &lt;property name="cacheName" value="myCache" /&gt;
+ *                                          &lt;property name="databaseSchema" value="MY_DB_SCHEMA" /&gt;
+ *                                          &lt;property name="databaseTable" value="PERSON" /&gt;
+ *                                          &lt;property name="keyType" value="java.lang.Integer" /&gt;
+ *                                          &lt;property name="keyFields"&gt;
+ *                                              &lt;list&gt;
+ *                                                  &lt;bean class="org.apache.ignite.cache.store.jdbc.JdbcTypeField"&gt;
+ *                                                      &lt;property name="databaseFieldType" &gt;
+ *                                                          &lt;util:constant static-field="java.sql.Types.INTEGER"/&gt;
+ *                                                      &lt;/property&gt;
+ *                                                      &lt;property name="databaseFieldName" value="ID" /&gt;
+ *                                                      &lt;property name="javaFieldType" value="java.lang.Integer" /&gt;
+ *                                                      &lt;property name="javaFieldName" value="id" /&gt;
+ *                                                  &lt;/bean&gt;
+ *                                              &lt;/list&gt;
+ *                                          &lt;/property&gt;
+ *                                          &lt;property name="valueType" value="my.company.Person" /&gt;
+ *                                          &lt;property name="valueFields"&gt;
+ *                                              &lt;list&gt;
+ *                                                  &lt;bean class="org.apache.ignite.cache.store.jdbc.JdbcTypeField"&gt;
+ *                                                      &lt;property name="databaseFieldType" &gt;
+ *                                                          &lt;util:constant static-field="java.sql.Types.VARCHAR"/&gt;
+ *                                                      &lt;/property&gt;
+ *                                                      &lt;property name="databaseFieldName" value="NAME" /&gt;
+ *                                                      &lt;property name="javaFieldType" value="java.lang.String" /&gt;
+ *                                                      &lt;property name="javaFieldName" value="name" /&gt;
+ *                                                  &lt;/bean&gt;
+ *                                              &lt;/list&gt;
+ *                                          &lt;/property&gt;
+ *                                      &lt;/bean&gt;
+ *                                  &lt;/list&gt;
+ *                              &lt;/property&gt;
  *                          &lt;/bean&gt;
  *                      &lt;/property&gt;
  *                  &lt;/bean&gt;
@@ -57,64 +93,85 @@ import org.apache.ignite.resources.SpringApplicationContextResource;
  * <br>
  * For information about Spring framework visit <a href="http://www.springframework.org/">www.springframework.org</a>
  */
-public class CacheJdbcPojoStoreFactory<K, V> implements Factory<CacheJdbcPojoStore<K, V>> {
+public class CacheJdbcPojoStoreFactory<K, V> implements Factory<CacheAbstractJdbcStore<K, V>> {
     /** */
     private static final long serialVersionUID = 0L;
+
+    /** Default value for write attempts. */
+    public static final int DFLT_WRITE_ATTEMPTS = 2;
+
+    /** Default batch size for put and remove operations. */
+    public static final int DFLT_BATCH_SIZE = 512;
+
+    /** Default batch size for put and remove operations. */
+    public static final int DFLT_PARALLEL_LOAD_CACHE_MINIMUM_THRESHOLD = 512;
+
+    /** Maximum batch size for writeAll and deleteAll operations. */
+    private int batchSizw = DFLT_BATCH_SIZE;
 
     /** Name of data source bean. */
     private String dataSrcBean;
 
-    /** Data source. */
-    private transient DataSource dataSrc;
-
     /** Database dialect. */
     private JdbcDialect dialect;
 
+    /** Max workers thread count. These threads are responsible for load cache. */
+    private int maxPoolSize = Runtime.getRuntime().availableProcessors();
+
+    /** Maximum write attempts in case of database error. */
+    private int maxWriteAttempts = DFLT_WRITE_ATTEMPTS;
+
+    /** Parallel load cache minimum threshold. If {@code 0} then load sequentially. */
+    private int parallelLoadCacheMinThreshold = DFLT_PARALLEL_LOAD_CACHE_MINIMUM_THRESHOLD;
+
+    /** Hash calculator.  */
+    private JdbcTypeHasher hasher = JdbcTypeDefaultHasher.INSTANCE;
+
+    /** Types that store could process. */
+    private JdbcType[] types;
+
+    /** Data source. */
+    private transient DataSource dataSrc;
+
     /** Application context. */
     @SpringApplicationContextResource
-    private transient Object appContext;
+    private transient Object appCtx;
 
     /** {@inheritDoc} */
     @Override public CacheJdbcPojoStore<K, V> create() {
         CacheJdbcPojoStore<K, V> store = new CacheJdbcPojoStore<>();
 
+        store.setBatchSize(batchSizw);
         store.setDialect(dialect);
+        store.setMaximumPoolSize(maxPoolSize);
+        store.setMaximumWriteAttempts(maxWriteAttempts);
+        store.setParallelLoadCacheMinimumThreshold(parallelLoadCacheMinThreshold);
+        store.setTypes(types);
 
         if (dataSrc != null)
             store.setDataSource(dataSrc);
-        else if (dataSrcBean != null) {
-            if (appContext == null)
-                throw new IgniteException("Spring application context resource is not injected.");
+        else {
+            if (dataSrcBean != null) {
+                if (appCtx == null)
+                    throw new IgniteException("Spring application context resource is not injected.");
 
-            IgniteSpringHelper spring;
+                IgniteSpringHelper spring;
 
-            try {
-                spring = IgniteComponentType.SPRING.create(false);
+                try {
+                    spring = IgniteComponentType.SPRING.create(false);
 
-                DataSource data = spring.loadBeanFromAppContext(appContext, dataSrcBean);
+                    DataSource data = spring.loadBeanFromAppContext(appCtx, dataSrcBean);
 
-                store.setDataSource(data);
-            }
-            catch (Exception e) {
-                throw new IgniteException("Failed to load bean in application context [beanName=" + dataSrcBean +
-                    ", igniteConfig=" + appContext + ']', e);
+                    store.setDataSource(data);
+                }
+                catch (Exception e) {
+                    throw new IgniteException("Failed to load bean in application context [beanName=" + dataSrcBean +
+                        ", igniteConfig=" + appCtx + ']', e);
+                }
             }
         }
 
         return store;
-    }
-
-    /**
-     * Sets name of the data source bean.
-     *
-     * @param dataSrcBean Data source bean name.
-     * @return {@code This} for chaining.
-     * @see CacheJdbcPojoStore#setDataSource(DataSource)
-     */
-    public CacheJdbcPojoStoreFactory<K, V> setDataSourceBean(String dataSrcBean) {
-        this.dataSrcBean = dataSrcBean;
-
-        return this;
     }
 
     /**
@@ -131,13 +188,171 @@ public class CacheJdbcPojoStoreFactory<K, V> implements Factory<CacheJdbcPojoSto
     }
 
     /**
+     * Get maximum batch size for delete and delete operations.
+     *
+     * @return Maximum batch size.
+     */
+    public int getBatchSize() {
+        return batchSizw;
+    }
+
+    /**
+     * Set maximum batch size for write and delete operations.
+     *
+     * @param batchSize Maximum batch size.
+     * @return {@code This} for chaining.
+     */
+    public CacheJdbcPojoStoreFactory setBatchSize(int batchSize) {
+        this.batchSizw = batchSize;
+
+        return this;
+    }
+
+    /**
+     * Gets name of the data source bean.
+     *
+     * @return Data source bean name.
+     */
+    public String getDataSourceBean() {
+        return dataSrcBean;
+    }
+
+    /**
+     * Sets name of the data source bean.
+     *
+     * @param dataSrcBean Data source bean name.
+     * @return {@code This} for chaining.
+     */
+    public CacheJdbcPojoStoreFactory setDataSourceBean(String dataSrcBean) {
+        this.dataSrcBean = dataSrcBean;
+
+        return this;
+    }
+
+    /**
+     * Get database dialect.
+     *
+     * @return Database dialect.
+     */
+    public JdbcDialect getDialect() {
+        return dialect;
+    }
+
+    /**
      * Set database dialect.
      *
      * @param dialect Database dialect.
-     * @see CacheJdbcPojoStore#setDialect(JdbcDialect)
+     * @return {@code This} for chaining.
      */
-    public void setDialect(JdbcDialect dialect) {
+    public CacheJdbcPojoStoreFactory setDialect(JdbcDialect dialect) {
         this.dialect = dialect;
+
+        return this;
+    }
+
+    /**
+     * Get maximum workers thread count. These threads are responsible for queries execution.
+     *
+     * @return Maximum workers thread count.
+     */
+    public int getMaximumPoolSize() {
+        return maxPoolSize;
+    }
+
+    /**
+     * Set Maximum workers thread count. These threads are responsible for queries execution.
+     *
+     * @param maxPoolSize Max workers thread count.
+     * @return {@code This} for chaining.
+     */
+    public CacheJdbcPojoStoreFactory setMaximumPoolSize(int maxPoolSize) {
+        this.maxPoolSize = maxPoolSize;
+
+        return this;
+    }
+
+    /**
+     * Gets maximum number of write attempts in case of database error.
+     *
+     * @return Maximum number of write attempts.
+     */
+    public int getMaximumWriteAttempts() {
+        return maxWriteAttempts;
+    }
+
+    /**
+     * Sets maximum number of write attempts in case of database error.
+     *
+     * @param maxWrtAttempts Number of write attempts.
+     * @return {@code This} for chaining.
+     */
+    public CacheJdbcPojoStoreFactory setMaximumWriteAttempts(int maxWrtAttempts) {
+        this.maxWriteAttempts = maxWrtAttempts;
+
+        return this;
+    }
+
+    /**
+     * Parallel load cache minimum row count threshold.
+     *
+     * @return If {@code 0} then load sequentially.
+     */
+    public int getParallelLoadCacheMinimumThreshold() {
+        return parallelLoadCacheMinThreshold;
+    }
+
+    /**
+     * Parallel load cache minimum row count threshold.
+     *
+     * @param parallelLoadCacheMinThreshold Minimum row count threshold. If {@code 0} then load sequentially.
+     * @return {@code This} for chaining.
+     */
+    public CacheJdbcPojoStoreFactory setParallelLoadCacheMinimumThreshold(int parallelLoadCacheMinThreshold) {
+        this.parallelLoadCacheMinThreshold = parallelLoadCacheMinThreshold;
+
+        return this;
+    }
+
+    /**
+     * Gets types known by store.
+     *
+     * @return Types known by store.
+     */
+    public JdbcType[] getTypes() {
+        return types;
+    }
+
+    /**
+     * Sets store configurations.
+     *
+     * @param types Store should process.
+     * @return {@code This} for chaining.
+     */
+    public CacheJdbcPojoStoreFactory setTypes(JdbcType... types) {
+        this.types = types;
+
+        return this;
+    }
+
+    /**
+     * Gets hash code calculator.
+     *
+     * @return Hash code calculator.
+     */
+    public JdbcTypeHasher getHasher() {
+        return hasher;
+    }
+
+    /**
+     * Sets hash code calculator.
+     *
+     * @param hasher Hash code calculator.
+     * @return {@code This} for chaining.
+     */
+    public CacheJdbcPojoStoreFactory setHasher(JdbcTypeHasher hasher) {
+        this.hasher = hasher;
+
+        return this;
     }
 
     /** {@inheritDoc} */

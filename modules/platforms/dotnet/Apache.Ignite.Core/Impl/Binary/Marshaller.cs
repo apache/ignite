@@ -19,7 +19,7 @@ namespace Apache.Ignite.Core.Impl.Binary
 {
     using System;
     using System.Collections.Generic;
-    using System.Globalization;
+    using System.Diagnostics;
     using System.Linq;
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Impl.Binary.IO;
@@ -112,11 +112,12 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// <returns>Serialized data as byte array.</returns>
         public byte[] Marshal<T>(T val)
         {
-            BinaryHeapStream stream = new BinaryHeapStream(128);
+            using (var stream = new BinaryHeapStream(128))
+            {
+                Marshal(val, stream);
 
-            Marshal(val, stream);
-
-            return stream.GetArrayCopy();
+                return stream.GetArrayCopy();
+            }
         }
 
         /// <summary>
@@ -149,14 +150,14 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// </summary>
         /// <param name="writer">Writer.</param>
         /// <returns>Dictionary with metadata.</returns>
-        public void FinishMarshal(IBinaryWriter writer)
+        public void FinishMarshal(BinaryWriter writer)
         {
-            var meta = ((BinaryWriter) writer).GetBinaryTypes();
+            var metas = writer.GetBinaryTypes();
 
             var ignite = Ignite;
 
-            if (ignite != null && meta != null && meta.Count > 0)
-                ignite.PutBinaryTypes(meta);
+            if (ignite != null && metas != null && metas.Count > 0)
+                ignite.PutBinaryTypes(metas);
         }
 
         /// <summary>
@@ -170,7 +171,10 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// </returns>
         public T Unmarshal<T>(byte[] data, bool keepBinary)
         {
-            return Unmarshal<T>(new BinaryHeapStream(data), keepBinary);
+            using (var stream = new BinaryHeapStream(data))
+            {
+                return Unmarshal<T>(stream, keepBinary);
+            }
         }
 
         /// <summary>
@@ -183,7 +187,10 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// </returns>
         public T Unmarshal<T>(byte[] data, BinaryMode mode = BinaryMode.Deserialize)
         {
-            return Unmarshal<T>(new BinaryHeapStream(data), mode);
+            using (var stream = new BinaryHeapStream(data))
+            {
+                return Unmarshal<T>(stream, mode);
+            }
         }
 
         /// <summary>
@@ -266,7 +273,22 @@ namespace Apache.Ignite.Core.Impl.Binary
                     return meta;
             }
 
-            return BinaryType.EmptyMeta;
+            return BinaryType.Empty;
+        }
+
+        /// <summary>
+        /// Puts the binary type metadata to Ignite.
+        /// </summary>
+        /// <param name="desc">Descriptor.</param>
+        /// <param name="fields">Fields.</param>
+        public void PutBinaryType(IBinaryTypeDescriptor desc, IDictionary<string, int> fields = null)
+        {
+            Debug.Assert(desc != null);
+
+            GetBinaryTypeHandler(desc);  // ensure that handler exists
+
+            if (Ignite != null)
+                Ignite.PutBinaryTypes(new[] {new BinaryType(desc, fields)});
         }
 
         /// <summary>
@@ -287,7 +309,7 @@ namespace Apache.Ignite.Core.Impl.Binary
                         IDictionary<int, BinaryTypeHolder> metas0 =
                             new Dictionary<int, BinaryTypeHolder>(_metas);
 
-                        holder = new BinaryTypeHolder(desc.TypeId, desc.TypeName, desc.AffinityKeyFieldName);
+                        holder = new BinaryTypeHolder(desc.TypeId, desc.TypeName, desc.AffinityKeyFieldName, desc.IsEnum);
 
                         metas0[desc.TypeId] = holder;
 
@@ -298,7 +320,7 @@ namespace Apache.Ignite.Core.Impl.Binary
 
             if (holder != null)
             {
-                ICollection<int> ids = holder.FieldIds();
+                ICollection<int> ids = holder.GetFieldIds();
 
                 bool newType = ids.Count == 0 && !holder.Saved();
 
@@ -312,23 +334,20 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// Callback invoked when metadata has been sent to the server and acknowledged by it.
         /// </summary>
         /// <param name="newMetas">Binary types.</param>
-        public void OnBinaryTypesSent(IDictionary<int, IBinaryType> newMetas)
+        public void OnBinaryTypesSent(IEnumerable<BinaryType> newMetas)
         {
-            foreach (KeyValuePair<int, IBinaryType> metaEntry in newMetas)
+            foreach (var meta in newMetas)
             {
-                BinaryType meta = (BinaryType) metaEntry.Value;
+                var mergeInfo = new Dictionary<int, Tuple<string, int>>(meta.GetFieldsMap().Count);
 
-                IDictionary<int, Tuple<string, int>> mergeInfo =
-                    new Dictionary<int, Tuple<string, int>>(meta.FieldsMap().Count);
-
-                foreach (KeyValuePair<string, int> fieldMeta in meta.FieldsMap())
+                foreach (KeyValuePair<string, int> fieldMeta in meta.GetFieldsMap())
                 {
-                    int fieldId = BinaryUtils.FieldId(metaEntry.Key, fieldMeta.Key, null, null);
+                    int fieldId = BinaryUtils.FieldId(meta.TypeId, fieldMeta.Key, null, null);
 
                     mergeInfo[fieldId] = new Tuple<string, int>(fieldMeta.Key, fieldMeta.Value);
                 }
 
-                _metas[metaEntry.Key].Merge(mergeInfo);
+                _metas[meta.TypeId].Merge(mergeInfo);
             }
         }
         
@@ -396,7 +415,7 @@ namespace Apache.Ignite.Core.Impl.Binary
             if (type != null)
             {
                 // Type is found.
-                var typeName = GetTypeName(type);
+                var typeName = BinaryUtils.GetTypeName(type);
 
                 int typeId = BinaryUtils.TypeId(typeName, nameMapper, idMapper);
 
@@ -408,8 +427,15 @@ namespace Apache.Ignite.Core.Impl.Binary
                 if (refSerializer != null)
                     refSerializer.Register(type, typeId, nameMapper, idMapper);
 
+                if (typeCfg.IsEnum != type.IsEnum)
+                    throw new BinaryObjectException(
+                        string.Format(
+                            "Invalid IsEnum flag in binary type configuration. " +
+                            "Configuration value: IsEnum={0}, actual type: IsEnum={1}",
+                            typeCfg.IsEnum, type.IsEnum));
+
                 AddType(type, typeId, typeName, true, keepDeserialized, nameMapper, idMapper, serializer,
-                    typeCfg.AffinityKeyFieldName);
+                    typeCfg.AffinityKeyFieldName, type.IsEnum);
             }
             else
             {
@@ -419,7 +445,7 @@ namespace Apache.Ignite.Core.Impl.Binary
                 int typeId = BinaryUtils.TypeId(typeName, nameMapper, idMapper);
 
                 AddType(null, typeId, typeName, true, keepDeserialized, nameMapper, idMapper, null,
-                    typeCfg.AffinityKeyFieldName);
+                    typeCfg.AffinityKeyFieldName, typeCfg.IsEnum);
             }
         }
 
@@ -434,7 +460,7 @@ namespace Apache.Ignite.Core.Impl.Binary
                 ? BinarizableSerializer.Instance 
                 : null;
         }
-        
+
         /// <summary>
         /// Add type.
         /// </summary>
@@ -447,9 +473,10 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// <param name="idMapper">ID mapper.</param>
         /// <param name="serializer">Serializer.</param>
         /// <param name="affKeyFieldName">Affinity key field name.</param>
+        /// <param name="isEnum">Enum flag.</param>
         private void AddType(Type type, int typeId, string typeName, bool userType, 
             bool keepDeserialized, IBinaryNameMapper nameMapper, IBinaryIdMapper idMapper,
-            IBinarySerializer serializer, string affKeyFieldName)
+            IBinarySerializer serializer, string affKeyFieldName, bool isEnum)
         {
             long typeKey = BinaryUtils.TypeKey(userType, typeId);
 
@@ -470,9 +497,8 @@ namespace Apache.Ignite.Core.Impl.Binary
             if (userType && _typeNameToDesc.ContainsKey(typeName))
                 throw new BinaryObjectException("Conflicting type name: " + typeName);
 
-            IBinaryTypeDescriptor descriptor =
-                new BinaryFullTypeDescriptor(type, typeId, typeName, userType, nameMapper, idMapper, serializer,
-                    keepDeserialized, affKeyFieldName);
+            var descriptor = new BinaryFullTypeDescriptor(type, typeId, typeName, userType, nameMapper, idMapper, 
+                serializer, keepDeserialized, affKeyFieldName, isEnum);
 
             if (type != null)
                 _typeToDesc[type] = descriptor;
@@ -492,7 +518,7 @@ namespace Apache.Ignite.Core.Impl.Binary
 
             var serializer = new BinarySystemTypeSerializer<T>(ctor);
 
-            AddType(type, typeId, GetTypeName(type), false, false, null, null, serializer, null);
+            AddType(type, typeId, BinaryUtils.GetTypeName(type), false, false, null, null, serializer, null, false);
         }
 
         /// <summary>
@@ -515,23 +541,6 @@ namespace Apache.Ignite.Core.Impl.Binary
             AddSystemType(BinaryUtils.TypeCacheEntryPredicateHolder, w => new CacheEntryFilterHolder(w));
             AddSystemType(BinaryUtils.TypeMessageListenerHolder, w => new MessageListenerHolder(w));
             AddSystemType(BinaryUtils.TypeStreamReceiverHolder, w => new StreamReceiverHolder(w));
-        }
-
-        /// <summary>
-        /// Gets the name of the type.
-        /// </summary>
-        /// <param name="type">The type.</param>
-        /// <returns>
-        /// Simple type name for non-generic types; simple type name with appended generic arguments for generic types.
-        /// </returns>
-        private static string GetTypeName(Type type)
-        {
-            if (!type.IsGenericType)
-                return type.Name;
-
-            var args = type.GetGenericArguments().Select(GetTypeName).Aggregate((x, y) => x + "," + y);
-
-            return string.Format(CultureInfo.InvariantCulture, "{0}[{1}]", type.Name, args);
         }
     }
 }

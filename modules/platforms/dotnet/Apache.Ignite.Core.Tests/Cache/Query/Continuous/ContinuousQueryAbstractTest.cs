@@ -32,9 +32,9 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
     using Apache.Ignite.Core.Cluster;
     using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Impl;
+    using Apache.Ignite.Core.Impl.Cache.Event;
     using Apache.Ignite.Core.Resource;
     using NUnit.Framework;
-    using CQU = Apache.Ignite.Core.Impl.Cache.Query.Continuous.ContinuousQueryUtils;
 
     /// <summary>
     /// Tests for continuous query.
@@ -69,14 +69,14 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
         private IIgnite grid2;
 
         /** Cache on the first node. */
-        private ICache<int, PortableEntry> cache1;
+        private ICache<int, BinarizableEntry> cache1;
 
         /** Cache on the second node. */
-        private ICache<int, PortableEntry> cache2;
+        private ICache<int, BinarizableEntry> cache2;
 
         /** Cache name. */
         private readonly string cacheName;
-        
+
         /// <summary>
         /// Constructor.
         /// </summary>
@@ -101,9 +101,9 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
 
             ICollection<BinaryTypeConfiguration> portTypeCfgs = new List<BinaryTypeConfiguration>();
 
-            portTypeCfgs.Add(new BinaryTypeConfiguration(typeof(PortableEntry)));
-            portTypeCfgs.Add(new BinaryTypeConfiguration(typeof(PortableFilter)));
-            portTypeCfgs.Add(new BinaryTypeConfiguration(typeof(KeepPortableFilter)));
+            portTypeCfgs.Add(new BinaryTypeConfiguration(typeof(BinarizableEntry)));
+            portTypeCfgs.Add(new BinaryTypeConfiguration(typeof(BinarizableFilter)));
+            portTypeCfgs.Add(new BinaryTypeConfiguration(typeof(KeepBinaryFilter)));
 
             portCfg.TypeConfigurations = portTypeCfgs;
 
@@ -114,11 +114,11 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
 
             cfg.GridName = "grid-1";
             grid1 = Ignition.Start(cfg);
-            cache1 = grid1.GetCache<int, PortableEntry>(cacheName);
+            cache1 = grid1.GetCache<int, BinarizableEntry>(cacheName);
 
             cfg.GridName = "grid-2";
             grid2 = Ignition.Start(cfg);
-            cache2 = grid2.GetCache<int, PortableEntry>(cacheName);
+            cache2 = grid2.GetCache<int, BinarizableEntry>(cacheName);
         }
 
         /// <summary>
@@ -139,10 +139,10 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
             CB_EVTS = new BlockingCollection<CallbackEvent>();
             FILTER_EVTS = new BlockingCollection<FilterEvent>();
 
-            AbstractFilter<PortableEntry>.res = true;
-            AbstractFilter<PortableEntry>.err = false;
-            AbstractFilter<PortableEntry>.marshErr = false;
-            AbstractFilter<PortableEntry>.unmarshErr = false;
+            AbstractFilter<BinarizableEntry>.res = true;
+            AbstractFilter<BinarizableEntry>.err = false;
+            AbstractFilter<BinarizableEntry>.marshErr = false;
+            AbstractFilter<BinarizableEntry>.unmarshErr = false;
 
             cache1.Remove(PrimaryKey(cache1));
             cache1.Remove(PrimaryKey(cache2));
@@ -159,7 +159,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
         [Test]
         public void TestValidation()
         {
-            Assert.Throws<ArgumentException>(() => { cache1.QueryContinuous(new ContinuousQuery<int, PortableEntry>(null)); });
+            Assert.Throws<ArgumentException>(() => { cache1.QueryContinuous(new ContinuousQuery<int, BinarizableEntry>(null)); });
         }
 
         /// <summary>
@@ -171,8 +171,8 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
             int key1 = PrimaryKey(cache1);
             int key2 = PrimaryKey(cache2);
 
-            ContinuousQuery<int, PortableEntry> qry =
-                new ContinuousQuery<int, PortableEntry>(new Listener<PortableEntry>());
+            ContinuousQuery<int, BinarizableEntry> qry =
+                new ContinuousQuery<int, BinarizableEntry>(new Listener<BinarizableEntry>());
 
             IDisposable qryHnd;
 
@@ -208,9 +208,9 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
             int key1 = PrimaryKey(cache1);
             int key2 = PrimaryKey(cache2);
             
-            ContinuousQuery<int, PortableEntry> qry = loc ?
-                new ContinuousQuery<int, PortableEntry>(new Listener<PortableEntry>(), true) :
-                new ContinuousQuery<int, PortableEntry>(new Listener<PortableEntry>());
+            ContinuousQuery<int, BinarizableEntry> qry = loc ?
+                new ContinuousQuery<int, BinarizableEntry>(new Listener<BinarizableEntry>(), true) :
+                new ContinuousQuery<int, BinarizableEntry>(new Listener<BinarizableEntry>());
 
             using (cache1.QueryContinuous(qry))
             {
@@ -260,21 +260,21 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
         [Test]
         public void TestCallbackInjection()
         {
-            Listener<PortableEntry> cb = new Listener<PortableEntry>();
+            Listener<BinarizableEntry> cb = new Listener<BinarizableEntry>();
 
             Assert.IsNull(cb.ignite);
 
-            using (cache1.QueryContinuous(new ContinuousQuery<int, PortableEntry>(cb)))
+            using (cache1.QueryContinuous(new ContinuousQuery<int, BinarizableEntry>(cb)))
             {
                 Assert.IsNotNull(cb.ignite);
             }
         }
         
         /// <summary>
-        /// Test portable filter logic.
+        /// Test binarizable filter logic.
         /// </summary>
         [Test]
-        public void TestFilterPortable()
+        public void TestFilterBinarizable()
         {
             CheckFilter(true, false);
         }
@@ -291,17 +291,17 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
         /// <summary>
         /// Check filter.
         /// </summary>
-        /// <param name="portable">Portable.</param>
+        /// <param name="binarizable">Binarizable.</param>
         /// <param name="loc">Local cache flag.</param>
-        protected void CheckFilter(bool portable, bool loc)
+        protected void CheckFilter(bool binarizable, bool loc)
         {
-            ICacheEntryEventListener<int, PortableEntry> lsnr = new Listener<PortableEntry>();
-            ICacheEntryEventFilter<int, PortableEntry> filter = 
-                portable ? (AbstractFilter<PortableEntry>)new PortableFilter() : new SerializableFilter();
+            ICacheEntryEventListener<int, BinarizableEntry> lsnr = new Listener<BinarizableEntry>();
+            ICacheEntryEventFilter<int, BinarizableEntry> filter =
+                binarizable ? (AbstractFilter<BinarizableEntry>) new BinarizableFilter() : new SerializableFilter();
 
-            ContinuousQuery<int, PortableEntry> qry = loc ? 
-                new ContinuousQuery<int, PortableEntry>(lsnr, filter, true) : 
-                new ContinuousQuery<int, PortableEntry>(lsnr, filter);
+            ContinuousQuery<int, BinarizableEntry> qry = loc ? 
+                new ContinuousQuery<int, BinarizableEntry>(lsnr, filter, true) : 
+                new ContinuousQuery<int, BinarizableEntry>(lsnr, filter);
 
             using (cache1.QueryContinuous(qry))
             {
@@ -326,7 +326,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
                     CheckCallbackSingle(key2, null, Entry(key2));
                 }
 
-                AbstractFilter<PortableEntry>.res = false;
+                AbstractFilter<BinarizableEntry>.res = false;
 
                 // Ignored put from local node.
                 cache1.GetAndPut(key1, Entry(key1 + 1));
@@ -346,11 +346,11 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
         }
 
         /// <summary>
-        /// Test portable filter error during invoke.
+        /// Test binarizable filter error during invoke.
         /// </summary>
         [Ignore("IGNITE-521")]
         [Test]
-        public void TestFilterInvokeErrorPortable()
+        public void TestFilterInvokeErrorBinarizable()
         {
             CheckFilterInvokeError(true);
         }
@@ -368,15 +368,15 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
         /// <summary>
         /// Check filter error handling logic during invoke.
         /// </summary>
-        private void CheckFilterInvokeError(bool portable)
+        private void CheckFilterInvokeError(bool binarizable)
         {
-            AbstractFilter<PortableEntry>.err = true;
+            AbstractFilter<BinarizableEntry>.err = true;
 
-            ICacheEntryEventListener<int, PortableEntry> lsnr = new Listener<PortableEntry>();
-            ICacheEntryEventFilter<int, PortableEntry> filter =
-                portable ? (AbstractFilter<PortableEntry>) new PortableFilter() : new SerializableFilter();
+            ICacheEntryEventListener<int, BinarizableEntry> lsnr = new Listener<BinarizableEntry>();
+            ICacheEntryEventFilter<int, BinarizableEntry> filter =
+                binarizable ? (AbstractFilter<BinarizableEntry>) new BinarizableFilter() : new SerializableFilter();
 
-            ContinuousQuery<int, PortableEntry> qry = new ContinuousQuery<int, PortableEntry>(lsnr, filter);
+            ContinuousQuery<int, BinarizableEntry> qry = new ContinuousQuery<int, BinarizableEntry>(lsnr, filter);
 
             using (cache1.QueryContinuous(qry))
             {
@@ -415,10 +415,10 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
         }
 
         /// <summary>
-        /// Test portable filter marshalling error.
+        /// Test binarizable filter marshalling error.
         /// </summary>
         [Test]
-        public void TestFilterMarshalErrorPortable()
+        public void TestFilterMarshalErrorBinarizable()
         {
             CheckFilterMarshalError(true);
         }
@@ -435,16 +435,16 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
         /// <summary>
         /// Check filter marshal error handling.
         /// </summary>
-        /// <param name="portable">Portable flag.</param>
-        private void CheckFilterMarshalError(bool portable)
+        /// <param name="binarizable">Binarizable flag.</param>
+        private void CheckFilterMarshalError(bool binarizable)
         {
-            AbstractFilter<PortableEntry>.marshErr = true;
+            AbstractFilter<BinarizableEntry>.marshErr = true;
 
-            ICacheEntryEventListener<int, PortableEntry> lsnr = new Listener<PortableEntry>();
-            ICacheEntryEventFilter<int, PortableEntry> filter =
-                portable ? (AbstractFilter<PortableEntry>)new PortableFilter() : new SerializableFilter();
+            ICacheEntryEventListener<int, BinarizableEntry> lsnr = new Listener<BinarizableEntry>();
+            ICacheEntryEventFilter<int, BinarizableEntry> filter =
+                binarizable ? (AbstractFilter<BinarizableEntry>)new BinarizableFilter() : new SerializableFilter();
 
-            ContinuousQuery<int, PortableEntry> qry = new ContinuousQuery<int, PortableEntry>(lsnr, filter);
+            ContinuousQuery<int, BinarizableEntry> qry = new ContinuousQuery<int, BinarizableEntry>(lsnr, filter);
 
             Assert.Throws<Exception>(() =>
             {
@@ -470,14 +470,14 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
         /// <param name="loc"></param>
         protected void CheckFilterNonSerializable(bool loc)
         {
-            AbstractFilter<PortableEntry>.unmarshErr = true;
+            AbstractFilter<BinarizableEntry>.unmarshErr = true;
 
-            ICacheEntryEventListener<int, PortableEntry> lsnr = new Listener<PortableEntry>();
-            ICacheEntryEventFilter<int, PortableEntry> filter = new LocalFilter();
+            ICacheEntryEventListener<int, BinarizableEntry> lsnr = new Listener<BinarizableEntry>();
+            ICacheEntryEventFilter<int, BinarizableEntry> filter = new LocalFilter();
 
-            ContinuousQuery<int, PortableEntry> qry = loc
-                ? new ContinuousQuery<int, PortableEntry>(lsnr, filter, true)
-                : new ContinuousQuery<int, PortableEntry>(lsnr, filter);
+            ContinuousQuery<int, BinarizableEntry> qry = loc
+                ? new ContinuousQuery<int, BinarizableEntry>(lsnr, filter, true)
+                : new ContinuousQuery<int, BinarizableEntry>(lsnr, filter);
 
             if (loc)
             {
@@ -502,11 +502,11 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
         }
 
         /// <summary>
-        /// Test portable filter unmarshalling error.
+        /// Test binarizable filter unmarshalling error.
         /// </summary>
         [Ignore("IGNITE-521")]
         [Test]
-        public void TestFilterUnmarshalErrorPortable()
+        public void TestFilterUnmarshalErrorBinarizable()
         {
             CheckFilterUnmarshalError(true);
         }
@@ -524,16 +524,16 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
         /// <summary>
         /// Check filter unmarshal error handling.
         /// </summary>
-        /// <param name="portable">Portable flag.</param>
-        private void CheckFilterUnmarshalError(bool portable)
+        /// <param name="binarizable">Binarizable flag.</param>
+        private void CheckFilterUnmarshalError(bool binarizable)
         {
-            AbstractFilter<PortableEntry>.unmarshErr = true;
+            AbstractFilter<BinarizableEntry>.unmarshErr = true;
 
-            ICacheEntryEventListener<int, PortableEntry> lsnr = new Listener<PortableEntry>();
-            ICacheEntryEventFilter<int, PortableEntry> filter =
-                portable ? (AbstractFilter<PortableEntry>)new PortableFilter() : new SerializableFilter();
+            ICacheEntryEventListener<int, BinarizableEntry> lsnr = new Listener<BinarizableEntry>();
+            ICacheEntryEventFilter<int, BinarizableEntry> filter =
+                binarizable ? (AbstractFilter<BinarizableEntry>) new BinarizableFilter() : new SerializableFilter();
 
-            ContinuousQuery<int, PortableEntry> qry = new ContinuousQuery<int, PortableEntry>(lsnr, filter);
+            ContinuousQuery<int, BinarizableEntry> qry = new ContinuousQuery<int, BinarizableEntry>(lsnr, filter);
 
             using (cache1.QueryContinuous(qry))
             {
@@ -566,12 +566,12 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
         [Test]
         public void TestFilterInjection()
         {
-            Listener<PortableEntry> cb = new Listener<PortableEntry>();
-            PortableFilter filter = new PortableFilter();
+            Listener<BinarizableEntry> cb = new Listener<BinarizableEntry>();
+            BinarizableFilter filter = new BinarizableFilter();
 
             Assert.IsNull(filter.ignite);
 
-            using (cache1.QueryContinuous(new ContinuousQuery<int, PortableEntry>(cb, filter)))
+            using (cache1.QueryContinuous(new ContinuousQuery<int, BinarizableEntry>(cb, filter)))
             {
                 // Local injection.
                 Assert.IsNotNull(filter.ignite);
@@ -589,15 +589,15 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
 
 
         /// <summary>
-        /// Test "keep-portable" scenario.
+        /// Test "keep-binary" scenario.
         /// </summary>
         [Test]
-        public void TestKeepPortable()
+        public void TestKeepBinary()
         {
             var cache = cache1.WithKeepBinary<int, IBinaryObject>();
 
             ContinuousQuery<int, IBinaryObject> qry = new ContinuousQuery<int, IBinaryObject>(
-                    new Listener<IBinaryObject>(), new KeepPortableFilter());
+                    new Listener<IBinaryObject>(), new KeepBinaryFilter());
 
             using (cache.QueryContinuous(qry))
             {
@@ -611,30 +611,81 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
                 Assert.AreEqual(PrimaryKey(cache1), filterEvt.entry.Key);
                 Assert.AreEqual(null, filterEvt.entry.OldValue);
                 Assert.AreEqual(Entry(1), (filterEvt.entry.Value as IBinaryObject)
-                    .Deserialize<PortableEntry>());
+                    .Deserialize<BinarizableEntry>());
 
                 Assert.IsTrue(CB_EVTS.TryTake(out cbEvt, 500));
                 Assert.AreEqual(1, cbEvt.entries.Count);
                 Assert.AreEqual(PrimaryKey(cache1), cbEvt.entries.First().Key);
                 Assert.AreEqual(null, cbEvt.entries.First().OldValue);
                 Assert.AreEqual(Entry(1), (cbEvt.entries.First().Value as IBinaryObject)
-                    .Deserialize<PortableEntry>());
+                    .Deserialize<BinarizableEntry>());
 
                 // 2. Remote put.
+                ClearEvents();
                 cache1.GetAndPut(PrimaryKey(cache2), Entry(2));
 
                 Assert.IsTrue(FILTER_EVTS.TryTake(out filterEvt, 500));
                 Assert.AreEqual(PrimaryKey(cache2), filterEvt.entry.Key);
                 Assert.AreEqual(null, filterEvt.entry.OldValue);
                 Assert.AreEqual(Entry(2), (filterEvt.entry.Value as IBinaryObject)
-                    .Deserialize<PortableEntry>());
+                    .Deserialize<BinarizableEntry>());
 
                 Assert.IsTrue(CB_EVTS.TryTake(out cbEvt, 500));
                 Assert.AreEqual(1, cbEvt.entries.Count);
                 Assert.AreEqual(PrimaryKey(cache2), cbEvt.entries.First().Key);
                 Assert.AreEqual(null, cbEvt.entries.First().OldValue);
                 Assert.AreEqual(Entry(2),
-                    (cbEvt.entries.First().Value as IBinaryObject).Deserialize<PortableEntry>());
+                    (cbEvt.entries.First().Value as IBinaryObject).Deserialize<BinarizableEntry>());
+            }
+        }
+        /// <summary>
+        /// Test value types (special handling is required for nulls).
+        /// </summary>
+        [Test]
+        public void TestValueTypes()
+        {
+            var cache = grid1.GetCache<int, int>(cacheName);
+
+            var qry = new ContinuousQuery<int, int>(new Listener<int>());
+
+            var key = PrimaryKey(cache);
+
+            using (cache.QueryContinuous(qry))
+            {
+                // First update
+                cache.Put(key, 1);
+
+                CallbackEvent cbEvt;
+
+                Assert.IsTrue(CB_EVTS.TryTake(out cbEvt, 500));
+                var cbEntry = cbEvt.entries.Single();
+                Assert.IsFalse(cbEntry.HasOldValue);
+                Assert.IsTrue(cbEntry.HasValue);
+                Assert.AreEqual(key, cbEntry.Key);
+                Assert.AreEqual(null, cbEntry.OldValue);
+                Assert.AreEqual(1, cbEntry.Value);
+
+                // Second update
+                cache.Put(key, 2);
+
+                Assert.IsTrue(CB_EVTS.TryTake(out cbEvt, 500));
+                cbEntry = cbEvt.entries.Single();
+                Assert.IsTrue(cbEntry.HasOldValue);
+                Assert.IsTrue(cbEntry.HasValue);
+                Assert.AreEqual(key, cbEntry.Key);
+                Assert.AreEqual(1, cbEntry.OldValue);
+                Assert.AreEqual(2, cbEntry.Value);
+
+                // Remove
+                cache.Remove(key);
+
+                Assert.IsTrue(CB_EVTS.TryTake(out cbEvt, 500));
+                cbEntry = cbEvt.entries.Single();
+                Assert.IsTrue(cbEntry.HasOldValue);
+                Assert.IsFalse(cbEntry.HasValue);
+                Assert.AreEqual(key, cbEntry.Key);
+                Assert.AreEqual(2, cbEntry.OldValue);
+                Assert.AreEqual(null, cbEntry.Value);
             }
         }
 
@@ -647,7 +698,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
             // Put two remote keys in advance.
             List<int> rmtKeys = PrimaryKeys(cache2, 2);
 
-            ContinuousQuery<int, PortableEntry> qry = new ContinuousQuery<int, PortableEntry>(new Listener<PortableEntry>());
+            ContinuousQuery<int, BinarizableEntry> qry = new ContinuousQuery<int, BinarizableEntry>(new Listener<BinarizableEntry>());
 
             qry.BufferSize = 2;
             qry.TimeInterval = TimeSpan.FromMilliseconds(1000000);
@@ -693,8 +744,8 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
             int key1 = PrimaryKey(cache1);
             int key2 = PrimaryKey(cache2);
 
-            ContinuousQuery<int, PortableEntry> qry =
-                new ContinuousQuery<int, PortableEntry>(new Listener<PortableEntry>());
+            ContinuousQuery<int, BinarizableEntry> qry =
+                new ContinuousQuery<int, BinarizableEntry>(new Listener<BinarizableEntry>());
 
             qry.BufferSize = 2;
             qry.TimeInterval = TimeSpan.FromMilliseconds(500);
@@ -741,26 +792,26 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
         public void TestInitialQuery()
         {
             // Scan query, GetAll
-            TestInitialQuery(new ScanQuery<int, PortableEntry>(new InitialQueryScanFilter()), cur => cur.GetAll());
+            TestInitialQuery(new ScanQuery<int, BinarizableEntry>(new InitialQueryScanFilter()), cur => cur.GetAll());
 
             // Scan query, iterator
-            TestInitialQuery(new ScanQuery<int, PortableEntry>(new InitialQueryScanFilter()), cur => cur.ToList());
+            TestInitialQuery(new ScanQuery<int, BinarizableEntry>(new InitialQueryScanFilter()), cur => cur.ToList());
 
             // Sql query, GetAll
-            TestInitialQuery(new SqlQuery(typeof(PortableEntry), "val < 33"), cur => cur.GetAll());
+            TestInitialQuery(new SqlQuery(typeof(BinarizableEntry), "val < 33"), cur => cur.GetAll());
             
             // Sql query, iterator
-            TestInitialQuery(new SqlQuery(typeof(PortableEntry), "val < 33"), cur => cur.ToList());
+            TestInitialQuery(new SqlQuery(typeof(BinarizableEntry), "val < 33"), cur => cur.ToList());
 
             // Text query, GetAll
-            TestInitialQuery(new TextQuery(typeof(PortableEntry), "1*"), cur => cur.GetAll());
+            TestInitialQuery(new TextQuery(typeof(BinarizableEntry), "1*"), cur => cur.GetAll());
             
             // Text query, iterator
-            TestInitialQuery(new TextQuery(typeof(PortableEntry), "1*"), cur => cur.ToList());
+            TestInitialQuery(new TextQuery(typeof(BinarizableEntry), "1*"), cur => cur.ToList());
 
             // Test exception: invalid initial query
             var ex = Assert.Throws<IgniteException>(
-                () => TestInitialQuery(new TextQuery(typeof (PortableEntry), "*"), cur => cur.GetAll()));
+                () => TestInitialQuery(new TextQuery(typeof (BinarizableEntry), "*"), cur => cur.GetAll()));
 
             Assert.AreEqual("Cannot parse '*': '*' or '?' not allowed as first character in WildcardQuery", ex.Message);
         }
@@ -768,10 +819,10 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
         /// <summary>
         /// Tests the initial query.
         /// </summary>
-        private void TestInitialQuery(QueryBase initialQry, Func<IQueryCursor<ICacheEntry<int, PortableEntry>>, 
-            IEnumerable<ICacheEntry<int, PortableEntry>>> getAllFunc)
+        private void TestInitialQuery(QueryBase initialQry, Func<IQueryCursor<ICacheEntry<int, BinarizableEntry>>, 
+            IEnumerable<ICacheEntry<int, BinarizableEntry>>> getAllFunc)
         {
-            var qry = new ContinuousQuery<int, PortableEntry>(new Listener<PortableEntry>());
+            var qry = new ContinuousQuery<int, BinarizableEntry>(new Listener<BinarizableEntry>());
 
             cache1.Put(11, Entry(11));
             cache1.Put(12, Entry(12));
@@ -779,7 +830,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
 
             try
             {
-                IContinuousQueryHandle<ICacheEntry<int, PortableEntry>> contQry;
+                IContinuousQueryHandle<ICacheEntry<int, BinarizableEntry>> contQry;
                 
                 using (contQry = cache1.QueryContinuous(qry, initialQry))
                 {
@@ -818,9 +869,10 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
         /// <param name="expKey">Expected key.</param>
         /// <param name="expOldVal">Expected old value.</param>
         /// <param name="expVal">Expected value.</param>
-        private void CheckFilterSingle(int expKey, PortableEntry expOldVal, PortableEntry expVal)
+        private void CheckFilterSingle(int expKey, BinarizableEntry expOldVal, BinarizableEntry expVal)
         {
             CheckFilterSingle(expKey, expOldVal, expVal, 1000);
+            ClearEvents();
         }
 
         /// <summary>
@@ -830,7 +882,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
         /// <param name="expOldVal">Expected old value.</param>
         /// <param name="expVal">Expected value.</param>
         /// <param name="timeout">Timeout.</param>
-        private void CheckFilterSingle(int expKey, PortableEntry expOldVal, PortableEntry expVal, int timeout)
+        private static void CheckFilterSingle(int expKey, BinarizableEntry expOldVal, BinarizableEntry expVal, int timeout)
         {
             FilterEvent evt;
 
@@ -839,13 +891,24 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
             Assert.AreEqual(expKey, evt.entry.Key);
             Assert.AreEqual(expOldVal, evt.entry.OldValue);
             Assert.AreEqual(expVal, evt.entry.Value);
+
+            ClearEvents();
+        }
+
+        /// <summary>
+        /// Clears the events collection.
+        /// </summary>
+        private static void ClearEvents()
+        {
+            while (FILTER_EVTS.Count > 0)
+                FILTER_EVTS.Take();
         }
 
         /// <summary>
         /// Ensure that no filter events are logged.
         /// </summary>
         /// <param name="timeout">Timeout.</param>
-        private void CheckNoFilter(int timeout)
+        private static void CheckNoFilter(int timeout)
         {
             FilterEvent evt;
 
@@ -858,7 +921,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
         /// <param name="expKey">Expected key.</param>
         /// <param name="expOldVal">Expected old value.</param>
         /// <param name="expVal">Expected new value.</param>
-        private void CheckCallbackSingle(int expKey, PortableEntry expOldVal, PortableEntry expVal)
+        private static void CheckCallbackSingle(int expKey, BinarizableEntry expOldVal, BinarizableEntry expVal)
         {
             CheckCallbackSingle(expKey, expOldVal, expVal, 1000);
         }
@@ -870,7 +933,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
         /// <param name="expOldVal">Expected old value.</param>
         /// <param name="expVal">Expected new value.</param>
         /// <param name="timeout">Timeout.</param>
-        private void CheckCallbackSingle(int expKey, PortableEntry expOldVal, PortableEntry expVal, int timeout)
+        private static void CheckCallbackSingle(int expKey, BinarizableEntry expOldVal, BinarizableEntry expVal, int timeout)
         {
             CallbackEvent evt;
 
@@ -899,9 +962,9 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
         /// </summary>
         /// <param name="val">Value.</param>
         /// <returns>Entry.</returns>
-        private static PortableEntry Entry(int val)
+        private static BinarizableEntry Entry(int val)
         {
-            return new PortableEntry(val);
+            return new BinarizableEntry(val);
         }
 
         /// <summary>
@@ -946,9 +1009,23 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
         }
 
         /// <summary>
-        /// Portable entry.
+        /// Creates object-typed event.
         /// </summary>
-        public class PortableEntry
+        private static ICacheEntryEvent<object, object> CreateEvent<T, V>(ICacheEntryEvent<T,V> e)
+        {
+            if (!e.HasOldValue)
+                return new CacheEntryCreateEvent<object, object>(e.Key, e.Value);
+
+            if (!e.HasValue)
+                return new CacheEntryRemoveEvent<object, object>(e.Key, e.OldValue);
+
+            return new CacheEntryUpdateEvent<object, object>(e.Key, e.OldValue, e.Value);
+        }
+
+        /// <summary>
+        /// Binarizable entry.
+        /// </summary>
+        public class BinarizableEntry
         {
             /** Value. */
             public readonly int val;
@@ -963,7 +1040,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
             /// Constructor.
             /// </summary>
             /// <param name="val">Value.</param>
-            public PortableEntry(int val)
+            public BinarizableEntry(int val)
             {
                 this.val = val;
             }
@@ -971,7 +1048,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
             /** <inheritDoc /> */
             public override bool Equals(object obj)
             {
-                return obj != null && obj is PortableEntry && ((PortableEntry)obj).val == val;
+                return obj != null && obj is BinarizableEntry && ((BinarizableEntry)obj).val == val;
             }
         }
 
@@ -1003,8 +1080,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
                 if (err)
                     throw new Exception("Filter error.");
 
-                FILTER_EVTS.Add(new FilterEvent(ignite,
-                    CQU.CreateEvent<object, object>(evt.Key, evt.OldValue, evt.Value)));
+                FILTER_EVTS.Add(new FilterEvent(ignite, CreateEvent(evt)));
 
                 return res;
             }
@@ -1013,15 +1089,15 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
         /// <summary>
         /// Filter which cannot be serialized.
         /// </summary>
-        public class LocalFilter : AbstractFilter<PortableEntry>
+        public class LocalFilter : AbstractFilter<BinarizableEntry>
         {
             // No-op.
         }
 
         /// <summary>
-        /// Portable filter.
+        /// Binarizable filter.
         /// </summary>
-        public class PortableFilter : AbstractFilter<PortableEntry>, IBinarizable
+        public class BinarizableFilter : AbstractFilter<BinarizableEntry>, IBinarizable
         {
             /** <inheritDoc /> */
             public void WriteBinary(IBinaryWriter writer)
@@ -1042,7 +1118,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
         /// Serializable filter.
         /// </summary>
         [Serializable]
-        public class SerializableFilter : AbstractFilter<PortableEntry>, ISerializable
+        public class SerializableFilter : AbstractFilter<BinarizableEntry>, ISerializable
         {
             /// <summary>
             /// Constructor.
@@ -1072,9 +1148,9 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
         }
 
         /// <summary>
-        /// Filter for "keep-portable" scenario.
+        /// Filter for "keep-binary" scenario.
         /// </summary>
-        public class KeepPortableFilter : AbstractFilter<IBinaryObject>
+        public class KeepBinaryFilter : AbstractFilter<IBinaryObject>
         {
             // No-op.
         }
@@ -1090,13 +1166,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
             /** <inheritDoc /> */
             public void OnEvent(IEnumerable<ICacheEntryEvent<int, V>> evts)
             {
-                ICollection<ICacheEntryEvent<object, object>> entries0 =
-                    new List<ICacheEntryEvent<object, object>>();
-
-                foreach (ICacheEntryEvent<int, V> evt in evts)
-                    entries0.Add(CQU.CreateEvent<object, object>(evt.Key, evt.OldValue, evt.Value));
-
-                CB_EVTS.Add(new CallbackEvent(entries0));
+                CB_EVTS.Add(new CallbackEvent(evts.Select(CreateEvent).ToList()));
             }
         }
 
@@ -1116,7 +1186,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
 
                     IBinaryType meta = val.GetBinaryType();
 
-                    Assert.AreEqual(typeof(PortableEntry).Name, meta.TypeName);
+                    Assert.AreEqual(typeof(BinarizableEntry).Name, meta.TypeName);
                 }
 
                 countDown.Signal();
@@ -1168,10 +1238,10 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
         /// ScanQuery filter for InitialQuery test.
         /// </summary>
         [Serializable]
-        private class InitialQueryScanFilter : ICacheEntryFilter<int, PortableEntry>
+        private class InitialQueryScanFilter : ICacheEntryFilter<int, BinarizableEntry>
         {
             /** <inheritdoc /> */
-            public bool Invoke(ICacheEntry<int, PortableEntry> entry)
+            public bool Invoke(ICacheEntry<int, BinarizableEntry> entry)
             {
                 return entry.Key < 33;
             }

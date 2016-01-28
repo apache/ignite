@@ -31,21 +31,20 @@ import static org.apache.ignite.transactions.TransactionIsolation.SERIALIZABLE;
  *
  */
 public class IgniteAccountSerializableTxBenchmark extends IgniteAccountTxAbstractBenchmark {
-    /** */
-    private static final int ACCOUNT_NUMBER = 3;
-
     /** {@inheritDoc} */
     @Override public boolean test(Map<Object, Object> ctx) throws Exception {
         Set<Integer> accountIds = new HashSet<>();
 
-        while (accountIds.size() < ACCOUNT_NUMBER)
+        int accNum = args.batch();
+
+        while (accountIds.size() < accNum)
             accountIds.add(nextRandom(args.range()));
 
         while (true) {
             try (Transaction tx = txs.txStart(OPTIMISTIC, SERIALIZABLE)) {
                 Map<Integer, Account> accounts = (Map)cache.getAll(accountIds);
 
-                if (accounts.size() != ACCOUNT_NUMBER)
+                if (accounts.size() != accNum)
                     throw new Exception("Failed to find accounts: " + accountIds);
 
                 Integer fromId = accountIds.iterator().next();

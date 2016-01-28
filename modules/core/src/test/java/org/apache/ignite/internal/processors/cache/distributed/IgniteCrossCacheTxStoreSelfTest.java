@@ -300,6 +300,7 @@ public class IgniteCrossCacheTxStoreSelfTest extends GridCommonAbstractTest {
             throws CacheLoaderException {
         }
 
+        /** {@inheritDoc} */
         @Override public void sessionEnd(boolean commit) throws CacheWriterException {
             evts.offer("sessionEnd " + commit);
         }

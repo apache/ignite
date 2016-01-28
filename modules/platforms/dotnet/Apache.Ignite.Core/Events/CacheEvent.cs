@@ -151,8 +151,8 @@ namespace Apache.Ignite.Core.Events
 
         /// <summary>
         /// Gets security subject ID initiated this cache event, if available. This property is available only for <see 
-        /// cref="EventType.EventCacheObjectPut" />, <see cref="EventType.EventCacheObjectRemoved" /> and <see 
-        /// cref="EventType.EventCacheObjectRead" /> cache events. Subject ID will be set either to nodeId initiated 
+        /// cref="EventType.CacheObjectPut" />, <see cref="EventType.CacheObjectRemoved" /> and <see 
+        /// cref="EventType.CacheObjectRead" /> cache events. Subject ID will be set either to nodeId initiated 
         /// cache update or read or client ID initiated cache update or read. 
         /// </summary>
         public Guid? SubjectId { get { return _subjectId; } }
@@ -166,9 +166,11 @@ namespace Apache.Ignite.Core.Events
         /// Gets task name if cache event was caused by an operation initiated within task execution. 
         /// </summary>
         public string TaskName { get { return _taskName; } }
-        
-        /** <inheritDoc /> */
-	    public override string ToShortString()
+
+        /// <summary>
+        /// Gets shortened version of ToString result.
+        /// </summary>
+        public override string ToShortString()
 	    {
             return string.Format(CultureInfo.InvariantCulture, 
                 "{0}: IsNear={1}, Key={2}, HasNewValue={3}, HasOldValue={4}, NodeId={5}", Name, 

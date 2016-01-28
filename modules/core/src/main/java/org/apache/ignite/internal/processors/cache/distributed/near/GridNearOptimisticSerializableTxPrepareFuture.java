@@ -23,30 +23,27 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
-import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
+
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.cluster.ClusterTopologyException;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
-import org.apache.ignite.internal.cluster.ClusterTopologyServerNotFoundException;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryRemovedException;
 import org.apache.ignite.internal.processors.cache.GridCacheMvccCandidate;
-import org.apache.ignite.internal.processors.cache.GridCacheMvccFuture;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedTxMapping;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxMapping;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry;
-import org.apache.ignite.internal.processors.cache.transactions.IgniteTxKey;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.transactions.IgniteTxOptimisticCheckedException;
 import org.apache.ignite.internal.transactions.IgniteTxRollbackCheckedException;
 import org.apache.ignite.internal.transactions.IgniteTxTimeoutCheckedException;
-import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
@@ -57,11 +54,9 @@ import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.P1;
 import org.apache.ignite.internal.util.typedef.X;
-import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
-import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.lang.IgniteReducer;
 import org.apache.ignite.lang.IgniteUuid;
@@ -74,14 +69,13 @@ import static org.apache.ignite.transactions.TransactionState.PREPARING;
 /**
  *
  */
-public class GridNearOptimisticSerializableTxPrepareFuture extends GridNearOptimisticTxPrepareFutureAdapter
-    implements GridCacheMvccFuture<IgniteInternalTx> {
+public class GridNearOptimisticSerializableTxPrepareFuture extends GridNearOptimisticTxPrepareFutureAdapter {
     /** */
     public static final IgniteProductVersion SER_TX_SINCE = IgniteProductVersion.fromString("1.5.0");
 
     /** */
     @GridToStringExclude
-    private KeyLockFuture keyLockFut = new KeyLockFuture();
+    private KeyLockFuture keyLockFut;
 
     /** */
     @GridToStringExclude
@@ -91,13 +85,16 @@ public class GridNearOptimisticSerializableTxPrepareFuture extends GridNearOptim
      * @param cctx Context.
      * @param tx Transaction.
      */
-    public GridNearOptimisticSerializableTxPrepareFuture(GridCacheSharedContext cctx, GridNearTxLocal tx) {
+    public GridNearOptimisticSerializableTxPrepareFuture(GridCacheSharedContext cctx,
+        GridNearTxLocal tx) {
         super(cctx, tx);
 
         assert tx.optimistic() && tx.serializable() : tx;
+    }
 
-        // Should wait for all mini futures completion before finishing tx.
-        ignoreChildFailures(IgniteCheckedException.class);
+    /** {@inheritDoc} */
+    @Override protected boolean ignoreFailure(Throwable err) {
+        return IgniteCheckedException.class.isAssignableFrom(err.getClass());
     }
 
     /** {@inheritDoc} */
@@ -124,7 +121,7 @@ public class GridNearOptimisticSerializableTxPrepareFuture extends GridNearOptim
                                         new IgniteTxOptimisticCheckedException("Failed to prepare transaction, " +
                                             "read/write conflict [key=" + key + ", cache=" + ctx.name() + ']');
 
-                                    err.compareAndSet(null, err0);
+                                    ERR_UPD.compareAndSet(this, null, err0);
                                 }
 
                                 break;
@@ -139,25 +136,14 @@ public class GridNearOptimisticSerializableTxPrepareFuture extends GridNearOptim
                     }
                 }
 
-                keyLockFut.onKeyLocked(entry.txKey());
+                if (keyLockFut != null)
+                    keyLockFut.onKeyLocked(entry.txKey());
 
                 return true;
             }
         }
 
         return false;
-    }
-
-    /** {@inheritDoc} */
-    @Override public Collection<? extends ClusterNode> nodes() {
-        return F.viewReadOnly(futures(), new IgniteClosure<IgniteInternalFuture<?>, ClusterNode>() {
-            @Nullable @Override public ClusterNode apply(IgniteInternalFuture<?> f) {
-                if (isMini(f))
-                    return ((MiniFuture)f).node();
-
-                return cctx.discovery().localNode();
-            }
-        });
     }
 
     /** {@inheritDoc} */
@@ -204,25 +190,19 @@ public class GridNearOptimisticSerializableTxPrepareFuture extends GridNearOptim
                 tx.removeMapping(m.node().id());
         }
 
-        err.compareAndSet(null, e);
+        ERR_UPD.compareAndSet(this, null, e);
 
-        keyLockFut.onDone(e);
+        if (keyLockFut != null)
+            keyLockFut.onDone(e);
     }
 
     /** {@inheritDoc} */
     @Override public void onResult(UUID nodeId, GridNearTxPrepareResponse res) {
         if (!isDone()) {
-            for (IgniteInternalFuture<GridNearTxPrepareResponse> fut : pending()) {
-                if (isMini(fut)) {
-                    MiniFuture f = (MiniFuture)fut;
+            MiniFuture mini = miniFuture(res.miniId());
 
-                    if (f.futureId().equals(res.miniId())) {
-                        assert f.node().id().equals(nodeId);
-
-                        f.onResult(res);
-                    }
-                }
-            }
+            if (mini != null)
+                mini.onResult(res);
         }
     }
 
@@ -232,12 +212,44 @@ public class GridNearOptimisticSerializableTxPrepareFuture extends GridNearOptim
             return false;
 
         if (err != null) {
-            this.err.compareAndSet(null, err);
+            ERR_UPD.compareAndSet(this, null, err);
 
-            keyLockFut.onDone(err);
+            if (keyLockFut != null)
+                keyLockFut.onDone(err);
         }
 
         return onComplete();
+    }
+
+    /**
+     * Finds pending mini future by the given mini ID.
+     *
+     * @param miniId Mini ID to find.
+     * @return Mini future.
+     */
+    @SuppressWarnings("ForLoopReplaceableByForEach")
+    private MiniFuture miniFuture(IgniteUuid miniId) {
+        // We iterate directly over the futs collection here to avoid copy.
+        synchronized (futs) {
+            // Avoid iterator creation.
+            for (int i = 0; i < futs.size(); i++) {
+                IgniteInternalFuture<GridNearTxPrepareResponse> fut = futs.get(i);
+
+                if (!isMini(fut))
+                    continue;
+
+                MiniFuture mini = (MiniFuture)fut;
+
+                if (mini.futureId().equals(miniId)) {
+                    if (!mini.isDone())
+                        return mini;
+                    else
+                        return null;
+                }
+            }
+        }
+
+        return null;
     }
 
     /**
@@ -254,7 +266,7 @@ public class GridNearOptimisticSerializableTxPrepareFuture extends GridNearOptim
      * @return {@code True} if future was finished by this call.
      */
     private boolean onComplete() {
-        Throwable err0 = err.get();
+        Throwable err0 = err;
 
         if (err0 == null || tx.needCheckBackup())
             tx.state(PREPARED);
@@ -264,7 +276,7 @@ public class GridNearOptimisticSerializableTxPrepareFuture extends GridNearOptim
                 tx.setRollbackOnly();
 
             // Don't forget to clean up.
-            cctx.mvcc().removeFuture(this);
+            cctx.mvcc().removeMvccFuture(this);
 
             return true;
         }
@@ -278,31 +290,34 @@ public class GridNearOptimisticSerializableTxPrepareFuture extends GridNearOptim
      * @param remap Remap flag.
      */
     @Override protected void prepare0(boolean remap, boolean topLocked) {
-        try {
-            boolean txStateCheck = remap ? tx.state() == PREPARING : tx.state(PREPARING);
+        boolean txStateCheck = remap ? tx.state() == PREPARING : tx.state(PREPARING);
 
-            if (!txStateCheck) {
-                if (tx.setRollbackOnly()) {
-                    if (tx.timedOut())
-                        onError(null, new IgniteTxTimeoutCheckedException("Transaction timed out and " +
-                            "was rolled back: " + this));
-                    else
-                        onError(null, new IgniteCheckedException("Invalid transaction state for prepare " +
-                            "[state=" + tx.state() + ", tx=" + this + ']'));
-                }
+        if (!txStateCheck) {
+            if (tx.setRollbackOnly()) {
+                if (tx.timedOut())
+                    onError(null, new IgniteTxTimeoutCheckedException("Transaction timed out and " +
+                        "was rolled back: " + this));
                 else
-                    onError(null, new IgniteTxRollbackCheckedException("Invalid transaction state for " +
-                        "prepare [state=" + tx.state() + ", tx=" + this + ']'));
-
-                return;
+                    onError(null, new IgniteCheckedException("Invalid transaction state for prepare " +
+                        "[state=" + tx.state() + ", tx=" + this + ']'));
             }
+            else
+                onError(null, new IgniteTxRollbackCheckedException("Invalid transaction state for " +
+                    "prepare [state=" + tx.state() + ", tx=" + this + ']'));
 
+            return;
+        }
+
+        boolean set = cctx.tm().setTxTopologyHint(tx.topologyVersionSnapshot());
+
+        try {
             prepare(tx.readEntries(), tx.writeEntries(), remap, topLocked);
 
             markInitialized();
         }
-        catch (IgniteCheckedException e) {
-            onDone(e);
+        finally {
+            if (set)
+                cctx.tm().setTxTopologyHint(null);
         }
     }
 
@@ -311,7 +326,6 @@ public class GridNearOptimisticSerializableTxPrepareFuture extends GridNearOptim
      * @param writes Write entries.
      * @param remap Remap flag.
      * @param topLocked Topology locked flag.
-     * @throws IgniteCheckedException If failed.
      */
     @SuppressWarnings("unchecked")
     private void prepare(
@@ -319,25 +333,12 @@ public class GridNearOptimisticSerializableTxPrepareFuture extends GridNearOptim
         Iterable<IgniteTxEntry> writes,
         boolean remap,
         boolean topLocked
-    ) throws IgniteCheckedException {
+    ) {
         AffinityTopologyVersion topVer = tx.topologyVersion();
 
         assert topVer.topologyVersion() > 0;
 
         txMapping = new GridDhtTxMapping();
-
-        if (!F.isEmpty(reads) || !F.isEmpty(writes)) {
-            for (int cacheId : tx.activeCacheIds()) {
-                GridCacheContext<?, ?> cacheCtx = cctx.cacheContext(cacheId);
-
-                if (CU.affinityNodes(cacheCtx, topVer).isEmpty()) {
-                    onDone(new ClusterTopologyServerNotFoundException("Failed to map keys for cache (all " +
-                        "partition nodes left the grid): " + cacheCtx.name()));
-
-                    return;
-                }
-            }
-        }
 
         Map<IgniteBiTuple<ClusterNode, Boolean>, GridDistributedTxMapping> mappings = new HashMap<>();
 
@@ -347,10 +348,8 @@ public class GridNearOptimisticSerializableTxPrepareFuture extends GridNearOptim
         for (IgniteTxEntry read : reads)
             map(read, topVer, mappings, remap, topLocked);
 
-        keyLockFut.onAllKeysAdded();
-
-        if (!remap)
-            add(keyLockFut);
+        if (keyLockFut != null)
+            keyLockFut.onAllKeysAdded();
 
         if (isDone()) {
             if (log.isDebugEnabled())
@@ -370,9 +369,7 @@ public class GridNearOptimisticSerializableTxPrepareFuture extends GridNearOptim
         for (GridDistributedTxMapping m : mappings.values()) {
             assert !m.empty();
 
-            MiniFuture fut = new MiniFuture(m);
-
-            add(fut);
+            add(new MiniFuture(this, m));
         }
 
         Collection<IgniteInternalFuture<?>> futs = (Collection)futures();
@@ -416,7 +413,7 @@ public class GridNearOptimisticSerializableTxPrepareFuture extends GridNearOptim
      * @return {@code True} if skip future during remap.
      */
     private boolean skipFuture(boolean remap, IgniteInternalFuture<?> fut) {
-        return !(isMini(fut)) || (remap && ((MiniFuture)fut).rcvRes.get());
+        return !(isMini(fut)) || (remap && (((MiniFuture)fut).rcvRes == 1));
     }
 
     /**
@@ -437,7 +434,6 @@ public class GridNearOptimisticSerializableTxPrepareFuture extends GridNearOptim
             m.near(),
             txMapping.transactionNodes(),
             m.last(),
-            m.lastBackups(),
             tx.onePhaseCommit(),
             tx.needReturnValue() && tx.implicit(),
             tx.implicitSingle(),
@@ -550,8 +546,15 @@ public class GridNearOptimisticSerializableTxPrepareFuture extends GridNearOptim
             entry.cached(cacheCtx.local().entryEx(entry.key(), topVer));
 
         if (!remap && (cacheCtx.isNear() || cacheCtx.isLocal())) {
-            if (entry.explicitVersion() == null)
+            if (entry.explicitVersion() == null) {
+                if (keyLockFut == null) {
+                    keyLockFut = new KeyLockFuture();
+
+                    add(keyLockFut);
+                }
+
                 keyLockFut.addLockKey(entry.txKey());
+            }
         }
 
         IgniteBiTuple<ClusterNode, Boolean> key = F.t(primary, cacheCtx.isNear());
@@ -628,56 +631,77 @@ public class GridNearOptimisticSerializableTxPrepareFuture extends GridNearOptim
     }
 
     /**
-     *
+     * Client remap future.
      */
-    private class ClientRemapFuture extends GridCompoundFuture<GridNearTxPrepareResponse, Boolean> {
+    private static class ClientRemapFuture extends GridCompoundFuture<GridNearTxPrepareResponse, Boolean> {
         /** */
-        private boolean remap = true;
+        private static final long serialVersionUID = 0L;
 
         /**
-         *
+         * Constructor.
          */
         public ClientRemapFuture() {
-            super();
+            super(new ClientRemapFutureReducer());
+        }
+    }
 
-            reducer(new IgniteReducer<GridNearTxPrepareResponse, Boolean>() {
-                @Override public boolean collect(GridNearTxPrepareResponse res) {
-                    assert res != null;
+    /**
+     * Client remap future reducer.
+     */
+    private static class ClientRemapFutureReducer implements IgniteReducer<GridNearTxPrepareResponse, Boolean> {
+        /** */
+        private static final long serialVersionUID = 0L;
 
-                    if (res.clientRemapVersion() == null)
-                        remap = false;
+        /** Remap flag. */
+        private boolean remap = true;
 
-                    return true;
-                }
+        /** {@inheritDoc} */
+        @Override public boolean collect(@Nullable GridNearTxPrepareResponse res) {
+            assert res != null;
 
-                @Override public Boolean reduce() {
-                    return remap;
-                }
-            });
+            if (res.clientRemapVersion() == null)
+                remap = false;
+
+            return true;
+        }
+
+        /** {@inheritDoc} */
+        @Override public Boolean reduce() {
+            return remap;
         }
     }
 
     /**
      *
      */
-    private class MiniFuture extends GridFutureAdapter<GridNearTxPrepareResponse> {
+    private static class MiniFuture extends GridFutureAdapter<GridNearTxPrepareResponse> {
         /** */
         private static final long serialVersionUID = 0L;
 
+        /** Receive result flag updater. */
+        private static AtomicIntegerFieldUpdater<MiniFuture> RCV_RES_UPD =
+            AtomicIntegerFieldUpdater.newUpdater(MiniFuture.class, "rcvRes");
+
         /** */
         private final IgniteUuid futId = IgniteUuid.randomUuid();
+
+        /** Parent future. */
+        private final GridNearOptimisticSerializableTxPrepareFuture parent;
 
         /** Keys. */
         @GridToStringInclude
         private GridDistributedTxMapping m;
 
         /** Flag to signal some result being processed. */
-        private AtomicBoolean rcvRes = new AtomicBoolean(false);
+        @SuppressWarnings("UnusedDeclaration")
+        private volatile int rcvRes;
 
         /**
+         * @param parent Parent future.
          * @param m Mapping.
          */
-        MiniFuture(GridDistributedTxMapping m) {
+        MiniFuture(GridNearOptimisticSerializableTxPrepareFuture parent, GridDistributedTxMapping m) {
+            this.parent = parent;
             this.m = m;
         }
 
@@ -706,8 +730,8 @@ public class GridNearOptimisticSerializableTxPrepareFuture extends GridNearOptim
          * @param e Error.
          */
         void onResult(Throwable e) {
-            if (rcvRes.compareAndSet(false, true)) {
-                onError(m, e);
+            if (RCV_RES_UPD.compareAndSet(this, 0, 1)) {
+                parent.onError(m, e);
 
                 if (log.isDebugEnabled())
                     log.debug("Failed to get future result [fut=" + this + ", err=" + e + ']');
@@ -717,7 +741,7 @@ public class GridNearOptimisticSerializableTxPrepareFuture extends GridNearOptim
             }
             else
                 U.warn(log, "Received error after another result has been processed [fut=" +
-                    GridNearOptimisticSerializableTxPrepareFuture.this + ", mini=" + this + ']', e);
+                    parent + ", mini=" + this + ']', e);
         }
 
         /**
@@ -727,11 +751,11 @@ public class GridNearOptimisticSerializableTxPrepareFuture extends GridNearOptim
             if (isDone())
                 return;
 
-            if (rcvRes.compareAndSet(false, true)) {
+            if (RCV_RES_UPD.compareAndSet(this, 0, 1)) {
                 if (log.isDebugEnabled())
                     log.debug("Remote node left grid while sending or waiting for reply (will not retry): " + this);
 
-                onError(null, e);
+                parent.onError(null, e);
 
                 onDone(e);
             }
@@ -740,40 +764,40 @@ public class GridNearOptimisticSerializableTxPrepareFuture extends GridNearOptim
         /**
          * @param res Result callback.
          */
-        @SuppressWarnings("unchecked")
+        @SuppressWarnings({"unchecked", "ThrowableResultOfMethodCallIgnored"})
         void onResult(final GridNearTxPrepareResponse res) {
             if (isDone())
                 return;
 
-            if (rcvRes.compareAndSet(false, true)) {
+            if (RCV_RES_UPD.compareAndSet(this, 0, 1)) {
                 if (res.error() != null) {
                     // Fail the whole compound future.
-                    onError(m, res.error());
+                    parent.onError(m, res.error());
 
                     onDone(res.error());
                 }
                 else {
                     if (res.clientRemapVersion() != null) {
-                        assert cctx.kernalContext().clientNode();
+                        assert parent.cctx.kernalContext().clientNode();
                         assert m.clientFirst();
 
-                        tx.removeMapping(m.node().id());
+                        parent.tx.removeMapping(m.node().id());
 
                         ClientRemapFuture remapFut0 = null;
 
-                        synchronized (GridNearOptimisticSerializableTxPrepareFuture.this) {
-                            if (remapFut == null) {
-                                remapFut = new ClientRemapFuture();
+                        synchronized (parent) {
+                            if (parent.remapFut == null) {
+                                parent.remapFut = new ClientRemapFuture();
 
-                                remapFut0 = remapFut;
+                                remapFut0 = parent.remapFut;
                             }
                         }
 
                         if (remapFut0 != null) {
-                            Collection<IgniteInternalFuture<?>> futs = (Collection)futures();
+                            Collection<IgniteInternalFuture<?>> futs = (Collection)parent.futures();
 
                             for (IgniteInternalFuture<?> fut : futs) {
-                                if (isMini(fut) && fut != this)
+                                if (parent.isMini(fut) && fut != this)
                                     remapFut0.add((MiniFuture)fut);
                             }
 
@@ -783,22 +807,22 @@ public class GridNearOptimisticSerializableTxPrepareFuture extends GridNearOptim
                                 @Override public void apply(IgniteInternalFuture<Boolean> remapFut0) {
                                     try {
                                         IgniteInternalFuture<?> affFut =
-                                            cctx.exchange().affinityReadyFuture(res.clientRemapVersion());
+                                            parent.cctx.exchange().affinityReadyFuture(res.clientRemapVersion());
 
                                         if (affFut == null)
                                             affFut = new GridFinishedFuture<Object>();
 
-                                        if (remapFut.get()) {
+                                        if (parent.remapFut.get()) {
                                             if (log.isDebugEnabled()) {
                                                 log.debug("Will remap client tx [" +
-                                                    "fut=" + GridNearOptimisticSerializableTxPrepareFuture.this +
+                                                    "fut=" + parent +
                                                     ", topVer=" + res.topologyVersion() + ']');
                                             }
 
-                                            synchronized (GridNearOptimisticSerializableTxPrepareFuture.this) {
-                                                assert remapFut0 == remapFut;
+                                            synchronized (parent) {
+                                                assert remapFut0 == parent.remapFut;
 
-                                                remapFut = null;
+                                                parent.remapFut = null;
                                             }
 
                                             affFut.listen(new CI1<IgniteInternalFuture<?>>() {
@@ -809,7 +833,7 @@ public class GridNearOptimisticSerializableTxPrepareFuture extends GridNearOptim
                                                         remap(res);
                                                     }
                                                     catch (IgniteCheckedException e) {
-                                                        err.compareAndSet(null, e);
+                                                        ERR_UPD.compareAndSet(parent, null, e);
 
                                                         onDone(e);
                                                     }
@@ -822,7 +846,7 @@ public class GridNearOptimisticSerializableTxPrepareFuture extends GridNearOptim
 
                                             err0.retryReadyFuture(affFut);
 
-                                            err.compareAndSet(null, err0);
+                                            ERR_UPD.compareAndSet(parent, null, err0);
 
                                             onDone(err0);
                                         }
@@ -830,10 +854,10 @@ public class GridNearOptimisticSerializableTxPrepareFuture extends GridNearOptim
                                     catch (IgniteCheckedException e) {
                                         if (log.isDebugEnabled()) {
                                             log.debug("Prepare failed, will not remap tx: " +
-                                                GridNearOptimisticSerializableTxPrepareFuture.this);
+                                                parent);
                                         }
 
-                                        err.compareAndSet(null, e);
+                                        ERR_UPD.compareAndSet(parent, null, e);
 
                                         onDone(e);
                                     }
@@ -844,10 +868,10 @@ public class GridNearOptimisticSerializableTxPrepareFuture extends GridNearOptim
                             onDone(res);
                     }
                     else {
-                        onPrepareResponse(m, res);
+                        parent.onPrepareResponse(m, res);
 
                         // Finish this mini future (need result only on client node).
-                        onDone(cctx.kernalContext().clientNode() ? res : null);
+                        onDone(parent.cctx.kernalContext().clientNode() ? res : null);
                     }
                 }
             }
@@ -857,8 +881,9 @@ public class GridNearOptimisticSerializableTxPrepareFuture extends GridNearOptim
          * @param res Response.
          */
         private void remap(final GridNearTxPrepareResponse res) {
-            prepareOnTopology(true, new Runnable() {
-                @Override public void run() {
+            parent.prepareOnTopology(true, new Runnable() {
+                @Override
+                public void run() {
                     onDone(res);
                 }
             });
@@ -867,70 +892,6 @@ public class GridNearOptimisticSerializableTxPrepareFuture extends GridNearOptim
         /** {@inheritDoc} */
         @Override public String toString() {
             return S.toString(MiniFuture.class, this, "done", isDone(), "cancelled", isCancelled(), "err", error());
-        }
-    }
-
-    /**
-     * Keys lock future.
-     */
-    private class KeyLockFuture extends GridFutureAdapter<GridNearTxPrepareResponse> {
-        /** */
-        @GridToStringInclude
-        private Collection<IgniteTxKey> lockKeys = new GridConcurrentHashSet<>();
-
-        /** */
-        private volatile boolean allKeysAdded;
-
-        /**
-         * @param key Key to track for locking.
-         */
-        private void addLockKey(IgniteTxKey key) {
-            assert !allKeysAdded;
-
-            lockKeys.add(key);
-        }
-
-        /**
-         * @param key Locked keys.
-         */
-        private void onKeyLocked(IgniteTxKey key) {
-            lockKeys.remove(key);
-
-            checkLocks();
-        }
-
-        /**
-         * Moves future to the ready state.
-         */
-        private void onAllKeysAdded() {
-            allKeysAdded = true;
-
-            checkLocks();
-        }
-
-        /**
-         * @return {@code True} if all locks are owned.
-         */
-        private boolean checkLocks() {
-            boolean locked = lockKeys.isEmpty();
-
-            if (locked && allKeysAdded) {
-                if (log.isDebugEnabled())
-                    log.debug("All locks are acquired for near prepare future: " + this);
-
-                onDone((GridNearTxPrepareResponse)null);
-            }
-            else {
-                if (log.isDebugEnabled())
-                    log.debug("Still waiting for locks [fut=" + this + ", keys=" + lockKeys + ']');
-            }
-
-            return locked;
-        }
-
-        /** {@inheritDoc} */
-        @Override public String toString() {
-            return S.toString(KeyLockFuture.class, this, super.toString());
         }
     }
 }

@@ -18,6 +18,7 @@
 namespace Apache.Ignite.Core.Binary
 {
     using System;
+    using Apache.Ignite.Core.Impl.Common;
 
     /// <summary>
     /// Binary type configuration.
@@ -47,7 +48,10 @@ namespace Apache.Ignite.Core.Binary
         /// <param name="type">Type.</param> 
         public BinaryTypeConfiguration(Type type)
         {
+            IgniteArgumentCheck.NotNull(type, "type");
+
             TypeName = type.AssemblyQualifiedName;
+            IsEnum = type.IsEnum;
         }
 
         /// <summary>
@@ -56,12 +60,15 @@ namespace Apache.Ignite.Core.Binary
         /// <param name="cfg">Configuration to copy.</param>
         public BinaryTypeConfiguration(BinaryTypeConfiguration cfg)
         {
+            IgniteArgumentCheck.NotNull(cfg, "cfg");
+
             AffinityKeyFieldName = cfg.AffinityKeyFieldName;
             IdMapper = cfg.IdMapper;
             NameMapper = cfg.NameMapper;
             Serializer = cfg.Serializer;
             TypeName = cfg.TypeName;
             KeepDeserialized = cfg.KeepDeserialized;
+            IsEnum = cfg.IsEnum;
         }
 
         /// <summary>
@@ -101,6 +108,11 @@ namespace Apache.Ignite.Core.Binary
         public bool? KeepDeserialized { get; set; }
 
         /// <summary>
+        /// Gets or sets a value indicating whether this instance describes an enum type.
+        /// </summary>
+        public bool IsEnum { get; set; }
+
+        /// <summary>
         /// Returns a string that represents the current object.
         /// </summary>
         /// <returns>
@@ -108,9 +120,12 @@ namespace Apache.Ignite.Core.Binary
         /// </returns>
         public override string ToString()
         {
-            return typeof (BinaryTypeConfiguration).Name + " [TypeName=" + TypeName +
-                   ", NameMapper=" + NameMapper + ", IdMapper=" + IdMapper + ", Serializer=" + Serializer +
-                   ", AffinityKeyFieldName=" + AffinityKeyFieldName + ']';
+            return
+                string.Format(
+                    "{0} [TypeName={1}, NameMapper={2}, IdMapper={3}, Serializer={4}, AffinityKeyFieldName={5}, " +
+                    "KeepDeserialized={6}, IsEnum={7}]",
+                    typeof (BinaryTypeConfiguration).Name, TypeName, NameMapper, IdMapper, Serializer,
+                    AffinityKeyFieldName, KeepDeserialized, IsEnum);
         }
     }
 }

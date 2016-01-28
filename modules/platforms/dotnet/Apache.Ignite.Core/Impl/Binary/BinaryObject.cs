@@ -17,14 +17,17 @@
 
 namespace Apache.Ignite.Core.Impl.Binary
 {
+    using System;
     using System.Collections;
     using System.Collections.Generic;
+    using System.Diagnostics;
     using System.IO;
     using System.Runtime.CompilerServices;
     using System.Text;
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Impl.Binary.IO;
+    using Apache.Ignite.Core.Impl.Common;
 
     /// <summary>
     /// Binary object.
@@ -61,6 +64,10 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// <param name="header">The header.</param>
         public BinaryObject(Marshaller marsh, byte[] data, int offset, BinaryObjectHeader header)
         {
+            Debug.Assert(marsh != null);
+            Debug.Assert(data != null);
+            Debug.Assert(offset >= 0 && offset < data.Length);
+
             _marsh = marsh;
 
             _data = data;
@@ -78,9 +85,21 @@ namespace Apache.Ignite.Core.Impl.Binary
         /** <inheritdoc /> */
         public T GetField<T>(string fieldName)
         {
+            IgniteArgumentCheck.NotNullOrEmpty(fieldName, "fieldName");
+
             int pos;
 
             return TryGetFieldPosition(fieldName, out pos) ? GetField<T>(pos, null) : default(T);
+        }
+
+        /** <inheritdoc /> */
+        public bool HasField(string fieldName)
+        {
+            IgniteArgumentCheck.NotNullOrEmpty(fieldName, "fieldName");
+
+            int pos;
+
+            return TryGetFieldPosition(fieldName, out pos);
         }
 
         /// <summary>
@@ -91,17 +110,34 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// <returns>Field value.</returns>
         public T GetField<T>(int pos, BinaryObjectBuilder builder)
         {
-            IBinaryStream stream = new BinaryHeapStream(_data);
+            using (IBinaryStream stream = new BinaryHeapStream(_data))
+            {
+                stream.Seek(pos + _offset, SeekOrigin.Begin);
 
-            stream.Seek(pos + _offset, SeekOrigin.Begin);
-
-            return _marsh.Unmarshal<T>(stream, BinaryMode.ForceBinary, builder);
+                return _marsh.Unmarshal<T>(stream, BinaryMode.ForceBinary, builder);
+            }
         }
 
         /** <inheritdoc /> */
         public T Deserialize<T>()
         {
             return Deserialize<T>(BinaryMode.Deserialize);
+        }
+
+        /** <inheritdoc /> */
+        public int EnumValue
+        {
+            get
+            {
+                throw new NotSupportedException("IBinaryObject.Value is only supported for enums. " +
+                    "Check IBinaryObject.IsEnum property before accessing Value.");
+            }
+        }
+
+        /** <inheritdoc /> */
+        public IBinaryObjectBuilder ToBuilder()
+        {
+            return _marsh.Ignite.GetBinary().GetBuilder(this);
         }
 
         /// <summary>
@@ -115,13 +151,16 @@ namespace Apache.Ignite.Core.Impl.Binary
         {
             if (_deserialized == null)
             {
-                IBinaryStream stream = new BinaryHeapStream(_data);
+                T res;
 
-                stream.Seek(_offset, SeekOrigin.Begin);
+                using (IBinaryStream stream = new BinaryHeapStream(_data))
+                {
+                    stream.Seek(_offset, SeekOrigin.Begin);
 
-                T res = _marsh.Unmarshal<T>(stream, mode);
+                    res = _marsh.Unmarshal<T>(stream, mode);
+                }
 
-                IBinaryTypeDescriptor desc = _marsh.GetDescriptor(true, _header.TypeId);
+                var desc = _marsh.GetDescriptor(true, _header.TypeId);
 
                 if (!desc.KeepDeserialized)
                     return res;
@@ -173,11 +212,12 @@ namespace Apache.Ignite.Core.Impl.Binary
             if (_fields != null) 
                 return;
 
-            var stream = new BinaryHeapStream(_data);
+            using (var stream = new BinaryHeapStream(_data))
+            {
+                var hdr = BinaryObjectHeader.Read(stream, _offset);
 
-            var hdr = BinaryObjectHeader.Read(stream, _offset);
-
-            _fields = hdr.ReadSchemaAsDictionary(stream, _offset) ?? EmptyFields;
+                _fields = hdr.ReadSchemaAsDictionary(stream, _offset) ?? EmptyFields;
+            }
         }
 
         /** <inheritdoc /> */
@@ -227,15 +267,16 @@ namespace Apache.Ignite.Core.Impl.Binary
 
                     // 4. Check if objects have the same raw data.
                     // ReSharper disable ImpureMethodCallOnReadonlyValueField (method is not impure)
-                    var stream = new BinaryHeapStream(_data);
-                    var rawOffset = _header.GetRawOffset(stream, _offset);
+                    using (var stream = new BinaryHeapStream(_data))
+                    using (var thatStream = new BinaryHeapStream(that._data))
+                    {
+                        var rawOffset = _header.GetRawOffset(stream, _offset);
+                        var thatRawOffset = that._header.GetRawOffset(thatStream, that._offset);
 
-                    var thatStream = new BinaryHeapStream(that._data);
-                    var thatRawOffset = that._header.GetRawOffset(thatStream, that._offset);
+                        return BinaryUtils.CompareArrays(_data, _offset + rawOffset, _header.Length - rawOffset,
+                            that._data, that._offset + thatRawOffset, that._header.Length - thatRawOffset);
+                    }
                     // ReSharper restore ImpureMethodCallOnReadonlyValueField
-
-                    return BinaryUtils.CompareArrays(_data, _offset + rawOffset, _header.Length - rawOffset, 
-                        that._data, that._offset + thatRawOffset, that._header.Length - thatRawOffset);
                 }
             }
 

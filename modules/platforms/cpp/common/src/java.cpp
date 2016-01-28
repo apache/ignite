@@ -78,7 +78,7 @@ namespace ignite
                 }
             };
 
-            /*
+            /**
              * Heloper function to copy characters.
              *
              * @param src Source.
@@ -148,6 +148,32 @@ namespace ignite
                     delete[] errMsg;
             }
 
+            /**
+             * Guard to ensure global reference cleanup.
+             */
+            class JniGlobalRefGuard
+            {
+            public:
+                JniGlobalRefGuard(JNIEnv *e, jobject obj) : env(e), ref(obj)
+                {
+                    // No-op.
+                }
+
+                ~JniGlobalRefGuard()
+                {
+                    env->DeleteGlobalRef(ref);
+                }
+
+            private:
+                /** Environment. */
+                JNIEnv* env;
+
+                /** Target reference. */
+                jobject ref;
+
+                IGNITE_NO_COPY_ASSIGNMENT(JniGlobalRefGuard)
+            };
+
             const char* C_THROWABLE = "java/lang/Throwable";
             JniMethod M_THROWABLE_GET_MESSAGE = JniMethod("getMessage", "()Ljava/lang/String;", false);
             JniMethod M_THROWABLE_PRINT_STACK_TRACE = JniMethod("printStackTrace", "()V", false);
@@ -165,6 +191,7 @@ namespace ignite
             JniMethod M_PLATFORM_PROCESSOR_CACHE = JniMethod("cache", "(Ljava/lang/String;)Lorg/apache/ignite/internal/processors/platform/PlatformTarget;", false);
             JniMethod M_PLATFORM_PROCESSOR_CREATE_CACHE = JniMethod("createCache", "(Ljava/lang/String;)Lorg/apache/ignite/internal/processors/platform/PlatformTarget;", false);
             JniMethod M_PLATFORM_PROCESSOR_GET_OR_CREATE_CACHE = JniMethod("getOrCreateCache", "(Ljava/lang/String;)Lorg/apache/ignite/internal/processors/platform/PlatformTarget;", false);
+            JniMethod M_PLATFORM_PROCESSOR_DESTROY_CACHE = JniMethod("destroyCache", "(Ljava/lang/String;)V", false);
             JniMethod M_PLATFORM_PROCESSOR_AFFINITY = JniMethod("affinity", "(Ljava/lang/String;)Lorg/apache/ignite/internal/processors/platform/PlatformTarget;", false);
             JniMethod M_PLATFORM_PROCESSOR_DATA_STREAMER = JniMethod("dataStreamer", "(Ljava/lang/String;Z)Lorg/apache/ignite/internal/processors/platform/PlatformTarget;", false);
             JniMethod M_PLATFORM_PROCESSOR_TRANSACTIONS = JniMethod("transactions", "()Lorg/apache/ignite/internal/processors/platform/PlatformTarget;", false);
@@ -174,7 +201,7 @@ namespace ignite
             JniMethod M_PLATFORM_PROCESSOR_SERVICES = JniMethod("services", "(Lorg/apache/ignite/internal/processors/platform/PlatformTarget;)Lorg/apache/ignite/internal/processors/platform/PlatformTarget;", false);
             JniMethod M_PLATFORM_PROCESSOR_EXTENSIONS = JniMethod("extensions", "()Lorg/apache/ignite/internal/processors/platform/PlatformTarget;", false);
             JniMethod M_PLATFORM_PROCESSOR_ATOMIC_LONG = JniMethod("atomicLong", "(Ljava/lang/String;JZ)Lorg/apache/ignite/internal/processors/platform/PlatformTarget;", false);
-            
+
             const char* C_PLATFORM_TARGET = "org/apache/ignite/internal/processors/platform/PlatformTarget";
             JniMethod M_PLATFORM_TARGET_IN_STREAM_OUT_LONG = JniMethod("inStreamOutLong", "(IJ)J", false);
             JniMethod M_PLATFORM_TARGET_IN_STREAM_OUT_OBJECT = JniMethod("inStreamOutObject", "(IJ)Ljava/lang/Object;", false);
@@ -185,6 +212,8 @@ namespace ignite
             JniMethod M_PLATFORM_TARGET_OUT_OBJECT = JniMethod("outObject", "(I)Ljava/lang/Object;", false);
             JniMethod M_PLATFORM_TARGET_LISTEN_FUTURE = JniMethod("listenFuture", "(JI)V", false);
             JniMethod M_PLATFORM_TARGET_LISTEN_FOR_OPERATION = JniMethod("listenFutureForOperation", "(JII)V", false);
+            JniMethod M_PLATFORM_TARGET_LISTEN_FUTURE_AND_GET = JniMethod("listenFutureAndGet", "(JI)Lorg/apache/ignite/internal/processors/platform/utils/PlatformListenable;", false);
+            JniMethod M_PLATFORM_TARGET_LISTEN_FOR_OPERATION_AND_GET = JniMethod("listenFutureForOperationAndGet", "(JII)Lorg/apache/ignite/internal/processors/platform/utils/PlatformListenable;", false);
 
             const char* C_PLATFORM_CLUSTER_GRP = "org/apache/ignite/internal/processors/platform/cluster/PlatformClusterGroup";
             JniMethod M_PLATFORM_CLUSTER_GRP_FOR_OTHERS = JniMethod("forOthers", "(Lorg/apache/ignite/internal/processors/platform/cluster/PlatformClusterGroup;)Lorg/apache/ignite/internal/processors/platform/cluster/PlatformClusterGroup;", false);
@@ -194,21 +223,21 @@ namespace ignite
             JniMethod M_PLATFORM_CLUSTER_GRP_FOR_OLDEST = JniMethod("forOldest", "()Lorg/apache/ignite/internal/processors/platform/cluster/PlatformClusterGroup;", false);
             JniMethod M_PLATFORM_CLUSTER_GRP_FOR_YOUNGEST = JniMethod("forYoungest", "()Lorg/apache/ignite/internal/processors/platform/cluster/PlatformClusterGroup;", false);
             JniMethod M_PLATFORM_CLUSTER_GRP_RESET_METRICS = JniMethod("resetMetrics", "()V", false);
-            
+
             const char* C_PLATFORM_MESSAGING = "org/apache/ignite/internal/processors/platform/messaging/PlatformMessaging";
             JniMethod M_PLATFORM_MESSAGING_WITH_ASYNC = JniMethod("withAsync", "()Lorg/apache/ignite/internal/processors/platform/messaging/PlatformMessaging;", false);
 
             const char* C_PLATFORM_COMPUTE = "org/apache/ignite/internal/processors/platform/compute/PlatformCompute";
             JniMethod M_PLATFORM_COMPUTE_WITH_NO_FAILOVER = JniMethod("withNoFailover", "()V", false);
             JniMethod M_PLATFORM_COMPUTE_WITH_TIMEOUT = JniMethod("withTimeout", "(J)V", false);
-            JniMethod M_PLATFORM_COMPUTE_EXECUTE_NATIVE = JniMethod("executeNative", "(JJ)V", false);
+            JniMethod M_PLATFORM_COMPUTE_EXECUTE_NATIVE = JniMethod("executeNative", "(JJ)Lorg/apache/ignite/internal/processors/platform/utils/PlatformListenable;", false);
 
             const char* C_PLATFORM_CACHE = "org/apache/ignite/internal/processors/platform/cache/PlatformCache";
             JniMethod M_PLATFORM_CACHE_WITH_SKIP_STORE = JniMethod("withSkipStore", "()Lorg/apache/ignite/internal/processors/platform/cache/PlatformCache;", false);
             JniMethod M_PLATFORM_CACHE_WITH_NO_RETRIES = JniMethod("withNoRetries", "()Lorg/apache/ignite/internal/processors/platform/cache/PlatformCache;", false);
             JniMethod M_PLATFORM_CACHE_WITH_EXPIRY_PLC = JniMethod("withExpiryPolicy", "(JJJ)Lorg/apache/ignite/internal/processors/platform/cache/PlatformCache;", false);
             JniMethod M_PLATFORM_CACHE_WITH_ASYNC = JniMethod("withAsync", "()Lorg/apache/ignite/internal/processors/platform/cache/PlatformCache;", false);
-            JniMethod M_PLATFORM_CACHE_WITH_KEEP_PORTABLE = JniMethod("withKeepPortable", "()Lorg/apache/ignite/internal/processors/platform/cache/PlatformCache;", false);
+            JniMethod M_PLATFORM_CACHE_WITH_KEEP_PORTABLE = JniMethod("withKeepBinary", "()Lorg/apache/ignite/internal/processors/platform/cache/PlatformCache;", false);
             JniMethod M_PLATFORM_CACHE_CLEAR = JniMethod("clear", "()V", false);
             JniMethod M_PLATFORM_CACHE_REMOVE_ALL = JniMethod("removeAll", "()V", false);
             JniMethod M_PLATFORM_CACHE_ITERATOR = JniMethod("iterator", "()Lorg/apache/ignite/internal/processors/platform/cache/PlatformCacheIterator;", false);
@@ -296,16 +325,16 @@ namespace ignite
             JniMethod M_PLATFORM_CALLBACK_UTILS_MESSAGING_FILTER_CREATE = JniMethod("messagingFilterCreate", "(JJ)J", true);
             JniMethod M_PLATFORM_CALLBACK_UTILS_MESSAGING_FILTER_APPLY = JniMethod("messagingFilterApply", "(JJJ)I", true);
             JniMethod M_PLATFORM_CALLBACK_UTILS_MESSAGING_FILTER_DESTROY = JniMethod("messagingFilterDestroy", "(JJ)V", true);
-            
+
             JniMethod M_PLATFORM_CALLBACK_UTILS_EVENT_FILTER_CREATE = JniMethod("eventFilterCreate", "(JJ)J", true);
             JniMethod M_PLATFORM_CALLBACK_UTILS_EVENT_FILTER_APPLY = JniMethod("eventFilterApply", "(JJJ)I", true);
             JniMethod M_PLATFORM_CALLBACK_UTILS_EVENT_FILTER_DESTROY = JniMethod("eventFilterDestroy", "(JJ)V", true);
-            
+
             JniMethod M_PLATFORM_CALLBACK_UTILS_SERVICE_INIT = JniMethod("serviceInit", "(JJ)J", true);
             JniMethod M_PLATFORM_CALLBACK_UTILS_SERVICE_EXECUTE = JniMethod("serviceExecute", "(JJJ)V", true);
             JniMethod M_PLATFORM_CALLBACK_UTILS_SERVICE_CANCEL = JniMethod("serviceCancel", "(JJJ)V", true);
             JniMethod M_PLATFORM_CALLBACK_UTILS_SERVICE_INVOKE_METHOD = JniMethod("serviceInvokeMethod", "(JJJJ)V", true);
-			
+
             JniMethod M_PLATFORM_CALLBACK_UTILS_CLUSTER_NODE_FILTER_APPLY = JniMethod("clusterNodeFilterApply", "(JJ)I", true);
 
             JniMethod M_PLATFORM_CALLBACK_UTILS_NODE_INFO = JniMethod("nodeInfo", "(JJ)V", true);
@@ -317,7 +346,7 @@ namespace ignite
 
             JniMethod M_PLATFORM_CALLBACK_UTILS_EXTENSION_CALLBACK_IN_LONG_OUT_LONG = JniMethod("extensionCallbackInLongOutLong", "(JIJ)J", true);
             JniMethod M_PLATFORM_CALLBACK_UTILS_EXTENSION_CALLBACK_IN_LONG_LONG_OUT_LONG = JniMethod("extensionCallbackInLongLongOutLong", "(JIJJ)J", true);
-            
+
             const char* C_PLATFORM_UTILS = "org/apache/ignite/internal/processors/platform/utils/PlatformUtils";
             JniMethod M_PLATFORM_UTILS_REALLOC = JniMethod("reallocate", "(JI)V", true);
             JniMethod M_PLATFORM_UTILS_ERR_DATA = JniMethod("errorData", "(Ljava/lang/Throwable;)[B", true);
@@ -328,7 +357,7 @@ namespace ignite
             JniMethod M_PLATFORM_IGNITION_ENVIRONMENT_POINTER = JniMethod("environmentPointer", "(Ljava/lang/String;)J", true);
             JniMethod M_PLATFORM_IGNITION_STOP = JniMethod("stop", "(Ljava/lang/String;Z)Z", true);
             JniMethod M_PLATFORM_IGNITION_STOP_ALL = JniMethod("stopAll", "(Z)V", true);
-            
+
             const char* C_PLATFORM_ABSTRACT_QRY_CURSOR = "org/apache/ignite/internal/processors/platform/cache/query/PlatformAbstractQueryCursor";
             JniMethod M_PLATFORM_ABSTRACT_QRY_CURSOR_ITER = JniMethod("iterator", "()V", false);
             JniMethod M_PLATFORM_ABSTRACT_QRY_CURSOR_ITER_HAS_NEXT = JniMethod("iteratorHasNext", "()Z", false);
@@ -343,10 +372,10 @@ namespace ignite
             JniMethod M_PLATFORM_EVENTS_STOP_LOCAL_LISTEN = JniMethod("stopLocalListen", "(J)Z", false);
             JniMethod M_PLATFORM_EVENTS_LOCAL_LISTEN = JniMethod("localListen", "(JI)V", false);
             JniMethod M_PLATFORM_EVENTS_IS_ENABLED = JniMethod("isEnabled", "(I)Z", false);
-            
+
             const char* C_PLATFORM_SERVICES = "org/apache/ignite/internal/processors/platform/services/PlatformServices";
 			JniMethod M_PLATFORM_SERVICES_WITH_ASYNC = JniMethod("withAsync", "()Lorg/apache/ignite/internal/processors/platform/services/PlatformServices;", false);
-			JniMethod M_PLATFORM_SERVICES_WITH_SERVER_KEEP_PORTABLE = JniMethod("withServerKeepPortable", "()Lorg/apache/ignite/internal/processors/platform/services/PlatformServices;", false);
+			JniMethod M_PLATFORM_SERVICES_WITH_SERVER_KEEP_PORTABLE = JniMethod("withServerKeepBinary", "()Lorg/apache/ignite/internal/processors/platform/services/PlatformServices;", false);
 			JniMethod M_PLATFORM_SERVICES_CANCEL = JniMethod("cancel", "(Ljava/lang/String;)V", false);
 			JniMethod M_PLATFORM_SERVICES_CANCEL_ALL = JniMethod("cancelAll", "()V", false);
 			JniMethod M_PLATFORM_SERVICES_SERVICE_PROXY = JniMethod("dotNetServiceProxy", "(Ljava/lang/String;Z)Ljava/lang/Object;", false);
@@ -364,6 +393,10 @@ namespace ignite
             JniMethod M_PLATFORM_ATOMIC_LONG_IS_CLOSED = JniMethod("isClosed", "()Z", false);
             JniMethod M_PLATFORM_ATOMIC_LONG_CLOSE = JniMethod("close", "()V", false);
 
+            const char* C_PLATFORM_LISTENABLE = "org/apache/ignite/internal/processors/platform/utils/PlatformListenable";
+            JniMethod M_PLATFORM_LISTENABLE_CANCEL = JniMethod("cancel", "()Z", false);
+            JniMethod M_PLATFORM_LISTENABLE_IS_CANCELED = JniMethod("isCancelled", "()Z", false);
+
             /* STATIC STATE. */
             gcc::CriticalSection JVM_LOCK;
             JniJvm JVM;
@@ -371,7 +404,7 @@ namespace ignite
 
             /* HELPER METHODS. */
 
-            /*
+            /**
              * Throw exception to Java in case of missing callback pointer. It means that callback is not implemented in
              * native platform and Java -> platform operation cannot proceede further. As JniContext is not available at
              * this point, we have to obtain exception details from scratch. This is not critical from performance
@@ -418,7 +451,7 @@ namespace ignite
                     std::string res = std::string(resChars, *len);
 
                     delete[] resChars;
-                    
+
                     return res;
                 }
                 else
@@ -574,13 +607,13 @@ namespace ignite
                 m_PlatformDataStreamer_setPerNodeBufSize = FindMethod(env, c_PlatformDataStreamer, M_PLATFORM_DATA_STREAMER_SET_PER_NODE_BUFFER_SIZE);
                 m_PlatformDataStreamer_getPerNodeParallelOps = FindMethod(env, c_PlatformDataStreamer, M_PLATFORM_DATA_STREAMER_GET_PER_NODE_PARALLEL_OPS);
                 m_PlatformDataStreamer_setPerNodeParallelOps = FindMethod(env, c_PlatformDataStreamer, M_PLATFORM_DATA_STREAMER_SET_PER_NODE_PARALLEL_OPS);
-                
+
                 c_PlatformEvents = FindClass(env, C_PLATFORM_EVENTS);
                 m_PlatformEvents_withAsync = FindMethod(env, c_PlatformEvents, M_PLATFORM_EVENTS_WITH_ASYNC);
                 m_PlatformEvents_stopLocalListen = FindMethod(env, c_PlatformEvents, M_PLATFORM_EVENTS_STOP_LOCAL_LISTEN);
                 m_PlatformEvents_localListen = FindMethod(env, c_PlatformEvents, M_PLATFORM_EVENTS_LOCAL_LISTEN);
                 m_PlatformEvents_isEnabled = FindMethod(env, c_PlatformEvents, M_PLATFORM_EVENTS_IS_ENABLED);
-                
+
 				c_PlatformServices = FindClass(env, C_PLATFORM_SERVICES);
 				m_PlatformServices_withAsync = FindMethod(env, c_PlatformServices, M_PLATFORM_SERVICES_WITH_ASYNC);
 				m_PlatformServices_withServerKeepPortable = FindMethod(env, c_PlatformServices, M_PLATFORM_SERVICES_WITH_SERVER_KEEP_PORTABLE);
@@ -603,6 +636,7 @@ namespace ignite
                 m_PlatformProcessor_cache = FindMethod(env, c_PlatformProcessor, M_PLATFORM_PROCESSOR_CACHE);
                 m_PlatformProcessor_createCache = FindMethod(env, c_PlatformProcessor, M_PLATFORM_PROCESSOR_CREATE_CACHE);
                 m_PlatformProcessor_getOrCreateCache = FindMethod(env, c_PlatformProcessor, M_PLATFORM_PROCESSOR_GET_OR_CREATE_CACHE);
+                m_PlatformProcessor_destroyCache = FindMethod(env, c_PlatformProcessor, M_PLATFORM_PROCESSOR_DESTROY_CACHE);
                 m_PlatformProcessor_affinity = FindMethod(env, c_PlatformProcessor, M_PLATFORM_PROCESSOR_AFFINITY);
                 m_PlatformProcessor_dataStreamer = FindMethod(env, c_PlatformProcessor, M_PLATFORM_PROCESSOR_DATA_STREAMER);
                 m_PlatformProcessor_transactions = FindMethod(env, c_PlatformProcessor, M_PLATFORM_PROCESSOR_TRANSACTIONS);
@@ -624,6 +658,8 @@ namespace ignite
                 m_PlatformTarget_inObjectStreamOutStream = FindMethod(env, c_PlatformTarget, M_PLATFORM_TARGET_IN_OBJECT_STREAM_OUT_STREAM);
                 m_PlatformTarget_listenFuture = FindMethod(env, c_PlatformTarget, M_PLATFORM_TARGET_LISTEN_FUTURE);
                 m_PlatformTarget_listenFutureForOperation = FindMethod(env, c_PlatformTarget, M_PLATFORM_TARGET_LISTEN_FOR_OPERATION);
+                m_PlatformTarget_listenFutureAndGet = FindMethod(env, c_PlatformTarget, M_PLATFORM_TARGET_LISTEN_FUTURE_AND_GET);
+                m_PlatformTarget_listenFutureForOperationAndGet = FindMethod(env, c_PlatformTarget, M_PLATFORM_TARGET_LISTEN_FOR_OPERATION_AND_GET);
 
                 c_PlatformTransactions = FindClass(env, C_PLATFORM_TRANSACTIONS);
                 m_PlatformTransactions_txStart = FindMethod(env, c_PlatformTransactions, M_PLATFORM_TRANSACTIONS_TX_START);
@@ -640,7 +676,7 @@ namespace ignite
                 m_PlatformUtils_reallocate = FindMethod(env, c_PlatformUtils, M_PLATFORM_UTILS_REALLOC);
                 m_PlatformUtils_errData = FindMethod(env, c_PlatformUtils, M_PLATFORM_UTILS_ERR_DATA);
 
-                jclass c_PlatformAtomicLong = FindClass(env, C_PLATFORM_ATOMIC_LONG);
+                c_PlatformAtomicLong = FindClass(env, C_PLATFORM_ATOMIC_LONG);
                 m_PlatformAtomicLong_get = FindMethod(env, c_PlatformAtomicLong, M_PLATFORM_ATOMIC_LONG_GET);
                 m_PlatformAtomicLong_incrementAndGet = FindMethod(env, c_PlatformAtomicLong, M_PLATFORM_ATOMIC_LONG_INCREMENT_AND_GET);
                 m_PlatformAtomicLong_getAndIncrement = FindMethod(env, c_PlatformAtomicLong, M_PLATFORM_ATOMIC_LONG_GET_AND_INCREMENT);
@@ -652,6 +688,10 @@ namespace ignite
                 m_PlatformAtomicLong_compareAndSetAndGet = FindMethod(env, c_PlatformAtomicLong, M_PLATFORM_ATOMIC_LONG_COMPARE_AND_SET_AND_GET);
                 m_PlatformAtomicLong_isClosed = FindMethod(env, c_PlatformAtomicLong, M_PLATFORM_ATOMIC_LONG_IS_CLOSED);
                 m_PlatformAtomicLong_close = FindMethod(env, c_PlatformAtomicLong, M_PLATFORM_ATOMIC_LONG_CLOSE);
+
+                c_PlatformListenable = FindClass(env, C_PLATFORM_LISTENABLE);
+                m_PlatformListenable_cancel = FindMethod(env, c_PlatformListenable, M_PLATFORM_LISTENABLE_CANCEL);                    
+                m_PlatformListenable_isCancelled = FindMethod(env, c_PlatformListenable, M_PLATFORM_LISTENABLE_IS_CANCELED);
 
                 // Find utility classes which are not used from context, but are still required in other places.
                 CheckClass(env, C_PLATFORM_NO_CALLBACK_EXCEPTION);
@@ -681,7 +721,7 @@ namespace ignite
                 // No-op.
             }
 
-            JniJvm::JniJvm(JavaVM* jvm, JniJavaMembers javaMembers, JniMembers members) : 
+            JniJvm::JniJvm(JavaVM* jvm, JniJavaMembers javaMembers, JniMembers members) :
                 jvm(jvm), javaMembers(javaMembers), members(members)
             {
                 // No-op.
@@ -702,7 +742,7 @@ namespace ignite
                 return members;
             }
 
-            /*
+            /**
              * Create JVM.
              */
             void CreateJvm(char** opts, int optsLen, JavaVM** jvm, JNIEnv** env) {
@@ -719,7 +759,7 @@ namespace ignite
                 args.ignoreUnrecognized = 0;
 
                 jint res = JNI_CreateJavaVM(jvm, reinterpret_cast<void**>(env), &args);
-                
+
                 delete[] opts0;
 
                 if (res != JNI_OK)
@@ -780,16 +820,16 @@ namespace ignite
                     AddNativeMethod(methods + idx++, M_PLATFORM_CALLBACK_UTILS_MESSAGING_FILTER_CREATE, reinterpret_cast<void*>(JniMessagingFilterCreate));
                     AddNativeMethod(methods + idx++, M_PLATFORM_CALLBACK_UTILS_MESSAGING_FILTER_APPLY, reinterpret_cast<void*>(JniMessagingFilterApply));
                     AddNativeMethod(methods + idx++, M_PLATFORM_CALLBACK_UTILS_MESSAGING_FILTER_DESTROY, reinterpret_cast<void*>(JniMessagingFilterDestroy));
-                    
+
                     AddNativeMethod(methods + idx++, M_PLATFORM_CALLBACK_UTILS_EVENT_FILTER_CREATE, reinterpret_cast<void*>(JniEventFilterCreate));
                     AddNativeMethod(methods + idx++, M_PLATFORM_CALLBACK_UTILS_EVENT_FILTER_APPLY, reinterpret_cast<void*>(JniEventFilterApply));
                     AddNativeMethod(methods + idx++, M_PLATFORM_CALLBACK_UTILS_EVENT_FILTER_DESTROY, reinterpret_cast<void*>(JniEventFilterDestroy));
-                    
+
                     AddNativeMethod(methods + idx++, M_PLATFORM_CALLBACK_UTILS_SERVICE_INIT, reinterpret_cast<void*>(JniServiceInit));
                     AddNativeMethod(methods + idx++, M_PLATFORM_CALLBACK_UTILS_SERVICE_EXECUTE, reinterpret_cast<void*>(JniServiceExecute));
                     AddNativeMethod(methods + idx++, M_PLATFORM_CALLBACK_UTILS_SERVICE_CANCEL, reinterpret_cast<void*>(JniServiceCancel));
                     AddNativeMethod(methods + idx++, M_PLATFORM_CALLBACK_UTILS_SERVICE_INVOKE_METHOD, reinterpret_cast<void*>(JniServiceInvokeMethod));
-					
+
                     AddNativeMethod(methods + idx++, M_PLATFORM_CALLBACK_UTILS_CLUSTER_NODE_FILTER_APPLY, reinterpret_cast<void*>(JniClusterNodeFilterApply));
 
                     AddNativeMethod(methods + idx++, M_PLATFORM_CALLBACK_UTILS_NODE_INFO, reinterpret_cast<void*>(JniNodeInfo));
@@ -806,7 +846,7 @@ namespace ignite
 
                     if (res != JNI_OK)
                         throw JvmException();
-                }  
+                }
             }
 
             JniContext::JniContext(JniJvm* jvm, JniHandlers hnds) : jvm(jvm), hnds(hnds) {
@@ -841,7 +881,7 @@ namespace ignite
 
                 try {
                     if (!JVM.GetJvm()) {
-                        // 1. Create JVM itself.    
+                        // 1. Create JVM itself.
                         CreateJvm(opts, optsLen, &jvm, &env);
 
                         // 2. Populate members;
@@ -950,7 +990,7 @@ namespace ignite
             jobject JniContext::IgnitionStart(char* cfgPath, char* name, int factoryId, long long dataPtr) {
                 return IgnitionStart(cfgPath, name, factoryId, dataPtr, NULL);
             }
-            
+
             jobject JniContext::IgnitionStart(char* cfgPath, char* name, int factoryId, long long dataPtr, JniErrorInfo* errInfo)
             {
                 JNIEnv* env = Attach();
@@ -1106,6 +1146,24 @@ namespace ignite
                 return ProcessorCache0(obj, name, jvm->GetMembers().m_PlatformProcessor_getOrCreateCache, errInfo);
             }
 
+            void JniContext::ProcessorDestroyCache(jobject obj, const char* name) {
+                ProcessorDestroyCache(obj, name, NULL);
+            }
+
+            void JniContext::ProcessorDestroyCache(jobject obj, const char* name, JniErrorInfo* errInfo)
+            {
+                JNIEnv* env = Attach();
+
+                jstring name0 = name != NULL ? env->NewStringUTF(name) : NULL;
+
+                env->CallVoidMethod(obj, jvm->GetMembers().m_PlatformProcessor_destroyCache, name0);
+
+                if (name0)
+                    env->DeleteLocalRef(name0);
+
+                ExceptionCheck(env, errInfo);
+            }
+
             jobject JniContext::ProcessorAffinity(jobject obj, const char* name) {
                 JNIEnv* env = Attach();
 
@@ -1146,7 +1204,7 @@ namespace ignite
 
                 return LocalToGlobal(env, tx);
             }
-            
+
             jobject JniContext::ProcessorCompute(jobject obj, jobject prj) {
                 JNIEnv* env = Attach();
 
@@ -1186,7 +1244,7 @@ namespace ignite
 
                 return LocalToGlobal(env, res);
             }
-            
+
             jobject JniContext::ProcessorExtensions(jobject obj)
             {
                 JNIEnv* env = Attach();
@@ -1294,6 +1352,28 @@ namespace ignite
                 env->CallVoidMethod(obj, jvm->GetMembers().m_PlatformTarget_listenFutureForOperation, futId, typ, opId);
 
                 ExceptionCheck(env);
+            }
+
+            void* JniContext::TargetListenFutureAndGet(jobject obj, long long futId, int typ) {
+                JNIEnv* env = Attach();
+
+                jobject res = env->CallObjectMethod(obj,
+                    jvm->GetMembers().m_PlatformTarget_listenFutureAndGet, futId, typ);
+
+                ExceptionCheck(env);
+
+                return LocalToGlobal(env, res);
+            }
+
+            void* JniContext::TargetListenFutureForOperationAndGet(jobject obj, long long futId, int typ, int opId) {
+                JNIEnv* env = Attach();
+
+                jobject res = env->CallObjectMethod(obj,
+                    jvm->GetMembers().m_PlatformTarget_listenFutureForOperationAndGet, futId, typ, opId);
+
+                ExceptionCheck(env);
+
+                return LocalToGlobal(env, res);
             }
 
             int JniContext::AffinityPartitions(jobject obj) {
@@ -1491,12 +1571,15 @@ namespace ignite
                 ExceptionCheck(env);
             }
 
-            void JniContext::ComputeExecuteNative(jobject obj, long long taskPtr, long long topVer) {
+            void* JniContext::ComputeExecuteNative(jobject obj, long long taskPtr, long long topVer) {
                 JNIEnv* env = Attach();
 
-                env->CallVoidMethod(obj, jvm->GetMembers().m_PlatformCompute_executeNative, taskPtr, topVer);
+                jobject res = env->CallObjectMethod(obj,
+                    jvm->GetMembers().m_PlatformCompute_executeNative, taskPtr, topVer);
 
                 ExceptionCheck(env);
+
+                return LocalToGlobal(env, res);
             }
 
             void JniContext::ContinuousQueryClose(jobject obj) {
@@ -1510,7 +1593,8 @@ namespace ignite
             jobject JniContext::ContinuousQueryGetInitialQueryCursor(jobject obj) {
                 JNIEnv* env = Attach();
 
-                jobject res = env->CallObjectMethod(obj, jvm->GetMembers().m_PlatformContinuousQuery_getInitialQueryCursor);
+                jobject res = env->CallObjectMethod(obj,
+                    jvm->GetMembers().m_PlatformContinuousQuery_getInitialQueryCursor);
 
                 ExceptionCheck(env);
 
@@ -1835,7 +1919,7 @@ namespace ignite
 
                 return res != 0;
             }
-            
+
 			jobject JniContext::ServicesWithAsync(jobject obj) {
                 JNIEnv* env = Attach();
 
@@ -2011,6 +2095,28 @@ namespace ignite
                 ExceptionCheck(env);
             }
 
+            bool JniContext::ListenableCancel(jobject obj)
+            {
+                JNIEnv* env = Attach();
+
+                jboolean res = env->CallBooleanMethod(obj, jvm->GetMembers().m_PlatformListenable_cancel);
+
+                ExceptionCheck(env);
+
+                return res != 0;;
+            }
+
+            bool JniContext::ListenableIsCancelled(jobject obj)
+            {
+                JNIEnv* env = Attach();
+
+                jboolean res = env->CallBooleanMethod(obj, jvm->GetMembers().m_PlatformListenable_isCancelled);
+
+                ExceptionCheck(env);
+
+                return res != 0;;
+            }
+
 			jobject JniContext::Acquire(jobject obj)
             {
                 if (obj) {
@@ -2023,7 +2129,7 @@ namespace ignite
 
                     return obj0;
                 }
-                
+
                 return NULL;
             }
 
@@ -2031,14 +2137,14 @@ namespace ignite
                 if (obj)
                 {
                     JavaVM* jvm = JVM.GetJvm();
-                    
+
                     if (jvm)
                     {
                         JNIEnv* env;
 
                         jint attachRes = jvm->AttachCurrentThread(reinterpret_cast<void**>(&env), NULL);
 
-                        if (attachRes == JNI_OK) 
+                        if (attachRes == JNI_OK)
                         {
                             AttachHelper::OnThreadAttach();
 
@@ -2058,9 +2164,9 @@ namespace ignite
                 jvm->GetJvm()->DestroyJavaVM();
             }
 
-            /*
-            * Attach thread to JVM.
-            */
+            /**
+             * Attach thread to JVM.
+             */
             JNIEnv* JniContext::Attach() {
                 JNIEnv* env;
 
@@ -2124,7 +2230,7 @@ namespace ignite
                         if (hnds.error)
                             hnds.error(hnds.target, IGNITE_JNI_ERR_GENERIC, clsName0.c_str(), clsNameLen, msg0.c_str(), msgLen,
                                 errBytesNative, errBytesLen);
-                        
+
                         env->ReleaseByteArrayElements(errData, errBytesNative, JNI_ABORT);
                     }
                     else
@@ -2133,14 +2239,14 @@ namespace ignite
                             hnds.error(hnds.target, IGNITE_JNI_ERR_GENERIC, clsName0.c_str(), clsNameLen, msg0.c_str(), msgLen,
                                 NULL, 0);
                     }
-                    
+
                     env->DeleteLocalRef(err);
                 }
             }
 
-            /*
-            * Convert local reference to global.
-            */
+            /**
+             * Convert local reference to global.
+             */
             jobject JniContext::LocalToGlobal(JNIEnv* env, jobject localRef) {
                 if (localRef) {
                     jobject globalRef = env->NewGlobalRef(localRef);
@@ -2161,7 +2267,22 @@ namespace ignite
             }
 
             JNIEXPORT jint JNICALL JniCacheStoreInvoke(JNIEnv *env, jclass cls, jlong envPtr, jlong objPtr, jlong memPtr, jobject cb) {
-                IGNITE_SAFE_FUNC(env, envPtr, CacheStoreInvokeHandler, cacheStoreInvoke, objPtr, memPtr, cb);
+                if (cb)
+                {
+                    jobject cb0 = env->NewGlobalRef(cb);
+
+                    if (cb0)
+                    {
+                        JniGlobalRefGuard guard(env, cb0);
+
+                        IGNITE_SAFE_FUNC(env, envPtr, CacheStoreInvokeHandler, cacheStoreInvoke, objPtr, memPtr, cb0);
+                    }
+                    else
+                        return 0;
+                }
+                else {
+                    IGNITE_SAFE_FUNC(env, envPtr, CacheStoreInvokeHandler, cacheStoreInvoke, objPtr, memPtr, NULL);
+                }
             }
 
             JNIEXPORT void JNICALL JniCacheStoreDestroy(JNIEnv *env, jclass cls, jlong envPtr, jlong objPtr) {
@@ -2223,7 +2344,7 @@ namespace ignite
             JNIEXPORT void JNICALL JniComputeJobDestroy(JNIEnv *env, jclass cls, jlong envPtr, jlong jobPtr) {
                 IGNITE_SAFE_PROC(env, envPtr, ComputeJobDestroyHandler, computeJobDestroy, jobPtr);
             }
-            
+
             JNIEXPORT void JNICALL JniContinuousQueryListenerApply(JNIEnv *env, jclass cls, jlong envPtr, jlong cbPtr, jlong memPtr) {
                 IGNITE_SAFE_PROC(env, envPtr, ContinuousQueryListenerApplyHandler, contQryLsnrApply, cbPtr, memPtr);
             }
@@ -2245,7 +2366,14 @@ namespace ignite
             }
 
             JNIEXPORT void JNICALL JniDataStreamerStreamReceiverInvoke(JNIEnv *env, jclass cls, jlong envPtr, jlong ptr, jobject cache, jlong memPtr, jboolean keepPortable) {
-                IGNITE_SAFE_PROC(env, envPtr, DataStreamerStreamReceiverInvokeHandler, streamReceiverInvoke, ptr, cache, memPtr, keepPortable);
+                jobject cache0 = env->NewGlobalRef(cache);
+
+                if (cache0)
+                {
+                    JniGlobalRefGuard guard(env, cache0);
+
+                    IGNITE_SAFE_PROC(env, envPtr, DataStreamerStreamReceiverInvokeHandler, streamReceiverInvoke, ptr, cache0, memPtr, keepPortable);
+                }
             }
 
             JNIEXPORT void JNICALL JniFutureByteResult(JNIEnv *env, jclass cls, jlong envPtr, jlong futPtr, jint res) {
@@ -2311,7 +2439,7 @@ namespace ignite
             JNIEXPORT void JNICALL JniMessagingFilterDestroy(JNIEnv *env, jclass cls, jlong envPtr, jlong ptr) {
                 IGNITE_SAFE_PROC(env, envPtr, MessagingFilterDestroyHandler, messagingFilterDestroy, ptr);
             }
-            
+
             JNIEXPORT jlong JNICALL JniEventFilterCreate(JNIEnv *env, jclass cls, jlong envPtr, jlong memPtr) {
                 IGNITE_SAFE_FUNC(env, envPtr, EventFilterCreateHandler, eventFilterCreate, memPtr);
             }
@@ -2355,7 +2483,7 @@ namespace ignite
             JNIEXPORT void JNICALL JniOnStop(JNIEnv *env, jclass cls, jlong envPtr) {
                 IGNITE_SAFE_PROC_NO_ARG(env, envPtr, OnStopHandler, onStop);
             }
-            
+
             JNIEXPORT jlong JNICALL JniExtensionCallbackInLongOutLong(JNIEnv *env, jclass cls, jlong envPtr, jint typ, jlong arg1) {
                 IGNITE_SAFE_FUNC(env, envPtr, ExtensionCallbackInLongOutLongHandler, extensionCallbackInLongOutLong, typ, arg1);
             }

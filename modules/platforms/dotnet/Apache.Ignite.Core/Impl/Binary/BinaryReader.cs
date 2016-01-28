@@ -399,13 +399,34 @@ namespace Apache.Ignite.Core.Impl.Binary
         /** <inheritdoc /> */
         public T ReadEnum<T>(string fieldName)
         {
-            return ReadField(fieldName, BinaryUtils.ReadEnum<T>, BinaryUtils.TypeEnum);
+            return SeekField(fieldName) ? ReadEnum<T>() : default(T);
         }
 
         /** <inheritdoc /> */
         public T ReadEnum<T>()
         {
-            return Read(BinaryUtils.ReadEnum<T>, BinaryUtils.TypeEnum);
+            var hdr = ReadByte();
+
+            switch (hdr)
+            {
+                case BinaryUtils.HdrNull:
+                    return default(T);
+
+                case BinaryUtils.TypeEnum:
+                    // Never read enums in binary mode when reading a field (we do not support half-binary objects)
+                    return ReadEnum0<T>(this, false);  
+
+                case BinaryUtils.HdrFull:
+                    // Unregistered enum written as serializable
+                    Stream.Seek(-1, SeekOrigin.Current);
+
+                    return ReadObject<T>(); 
+
+                default:
+                    throw new BinaryObjectException(
+                        string.Format("Invalid header on enum deserialization. Expected: {0} or {1} but was: {2}",
+                            BinaryUtils.TypeEnum, BinaryUtils.HdrFull, hdr));
+            }
         }
 
         /** <inheritdoc /> */
@@ -463,15 +484,14 @@ namespace Apache.Ignite.Core.Impl.Binary
         }
 
         /** <inheritdoc /> */
-        public ICollection ReadCollection(string fieldName, CollectionFactory factory,
-            CollectionAdder adder)
+        public ICollection ReadCollection(string fieldName, Func<int, ICollection> factory, 
+            Action<ICollection, object> adder)
         {
             return ReadField(fieldName, r => BinaryUtils.ReadCollection(r, factory, adder), BinaryUtils.TypeCollection);
         }
 
         /** <inheritdoc /> */
-        public ICollection ReadCollection(CollectionFactory factory,
-            CollectionAdder adder)
+        public ICollection ReadCollection(Func<int, ICollection> factory, Action<ICollection, object> adder)
         {
             return Read(r => BinaryUtils.ReadCollection(r, factory, adder), BinaryUtils.TypeCollection);
         }
@@ -485,17 +505,17 @@ namespace Apache.Ignite.Core.Impl.Binary
         /** <inheritdoc /> */
         public IDictionary ReadDictionary()
         {
-            return ReadDictionary((DictionaryFactory)null);
+            return ReadDictionary((Func<int, IDictionary>) null);
         }
 
         /** <inheritdoc /> */
-        public IDictionary ReadDictionary(string fieldName, DictionaryFactory factory)
+        public IDictionary ReadDictionary(string fieldName, Func<int, IDictionary> factory)
         {
             return ReadField(fieldName, r => BinaryUtils.ReadDictionary(r, factory), BinaryUtils.TypeDictionary);
         }
 
         /** <inheritdoc /> */
-        public IDictionary ReadDictionary(DictionaryFactory factory)
+        public IDictionary ReadDictionary(Func<int, IDictionary> factory)
         {
             return Read(r => BinaryUtils.ReadDictionary(r, factory), BinaryUtils.TypeDictionary);
         }
@@ -503,9 +523,11 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// <summary>
         /// Enable detach mode for the next object read. 
         /// </summary>
-        public void DetachNext()
+        public BinaryReader DetachNext()
         {
             _detach = true;
+
+            return this;
         }
 
         /// <summary>
@@ -513,6 +535,22 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// </summary>
         /// <returns>Deserialized object.</returns>
         public T Deserialize<T>()
+        {
+            T res;
+
+            // ReSharper disable once CompareNonConstrainedGenericWithNull
+            if (!TryDeserialize(out res) && default(T) != null)
+                throw new BinaryObjectException(string.Format("Invalid data on deserialization. " +
+                    "Expected: '{0}' But was: null", typeof (T)));
+
+            return res;
+        }
+
+        /// <summary>
+        /// Deserialize object.
+        /// </summary>
+        /// <returns>Deserialized object.</returns>
+        public bool TryDeserialize<T>(out T res)
         {
             int pos = Stream.Position;
 
@@ -525,24 +563,33 @@ namespace Apache.Ignite.Core.Impl.Binary
             switch (hdr)
             {
                 case BinaryUtils.HdrNull:
-                    if (default(T) != null)
-                        throw new BinaryObjectException(string.Format("Invalid data on deserialization. " +
-                            "Expected: '{0}' But was: null", typeof (T)));
+                    res = default(T);
 
-                    return default(T);
+                    return false;
 
                 case BinaryUtils.HdrHnd:
-                    return ReadHandleObject<T>(pos);
+                    res = ReadHandleObject<T>(pos);
+
+                    return true;
 
                 case BinaryUtils.HdrFull:
-                    return ReadFullObject<T>(pos);
+                    res = ReadFullObject<T>(pos);
+
+                    return true;
 
                 case BinaryUtils.TypeBinary:
-                    return ReadBinaryObject<T>(doDetach);
+                    res = ReadBinaryObject<T>(doDetach);
+
+                    return true;
+
+                case BinaryUtils.TypeEnum:
+                    res = ReadEnum0<T>(this, _mode != BinaryMode.Deserialize);
+
+                    return true;
             }
 
-            if (BinaryUtils.IsPredefinedType(hdr))
-                return BinarySystemHandlers.ReadSystemType<T>(hdr, this);
+            if (BinarySystemHandlers.TryReadSystemType(hdr, this, out res))
+                return true;
 
             throw new BinaryObjectException("Invalid header on deserialization [pos=" + pos + ", hdr=" + hdr + ']');
         }
@@ -873,7 +920,7 @@ namespace Apache.Ignite.Core.Impl.Binary
             if (_curRaw)
                 throw new BinaryObjectException("Cannot read named fields after raw data is read.");
 
-            if (_curHdr.IsRawOnly)
+            if (!_curHdr.HasSchema)
                 return false;
 
             var actionId = _curStruct.CurStructAction;
@@ -935,6 +982,21 @@ namespace Apache.Ignite.Core.Impl.Binary
         private T Read<T>(Func<IBinaryStream, T> readFunc, byte expHdr)
         {
             return IsNotNullHeader(expHdr) ? readFunc(Stream) : default(T);
+        }
+
+        /// <summary>
+        /// Reads the enum.
+        /// </summary>
+        private static T ReadEnum0<T>(BinaryReader reader, bool keepBinary)
+        {
+            var enumType = reader.ReadInt();
+
+            var enumValue = reader.ReadInt();
+
+            if (!keepBinary)
+                return BinaryUtils.GetEnumValue<T>(enumValue, enumType, reader.Marshaller);
+
+            return TypeCaster<T>.Cast(new BinaryEnum(enumType, enumValue, reader.Marshaller));
         }
     }
 }

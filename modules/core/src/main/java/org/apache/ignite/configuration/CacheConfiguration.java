@@ -101,10 +101,14 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     private static final long serialVersionUID = 0L;
 
     /** Default size of rebalance thread pool. */
+    @Deprecated
     public static final int DFLT_REBALANCE_THREAD_POOL_SIZE = 2;
 
     /** Default rebalance timeout (ms).*/
     public static final long DFLT_REBALANCE_TIMEOUT = 10000;
+
+    /** Default rebalance batches prefetch count. */
+    public static final long DFLT_REBALANCE_BATCHES_PREFETCH_COUNT = 2;
 
     /** Time in milliseconds to wait between rebalance messages to avoid overloading CPU. */
     public static final long DFLT_REBALANCE_THROTTLE = 0;
@@ -202,14 +206,21 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     /** Default size for onheap SQL row cache size. */
     public static final int DFLT_SQL_ONHEAP_ROW_CACHE_SIZE = 10 * 1024;
 
-    /** Default value for keep portable in store behavior .*/
+    /** Default value for keep binary in store behavior .*/
     @SuppressWarnings({"UnnecessaryBoxing", "BooleanConstructorCall"})
-    public static final Boolean DFLT_KEEP_PORTABLE_IN_STORE  = new Boolean(true);
+    public static final Boolean DFLT_STORE_KEEP_BINARY = new Boolean(false);
+
+    /** Default threshold for concurrent loading of keys from {@link CacheStore}. */
+    public static final int DFLT_CONCURRENT_LOAD_ALL_THRESHOLD = 5;
 
     /** Cache name. */
     private String name;
 
+    /** Threshold for concurrent loading of keys from {@link CacheStore}. */
+    private int storeConcurrentLoadAllThreshold = DFLT_CONCURRENT_LOAD_ALL_THRESHOLD;
+
     /** Rebalance thread pool size. */
+    @Deprecated
     private int rebalancePoolSize = DFLT_REBALANCE_THREAD_POOL_SIZE;
 
     /** Rebalance timeout. */
@@ -258,7 +269,7 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     private Factory storeFactory;
 
     /** */
-    private Boolean keepPortableInStore = DFLT_KEEP_PORTABLE_IN_STORE;
+    private Boolean storeKeepBinary = DFLT_STORE_KEEP_BINARY;
 
     /** */
     private boolean loadPrevVal = DFLT_LOAD_PREV_VAL;
@@ -292,6 +303,9 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
 
     /** Rebalance batch size. */
     private int rebalanceBatchSize = DFLT_REBALANCE_BATCH_SIZE;
+
+    /** Rebalance batches prefetch count. */
+    private long rebalanceBatchesPrefetchCount = DFLT_REBALANCE_BATCHES_PREFETCH_COUNT;
 
     /** Off-heap memory size. */
     private long offHeapMaxMem = DFLT_OFFHEAP_MEMORY;
@@ -351,13 +365,19 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     private IgnitePredicate<ClusterNode> nodeFilter;
 
     /** */
+    private String sqlSchema;
+
+    /** */
     private boolean sqlEscapeAll;
+
+    /** */
+    private int sqlOnheapRowCacheSize = DFLT_SQL_ONHEAP_ROW_CACHE_SIZE;
 
     /** */
     private transient Class<?>[] indexedTypes;
 
     /** */
-    private int sqlOnheapRowCacheSize = DFLT_SQL_ONHEAP_ROW_CACHE_SIZE;
+    private boolean snapshotableIdx;
 
     /** Copy on read flag. */
     private boolean cpOnRead = DFLT_COPY_ON_READ;
@@ -427,8 +447,7 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
         invalidate = cc.isInvalidate();
         isReadThrough = cc.isReadThrough();
         isWriteThrough = cc.isWriteThrough();
-        keepPortableInStore = cc.isKeepPortableInStore() != null ? cc.isKeepPortableInStore() :
-            DFLT_KEEP_PORTABLE_IN_STORE;
+        storeKeepBinary = cc.isStoreKeepBinary() != null ? cc.isStoreKeepBinary() : DFLT_STORE_KEEP_BINARY;
         listenerConfigurations = cc.listenerConfigurations;
         loadPrevVal = cc.isLoadPreviousValue();
         longQryWarnTimeout = cc.getLongQueryWarningTimeout();
@@ -439,15 +458,18 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
         nearCfg = cc.getNearConfiguration();
         nodeFilter = cc.getNodeFilter();
         pluginCfgs = cc.getPluginConfigurations();
-        qryEntities = cc.getQueryEntities();
-        rebalanceMode = cc.getRebalanceMode();
+        qryEntities = cc.getQueryEntities() == Collections.<QueryEntity>emptyList() ? null : cc.getQueryEntities();
+        readFromBackup = cc.isReadFromBackup();
         rebalanceBatchSize = cc.getRebalanceBatchSize();
+        rebalanceBatchesPrefetchCount = cc.getRebalanceBatchesPrefetchCount();
         rebalanceDelay = cc.getRebalanceDelay();
+        rebalanceMode = cc.getRebalanceMode();
         rebalanceOrder = cc.getRebalanceOrder();
         rebalancePoolSize = cc.getRebalanceThreadPoolSize();
         rebalanceTimeout = cc.getRebalanceTimeout();
         rebalanceThrottle = cc.getRebalanceThrottle();
-        readFromBackup = cc.isReadFromBackup();
+        snapshotableIdx = cc.isSnapshotableIndex();
+        sqlSchema = cc.getSqlSchema();
         sqlEscapeAll = cc.isSqlEscapeAll();
         sqlFuncCls = cc.getSqlFunctionClasses();
         sqlOnheapRowCacheSize = cc.getSqlOnheapRowCacheSize();
@@ -871,34 +893,64 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
 
     /**
      * Flag indicating that {@link CacheStore} implementation
-     * is working with portable objects instead of Java objects.
-     * Default value of this flag is {@link #DFLT_KEEP_PORTABLE_IN_STORE},
-     * because this is recommended behavior from performance standpoint.
+     * is working with binary objects instead of Java objects.
+     * Default value of this flag is {@link #DFLT_STORE_KEEP_BINARY}.
      * <p>
      * If set to {@code false}, Ignite will deserialize keys and
-     * values stored in portable format before they are passed
+     * values stored in binary format before they are passed
      * to cache store.
      * <p>
      * Note that setting this flag to {@code false} can simplify
      * store implementation in some cases, but it can cause performance
      * degradation due to additional serializations and deserializations
-     * of portable objects. You will also need to have key and value
+     * of binary objects. You will also need to have key and value
      * classes on all nodes since binary will be deserialized when
      * store is called.
      *
      * @return Keep binary in store flag.
      */
-    public Boolean isKeepPortableInStore() {
-        return keepPortableInStore;
+    public Boolean isStoreKeepBinary() {
+        return storeKeepBinary;
     }
 
     /**
      * Sets keep binary in store flag.
      *
-     * @param keepPortableInStore Keep binary in store flag.
+     * @param storeKeepBinary Keep binary in store flag.
      */
-    public void setKeepPortableInStore(boolean keepPortableInStore) {
-        this.keepPortableInStore = keepPortableInStore;
+    public void setStoreKeepBinary(boolean storeKeepBinary) {
+        this.storeKeepBinary = storeKeepBinary;
+    }
+
+    /**
+     * Gets the threshold used in cases when values for multiple keys are being loaded from an underlying
+     * {@link CacheStore} in parallel. In the situation when several threads load the same or intersecting set of keys
+     * and the total number of keys to load is less or equal to this threshold then there will be no a second call to
+     * the storage in order to load a key from thread A if the same key is already being loaded by thread B.
+     *
+     * The threshold should be controlled wisely. On the one hand if it's set to a big value then the interaction with
+     * a storage during the load of missing keys will be minimal. On the other hand the big value may result in
+     * significant performance degradation because it is needed to check for every key whether it's being loaded or not.
+     *
+     * When not set, default value is {@link #DFLT_CONCURRENT_LOAD_ALL_THRESHOLD}.
+     *
+     * @return The concurrent load-all threshold.
+     */
+    public int getStoreConcurrentLoadAllThreshold() {
+        return storeConcurrentLoadAllThreshold;
+    }
+
+    /**
+     * Sets the concurrent load-all threshold used for cases when keys' values are being loaded from {@link CacheStore}
+     * in parallel.
+     *
+     * @param storeConcurrentLoadAllThreshold The concurrent load-all threshold.
+     * @return {@code this} for chaining.
+     */
+    public CacheConfiguration<K, V> setStoreConcurrentLoadAllThreshold(int storeConcurrentLoadAllThreshold) {
+        this.storeConcurrentLoadAllThreshold = storeConcurrentLoadAllThreshold;
+
+        return this;
     }
 
     /**
@@ -1063,7 +1115,7 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
      * Gets class name of transaction manager finder for integration for JEE app servers.
      *
      * @return Transaction manager finder.
-     * @deprecated Use {@link TransactionConfiguration#getTxManagerLookupClassName()} instead.
+     * @deprecated Use {@link TransactionConfiguration#getTxManagerFactory()} instead.
      */
     @Deprecated
     public String getTransactionManagerLookupClassName() {
@@ -1076,7 +1128,7 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
      * @param tmLookupClsName Name of class implementing GridCacheTmLookup interface that is used to
      *      receive JTA transaction manager.
      * @return {@code this} for chaining.
-     * @deprecated Use {@link TransactionConfiguration#setTxManagerLookupClassName(String)} instead.
+     * @deprecated Use {@link TransactionConfiguration#setTxManagerFactory(Factory)} instead.
      */
     @Deprecated
     public CacheConfiguration<K, V> setTransactionManagerLookupClassName(String tmLookupClsName) {
@@ -1113,10 +1165,10 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
      * {@link CacheRebalanceMode#SYNC SYNC} or {@link CacheRebalanceMode#ASYNC ASYNC} rebalance modes only.
      * <p/>
      * If cache rebalance order is positive, rebalancing for this cache will be started only when rebalancing for
-     * all caches with smaller rebalance order (except caches with rebalance order {@code 0}) will be completed.
+     * all caches with smaller rebalance order will be completed.
      * <p/>
      * Note that cache with order {@code 0} does not participate in ordering. This means that cache with
-     * rebalance order {@code 1} will never wait for any other caches. All caches with order {@code 0} will
+     * rebalance order {@code 0} will never wait for any other caches. All caches with order {@code 0} will
      * be rebalanced right away concurrently with each other and ordered rebalance processes.
      * <p/>
      * If not set, cache order is 0, i.e. rebalancing is not ordered.
@@ -1160,6 +1212,35 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
      */
     public CacheConfiguration<K, V> setRebalanceBatchSize(int rebalanceBatchSize) {
         this.rebalanceBatchSize = rebalanceBatchSize;
+
+        return this;
+    }
+
+    /**
+     * To gain better rebalancing performance supplier node can provide more than one batch at rebalancing start and
+     * provide one new to each next demand request.
+     *
+     * Gets number of batches generated by supply node at rebalancing start.
+     * Minimum is 1.
+     *
+     * @return batches count
+     */
+    public long getRebalanceBatchesPrefetchCount() {
+        return rebalanceBatchesPrefetchCount;
+    }
+
+    /**
+     * To gain better rebalancing performance supplier node can provide more than one batch at rebalancing start and
+     * provide one new to each next demand request.
+     *
+     * Sets number of batches generated by supply node at rebalancing start.
+     * Minimum is 1.
+     *
+     * @param rebalanceBatchesCnt batches count.
+     * @return {@code this} for chaining.
+     */
+    public CacheConfiguration<K, V> setRebalanceBatchesPrefetchCount(long rebalanceBatchesCnt) {
+        this.rebalanceBatchesPrefetchCount = rebalanceBatchesCnt;
 
         return this;
     }
@@ -1350,24 +1431,22 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     }
 
     /**
-     * Gets size of rebalancing thread pool. Note that size serves as a hint and implementation
-     * may create more threads for rebalancing than specified here (but never less threads).
-     * <p>
-     * Default value is {@link #DFLT_REBALANCE_THREAD_POOL_SIZE}.
+     * Use {@link IgniteConfiguration#getRebalanceThreadPoolSize()} instead.
      *
      * @return Size of rebalancing thread pool.
      */
+    @Deprecated
     public int getRebalanceThreadPoolSize() {
         return rebalancePoolSize;
     }
 
     /**
-     * Sets size of rebalancing thread pool. Note that size serves as a hint and implementation may create more threads
-     * for rebalancing than specified here (but never less threads).
+     * Use {@link IgniteConfiguration#getRebalanceThreadPoolSize()} instead.
      *
      * @param rebalancePoolSize Size of rebalancing thread pool.
      * @return {@code this} for chaining.
      */
+    @Deprecated
     public CacheConfiguration<K, V> setRebalanceThreadPoolSize(int rebalancePoolSize) {
         this.rebalancePoolSize = rebalancePoolSize;
 
@@ -1695,13 +1774,47 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     }
 
     /**
-     * Gets timeout in milliseconds after which long query warning will be printed.
+     * Sets timeout in milliseconds after which long query warning will be printed.
      *
      * @param longQryWarnTimeout Timeout in milliseconds.
      * @return {@code this} for chaining.
      */
     public CacheConfiguration<K, V> setLongQueryWarningTimeout(long longQryWarnTimeout) {
         this.longQryWarnTimeout = longQryWarnTimeout;
+
+        return this;
+    }
+
+    /**
+     * Gets custom name of the sql schema. If custom sql schema is not set then {@code null} will be returned and
+     * quoted case sensitive name will be used as sql schema.
+     *
+     * @return Schema name for current cache according to SQL ANSI-99. Could be {@code null}.
+     */
+    @Nullable public String getSqlSchema() {
+        return sqlSchema;
+    }
+
+    /**
+     * Sets sql schema to be used for current cache. This name will correspond to SQL ANSI-99 standard.
+     * Nonquoted identifiers are not case sensitive. Quoted identifiers are case sensitive.
+     * <p/>
+     * Be aware of using the same string in case sensitive and case insensitive manner simultaneously, since
+     * behaviour for such case is not specified.
+     * <p/>
+     * When sqlSchema is not specified, quoted {@code cacheName} is used instead.
+     * <p/>
+     * {@code sqlSchema} could not be an empty string. Has to be {@code "\"\""} instead.
+     *
+     * @param sqlSchema Schema name for current cache according to SQL ANSI-99. Should not be {@code null}.
+     *
+     * @return {@code this} for chaining.
+     */
+    public CacheConfiguration<K, V> setSqlSchema(String sqlSchema) {
+        A.ensure((sqlSchema != null), "Schema could not be null.");
+        A.ensure(!sqlSchema.isEmpty(), "Schema could not be empty.");
+
+        this.sqlSchema = sqlSchema;
 
         return this;
     }
@@ -1763,7 +1876,8 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
      * @return {@code this} for chaining.
      */
     public CacheConfiguration<K, V> setIndexedTypes(Class<?>... indexedTypes) {
-        A.notNull(indexedTypes, "indexedTypes");
+        if (F.isEmpty(indexedTypes))
+            return this;
 
         int len = indexedTypes.length;
 
@@ -1794,7 +1908,20 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
 
             TypeDescriptor desc = processKeyAndValueClasses(keyCls, valCls);
 
-            qryEntities.add(convert(desc));
+            QueryEntity converted = convert(desc);
+
+            boolean dup = false;
+
+            for (QueryEntity entity : qryEntities) {
+                if (F.eq(entity.getValueType(), converted.getValueType())) {
+                    dup = true;
+
+                    break;
+                }
+            }
+
+            if (!dup)
+                qryEntities.add(converted);
         }
 
         return this;
@@ -1821,6 +1948,32 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
      */
     public CacheConfiguration<K, V> setSqlOnheapRowCacheSize(int size) {
         this.sqlOnheapRowCacheSize = size;
+
+        return this;
+    }
+
+    /**
+     * Gets flag indicating whether SQL indexes should support snapshots.
+     *
+     * @return {@code True} if SQL indexes should support snapshots.
+     */
+    public boolean isSnapshotableIndex() {
+        return snapshotableIdx;
+    }
+
+    /**
+     * Sets flag indicating whether SQL indexes should support snapshots.
+     * <p>
+     * Default value is {@code false}.
+     * <p>
+     * <b>Note</b> that this flag is ignored if indexes are stored in offheap memory,
+     * for offheap indexes snapshots are always enabled.
+     *
+     * @param snapshotableIdx {@code True} if SQL indexes should support snapshots.
+     * @return {@code this} for chaining.
+     */
+    public CacheConfiguration<K, V> setSnapshotableIndex(boolean snapshotableIdx) {
+        this.snapshotableIdx = snapshotableIdx;
 
         return this;
     }
@@ -1864,10 +2017,21 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     public CacheConfiguration<K, V> setQueryEntities(Collection<QueryEntity> qryEntities) {
         if (this.qryEntities == null)
             this.qryEntities = new ArrayList<>(qryEntities);
-        else if (indexedTypes != null)
-            this.qryEntities.addAll(qryEntities);
-        else
-            throw new CacheException("Query entities can be set only once.");
+
+        for (QueryEntity entity : qryEntities) {
+            boolean found = false;
+
+            for (QueryEntity existing : this.qryEntities) {
+                if (F.eq(entity.getValueType(), existing.getValueType())) {
+                    found = true;
+
+                    break;
+                }
+            }
+
+            if (!found)
+                this.qryEntities.add(entity);
+        }
 
         return this;
     }

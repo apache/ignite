@@ -18,13 +18,13 @@
 package org.apache.ignite.schema;
 
 import javax.cache.Cache;
-import javax.cache.configuration.Factory;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.Ignition;
-import org.apache.ignite.cache.store.CacheStore;
 import org.apache.ignite.cache.store.jdbc.CacheJdbcPojoStore;
+import org.apache.ignite.cache.store.jdbc.CacheJdbcPojoStoreFactory;
+import org.apache.ignite.cache.store.jdbc.dialect.H2Dialect;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.transactions.Transaction;
 import org.h2.jdbcx.JdbcConnectionPool;
@@ -38,16 +38,16 @@ import org.h2.jdbcx.JdbcConnectionPool;
  */
 public class Demo {
     /**
-     * Constructs and returns a fully configured instance of a {@link CacheJdbcPojoStore}.
+     * Constructs and returns a fully configured instance of a {@link CacheJdbcPojoStoreFactory}.
      */
-    private static class H2DemoStoreFactory<K, V> implements Factory<CacheStore<K, V>> {
+    private static class H2DemoStoreFactory<K, V> extends CacheJdbcPojoStoreFactory<K, V> {
         /** {@inheritDoc} */
-        @Override public CacheStore<K, V> create() {
-            CacheJdbcPojoStore<K, V> store = new CacheJdbcPojoStore<>();
+        @Override public CacheJdbcPojoStore<K, V> create() {
+            setDialect(new H2Dialect());
 
-            store.setDataSource(JdbcConnectionPool.create("jdbc:h2:tcp://localhost/~/schema-import/demo", "sa", ""));
+            setDataSource(JdbcConnectionPool.create("jdbc:h2:tcp://localhost/~/schema-import/demo", "sa", ""));
 
-            return store;
+            return super.create();
         }
     }
 

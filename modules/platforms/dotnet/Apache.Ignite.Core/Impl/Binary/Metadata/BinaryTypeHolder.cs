@@ -19,7 +19,6 @@ namespace Apache.Ignite.Core.Impl.Binary.Metadata
 {
     using System;
     using System.Collections.Generic;
-    using Apache.Ignite.Core.Binary;
 
     /// <summary>
     /// Metadata for particular type.
@@ -35,11 +34,11 @@ namespace Apache.Ignite.Core.Impl.Binary.Metadata
         /** Affinity key field name. */
         private readonly string _affKeyFieldName;
 
-        /** Empty metadata when nothig is know about object fields yet. */
-        private readonly IBinaryType _emptyMeta;
+        /** Enum flag. */
+        private readonly bool _isEnum;
 
         /** Collection of know field IDs. */
-        private volatile ICollection<int> _ids;
+        private volatile HashSet<int> _ids;
 
         /** Last known unmodifiable metadata which is given to the user. */
         private volatile BinaryType _meta;
@@ -47,19 +46,20 @@ namespace Apache.Ignite.Core.Impl.Binary.Metadata
         /** Saved flag (set if type metadata was saved at least once). */
         private volatile bool _saved;
 
+
         /// <summary>
         /// Constructor.
         /// </summary>
         /// <param name="typeId">Type ID.</param>
         /// <param name="typeName">Type name.</param>
         /// <param name="affKeyFieldName">Affinity key field name.</param>
-        public BinaryTypeHolder(int typeId, string typeName, string affKeyFieldName)
+        /// <param name="isEnum">Enum flag.</param>
+        public BinaryTypeHolder(int typeId, string typeName, string affKeyFieldName, bool isEnum)
         {
             _typeId = typeId;
             _typeName = typeName;
             _affKeyFieldName = affKeyFieldName;
-
-            _emptyMeta = new BinaryType(typeId, typeName, null, affKeyFieldName);
+            _isEnum = isEnum;
         }
 
         /// <summary>
@@ -72,21 +72,12 @@ namespace Apache.Ignite.Core.Impl.Binary.Metadata
         }
 
         /// <summary>
-        /// Get current type metadata.
-        /// </summary>
-        /// <value>Type metadata.</value>
-        public IBinaryType BinaryType
-        {
-            get { return _meta ?? _emptyMeta; }
-        }
-
-        /// <summary>
         /// Currently cached field IDs.
         /// </summary>
         /// <returns>Cached field IDs.</returns>
-        public ICollection<int> FieldIds()
+        public ICollection<int> GetFieldIds()
         {
-            ICollection<int> ids0 = _ids;
+            var ids0 = _ids;
 
             if (_ids == null)
             {
@@ -120,13 +111,13 @@ namespace Apache.Ignite.Core.Impl.Binary.Metadata
             lock (this)
             {
                 // 1. Create copies of the old meta.
-                ICollection<int> ids0 = _ids;
+                var ids0 = _ids;
                 BinaryType meta0 = _meta;
 
-                ICollection<int> newIds = ids0 != null ? new HashSet<int>(ids0) : new HashSet<int>();
+                var newIds = ids0 != null ? new HashSet<int>(ids0) : new HashSet<int>();
 
                 IDictionary<string, int> newFields = meta0 != null ?
-                    new Dictionary<string, int>(meta0.FieldsMap()) : new Dictionary<string, int>(newMap.Count);
+                    new Dictionary<string, int>(meta0.GetFieldsMap()) : new Dictionary<string, int>(newMap.Count);
 
                 // 2. Add new fields.
                 foreach (KeyValuePair<int, Tuple<string, int>> newEntry in newMap)
@@ -139,7 +130,7 @@ namespace Apache.Ignite.Core.Impl.Binary.Metadata
                 }
 
                 // 3. Assign new meta. Order is important here: meta must be assigned before field IDs.
-                _meta = new BinaryType(_typeId, _typeName, newFields, _affKeyFieldName);
+                _meta = new BinaryType(_typeId, _typeName, newFields, _affKeyFieldName, _isEnum);
                 _ids = newIds;
             }
         }

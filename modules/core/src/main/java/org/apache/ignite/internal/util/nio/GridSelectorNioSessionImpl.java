@@ -294,6 +294,13 @@ class GridSelectorNioSessionImpl extends GridNioSessionImpl {
      *
      */
     void onServerStopped() {
+        onClosed();
+    }
+
+    /**
+     *
+     */
+    void onClosed() {
         if (sem != null)
             sem.release(1_000_000);
     }

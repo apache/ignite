@@ -18,6 +18,8 @@
 package org.apache.ignite.cache;
 
 import java.io.Serializable;
+import java.lang.reflect.Field;
+import org.apache.ignite.cache.affinity.AffinityKeyMapped;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
@@ -38,6 +40,23 @@ public class CacheKeyConfiguration implements Serializable {
      */
     public CacheKeyConfiguration() {
         // Convenience no-op constructor.
+    }
+
+    /**
+     * @param keyCls Key class.
+     */
+    public CacheKeyConfiguration(Class keyCls) {
+        typeName = keyCls.getName();
+
+        for (; keyCls != Object.class && keyCls != null; keyCls = keyCls.getSuperclass()) {
+            for (Field f : keyCls.getDeclaredFields()) {
+                if (f.getAnnotation(AffinityKeyMapped.class) != null) {
+                    affKeyFieldName = f.getName();
+
+                    return;
+                }
+            }
+        }
     }
 
     /**

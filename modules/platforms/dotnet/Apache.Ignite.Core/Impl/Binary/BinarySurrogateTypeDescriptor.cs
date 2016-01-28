@@ -124,6 +124,12 @@ namespace Apache.Ignite.Core.Impl.Binary
             get { return null; }
         }
 
+        /** <inheritdoc/> */
+        public bool IsEnum
+        {
+            get { return false; }
+        }
+
         /** <inheritDoc /> */
         public BinaryStructure WriterTypeStructure
         {
