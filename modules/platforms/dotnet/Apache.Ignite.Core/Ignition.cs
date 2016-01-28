@@ -148,8 +148,7 @@ namespace Apache.Ignite.Core
 
                 var gridName = cfgEx != null ? cfgEx.GridName : null;
 
-                var cfgPath = Environment.GetEnvironmentVariable(EnvIgniteSpringConfigUrlPrefix) +
-                    (cfg.SpringConfigUrl ?? DefaultCfg);
+                var cfgPath = Environment.GetEnvironmentVariable(EnvIgniteSpringConfigUrlPrefix) + cfg.SpringConfigUrl;
 
                 // 3. Create startup object which will guide us through the rest of the process.
                 _startup = new Startup(cfg, cbs);

@@ -20,6 +20,7 @@ namespace Apache.Ignite.Core.Cache.Query
     using System;
     using Apache.Ignite.Core.Impl.Binary;
     using Apache.Ignite.Core.Impl.Cache;
+    using Apache.Ignite.Core.Impl.Common;
 
     /// <summary>
     /// Text query.
@@ -42,7 +43,8 @@ namespace Apache.Ignite.Core.Cache.Query
         /// <param name="queryType">Type.</param>
         /// <param name="text">Text.</param>
         /// <param name="local">Whether query should be executed locally.</param>
-        public TextQuery(Type queryType, string text, bool local) : this(queryType.Name, text, local)
+        public TextQuery(Type queryType, string text, bool local)
+            : this(queryType == null ? null : queryType.Name, text, local)
         {
             // No-op.
         }
@@ -65,6 +67,9 @@ namespace Apache.Ignite.Core.Cache.Query
         /// <param name="local">Whether query should be executed locally.</param>
         public TextQuery(string queryType, string text, bool local)
         {
+            IgniteArgumentCheck.NotNullOrEmpty("queryType", queryType);
+            IgniteArgumentCheck.NotNullOrEmpty("text", text);
+
             QueryType = queryType;
             Text = text;
             Local = local;
