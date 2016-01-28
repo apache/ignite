@@ -163,4 +163,58 @@ BOOST_AUTO_TEST_CASE(TestCursorUpdate)
     CheckCursorEnd(cursor);
 }
 
+BOOST_AUTO_TEST_CASE(TestCursorUpdateOneRow)
+{
+    Cursor cursor(testQueryId);
+
+    std::auto_ptr<ResultPage> resultPage = CreateTestPage(false, 1);
+
+    cursor.UpdateData(resultPage);
+
+    BOOST_REQUIRE(cursor.GetQueryId() == testQueryId);
+
+    CheckCursorNeedUpdate(cursor);
+
+    BOOST_REQUIRE(!cursor.Increment());
+
+    resultPage = CreateTestPage(true, 1);
+
+    cursor.UpdateData(resultPage);
+
+    CheckCursorEnd(cursor);
+
+    BOOST_REQUIRE(!cursor.Increment());
+}
+
+BOOST_AUTO_TEST_CASE(TestCursorUpdateTwoRows)
+{
+    Cursor cursor(testQueryId);
+
+    std::auto_ptr<ResultPage> resultPage = CreateTestPage(false, 2);
+
+    cursor.UpdateData(resultPage);
+
+    BOOST_REQUIRE(cursor.GetQueryId() == testQueryId);
+
+    CheckCursorReady(cursor);
+
+    BOOST_REQUIRE(cursor.Increment());
+
+    CheckCursorNeedUpdate(cursor);
+
+    BOOST_REQUIRE(!cursor.Increment());
+
+    resultPage = CreateTestPage(true, 2);
+
+    cursor.UpdateData(resultPage);
+
+    CheckCursorReady(cursor);
+
+    BOOST_REQUIRE(cursor.Increment());
+
+    CheckCursorEnd(cursor);
+
+    BOOST_REQUIRE(!cursor.Increment());
+}
+
 BOOST_AUTO_TEST_SUITE_END()
