@@ -17,6 +17,8 @@
 
 namespace Apache.Ignite.Core.Discovery
 {
+    using Apache.Ignite.Core.Discovery.Tcp;
+
     /// <summary>
     /// Represents a discovery service provider interface.
     /// Only predefined implementation is supported now: <see cref="TcpDiscoverySpi"/>.
