@@ -104,6 +104,7 @@ div
                             data-ignite-unique='#{regions}'
                             data-ignite-form-field-input-autofocus='true'
                             on-enter='#{valid} && (#{save}); #{valid} && (___.edit = false);'
+                            on-escape='___.edit = false'
                             ng-blur='#{valid} && (#{save}); (___.edit = false)'
                         )
                             i.fa.fa-floppy-o(
@@ -133,6 +134,7 @@ div
                         data-ignite-unique='#{regions}'
                         data-ignite-form-field-input-autofocus='true'
                         on-enter='#{valid} && #{push}; #{valid} && (stopblur = true) && (__.add = [{}])'
+                        on-escape='___.add = []'
                         ng-blur='#{valid} && #{push}; !stopblur && (__.add = [])'
                     )
                         i.fa.fa-floppy-o(
@@ -185,6 +187,7 @@ div
                             data-ignite-unique='#{zones}'
                             data-ignite-form-field-input-autofocus='true'
                             on-enter='#{valid} && (#{save}); #{valid} && (___.edit = false);'
+                            on-escape='___.edit = false'
                             ng-blur='#{valid} && (#{save}); (___.edit = false)'
                         )
                             i.fa.fa-floppy-o(
@@ -214,6 +217,7 @@ div
                         data-ignite-unique='#{zones}'
                         data-ignite-form-field-input-autofocus='true'
                         on-enter='#{valid} && #{push}; #{valid} && (stopblur = true) && (__.add = [{}])'
+                        on-escape='___.add = []'
                         ng-blur='#{valid} && #{push}; !stopblur && (__.add = [])'
                     )
                         i.fa.fa-floppy-o(
