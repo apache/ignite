@@ -37,7 +37,7 @@ namespace Apache.Ignite.Examples.Compute
     /// Apache.Ignite.exe -IgniteHome="%IGNITE_HOME%" -springConfigUrl=platforms\dotnet\examples\config\example-compute.xml -assembly=[path_to_Apache.Ignite.ExamplesDll.dll]
     /// 2) Start example.
     /// </summary>
-    public class LambdaExample
+    public class LambdaComputeExample
     {
         /// <summary>
         /// Runs the example.

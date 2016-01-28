@@ -55,7 +55,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Compute\ClosureExample.cs" />
-    <Compile Include="Compute\LambdaExample.cs" />
+    <Compile Include="Compute\LambdaComputeExample.cs" />
     <Compile Include="Compute\TaskExample.cs" />
     <Compile Include="Datagrid\ContinuousQueryExample.cs" />
     <Compile Include="Datagrid\DataStreamerExample.cs" />
