@@ -17,12 +17,13 @@
 
 using System;
 using System.Collections.Generic;
-using System.Threading;
 using Apache.Ignite.Core;
+using Apache.Ignite.Core.Messaging;
 using Apache.Ignite.ExamplesDll.Messaging;
 
 namespace Apache.Ignite.Examples.Messaging
 {
+
     /// <summary>
     /// Example demonstrating Ignite messaging with lambda expressions. Should be run with standalone Apache Ignite.NET node.
     /// <para />
@@ -66,23 +67,22 @@ namespace Apache.Ignite.Examples.Messaging
                     // Set up local listeners
                     var localMessaging = ignite.GetCluster().ForLocal().GetMessaging();
 
-                    var msgCount = remotes.GetNodes().Count * 10;
+                    localMessaging.LocalListen<int>((id, msg) =>
+                    {
+                        Console.WriteLine(">>> Received unordered message '{0}' from node '{1}'", msg, id);
+                        return true;
+                    }, Topic.Unordered);
 
-                    var orderedCounter = new CountdownEvent(msgCount);
-                    var unorderedCounter = new CountdownEvent(msgCount);
-
-                    localMessaging.LocalListen(new LocalListener(unorderedCounter), Topic.Unordered);
-
-                    localMessaging.LocalListen(new LocalListener(orderedCounter), Topic.Ordered);
-
-                    // Set up remote listeners
-                    var remoteMessaging = remotes.GetMessaging();
-
-                    var idUnordered = remoteMessaging.RemoteListen(new RemoteUnorderedListener(), Topic.Unordered);
-                    var idOrdered = remoteMessaging.RemoteListen(new RemoteOrderedListener(), Topic.Ordered);
+                    localMessaging.LocalListen<int>((id, msg) =>
+                    {
+                        Console.WriteLine(">>> Received ordered message '{0}' from node '{1}'", msg, id);
+                        return true;
+                    }, Topic.Ordered);
 
                     // Send unordered
                     Console.WriteLine(">>> Sending unordered messages...");
+
+                    var remoteMessaging = remotes.GetMessaging();
 
                     for (var i = 0; i < 10; i++)
                         remoteMessaging.Send(i, Topic.Unordered);
@@ -96,16 +96,6 @@ namespace Apache.Ignite.Examples.Messaging
                         remoteMessaging.SendOrdered(i, Topic.Ordered);
 
                     Console.WriteLine(">>> Finished sending ordered messages.");
-
-                    Console.WriteLine(">>> Check output on all nodes for message printouts.");
-                    Console.WriteLine(">>> Waiting for messages acknowledgements from all remote nodes...");
-
-                    unorderedCounter.Wait();
-                    orderedCounter.Wait();
-
-                    // Unsubscribe
-                    remoteMessaging.StopRemoteListen(idUnordered);
-                    remoteMessaging.StopRemoteListen(idOrdered);
                 }
             }
 
