@@ -143,6 +143,7 @@ form.panel.panel-default(name='#{form}' novalidate)
                                         data-ignite-unique='#{trust}'
                                         data-ignite-form-field-input-autofocus='true'
                                         on-enter='#{valid} && (#{save}); #{valid} && (___.edit = false);'
+                                        on-escape='___.edit = false'
                                         ng-blur='#{valid} && (#{save}); (___.edit = false)'
                                     )
                                         i.fa.fa-floppy-o(
@@ -171,6 +172,7 @@ form.panel.panel-default(name='#{form}' novalidate)
                                     data-ignite-unique='#{trust}'
                                     data-ignite-form-field-input-autofocus='true'
                                     on-enter='#{valid} && #{push}; #{valid} && (stopblur = true) && (__.add = [{}])'
+                                    on-escape='__.add = []'
                                     ng-blur='#{valid} && #{push}; !stopblur && (__.add = [])'
                                 )
                                     i.fa.fa-floppy-o(

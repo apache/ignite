@@ -17,6 +17,7 @@
 - var model = 'backupItem'
 - var exclude = model + '.peerClassLoadingLocalClassPathExclude'
 - var form = 'deployment'
+- var enabled = 'backupItem.peerClassLoadingEnabled'
 
 mixin feedback(name, error, message)
     i.fa.fa-exclamation-triangle.form-control-feedback(
@@ -64,7 +65,7 @@ form.panel.panel-default(name='#{form}' novalidate)
                         | Enable peer class loading
                         ignite-form-field-tooltip
                             | Enables/disables peer class loading
-                .settings-row(ng-if='#{model}.peerClassLoadingEnabled')
+                .settings-row
                     ignite-form-field
                         ignite-form-field-label
                             | Missed resources cache size:
@@ -76,8 +77,9 @@ form.panel.panel-default(name='#{form}' novalidate)
                             data-name='peerClassLoadingMissedResourcesCacheSize'
                             data-ng-model='#{model}.peerClassLoadingMissedResourcesCacheSize'
                             data-placeholder='100'
+                            data-ng-disabled='!#{enabled}'
                         )
-                .settings-row(ng-if='#{model}.peerClassLoadingEnabled')
+                .settings-row
                     ignite-form-field
                         ignite-form-field-label
                             | Pool size:
@@ -88,15 +90,16 @@ form.panel.panel-default(name='#{form}' novalidate)
                             data-name='peerClassLoadingThreadPoolSize'
                             data-ng-model='#{model}.peerClassLoadingThreadPoolSize'
                             data-placeholder='availableProcessors'
+                            data-ng-disabled='!#{enabled}'
                         )
-                .settings-row(ng-if='#{model}.peerClassLoadingEnabled')
+                .settings-row
                     ignite-form-group(ng-init='__ = {}; ___ = {}' ng-model='#{exclude}' name='peerClassLoadingLocalClassPathExclude' )
                         ignite-form-field-label
                             | Local class path exclude
                         ignite-form-group-tooltip
                             | List of packages from the system classpath that need to be peer-to-peer loaded from task originating node#[br]
                             | '*' is supported at the end of the package name which means that all sub-packages and their classes are included like in Java package import clause
-                        ignite-form-group-add(ng-click='(__.add = [{}])')
+                        ignite-form-group-add(ng-show='#{enabled}' ng-click='(__.add = [{}])')
                             | Add package name.
 
                         - var field = 'edit'
@@ -113,7 +116,7 @@ form.panel.panel-default(name='#{form}' novalidate)
                                     ng-click='#{exclude}.splice(#{exclude}.indexOf(model), 1)'
                                 )
                                 span(ng-hide='___.edit')
-                                    a.labelFormField(ng-click='___.edit = true') {{ model }}
+                                    a.labelFormField(ng-click='#{enabled} && (___.edit = true)') {{ model }}
                                 span(ng-if='___.edit' ng-form='form' ng-init='#{field} = model')
                                     ignite-form-field-input-text(
                                         data-name='#{field}'
@@ -125,7 +128,8 @@ form.panel.panel-default(name='#{form}' novalidate)
                                         data-ignite-unique='#{exclude}'
                                         data-ignite-form-field-input-autofocus='true'
                                         on-enter='#{valid} && (#{save}); #{valid} && (___.edit = false);'
-                                        bng-blur='#{valid} && (#{save}); (___.edit = false)'
+                                        on-escape='___.edit = false'
+                                        ng-blur='#{valid} && (#{save}); (___.edit = false)'
                                     )
                                         i.fa.fa-floppy-o(
                                             ng-show='#{valid}'
@@ -155,7 +159,8 @@ form.panel.panel-default(name='#{form}' novalidate)
                                     data-ignite-unique='#{exclude}'
                                     data-ignite-form-field-input-autofocus='true'
                                     on-enter='#{valid} && #{push}; #{valid} && (stopblur = true) && (__.add = [{}])'
-                                    bng-blur='#{valid} && #{push}; !stopblur && (__.add = [])'
+                                    on-escape='__.add = []'
+                                    ng-blur='#{valid} && #{push}; !stopblur && (__.add = [])'
                                 )
                                     i.fa.fa-floppy-o(
                                         ng-show='#{valid}'
