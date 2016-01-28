@@ -550,7 +550,13 @@ namespace Apache.Ignite.Core.Impl.Memory
             return *((float*)(_data + curPos));
         }
 
-
+        /// <summary>
+        /// Read float array.
+        /// </summary>
+        /// <param name="cnt">Count.</param>
+        /// <returns>
+        /// Float array.
+        /// </returns>
         public virtual float[] ReadFloatArray(int cnt)
         {
             float[] res = new float[cnt];
