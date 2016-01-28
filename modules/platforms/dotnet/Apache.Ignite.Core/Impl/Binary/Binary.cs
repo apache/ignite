@@ -23,7 +23,6 @@ namespace Apache.Ignite.Core.Impl.Binary
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Impl.Binary.IO;
-    using Apache.Ignite.Core.Impl.Binary.Metadata;
     using Apache.Ignite.Core.Impl.Common;
 
     /// <summary>
@@ -49,25 +48,26 @@ namespace Apache.Ignite.Core.Impl.Binary
             if (obj is IBinaryObject)
                 return (T)obj;
 
-            IBinaryStream stream = new BinaryHeapStream(1024);
-
-            // Serialize.
-            BinaryWriter writer = _marsh.StartMarshal(stream);
-
-            try
+            using (var stream = new BinaryHeapStream(1024))
             {
-                writer.Write(obj);
-            }
-            finally
-            {
-                // Save metadata.
-                _marsh.FinishMarshal(writer);
-            }
+                // Serialize.
+                BinaryWriter writer = _marsh.StartMarshal(stream);
 
-            // Deserialize.
-            stream.Seek(0, SeekOrigin.Begin);
+                try
+                {
+                    writer.Write(obj);
+                }
+                finally
+                {
+                    // Save metadata.
+                    _marsh.FinishMarshal(writer);
+                }
 
-            return _marsh.Unmarshal<T>(stream, BinaryMode.ForceBinary);
+                // Deserialize.
+                stream.Seek(0, SeekOrigin.Begin);
+
+                return _marsh.Unmarshal<T>(stream, BinaryMode.ForceBinary);
+            }
         }
 
         /** <inheritDoc /> */
@@ -191,16 +191,17 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// <returns>Empty binary object.</returns>
         private BinaryObject BinaryFromDescriptor(IBinaryTypeDescriptor desc)
         {
-            var len = BinaryObjectHeader.Size;
+            const int len = BinaryObjectHeader.Size;
 
             var hdr = new BinaryObjectHeader(desc.TypeId, 0, len, 0, len,
                 desc.UserType ? BinaryObjectHeader.Flag.UserType : BinaryObjectHeader.Flag.None);
 
-            var stream = new BinaryHeapStream(len);
+            using (var stream = new BinaryHeapStream(len))
+            {
+                BinaryObjectHeader.Write(hdr, stream, 0);
 
-            BinaryObjectHeader.Write(hdr, stream, 0);
-
-            return new BinaryObject(_marsh, stream.InternalArray, 0, hdr);
+                return new BinaryObject(_marsh, stream.InternalArray, 0, hdr);
+            }
         }
 
         /// <summary>
