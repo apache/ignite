@@ -25,8 +25,13 @@ import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.cache.QueryCursorImpl;
 import org.apache.ignite.internal.processors.query.GridQueryFieldMetadata;
 import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
+import org.apache.ignite.internal.util.GridSpinBusyLock;
+import org.apache.ignite.internal.util.nio.GridNioServerListenerAdapter;
+import org.apache.ignite.internal.util.nio.GridNioSession;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
@@ -37,12 +42,15 @@ import static org.apache.ignite.internal.processors.odbc.OdbcRequest.*;
 /**
  * SQL query handler.
  */
-public class OdbcCommandHandler {
+public class OdbcCommandHandler extends GridNioServerListenerAdapter<OdbcRequest> {
     /** Query ID sequence. */
     private static final AtomicLong qryIdGen = new AtomicLong();
 
     /** Kernel context. */
     private final GridKernalContext ctx;
+
+    /** Busy lock. */
+    private final GridSpinBusyLock busyLock;
 
     /** Logger. */
     private final IgniteLogger log;
@@ -55,10 +63,45 @@ public class OdbcCommandHandler {
      *
      * @param ctx Context.
      */
-    public OdbcCommandHandler(GridKernalContext ctx) {
+    public OdbcCommandHandler(final GridKernalContext ctx, final GridSpinBusyLock busyLock) {
         this.ctx = ctx;
+        this.busyLock = busyLock;
 
-        log = ctx.log(getClass());
+        this.log = ctx.log(getClass());
+    }
+
+    /** {@inheritDoc} */
+    @Override public void onConnected(GridNioSession ses) {
+        if (log.isDebugEnabled())
+            log.debug("Driver connected");
+    }
+
+    /** {@inheritDoc} */
+    @Override public void onDisconnected(GridNioSession ses, @Nullable Exception e) {
+        if (log.isDebugEnabled())
+            log.debug("Driver disconnected");
+
+        if (e != null) {
+            if (e instanceof RuntimeException)
+                U.error(log, "Failed to process request from remote client: " + ses, e);
+            else
+                U.warn(log, "Closed client session due to exception [ses=" + ses + ", msg=" + e.getMessage() + ']');
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public void onMessage(GridNioSession ses, OdbcRequest msg) {
+        assert msg != null;
+
+        if (log.isDebugEnabled())
+            log.debug("Received request from client: [msg=" + msg + ']');
+
+        OdbcResponse res = handle(msg);
+
+        if (log.isDebugEnabled())
+            log.debug("Handling result: [res=" + res.status() + ']');
+
+        ses.send(res);
     }
 
     /**
@@ -70,25 +113,39 @@ public class OdbcCommandHandler {
     public OdbcResponse handle(OdbcRequest req) {
         assert req != null;
 
-        switch (req.command()) {
-            case EXECUTE_SQL_QUERY:
-                return executeQuery((OdbcQueryExecuteRequest)req);
+        if (!busyLock.enterBusy()) {
+            String errMsg = "Failed to handle request [req=" + req +
+                    ", err=Received request while stopping grid]";
 
-            case FETCH_SQL_QUERY:
-                return fetchQuery((OdbcQueryFetchRequest)req);
+            U.error(log, errMsg);
 
-            case CLOSE_SQL_QUERY:
-                return closeQuery((OdbcQueryCloseRequest)req);
-
-            case GET_COLUMNS_META:
-                return getColumnsMeta((OdbcQueryGetColumnsMetaRequest) req);
-
-            case GET_TABLES_META:
-                return getTablesMeta((OdbcQueryGetTablesMetaRequest) req);
+            return new OdbcResponse(OdbcResponse.STATUS_FAILED, errMsg);
         }
 
-        return new OdbcResponse(OdbcResponse.STATUS_FAILED,
-                "Failed to find registered handler for command: " + req.command());
+        try {
+            switch (req.command()) {
+                case EXECUTE_SQL_QUERY:
+                    return executeQuery((OdbcQueryExecuteRequest)req);
+
+                case FETCH_SQL_QUERY:
+                    return fetchQuery((OdbcQueryFetchRequest)req);
+
+                case CLOSE_SQL_QUERY:
+                    return closeQuery((OdbcQueryCloseRequest)req);
+
+                case GET_COLUMNS_META:
+                    return getColumnsMeta((OdbcQueryGetColumnsMetaRequest) req);
+
+                case GET_TABLES_META:
+                    return getTablesMeta((OdbcQueryGetTablesMetaRequest) req);
+            }
+
+            return new OdbcResponse(OdbcResponse.STATUS_FAILED,
+                    "Failed to find registered handler for command: " + req.command());
+        }
+        finally {
+            busyLock.leaveBusy();
+        }
     }
 
     /**

@@ -62,9 +62,7 @@ public class OdbcProcessor extends GridProcessorAdapter {
 
             assert cfg != null;
 
-            OdbcCommandHandler handler = new OdbcCommandHandler(ctx);
-
-            GridNioServerListener<OdbcRequest> listener = new OdbcTcpNioListener(log, handler, busyLock);
+            GridNioServerListener<OdbcRequest> listener = new OdbcCommandHandler(ctx, busyLock);
 
             GridNioParser parser = new OdbcParser(ctx);
 
