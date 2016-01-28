@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-namespace Apache.Ignite.Core.Discovery
+namespace Apache.Ignite.Core.Discovery.Tcp
 {
     /// <summary>
     /// Represents an IP finder for <see cref="TcpDiscoverySpi"/>.

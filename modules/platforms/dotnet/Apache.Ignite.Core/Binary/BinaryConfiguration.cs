@@ -53,7 +53,6 @@ namespace Apache.Ignite.Core.Binary
                 ? null
                 : cfg.TypeConfigurations.Select(x => new BinaryTypeConfiguration(x)).ToList();
 
-            TypeNames = cfg.TypeNames == null ? null : cfg.TypeNames.ToList();
             Types = cfg.Types == null ? null : cfg.Types.ToList();
         }
 
@@ -63,7 +62,7 @@ namespace Apache.Ignite.Core.Binary
         /// <param name="binaryTypes">Binary types to register.</param>
         public BinaryConfiguration(params Type[] binaryTypes)
         {
-            Types = binaryTypes;
+            TypeConfigurations = binaryTypes.Select(t => new BinaryTypeConfiguration(t)).ToList();
         }
 
         /// <summary>
@@ -76,13 +75,7 @@ namespace Apache.Ignite.Core.Binary
         /// Binarizable types. Shorthand for creating <see cref="BinaryTypeConfiguration"/>.
         /// </summary>
         [SuppressMessage("Microsoft.Usage", "CA2227:CollectionPropertiesShouldBeReadOnly")]
-        public ICollection<string> TypeNames { get; set; }
-
-        /// <summary>
-        /// Binarizable types. Shorthand for creating <see cref="BinaryTypeConfiguration"/>.
-        /// </summary>
-        [SuppressMessage("Microsoft.Usage", "CA2227:CollectionPropertiesShouldBeReadOnly")]
-        public ICollection<Type> Types { get; set; }
+        public ICollection<string> Types { get; set; }
 
         /// <summary>
         /// Default name mapper.

@@ -46,7 +46,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Store
                 SpringConfigUrl = "config\\native-client-test-cache-parallel-store.xml",
                 BinaryConfiguration = new BinaryConfiguration
                 {
-                    TypeNames = new[] {typeof (CacheTestParallelLoadStore.Record).FullName}
+                    Types = new[] {typeof (CacheTestParallelLoadStore.Record).FullName}
                 }
             });
         }
