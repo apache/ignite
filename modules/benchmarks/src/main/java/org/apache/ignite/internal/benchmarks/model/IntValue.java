@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.benchmarks.model;
+package org.apache.ignite.internal.benchmarks.model;
 
 import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.binary.BinaryReader;

@@ -133,6 +133,8 @@ public class ServiceContextImpl implements ServiceContext {
         if (mtd == null) {
             try {
                 mtd = svc.getClass().getMethod(key.methodName(), key.argTypes());
+
+                mtd.setAccessible(true);
             }
             catch (NoSuchMethodException e) {
                 mtd = NULL_METHOD;
