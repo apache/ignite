@@ -344,6 +344,12 @@ namespace Apache.Ignite.Core.Impl
             return Cache<TK, TV>(UU.ProcessorCreateCache(_proc, name));
         }
 
+        /** <inheritdoc /> */
+        public void DestroyCache(string name)
+        {
+            UU.ProcessorDestroyCache(_proc, name);
+        }
+
         /// <summary>
         /// Gets cache from specified native cache object.
         /// </summary>

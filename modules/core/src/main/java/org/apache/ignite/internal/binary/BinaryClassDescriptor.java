@@ -17,20 +17,6 @@
 
 package org.apache.ignite.internal.binary;
 
-import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.binary.BinaryIdMapper;
-import org.apache.ignite.binary.BinaryObjectException;
-import org.apache.ignite.binary.BinaryReflectiveSerializer;
-import org.apache.ignite.binary.BinarySerializer;
-import org.apache.ignite.binary.Binarylizable;
-import org.apache.ignite.internal.processors.cache.CacheObjectImpl;
-import org.apache.ignite.internal.util.GridUnsafe;
-import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.marshaller.MarshallerExclusions;
-import org.apache.ignite.marshaller.optimized.OptimizedMarshaller;
-import org.jetbrains.annotations.Nullable;
-import sun.misc.Unsafe;
-
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
@@ -47,6 +33,19 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.binary.BinaryIdMapper;
+import org.apache.ignite.binary.BinaryObjectException;
+import org.apache.ignite.binary.BinaryReflectiveSerializer;
+import org.apache.ignite.binary.BinarySerializer;
+import org.apache.ignite.binary.Binarylizable;
+import org.apache.ignite.internal.processors.cache.CacheObjectImpl;
+import org.apache.ignite.internal.util.GridUnsafe;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.marshaller.MarshallerExclusions;
+import org.apache.ignite.marshaller.optimized.OptimizedMarshaller;
+import org.jetbrains.annotations.Nullable;
+import sun.misc.Unsafe;
 
 /**
  * Binary class descriptor.
@@ -173,11 +172,13 @@ public class BinaryClassDescriptor {
                 mode = serializer != null ? BinaryWriteMode.BINARY : BinaryUtils.mode(cls);
         }
 
-        if (useOptMarshaller && userType) {
-            U.quietAndWarn(ctx.log(), "Class \"" + cls.getName() + "\" cannot be written in binary format because " +
-                "it either implements Externalizable interface or have writeObject/readObject methods. Please " +
-                "ensure that all nodes have this class in classpath. To enable binary serialization either " +
-                "implement " + Binarylizable.class.getSimpleName() + " interface or set explicit serializer using " +
+        if (useOptMarshaller && userType && !U.isIgnite(cls) && !U.isJdk(cls)) {
+            U.quietAndWarn(ctx.log(), "Class \"" + cls.getName() + "\" cannot be serialized using " +
+                BinaryMarshaller.class.getSimpleName() + " because it either implements Externalizable interface " +
+                "or have writeObject/readObject methods. " + OptimizedMarshaller.class.getSimpleName() + " will be " +
+                "used instead and class instances will be deserialized on the server. Please ensure that all nodes " +
+                "have this class in classpath. To enable binary serialization either implement " +
+                Binarylizable.class.getSimpleName() + " interface or set explicit serializer using " +
                 "BinaryTypeConfiguration.setSerializer() method.");
         }
 

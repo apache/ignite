@@ -138,7 +138,7 @@ public class GridDhtPartitionsSingleMessage extends GridDhtPartitionsAbstractMes
         if (partsBytes == null && parts != null)
             partsBytes = ctx.marshaller().marshal(parts);
 
-        if (partCntrs != null)
+        if (partCntrsBytes == null && partCntrs != null)
             partCntrsBytes = ctx.marshaller().marshal(partCntrs);
     }
 
@@ -149,7 +149,7 @@ public class GridDhtPartitionsSingleMessage extends GridDhtPartitionsAbstractMes
         if (partsBytes != null && parts == null)
             parts = ctx.marshaller().unmarshal(partsBytes, ldr);
 
-        if (partCntrsBytes != null)
+        if (partCntrsBytes != null && partCntrs == null)
             partCntrs = ctx.marshaller().unmarshal(partCntrsBytes, ldr);
     }
 

@@ -2482,6 +2482,16 @@ public abstract class IgniteUtils {
     }
 
     /**
+     * Gets a hex string representation of the given long value.
+     *
+     * @param val Value to convert to string.
+     * @return Hex string.
+     */
+    public static String hexLong(long val) {
+        return new SB().appendHex(val).toString();
+    }
+
+    /**
      * Return byte value for certain character.
      *
      * @param ch Character
@@ -9312,6 +9322,9 @@ public abstract class IgniteUtils {
         assert out != null;
         assert buf != null;
         assert buf.hasArray();
+
+        if (writer != null)
+            writer.setCurrentWriteClass(msg.getClass());
 
         boolean finished = false;
         int cnt = 0;

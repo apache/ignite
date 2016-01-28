@@ -90,6 +90,14 @@ public interface PlatformProcessor extends GridProcessor {
     public PlatformTarget getOrCreateCache(@Nullable String name) throws IgniteCheckedException;
 
     /**
+     * Destroy dynamically created cache.
+     *
+     * @param name Cache name.
+     * @throws IgniteCheckedException If failed.
+     */
+    public void destroyCache(@Nullable String name) throws IgniteCheckedException;
+
+    /**
      * Get affinity.
      *
      * @param name Cache name.

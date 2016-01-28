@@ -317,6 +317,32 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
     }
 
     /** {@inheritDoc} */
+    @Override protected V get(K key, String taskName, boolean deserializeBinary) throws IgniteCheckedException {
+        ctx.checkSecurity(SecurityPermission.CACHE_READ);
+
+        if (keyCheck)
+            validateCacheKey(key);
+
+        CacheOperationContext opCtx = ctx.operationContextPerCall();
+
+        UUID subjId = ctx.subjectIdPerCall(null, opCtx);
+
+        final ExpiryPolicy expiryPlc = opCtx != null ? opCtx.expiry() : null;
+
+        final boolean skipStore = opCtx != null && opCtx.skipStore();
+
+        return getAsync0(ctx.toCacheKeyObject(key),
+            !ctx.config().isReadFromBackup(),
+            subjId,
+            taskName,
+            deserializeBinary,
+            expiryPlc,
+            false,
+            skipStore,
+            true).get();
+    }
+
+    /** {@inheritDoc} */
     @Override protected IgniteInternalFuture<V> getAsync(final K key,
         final boolean forcePrimary,
         final boolean skipTx,
@@ -1541,16 +1567,19 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                     try {
                         Object computed = entryProcessor.process(invokeEntry, req.invokeArguments());
 
-                        updatedVal = ctx.unwrapTemporary(invokeEntry.getValue());
-
-                        updated = ctx.toCacheObject(updatedVal);
-
                         if (computed != null) {
                             if (invokeRes == null)
                                 invokeRes = new GridCacheReturn(node.isLocal());
 
                             invokeRes.addEntryProcessResult(ctx, entry.key(), invokeEntry.key(), computed, null);
                         }
+
+                        if (!invokeEntry.modified())
+                            continue;
+
+                        updatedVal = ctx.unwrapTemporary(invokeEntry.getValue());
+
+                        updated = ctx.toCacheObject(updatedVal);
                     }
                     catch (Exception e) {
                         if (invokeRes == null)
