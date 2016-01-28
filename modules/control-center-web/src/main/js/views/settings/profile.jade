@@ -34,11 +34,11 @@ mixin lbl(txt)
                         .col-xs-5.col-sm-4
                             input#profile-email.form-control(type='email' ng-model='profileUser.email' placeholder='you@domain.com' required)
                     .details-row
-                        label.col-sm-2.required.labelFormField Company:
+                        label.col-sm-2.labelFormField Company:
                         .col-xs-5.col-sm-4
                             input#profile-company.form-control(type='text' ng-model='profileUser.company' placeholder='You company name')
                     .details-row
-                        label.col-sm-2.required.labelFormField Country:
+                        label.col-sm-2.labelFormField Country:
                         .col-xs-5.col-sm-4
                             button#profile-country.select-toggle.form-control(bs-select bs-options='item for item in countries' type='text' ng-model='profileUser.country' placeholder='Choose you country')
                     .details-row

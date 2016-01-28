@@ -156,11 +156,7 @@ consoleModule.controller('clustersController', function ($http, $timeout, $scope
             {value: undefined, label: 'Not set'}
         ];
 
-        $scope.events = [];
-
-        _.forEach(igniteIncludeEventGroups, function (evts, evtGrp) {
-            $scope.events.push({label: evtGrp, value: evtGrp});
-        });
+        $scope.eventGroups = igniteIncludeEventGroups;
 
         $scope.preview = {
             general: {xml: '', java: '', allDefaults: true},

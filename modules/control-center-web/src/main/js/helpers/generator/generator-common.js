@@ -54,6 +54,7 @@ $generatorCommon.builder = function (deep) {
     res.lineStart = true;
     res.datasources = [];
     res.imports = {};
+    res.staticImports = {};
     res.vars = {};
 
     res.safeDeep = 0;
@@ -67,6 +68,7 @@ $generatorCommon.builder = function (deep) {
             res.datasources = fromRes.datasources;
 
             angular.extend(res.imports, fromRes.imports);
+            angular.extend(res.staticImports, fromRes.staticImports);
             angular.extend(res.vars, fromRes.vars);
         }
     };
@@ -86,6 +88,7 @@ $generatorCommon.builder = function (deep) {
         res.safeDeep = this.deep;
         this.safeNeedEmptyLine = this.needEmptyLine;
         this.safeImports = _.cloneDeep(this.imports);
+        this.safeStaticImports = _.cloneDeep(this.staticImports);
         this.safeDatasources = this.datasources.slice();
         this.safePoint = this.length;
     };
@@ -98,6 +101,7 @@ $generatorCommon.builder = function (deep) {
             this.needEmptyLine = this.safeNeedEmptyLine;
             this.datasources = this.safeDatasources;
             this.imports = this.safeImports;
+            this.staticImports = this.safeStaticImports;
             this.safePoint = -1;
         }
     };
@@ -191,6 +195,27 @@ $generatorCommon.builder = function (deep) {
     };
 
     /**
+     * Add class to imports.
+     *
+     * @param member Static member.
+     * @returns {String} Short class name or full class name in case of names conflict.
+     */
+    res.importStatic = function (member) {
+        var dotIdx = member.lastIndexOf('.');
+
+        var shortName = dotIdx > 0 ? member.substr(dotIdx + 1) : member;
+
+        if (this.staticImports[shortName]) {
+            if (this.staticImports[shortName] !== member)
+                return member; // Short class names conflict. Return full name.
+        }
+        else
+            this.staticImports[shortName] = member;
+
+        return shortName;
+    };
+
+    /**
      * @returns String with "java imports" section.
      */
     res.generateImports = function () {
@@ -199,6 +224,22 @@ $generatorCommon.builder = function (deep) {
         for (var clsName in this.imports) {
             if (this.imports.hasOwnProperty(clsName) && this.imports[clsName].lastIndexOf('java.lang.', 0) !== 0)
                 res.push('import ' + this.imports[clsName] + ';');
+        }
+
+        res.sort();
+
+        return res.join('\n');
+    };
+
+    /**
+     * @returns String with "java imports" section.
+     */
+    res.generateStaticImports = function () {
+        var res = [];
+
+        for (var clsName in this.staticImports) {
+            if (this.staticImports.hasOwnProperty(clsName) && this.staticImports[clsName].lastIndexOf('java.lang.', 0) !== 0)
+                res.push('import static ' + this.staticImports[clsName] + ';');
         }
 
         res.sort();

@@ -583,9 +583,12 @@ $generatorXml.clusterEvents = function (cluster, res) {
 
                 res.line('<!-- EventType.' + eventGroup + ' -->');
 
-                _.forEach(evtGrps[eventGroup], function(event) {
-                    res.line('<util:constant static-field="org.apache.ignite.events.EventType.' + event + '"/>');
-                });
+                var evtGrp = _.find(evtGrps, {value: eventGroup});
+
+                if (evtGrp)
+                    _.forEach(evtGrp.events, function(event) {
+                        res.line('<util:constant static-field="' + evtGrp.class + '.' + event + '"/>');
+                    });
             });
 
             res.endBlock('</list>');

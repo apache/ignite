@@ -798,17 +798,24 @@ $generatorJava.clusterEvents = function (cluster, res) {
     if (cluster.includeEventTypes && cluster.includeEventTypes.length > 0) {
         res.emptyLineIfNeeded();
 
-        res.importClass('org.apache.ignite.events.EventType');
+        var evtGrps = angular.element(document.getElementById('app')).injector().get('igniteIncludeEventGroups');
+
+        var evtGrpDscr = _.find(evtGrps, {value: cluster.includeEventTypes[0]});
+
+        var evt = res.importStatic(evtGrpDscr.class + '.' + evtGrpDscr.value);
 
         if (cluster.includeEventTypes.length === 1)
-            res.line('cfg.setIncludeEventTypes(EventType.' + cluster.includeEventTypes[0] + ');');
+            res.line('cfg.setIncludeEventTypes(' + evt + ');');
         else {
-            res.line('int[] events = new int[EventType.' + cluster.includeEventTypes[0] + '.length');
+            _.forEach(cluster.includeEventTypes, function(value, ix) {
+                var evtGrpDscr = _.find(evtGrps, {value: value});
 
-            _.forEach(cluster.includeEventTypes, function(e, ix) {
-                if (ix > 0) {
-                    res.line('    + EventType.' + e + '.length');
-                }
+                var evt = res.importStatic(evtGrpDscr.class + '.' + evtGrpDscr.value);
+
+                if (ix === 0)
+                    res.line('int[] events = new int[' + evt + '.length');
+                else
+                    res.line('    + ' + evt + '.length');
             });
 
             res.line('];');
@@ -817,11 +824,15 @@ $generatorJava.clusterEvents = function (cluster, res) {
 
             res.line('int k = 0;');
 
-            _.forEach(cluster.includeEventTypes, function(e) {
+            _.forEach(cluster.includeEventTypes, function(value) {
                 res.needEmptyLine = true;
 
-                res.line('System.arraycopy(EventType.' + e + ', 0, events, k, EventType.' + e + '.length);');
-                res.line('k += EventType.' + e + '.length;');
+                var evtGrpDscr = _.find(evtGrps, {value: value});
+
+                evt = res.importStatic(evtGrpDscr.class + '.' + value);
+
+                res.line('System.arraycopy(' + evt + ', 0, events, k, ' + evt + '.length);');
+                res.line('k += ' + evt + '.length;');
             });
 
             res.needEmptyLine = true;
@@ -1755,7 +1766,9 @@ $generatorJava.clusterCacheUse = function (caches, igfss, res) {
     });
 
     if (names.length > 0 || igfsNames.length > 0) {
-        names.push(igfsNames);
+        _.forEach(igfsNames, function (igfsName) {
+            names.push(igfsName);
+        });
 
         res.line('cfg.setCacheConfiguration(' + names.join(', ') + ');');
 
@@ -2004,7 +2017,7 @@ $generatorJava.javaClassCode = function (domain, key, pkg, useConstructor, inclu
 
     res.endBlock('}');
 
-    return 'package ' + pkg + ';' + '\n\n' + res.generateImports() + '\n\n' + res.asString();
+    return 'package ' + pkg + ';' + '\n\n' + res.generateImports() + '\n\n' + res.generateStaticImports() + '\n\n' + res.asString();
 };
 
 /**
@@ -2453,7 +2466,7 @@ $generatorJava.cluster = function (cluster, pkg, javaClass, clientNearCfg) {
 
         res.endBlock('}');
 
-        return 'package ' + pkg + ';\n\n' + res.generateImports() + '\n\n' + res.asString();
+        return 'package ' + pkg + ';\n\n' + res.generateImports() + '\n\n' + res.generateStaticImports()  + '\n\n' + res.asString();
     }
 
     return res.asString();
@@ -2826,5 +2839,5 @@ $generatorJava.nodeStartup = function (cluster, pkg, cls, cfg, factoryCls, clien
 
     res.endBlock('}');
 
-    return 'package ' + pkg + ';\n\n' + res.generateImports() + '\n\n' + res.asString();
+    return 'package ' + pkg + ';\n\n' + res.generateImports() + '\n\n' + res.generateStaticImports() + '\n\n' + res.asString();
 };
