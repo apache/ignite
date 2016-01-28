@@ -47,5 +47,15 @@ namespace Apache.Ignite.ExamplesDll.Compute
                 return len;
             }, words, ints => ints.Sum());
         }
+
+        /// <summary>
+        /// Broadcasts the message to console on all nodes.
+        /// </summary>
+        /// <param name="compute">The compute.</param>
+        /// <param name="message">The message.</param>
+        public static void BroadcastConsoleMessage(ICompute compute, string message)
+        {
+            compute.Broadcast(() => Console.WriteLine(message));
+        }
     }
 }

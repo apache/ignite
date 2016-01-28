@@ -17,8 +17,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 
 namespace Apache.Ignite.Examples.Compute
 {
@@ -56,7 +54,10 @@ namespace Apache.Ignite.Examples.Compute
             using (var ignite = Ignition.Start(cfg))
             {
                 Console.WriteLine();
-                Console.WriteLine(">>> Closure execution example started.");
+                Console.WriteLine(">>> Lambda execution example started.");
+
+                Console.WriteLine();
+                Console.WriteLine(">>> Calculating character count:");
 
                 // Split the string by spaces to count letters in each word in parallel.
                 const string data =  "Count characters using lambda expressions";
@@ -65,6 +66,13 @@ namespace Apache.Ignite.Examples.Compute
                 var totalLen = LambdaCompute.CountCharacters(ignite.GetCompute(), data);
 
                 Console.WriteLine(">>> Total character count: " + totalLen);
+                Console.WriteLine();
+
+                Console.WriteLine(">>> Broadcasting anonymous method:");
+
+                LambdaCompute.BroadcastConsoleMessage(ignite.GetCompute(), "Hello Node!");
+
+                Console.WriteLine(">>> Check all nodes for hello message output.");
                 Console.WriteLine();
             }
 
