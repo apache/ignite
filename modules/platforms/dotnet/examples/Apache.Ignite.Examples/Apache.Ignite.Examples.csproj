@@ -65,6 +65,7 @@
     <Compile Include="Datagrid\TransactionExample.cs" />
     <Compile Include="Events\LambdaEventsExample.cs" />
     <Compile Include="Events\EventsExample.cs" />
+    <Compile Include="Messaging\LambdaMessagingExample.cs" />
     <Compile Include="Messaging\MessagingExample.cs" />
     <Compile Include="Misc\LifecycleExample.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
