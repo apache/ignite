@@ -92,7 +92,7 @@ import igniteFormFieldJavaClass from './directives/form-field-java-class/form-fi
 import IgniteUiAceOnLoad from './services/UiAceOnLoad/service';
 
 // Providers
-import igniteCountries from './providers/countries/index';
+import igniteCountries from './providers/Countries/index';
 
 // Filters.
 import hasPojo from './filters/hasPojo/hasPojo.filter';
