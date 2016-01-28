@@ -22,6 +22,7 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.OdbcConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.util.GridSpinBusyLock;
 import org.apache.ignite.internal.util.nio.*;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.IgnitePortProtocol;
@@ -58,15 +59,15 @@ public class OdbcTcpServer {
     /**
      * Start ODBC TCP server.
      *
-     * @param hnd ODBC protocol handler.
+     * @param hnd ODBC command handler.
      * @throws IgniteCheckedException
      */
-    public void start(final OdbcProtocolHandler hnd) throws IgniteCheckedException {
+    public void start(final OdbcCommandHandler hnd, final GridSpinBusyLock busyLock) throws IgniteCheckedException {
         OdbcConfiguration cfg = ctx.config().getOdbcConfiguration();
 
         assert cfg != null;
 
-        GridNioServerListener<OdbcRequest> listener = new OdbcTcpNioListener(log, hnd);
+        GridNioServerListener<OdbcRequest> listener = new OdbcTcpNioListener(log, hnd, busyLock);
 
         GridNioParser parser = new OdbcParser(ctx);
 
@@ -76,7 +77,8 @@ public class OdbcTcpServer {
             int port = cfg.getPort();
 
             if (startTcpServer(host, port, listener, parser, cfg)) {
-                log.debug("ODBC Server has started on TCP port " + port);
+                if (log.isDebugEnabled())
+                    log.debug("ODBC Server has started on TCP port " + port);
 
                 return;
             }

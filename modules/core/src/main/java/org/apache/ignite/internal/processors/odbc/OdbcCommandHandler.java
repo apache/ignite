@@ -67,9 +67,8 @@ public class OdbcCommandHandler {
      *
      * @param req Request.
      * @return Response.
-     * @throws IgniteCheckedException If failed.
      */
-    public OdbcResponse handle(OdbcRequest req) throws IgniteCheckedException {
+    public OdbcResponse handle(OdbcRequest req) {
         assert req != null;
 
         switch (req.command()) {
@@ -89,7 +88,8 @@ public class OdbcCommandHandler {
                 return getTablesMeta((OdbcQueryGetTablesMetaRequest) req);
         }
 
-        return null;
+        return new OdbcResponse(OdbcResponse.STATUS_FAILED,
+                "Failed to find registered handler for command: " + req.command());
     }
 
     /**
@@ -120,7 +120,8 @@ public class OdbcCommandHandler {
 
             List<?> fieldsMeta = ((QueryCursorImpl) qryCur).fieldsMeta();
 
-            log.debug("Field meta: " + fieldsMeta);
+            if (log.isDebugEnabled())
+                log.debug("Field meta: " + fieldsMeta);
 
             OdbcQueryExecuteResult res = new OdbcQueryExecuteResult(qryId, convertMetadata(fieldsMeta));
 

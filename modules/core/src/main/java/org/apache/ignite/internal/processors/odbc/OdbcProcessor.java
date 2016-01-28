@@ -21,7 +21,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
-import org.apache.ignite.internal.util.GridSpinReadWriteLock;
+import org.apache.ignite.internal.util.GridSpinBusyLock;
 import org.apache.ignite.marshaller.Marshaller;
 
 /**
@@ -32,54 +32,7 @@ public class OdbcProcessor extends GridProcessorAdapter {
     private OdbcTcpServer srv;
 
     /** Busy lock. */
-    private final GridSpinReadWriteLock busyLock = new GridSpinReadWriteLock();
-
-    /** Command handler. */
-    private OdbcCommandHandler handler;
-
-    /** Protocol handler. */
-    private final OdbcProtocolHandler protoHnd = new OdbcProtocolHandler() {
-        /** {@inheritDoc} */
-        @Override public OdbcResponse handle(OdbcRequest req) throws IgniteCheckedException {
-            return handle0(req);
-        }
-    };
-
-    /**
-     * Handle request.
-     *
-     * @param req Request.
-     * @return Response.
-     */
-    private OdbcResponse handle0(final OdbcRequest req) throws IgniteCheckedException {
-        if (!busyLock.tryReadLock())
-            throw new IgniteCheckedException("Failed to handle request (received request while stopping grid).");
-
-        try {
-            if (log.isDebugEnabled())
-                log.debug("Received request from client: " + req);
-
-            OdbcResponse rsp;
-
-            try {
-                rsp = handler == null ? null : handler.handle(req);
-
-                if (rsp == null)
-                    throw new IgniteCheckedException("Failed to find registered handler for command: " + req.command());
-            }
-            catch (Exception e) {
-                if (log.isDebugEnabled())
-                    log.debug("Failed to handle request [req=" + req + ", e=" + e + "]");
-
-                rsp = new OdbcResponse(OdbcResponse.STATUS_FAILED, e.getMessage());
-            }
-
-            return rsp;
-        }
-        finally {
-            busyLock.readUnlock();
-        }
-    }
+    private final GridSpinBusyLock busyLock = new GridSpinBusyLock();
 
     /**
      * @param ctx Kernal context.
@@ -98,10 +51,7 @@ public class OdbcProcessor extends GridProcessorAdapter {
             if (marsh != null && !(marsh instanceof BinaryMarshaller))
                 throw new IgniteCheckedException("ODBC may only be used with BinaryMarshaller.");
 
-            // Register handler.
-            handler = new OdbcCommandHandler(ctx);
-
-            srv.start(protoHnd);
+            srv.start(new OdbcCommandHandler(ctx), busyLock);
         }
     }
 
@@ -123,7 +73,7 @@ public class OdbcProcessor extends GridProcessorAdapter {
     /** {@inheritDoc} */
     @Override public void onKernalStop(boolean cancel) {
         if (isOdbcEnabled()) {
-            busyLock.writeLock();
+            busyLock.block();
 
             if (log.isDebugEnabled())
                 log.debug("ODBC processor stopped.");

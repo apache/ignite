@@ -19,10 +19,13 @@ package org.apache.ignite.internal.processors.odbc;
 
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.util.GridSpinBusyLock;
 import org.apache.ignite.internal.util.nio.GridNioFuture;
 import org.apache.ignite.internal.util.nio.GridNioServerListenerAdapter;
 import org.apache.ignite.internal.util.nio.GridNioSession;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteInClosure;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -32,26 +35,32 @@ public class OdbcTcpNioListener extends GridNioServerListenerAdapter<OdbcRequest
     /** Logger. */
     private final IgniteLogger log;
 
-    /** Protocol handler. */
-    private final OdbcProtocolHandler hnd;
+    /** Command handler. */
+    private final OdbcCommandHandler handler;
+
+    /** Busy lock. */
+    private final GridSpinBusyLock busyLock;
 
     /**
      * @param log Logger.
      * @param hnd Protocol handler.
      */
-    OdbcTcpNioListener(IgniteLogger log, OdbcProtocolHandler hnd) {
+    OdbcTcpNioListener(final IgniteLogger log, final OdbcCommandHandler hnd, final GridSpinBusyLock busyLock) {
         this.log = log;
-        this.hnd = hnd;
+        this.handler = hnd;
+        this.busyLock = busyLock;
     }
 
     /** {@inheritDoc} */
     @Override public void onConnected(GridNioSession ses) {
-        log.debug("Driver connected");
+        if (log.isDebugEnabled())
+            log.debug("Driver connected");
     }
 
     /** {@inheritDoc} */
     @Override public void onDisconnected(GridNioSession ses, @Nullable Exception e) {
-        log.debug("Driver disconnected");
+        if (log.isDebugEnabled())
+            log.debug("Driver disconnected");
 
         if (e != null) {
             if (e instanceof RuntimeException)
@@ -65,32 +74,40 @@ public class OdbcTcpNioListener extends GridNioServerListenerAdapter<OdbcRequest
     @Override public void onMessage(GridNioSession ses, OdbcRequest msg) {
         assert msg != null;
 
-        log.debug("Query: " + msg.command());
+        if (log.isDebugEnabled())
+            log.debug("Received request from client: [msg=" + msg + ']');
 
-        OdbcResponse res;
+        OdbcResponse res = handle(msg);
+
+        if (log.isDebugEnabled())
+            log.debug("Handling result: [res=" + res.status() + ']');
+
+        ses.send(res);
+    }
+
+    /**
+     * Handle incoming ODBC request.
+     *
+     * @param req ODBC request.
+     * @return ODBC response.
+     */
+    OdbcResponse handle(OdbcRequest req) {
+        assert handler != null;
+
+        if (!busyLock.enterBusy()) {
+            String errMsg = "Failed to handle request [req=" + req +
+                    ", err=Received request while stopping grid]";
+
+            U.error(log, errMsg);
+
+            return new OdbcResponse(OdbcResponse.STATUS_FAILED, errMsg);
+        }
 
         try {
-            res = hnd.handle(msg);
+            return handler.handle(req);
         }
-        catch (IgniteCheckedException e) {
-            U.error(log, "Failed to process client request: " + msg, e);
-
-            res = new OdbcResponse(OdbcResponse.STATUS_FAILED,
-                    "Failed to process client request: " + e.getMessage());
-        }
-
-        log.debug("Resulting success status: " + res.status());
-
-        GridNioFuture<?> sf = ses.send(res);
-
-        // Check if send failed.
-        if (sf.isDone()) {
-            try {
-                sf.get();
-            }
-            catch (Exception e) {
-                U.error(log, "Failed to process client request [ses=" + ses + ", msg=" + msg + ']', e);
-            }
+        finally {
+            busyLock.leaveBusy();
         }
     }
 }
