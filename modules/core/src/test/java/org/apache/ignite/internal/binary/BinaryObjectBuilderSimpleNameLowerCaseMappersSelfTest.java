@@ -34,7 +34,7 @@ public class BinaryObjectBuilderSimpleNameLowerCaseMappersSelfTest extends Binar
         BinaryConfiguration bCfg = cfg.getBinaryConfiguration();
 
         bCfg.setIdMapper(new BinaryBasicIdMapper(true));
-        bCfg.setNameMapper(new BinaryBasicNameMapper());
+        bCfg.setNameMapper(new BinaryBasicNameMapper(true));
 
         return cfg;
     }
