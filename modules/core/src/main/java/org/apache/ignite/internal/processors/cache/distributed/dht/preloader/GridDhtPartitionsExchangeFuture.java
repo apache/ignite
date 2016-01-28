@@ -195,7 +195,7 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
     private volatile Map<Integer, Boolean> cacheValidRes;
 
     /** Partitions' validation results. True if lost. cacheId -> (partitionId -> isLost). */
-    private Map<Integer, Map<Integer, Boolean>> cachesPartsLoss = new HashMap<>();
+    private Map<Integer, Map<Integer, Boolean>> cachesPartsLoss = new ConcurrentHashMap8<>();
 
     /** Skip preload flag. */
     private boolean skipPreload;
@@ -1124,6 +1124,9 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
      * Checking each partition for an existing of an owning node.
      */
     private void processLostParts() {
+
+        assert cachesPartsLoss.isEmpty();
+
         // Collect all owned partitions for caches.
         for (GridCacheContext cacheContext : cctx.cacheContexts()) {
             if (cacheContext.isLocal())
@@ -1147,6 +1150,9 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
 
         for (Map.Entry<Integer, Map<Integer, Boolean>> cachePartitions : cachesPartsLoss.entrySet()) {
             GridCacheContext cacheContext = cctx.cacheContext(cachePartitions.getKey());
+
+            assert cacheContext != null;
+
             int amountOfPartitions = cacheContext.affinity().partitions();
 
             // Size of owned partitions is equal to the total amount of partitions. Which means - nothing is lost.
@@ -1157,7 +1163,7 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
                 if (!cachePartitions.getValue().containsKey(partId)) { // Partition is lost.
 
                     GridDhtLocalPartition localPartition = cacheContext.topology().localPartition(partId, false);
-                    boolean updateState = false;
+                    boolean updateState;
 
                     cachePartitions.getValue().put(partId, true);
 
@@ -1208,7 +1214,7 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
 
         cctx.exchange().onExchangeDone(this, err);
 
-        if (oldestNode.get() != null)
+        if (oldestNode.get() != null && err == null)
             // Check for the lost partition have to be complete under the lock, thus it precedes super.onDone.
             processLostParts();
 

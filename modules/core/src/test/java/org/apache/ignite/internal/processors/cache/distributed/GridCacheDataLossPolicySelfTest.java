@@ -20,23 +20,31 @@ package org.apache.ignite.internal.processors.cache.distributed;
 import java.util.Collections;
 import java.util.UUID;
 import java.util.concurrent.Callable;
+import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.Ignition;
+import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.DataLossPolicy;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.events.Event;
 import org.apache.ignite.events.EventType;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteInClosure;
+import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.apache.ignite.transactions.Transaction;
+import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.util.TestTcpCommunicationSpi;
+
+import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_READ;
 
 /**
  * Tests {@link DataLossPolicy#FAIL_OPS}
@@ -44,6 +52,8 @@ import org.apache.ignite.util.TestTcpCommunicationSpi;
 public class GridCacheDataLossPolicySelfTest extends GridCommonAbstractTest {
     /** */
     protected static final TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
+
+    private int rebalanceDelay = 0;
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
@@ -71,6 +81,8 @@ public class GridCacheDataLossPolicySelfTest extends GridCommonAbstractTest {
 
         cacheCfg.setCacheMode(CacheMode.PARTITIONED);
         cacheCfg.setBackups(0);
+        cacheCfg.setRebalanceDelay(rebalanceDelay);
+        cacheCfg.setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL);
 
         cfg.setCacheConfiguration(cacheCfg);
 
@@ -88,6 +100,8 @@ public class GridCacheDataLossPolicySelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testPartLostReset() throws Exception {
+        rebalanceDelay = 0;
+
         startGrid(0);
         startGrid(1);
 
@@ -100,7 +114,7 @@ public class GridCacheDataLossPolicySelfTest extends GridCommonAbstractTest {
 
         final int key = primaryKey(jcache(0));
         final int keyAfterLost = primaryKeys(jcache(0), 1, key + 1).get(0);
-        final int keyAtFututre = primaryKeys(jcache(0), 1, keyAfterLost + 1).get(0);
+        final int keyAtFuture = primaryKeys(jcache(0), 1, keyAfterLost + 1).get(0);
 
         jcache(1).put(key, key);
 
@@ -136,7 +150,7 @@ public class GridCacheDataLossPolicySelfTest extends GridCommonAbstractTest {
 
         fut.listen(new IgniteInClosure<IgniteFuture<?>>() {
             @Override public void apply(IgniteFuture<?> future) {
-                jcache(1).put(keyAtFututre, keyAtFututre);
+                jcache(1).put(keyAtFuture, keyAtFuture);
             }
         });
 
@@ -180,5 +194,69 @@ public class GridCacheDataLossPolicySelfTest extends GridCommonAbstractTest {
         cfg.getCacheConfiguration()[0].setDataLossPolicy(DataLossPolicy.FAIL_OPS);
 
         Ignition.start(cfg);
+    }
+
+    /**
+     * For case, when all nodes except client node have left the claster. Thus there is no an oldest node for the last
+     * client node.
+     *
+     * @throws Exception If failed.
+     */
+    public void testGetUnderTransaction() throws Exception {
+        rebalanceDelay = -1;
+
+        final Ignite stable = startGrid(0);
+        final Ignite fail = startGrid(1);
+        final Ignite txOwner = startGrid(2);
+
+        //awaitPartitionMapExchange();
+
+        final NodeLeft lsnr = new NodeLeft();
+
+        txOwner.events().localListen(lsnr, EventType.EVT_NODE_LEFT);
+
+        final int keyForLock = primaryKey(jcache(0));
+        final int keyAfterNodeFail = primaryKey(jcache(1));
+
+        jcache(1).put(keyForLock, keyForLock);
+        jcache(1).put(keyAfterNodeFail, keyAfterNodeFail);
+
+        assert keyForLock != keyAfterNodeFail;
+        assert jcache(0).containsKey(keyForLock);
+        assert jcache(0).containsKey(keyAfterNodeFail);
+
+        try (Transaction tx = txOwner.transactions().txStart(TransactionConcurrency.PESSIMISTIC, REPEATABLE_READ)) {
+            jcache(2).get(keyForLock);
+
+            TestTcpCommunicationSpi.stop(fail);
+
+            stopGrid(fail.name(), true);
+
+            GridTestUtils.waitForCondition(new GridAbsPredicate() {
+                @Override public boolean apply() {
+                    return lsnr.isHappened();
+                }
+            }, getTestTimeout());
+
+            jcache(2).get(keyAfterNodeFail);
+
+            tx.commit();
+        }
+    }
+
+    private static class NodeLeft implements IgnitePredicate<Event> {
+        /** */
+        private boolean happened = false;
+
+        /** {@inheritDoc} */
+        @Override public boolean apply(Event evt) {
+            happened = true;
+
+            return true;
+        }
+
+        public boolean isHappened() {
+            return happened;
+        }
     }
 }
