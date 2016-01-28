@@ -32,6 +32,7 @@ import org.apache.ignite.configuration.CollectionConfiguration;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
@@ -136,7 +137,7 @@ public abstract class GridCacheQueueApiSelfAbstractTest extends IgniteCollection
 
         // Initialize queue.
         for (int i = 0; i < retries; i++)
-            queue.addAll(Arrays.asList(new SameHashItem(Integer.toString(i)), new SameHashItem(Integer.toString(i))));
+            queue.addAll(U.asList(new SameHashItem(Integer.toString(i)), new SameHashItem(Integer.toString(i))));
 
         // Get arrays from queue.
         assertEquals(retries * 2, queue.toArray().length);
@@ -155,12 +156,12 @@ public abstract class GridCacheQueueApiSelfAbstractTest extends IgniteCollection
 
         assertFalse(queue.contains(new SameHashItem(Integer.toString(144))));
 
-        Collection<SameHashItem> col1 = Arrays.asList(new SameHashItem(Integer.toString(14)),
+        Collection<SameHashItem> col1 = U.asList(new SameHashItem(Integer.toString(14)),
             new SameHashItem(Integer.toString(14)), new SameHashItem(Integer.toString(18)));
 
         assertTrue(queue.containsAll(col1));
 
-        Collection<SameHashItem> col2 = Arrays.asList(new SameHashItem(Integer.toString(245)),
+        Collection<SameHashItem> col2 = U.asList(new SameHashItem(Integer.toString(245)),
             new SameHashItem(Integer.toString(14)), new SameHashItem(Integer.toString(18)));
 
         assertFalse(queue.containsAll(col2));
@@ -181,14 +182,14 @@ public abstract class GridCacheQueueApiSelfAbstractTest extends IgniteCollection
         // Try to remove some items.
         assertTrue(queue.contains(new SameHashItem(Integer.toString(33))));
 
-        assertTrue(queue.removeAll(Arrays.asList(new SameHashItem(Integer.toString(15)),
+        assertTrue(queue.removeAll(U.asList(new SameHashItem(Integer.toString(15)),
             new SameHashItem(Integer.toString(14)), new SameHashItem(Integer.toString(33)),
             new SameHashItem(Integer.toString(1)))));
 
         assertFalse(queue.contains(new SameHashItem(Integer.toString(33))));
 
         // Try to retain all items.
-        assertTrue(queue.retainAll(Arrays.asList(new SameHashItem(Integer.toString(15)),
+        assertTrue(queue.retainAll(U.asList(new SameHashItem(Integer.toString(15)),
             new SameHashItem(Integer.toString(14)), new SameHashItem(Integer.toString(33)),
             new SameHashItem(Integer.toString(1)))));
 

@@ -30,6 +30,7 @@ import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.TextQuery;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
@@ -73,9 +74,9 @@ public class IgniteCacheFullTextQueryNodeJoiningSelfTest extends GridCommonAbstr
 
         qryEntity.setFields(fields);
 
-        qryEntity.setIndexes(Arrays.asList(new QueryIndex("val", QueryIndexType.FULLTEXT)));
+        qryEntity.setIndexes(U.asList(new QueryIndex("val", QueryIndexType.FULLTEXT)));
 
-        cache.setQueryEntities(Arrays.asList(qryEntity));
+        cache.setQueryEntities(U.asList(qryEntity));
 
         cfg.setCacheConfiguration(cache);
 

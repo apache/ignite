@@ -57,12 +57,12 @@ public abstract class TcpDiscoveryIpFinderAbstractSelfTest<T extends TcpDiscover
      * @throws Exception If any error occurs.
      */
     public void testIpFinder() throws Exception {
-        finder.initializeLocalAddresses(Arrays.asList(new InetSocketAddress(InetAddress.getLocalHost(), 1000)));
+        finder.initializeLocalAddresses(U.asList(new InetSocketAddress(InetAddress.getLocalHost(), 1000)));
 
         InetSocketAddress node1 = new InetSocketAddress(InetAddress.getLocalHost(), 1000);
         InetSocketAddress node2 = new InetSocketAddress(InetAddress.getLocalHost(), 1001);
 
-        List<InetSocketAddress> initAddrs = Arrays.asList(node1, node2);
+        List<InetSocketAddress> initAddrs = U.asList(node1, node2);
 
         finder.registerAddresses(Collections.singletonList(node1));
 

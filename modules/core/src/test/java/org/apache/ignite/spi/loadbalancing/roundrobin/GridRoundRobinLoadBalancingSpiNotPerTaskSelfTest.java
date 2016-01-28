@@ -27,6 +27,7 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.compute.ComputeTaskSession;
 import org.apache.ignite.events.TaskEvent;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.testframework.GridSpiTestContext;
 import org.apache.ignite.testframework.GridTestNode;
@@ -111,7 +112,7 @@ public class GridRoundRobinLoadBalancingSpiNotPerTaskSelfTest
 
         List<ClusterNode> allNodes = (List<ClusterNode>)getSpiContext().nodes();
 
-        List<ClusterNode> balancedNode = Arrays.asList(allNodes.get(0));
+        List<ClusterNode> balancedNode = U.asList(allNodes.get(0));
 
         ClusterNode firstNode = getSpi().getBalancedNode(ses, balancedNode, new GridTestJob());
         ClusterNode secondNode = getSpi().getBalancedNode(ses, balancedNode, new GridTestJob());
@@ -125,7 +126,7 @@ public class GridRoundRobinLoadBalancingSpiNotPerTaskSelfTest
 
         ClusterNode node = new GridTestNode(UUID.randomUUID());
 
-        List<ClusterNode> notInTop = Arrays.asList(node);
+        List<ClusterNode> notInTop = U.asList(node);
 
         try {
             getSpi().getBalancedNode(ses, notInTop, new GridTestJob());

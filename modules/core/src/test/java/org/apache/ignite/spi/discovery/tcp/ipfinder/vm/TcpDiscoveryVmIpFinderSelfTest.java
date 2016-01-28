@@ -19,6 +19,8 @@ package org.apache.ignite.spi.discovery.tcp.ipfinder.vm;
 
 import java.util.Arrays;
 import java.util.Collections;
+
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinderAbstractSelfTest;
 
@@ -52,7 +54,7 @@ public class TcpDiscoveryVmIpFinderSelfTest
         TcpDiscoveryVmIpFinder finder = ipFinder();
 
         try {
-            finder.setAddresses(Arrays.asList("127.0.0.1:475000001"));
+            finder.setAddresses(U.asList("127.0.0.1:475000001"));
 
             assert false;
         }
@@ -63,7 +65,7 @@ public class TcpDiscoveryVmIpFinderSelfTest
         }
 
         try {
-            finder.setAddresses(Arrays.asList("127.0.0.1:-2"));
+            finder.setAddresses(U.asList("127.0.0.1:-2"));
 
             assert false;
         }
@@ -73,7 +75,7 @@ public class TcpDiscoveryVmIpFinderSelfTest
             assert e.getMessage().contains("127.0.0.1:-2");
         }
 
-        finder.setAddresses(Arrays.asList("127.0.0.1:45555", "8.8.8.8", "some-dns-name", "some-dns-name1:200",
+        finder.setAddresses(U.asList("127.0.0.1:45555", "8.8.8.8", "some-dns-name", "some-dns-name1:200",
             "127.0.0.1:"));
 
         info("IP finder initialized: " + finder);
@@ -121,7 +123,7 @@ public class TcpDiscoveryVmIpFinderSelfTest
         TcpDiscoveryVmIpFinder finder = ipFinder();
 
         try {
-            finder.setAddresses(Arrays.asList("[::1]:475000001"));
+            finder.setAddresses(U.asList("[::1]:475000001"));
 
             fail();
         }
@@ -130,7 +132,7 @@ public class TcpDiscoveryVmIpFinderSelfTest
         }
 
         try {
-            finder.setAddresses(Arrays.asList("[::1]:-2"));
+            finder.setAddresses(U.asList("[::1]:-2"));
 
             fail();
         }
@@ -138,7 +140,7 @@ public class TcpDiscoveryVmIpFinderSelfTest
             info("Caught expected exception: " + e);
         }
 
-        finder.setAddresses(Arrays.asList("[::1]:45555", "8.8.8.8", "some-dns-name", "some-dns-name1:200", "::1"));
+        finder.setAddresses(U.asList("[::1]:45555", "8.8.8.8", "some-dns-name", "some-dns-name1:200", "::1"));
 
         info("IP finder initialized: " + finder);
 

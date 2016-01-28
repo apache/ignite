@@ -143,7 +143,7 @@ public abstract class GridCacheAbstractQueueFailoverDataConsistencySelfTest exte
 
         assertNotNull(queue);
 
-        testAddFailover(queue, Arrays.asList(primaryNode)); // Kill queue header's primary node .
+        testAddFailover(queue, U.asList(primaryNode)); // Kill queue header's primary node .
 
         List<Integer> killIdxs = new ArrayList<>();
 
@@ -238,7 +238,7 @@ public abstract class GridCacheAbstractQueueFailoverDataConsistencySelfTest exte
 
         assertNotNull(queue);
 
-        testPollFailover(queue, Arrays.asList(primaryQueueNode(queue))); // Kill queue header's primary node .
+        testPollFailover(queue, U.asList(primaryQueueNode(queue))); // Kill queue header's primary node .
 
         List<Integer> killIdxs = new ArrayList<>();
 

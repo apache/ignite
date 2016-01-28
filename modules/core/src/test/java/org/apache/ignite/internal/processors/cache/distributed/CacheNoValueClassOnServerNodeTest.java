@@ -60,7 +60,7 @@ public class CacheNoValueClassOnServerNodeTest extends GridCommonAbstractTest {
 
         TcpDiscoveryVmIpFinder ipFinder = new TcpDiscoveryVmIpFinder();
 
-        ipFinder.setAddresses(Arrays.asList("127.0.0.1:47500..47509"));
+        ipFinder.setAddresses(U.asList("127.0.0.1:47500..47509"));
 
         disco.setIpFinder(ipFinder);
 
@@ -92,7 +92,7 @@ public class CacheNoValueClassOnServerNodeTest extends GridCommonAbstractTest {
 
             final CountDownLatch clientReadyLatch = new CountDownLatch(1);
 
-            Collection<String> jvmArgs = Arrays.asList("-ea", "-DIGNITE_QUIET=false");
+            Collection<String> jvmArgs = U.asList("-ea", "-DIGNITE_QUIET=false");
 
             GridJavaProcess clientNode = null;
 

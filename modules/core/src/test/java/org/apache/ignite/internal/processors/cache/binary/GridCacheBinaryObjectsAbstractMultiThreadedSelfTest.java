@@ -40,6 +40,7 @@ import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.binary.BinaryReader;
 import org.apache.ignite.binary.BinaryTypeConfiguration;
 import org.apache.ignite.binary.BinaryWriter;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
@@ -78,7 +79,7 @@ public abstract class GridCacheBinaryObjectsAbstractMultiThreadedSelfTest extend
 
         BinaryConfiguration bCfg = new BinaryConfiguration();
 
-        bCfg.setTypeConfigurations(Arrays.asList(
+        bCfg.setTypeConfigurations(U.asList(
             new BinaryTypeConfiguration(TestObject.class.getName())));
 
         cfg.setBinaryConfiguration(bCfg);

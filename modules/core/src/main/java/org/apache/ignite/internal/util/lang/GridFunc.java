@@ -1391,7 +1391,7 @@ public class GridFunc {
      * @return {@link List} instance for array.
      */
     public static <T> List<T> asList(@Nullable T... vals) {
-        return isEmpty(vals) ? Collections.<T>emptyList() : Arrays.asList(vals);
+        return isEmpty(vals) ? Collections.<T>emptyList() : U.asList(vals);
     }
 
     /**

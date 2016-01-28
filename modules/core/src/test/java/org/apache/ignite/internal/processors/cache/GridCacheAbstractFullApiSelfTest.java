@@ -4468,28 +4468,28 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
      * @throws Exception If failed.
      */
     public void testGlobalClearKey() throws Exception {
-        testGlobalClearKey(false, Arrays.asList("key25"));
+        testGlobalClearKey(false, U.asList("key25"));
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testGlobalClearKeyAsync() throws Exception {
-        testGlobalClearKey(true, Arrays.asList("key25"));
+        testGlobalClearKey(true, U.asList("key25"));
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testGlobalClearKeys() throws Exception {
-        testGlobalClearKey(false, Arrays.asList("key25", "key100", "key150"));
+        testGlobalClearKey(false, U.asList("key25", "key100", "key150"));
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testGlobalClearKeysAsync() throws Exception {
-        testGlobalClearKey(true, Arrays.asList("key25", "key100", "key150"));
+        testGlobalClearKey(true, U.asList("key25", "key100", "key150"));
     }
 
     /**
@@ -5234,7 +5234,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
                 new Callable<Object>() {
                     @Override public Object call() throws Exception {
                         try (Transaction tx = ignite(0).transactions().txStart()) {
-                            jcache(0).lockAll(Arrays.asList("key1", "key2")).lock();
+                            jcache(0).lockAll(U.asList("key1", "key2")).lock();
                         }
 
                         return null;

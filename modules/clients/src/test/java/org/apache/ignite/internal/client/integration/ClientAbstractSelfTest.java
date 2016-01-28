@@ -213,7 +213,7 @@ public abstract class ClientAbstractSelfTest extends GridCommonAbstractTest {
      * @return Task argument.
      */
     protected Object getTaskArgument() {
-        return Arrays.asList(TASK_ARGS);
+        return U.asList(TASK_ARGS);
     }
 
     /** {@inheritDoc} */
@@ -329,10 +329,10 @@ public abstract class ClientAbstractSelfTest extends GridCommonAbstractTest {
 
         cache.setName(CACHE_NAME);
 
-        cfg.setDataConfigurations(Arrays.asList(nullCache, cache));
+        cfg.setDataConfigurations(U.asList(nullCache, cache));
 
         cfg.setProtocol(protocol());
-        cfg.setServers(Arrays.asList(serverAddress()));
+        cfg.setServers(U.asList(serverAddress()));
 
         // Setting custom executor, to avoid failures on client shutdown.
         // And applying custom naming scheme to ease debugging.
@@ -390,9 +390,9 @@ public abstract class ClientAbstractSelfTest extends GridCommonAbstractTest {
         futs.put("put", data.putAsync("key", "val"));
         futs.put("putAll", data.putAllAsync(F.asMap("key", "val")));
         futs.put("get", data.getAsync("key"));
-        futs.put("getAll", data.getAllAsync(Arrays.asList("key")));
+        futs.put("getAll", data.getAllAsync(U.asList("key")));
         futs.put("remove", data.removeAsync("key"));
-        futs.put("removeAll", data.removeAllAsync(Arrays.asList("key")));
+        futs.put("removeAll", data.removeAllAsync(U.asList("key")));
         futs.put("replace", data.replaceAsync("key", "val"));
         futs.put("cas", data.casAsync("key", "val", "val2"));
         futs.put("metrics", data.metricsAsync());

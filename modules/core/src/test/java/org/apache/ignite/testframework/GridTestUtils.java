@@ -371,7 +371,7 @@ public final class GridTestUtils {
      */
     @SuppressWarnings("ConstantConditions")
     public static <T> void assertOneToOne(Iterable<T> it, IgnitePredicate<T>... ps) {
-        Collection<IgnitePredicate<T>> ps0 = new ArrayList<>(Arrays.asList(ps));
+        Collection<IgnitePredicate<T>> ps0 = new ArrayList<>(U.asList(ps));
         Collection<T2<IgnitePredicate<T>, T>> passed = new ArrayList<>();
 
         for (T elem : it) {

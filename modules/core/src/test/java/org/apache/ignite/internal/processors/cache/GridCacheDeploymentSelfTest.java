@@ -307,7 +307,7 @@ public class GridCacheDeploymentSelfTest extends GridCommonAbstractTest {
 
             assert cache != null;
 
-            cache.put(key, new ArrayList<>(Arrays.asList(val1Cls.newInstance())));
+            cache.put(key, new ArrayList<>(U.asList(val1Cls.newInstance())));
 
             info(">>>>>>> First put completed.");
 

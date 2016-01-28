@@ -25,6 +25,7 @@ import java.util.List;
 import java.util.UUID;
 import org.apache.ignite.internal.GridDirectCollection;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
@@ -63,7 +64,7 @@ public class UUIDCollectionMessage implements Message {
         if (uuids == null || uuids.length == 0)
             return null;
 
-        List<UUID> list = uuids.length == 1 ? Collections.singletonList(uuids[0]) : Arrays.asList(uuids);
+        List<UUID> list = uuids.length == 1 ? Collections.singletonList(uuids[0]) : U.asList(uuids);
 
         return new UUIDCollectionMessage(list);
     }

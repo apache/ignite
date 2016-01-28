@@ -28,6 +28,7 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.CU;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
@@ -113,7 +114,7 @@ public class GridAffinitySelfTest extends GridCommonAbstractTest {
      * @return Non-system caches.
      */
     private Collection<CacheConfiguration> caches(Ignite g) {
-        return F.view(Arrays.asList(g.configuration().getCacheConfiguration()), new IgnitePredicate<CacheConfiguration>() {
+        return F.view(U.asList(g.configuration().getCacheConfiguration()), new IgnitePredicate<CacheConfiguration>() {
             @Override public boolean apply(CacheConfiguration c) {
                 return !CU.MARSH_CACHE_NAME.equals(c.getName()) && !CU.UTILITY_CACHE_NAME.equals(c.getName()) &&
                     !CU.ATOMICS_CACHE_NAME.equals(c.getName());

@@ -130,7 +130,7 @@ public class CacheEntryEventProbe implements BenchmarkProbe {
 
     /** {@inheritDoc} */
     @Override public Collection<String> metaInfo() {
-        return Arrays.asList("Time, sec", "Received events/sec (more is better)");
+        return U.asList("Time, sec", "Received events/sec (more is better)");
     }
 
     /** {@inheritDoc} */

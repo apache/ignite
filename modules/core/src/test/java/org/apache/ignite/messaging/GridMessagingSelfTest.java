@@ -751,7 +751,7 @@ public class GridMessagingSelfTest extends GridCommonAbstractTest implements Ser
      * @throws Exception If error occurs.
      */
     public void testRemoteListenOrderedMessages() throws Exception {
-        List<TestMessage> msgs = Arrays.asList(
+        List<TestMessage> msgs = U.asList(
             new TestMessage(MSG_1),
             new TestMessage(MSG_2, 3000),
             new TestMessage(MSG_3));
@@ -795,7 +795,7 @@ public class GridMessagingSelfTest extends GridCommonAbstractTest implements Ser
         assertFalse(error.get());
 
         //noinspection AssertEqualsBetweenInconvertibleTypes
-        assertEquals(msgs, Arrays.asList(rcvMsgs.toArray()));
+        assertEquals(msgs, U.asList(rcvMsgs.toArray()));
     }
 
     /**
@@ -1015,7 +1015,7 @@ public class GridMessagingSelfTest extends GridCommonAbstractTest implements Ser
 
         assertThrows(log, new Callable<Object>() {
             @Override public Object call() throws Exception {
-                ignite1.message().send(null, Arrays.asList(null, new Object()));
+                ignite1.message().send(null, U.asList(null, new Object()));
 
                 return null;
             }

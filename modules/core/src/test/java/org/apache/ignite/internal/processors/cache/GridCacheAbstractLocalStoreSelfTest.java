@@ -206,7 +206,7 @@ public abstract class GridCacheAbstractLocalStoreSelfTest extends GridCommonAbst
 
         // Check that entry is evicted from cache, but local store does contain it.
         for (int i = 0; i < KEYS; i++) {
-            cache.localEvict(Arrays.asList(i));
+            cache.localEvict(U.asList(i));
 
             assertNull(cache.localPeek(i));
 

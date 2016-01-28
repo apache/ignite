@@ -29,6 +29,7 @@ import org.apache.ignite.configuration.BinaryConfiguration;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
@@ -53,7 +54,7 @@ public abstract class GridCacheBinaryStoreAbstractSelfTest extends GridCommonAbs
 
         BinaryConfiguration bCfg = new BinaryConfiguration();
 
-        bCfg.setClassNames(Arrays.asList(Key.class.getName(), Value.class.getName()));
+        bCfg.setClassNames(U.asList(Key.class.getName(), Value.class.getName()));
 
         cfg.setBinaryConfiguration(bCfg);
 

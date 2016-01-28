@@ -353,7 +353,7 @@ abstract class GridClientAbstractProjection<T extends GridClientAbstractProjecti
 
         if (prjNodes.isEmpty())
             throw new GridServerUnreachableException("Failed to get balanced node (no nodes in topology were " +
-                "accepted by the filters): " + Arrays.asList(filter, excludeFilter));
+                "accepted by the filters): " + U.asList(filter, excludeFilter));
 
         if (prjNodes.size() == 1) {
             GridClientNode ret = GridClientUtils.first(prjNodes);

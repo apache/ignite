@@ -37,6 +37,7 @@ import org.apache.ignite.internal.binary.mutabletest.GridBinaryMarshalerAwareTes
 import org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl;
 import org.apache.ignite.internal.processors.cache.binary.IgniteBinaryImpl;
 import org.apache.ignite.internal.util.lang.GridMapEntry;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Assert;
@@ -76,7 +77,7 @@ public class BinaryObjectBuilderAdditionalSelfTest extends GridCommonAbstractTes
 
         bCfg.setCompactFooter(compactFooter());
 
-        bCfg.setClassNames(Arrays.asList("org.apache.ignite.internal.binary.mutabletest.*"));
+        bCfg.setClassNames(U.asList("org.apache.ignite.internal.binary.mutabletest.*"));
 
         cfg.setMarshaller(new BinaryMarshaller());
 
@@ -576,14 +577,14 @@ public class BinaryObjectBuilderAdditionalSelfTest extends GridCommonAbstractTes
         String s = list.remove(1); // "_", "b", "c", "!"
         assertEquals("a", s);
 
-        assertEquals(Arrays.asList("c", "!"), list.subList(2, 4));
+        assertEquals(U.asList("c", "!"), list.subList(2, 4));
         assertEquals(1, list.indexOf("b"));
         assertEquals(1, list.lastIndexOf("b"));
 
         GridBinaryTestClasses.TestObjectContainer res = mutObj.build().deserialize();
 
         assertTrue(res.foo instanceof ArrayList);
-        assertEquals(Arrays.asList("_", "b", "c", "!"), res.foo);
+        assertEquals(U.asList("_", "b", "c", "!"), res.foo);
     }
 
     /**
@@ -628,13 +629,13 @@ public class BinaryObjectBuilderAdditionalSelfTest extends GridCommonAbstractTes
      */
     public void testLinkedListRead() {
         GridBinaryTestClasses.TestObjectContainer obj = new GridBinaryTestClasses.TestObjectContainer();
-        obj.foo = Lists.newLinkedList(Arrays.asList(obj, "a"));
+        obj.foo = Lists.newLinkedList(U.asList(obj, "a"));
 
         BinaryObjectBuilderImpl mutObj = wrap(obj);
 
         List<Object> list = mutObj.getField("foo");
 
-        assert list.equals(Lists.newLinkedList(Arrays.asList(mutObj, "a")));
+        assert list.equals(Lists.newLinkedList(U.asList(mutObj, "a")));
     }
 
     /**
@@ -645,7 +646,7 @@ public class BinaryObjectBuilderAdditionalSelfTest extends GridCommonAbstractTes
 
         BinaryObjectBuilderImpl mutObj = wrap(obj);
 
-        List<Object> list = Lists.newLinkedList(Arrays.asList(mutObj, "a", Lists.newLinkedList(Arrays.asList(1, 2))));
+        List<Object> list = Lists.newLinkedList(U.asList(mutObj, "a", Lists.newLinkedList(U.asList(1, 2))));
 
         mutObj.setField("foo", list);
 
@@ -663,7 +664,7 @@ public class BinaryObjectBuilderAdditionalSelfTest extends GridCommonAbstractTes
     public void testLinkedListModification() {
         GridBinaryTestClasses.TestObjectContainer obj = new GridBinaryTestClasses.TestObjectContainer();
 
-        obj.foo = Lists.newLinkedList(Arrays.asList("a", "b", "c"));
+        obj.foo = Lists.newLinkedList(U.asList("a", "b", "c"));
 
         BinaryObjectBuilderImpl mutObj = wrap(obj);
 
@@ -675,14 +676,14 @@ public class BinaryObjectBuilderAdditionalSelfTest extends GridCommonAbstractTes
         String s = list.remove(1); // "_", "b", "c", "!"
         assertEquals("a", s);
 
-        assertEquals(Arrays.asList("c", "!"), list.subList(2, 4));
+        assertEquals(U.asList("c", "!"), list.subList(2, 4));
         assertEquals(1, list.indexOf("b"));
         assertEquals(1, list.lastIndexOf("b"));
 
         GridBinaryTestClasses.TestObjectContainer res = mutObj.build().deserialize();
 
         assertTrue(res.foo instanceof LinkedList);
-        assertEquals(Arrays.asList("_", "b", "c", "!"), res.foo);
+        assertEquals(U.asList("_", "b", "c", "!"), res.foo);
     }
 
     /**
@@ -691,7 +692,7 @@ public class BinaryObjectBuilderAdditionalSelfTest extends GridCommonAbstractTes
     public void testLinkedListWriteUnmodifiable() {
         GridBinaryTestClasses.TestObjectContainer obj = new GridBinaryTestClasses.TestObjectContainer();
 
-        LinkedList<Object> src = Lists.newLinkedList(Arrays.asList(obj, "a", "b", "c"));
+        LinkedList<Object> src = Lists.newLinkedList(U.asList(obj, "a", "b", "c"));
 
         obj.foo = src;
 
@@ -895,9 +896,9 @@ public class BinaryObjectBuilderAdditionalSelfTest extends GridCommonAbstractTes
         GridBinaryTestClasses.TestObjectContainer obj = new GridBinaryTestClasses.TestObjectContainer();
         obj.foo = Lists.newArrayList(
             Lists.newArrayList(1, 2),
-            Lists.newLinkedList(Arrays.asList(1, 2)),
+            Lists.newLinkedList(U.asList(1, 2)),
             Sets.newHashSet("a", "b"),
-            Sets.newLinkedHashSet(Arrays.asList("a", "b")),
+            Sets.newLinkedHashSet(U.asList("a", "b")),
             Maps.newHashMap(ImmutableMap.of(1, "a", 2, "b")));
 
         GridBinaryTestClasses.TestObjectContainer deserialized = wrap(obj).build().deserialize();
@@ -973,7 +974,7 @@ public class BinaryObjectBuilderAdditionalSelfTest extends GridCommonAbstractTes
 
         BinaryType metadata = binaries().type(c.getClass());
 
-        assertTrue(metadata.fieldNames().containsAll(Arrays.asList("intField", "intArrField", "arrField", "strField",
+        assertTrue(metadata.fieldNames().containsAll(U.asList("intField", "intArrField", "arrField", "strField",
             "colField", "mapField", "enumField", "enumArrField")));
 
         assertEquals("int", metadata.fieldTypeName("intField"));
@@ -1110,7 +1111,7 @@ public class BinaryObjectBuilderAdditionalSelfTest extends GridCommonAbstractTes
 
         GridBinaryTestClasses.Addresses res = binaryAddres.build().deserialize();
 
-        assertEquals(Arrays.asList("Nevskiy", "Torzhkovskya"), new ArrayList<>(res.getCompanyByStreet().keySet()));
+        assertEquals(U.asList("Nevskiy", "Torzhkovskya"), new ArrayList<>(res.getCompanyByStreet().keySet()));
 
         GridBinaryTestClasses.Companies torzhkovskyaCompanies = res.getCompanyByStreet().get("Torzhkovskya");
 

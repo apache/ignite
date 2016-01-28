@@ -38,6 +38,7 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.managers.deployment.GridDeployment;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
 import org.apache.ignite.internal.util.typedef.X;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lifecycle.LifecycleBean;
 import org.apache.ignite.resources.CacheNameResource;
 import org.apache.ignite.resources.CacheStoreSessionResource;
@@ -59,7 +60,7 @@ import org.jetbrains.annotations.Nullable;
  */
 public class GridResourceProcessor extends GridProcessorAdapter {
     /** */
-    private static final Collection<Class<? extends Annotation>> JOB_INJECTIONS = Arrays.asList(
+    private static final Collection<Class<? extends Annotation>> JOB_INJECTIONS = U.asList(
         TaskSessionResource.class,
         JobContextResource.class,
         IgniteInstanceResource.class,
@@ -69,7 +70,7 @@ public class GridResourceProcessor extends GridProcessorAdapter {
         ServiceResource.class);
 
     /** */
-    private static final Collection<Class<? extends Annotation>> TASK_INJECTIONS = Arrays.asList(
+    private static final Collection<Class<? extends Annotation>> TASK_INJECTIONS = U.asList(
         TaskSessionResource.class,
         LoadBalancerResource.class,
         TaskContinuousMapperResource.class,

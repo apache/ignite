@@ -118,10 +118,10 @@ public class GridifySetToValueTarget implements GridifySetToValueTargetInterface
      */
     private Long findMaximumInArray0(Long[] input) {
         System.out.println(">>>");
-        System.out.println("Find maximum in array: " + Arrays.asList(input));
+        System.out.println("Find maximum in array: " + U.asList(input));
         System.out.println(">>>");
 
-        return Collections.max(Arrays.asList(input));
+        return Collections.max(U.asList(input));
     }
 
     /**

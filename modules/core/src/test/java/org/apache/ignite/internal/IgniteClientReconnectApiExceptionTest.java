@@ -99,7 +99,7 @@ public class IgniteClientReconnectApiExceptionTest extends IgniteClientReconnect
 
         final Ignite client = startGrid(serverCount());
 
-        doTestIgniteOperationOnDisconnect(client, Arrays.asList(
+        doTestIgniteOperationOnDisconnect(client, U.asList(
             // Check atomic long.
             new T2<Callable, C1<Object, Boolean>>(
                 new Callable() {
@@ -223,7 +223,7 @@ public class IgniteClientReconnectApiExceptionTest extends IgniteClientReconnect
 
         assertNotNull(dfltCache);
 
-        doTestIgniteOperationOnDisconnect(client, Arrays.asList(
+        doTestIgniteOperationOnDisconnect(client, U.asList(
             // Check put and get operation.
             new T2<Callable, C1<Object, Boolean>>(
                 new Callable() {
@@ -547,7 +547,7 @@ public class IgniteClientReconnectApiExceptionTest extends IgniteClientReconnect
 
         assertNotNull(dfltCache);
 
-        doTestIgniteOperationOnDisconnect(client, Arrays.asList(
+        doTestIgniteOperationOnDisconnect(client, U.asList(
             // Check compute.
             new T2<Callable, C1<Object, Boolean>>(
                 new Callable() {

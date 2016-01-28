@@ -35,6 +35,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.X;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.resources.LoggerResource;
 import org.apache.ignite.spi.IgniteSpiAdapter;
 import org.apache.ignite.spi.IgniteSpiException;
@@ -130,7 +131,7 @@ public class GridCancelledJobsMetricsSelfTest extends GridCommonAbstractTest {
     private static final class CancelledTask extends ComputeTaskSplitAdapter<String, Object> {
         /** {@inheritDoc} */
         @Override protected Collection<? extends ComputeJob> split(int gridSize, String arg) {
-            return Arrays.asList(new GridCancelledJob());
+            return U.asList(new GridCancelledJob());
         }
 
         /** {@inheritDoc} */

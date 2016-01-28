@@ -27,7 +27,7 @@ import java.util.Set;
 public class DB2MetadataDialect extends JdbcMetadataDialect {
     /** {@inheritDoc} */
     @Override public Set<String> systemSchemas() {
-        return new HashSet<>(Arrays.asList("SYSIBM", "SYSCAT", "SYSSTAT", "SYSTOOLS", "SYSFUN", "SYSIBMADM",
+        return new HashSet<>(U.asList("SYSIBM", "SYSCAT", "SYSSTAT", "SYSTOOLS", "SYSFUN", "SYSIBMADM",
             "SYSIBMINTERNAL", "SYSIBMTS", "SYSPROC", "SYSPUBLIC"));
     }
 }

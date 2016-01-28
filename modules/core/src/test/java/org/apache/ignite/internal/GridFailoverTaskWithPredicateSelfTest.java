@@ -37,6 +37,7 @@ import org.apache.ignite.compute.ComputeTaskSession;
 import org.apache.ignite.compute.ComputeTaskSessionFullSupport;
 import org.apache.ignite.compute.ComputeUserUndeclaredException;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.resources.TaskSessionResource;
 import org.apache.ignite.spi.failover.FailoverContext;
@@ -180,7 +181,7 @@ public class GridFailoverTaskWithPredicateSelfTest extends GridCommonAbstractTes
             assert ignite3 != null;
 
             // Get projection only for first 2 nodes.
-            ClusterGroup nodes = ignite1.cluster().forNodeIds(Arrays.asList(
+            ClusterGroup nodes = ignite1.cluster().forNodeIds(U.asList(
                 ignite1.cluster().localNode().id(),
                 ignite2.cluster().localNode().id()));
 

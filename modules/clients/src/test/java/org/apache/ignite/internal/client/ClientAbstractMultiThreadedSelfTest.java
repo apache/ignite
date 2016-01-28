@@ -316,7 +316,7 @@ public abstract class ClientAbstractMultiThreadedSelfTest extends GridCommonAbst
         cfg.setMaxConnectionIdleTime(maxConnectionIdleTime());
 
         cfg.setProtocol(protocol());
-        cfg.setServers(Arrays.asList(serverAddress()));
+        cfg.setServers(U.asList(serverAddress()));
         cfg.setBalancer(new GridClientRoundRobinBalancer());
 
         if (useSsl())
@@ -338,7 +338,7 @@ public abstract class ClientAbstractMultiThreadedSelfTest extends GridCommonAbst
         GridClientDataConfiguration replicatedAsync = new GridClientDataConfiguration();
         replicatedAsync.setName(REPLICATED_ASYNC_CACHE_NAME);
 
-        cfg.setDataConfigurations(Arrays.asList(loc, partitioned, replicated, replicatedAsync, partitionedAsyncBackup));
+        cfg.setDataConfigurations(U.asList(loc, partitioned, replicated, replicatedAsync, partitionedAsyncBackup));
 
         return cfg;
     }

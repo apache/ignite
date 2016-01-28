@@ -56,7 +56,7 @@ public class GarHelloWorldTask extends ComputeTaskSplitAdapter<String, String> {
         assert msg != null;
 
         // Split the passed in phrase into multiple words separated by spaces.
-        List<String> words = Arrays.asList(msg.split(" "));
+        List<String> words = U.asList(msg.split(" "));
 
         Collection<ComputeJob> jobs = new ArrayList<>(words.size());
 

@@ -25,6 +25,7 @@ import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.configuration.BinaryConfiguration;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 import java.io.Serializable;
@@ -79,7 +80,7 @@ public class BinaryEnumsSelfTest extends GridCommonAbstractTest {
             BinaryTypeConfiguration enumCfg = new BinaryTypeConfiguration(EnumType.class.getName());
             enumCfg.setEnum(true);
 
-            bCfg.setTypeConfigurations(Arrays.asList(enumCfg, new BinaryTypeConfiguration(EnumHolder.class.getName())));
+            bCfg.setTypeConfigurations(U.asList(enumCfg, new BinaryTypeConfiguration(EnumHolder.class.getName())));
 
             cfg.setBinaryConfiguration(bCfg);
         }

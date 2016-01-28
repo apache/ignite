@@ -25,6 +25,7 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
@@ -106,7 +107,7 @@ public class GridCacheMvccPartitionedSelfTest extends GridCommonAbstractTest {
         assertEquals(1, rmtCands.size());
         assertEquals(ver1, rmtCands.iterator().next().version());
 
-        entry.readyNearLocal(ver2, ver2, empty(), empty(), Arrays.asList(ver1));
+        entry.readyNearLocal(ver2, ver2, empty(), empty(), U.asList(ver1));
 
         checkLocalOwner(c2, ver2, false);
         checkRemote(c1, ver1, false, false);
@@ -140,7 +141,7 @@ public class GridCacheMvccPartitionedSelfTest extends GridCommonAbstractTest {
         assertEquals(1, rmtCands.size());
         assertEquals(ver2, rmtCands.iterator().next().version());
 
-        entry.readyNearLocal(ver1, ver1, Arrays.asList(ver2), empty(), empty());
+        entry.readyNearLocal(ver1, ver1, U.asList(ver2), empty(), empty());
 
         checkLocal(c1, ver1, true, false, false);
         checkRemote(c2, ver2, true, false);
@@ -173,7 +174,7 @@ public class GridCacheMvccPartitionedSelfTest extends GridCommonAbstractTest {
         assertEquals(1, rmtCands.size());
         assertEquals(ver2, rmtCands.iterator().next().version());
 
-        entry.readyNearLocal(ver1, ver1, empty(), Arrays.asList(ver2), empty());
+        entry.readyNearLocal(ver1, ver1, empty(), U.asList(ver2), empty());
 
         checkLocal(c1, ver1, true, false, false);
         checkRemote(c2, ver2, true, false);
@@ -299,7 +300,7 @@ public class GridCacheMvccPartitionedSelfTest extends GridCommonAbstractTest {
 
         GridCacheMvccCandidate c3 = entry.addNearLocal(node1, 1, ver3, 0, true);
 
-        entry.readyNearLocal(ver3, ver3, empty(), empty(), Arrays.asList(ver0, ver1, ver2));
+        entry.readyNearLocal(ver3, ver3, empty(), empty(), U.asList(ver0, ver1, ver2));
 
         GridCacheMvccCandidate c2 = entry.addRemote(node1, 1, ver2, 0, false, true);
         GridCacheMvccCandidate c1 = entry.addRemote(node1, 1, ver1, 0, false, true);
@@ -343,7 +344,7 @@ public class GridCacheMvccPartitionedSelfTest extends GridCommonAbstractTest {
         GridCacheMvccCandidate c3 = entry.addNearLocal(node1, 1, ver3, 0, true);
         entry.addNearLocal(node1, 1, ver2, 0, true);
 
-        entry.readyNearLocal(ver3, ver3, empty(), empty(), Arrays.asList(ver0, ver1, ver2));
+        entry.readyNearLocal(ver3, ver3, empty(), empty(), U.asList(ver0, ver1, ver2));
 
         GridCacheMvccCandidate c1 = entry.addRemote(node1, 1, ver1, 0, false, true);
         GridCacheMvccCandidate c0 = entry.addRemote(node1, 1, ver0, 0, false, true);
@@ -493,8 +494,8 @@ public class GridCacheMvccPartitionedSelfTest extends GridCommonAbstractTest {
         assertEquals(2, rmtCands.size());
         assertEquals(ver1, rmtCands.iterator().next().version());
 
-        entry.orderCompleted(nearVer2, Arrays.asList(ver3), empty());
-        entry.readyNearLocal(nearVer2, ver2, empty(), empty(), Arrays.asList(ver1));
+        entry.orderCompleted(nearVer2, U.asList(ver3), empty());
+        entry.readyNearLocal(nearVer2, ver2, empty(), empty(), U.asList(ver1));
 
         nearLocCands = entry.localCandidates();
         rmtCands = entry.remoteMvccSnapshot();
@@ -584,7 +585,7 @@ public class GridCacheMvccPartitionedSelfTest extends GridCommonAbstractTest {
         assertEquals(ver1, rmtCands.iterator().next().version());
 
         entry.orderCompleted(nearVer2, empty(), empty());
-        entry.readyNearLocal(nearVer2, ver2, empty(), empty(), Arrays.asList(ver1));
+        entry.readyNearLocal(nearVer2, ver2, empty(), empty(), U.asList(ver1));
 
         rmtCands = entry.remoteMvccSnapshot();
 

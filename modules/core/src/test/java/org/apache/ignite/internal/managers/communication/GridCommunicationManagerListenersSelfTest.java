@@ -30,6 +30,7 @@ import org.apache.ignite.compute.ComputeJobResult;
 import org.apache.ignite.compute.ComputeTaskSplitAdapter;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.P2;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.common.GridCommonTest;
@@ -144,7 +145,7 @@ public class GridCommunicationManagerListenersSelfTest extends GridCommonAbstrac
                 }
             });
 
-            return Arrays.asList(new ComputeJobAdapter() {
+            return U.asList(new ComputeJobAdapter() {
                 @Override public Object execute() {
                     return null;
                 }

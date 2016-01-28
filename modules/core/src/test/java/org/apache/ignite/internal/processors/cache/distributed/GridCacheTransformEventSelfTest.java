@@ -37,6 +37,7 @@ import org.apache.ignite.configuration.TransactionConfiguration;
 import org.apache.ignite.events.CacheEvent;
 import org.apache.ignite.events.Event;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
@@ -562,7 +563,7 @@ public class GridCacheTransformEventSelfTest extends GridCommonAbstractTest {
                 if (primaryOnly)
                     res.add(grid(0).affinity(CACHE_NAME).mapKeyToNode(key).id());
                 else
-                    res.addAll(Arrays.asList(ids));
+                    res.addAll(U.asList(ids));
             }
         }
 

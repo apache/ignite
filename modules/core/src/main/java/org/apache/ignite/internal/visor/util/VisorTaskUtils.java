@@ -942,7 +942,7 @@ public class VisorTaskUtils {
         throws IOException {
         String[] commands = args;
 
-        String cmd = F.concat(Arrays.asList(args), " ");
+        String cmd = F.concat(U.asList(args), " ");
 
         if (U.isWindows())
             commands = F.asArray("cmd", "/c", String.format("start %s", cmd));

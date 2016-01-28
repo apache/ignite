@@ -493,7 +493,7 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testBinaryObject() throws Exception {
-        BinaryMarshaller marsh = binaryMarshaller(Arrays.asList(new BinaryTypeConfiguration(SimpleObject.class.getName())));
+        BinaryMarshaller marsh = binaryMarshaller(U.asList(new BinaryTypeConfiguration(SimpleObject.class.getName())));
 
         SimpleObject obj = simpleObject();
 
@@ -520,7 +520,7 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testEnum() throws Exception {
-        BinaryMarshaller marsh = binaryMarshaller(Arrays.asList(new BinaryTypeConfiguration(TestEnum.class.getName())));
+        BinaryMarshaller marsh = binaryMarshaller(U.asList(new BinaryTypeConfiguration(TestEnum.class.getName())));
 
         assertEquals(TestEnum.B, marshalUnmarshal(TestEnum.B, marsh));
     }
@@ -531,7 +531,7 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
     public void testDateAndTimestampInSingleObject() throws Exception {
         BinaryTypeConfiguration cfg1 = new BinaryTypeConfiguration(DateClass1.class.getName());
 
-        BinaryMarshaller marsh = binaryMarshaller(Arrays.asList(cfg1));
+        BinaryMarshaller marsh = binaryMarshaller(U.asList(cfg1));
 
         Date date = new Date();
         Timestamp ts = new Timestamp(System.currentTimeMillis());
@@ -556,7 +556,7 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testSimpleObject() throws Exception {
-        BinaryMarshaller marsh = binaryMarshaller(Arrays.asList(
+        BinaryMarshaller marsh = binaryMarshaller(U.asList(
             new BinaryTypeConfiguration(SimpleObject.class.getName())
         ));
 
@@ -641,7 +641,7 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testBinary() throws Exception {
-        BinaryMarshaller marsh = binaryMarshaller(Arrays.asList(
+        BinaryMarshaller marsh = binaryMarshaller(U.asList(
             new BinaryTypeConfiguration(SimpleObject.class.getName()),
             new BinaryTypeConfiguration(TestBinary.class.getName())
         ));
@@ -915,7 +915,7 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testClassWithoutPublicConstructor() throws Exception {
-        BinaryMarshaller marsh = binaryMarshaller(Arrays.asList(
+        BinaryMarshaller marsh = binaryMarshaller(U.asList(
                 new BinaryTypeConfiguration(NoPublicConstructor.class.getName()),
                 new BinaryTypeConfiguration(NoPublicDefaultConstructor.class.getName()),
                 new BinaryTypeConfiguration(ProtectedConstructor.class.getName()))
@@ -946,7 +946,7 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
 
         type.setSerializer(new CustomSerializer1());
 
-        BinaryMarshaller marsh = binaryMarshaller(Arrays.asList(type));
+        BinaryMarshaller marsh = binaryMarshaller(U.asList(type));
 
         CustomSerializedObject1 obj1 = new CustomSerializedObject1(10);
 
@@ -966,7 +966,7 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
 
         type2.setSerializer(new CustomSerializer2());
 
-        BinaryMarshaller marsh = binaryMarshaller(new CustomSerializer1(), Arrays.asList(type1, type2));
+        BinaryMarshaller marsh = binaryMarshaller(new CustomSerializer1(), U.asList(type1, type2));
 
         CustomSerializedObject1 obj1 = new CustomSerializedObject1(10);
 
@@ -1007,7 +1007,7 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
             }
         });
 
-        BinaryMarshaller marsh = binaryMarshaller(Arrays.asList(type));
+        BinaryMarshaller marsh = binaryMarshaller(U.asList(type));
 
         CustomMappedObject1 obj1 = new CustomMappedObject1(10, "str");
 
@@ -1064,7 +1064,7 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
 
                 return 0;
             }
-        }, Arrays.asList(type1, type2));
+        }, U.asList(type1, type2));
 
         CustomMappedObject1 obj1 = new CustomMappedObject1(10, "str1");
 
@@ -1093,7 +1093,7 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testDynamicObject() throws Exception {
-        BinaryMarshaller marsh = binaryMarshaller(Arrays.asList(
+        BinaryMarshaller marsh = binaryMarshaller(U.asList(
             new BinaryTypeConfiguration(DynamicObject.class.getName())
         ));
 
@@ -1138,7 +1138,7 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testCycleLink() throws Exception {
-        BinaryMarshaller marsh = binaryMarshaller(Arrays.asList(
+        BinaryMarshaller marsh = binaryMarshaller(U.asList(
             new BinaryTypeConfiguration(CycleLinkObject.class.getName())
         ));
 
@@ -1157,7 +1157,7 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testDetached() throws Exception {
-        BinaryMarshaller marsh = binaryMarshaller(Arrays.asList(
+        BinaryMarshaller marsh = binaryMarshaller(U.asList(
             new BinaryTypeConfiguration(DetachedTestObject.class.getName()),
             new BinaryTypeConfiguration(DetachedInnerTestObject.class.getName())
         ));
@@ -1211,14 +1211,14 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testCollectionFields() throws Exception {
-        BinaryMarshaller marsh = binaryMarshaller(Arrays.asList(
+        BinaryMarshaller marsh = binaryMarshaller(U.asList(
             new BinaryTypeConfiguration(CollectionFieldsObject.class.getName()),
             new BinaryTypeConfiguration(Key.class.getName()),
             new BinaryTypeConfiguration(Value.class.getName())
         ));
 
         Object[] arr = new Object[] {new Value(1), new Value(2), new Value(3)};
-        Collection<Value> col = new ArrayList<>(Arrays.asList(new Value(4), new Value(5), new Value(6)));
+        Collection<Value> col = new ArrayList<>(U.asList(new Value(4), new Value(5), new Value(6)));
         Map<Key, Value> map = new HashMap<>(F.asMap(new Key(10), new Value(10), new Key(20), new Value(20), new Key(30), new Value(30)));
 
         CollectionFieldsObject obj = new CollectionFieldsObject(arr, col, map);
@@ -1277,7 +1277,7 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
             }
         });
 
-        BinaryMarshaller marsh1 = binaryMarshaller(Arrays.asList(
+        BinaryMarshaller marsh1 = binaryMarshaller(U.asList(
             new BinaryTypeConfiguration(SimpleObject.class.getName()),
             customMappingType
         ));
@@ -1286,7 +1286,7 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
 
         BinaryObjectImpl po = marshal(obj, marsh1);
 
-        BinaryMarshaller marsh2 = binaryMarshaller(Arrays.asList(
+        BinaryMarshaller marsh2 = binaryMarshaller(U.asList(
             new BinaryTypeConfiguration(SimpleObject.class.getName()),
             new BinaryTypeConfiguration(TestBinary.class.getName())
         ));
@@ -1348,7 +1348,7 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
             }
         });
 
-        BinaryMarshaller marsh = binaryMarshaller(Arrays.asList(
+        BinaryMarshaller marsh = binaryMarshaller(U.asList(
             new BinaryTypeConfiguration(Key.class.getName()),
             new BinaryTypeConfiguration("org.gridgain.NonExistentClass3"),
             new BinaryTypeConfiguration("NonExistentClass4"),
@@ -1416,7 +1416,7 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
             }
         });
 
-        BinaryMarshaller marsh = binaryMarshaller(Arrays.asList(new BinaryTypeConfiguration(Key.class.getName()),
+        BinaryMarshaller marsh = binaryMarshaller(U.asList(new BinaryTypeConfiguration(Key.class.getName()),
             new BinaryTypeConfiguration("NonExistentClass2"),
             customType1,
             customType2));
@@ -1463,7 +1463,7 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
         });
 
         try {
-            binaryMarshaller(Arrays.asList(customType1, customType2));
+            binaryMarshaller(U.asList(customType1, customType2));
         }
         catch (IgniteCheckedException e) {
             assertEquals("Duplicate type ID [clsName=org.gridgain.Class2, id=100]",
@@ -1479,7 +1479,7 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testBinaryCopy() throws Exception {
-        BinaryMarshaller marsh = binaryMarshaller(Arrays.asList(
+        BinaryMarshaller marsh = binaryMarshaller(U.asList(
             new BinaryTypeConfiguration(SimpleObject.class.getName())
         ));
 
@@ -1602,7 +1602,7 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testBinaryCopyString() throws Exception {
-        BinaryMarshaller marsh = binaryMarshaller(Arrays.asList(
+        BinaryMarshaller marsh = binaryMarshaller(U.asList(
             new BinaryTypeConfiguration(SimpleObject.class.getName())
         ));
 
@@ -1623,7 +1623,7 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testBinaryCopyUuid() throws Exception {
-        BinaryMarshaller marsh = binaryMarshaller(Arrays.asList(
+        BinaryMarshaller marsh = binaryMarshaller(U.asList(
             new BinaryTypeConfiguration(SimpleObject.class.getName())
         ));
 
@@ -1646,7 +1646,7 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testBinaryCopyByteArray() throws Exception {
-        BinaryMarshaller marsh = binaryMarshaller(Arrays.asList(
+        BinaryMarshaller marsh = binaryMarshaller(U.asList(
             new BinaryTypeConfiguration(SimpleObject.class.getName())
         ));
 
@@ -1683,7 +1683,7 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testBinaryCopyShortArray() throws Exception {
-        BinaryMarshaller marsh = binaryMarshaller(Arrays.asList(
+        BinaryMarshaller marsh = binaryMarshaller(U.asList(
             new BinaryTypeConfiguration(SimpleObject.class.getName())
         ));
 
@@ -1704,7 +1704,7 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testBinaryCopyIntArray() throws Exception {
-        BinaryMarshaller marsh = binaryMarshaller(Arrays.asList(
+        BinaryMarshaller marsh = binaryMarshaller(U.asList(
             new BinaryTypeConfiguration(SimpleObject.class.getName())
         ));
 
@@ -1725,7 +1725,7 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testBinaryCopyLongArray() throws Exception {
-        BinaryMarshaller marsh = binaryMarshaller(Arrays.asList(
+        BinaryMarshaller marsh = binaryMarshaller(U.asList(
             new BinaryTypeConfiguration(SimpleObject.class.getName())
         ));
 
@@ -1746,7 +1746,7 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testBinaryCopyFloatArray() throws Exception {
-        BinaryMarshaller marsh = binaryMarshaller(Arrays.asList(
+        BinaryMarshaller marsh = binaryMarshaller(U.asList(
             new BinaryTypeConfiguration(SimpleObject.class.getName())
         ));
 
@@ -1767,7 +1767,7 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testBinaryCopyDoubleArray() throws Exception {
-        BinaryMarshaller marsh = binaryMarshaller(Arrays.asList(
+        BinaryMarshaller marsh = binaryMarshaller(U.asList(
             new BinaryTypeConfiguration(SimpleObject.class.getName())
         ));
 
@@ -1788,7 +1788,7 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testBinaryCopyCharArray() throws Exception {
-        BinaryMarshaller marsh = binaryMarshaller(Arrays.asList(
+        BinaryMarshaller marsh = binaryMarshaller(U.asList(
             new BinaryTypeConfiguration(SimpleObject.class.getName())
         ));
 
@@ -1809,7 +1809,7 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testBinaryCopyStringArray() throws Exception {
-        BinaryMarshaller marsh = binaryMarshaller(Arrays.asList(
+        BinaryMarshaller marsh = binaryMarshaller(U.asList(
             new BinaryTypeConfiguration(SimpleObject.class.getName())
         ));
 
@@ -1830,7 +1830,7 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testBinaryCopyObject() throws Exception {
-        BinaryMarshaller marsh = binaryMarshaller(Arrays.asList(
+        BinaryMarshaller marsh = binaryMarshaller(U.asList(
             new BinaryTypeConfiguration(SimpleObject.class.getName())
         ));
 
@@ -1857,7 +1857,7 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testBinaryCopyNonPrimitives() throws Exception {
-        BinaryMarshaller marsh = binaryMarshaller(Arrays.asList(
+        BinaryMarshaller marsh = binaryMarshaller(U.asList(
             new BinaryTypeConfiguration(SimpleObject.class.getName())
         ));
 
@@ -1894,7 +1894,7 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testBinaryCopyMixed() throws Exception {
-        BinaryMarshaller marsh = binaryMarshaller(Arrays.asList(new BinaryTypeConfiguration(SimpleObject.class.getName())));
+        BinaryMarshaller marsh = binaryMarshaller(U.asList(new BinaryTypeConfiguration(SimpleObject.class.getName())));
 
         SimpleObject obj = simpleObject();
 
@@ -1938,7 +1938,7 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testKeepDeserialized() throws Exception {
-        BinaryMarshaller marsh = binaryMarshaller(Arrays.asList(new BinaryTypeConfiguration(SimpleObject.class.getName())));
+        BinaryMarshaller marsh = binaryMarshaller(U.asList(new BinaryTypeConfiguration(SimpleObject.class.getName())));
 
         BinaryObjectImpl po = marshal(simpleObject(), marsh);
 
@@ -1955,7 +1955,7 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testOffheapBinary() throws Exception {
-        BinaryMarshaller marsh = binaryMarshaller(Arrays.asList(new BinaryTypeConfiguration(SimpleObject.class.getName())));
+        BinaryMarshaller marsh = binaryMarshaller(U.asList(new BinaryTypeConfiguration(SimpleObject.class.getName())));
 
         BinaryContext ctx = binaryContext(marsh);
 
@@ -2049,7 +2049,7 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
      *
      */
     public void testReadResolve() throws Exception {
-        BinaryMarshaller marsh = binaryMarshaller(Arrays.asList(
+        BinaryMarshaller marsh = binaryMarshaller(U.asList(
             new BinaryTypeConfiguration(MySingleton.class.getName()),
             new BinaryTypeConfiguration(SingletonMarker.class.getName())));
 
@@ -2080,7 +2080,7 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
      * @throws Exception If ecxeption thrown.
      */
     public void testDeclareReadResolveInParent() throws Exception {
-        BinaryMarshaller marsh = binaryMarshaller(Arrays.asList(new BinaryTypeConfiguration(ChildBinary.class.getName())));
+        BinaryMarshaller marsh = binaryMarshaller(U.asList(new BinaryTypeConfiguration(ChildBinary.class.getName())));
 
         BinaryObjectImpl binaryObj = marshal(new ChildBinary(), marsh);
 

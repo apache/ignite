@@ -175,7 +175,7 @@ public abstract class GridAbstractCacheStoreSelfTest<T extends CacheStore<Object
         assertEquals("v3", store.load("k3"));
 
         // Remove all.
-        store.deleteAll(Arrays.asList("k3"));
+        store.deleteAll(U.asList("k3"));
 
         store.sessionEnd(false); // Rollback.
 
@@ -242,7 +242,7 @@ public abstract class GridAbstractCacheStoreSelfTest<T extends CacheStore<Object
             }
 
             if (tx == null || commit) {
-                Map<Object, Object> loaded = store.loadAll(Arrays.asList("key1", "key2", "key3", "no_such_key"));
+                Map<Object, Object> loaded = store.loadAll(U.asList("key1", "key2", "key3", "no_such_key"));
 
                 for (Map.Entry<Object, Object> e : loaded.entrySet()) {
                     Object key = e.getKey();
@@ -264,7 +264,7 @@ public abstract class GridAbstractCacheStoreSelfTest<T extends CacheStore<Object
                 assertEquals(3, loaded.size());
             }
 
-            store.deleteAll(Arrays.asList("key2", "key3"));
+            store.deleteAll(U.asList("key2", "key3"));
 
             if (tx != null && commit) {
                 store.sessionEnd(true);

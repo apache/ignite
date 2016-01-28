@@ -30,6 +30,7 @@ import org.apache.ignite.configuration.AddressResolver;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.util.nio.GridCommunicationClient;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteCallable;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
@@ -69,7 +70,7 @@ public class GridTcpSpiForwardingSelfTest extends GridCommonAbstractTest {
     @SuppressWarnings({"IfMayBeConditional", "deprecation"})
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         TcpDiscoveryVmIpFinder ipFinder = new TcpDiscoveryVmIpFinder();
-        ipFinder.setAddresses(Arrays.asList("127.0.0.1:" + extPort1, "127.0.0.1:" + extPort2));
+        ipFinder.setAddresses(U.asList("127.0.0.1:" + extPort1, "127.0.0.1:" + extPort2));
 
         TcpDiscoverySpi spi = new TcpDiscoverySpi();
 

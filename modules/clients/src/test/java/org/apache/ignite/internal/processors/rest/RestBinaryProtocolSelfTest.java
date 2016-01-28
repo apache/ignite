@@ -500,7 +500,7 @@ public class RestBinaryProtocolSelfTest extends GridCommonAbstractTest {
      */
     public void testExecute() throws Exception {
         GridClientTaskResultBean res = client.execute(TestTask.class.getName(),
-            Arrays.asList("executing", 3, "test", 5, "task"));
+            U.asList("executing", 3, "test", 5, "task"));
 
         assertTrue(res.isFinished());
         assertEquals(new Integer(25), res.getResult());

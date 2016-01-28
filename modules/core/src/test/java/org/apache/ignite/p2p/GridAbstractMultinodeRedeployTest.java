@@ -25,6 +25,7 @@ import org.apache.ignite.compute.ComputeTask;
 import org.apache.ignite.compute.ComputeTaskFuture;
 import org.apache.ignite.configuration.DeploymentMode;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.failover.never.NeverFailoverSpi;
 import org.apache.ignite.testframework.GridTestExternalClassLoader;
 import org.apache.ignite.testframework.config.GridTestProperties;
@@ -72,12 +73,12 @@ abstract class GridAbstractMultinodeRedeployTest extends GridCommonAbstractTest 
                 ignite1.compute().localDeployTask(loadTaskClass(), loadTaskClass().getClassLoader());
                 ignite2.compute().localDeployTask(loadTaskClass(), loadTaskClass().getClassLoader());
 
-                ComputeTaskFuture<Integer> fut1 = executeAsync(ignite1.compute(), TASK_NAME, Arrays.asList(
+                ComputeTaskFuture<Integer> fut1 = executeAsync(ignite1.compute(), TASK_NAME, U.asList(
                     ignite1.cluster().localNode().id(),
                     ignite2.cluster().localNode().id(),
                     ignite3.cluster().localNode().id()));
 
-                ComputeTaskFuture<Integer> fut2 = executeAsync(ignite2.compute(), TASK_NAME, Arrays.asList(
+                ComputeTaskFuture<Integer> fut2 = executeAsync(ignite2.compute(), TASK_NAME, U.asList(
                     ignite1.cluster().localNode().id(),
                     ignite2.cluster().localNode().id(),
                     ignite3.cluster().localNode().id()));

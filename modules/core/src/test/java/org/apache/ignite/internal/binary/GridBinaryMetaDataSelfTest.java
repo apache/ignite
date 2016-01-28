@@ -33,6 +33,7 @@ import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.binary.BinaryRawWriter;
 import org.apache.ignite.binary.BinaryReader;
 import org.apache.ignite.binary.BinaryWriter;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 /**
@@ -48,7 +49,7 @@ public class GridBinaryMetaDataSelfTest extends GridCommonAbstractTest {
 
         BinaryConfiguration bCfg = new BinaryConfiguration();
 
-        bCfg.setClassNames(Arrays.asList(TestObject1.class.getName(), TestObject2.class.getName()));
+        bCfg.setClassNames(U.asList(TestObject1.class.getName(), TestObject2.class.getName()));
 
         cfg.setBinaryConfiguration(bCfg);
 

@@ -264,7 +264,7 @@ public class IgniteComputeImpl extends AsyncSupportAdapter<IgniteCompute>
         guard();
 
         try {
-            return saveOrGet(ctx.closure().callAsync(BROADCAST, Arrays.asList(job), prj.nodes()));
+            return saveOrGet(ctx.closure().callAsync(BROADCAST, U.asList(job), prj.nodes()));
         }
         catch (IgniteCheckedException e) {
             throw U.convertException(e);

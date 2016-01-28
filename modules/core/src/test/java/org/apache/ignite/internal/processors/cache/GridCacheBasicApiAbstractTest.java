@@ -237,7 +237,7 @@ public abstract class GridCacheBasicApiAbstractTest extends GridCommonAbstractTe
                     try {
                         latch.countDown();
 
-                        isOk.set(!cache.lockAll(Arrays.asList(keys.get(0), keys.get(1))).tryLock(5000, MILLISECONDS));
+                        isOk.set(!cache.lockAll(U.asList(keys.get(0), keys.get(1))).tryLock(5000, MILLISECONDS));
                     }
                     catch (InterruptedException ignored) {
                         isOk.set(false);
@@ -572,7 +572,7 @@ public abstract class GridCacheBasicApiAbstractTest extends GridCommonAbstractTe
     public void testMultiLocks() throws Exception {
         IgniteCache<Integer, String> cache = ignite.cache(null);
 
-        Collection<Integer> keys = Arrays.asList(1, 2, 3);
+        Collection<Integer> keys = U.asList(1, 2, 3);
 
         Lock lock = cache.lockAll(keys);
 

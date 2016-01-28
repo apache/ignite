@@ -154,10 +154,10 @@ public class TaskCommandHandlerSelfTest extends GridCommonAbstractTest {
 
         cache.setName(CACHE_NAME);
 
-        cfg.setDataConfigurations(Arrays.asList(nullCache, cache));
+        cfg.setDataConfigurations(U.asList(nullCache, cache));
 
         cfg.setProtocol(TCP);
-        cfg.setServers(Arrays.asList("localhost:" + BINARY_PORT));
+        cfg.setServers(U.asList("localhost:" + BINARY_PORT));
 
         return cfg;
     }

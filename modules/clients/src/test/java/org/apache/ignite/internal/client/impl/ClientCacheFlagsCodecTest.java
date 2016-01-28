@@ -65,7 +65,7 @@ public class ClientCacheFlagsCodecTest extends TestCase {
      */
     private void doTestGroup(GridClientCacheFlag... flags) {
         EnumSet<GridClientCacheFlag> flagSet = F.isEmpty(flags) ? EnumSet.noneOf(GridClientCacheFlag.class) :
-            EnumSet.copyOf(Arrays.asList(flags));
+            EnumSet.copyOf(U.asList(flags));
 
         int bits = GridClientConnection.encodeCacheFlags(flagSet);
 

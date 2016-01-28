@@ -167,7 +167,7 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
         if (gridName.contains("NonSharedIpFinder")) {
             TcpDiscoveryVmIpFinder finder = new TcpDiscoveryVmIpFinder();
 
-            finder.setAddresses(Arrays.asList("127.0.0.1:47501"));
+            finder.setAddresses(U.asList("127.0.0.1:47501"));
 
             spi.setIpFinder(finder);
         }
@@ -899,7 +899,7 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
      */
     public void testIpFinderCleaning() throws Exception {
         try {
-            ipFinder.registerAddresses(Arrays.asList(new InetSocketAddress("1.1.1.1", 1024),
+            ipFinder.registerAddresses(U.asList(new InetSocketAddress("1.1.1.1", 1024),
                 new InetSocketAddress("1.1.1.2", 1024)));
 
             Ignite g1 = startGrid(1);
@@ -925,7 +925,7 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
             // Check that missing addresses are returned back.
             ipFinder.unregisterAddresses(ipFinder.getRegisteredAddresses()); // Unregister valid address.
 
-            ipFinder.registerAddresses(Arrays.asList(new InetSocketAddress("1.1.1.1", 1024),
+            ipFinder.registerAddresses(U.asList(new InetSocketAddress("1.1.1.1", 1024),
                 new InetSocketAddress("1.1.1.2", 1024)));
 
             GridTestUtils.waitForCondition(new GridAbsPredicate() {
@@ -1050,7 +1050,7 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
         try {
             // Dirty IP finder
             for (int i = 47500; i < 47520; i++)
-                ipFinder.registerAddresses(Arrays.asList(new InetSocketAddress("127.0.0.1", i),
+                ipFinder.registerAddresses(U.asList(new InetSocketAddress("127.0.0.1", i),
                     new InetSocketAddress("unknown-host", i)));
 
             assert ipFinder.isShared();

@@ -30,6 +30,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.events.Event;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
@@ -386,7 +387,7 @@ public abstract class GridCacheMultiNodeAbstractTest extends GridCommonAbstractT
 
             assert evts.length > 0;
 
-            this.evts = Arrays.asList(evts);
+            this.evts = U.asList(evts);
         }
 
         /**
@@ -400,7 +401,7 @@ public abstract class GridCacheMultiNodeAbstractTest extends GridCommonAbstractT
 
             assert evts.length > 0;
 
-            this.evts = Arrays.asList(evts);
+            this.evts = U.asList(evts);
         }
 
         /**

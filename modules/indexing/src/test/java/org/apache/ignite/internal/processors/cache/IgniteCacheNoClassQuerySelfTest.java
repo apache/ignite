@@ -27,6 +27,7 @@ import org.apache.ignite.cache.QueryIndex;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.marshaller.optimized.OptimizedMarshaller;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
@@ -93,7 +94,7 @@ public class IgniteCacheNoClassQuerySelfTest extends GridCommonAbstractTest {
 
         qryEntity.setFields(fields);
 
-        qryEntity.setIndexes(Arrays.asList(
+        qryEntity.setIndexes(U.asList(
             new QueryIndex("strField"),
             new QueryIndex("intField"),
             new QueryIndex("doubleField")

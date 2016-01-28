@@ -991,7 +991,7 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements DiscoverySpi, T
 
         if (addExtAddrAttr) {
             Collection<InetSocketAddress> extAddrs = addrRslvr == null ? null :
-                U.resolveAddresses(addrRslvr, F.flat(Arrays.asList(addrs.get1(), addrs.get2())),
+                U.resolveAddresses(addrRslvr, F.flat(U.asList(addrs.get1(), addrs.get2())),
                     locNode.discoveryPort());
 
             locNodeAddrs = new LinkedHashSet<>();

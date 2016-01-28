@@ -115,7 +115,7 @@ public class OracleMetadataDialect extends DatabaseMetadataDialect {
 
     /** {@inheritDoc} */
     @Override public Set<String> systemSchemas() {
-        return new HashSet<>(Arrays.asList("ANONYMOUS", "CTXSYS", "DBSNMP", "EXFSYS", "LBACSYS", "MDSYS", "MGMT_VIEW",
+        return new HashSet<>(U.asList("ANONYMOUS", "CTXSYS", "DBSNMP", "EXFSYS", "LBACSYS", "MDSYS", "MGMT_VIEW",
             "OLAPSYS", "OWBSYS", "ORDPLUGINS", "ORDSYS", "OUTLN", "SI_INFORMTN_SCHEMA", "SYS", "SYSMAN", "SYSTEM",
             "TSMSYS", "WK_TEST", "WKSYS", "WKPROXY", "WMSYS", "XDB",
 

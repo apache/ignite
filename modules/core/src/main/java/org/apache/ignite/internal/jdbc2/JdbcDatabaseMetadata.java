@@ -661,9 +661,9 @@ public class JdbcDatabaseMetadata implements DatabaseMetaData {
         return new JdbcResultSet(null,
             conn.createStatement0(),
             Collections.<String>emptyList(),
-            Arrays.asList("PROCEDURE_CAT", "PROCEDURE_SCHEM", "PROCEDURE_NAME",
+            U.asList("PROCEDURE_CAT", "PROCEDURE_SCHEM", "PROCEDURE_NAME",
                 "REMARKS", "PROCEDURE_TYPE", "SPECIFIC_NAME"),
-            Arrays.asList(String.class.getName(), String.class.getName(), String.class.getName(),
+            U.asList(String.class.getName(), String.class.getName(), String.class.getName(),
                 String.class.getName(), Short.class.getName(), String.class.getName()),
             Collections.<List<?>>emptyList(), true
         );
@@ -675,12 +675,12 @@ public class JdbcDatabaseMetadata implements DatabaseMetaData {
         return new JdbcResultSet(null,
             conn.createStatement0(),
             Collections.<String>emptyList(),
-            Arrays.asList("PROCEDURE_CAT", "PROCEDURE_SCHEM", "PROCEDURE_NAME",
+            U.asList("PROCEDURE_CAT", "PROCEDURE_SCHEM", "PROCEDURE_NAME",
                 "COLUMN_NAME", "COLUMN_TYPE", "DATA_TYPE", "TYPE_NAME", "PRECISION",
                 "LENGTH", "SCALE", "RADIX", "NULLABLE", "REMARKS", "COLUMN_DEF",
                 "SQL_DATA_TYPE", "SQL_DATETIME_SUB", "CHAR_OCTET_LENGTH",
                 "ORDINAL_POSITION", "IS_NULLABLE", "SPECIFIC_NAME"),
-            Arrays.asList(String.class.getName(), String.class.getName(), String.class.getName(),
+            U.asList(String.class.getName(), String.class.getName(), String.class.getName(),
                 String.class.getName(), Short.class.getName(), Integer.class.getName(), String.class.getName(),
                 Integer.class.getName(), Integer.class.getName(), Short.class.getName(), Short.class.getName(),
                 Short.class.getName(), String.class.getName(), String.class.getName(), Integer.class.getName(),
@@ -697,7 +697,7 @@ public class JdbcDatabaseMetadata implements DatabaseMetaData {
 
         List<List<?>> rows = new LinkedList<>();
 
-        if (tblTypes == null || Arrays.asList(tblTypes).contains("TABLE"))
+        if (tblTypes == null || U.asList(tblTypes).contains("TABLE"))
             for (Map.Entry<String, Map<String, Map<String, String>>> schema : meta.entrySet())
                 if (matches(schema.getKey(), schemaPtrn))
                     for (String tbl : schema.getValue().keySet())
@@ -707,9 +707,9 @@ public class JdbcDatabaseMetadata implements DatabaseMetaData {
         return new JdbcResultSet(null,
             conn.createStatement0(),
             Collections.<String>emptyList(),
-            Arrays.asList("TABLE_CAT", "TABLE_SCHEM", "TABLE_NAME", "TABLE_TYPE", "REMARKS", "TYPE_CAT",
+            U.asList("TABLE_CAT", "TABLE_SCHEM", "TABLE_NAME", "TABLE_TYPE", "REMARKS", "TYPE_CAT",
                 "TYPE_SCHEM", "TYPE_NAME", "SELF_REFERENCING_COL_NAME", "REF_GENERATION"),
-            Arrays.asList(String.class.getName(), String.class.getName(), String.class.getName(),
+            U.asList(String.class.getName(), String.class.getName(), String.class.getName(),
                 String.class.getName(), String.class.getName(), String.class.getName(), String.class.getName(),
                 String.class.getName(), String.class.getName(), String.class.getName()),
             rows, true
@@ -787,11 +787,11 @@ public class JdbcDatabaseMetadata implements DatabaseMetaData {
         return new JdbcResultSet(null,
             conn.createStatement0(),
             Collections.<String>emptyList(),
-            Arrays.asList("TABLE_CAT", "TABLE_SCHEM", "TABLE_NAME", "COLUMN_NAME", "DATA_TYPE",
+            U.asList("TABLE_CAT", "TABLE_SCHEM", "TABLE_NAME", "COLUMN_NAME", "DATA_TYPE",
                 "TYPE_NAME", "COLUMN_SIZE", "DECIMAL_DIGITS", "NUM_PREC_RADIX", "NULLABLE",
                 "REMARKS", "COLUMN_DEF", "CHAR_OCTET_LENGTH", "ORDINAL_POSITION", "IS_NULLABLE",
                 "SCOPE_CATLOG", "SCOPE_SCHEMA", "SCOPE_TABLE", "SOURCE_DATA_TYPE", "IS_AUTOINCREMENT"),
-            Arrays.asList(String.class.getName(), String.class.getName(), String.class.getName(),
+            U.asList(String.class.getName(), String.class.getName(), String.class.getName(),
                 String.class.getName(), Integer.class.getName(), String.class.getName(), Integer.class.getName(),
                 Integer.class.getName(), Integer.class.getName(), Integer.class.getName(), String.class.getName(),
                 String.class.getName(), Integer.class.getName(), Integer.class.getName(), String.class.getName(),
@@ -906,8 +906,8 @@ public class JdbcDatabaseMetadata implements DatabaseMetaData {
         return new JdbcResultSet(null,
             conn.createStatement0(),
             Collections.<String>emptyList(),
-            Arrays.asList("TABLE_CAT", "TABLE_SCHEM", "TABLE_NAME", "COLUMN_NAME", "KEY_SEQ", "PK_NAME"),
-            Arrays.asList(String.class.getName(), String.class.getName(), String.class.getName(),
+            U.asList("TABLE_CAT", "TABLE_SCHEM", "TABLE_NAME", "COLUMN_NAME", "KEY_SEQ", "PK_NAME"),
+            U.asList(String.class.getName(), String.class.getName(), String.class.getName(),
                 String.class.getName(), Short.class.getName(), String.class.getName()),
             rows, true
         );
@@ -995,10 +995,10 @@ public class JdbcDatabaseMetadata implements DatabaseMetaData {
         return new JdbcResultSet(null,
             conn.createStatement0(),
             Collections.<String>emptyList(),
-            Arrays.asList("TABLE_CAT", "TABLE_SCHEM", "TABLE_NAME", "NON_UNIQUE", "INDEX_QUALIFIER",
+            U.asList("TABLE_CAT", "TABLE_SCHEM", "TABLE_NAME", "NON_UNIQUE", "INDEX_QUALIFIER",
                 "INDEX_NAME", "TYPE", "ORDINAL_POSITION", "COLUMN_NAME", "ASC_OR_DESC", "CARDINALITY",
                 "PAGES", "FILTER_CONDITION"),
-            Arrays.asList(String.class.getName(), String.class.getName(), String.class.getName(),
+            U.asList(String.class.getName(), String.class.getName(), String.class.getName(),
                 Boolean.class.getName(), String.class.getName(), String.class.getName(), Short.class.getName(),
                 Short.class.getName(), String.class.getName(), String.class.getName(), Integer.class.getName(),
                 Integer.class.getName(), String.class.getName()),
@@ -1206,8 +1206,8 @@ public class JdbcDatabaseMetadata implements DatabaseMetaData {
         return new JdbcResultSet(null,
             conn.createStatement0(),
             Collections.<String>emptyList(),
-            Arrays.asList("TABLE_SCHEM", "TABLE_CATALOG"),
-            Arrays.asList(String.class.getName(), String.class.getName()),
+            U.asList("TABLE_SCHEM", "TABLE_CATALOG"),
+            U.asList(String.class.getName(), String.class.getName()),
             rows, true
         );
     }
@@ -1240,9 +1240,9 @@ public class JdbcDatabaseMetadata implements DatabaseMetaData {
         return new JdbcResultSet(null,
             conn.createStatement0(),
             Collections.<String>emptyList(),
-            Arrays.asList("FUNCTION_CAT", "FUNCTION_SCHEM", "FUNCTION_NAME",
+            U.asList("FUNCTION_CAT", "FUNCTION_SCHEM", "FUNCTION_NAME",
                 "REMARKS", "FUNCTION_TYPE", "SPECIFIC_NAME"),
-            Arrays.asList(String.class.getName(), String.class.getName(), String.class.getName(),
+            U.asList(String.class.getName(), String.class.getName(), String.class.getName(),
                 String.class.getName(), Short.class.getName(), String.class.getName()),
             Collections.<List<?>>emptyList(), true
         );
@@ -1254,11 +1254,11 @@ public class JdbcDatabaseMetadata implements DatabaseMetaData {
         return new JdbcResultSet(null,
             conn.createStatement0(),
             Collections.<String>emptyList(),
-            Arrays.asList("FUNCTION_CAT", "FUNCTION_SCHEM", "FUNCTION_NAME",
+            U.asList("FUNCTION_CAT", "FUNCTION_SCHEM", "FUNCTION_NAME",
                 "COLUMN_NAME", "COLUMN_TYPE", "DATA_TYPE", "TYPE_NAME", "PRECISION",
                 "LENGTH", "SCALE", "RADIX", "NULLABLE", "REMARKS", "CHAR_OCTET_LENGTH",
                 "ORDINAL_POSITION", "IS_NULLABLE", "SPECIFIC_NAME"),
-            Arrays.asList(String.class.getName(), String.class.getName(), String.class.getName(),
+            U.asList(String.class.getName(), String.class.getName(), String.class.getName(),
                 String.class.getName(), Short.class.getName(), Integer.class.getName(), String.class.getName(),
                 Integer.class.getName(), Integer.class.getName(), Short.class.getName(), Short.class.getName(),
                 Short.class.getName(), String.class.getName(), Integer.class.getName(), Integer.class.getName(),

@@ -75,7 +75,7 @@ public class ClientConsistentHashSelfTest extends GridCommonAbstractTest {
         boolean fail = false;
 
         for (UUID exp : nodes) {
-            UUID act = hash.node(0, Arrays.asList(exp));
+            UUID act = hash.node(0, U.asList(exp));
 
             if (exp.equals(act))
                 info("Validation succeed [exp=" + exp + ", act=" + act + ']');
@@ -174,7 +174,7 @@ public class ClientConsistentHashSelfTest extends GridCommonAbstractTest {
         String n3 = "node #3";
         String n4 = "node #4";
 
-        List<String> nodes = Arrays.asList(n1, n2, n3, n4);
+        List<String> nodes = U.asList(n1, n2, n3, n4);
 
         GridClientConsistentHash<String> hash = new GridClientConsistentHash<>();
 

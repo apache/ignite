@@ -24,6 +24,7 @@ import java.util.Collections;
 import java.util.List;
 import org.apache.ignite.internal.GridDirectCollection;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
@@ -62,7 +63,7 @@ public final class GridMessageCollection<M extends Message> implements Message {
         if (msgs == null || msgs.length == 0)
             return null;
 
-        List<X> list = msgs.length == 1 ? Collections.singletonList(msgs[0]) : Arrays.asList(msgs);
+        List<X> list = msgs.length == 1 ? Collections.singletonList(msgs[0]) : U.asList(msgs);
 
         return new GridMessageCollection<>(list);
     }

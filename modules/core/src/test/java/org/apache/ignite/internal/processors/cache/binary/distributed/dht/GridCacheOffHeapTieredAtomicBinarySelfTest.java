@@ -22,6 +22,7 @@ import org.apache.ignite.configuration.BinaryConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.processors.cache.GridCacheOffHeapTieredAtomicSelfTest;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
+import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
  *
@@ -39,7 +40,7 @@ public class GridCacheOffHeapTieredAtomicBinarySelfTest extends GridCacheOffHeap
 
         BinaryConfiguration bCfg = new BinaryConfiguration();
 
-        bCfg.setClassNames(Arrays.asList(TestValue.class.getName()));
+        bCfg.setClassNames(U.asList(TestValue.class.getName()));
 
         cfg.setMarshaller(new BinaryMarshaller());
 

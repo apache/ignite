@@ -34,6 +34,7 @@ import java.io.ObjectOutput;
 import java.io.OutputStream;
 import java.io.PrintStream;
 import java.io.Reader;
+import java.io.Serializable;
 import java.io.StringWriter;
 import java.io.Writer;
 import java.lang.annotation.Annotation;
@@ -81,6 +82,7 @@ import java.security.cert.X509Certificate;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.text.SimpleDateFormat;
+import java.util.AbstractList;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Calendar;
@@ -98,6 +100,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
+import java.util.RandomAccess;
 import java.util.ServiceLoader;
 import java.util.Set;
 import java.util.StringTokenizer;
@@ -141,6 +144,7 @@ import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLSession;
 import javax.net.ssl.TrustManager;
 import javax.net.ssl.X509TrustManager;
+
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteClientDisconnectedException;
@@ -518,7 +522,7 @@ public abstract class IgniteUtils {
             mac = true;
         else {
             // UNIXs flavors tokens.
-            for (CharSequence os : new String[]{"ix", "inux", "olaris", "un", "ux", "sco", "bsd", "att"})
+            for (CharSequence os : new String[] {"ix", "inux", "olaris", "un", "ux", "sco", "bsd", "att"})
                 if (osLow.contains(os)) {
                     unix = true;
 
@@ -628,7 +632,7 @@ public abstract class IgniteUtils {
         }
 
         // Event names initialization.
-        Class<?>[] evtHolderClasses = new Class[]{EventType.class, DiscoveryCustomEvent.class};
+        Class<?>[] evtHolderClasses = new Class[] {EventType.class, DiscoveryCustomEvent.class};
 
         for (Class<?> cls : evtHolderClasses) {
             for (Field field : cls.getFields()) {
@@ -706,7 +710,8 @@ public abstract class IgniteUtils {
      * @param clazz Class.
      * @return The IgniteClosure mapped to this exception class, or null if none.
      */
-    public static C1<IgniteCheckedException, IgniteException> getExceptionConverter(Class<? extends IgniteCheckedException> clazz) {
+    public static C1<IgniteCheckedException, IgniteException> getExceptionConverter(
+        Class<? extends IgniteCheckedException> clazz) {
         return exceptionConverters.get(clazz);
     }
 
@@ -716,7 +721,7 @@ public abstract class IgniteUtils {
      * @return Exception converters.
      */
     private static Map<Class<? extends IgniteCheckedException>, C1<IgniteCheckedException, IgniteException>>
-        exceptionConverters() {
+    exceptionConverters() {
         Map<Class<? extends IgniteCheckedException>, C1<IgniteCheckedException, IgniteException>> m = new HashMap<>();
 
         m.put(IgniteInterruptedCheckedException.class, new C1<IgniteCheckedException, IgniteException>() {
@@ -1192,7 +1197,7 @@ public abstract class IgniteUtils {
             warn(log, "No deadlocked threads detected.");
         else
             warn(log, "Deadlocked threads detected (see thread dump below) " +
-                    "[deadlockedThreadsCnt=" + deadlockedThreadsIds.size() + ']');
+                "[deadlockedThreadsCnt=" + deadlockedThreadsIds.size() + ']');
 
         ThreadInfo[] threadInfos =
             mxBean.dumpAllThreads(mxBean.isObjectMonitorUsageSupported(), mxBean.isSynchronizerUsageSupported());
@@ -1395,7 +1400,8 @@ public abstract class IgniteUtils {
         }
         catch (InstantiationException | InvocationTargetException | IllegalAccessException e) {
             throw new IgniteCheckedException("Failed to create new instance for class: " + cls, e);
-        } finally {
+        }
+        finally {
             if (ctor != null && set)
                 ctor.setAccessible(false);
         }
@@ -1429,7 +1435,8 @@ public abstract class IgniteUtils {
         }
         catch (InstantiationException | InvocationTargetException | IllegalAccessException e) {
             throw new IgniteCheckedException("Failed to create new instance for class: " + cls, e);
-        } finally {
+        }
+        finally {
             if (set)
                 ctor.setAccessible(false);
         }
@@ -1682,7 +1689,7 @@ public abstract class IgniteUtils {
      * @return Sealed collection.
      */
     public static <E> List<E> sealList(E... a) {
-        return Collections.unmodifiableList(Arrays.asList(a));
+        return Collections.unmodifiableList(U.asList(a));
     }
 
     /**
@@ -1781,11 +1788,13 @@ public abstract class IgniteUtils {
         for (Future<?> fut : futs) {
             try {
                 fut.get();
-            } catch (InterruptedException e) {
+            }
+            catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
 
                 throw new IgniteException("Thread has been interrupted.", e);
-            } catch (ExecutionException e) {
+            }
+            catch (ExecutionException e) {
                 throw new IgniteException(e);
             }
         }
@@ -2106,7 +2115,8 @@ public abstract class IgniteUtils {
         }
         catch (NoSuchAlgorithmException | KeyManagementException e) {
             throw new IOException("Failed to open HTTPs connection [url=" + url.toString() + ", msg=" + e + ']', e);
-        } finally {
+        }
+        finally {
             close(in, null);
             close(out, null);
         }
@@ -2120,7 +2130,7 @@ public abstract class IgniteUtils {
      * @return Array with one X509TrustManager implementation of trust manager.
      */
     private static TrustManager[] getTrustManagers() {
-        return new TrustManager[]{
+        return new TrustManager[] {
             new X509TrustManager() {
                 @Nullable @Override public X509Certificate[] getAcceptedIssuers() {
                     return null;
@@ -3124,7 +3134,7 @@ public abstract class IgniteUtils {
 
         int cnt = 0;
 
-        for (int n; (n = in.read(buf)) > 0;) {
+        for (int n; (n = in.read(buf)) > 0; ) {
             out.write(buf, 0, n);
 
             cnt += n;
@@ -3149,7 +3159,7 @@ public abstract class IgniteUtils {
 
         int cnt = 0;
 
-        for (int n; (n = in.read(buf)) > 0;) {
+        for (int n; (n = in.read(buf)) > 0; ) {
             out.write(buf, 0, n);
 
             cnt += n;
@@ -4243,7 +4253,7 @@ public abstract class IgniteUtils {
      * @param sb Sb.
      */
     private static void appendJvmId(SB sb) {
-        if (getBoolean(IGNITE_MBEAN_APPEND_JVM_ID)){
+        if (getBoolean(IGNITE_MBEAN_APPEND_JVM_ID)) {
             String jvmId = ManagementFactory.getRuntimeMXBean().getName();
 
             sb.a("jvmId=").a(jvmId).a(',');
@@ -4909,7 +4919,8 @@ public abstract class IgniteUtils {
      * @throws ClassNotFoundException If deserialized class could not be found.
      */
     @SuppressWarnings({"unchecked"})
-    @Nullable public static <K, V> TreeMap<K, V> readTreeMap(ObjectInput in) throws IOException, ClassNotFoundException {
+    @Nullable public static <K, V> TreeMap<K, V> readTreeMap(
+        ObjectInput in) throws IOException, ClassNotFoundException {
         int size = in.readInt();
 
         if (size == -1)
@@ -5184,7 +5195,7 @@ public abstract class IgniteUtils {
         Set<E> set = new HashSet(size, 1.0f);
 
         for (int i = 0; i < size; i++)
-            set.add((E) in.readObject());
+            set.add((E)in.readObject());
 
         return set;
     }
@@ -5589,7 +5600,7 @@ public abstract class IgniteUtils {
             // We need to find common classloader for all elements AND the collection itself
             Collection<Object> tmpC = new ArrayList<>();
 
-            for (Object e: c)
+            for (Object e : c)
                 tmpC.add(e);
 
             tmpC.add(c);
@@ -5793,7 +5804,7 @@ public abstract class IgniteUtils {
 
                 boolean cached = tup != null && tup.get1().equals(cls);
 
-                Iterable<Field> fields = cached ? tup.get2() : Arrays.asList(cls.getDeclaredFields());
+                Iterable<Field> fields = cached ? tup.get2() : U.asList(cls.getDeclaredFields());
 
                 if (!cached) {
                     tup = F.t2();
@@ -6319,7 +6330,7 @@ public abstract class IgniteUtils {
             String p2 = part2[idx];
 
             int cmp = (p1.matches("\\d+") && p2.matches("\\d+"))
-                        ? Integer.valueOf(p1).compareTo(Integer.valueOf(p2)) : p1.compareTo(p2);
+                ? Integer.valueOf(p1).compareTo(Integer.valueOf(p2)) : p1.compareTo(p2);
 
             if (cmp != 0)
                 return cmp;
@@ -7493,7 +7504,7 @@ public abstract class IgniteUtils {
                 }
                 catch (IllegalStateException ignored) {
                     error(log, "Failed to add cause to the end of cause chain (cause is printed here but will " +
-                        "not be propagated to callee): " + e,
+                            "not be propagated to callee): " + e,
                         "Failed to add cause to the end of cause chain: " + e, cause);
                 }
 
@@ -7557,11 +7568,11 @@ public abstract class IgniteUtils {
      * @return Segment index.
      */
     public static int concurrentMapSegment(int hash, int concurLvl) {
-        hash += (hash <<  15) ^ 0xffffcd7d;
+        hash += (hash << 15) ^ 0xffffcd7d;
         hash ^= (hash >>> 10);
-        hash += (hash <<   3);
-        hash ^= (hash >>>  6);
-        hash += (hash <<   2) + (hash << 14);
+        hash += (hash << 3);
+        hash ^= (hash >>> 6);
+        hash += (hash << 2) + (hash << 14);
 
         int shift = 0;
         int size = 1;
@@ -8125,7 +8136,7 @@ public abstract class IgniteUtils {
             sb.append(" [");
 
             for (int i = 0; i < args.length / 2; i++) {
-                sb.append(args[ i * 2]).append('=').append(args[i * 2 + 1]);
+                sb.append(args[i * 2]).append('=').append(args[i * 2 + 1]);
                 sb.append(", ");
             }
 
@@ -8236,11 +8247,11 @@ public abstract class IgniteUtils {
     public static int hash(int h) {
         // Spread bits to regularize both segment and index locations,
         // using variant of single-word Wang/Jenkins hash.
-        h += (h <<  15) ^ 0xffffcd7d;
+        h += (h << 15) ^ 0xffffcd7d;
         h ^= (h >>> 10);
-        h += (h <<   3);
-        h ^= (h >>>  6);
-        h += (h <<   2) + (h << 14);
+        h += (h << 3);
+        h ^= (h >>> 6);
+        h += (h << 2) + (h << 14);
 
         return h ^ (h >>> 16);
     }
@@ -8761,7 +8772,8 @@ public abstract class IgniteUtils {
      * @param suppressed The collections of suppressed exceptions.
      * @return {@code IgniteCheckedException}.
      */
-    public static IgniteCheckedException exceptionWithSuppressed(String msg, @Nullable Collection<Throwable> suppressed) {
+    public static IgniteCheckedException exceptionWithSuppressed(String msg,
+        @Nullable Collection<Throwable> suppressed) {
         IgniteCheckedException e = new IgniteCheckedException(msg);
 
         if (suppressed != null) {
@@ -9263,6 +9275,88 @@ public abstract class IgniteUtils {
         }
 
         return list;
+    }
+
+    public static <T> List<T> asList(T e) {
+        return Collections.singletonList(e);
+    }
+
+    public static <T> List<T> asList(T e1, T e2) {
+        return new DoubletonList<>(e1, e2);
+    }
+
+    public static <T> List<T> asList(T... es) {
+        assert es != null;
+
+        if (es.length == 1)
+            return asList(es[0]);
+
+        if (es.length == 2)
+            return asList(es[0], es[1]);
+
+        return Arrays.asList(es);
+    }
+
+    private static class DoubletonList<T> extends AbstractList<T>
+        implements RandomAccess, Serializable {
+
+        private static final long serialVersionUID = 0;
+
+        private final T first;
+        private final T second;
+
+        DoubletonList(T first, T second) {
+            this.first = first;
+            this.second = second;
+        }
+
+        @Override public Iterator<T> iterator() {
+            return new Iterator<T>() {
+                private int pos = 0;
+
+                @Override public boolean hasNext() {
+                    return pos > 1;
+                }
+
+                @Override public T next() {
+                    if (pos == 0) {
+                        pos++;
+                        return first;
+                    }
+                    else if (pos == 1) {
+                        pos++;
+                        return second;
+                    }
+                    else
+                        throw new NoSuchElementException();
+
+                }
+
+                @Override public void remove() {
+                    throw new UnsupportedOperationException();
+                }
+            };
+        }
+
+        @Override public int size() {
+            return 2;
+        }
+
+        @Override public boolean contains(Object obj) {
+            if (obj == null)
+                return first == null || second == null;
+            else
+                return obj.equals(first) || obj.equals(second);
+        }
+
+        @Override public T get(int index) {
+            if (index == 0)
+                return first;
+            else if (index == 1)
+                return second;
+            else
+                throw new IndexOutOfBoundsException("Index: " + index + ", Size: 2");
+        }
     }
 
     /**

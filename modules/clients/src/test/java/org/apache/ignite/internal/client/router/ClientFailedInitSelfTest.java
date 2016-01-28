@@ -262,7 +262,7 @@ public class ClientFailedInitSelfTest extends GridCommonAbstractTest {
             (useRouter ? ROUTER_JETTY_PORT : JETTY_PORT);
 
         cfg.setProtocol(p);
-        cfg.setServers(Arrays.asList(HOST + ":" + port));
+        cfg.setServers(U.asList(HOST + ":" + port));
         cfg.setTopologyRefreshFrequency(TOP_REFRESH_PERIOD);
 
         return GridClientFactory.start(cfg);

@@ -176,7 +176,7 @@ import org.jetbrains.annotations.Nullable;
  *
  * BinaryMarshaller marsh = new BinaryMarshaller();
  *
- * marsh.setClassNames(Arrays.asList(
+ * marsh.setClassNames(U.asList(
  *     Employee.class.getName(),
  *     Address.class.getName())
  * );

@@ -20,6 +20,8 @@ package org.apache.ignite.internal.processors.query.h2.twostep;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
+
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.h2.api.TableEngine;
 import org.h2.command.ddl.CreateTableData;
 import org.h2.engine.DbObject;
@@ -118,7 +120,7 @@ public class GridThreadLocalTable extends Table {
 
     /** {@inheritDoc} */
     @Override protected void setColumns(Column[] columns) {
-        throw new IllegalStateException("Cols: " + Arrays.asList(columns));
+        throw new IllegalStateException("Cols: " + U.asList(columns));
     }
 
     /** {@inheritDoc} */

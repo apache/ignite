@@ -23,6 +23,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.IgniteFutureTimeoutCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.util.typedef.C2;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiClosure;
 import org.apache.ignite.testframework.junits.GridTestKernalContext;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
@@ -71,7 +72,7 @@ public class GridEmbeddedFutureSelfTest extends GridCommonAbstractTest {
      */
     @SuppressWarnings("ErrorNotRethrown")
     public void testFutureCompletesCorrectly() throws Exception {
-        List<Throwable> list = Arrays.asList(
+        List<Throwable> list = U.asList(
             null,
             new RuntimeException("Test runtime exception (should be ignored)."),
             new IllegalStateException("Test illegal state exception (should be ignored)."),

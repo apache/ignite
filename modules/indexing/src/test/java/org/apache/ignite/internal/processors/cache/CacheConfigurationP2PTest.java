@@ -63,7 +63,7 @@ public class CacheConfigurationP2PTest extends GridCommonAbstractTest {
 
         TcpDiscoveryVmIpFinder ipFinder = new TcpDiscoveryVmIpFinder();
 
-        ipFinder.setAddresses(Arrays.asList("127.0.0.1:47500..47509"));
+        ipFinder.setAddresses(U.asList("127.0.0.1:47500..47509"));
 
         disco.setIpFinder(ipFinder);
 
@@ -87,7 +87,7 @@ public class CacheConfigurationP2PTest extends GridCommonAbstractTest {
             GridJavaProcess node2 = null;
             GridJavaProcess clientNode = null;
 
-            Collection<String> jvmArgs = Arrays.asList("-ea", "-DIGNITE_QUIET=false");
+            Collection<String> jvmArgs = U.asList("-ea", "-DIGNITE_QUIET=false");
 
             try {
                 node1 = GridJavaProcess.exec(

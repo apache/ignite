@@ -41,6 +41,7 @@ import org.apache.ignite.internal.processors.rest.handlers.GridRestCommandHandle
 import org.apache.ignite.internal.processors.rest.request.GridRestCacheRequest;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
@@ -118,15 +119,15 @@ public class GridCacheCommandHandlerSelfTest extends GridCommonAbstractTest {
         assertEquals("as" + "df", testAppend("as", "df", true));
         assertEquals("df" + "as", testAppend("as", "df", false));
 
-        List<String> curList = new ArrayList<>(Arrays.asList("a", "b"));
-        List<String> newList = new ArrayList<>(Arrays.asList("b", "c"));
+        List<String> curList = new ArrayList<>(U.asList("a", "b"));
+        List<String> newList = new ArrayList<>(U.asList("b", "c"));
 
-        assertEquals(Arrays.asList("a", "b", "b", "c"), testAppend(curList, newList, true));
-        assertEquals(Arrays.asList("b", "c", "a", "b"), testAppend(curList, newList, false));
+        assertEquals(U.asList("a", "b", "b", "c"), testAppend(curList, newList, true));
+        assertEquals(U.asList("b", "c", "a", "b"), testAppend(curList, newList, false));
 
-        Set<String> curSet = new HashSet<>(Arrays.asList("a", "b"));
-        Set<String> newSet = new HashSet<>(Arrays.asList("b", "c"));
-        Set<String> resSet = new HashSet<>(Arrays.asList("a", "b", "c"));
+        Set<String> curSet = new HashSet<>(U.asList("a", "b"));
+        Set<String> newSet = new HashSet<>(U.asList("b", "c"));
+        Set<String> resSet = new HashSet<>(U.asList("a", "b", "c"));
 
         assertEquals(resSet, testAppend(curSet, newSet, true));
         assertEquals(resSet, testAppend(curSet, newSet, false));
@@ -142,7 +143,7 @@ public class GridCacheCommandHandlerSelfTest extends GridCommonAbstractTest {
         assertEquals(F.asMap("a", "1", "b", "2", "c", "3", "d", "4"), testAppend(curMap, newMap, false));
 
         try {
-            testAppend("as", Arrays.asList("df"), true);
+            testAppend("as", U.asList("df"), true);
 
             fail("Expects failed with incompatible types message.");
         }

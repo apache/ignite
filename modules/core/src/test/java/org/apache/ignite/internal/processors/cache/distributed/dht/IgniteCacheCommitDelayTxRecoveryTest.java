@@ -37,6 +37,7 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.util.typedef.G;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
@@ -153,7 +154,7 @@ public class IgniteCacheCommitDelayTxRecoveryTest extends GridCommonAbstractTest
 
         assertFalse(srv.configuration().isClientMode());
 
-        for (Boolean pessimistic : Arrays.asList(false, true)) {
+        for (Boolean pessimistic : U.asList(false, true)) {
             checkRecovery(backupKey(srv.cache(null)), srv, pessimistic, useStore);
 
             checkRecovery(nearKey(srv.cache(null)), srv, pessimistic, useStore);

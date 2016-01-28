@@ -69,7 +69,7 @@ public class IgniteMqttStreamerTest extends GridCommonAbstractTest {
     private static final String SINGLE_TOPIC_NAME = "abc";
 
     /** Topic names for multiple topic tests. */
-    private static final List<String> MULTIPLE_TOPIC_NAMES = Arrays.asList("def", "ghi", "jkl", "mno");
+    private static final List<String> MULTIPLE_TOPIC_NAMES = U.asList("def", "ghi", "jkl", "mno");
 
     /** The AMQ broker with an MQTT interface. */
     private BrokerService broker;
@@ -237,7 +237,7 @@ public class IgniteMqttStreamerTest extends GridCommonAbstractTest {
         streamer.start();
 
         // send messages
-        sendMessages(Arrays.asList(SINGLE_TOPIC_NAME), 0, 50, false);
+        sendMessages(U.asList(SINGLE_TOPIC_NAME), 0, 50, false);
 
         // assertions
         assertTrue(latch.await(10, TimeUnit.SECONDS));
@@ -285,7 +285,7 @@ public class IgniteMqttStreamerTest extends GridCommonAbstractTest {
         streamer.start();
 
         // send messages
-        sendMessages(Arrays.asList(SINGLE_TOPIC_NAME), 0, 50, true);
+        sendMessages(U.asList(SINGLE_TOPIC_NAME), 0, 50, true);
 
         // assertions
         assertTrue(latch.await(10, TimeUnit.SECONDS));
@@ -337,7 +337,7 @@ public class IgniteMqttStreamerTest extends GridCommonAbstractTest {
         streamer.start();
 
         // send messages
-        sendMessages(Arrays.asList(SINGLE_TOPIC_NAME), 0, 50, false);
+        sendMessages(U.asList(SINGLE_TOPIC_NAME), 0, 50, false);
 
         // assertions
         assertTrue(latch.await(10, TimeUnit.SECONDS));
@@ -347,7 +347,7 @@ public class IgniteMqttStreamerTest extends GridCommonAbstractTest {
         streamer.stop();
 
         // send messages while stopped
-        sendMessages(Arrays.asList(SINGLE_TOPIC_NAME), 50, 50, false);
+        sendMessages(U.asList(SINGLE_TOPIC_NAME), 50, 50, false);
 
         latch = subscribeToPutEvents(50);
 
@@ -376,7 +376,7 @@ public class IgniteMqttStreamerTest extends GridCommonAbstractTest {
         streamer.start();
 
         // send messages
-        sendMessages(Arrays.asList(SINGLE_TOPIC_NAME), 0, 50, false);
+        sendMessages(U.asList(SINGLE_TOPIC_NAME), 0, 50, false);
 
         // assertions
         assertTrue(latch.await(10, TimeUnit.SECONDS));
@@ -398,7 +398,7 @@ public class IgniteMqttStreamerTest extends GridCommonAbstractTest {
         latch = subscribeToPutEvents(50);
 
         // send messages
-        sendMessages(Arrays.asList(SINGLE_TOPIC_NAME), 50, 50, false);
+        sendMessages(U.asList(SINGLE_TOPIC_NAME), 50, 50, false);
 
         // assertions
         assertTrue(latch.await(10, TimeUnit.SECONDS));
@@ -422,7 +422,7 @@ public class IgniteMqttStreamerTest extends GridCommonAbstractTest {
         streamer.start();
 
         // send messages
-        sendMessages(Arrays.asList(SINGLE_TOPIC_NAME), 0, 50, false);
+        sendMessages(U.asList(SINGLE_TOPIC_NAME), 0, 50, false);
 
         // assertions
         assertTrue(latch.await(10, TimeUnit.SECONDS));
@@ -437,7 +437,7 @@ public class IgniteMqttStreamerTest extends GridCommonAbstractTest {
         client.connect();
 
         // lets send messages and ensure they are not received, because our retrier desisted
-        sendMessages(Arrays.asList(SINGLE_TOPIC_NAME), 50, 50, false);
+        sendMessages(U.asList(SINGLE_TOPIC_NAME), 50, 50, false);
 
         Thread.sleep(3000);
 
@@ -451,7 +451,7 @@ public class IgniteMqttStreamerTest extends GridCommonAbstractTest {
         // configure streamer
         streamer.setSingleTupleExtractor(singleTupleExtractor());
         streamer.setTopics(MULTIPLE_TOPIC_NAMES);
-        streamer.setQualitiesOfService(Arrays.asList(1, 1, 1, 1));
+        streamer.setQualitiesOfService(U.asList(1, 1, 1, 1));
 
         // subscribe to cache PUT events
         CountDownLatch latch = subscribeToPutEvents(50);
@@ -478,7 +478,7 @@ public class IgniteMqttStreamerTest extends GridCommonAbstractTest {
         // configure streamer
         streamer.setSingleTupleExtractor(singleTupleExtractor());
         streamer.setTopics(MULTIPLE_TOPIC_NAMES);
-        streamer.setQualitiesOfService(Arrays.asList(1, 1, 1));
+        streamer.setQualitiesOfService(U.asList(1, 1, 1));
 
         try {
             streamer.start();

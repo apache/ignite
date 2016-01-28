@@ -26,6 +26,7 @@ import java.util.Date;
 import java.util.List;
 import javax.cache.Cache;
 import org.apache.ignite.internal.util.IgniteUtils;
+import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
  * Contains utility methods for Visor query tasks and jobs.
@@ -44,7 +45,7 @@ public class VisorQueryUtils {
     public static final String SCAN_NEAR_CACHE = "VISOR_SCAN_NEAR_CACHE";
 
     /** Columns for SCAN queries. */
-    public static final Collection<VisorQueryField> SCAN_COL_NAMES = Arrays.asList(
+    public static final Collection<VisorQueryField> SCAN_COL_NAMES = U.asList(
         new VisorQueryField(null, null, "Key Class", ""), new VisorQueryField(null, null, "Key", ""),
         new VisorQueryField(null, null, "Value Class", ""), new VisorQueryField(null, null, "Value", "")
     );

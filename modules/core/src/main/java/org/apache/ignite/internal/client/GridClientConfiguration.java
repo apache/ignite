@@ -705,7 +705,7 @@ public class GridClientConfiguration {
             setProtocol(GridClientProtocol.valueOf(proto));
 
         if (!F.isEmpty(srvrs))
-            setServers(Arrays.asList(srvrs.replaceAll("\\s+", "").split(",")));
+            setServers(U.asList(srvrs.replaceAll("\\s+", "").split(",")));
 
         if (!F.isEmpty(tcpNoDelay))
             setTcpNoDelay(Boolean.parseBoolean(tcpNoDelay));

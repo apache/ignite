@@ -253,7 +253,7 @@ public class GridH2IndexingGeoSelfTest extends GridCacheAbstractSelfTest {
      * @param points Expected points.
      */
     private void checkPoints( Collection<Cache.Entry<Integer, EnemyCamp>> res, String... points) {
-        Set<String> set = new HashSet<>(Arrays.asList(points));
+        Set<String> set = new HashSet<>(U.asList(points));
 
         assertEquals(set.size(), res.size());
 

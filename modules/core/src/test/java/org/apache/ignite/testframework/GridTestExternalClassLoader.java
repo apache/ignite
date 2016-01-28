@@ -28,6 +28,8 @@ import java.util.Enumeration;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
+
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -69,7 +71,7 @@ public class GridTestExternalClassLoader extends URLClassLoader {
      * @param excludeClassNames list of excluded classes.
      */
     public GridTestExternalClassLoader(URL[] urls, Map<String, byte[]> resourceMap, String... excludeClassNames) {
-        this(urls, resourceMap, new HashSet<>(Arrays.asList(excludeClassNames)));
+        this(urls, resourceMap, new HashSet<>(U.asList(excludeClassNames)));
     }
 
     /**
@@ -101,7 +103,7 @@ public class GridTestExternalClassLoader extends URLClassLoader {
      * @param excludeClassNames excluded resource paths.
      */
     public void setExcludeClassNames(String... excludeClassNames) {
-        setExcludeClassNames(new HashSet<>(Arrays.asList(excludeClassNames)));
+        setExcludeClassNames(new HashSet<>(U.asList(excludeClassNames)));
     }
 
     /**

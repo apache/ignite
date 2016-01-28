@@ -255,7 +255,7 @@ public class GridNearTxRemote extends GridDistributedTxRemoteAdapter {
 
     /** {@inheritDoc} */
     @Override public Collection<UUID> masterNodeIds() {
-        return Arrays.asList(nodeId, nearNodeId);
+        return U.asList(nodeId, nearNodeId);
     }
 
     /**

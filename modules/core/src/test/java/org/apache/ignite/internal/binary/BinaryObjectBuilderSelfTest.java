@@ -41,6 +41,7 @@ import org.apache.ignite.internal.binary.builder.BinaryObjectBuilderImpl;
 import org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl;
 import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import sun.misc.Unsafe;
@@ -77,7 +78,7 @@ public class BinaryObjectBuilderSelfTest extends GridCommonAbstractTest {
 
         bCfg.setCompactFooter(compactFooter());
 
-        bCfg.setTypeConfigurations(Arrays.asList(
+        bCfg.setTypeConfigurations(U.asList(
             new BinaryTypeConfiguration(Key.class.getName()),
             new BinaryTypeConfiguration(Value.class.getName()),
             new BinaryTypeConfiguration("org.gridgain.grid.internal.util.binary.mutabletest.*"),
@@ -650,7 +651,7 @@ public class BinaryObjectBuilderSelfTest extends GridCommonAbstractTest {
 
         builder.hashCode(100);
 
-        builder.setField("collectionField", Arrays.asList(new Value(1), new Value(2)));
+        builder.setField("collectionField", U.asList(new Value(1), new Value(2)));
 
         BinaryObject po = builder.build();
 
@@ -700,7 +701,7 @@ public class BinaryObjectBuilderSelfTest extends GridCommonAbstractTest {
         builder.setField("f", 111.111f);
         builder.setField("iArr", new int[] {1, 2, 3});
         builder.setField("obj", new Key(1));
-        builder.setField("col", Arrays.asList(new Value(1), new Value(2)));
+        builder.setField("col", U.asList(new Value(1), new Value(2)));
 
         BinaryObject po = builder.build();
 
@@ -732,7 +733,7 @@ public class BinaryObjectBuilderSelfTest extends GridCommonAbstractTest {
         builder.setField("f", 111.111f);
         builder.setField("iArr", new int[] {1, 2, 3});
         builder.setField("obj", new Key(1));
-        builder.setField("col", Arrays.asList(new Value(1), new Value(2)));
+        builder.setField("col", U.asList(new Value(1), new Value(2)));
 
         BinaryObject po = builder.build();
 

@@ -57,7 +57,7 @@ public class CodeGenerator {
     private static final String TAB3 = TAB + TAB + TAB;
 
     /** Java key words. */
-    private static final Set<String> JAVA_KEYWORDS = new HashSet<>(Arrays.asList(
+    private static final Set<String> JAVA_KEYWORDS = new HashSet<>(U.asList(
         "abstract",     "assert",        "boolean",      "break",           "byte",
         "case",         "catch",         "char",         "class",           "const",
         "continue",     "default",       "do",           "double",          "else",

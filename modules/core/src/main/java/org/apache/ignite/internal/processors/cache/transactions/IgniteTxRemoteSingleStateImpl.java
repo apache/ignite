@@ -25,6 +25,7 @@ import java.util.Map;
 import java.util.Set;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -70,7 +71,7 @@ public class IgniteTxRemoteSingleStateImpl extends IgniteTxRemoteStateAdapter {
 
     /** {@inheritDoc} */
     @Override public Collection<IgniteTxEntry> writeEntries() {
-        return entry != null ? Arrays.asList(entry) : Collections.<IgniteTxEntry>emptyList();
+        return entry != null ? U.asList(entry) : Collections.<IgniteTxEntry>emptyList();
     }
 
     /** {@inheritDoc} */
@@ -96,7 +97,7 @@ public class IgniteTxRemoteSingleStateImpl extends IgniteTxRemoteStateAdapter {
 
     /** {@inheritDoc} */
     @Override public Collection<IgniteTxEntry> allEntries() {
-        return entry != null ? Arrays.asList(entry) : Collections.<IgniteTxEntry>emptyList();
+        return entry != null ? U.asList(entry) : Collections.<IgniteTxEntry>emptyList();
     }
 
     /** {@inheritDoc} */

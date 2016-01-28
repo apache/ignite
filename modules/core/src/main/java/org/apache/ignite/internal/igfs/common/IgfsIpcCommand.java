@@ -17,6 +17,8 @@
 
 package org.apache.ignite.internal.igfs.common;
 
+import org.apache.ignite.internal.util.typedef.internal.U;
+
 import java.util.Arrays;
 import java.util.List;
 
@@ -85,7 +87,7 @@ public enum IgfsIpcCommand {
     CONTROL_RESPONSE;
 
     /** All values */
-    private static final List<IgfsIpcCommand> ALL = Arrays.asList(values());
+    private static final List<IgfsIpcCommand> ALL = U.asList(values());
 
     /**
      * Resolve command by its ordinal.

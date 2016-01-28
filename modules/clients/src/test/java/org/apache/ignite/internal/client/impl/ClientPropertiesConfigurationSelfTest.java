@@ -77,14 +77,14 @@ public class ClientPropertiesConfigurationSelfTest extends GridCommonAbstractTes
         // Validate default configuration.
         GridClientConfiguration cfg = new GridClientConfiguration();
 
-        cfg.setServers(Arrays.asList("localhost:11211"));
+        cfg.setServers(U.asList("localhost:11211"));
 
         validateConfig(0, cfg);
 
         // Validate default properties-based configuration.
         cfg = new GridClientConfiguration();
 
-        cfg.setServers(Arrays.asList("localhost:11211"));
+        cfg.setServers(U.asList("localhost:11211"));
 
         validateConfig(0, cfg);
 
@@ -135,7 +135,7 @@ public class ClientPropertiesConfigurationSelfTest extends GridCommonAbstractTes
         GridClientConfiguration cfg = new FileSystemXmlApplicationContext(
             GRID_CLIENT_SPRING_CONFIG.toString()).getBean(GridClientConfiguration.class);
 
-        assertEquals(Arrays.asList("127.0.0.1:11211"), new ArrayList<>(cfg.getServers()));
+        assertEquals(U.asList("127.0.0.1:11211"), new ArrayList<>(cfg.getServers()));
         assertNull(cfg.getSecurityCredentialsProvider());
 
         Collection<GridClientDataConfiguration> dataCfgs = cfg.getDataConfigurations();
@@ -235,7 +235,7 @@ public class ClientPropertiesConfigurationSelfTest extends GridCommonAbstractTes
 
         assertEquals(DFLT_MAX_CONN_IDLE_TIME, cfg.getMaxConnectionIdleTime());
         assertEquals(GridClientProtocol.TCP, cfg.getProtocol());
-        assertEquals(Arrays.asList("localhost:11211"), new ArrayList<>(cfg.getServers()));
+        assertEquals(U.asList("localhost:11211"), new ArrayList<>(cfg.getServers()));
         assertEquals(true, cfg.isEnableAttributesCache());
         assertEquals(true, cfg.isEnableMetricsCache());
         assertEquals(true, cfg.isTcpNoDelay());

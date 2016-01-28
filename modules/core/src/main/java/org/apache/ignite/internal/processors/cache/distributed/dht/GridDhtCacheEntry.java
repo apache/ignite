@@ -45,6 +45,7 @@ import org.apache.ignite.internal.util.typedef.C1;
 import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteClosure;
 import org.jetbrains.annotations.Nullable;
@@ -654,7 +655,7 @@ public class GridDhtCacheEntry extends GridDistributedCacheEntry {
             this.rdrs = rdrs;
         }
 
-        return Arrays.asList(rdrs);
+        return U.asList(rdrs);
     }
 
     /** {@inheritDoc} */

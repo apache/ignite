@@ -29,6 +29,7 @@ import org.apache.ignite.compute.gridify.GridifyInput;
 import org.apache.ignite.compute.gridify.GridifySetToSet;
 import org.apache.ignite.compute.gridify.GridifySetToValue;
 import org.apache.ignite.compute.gridify.aop.GridifyArgumentAdapter;
+import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
  * Argument builder used for creating arguments for tasks and jobs in gridified methods.
@@ -93,7 +94,7 @@ public final class GridifyArgumentBuilder {
         }
 
         assert !allowedParamIdxs.isEmpty() : "Invalid method signature. Failed to get valid method parameter " +
-            "types [mtdName=" + mtdName + ", mtdTypes=" + Arrays.asList(mtdTypes) + ']';
+            "types [mtdName=" + mtdName + ", mtdTypes=" + U.asList(mtdTypes) + ']';
 
         if (allowedParamIdxs.size() == 1)
             return allowedParamIdxs.get(0);
@@ -106,7 +107,7 @@ public final class GridifyArgumentBuilder {
         }
 
         assert annParamIdxs.size() == 1 : "Invalid method signature. Method parameter must be annotated with @" +
-                GridifyInput.class.getSimpleName() + "[mtdName=" + mtdName + ", mtdTypes=" + Arrays.asList(mtdTypes) +
+                GridifyInput.class.getSimpleName() + "[mtdName=" + mtdName + ", mtdTypes=" + U.asList(mtdTypes) +
                 ", allowedParamIdxs=" + allowedParamIdxs + ", annParamIdxs=" + annParamIdxs + ']';
 
         return annParamIdxs.get(0);

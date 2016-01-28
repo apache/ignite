@@ -22,6 +22,7 @@ import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
@@ -78,7 +79,7 @@ public class IgniteCacheDuplicateEntityConfigurationSelfTest extends GridCommonA
 
         entity.setFields(fields);
 
-        ccfg.setQueryEntities(Arrays.asList(entity));
+        ccfg.setQueryEntities(U.asList(entity));
 
         try {
             ignite(0).getOrCreateCache(ccfg);
@@ -107,7 +108,7 @@ public class IgniteCacheDuplicateEntityConfigurationSelfTest extends GridCommonA
 
         entity.setFields(fields);
 
-        ccfg.setQueryEntities(Arrays.asList(entity));
+        ccfg.setQueryEntities(U.asList(entity));
 
         ccfg.setIndexedTypes(Integer.class, Person.class);
 

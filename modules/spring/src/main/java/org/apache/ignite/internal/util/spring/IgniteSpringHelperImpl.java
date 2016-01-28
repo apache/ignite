@@ -439,7 +439,7 @@ public class IgniteSpringHelperImpl implements IgniteSpringHelper {
         GenericApplicationContext springCtx = new GenericApplicationContext();
 
         if (excludedProps.length > 0) {
-            final List<String> excludedPropsList = Arrays.asList(excludedProps);
+            final List<String> excludedPropsList = U.asList(excludedProps);
 
             BeanFactoryPostProcessor postProc = new BeanFactoryPostProcessor() {
                 /**
