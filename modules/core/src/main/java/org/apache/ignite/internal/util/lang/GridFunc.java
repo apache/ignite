@@ -17,6 +17,8 @@
 
 package org.apache.ignite.internal.util.lang;
 
+import java.io.Serializable;
+import java.util.AbstractList;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -4047,12 +4049,85 @@ public class GridFunc {
     /**
      * Creates read-only list with given values.
      *
-     * @param t Element (if {@code null}, then empty list is returned).
+     * @param t Element.
      * @param <T> Element's type.
      * @return Created list.
      */
     public static <T> List<T> asList(@Nullable T t) {
-        return t == null ? Collections.<T>emptyList() : Collections.singletonList(t);
+        return Collections.singletonList(t);
+    }
+
+    /**
+     * Creates read-only list with given values.
+     *
+     * @param t1 First element.
+     * @param t2 Second element.
+     * @param <T> Element's type.
+     * @return Created list.
+     */
+    public static <T> List<T> asList(@Nullable T t1, @Nullable T t2) {
+        return new DoubletonList<>(t1, t2);
+    }
+
+    private static class DoubletonList<T> extends AbstractList<T> implements RandomAccess, Serializable {
+
+        private static final long serialVersionUID = 0;
+
+        private final T first;
+        private final T second;
+
+        DoubletonList(T first, T second) {
+            this.first = first;
+            this.second = second;
+        }
+
+        @Override public Iterator<T> iterator() {
+            return new Iterator<T>() {
+                private int pos = 0;
+
+                @Override public boolean hasNext() {
+                    return pos > 1;
+                }
+
+                @Override public T next() {
+                    if (pos == 0) {
+                        pos++;
+                        return first;
+                    }
+                    else if (pos == 1) {
+                        pos++;
+                        return second;
+                    }
+                    else
+                        throw new NoSuchElementException();
+
+                }
+
+                @Override public void remove() {
+                    throw new UnsupportedOperationException();
+                }
+            };
+        }
+
+        @Override public int size() {
+            return 2;
+        }
+
+        @Override public boolean contains(Object obj) {
+            if (obj == null)
+                return first == null || second == null;
+            else
+                return obj.equals(first) || obj.equals(second);
+        }
+
+        @Override public T get(int index) {
+            if (index == 0)
+                return first;
+            else if (index == 1)
+                return second;
+            else
+                throw new IndexOutOfBoundsException("Index: " + index + ", Size: 2");
+        }
     }
 
     /**
