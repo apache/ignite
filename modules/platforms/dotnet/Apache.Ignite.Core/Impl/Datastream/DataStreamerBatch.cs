@@ -192,6 +192,7 @@ namespace Apache.Ignite.Core.Impl.Datastream
                 {
                     curBatch._fut.Get();
                 }
+                // ReSharper disable once EmptyGeneralCatchClause
                 catch (Exception)
                 {
                     // Ignore.
