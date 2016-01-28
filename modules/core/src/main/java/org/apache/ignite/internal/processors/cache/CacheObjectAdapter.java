@@ -71,6 +71,9 @@ public abstract class CacheObjectAdapter implements CacheObject, Externalizable 
 
     /** {@inheritDoc} */
     @Override public boolean putValue(ByteBuffer buf, CacheObjectContext ctx) throws IgniteCheckedException {
+        if (valBytes == null)
+            valueBytes(ctx);
+
         if (buf.remaining() < valBytes.length + 5)
             return false;
 
