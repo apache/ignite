@@ -51,6 +51,9 @@ public class JmhIdeBenchmarkRunner {
     /** Output. */
     private String output;
 
+    /** Amount of threads. */
+    private int threads;
+
     /**
      * Create new runner.
      *
@@ -147,6 +150,16 @@ public class JmhIdeBenchmarkRunner {
     }
 
     /**
+     * @param threads Threads.
+     * @return This instance.
+     */
+    public JmhIdeBenchmarkRunner threads(int threads) {
+        this.threads = threads;
+
+        return this;
+    }
+
+    /**
      * Get prepared options builder.
      *
      * @return Options builder.
@@ -158,6 +171,7 @@ public class JmhIdeBenchmarkRunner {
         builder.warmupIterations(warmupIterations);
         builder.measurementIterations(measurementIterations);
         builder.timeUnit(outputTimeUnit);
+        builder.threads(threads);
 
         if (benchmarkModes != null) {
             for (Mode benchmarkMode : benchmarkModes)
