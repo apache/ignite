@@ -50,7 +50,7 @@ $generatorJava.toJavaCode = function (val, type) {
     if (typeof(val) === 'number' || typeof(val) === 'boolean')
         return '' + val;
 
-    throw "Unknown type: " + typeof(val) + ' (' + val + ')';
+    return 'Unknown type: ' + typeof(val) + ' (' + val + ')';
 };
 
 /**
