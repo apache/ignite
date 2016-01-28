@@ -27,7 +27,7 @@ mixin feedback(field, error, message)
         data-title='#{message}'
     )
 
-form.panel.panel-default(name='#{form}')
+form.panel.panel-default(name='#{form}' novalidate)
     .panel-heading(bs-collapse-toggle ng-click='__show__ = true')
         ignite-form-panel-chevron
         label SSL configuration

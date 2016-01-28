@@ -27,7 +27,6 @@ include ../includes/controls
     div(dw-loading='loadingClustersScreen' dw-loading-options='{text: "Loading clusters screen...", className: "page-loading-overlay"}')
         div(ng-show='ui.ready')
             hr
-
             +main-table('clusters', 'clusters', 'clusterName', 'selectItem(row)', '{{$index + 1}}) {{row.label}}', 'label')
             .padding-top-dflt(bs-affix)
                 .panel-tip-container(data-placement='bottom' bs-tooltip='' data-title='Create new cluster')
@@ -51,7 +50,6 @@ include ../includes/controls
                             span.caret
                     .panel-tip-container(ng-show='backupItem')
                         i.btn.btn-primary.fa.fa-undo(id='undo-item' ng-disabled='!ui.inputForm.$dirty' ng-click='ui.inputForm.$dirty && resetAll()' bs-tooltip=undoTip data-placement='bottom' data-trigger='hover')
-
             hr
             div(bs-collapse='' data-allow-multiple='true' ng-model='__.groups')
                 form.form-horizontal(name='ui.inputForm' ng-show='backupItem && tableVisibleRow(displayedRows, selectedItem)' novalidate unsaved-warning-form)

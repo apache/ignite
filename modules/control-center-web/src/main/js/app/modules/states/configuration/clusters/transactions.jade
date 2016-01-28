@@ -19,7 +19,7 @@ mixin ignite-form-field-tooltip(message)
 
 - var model = 'backupItem.transactionConfiguration'
 
-form.panel.panel-default(name='transactionConfiguration')
+form.panel.panel-default(name='transactionConfiguration' novalidate)
     .panel-heading(bs-collapse-toggle ng-click='__show__ = true')
         ignite-form-panel-chevron
         label Transactions
