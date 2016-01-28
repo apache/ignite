@@ -123,7 +123,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
 
             // Multiple values
             Assert.AreEqual(new[] {0, 1, 2},
-                cache.ToQueryable().Where(x => x.Key < 3).Select(x => x.Value.Age).ToArray());
+                cache.ToQueryable().Where(x => x.Key < 3).Select(x => x.Value.Address.Zip).ToArray());
 
             // Single value
             Assert.AreEqual(3, cache.ToQueryable().Where(x => x.Key == 3).Select(x => x.Value.Age).FirstOrDefault());
@@ -136,12 +136,18 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
             var cache = GetCache();
 
             // Test anonymous type (ctor invoke)
-            var data = cache.ToQueryable().Where(x => x.Key < 5).Select(x => new {x.Key, x.Value.Age}).ToArray();
+            var data = cache.ToQueryable()
+                .Where(x => x.Key < 5)
+                .Select(x => new {x.Key, x.Value.Age, x.Value.Address})
+                .ToArray();
 
             Assert.AreEqual(5, data.Length);
 
             foreach (var t in data)
+            {
                 Assert.AreEqual(t.Age, t.Key);
+                Assert.AreEqual(t.Age, t.Address.Zip);
+            }
 
             // Test static method call
             var person = cache.ToQueryable().Where(x => x.Key == 13)
