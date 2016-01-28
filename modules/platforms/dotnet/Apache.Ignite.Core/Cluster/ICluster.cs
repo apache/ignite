@@ -67,7 +67,7 @@ namespace Apache.Ignite.Core.Cluster
         /// <returns>Collection of Ignite nodes which represented by specified topology version, 
         /// if it is present in history storage, null otherwise.</returns>
         /// <exception cref="IgniteException">If underlying SPI implementation does not support 
-        /// topology history. Currently only <code>org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi</code>
+        /// topology history. Currently only <c>org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi</c>
         /// supports topology history.</exception>
         ICollection<IClusterNode> GetTopology(long ver);
 

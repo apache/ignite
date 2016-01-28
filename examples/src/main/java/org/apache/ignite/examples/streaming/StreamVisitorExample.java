@@ -25,6 +25,8 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.Ignition;
+import org.apache.ignite.binary.BinaryObject;
+import org.apache.ignite.binary.BinaryObjectBuilder;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -50,6 +52,10 @@ public class StreamVisitorExample {
     /** The list of initial instrument prices. */
     private static final double[] INITIAL_PRICES = {194.9, 893.49, 34.21, 23.24, 57.93, 45.03, 44.41, 28.44, 378.49, 69.50};
 
+    /** Caches' names. */
+    private static final String CACHE_NAME = "instCache";
+    private static final String MARKET_TICKS_CACHE_NAME = "marketTicks";
+
     public static void main(String[] args) throws Exception {
         // Mark this cluster member as client.
         Ignition.setClientMode(true);
@@ -59,7 +65,7 @@ public class StreamVisitorExample {
                 return;
 
             // Financial instrument cache configuration.
-            CacheConfiguration<String, Instrument> instCfg = new CacheConfiguration<>("instCache");
+            CacheConfiguration<String, Instrument> instCfg = new CacheConfiguration<>(CACHE_NAME);
 
             // Index key and value for querying financial instruments.
             // Note that Instrument class has @QuerySqlField annotation for secondary field indexing.
@@ -67,7 +73,7 @@ public class StreamVisitorExample {
 
             // Auto-close caches at the end of the example.
             try (
-                IgniteCache<String, Double> mktCache = ignite.getOrCreateCache("marketTicks"); // Default config.
+                IgniteCache<String, Double> mktCache = ignite.getOrCreateCache(MARKET_TICKS_CACHE_NAME); // Default config.
                 IgniteCache<String, Instrument> instCache = ignite.getOrCreateCache(instCfg)
             ) {
                 try (IgniteDataStreamer<String, Double> mktStmr = ignite.dataStreamer(mktCache.getName())) {
@@ -75,21 +81,39 @@ public class StreamVisitorExample {
                     // Instead we update the instruments in the 'instCache'.
                     // Since both, 'instCache' and 'mktCache' use the same key, updates are collocated.
                     mktStmr.receiver(new StreamVisitor<String, Double>() {
-                        @Override
-                        public void apply(IgniteCache<String, Double> cache, Map.Entry<String, Double> e) {
+                        @Override public void apply(IgniteCache<String, Double> cache, Map.Entry<String, Double> e) {
                             String symbol = e.getKey();
                             Double tick = e.getValue();
 
-                            Instrument inst = instCache.get(symbol);
+                            IgniteCache<String, BinaryObject> binInstCache = ignite.cache("instCache").withKeepBinary();
 
-                            if (inst == null)
-                                inst = new Instrument(symbol);
+                            BinaryObject inst = binInstCache.get(symbol);
 
-                            // Don't populate market cache, as we don't use it for querying.
-                            // Update cached instrument based on the latest market tick.
-                            inst.update(tick);
+                            BinaryObjectBuilder instBuilder;
 
-                            instCache.put(symbol, inst);
+                            if (inst == null) {
+                                instBuilder = ignite.binary().builder("Instrument");
+
+                                // Constructor logic.
+                                instBuilder.setField(
+                                    "symbol",
+                                    symbol);
+                            }
+                            else
+                                instBuilder = inst.toBuilder();
+
+                            // Instrument.update() logic.
+                            Double open = instBuilder.<Double>getField("open");
+
+                            if (open == null || open == 0)
+                                instBuilder.setField("open", tick);
+
+                            instBuilder.setField("latest", tick);
+
+                            // Build instrument object.
+                            inst = instBuilder.build();
+
+                            binInstCache.put(symbol, inst);
                         }
                     });
 
@@ -119,6 +143,11 @@ public class StreamVisitorExample {
 
                 // Print top 10 words.
                 ExamplesUtils.printQueryResults(top3);
+            }
+            finally {
+                // Distributed cache could be removed from cluster only by #destroyCache() call.
+                ignite.destroyCache(CACHE_NAME);
+                ignite.destroyCache(MARKET_TICKS_CACHE_NAME);
             }
         }
     }

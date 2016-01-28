@@ -27,6 +27,7 @@ import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.GridDirectCollection;
+import org.apache.ignite.internal.GridDirectMap;
 import org.apache.ignite.internal.GridDirectTransient;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
@@ -34,9 +35,13 @@ import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxKey;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
+import org.apache.ignite.internal.util.UUIDCollectionMessage;
 import org.apache.ignite.internal.util.tostring.GridToStringBuilder;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
+import org.apache.ignite.internal.util.typedef.C1;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
@@ -51,6 +56,23 @@ import org.jetbrains.annotations.Nullable;
 public class GridDistributedTxPrepareRequest extends GridDistributedBaseMessage {
     /** */
     private static final long serialVersionUID = 0L;
+
+    /** Version in which direct marshalling of tx nodes was introduced. */
+    public static final IgniteProductVersion TX_NODES_DIRECT_MARSHALLABLE_SINCE = IgniteProductVersion.fromString("1.5.0");
+
+    /** Collection to message converter. */
+    public static final C1<Collection<UUID>, UUIDCollectionMessage> COL_TO_MSG = new C1<Collection<UUID>, UUIDCollectionMessage>() {
+        @Override public UUIDCollectionMessage apply(Collection<UUID> uuids) {
+            return new UUIDCollectionMessage(uuids);
+        }
+    };
+
+    /** Message to collection converter. */
+    public static final C1<UUIDCollectionMessage, Collection<UUID>> MSG_TO_COL = new C1<UUIDCollectionMessage, Collection<UUID>>() {
+        @Override public Collection<UUID> apply(UUIDCollectionMessage msg) {
+            return msg.uuids();
+        }
+    };
 
     /** Thread ID. */
     @GridToStringInclude
@@ -105,6 +127,10 @@ public class GridDistributedTxPrepareRequest extends GridDistributedBaseMessage 
     /** Transaction nodes mapping (primary node -> related backup nodes). */
     @GridDirectTransient
     private Map<UUID, Collection<UUID>> txNodes;
+
+    /** Tx nodes direct marshallable message. */
+    @GridDirectMap(keyType = UUID.class, valueType = UUIDCollectionMessage.class)
+    private Map<UUID, UUIDCollectionMessage> txNodesMsg;
 
     /** */
     private byte[] txNodesBytes;
@@ -291,7 +317,7 @@ public class GridDistributedTxPrepareRequest extends GridDistributedBaseMessage 
         if (reads != null)
             marshalTx(reads, ctx);
 
-        if (dhtVers != null) {
+        if (dhtVers != null && dhtVerKeys == null) {
             for (IgniteTxKey key : dhtVers.keySet()) {
                 GridCacheContext cctx = ctx.cacheContext(key.cacheId());
 
@@ -302,8 +328,15 @@ public class GridDistributedTxPrepareRequest extends GridDistributedBaseMessage 
             dhtVerVals = dhtVers.values();
         }
 
-        if (txNodes != null)
-            txNodesBytes = ctx.marshaller().marshal(txNodes);
+        // Marshal txNodes only if there is a node in topology with an older version.
+        if (ctx.exchange().minimumNodeVersion(topologyVersion()).compareTo(TX_NODES_DIRECT_MARSHALLABLE_SINCE) < 0) {
+            if (txNodes != null && txNodesBytes == null)
+                txNodesBytes = ctx.marshaller().marshal(txNodes);
+        }
+        else {
+            if (txNodesMsg == null)
+                txNodesMsg = F.viewReadOnly(txNodes, COL_TO_MSG);
+        }
     }
 
     /** {@inheritDoc} */
@@ -334,7 +367,10 @@ public class GridDistributedTxPrepareRequest extends GridDistributedBaseMessage 
             }
         }
 
-        if (txNodesBytes != null)
+        if (txNodesMsg != null)
+            txNodes = F.viewReadOnly(txNodesMsg, MSG_TO_COL);
+
+        if (txNodesBytes != null && txNodes == null)
             txNodes = ctx.marshaller().unmarshal(txNodesBytes, ldr);
     }
 
@@ -431,18 +467,24 @@ public class GridDistributedTxPrepareRequest extends GridDistributedBaseMessage 
                 writer.incrementState();
 
             case 19:
-                if (!writer.writeInt("txSize", txSize))
+                if (!writer.writeMap("txNodesMsg", txNodesMsg, MessageCollectionItemType.UUID, MessageCollectionItemType.MSG))
                     return false;
 
                 writer.incrementState();
 
             case 20:
-                if (!writer.writeMessage("writeVer", writeVer))
+                if (!writer.writeInt("txSize", txSize))
                     return false;
 
                 writer.incrementState();
 
             case 21:
+                if (!writer.writeMessage("writeVer", writeVer))
+                    return false;
+
+                writer.incrementState();
+
+            case 22:
                 if (!writer.writeCollection("writes", writes, MessageCollectionItemType.MSG))
                     return false;
 
@@ -569,7 +611,7 @@ public class GridDistributedTxPrepareRequest extends GridDistributedBaseMessage 
                 reader.incrementState();
 
             case 19:
-                txSize = reader.readInt("txSize");
+                txNodesMsg = reader.readMap("txNodesMsg", MessageCollectionItemType.UUID, MessageCollectionItemType.MSG, false);
 
                 if (!reader.isLastRead())
                     return false;
@@ -577,7 +619,7 @@ public class GridDistributedTxPrepareRequest extends GridDistributedBaseMessage 
                 reader.incrementState();
 
             case 20:
-                writeVer = reader.readMessage("writeVer");
+                txSize = reader.readInt("txSize");
 
                 if (!reader.isLastRead())
                     return false;
@@ -585,6 +627,14 @@ public class GridDistributedTxPrepareRequest extends GridDistributedBaseMessage 
                 reader.incrementState();
 
             case 21:
+                writeVer = reader.readMessage("writeVer");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+            case 22:
                 writes = reader.readCollection("writes", MessageCollectionItemType.MSG);
 
                 if (!reader.isLastRead())
@@ -604,7 +654,7 @@ public class GridDistributedTxPrepareRequest extends GridDistributedBaseMessage 
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 22;
+        return 23;
     }
 
     /** {@inheritDoc} */

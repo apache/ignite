@@ -22,6 +22,7 @@ namespace Apache.Ignite.Core.Impl.Binary
     using System.Collections.Generic;
     using System.Diagnostics;
     using System.Diagnostics.CodeAnalysis;
+    using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Impl.Binary.IO;
     using Apache.Ignite.Core.Impl.Common;
 
@@ -68,7 +69,6 @@ namespace Apache.Ignite.Core.Impl.Binary
             {typeof (Guid?), BinaryUtils.TypeGuid},
             {typeof (ArrayList), BinaryUtils.TypeCollection},
             {typeof (Hashtable), BinaryUtils.TypeDictionary},
-            {typeof (DictionaryEntry), BinaryUtils.TypeMapEntry},
             {typeof (bool[]), BinaryUtils.TypeArrayBool},
             {typeof (byte[]), BinaryUtils.TypeArrayByte},
             {typeof (sbyte[]), BinaryUtils.TypeArrayByte},
@@ -161,12 +161,8 @@ namespace Apache.Ignite.Core.Impl.Binary
 
             // 13. Arbitrary dictionary.
             ReadHandlers[BinaryUtils.TypeDictionary] = new BinarySystemReader(ReadDictionary);
-
-            // 15. Map entry.
-            ReadHandlers[BinaryUtils.TypeMapEntry] = new BinarySystemReader(ReadMapEntry);
             
-            // 16. Enum.
-            ReadHandlers[BinaryUtils.TypeEnum] = new BinarySystemReader<int>(BinaryUtils.ReadEnum<int>);
+            // 14. Enum.
             ReadHandlers[BinaryUtils.TypeArrayEnum] = new BinarySystemReader(ReadEnumArray);
         }
 
@@ -212,12 +208,13 @@ namespace Apache.Ignite.Core.Impl.Binary
                 return WriteGuid;
             if (type == typeof (BinaryObject))
                 return WriteBinary;
+            if (type == typeof (BinaryEnum))
+                return WriteBinaryEnum;
             if (type == typeof (ArrayList))
                 return WriteArrayList;
             if (type == typeof(Hashtable))
                 return WriteHashtable;
-            if (type == typeof(DictionaryEntry))
-                return WriteMapEntry;
+
             if (type.IsArray)
             {
                 // We know how to write any array type.
@@ -257,11 +254,11 @@ namespace Apache.Ignite.Core.Impl.Binary
                 if (elemType == typeof(Guid?))
                     return WriteGuidArray;
                 // Enums.
-                if (elemType.IsEnum)
+                if (elemType.IsEnum || elemType == typeof(BinaryEnum))
                     return WriteEnumArray;
                 
                 // Object array.
-                if (elemType == typeof (object))
+                if (elemType == typeof (object) || elemType == typeof(IBinaryObject) || elemType == typeof(BinaryObject))
                     return WriteArray;
             }
 
@@ -329,13 +326,18 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// <summary>
         /// Reads an object of predefined type.
         /// </summary>
-        public static T ReadSystemType<T>(byte typeId, BinaryReader ctx)
+        public static bool TryReadSystemType<T>(byte typeId, BinaryReader ctx, out T res)
         {
             var handler = ReadHandlers[typeId];
 
-            Debug.Assert(handler != null, "Cannot find predefined read handler: " + typeId);
-            
-            return handler.Read<T>(ctx);
+            if (handler == null)
+            {
+                res = default(T);
+                return false;
+            }
+
+            res = handler.Read<T>(ctx);
+            return true;
         }
         
         /// <summary>
@@ -417,7 +419,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         {
             ctx.Stream.WriteByte(BinaryUtils.TypeArrayByte);
 
-            BinaryUtils.WriteByteArray((byte[])(Array)obj, ctx.Stream);
+            BinaryUtils.WriteByteArray((byte[]) obj, ctx.Stream);
         }
 
         /// <summary>
@@ -441,7 +443,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         {
             ctx.Stream.WriteByte(BinaryUtils.TypeArrayShort);
 
-            BinaryUtils.WriteShortArray((short[])(Array)obj, ctx.Stream);
+            BinaryUtils.WriteShortArray((short[]) obj, ctx.Stream);
         }
 
         /// <summary>
@@ -477,7 +479,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         {
             ctx.Stream.WriteByte(BinaryUtils.TypeArrayInt);
 
-            BinaryUtils.WriteIntArray((int[])(Array)obj, ctx.Stream);
+            BinaryUtils.WriteIntArray((int[]) obj, ctx.Stream);
         }
 
         /// <summary>
@@ -501,7 +503,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         {
             ctx.Stream.WriteByte(BinaryUtils.TypeArrayLong);
 
-            BinaryUtils.WriteLongArray((long[])(Array)obj, ctx.Stream);
+            BinaryUtils.WriteLongArray((long[]) obj, ctx.Stream);
         }
 
         /// <summary>
@@ -605,16 +607,6 @@ namespace Apache.Ignite.Core.Impl.Binary
         }
 
         /**
-         * <summary>Write map entry.</summary>
-         */
-        private static void WriteMapEntry(BinaryWriter ctx, object obj)
-        {
-            ctx.Stream.WriteByte(BinaryUtils.TypeMapEntry);
-
-            BinaryUtils.WriteMapEntry(ctx, (DictionaryEntry)obj);
-        }
-
-        /**
          * <summary>Write binary object.</summary>
          */
         private static void WriteBinary(BinaryWriter ctx, object obj)
@@ -629,9 +621,20 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// </summary>
         private static void WriteEnum(BinaryWriter ctx, object obj)
         {
+            ctx.WriteEnum(obj);
+        }
+
+        /// <summary>
+        /// Write enum.
+        /// </summary>
+        private static void WriteBinaryEnum(BinaryWriter ctx, object obj)
+        {
+            var binEnum = (BinaryEnum) obj;
+
             ctx.Stream.WriteByte(BinaryUtils.TypeEnum);
 
-            BinaryUtils.WriteEnum(ctx.Stream, (Enum)obj);
+            ctx.WriteInt(binEnum.TypeId);
+            ctx.WriteInt(binEnum.EnumValue);
         }
 
         /// <summary>
@@ -677,21 +680,6 @@ namespace Apache.Ignite.Core.Impl.Binary
         {
             return BinaryUtils.ReadDictionary(ctx, null);
         }
-
-        /**
-         * <summary>Read map entry.</summary>
-         */
-        private static object ReadMapEntry(BinaryReader ctx, Type type)
-        {
-            return BinaryUtils.ReadMapEntry(ctx);
-        }
-
-        /**
-         * <summary>Add element to array list.</summary>
-         * <param name="col">Array list.</param>
-         * <param name="elem">Element.</param>
-         */
-
 
         /**
          * <summary>Read delegate.</summary>
@@ -811,6 +799,7 @@ namespace Apache.Ignite.Core.Impl.Binary
             }
 
             /** <inheritdoc /> */
+            [SuppressMessage("Microsoft.Design", "CA1062:Validate arguments of public methods")]
             T2 IBinarySystemReader<T2>.Read(BinaryReader ctx)
             {
                 return _readDelegate2(ctx.Stream);

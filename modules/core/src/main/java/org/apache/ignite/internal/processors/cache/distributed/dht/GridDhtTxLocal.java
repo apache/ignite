@@ -22,7 +22,8 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Map;
 import java.util.UUID;
-import java.util.concurrent.atomic.AtomicReference;
+import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
+
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
@@ -83,10 +84,14 @@ public class GridDhtTxLocal extends GridDhtTxLocalAdapter implements GridCacheMa
     /** Near XID. */
     private GridCacheVersion nearXidVer;
 
+    /** Future updater. */
+    private static final AtomicReferenceFieldUpdater<GridDhtTxLocal, GridDhtTxPrepareFuture> PREP_FUT_UPD =
+        AtomicReferenceFieldUpdater.newUpdater(GridDhtTxLocal.class, GridDhtTxPrepareFuture.class, "prepFut");
+
     /** Future. */
+    @SuppressWarnings("UnusedDeclaration")
     @GridToStringExclude
-    private final AtomicReference<GridDhtTxPrepareFuture> prepFut =
-        new AtomicReference<>();
+    private volatile GridDhtTxPrepareFuture prepFut;
 
     /**
      * Empty constructor required for {@link Externalizable}.
@@ -223,11 +228,6 @@ public class GridDhtTxLocal extends GridDhtTxLocalAdapter implements GridCacheMa
     }
 
     /** {@inheritDoc} */
-    @Override protected IgniteUuid nearMiniId() {
-        return nearMiniId;
-    }
-
-    /** {@inheritDoc} */
     @Override public boolean dht() {
         return true;
     }
@@ -307,24 +307,22 @@ public class GridDhtTxLocal extends GridDhtTxLocalAdapter implements GridCacheMa
                 0,
                 nearMiniId,
                 null,
-                true,
-                null);
+                true);
         }
 
         // For pessimistic mode we don't distribute prepare request.
-        GridDhtTxPrepareFuture fut = prepFut.get();
+        GridDhtTxPrepareFuture fut = prepFut;
 
         if (fut == null) {
             // Future must be created before any exception can be thrown.
-            if (!prepFut.compareAndSet(null, fut = new GridDhtTxPrepareFuture(
+            if (!PREP_FUT_UPD.compareAndSet(this, null, fut = new GridDhtTxPrepareFuture(
                 cctx,
                 this,
                 nearMiniId,
                 Collections.<IgniteTxKey, GridCacheVersion>emptyMap(),
                 true,
-                needReturnValue(),
-                null)))
-                return prepFut.get();
+                needReturnValue())))
+                return prepFut;
         }
         else
             // Prepare was called explicitly.
@@ -378,7 +376,6 @@ public class GridDhtTxLocal extends GridDhtTxLocalAdapter implements GridCacheMa
      * @param nearMiniId Near mini future ID.
      * @param txNodes Transaction nodes mapping.
      * @param last {@code True} if this is last prepare request.
-     * @param lastBackups IDs of backup nodes receiving last prepare request.
      * @return Future that will be completed when locks are acquired.
      */
     public IgniteInternalFuture<GridNearTxPrepareResponse> prepareAsync(
@@ -388,25 +385,23 @@ public class GridDhtTxLocal extends GridDhtTxLocalAdapter implements GridCacheMa
         long msgId,
         IgniteUuid nearMiniId,
         Map<UUID, Collection<UUID>> txNodes,
-        boolean last,
-        Collection<UUID> lastBackups
+        boolean last
     ) {
         // In optimistic mode prepare still can be called explicitly from salvageTx.
-        GridDhtTxPrepareFuture fut = prepFut.get();
+        GridDhtTxPrepareFuture fut = prepFut;
 
         if (fut == null) {
             init();
 
             // Future must be created before any exception can be thrown.
-            if (!prepFut.compareAndSet(null, fut = new GridDhtTxPrepareFuture(
+            if (!PREP_FUT_UPD.compareAndSet(this, null, fut = new GridDhtTxPrepareFuture(
                 cctx,
                 this,
                 nearMiniId,
                 verMap,
                 last,
-                needReturnValue(),
-                lastBackups))) {
-                GridDhtTxPrepareFuture f = prepFut.get();
+                needReturnValue()))) {
+                GridDhtTxPrepareFuture f = prepFut;
 
                 assert f.nearMiniId().equals(nearMiniId) : "Wrong near mini id on existing future " +
                     "[futMiniId=" + f.nearMiniId() + ", miniId=" + nearMiniId + ", fut=" + f + ']';
@@ -426,6 +421,7 @@ public class GridDhtTxLocal extends GridDhtTxLocalAdapter implements GridCacheMa
             if (!state(PREPARING)) {
                 if (state() == PREPARED && isSystemInvalidate())
                     fut.complete();
+
                 if (setRollbackOnly()) {
                     if (timedOut())
                         fut.onError(new IgniteTxTimeoutCheckedException("Transaction timed out and was rolled back: " +
@@ -443,13 +439,15 @@ public class GridDhtTxLocal extends GridDhtTxLocalAdapter implements GridCacheMa
         }
 
         try {
-            if (reads != null)
+            if (reads != null) {
                 for (IgniteTxEntry e : reads)
                     addEntry(msgId, e);
+            }
 
-            if (writes != null)
+            if (writes != null) {
                 for (IgniteTxEntry e : writes)
                     addEntry(msgId, e);
+            }
 
             userPrepare();
 
@@ -498,9 +496,9 @@ public class GridDhtTxLocal extends GridDhtTxLocalAdapter implements GridCacheMa
 
         final GridDhtTxFinishFuture fut = new GridDhtTxFinishFuture<>(cctx, this, /*commit*/true);
 
-        cctx.mvcc().addFuture(fut);
+        cctx.mvcc().addFuture(fut, fut.futureId());
 
-        GridDhtTxPrepareFuture prep = prepFut.get();
+        GridDhtTxPrepareFuture prep = prepFut;
 
         if (prep != null) {
             if (prep.isDone()) {
@@ -579,16 +577,16 @@ public class GridDhtTxLocal extends GridDhtTxLocalAdapter implements GridCacheMa
     @Override protected void clearPrepareFuture(GridDhtTxPrepareFuture fut) {
         assert optimistic();
 
-        prepFut.compareAndSet(fut, null);
+        PREP_FUT_UPD.compareAndSet(this, fut, null);
     }
 
     /** {@inheritDoc} */
     @Override public IgniteInternalFuture<IgniteInternalTx> rollbackAsync() {
-        GridDhtTxPrepareFuture prepFut = this.prepFut.get();
+        GridDhtTxPrepareFuture prepFut = this.prepFut;
 
         final GridDhtTxFinishFuture fut = new GridDhtTxFinishFuture<>(cctx, this, /*rollback*/false);
 
-        cctx.mvcc().addFuture(fut);
+        cctx.mvcc().addFuture(fut, fut.futureId());
 
         if (prepFut == null) {
             try {
@@ -695,7 +693,7 @@ public class GridDhtTxLocal extends GridDhtTxLocalAdapter implements GridCacheMa
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
     @Nullable @Override public IgniteInternalFuture<?> currentPrepareFuture() {
-        return prepFut.get();
+        return prepFut;
     }
 
     /** {@inheritDoc} */

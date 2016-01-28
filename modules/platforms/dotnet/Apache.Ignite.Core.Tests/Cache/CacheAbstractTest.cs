@@ -347,17 +347,16 @@ namespace Apache.Ignite.Core.Tests.Cache
             for (int i = 0; i < GridCount(); i++)
             {
                 var cache = Cache(i);
+                var entries = cache.Select(pair => pair.ToString() + GetKeyAffinity(cache, pair.Key)).ToArray();
 
-                if (!cache.IsEmpty())
-                {
-                    var entries = Enumerable.Range(0, 2000)
-                        .Select(x => new KeyValuePair<int, int>(x, cache.LocalPeek(x)))
-                        .Where(x => x.Value != 0)
-                        .Select(pair => pair.ToString() + GetKeyAffinity(cache, pair.Key))
-                        .Aggregate((acc, val) => string.Format("{0}, {1}", acc, val));
+                if (entries.Any())
+                    Assert.Fail("Cache '{0}' is not empty in grid [{1}]: ({2})", CacheName(), i,
+                        entries.Aggregate((acc, val) => string.Format("{0}, {1}", acc, val)));
 
-                    Assert.Fail("Cache '{0}' is not empty in grid [{1}]: ({2})", CacheName(), i, entries);
-                }
+                var size = cache.GetSize();
+                Assert.AreEqual(0, size,
+                    "Cache enumerator returned no entries, but cache '{0}' size is {1} in grid [{2}]",
+                    CacheName(), size, i);
             }
 
             Console.WriteLine("Test finished: " + TestContext.CurrentContext.Test.Name);
@@ -936,6 +935,64 @@ namespace Apache.Ignite.Core.Tests.Cache
 
             cache0.RemoveAll(new List<int> { key0, key1 });
 
+            // Test regular expiration.
+            cache = cache0.WithExpiryPolicy(new ExpiryPolicy(TimeSpan.FromMilliseconds(100),
+                TimeSpan.FromMilliseconds(100), TimeSpan.FromMilliseconds(100)));
+
+            cache.Put(key0, key0);
+            cache.Put(key1, key1);
+            Assert.IsTrue(cache0.ContainsKey(key0));
+            Assert.IsTrue(cache0.ContainsKey(key1));
+            Thread.Sleep(200);
+            Assert.IsFalse(cache0.ContainsKey(key0));
+            Assert.IsFalse(cache0.ContainsKey(key1));
+
+            cache0.Put(key0, key0);
+            cache0.Put(key1, key1);
+            cache.Put(key0, key0 + 1);
+            cache.Put(key1, key1 + 1);
+            Assert.IsTrue(cache0.ContainsKey(key0));
+            Assert.IsTrue(cache0.ContainsKey(key1));
+            Thread.Sleep(200);
+            Assert.IsFalse(cache0.ContainsKey(key0));
+            Assert.IsFalse(cache0.ContainsKey(key1));
+
+            cache0.Put(key0, key0);
+            cache0.Put(key1, key1);
+            cache.Get(key0); 
+            cache.Get(key1);
+            Assert.IsTrue(cache0.ContainsKey(key0));
+            Assert.IsTrue(cache0.ContainsKey(key1));
+            Thread.Sleep(200);
+            Assert.IsFalse(cache0.ContainsKey(key0));
+            Assert.IsFalse(cache0.ContainsKey(key1));
+        }
+        
+        /// <summary>
+        /// Expiry policy tests for zero and negative expiry values.
+        /// </summary>
+        [Test]
+        [Ignore("IGNITE-1423")]
+        public void TestWithExpiryPolicyZeroNegative()
+        {
+            ICache<int, int> cache0 = Cache(0);
+            
+            int key0;
+            int key1;
+
+            if (LocalCache())
+            {
+                key0 = 0;
+                key1 = 1;
+            }
+            else
+            {
+                key0 = PrimaryKeyForCache(cache0);
+                key1 = PrimaryKeyForCache(Cache(1));
+            }
+
+            var cache = cache0.WithExpiryPolicy(new ExpiryPolicy(null, null, null));
+
             // Test zero expiration.
             cache = cache0.WithExpiryPolicy(new ExpiryPolicy(TimeSpan.Zero, TimeSpan.Zero, TimeSpan.Zero));
 
@@ -988,38 +1045,6 @@ namespace Apache.Ignite.Core.Tests.Cache
             Assert.IsFalse(cache0.ContainsKey(key1));
 
             cache0.RemoveAll(new List<int> { key0, key1 });
-
-            // Test regular expiration.
-            cache = cache0.WithExpiryPolicy(new ExpiryPolicy(TimeSpan.FromMilliseconds(100),
-                TimeSpan.FromMilliseconds(100), TimeSpan.FromMilliseconds(100)));
-
-            cache.Put(key0, key0);
-            cache.Put(key1, key1);
-            Assert.IsTrue(cache0.ContainsKey(key0));
-            Assert.IsTrue(cache0.ContainsKey(key1));
-            Thread.Sleep(200);
-            Assert.IsFalse(cache0.ContainsKey(key0));
-            Assert.IsFalse(cache0.ContainsKey(key1));
-
-            cache0.Put(key0, key0);
-            cache0.Put(key1, key1);
-            cache.Put(key0, key0 + 1);
-            cache.Put(key1, key1 + 1);
-            Assert.IsTrue(cache0.ContainsKey(key0));
-            Assert.IsTrue(cache0.ContainsKey(key1));
-            Thread.Sleep(200);
-            Assert.IsFalse(cache0.ContainsKey(key0));
-            Assert.IsFalse(cache0.ContainsKey(key1));
-
-            cache0.Put(key0, key0);
-            cache0.Put(key1, key1);
-            cache.Get(key0); 
-            cache.Get(key1);
-            Assert.IsTrue(cache0.ContainsKey(key0));
-            Assert.IsTrue(cache0.ContainsKey(key1));
-            Thread.Sleep(200);
-            Assert.IsFalse(cache0.ContainsKey(key0));
-            Assert.IsFalse(cache0.ContainsKey(key1));
         }
 
         [Test]
@@ -3075,6 +3100,27 @@ namespace Apache.Ignite.Core.Tests.Cache
 
             Assert.AreEqual(10, cache1.Get(1));
         }
+
+        [Test]
+        public void TestDestroy()
+        {
+            var cacheName = "template" + Guid.NewGuid();
+
+            var ignite = GetIgnite(0);
+
+            var cache = ignite.CreateCache<int, int>(cacheName);
+
+            Assert.IsNotNull(ignite.GetCache<int, int>(cacheName));
+
+            ignite.DestroyCache(cache.Name);
+
+            var ex = Assert.Throws<ArgumentException>(() => ignite.GetCache<int, int>(cacheName));
+
+            Assert.IsTrue(ex.Message.StartsWith("Cache doesn't exist"));
+
+            Assert.Throws<InvalidOperationException>(() => cache.Get(1));
+        }
+
 
         [Test]
         public void TestIndexer()

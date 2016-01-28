@@ -42,10 +42,15 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Queue;
 import java.util.Set;
 import java.util.Timer;
 import java.util.TimerTask;
+import java.util.UUID;
 import java.util.concurrent.Callable;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 import javax.cache.CacheException;
 import javax.cache.configuration.Factory;
@@ -81,13 +86,16 @@ import org.apache.ignite.internal.util.future.GridCompoundFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.lang.GridAbsClosure;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
+import org.apache.ignite.internal.util.lang.IgnitePair;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgnitePredicate;
+import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.spi.swapspace.inmemory.GridTestSwapSpaceSpi;
 import org.apache.ignite.ssl.SslContextFactory;
 import org.apache.ignite.testframework.config.GridTestProperties;
@@ -147,12 +155,64 @@ public final class GridTestUtils {
     /** */
     private static final GridBusyLock busyLock = new GridBusyLock();
 
+    /** */
+    public static final ConcurrentMap<IgnitePair<UUID>, IgnitePair<Queue<Message>>> msgMap = new ConcurrentHashMap<>();
+
     /**
      * Ensure singleton.
      */
     private GridTestUtils() {
         // No-op.
     }
+
+    /**
+     * @param from From node ID.
+     * @param to To node ID.
+     * @param msg Message.
+     * @param sent Sent or received.
+     */
+    public static void addMessage(UUID from, UUID to, Message msg, boolean sent) {
+        IgnitePair<UUID> key = F.pair(from, to);
+
+        IgnitePair<Queue<Message>> val = msgMap.get(key);
+
+        if (val == null) {
+            IgnitePair<Queue<Message>> old = msgMap.putIfAbsent(key,
+                val = F.<Queue<Message>>pair(new ConcurrentLinkedQueue<Message>(), new ConcurrentLinkedQueue<Message>()));
+
+            if (old != null)
+                val = old;
+        }
+
+        (sent ? val.get1() : val.get2()).add(msg);
+    }
+
+    /**
+     * Dumps all messages tracked with {@link #addMessage(UUID, UUID, Message, boolean)} to std out.
+     */
+    public static void dumpMessages() {
+        for (Map.Entry<IgnitePair<UUID>, IgnitePair<Queue<Message>>> entry : msgMap.entrySet()) {
+            U.debug("\n" + entry.getKey().get1() + " [sent to] " + entry.getKey().get2());
+
+            for (Message message : entry.getValue().get1())
+                U.debug("\t" + message);
+
+            U.debug(entry.getKey().get2() + " [received from] " + entry.getKey().get1());
+
+            for (Message message : entry.getValue().get2())
+                U.debug("\t" + message);
+        }
+    }
+
+//    static {
+//        new Thread(new Runnable() {
+//            @Override public void run() {
+//                JOptionPane.showMessageDialog(null, "Close this to dump messages.");
+//
+//                dumpMessages();
+//            }
+//        }).start();
+//    }
 
     /**
      * Checks whether callable throws expected exception or not.
@@ -527,6 +587,32 @@ public final class GridTestUtils {
     }
 
     /**
+     * @param call Closure that receives thread index.
+     * @param threadNum Number of threads.
+     * @param threadName Thread names.
+     * @return Execution time in milliseconds.
+     * @throws Exception If failed.
+     */
+    public static long runMultiThreaded(final IgniteInClosure<Integer> call, int threadNum, String threadName)
+        throws Exception {
+        List<Callable<?>> calls = new ArrayList<>(threadNum);
+
+        for (int i = 0; i < threadNum; i++) {
+            final int idx = i;
+
+            calls.add(new Callable<Void>() {
+                @Override public Void call() throws Exception {
+                    call.apply(idx);
+
+                    return null;
+                }
+            });
+        }
+
+        return runMultiThreaded(calls, threadName);
+    }
+
+    /**
      * Runs callable object in specified number of threads.
      *
      * @param call Callable.
@@ -562,10 +648,11 @@ public final class GridTestUtils {
         });
 
         // Compound future, that adds cancel() support to execution future.
-        GridCompoundFuture<Long, Long> compFut = new GridCompoundFuture<>();
+        GridCompoundFuture<Long, Long> compFut = new GridCompoundFuture<>(F.sumLongReducer());
 
-        compFut.addAll(cancelFut, runFut);
-        compFut.reducer(F.sumLongReducer());
+        compFut.add(cancelFut);
+        compFut.add(runFut);
+
         compFut.markInitialized();
 
         cancelFut.onDone();

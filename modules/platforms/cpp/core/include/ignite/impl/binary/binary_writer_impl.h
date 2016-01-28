@@ -601,7 +601,7 @@ namespace ignite
 
                         stream->WriteInt8(IGNITE_HDR_FULL);
                         stream->WriteInt8(IGNITE_PROTO_VER);
-                        stream->WriteInt16(IGNITE_BINARY_FLAG_USER_OBJECT);
+                        stream->WriteInt16(IGNITE_BINARY_FLAG_USER_TYPE);
                         stream->WriteInt32(idRslvr.GetTypeId());
                         stream->WriteInt32(type.GetHashCode(obj));
 

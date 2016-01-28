@@ -30,6 +30,7 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.internal.managers.communication.GridIoMessage;
+import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxPrepareRequest;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteInClosure;
@@ -66,9 +67,6 @@ public class CacheStopAndDestroySelfTest extends GridCommonAbstractTest {
 
     /** local cache name. */
     protected static String CACHE_NAME_LOC = "cache_local";
-
-    /** */
-    private static volatile boolean stop;
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
@@ -541,6 +539,8 @@ public class CacheStopAndDestroySelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testNearClose() throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-2189");
+
         IgniteCache<String, String> cache0 = grid(0).getOrCreateCache(getNearConfig());
 
         // GridDhtTxPrepareRequest requests to Client node will be counted.
@@ -673,6 +673,10 @@ public class CacheStopAndDestroySelfTest extends GridCommonAbstractTest {
         assertNull(grid(1).cache(CACHE_NAME_LOC));
 
         // Local creation after closed.
+
+        AffinityTopologyVersion topVer = grid(1).context().cache().context().exchange().lastTopologyFuture().get();
+
+        grid(0).context().cache().context().exchange().affinityReadyFuture(topVer).get();
 
         grid(0).getOrCreateCache(getLocalConfig());
 

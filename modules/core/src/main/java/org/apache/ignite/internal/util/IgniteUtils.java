@@ -173,6 +173,7 @@ import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.compute.ComputeTaskCancelledCheckedException;
 import org.apache.ignite.internal.compute.ComputeTaskTimeoutCheckedException;
 import org.apache.ignite.internal.events.DiscoveryCustomEvent;
+import org.apache.ignite.internal.managers.communication.GridIoManager;
 import org.apache.ignite.internal.managers.deployment.GridDeploymentInfo;
 import org.apache.ignite.internal.mxbean.IgniteStandardMXBean;
 import org.apache.ignite.internal.processors.cache.GridCacheAttributes;
@@ -2481,6 +2482,16 @@ public abstract class IgniteUtils {
     }
 
     /**
+     * Gets a hex string representation of the given long value.
+     *
+     * @param val Value to convert to string.
+     * @return Hex string.
+     */
+    public static String hexLong(long val) {
+        return new SB().appendHex(val).toString();
+    }
+
+    /**
      * Return byte value for certain character.
      *
      * @param ch Character
@@ -4242,11 +4253,11 @@ public abstract class IgniteUtils {
     /**
      * Mask component name to make sure that it is not {@code null}.
      *
-     * @param cacheName Component name to mask, possibly {@code null}.
+     * @param name Component name to mask, possibly {@code null}.
      * @return Component name.
      */
-    public static String maskName(@Nullable String cacheName) {
-        return cacheName == null ? "default" : cacheName;
+    public static String maskName(@Nullable String name) {
+        return name == null ? "default" : name;
     }
 
     /**
@@ -4980,6 +4991,31 @@ public abstract class IgniteUtils {
      */
     public static String readUTFStringNullable(DataInput in) throws IOException {
         return in.readBoolean() ? in.readUTF() : null;
+    }
+
+    /**
+     * Read hash map.
+     *
+     * @param in Input.
+     * @return Read map.
+     * @throws IOException If de-serialization failed.
+     * @throws ClassNotFoundException If deserialized class could not be found.
+     */
+    @SuppressWarnings({"unchecked"})
+    @Nullable public static <K, V> HashMap<K, V> readHashMap(ObjectInput in)
+        throws IOException, ClassNotFoundException {
+        int size = in.readInt();
+
+        // Check null flag.
+        if (size == -1)
+            return null;
+
+        HashMap<K, V> map = U.newHashMap(size);
+
+        for (int i = 0; i < size; i++)
+            map.put((K)in.readObject(), (V)in.readObject());
+
+        return map;
     }
 
     /**
@@ -7641,6 +7677,30 @@ public abstract class IgniteUtils {
     }
 
     /**
+     * Gets object field offset.
+     *
+     * @param cls Object class.
+     * @param fieldName Field name.
+     * @return Field offset.
+     */
+    public static long fieldOffset(Class<?> cls, String fieldName) {
+        try {
+            return UNSAFE.objectFieldOffset(cls.getDeclaredField(fieldName));
+        }
+        catch (NoSuchFieldException e) {
+            throw new IllegalStateException(e);
+        }
+    }
+
+    /**
+     * @param cls Class to check.
+     * @return {@code True} if class is final.
+     */
+    public static boolean isFinal(Class<?> cls) {
+        return Modifier.isFinal(cls.getModifiers());
+    }
+
+    /**
      * Gets field value.
      *
      * @param cls Class.
@@ -8174,15 +8234,15 @@ public abstract class IgniteUtils {
      * @return Hash value.
      */
     public static int hash(int h) {
-        // Apply base step of MurmurHash; see http://code.google.com/p/smhasher/
-        // Despite two multiplies, this is often faster than others
-        // with comparable bit-spread properties.
-        h ^= h >>> 16;
-        h *= 0x85ebca6b;
-        h ^= h >>> 13;
-        h *= 0xc2b2ae35;
+        // Spread bits to regularize both segment and index locations,
+        // using variant of single-word Wang/Jenkins hash.
+        h += (h <<  15) ^ 0xffffcd7d;
+        h ^= (h >>> 10);
+        h += (h <<   3);
+        h ^= (h >>>  6);
+        h += (h <<   2) + (h << 14);
 
-        return (h >>> 16) ^ h;
+        return h ^ (h >>> 16);
     }
 
     /**
@@ -9140,6 +9200,30 @@ public abstract class IgniteUtils {
     }
 
     /**
+     * @param cls The class to search.
+     * @param name Name of a field to get.
+     * @return Field or {@code null}.
+     */
+    @Nullable public static Field findNonPublicField(Class<?> cls, String name) {
+        while (cls != null) {
+            try {
+                Field fld = cls.getDeclaredField(name);
+
+                fld.setAccessible(true);
+
+                return fld;
+            }
+            catch (NoSuchFieldException e) {
+                // No-op.
+            }
+
+            cls = cls.getSuperclass();
+        }
+
+        return null;
+    }
+
+    /**
      * @param c Collection.
      * @param p Optional filters.
      * @return Resulting array list.
@@ -9239,6 +9323,9 @@ public abstract class IgniteUtils {
         assert buf != null;
         assert buf.hasArray();
 
+        if (writer != null)
+            writer.setCurrentWriteClass(msg.getClass());
+
         boolean finished = false;
         int cnt = 0;
 
@@ -9302,5 +9389,35 @@ public abstract class IgniteUtils {
 
             throw new IgniteInterruptedCheckedException(e);
         }
+    }
+
+    /**
+     * Defines which protocol version to use for
+     * communication with the provided node.
+     *
+     * @param ctx Context.
+     * @param nodeId Node ID.
+     * @return Protocol version.
+     * @throws IgniteCheckedException If node doesn't exist.
+     */
+    public static byte directProtocolVersion(GridKernalContext ctx, UUID nodeId) throws IgniteCheckedException {
+        assert nodeId != null;
+
+        ClusterNode node = ctx.discovery().node(nodeId);
+
+        if (node == null)
+            throw new IgniteCheckedException("Failed to define communication protocol version " +
+                "(has node left topology?): " + nodeId);
+
+        assert !node.isLocal();
+
+        Byte attr = node.attribute(GridIoManager.DIRECT_PROTO_VER_ATTR);
+
+        byte rmtProtoVer = attr != null ? attr : 1;
+
+        if (rmtProtoVer < GridIoManager.DIRECT_PROTO_VER)
+            return rmtProtoVer;
+        else
+            return GridIoManager.DIRECT_PROTO_VER;
     }
 }

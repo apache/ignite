@@ -25,8 +25,14 @@
         <property name="localHost" value="127.0.0.1"/>
         <property name="connectorConfiguration"><null/></property>
 
+        <property name="binaryConfiguration">
+            <bean class="org.apache.ignite.configuration.BinaryConfiguration">
+                <property name="compactFooter" value="false"/>
+            </bean>
+        </property>
+
         <property name="marshaller">
-            <bean class="org.apache.ignite.marshaller.portable.PortableMarshaller" />
+            <bean class="org.apache.ignite.internal.binary.BinaryMarshaller"/>
         </property>
 
         <property name="discoverySpi">

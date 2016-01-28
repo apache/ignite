@@ -382,8 +382,15 @@ public class IgniteApplicationMasterSelfTest extends TestCase {
             return 0;
         }
 
-        /** {@inheritDoc} */
-        @Override public void updateBlacklist(List blacklistAdditions, List blacklistRemovals) {
+        /**
+         * Update application's blacklist with addition or removal resources.
+         *
+         * @param blacklistAdditions list of resources which should be added to the
+         *        application blacklist
+         * @param blacklistRemovals list of resources which should be removed from the
+         *        application blacklist
+         */
+        public void updateBlacklist(List blacklistAdditions, List blacklistRemovals) {
             // No-op.
         }
     }

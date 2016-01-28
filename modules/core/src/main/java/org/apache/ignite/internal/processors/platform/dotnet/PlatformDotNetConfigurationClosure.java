@@ -19,13 +19,14 @@ package org.apache.ignite.internal.processors.platform.dotnet;
 
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.configuration.BinaryConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.PlatformConfiguration;
 import org.apache.ignite.internal.MarshallerContextImpl;
-import org.apache.ignite.internal.portable.GridPortableMarshaller;
-import org.apache.ignite.internal.portable.PortableContext;
-import org.apache.ignite.internal.portable.PortableMetaDataHandler;
-import org.apache.ignite.internal.portable.BinaryRawWriterEx;
+import org.apache.ignite.internal.binary.BinaryNoopMetadataHandler;
+import org.apache.ignite.internal.binary.BinaryRawWriterEx;
+import org.apache.ignite.internal.binary.GridBinaryMarshaller;
+import org.apache.ignite.internal.binary.BinaryContext;
 import org.apache.ignite.internal.processors.platform.PlatformAbstractConfigurationClosure;
 import org.apache.ignite.internal.processors.platform.lifecycle.PlatformLifecycleBean;
 import org.apache.ignite.internal.processors.platform.memory.PlatformInputStream;
@@ -35,12 +36,11 @@ import org.apache.ignite.internal.processors.platform.memory.PlatformOutputStrea
 import org.apache.ignite.internal.processors.platform.utils.PlatformUtils;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lifecycle.LifecycleBean;
+import org.apache.ignite.logger.NullLogger;
 import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.platform.dotnet.PlatformDotNetConfiguration;
-import org.apache.ignite.marshaller.portable.PortableMarshaller;
+import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.platform.dotnet.PlatformDotNetLifecycleBean;
-import org.apache.ignite.binary.BinaryObjectException;
-import org.apache.ignite.binary.BinaryType;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -94,14 +94,28 @@ public class PlatformDotNetConfigurationClosure extends PlatformAbstractConfigur
         Marshaller marsh = igniteCfg.getMarshaller();
 
         if (marsh == null) {
-            igniteCfg.setMarshaller(new PortableMarshaller());
+            igniteCfg.setMarshaller(new BinaryMarshaller());
 
             dotNetCfg0.warnings(Collections.singleton("Marshaller is automatically set to " +
-                PortableMarshaller.class.getName() + " (other nodes must have the same marshaller type)."));
+                BinaryMarshaller.class.getName() + " (other nodes must have the same marshaller type)."));
         }
-        else if (!(marsh instanceof PortableMarshaller))
-            throw new IgniteException("Unsupported marshaller (only " + PortableMarshaller.class.getName() +
+        else if (!(marsh instanceof BinaryMarshaller))
+            throw new IgniteException("Unsupported marshaller (only " + BinaryMarshaller.class.getName() +
                 " can be used when running Apache Ignite.NET): " + marsh.getClass().getName());
+
+        BinaryConfiguration bCfg = igniteCfg.getBinaryConfiguration();
+
+        if (bCfg == null) {
+            bCfg = new BinaryConfiguration();
+
+            bCfg.setCompactFooter(false);
+
+            igniteCfg.setBinaryConfiguration(bCfg);
+        }
+
+        if (bCfg.isCompactFooter())
+            throw new IgniteException("Unsupported " + BinaryMarshaller.class.getName() +
+                " \"compactFooter\" flag: must be false when running Apache Ignite.NET.");
 
         // Set Ignite home so that marshaller context works.
         String ggHome = igniteCfg.getIgniteHome();
@@ -221,31 +235,23 @@ public class PlatformDotNetConfigurationClosure extends PlatformAbstractConfigur
     }
 
     /**
-     * Create portable marshaller.
+     * Create binary marshaller.
      *
      * @return Marshaller.
      */
     @SuppressWarnings("deprecation")
-    private static GridPortableMarshaller marshaller() {
+    private static GridBinaryMarshaller marshaller() {
         try {
-            PortableContext ctx = new PortableContext(new PortableMetaDataHandler() {
-                @Override public void addMeta(int typeId, BinaryType meta)
-                    throws BinaryObjectException {
-                    // No-op.
-                }
+            BinaryContext ctx =
+                new BinaryContext(BinaryNoopMetadataHandler.instance(), new IgniteConfiguration(), new NullLogger());
 
-                @Override public BinaryType metadata(int typeId) throws BinaryObjectException {
-                    return null;
-                }
-            }, new IgniteConfiguration());
-
-            PortableMarshaller marsh = new PortableMarshaller();
+            BinaryMarshaller marsh = new BinaryMarshaller();
 
             marsh.setContext(new MarshallerContextImpl(null));
 
-            ctx.configure(marsh);
+            ctx.configure(marsh, new IgniteConfiguration());
 
-            return new GridPortableMarshaller(ctx);
+            return new GridBinaryMarshaller(ctx);
         }
         catch (IgniteCheckedException e) {
             throw U.convertException(e);

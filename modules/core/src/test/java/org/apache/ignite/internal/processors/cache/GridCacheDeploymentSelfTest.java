@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
@@ -26,6 +27,7 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DeploymentMode;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
+import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
@@ -207,7 +209,9 @@ public class GridCacheDeploymentSelfTest extends GridCommonAbstractTest {
             }
 
             assertEquals(0, g1.cache(null).localSize());
-            assertEquals(0, g2.cache(null).localSize());
+
+            assertEquals(g2.configuration().getMarshaller() instanceof BinaryMarshaller ? 1 : 0,
+                g2.cache(null).localSize());
 
             startGrid(3);
         }
@@ -219,6 +223,18 @@ public class GridCacheDeploymentSelfTest extends GridCommonAbstractTest {
     /** @throws Exception If failed. */
     @SuppressWarnings("unchecked")
     public void testDeployment4() throws Exception {
+        doDeployment4(false);
+    }
+
+    /** @throws Exception If failed. */
+    @SuppressWarnings("unchecked")
+    public void testDeployment4BackupLeavesGrid() throws Exception {
+        doDeployment4(true);
+    }
+
+    /** @throws Exception If failed. */
+    @SuppressWarnings("unchecked")
+    private void doDeployment4(boolean backupLeavesGrid) throws Exception {
         try {
             depMode = CONTINUOUS;
 
@@ -241,7 +257,8 @@ public class GridCacheDeploymentSelfTest extends GridCommonAbstractTest {
             for (int i = 0; i < 1000; i++) {
                 key = "1" + i;
 
-                if (g1.cluster().mapKeyToNode(null, key).id().equals(g2.cluster().localNode().id()))
+                if (g1.cluster().mapKeyToNode(null, key).id().equals(g2.cluster().localNode().id()) &&
+                    g1.affinity(null).isBackup((backupLeavesGrid ? g0 : g1).cluster().localNode(), key))
                     break;
             }
 
@@ -250,9 +267,7 @@ public class GridCacheDeploymentSelfTest extends GridCommonAbstractTest {
             stopGrid(GRID_NAME);
 
             assertEquals(1, g1.cache(null).localSize(CachePeekMode.ALL));
-            assertEquals(1, g1.cache(null).localSize(CachePeekMode.ALL));
 
-            assertEquals(1, g2.cache(null).localSize(CachePeekMode.ALL));
             assertEquals(1, g2.cache(null).localSize(CachePeekMode.ALL));
 
             startGrid(3);
@@ -292,7 +307,7 @@ public class GridCacheDeploymentSelfTest extends GridCommonAbstractTest {
 
             assert cache != null;
 
-            cache.put(key, Arrays.asList(val1Cls.newInstance()));
+            cache.put(key, new ArrayList<>(Arrays.asList(val1Cls.newInstance())));
 
             info(">>>>>>> First put completed.");
 

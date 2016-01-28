@@ -152,8 +152,6 @@ namespace Apache.Ignite.Core.Impl.Cache
         }
 
         /** <inheritDoc /> */
-
-        /** <inheritDoc /> */
         public bool IsEmpty()
         {
             return GetSize() == 0;
@@ -270,21 +268,10 @@ namespace Apache.Ignite.Core.Impl.Cache
             {
                 if (p != null)
                 {
-                    var p0 = new CacheEntryFilterHolder(p, (k, v) => p.Invoke(new CacheEntry<TK, TV>((TK)k, (TV)v)),
+                    var p0 = new CacheEntryFilterHolder(p, (k, v) => p.Invoke(new CacheEntry<TK, TV>((TK) k, (TV) v)),
                         Marshaller, IsKeepBinary);
 
-                    try
-                    {
-                        writer.WriteObject(p0);
-                    }
-                    catch (Exception)
-                    {
-                        writer.Marshaller.Ignite.HandleRegistry.Release(p0.Handle);
-
-                        throw;
-                    }
-
-                    writer.WriteLong(p0.Handle);
+                    writer.WriteObject(p0);
                 }
                 else
                     writer.WriteObject<CacheEntryFilterHolder>(null);
@@ -1013,36 +1000,46 @@ namespace Apache.Ignite.Core.Impl.Cache
         /// <summary>
         /// QueryContinuous implementation.
         /// </summary>
-        private IContinuousQueryHandle<ICacheEntry<TK, TV>> QueryContinuousImpl(ContinuousQuery<TK, TV> qry, 
+        private IContinuousQueryHandle<ICacheEntry<TK, TV>> QueryContinuousImpl(ContinuousQuery<TK, TV> qry,
             QueryBase initialQry)
         {
             qry.Validate();
 
             var hnd = new ContinuousQueryHandleImpl<TK, TV>(qry, Marshaller, _flagKeepBinary);
 
-            using (var stream = IgniteManager.Memory.Allocate().GetStream())
+            try
             {
-                var writer = Marshaller.StartMarshal(stream);
-
-                hnd.Start(_ignite, writer, () =>
+                using (var stream = IgniteManager.Memory.Allocate().GetStream())
                 {
-                    if (initialQry != null)
+                    var writer = Marshaller.StartMarshal(stream);
+
+                    hnd.Start(_ignite, writer, () =>
                     {
-                        writer.WriteInt((int) initialQry.OpId);
+                        if (initialQry != null)
+                        {
+                            writer.WriteInt((int) initialQry.OpId);
 
-                        initialQry.Write(writer, IsKeepBinary);
-                    }
-                    else
-                        writer.WriteInt(-1); // no initial query
+                            initialQry.Write(writer, IsKeepBinary);
+                        }
+                        else
+                            writer.WriteInt(-1); // no initial query
 
-                    FinishMarshal(writer);
+                        FinishMarshal(writer);
 
-                    // ReSharper disable once AccessToDisposedClosure
-                    return UU.CacheOutOpContinuousQuery(Target, (int)CacheOp.QryContinuous, stream.SynchronizeOutput());
-                }, qry);
+                        // ReSharper disable once AccessToDisposedClosure
+                        return UU.CacheOutOpContinuousQuery(Target, (int) CacheOp.QryContinuous,
+                            stream.SynchronizeOutput());
+                    }, qry);
+                }
+
+                return hnd;
             }
+            catch (Exception)
+            {
+                hnd.Dispose();
 
-            return hnd;
+                throw;
+            }
         }
 
         #endregion

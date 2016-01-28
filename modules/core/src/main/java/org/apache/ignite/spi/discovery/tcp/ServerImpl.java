@@ -56,6 +56,7 @@ import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 import javax.net.ssl.SSLException;
+import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
@@ -65,6 +66,7 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.IgniteFutureTimeoutCheckedException;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.IgniteNodeAttributes;
+import org.apache.ignite.internal.IgnitionEx;
 import org.apache.ignite.internal.events.DiscoveryCustomEvent;
 import org.apache.ignite.internal.processors.security.SecurityContext;
 import org.apache.ignite.internal.util.GridBoundedLinkedHashSet;
@@ -135,6 +137,7 @@ import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
 import static org.apache.ignite.events.EventType.EVT_NODE_METRICS_UPDATED;
 import static org.apache.ignite.events.EventType.EVT_NODE_SEGMENTED;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_MARSHALLER;
+import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_MARSHALLER_COMPACT_FOOTER;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_MARSHALLER_USE_DFLT_SUID;
 import static org.apache.ignite.spi.IgnitePortProtocol.TCP;
 import static org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoverySpiState.AUTH_FAILED;
@@ -1719,12 +1722,11 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                         if (res == null) {
                             try {
-                                res = pingNode(addr, null, null).get1() != null;
+                                res = pingNode(addr, null, null) != null;
                             }
                             catch (IgniteCheckedException e) {
                                 if (log.isDebugEnabled())
-                                    log.debug("Failed to ping node [addr=" + addr +
-                                        ", err=" + e.getMessage() + ']');
+                                    log.debug("Failed to ping node [addr=" + addr + ", err=" + e.getMessage() + ']');
 
                                 res = false;
                             }
@@ -2022,7 +2024,7 @@ class ServerImpl extends TcpDiscoveryImpl {
             private boolean skipMsg = discardId != null;
 
             /** Skip custom messages flag. */
-            private boolean skipCustomMsg;
+            private boolean skipCustomMsg = customDiscardId != null;
 
             /** Internal iterator. */
             private Iterator<TcpDiscoveryAbstractMessage> msgIt = msgs.iterator();
@@ -2150,6 +2152,41 @@ class ServerImpl extends TcpDiscoveryImpl {
             super("tcp-disco-msg-worker", 10);
 
             initConnectionCheckFrequency();
+        }
+
+        /** {@inheritDoc} */
+        @Override protected void body() throws InterruptedException {
+            try {
+                super.body();
+            }
+            catch (Throwable e) {
+                if (!spi.isNodeStopping0()) {
+                    final Ignite ignite = spi.ignite();
+
+                    if (ignite != null) {
+                        U.error(log, "TcpDiscoverSpi's message worker thread failed abnormally. " +
+                            "Stopping the node in order to prevent cluster wide instability.", e);
+
+                        new Thread(new Runnable() {
+                            @Override public void run() {
+                                try {
+                                    IgnitionEx.stop(ignite.name(), true, true);
+
+                                    U.log(log, "Stopped the node successfully in response to TcpDiscoverySpi's " +
+                                        "message worker thread abnormal termination.");
+                                }
+                                catch (Throwable e) {
+                                    U.error(log, "Failed to stop the node in response to TcpDiscoverySpi's " +
+                                        "message worker thread abnormal termination.", e);
+                                }
+                            }
+                        }, "node-stop-thread").start();
+                    }
+                }
+
+                // Must be processed by IgniteSpiThread as well.
+                throw e;
+            }
         }
 
         /**
@@ -2314,7 +2351,7 @@ class ServerImpl extends TcpDiscoveryImpl {
 
             assert ring.hasRemoteNodes();
 
-            for (IgniteInClosure<TcpDiscoveryAbstractMessage> msgLsnr : spi.sendMsgLsnrs)
+            for (IgniteInClosure<TcpDiscoveryAbstractMessage> msgLsnr : spi.sndMsgLsnrs)
                 msgLsnr.apply(msg);
 
             sendMessageToClients(msg);
@@ -3160,14 +3197,60 @@ class ServerImpl extends TcpDiscoveryImpl {
                             " property value differs from remote node's value " +
                             "(to make sure all nodes in topology have identical marshaller settings, " +
                             "configure system property explicitly) " +
-                            "[locMarshUseDfltSuid=" + locMarshUseDfltSuid +
-                            ", rmtMarshUseDfltSuid=" + rmtMarshUseDfltSuid +
+                            "[locMarshUseDfltSuid=" + rmtMarshUseDfltSuid +
+                            ", rmtMarshUseDfltSuid=" + locMarshUseDfltSuid +
                             ", locNodeAddrs=" + U.addressesAsString(node) + ", locPort=" + node.discoveryPort() +
                             ", rmtNodeAddr=" + U.addressesAsString(locNode) + ", locNodeId=" + node.id() +
                             ", rmtNodeId=" + locNode.id() + ']';
 
                         trySendMessageDirectly(node,
                             new TcpDiscoveryCheckFailedMessage(locNodeId, sndMsg));
+                    }
+                    catch (IgniteSpiException e) {
+                        if (log.isDebugEnabled())
+                            log.debug("Failed to send marshaller check failed message to node " +
+                                "[node=" + node + ", err=" + e.getMessage() + ']');
+
+                        onException("Failed to send marshaller check failed message to node " +
+                            "[node=" + node + ", err=" + e.getMessage() + ']', e);
+                    }
+
+                    // Ignore join request.
+                    return;
+                }
+
+                // Validate compact footer flags.
+                Boolean locMarshCompactFooter = locNode.attribute(ATTR_MARSHALLER_COMPACT_FOOTER);
+                boolean locMarshCompactFooterBool = locMarshCompactFooter != null ? locMarshCompactFooter : false;
+
+                Boolean rmtMarshCompactFooter = node.attribute(ATTR_MARSHALLER_COMPACT_FOOTER);
+                boolean rmtMarshCompactFooterBool = rmtMarshCompactFooter != null ? rmtMarshCompactFooter : false;
+
+                if (locMarshCompactFooterBool != rmtMarshCompactFooterBool) {
+                    String errMsg = "Local node's binary marshaller \"compactFooter\" property differs from " +
+                        "the same property on remote node (make sure all nodes in topology have the same value " +
+                        "of \"compactFooter\" property) [locMarshallerCompactFooter=" + locMarshCompactFooterBool +
+                        ", rmtMarshallerCompactFooter=" + rmtMarshCompactFooterBool +
+                        ", locNodeAddrs=" + U.addressesAsString(locNode) +
+                        ", rmtNodeAddrs=" + U.addressesAsString(node) +
+                        ", locNodeId=" + locNode.id() + ", rmtNodeId=" + msg.creatorNodeId() + ']';
+
+                    LT.warn(log, null, errMsg);
+
+                    // Always output in debug.
+                    if (log.isDebugEnabled())
+                        log.debug(errMsg);
+
+                    try {
+                        String sndMsg = "Local node's binary marshaller \"compactFooter\" property differs from " +
+                            "the same property on remote node (make sure all nodes in topology have the same value " +
+                            "of \"compactFooter\" property) [locMarshallerCompactFooter=" + rmtMarshCompactFooterBool +
+                            ", rmtMarshallerCompactFooter=" + locMarshCompactFooterBool +
+                            ", locNodeAddrs=" + U.addressesAsString(node) + ", locPort=" + node.discoveryPort() +
+                            ", rmtNodeAddr=" + U.addressesAsString(locNode) + ", locNodeId=" + node.id() +
+                            ", rmtNodeId=" + locNode.id() + ']';
+
+                        trySendMessageDirectly(node, new TcpDiscoveryCheckFailedMessage(locNodeId, sndMsg));
                     }
                     catch (IgniteSpiException e) {
                         if (log.isDebugEnabled())
@@ -3987,7 +4070,7 @@ class ServerImpl extends TcpDiscoveryImpl {
             }
 
             if (node != null) {
-                assert !node.isLocal() : msg;
+                assert !node.isLocal() || !msg.verified() : msg;
 
                 synchronized (mux) {
                     failedNodes.add(node);
@@ -4765,7 +4848,7 @@ class ServerImpl extends TcpDiscoveryImpl {
             for (port = spi.locPort; port < spi.locPort + spi.locPortRange; port++) {
                 try {
                     if (spi.isSslEnabled())
-                        srvrSock = spi.sslSrvSocketFactory.createServerSocket(port, 0, spi.locHost);
+                        srvrSock = spi.sslSrvSockFactory.createServerSocket(port, 0, spi.locHost);
                     else
                         srvrSock = new ServerSocket(port, 0, spi.locHost);
 

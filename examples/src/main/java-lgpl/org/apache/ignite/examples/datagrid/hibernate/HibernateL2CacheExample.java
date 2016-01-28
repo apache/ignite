@@ -92,6 +92,13 @@ public class HibernateL2CacheExample {
     private static final List<String> ENTITY_NAMES =
         Arrays.asList(User.class.getName(), Post.class.getName(), User.class.getName() + ".posts");
 
+    /** Caches' names. */
+    private static final String UPDATE_TIMESTAMPS_CACHE_NAME = "org.hibernate.cache.spi.UpdateTimestampsCache";
+    private static final String STANDART_QUERY_CACHE_NAME = "org.hibernate.cache.internal.StandardQueryCache";
+    private static final String USER_CACHE_NAME = "org.apache.ignite.examples.datagrid.hibernate.User";
+    private static final String USER_POSTS_CACHE_NAME = "org.apache.ignite.examples.datagrid.hibernate.User.posts";
+    private static final String POST_CACHE_NAME = "org.apache.ignite.examples.datagrid.hibernate.Post";
+
     /**
      * Executes example.
      *
@@ -107,13 +114,14 @@ public class HibernateL2CacheExample {
             System.out.println();
             System.out.println(">>> Hibernate L2 cache example started.");
 
+            // Auto-close cache at the end of the example.
             try (
                 // Create all required caches.
-                IgniteCache c1 = createCache("org.hibernate.cache.spi.UpdateTimestampsCache", ATOMIC);
-                IgniteCache c2 = createCache("org.hibernate.cache.internal.StandardQueryCache", ATOMIC);
-                IgniteCache c3 = createCache("org.apache.ignite.examples.datagrid.hibernate.User", TRANSACTIONAL);
-                IgniteCache c4 = createCache("org.apache.ignite.examples.datagrid.hibernate.User.posts", TRANSACTIONAL);
-                IgniteCache c5 = createCache("org.apache.ignite.examples.datagrid.hibernate.Post", TRANSACTIONAL)
+                IgniteCache c1 = createCache(UPDATE_TIMESTAMPS_CACHE_NAME, ATOMIC);
+                IgniteCache c2 = createCache(STANDART_QUERY_CACHE_NAME, ATOMIC);
+                IgniteCache c3 = createCache(USER_CACHE_NAME, TRANSACTIONAL);
+                IgniteCache c4 = createCache(USER_POSTS_CACHE_NAME, TRANSACTIONAL);
+                IgniteCache c5 = createCache(POST_CACHE_NAME, TRANSACTIONAL)
             ) {
                 URL hibernateCfg = ExamplesUtils.url(HIBERNATE_CFG);
 
@@ -182,6 +190,14 @@ public class HibernateL2CacheExample {
                 // The Post is loaded with the collection, so it won't imply
                 // a miss.
                 printStats(sesFactory);
+            }
+            finally {
+                // Distributed cache could be removed from cluster only by #destroyCache() call.
+                ignite.destroyCache(UPDATE_TIMESTAMPS_CACHE_NAME);
+                ignite.destroyCache(STANDART_QUERY_CACHE_NAME);
+                ignite.destroyCache(USER_CACHE_NAME);
+                ignite.destroyCache(USER_POSTS_CACHE_NAME);
+                ignite.destroyCache(POST_CACHE_NAME);
             }
         }
     }

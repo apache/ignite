@@ -134,8 +134,9 @@ namespace Apache.Ignite.Core.Impl.Events
         {
             AsyncInstance.RemoteQuery(filter, timeout, types);
 
-            return GetFuture((futId, futTyp) => UU.TargetListenFutureForOperation(AsyncInstance.Target, futId, futTyp,
-                (int) Op.RemoteQuery), convertFunc: ReadEvents<T>).Task;
+            // ReSharper disable once RedundantTypeArgumentsOfMethod (won't compile in VS2010)
+            return GetFuture<ICollection<T>>((futId, futTyp) => UU.TargetListenFutureForOperation(AsyncInstance.Target, 
+                futId, futTyp, (int) Op.RemoteQuery), convertFunc: ReadEvents<T>).Task;
         }
 
         /** <inheritDoc /> */
@@ -251,7 +252,8 @@ namespace Apache.Ignite.Core.Impl.Events
             {
                 AsyncInstance.WaitForLocal0(filter, ref hnd, types);
 
-                var fut = GetFuture((futId, futTyp) => UU.TargetListenFutureForOperation(AsyncInstance.Target, futId,
+                // ReSharper disable once RedundantTypeArgumentsOfMethod (won't compile in VS2010)
+                var fut = GetFuture<T>((futId, futTyp) => UU.TargetListenFutureForOperation(AsyncInstance.Target, futId,
                     futTyp, (int) Op.WaitForLocal), convertFunc: reader => (T) EventReader.Read<IEvent>(reader));
 
                 if (filter != null)

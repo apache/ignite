@@ -33,7 +33,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.regex.Pattern;
-import org.apache.ignite.schema.model.IndexItem;
+
+import org.apache.ignite.cache.QueryIndex;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.schema.model.PojoDescriptor;
 import org.apache.ignite.schema.model.PojoField;
 import org.apache.ignite.schema.ui.ConfirmCallable;
@@ -53,11 +55,9 @@ public class CodeGenerator {
     private static final String TAB2 = TAB + TAB;
     /** */
     private static final String TAB3 = TAB + TAB + TAB;
-    /** */
-    private static final String TAB4 = TAB + TAB + TAB + TAB;
 
     /** Java key words. */
-    private static final Set<String> javaKeywords = new HashSet<>(Arrays.asList(
+    private static final Set<String> JAVA_KEYWORDS = new HashSet<>(Arrays.asList(
         "abstract",     "assert",        "boolean",      "break",           "byte",
         "case",         "catch",         "char",         "class",           "const",
         "continue",     "default",       "do",           "double",          "else",
@@ -70,6 +70,12 @@ public class CodeGenerator {
         "throw",        "throws",        "transient",    "true",            "try",
         "void",         "volatile",      "while"
     ));
+
+    /** java.lang.* */
+    private static final String JAVA_LANG_PKG = "java.lang.";
+
+    /** java.util.* */
+    private static final String JAVA_UTIL_PKG = "java.util.";
 
     /** Regexp to validate java identifier. */
     private static final Pattern VALID_JAVA_IDENTIFIER =
@@ -98,7 +104,7 @@ public class CodeGenerator {
             if (part.isEmpty())
                 throw new IllegalStateException(msg + " could not has empty parts!");
 
-            if (javaKeywords.contains(part))
+            if (JAVA_KEYWORDS.contains(part))
                 throw new IllegalStateException(msg + " could not contains reserved keyword:" +
                     " [type = " + type + ", identifier=" + identifier + ", keyword=" + part + "]");
 
@@ -157,16 +163,6 @@ public class CodeGenerator {
      */
     private static void add3(Collection<String> src, String line) {
         src.add(TAB3 + line);
-    }
-
-    /**
-     * Add line to source code with four indents.
-     *
-     * @param src Source code.
-     * @param line Code line.
-     */
-    private static void add4(Collection<String> src, String line) {
-        src.add(TAB4 + line);
     }
 
     /**
@@ -278,10 +274,14 @@ public class CodeGenerator {
         boolean constructor, boolean includeKeys, ConfirmCallable askOverwrite) throws IOException {
         String type = key ? pojo.keyClassName() : pojo.valueClassName();
 
-        File out = new File(pkgFolder, type + ".java");
-
         checkValidJavaIdentifier(pkg, true, "Package", type);
+
         checkValidJavaIdentifier(type, false, "Type", type);
+
+        if (!pkgFolder.exists() && !pkgFolder.mkdirs())
+            throw new IOException("Failed to create folders for package: " + pkg);
+
+        File out = new File(pkgFolder, type + ".java");
 
         if (out.exists()) {
             MessageBox.Result choice = askOverwrite.confirm(out.getName());
@@ -529,9 +529,6 @@ public class CodeGenerator {
         boolean includeKeys, ConfirmCallable askOverwrite) throws IOException {
         File pkgFolder = new File(outFolder, pkg.replace('.', File.separatorChar));
 
-        if (!pkgFolder.exists() && !pkgFolder.mkdirs())
-            throw new IOException("Failed to create folders for package: " + pkg);
-
         generateCode(pojo, true, pkg, pkgFolder, constructor, false, askOverwrite);
 
         generateCode(pojo, false, pkg, pkgFolder, constructor, includeKeys, askOverwrite);
@@ -548,43 +545,14 @@ public class CodeGenerator {
         for (PojoField field : fields) {
             String javaTypeName = field.javaTypeName();
 
-            if (javaTypeName.startsWith("java.lang."))
-                javaTypeName = javaTypeName.substring(10);
+            if (javaTypeName.startsWith(JAVA_LANG_PKG))
+                javaTypeName = javaTypeName.substring(JAVA_LANG_PKG.length());
+            else if (javaTypeName.startsWith(JAVA_UTIL_PKG))
+                javaTypeName = javaTypeName.substring(JAVA_UTIL_PKG.length());
 
-            add2(src, owner + ".add(new CacheTypeFieldMetadata(\"" + field.dbName() + "\", " +
-                "Types." + field.dbTypeName() + ", \"" +
-                field.javaName() + "\", " + javaTypeName + ".class));");
+            add2(src, owner + ".add(new JdbcTypeField(Types." + field.dbTypeName() + ", \"" + field.dbName() + "\", " +
+                javaTypeName + ".class, \"" + field.javaName() + "\"));");
         }
-    }
-
-    /**
-     * Add query fields.
-     *
-     * @param src Source code lines.
-     * @param fields List of fields to add.
-     * @param varName Variable name to generate.
-     * @param mtdName Method name to generate.
-     * @param comment Commentary text.
-     * @param first {@code true} if variable should be declared.
-     * @return {@code false} if variable was declared.
-     */
-    private static boolean addQueryFields(Collection<String> src, Collection<PojoField> fields, String varName,
-        String mtdName, String comment, boolean first) {
-        if (fields.isEmpty())
-            return first;
-
-        add2(src, comment);
-        add2(src, (first ? "Map<String, Class<?>> " : "") + varName + " = new LinkedHashMap<>();");
-        add0(src, "");
-
-        for (PojoField field : fields)
-            add2(src, varName + ".put(\"" + field.javaName() + "\", " + javaTypeName(field) + ".class);");
-
-        add0(src, "");
-        add2(src, "type." + mtdName + "(" + varName + ");");
-        add0(src, "");
-
-        return false;
     }
 
     /**
@@ -615,122 +583,182 @@ public class CodeGenerator {
 
         Collection<String> src = new ArrayList<>(256);
 
-        header(src, pkg, "org.apache.ignite.cache.*;org.apache.ignite.cache.store.*;" +
-                "org.apache.ignite.configuration.*;org.apache.ignite.lang.*;;" +
-                "javax.cache.configuration.*;java.sql.*;java.util.*",
+        header(src, pkg, "java.sql.*;java.util.*;" +
+            "org.apache.ignite.cache.*;org.apache.ignite.cache.store.jdbc.*;" +
+            "org.apache.ignite.configuration.*",
             "CacheConfig", "CacheConfig");
 
+        // Generate methods for each type in order to avoid compiler error "java: code too large".
+        for (PojoDescriptor pojo : pojos) {
+            String tbl = pojo.table();
+            String valClsName = pojo.valueClassName();
+
+            add1(src, "/**");
+            add1(src, " * Create JDBC type for " + tbl + ".");
+            add1(src, " *");
+            add1(src, " * @param cacheName Cache name.");
+            add1(src, " * @return Configured JDBC type.");
+            add1(src, " */");
+            add1(src, "private static JdbcType jdbcType" + valClsName + "(String cacheName) {");
+
+            add2(src, "JdbcType jdbcType = new JdbcType();");
+            add0(src, "");
+
+            add2(src, "jdbcType.setCacheName(cacheName);");
+
+            // Database schema.
+            if (pojo.schema() != null)
+                add2(src, "jdbcType.setDatabaseSchema(\"" + pojo.schema() + "\");");
+
+            // Database table.
+            add2(src, "jdbcType.setDatabaseTable(\"" + tbl + "\");");
+
+            // Java info.
+            add2(src, "jdbcType.setKeyType(\"" + pkg + "." + pojo.keyClassName() + "\");");
+            add2(src, "jdbcType.setValueType(\"" + pkg + "." + valClsName + "\");");
+            add0(src, "");
+
+            // Key fields.
+            add2(src, "// Key fields for " + tbl + ".");
+            add2(src, "Collection<JdbcTypeField> keys = new ArrayList<>();");
+            addFields(src, "keys", pojo.keyFields());
+            add2(src, "jdbcType.setKeyFields(keys.toArray(new JdbcTypeField[keys.size()]));");
+            add0(src, "");
+
+            // Value fields.
+            add2(src, "// Value fields for " + tbl + ".");
+            add2(src, "Collection<JdbcTypeField> vals = new ArrayList<>();");
+            addFields(src, "vals", pojo.valueFields(includeKeys));
+            add2(src, "jdbcType.setValueFields(vals.toArray(new JdbcTypeField[vals.size()]));");
+            add0(src, "");
+            add2(src, "return jdbcType;");
+            add1(src, "}");
+            add0(src, "");
+
+            add1(src, "/**");
+            add1(src, " * Create SQL Query descriptor for " + tbl + ".");
+            add1(src, " *");
+            add1(src, " * @return Configured query entity.");
+            add1(src, " */");
+            add1(src, "private static QueryEntity queryEntity" + valClsName + "() {");
+
+            // Query entity.
+            add2(src, "QueryEntity qryEntity = new QueryEntity();");
+            add0(src, "");
+            add2(src, "qryEntity.setKeyType(\"" + pkg + "." + pojo.keyClassName() + "\");");
+            add2(src, "qryEntity.setValueType(\"" + pkg + "." + valClsName + "\");");
+
+            add0(src, "");
+
+            // Query fields.
+            add2(src, "// Query fields for " + tbl + ".");
+            add2(src, "LinkedHashMap<String, String> fields = new LinkedHashMap<>();");
+            add0(src, "");
+
+            for (PojoField field : pojo.fields())
+                add2(src, "fields.put(\"" + field.javaName() + "\", \"" + javaTypeName(field) + "\");");
+
+            add0(src, "");
+            add2(src, "qryEntity.setFields(fields);");
+            add0(src, "");
+
+            // Indexes.
+            Collection<QueryIndex> idxs = pojo.indexes();
+
+            if (!idxs.isEmpty()) {
+                add2(src, "// Indexes for " + tbl + ".");
+                add2(src, "Collection<QueryIndex> idxs = new ArrayList<>();");
+                add0(src, "");
+
+                boolean firstIdx = true;
+
+                for (QueryIndex idx : idxs) {
+                    if (idx.getFields().size() == 1) {
+                        Map.Entry<String, Boolean> fld = F.first(idx.getFields().entrySet());
+
+                        add2(src, "idxs.add(new QueryIndex(\"" + fld.getKey() + "\", " + fld.getValue() + ", \"" +
+                            idx.getName() + "\"));");
+                        add0(src, "");
+                    }
+                    else {
+                        add2(src, (firstIdx ? "QueryIndex " : "") + "idx = new QueryIndex();");
+                        add0(src, "");
+
+                        add2(src, "idx.setName(\"" + idx.getName() + "\");");
+                        add0(src, "");
+
+                        add2(src, (firstIdx ? "LinkedHashMap<String, Boolean> " : "") +
+                            "idxFlds = new LinkedHashMap<>();");
+                        add0(src, "");
+
+                        for (Map.Entry<String, Boolean> idxFld : idx.getFields().entrySet())
+                            add2(src, "idxFlds.put(\"" + idxFld.getKey() + "\", " + idxFld.getValue() + ");");
+
+                        add0(src, "");
+
+                        add2(src, "idx.setFields(idxFlds);");
+                        add0(src, "");
+
+                        add2(src, "idxs.add(idx);");
+                        add0(src, "");
+
+                        firstIdx = false;
+                    }
+                }
+
+                add2(src, "qryEntity.setIndexes(idxs);");
+                add0(src, "");
+            }
+
+            add2(src, "return qryEntity;");
+
+            add1(src, "}");
+            add0(src, "");
+        }
+
         add1(src, "/**");
-        add1(src, "* Configure cache.");
-        add1(src, "*");
-        add1(src, "* @param name Cache name.");
-        add1(src, "* @param storeFactory Cache store factory.");
-        add1(src, "*/");
-        add1(src, "public static <K, V> CacheConfiguration<K, V> cache(String name," +
-            " Factory<CacheStore<K, V>> storeFactory) {");
+        add1(src, " * Configure cache.");
+        add1(src, " *");
+        add1(src, " * @param cacheName Cache name.");
+        add1(src, " * @param storeFactory Cache store factory.");
+        add1(src, " * @return Cache configuration.");
+        add1(src, " */");
+        add1(src, "public static <K, V> CacheConfiguration<K, V> cache(String cacheName," +
+            " CacheJdbcPojoStoreFactory<K, V> storeFactory) {");
         add2(src, "if (storeFactory == null)");
         add3(src, " throw new IllegalArgumentException(\"Cache store factory cannot be null.\");");
         add0(src, "");
-        add2(src, "CacheConfiguration<K, V> ccfg = new CacheConfiguration<>(name);");
+        add2(src, "CacheConfiguration<K, V> ccfg = new CacheConfiguration<>(cacheName);");
         add0(src, "");
         add2(src, "ccfg.setCacheStoreFactory(storeFactory);");
         add2(src, "ccfg.setReadThrough(true);");
         add2(src, "ccfg.setWriteThrough(true);");
         add0(src, "");
 
-        add2(src, "// Configure cache types. ");
-        add2(src, "Collection<CacheTypeMetadata> meta = new ArrayList<>();");
+        add2(src, "// Configure JDBC types. ");
+        add2(src, "Collection<JdbcType> jdbcTypes = new ArrayList<>();");
         add0(src, "");
 
-        boolean first = true;
-        boolean firstAsc = true;
-        boolean firstDesc = true;
-        boolean firstGrps = true;
-        boolean firstGrp = true;
+        for (PojoDescriptor pojo : pojos)
+            add2(src, "jdbcTypes.add(jdbcType" + pojo.valueClassName() + "(cacheName));");
 
-        for (PojoDescriptor pojo : pojos) {
-            String tbl = pojo.table();
+        add0(src, "");
 
-            add2(src, "// " + tbl + ".");
-            add2(src, (first ? "CacheTypeMetadata " : "") + "type = new CacheTypeMetadata();");
-            add0(src, "");
-            add2(src, "meta.add(type);");
-            add0(src, "");
+        add2(src, "storeFactory.setTypes(jdbcTypes.toArray(new JdbcType[jdbcTypes.size()]));");
+        add0(src, "");
 
-            // Database info.
-            add2(src, "type.setDatabaseSchema(\"" + pojo.schema() + "\");");
-            add2(src, "type.setDatabaseTable(\"" + tbl + "\");");
 
-            // Java info.
-            add2(src, "type.setKeyType(" + pojo.keyClassName() + ".class.getName());");
-            add2(src, "type.setValueType(" + pojo.valueClassName() + ".class.getName());");
-            add0(src, "");
+        add2(src, "// Configure query entities. ");
+        add2(src, "Collection<QueryEntity> qryEntities = new ArrayList<>();");
+        add0(src, "");
 
-            // Key fields.
-            add2(src, "// Key fields for " + tbl + ".");
-            add2(src, (first ? "Collection<CacheTypeFieldMetadata> " : "") + "keys = new ArrayList<>();");
-            addFields(src, "keys", pojo.keyFields());
-            add2(src, "type.setKeyFields(keys);");
-            add0(src, "");
+        for (PojoDescriptor pojo : pojos)
+            add2(src, "qryEntities.add(queryEntity" + pojo.valueClassName() + "());");
 
-            // Value fields.
-            add2(src, "// Value fields for " + tbl + ".");
-            add2(src, (first ? "Collection<CacheTypeFieldMetadata> " : "") + "vals = new ArrayList<>();");
-            addFields(src, "vals", pojo.valueFields(includeKeys));
-            add2(src, "type.setValueFields(vals);");
-            add0(src, "");
+        add0(src, "");
 
-            // Query fields.
-            addQueryFields(src, pojo.fields(), "qryFlds", "setQueryFields", "// Query fields for " + tbl + ".", first);
-
-            // Ascending fields.
-            firstAsc = addQueryFields(src, pojo.ascendingFields(), "ascFlds", "setAscendingFields",
-                "// Ascending fields for " + tbl + ".", firstAsc);
-
-            // Descending fields.
-            firstDesc = addQueryFields(src, pojo.descendingFields(), "descFlds", "setDescendingFields",
-                "// Descending fields for " + tbl + ".", firstDesc);
-
-            // Groups.
-            Map<String, Map<String, IndexItem>> groups = pojo.groups();
-
-            if (!groups.isEmpty()) {
-                add2(src, "// Groups for " + tbl + ".");
-                add2(src, (firstGrps ? "Map<String, LinkedHashMap<String, IgniteBiTuple<Class<?>, Boolean>>> " : "") +
-                    "grps = new LinkedHashMap<>();");
-                add0(src, "");
-
-                firstGrps = false;
-
-                for (Map.Entry<String, Map<String, IndexItem>> group : groups.entrySet()) {
-                    add2(src, (firstGrp ? "LinkedHashMap<String, IgniteBiTuple<Class<?>, Boolean>> " : "") +
-                        "grpItems = new LinkedHashMap<>();");
-                    add0(src, "");
-
-                    for (Map.Entry<String, IndexItem> grpItem : group.getValue().entrySet()) {
-                        IndexItem idxCol = grpItem.getValue();
-
-                        add2(src, "grpItems.put(\"" + grpItem.getKey() + "\", " +
-                            "new IgniteBiTuple<Class<?>, Boolean>(" + javaTypeName(idxCol.type()) + ".class, " +
-                            idxCol.descending() + "));");
-                    }
-
-                    add0(src, "");
-                    add2(src, "grps.put(\"" + group.getKey() + "\", grpItems);");
-                    add0(src, "");
-
-                    firstGrp = false;
-                }
-
-                add2(src, "type.setGroups(grps);");
-                add0(src, "");
-            }
-
-            add2(src, "ccfg.setTypeMetadata(meta);");
-            add0(src, "");
-
-            first = false;
-        }
+        add2(src, "ccfg.setQueryEntities(qryEntities);");
+        add0(src, "");
 
         add2(src, "return ccfg;");
         add1(src, "}");

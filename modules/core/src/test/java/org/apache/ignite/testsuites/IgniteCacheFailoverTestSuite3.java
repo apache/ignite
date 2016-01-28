@@ -18,11 +18,10 @@
 package org.apache.ignite.testsuites;
 
 import junit.framework.TestSuite;
+import org.apache.ignite.internal.processors.cache.distributed.CacheGetInsideLockChangingTopologyTest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.IgniteCachePutRetryAtomicSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.IgniteCachePutRetryTransactionalSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.IgniteCachePutRetryAtomicPrimaryWriteOrderSelfTest;
-import org.apache.ignite.internal.util.IgniteUtils;
-import org.apache.ignite.spi.communication.tcp.IgniteCacheSslStartStopSelfTest;
 
 /**
  * Test suite.
@@ -38,10 +37,7 @@ public class IgniteCacheFailoverTestSuite3 extends TestSuite {
         suite.addTestSuite(IgniteCachePutRetryAtomicSelfTest.class);
         suite.addTestSuite(IgniteCachePutRetryAtomicPrimaryWriteOrderSelfTest.class);
         suite.addTestSuite(IgniteCachePutRetryTransactionalSelfTest.class);
-
-        // Disable SSL test with old JDK because of https://bugs.openjdk.java.net/browse/JDK-8013809.
-        if (!IgniteUtils.isHotSpot() || IgniteUtils.isJavaVersionAtLeast("1.7.0_65"))
-            suite.addTestSuite(IgniteCacheSslStartStopSelfTest.class);
+        suite.addTestSuite(CacheGetInsideLockChangingTopologyTest.class);
 
         return suite;
     }

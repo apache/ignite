@@ -31,24 +31,24 @@
     </parent>
 
     <artifactId>ignite-yarn</artifactId>
-    <version>1.5.0-SNAPSHOT</version>
+    <version>1.6.0-SNAPSHOT</version>
     <url>http://ignite.apache.org</url>
 
     <properties>
-        <hadoop.version>2.7.0</hadoop.version>
+        <hadoop-yarn.version>2.7.0</hadoop-yarn.version>
     </properties>
 
     <dependencies>
         <dependency>
             <groupId>org.apache.hadoop</groupId>
             <artifactId>hadoop-yarn-client</artifactId>
-            <version>${hadoop.version}</version>
+            <version>${hadoop-yarn.version}</version>
         </dependency>
 
         <dependency>
             <groupId>org.apache.hadoop</groupId>
             <artifactId>hadoop-common</artifactId>
-            <version>${hadoop.version}</version>
+            <version>${hadoop-yarn.version}</version>
         </dependency>
 
         <dependency>

@@ -44,27 +44,32 @@ public class NoOpBinary implements IgniteBinary {
     }
 
     /** {@inheritDoc} */
-    @Override public BinaryObjectBuilder builder(BinaryObject portableObj) throws BinaryObjectException {
+    @Override public BinaryObjectBuilder builder(BinaryObject binaryObj) throws BinaryObjectException {
         throw unsupported();
     }
 
     /** {@inheritDoc} */
-    @Override public BinaryType metadata(Class<?> cls) throws BinaryObjectException {
+    @Override public BinaryType type(Class<?> cls) throws BinaryObjectException {
         throw unsupported();
     }
 
     /** {@inheritDoc} */
-    @Override public BinaryType metadata(String typeName) throws BinaryObjectException {
+    @Override public BinaryType type(String typeName) throws BinaryObjectException {
         throw unsupported();
     }
 
     /** {@inheritDoc} */
-    @Override public BinaryType metadata(int typeId) throws BinaryObjectException {
+    @Override public BinaryType type(int typeId) throws BinaryObjectException {
         throw unsupported();
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<BinaryType> metadata() throws BinaryObjectException {
+    @Override public Collection<BinaryType> types() throws BinaryObjectException {
+        throw unsupported();
+    }
+
+    /** {@inheritDoc} */
+    @Override public BinaryObject buildEnum(String typeName, int ord) {
         throw unsupported();
     }
 

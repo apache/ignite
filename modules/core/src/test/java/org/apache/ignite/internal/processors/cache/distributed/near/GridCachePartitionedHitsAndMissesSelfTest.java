@@ -121,8 +121,8 @@ public class GridCachePartitionedHitsAndMissesSelfTest extends GridCommonAbstrac
             }
 
             // Check that invoke and loader updated metrics
-            assertEquals(CNT, hits);
-            assertEquals(CNT, misses);
+            assertEquals(CNT / 2, hits);
+            assertEquals(CNT / 2, misses);
         }
         finally {
             stopAllGrids();

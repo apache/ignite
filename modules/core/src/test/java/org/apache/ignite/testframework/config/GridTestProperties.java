@@ -73,6 +73,12 @@ public final class GridTestProperties {
     public static final String MARSH_CLASS_NAME = "marshaller.class";
 
     /** */
+    public static final String ENTRY_PROCESSOR_CLASS_NAME = "entry.processor.class";
+
+    /** Binary marshaller compact footers property. */
+    public static final String BINARY_COMPACT_FOOTERS = "binary.marshaller.compact.footers";
+
+    /** */
     static {
         // Initialize IGNITE_HOME system property.
         String igniteHome = System.getProperty("IGNITE_HOME");

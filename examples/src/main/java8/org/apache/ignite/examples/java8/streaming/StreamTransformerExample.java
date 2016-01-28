@@ -46,6 +46,9 @@ public class StreamTransformerExample {
     /** Range within which to generate numbers. */
     private static final int RANGE = 1000;
 
+    /** Cache name. */
+    private static final String CACHE_NAME = "randomNumbers";
+
     public static void main(String[] args) throws Exception {
         // Mark this cluster member as client.
         Ignition.setClientMode(true);
@@ -54,7 +57,7 @@ public class StreamTransformerExample {
             if (!ExamplesUtils.hasServerNodes(ignite))
                 return;
 
-            CacheConfiguration<Integer, Long> cfg = new CacheConfiguration<>("randomNumbers");
+            CacheConfiguration<Integer, Long> cfg = new CacheConfiguration<>(CACHE_NAME);
 
             // Index key and value.
             cfg.setIndexedTypes(Integer.class, Long.class);
@@ -95,6 +98,10 @@ public class StreamTransformerExample {
 
                 // Print top 10 words.
                 ExamplesUtils.printQueryResults(top10);
+            }
+            finally {
+                // Distributed cache could be removed from cluster only by #destroyCache() call.
+                ignite.destroyCache(CACHE_NAME);
             }
         }
     }

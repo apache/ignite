@@ -32,7 +32,7 @@
 
     <groupId>org.apache.ignite</groupId>
     <artifactId>apache-ignite</artifactId>
-    <version>1.5.0-SNAPSHOT</version>
+    <version>1.6.0-SNAPSHOT</version>
     <packaging>pom</packaging>
 
     <properties>
@@ -73,10 +73,18 @@
         <module>modules/cloud</module>
         <module>modules/mesos</module>
         <module>modules/kafka</module>
+        <module>modules/flume</module>
         <module>modules/yarn</module>
         <module>modules/jms11</module>
+        <module>modules/twitter</module>
         <module>modules/mqtt</module>
         <module>modules/zookeeper</module>
+        <module>modules/camel</module>
+        <module>modules/storm</module>
+        <module>modules/osgi-paxlogging</module>
+        <module>modules/osgi-karaf</module>
+        <module>modules/osgi</module>
+		<module>modules/benchmarks</module>
     </modules>
 
     <profiles>
@@ -470,25 +478,28 @@
                 <plugins>
                     <plugin>
                         <artifactId>maven-assembly-plugin</artifactId>
-                        <dependencies>
-                            <dependency>
-                                <groupId>org.apache.apache.resources</groupId>
-                                <artifactId>apache-source-release-assembly-descriptor</artifactId>
-                                <version>1.0.4</version>
-                            </dependency>
-                        </dependencies>
                         <executions>
                             <execution>
+                                <!-- skip default -->
                                 <id>source-release-assembly</id>
+                                <goals>
+                                    <goal>single</goal>
+                                </goals>
+                                <configuration>
+                                    <skipAssembly>true</skipAssembly>
+                                </configuration>
+                            </execution>
+                            <execution>
+                                <id>source-release-assembly-ignite</id>
                                 <phase>package</phase>
                                 <goals>
                                     <goal>single</goal>
                                 </goals>
                                 <configuration>
                                     <runOnlyAtExecutionRoot>true</runOnlyAtExecutionRoot>
-                                    <descriptorRefs>
-                                        <descriptorRef>${sourceReleaseAssemblyDescriptor}</descriptorRef>
-                                    </descriptorRefs>
+                                    <descriptors>
+                                        <descriptor>assembly/release-sources.xml</descriptor>
+                                    </descriptors>
                                     <tarLongFileMode>gnu</tarLongFileMode>
                                     <finalName>${project.artifactId}-${project.version}-src</finalName>
                                     <appendAssemblyId>false</appendAssemblyId>
@@ -771,20 +782,28 @@
                                     <target>
                                         <script language="javascript">
                                             function setClientVersion(ggVer, clientVer) {
-                                            var p = project.getProperty(ggVer);
+                                                var p = project.getProperty(ggVer);
 
-                                            if (java.util.regex.Pattern.matches(".*-p\\d+", p))
-                                            project.setProperty(clientVer, p.replace("-p", "."));
-                                            else
-                                            if (java.util.regex.Pattern.matches(".*-[a-zA-Z]+\\d+.*", p))
-                                            project.setProperty(clientVer, p.replaceAll("-[a-zA-Z]+(\\d+)?.*", ".$1"));
-                                            else
-                                            project.setProperty(clientVer, p);
+                                                var digitVer = /\d+\.\d+\.\d+/.exec(p);
+
+                                                if (digitVer != null)
+                                                {
+                                                    // Date of the last major release
+                                                    var startDate = new Date(2015,1,1);
+
+                                                    // Number of hours since the last major release
+                                                    var buildNum = Math.round((new Date() - startDate)/(3600*1000));
+                                                    var ver = digitVer[0] + "." + buildNum;
+
+                                                    project.setProperty(clientVer, ver);
+                                                }
+                                                else
+                                                    project.setProperty(clientVer, p);
                                             }
 
                                             function fix(dest, source) {
-                                            project.setProperty(dest, project.getProperty(source).replace("-SNAPSHOT",
-                                            ""));
+                                                project.setProperty(dest, project.getProperty(source).replace("-SNAPSHOT",
+                                                ""));
                                             }
 
                                             fix('ignite.version.fixed', 'project.version');
@@ -797,8 +816,17 @@
                                         <echo message="${new.client.version}" />
 
                                         <replaceregexp byline="true" encoding="UTF-8">
-                                            <regexp pattern="(\[assembly:\s*Assembly\w*Version\w*\(&quot;)\d.\d.\d(.\d)?(&quot;\)\])" />
+                                            <regexp pattern="(\[assembly:\s*Assembly\w*Version\w*\(&quot;)\d+\.\d+\.\d+(\.\d+)?(&quot;\)\])" />
                                             <substitution expression="\1${new.client.version}\3" />
+                                            <fileset dir="${basedir}/">
+                                                <include name="**/AssemblyInfo.cs" />
+                                                <include name="**/AssemblyInfo.cpp" />
+                                            </fileset>
+                                        </replaceregexp>
+
+                                        <replaceregexp byline="true" encoding="UTF-8">
+                                            <regexp pattern="(\[assembly:\s*AssemblyInformationalVersion\w*\(&quot;).*?(&quot;\)\])" />
+                                            <substitution expression="\1${new.ignite.version.fixed}\2" />
                                             <fileset dir="${basedir}/">
                                                 <include name="**/AssemblyInfo.cs" />
                                                 <include name="**/AssemblyInfo.cpp" />
@@ -807,15 +835,15 @@
 
                                         <echo message="Update ignite.version in cpp client" />
                                         <replaceregexp byline="true" encoding="UTF-8">
-                                            <regexp pattern="(AC_INIT.+\[)\d.\d.\d(.\d)?(\].+)" />
-                                            <substitution expression="\1${new.client.version}\3" />
+                                            <regexp pattern="(AC_INIT.+\[)\d+\.\d+\.\d+.*?(\].+)" />
+                                            <substitution expression="\1${new.client.version}\2" />
                                             <fileset dir="${basedir}/">
                                                 <include name="**/configure.ac" />
                                             </fileset>
                                         </replaceregexp>
 
                                         <replaceregexp byline="true" encoding="UTF-8">
-                                            <regexp pattern="(define GG_VERSION_STR_WIN &quot;)\d.\d.\d(.\d)?(&quot;)" />
+                                            <regexp pattern="(define GG_VERSION_STR_WIN &quot;)\d+\.\d+\.\d+(\.\d+)?(&quot;)" />
                                             <substitution expression="\1${new.client.version}\3" />
                                             <fileset dir="${basedir}/">
                                                 <include name="**/resource.h" />
@@ -823,7 +851,7 @@
                                         </replaceregexp>
 
                                         <replaceregexp byline="true" encoding="UTF-16">
-                                            <regexp pattern="(Version&quot;, &quot;)\d.\d.\d.\d(&quot;)" />
+                                            <regexp pattern="(Version&quot;, &quot;)\d+\.\d+\.\d+\.\d+(&quot;)" />
                                             <substitution expression="\1${new.client.version}\2" />
                                             <fileset dir="${basedir}/">
                                                 <include name="**/Resource.rc" />

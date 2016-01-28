@@ -18,6 +18,7 @@
 namespace Apache.Ignite.Core.Impl
 {
     using System;
+    using System.Diagnostics.CodeAnalysis;
     using System.Runtime.Serialization.Formatters.Binary;
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Impl.Binary;
@@ -29,7 +30,7 @@ namespace Apache.Ignite.Core.Impl
     internal class InteropExceptionHolder : IBinarizable
     {
         /** Initial exception. */
-        private Exception _err;
+        private readonly Exception _err;
 
         /// <summary>
         /// Constructor.
@@ -57,6 +58,7 @@ namespace Apache.Ignite.Core.Impl
         }
 
         /** <inheritDoc /> */
+        [SuppressMessage("Microsoft.Design", "CA1062:Validate arguments of public methods")]
         public void WriteBinary(IBinaryWriter writer)
         {
             var writer0 = (BinaryWriter) writer.GetRawWriter();
@@ -70,9 +72,10 @@ namespace Apache.Ignite.Core.Impl
             {
                 writer0.WriteBoolean(false);
 
-                BinaryFormatter bf = new BinaryFormatter();
-
-                bf.Serialize(new BinaryStreamAdapter(writer0.Stream), _err);
+                using (var streamAdapter = new BinaryStreamAdapter(writer0.Stream))
+                {
+                    new BinaryFormatter().Serialize(streamAdapter, _err);
+                }
             }
         }
 

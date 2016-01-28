@@ -56,7 +56,7 @@ namespace Apache.Ignite.Core.Cluster
         /// </summary>
         /// <param name="name">Attribute name.</param>
         /// <param name="attr">Attribute value.</param>
-        /// <returns><code>true</code> in case such attribute exists.</returns>
+        /// <returns><c>true</c> in case such attribute exists.</returns>
         bool TryGetAttribute<T>(string name, out T attr);
 
         /// <summary>
@@ -125,8 +125,8 @@ namespace Apache.Ignite.Core.Cluster
         /// an idea about CPU load on remote node via <see cref="IClusterMetrics.CurrentCpuLoad"/>.
         /// <para/>
         /// Node metrics are updated with some delay which is directly related to heartbeat
-        /// frequency. For example, when used with default <code>GridTcpDiscoverySpi</code> the 
-        /// update will happen every <code>2</code> seconds.
+        /// frequency. For example, when used with default <c>GridTcpDiscoverySpi</c> the 
+        /// update will happen every <c>2</c> seconds.
         /// </summary>
         /// <returns>Runtime metrics snapshot for this node.</returns>
         [SuppressMessage("Microsoft.Design", "CA1024:UsePropertiesWhereAppropriate", Justification = "Semantics.")]

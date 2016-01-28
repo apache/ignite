@@ -19,14 +19,12 @@ package org.apache.ignite.internal.processors.cache.distributed;
 
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.List;
 import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.GridDirectCollection;
 import org.apache.ignite.internal.GridDirectTransient;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
-import org.apache.ignite.internal.processors.cache.GridCacheMvccCandidate;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
@@ -253,7 +251,7 @@ public class GridDistributedLockRequest extends GridDistributedBaseMessage {
     }
 
     /**
-     * @return Keep portable.
+     * @return Keep binary.
      */
     public boolean keepBinary() {
         return (flags & KEEP_BINARY_FLAG_MASK) != 0;
@@ -278,22 +276,18 @@ public class GridDistributedLockRequest extends GridDistributedBaseMessage {
      *
      * @param key Key.
      * @param retVal Flag indicating whether value should be returned.
-     * @param cands Candidates.
      * @param ctx Context.
      * @throws IgniteCheckedException If failed.
      */
     public void addKeyBytes(
         KeyCacheObject key,
         boolean retVal,
-        @Nullable Collection<GridCacheMvccCandidate> cands,
         GridCacheContext ctx
     ) throws IgniteCheckedException {
         if (keys == null)
             keys = new ArrayList<>(keysCount());
 
         keys.add(key);
-
-        candidatesByIndex(idx, cands);
 
         retVals[idx] = retVal;
 

@@ -2832,6 +2832,8 @@ public class CacheSerializableTransactionsTest extends GridCommonAbstractTest {
     public void testRandomOperations() throws Exception {
         Ignite ignite0 = ignite(0);
 
+        long stopTime = U.currentTimeMillis() + getTestTimeout() - 30_000;
+
         for (CacheConfiguration<Integer, Integer> ccfg : cacheConfigurations()) {
             logCacheInfo(ccfg);
 
@@ -2869,6 +2871,9 @@ public class CacheSerializableTransactionsTest extends GridCommonAbstractTest {
 
                             tx.commit();
                         }
+
+                        if (i % 100 == 0 && U.currentTimeMillis() > stopTime)
+                            break;
                     }
 
                     for (int key = 0; key < KEYS; key++) {
@@ -2877,6 +2882,9 @@ public class CacheSerializableTransactionsTest extends GridCommonAbstractTest {
                         for (int node = 1; node < SRVS + CLIENTS; node++)
                             assertEquals(val, ignite(node).cache(cache.getName()).get(key));
                     }
+
+                    if (U.currentTimeMillis() > stopTime)
+                        break;
                 }
             }
             finally {
@@ -2981,6 +2989,8 @@ public class CacheSerializableTransactionsTest extends GridCommonAbstractTest {
 
             IgniteInternalFuture<?> restartFut = restart ? restartFuture(stop, null) : null;
 
+            final long stopTime = U.currentTimeMillis() + getTestTimeout() - 30_000;
+
             for (int i = 0; i < 30; i++) {
                 final AtomicInteger cntr = new AtomicInteger();
 
@@ -3007,6 +3017,9 @@ public class CacheSerializableTransactionsTest extends GridCommonAbstractTest {
                         barrier.await();
 
                         for (int i = 0; i < 1000; i++) {
+                            if (i % 100 == 0 && U.currentTimeMillis() > stopTime)
+                                break;
+
                             try {
                                 try (Transaction tx = txs.txStart(OPTIMISTIC, SERIALIZABLE)) {
                                     Integer val = cache.get(key);
@@ -3036,6 +3049,9 @@ public class CacheSerializableTransactionsTest extends GridCommonAbstractTest {
                 assertTrue(cntr.get() > 0);
 
                 checkValue(key, cntr.get(), cacheName, restart);
+
+                if (U.currentTimeMillis() > stopTime)
+                    break;
             }
 
             stop.set(true);

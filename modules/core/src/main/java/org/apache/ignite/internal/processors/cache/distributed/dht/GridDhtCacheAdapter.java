@@ -23,7 +23,6 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
@@ -57,9 +56,12 @@ import org.apache.ignite.internal.processors.cache.distributed.GridDistributedCa
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedCacheEntry;
 import org.apache.ignite.internal.processors.cache.distributed.dht.colocated.GridDhtDetachedCacheEntry;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPreloader;
+import org.apache.ignite.internal.processors.cache.distributed.near.CacheVersionedValue;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearCacheAdapter;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearGetRequest;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearGetResponse;
+import org.apache.ignite.internal.processors.cache.distributed.near.GridNearSingleGetRequest;
+import org.apache.ignite.internal.processors.cache.distributed.near.GridNearSingleGetResponse;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.platform.cache.PlatformCacheEntryFilter;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
@@ -76,6 +78,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteUuid;
+import org.apache.ignite.plugin.extensions.communication.Message;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.jsr166.ConcurrentHashMap8;
@@ -110,6 +113,47 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
     }
 
     /**
+     * @param nodeId Sender node ID.
+     * @param res Near get response.
+     */
+    protected final void processNearGetResponse(UUID nodeId, GridNearGetResponse res) {
+        if (log.isDebugEnabled())
+            log.debug("Processing near get response [nodeId=" + nodeId + ", res=" + res + ']');
+
+        CacheGetFuture fut = (CacheGetFuture)ctx.mvcc().future(res.futureId());
+
+        if (fut == null) {
+            if (log.isDebugEnabled())
+                log.debug("Failed to find future for get response [sender=" + nodeId + ", res=" + res + ']');
+
+            return;
+        }
+
+        fut.onResult(nodeId, res);
+    }
+
+    /**
+     * @param nodeId Sender node ID.
+     * @param res Near get response.
+     */
+    protected void processNearSingleGetResponse(UUID nodeId, GridNearSingleGetResponse res) {
+        if (log.isDebugEnabled())
+            log.debug("Processing near get response [nodeId=" + nodeId + ", res=" + res + ']');
+
+        GridPartitionedSingleGetFuture fut = (GridPartitionedSingleGetFuture)ctx.mvcc()
+            .future(new IgniteUuid(IgniteUuid.VM_ID, res.futureId()));
+
+        if (fut == null) {
+            if (log.isDebugEnabled())
+                log.debug("Failed to find future for get response [sender=" + nodeId + ", res=" + res + ']');
+
+            return;
+        }
+
+        fut.onResult(nodeId, res);
+    }
+
+    /**
      * @param ctx Context.
      */
     protected GridDhtCacheAdapter(GridCacheContext<K, V> ctx) {
@@ -134,18 +178,17 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
     @Override protected void init() {
         map.setEntryFactory(new GridCacheMapEntryFactory() {
             /** {@inheritDoc} */
-            @Override public GridCacheMapEntry create(GridCacheContext ctx,
+            @Override public GridCacheMapEntry create(
+                GridCacheContext ctx,
                 AffinityTopologyVersion topVer,
                 KeyCacheObject key,
                 int hash,
-                CacheObject val,
-                GridCacheMapEntry next,
-                int hdrId)
-            {
+                CacheObject val
+            ) {
                 if (ctx.useOffheapEntry())
-                    return new GridDhtOffHeapCacheEntry(ctx, topVer, key, hash, val, next, hdrId);
+                    return new GridDhtOffHeapCacheEntry(ctx, topVer, key, hash, val);
 
-                return new GridDhtCacheEntry(ctx, topVer, key, hash, val, next, hdrId);
+                return new GridDhtCacheEntry(ctx, topVer, key, hash, val);
             }
         });
     }
@@ -549,7 +592,12 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
 
     /** {@inheritDoc} */
     @Override public int primarySize() {
-        int sum = 0;
+        return (int)primarySizeLong();
+    }
+
+    /** {@inheritDoc} */
+    @Override public long primarySizeLong() {
+        long sum = 0;
 
         AffinityTopologyVersion topVer = ctx.affinity().affinityTopologyVersion();
 
@@ -563,7 +611,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
 
     /**
      * This method is used internally. Use
-     * {@link #getDhtAsync(UUID, long, LinkedHashMap, boolean, AffinityTopologyVersion, UUID, int, IgniteCacheExpiryPolicy, boolean)}
+     * {@link #getDhtAsync(UUID, long, Map, boolean, AffinityTopologyVersion, UUID, int, IgniteCacheExpiryPolicy, boolean)}
      * method instead to retrieve DHT value.
      *
      * @param keys {@inheritDoc}
@@ -577,7 +625,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
         boolean skipTx,
         @Nullable UUID subjId,
         String taskName,
-        boolean deserializePortable,
+        boolean deserializeBinary,
         boolean skipVals,
         boolean canRemap
     ) {
@@ -588,7 +636,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
             /*don't check local tx. */false,
             subjId,
             taskName,
-            deserializePortable,
+            deserializeBinary,
             forcePrimary,
             null,
             skipVals,
@@ -641,7 +689,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
      */
     public GridDhtFuture<Collection<GridCacheEntryInfo>> getDhtAsync(UUID reader,
         long msgId,
-        LinkedHashMap<KeyCacheObject, Boolean> keys,
+        Map<KeyCacheObject, Boolean> keys,
         boolean readThrough,
         AffinityTopologyVersion topVer,
         @Nullable UUID subjId,
@@ -663,6 +711,107 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
         fut.init();
 
         return fut;
+    }
+
+    /**
+     * @param nodeId Node ID.
+     * @param req Get request.
+     */
+    protected void processNearSingleGetRequest(final UUID nodeId, final GridNearSingleGetRequest req) {
+        assert ctx.affinityNode();
+
+        long ttl = req.accessTtl();
+
+        final CacheExpiryPolicy expiryPlc = CacheExpiryPolicy.forAccess(ttl);
+
+        Map<KeyCacheObject, Boolean> map = Collections.singletonMap(req.key(), req.addReader());
+
+        IgniteInternalFuture<Collection<GridCacheEntryInfo>> fut =
+            getDhtAsync(nodeId,
+                req.messageId(),
+                map,
+                req.readThrough(),
+                req.topologyVersion(),
+                req.subjectId(),
+                req.taskNameHash(),
+                expiryPlc,
+                req.skipValues());
+
+        fut.listen(new CI1<IgniteInternalFuture<Collection<GridCacheEntryInfo>>>() {
+            @Override public void apply(IgniteInternalFuture<Collection<GridCacheEntryInfo>> f) {
+                GridNearSingleGetResponse res;
+
+                GridDhtFuture<Collection<GridCacheEntryInfo>> fut =
+                    (GridDhtFuture<Collection<GridCacheEntryInfo>>)f;
+
+                try {
+                    Collection<GridCacheEntryInfo> entries = fut.get();
+
+                    if (F.isEmpty(fut.invalidPartitions())) {
+                        GridCacheEntryInfo info = F.first(entries);
+
+                        Message res0 = null;
+
+                        if (info != null) {
+                            if (req.needEntryInfo()) {
+                                info.key(null);
+
+                                res0 = info;
+                            }
+                            else if (req.needVersion())
+                                res0 = new CacheVersionedValue(info.value(), info.version());
+                            else
+                                res0 = info.value();
+                        }
+
+                        res = new GridNearSingleGetResponse(ctx.cacheId(),
+                            req.futureId(),
+                            req.topologyVersion(),
+                            res0,
+                            false,
+                            req.addDeploymentInfo());
+
+                        if (info != null && req.skipValues())
+                            res.setContainsValue();
+                    }
+                    else {
+                        AffinityTopologyVersion topVer = ctx.shared().exchange().readyAffinityVersion();
+
+                        assert topVer.compareTo(req.topologyVersion()) >= 0 : "Wrong ready topology version for " +
+                            "invalid partitions response [topVer=" + topVer + ", req=" + req + ']';
+
+                        res = new GridNearSingleGetResponse(ctx.cacheId(),
+                            req.futureId(),
+                            topVer,
+                            null,
+                            true,
+                            req.addDeploymentInfo());
+                    }
+                }
+                catch (IgniteCheckedException e) {
+                    U.error(log, "Failed processing get request: " + req, e);
+
+                    res = new GridNearSingleGetResponse(ctx.cacheId(),
+                        req.futureId(),
+                        req.topologyVersion(),
+                        null,
+                        false,
+                        req.addDeploymentInfo());
+
+                    res.error(e);
+                }
+
+                try {
+                    ctx.io().send(nodeId, res, ctx.ioPolicy());
+                }
+                catch (IgniteCheckedException e) {
+                    U.error(log, "Failed to send get response to node (is node still alive?) [nodeId=" + nodeId +
+                        ",req=" + req + ", res=" + res + ']', e);
+                }
+
+                sendTtlUpdateRequest(expiryPlc);
+            }
+        });
     }
 
     /**
@@ -1020,7 +1169,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
         assert primary || backup;
 
         if (primary && backup)
-            return iterator(map.entries0().iterator(), !ctx.keepPortable());
+            return iterator(map.entries0().iterator(), !ctx.keepBinary());
         else {
             final AffinityTopologyVersion topVer = ctx.affinity().affinityTopologyVersion();
 
@@ -1084,7 +1233,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
                 }
             };
 
-            return iterator(it, !ctx.keepPortable());
+            return iterator(it, !ctx.keepBinary());
         }
     }
 
