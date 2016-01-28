@@ -15,13 +15,13 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.benchmarks.jmh.cache;
+package org.apache.ignite.internal.benchmarks.jmh.cache;
 
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.Ignition;
-import org.apache.ignite.benchmarks.model.IntValue;
+import org.apache.ignite.internal.benchmarks.model.IntValue;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.CacheRebalanceMode;
