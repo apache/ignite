@@ -75,16 +75,14 @@ namespace Apache.Ignite.Examples.Messaging
 
                     localMessaging.LocalListen<int>((id, msg) =>
                     {
-                        Console.WriteLine(">>> Received unordered message '{0}' from node '{1}'", msg, id);
                         unorderedCounter.Signal();
-                        return unorderedCounter.IsSet;
+                        return !unorderedCounter.IsSet;
                     }, Topic.Unordered);
 
                     localMessaging.LocalListen<int>((id, msg) =>
                     {
-                        Console.WriteLine(">>> Received ordered message '{0}' from node '{1}'", msg, id);
                         orderedCounter.Signal();
-                        return orderedCounter.IsSet;
+                        return !orderedCounter.IsSet;
                     }, Topic.Ordered);
 
                     // Set up remote listeners
