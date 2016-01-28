@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.query.h2.opt;
 
+import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.h2.result.Row;
 import org.h2.value.Value;
 
@@ -24,6 +25,15 @@ import org.h2.value.Value;
  * Row with locking support needed for unique key conflicts resolution.
  */
 public class GridH2Row extends Row implements GridSearchRowPointer {
+    /** */
+    public long link; // TODO remove
+
+    /** */
+    public CacheObject key; // TODO remove
+
+    /** */
+    public CacheObject val; // TODO remove
+
     /**
      * @param data Column values.
      */
