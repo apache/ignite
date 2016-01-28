@@ -496,13 +496,13 @@ consoleModule.controller('clustersController', function ($http, $timeout, $scope
                 if (!$common.isEmptyString(d.authenticator) && !$common.isValidJavaClass('Node authenticator', d.authenticator, false, 'authenticator', false, $scope.panels, 'discovery'))
                     return false;
 
-                if (d.kind === 'Vm' && d.Vm.addresses.length === 0)
+                if (d.kind === 'Vm' && d.Vm && d.Vm.addresses.length === 0)
                     return showPopoverMessage($scope.panels, 'general', 'addresses', 'Addresses are not specified');
 
-                if (d.kind === 'S3' && $common.isEmptyString(d.S3.bucketName))
+                if (d.kind === 'S3' && d.S3 && $common.isEmptyString(d.S3.bucketName))
                     return showPopoverMessage($scope.panels, 'general', 'bucketName', 'Bucket name should not be empty');
 
-                if (d.kind === 'Cloud') {
+                if (d.kind === 'Cloud' && d.Cloud) {
                     if ($common.isEmptyString(d.Cloud.identity))
                         return showPopoverMessage($scope.panels, 'general', 'identity', 'Identity should not be empty');
 
@@ -510,7 +510,7 @@ consoleModule.controller('clustersController', function ($http, $timeout, $scope
                         return showPopoverMessage($scope.panels, 'general', 'provider', 'Provider should not be empty');
                 }
 
-                if (d.kind === 'GoogleStorage') {
+                if (d.kind === 'GoogleStorage' && d.GoogleStorage) {
                     if ($common.isEmptyString(d.GoogleStorage.projectName))
                         return showPopoverMessage($scope.panels, 'general', 'projectName', 'Project name should not be empty');
 
