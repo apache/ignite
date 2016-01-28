@@ -21,13 +21,11 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.Ignition;
-import org.apache.ignite.internal.benchmarks.model.IntValue;
 import org.apache.ignite.cache.CacheAtomicityMode;
-import org.apache.ignite.cache.CacheMode;
-import org.apache.ignite.cache.CacheRebalanceMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
-import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.benchmarks.jmh.runner.JmhIdeBenchmarkRunner;
+import org.apache.ignite.internal.benchmarks.model.IntValue;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.openjdk.jmh.annotations.Benchmark;
@@ -36,15 +34,8 @@ import org.openjdk.jmh.annotations.Fork;
 import org.openjdk.jmh.annotations.Measurement;
 import org.openjdk.jmh.annotations.Mode;
 import org.openjdk.jmh.annotations.OutputTimeUnit;
-import org.openjdk.jmh.annotations.Scope;
-import org.openjdk.jmh.annotations.Setup;
-import org.openjdk.jmh.annotations.State;
-import org.openjdk.jmh.annotations.TearDown;
 import org.openjdk.jmh.annotations.Threads;
 import org.openjdk.jmh.annotations.Warmup;
-import org.openjdk.jmh.runner.Runner;
-import org.openjdk.jmh.runner.options.Options;
-import org.openjdk.jmh.runner.options.OptionsBuilder;
 
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
@@ -53,13 +44,12 @@ import java.util.concurrent.TimeUnit;
  * Put benchmark.
  */
 @SuppressWarnings({"unchecked", "unused", "FieldCanBeLocal"})
-@State(Scope.Benchmark)
 @BenchmarkMode(Mode.Throughput)
 @OutputTimeUnit(TimeUnit.SECONDS)
 @Warmup(iterations = 10)
 @Measurement(iterations = 120)
 @Fork(1)
-public class PutBenchmark {
+public class JmhCachePutBenchmark extends JmhCacheAbstractBenchmark {
     /** First Ignite instance. */
     private static Ignite ignite1;
 
@@ -80,8 +70,10 @@ public class PutBenchmark {
      *
      * @throws Exception If failed.
      */
-    @Setup
-    public static void setup() throws Exception {
+
+    public void setup() throws Exception {
+        super.setup();
+
         ignite1 = Ignition.start(config("node1"));
         ignite2 = Ignition.start(config("node2"));
 
@@ -98,22 +90,12 @@ public class PutBenchmark {
     }
 
     /**
-     * Tear down routine.
-     *
-     * @throws Exception If failed.
-     */
-    @TearDown
-    public static void tearDown() throws Exception {
-        Ignition.stopAll(true);
-    }
-
-    /**
      * Create configuration.
      *
      * @param gridName Grid name.
      * @return Configuration.
      */
-    private static IgniteConfiguration config(String gridName) {
+    private IgniteConfiguration config(String gridName) {
         IgniteConfiguration cfg = new IgniteConfiguration();
 
         cfg.setGridName(gridName);
@@ -124,16 +106,7 @@ public class PutBenchmark {
         discoSpi.setIpFinder(IP_FINDER);
         cfg.setDiscoverySpi(discoSpi);
 
-        CacheConfiguration cacheCfg = new CacheConfiguration();
-
-        cacheCfg.setName(null);
-        cacheCfg.setCacheMode(CacheMode.PARTITIONED);
-        cacheCfg.setAtomicityMode(CacheAtomicityMode.ATOMIC);
-        cacheCfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.PRIMARY_SYNC);
-        cacheCfg.setRebalanceMode(CacheRebalanceMode.SYNC);
-        cacheCfg.setBackups(1);
-
-        cfg.setCacheConfiguration(cacheCfg);
+        cfg.setCacheConfiguration(cacheConfiguration());
 
         return cfg;
     }
@@ -158,13 +131,20 @@ public class PutBenchmark {
      * @throws Exception If failed.
      */
     public static void main(String[] args) throws Exception {
-        // Use the following additional options to record JFR dump:
-        // "-XX:+UnlockCommercialFeatures", "-XX:+FlightRecorder", "-XX:StartFlightRecording=delay=20s,duration=60s,filename=ignite-put_bench.jfr"
-
-        String[] jvmArgs = new String[] { "-Xms4g", "-Xmx4g" };
-
-        Options opts = new OptionsBuilder().include(PutBenchmark.class.getSimpleName()).jvmArgs(jvmArgs).build();
-
-        new Runner(opts).run();
+        JmhIdeBenchmarkRunner.create()
+            .forks(1)
+            .warmupIterations(10)
+            .measurementIterations(2000)
+            .classes(JmhCachePutBenchmark.class)
+            .jvmArguments(
+                "-Xms4g",
+                "-Xmx4g",
+                "-XX:+UnlockCommercialFeatures",
+                "-XX:+FlightRecorder",
+                "-XX:StartFlightRecording=delay=20s,duration=60s,dumponexit=true,settings=alloc,filename=ignite-put_bench.jfr",
+                JmhIdeBenchmarkRunner.createProperty(PROP_BACKUPS, 1),
+                JmhIdeBenchmarkRunner.createProperty(PROP_ATOMICITY_MODE, CacheAtomicityMode.ATOMIC),
+                JmhIdeBenchmarkRunner.createProperty(PROP_WRITE_SYNC_MODE, CacheWriteSynchronizationMode.PRIMARY_SYNC))
+            .run();
     }
 }
