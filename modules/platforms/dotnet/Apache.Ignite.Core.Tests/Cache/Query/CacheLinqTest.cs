@@ -68,6 +68,11 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
                     OrganizationId = i % 2
                 });
 
+            var orgCache = GetOrgCache();
+
+            orgCache[0] = new LinqOrganization {Id = 0, Name = "Org_0"};
+            orgCache[1] = new LinqOrganization {Id = 1, Name = "Org_1"};
+
             Assert.AreEqual(1, cache[1].Age);
         }
 
@@ -211,11 +216,28 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
             Assert.AreEqual(DataSize, cache.ToQueryable().Count(x => x.Value.Name.ToUpper().StartsWith("PERSON")));
         }
 
+        [Test]
+        public void TestSameCacheJoin()
+        {
+            var cache = GetCache();
+        }
+
         private static ICache<int, LinqPerson> GetCache()
         {
+            return GetCache0<LinqPerson>();
+        }
+
+        private static ICache<int, LinqOrganization> GetOrgCache()
+        {
+            return GetCache0<LinqOrganization>();
+        }
+
+        private static ICache<int, T> GetCache0<T>()
+        {
             return Ignition.GetIgnite()
-                .GetOrCreateCache<int, LinqPerson>(new CacheConfiguration(CacheName,
-                    new QueryEntity(typeof (int), typeof (LinqPerson))));
+                .GetOrCreateCache<int, T>(new CacheConfiguration(CacheName,
+                    new QueryEntity(typeof (int), typeof (LinqPerson)),
+                        new QueryEntity(typeof (int), typeof (LinqOrganization))));
         }
 
         public class LinqPerson : IBinarizable
