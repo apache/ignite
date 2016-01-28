@@ -30,7 +30,7 @@ header#header.header
     .main-content(ng-controller='auth')
         .row.greedy.home
             .col-xs-12.col-md-6
-                form(name='loginForm')
+                form(name='loginForm' novalidate)
                     .modal-body.row(style='padding-bottom: 10px; margin: 0')
                         .settings-row(ng-if='action == "register"')
                             h3.login-header Sign Up
