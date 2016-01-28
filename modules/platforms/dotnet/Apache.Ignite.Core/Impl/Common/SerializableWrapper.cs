@@ -20,6 +20,7 @@ namespace Apache.Ignite.Core.Impl.Common
     using System;
     using System.Collections.Generic;
     using System.Diagnostics;
+    using System.Diagnostics.CodeAnalysis;
     using System.Linq;
     using System.Reflection;
     using System.Runtime.CompilerServices;
@@ -96,6 +97,7 @@ namespace Apache.Ignite.Core.Impl.Common
         }
 
         /** <inheritdoc /> */
+        [SuppressMessage("Microsoft.Design", "CA1062:Validate arguments of public methods")]
         public void GetObjectData(SerializationInfo info, StreamingContext context)
         {
             info.AddValue(ValType, _obj.GetType());
