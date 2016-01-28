@@ -17,7 +17,7 @@
 
 // Controller for Clusters screen.
 consoleModule.controller('clustersController', function ($http, $timeout, $scope, $state, $controller,
-    $common, $focus, $confirm, $clone, $table, $preview, $loading, $unsavedChangesGuard, igniteIncludeEventGroups) {
+    $common, $focus, $confirm, $clone, $preview, $loading, $unsavedChangesGuard, igniteIncludeEventGroups) {
         $unsavedChangesGuard.install($scope);
 
         var __original_value;
@@ -38,6 +38,7 @@ consoleModule.controller('clustersController', function ($http, $timeout, $scope
         angular.extend(this, $controller('save-remove', {$scope: $scope}));
 
         $scope.ui = $common.formUI();
+        $scope.ui.angularWay = true; // TODO We need to distinguish refactored UI from legacy UI.
 
         $scope.joinTip = $common.joinTip;
         $scope.getModel = $common.getModel;
@@ -45,82 +46,6 @@ consoleModule.controller('clustersController', function ($http, $timeout, $scope
         $scope.widthIsSufficient = $common.widthIsSufficient;
         $scope.saveBtnTipText = $common.saveBtnTipText;
         $scope.panelExpanded = $common.panelExpanded;
-
-        $scope.tableVisibleRow = $table.tableVisibleRow;
-
-        $scope.tableSave = function (field, index, stopEdit) {
-            switch (field.type) {
-                case 'table-simple':
-                    if ($table.tableSimpleSaveVisible(field, index))
-                        return $table.tableSimpleSave($scope.tableSimpleValid, $scope.backupItem, field, index, stopEdit);
-
-                    break;
-            }
-
-            return true;
-        };
-
-        $scope.tableReset = function (save) {
-            var field = $table.tableField();
-
-            if (!save || !$common.isDefined(field) || $scope.tableSave(field, $table.tableEditedRowIndex(), true)) {
-                $table.tableReset();
-
-                return true;
-            }
-
-            return false;
-        };
-
-        $scope.tableNewItem = function (field) {
-            if ($scope.tableReset(true)) {
-                if (field.type === 'typeConfigurations') {
-                    var binary = $scope.backupItem.binaryConfiguration;
-
-                    if (!binary)
-                        $scope.backupItem.binaryConfiguration = {typeConfigurations: [{}]};
-                    else if (!$common.isDefined(binary.typeConfigurations))
-                        binary.typeConfigurations = [{}];
-                    else
-                        binary.typeConfigurations.push({});
-                }
-                else
-                    $table.tableNewItem(field);
-            }
-        };
-        $scope.tableNewItemActive = $table.tableNewItemActive;
-
-        $scope.tableStartEdit = function (item, field, index) {
-            if ($scope.tableReset(true))
-                $table.tableStartEdit(item, field, index);
-        };
-        $scope.tableEditing = $table.tableEditing;
-
-        $scope.tableRemove = function (item, field, index) {
-            if ($scope.tableReset(true)) {
-                if (field.type === 'typeConfigurations')
-                    $scope.backupItem.binaryConfiguration.typeConfigurations.splice(index, 1);
-                else
-                    $table.tableRemove(item, field, index);
-            }
-        };
-
-        $scope.tableSimpleSave = $table.tableSimpleSave;
-        $scope.tableSimpleSaveVisible = $table.tableSimpleSaveVisible;
-
-        $scope.tableSimpleUp = function (item, field, index) {
-            if ($scope.tableReset(true))
-                $table.tableSimpleUp(item, field, index);
-        };
-
-        $scope.tableSimpleDown = function (item, field, index) {
-            if ($scope.tableReset(true))
-                $table.tableSimpleDown(item, field, index);
-        };
-
-        $scope.tableSimpleDownVisible = $table.tableSimpleDownVisible;
-
-        $scope.tableEditedRowIndex = $table.tableEditedRowIndex;
 
         var previews = [];
 
@@ -202,38 +127,6 @@ consoleModule.controller('clustersController', function ($http, $timeout, $scope
         };
 
         $scope.panels = {activePanels: [0]};
-
-        var simpleTables = {
-            addresses: {msg: 'Such IP address already exists!', id: 'IpAddress'},
-            regions: {msg: 'Such region already exists!', id: 'Region'},
-            zones: {msg: 'Such zone already exists!', id: 'Zone'},
-            peerClassLoadingLocalClassPathExclude: {msg: 'Such package already exists!', id: 'PeerClsPathExclude'},
-            trustManagers: {msg: 'Such trust manager already exists!', id: 'trustManagers'}
-        };
-
-        $scope.tableSimpleValid = function (item, field, val, index) {
-            var model = $common.getModel(item, field)[field.model];
-
-            if (field.model === 'trustManagers' && !$common.isValidJavaClass('Trust manager', val, false,  $table.tableFieldId(index, 'trustManagers'), false))
-                return false;
-
-            if ($common.isDefined(model)) {
-                var idx = _.indexOf(model, val);
-
-                // Found duplicate.
-                if (idx >= 0 && idx !== index) {
-                    var simpleTable = simpleTables[field.model];
-
-                    if (simpleTable) {
-                        $common.showPopoverMessage(null, null, $table.tableFieldId(index, simpleTable.id), simpleTable.msg);
-
-                        return $table.tableFocusInvalidField(index, simpleTable.id);
-                    }
-                }
-            }
-
-            return true;
-        };
 
         $scope.clusters = [];
 
@@ -390,8 +283,6 @@ consoleModule.controller('clustersController', function ($http, $timeout, $scope
 
         $scope.selectItem = function (item, backup) {
             function selectItem() {
-                $table.tableReset();
-
                 $scope.selectedItem = angular.copy(item);
 
                 try {
@@ -444,13 +335,11 @@ consoleModule.controller('clustersController', function ($http, $timeout, $scope
 
         // Add new cluster.
         $scope.createItem = function(id) {
-            if ($scope.tableReset(true)) {
-                $timeout(function () {
-                    $common.ensureActivePanel($scope.panels, "general", 'clusterName');
-                });
+            $timeout(function () {
+                $common.ensureActivePanel($scope.panels, "general", 'clusterName');
+            });
 
-                $scope.selectItem(undefined, prepareNewItem(id));
-            }
+            $scope.selectItem(undefined, prepareNewItem(id));
         };
 
         $scope.indexOfCache = function (cacheId) {
@@ -710,12 +599,10 @@ consoleModule.controller('clustersController', function ($http, $timeout, $scope
 
         // Save cluster.
         $scope.saveItem = function () {
-            if ($scope.tableReset(true)) {
-                var item = $scope.backupItem;
+            var item = $scope.backupItem;
 
-                if (validate(item))
-                    save(item);
-            }
+            if (validate(item))
+                save(item);
         };
 
         function _clusterNames() {
@@ -727,16 +614,15 @@ consoleModule.controller('clustersController', function ($http, $timeout, $scope
         // Copy cluster with new name.
         $scope.cloneItem = function () {
             function cloneItem() {
-                if ($scope.tableReset(true)) {
-                    if (validate($scope.backupItem))
-                        $clone.confirm($scope.backupItem.name, _clusterNames()).then(function (newName) {
-                            var item = angular.copy($scope.backupItem);
+                if (validate($scope.backupItem)) {
+                    $clone.confirm($scope.backupItem.name, _clusterNames()).then(function (newName) {
+                        var item = angular.copy($scope.backupItem);
 
-                            delete item._id;
-                            item.name = newName;
+                        delete item._id;
+                        item.name = newName;
 
-                            save(item);
-                        });
+                        save(item);
+                    });
                 }
             }
 
@@ -745,8 +631,6 @@ consoleModule.controller('clustersController', function ($http, $timeout, $scope
 
         // Remove cluster from db.
         $scope.removeItem = function () {
-            $table.tableReset();
-
             var selectedItem = $scope.selectedItem;
 
             $confirm.confirm('Are you sure you want to remove cluster: "' + selectedItem.name + '"?')
@@ -780,8 +664,6 @@ consoleModule.controller('clustersController', function ($http, $timeout, $scope
 
         // Remove all clusters from db.
         $scope.removeAllItems = function () {
-            $table.tableReset();
-
             $confirm.confirm('Are you sure you want to remove all clusters?')
                 .then(function () {
                         $http.post('/api/v1/configuration/clusters/remove/all')
@@ -809,8 +691,6 @@ consoleModule.controller('clustersController', function ($http, $timeout, $scope
         };
 
         $scope.resetAll = function() {
-            $table.tableReset();
-
             $confirm.confirm('Are you sure you want to undo all changes for current cluster?')
                 .then(function() {
                     $scope.backupItem = $scope.selectedItem ? angular.copy($scope.selectedItem) : prepareNewItem();
