@@ -48,6 +48,9 @@ public class JmhIdeBenchmarkRunner {
     /** JVM arguments. */
     private String[] jvmArgs;
 
+    /** Output. */
+    private String output;
+
     /**
      * Create new runner.
      *
@@ -124,6 +127,16 @@ public class JmhIdeBenchmarkRunner {
     }
 
     /**
+     * @param output Output file.
+     * @return This instance.
+     */
+    public JmhIdeBenchmarkRunner output(String output) {
+        this.output = output;
+
+        return this;
+    }
+
+    /**
      * @param jvmArgs JVM arguments.
      * @return This instance.
      */
@@ -158,6 +171,9 @@ public class JmhIdeBenchmarkRunner {
 
         if (jvmArgs != null)
             builder.jvmArgs(jvmArgs);
+
+        if (output != null)
+            builder.output(output);
 
         return builder;
     }
