@@ -104,6 +104,7 @@ import org.apache.ignite.internal.util.offheap.unsafe.GridUnsafeGuard;
 import org.apache.ignite.internal.util.offheap.unsafe.GridUnsafeMemory;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T3;
+import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.SB;
@@ -1953,7 +1954,16 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
             ArrayList<Index> idxs = new ArrayList<>();
 
-            idxs.add(createSortedIndex("_key_PK", tbl, true, KEY_COL, VAL_COL, tbl.indexColumn(0, ASCENDING)));
+            int cacheId = CU.cacheId(schema.ccfg.getName());
+
+            idxs.add(createSortedIndex(
+                cacheId,
+                "_key_PK",
+                tbl,
+                true,
+                KEY_COL,
+                VAL_COL,
+                tbl.indexColumn(0, ASCENDING)));
 
             if (type().valueClass() == String.class) {
                 try {
@@ -1993,7 +2003,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                     }
 
                     if (idx.type() == SORTED)
-                        idxs.add(createSortedIndex(name, tbl, false, KEY_COL, VAL_COL, cols));
+                        idxs.add(createSortedIndex(cacheId, name, tbl, false, KEY_COL, VAL_COL, cols));
                     else if (idx.type() == GEO_SPATIAL)
                         idxs.add(createH2SpatialIndex(tbl, name, cols, KEY_COL, VAL_COL));
                     else
@@ -2013,9 +2023,17 @@ public class IgniteH2Indexing implements GridQueryIndexing {
          * @param cols Columns.
          * @return Index.
          */
-        private Index createSortedIndex(String name, GridH2Table tbl, boolean pk, int keyCol, int valCol, IndexColumn... cols) {
+        private Index createSortedIndex(
+            int cacheId,
+            String name,
+            GridH2Table tbl,
+            boolean pk,
+            int keyCol,
+            int valCol,
+            IndexColumn... cols
+        ) {
             if (idxProvider != null)
-                return idxProvider.createIndex(name, tbl, pk, keyCol, valCol, cols);
+                return idxProvider.createIndex(cacheId, name, tbl, pk, keyCol, valCol, cols);
 
             return new GridH2TreeIndex(name, tbl, pk, keyCol, valCol, cols);
         }
