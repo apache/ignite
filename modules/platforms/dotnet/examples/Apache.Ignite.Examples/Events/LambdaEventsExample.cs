@@ -63,15 +63,11 @@ namespace Apache.Ignite.Examples.Events
                 // Local listen example
                 Console.WriteLine(">>> Listening for a local event...");
 
-                var listener = new LocalListener();
-                ignite.GetEvents().LocalListen(listener, EventType.TaskExecutionAll);
+                var listener = LambdaListener.LocalListen(ignite.GetEvents(), EventType.TaskExecutionAll);
 
                 ExecuteTask(ignite);
 
                 ignite.GetEvents().StopLocalListen(listener);
-
-                Console.WriteLine(">>> Received events count: " + listener.EventsReceived);
-                Console.WriteLine();
             }
 
             Console.WriteLine();
