@@ -352,7 +352,7 @@ $generatorXml.clusterGeneral = function (cluster, res) {
                 break;
 
             default:
-                throw "Unknown discovery kind: " + d.kind;
+                res.line('Unknown discovery kind: ' + d.kind);
         }
 
         res.endBlock('</property>');

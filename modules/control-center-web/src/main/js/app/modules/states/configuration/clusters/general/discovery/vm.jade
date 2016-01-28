@@ -51,8 +51,8 @@ div
                     ng-click='#{addresses}.splice(#{addresses}.indexOf(model), 1)'
                 )
 
-                ignite-form-field-down(ng-if='!$last' data-ng-model='model' data-models='#{addresses}')
-                ignite-form-field-up(ng-if='!$first' data-ng-model='model' data-models='#{addresses}')
+                ignite-form-field-down(ng-if='!$last' ng-hide='___.edit' data-ng-model='model' data-models='#{addresses}')
+                ignite-form-field-up(ng-if='!$first' ng-hide='___.edit' data-ng-model='model' data-models='#{addresses}')
                 
                 span(ng-hide='___.edit')
                     a.labelFormField(ng-click='___.edit = true') {{ model }}
@@ -65,6 +65,7 @@ div
                         data-ignite-unique='#{addresses}'
                         data-ignite-form-field-input-autofocus='true'
                         on-enter='#{valid} && (#{save}); #{valid} && (___.edit = false);'
+                        on-escape='___.edit = false'
                         ng-blur='#{valid} && (#{save}); (___.edit = false)'
                     )
                         i.fa.fa-floppy-o(
@@ -94,6 +95,7 @@ div
                     data-ignite-unique='#{addresses}'
                     data-ignite-form-field-input-autofocus='true'
                     on-enter='#{valid} && #{push}; #{valid} && (stopblur = true) && (__.add = [{}])'
+                    on-escape='___.add = false'
                     ng-blur='#{valid} && #{push}; !stopblur && (__.add = [])'
                 )
                     i.fa.fa-floppy-o(

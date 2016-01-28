@@ -591,47 +591,49 @@ consoleModule.controller('clustersController', function ($http, $timeout, $scope
 
             var d = item.discovery;
 
-            if (!$common.isEmptyString(d.addressResolver) && !$common.isValidJavaClass('Address resolver', d.addressResolver, false, 'discoAddressResolver', false, $scope.panels, 'discovery'))
-                return false;
+            if (d) {
+                if (!$common.isEmptyString(d.addressResolver) && !$common.isValidJavaClass('Address resolver', d.addressResolver, false, 'discoAddressResolver', false, $scope.panels, 'discovery'))
+                    return false;
 
-            if (!$common.isEmptyString(d.listener) && !$common.isValidJavaClass('Discovery listener', d.listener, false, 'discoListener', false, $scope.panels, 'discovery'))
-                return false;
+                if (!$common.isEmptyString(d.listener) && !$common.isValidJavaClass('Discovery listener', d.listener, false, 'discoListener', false, $scope.panels, 'discovery'))
+                    return false;
 
-            if (!$common.isEmptyString(d.dataExchange) && !$common.isValidJavaClass('Data exchange', d.dataExchange, false, 'dataExchange', false, $scope.panels, 'discovery'))
-                return false;
+                if (!$common.isEmptyString(d.dataExchange) && !$common.isValidJavaClass('Data exchange', d.dataExchange, false, 'dataExchange', false, $scope.panels, 'discovery'))
+                    return false;
 
-            if (!$common.isEmptyString(d.metricsProvider) && !$common.isValidJavaClass('Metrics provider', d.metricsProvider, false, 'metricsProvider', false, $scope.panels, 'discovery'))
-                return false;
+                if (!$common.isEmptyString(d.metricsProvider) && !$common.isValidJavaClass('Metrics provider', d.metricsProvider, false, 'metricsProvider', false, $scope.panels, 'discovery'))
+                    return false;
 
-            if (!$common.isEmptyString(d.authenticator) && !$common.isValidJavaClass('Node authenticator', d.authenticator, false, 'authenticator', false, $scope.panels, 'discovery'))
-                return false;
+                if (!$common.isEmptyString(d.authenticator) && !$common.isValidJavaClass('Node authenticator', d.authenticator, false, 'authenticator', false, $scope.panels, 'discovery'))
+                    return false;
 
-            if (item.discovery.kind === 'Vm' && item.discovery.Vm.addresses.length === 0)
-                return showPopoverMessage($scope.panels, 'general', 'addresses', 'Addresses are not specified');
+                if (d.kind === 'Vm' && d.Vm.addresses.length === 0)
+                    return showPopoverMessage($scope.panels, 'general', 'addresses', 'Addresses are not specified');
 
-            if (item.discovery.kind === 'S3' && $common.isEmptyString(item.discovery.S3.bucketName))
-                return showPopoverMessage($scope.panels, 'general', 'bucketName', 'Bucket name should not be empty');
-
-            if (item.discovery.kind === 'Cloud') {
-                if ($common.isEmptyString(item.discovery.Cloud.identity))
-                    return showPopoverMessage($scope.panels, 'general', 'identity', 'Identity should not be empty');
-
-                if ($common.isEmptyString(item.discovery.Cloud.provider))
-                    return showPopoverMessage($scope.panels, 'general', 'provider', 'Provider should not be empty');
-            }
-
-            if (item.discovery.kind === 'GoogleStorage') {
-                if ($common.isEmptyString(item.discovery.GoogleStorage.projectName))
-                    return showPopoverMessage($scope.panels, 'general', 'projectName', 'Project name should not be empty');
-
-                if ($common.isEmptyString(item.discovery.GoogleStorage.bucketName))
+                if (d.kind === 'S3' && $common.isEmptyString(d.S3.bucketName))
                     return showPopoverMessage($scope.panels, 'general', 'bucketName', 'Bucket name should not be empty');
 
-                if ($common.isEmptyString(item.discovery.GoogleStorage.serviceAccountP12FilePath))
-                    return showPopoverMessage($scope.panels, 'general', 'serviceAccountP12FilePath', 'Private key path should not be empty');
+                if (d.kind === 'Cloud') {
+                    if ($common.isEmptyString(d.Cloud.identity))
+                        return showPopoverMessage($scope.panels, 'general', 'identity', 'Identity should not be empty');
 
-                if ($common.isEmptyString(item.discovery.GoogleStorage.serviceAccountId))
-                    return showPopoverMessage($scope.panels, 'general', 'serviceAccountId', 'Account ID should not be empty');
+                    if ($common.isEmptyString(d.Cloud.provider))
+                        return showPopoverMessage($scope.panels, 'general', 'provider', 'Provider should not be empty');
+                }
+
+                if (d.kind === 'GoogleStorage') {
+                    if ($common.isEmptyString(d.GoogleStorage.projectName))
+                        return showPopoverMessage($scope.panels, 'general', 'projectName', 'Project name should not be empty');
+
+                    if ($common.isEmptyString(d.GoogleStorage.bucketName))
+                        return showPopoverMessage($scope.panels, 'general', 'bucketName', 'Bucket name should not be empty');
+
+                    if ($common.isEmptyString(d.GoogleStorage.serviceAccountP12FilePath))
+                        return showPopoverMessage($scope.panels, 'general', 'serviceAccountP12FilePath', 'Private key path should not be empty');
+
+                    if ($common.isEmptyString(d.GoogleStorage.serviceAccountId))
+                        return showPopoverMessage($scope.panels, 'general', 'serviceAccountId', 'Account ID should not be empty');
+                }
             }
 
             var swapKind = item.swapSpaceSpi && item.swapSpaceSpi.kind;
@@ -724,17 +726,21 @@ consoleModule.controller('clustersController', function ($http, $timeout, $scope
 
         // Copy cluster with new name.
         $scope.cloneItem = function () {
-            if ($scope.tableReset(true)) {
-                if (validate($scope.backupItem))
-                    $clone.confirm($scope.backupItem.name, _clusterNames()).then(function (newName) {
-                        var item = angular.copy($scope.backupItem);
+            function cloneItem() {
+                if ($scope.tableReset(true)) {
+                    if (validate($scope.backupItem))
+                        $clone.confirm($scope.backupItem.name, _clusterNames()).then(function (newName) {
+                            var item = angular.copy($scope.backupItem);
 
-                        delete item._id;
-                        item.name = newName;
+                            delete item._id;
+                            item.name = newName;
 
-                        save(item);
-                    });
+                            save(item);
+                        });
+                }
             }
+
+            $common.confirmUnsavedChanges($scope.backupItem && $scope.ui.inputForm.$dirty, cloneItem);
         };
 
         // Remove cluster from db.
@@ -784,7 +790,7 @@ consoleModule.controller('clustersController', function ($http, $timeout, $scope
 
                                 $scope.clusters = [];
 
-                                $scope.selectItem(undefined, undefined);
+                                $scope.backupItem = undefined;
                             })
                             .error(function (errMsg) {
                                 $common.showError(errMsg);

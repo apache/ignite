@@ -1144,7 +1144,7 @@ consoleModule.service('$unsavedChangesGuard', function ($rootScope) {
             });
 
             var unbind = $rootScope.$on('$stateChangeStart', function(event) {
-                if ($scope.ui && $scope.ui.isDirty()) {
+                if ($scope.ui && ($scope.ui.isDirty() || ($scope.ui.inputForm && $scope.ui.inputForm.$dirty))) {
                     if (!confirm('You have unsaved changes.\n\nAre you sure you want to discard them?')) {
                         event.preventDefault();
                     } else {
