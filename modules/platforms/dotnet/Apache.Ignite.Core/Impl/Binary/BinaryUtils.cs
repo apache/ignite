@@ -1821,6 +1821,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         {
             [FieldOffset(0)] public readonly ulong CBA;
             [FieldOffset(8)] public readonly ulong KJIHGFED;
+            [SuppressMessage("Microsoft.Performance", "CA1823:AvoidUnusedPrivateFields")]
             [FieldOffset(0)] public unsafe fixed byte Bytes [16];
 
             /// <summary>
