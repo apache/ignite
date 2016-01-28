@@ -23,7 +23,6 @@ import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.internal.benchmarks.jmh.runner.JmhIdeBenchmarkRunner;
 import org.apache.ignite.internal.benchmarks.model.IntValue;
 import org.openjdk.jmh.annotations.Benchmark;
-import org.openjdk.jmh.annotations.Threads;
 
 import java.util.concurrent.ThreadLocalRandom;
 
@@ -60,7 +59,6 @@ public class JmhCachePutBenchmark extends JmhCacheAbstractBenchmark {
      * @throws Exception If failed.
      */
     @Benchmark
-    @Threads(4)
     public void testPut() throws Exception {
         int key = ThreadLocalRandom.current().nextInt(CNT);
 
@@ -68,13 +66,13 @@ public class JmhCachePutBenchmark extends JmhCacheAbstractBenchmark {
     }
 
     /**
-     * Runner.
+     * Run benchmarks.
      *
      * @param args Arguments.
      * @throws Exception If failed.
      */
     public static void main(String[] args) throws Exception {
-        runAtomic(CacheAtomicityMode.ATOMIC);
+        run(CacheAtomicityMode.ATOMIC);
     }
 
     /**
@@ -83,11 +81,11 @@ public class JmhCachePutBenchmark extends JmhCacheAbstractBenchmark {
      * @param atomicityMode Atomicity mode.
      * @throws Exception If failed.
      */
-    private static void runAtomic(CacheAtomicityMode atomicityMode) throws Exception {
-        run(true, atomicityMode, CacheWriteSynchronizationMode.PRIMARY_SYNC);
-        run(true, atomicityMode, CacheWriteSynchronizationMode.FULL_SYNC);
-        run(false, atomicityMode, CacheWriteSynchronizationMode.PRIMARY_SYNC);
-        run(false, atomicityMode, CacheWriteSynchronizationMode.FULL_SYNC);
+    private static void run(CacheAtomicityMode atomicityMode) throws Exception {
+        run(4, true, atomicityMode, CacheWriteSynchronizationMode.PRIMARY_SYNC);
+        run(4, true, atomicityMode, CacheWriteSynchronizationMode.FULL_SYNC);
+        run(4, false, atomicityMode, CacheWriteSynchronizationMode.PRIMARY_SYNC);
+        run(4, false, atomicityMode, CacheWriteSynchronizationMode.FULL_SYNC);
     }
 
     /**
@@ -97,12 +95,14 @@ public class JmhCachePutBenchmark extends JmhCacheAbstractBenchmark {
      * @param writeSyncMode Write synchronization mode.
      * @throws Exception If failed.
      */
-    private static void run(boolean client, CacheAtomicityMode atomicityMode,
+    private static void run(int threads, boolean client, CacheAtomicityMode atomicityMode,
         CacheWriteSynchronizationMode writeSyncMode) throws Exception {
-        String output = "ignite-cache-put-" + (client ? "client" : "data") + "-" + atomicityMode + "-" + writeSyncMode;
+        String output = "ignite-cache-put-" + threads + "-threads-" + (client ? "client" : "data") +
+            "-" + atomicityMode + "-" + writeSyncMode;
 
         JmhIdeBenchmarkRunner.create()
             .forks(1)
+            .threads(threads)
             .warmupIterations(10)
             .measurementIterations(60)
             .classes(JmhCachePutBenchmark.class)
