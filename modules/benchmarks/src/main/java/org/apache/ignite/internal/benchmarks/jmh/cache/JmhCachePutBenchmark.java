@@ -17,53 +17,23 @@
 
 package org.apache.ignite.internal.benchmarks.jmh.cache;
 
-import org.apache.ignite.Ignite;
-import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteDataStreamer;
-import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
-import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.benchmarks.jmh.runner.JmhIdeBenchmarkRunner;
 import org.apache.ignite.internal.benchmarks.model.IntValue;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.openjdk.jmh.annotations.Benchmark;
-import org.openjdk.jmh.annotations.BenchmarkMode;
-import org.openjdk.jmh.annotations.Fork;
-import org.openjdk.jmh.annotations.Measurement;
-import org.openjdk.jmh.annotations.Mode;
-import org.openjdk.jmh.annotations.OutputTimeUnit;
 import org.openjdk.jmh.annotations.Threads;
-import org.openjdk.jmh.annotations.Warmup;
 
 import java.util.concurrent.ThreadLocalRandom;
-import java.util.concurrent.TimeUnit;
 
 /**
  * Put benchmark.
  */
-@SuppressWarnings({"unchecked", "unused", "FieldCanBeLocal"})
-@BenchmarkMode(Mode.Throughput)
-@OutputTimeUnit(TimeUnit.SECONDS)
-@Warmup(iterations = 10)
-@Measurement(iterations = 120)
-@Fork(1)
+@SuppressWarnings("unchecked")
 public class JmhCachePutBenchmark extends JmhCacheAbstractBenchmark {
-    /** First Ignite instance. */
-    private static Ignite ignite1;
-
-    /** Second Ignite instance. */
-    private static Ignite ignite2;
-
-    /** Target cache. */
-    private static IgniteCache<Integer, IntValue> cache1;
-
     /** Items count. */
     private static final int CNT = 100000;
-
-    /** IP finder shared across nodes. */
-    private static final TcpDiscoveryVmIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
 
     /**
      * Set up routine.
@@ -74,12 +44,7 @@ public class JmhCachePutBenchmark extends JmhCacheAbstractBenchmark {
     public void setup() throws Exception {
         super.setup();
 
-        ignite1 = Ignition.start(config("node1"));
-        ignite2 = Ignition.start(config("node2"));
-
-        cache1 = ignite1.cache(null);
-
-        IgniteDataStreamer<Integer, IntValue> dataLdr = ignite1.dataStreamer(cache1.getName());
+        IgniteDataStreamer<Integer, IntValue> dataLdr = node.dataStreamer(cache.getName());
 
         for (int i = 0; i < CNT; i++)
             dataLdr.addData(i, new IntValue(i));
@@ -87,28 +52,6 @@ public class JmhCachePutBenchmark extends JmhCacheAbstractBenchmark {
         dataLdr.close();
 
         System.out.println("Cache populated.");
-    }
-
-    /**
-     * Create configuration.
-     *
-     * @param gridName Grid name.
-     * @return Configuration.
-     */
-    private IgniteConfiguration config(String gridName) {
-        IgniteConfiguration cfg = new IgniteConfiguration();
-
-        cfg.setGridName(gridName);
-
-        cfg.setLocalHost("127.0.0.1");
-
-        TcpDiscoverySpi discoSpi = new TcpDiscoverySpi();
-        discoSpi.setIpFinder(IP_FINDER);
-        cfg.setDiscoverySpi(discoSpi);
-
-        cfg.setCacheConfiguration(cacheConfiguration());
-
-        return cfg;
     }
 
     /**
@@ -121,7 +64,7 @@ public class JmhCachePutBenchmark extends JmhCacheAbstractBenchmark {
     public void testPut() throws Exception {
         int key = ThreadLocalRandom.current().nextInt(CNT);
 
-        cache1.put(key, new IntValue(key));
+        cache.put(key, new IntValue(key));
     }
 
     /**
@@ -131,20 +74,49 @@ public class JmhCachePutBenchmark extends JmhCacheAbstractBenchmark {
      * @throws Exception If failed.
      */
     public static void main(String[] args) throws Exception {
+        runAtomic(CacheAtomicityMode.ATOMIC);
+    }
+
+    /**
+     * Run benchmarks for atomic cache.
+     *
+     * @param atomicityMode Atomicity mode.
+     * @throws Exception If failed.
+     */
+    private static void runAtomic(CacheAtomicityMode atomicityMode) throws Exception {
+        run(true, atomicityMode, CacheWriteSynchronizationMode.PRIMARY_SYNC);
+        run(true, atomicityMode, CacheWriteSynchronizationMode.FULL_SYNC);
+        run(false, atomicityMode, CacheWriteSynchronizationMode.PRIMARY_SYNC);
+        run(false, atomicityMode, CacheWriteSynchronizationMode.FULL_SYNC);
+    }
+
+    /**
+     * Run benchmark.
+     *
+     * @param client Client mode flag.
+     * @param writeSyncMode Write synchronization mode.
+     * @throws Exception If failed.
+     */
+    private static void run(boolean client, CacheAtomicityMode atomicityMode,
+        CacheWriteSynchronizationMode writeSyncMode) throws Exception {
+        String output = "ignite-cache-put-" + (client ? "client" : "data") + "-" + atomicityMode + "-" + writeSyncMode;
+
         JmhIdeBenchmarkRunner.create()
             .forks(1)
             .warmupIterations(10)
-            .measurementIterations(2000)
+            .measurementIterations(60)
             .classes(JmhCachePutBenchmark.class)
+            .output(output + ".jmh.log")
             .jvmArguments(
                 "-Xms4g",
                 "-Xmx4g",
                 "-XX:+UnlockCommercialFeatures",
                 "-XX:+FlightRecorder",
-                "-XX:StartFlightRecording=delay=20s,duration=60s,dumponexit=true,settings=alloc,filename=ignite-put_bench.jfr",
-                JmhIdeBenchmarkRunner.createProperty(PROP_BACKUPS, 1),
-                JmhIdeBenchmarkRunner.createProperty(PROP_ATOMICITY_MODE, CacheAtomicityMode.ATOMIC),
-                JmhIdeBenchmarkRunner.createProperty(PROP_WRITE_SYNC_MODE, CacheWriteSynchronizationMode.PRIMARY_SYNC))
+                "-XX:StartFlightRecording=delay=30s,dumponexit=true,settings=alloc,filename=" + output + ".jfr",
+                JmhIdeBenchmarkRunner.createProperty(PROP_ATOMICITY_MODE, atomicityMode),
+                JmhIdeBenchmarkRunner.createProperty(PROP_WRITE_SYNC_MODE, writeSyncMode),
+                JmhIdeBenchmarkRunner.createProperty(PROP_DATA_NODES, 2),
+                JmhIdeBenchmarkRunner.createProperty(PROP_CLIENT_MODE, client))
             .run();
     }
 }
