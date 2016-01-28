@@ -31,7 +31,7 @@
     </parent>
 
     <artifactId>ignite-core</artifactId>
-    <version>1.5.1.final-SNAPSHOT</version>
+    <version>1.6.0-SNAPSHOT</version>
     <url>http://ignite.apache.org</url>
 
     <repositories>
@@ -228,9 +228,6 @@
                 <excludes>
                     <exclude>**/*.java</exclude>
                 </excludes>
-            </testResource>
-            <testResource>
-                <directory>src/test/resources</directory>
             </testResource>
         </testResources>
 

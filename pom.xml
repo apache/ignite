@@ -32,7 +32,7 @@
 
     <groupId>org.apache.ignite</groupId>
     <artifactId>apache-ignite</artifactId>
-    <version>1.5.1.final-SNAPSHOT</version>
+    <version>1.6.0-SNAPSHOT</version>
     <packaging>pom</packaging>
 
     <properties>
@@ -84,6 +84,7 @@
         <module>modules/osgi-paxlogging</module>
         <module>modules/osgi-karaf</module>
         <module>modules/osgi</module>
+		<module>modules/benchmarks</module>
     </modules>
 
     <profiles>
