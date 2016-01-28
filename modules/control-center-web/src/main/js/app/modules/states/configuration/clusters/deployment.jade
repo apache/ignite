@@ -93,7 +93,7 @@ form.panel.panel-default(name='#{form}' novalidate)
                             data-ng-disabled='!#{enabled}'
                         )
                 .settings-row
-                    ignite-form-group(ng-init='__ = {}; ___ = {}' ng-model='#{exclude}' name='peerClassLoadingLocalClassPathExclude' )
+                    ignite-form-group(ng-init='__ = {};' ng-model='#{exclude}' name='peerClassLoadingLocalClassPathExclude' )
                         ignite-form-field-label
                             | Local class path exclude
                         ignite-form-group-tooltip
@@ -107,7 +107,7 @@ form.panel.panel-default(name='#{form}' novalidate)
                         - var save = exclude + '[$index] = ' + field
 
                         .group-content(ng-if='#{exclude}.length')
-                            ignite-form-field(ng-repeat='model in #{exclude} track by $index' type='internal' ng-init='')
+                            ignite-form-field(ng-repeat='model in #{exclude} track by $index' type='internal' ng-init='___ = {}')
                                 .indexField
                                     | {{ $index+1 }}) 
                                 i.tipField.fa.fa-remove(
@@ -117,7 +117,7 @@ form.panel.panel-default(name='#{form}' novalidate)
                                 )
                                 span(ng-hide='___.edit')
                                     a.labelFormField(ng-click='#{enabled} && (___.edit = true)') {{ model }}
-                                span(ng-if='___.edit' ng-form='form' ng-init='#{field} = model')
+                                span(ng-if='___.edit' ng-init='#{field} = model')
                                     ignite-form-field-input-text(
                                         data-name='#{field}'
                                         data-ng-model='#{field}'

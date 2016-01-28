@@ -19,7 +19,7 @@
 - var form = 'general';
 
 div
-    ignite-form-group(ng-init='__ = {}; ___ = {}' ng-model='#{addresses}' name='discoveryVmAddresses')
+    ignite-form-group(ng-init='__ = {};' ng-model='#{addresses}' name='discoveryVmAddresses')
         ignite-form-field-label
             | Addresses
         ignite-form-group-tooltip
@@ -42,7 +42,7 @@ div
         - var save = addresses + '[$index] = ' + field
 
         .group-content(ng-if='#{addresses}.length')
-            ignite-form-field(ng-repeat='model in #{addresses} track by $index' type='internal' ng-init='')
+            ignite-form-field(ng-repeat='model in #{addresses} track by $index' type='internal' ng-init='___ = {}')
                 .indexField
                     | {{ $index+1 }}) 
                 i.tipField.fa.fa-remove(

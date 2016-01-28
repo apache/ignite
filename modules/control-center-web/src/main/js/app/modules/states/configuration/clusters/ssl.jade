@@ -111,7 +111,7 @@ form.panel.panel-default(name='#{form}' novalidate)
                         )
 
                 .settings-row
-                    ignite-form-group(ng-init='__ = {}; ___ = {}' name='trustManagers' ng-model='#{trust}')
+                    ignite-form-group(ng-init='__ = {};' name='trustManagers' ng-model='#{trust}')
                         ignite-form-field-label
                             | Trust managers
                         ignite-form-group-tooltip
@@ -124,7 +124,7 @@ form.panel.panel-default(name='#{form}' novalidate)
                         - var save = trust + '[$index] = ' + field
 
                         .group-content(ng-if='#{trust}.length')
-                            ignite-form-field(ng-repeat='model in #{trust} track by $index' type='internal' ng-init='')
+                            ignite-form-field(ng-repeat='model in #{trust} track by $index' type='internal' ng-init='___ = {}')
                                 .indexField
                                     | {{ $index+1 }}) 
                                 i.tipField.fa.fa-remove(

@@ -83,7 +83,7 @@ div
                 data-ng-model='#{model}.localAddress'
             )
     .details-row
-        ignite-form-group(ng-init='__ = {}; ___ = {}' ng-model='#{addresses}' name='discoveryMulticastAddresses')
+        ignite-form-group(ng-init='__ = {};' ng-model='#{addresses}' name='discoveryMulticastAddresses')
             ignite-form-field-label
                 | Addresses
             ignite-form-group-tooltip
@@ -106,7 +106,7 @@ div
             - var save = addresses + '[$index] = ' + field
 
             .group-content(ng-if='#{addresses}.length')
-                ignite-form-field(ng-repeat='model in #{addresses} track by $index' type='internal' ng-init='')
+                ignite-form-field(ng-repeat='model in #{addresses} track by $index' type='internal' ng-init=' ___ = {}')
                     .indexField
                         | {{ $index+1 }}) 
                     i.tipField.fa.fa-remove(
@@ -115,8 +115,8 @@ div
                         ng-click='#{addresses}.splice(#{addresses}.indexOf(model), 1)'
                     )
 
-                    ignite-form-field-down(ng-if='!$last' data-ng-model='model' data-models='#{addresses}')
-                    ignite-form-field-up(ng-if='!$first' data-ng-model='model' data-models='#{addresses}')
+                    ignite-form-field-down(ng-if='!$last' ng-hide='___.edit' data-ng-model='model' data-models='#{addresses}')
+                    ignite-form-field-up(ng-if='!$first' ng-hide='___.edit' data-ng-model='model' data-models='#{addresses}')
 
                     span(ng-hide='___.edit')
                         a.labelFormField(ng-click='___.edit = true') {{ model }}
