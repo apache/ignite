@@ -34,15 +34,12 @@ import org.apache.ignite.internal.GridStopWithCancelSelfTest;
 import org.apache.ignite.internal.IgniteSlowClientDetectionSelfTest;
 import org.apache.ignite.internal.processors.affinity.GridAffinityProcessorRendezvousSelfTest;
 import org.apache.ignite.internal.processors.cache.GridProjectionForCachesOnDaemonNodeSelfTest;
-import org.apache.ignite.internal.processors.cache.IgniteDaemonNodeMarshallerCacheTest;
-import org.apache.ignite.internal.processors.cache.IgniteMarshallerCacheConcurrentReadWriteTest;
 import org.apache.ignite.internal.processors.cache.OffHeapTieredTransactionSelfTest;
 import org.apache.ignite.internal.processors.closure.GridClosureProcessorSelfTest;
 import org.apache.ignite.internal.processors.continuous.GridEventConsumeSelfTest;
 import org.apache.ignite.internal.processors.continuous.GridMessageListenSelfTest;
 import org.apache.ignite.internal.processors.service.ClosureServiceClientsNodesTest;
 import org.apache.ignite.internal.product.GridProductVersionSelfTest;
-import org.apache.ignite.internal.util.nio.IgniteExceptionInNioWorkerSelfTest;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.messaging.GridMessagingNoPeerClassLoadingSelfTest;
 import org.apache.ignite.messaging.GridMessagingSelfTest;
@@ -111,10 +108,10 @@ public class IgniteBasicTestSuite extends TestSuite {
         suite.addTestSuite(GridFailFastNodeFailureDetectionSelfTest.class);
         suite.addTestSuite(OffHeapTieredTransactionSelfTest.class);
         suite.addTestSuite(IgniteSlowClientDetectionSelfTest.class);
-        suite.addTestSuite(IgniteDaemonNodeMarshallerCacheTest.class);
-        suite.addTestSuite(IgniteMarshallerCacheConcurrentReadWriteTest.class);
-
-        suite.addTestSuite(IgniteExceptionInNioWorkerSelfTest.class);
+//        suite.addTestSuite(IgniteDaemonNodeMarshallerCacheTest.class);
+//        suite.addTestSuite(IgniteMarshallerCacheConcurrentReadWriteTest.class);
+//
+//        suite.addTestSuite(IgniteExceptionInNioWorkerSelfTest.class);
 
         return suite;
     }
