@@ -110,7 +110,7 @@ public class GridCacheDhtLockBackupSelfTest extends GridCommonAbstractTest {
 
         Ignite ignite2 = startGridWithSpi(2, new TestCommunicationSpi(GridNearUnlockRequest.class, 1000));
 
-        if (!ignite1.cluster().mapKeyToNode(null, kv).id().equals(ignite1.cluster().localNode().id())) {
+        if (!ignite1.affinity(null).mapKeyToNode(kv).id().equals(ignite1.cluster().localNode().id())) {
             Ignite tmp = ignite1;
             ignite1 = ignite2;
             ignite2 = tmp;
