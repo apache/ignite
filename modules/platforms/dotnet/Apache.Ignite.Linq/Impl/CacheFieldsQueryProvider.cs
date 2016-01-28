@@ -27,13 +27,16 @@ namespace Apache.Ignite.Linq.Impl
     /// </summary>
     internal class CacheFieldsQueryProvider : QueryProviderBase
     {
-        //  TODO: Do we even need this class?
-
-        public CacheFieldsQueryProvider(IQueryParser queryParser, IQueryExecutor executor) : base(queryParser, executor)
+        /// <summary>
+        /// Initializes a new instance of the <see cref="CacheFieldsQueryProvider"/> class.
+        /// </summary>
+        public CacheFieldsQueryProvider(IQueryParser queryParser, IQueryExecutor executor) 
+            : base(queryParser, executor)
         {
             // No-op.
         }
 
+        /** <inheritdoc /> */
         public override IQueryable<T> CreateQuery<T>(Expression expression)
         {
             return new CacheFieldsQueryable<T>(this, expression);
