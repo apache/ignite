@@ -25,10 +25,16 @@ function _updateUser(res, user, params) {
     if (params.email)
         user.email = params.email;
 
+    if (params.company)
+        user.company = params.company;
+
+    if (params.country)
+        user.country = params.country;
+
     if (params.token)
         user.token = params.token;
 
-    if (params.userName || params.email || params.token || params.newPassword)
+    if (params.userName || params.email || params.company || params.country || params.token || params.newPassword)
         user.save(function (err) {
             if (err)
                 // TODO IGNITE-843 Send error to admin.

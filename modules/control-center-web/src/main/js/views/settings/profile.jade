@@ -28,11 +28,19 @@ mixin lbl(txt)
                     .details-row
                         +lbl('User name:')
                         .col-xs-5.col-sm-4
-                            input.form-control(id='profile-username' type='text' ng-model='profileUser.username' placeholder='Input name' required auto-focus)
+                            input#profile-username.form-control(type='text' ng-model='profileUser.username' placeholder='Input name' required auto-focus)
                     .details-row
                         +lbl('Email:')
                         .col-xs-5.col-sm-4
-                            input.form-control(id='profile-email' type='email' ng-model='profileUser.email' placeholder='you@domain.com' required)
+                            input#profile-email.form-control(type='email' ng-model='profileUser.email' placeholder='you@domain.com' required)
+                    .details-row
+                        label.col-sm-2.required.labelFormField Company:
+                        .col-xs-5.col-sm-4
+                            input#profile-company.form-control(type='text' ng-model='profileUser.company' placeholder='You company name')
+                    .details-row
+                        label.col-sm-2.required.labelFormField Country:
+                        .col-xs-5.col-sm-4
+                            button#profile-country.select-toggle.form-control(bs-select bs-options='item for item in countries' type='text' ng-model='profileUser.country' placeholder='Choose you country')
                     .details-row
                         .advanced-options
                             i.fa.fa-chevron-circle-down(ng-show='profileUser.showToken' ng-click='profileUser.showToken = ! profileUser.showToken')

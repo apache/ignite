@@ -33,6 +33,8 @@ mongoose.connect(config.get('mongoDB:url'), {server: {poolSize: 4}});
 var AccountSchema = new Schema({
     username: String,
     email: String,
+    company: String,
+    country: String,
     lastLogin: Date,
     admin: Boolean,
     token: String,
@@ -50,6 +52,8 @@ AccountSchema.set('toJSON', {
             _id: ret._id,
             email: ret.email,
             username: ret.username,
+            company: ret.company,
+            country: ret.country,
             admin: ret.admin,
             token: ret.token,
             lastLogin: ret.lastLogin

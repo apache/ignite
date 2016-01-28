@@ -52,9 +52,7 @@ angular
             'EVT_IGFS_META_UPDATED', 'EVT_IGFS_DIR_CREATED', 'EVT_IGFS_DIR_RENAMED', 'EVT_IGFS_DIR_DELETED']
     };
 
-    this.push = function(data) {
-        items.push(data);
-    };
+    this.push = (data) => items.push(data);
 
     this.$get = [() => {
         return items;

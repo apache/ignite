@@ -59,8 +59,8 @@ angular
                  * @param value text to check.
                  * @returns boolean 'true' if given text non Java keyword.
                  */
-                nonKeywords(value) {
-                    return !_.contains(JAVA_KEYWORDS, value);
+                isKeywords(value) {
+                    return _.contains(JAVA_KEYWORDS, value);
                 }
             };
         }];

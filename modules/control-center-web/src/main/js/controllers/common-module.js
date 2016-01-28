@@ -2036,15 +2036,14 @@ consoleModule.controller('resetPassword', [
 
 // Login popup controller.
 // TODO IGNITE-1936 Refactor this controller.
-consoleModule.controller('auth', [
-    '$scope', '$focus', 'Auth',
-    function ($scope, $focus, Auth) {
-        $scope.auth = Auth.auth;
+consoleModule.controller('auth', ['$scope', '$focus', 'Auth', 'igniteCountries', function ($scope, $focus, Auth, countries) {
+    $scope.auth = Auth.auth;
 
-        $scope.action = 'login';
+    $scope.action = 'login';
+    $scope.countries = countries;
 
-        $focus('user_email');
-    }]);
+    $focus('user_email');
+}]);
 
 // Download agent controller.
 consoleModule.service('$agentDownload', [

@@ -15,26 +15,11 @@
  * limitations under the License.
  */
 
-export default ['javaKeywords', ['JavaTypes', (JavaTypes) => {
-    const link = (scope, el, attrs, [ngModel]) => {
-        if (typeof attrs.javaKeywords === 'undefined' || !attrs.javaKeywords)
-            return;
+// Java built-in short class names.
+import COUNTRIES from 'app/data/countries.json!';
 
-        ngModel.$validators.javaKeywords = (value) => {
-            if (value) {
-                for (const item of value.split('.')) {
-                    if (JavaTypes.isKeywords(item))
-                        return false;
-                }
-            }
-
-            return true;
-        };
-    };
-
-    return {
-        restrict: 'A',
-        link,
-        require: ['ngModel']
-    };
-}]];
+export default ['igniteCountries', function() {
+    this.$get = [() => {
+        return COUNTRIES;
+    }];
+}];

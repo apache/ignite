@@ -1,8 +1,7 @@
 mixin feedback(error, message)
     i.fa.fa-exclamation-triangle.form-control-feedback(
         ng-show='!form[name].$pristine && form[name].$error.#{error}'
-        bs-tooltip
-        data-title='#{message}'
+        bs-tooltip='"#{message}"'
     )
 
 div
@@ -28,8 +27,8 @@ div
     )
         span(ng-transclude)
 
-        +feedback('javaIdentifier', 'Trust manager is invalid!')
-        +feedback('required', 'Trust manager could not be empty!')
-        +feedback('javaKeywords', 'Trust manager could not contains reserved java keyword: ""!')
-        +feedback('javaBuiltInClass', 'Trust manager should not be the Java built-in class!')
-        +feedback('javaPackageSpecified', 'Trust manager does not have package specified!')
+        +feedback('javaIdentifier', '{{ name }} is invalid!')
+        +feedback('required', '{{ name }} could not be empty!')
+        +feedback('javaKeywords', '{{ name }} could not contains reserved Java keyword!')
+        +feedback('javaBuiltInClass', '{{ name }} should not be the Java built-in class!')
+        +feedback('javaPackageSpecified', '{{ name }} does not have package specified!')

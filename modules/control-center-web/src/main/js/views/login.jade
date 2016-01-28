@@ -15,6 +15,9 @@
     limitations under the License.
 
 mixin lbl(txt)
+    label.col-xs-3.col-md-3 #{txt}
+
+mixin lblRequired(txt)
     label.col-xs-3.col-md-3.required #{txt}
 
 header#header.header
@@ -39,19 +42,27 @@ header#header.header
                             p.col-xs-12.col-md-11(ng-show='action == "password/forgot"')
                                 | That's ok! Simply enter your email below and a reset password link will be sent to you via email. You can then follow that link and select a new password.
                         .settings-row(ng-show='action == "register"')
-                            +lbl('Full Name:')
+                            +lblRequired('Full Name:')
                             .col-xs-9.col-md-8
                                 input#user_name.form-control(enter-focus-next='user_email' type='text' ng-model='user_info.username' placeholder='John Smith' ng-required='action=="register"')
                         .settings-row
-                            +lbl('Email:')
+                            +lblRequired('Email:')
                             .col-xs-9.col-md-8
-                                input#user_email.form-control(enter-focus-next='user_password' type='email' ng-model='user_info.email' placeholder='you@domain.com' required on-enter='action == "password/forgot" && loginForm.$valid && auth(action, user_info)')
+                                input#user_email.form-control(enter-focus-next='company' type='email' ng-model='user_info.email' placeholder='you@domain.com' required)
+                        .settings-row(ng-show='action == "register"')
+                            +lbl('Company:')
+                            .col-xs-9.col-md-8
+                                input#company.form-control(enter-focus-next='country' type='text' ng-model='user_info.company' placeholder='You company name')
+                        .settings-row(ng-show='action == "register"')
+                            +lbl('Country:')
+                            .col-xs-9.col-md-8
+                                button#country.select-toggle.form-control(bs-select bs-options='item for item in countries' enter-focus-next='user_password' type='text' ng-model='user_info.country' placeholder='Choose you country')
                         .settings-row(ng-show='action != "password/forgot"')
-                            +lbl('Password:')
+                            +lblRequired('Password:')
                             .col-xs-9.col-md-8
                                 input#user_password.form-control(enter-focus-next='user_confirm' type='password' ng-model='user_info.password' placeholder='Password' ng-required='action != "password/forgot"' on-enter='action == "login" && loginForm.$valid && auth(action, user_info)')
                         .settings-row(ng-if='action == "register"')
-                            +lbl('Confirm:')
+                            +lblRequired('Confirm:')
                             .col-xs-9.col-md-8
                                 input#user_confirm.form-control(type='password' ng-model='user_info.confirm' match='user_info.password' placeholder='Confirm password' ng-required='action == "register"' on-enter='loginForm.$valid && auth(action, user_info)')
                         .settings-row(ignite-terms)

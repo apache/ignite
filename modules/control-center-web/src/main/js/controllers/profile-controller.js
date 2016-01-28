@@ -17,8 +17,10 @@
 
 // Controller for Profile screen.
 consoleModule.controller('profileController',
-    ['$scope', '$http', '$common', '$focus', '$confirm', function ($scope, $http, $common, $focus, $confirm) {
+    ['$scope', '$http', '$common', '$focus', '$confirm', 'igniteCountries', function ($scope, $http, $common, $focus, $confirm, countries) {
     $scope.profileUser = angular.copy($scope.$root.user);
+
+    $scope.countries = countries;
 
     if ($scope.profileUser && !$scope.profileUser.token)
         $scope.profileUser.token = 'No security token. Regenerate please.';
@@ -34,8 +36,9 @@ consoleModule.controller('profileController',
         var old = $scope.$root.user;
         var cur = $scope.profileUser;
 
-        return old && (old.username != cur.username || old.email != cur.email || old.token != cur.token ||
-            (cur.changePassword && !$common.isEmptyString(cur.newPassword)));
+        return old && (old.username != cur.username || old.email != cur.email ||
+            old.company != cur.company || old.country != cur.country
+            || old.token != cur.token || (cur.changePassword && !$common.isEmptyString(cur.newPassword)));
     };
 
     $scope.profileCouldBeSaved = function () {
@@ -59,14 +62,22 @@ consoleModule.controller('profileController',
             var email = profile.email;
             var changeEmail = email != $scope.$root.user.email;
 
+            var company = profile.company;
+            var changeCompany = company != $scope.$root.user.company;
+
+            var country = profile.country;
+            var changeCountry = country != $scope.$root.user.country;
+
             var token = profile.token;
             var changeToken = token != $scope.$root.user.token;
 
-            if (changeUsername || changeEmail || changeToken || profile.changePassword) {
+            if (changeUsername || changeEmail || changeCompany || changeCountry || changeToken || profile.changePassword) {
                 $http.post('/api/v1/profile/save', {
                     _id: profile._id,
                     userName: changeUsername ? userName : undefined,
                     email: changeEmail ? email : undefined,
+                    company: changeCompany ? company : undefined,
+                    country: changeCountry ? country : undefined,
                     token: changeToken ? token : undefined,
                     newPassword: profile.changePassword ? profile.newPassword : undefined
                 }).success(function (user) {
@@ -81,6 +92,12 @@ consoleModule.controller('profileController',
 
                     if (changeEmail)
                         $scope.$root.user.email = email;
+
+                    if (changeCompany)
+                        $scope.$root.user.company = company;
+
+                    if (changeCountry)
+                        $scope.$root.user.country = country;
 
                     $focus('profile-username');
                 }).error(function (err) {

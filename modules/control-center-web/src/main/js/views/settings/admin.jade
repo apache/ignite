@@ -21,12 +21,14 @@
             table.table.table-striped.admin(st-table='displayedUsers' st-safe-src='users')
                 thead
                     tr
-                        th.header(colspan='5')
+                        th.header(colspan='7')
                             .col-sm-2.pull-right
                                 input.form-control(type='text' st-search='' placeholder='Filter users...')
                     tr
                         th(st-sort='username') User name
                         th(st-sort='email') Email
+                        th(st-sort='company') Company
+                        th(st-sort='country') Country
                         th.col-sm-2(st-sort='lastLogin') Last login
                         th(width='1%'  st-sort='admin') Admin
                         th(width='1%') Actions
@@ -35,6 +37,8 @@
                         td {{row.username}}
                         td
                             a(ng-href='mailto:{{row.email}}') {{row.email}}
+                        td {{row.company}}
+                        td {{row.country}}
                         td
                             span {{row.lastLogin | date:'medium'}}
                         td(style='text-align: center;')
