@@ -81,7 +81,7 @@ public class AgentSocket implements WebSocketSender {
      */
     @OnWebSocketClose
     public void onClose(int statusCode, String reason) {
-        log.warn(String.format("Connection closed: %d - %s.", statusCode, reason));
+        log.error(String.format("Connection closed: %d - %s.", statusCode, reason));
 
         if (remote != null)
             remote.close();
@@ -104,6 +104,7 @@ public class AgentSocket implements WebSocketSender {
 
         authMsg.addProperty("type", "AuthMessage");
         authMsg.addProperty("token", cfg.token());
+        authMsg.addProperty("relDate", cfg.relDate());
 
         send(authMsg);
     }
