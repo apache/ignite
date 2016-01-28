@@ -236,12 +236,16 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
             {
                 writer.WriteInt("age1", Age);
                 writer.WriteString("name", Name);
+                writer.WriteInt("OrganizationId", OrganizationId);
+                writer.WriteObject("Address", Address);
             }
 
             public void ReadBinary(IBinaryReader reader)
             {
                 Age = reader.ReadInt("age1");
                 Name = reader.ReadString("name");
+                OrganizationId = reader.ReadInt("OrganizationId");
+                Address = reader.ReadObject<LinqAddress>("Address");
             }
         }
 
