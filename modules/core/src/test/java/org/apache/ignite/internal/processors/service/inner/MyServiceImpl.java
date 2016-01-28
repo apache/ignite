@@ -1,4 +1,4 @@
-﻿﻿/*
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -15,22 +15,31 @@
  * limitations under the License.
  */
 
-using System.Reflection;
-﻿﻿using System.Runtime.InteropServices;
+package org.apache.ignite.internal.processors.service.inner;
 
-[assembly: AssemblyTitle("Apache Ignite.NET Examples Library")]
-[assembly: AssemblyDescription("")]
-[assembly: AssemblyConfiguration("")]
-[assembly: AssemblyCompany("Apache Software Foundation")]
-[assembly: AssemblyProduct("Apache Ignite.NET")]
-[assembly: AssemblyCopyright("Copyright ©  2015")]
-[assembly: AssemblyTrademark("")]
-[assembly: AssemblyCulture("")]
+import org.apache.ignite.services.ServiceContext;
 
-[assembly: ComVisible(false)]
+/**
+ * Package-private service implementation.
+ */
+class MyServiceImpl implements MyService {
+    /** {@inheritDoc} */
+    @Override public int hello() {
+        return 42;
+    }
 
-[assembly: Guid("ce65ec7c-d3cf-41ad-8f45-f90d5af68d77")]
+    /** {@inheritDoc} */
+    @Override public void cancel(ServiceContext ctx) {
+        // No-op.
+    }
 
-[assembly: AssemblyVersion("1.6.0.8653")]
-[assembly: AssemblyFileVersion("1.6.0.8653")]
-[assembly: AssemblyInformationalVersion("1.6.0")]
+    /** {@inheritDoc} */
+    @Override public void init(ServiceContext ctx) throws Exception {
+        // No-op.
+    }
+
+    /** {@inheritDoc} */
+    @Override public void execute(ServiceContext ctx) throws Exception {
+        // No-op.
+    }
+}
