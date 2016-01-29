@@ -17,13 +17,10 @@
 
 namespace Apache.Ignite.Linq.Impl
 {
-    using System;
     using System.Collections.Generic;
-    using System.Diagnostics;
     using System.Linq;
     using System.Linq.Expressions;
     using System.Text;
-    using Apache.Ignite.Core.Cache;
     using Remotion.Linq;
     using Remotion.Linq.Clauses;
 
@@ -72,8 +69,7 @@ namespace Apache.Ignite.Linq.Impl
         {
             base.VisitMainFromClause(fromClause, queryModel);
 
-            // TODO
-            Builder.AppendFormat("from {0} ", "TODO");
+            Builder.AppendFormat("from {0} ", TableNameMapper.GetTableName(fromClause));
         }
 
         /** <inheritdoc /> */

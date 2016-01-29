@@ -8,6 +8,7 @@ namespace Apache.Ignite.Linq.Impl
     using System.Diagnostics;
     using System.Linq.Expressions;
     using Apache.Ignite.Core.Cache;
+    using Remotion.Linq.Clauses;
     using Remotion.Linq.Clauses.Expressions;
 
     internal static class TableNameMapper
@@ -42,10 +43,13 @@ namespace Apache.Ignite.Linq.Impl
 
         public static string GetTableName(MemberExpression expression)
         {
-            // TODO
             return "TODO";
         }
 
 
+        public static string GetTableName(MainFromClause fromClause)
+        {
+            return "TODO";
+        }
     }
 }
