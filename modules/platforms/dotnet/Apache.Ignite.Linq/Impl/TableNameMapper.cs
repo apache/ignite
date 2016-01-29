@@ -41,8 +41,9 @@ namespace Apache.Ignite.Linq.Impl
         public static string GetTableNameFromEntryType(Type cacheEntryType)
         {
             Debug.Assert(cacheEntryType != null);
-            Debug.Assert(cacheEntryType.IsGenericType);
-            Debug.Assert(cacheEntryType.GetGenericTypeDefinition() == typeof(ICacheEntry<,>));
+            
+            if (!(cacheEntryType.IsGenericType && cacheEntryType.GetGenericTypeDefinition() == typeof(ICacheEntry<,>)))
+                throw new NotSupportedException("Unexpected cache query entry type: " + cacheEntryType);
 
             return GetTableNameFromEntryValueType(cacheEntryType.GetGenericArguments()[1]);
         }

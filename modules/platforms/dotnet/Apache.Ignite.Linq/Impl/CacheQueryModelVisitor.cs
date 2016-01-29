@@ -17,12 +17,14 @@
 
 namespace Apache.Ignite.Linq.Impl
 {
+    using System;
     using System.Collections.Generic;
     using System.Linq;
     using System.Linq.Expressions;
     using System.Text;
     using Remotion.Linq;
     using Remotion.Linq.Clauses;
+    using Remotion.Linq.Clauses.Expressions;
 
     /// <summary>
     /// Query visitor, transforms LINQ expression to SQL.
@@ -85,17 +87,27 @@ namespace Apache.Ignite.Linq.Impl
             _parameters.AddRange(whereSql.Parameters);
         }
 
+        /** <inheritdoc /> */
         public override void VisitAdditionalFromClause(AdditionalFromClause fromClause, QueryModel queryModel, int index)
         {
             base.VisitAdditionalFromClause(fromClause, queryModel, index);
         }
 
+        /** <inheritdoc /> */
         public override void VisitJoinClause(JoinClause joinClause, QueryModel queryModel, int index)
         {
             base.VisitJoinClause(joinClause, queryModel, index);
 
-            Builder.AppendFormat("join {0} on ({1} = {2}) ",
-                TableNameMapper.GetTableName(joinClause),
+            Builder.Append("join (");
+
+            var innerModel = joinClause.InnerSequence as SubQueryExpression;
+
+            if (innerModel == null)
+                throw new NotSupportedException("Unexpected JOIN subexpression: " + joinClause.InnerSequence);
+
+            VisitQueryModel(innerModel.QueryModel);
+
+            Builder.AppendFormat(") on ({0} = {1}) ",
                 GetSqlExpression(joinClause.InnerKeySelector).QueryText,
                 GetSqlExpression(joinClause.OuterKeySelector).QueryText);
         }
