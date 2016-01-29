@@ -129,6 +129,10 @@ namespace Apache.Ignite.Linq.Impl
                     _resultBuilder.Append(" = ");
                     break;
 
+                case ExpressionType.NotEqual:
+                    _resultBuilder.Append(" <> ");
+                    break;
+
                 case ExpressionType.AndAlso:
                 case ExpressionType.And:
                     _resultBuilder.Append(" and ");
