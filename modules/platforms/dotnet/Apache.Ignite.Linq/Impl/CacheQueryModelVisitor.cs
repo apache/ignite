@@ -96,14 +96,14 @@ namespace Apache.Ignite.Linq.Impl
 
             Builder.AppendFormat("join {0} on ({1} = {2}) ",
                 TableNameMapper.GetTableName(joinClause),
-                GetSqlExpression(joinClause.InnerKeySelector),
-                GetSqlExpression(joinClause.OuterKeySelector));
+                GetSqlExpression(joinClause.InnerKeySelector).QueryText,
+                GetSqlExpression(joinClause.OuterKeySelector).QueryText);
         }
 
         /// <summary>
         /// Gets the SQL expression.
         /// </summary>
-        protected QueryData GetSqlExpression(Expression expression)
+        protected static QueryData GetSqlExpression(Expression expression)
         {
             return CacheQueryExpressionVisitor.GetSqlExpression(expression);
         }
