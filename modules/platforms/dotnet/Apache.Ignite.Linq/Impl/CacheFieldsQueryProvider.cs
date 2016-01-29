@@ -34,18 +34,14 @@ namespace Apache.Ignite.Linq.Impl
         /** */
         private readonly string _cacheName;
         
-        /** */
-        private readonly string _tableName;
-
         /// <summary>
         /// Initializes a new instance of the <see cref="CacheFieldsQueryProvider"/> class.
         /// </summary>
         public CacheFieldsQueryProvider(IQueryParser queryParser, IQueryExecutor executor, IIgnite ignite, 
-            string cacheName, string tableName) : base(queryParser, executor)
+            string cacheName) : base(queryParser, executor)
         {
             _ignite = ignite;
             _cacheName = cacheName;
-            _tableName = tableName;
         }
 
         /// <summary>
@@ -62,14 +58,6 @@ namespace Apache.Ignite.Linq.Impl
         public string CacheName
         {
             get { return _cacheName; }
-        }
-
-        /// <summary>
-        /// Gets the name of the table.
-        /// </summary>
-        public string TableName
-        {
-            get { return _tableName; }
         }
 
         /** <inheritdoc /> */

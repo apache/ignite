@@ -25,14 +25,6 @@ namespace Apache.Ignite.Linq
     public interface ICacheQueryable
     {
         /// <summary>
-        /// Gets the type of the query.
-        /// </summary>
-        /// <value>
-        /// The type of the query.
-        /// </value>
-        string QueryType { get; }
-
-        /// <summary>
         /// Gets the name of the cache that is associated with this query.
         /// </summary>
         /// <value>

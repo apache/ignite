@@ -41,12 +41,6 @@ namespace Apache.Ignite.Linq.Impl
         }
 
         /** <inheritdoc /> */
-        public string QueryType
-        {
-            get { return CacheQueryProvider.TableName; }
-        }
-
-        /** <inheritdoc /> */
         public string CacheName
         {
             get { return CacheQueryProvider.CacheName; }

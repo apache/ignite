@@ -38,30 +38,16 @@ namespace Apache.Ignite.Linq.Impl
         /** */
         private readonly List<object> _parameters = new List<object>();
 
-        /** */
-        private readonly string _tableName;
-
         /// <summary>
         /// Generates the query.
         /// </summary>
-        public static QueryData GenerateQuery(QueryModel queryModel, string tableName)
+        public static QueryData GenerateQuery(QueryModel queryModel)
         {
-            var visitor = new CacheQueryModelVisitor(tableName);
+            var visitor = new CacheQueryModelVisitor();
 
             visitor.VisitQueryModel(queryModel);
 
             return visitor.GetQuery();
-        }
-
-        /// <summary>
-        /// Initializes a new instance of the <see cref="CacheQueryModelVisitor"/> class.
-        /// </summary>
-        /// <param name="tableName">Name of the table.</param>
-        protected CacheQueryModelVisitor(string tableName)
-        {
-            Debug.Assert(!string.IsNullOrEmpty(tableName));
-
-            _tableName = tableName;
         }
 
         /// <summary>
@@ -86,7 +72,8 @@ namespace Apache.Ignite.Linq.Impl
         {
             base.VisitMainFromClause(fromClause, queryModel);
 
-            Builder.AppendFormat("from {0} ", _tableName);
+            // TODO
+            Builder.AppendFormat("from {0} ", "TODO");
         }
 
         /** <inheritdoc /> */
@@ -117,7 +104,7 @@ namespace Apache.Ignite.Linq.Impl
         /// </summary>
         protected QueryData GetSqlExpression(Expression expression)
         {
-            return CacheQueryExpressionVisitor.GetSqlExpression(expression, _tableName);
+            return CacheQueryExpressionVisitor.GetSqlExpression(expression);
         }
     }
 }

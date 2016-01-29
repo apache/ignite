@@ -33,28 +33,15 @@ namespace Apache.Ignite.Linq.Impl
         /** */
         private readonly ICache<TKey, TValue> _cache;
 
-        /** */
-        private readonly string _tableName;
-
         /// <summary>
         /// Initializes a new instance of the <see cref="CacheQueryProvider{TKey, TValue}" /> class.
         /// </summary>
         /// <param name="cache">The cache.</param>
-        /// <param name="tableName">Name of the query type.</param>
-        public CacheQueryProvider(ICache<TKey, TValue> cache, string tableName) 
+        public CacheQueryProvider(ICache<TKey, TValue> cache) 
             : base(Remotion.Linq.Parsing.Structure.QueryParser.CreateDefault(), 
-                  new CacheQueryExecutor<TKey, TValue>(cache, tableName))
+                  new CacheQueryExecutor<TKey, TValue>(cache))
         {
             _cache = cache;
-            _tableName = tableName;
-        }
-
-        /// <summary>
-        /// Gets the name of the table.
-        /// </summary>
-        public string TableName
-        {
-            get { return _tableName; }
         }
 
         /// <summary>
@@ -90,8 +77,8 @@ namespace Apache.Ignite.Linq.Impl
         private CacheFieldsQueryProvider GetFieldsProvider()
         {
             return new CacheFieldsQueryProvider(QueryParser,
-                new CacheFieldsQueryExecutor(q => Cache.QueryFields(q), TableName), 
-                _cache.Ignite, _cache.Name, _tableName);
+                new CacheFieldsQueryExecutor(q => Cache.QueryFields(q)), 
+                _cache.Ignite, _cache.Name);
         }
     }
 }

@@ -30,9 +30,9 @@ namespace Apache.Ignite.Linq.Impl
         /// <summary>
         /// Generates the query.
         /// </summary>
-        public new static QueryData GenerateQuery(QueryModel queryModel, string tableName)
+        public new static QueryData GenerateQuery(QueryModel queryModel)
         {
-            var visitor = new CacheFieldsQueryModelVisitor(tableName);
+            var visitor = new CacheFieldsQueryModelVisitor();
 
             visitor.VisitQueryModel(queryModel);
 
@@ -76,15 +76,6 @@ namespace Apache.Ignite.Linq.Impl
             var queryText = resultBuilder.Append(" ").Append(queryData.QueryText).ToString();
 
             return new QueryData(queryText, queryData.Parameters, true);
-        }
-
-        /// <summary>
-        /// Initializes a new instance of the <see cref="CacheFieldsQueryModelVisitor"/> class.
-        /// </summary>
-        /// <param name="tableName">Name of the table.</param>
-        private CacheFieldsQueryModelVisitor(string tableName) : base(tableName)
-        {
-            // No-op.
         }
     }
 }
