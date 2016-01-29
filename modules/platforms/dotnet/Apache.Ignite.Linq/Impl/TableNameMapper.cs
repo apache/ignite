@@ -52,7 +52,17 @@ namespace Apache.Ignite.Linq.Impl
         {
             Debug.Assert(expression != null);
 
-            return GetTableNameFromEntryType(expression.ReferencedQuerySource.ItemType);
+            var fromSource = expression.ReferencedQuerySource as IFromClause; 
+
+            if (fromSource != null)
+                return GetTableNameWithSchema(fromSource);
+
+            var joinSource = expression.ReferencedQuerySource as JoinClause;
+
+            if (joinSource != null)
+                return GetTableNameWithSchema(joinSource);
+
+            throw new NotSupportedException("Unexpected query source: " + expression.ReferencedQuerySource);
         }
 
         public static string GetTableNameWithSchema(MemberExpression expression)
@@ -72,14 +82,26 @@ namespace Apache.Ignite.Linq.Impl
             throw new NotSupportedException("Unexpected member expression, cannot find query source: " + expression);
         }
 
-        public static string GetTableNameWithSchema(MainFromClause fromClause)
+        public static string GetTableNameWithSchema(IFromClause fromClause)
         {
-            return GetTableNameFromEntryType(fromClause.ItemType);
+            return GetSchemaName(fromClause.FromExpression, GetTableNameFromEntryType(fromClause.ItemType));
         }
 
         public static string GetTableNameWithSchema(JoinClause joinClause)
         {
-            return GetTableNameFromEntryType(joinClause.ItemType);
+            return GetSchemaName(joinClause.InnerSequence, GetTableNameFromEntryType(joinClause.ItemType));
+        }
+
+        private static string GetSchemaName(Expression expression, string tableName)
+        {
+            var constExpr = expression as ConstantExpression;
+
+            if (constExpr == null)
+                throw new NotSupportedException("Unexpected query source: " + expression);
+
+            var cacheQuery = (ICacheQueryable) constExpr.Value;
+
+            return string.Format("\"{0}\".{1}", cacheQuery.CacheName, tableName);
         }
     }
 }
