@@ -90,7 +90,8 @@ namespace Apache.Ignite.Linq.Impl
         private CacheFieldsQueryProvider GetFieldsProvider()
         {
             return new CacheFieldsQueryProvider(QueryParser,
-                new CacheFieldsQueryExecutor(q => Cache.QueryFields(q), TableName));
+                new CacheFieldsQueryExecutor(q => Cache.QueryFields(q), TableName), 
+                _cache.Ignite, _cache.Name, _tableName);
         }
     }
 }
