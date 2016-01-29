@@ -33,6 +33,9 @@ namespace Apache.Ignite.Linq.Impl
         /** */
         private readonly ICache<TKey, TValue> _cache;
 
+        /** */
+        private CacheFieldsQueryProvider _fieldsProvider;
+
         /// <summary>
         /// Initializes a new instance of the <see cref="CacheQueryProvider{TKey, TValue}" /> class.
         /// </summary>
@@ -76,9 +79,9 @@ namespace Apache.Ignite.Linq.Impl
         /// </summary>
         private CacheFieldsQueryProvider GetFieldsProvider()
         {
-            return new CacheFieldsQueryProvider(QueryParser,
-                new CacheFieldsQueryExecutor(q => Cache.QueryFields(q)), 
-                _cache.Ignite, _cache.Name);
+            return _fieldsProvider ?? (_fieldsProvider =
+                new CacheFieldsQueryProvider(QueryParser,
+                    new CacheFieldsQueryExecutor(q => Cache.QueryFields(q)), _cache.Ignite, _cache.Name));
         }
     }
 }
