@@ -258,7 +258,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
 
             // Test full projection (selects pair of ICacheEntry)
             var res2 = persons.Join(organizations, person => person.Value.OrganizationId, org => org.Value.Id,
-                (person, org) => new { Person = person, Org = org }).ToList();
+                (person, org) => new {Person = person, Org = org}).Where(x => x.Org.Key == 1).ToList();
 
             Assert.AreEqual(DataSize / 2, res2.Count);
         }
