@@ -87,11 +87,12 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         [Test]
         public void TestEmptyQuery()
         {
-            var cache = GetCacheOf<object>();
+            var cache = GetCache();
 
             var results = cache.ToQueryable().ToArray();
 
-            Assert.AreEqual(DataSize + 2, results.Length);
+            // There are both persons and organizations in the same cache, but query should only return specific type
+            Assert.AreEqual(DataSize, results.Length);
         }
 
         [Test]
