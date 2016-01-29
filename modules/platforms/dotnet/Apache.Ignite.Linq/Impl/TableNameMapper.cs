@@ -56,12 +56,29 @@ namespace Apache.Ignite.Linq.Impl
 
         public static string GetTableName(MemberExpression expression)
         {
-            return "TODO";
+            Debug.Assert(expression != null);
+
+            var querySrc = expression.Expression as QuerySourceReferenceExpression;
+
+            if (querySrc != null)
+                return GetTableName(querySrc);
+
+            var innerMember = expression.Expression as MemberExpression;
+
+            if (innerMember != null)
+                return GetTableName(innerMember);
+;
+            throw new NotSupportedException("Unexpected member expression, cannot find query source: " + expression);
         }
 
         public static string GetTableName(MainFromClause fromClause)
         {
             return GetTableNameFromEntryType(fromClause.ItemType);
+        }
+
+        public static string GetTableName(JoinClause joinClause)
+        {
+            return GetTableNameFromEntryType(joinClause.ItemType);
         }
     }
 }

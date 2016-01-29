@@ -93,6 +93,8 @@ namespace Apache.Ignite.Linq.Impl
         public override void VisitJoinClause(JoinClause joinClause, QueryModel queryModel, int index)
         {
             base.VisitJoinClause(joinClause, queryModel, index);
+
+            Builder.AppendFormat("join {0} ", TableNameMapper.GetTableName(joinClause));
         }
 
         /// <summary>
