@@ -76,7 +76,6 @@ namespace Apache.Ignite.Linq.Impl
         /** <inheritdoc /> */
         public QueryData GetQueryData(QueryModel queryModel)
         {
-            // TODO: Cache name can be null
             return CacheQueryModelVisitor.GenerateQuery(queryModel, _cache.Name);
         }
     }

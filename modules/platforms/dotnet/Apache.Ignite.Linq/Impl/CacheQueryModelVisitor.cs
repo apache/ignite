@@ -55,7 +55,6 @@ namespace Apache.Ignite.Linq.Impl
         public static QueryData GenerateQuery(QueryModel queryModel, string schemaName)
         {
             Debug.Assert(queryModel != null);
-            Debug.Assert(!string.IsNullOrEmpty(schemaName));
 
             var visitor = new CacheQueryModelVisitor(schemaName);
 

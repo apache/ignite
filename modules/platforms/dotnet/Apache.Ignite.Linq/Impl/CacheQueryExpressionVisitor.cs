@@ -68,8 +68,6 @@ namespace Apache.Ignite.Linq.Impl
         /// </summary>
         private CacheQueryExpressionVisitor(bool aggregating, string schemaName)
         {
-            Debug.Assert(!string.IsNullOrEmpty(schemaName));
-
             _aggregating = aggregating;
             _schemaName = schemaName;
         }
@@ -78,7 +76,8 @@ namespace Apache.Ignite.Linq.Impl
         /// Gets the SQL statement.
         /// </summary>
         /// <param name="linqExpression">The linq expression.</param>
-        /// <param name="aggregating"></param>
+        /// <param name="aggregating">Aggregate flag.</param>
+        /// <param name="schemaName">Name of the schema.</param>
         /// <returns>
         /// SQL statement for the expression.
         /// </returns>
@@ -217,7 +216,7 @@ namespace Apache.Ignite.Linq.Impl
 
             var fieldName = queryFieldAttr == null || string.IsNullOrEmpty(queryFieldAttr.Name) ? expression.Member.Name : queryFieldAttr.Name;
 
-            _resultBuilder.AppendFormat("\"{0}\"{1}.{2}", _schemaName, TableNameMapper.GetTableName(expression),
+            _resultBuilder.AppendFormat("\"{0}\".{1}.{2}", _schemaName, TableNameMapper.GetTableName(expression),
                 fieldName);
 
             return expression;

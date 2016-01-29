@@ -47,7 +47,6 @@ namespace Apache.Ignite.Linq.Impl
         public CacheFieldsQueryExecutor(Func<SqlFieldsQuery, IQueryCursor<IList>> executorFunc, string schemaName)
         {
             Debug.Assert(executorFunc != null);
-            Debug.Assert(!string.IsNullOrEmpty(schemaName));
 
             _executorFunc = executorFunc;
             _schemaName = schemaName;
