@@ -24,7 +24,6 @@ namespace Apache.Ignite.Linq.Impl
     using System.Text;
     using Remotion.Linq;
     using Remotion.Linq.Clauses;
-    using Remotion.Linq.Clauses.Expressions;
 
     /// <summary>
     /// Query visitor, transforms LINQ expression to SQL.

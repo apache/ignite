@@ -18,6 +18,7 @@
 namespace Apache.Ignite.Linq.Impl
 {
     using System;
+    using System.Linq;
     using System.Text;
     using Remotion.Linq;
     using Remotion.Linq.Clauses.ResultOperators;
@@ -39,32 +40,36 @@ namespace Apache.Ignite.Linq.Impl
             var resultBuilder = new StringBuilder("select ");
             int parenCount = 0;
 
-            foreach (var resultOperator in queryModel.ResultOperators)
+            foreach (var op in queryModel.ResultOperators.Reverse())
             {
-                if (resultOperator is CountResultOperator)
+                if (op is CountResultOperator)
                 {
                     resultBuilder.Append("count (");
                     parenCount++;
                 }
-                else if (resultOperator is SumResultOperator)
+                else if (op is SumResultOperator)
                 {
                     resultBuilder.Append("sum (");
                     parenCount++;
                 }
-                else if (resultOperator is MinResultOperator)
+                else if (op is MinResultOperator)
                 {
                     resultBuilder.Append("min (");
                     parenCount++;
                 }
-                else if (resultOperator is MaxResultOperator)
+                else if (op is MaxResultOperator)
                 {
                     resultBuilder.Append("max (");
                     parenCount++;
                 }
-                else if (resultOperator is FirstResultOperator || resultOperator is SingleResultOperator)
-                    visitor.Builder.Append("limit 1 ");
+                else if (op is DistinctResultOperator)
+                    resultBuilder.Append("distinct ");
+                else if (op is FirstResultOperator || op is SingleResultOperator)
+                    resultBuilder.Append("top 1 ");
+                else if (op is TakeResultOperator)
+                    resultBuilder.AppendFormat("top {0} ", ((TakeResultOperator) op).Count);
                 else
-                    throw new NotSupportedException("Operator is not supported: " + resultOperator);
+                    throw new NotSupportedException("Operator is not supported: " + op);
             }
 
             resultBuilder.Append(GetSqlExpression(queryModel.SelectClause.Selector, parenCount > 0).QueryText);
