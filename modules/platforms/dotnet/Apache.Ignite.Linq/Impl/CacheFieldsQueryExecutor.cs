@@ -23,7 +23,9 @@ namespace Apache.Ignite.Linq.Impl
     using System.Diagnostics;
     using System.Linq;
     using System.Linq.Expressions;
+    using Apache.Ignite.Core.Cache;
     using Apache.Ignite.Core.Cache.Query;
+    using Apache.Ignite.Core.Impl.Cache;
     using Remotion.Linq;
 
     /// <summary>
@@ -86,7 +88,7 @@ namespace Apache.Ignite.Linq.Impl
             if (newExpr != null)
             {
                 // TODO: Compile Func<IList, T>
-                return fields => (T)newExpr.Constructor.Invoke(fields.Cast<object>().ToArray());
+                return fields => (T)newExpr.Constructor.Invoke(GetArguments(fields, newExpr.Arguments));
             }
 
             var methodExpr = selectorExpression as MethodCallExpression;
@@ -98,7 +100,7 @@ namespace Apache.Ignite.Linq.Impl
 
                 object target = targetExpr == null ? null : targetExpr.Value;
 
-                return fields => (T) methodExpr.Method.Invoke(target, fields.Cast<object>().ToArray());
+                return fields => (T) methodExpr.Method.Invoke(target, GetArguments(fields, methodExpr.Arguments));
             }
 
             var invokeExpr = selectorExpression as InvocationExpression;
@@ -113,10 +115,36 @@ namespace Apache.Ignite.Linq.Impl
 
                 var del = (Delegate) targetExpr.Value;
 
-                return fields => (T) del.DynamicInvoke(fields.Cast<object>().ToArray());
+                return fields => (T) del.DynamicInvoke(GetArguments(fields, invokeExpr.Arguments));
             }
 
             return ConvertSingleField<T>;
+        }
+
+        /// <summary>
+        /// Gets the arguments.
+        /// </summary>
+        private static object[] GetArguments(IList fields, ICollection<Expression> arguments)
+        {
+            var result = new List<object>(fields.Count);
+            int idx = 0;
+
+            foreach (var arg in arguments)
+            {
+                if (arg.Type.IsGenericType && arg.Type.GetGenericTypeDefinition() == typeof (ICacheEntry<,>))
+                {
+                    // Construct cache entry from key and value
+                    var entryType = typeof (CacheEntry<,>).MakeGenericType(arg.Type.GetGenericArguments());
+
+                    var entry = Activator.CreateInstance(entryType, fields[idx++], fields[idx++]);
+
+                    result.Add(entry);
+                }
+                else
+                    result.Add(fields[idx++]);
+            }
+
+            return result.ToArray();
         }
 
         /// <summary>
