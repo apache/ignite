@@ -419,7 +419,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         {
             ctx.Stream.WriteByte(BinaryUtils.TypeArrayByte);
 
-            BinaryUtils.WriteByteArray((byte[])(Array)obj, ctx.Stream);
+            BinaryUtils.WriteByteArray((byte[]) obj, ctx.Stream);
         }
 
         /// <summary>
@@ -443,7 +443,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         {
             ctx.Stream.WriteByte(BinaryUtils.TypeArrayShort);
 
-            BinaryUtils.WriteShortArray((short[])(Array)obj, ctx.Stream);
+            BinaryUtils.WriteShortArray((short[]) obj, ctx.Stream);
         }
 
         /// <summary>
@@ -479,7 +479,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         {
             ctx.Stream.WriteByte(BinaryUtils.TypeArrayInt);
 
-            BinaryUtils.WriteIntArray((int[])(Array)obj, ctx.Stream);
+            BinaryUtils.WriteIntArray((int[]) obj, ctx.Stream);
         }
 
         /// <summary>
@@ -503,7 +503,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         {
             ctx.Stream.WriteByte(BinaryUtils.TypeArrayLong);
 
-            BinaryUtils.WriteLongArray((long[])(Array)obj, ctx.Stream);
+            BinaryUtils.WriteLongArray((long[]) obj, ctx.Stream);
         }
 
         /// <summary>
@@ -799,6 +799,7 @@ namespace Apache.Ignite.Core.Impl.Binary
             }
 
             /** <inheritdoc /> */
+            [SuppressMessage("Microsoft.Design", "CA1062:Validate arguments of public methods")]
             T2 IBinarySystemReader<T2>.Read(BinaryReader ctx)
             {
                 return _readDelegate2(ctx.Stream);
