@@ -20,7 +20,6 @@ namespace Apache.Ignite.Linq.Impl
     using System;
     using System.Text;
     using Remotion.Linq;
-    using Remotion.Linq.Clauses.Expressions;
     using Remotion.Linq.Clauses.ResultOperators;
 
     /// <summary>
@@ -68,7 +67,7 @@ namespace Apache.Ignite.Linq.Impl
                     throw new NotSupportedException("Operator is not supported: " + resultOperator);
             }
 
-            resultBuilder.Append(GetSqlExpression(queryModel.SelectClause.Selector).QueryText);
+            resultBuilder.Append(GetSqlExpression(queryModel.SelectClause.Selector, parenCount > 0).QueryText);
 
             resultBuilder.Append(')', parenCount);
 
