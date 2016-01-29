@@ -236,6 +236,28 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
             Assert.IsTrue(res.All(r => r.person.Value.OrganizationId == 1));
         }
 
+        [Test]
+        public void TestIntrospection()
+        {
+            var cache = GetCache();
+
+            // Check regular query
+            var query = (ICacheQueryable) cache.ToQueryable("tableName1").Where(x => x.Key > 10);
+
+            Assert.AreEqual("tableName1", query.QueryType);
+            Assert.AreEqual(cache.Name, query.CacheName);
+            Assert.AreEqual(cache.Ignite, query.Ignite);
+
+            // Check fields query
+            var fieldsQuery = (ICacheQueryable) cache.ToQueryable("tableName1").Select(x => x.Value.Name);
+
+            Assert.AreEqual("tableName1", fieldsQuery.QueryType);
+            Assert.AreEqual(cache.Name, fieldsQuery.CacheName);
+            Assert.AreEqual(cache.Ignite, fieldsQuery.Ignite);
+
+            // TODO: ToTraceString
+        }
+
         private static ICache<int, LinqPerson> GetCache()
         {
             return GetCacheOf<LinqPerson>();
