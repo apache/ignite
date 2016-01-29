@@ -406,13 +406,13 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
                 _bar = bar;
             }
 
-            [QuerySqlField]
+            [QuerySqlField(Name = "_foo")]
             public int Foo
             {
                 get { return _foo; }
             }
 
-            [QuerySqlField]
+            [QuerySqlField(Name = "_bar")]
             public long Bar
             {
                 get { return _bar; }
