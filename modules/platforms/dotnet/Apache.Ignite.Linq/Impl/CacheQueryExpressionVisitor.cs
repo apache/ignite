@@ -173,23 +173,9 @@ namespace Apache.Ignite.Linq.Impl
         /** <inheritdoc /> */
         protected override Expression VisitQuerySourceReference(QuerySourceReferenceExpression expression)
         {
-            _resultBuilder.Append(GetTableName(expression)).Append(".*");
+            _resultBuilder.Append(TableNameMapper.GetTableName(expression)).Append(".*");
 
             return expression;
-        }
-
-        protected static string GetTableName(QuerySourceReferenceExpression expression)
-        {
-            // TODO
-            return "TODO";
-
-        }
-
-        protected static string GetTableName(MemberExpression expression)
-        {
-            // TODO
-            return "TODO";
-
         }
 
         /** <inheritdoc /> */
@@ -197,13 +183,12 @@ namespace Apache.Ignite.Linq.Impl
         {
             // Field hierarchy is flattened, append as is, do not call Visit.
             // TODO: Aliases? How do they work? See email.
-            // TODO: Full table name qualification
 
             var queryFieldAttr = expression.Member.GetCustomAttributes(true).OfType<QuerySqlFieldAttribute>().FirstOrDefault();
 
             var fieldName = queryFieldAttr == null || string.IsNullOrEmpty(queryFieldAttr.Name) ? expression.Member.Name : queryFieldAttr.Name;
 
-            _resultBuilder.AppendFormat("{0}.{1}",GetTableName(expression), fieldName);
+            _resultBuilder.AppendFormat("{0}.{1}", TableNameMapper.GetTableName(expression), fieldName);
 
             return expression;
         }
