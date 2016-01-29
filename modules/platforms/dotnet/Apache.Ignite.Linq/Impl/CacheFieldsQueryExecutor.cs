@@ -26,6 +26,7 @@ namespace Apache.Ignite.Linq.Impl
     using Apache.Ignite.Core.Cache;
     using Apache.Ignite.Core.Cache.Query;
     using Apache.Ignite.Core.Impl.Cache;
+    using Apache.Ignite.Core.Impl.Common;
     using Remotion.Linq;
 
     /// <summary>
@@ -124,6 +125,13 @@ namespace Apache.Ignite.Linq.Impl
                 return fields => (T) del.DynamicInvoke(GetArguments(fields, invokeExpr.Arguments));
             }
 
+            var entryCtor = GetCacheEntryCtor(typeof (T));
+
+            if (entryCtor != null)
+            {
+                return fields => (T) entryCtor(fields[0], fields[1]);
+            }
+
             return ConvertSingleField<T>;
         }
 
@@ -168,6 +176,19 @@ namespace Apache.Ignite.Linq.Impl
                 return (T) f;
 
             return (T) Convert.ChangeType(fields[0], typeof (T));
+        }
+
+        private static Func<object, object, object> GetCacheEntryCtor(Type entryType)
+        {
+            // TODO: Cache ctor somewhere in Core, because this is a common task. Probably CacheEntry.CreateInstance(Type, Type) or something.
+            if (!entryType.IsGenericType || entryType.GetGenericTypeDefinition() != typeof (ICacheEntry<,>))
+                return null;
+
+            var args = entryType.GetGenericArguments();
+
+            var targetType = typeof (CacheEntry<,>).MakeGenericType(args);
+
+            return DelegateConverter.CompileCtor<Func<object, object, object>>(targetType, args);
         }
     }
 }
