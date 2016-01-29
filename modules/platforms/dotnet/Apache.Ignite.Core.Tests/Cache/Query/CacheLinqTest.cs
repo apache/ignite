@@ -76,7 +76,10 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
             orgCache[1000] = new Organization {Id = 1000, Name = "Org_0"};
             orgCache[1001] = new Organization {Id = 1001, Name = "Org_1"};
 
-            Assert.AreEqual(1, cache[1].Age);
+            var roleCache = GetRoleCache();
+
+            roleCache[new RoleKey(1, 101)] = new Role {Name = "Role_1"};
+            roleCache[new RoleKey(2, 102)] = new Role {Name = "Role_2"};
         }
 
         [TestFixtureTearDown]
@@ -264,6 +267,12 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         }
 
         [Test]
+        public void TestCrossCacheJoin()
+        {
+            
+        }
+
+        [Test]
         public void TestInvalidJoin()
         {
             // Join on non-IQueryable
@@ -377,10 +386,57 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
             [QuerySqlField] public string Name { get; set; }
         }
 
-        public class RoleKey
+        public struct RoleKey : IEquatable<RoleKey>
         {
-            [QuerySqlField] public int Foo { get; set; }
-            [QuerySqlField] public long Bar { get; set; }
+            private readonly int _foo;
+            private readonly long _bar;
+
+            public RoleKey(int foo, long bar)
+            {
+                _foo = foo;
+                _bar = bar;
+            }
+
+            [QuerySqlField]
+            public int Foo
+            {
+                get { return _foo; }
+            }
+
+            [QuerySqlField]
+            public long Bar
+            {
+                get { return _bar; }
+            }
+
+            public bool Equals(RoleKey other)
+            {
+                return _foo == other._foo && _bar == other._bar;
+            }
+
+            public override bool Equals(object obj)
+            {
+                if (ReferenceEquals(null, obj)) return false;
+                return obj is RoleKey && Equals((RoleKey) obj);
+            }
+
+            public override int GetHashCode()
+            {
+                unchecked
+                {
+                    return (_foo*397) ^ _bar.GetHashCode();
+                }
+            }
+
+            public static bool operator ==(RoleKey left, RoleKey right)
+            {
+                return left.Equals(right);
+            }
+
+            public static bool operator !=(RoleKey left, RoleKey right)
+            {
+                return !left.Equals(right);
+            }
         }
     }
 }
