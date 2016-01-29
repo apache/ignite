@@ -285,7 +285,16 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         [Test]
         public void TestMultiCacheJoin()
         {
-            // TODO: 2 joins
+            var organizations = GetOrgCache().ToQueryable();
+            var persons = GetCache().ToQueryable();
+            var roles = GetRoleCache().ToQueryable();
+
+            var res = roles.Join(persons, role => role.Key.Foo, person => person.Key,
+                (role, person) => new {person, role})
+                .Join(organizations, pr => pr.person.Value.OrganizationId, org => org.Value.Id,
+                    (pr, org) => new {org, pr}).ToArray();
+
+            Assert.AreEqual(2, res.Length);
         }
 
         [Test]
