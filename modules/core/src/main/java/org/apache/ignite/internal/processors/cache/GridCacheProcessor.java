@@ -588,7 +588,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             ctx.config().getCacheStoreSessionListenerFactories()));
 
         for (int i = 0; i < cfgs.length; i++) {
-            if (ctx.config().isDaemon() && !CU.isMarshallerCache(cfgs[i].getName()))
+            if (ctx.config().isDaemon() && !daemonNodeCache(cfgs[i].getName()))
                 continue;
 
             cloneCheckSerializable(cfgs[i]);
@@ -742,7 +742,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
             // Start dynamic caches received from collect discovery data.
             for (DynamicCacheDescriptor desc : registeredCaches.values()) {
-                if (ctx.config().isDaemon() && !CU.isMarshallerCache(desc.cacheConfiguration().getName()))
+                if (ctx.config().isDaemon() && !daemonNodeCache(desc.cacheConfiguration().getName()))
                     continue;
 
                 boolean started = desc.onStart();
@@ -826,6 +826,15 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         assert caches.containsKey(CU.MARSH_CACHE_NAME) : "Marshaller cache should be started";
         assert ctx.config().isDaemon() || caches.containsKey(CU.UTILITY_CACHE_NAME) : "Utility cache should be started";
+    }
+
+    /**
+     * @param cacheName Cache name.
+     * @return {@code True} if a cache must be started on daemon node.
+     */
+    private boolean daemonNodeCache(String cacheName) {
+        return CU.isMarshallerCache(cacheName)
+            || (ctx.config().getMarshaller() instanceof BinaryMarshaller && CU.isSystemCache(cacheName));
     }
 
     /** {@inheritDoc} */
