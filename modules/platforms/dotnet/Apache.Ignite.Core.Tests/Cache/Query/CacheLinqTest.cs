@@ -290,14 +290,16 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
 
             Assert.AreEqual(cache.Name, query.CacheName);
             Assert.AreEqual(cache.Ignite, query.Ignite);
-            Assert.AreEqual("", query.ToTraceString());
+            Assert.AreEqual("SQL Query [SQL=from LinqPerson where (LinqPerson._key > ?), Parameters=10]",
+                query.ToTraceString());
 
             // Check fields query
             var fieldsQuery = (ICacheQueryable) cache.ToQueryable().Select(x => x.Value.Name);
 
             Assert.AreEqual(cache.Name, fieldsQuery.CacheName);
             Assert.AreEqual(cache.Ignite, fieldsQuery.Ignite);
-            Assert.AreEqual("", query.ToTraceString());
+            Assert.AreEqual("Fields Query [SQL=select LinqPerson.Name from LinqPerson, Parameters=]",
+                fieldsQuery.ToTraceString());
         }
 
         private static ICache<int, LinqPerson> GetCache()
