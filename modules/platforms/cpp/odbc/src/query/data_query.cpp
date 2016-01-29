@@ -70,6 +70,8 @@ namespace ignite
                 if (!cursor->HasData())
                     return SQL_RESULT_NO_DATA;
 
+                cursor->Increment();
+
                 if (cursor->NeedDataUpdate())
                 {
                     SqlResult result = MakeRequestFetch();
@@ -77,8 +79,6 @@ namespace ignite
                     if (result != SQL_RESULT_SUCCESS)
                         return result;
                 }
-                else
-                    cursor->Increment();
 
                 if (!cursor->HasData())
                     return SQL_RESULT_NO_DATA;
