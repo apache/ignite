@@ -23,7 +23,6 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Cache;
     using Apache.Ignite.Core.Cache.Configuration;
-    using Apache.Ignite.Core.Cache.Query;
     using Apache.Ignite.Linq;
     using NUnit.Framework;
 
@@ -220,13 +219,21 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         [Test]
         public void TestSameCacheJoin()
         {
-            var cache = GetCache();
+            var personCache = GetCache();
+            var orgCache = GetOrgCache();
 
-            var res = cache.Query(new SqlQuery("LinqPerson",
-                "from LinqPerson, LinqOrganization where LinqPerson.OrganizationId = LinqOrganization.Id and LinqOrganization.Name = ?", "Org_1"))
-                .GetAll();
+            //var res = cache.Query(new SqlQuery("LinqPerson",
+            //    "from LinqPerson, LinqOrganization where LinqPerson.OrganizationId = LinqOrganization.Id and LinqOrganization.Name = ?", "Org_1"))
+            //    .GetAll();
+
+            // Select persons in specific organization
+            var organizations = orgCache.Where(org => org.Value.Name == "Org_1");
+            var res = personCache.Join(organizations, person => person.Value.OrganizationId, org => org.Value.Id,
+                (person, org) => new {person, org}).ToList();
 
             Assert.AreEqual(DataSize / 2, res.Count);
+
+            Assert.IsTrue(res.All(r => r.person.Value.OrganizationId == 1));
         }
 
         private static ICache<int, LinqPerson> GetCache()
