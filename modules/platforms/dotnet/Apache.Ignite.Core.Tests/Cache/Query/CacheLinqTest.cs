@@ -264,12 +264,28 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
                 (person, org) => new {Person = person, Org = org}).Where(x => x.Org.Value.Name == "Org_0").ToList();
 
             Assert.AreEqual(DataSize / 2, res2.Count);
+
+            // Multi-key
+            // TODO
         }
 
         [Test]
         public void TestCrossCacheJoin()
         {
-            
+            var persons = GetCache().ToQueryable();
+            var roles = GetRoleCache().ToQueryable();
+
+            var res = persons.Join(roles, person => person.Key, role => role.Key.Foo, (person, role) => role)
+                .ToArray();
+
+            Assert.AreEqual(2, res.Length);
+            Assert.AreEqual(101, res[0].Key.Bar);
+        }
+
+        [Test]
+        public void TestMultiCacheJoin()
+        {
+            // TODO: 2 joins
         }
 
         [Test]
