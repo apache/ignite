@@ -885,7 +885,7 @@
                                         <exclude>**/*.sln</exclude>
                                         <exclude>**/*.snk</exclude>
                                         <exclude>**/*.slnrel</exclude>
-                                        <exclude>**/*.sln.DotSettings</exclude>
+                                        <exclude>**/*.DotSettings</exclude>
                                         <exclude>**/*.FxCop</exclude>
                                         <exclude>**/*.csproj</exclude>
                                         <exclude>**/*.csprojrel</exclude>
@@ -895,6 +895,7 @@
                                         <exclude>**/mkbuild.cmd</exclude>
                                         <exclude>**/module.def</exclude>
                                         <exclude>**/*.fxcop</exclude>
+                                        <exclude>**/*.ruleset</exclude>
                                         <exclude>**/*.metaproj</exclude>
                                         <exclude>**/*.metaproj.tmp</exclude>
                                         <exclude>**/*.nunit</exclude>

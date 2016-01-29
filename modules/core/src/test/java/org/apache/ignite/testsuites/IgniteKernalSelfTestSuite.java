@@ -47,6 +47,7 @@ import org.apache.ignite.internal.managers.events.GridEventStorageManagerSelfTes
 import org.apache.ignite.internal.managers.swapspace.GridSwapSpaceManagerSelfTest;
 import org.apache.ignite.internal.processors.port.GridPortProcessorSelfTest;
 import org.apache.ignite.internal.processors.service.GridServiceClientNodeTest;
+import org.apache.ignite.internal.processors.service.GridServicePackagePrivateSelfTest;
 import org.apache.ignite.internal.processors.service.GridServiceProcessorMultiNodeConfigSelfTest;
 import org.apache.ignite.internal.processors.service.GridServiceProcessorMultiNodeSelfTest;
 import org.apache.ignite.internal.processors.service.GridServiceProcessorProxySelfTest;
@@ -121,6 +122,7 @@ public class IgniteKernalSelfTestSuite extends TestSuite {
         suite.addTestSuite(GridServiceClientNodeTest.class);
         suite.addTestSuite(GridServiceProcessorStopSelfTest.class);
         suite.addTestSuite(ServicePredicateAccessCacheTest.class);
+        suite.addTestSuite(GridServicePackagePrivateSelfTest.class);
 
         return suite;
     }
