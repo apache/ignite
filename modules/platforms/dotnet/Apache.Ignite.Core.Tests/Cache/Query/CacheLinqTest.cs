@@ -232,7 +232,9 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
 
             Assert.AreEqual(DataSize, cache.Count());
             Assert.AreEqual(DataSize, cache.Select(x => x.Key).Count());
-            Assert.AreEqual(DataSize, cache.Select(x => new {x.Key, x.Value}).Count());
+            
+            // ReSharper disable once ReturnValueOfPureMethodIsNotUsed
+            Assert.Throws<NotSupportedException>(() => cache.Select(x => new {x.Key, x.Value}).Count());
 
             // TODO
             Assert.AreEqual(2, cache.Select(x => x.Value.OrganizationId).Distinct().Count());
