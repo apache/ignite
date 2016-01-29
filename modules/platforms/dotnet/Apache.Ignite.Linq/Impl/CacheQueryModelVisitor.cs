@@ -85,7 +85,7 @@ namespace Apache.Ignite.Linq.Impl
         {
             base.VisitMainFromClause(fromClause, queryModel);
 
-            Builder.AppendFormat("from {0} ", TableNameMapper.GetTableName(fromClause));
+            Builder.AppendFormat("from \"{0}\".{1} ", _schemaName, TableNameMapper.GetTableName(fromClause));
         }
 
         /** <inheritdoc /> */

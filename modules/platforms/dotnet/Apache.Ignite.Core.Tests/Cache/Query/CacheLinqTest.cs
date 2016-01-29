@@ -308,7 +308,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
 
             Assert.AreEqual(cache.Name, query.CacheName);
             Assert.AreEqual(cache.Ignite, query.Ignite);
-            Assert.AreEqual("SQL Query [SQL=from Person where (Person._key > ?), Parameters=10]",
+            Assert.AreEqual("SQL Query [SQL=from \"\".Person where (\"\".Person._key > ?), Parameters=10]",
                 query.ToTraceString());
 
             // Check fields query
@@ -316,7 +316,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
 
             Assert.AreEqual(cache.Name, fieldsQuery.CacheName);
             Assert.AreEqual(cache.Ignite, fieldsQuery.Ignite);
-            Assert.AreEqual("Fields Query [SQL=select Person.Name from Person, Parameters=]",
+            Assert.AreEqual("Fields Query [SQL=select \"\".Person.Name from \"\".Person, Parameters=]",
                 fieldsQuery.ToTraceString());
         }
 
