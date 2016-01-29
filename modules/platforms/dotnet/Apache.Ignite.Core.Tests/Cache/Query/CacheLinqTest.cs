@@ -56,22 +56,22 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
                 JvmClasspath = TestUtils.CreateTestClasspath(),
                 JvmOptions = TestUtils.TestJavaOptions(),
                 BinaryConfiguration =
-                    new BinaryConfiguration(typeof (LinqPerson), typeof (LinqOrganization), typeof (LinqAddress))
+                    new BinaryConfiguration(typeof (Person), typeof (Organization), typeof (Address))
             });
 
             var cache = GetCache();
 
             for (var i = 0; i < DataSize; i++)
-                cache.Put(i, new LinqPerson(i, "Person_" + i)
+                cache.Put(i, new Person(i, "Person_" + i)
                 {
-                    Address = new LinqAddress {Zip = i, Street = "Street " + i},
+                    Address = new Address {Zip = i, Street = "Street " + i},
                     OrganizationId = i % 2 + 1000
                 });
 
             var orgCache = GetOrgCache();
 
-            orgCache[1000] = new LinqOrganization {Id = 1000, Name = "Org_0"};
-            orgCache[1001] = new LinqOrganization {Id = 1001, Name = "Org_1"};
+            orgCache[1000] = new Organization {Id = 1000, Name = "Org_0"};
+            orgCache[1001] = new Organization {Id = 1001, Name = "Org_1"};
 
             Assert.AreEqual(1, cache[1].Age);
         }
@@ -179,7 +179,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
             Assert.AreEqual(_testField, person2.Age);
 
             // Test lambda/delegate
-            Func<int, LinqPerson> func = x => new LinqPerson(x, _testField.ToString());
+            Func<int, Person> func = x => new Person(x, _testField.ToString());
 
             var person3 = cache.Where(x => x.Key == 15)
                 .Select(x => func(x.Key)).ToArray().Single();
@@ -188,14 +188,14 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
             Assert.AreEqual(_testField.ToString(), person3.Name);
         }
 
-        private static LinqPerson CreatePersonStatic(int age, string name)
+        private static Person CreatePersonStatic(int age, string name)
         {
-            return new LinqPerson(age, name);
+            return new Person(age, name);
         }
 
-        private LinqPerson CreatePersonInstance(string name)
+        private Person CreatePersonInstance(string name)
         {
-            return new LinqPerson(_testField, name);
+            return new Person(_testField, name);
         }
 
         [Test]
@@ -289,7 +289,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
 
             Assert.AreEqual(cache.Name, query.CacheName);
             Assert.AreEqual(cache.Ignite, query.Ignite);
-            Assert.AreEqual("SQL Query [SQL=from LinqPerson where (LinqPerson._key > ?), Parameters=10]",
+            Assert.AreEqual("SQL Query [SQL=from Person where (Person._key > ?), Parameters=10]",
                 query.ToTraceString());
 
             // Check fields query
@@ -297,31 +297,31 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
 
             Assert.AreEqual(cache.Name, fieldsQuery.CacheName);
             Assert.AreEqual(cache.Ignite, fieldsQuery.Ignite);
-            Assert.AreEqual("Fields Query [SQL=select LinqPerson.Name from LinqPerson, Parameters=]",
+            Assert.AreEqual("Fields Query [SQL=select Person.Name from Person, Parameters=]",
                 fieldsQuery.ToTraceString());
         }
 
-        private static ICache<int, LinqPerson> GetCache()
+        private static ICache<int, Person> GetCache()
         {
-            return GetCacheOf<LinqPerson>();
+            return GetCacheOf<Person>();
         }
 
-        private static ICache<int, LinqOrganization> GetOrgCache()
+        private static ICache<int, Organization> GetOrgCache()
         {
-            return GetCacheOf<LinqOrganization>();
+            return GetCacheOf<Organization>();
         }
 
         private static ICache<int, T> GetCacheOf<T>()
         {
             return Ignition.GetIgnite()
                 .GetOrCreateCache<int, T>(new CacheConfiguration(CacheName,
-                    new QueryEntity(typeof (int), typeof (LinqPerson)),
-                        new QueryEntity(typeof (int), typeof (LinqOrganization))));
+                    new QueryEntity(typeof (int), typeof (Person)),
+                        new QueryEntity(typeof (int), typeof (Organization))));
         }
 
-        public class LinqPerson : IBinarizable
+        public class Person : IBinarizable
         {
-            public LinqPerson(int age, string name)
+            public Person(int age, string name)
             {
                 Age = age;
                 Name = name;
@@ -334,7 +334,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
             public string Name { get; set; }
 
             [QuerySqlField]
-            public LinqAddress Address { get; set; }
+            public Address Address { get; set; }
 
             [QuerySqlField]
             public int OrganizationId { get; set; }
@@ -352,11 +352,11 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
                 Age = reader.ReadInt("age1");
                 Name = reader.ReadString("name");
                 OrganizationId = reader.ReadInt("OrganizationId");
-                Address = reader.ReadObject<LinqAddress>("Address");
+                Address = reader.ReadObject<Address>("Address");
             }
         }
 
-        public class LinqAddress
+        public class Address
         {
             [QuerySqlField]
             public int Zip { get; set; }
@@ -365,7 +365,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
             public string Street { get; set; }
         }
 
-        public class LinqOrganization
+        public class Organization
         {
             [QuerySqlField]
             public int Id { get; set; }
