@@ -98,54 +98,52 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         [Test]
         public void TestWhere()
         {
-            var cache = GetCache();
+            var cache = GetCache().ToQueryable();
 
-            var queryable = cache.ToQueryable().Where(x => x.Value.Age < 10);
+            var queryable = cache.Where(x => x.Value.Age < 10);
             Assert.AreEqual(10, queryable.ToArray().Length);
 
-            Assert.AreEqual(10, cache.ToQueryable()
-                .Where(x => x.Value.Address.Zip < 10).ToArray().Length);
+            Assert.AreEqual(10, cache.Where(x => x.Value.Address.Zip < 10).ToArray().Length);
 
-            Assert.AreEqual(19, cache.ToQueryable()
-                .Where(x => x.Value.Age > 10 && x.Value.Age < 30).ToArray().Length);
+            Assert.AreEqual(19, cache.Where(x => x.Value.Age > 10 && x.Value.Age < 30).ToArray().Length);
 
-            Assert.AreEqual(20, cache
-                .ToQueryable().Where(x => x.Value.Age > 10).Count(x => x.Value.Age < 30 || x.Value.Age == 50));
+            Assert.AreEqual(20, cache.Where(x => x.Value.Age > 10).Count(x => x.Value.Age < 30 || x.Value.Age == 50));
         }
 
         [Test]
         public void TestKeyQuery()
         {
-            var cache = GetCache();
+            var cache = GetCache().ToQueryable();
 
-            Assert.AreEqual(15, cache.ToQueryable().Where(x => x.Key < 15).ToArray().Length);
-            Assert.AreEqual(15, cache.ToQueryable().Where(x => -x.Key > -15).ToArray().Length);
+            Assert.AreEqual(15, cache.Where(x => x.Key < 15).ToArray().Length);
+            Assert.AreEqual(15, cache.Where(x => -x.Key > -15).ToArray().Length);
         }
 
         [Test]
         public void TestSingleFieldQuery()
         {
-            var cache = GetCache();
+            var cache = GetCache().ToQueryable();
 
             // Multiple values
             Assert.AreEqual(new[] {0, 1, 2},
-                cache.ToQueryable().Where(x => x.Key < 3).Select(x => x.Value.Address.Zip).ToArray());
+                cache.Where(x => x.Key < 3).Select(x => x.Value.Address.Zip).ToArray());
 
             // Single value
-            Assert.AreEqual(0, cache.ToQueryable().Where(x => x.Key < 0).Select(x => x.Value.Age).FirstOrDefault());
-            Assert.AreEqual(3, cache.ToQueryable().Where(x => x.Key == 3).Select(x => x.Value.Age).FirstOrDefault());
-            Assert.AreEqual(3, cache.ToQueryable().Where(x => x.Key == 3).Select(x => x.Value).Single().Age);
-            Assert.AreEqual(3, cache.ToQueryable().Where(x => x.Key == 3).Select(x => x.Key).Single());
+            Assert.AreEqual(0, cache.Where(x => x.Key < 0).Select(x => x.Value.Age).FirstOrDefault());
+            Assert.AreEqual(3, cache.Where(x => x.Key == 3).Select(x => x.Value.Age).FirstOrDefault());
+            Assert.AreEqual(3, cache.Where(x => x.Key == 3).Select(x => x.Value).Single().Age);
+            Assert.AreEqual(3, cache.Where(x => x.Key == 3).Select(x => x.Key).Single());
+
+            // Projection
         }
 
         [Test]
         public void TestMultiFieldQuery()
         {
-            var cache = GetCache();
+            var cache = GetCache().ToQueryable();
 
             // Test anonymous type (ctor invoke)
-            var data = cache.ToQueryable()
-                .Where(x => x.Key < 5)
+            var data = cache.Where(x => x.Key < 5)
                 .Select(x => new {x.Key, x.Value.Age, x.Value.Address})
                 .ToArray();
 
@@ -158,7 +156,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
             }
 
             // Test static method call
-            var person = cache.ToQueryable().Where(x => x.Key == 13)
+            var person = cache.Where(x => x.Key == 13)
                 .Select(x => CreatePersonStatic(x.Value.Age, x.Value.Name)).ToArray().Single();
 
             Assert.AreEqual(13, person.Age);
@@ -166,7 +164,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
             // Test instance method call
             _testField = DateTime.Now.Second;
 
-            var person2 = cache.ToQueryable().Where(x => x.Key == 14)
+            var person2 = cache.Where(x => x.Key == 14)
                 .Select(x => CreatePersonInstance(x.Value.Name)).ToArray().Single();
 
             Assert.AreEqual(_testField, person2.Age);
@@ -174,7 +172,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
             // Test lambda/delegate
             Func<int, LinqPerson> func = x => new LinqPerson(x, _testField.ToString());
 
-            var person3 = cache.ToQueryable().Where(x => x.Key == 15)
+            var person3 = cache.Where(x => x.Key == 15)
                 .Select(x => func(x.Key)).ToArray().Single();
 
             Assert.AreEqual(15, person3.Age);
@@ -194,29 +192,28 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         [Test]
         public void TestScalarQuery()
         {
-            var cache = GetCache();
+            var cache = GetCache().ToQueryable();
 
-            Assert.AreEqual(DataSize - 1, cache.ToQueryable().Max(x => x.Value.Age));
-            Assert.AreEqual(0, cache.ToQueryable().Min(x => x.Value.Age));
+            Assert.AreEqual(DataSize - 1, cache.Max(x => x.Value.Age));
+            Assert.AreEqual(0, cache.Min(x => x.Value.Age));
 
-            Assert.AreEqual(21,
-                cache.ToQueryable().Where(x => x.Key > 5 && x.Value.Age < 9).Select(x => x.Value.Age).Sum());
+            Assert.AreEqual(21, cache.Where(x => x.Key > 5 && x.Value.Age < 9).Select(x => x.Value.Age).Sum());
 
-            Assert.AreEqual(DataSize, cache.ToQueryable().Count());
-            Assert.AreEqual(DataSize, cache.ToQueryable().Count(x => x.Key < DataSize));
+            Assert.AreEqual(DataSize, cache.Count());
+            Assert.AreEqual(DataSize, cache.Count(x => x.Key < DataSize));
         }
 
         [Test]
         public void TestStrings()
         {
-            var cache = GetCache();
+            var cache = GetCache().ToQueryable();
 
-            Assert.AreEqual(DataSize, cache.ToQueryable().Count(x => x.Value.Name.Contains("erson")));
-            Assert.AreEqual(11, cache.ToQueryable().Count(x => x.Value.Name.StartsWith("Person_9")));
-            Assert.AreEqual(1, cache.ToQueryable().Count(x => x.Value.Name.EndsWith("_99")));
+            Assert.AreEqual(DataSize, cache.Count(x => x.Value.Name.Contains("erson")));
+            Assert.AreEqual(11, cache.Count(x => x.Value.Name.StartsWith("Person_9")));
+            Assert.AreEqual(1, cache.Count(x => x.Value.Name.EndsWith("_99")));
 
-            Assert.AreEqual(DataSize, cache.ToQueryable().Count(x => x.Value.Name.ToLower().StartsWith("person")));
-            Assert.AreEqual(DataSize, cache.ToQueryable().Count(x => x.Value.Name.ToUpper().StartsWith("PERSON")));
+            Assert.AreEqual(DataSize, cache.Count(x => x.Value.Name.ToLower().StartsWith("person")));
+            Assert.AreEqual(DataSize, cache.Count(x => x.Value.Name.ToUpper().StartsWith("PERSON")));
         }
 
         [Test]
