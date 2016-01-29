@@ -34,6 +34,9 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         /** Cache name. */
         private const string CacheName = "cache";
 
+        /** Role cache name. */
+        private const string RoleCacheName = "role_cache";
+
         /** */
         private const int DataSize = 100;
 
@@ -55,8 +58,8 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
             {
                 JvmClasspath = TestUtils.CreateTestClasspath(),
                 JvmOptions = TestUtils.TestJavaOptions(),
-                BinaryConfiguration =
-                    new BinaryConfiguration(typeof (Person), typeof (Organization), typeof (Address))
+                BinaryConfiguration = new BinaryConfiguration(typeof (Person),
+                    typeof (Organization), typeof (Address), typeof (Role), typeof (RoleKey))
             });
 
             var cache = GetCache();
@@ -319,6 +322,13 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
                         new QueryEntity(typeof (int), typeof (Organization))));
         }
 
+        private static ICache<RoleKey, Role> GetRoleCache()
+        {
+            return Ignition.GetIgnite()
+                .GetOrCreateCache<RoleKey, Role>(new CacheConfiguration(RoleCacheName,
+                    new QueryEntity(typeof(RoleKey), typeof(Person))));
+        }
+
         public class Person : IBinarizable
         {
             public Person(int age, string name)
@@ -327,17 +337,13 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
                 Name = name;
             }
 
-            [QuerySqlField(Name = "age1")]
-            public int Age { get; set; }
+            [QuerySqlField(Name = "age1")] public int Age { get; set; }
 
-            [QuerySqlField]
-            public string Name { get; set; }
+            [QuerySqlField] public string Name { get; set; }
 
-            [QuerySqlField]
-            public Address Address { get; set; }
+            [QuerySqlField] public Address Address { get; set; }
 
-            [QuerySqlField]
-            public int OrganizationId { get; set; }
+            [QuerySqlField] public int OrganizationId { get; set; }
 
             public void WriteBinary(IBinaryWriter writer)
             {
@@ -358,20 +364,25 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
 
         public class Address
         {
-            [QuerySqlField]
-            public int Zip { get; set; }
-
-            [QuerySqlField]
-            public string Street { get; set; }
+            [QuerySqlField] public int Zip { get; set; }
+            [QuerySqlField] public string Street { get; set; }
         }
 
         public class Organization
         {
-            [QuerySqlField]
-            public int Id { get; set; }
+            [QuerySqlField] public int Id { get; set; }
+            [QuerySqlField] public string Name { get; set; }
+        }
 
-            [QuerySqlField]
-            public string Name { get; set; }
+        public class Role
+        {
+            [QuerySqlField] public string Name { get; set; }
+        }
+
+        public class RoleKey
+        {
+            [QuerySqlField] public int Foo { get; set; }
+            [QuerySqlField] public long Bar { get; set; }
         }
     }
 }
