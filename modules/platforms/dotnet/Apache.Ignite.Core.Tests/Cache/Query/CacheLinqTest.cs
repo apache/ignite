@@ -136,9 +136,6 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
             Assert.AreEqual(3, cache.Where(x => x.Key == 3).Select(x => x.Value.Age).FirstOrDefault());
             Assert.AreEqual(3, cache.Where(x => x.Key == 3).Select(x => x.Value).Single().Age);
             Assert.AreEqual(3, cache.Where(x => x.Key == 3).Select(x => x.Key).Single());
-
-            // Projection
-            // TODO
         }
 
         [Test]
