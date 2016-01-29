@@ -236,7 +236,6 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
             // ReSharper disable once ReturnValueOfPureMethodIsNotUsed
             Assert.Throws<NotSupportedException>(() => cache.Select(x => new {x.Key, x.Value}).Count());
 
-            // TODO
             Assert.AreEqual(2, cache.Select(x => x.Value.OrganizationId).Distinct().Count());
         }
 
