@@ -84,8 +84,6 @@ public class IgniteBinaryBasicTestSuite extends TestSuite {
         ignoredTests.add(GridMessagingSelfTest.class);
         ignoredTests.add(GridVersionSelfTest.class);
         ignoredTests.add(GridDeploymentMessageCountSelfTest.class);
-
-        // TODO: check and delete if pass.
         ignoredTests.add(IgniteDaemonNodeMarshallerCacheTest.class);
 
         suite.addTest(IgniteBasicTestSuite.suite(ignoredTests));
