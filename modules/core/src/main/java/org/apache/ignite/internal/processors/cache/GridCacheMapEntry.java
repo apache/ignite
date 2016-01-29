@@ -220,7 +220,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
         }
         else {
             try {
-                if (cctx.kernalContext().config().isPeerClassLoadingEnabled()) {
+                if (isPeerClassLoadingEnabled()) {
                     Object val0 = null;
 
                     if (val != null && val.cacheObjectType() != CacheObject.TYPE_BYTE_ARR) {
@@ -571,7 +571,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
             IgniteUuid valClsLdrId = null;
             IgniteUuid keyClsLdrId = null;
 
-            if (cctx.kernalContext().config().isPeerClassLoadingEnabled() && !cctx.binaryMarshaller()) {
+            if (isPeerClassLoadingEnabled()) {
                 if (val != null) {
                     valClsLdrId = cctx.deploy().getClassLoaderId(
                         U.detectObjectClassLoader(val.value(cctx.cacheObjectContext(), false)));
@@ -595,6 +595,13 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
             if (log.isDebugEnabled())
                 log.debug("Wrote swap entry: " + this);
         }
+    }
+
+    /**
+     * @return {@code True} if peer class loading is enabled.
+     */
+    private boolean isPeerClassLoadingEnabled() {
+        return !cctx.binaryMarshaller() && cctx.kernalContext().config().isPeerClassLoadingEnabled();
     }
 
     /**
@@ -3157,7 +3164,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
         if (hasOffHeapPointer()) {
             CacheObject val0 = cctx.fromOffheap(offHeapPointer(), tmp);
 
-            if (!tmp && cctx.kernalContext().config().isPeerClassLoadingEnabled())
+            if (!tmp && isPeerClassLoadingEnabled())
                 val0.finishUnmarshal(cctx.cacheObjectContext(), cctx.deploy().globalLoader());
 
             return val0;
@@ -4045,7 +4052,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                     IgniteUuid valClsLdrId = null;
                     IgniteUuid keyClsLdrId = null;
 
-                    if (cctx.kernalContext().config().isPeerClassLoadingEnabled()) {
+                    if (isPeerClassLoadingEnabled()) {
                         if (val != null) {
                             valClsLdrId = cctx.deploy().getClassLoaderId(
                                 U.detectObjectClassLoader(val.value(cctx.cacheObjectContext(), false)));
