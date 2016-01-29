@@ -1947,23 +1947,8 @@ consoleModule.factory('$focus', function ($timeout) {
         $timeout(function () {
             var elem = $('#' + id);
 
-            if (elem.length > 0) {
-                var offset = elem.offset();
-
-                var elemOffset = offset.top;
-
-                var winOffset = window.pageYOffset;
-
-                var topHeight = $('.padding-top-dflt.affix').outerHeight();
-
-                if(elemOffset - 20 - topHeight < winOffset
-                    || elemOffset + elem.outerHeight(true) + 20 > winOffset + window.innerHeight)
-                    $('html, body').animate({
-                        scrollTop: elemOffset - 20 - topHeight
-                    }, 10);
-
+            if (elem.length > 0)
                 elem[0].focus();
-            }
         }, 100);
     };
 });
