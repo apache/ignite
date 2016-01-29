@@ -227,11 +227,13 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
             //    .GetAll();
 
             // Select persons in specific organization
-            var organizations = GetOrgCache().ToQueryable().Where(org => org.Value.Name == "Org_1");
+            var organizations = GetOrgCache().ToQueryable();
             var persons = GetCache().ToQueryable();
 
             var res = persons.Join(organizations, person => person.Value.OrganizationId, org => org.Value.Id,
-                (person, org) => new {Person = person.Value, Org = org.Value}).ToList();
+                (person, org) => new {Person = person.Value, Org = org.Value})
+                .Where(x => x.Org.Name == "Org_1")
+                .ToList();
 
             Assert.AreEqual(DataSize / 2, res.Count);
 

@@ -98,16 +98,18 @@ namespace Apache.Ignite.Linq.Impl
         {
             base.VisitJoinClause(joinClause, queryModel, index);
 
-            Builder.Append("join (");
+            var innerExpr = joinClause.InnerSequence as ConstantExpression;
 
-            var innerModel = joinClause.InnerSequence as SubQueryExpression;
+            if (innerExpr == null)
+                throw new NotSupportedException("Unexpected JOIN inner sequence (squbqueries are not supported): " +
+                                                joinClause.InnerSequence);
 
-            if (innerModel == null)
-                throw new NotSupportedException("Unexpected JOIN subexpression: " + joinClause.InnerSequence);
+            if (!(innerExpr.Value is ICacheQueryable))
+                throw new NotSupportedException("Unexpected JOIN inner sequence " +
+                                                "(only results of cache.ToQueryable() are supported): " +
+                                                innerExpr.Value);
 
-            VisitQueryModel(innerModel.QueryModel);
-
-            Builder.AppendFormat(") on ({0} = {1}) ",
+            Builder.AppendFormat("join({0}) on ({1} = {2}) ", TableNameMapper.GetTableName(joinClause),
                 GetSqlExpression(joinClause.InnerKeySelector).QueryText,
                 GetSqlExpression(joinClause.OuterKeySelector).QueryText);
         }
