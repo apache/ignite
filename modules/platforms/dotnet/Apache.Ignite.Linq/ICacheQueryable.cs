@@ -17,11 +17,34 @@
 
 namespace Apache.Ignite.Linq
 {
+    using Apache.Ignite.Core;
+
     /// <summary>
     /// Common interface for cache queryables.
     /// </summary>
     public interface ICacheQueryable
     {
+        /// <summary>
+        /// Gets the type of the query.
+        /// </summary>
+        /// <value>
+        /// The type of the query.
+        /// </value>
+        string QueryType { get; }
+
+        /// <summary>
+        /// Gets the name of the cache that is associated with this query.
+        /// </summary>
+        /// <value>
+        /// The name of the cache.
+        /// </value>
+        string CacheName { get; }
+
+        /// <summary>
+        /// Gets the Ignite instance associated with this query.
+        /// </summary>
+        IIgnite Ignite { get; }
+
         /// <summary>
         /// Returns the commands to execute against the data source.
         /// </summary>

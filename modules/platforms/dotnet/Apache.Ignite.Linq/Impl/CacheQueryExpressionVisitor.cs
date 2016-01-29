@@ -103,7 +103,6 @@ namespace Apache.Ignite.Linq.Impl
         }
 
         /** <inheritdoc /> */
-
         protected override Expression VisitBinary(BinaryExpression expression)
         {
             _resultBuilder.Append("(");
@@ -170,20 +169,20 @@ namespace Apache.Ignite.Linq.Impl
         }
 
         /** <inheritdoc /> */
-
         protected override Expression VisitQuerySourceReference(QuerySourceReferenceExpression expression)
         {
+
             _resultBuilder.Append("*");
 
             return expression;
         }
 
         /** <inheritdoc /> */
-
         protected override Expression VisitMember(MemberExpression expression)
         {
             // Field hierarchy is flattened, append as is, do not call Visit.
             // TODO: Aliases? How do they work? See email.
+            // TODO: Full table name qualification
 
             var queryFieldAttr = expression.Member.GetCustomAttributes(true).OfType<QuerySqlFieldAttribute>().FirstOrDefault();
 
@@ -195,7 +194,6 @@ namespace Apache.Ignite.Linq.Impl
         }
 
         /** <inheritdoc /> */
-
         protected override Expression VisitConstant(ConstantExpression expression)
         {
             _resultBuilder.Append("?");
@@ -206,7 +204,6 @@ namespace Apache.Ignite.Linq.Impl
         }
 
         /** <inheritdoc /> */
-
         protected override Expression VisitMethodCall(MethodCallExpression expression)
         {
             if (expression.Method == StringContains)
@@ -272,7 +269,6 @@ namespace Apache.Ignite.Linq.Impl
         }
 
         /** <inheritdoc /> */
-
         protected override Expression VisitNew(NewExpression expression)
         {
             VisitArguments(expression.Arguments);
@@ -281,7 +277,6 @@ namespace Apache.Ignite.Linq.Impl
         }
 
         /** <inheritdoc /> */
-
         protected override Expression VisitInvocation(InvocationExpression expression)
         {
             VisitArguments(expression.Arguments);
@@ -290,7 +285,6 @@ namespace Apache.Ignite.Linq.Impl
         }
 
         /** <inheritdoc /> */
-
         protected override Exception CreateUnhandledItemException<T>(T unhandledItem, string visitMethod)
         {
             return new NotSupportedException(string.Format("The expression '{0}' (type: {1}) is not supported by this LINQ provider.", unhandledItem, typeof (T)));

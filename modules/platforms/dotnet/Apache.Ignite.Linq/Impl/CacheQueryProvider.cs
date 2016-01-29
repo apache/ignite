@@ -49,6 +49,22 @@ namespace Apache.Ignite.Linq.Impl
             _tableName = tableName;
         }
 
+        /// <summary>
+        /// Gets the name of the table.
+        /// </summary>
+        public string TableName
+        {
+            get { return _tableName; }
+        }
+
+        /// <summary>
+        /// Gets the cache.
+        /// </summary>
+        public ICache<TKey, TValue> Cache
+        {
+            get { return _cache; }
+        }
+
         /** <inheritdoc /> */
         public override IQueryable<T> CreateQuery<T>(Expression expression)
         {
@@ -74,7 +90,7 @@ namespace Apache.Ignite.Linq.Impl
         private CacheFieldsQueryProvider GetFieldsProvider()
         {
             return new CacheFieldsQueryProvider(QueryParser,
-                new CacheFieldsQueryExecutor(q => _cache.QueryFields(q), _tableName));
+                new CacheFieldsQueryExecutor(q => Cache.QueryFields(q), TableName));
         }
     }
 }
