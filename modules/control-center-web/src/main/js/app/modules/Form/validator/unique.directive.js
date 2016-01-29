@@ -28,7 +28,7 @@ export default ['igniteUnique', ['$parse', ($parse) => {
             if (!arr || !arr.length || !~(idx = arr.indexOf(value))) {
                 return true;
             }
-            
+
             if (typeof scope.$index === 'number' && scope.$index === idx) {
                 return true;
             }

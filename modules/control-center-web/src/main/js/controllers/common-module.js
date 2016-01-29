@@ -565,8 +565,11 @@ consoleModule.service('$common', [
 
         function ensureActivePanel(ui, id, focusId) {
             if (ui) {
-                var idx = _.findIndex($('div.panel-collapse'), function(pnl) {
-                    return pnl.id === id;
+                var headings = $('div.panel-heading');
+                var collapses = $('div.panel-collapse');
+
+                var idx = _.findIndex(collapses, function(collapse) {
+                    return collapse.id === id;
                 });
 
                 if (idx >= 0) {
@@ -584,6 +587,11 @@ consoleModule.service('$common', [
 
                         ui.activePanels = newActivePanels;
                     }
+
+                    if (!collapses[idx].firstElementChild)
+                        $timeout(function () {
+                            headings[idx].click();
+                        });
                 }
 
                 if (isDefined(focusId))
@@ -592,20 +600,22 @@ consoleModule.service('$common', [
         }
 
         function showPopoverMessage(ui, panelId, id, message, showTime) {
+            if (popover)
+                popover.hide();
+
             ensureActivePanel(ui, panelId, id);
 
             var el = $('body').find('#' + id);
 
-            if (popover)
-                popover.hide();
+            if (el && el.length > 0) {
+                var newPopover = $popover(el, {content: message});
 
-            var newPopover = $popover(el, {content: message});
+                popover = newPopover;
 
-            popover = newPopover;
+                $timeout(function () { newPopover.$promise.then(newPopover.show); }, 400);
 
-            $timeout(function () { newPopover.$promise.then(newPopover.show); }, 400);
-
-            $timeout(function () { newPopover.hide(); }, showTime ? showTime : 5000);
+                $timeout(function () { newPopover.hide(); }, showTime ? showTime : 5000);
+            }
 
             return false;
         }

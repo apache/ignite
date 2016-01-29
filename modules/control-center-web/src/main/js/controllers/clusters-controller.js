@@ -494,10 +494,10 @@ consoleModule.controller('clustersController', function ($http, $timeout, $scope
 
             var swapKind = item.swapSpaceSpi && item.swapSpaceSpi.kind;
 
-            if ($common.isDefined(swapKind)) {
+            if (swapKind && item.swapSpaceSpi[swapKind]) {
                 var sparsity = item.swapSpaceSpi[swapKind].maximumSparsity;
 
-                if (sparsity < 0 || sparsity >= 1)
+                if ($common.isDefined(sparsity) && (sparsity < 0 || sparsity >= 1))
                     return showPopoverMessage($scope.ui, 'swap', 'maximumSparsity', 'Maximum sparsity should be more or equal 0 and less than 1');
             }
 
@@ -509,7 +509,7 @@ consoleModule.controller('clustersController', function ($http, $timeout, $scope
                     return showPopoverMessage($scope.ui, 'sslConfiguration', 'sslConfiguration-title', 'Trust storage file or managers should be configured');
             }
 
-            if (!item.swapSpaceSpi || !item.swapSpaceSpi.kind && item.caches) {
+            if (!swapKind && item.caches) {
                 for (var i = 0; i < item.caches.length; i++) {
                     var idx = $scope.indexOfCache(item.caches[i]);
 
