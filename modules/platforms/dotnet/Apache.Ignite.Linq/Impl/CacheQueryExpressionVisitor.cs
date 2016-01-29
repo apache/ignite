@@ -57,7 +57,7 @@ namespace Apache.Ignite.Linq.Impl
         private static readonly MethodInfo StringToUpper = typeof (string).GetMethod("ToUpper", new Type[0]);
 
         /** */
-        private bool _aggregating;
+        private readonly bool _aggregating;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="CacheQueryExpressionVisitor"/> class.
@@ -319,7 +319,12 @@ namespace Apache.Ignite.Linq.Impl
             foreach (var e in arguments)
             {
                 if (!first)
+                {
+                    if (_aggregating)
+                        throw new NotSupportedException("Aggregate functions do not support multiple fields");
+
                     _resultBuilder.Append(", ");
+                }
 
                 first = false;
 
