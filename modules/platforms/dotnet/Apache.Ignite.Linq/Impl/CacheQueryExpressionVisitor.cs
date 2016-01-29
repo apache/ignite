@@ -21,6 +21,7 @@ using System.Text;
 namespace Apache.Ignite.Linq.Impl
 {
     using System.Collections.Generic;
+    using System.Diagnostics;
     using System.Linq;
     using System.Linq.Expressions;
     using System.Reflection;
@@ -33,12 +34,6 @@ namespace Apache.Ignite.Linq.Impl
     /// </summary>
     internal class CacheQueryExpressionVisitor : ThrowingExpressionVisitor
     {
-        /** */
-        private readonly StringBuilder _resultBuilder = new StringBuilder();
-
-        /** */
-        private readonly List<object> _parameters = new List<object>();
-
         /** */
         private static readonly MethodInfo StringContains = typeof (string).GetMethod("Contains");
 
@@ -59,12 +54,24 @@ namespace Apache.Ignite.Linq.Impl
         /** */
         private readonly bool _aggregating;
 
+        /** */
+        private readonly string _schemaName;
+
+        /** */
+        private readonly StringBuilder _resultBuilder = new StringBuilder();
+
+        /** */
+        private readonly List<object> _parameters = new List<object>();
+
         /// <summary>
         /// Initializes a new instance of the <see cref="CacheQueryExpressionVisitor"/> class.
         /// </summary>
-        private CacheQueryExpressionVisitor(bool aggregating)
+        private CacheQueryExpressionVisitor(bool aggregating, string schemaName)
         {
+            Debug.Assert(!string.IsNullOrEmpty(schemaName));
+
             _aggregating = aggregating;
+            _schemaName = schemaName;
         }
 
         /// <summary>
@@ -75,9 +82,9 @@ namespace Apache.Ignite.Linq.Impl
         /// <returns>
         /// SQL statement for the expression.
         /// </returns>
-        public static QueryData GetSqlExpression(Expression linqExpression, bool aggregating)
+        public static QueryData GetSqlExpression(Expression linqExpression, bool aggregating, string schemaName)
         {
-            var visitor = new CacheQueryExpressionVisitor(aggregating);
+            var visitor = new CacheQueryExpressionVisitor(aggregating, schemaName);
 
             visitor.Visit(linqExpression);
 
@@ -210,7 +217,8 @@ namespace Apache.Ignite.Linq.Impl
 
             var fieldName = queryFieldAttr == null || string.IsNullOrEmpty(queryFieldAttr.Name) ? expression.Member.Name : queryFieldAttr.Name;
 
-            _resultBuilder.AppendFormat("{0}.{1}", TableNameMapper.GetTableName(expression), fieldName);
+            _resultBuilder.AppendFormat("\"{0}\"{1}.{2}", _schemaName, TableNameMapper.GetTableName(expression),
+                fieldName);
 
             return expression;
         }

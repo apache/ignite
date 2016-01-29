@@ -18,6 +18,7 @@
 namespace Apache.Ignite.Linq.Impl
 {
     using System;
+    using System.Diagnostics;
     using System.Linq;
     using System.Text;
     using Remotion.Linq;
@@ -31,9 +32,12 @@ namespace Apache.Ignite.Linq.Impl
         /// <summary>
         /// Generates the query.
         /// </summary>
-        public new static QueryData GenerateQuery(QueryModel queryModel)
+        public new static QueryData GenerateQuery(QueryModel queryModel, string schemaName)
         {
-            var visitor = new CacheFieldsQueryModelVisitor();
+            Debug.Assert(queryModel != null);
+            Debug.Assert(!string.IsNullOrEmpty(schemaName));
+
+            var visitor = new CacheFieldsQueryModelVisitor(schemaName);
 
             visitor.VisitQueryModel(queryModel);
 
@@ -72,7 +76,7 @@ namespace Apache.Ignite.Linq.Impl
                     throw new NotSupportedException("Operator is not supported: " + op);
             }
 
-            resultBuilder.Append(GetSqlExpression(queryModel.SelectClause.Selector, parenCount > 0).QueryText);
+            resultBuilder.Append(visitor.GetSqlExpression(queryModel.SelectClause.Selector, parenCount > 0).QueryText);
 
             resultBuilder.Append(')', parenCount);
 
@@ -81,6 +85,15 @@ namespace Apache.Ignite.Linq.Impl
             var queryText = resultBuilder.Append(" ").Append(queryData.QueryText).ToString();
 
             return new QueryData(queryText, queryData.Parameters, true);
+        }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="CacheFieldsQueryModelVisitor"/> class.
+        /// </summary>
+        /// <param name="schemaName">Name of the schema.</param>
+        private CacheFieldsQueryModelVisitor(string schemaName) : base(schemaName)
+        {
+            // No-op.
         }
     }
 }

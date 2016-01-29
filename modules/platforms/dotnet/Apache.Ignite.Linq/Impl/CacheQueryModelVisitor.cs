@@ -19,6 +19,7 @@ namespace Apache.Ignite.Linq.Impl
 {
     using System;
     using System.Collections.Generic;
+    using System.Diagnostics;
     using System.Linq;
     using System.Linq.Expressions;
     using System.Text;
@@ -36,12 +37,27 @@ namespace Apache.Ignite.Linq.Impl
         /** */
         private readonly List<object> _parameters = new List<object>();
 
+        /** */
+        private readonly string _schemaName;
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="CacheQueryModelVisitor"/> class.
+        /// </summary>
+        /// <param name="schemaName">Name of the schema.</param>
+        protected CacheQueryModelVisitor(string schemaName)
+        {
+            _schemaName = schemaName;
+        }
+
         /// <summary>
         /// Generates the query.
         /// </summary>
-        public static QueryData GenerateQuery(QueryModel queryModel)
+        public static QueryData GenerateQuery(QueryModel queryModel, string schemaName)
         {
-            var visitor = new CacheQueryModelVisitor();
+            Debug.Assert(queryModel != null);
+            Debug.Assert(!string.IsNullOrEmpty(schemaName));
+
+            var visitor = new CacheQueryModelVisitor(schemaName);
 
             visitor.VisitQueryModel(queryModel);
 
@@ -52,7 +68,7 @@ namespace Apache.Ignite.Linq.Impl
         /// Gets the query.
         /// </summary>
         /// <returns>Query data.</returns>
-        protected virtual QueryData GetQuery()
+        protected QueryData GetQuery()
         {
             return new QueryData(Builder.ToString().TrimEnd(), _parameters);
         }
@@ -60,7 +76,7 @@ namespace Apache.Ignite.Linq.Impl
         /// <summary>
         /// Gets the builder.
         /// </summary>
-        protected StringBuilder Builder
+        private StringBuilder Builder
         {
             get { return _builder; }
         }
@@ -87,12 +103,6 @@ namespace Apache.Ignite.Linq.Impl
         }
 
         /** <inheritdoc /> */
-        public override void VisitAdditionalFromClause(AdditionalFromClause fromClause, QueryModel queryModel, int index)
-        {
-            base.VisitAdditionalFromClause(fromClause, queryModel, index);
-        }
-
-        /** <inheritdoc /> */
         public override void VisitJoinClause(JoinClause joinClause, QueryModel queryModel, int index)
         {
             base.VisitJoinClause(joinClause, queryModel, index);
@@ -116,9 +126,9 @@ namespace Apache.Ignite.Linq.Impl
         /// <summary>
         /// Gets the SQL expression.
         /// </summary>
-        protected static QueryData GetSqlExpression(Expression expression, bool aggregating = false)
+        protected QueryData GetSqlExpression(Expression expression, bool aggregating = false)
         {
-            return CacheQueryExpressionVisitor.GetSqlExpression(expression, aggregating);
+            return CacheQueryExpressionVisitor.GetSqlExpression(expression, aggregating, _schemaName);
         }
     }
 }
