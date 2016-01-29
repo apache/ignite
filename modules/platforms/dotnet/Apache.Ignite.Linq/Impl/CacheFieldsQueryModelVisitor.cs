@@ -67,7 +67,7 @@ namespace Apache.Ignite.Linq.Impl
                     throw new NotSupportedException("Operator is not supported: " + resultOperator);
             }
 
-            resultBuilder.Append(GetSqlExpression(queryModel.SelectClause.Selector).QueryText);
+            resultBuilder.Append(visitor.GetSqlExpression(queryModel.SelectClause.Selector).QueryText);
 
             resultBuilder.Append(')', parenCount);
 

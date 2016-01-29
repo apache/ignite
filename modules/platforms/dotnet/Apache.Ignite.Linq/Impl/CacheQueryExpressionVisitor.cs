@@ -21,6 +21,7 @@ using System.Text;
 namespace Apache.Ignite.Linq.Impl
 {
     using System.Collections.Generic;
+    using System.Diagnostics;
     using System.Linq;
     using System.Linq.Expressions;
     using System.Reflection;
@@ -40,6 +41,9 @@ namespace Apache.Ignite.Linq.Impl
         private readonly List<object> _parameters = new List<object>();
 
         /** */
+        private readonly string _tableName;
+
+        /** */
         private static readonly MethodInfo StringContains = typeof (string).GetMethod("Contains");
 
         /** */
@@ -57,13 +61,27 @@ namespace Apache.Ignite.Linq.Impl
         private static readonly MethodInfo StringToUpper = typeof (string).GetMethod("ToUpper", new Type[0]);
 
         /// <summary>
+        /// Initializes a new instance of the <see cref="CacheQueryExpressionVisitor"/> class.
+        /// </summary>
+        /// <param name="tableName">Name of the table.</param>
+        private CacheQueryExpressionVisitor(string tableName)
+        {
+            Debug.Assert(!string.IsNullOrEmpty(tableName));
+
+            _tableName = tableName;
+        }
+
+        /// <summary>
         /// Gets the SQL statement.
         /// </summary>
         /// <param name="linqExpression">The linq expression.</param>
-        /// <returns>SQL statement for the expression.</returns>
-        public static QueryData GetSqlExpression(Expression linqExpression)
+        /// <param name="tableName">Name of the table.</param>
+        /// <returns>
+        /// SQL statement for the expression.
+        /// </returns>
+        public static QueryData GetSqlExpression(Expression linqExpression, string tableName)
         {
-            var visitor = new CacheQueryExpressionVisitor();
+            var visitor = new CacheQueryExpressionVisitor(tableName);
 
             visitor.Visit(linqExpression);
 
@@ -171,7 +189,6 @@ namespace Apache.Ignite.Linq.Impl
         /** <inheritdoc /> */
         protected override Expression VisitQuerySourceReference(QuerySourceReferenceExpression expression)
         {
-
             _resultBuilder.Append("*");
 
             return expression;
@@ -188,7 +205,7 @@ namespace Apache.Ignite.Linq.Impl
 
             var fieldName = queryFieldAttr == null || string.IsNullOrEmpty(queryFieldAttr.Name) ? expression.Member.Name : queryFieldAttr.Name;
 
-            _resultBuilder.Append(fieldName);
+            _resultBuilder.AppendFormat("{0}.{1}",_tableName, fieldName);
 
             return expression;
         }

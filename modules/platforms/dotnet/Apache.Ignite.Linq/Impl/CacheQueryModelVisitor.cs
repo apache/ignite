@@ -105,9 +105,9 @@ namespace Apache.Ignite.Linq.Impl
         /// <summary>
         /// Gets the SQL expression.
         /// </summary>
-        protected static QueryData GetSqlExpression(Expression expression)
+        protected QueryData GetSqlExpression(Expression expression)
         {
-            return CacheQueryExpressionVisitor.GetSqlExpression(expression);
+            return CacheQueryExpressionVisitor.GetSqlExpression(expression, _tableName);
         }
     }
 }
