@@ -226,6 +226,19 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         }
 
         [Test]
+        public void TestAggregates()
+        {
+            var cache = GetCache().ToQueryable();
+
+            Assert.AreEqual(DataSize, cache.Count());
+            Assert.AreEqual(DataSize, cache.Select(x => x.Key).Count());
+            Assert.AreEqual(DataSize, cache.Select(x => new {x.Key, x.Value}).Count());
+
+            // TODO
+            Assert.AreEqual(2, cache.Select(x => x.Value.OrganizationId).Distinct().Count());
+        }
+
+        [Test]
         public void TestSameCacheJoin()
         {
             // Select persons in specific organization
