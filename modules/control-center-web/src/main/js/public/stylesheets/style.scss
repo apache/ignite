@@ -60,9 +60,13 @@ hr {
 
 .navbar-default .navbar-brand, .navbar-default .navbar-brand:hover {
     position: absolute;
-    width: 100%;
     left: 0;
     text-align: center;
+}
+
+.navbar-brand {
+    padding: 5px 0;
+    margin-right: 15px;
 }
 
 .modal.center .modal-dialog {
@@ -220,22 +224,6 @@ ul.navbar-nav, .sidebar-nav {
     padding: 15px;
 }
 
-.header h1.navbar-brand {
-    height: 40px;
-    width: 200px;
-    padding: 0;
-    margin: 5px 15px 0 0;
-}
-
-.header h1.navbar-brand a {
-    text-indent: -99999px;
-    background: no-repeat center center;
-    display: block;
-    width: 100%;
-    height: 100%;
-    background-size: contain;
-}
-
 .header .nav.navbar-nav.pull-right {
     position: relative;
     right: -15px;
@@ -296,14 +284,6 @@ body {
 h1, h2, h3, h4, h5, h6 {
     font-weight: 700;
     margin-bottom: 10px;
-}
-
-.header h1.navbar-brand a {
-    background-image: url("#{$logo-path}");
-}
-
-.header h1.navbar-brand {
-    width: 96px;
 }
 
 .container-footer {

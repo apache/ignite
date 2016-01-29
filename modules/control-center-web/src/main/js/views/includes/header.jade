@@ -15,13 +15,10 @@
     limitations under the License.
 
 header#header.header
-    .viewedUser(ng-show='$root.user.becomeUsed') Currently assuming "
-        strong {{$root.user.username}}
-        | ",&nbsp;&nbsp;
-        a(ng-click='$root.revertIdentity()') revert to your identity.
+    .viewedUser(ng-show='$root.user.becomeUsed')
+        | Currently assuming #[strong {{$root.user.username}}], #[a(ng-click='$root.revertIdentity()') revert to your identity].
     .container
-        h1.navbar-brand
-            a(href='/') Apache Ignite Web Console
+        ignite-logo
         .navbar-collapse.collapse(ng-if='$root.user')
             ul.nav.navbar-nav(ignite-configuration-sidebar ignite-navbar)
                 li(ng-class='{active: $state.includes("base.configuration")}')

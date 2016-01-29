@@ -48,7 +48,8 @@ var igniteModulePaths = [
     igniteModules + '/**/app/modules/*.js',
     igniteModules + '/**/app/modules/**/*.js',
     igniteModules + '/**/controllers/*.js',
-    igniteModules + '/**/controllers/models/*.json'
+    igniteModules + '/**/controllers/models/*.json',
+    igniteModules + '/**/images/*.png'
 ];
 
 gulp.task('copy', function(cb) {

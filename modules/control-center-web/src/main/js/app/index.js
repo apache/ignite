@@ -33,6 +33,7 @@ import 'angular-ui-grid';
 import 'angular-loading';
 import 'angular-drag-and-drop-lists';
 import 'angular-nvd3';
+import 'angular-retina';
 
 import 'bootstrap-carousel';
 import 'file-saver';
@@ -76,6 +77,7 @@ import './modules/settings/main';
 import './modules/configuration/sidebar/main';
 import './modules/configuration/include-event-types/main';
 import './modules/terms/main';
+import './modules/logo/main';
 // endignite
 
 // Directives.
@@ -102,6 +104,7 @@ angular
 .module('ignite-console', [
     'ui.router',
     'ui.router.title',
+    'ngRetina',
     // Base modules.
     'ignite-console.Auth',
     'ignite-console.User',
@@ -122,7 +125,8 @@ angular
     'ignite-console.userbar',
     'ignite-console.configuration.sidebar',
     'ignite-console.configuration.include-event-types',
-    'ignite-console.terms'
+    'ignite-console.terms',
+    'ignite-console.logo'
 ])
 // Directives.
 .directive(...igniteLoading)

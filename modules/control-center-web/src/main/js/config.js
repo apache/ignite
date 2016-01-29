@@ -25,6 +25,7 @@ System.config({
     "angular-loading": "github:darthwade/angular-loading@0.1.4",
     "angular-motion": "github:mgcrea/angular-motion@0.4.3",
     "angular-nvd3": "github:krispo/angular-nvd3@1.0.5",
+    "angular-retina": "npm:angular-retina@0.3.1",
     "angular-sanitize": "github:angular/bower-angular-sanitize@1.4.8",
     "angular-smart-table": "github:lorenzofox3/Smart-Table@2.1.6",
     "angular-strap": "github:akuznetsov-gridgain/angular-strap@fix-1852-2.3.6",
