@@ -277,7 +277,7 @@ Client.prototype._rmtAuthMessage = function(msg) {
         var relDate = 0;
 
         if (!err)
-            relDate = stats.birthtime;
+            relDate = stats.birthtime.getTime();
 
         if ((msg.relDate || 0) < relDate)
             self.authResult('You are using an older version of the agent. Please reload agent archive');

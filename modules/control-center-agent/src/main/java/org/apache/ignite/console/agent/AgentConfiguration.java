@@ -203,10 +203,16 @@ public class AgentConfiguration {
         if (val != null)
             driversFolder(val);
 
-        Long relDate = (Long)props.remove("rel-date");
+        val = (String)props.remove("rel-date");
 
-        if (relDate != null)
-            this.relDate = relDate;
+        if (val != null) {
+            try {
+                this.relDate = Long.parseLong(val);
+            }
+            catch (NumberFormatException ignored) {
+                // No-op.
+            }
+        }
     }
 
     /**
@@ -230,6 +236,8 @@ public class AgentConfiguration {
 
         if (driversFolder == null)
             driversFolder(cmd.driversFolder());
+
+        relDate = cmd.relDate();
     }
 
     /** {@inheritDoc} */
