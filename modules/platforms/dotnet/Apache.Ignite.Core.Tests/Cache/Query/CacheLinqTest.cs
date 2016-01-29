@@ -243,6 +243,23 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         }
 
         [Test]
+        public void TestInvalidJoin()
+        {
+            // Join on non-IQueryable
+            Assert.Throws<NotSupportedException>(() =>
+                // ReSharper disable once ReturnValueOfPureMethodIsNotUsed
+                GetCache().ToQueryable().Join(GetOrgCache(), p => p.Key, o => o.Key, (p, o) => p).ToList());
+
+            // Join with subexpression
+            Assert.Throws<NotSupportedException>(() =>
+                // ReSharper disable once ReturnValueOfPureMethodIsNotUsed
+                GetCache()
+                    .ToQueryable()
+                    .Join(GetOrgCache().ToQueryable().Where(x => x.Key > 10), p => p.Key, o => o.Key, (p, o) => p)
+                    .ToList());
+        }
+
+        [Test]
         public void TestIntrospection()
         {
             var cache = GetCache();
