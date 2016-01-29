@@ -21,7 +21,6 @@ using System.Text;
 namespace Apache.Ignite.Linq.Impl
 {
     using System.Collections.Generic;
-    using System.Diagnostics;
     using System.Linq;
     using System.Linq.Expressions;
     using System.Reflection;
@@ -55,9 +54,6 @@ namespace Apache.Ignite.Linq.Impl
         private readonly bool _aggregating;
 
         /** */
-        private readonly string _schemaName;
-
-        /** */
         private readonly StringBuilder _resultBuilder = new StringBuilder();
 
         /** */
@@ -66,10 +62,9 @@ namespace Apache.Ignite.Linq.Impl
         /// <summary>
         /// Initializes a new instance of the <see cref="CacheQueryExpressionVisitor"/> class.
         /// </summary>
-        private CacheQueryExpressionVisitor(bool aggregating, string schemaName)
+        private CacheQueryExpressionVisitor(bool aggregating)
         {
             _aggregating = aggregating;
-            _schemaName = schemaName;
         }
 
         /// <summary>
@@ -77,13 +72,12 @@ namespace Apache.Ignite.Linq.Impl
         /// </summary>
         /// <param name="linqExpression">The linq expression.</param>
         /// <param name="aggregating">Aggregate flag.</param>
-        /// <param name="schemaName">Name of the schema.</param>
         /// <returns>
         /// SQL statement for the expression.
         /// </returns>
-        public static QueryData GetSqlExpression(Expression linqExpression, bool aggregating, string schemaName)
+        public static QueryData GetSqlExpression(Expression linqExpression, bool aggregating)
         {
-            var visitor = new CacheQueryExpressionVisitor(aggregating, schemaName);
+            var visitor = new CacheQueryExpressionVisitor(aggregating);
 
             visitor.Visit(linqExpression);
 
@@ -199,7 +193,7 @@ namespace Apache.Ignite.Linq.Impl
             // In other cases we need both parts of cache entry
             var format = _aggregating ? "{0}.*" : "{0}._key, {0}._val";
 
-            var tableName = TableNameMapper.GetTableName(expression);
+            var tableName = TableNameMapper.GetTableNameWithSchema(expression);
 
             _resultBuilder.AppendFormat(format, tableName);
 
@@ -214,10 +208,11 @@ namespace Apache.Ignite.Linq.Impl
 
             var queryFieldAttr = expression.Member.GetCustomAttributes(true).OfType<QuerySqlFieldAttribute>().FirstOrDefault();
 
-            var fieldName = queryFieldAttr == null || string.IsNullOrEmpty(queryFieldAttr.Name) ? expression.Member.Name : queryFieldAttr.Name;
+            var fieldName = queryFieldAttr == null || string.IsNullOrEmpty(queryFieldAttr.Name)
+                ? expression.Member.Name
+                : queryFieldAttr.Name;
 
-            _resultBuilder.AppendFormat("\"{0}\".{1}.{2}", _schemaName, TableNameMapper.GetTableName(expression),
-                fieldName);
+            _resultBuilder.AppendFormat("{0}.{1}", TableNameMapper.GetTableNameWithSchema(expression), fieldName);
 
             return expression;
         }

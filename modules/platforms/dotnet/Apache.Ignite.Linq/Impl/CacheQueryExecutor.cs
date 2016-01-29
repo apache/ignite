@@ -76,7 +76,7 @@ namespace Apache.Ignite.Linq.Impl
         /** <inheritdoc /> */
         public QueryData GetQueryData(QueryModel queryModel)
         {
-            return CacheQueryModelVisitor.GenerateQuery(queryModel, _cache.Name);
+            return CacheQueryModelVisitor.GenerateQuery(queryModel);
         }
     }
 }

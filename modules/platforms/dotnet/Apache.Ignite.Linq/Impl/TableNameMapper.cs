@@ -48,36 +48,36 @@ namespace Apache.Ignite.Linq.Impl
             return GetTableNameFromEntryValueType(cacheEntryType.GetGenericArguments()[1]);
         }
 
-        public static string GetTableName(QuerySourceReferenceExpression expression)
+        public static string GetTableNameWithSchema(QuerySourceReferenceExpression expression)
         {
             Debug.Assert(expression != null);
 
             return GetTableNameFromEntryType(expression.ReferencedQuerySource.ItemType);
         }
 
-        public static string GetTableName(MemberExpression expression)
+        public static string GetTableNameWithSchema(MemberExpression expression)
         {
             Debug.Assert(expression != null);
 
             var querySrc = expression.Expression as QuerySourceReferenceExpression;
 
             if (querySrc != null)
-                return GetTableName(querySrc);
+                return GetTableNameWithSchema(querySrc);
 
             var innerMember = expression.Expression as MemberExpression;
 
             if (innerMember != null)
-                return GetTableName(innerMember);
+                return GetTableNameWithSchema(innerMember);
 ;
             throw new NotSupportedException("Unexpected member expression, cannot find query source: " + expression);
         }
 
-        public static string GetTableName(MainFromClause fromClause)
+        public static string GetTableNameWithSchema(MainFromClause fromClause)
         {
             return GetTableNameFromEntryType(fromClause.ItemType);
         }
 
-        public static string GetTableName(JoinClause joinClause)
+        public static string GetTableNameWithSchema(JoinClause joinClause)
         {
             return GetTableNameFromEntryType(joinClause.ItemType);
         }

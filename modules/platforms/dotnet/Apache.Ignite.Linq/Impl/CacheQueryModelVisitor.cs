@@ -37,26 +37,14 @@ namespace Apache.Ignite.Linq.Impl
         /** */
         private readonly List<object> _parameters = new List<object>();
 
-        /** */
-        private readonly string _schemaName;
-
-        /// <summary>
-        /// Initializes a new instance of the <see cref="CacheQueryModelVisitor"/> class.
-        /// </summary>
-        /// <param name="schemaName">Name of the schema.</param>
-        protected CacheQueryModelVisitor(string schemaName)
-        {
-            _schemaName = schemaName;
-        }
-
         /// <summary>
         /// Generates the query.
         /// </summary>
-        public static QueryData GenerateQuery(QueryModel queryModel, string schemaName)
+        public static QueryData GenerateQuery(QueryModel queryModel)
         {
             Debug.Assert(queryModel != null);
 
-            var visitor = new CacheQueryModelVisitor(schemaName);
+            var visitor = new CacheQueryModelVisitor();
 
             visitor.VisitQueryModel(queryModel);
 
@@ -85,7 +73,7 @@ namespace Apache.Ignite.Linq.Impl
         {
             base.VisitMainFromClause(fromClause, queryModel);
 
-            Builder.AppendFormat("from \"{0}\".{1} ", _schemaName, TableNameMapper.GetTableName(fromClause));
+            Builder.AppendFormat("from {0} ", TableNameMapper.GetTableNameWithSchema(fromClause));
         }
 
         /** <inheritdoc /> */
@@ -117,7 +105,7 @@ namespace Apache.Ignite.Linq.Impl
                                                 "(only results of cache.ToQueryable() are supported): " +
                                                 innerExpr.Value);
 
-            Builder.AppendFormat("join {0} on ({1} = {2}) ", TableNameMapper.GetTableName(joinClause),
+            Builder.AppendFormat("join {0} on ({1} = {2}) ", TableNameMapper.GetTableNameWithSchema(joinClause),
                 GetSqlExpression(joinClause.InnerKeySelector).QueryText,
                 GetSqlExpression(joinClause.OuterKeySelector).QueryText);
         }
@@ -127,7 +115,7 @@ namespace Apache.Ignite.Linq.Impl
         /// </summary>
         protected QueryData GetSqlExpression(Expression expression, bool aggregating = false)
         {
-            return CacheQueryExpressionVisitor.GetSqlExpression(expression, aggregating, _schemaName);
+            return CacheQueryExpressionVisitor.GetSqlExpression(expression, aggregating);
         }
     }
 }

@@ -32,11 +32,11 @@ namespace Apache.Ignite.Linq.Impl
         /// <summary>
         /// Generates the query.
         /// </summary>
-        public new static QueryData GenerateQuery(QueryModel queryModel, string schemaName)
+        public new static QueryData GenerateQuery(QueryModel queryModel)
         {
             Debug.Assert(queryModel != null);
 
-            var visitor = new CacheFieldsQueryModelVisitor(schemaName);
+            var visitor = new CacheFieldsQueryModelVisitor();
 
             visitor.VisitQueryModel(queryModel);
 
@@ -84,15 +84,6 @@ namespace Apache.Ignite.Linq.Impl
             var queryText = resultBuilder.Append(" ").Append(queryData.QueryText).ToString();
 
             return new QueryData(queryText, queryData.Parameters, true);
-        }
-
-        /// <summary>
-        /// Initializes a new instance of the <see cref="CacheFieldsQueryModelVisitor"/> class.
-        /// </summary>
-        /// <param name="schemaName">Name of the schema.</param>
-        private CacheFieldsQueryModelVisitor(string schemaName) : base(schemaName)
-        {
-            // No-op.
         }
     }
 }
