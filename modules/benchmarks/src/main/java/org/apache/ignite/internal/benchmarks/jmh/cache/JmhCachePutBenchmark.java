@@ -23,6 +23,7 @@ import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.internal.benchmarks.jmh.runner.JmhIdeBenchmarkRunner;
 import org.apache.ignite.internal.benchmarks.model.IntValue;
 import org.openjdk.jmh.annotations.Benchmark;
+import org.openjdk.jmh.profile.GCProfiler;
 
 import java.util.concurrent.ThreadLocalRandom;
 
@@ -107,6 +108,7 @@ public class JmhCachePutBenchmark extends JmhCacheAbstractBenchmark {
             .measurementIterations(60)
             .classes(JmhCachePutBenchmark.class)
             .output(output + ".jmh.log")
+            .profilers(GCProfiler.class)
             .jvmArguments(
                 "-Xms4g",
                 "-Xmx4g",
