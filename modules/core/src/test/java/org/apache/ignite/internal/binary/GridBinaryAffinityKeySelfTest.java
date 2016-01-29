@@ -21,7 +21,9 @@ import java.util.Collections;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicReference;
 import org.apache.ignite.Ignite;
+import org.apache.ignite.binary.BinaryNameMapper;
 import org.apache.ignite.binary.BinaryObjectBuilder;
+import org.apache.ignite.binary.BinaryTypeConfiguration;
 import org.apache.ignite.cache.CacheKeyConfiguration;
 import org.apache.ignite.cache.affinity.Affinity;
 import org.apache.ignite.configuration.BinaryConfiguration;
@@ -34,7 +36,6 @@ import org.apache.ignite.internal.processors.cache.CacheObjectContext;
 import org.apache.ignite.internal.processors.cacheobject.IgniteCacheObjectProcessor;
 import org.apache.ignite.lang.IgniteCallable;
 import org.apache.ignite.lang.IgniteRunnable;
-import org.apache.ignite.binary.BinaryTypeConfiguration;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
@@ -68,6 +69,8 @@ public class GridBinaryAffinityKeySelfTest extends GridCommonAbstractTest {
 
         bCfg.setTypeConfigurations(Collections.singleton(typeCfg));
 
+        bCfg.setNameMapper(nameMapper());
+
         cfg.setBinaryConfiguration(bCfg);
 
         CacheKeyConfiguration keyCfg = new CacheKeyConfiguration(TestObject.class.getName(), "affKey");
@@ -88,6 +91,13 @@ public class GridBinaryAffinityKeySelfTest extends GridCommonAbstractTest {
         ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(ipFinder);
 
         return cfg;
+    }
+
+    /**
+     * @return Name mapper.
+     */
+    protected BinaryNameMapper nameMapper() {
+        return null;
     }
 
     /** {@inheritDoc} */

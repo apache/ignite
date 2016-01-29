@@ -40,6 +40,7 @@ import org.apache.ignite.internal.binary.BinaryObjectBuilderDefaultMappersSelfTe
 import org.apache.ignite.internal.binary.BinaryObjectBuilderSimpleNameLowerCaseMappersSelfTest;
 import org.apache.ignite.internal.binary.BinarySimpleNameTestPropertySelfTest;
 import org.apache.ignite.internal.binary.GridBinaryAffinityKeySelfTest;
+import org.apache.ignite.internal.binary.GridBinaryAffinityKeySimpleNameMapperSelfTest;
 import org.apache.ignite.internal.binary.GridBinaryMarshallerCtxDisabledSelfTest;
 import org.apache.ignite.internal.binary.GridBinaryWildcardsSelfTest;
 import org.apache.ignite.internal.binary.GridDefaultBinaryMappersBinaryMetaDataSelfTest;
@@ -104,9 +105,7 @@ public class IgniteBinaryObjectsTestSuite extends TestSuite {
         suite.addTestSuite(BinaryFooterOffsetsOffheapSelfTest.class);
         suite.addTestSuite(BinaryEnumsSelfTest.class);
         suite.addTestSuite(GridDefaultBinaryMappersBinaryMetaDataSelfTest.class);
-        suite.addTestSuite(GridSimpleLowerCaseBinaryMappersBinaryMetaDataSelfTest.class);
         suite.addTestSuite(GridBinaryAffinityKeySelfTest.class);
-        suite.addTestSuite(GridBinaryWildcardsSelfTest.class);
 
         // Tests for simple-name mapper.
         suite.addTestSuite(BinaryObjectBuilderSimpleNameLowerCaseMappersSelfTest.class);
@@ -115,6 +114,8 @@ public class IgniteBinaryObjectsTestSuite extends TestSuite {
         suite.addTestSuite(BinaryFieldsOffheapSimpleNameMapperSelfTest.class);
         suite.addTestSuite(BinaryFooterOffsetsHeapSimpleNameMapperSelfTest.class);
         suite.addTestSuite(BinaryFooterOffsetsOffheapSimpleNameMapperSelfTest.class);
+        suite.addTestSuite(GridSimpleLowerCaseBinaryMappersBinaryMetaDataSelfTest.class);
+        suite.addTestSuite(GridBinaryAffinityKeySimpleNameMapperSelfTest.class);
 
         // Tests for objects with non-compact footers.
         suite.addTestSuite(BinaryMarshallerNonCompactSelfTest.class);
@@ -132,6 +133,9 @@ public class IgniteBinaryObjectsTestSuite extends TestSuite {
         suite.addTestSuite(BinaryFieldsOffheapNonCompactSimpleNameMapperSelfTest.class);
         suite.addTestSuite(BinaryFooterOffsetsHeapNonCompactSimpleNameMapperSelfTest.class);
         suite.addTestSuite(BinaryFooterOffsetsOffheapNonCompactSimpleNameMapperSelfTest.class);
+
+        // Test in different modes.
+        suite.addTestSuite(GridBinaryWildcardsSelfTest.class);
 
         suite.addTestSuite(GridCacheBinaryObjectsLocalSelfTest.class);
         suite.addTestSuite(GridCacheBinaryObjectsAtomicLocalSelfTest.class);
