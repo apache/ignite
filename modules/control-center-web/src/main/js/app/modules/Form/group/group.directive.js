@@ -39,7 +39,7 @@ export default ['igniteFormGroup', [() => {
         };
 
         scope.$watch(() => form.$pristine, setAsDefault);
-        
+
         scope.$watch('value', setAsDefault);
         scope.$watch('value', setAsDirty, true);
     };
