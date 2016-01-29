@@ -64,5 +64,5 @@ include ../includes/controls
                             span.caret
                 hr
             form.form-horizontal(name='ui.inputForm' ng-show='backupItem && tableVisibleRow((displayedRows | domainsValidation:ui.showValid:true), selectedItem)' novalidate)
-                .panel-group(bs-collapse ng-model='panels.activePanels' data-allow-multiple='true')
+                .panel-group(bs-collapse ng-model='ui.activePanels' data-allow-multiple='true')
                     +groups('domainModel', 'backupItem')

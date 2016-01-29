@@ -25,6 +25,9 @@ consoleModule.controller('cachesController', [
         angular.extend(this, $controller('save-remove', {$scope: $scope}));
 
         $scope.ui = $common.formUI();
+        $scope.ui.activePanels = [0];
+        $scope.ui.topPanels = [0, 1, 2, 3];
+
         $scope.selectedItemWatchGuard = false;
 
         $scope.joinTip = $common.joinTip;
@@ -152,8 +155,6 @@ consoleModule.controller('cachesController', [
 
             $common.hidePopover();
         };
-
-        $scope.panels = {activePanels: [0]};
 
         $scope.general = [];
         $scope.advanced = [];
@@ -443,7 +444,7 @@ consoleModule.controller('cachesController', [
         $scope.createItem = function (id) {
             if ($scope.tableReset(true)) {
                 $timeout(function () {
-                    $common.ensureActivePanel($scope.panels, 'general', 'cacheName');
+                    $common.ensureActivePanel($scope.ui, 'general', 'cacheName');
                 });
 
                 $scope.selectItem(undefined, prepareNewItem(id));
@@ -472,7 +473,7 @@ consoleModule.controller('cachesController', [
             });
 
             if (!checkRes.checked) {
-                return showPopoverMessage($scope.panels, 'store', checkRes.firstCache.cacheStoreFactory.kind === 'CacheJdbcPojoStoreFactory' ? 'pojoDialect' : 'blobDialect',
+                return showPopoverMessage($scope.ui, 'store', checkRes.firstCache.cacheStoreFactory.kind === 'CacheJdbcPojoStoreFactory' ? 'pojoDialect' : 'blobDialect',
                     'Found cache "' + checkRes.secondCache.name + '" in cluster "' + failCluster.label + '" ' +
                     'with the same data source bean name "' + checkRes.firstCache.cacheStoreFactory[checkRes.firstCache.cacheStoreFactory.kind].dataSourceBean +
                     '" and different database: "' + $common.cacheStoreJdbcDialectsLabel(checkRes.firstDB) + '" in current cache and "' +
@@ -485,14 +486,14 @@ consoleModule.controller('cachesController', [
         // Check cache logical consistency.
         function validate(item) {
             if ($common.isEmptyString(item.name))
-                return showPopoverMessage($scope.panels, 'general', 'cacheName', 'Name should not be empty');
+                return showPopoverMessage($scope.ui, 'general', 'cacheName', 'Name should not be empty');
 
             if (item.memoryMode === 'OFFHEAP_TIERED' && !$common.isDefined(item.offHeapMaxMemory))
-                return showPopoverMessage($scope.panels, 'memory', 'offHeapMaxMemory',
+                return showPopoverMessage($scope.ui, 'memory', 'offHeapMaxMemory',
                     'Off-heap max memory should be specified');
 
             if (item.memoryMode === 'ONHEAP_TIERED' && item.offHeapMaxMemory > 0 && !$common.isDefined(item.evictionPolicy.kind))
-                return showPopoverMessage($scope.panels, 'memory', 'evictionPolicy', 'Eviction policy should not be configured');
+                return showPopoverMessage($scope.ui, 'memory', 'evictionPolicy', 'Eviction policy should not be configured');
 
             var cacheStoreFactorySelected = item.cacheStoreFactory && item.cacheStoreFactory.kind;
 
@@ -501,14 +502,14 @@ consoleModule.controller('cachesController', [
 
                 if (item.cacheStoreFactory.kind === 'CacheJdbcPojoStoreFactory') {
                     if ($common.isEmptyString(storeFactory.dataSourceBean))
-                        return showPopoverMessage($scope.panels, 'store', 'dataSourceBean',
+                        return showPopoverMessage($scope.ui, 'store', 'dataSourceBean',
                             'Data source bean name should not be empty');
 
-                    if (!$common.isValidJavaIdentifier('Data source bean', storeFactory.dataSourceBean, 'dataSourceBean', $scope.panels, 'store'))
+                    if (!$common.isValidJavaIdentifier('Data source bean', storeFactory.dataSourceBean, 'dataSourceBean', $scope.ui, 'store'))
                         return false;
 
                     if (!storeFactory.dialect)
-                        return showPopoverMessage($scope.panels, 'store', 'pojoDialect',
+                        return showPopoverMessage($scope.ui, 'store', 'pojoDialect',
                             'Dialect should not be empty');
 
                     if (!checkDataSources())
@@ -518,23 +519,23 @@ consoleModule.controller('cachesController', [
                 if (item.cacheStoreFactory.kind === 'CacheJdbcBlobStoreFactory') {
                     if (storeFactory.connectVia === 'URL') {
                         if ($common.isEmptyString(storeFactory.connectionUrl))
-                            return showPopoverMessage($scope.panels, 'store', 'connectionUrl',
+                            return showPopoverMessage($scope.ui, 'store', 'connectionUrl',
                                 'Connection URL should not be empty');
 
                         if ($common.isEmptyString(storeFactory.user))
-                            return showPopoverMessage($scope.panels, 'store', 'user',
+                            return showPopoverMessage($scope.ui, 'store', 'user',
                                 'User should not be empty');
                     }
                     else {
                         if ($common.isEmptyString(storeFactory.dataSourceBean))
-                            return showPopoverMessage($scope.panels, 'store', 'dataSourceBean',
+                            return showPopoverMessage($scope.ui, 'store', 'dataSourceBean',
                                 'Data source bean name should not be empty');
 
-                        if (!$common.isValidJavaIdentifier('Data source bean', storeFactory.dataSourceBean, 'dataSourceBean', $scope.panels, 'store'))
+                        if (!$common.isValidJavaIdentifier('Data source bean', storeFactory.dataSourceBean, 'dataSourceBean', $scope.ui, 'store'))
                             return false;
 
                         if (!storeFactory.dialect)
-                            return showPopoverMessage($scope.panels, 'store', 'blobDialect',
+                            return showPopoverMessage($scope.ui, 'store', 'blobDialect',
                                 'Database should not be empty');
 
                         if (!checkDataSources())
@@ -544,16 +545,16 @@ consoleModule.controller('cachesController', [
             }
 
             if ((item.readThrough || item.writeThrough) && !cacheStoreFactorySelected)
-                return showPopoverMessage($scope.panels, 'store', 'cacheStoreFactory',
+                return showPopoverMessage($scope.ui, 'store', 'cacheStoreFactory',
                     (item.readThrough ? 'Read' : 'Write') + ' through are enabled but store is not configured!');
 
             if (item.writeBehindEnabled && !cacheStoreFactorySelected)
-                return showPopoverMessage($scope.panels, 'store', 'cacheStoreFactory',
+                return showPopoverMessage($scope.ui, 'store', 'cacheStoreFactory',
                     'Write behind enabled but store is not configured!');
 
             if (cacheStoreFactorySelected) {
                 if (!item.readThrough && !item.writeThrough)
-                    return showPopoverMessage($scope.panels, 'store', 'readThrough',
+                    return showPopoverMessage($scope.ui, 'store', 'readThrough',
                         'Store is configured but read/write through are not enabled!');
 
                 if (item.cacheStoreFactory.kind === 'CacheJdbcPojoStoreFactory') {
@@ -561,7 +562,7 @@ consoleModule.controller('cachesController', [
                         var domains = cacheDomains($scope.backupItem);
 
                         if (_.findIndex(domains, $common.domainForStoreConfigured) < 0)
-                            return showPopoverMessage($scope.panels, 'general', 'domains',
+                            return showPopoverMessage($scope.ui, 'general', 'domains',
                                 'Cache with configured JDBC POJO store factory should be associated with at least one domain model for cache store');
                     }
                 }

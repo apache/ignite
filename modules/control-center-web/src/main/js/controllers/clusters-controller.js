@@ -39,6 +39,8 @@ consoleModule.controller('clustersController', function ($http, $timeout, $scope
 
         $scope.ui = $common.formUI();
         $scope.ui.angularWay = true; // TODO We need to distinguish refactored UI from legacy UI.
+        $scope.ui.activePanels = [0];
+        $scope.ui.topPanels = [0];
 
         $scope.joinTip = $common.joinTip;
         $scope.getModel = $common.getModel;
@@ -125,8 +127,6 @@ consoleModule.controller('clustersController', function ($http, $timeout, $scope
 
             $common.hidePopover();
         };
-
-        $scope.panels = {activePanels: [0]};
 
         $scope.clusters = [];
 
@@ -336,7 +336,7 @@ consoleModule.controller('clustersController', function ($http, $timeout, $scope
         // Add new cluster.
         $scope.createItem = function(id) {
             $timeout(function () {
-                $common.ensureActivePanel($scope.panels, "general", 'clusterName');
+                $common.ensureActivePanel($scope.ui, "general", 'clusterName');
             });
 
             $scope.selectItem(undefined, prepareNewItem(id));
@@ -351,7 +351,19 @@ consoleModule.controller('clustersController', function ($http, $timeout, $scope
         // Check cluster logical consistency.
         function validate(item) {
             if ($common.isEmptyString(item.name))
-                return showPopoverMessage($scope.panels, 'general', 'clusterName', 'Name should not be empty');
+                return showPopoverMessage($scope.ui, 'general', 'clusterName', 'Name should not be empty');
+
+            var errors = $scope.ui.inputForm.$error;
+            var errKeys = Object.keys(errors);
+
+            if (errKeys && errKeys.length > 0) {
+                var firstErrorKey = errKeys[0];
+
+                var firstError = errors[firstErrorKey][0];
+                var actualError = firstError.$error[firstErrorKey][0];
+
+                return showPopoverMessage($scope.ui, firstError.$name, actualError.$name, 'Invalid value');
+            }
 
             var caches = _.filter(_.map($scope.caches, function (scopeCache) {
                 return scopeCache.cache;
@@ -362,7 +374,7 @@ consoleModule.controller('clustersController', function ($http, $timeout, $scope
             var checkRes = $common.checkCachesDataSources(caches);
 
             if (!checkRes.checked) {
-                return showPopoverMessage($scope.panels, 'general', 'caches',
+                return showPopoverMessage($scope.ui, 'general', 'caches',
                     'Found caches "' + checkRes.firstCache.name + '" and "' + checkRes.secondCache.name + '" ' +
                     'with the same data source bean name "' + checkRes.firstCache.cacheStoreFactory[checkRes.firstCache.cacheStoreFactory.kind].dataSourceBean +
                     '" and different databases: "' + $common.cacheStoreJdbcDialectsLabel(checkRes.firstDB) + '" in "' + checkRes.firstCache.name + '" and "' +
@@ -372,18 +384,6 @@ consoleModule.controller('clustersController', function ($http, $timeout, $scope
             var b = item.binaryConfiguration;
 
             if ($common.isDefined(b)) {
-                if (!$common.isEmptyString(b.idMapper) && !$common.isValidJavaClass('ID mapper', b.idMapper, false, 'idMapper', false, $scope.panels, 'binary')) {
-                    $scope.ui.expanded = true;
-
-                    return false;
-                }
-
-                if (!$common.isEmptyString(b.serializer) && !$common.isValidJavaClass('Serializer', b.serializer, false, 'serializer', false, $scope.panels, 'binary')) {
-                    $scope.ui.expanded = true;
-
-                    return false;
-                }
-
                 if (!$common.isEmptyArray(b.typeConfigurations)) {
                     var sameName = function (t, ix) {
                         return ix < typeIx && t.typeName === type.typeName;
@@ -392,39 +392,20 @@ consoleModule.controller('clustersController', function ($http, $timeout, $scope
                     for (var typeIx = 0; typeIx < b.typeConfigurations.length; typeIx++) {
                         var type = b.typeConfigurations[typeIx];
 
-                        if ($common.isEmptyString(type.typeName)) {
-                            $scope.ui.expanded = true;
+                        if ($common.isEmptyString(type.typeName))
+                            return showPopoverMessage($scope.ui, 'binary', 'typeName' + typeIx, 'Type name should be specified');
 
-                            showPopoverMessage($scope.panels, 'binary', 'typeName' + typeIx, 'Type name should be specified');
-
+                        if (!$common.isEmptyString(type.typeName) && !$common.isValidJavaClass('Type name', type.typeName, false, 'typeName' + typeIx, false, $scope.ui, 'binary'))
                             return false;
-                        }
 
-                        if (!$common.isEmptyString(type.typeName) && !$common.isValidJavaClass('Type name', type.typeName, false, 'typeName' + typeIx, false, $scope.panels, 'binary')) {
-                            $scope.ui.expanded = true;
-
+                        if (!$common.isEmptyString(type.idMapper) && !$common.isValidJavaClass('ID mapper', type.idMapper, false, 'idMapper' + typeIx, false, $scope.ui, 'binary'))
                             return false;
-                        }
 
-                        if (!$common.isEmptyString(type.idMapper) && !$common.isValidJavaClass('ID mapper', type.idMapper, false, 'idMapper' + typeIx, false, $scope.panels, 'binary')) {
-                            $scope.ui.expanded = true;
-
+                        if (!$common.isEmptyString(type.serializer) && !$common.isValidJavaClass('Serializer', type.serializer, false, 'serializer' + typeIx, false, $scope.ui, 'binary'))
                             return false;
-                        }
 
-                        if (!$common.isEmptyString(type.serializer) && !$common.isValidJavaClass('Serializer', type.serializer, false, 'serializer' + typeIx, false, $scope.panels, 'binary')) {
-                            $scope.ui.expanded = true;
-
-                            return false;
-                        }
-
-                        if (_.find(b.typeConfigurations, sameName)) {
-                            $scope.ui.expanded = true;
-
-                            showPopoverMessage($scope.panels, 'binary', 'typeName' + typeIx, 'Type with such name is already specified');
-
-                            return false;
-                        }
+                        if (_.find(b.typeConfigurations, sameName))
+                            return showPopoverMessage($scope.ui, 'binary', 'typeName' + typeIx, 'Type with such name is already specified');
                     }
                 }
             }
@@ -432,96 +413,80 @@ consoleModule.controller('clustersController', function ($http, $timeout, $scope
             var c = item.communication;
 
             if ($common.isDefined(c)) {
-                if (!$common.isEmptyString(c.listener) && !$common.isValidJavaClass('Communication listener', c.listener, false, 'comListener', false, $scope.panels, 'communication')) {
-                    $scope.ui.expanded = true;
-
+                if (!$common.isEmptyString(c.listener) && !$common.isValidJavaClass('Communication listener', c.listener, false, 'comListener', false, $scope.ui, 'communication'))
                     return false;
-                }
 
-                if (!$common.isEmptyString(c.addressResolver) && !$common.isValidJavaClass('Address resolver', c.addressResolver, false, 'comAddressResolver', false, $scope.panels, 'communication')) {
-                    $scope.ui.expanded = true;
-
+                if (!$common.isEmptyString(c.addressResolver) && !$common.isValidJavaClass('Address resolver', c.addressResolver, false, 'comAddressResolver', false, $scope.ui, 'communication'))
                     return false;
-                }
 
                 if ($common.isDefined(c.unacknowledgedMessagesBufferSize)) {
                     if ($common.isDefined(c.messageQueueLimit))
-                        if (c.unacknowledgedMessagesBufferSize < 5 * c.messageQueueLimit) {
-                            $scope.ui.expanded = true;
-
-                            showPopoverMessage($scope.panels, 'communication', 'unacknowledgedMessagesBufferSize', 'Maximum number of stored unacknowledged messages should be at least 5 * message queue limit');
-
-                            return false;
-                        }
+                        if (c.unacknowledgedMessagesBufferSize < 5 * c.messageQueueLimit)
+                            return showPopoverMessage($scope.ui, 'communication', 'unacknowledgedMessagesBufferSize', 'Maximum number of stored unacknowledged messages should be at least 5 * message queue limit');
 
                     if ($common.isDefined(c.ackSendThreshold))
-                        if (c.unacknowledgedMessagesBufferSize < 5 * c.ackSendThreshold) {
-                            $scope.ui.expanded = true;
-
-                            showPopoverMessage($scope.panels, 'communication', 'unacknowledgedMessagesBufferSize', 'Maximum number of stored unacknowledged messages should be at least 5 * ack send threshold');
-
-                            return false;
-                        }
+                        if (c.unacknowledgedMessagesBufferSize < 5 * c.ackSendThreshold)
+                            return showPopoverMessage($scope.ui, 'communication', 'unacknowledgedMessagesBufferSize', 'Maximum number of stored unacknowledged messages should be at least 5 * ack send threshold');
                 }
             }
 
             var r = item.connector;
 
             if ($common.isDefined(r)) {
-                if (!$common.isEmptyString(r.messageInterceptor) && !$common.isValidJavaClass('Message interceptor', r.messageInterceptor, false, 'connectorMessageInterceptor', false, $scope.panels, 'connector'))
+                if (!$common.isEmptyString(r.messageInterceptor) && !$common.isValidJavaClass('Message interceptor', r.messageInterceptor, false, 'connectorMessageInterceptor', false, $scope.ui, 'connector'))
                     return false;
 
                 if (r.sslEnabled && $common.isEmptyString(r.sslFactory))
-                    return showPopoverMessage($scope.panels, 'connector', 'connectorSslFactory', 'SSL factory should not be empty');
+                    return showPopoverMessage($scope.ui, 'connector', 'connectorSslFactory', 'SSL factory should not be empty');
 
-                if (r.sslEnabled && !$common.isEmptyString(r.sslFactory) && !$common.isValidJavaClass('SSL factory', r.sslFactory, false, 'connectorSslFactory', false, $scope.panels, 'connector'))
+                if (r.sslEnabled && !$common.isEmptyString(r.sslFactory) && !$common.isValidJavaClass('SSL factory', r.sslFactory, false, 'connectorSslFactory', false, $scope.ui, 'connector'))
                     return false;
             }
 
             var d = item.discovery;
 
             if (d) {
-                if (!$common.isEmptyString(d.addressResolver) && !$common.isValidJavaClass('Address resolver', d.addressResolver, false, 'discoAddressResolver', false, $scope.panels, 'discovery'))
+                if (!$common.isEmptyString(d.addressResolver) && !$common.isValidJavaClass('Address resolver', d.addressResolver, false, 'discoAddressResolver', false, $scope.ui, 'discovery'))
                     return false;
 
-                if (!$common.isEmptyString(d.listener) && !$common.isValidJavaClass('Discovery listener', d.listener, false, 'discoListener', false, $scope.panels, 'discovery'))
+                if (!$common.isEmptyString(d.listener) && !$common.isValidJavaClass('Discovery listener', d.listener, false, 'discoListener', false, $scope.ui, 'discovery'))
                     return false;
 
-                if (!$common.isEmptyString(d.dataExchange) && !$common.isValidJavaClass('Data exchange', d.dataExchange, false, 'dataExchange', false, $scope.panels, 'discovery'))
+                if (!$common.isEmptyString(d.dataExchange) && !$common.isValidJavaClass('Data exchange', d.dataExchange, false, 'dataExchange', false, $scope.ui, 'discovery'))
                     return false;
 
-                if (!$common.isEmptyString(d.metricsProvider) && !$common.isValidJavaClass('Metrics provider', d.metricsProvider, false, 'metricsProvider', false, $scope.panels, 'discovery'))
+                if (!$common.isEmptyString(d.metricsProvider) && !$common.isValidJavaClass('Metrics provider', d.metricsProvider, false, 'metricsProvider', false, $scope.ui, 'discovery'))
                     return false;
 
-                if (!$common.isEmptyString(d.authenticator) && !$common.isValidJavaClass('Node authenticator', d.authenticator, false, 'authenticator', false, $scope.panels, 'discovery'))
+                if (!$common.isEmptyString(d.authenticator) && !$common.isValidJavaClass('Node authenticator', d.authenticator, false, 'authenticator', false, $scope.ui, 'discovery'))
                     return false;
 
                 if (d.kind === 'Vm' && d.Vm && d.Vm.addresses.length === 0)
-                    return showPopoverMessage($scope.panels, 'general', 'addresses', 'Addresses are not specified');
+                    return showPopoverMessage($scope.ui, 'general', 'addresses', 'Addresses are not specified');
 
                 if (d.kind === 'S3' && d.S3 && $common.isEmptyString(d.S3.bucketName))
-                    return showPopoverMessage($scope.panels, 'general', 'bucketName', 'Bucket name should not be empty');
+                    return showPopoverMessage($scope.ui, 'general', 'bucketName', 'Bucket name should not be empty');
 
                 if (d.kind === 'Cloud' && d.Cloud) {
                     if ($common.isEmptyString(d.Cloud.identity))
-                        return showPopoverMessage($scope.panels, 'general', 'identity', 'Identity should not be empty');
+                        return showPopoverMessage($scope.ui, 'general', 'identity', 'Identity should not be empty');
 
                     if ($common.isEmptyString(d.Cloud.provider))
-                        return showPopoverMessage($scope.panels, 'general', 'provider', 'Provider should not be empty');
+                        return showPopoverMessage($scope.ui, 'general', 'provider', 'Provider should not be empty');
                 }
 
                 if (d.kind === 'GoogleStorage' && d.GoogleStorage) {
                     if ($common.isEmptyString(d.GoogleStorage.projectName))
-                        return showPopoverMessage($scope.panels, 'general', 'projectName', 'Project name should not be empty');
+                        return showPopoverMessage($scope.ui, 'general', 'projectName', 'Project name should not be empty');
 
                     if ($common.isEmptyString(d.GoogleStorage.bucketName))
-                        return showPopoverMessage($scope.panels, 'general', 'bucketName', 'Bucket name should not be empty');
+                        return showPopoverMessage($scope.ui, 'general', 'bucketName', 'Bucket name should not be empty');
 
                     if ($common.isEmptyString(d.GoogleStorage.serviceAccountP12FilePath))
-                        return showPopoverMessage($scope.panels, 'general', 'serviceAccountP12FilePath', 'Private key path should not be empty');
+                        return showPopoverMessage($scope.ui, 'general', 'serviceAccountP12FilePath', 'Private key path should not be empty');
 
                     if ($common.isEmptyString(d.GoogleStorage.serviceAccountId))
-                        return showPopoverMessage($scope.panels, 'general', 'serviceAccountId', 'Account ID should not be empty');
+                        return showPopoverMessage($scope.ui, 'general', 'serviceAccountId', 'Account ID should not be empty');
                 }
             }
 
@@ -531,15 +496,15 @@ consoleModule.controller('clustersController', function ($http, $timeout, $scope
                 var sparsity = item.swapSpaceSpi[swapKind].maximumSparsity;
 
                 if (sparsity < 0 || sparsity >= 1)
-                    return showPopoverMessage($scope.panels, 'swap', 'maximumSparsity', 'Maximum sparsity should be more or equal 0 and less than 1');
+                    return showPopoverMessage($scope.ui, 'swap', 'maximumSparsity', 'Maximum sparsity should be more or equal 0 and less than 1');
             }
 
             if (item.sslEnabled) {
                 if (!$common.isDefined(item.sslContextFactory) || $common.isEmptyString(item.sslContextFactory.keyStoreFilePath))
-                    return showPopoverMessage($scope.panels, 'sslConfiguration', 'keyStoreFilePath', 'Key store file should not be empty');
+                    return showPopoverMessage($scope.ui, 'sslConfiguration', 'keyStoreFilePath', 'Key store file should not be empty');
 
                 if ($common.isEmptyString(item.sslContextFactory.trustStoreFilePath) && $common.isEmptyArray(item.sslContextFactory.trustManagers))
-                    return showPopoverMessage($scope.panels, 'sslConfiguration', 'sslConfiguration-title', 'Trust storage file or managers should be configured');
+                    return showPopoverMessage($scope.ui, 'sslConfiguration', 'sslConfiguration-title', 'Trust storage file or managers should be configured');
             }
 
             if (!item.swapSpaceSpi || !item.swapSpaceSpi.kind && item.caches) {
@@ -549,22 +514,16 @@ consoleModule.controller('clustersController', function ($http, $timeout, $scope
                     if (idx >= 0) {
                         var cache = $scope.caches[idx];
 
-                        if (cache.cache.swapEnabled) {
-                            $scope.ui.expanded = true;
-
-                            return showPopoverMessage($scope.panels, 'swap', 'swapSpaceSpi',
+                        if (cache.cache.swapEnabled)
+                            return showPopoverMessage($scope.ui, 'swap', 'swapSpaceSpi',
                                 'Swap space SPI is not configured, but cache "' + cache.label + '" configured to use swap!');
-                        }
                     }
                 }
             }
 
-            if (item.rebalanceThreadPoolSize && item.systemThreadPoolSize && item.systemThreadPoolSize <= item.rebalanceThreadPoolSize) {
-                $scope.ui.expanded = true;
-
-                return showPopoverMessage($scope.panels, 'pools', 'rebalanceThreadPoolSize',
+            if (item.rebalanceThreadPoolSize && item.systemThreadPoolSize && item.systemThreadPoolSize <= item.rebalanceThreadPoolSize)
+                return showPopoverMessage($scope.ui, 'pools', 'rebalanceThreadPoolSize',
                     'Rebalance thread pool size exceed or equals System thread pool size');
-            }
 
             return true;
         }

@@ -51,16 +51,16 @@ include ../includes/controls
                     .panel-tip-container(ng-show='backupItem')
                         i.btn.btn-primary.fa.fa-undo(id='undo-item' ng-disabled='!ui.inputForm.$dirty' ng-click='ui.inputForm.$dirty && resetAll()' bs-tooltip=undoTip data-placement='bottom' data-trigger='hover')
             hr
-            div(bs-collapse='' data-allow-multiple='true' ng-model='__.groups')
+            div(bs-collapse='' data-allow-multiple='true' ng-model='ui.activePanels')
                 form.form-horizontal(name='ui.inputForm' ng-show='backupItem' novalidate)
                     .panel-group(ng-click='triggerDigest = true')
                         ignite-configuration-clusters-general
                         .advanced-options
                             i.fa(
-                                ng-click='__.advanced = !__.advanced'
-                                ng-class='__.advanced ? "fa-chevron-circle-down" : "fa-chevron-circle-right"')
-                            a(ng-click='__.advanced = !__.advanced') {{__.advanced ? 'Hide advanced settings...' : 'Show advanced settings...'}}
-                        div(ng-show='__.advanced')
+                                ng-click='toggleExpanded()'
+                                ng-class='ui.expanded ? "fa-chevron-circle-down" : "fa-chevron-circle-right"')
+                            a(ng-click='toggleExpanded()') {{ui.expanded ? 'Hide advanced settings...' : 'Show advanced settings...'}}
+                        div(ng-show='ui.expanded')
                             ignite-configuration-clusters-atomic
                             ignite-configuration-clusters-binary
                             ignite-configuration-clusters-communication
@@ -78,5 +78,5 @@ include ../includes/controls
                             ignite-configuration-clusters-transactions
 
                             .advanced-options
-                                i.fa.fa-chevron-circle-down(ng-click='__.advanced = !__.advanced')
-                                a(ng-click='__.advanced = !__.advanced') Hide advanced settings...
+                                i.fa.fa-chevron-circle-down(ng-click='ui.expanded = !ui.expanded')
+                                a(ng-click='ui.expanded = !ui.expanded') Hide advanced settings...

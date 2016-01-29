@@ -99,7 +99,7 @@ form.panel.panel-default(name='connector' novalidate)
                         ignite-form-field-label
                             | Idle query cursor timeout:
                         ignite-form-field-tooltip
-                            | Reject open query cursors that is not used timeout
+                            | Reject open query cursors that is not used timeout#[br]
                             | If no fetch query request come within idle timeout, it will be removed on next check for old query cursors
                         ignite-form-field-input-number(
                         data-id='connectorIdleQueryCursorTimeout'
@@ -113,7 +113,7 @@ form.panel.panel-default(name='connector' novalidate)
                         ignite-form-field-label
                             | Idle query cursor check frequency:
                         ignite-form-field-tooltip
-                            | Idle query cursors check frequency.
+                            | Idle query cursors check frequency#[br]
                             | This setting is used to reject open query cursors that is not used
                         ignite-form-field-input-number(
                         data-id='connectorIdleQueryCursorCheckFrequency'

@@ -49,7 +49,7 @@ mixin ignite-form-field-tooltip(message)
                             label.tipLabel Project structure
                     button.btn.btn-primary(id='proprietary-jdbc-drivers' ng-if='downloadJdbcDriversVisible()' ng-click='downloadJdbcDrivers()' bs-tooltip='' data-title='Open proprietary JDBC drivers download pages' data-placement='bottom') Download JDBC drivers
                     hr
-                .panel-group(bs-collapse ng-init='panels.activePanels=[0,1]' ng-model='panels.activePanels' data-allow-multiple='true')
+                .panel-group(bs-collapse ng-init='ui.activePanels=[0,1]' ng-model='ui.activePanels' data-allow-multiple='true')
                     .panel.panel-default
                         .panel-heading(role='tab' bs-collapse-toggle)
                             i.fa(ng-class='panelExpanded(panels, "server") ? "fa-chevron-circle-down" : "fa-chevron-circle-right"')

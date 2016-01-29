@@ -25,6 +25,8 @@ consoleModule.controller('igfsController', [
             angular.extend(this, $controller('save-remove', {$scope: $scope}));
 
             $scope.ui = $common.formUI();
+            $scope.ui.activePanels = [0];
+            $scope.ui.topPanels = [0];
 
             $scope.joinTip = $common.joinTip;
             $scope.getModel = $common.getModel;
@@ -121,8 +123,6 @@ consoleModule.controller('igfsController', [
                 $common.hidePopover();
             };
 
-            $scope.panels = {activePanels: [0]};
-
             $scope.general = [];
             $scope.advanced = [];
             $scope.igfss = [];
@@ -149,7 +149,7 @@ consoleModule.controller('igfsController', [
 
                     // Found duplicate.
                     if (idx >= 0 && idx !== index)
-                        return showPopoverMessage($scope.panels, 'misc', $table.tableFieldId(index, 'KeyPathMode'), 'Such path already exists!');
+                        return showPopoverMessage($scope.ui, 'misc', $table.tableFieldId(index, 'KeyPathMode'), 'Such path already exists!');
                 }
 
                 return true;
@@ -292,7 +292,7 @@ consoleModule.controller('igfsController', [
             $scope.createItem = function (id) {
                 if ($scope.tableReset(true)) {
                     $timeout(function () {
-                        $common.ensureActivePanel($scope.panels, 'general', 'igfsName');
+                        $common.ensureActivePanel($scope.ui, 'general', 'igfsName');
                     });
 
                     $scope.selectItem(undefined, prepareNewItem(id));
@@ -302,32 +302,19 @@ consoleModule.controller('igfsController', [
             // Check IGFS logical consistency.
             function validate(item) {
                 if ($common.isEmptyString(item.name))
-                    return showPopoverMessage($scope.panels, 'general', 'igfsName', 'Name should not be empty');
+                    return showPopoverMessage($scope.ui, 'general', 'igfsName', 'Name should not be empty');
 
                 if (!$common.isEmptyString(item.dualModePutExecutorService) &&
-                    !$common.isValidJavaClass('Put executor service', item.dualModePutExecutorService, false, 'dualModePutExecutorService', false, $scope.panels, 'dualMode')) {
-                    $scope.ui.expanded = true;
-
+                    !$common.isValidJavaClass('Put executor service', item.dualModePutExecutorService, false, 'dualModePutExecutorService', false, $scope.ui, 'dualMode'))
                     return false;
-                }
 
-                if (!item.secondaryFileSystemEnabled && (item.defaultMode === 'PROXY')) {
-                    $scope.ui.expanded = true;
-
-                    showPopoverMessage($scope.panels, 'secondaryFileSystem', 'secondaryFileSystem-title', 'Secondary file system should be configured for "PROXY" IGFS mode');
-
-                    return false;
-                }
+                if (!item.secondaryFileSystemEnabled && (item.defaultMode === 'PROXY'))
+                    return showPopoverMessage($scope.ui, 'secondaryFileSystem', 'secondaryFileSystem-title', 'Secondary file system should be configured for "PROXY" IGFS mode');
 
                 if (item.pathModes) {
                     for (var pathIx = 0; pathIx < item.pathModes.length; pathIx ++) {
-                        if (!item.secondaryFileSystemEnabled && item.pathModes[pathIx].mode === 'PROXY') {
-                            $scope.ui.expanded = true;
-
-                            showPopoverMessage($scope.panels, 'misc', 'secondaryFileSystem-title', 'Secondary file system should be configured for "PROXY" path mode');
-
-                            return false;
-                        }
+                        if (!item.secondaryFileSystemEnabled && item.pathModes[pathIx].mode === 'PROXY')
+                            return showPopoverMessage($scope.ui, 'misc', 'secondaryFileSystem-title', 'Secondary file system should be configured for "PROXY" path mode');
                     }
                 }
 

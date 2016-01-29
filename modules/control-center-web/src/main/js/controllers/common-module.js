@@ -563,23 +563,26 @@ consoleModule.service('$common', [
 
         var popover = null;
 
-        function ensureActivePanel(panels, id, focusId) {
-            if (panels) {
+        function ensureActivePanel(ui, id, focusId) {
+            if (ui) {
                 var idx = _.findIndex($('div.panel-collapse'), function(pnl) {
                     return pnl.id === id;
                 });
 
                 if (idx >= 0) {
-                    var activePanels = panels.activePanels;
+                    var activePanels = ui.activePanels;
+
+                    if (!_.includes(ui.topPanels))
+                        ui.expanded = true;
 
                     if (!activePanels || activePanels.length < 1)
-                        panels.activePanels = [idx];
+                        ui.activePanels = [idx];
                     else if (!_.contains(activePanels, idx)) {
                         var newActivePanels = angular.copy(activePanels);
 
                         newActivePanels.push(idx);
 
-                        panels.activePanels = newActivePanels;
+                        ui.activePanels = newActivePanels;
                     }
                 }
 
@@ -588,8 +591,8 @@ consoleModule.service('$common', [
             }
         }
 
-        function showPopoverMessage(panels, panelId, id, message, showTime) {
-            ensureActivePanel(panels, panelId, id);
+        function showPopoverMessage(ui, panelId, id, message, showTime) {
+            ensureActivePanel(ui, panelId, id);
 
             var el = $('body').find('#' + id);
 
@@ -900,13 +903,13 @@ consoleModule.service('$common', [
             ensureActivePanel: function (panels, id, focusId) {
                 ensureActivePanel(panels, id, focusId);
             },
-            panelExpanded: function (panels, id) {
-                if (panels && panels.activePanels && panels.activePanels.length > 0) {
+            panelExpanded: function (ui, id) {
+                if (ui && ui.activePanels && ui.activePanels.length > 0) {
                     var idx = _.findIndex($('div.panel-collapse'), function(pnl) {
                         return pnl.id === id;
                     });
 
-                    return idx >= 0 && _.includes(panels.activePanels, idx);
+                    return idx >= 0 && _.includes(ui.activePanels, idx);
                 }
 
                 return false;

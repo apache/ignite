@@ -34,7 +34,7 @@ include ../includes/controls
                 +save-remove-buttons('cache')
                 hr
             form.form-horizontal(name='ui.inputForm' ng-show='backupItem && tableVisibleRow(displayedRows, selectedItem)' novalidate)
-                .panel-group(bs-collapse ng-model='panels.activePanels' data-allow-multiple='true')
+                .panel-group(bs-collapse ng-model='ui.activePanels' data-allow-multiple='true')
                     +groups('general', 'backupItem')
                     div(ng-show='ui.expanded')
                         +advanced-options
