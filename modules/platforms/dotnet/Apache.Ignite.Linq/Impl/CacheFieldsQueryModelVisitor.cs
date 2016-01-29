@@ -20,6 +20,7 @@ namespace Apache.Ignite.Linq.Impl
     using System;
     using System.Text;
     using Remotion.Linq;
+    using Remotion.Linq.Clauses.Expressions;
     using Remotion.Linq.Clauses.ResultOperators;
 
     /// <summary>

@@ -56,16 +56,28 @@ namespace Apache.Ignite.Linq.Impl
         /** */
         private static readonly MethodInfo StringToUpper = typeof (string).GetMethod("ToUpper", new Type[0]);
 
+        /** */
+        private bool _aggregating;
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="CacheQueryExpressionVisitor"/> class.
+        /// </summary>
+        private CacheQueryExpressionVisitor(bool aggregating)
+        {
+            _aggregating = aggregating;
+        }
+
         /// <summary>
         /// Gets the SQL statement.
         /// </summary>
         /// <param name="linqExpression">The linq expression.</param>
+        /// <param name="aggregating"></param>
         /// <returns>
         /// SQL statement for the expression.
         /// </returns>
-        public static QueryData GetSqlExpression(Expression linqExpression)
+        public static QueryData GetSqlExpression(Expression linqExpression, bool aggregating)
         {
-            var visitor = new CacheQueryExpressionVisitor();
+            var visitor = new CacheQueryExpressionVisitor(aggregating);
 
             visitor.Visit(linqExpression);
 
@@ -173,15 +185,13 @@ namespace Apache.Ignite.Linq.Impl
         /** <inheritdoc /> */
         protected override Expression VisitQuerySourceReference(QuerySourceReferenceExpression expression)
         {
+            // Count, sum, max, min expect a single field or *
+            // In other cases we need both parts of cache entry
+            var format = _aggregating ? "{0}.*" : "{0}._key, {0}._val";
+
             var tableName = TableNameMapper.GetTableName(expression);
 
-            // TODO: For COUNT there must be either * or _key/_val
-            // For JOIN we need both key and val
-
-            _resultBuilder.Append(tableName).Append(".*");
-            //_resultBuilder.Append(tableName).Append("._key");
-            //_resultBuilder.Append(", ");
-            //_resultBuilder.Append(tableName).Append("._val");
+            _resultBuilder.AppendFormat(format, tableName);
 
             return expression;
         }
