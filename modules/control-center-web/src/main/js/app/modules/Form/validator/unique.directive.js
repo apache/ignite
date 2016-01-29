@@ -20,11 +20,20 @@ export default ['igniteUnique', ['$parse', ($parse) => {
         if (typeof attrs.igniteUnique === 'undefined' || !attrs.igniteUnique)
             return;
 
-        ngModel.$validators.igniteUnique = (value) => {
+        ngModel.$validators.igniteUnique = (value, old) => {
+            let idx;
             const arr = $parse(attrs.igniteUnique)(scope);
 
             // Return true in case if array not exist, array empty, or value is unique.
-            return !arr || !arr.length || !~arr.indexOf(value);
+            if (!arr || !arr.length || !~(idx = arr.indexOf(value))) {
+                return true;
+            }
+            
+            if (typeof scope.$index === 'number' && scope.$index === idx) {
+                return true;
+            }
+
+            return false;
         };
     };
 

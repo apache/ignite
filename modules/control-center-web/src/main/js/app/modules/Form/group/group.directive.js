@@ -33,8 +33,15 @@ export default ['igniteFormGroup', [() => {
             form.$defaults[name] = _.cloneDeep(scope.value);
         };
 
+        const setAsDirty = () => {
+            if (JSON.stringify(scope.value) !== JSON.stringify(form.$defaults[name]))
+                form.$setDirty();
+        };
+
         scope.$watch(() => form.$pristine, setAsDefault);
+        
         scope.$watch('value', setAsDefault);
+        scope.$watch('value', setAsDirty, true);
     };
 
     return {

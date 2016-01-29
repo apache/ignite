@@ -186,6 +186,8 @@ consoleModule.controller('clustersController', function ($http, $timeout, $scope
                 $scope.$watch('backupItem', function (val) {
                     if (__original_value === JSON.stringify(val))
                         $scope.ui.inputForm.$setPristine();
+                    else 
+                        $scope.ui.inputForm.$setDirty();
 
                     if (val) {
                         var clusterCaches = _.reduce($scope.caches, function(caches, cache){
