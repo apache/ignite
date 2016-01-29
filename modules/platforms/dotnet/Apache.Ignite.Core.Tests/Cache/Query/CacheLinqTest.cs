@@ -231,11 +231,17 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
             var persons = GetCache().ToQueryable();
 
             var res = persons.Join(organizations, person => person.Value.OrganizationId, org => org.Value.Id,
-                (person, org) => new {person, org}).ToList();
+                (person, org) => new {Person = person.Value, Org = org.Value}).ToList();
 
             Assert.AreEqual(DataSize / 2, res.Count);
 
-            Assert.IsTrue(res.All(r => r.person.Value.OrganizationId == 1));
+            Assert.IsTrue(res.All(r => r.Person.OrganizationId == r.Org.Id));
+
+            // Test full projection (selects pair of ICacheEntry)
+            var res2 = persons.Join(organizations, person => person.Value.OrganizationId, org => org.Value.Id,
+                (person, org) => new { Person = person, Org = org }).ToList();
+
+            Assert.AreEqual(DataSize / 2, res2.Count);
         }
 
         [Test]
