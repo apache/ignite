@@ -222,10 +222,6 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         [Test]
         public void TestSameCacheJoin()
         {
-            //var res = cache.Query(new SqlQuery("LinqPerson",
-            //    "from LinqPerson, LinqOrganization where LinqPerson.OrganizationId = LinqOrganization.Id and LinqOrganization.Name = ?", "Org_1"))
-            //    .GetAll();
-
             // Select persons in specific organization
             var organizations = GetOrgCache().ToQueryable();
             var persons = GetCache().ToQueryable();
