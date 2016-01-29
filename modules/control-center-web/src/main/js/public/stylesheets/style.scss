@@ -363,12 +363,9 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 .modal-footer {
-    .checkbox {
+    label {
+        float: left;
         margin: 0;
-
-        label {
-            vertical-align: middle;
-        }
     }
 }
 

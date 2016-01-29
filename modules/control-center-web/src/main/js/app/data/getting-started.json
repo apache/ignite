@@ -1,0 +1,20 @@
+[
+    {
+        "title": "What is Apache Ignite Web Console",
+        "message": [
+            "Apache Ignite Web Console is a powerful tool for configuration of your cluster."
+        ]
+    },
+    {
+        "title": "Get started",
+        "message": [
+            "In cluster configuration you can follow next steps:",
+            "<ul>",
+            "<li>Configure cluster configuration on Cluster screen</li>",
+            "<li>Configure domain models on Model screen</li>",
+            "<li>Configure clusters on Clusters screen</li>",
+            "<li>See and download generated project for configured cluster on Summary screen</li>",
+            "</ul>"
+        ]
+    }
+]

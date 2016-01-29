@@ -39,7 +39,7 @@ angular
         }
     }
 
-    this.$get = ['$http', '$rootScope', '$state', '$common', 'User', function($http, $root, $state, $common, User) {
+    this.$get = ['$http', '$rootScope', '$state', '$common', 'IgniteGettingStarted', 'User', function($http, $root, $state, $common, gettingStarted, User) {
         return {
             get authorized() {
                 return _auth;
@@ -57,6 +57,8 @@ angular
                             $root.$broadcast('user', user);
 
                             $state.go('base.configuration.clusters');
+
+                            $root.gettingStarted.tryShow();
                         } else
                             $state.go('password.send');
                     })

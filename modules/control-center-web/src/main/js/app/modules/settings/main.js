@@ -38,10 +38,13 @@ angular
         controller: ['$rootScope', 'igniteSettings', function($root, igniteSettings) {
             const ctrl = this;
 
-            ctrl.items = [{text: 'Profile', sref: 'settings.profile'}];
+            ctrl.items = [
+                {text: 'Profile', sref: 'settings.profile'},
+                {text: 'Getting Started', click: 'gettingStarted.tryShow(true)'}
+            ];
 
             const _rebuildSettings = (event, user) => {
-                ctrl.items.splice(1);
+                ctrl.items.splice(2);
 
                 if (!user.becomeUsed && user.admin)
                     ctrl.items.push({text: 'Admin Panel', sref: 'settings.admin'});

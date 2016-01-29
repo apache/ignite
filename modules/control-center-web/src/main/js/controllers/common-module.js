@@ -24,7 +24,9 @@ var consoleModule = angular.module('ignite-web-console',
         /* ignite:plugins */
         /* endignite */
     ])
-    .run(function ($rootScope, $http, $state, $common, Auth, User) {
+    .run(function ($rootScope, $http, $state, $common, Auth, User, IgniteGettingStarted) {
+        $rootScope.gettingStarted = IgniteGettingStarted;
+
         if (Auth.authorized)
             User.read().then(function (user) {
                 $rootScope.$broadcast('user', user);

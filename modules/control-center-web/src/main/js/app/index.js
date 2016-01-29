@@ -90,6 +90,7 @@ import igniteFormFieldJavaClass from './directives/form-field-java-class/form-fi
 
 // Services.
 import IgniteUiAceOnLoad from './services/UiAceOnLoad/service';
+import IgniteGettingStarted from './services/GettingStarted/index';
 
 // Providers
 import igniteCountries from './providers/Countries/index';
@@ -134,6 +135,7 @@ angular
 .directive(...igniteFormFieldJavaClass)
 // Services.
 .service(...IgniteUiAceOnLoad)
+.service(...IgniteGettingStarted)
 // Providers.
 .provider(...igniteCountries)
 // Filters.
