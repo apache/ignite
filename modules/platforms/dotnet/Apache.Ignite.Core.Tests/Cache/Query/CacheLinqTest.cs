@@ -131,7 +131,14 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
             Assert.AreEqual(0, cache.Where(x => x.Key < 0).Select(x => x.Value.Age).FirstOrDefault());
             Assert.AreEqual(3, cache.Where(x => x.Key == 3).Select(x => x.Value.Age).FirstOrDefault());
             Assert.AreEqual(3, cache.Where(x => x.Key == 3).Select(x => x.Value).Single().Age);
-            Assert.AreEqual(3, cache.Where(x => x.Key == 3).Select(x => x.Key).Single());
+            Assert.AreEqual(3, cache.Select(x => x.Key).Single(x => x == 3));
+            Assert.AreEqual(7,
+                cache.Select(x => x.Value)
+                    .Where(x => x.Age == 7)
+                    .Select(x => x.Address)
+                    .Where(x => x.Zip > 0)
+                    .Select(x => x.Zip)
+                    .Single());
         }
 
         [Test]
