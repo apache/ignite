@@ -17,11 +17,9 @@
 
 namespace Apache.Ignite.Linq.Impl
 {
-    using System;
     using System.Linq;
     using System.Linq.Expressions;
     using Apache.Ignite.Core;
-    using Apache.Ignite.Core.Cache;
     using Remotion.Linq;
 
     /// <summary>
@@ -63,8 +61,9 @@ namespace Apache.Ignite.Linq.Impl
         /** <inheritdoc /> */
         public string ToTraceString()
         {
-            // TODO
-            throw new NotImplementedException();
+            var model = CacheQueryProvider.GenerateQueryModel(Expression);
+
+            return ((ICacheQueryExecutor)CacheQueryProvider.Executor).GetQueryData(model).ToString();
         }
     }
 }

@@ -31,7 +31,7 @@ namespace Apache.Ignite.Linq.Impl
     /// <summary>
     /// Fields query executor.
     /// </summary>
-    internal class CacheFieldsQueryExecutor : IQueryExecutor
+    internal class CacheFieldsQueryExecutor : ICacheQueryExecutor
     {
         /** */
         private readonly Func<SqlFieldsQuery, IQueryCursor<IList>> _executorFunc;
@@ -64,7 +64,7 @@ namespace Apache.Ignite.Linq.Impl
         /** <inheritdoc /> */
         public IEnumerable<T> ExecuteCollection<T>(QueryModel queryModel)
         {
-            var queryData = CacheFieldsQueryModelVisitor.GenerateQuery(queryModel);
+            var queryData = GetQueryData(queryModel);
 
             var query = new SqlFieldsQuery(queryData.QueryText, queryData.Parameters.ToArray());
 
@@ -76,6 +76,12 @@ namespace Apache.Ignite.Linq.Impl
             var selector = GetResultSelector<T>(queryModel.SelectClause.Selector);
 
             return queryCursor.Select(selector);
+        }
+
+        /** <inheritdoc /> */
+        public QueryData GetQueryData(QueryModel queryModel)
+        {
+            return CacheFieldsQueryModelVisitor.GenerateQuery(queryModel);
         }
 
         /// <summary>

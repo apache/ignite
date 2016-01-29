@@ -29,7 +29,7 @@ namespace Apache.Ignite.Linq.Impl
     /// </summary>
     /// <typeparam name="TKey">The type of the key.</typeparam>
     /// <typeparam name="TValue">The type of the value.</typeparam>
-    internal class CacheQueryExecutor<TKey, TValue> : IQueryExecutor
+    internal class CacheQueryExecutor<TKey, TValue> : ICacheQueryExecutor
     {
         /** */
         private readonly ICache<TKey, TValue> _cache;
@@ -62,7 +62,7 @@ namespace Apache.Ignite.Linq.Impl
         /** <inheritdoc /> */
         public IEnumerable<T> ExecuteCollection<T>(QueryModel queryModel)
         {
-            var queryData = CacheQueryModelVisitor.GenerateQuery(queryModel);
+            var queryData = GetQueryData(queryModel);
 
             var query = new SqlQuery(TableNameMapper.GetTableName(_cache), queryData.QueryText,
                 queryData.Parameters.ToArray());
@@ -71,6 +71,12 @@ namespace Apache.Ignite.Linq.Impl
                 string.Join(", ", queryData.Parameters.Select(x => x.ToString())));
 
             return (IEnumerable<T>) _cache.Query(query);
+        }
+
+        /** <inheritdoc /> */
+        public QueryData GetQueryData(QueryModel queryModel)
+        {
+            return CacheQueryModelVisitor.GenerateQuery(queryModel);
         }
     }
 }

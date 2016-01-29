@@ -18,6 +18,7 @@
 namespace Apache.Ignite.Linq.Impl
 {
     using System.Collections.Generic;
+    using System.Linq;
 
     /// <summary>
     /// Query data DTO.
@@ -68,6 +69,18 @@ namespace Apache.Ignite.Linq.Impl
         public bool IsFieldsQuery
         {
             get { return _isFieldsQuery; }
+        }
+
+        /// <summary>
+        /// Returns a <see cref="string" /> that represents this instance.
+        /// </summary>
+        /// <returns>
+        /// A <see cref="string" /> that represents this instance.
+        /// </returns>
+        public override string ToString()
+        {
+            return string.Format("{0} Query [SQL={1}, Parameters={2}]", IsFieldsQuery ? "Fields" : "SQL", QueryText,
+                string.Join(", ", Parameters.Select(x => x.ToString())));
         }
     }
 }

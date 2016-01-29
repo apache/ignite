@@ -73,8 +73,7 @@ namespace Apache.Ignite.Linq.Impl
         /** <inheritdoc /> */
         public string ToTraceString()
         {
-            // TODO
-            throw new NotImplementedException();
+            return CacheQueryProvider.GetQueryData(Expression).ToString();
         }
     }
 }

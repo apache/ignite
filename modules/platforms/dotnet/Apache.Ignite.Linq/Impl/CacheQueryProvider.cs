@@ -21,6 +21,7 @@ namespace Apache.Ignite.Linq.Impl
     using System.Linq.Expressions;
     using Apache.Ignite.Core.Cache;
     using Remotion.Linq;
+    using Remotion.Linq.Clauses.ResultOperators;
     using Remotion.Linq.Clauses.StreamedData;
 
     /// <summary>
@@ -67,11 +68,36 @@ namespace Apache.Ignite.Linq.Impl
         /** <inheritdoc /> */
         public override IStreamedData Execute(Expression expression)
         {
-            if (expression.NodeType != ExpressionType.Constant &&
-                expression.Type != typeof (IQueryable<ICacheEntry<TKey, TValue>>))
+            if (IsFieldsQuery(expression))
                 return GetFieldsProvider().Execute(expression);
 
             return base.Execute(expression);
+        }
+
+
+        /// <summary>
+        /// Gets the query data.
+        /// </summary>
+        /// <param name="expression">The expression.</param>
+        /// <returns>Query data.</returns>
+        public QueryData GetQueryData(Expression expression)
+        {
+            var provider = IsFieldsQuery(expression) ? (QueryProviderBase) GetFieldsProvider() : this;
+
+            var model = provider.GenerateQueryModel(expression);
+
+            return ((ICacheQueryExecutor) provider.Executor).GetQueryData(model);
+        }
+
+        /// <summary>
+        /// Determines whether specified expression represents fields query.
+        /// </summary>
+        /// <param name="expression">The expression.</param>
+        /// <returns></returns>
+        private static bool IsFieldsQuery(Expression expression)
+        {
+            return expression.NodeType != ExpressionType.Constant &&
+                   expression.Type != typeof (IQueryable<ICacheEntry<TKey, TValue>>);
         }
 
         /// <summary>
