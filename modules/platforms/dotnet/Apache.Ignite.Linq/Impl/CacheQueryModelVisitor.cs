@@ -102,6 +102,16 @@ namespace Apache.Ignite.Linq.Impl
             _parameters.AddRange(whereSql.Parameters);
         }
 
+        public override void VisitAdditionalFromClause(AdditionalFromClause fromClause, QueryModel queryModel, int index)
+        {
+            base.VisitAdditionalFromClause(fromClause, queryModel, index);
+        }
+
+        public override void VisitJoinClause(JoinClause joinClause, QueryModel queryModel, int index)
+        {
+            base.VisitJoinClause(joinClause, queryModel, index);
+        }
+
         /// <summary>
         /// Gets the SQL expression.
         /// </summary>
