@@ -418,10 +418,6 @@ public final class GridNearTxFinishFuture<K, V> extends GridCompoundIdentityFutu
 
                 ClusterNode backup = cctx.discovery().node(backupId);
 
-                final CheckBackupMiniFuture mini = new CheckBackupMiniFuture(backup, mapping);
-
-                add(mini);
-
                 // Nothing to do if backup has left the grid.
                 if (backup == null) {
                     readyNearMappingFromBackup(mapping);
@@ -431,64 +427,70 @@ public final class GridNearTxFinishFuture<K, V> extends GridCompoundIdentityFutu
 
                     cause.retryReadyFuture(cctx.nextAffinityReadyFuture(tx.topologyVersion()));
 
-                    mini.onDone(new IgniteTxRollbackCheckedException("Failed to commit transaction " +
+                    onDone(new IgniteTxRollbackCheckedException("Failed to commit transaction " +
                         "(backup has left grid): " + tx.xidVersion(), cause));
                 }
-                else if (backup.isLocal()) {
-                    boolean committed = !cctx.tm().addRolledbackTx(tx);
+                else {
+                    final CheckBackupMiniFuture mini = new CheckBackupMiniFuture(backup, mapping);
 
-                    readyNearMappingFromBackup(mapping);
+                    add(mini);
 
-                    if (committed) {
-                        if (tx.syncCommit()) {
-                            GridCacheVersion nearXidVer = tx.nearXidVersion();
+                    if (backup.isLocal()) {
+                        boolean committed = !cctx.tm().addRolledbackTx(tx);
 
-                            assert nearXidVer != null : tx;
+                        readyNearMappingFromBackup(mapping);
 
-                            IgniteInternalFuture<?> fut = cctx.tm().remoteTxFinishFuture(nearXidVer);
+                        if (committed) {
+                            if (tx.syncCommit()) {
+                                GridCacheVersion nearXidVer = tx.nearXidVersion();
 
-                            fut.listen(new CI1<IgniteInternalFuture<?>>() {
-                                @Override public void apply(IgniteInternalFuture<?> fut) {
-                                    mini.onDone(tx);
-                                }
-                            });
+                                assert nearXidVer != null : tx;
 
-                            return;
+                                IgniteInternalFuture<?> fut = cctx.tm().remoteTxFinishFuture(nearXidVer);
+
+                                fut.listen(new CI1<IgniteInternalFuture<?>>() {
+                                    @Override public void apply(IgniteInternalFuture<?> fut) {
+                                        mini.onDone(tx);
+                                    }
+                                });
+
+                                return;
+                            }
+
+                            mini.onDone(tx);
                         }
+                        else {
+                            ClusterTopologyCheckedException cause =
+                                new ClusterTopologyCheckedException("Primary node left grid: " + nodeId);
 
-                        mini.onDone(tx);
+                            cause.retryReadyFuture(cctx.nextAffinityReadyFuture(tx.topologyVersion()));
+
+                            mini.onDone(new IgniteTxRollbackCheckedException("Failed to commit transaction " +
+                                "(transaction has been rolled back on backup node): " + tx.xidVersion(), cause));
+                        }
                     }
                     else {
-                        ClusterTopologyCheckedException cause =
-                            new ClusterTopologyCheckedException("Primary node left grid: " + nodeId);
+                        GridDhtTxFinishRequest finishReq = checkCommittedRequest(mini.futureId());
 
-                        cause.retryReadyFuture(cctx.nextAffinityReadyFuture(tx.topologyVersion()));
+                        // Preserve old behavior, otherwise response is not sent.
+                        if (WAIT_REMOTE_TXS_SINCE.compareTo(backup.version()) > 0)
+                            finishReq.syncCommit(true);
 
-                        mini.onDone(new IgniteTxRollbackCheckedException("Failed to commit transaction " +
-                            "(transaction has been rolled back on backup node): " + tx.xidVersion(), cause));
-                    }
-                }
-                else {
-                    GridDhtTxFinishRequest finishReq = checkCommittedRequest(mini.futureId());
-
-                    // Preserve old behavior, otherwise response is not sent.
-                    if (WAIT_REMOTE_TXS_SINCE.compareTo(backup.version()) > 0)
-                        finishReq.syncCommit(true);
-
-                    try {
-                        if (FINISH_NEAR_ONE_PHASE_SINCE.compareTo(backup.version()) <= 0)
-                            cctx.io().send(backup, finishReq, tx.ioPolicy());
-                        else {
-                            mini.onDone(new IgniteTxHeuristicCheckedException("Failed to check for tx commit on " +
-                                "the backup node (node has an old Ignite version) [rmtNodeId=" + backup.id() +
-                                ", ver=" + backup.version() + ']'));
+                        try {
+                            if (FINISH_NEAR_ONE_PHASE_SINCE.compareTo(backup.version()) <= 0)
+                                cctx.io().send(backup, finishReq, tx.ioPolicy());
+                            else {
+                                mini.onDone(new IgniteTxHeuristicCheckedException("Failed to check for tx commit on " +
+                                    "the backup node (node has an old Ignite version) [rmtNodeId=" + backup.id() +
+                                    ", ver=" + backup.version() + ']'));
+                            }
                         }
-                    }
-                    catch (ClusterTopologyCheckedException e) {
-                        mini.onNodeLeft(backupId);
-                    }
-                    catch (IgniteCheckedException e) {
-                        mini.onDone(e);
+                        catch (ClusterTopologyCheckedException e) {
+                            mini.onNodeLeft(backupId);
+                        }
+                        catch (IgniteCheckedException e) {
+                            mini.onDone(e);
+                        }
                     }
                 }
             }
