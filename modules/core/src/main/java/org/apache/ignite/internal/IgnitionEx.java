@@ -1662,7 +1662,7 @@ public class IgnitionEx {
                 "utility",
                 cfg.getGridName(),
                 myCfg.getUtilityCacheThreadPoolSize(),
-                DFLT_SYSTEM_MAX_THREAD_CNT,
+                myCfg.getUtilityCacheThreadPoolSize(),
                 myCfg.getUtilityCacheKeepAliveTime(),
                 new LinkedBlockingQueue<Runnable>(DFLT_SYSTEM_THREADPOOL_QUEUE_CAP));
 
@@ -1670,7 +1670,7 @@ public class IgnitionEx {
                 "marshaller-cache",
                 cfg.getGridName(),
                 myCfg.getMarshallerCacheThreadPoolSize(),
-                DFLT_SYSTEM_MAX_THREAD_CNT,
+                myCfg.getMarshallerCacheThreadPoolSize(),
                 myCfg.getMarshallerCacheKeepAliveTime(),
                 new LinkedBlockingQueue<Runnable>(DFLT_SYSTEM_THREADPOOL_QUEUE_CAP));
 
