@@ -189,7 +189,7 @@ namespace Apache.Ignite.Linq.Impl
         /** <inheritdoc /> */
         protected override Expression VisitQuerySourceReference(QuerySourceReferenceExpression expression)
         {
-            _resultBuilder.Append("*");
+            _resultBuilder.Append(_tableName).Append(".*");
 
             return expression;
         }
