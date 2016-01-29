@@ -138,6 +138,15 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         }
 
         [Test]
+        public void TestFieldProjection()
+        {
+            var cache = GetCache().ToQueryable();
+
+            // Project whole cache entry to anonymous class
+            Assert.AreEqual(5, cache.Where(x => x.Key == 5).Select(x => new { Foo = x }).Single().Foo.Key);
+        }
+
+        [Test]
         public void TestMultiFieldQuery()
         {
             var cache = GetCache().ToQueryable();
