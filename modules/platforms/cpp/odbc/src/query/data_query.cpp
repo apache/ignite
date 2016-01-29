@@ -76,12 +76,12 @@ namespace ignite
 
                     if (result != SQL_RESULT_SUCCESS)
                         return result;
-
-                    if (!cursor->HasData())
-                        return SQL_RESULT_NO_DATA;
                 }
                 else
                     cursor->Increment();
+
+                if (!cursor->HasData())
+                    return SQL_RESULT_NO_DATA;
 
                 Row* row = cursor->GetRow();
 
@@ -96,16 +96,16 @@ namespace ignite
                 {
                     app::ColumnBindingMap::iterator it = columnBindings.find(i);
 
-                    SqlResult result;
-
                     if (it != columnBindings.end())
-                        result = row->ReadColumnToBuffer(i, it->second);
-
-                    if (result == SQL_RESULT_ERROR)
                     {
-                        diag.AddStatusRecord(SQL_STATE_01S01_ERROR_IN_ROW, "Can not retrieve row column.", 0, i);
+                        SqlResult result = row->ReadColumnToBuffer(i, it->second);
 
-                        return SQL_RESULT_ERROR;
+                        if (result == SQL_RESULT_ERROR)
+                        {
+                            diag.AddStatusRecord(SQL_STATE_01S01_ERROR_IN_ROW, "Can not retrieve row column.", 0, i);
+
+                            return SQL_RESULT_ERROR;
+                        }
                     }
                 }
 
