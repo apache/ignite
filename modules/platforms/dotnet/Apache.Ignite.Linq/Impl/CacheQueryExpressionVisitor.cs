@@ -173,7 +173,15 @@ namespace Apache.Ignite.Linq.Impl
         /** <inheritdoc /> */
         protected override Expression VisitQuerySourceReference(QuerySourceReferenceExpression expression)
         {
-            _resultBuilder.Append(TableNameMapper.GetTableName(expression)).Append("._val");
+            var tableName = TableNameMapper.GetTableName(expression);
+
+            // TODO: For COUNT there must be either * or _key/_val
+            // For JOIN we need both key and val
+
+            _resultBuilder.Append(tableName).Append(".*");
+            //_resultBuilder.Append(tableName).Append("._key");
+            //_resultBuilder.Append(", ");
+            //_resultBuilder.Append(tableName).Append("._val");
 
             return expression;
         }
