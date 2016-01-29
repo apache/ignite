@@ -19,6 +19,7 @@ package org.apache.ignite.internal.binary;
 
 import java.util.Arrays;
 import org.apache.ignite.binary.BinaryField;
+import org.apache.ignite.binary.BinaryNameMapper;
 import org.apache.ignite.binary.BinaryTypeConfiguration;
 import org.apache.ignite.configuration.BinaryConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -55,6 +56,8 @@ public abstract class BinaryFooterOffsetsAbstractSelfTest extends GridCommonAbst
 
         BinaryConfiguration bCfg = new BinaryConfiguration();
 
+        bCfg.setNameMapper(nameMapper());
+
         bCfg.setTypeConfigurations(Arrays.asList(new BinaryTypeConfiguration(TestObject.class.getName())));
 
         bCfg.setCompactFooter(compactFooter());
@@ -64,6 +67,13 @@ public abstract class BinaryFooterOffsetsAbstractSelfTest extends GridCommonAbst
         marsh.setContext(new MarshallerContextTestImpl(null));
 
         IgniteUtils.invoke(BinaryMarshaller.class, marsh, "setBinaryContext", ctx, iCfg);
+    }
+
+    /**
+     * @return Name mapper.
+     */
+    protected BinaryNameMapper nameMapper() {
+        return null;
     }
 
     /**

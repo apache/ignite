@@ -18,10 +18,12 @@
 package org.apache.ignite.internal.binary;
 
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.binary.BinaryBasicNameMapper;
 import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.binary.BinaryReader;
 import org.apache.ignite.binary.BinaryWriter;
 import org.apache.ignite.binary.Binarylizable;
+import org.apache.ignite.configuration.BinaryConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.MarshallerContextAdapter;
 import org.apache.ignite.internal.util.IgniteUtils;
@@ -42,10 +44,31 @@ public class GridBinaryMarshallerCtxDisabledSelfTest extends GridCommonAbstractT
      * @throws Exception If failed.
      */
     public void testObjectExchange() throws Exception {
+        checkObjectExchange(new IgniteConfiguration());
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testObjectExchangeSimpleNameMapper() throws Exception {
+        IgniteConfiguration cfg = new IgniteConfiguration();
+
+        BinaryConfiguration bcfg = new BinaryConfiguration();
+
+        bcfg.setNameMapper(new BinaryBasicNameMapper(true));
+
+        cfg.setBinaryConfiguration(bcfg);
+
+        checkObjectExchange(cfg);
+    }
+
+    /**
+     * @param cfg Configuration.
+     * @throws IgniteCheckedException If failed.
+     */
+    private void checkObjectExchange(IgniteConfiguration cfg) throws IgniteCheckedException {
         BinaryMarshaller marsh = new BinaryMarshaller();
         marsh.setContext(new MarshallerContextWithNoStorage());
-
-        IgniteConfiguration cfg = new IgniteConfiguration();
 
         BinaryContext context = new BinaryContext(BinaryCachingMetadataHandler.create(), cfg, new NullLogger());
 

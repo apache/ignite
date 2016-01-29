@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.binary;
 
 import org.apache.ignite.binary.BinaryField;
+import org.apache.ignite.binary.BinaryNameMapper;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.binary.BinaryTypeConfiguration;
 import org.apache.ignite.configuration.BinaryConfiguration;
@@ -63,6 +64,8 @@ public abstract class BinaryFieldsAbstractSelfTest extends GridCommonAbstractTes
             new BinaryTypeConfiguration(TestInnerObject.class.getName())
         ));
 
+        bCfg.setNameMapper(nameMapper());
+
         IgniteConfiguration iCfg = new IgniteConfiguration();
 
         iCfg.setBinaryConfiguration(bCfg);
@@ -72,6 +75,13 @@ public abstract class BinaryFieldsAbstractSelfTest extends GridCommonAbstractTes
         IgniteUtils.invoke(BinaryMarshaller.class, marsh, "setBinaryContext", ctx, iCfg);
 
         return marsh;
+    }
+
+    /**
+     * @return Name mapper.
+     */
+    protected BinaryNameMapper nameMapper() {
+        return null;
     }
 
     /**
