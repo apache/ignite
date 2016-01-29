@@ -279,7 +279,7 @@ Client.prototype._rmtAuthMessage = function(msg) {
         if (!err)
             relDate = stats.birthtime;
 
-        if (msg.relDate < relDate)
+        if ((msg.relDate || 0) < relDate)
             self.authResult('Used old version on agent. Please reload agent archive');
 
         db.Account.findOne({ token: msg.token }, function (err, account) {

@@ -77,7 +77,6 @@ router.get('/download/zip', function (req, res) {
             prop.push('#Uncomment following options if needed:');
             prop.push('#node-uri=http://localhost:8080');
             prop.push('#driver-folder=./jdbc-drivers');
-            prop.push('#driver-folder=./jdbc-drivers');
             prop.push('');
             prop.push("#Note: Don't change this auto generated line");
             prop.push('rel-date=' + stats.birthtime.getTime());
