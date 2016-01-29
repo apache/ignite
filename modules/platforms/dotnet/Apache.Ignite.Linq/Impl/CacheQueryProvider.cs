@@ -21,7 +21,6 @@ namespace Apache.Ignite.Linq.Impl
     using System.Linq.Expressions;
     using Apache.Ignite.Core.Cache;
     using Remotion.Linq;
-    using Remotion.Linq.Clauses.ResultOperators;
     using Remotion.Linq.Clauses.StreamedData;
 
     /// <summary>
