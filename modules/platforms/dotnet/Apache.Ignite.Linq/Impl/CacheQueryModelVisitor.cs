@@ -109,7 +109,7 @@ namespace Apache.Ignite.Linq.Impl
                                                 "(only results of cache.ToQueryable() are supported): " +
                                                 innerExpr.Value);
 
-            Builder.AppendFormat("join({0}) on ({1} = {2}) ", TableNameMapper.GetTableName(joinClause),
+            Builder.AppendFormat("join {0} on ({1} = {2}) ", TableNameMapper.GetTableName(joinClause),
                 GetSqlExpression(joinClause.InnerKeySelector).QueryText,
                 GetSqlExpression(joinClause.OuterKeySelector).QueryText);
         }
