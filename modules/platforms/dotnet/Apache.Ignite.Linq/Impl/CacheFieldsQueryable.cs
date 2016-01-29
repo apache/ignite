@@ -20,6 +20,7 @@ namespace Apache.Ignite.Linq.Impl
     using System;
     using System.Linq;
     using System.Linq.Expressions;
+    using Apache.Ignite.Core;
     using Apache.Ignite.Core.Cache;
     using Remotion.Linq;
 
@@ -37,6 +38,32 @@ namespace Apache.Ignite.Linq.Impl
         public CacheFieldsQueryable(IQueryProvider provider, Expression expression) : base(provider, expression)
         {
             // No-op.
+        }
+
+        /** <inheritdoc /> */
+        public string QueryType
+        {
+            get { return CacheQueryProvider.TableName; }
+        }
+
+        /** <inheritdoc /> */
+        public string CacheName
+        {
+            get { return CacheQueryProvider.CacheName; }
+        }
+
+        /** <inheritdoc /> */
+        public IIgnite Ignite
+        {
+            get { return CacheQueryProvider.Ignite; }
+        }
+
+        /// <summary>
+        /// Gets the cache query provider.
+        /// </summary>
+        private CacheFieldsQueryProvider CacheQueryProvider
+        {
+            get { return (CacheFieldsQueryProvider) Provider; }
         }
 
         /** <inheritdoc /> */
