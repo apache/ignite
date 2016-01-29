@@ -23,8 +23,8 @@
     .modal-footer
         .checkbox
             label
-                input(type='checkbox' ng-model='ui.showGettingStarted' bs-tooltip='' data-title='Show getting started on next login' data-placement='bottom')
+                input(type='checkbox' ng-model='ui.showGettingStarted')
                 | Show getting started on next login
-        a.btn.btn-primary(ng-disabled='isFirst()' ng-click='prev()') Prev
-        a.btn.btn-primary(ng-disabled='isLast()' ng-click='next()') Next
+        a.btn.btn-primary(ng-disabled='isFirst()' ng-click='!isFirst() && prev()') Prev
+        a.btn.btn-primary(ng-disabled='isLast()' ng-click='!isLast() && next()') Next
         a.btn.btn-primary(ng-click='close()') Close
