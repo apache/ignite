@@ -23,6 +23,7 @@ import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -126,6 +127,16 @@ public interface PluginProvider<C extends PluginConfiguration> {
      *      sent for this component.
      */
     public void receiveDiscoveryData(UUID nodeId, Serializable data);
+
+    /**
+     * @param cctx Cache context.
+     */
+    public void onBeforeCacheStart(GridCacheContext cctx);
+
+    /**
+     * @param cctx Cache context.
+     */
+    public void onAfterCacheStop(GridCacheContext cctx);
 
     /**
      * Validates that new node can join grid topology, this method is called on coordinator

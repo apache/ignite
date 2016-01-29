@@ -166,7 +166,7 @@ public class GridH2Table extends TableBase {
     private boolean onSwapUnswap(CacheObject key, @Nullable CacheObject val) throws IgniteCheckedException {
         assert key != null;
 
-        GridH2TreeIndex pk = pk();
+        GridH2IndexBase pk = pk();
 
         assert desc != null;
 
@@ -358,8 +358,8 @@ public class GridH2Table extends TableBase {
      *
      * @return Primary key.
      */
-    private GridH2TreeIndex pk() {
-        return (GridH2TreeIndex)idxs.get(1);
+    private GridH2IndexBase pk() {
+        return (GridH2IndexBase)idxs.get(1);
     }
 
     /**
@@ -382,7 +382,7 @@ public class GridH2Table extends TableBase {
             desc.guard().begin();
 
         try {
-            GridH2TreeIndex pk = pk();
+            GridH2IndexBase pk = pk();
 
             if (!del) {
                 GridH2Row old = pk.put(row); // Put to PK.
