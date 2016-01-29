@@ -38,7 +38,10 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         private const string RoleCacheName = "role_cache";
 
         /** */
-        private const int DataSize = 100;
+        private const int RoleCount = 2;
+
+        /** */
+        private const int PersonCount = 100;
 
         /** */
         private bool _runDbConsole;
@@ -64,7 +67,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
 
             var cache = GetCache();
 
-            for (var i = 0; i < DataSize; i++)
+            for (var i = 0; i < PersonCount; i++)
                 cache.Put(i, new Person(i, "Person_" + i)
                 {
                     Address = new Address {Zip = i, Street = "Street " + i},
@@ -93,12 +96,9 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         [Test]
         public void TestEmptyQuery()
         {
-            var cache = GetCache();
-
-            var results = cache.ToQueryable().ToArray();
-
             // There are both persons and organizations in the same cache, but query should only return specific type
-            Assert.AreEqual(DataSize, results.Length);
+            Assert.AreEqual(PersonCount, GetCache().ToQueryable().ToArray().Length);
+            Assert.AreEqual(RoleCount, GetRoleCache().ToQueryable().ToArray().Length);
         }
 
         [Test]
@@ -106,23 +106,16 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         {
             var cache = GetCache().ToQueryable();
 
-            var queryable = cache.Where(x => x.Value.Age < 10);
-            Assert.AreEqual(10, queryable.ToArray().Length);
-
+            Assert.AreEqual(10, cache.Where(x => x.Value.Age < 10).ToArray().Length);
             Assert.AreEqual(10, cache.Where(x => x.Value.Address.Zip < 10).ToArray().Length);
-
             Assert.AreEqual(19, cache.Where(x => x.Value.Age > 10 && x.Value.Age < 30).ToArray().Length);
-
             Assert.AreEqual(20, cache.Where(x => x.Value.Age > 10).Count(x => x.Value.Age < 30 || x.Value.Age == 50));
-        }
-
-        [Test]
-        public void TestKeyQuery()
-        {
-            var cache = GetCache().ToQueryable();
-
             Assert.AreEqual(15, cache.Where(x => x.Key < 15).ToArray().Length);
             Assert.AreEqual(15, cache.Where(x => -x.Key > -15).ToArray().Length);
+
+            Assert.AreEqual(1, GetRoleCache().ToQueryable().Where(x => x.Key.Foo > 1).ToArray().Length);
+            Assert.AreEqual(2, GetRoleCache().ToQueryable().Where(x => x.Key.Bar > 1 && x.Value.Name != "11")
+                .ToArray().Length);
         }
 
         [Test]
@@ -207,13 +200,13 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         {
             var cache = GetCache().ToQueryable();
 
-            Assert.AreEqual(DataSize - 1, cache.Max(x => x.Value.Age));
+            Assert.AreEqual(PersonCount - 1, cache.Max(x => x.Value.Age));
             Assert.AreEqual(0, cache.Min(x => x.Value.Age));
 
             Assert.AreEqual(21, cache.Where(x => x.Key > 5 && x.Value.Age < 9).Select(x => x.Value.Age).Sum());
 
-            Assert.AreEqual(DataSize, cache.Count());
-            Assert.AreEqual(DataSize, cache.Count(x => x.Key < DataSize));
+            Assert.AreEqual(PersonCount, cache.Count());
+            Assert.AreEqual(PersonCount, cache.Count(x => x.Key < PersonCount));
         }
 
         [Test]
@@ -221,12 +214,12 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         {
             var cache = GetCache().ToQueryable();
 
-            Assert.AreEqual(DataSize, cache.Count(x => x.Value.Name.Contains("erson")));
+            Assert.AreEqual(PersonCount, cache.Count(x => x.Value.Name.Contains("erson")));
             Assert.AreEqual(11, cache.Count(x => x.Value.Name.StartsWith("Person_9")));
             Assert.AreEqual(1, cache.Count(x => x.Value.Name.EndsWith("_99")));
 
-            Assert.AreEqual(DataSize, cache.Count(x => x.Value.Name.ToLower().StartsWith("person")));
-            Assert.AreEqual(DataSize, cache.Count(x => x.Value.Name.ToUpper().StartsWith("PERSON")));
+            Assert.AreEqual(PersonCount, cache.Count(x => x.Value.Name.ToLower().StartsWith("person")));
+            Assert.AreEqual(PersonCount, cache.Count(x => x.Value.Name.ToUpper().StartsWith("PERSON")));
         }
 
         [Test]
@@ -234,8 +227,8 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         {
             var cache = GetCache().ToQueryable();
 
-            Assert.AreEqual(DataSize, cache.Count());
-            Assert.AreEqual(DataSize, cache.Select(x => x.Key).Count());
+            Assert.AreEqual(PersonCount, cache.Count());
+            Assert.AreEqual(PersonCount, cache.Select(x => x.Key).Count());
             
             // ReSharper disable once ReturnValueOfPureMethodIsNotUsed
             Assert.Throws<NotSupportedException>(() => cache.Select(x => new {x.Key, x.Value}).Count());
@@ -255,7 +248,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
                 .Where(x => x.Org.Name == "Org_1")
                 .ToList();
 
-            Assert.AreEqual(DataSize / 2, res.Count);
+            Assert.AreEqual(PersonCount / 2, res.Count);
 
             Assert.IsTrue(res.All(r => r.Person.OrganizationId == r.Org.Id));
 
@@ -263,7 +256,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
             var res2 = persons.Join(organizations, person => person.Value.OrganizationId, org => org.Value.Id,
                 (person, org) => new {Person = person, Org = org}).Where(x => x.Org.Value.Name == "Org_0").ToList();
 
-            Assert.AreEqual(DataSize / 2, res2.Count);
+            Assert.AreEqual(PersonCount / 2, res2.Count);
 
             // Multi-key
             // TODO
@@ -349,7 +342,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         {
             return Ignition.GetIgnite()
                 .GetOrCreateCache<RoleKey, Role>(new CacheConfiguration(RoleCacheName,
-                    new QueryEntity(typeof(RoleKey), typeof(Person))));
+                    new QueryEntity(typeof(RoleKey), typeof(Role))));
         }
 
         public class Person : IBinarizable
