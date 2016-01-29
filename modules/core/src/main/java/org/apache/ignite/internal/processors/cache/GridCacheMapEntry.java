@@ -3164,7 +3164,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
         if (hasOffHeapPointer()) {
             CacheObject val0 = cctx.fromOffheap(offHeapPointer(), tmp);
 
-            if (!tmp && isPeerClassLoadingEnabled())
+            if (!tmp && cctx.kernalContext().config().isPeerClassLoadingEnabled())
                 val0.finishUnmarshal(cctx.cacheObjectContext(), cctx.deploy().globalLoader());
 
             return val0;
