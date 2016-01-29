@@ -1125,8 +1125,34 @@ $generatorXml.domainModelGeneral = function(domain, res) {
     if (!res)
         res = $generatorCommon.builder();
 
-    $generatorXml.classNameProperty(res, domain, 'keyType');
-    $generatorXml.property(res, domain, 'valueType');
+    switch ($generatorCommon.domainQueryMetadata(domain)) {
+        case 'Annotations':
+            if ($commonUtils.isDefinedAndNotEmpty(domain.keyType) || $commonUtils.isDefinedAndNotEmpty(domain.valueType)) {
+                res.startBlock('<property name="indexedTypes">');
+                res.startBlock('<list>');
+
+                if ($commonUtils.isDefinedAndNotEmpty(domain.keyType))
+                    res.line('<value>' + $dataStructures.fullClassName(domain.keyType) + '</value>');
+                else
+                    res.line('<value>???</value>');
+
+                if ($commonUtils.isDefinedAndNotEmpty(domain.valueType))
+                    res.line('<value>' + $dataStructures.fullClassName(domain.valueType) + '</value>');
+                else
+                    res.line('<value>>???</value>');
+
+                res.endBlock('</list>');
+                res.endBlock('</property>');
+            }
+
+            break;
+
+        case 'Configuration':
+            $generatorXml.classNameProperty(res, domain, 'keyType');
+            $generatorXml.property(res, domain, 'valueType');
+
+            break;
+    }
 
     res.needEmptyLine = true;
 

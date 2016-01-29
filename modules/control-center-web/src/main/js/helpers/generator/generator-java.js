@@ -1497,8 +1497,45 @@ $generatorJava.domainModelGeneral = function (domain, res) {
     if (!res)
         res = $generatorCommon.builder();
 
-    $generatorJava.classNameProperty(res, 'typeMeta', domain, 'keyType');
-    $generatorJava.property(res, 'typeMeta', domain, 'valueType');
+    switch ($generatorCommon.domainQueryMetadata(domain)) {
+        case 'Annotations':
+            if ($commonUtils.isDefinedAndNotEmpty(domain.keyType) || $commonUtils.isDefinedAndNotEmpty(domain.valueType)) {
+                var types = [];
+
+                if ($commonUtils.isDefinedAndNotEmpty(domain.keyType))
+                    types.push($generatorJava.toJavaCode(res.importClass(domain.keyType), 'class'));
+                else
+                    types.push('???');
+
+                if ($commonUtils.isDefinedAndNotEmpty(domain.valueType))
+                    types.push($generatorJava.toJavaCode(res.importClass(domain.valueType), 'class'));
+                else
+                    types.push('???');
+
+                if ($commonUtils.isDefinedAndNotEmpty(types)) {
+                    res.startBlock('cache.setIndexedTypes(');
+
+                    res.line(types.join(', '));
+
+                    res.endBlock(');');
+                }
+            }
+
+            break;
+
+        case 'Configuration':
+            $generatorJava.classNameProperty(res, 'jdbcTypes', domain, 'keyType');
+            $generatorJava.property(res, 'jdbcTypes', domain, 'valueType');
+
+            if ($commonUtils.isDefinedAndNotEmpty(domain.fields)) {
+                res.needEmptyLine = true;
+
+                $generatorJava.classNameProperty(res, 'qryMeta', domain, 'keyType');
+                $generatorJava.property(res, 'qryMeta', domain, 'valueType');
+            }
+
+            break;
+    }
 
     res.needEmptyLine = true;
 
