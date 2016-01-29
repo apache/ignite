@@ -138,6 +138,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
             Assert.AreEqual(3, cache.Where(x => x.Key == 3).Select(x => x.Key).Single());
 
             // Projection
+            // TODO
         }
 
         [Test]
@@ -169,7 +170,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
 
             // Test static method call
             var person = cache.Where(x => x.Key == 13)
-                .Select(x => CreatePersonStatic(x.Value.Age, x.Value.Name)).ToArray().Single();
+                .Select(x => CreatePersonStatic(x.Value.Age, x.Value.Name)).Single();
 
             Assert.AreEqual(13, person.Age);
             
@@ -177,7 +178,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
             _testField = DateTime.Now.Second;
 
             var person2 = cache.Where(x => x.Key == 14)
-                .Select(x => CreatePersonInstance(x.Value.Name)).ToArray().Single();
+                .Select(x => CreatePersonInstance(x.Value.Name)).Single();
 
             Assert.AreEqual(_testField, person2.Age);
 
@@ -185,7 +186,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
             Func<int, Person> func = x => new Person(x, _testField.ToString());
 
             var person3 = cache.Where(x => x.Key == 15)
-                .Select(x => func(x.Key)).ToArray().Single();
+                .Select(x => func(x.Key)).Single();
 
             Assert.AreEqual(15, person3.Age);
             Assert.AreEqual(_testField.ToString(), person3.Name);
