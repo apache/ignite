@@ -54,6 +54,9 @@ public class JmhIdeBenchmarkRunner {
     /** Amount of threads. */
     private int threads;
 
+    /** Profilers. */
+    private Class[] profilers;
+
     /**
      * Create new runner.
      *
@@ -160,6 +163,16 @@ public class JmhIdeBenchmarkRunner {
     }
 
     /**
+     * @param profilers Profilers.
+     * @return This instance.
+     */
+    public JmhIdeBenchmarkRunner profilers(Class... profilers) {
+        this.profilers = profilers;
+
+        return this;
+    }
+
+    /**
      * Get prepared options builder.
      *
      * @return Options builder.
@@ -188,6 +201,11 @@ public class JmhIdeBenchmarkRunner {
 
         if (output != null)
             builder.output(output);
+
+        if (profilers != null) {
+            for (Class profiler : profilers)
+                builder.addProfiler(profiler);
+        }
 
         return builder;
     }
