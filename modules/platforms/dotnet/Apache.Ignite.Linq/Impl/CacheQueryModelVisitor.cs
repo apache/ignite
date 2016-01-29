@@ -94,7 +94,10 @@ namespace Apache.Ignite.Linq.Impl
         {
             base.VisitJoinClause(joinClause, queryModel, index);
 
-            Builder.AppendFormat("join {0} ", TableNameMapper.GetTableName(joinClause));
+            Builder.AppendFormat("join {0} on ({1} = {2}) ",
+                TableNameMapper.GetTableName(joinClause),
+                GetSqlExpression(joinClause.InnerKeySelector),
+                GetSqlExpression(joinClause.OuterKeySelector));
         }
 
         /// <summary>
