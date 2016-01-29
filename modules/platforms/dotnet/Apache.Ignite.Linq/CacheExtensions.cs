@@ -32,6 +32,8 @@ namespace Apache.Ignite.Linq
         /// Resulting query will be translated to cache SQL query and executed over the cache instance 
         /// via either <see cref="ICache{TK,TV}.Query"/> or <see cref="ICache{TK,TV}.QueryFields"/>,
         /// depending on requested result. 
+        /// <para />
+        /// Result of this method can be cast to <see cref="ICacheQueryable"/> for introspection.
         /// </summary>
         /// <typeparam name="TKey">The type of the key.</typeparam>
         /// <typeparam name="TValue">The type of the value.</typeparam>
@@ -48,6 +50,8 @@ namespace Apache.Ignite.Linq
         /// Resulting query will be translated to cache SQL query and executed over the cache instance
         /// via either <see cref="ICache{TK,TV}.Query" /> or <see cref="ICache{TK,TV}.QueryFields" />,
         /// depending on requested result.
+        /// <para />
+        /// Result of this method can be cast to <see cref="ICacheQueryable"/> for introspection.
         /// </summary>
         /// <typeparam name="TKey">The type of the key.</typeparam>
         /// <typeparam name="TValue">The type of the value.</typeparam>
