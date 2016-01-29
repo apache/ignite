@@ -1030,6 +1030,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     private void startCache(GridCacheAdapter<?, ?> cache) throws IgniteCheckedException {
         GridCacheContext<?, ?> cacheCtx = cache.context();
 
+        ctx.plugins().onBeforeCacheStart(cacheCtx);
+
         ctx.query().onCacheStart(cacheCtx);
         ctx.continuous().onCacheStart(cacheCtx);
 
@@ -1116,6 +1118,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         ctx.kernalContext().query().onCacheStop(ctx);
         ctx.kernalContext().continuous().onCacheStop(ctx);
+
+        ctx.kernalContext().plugins().onAfterCacheStop(ctx);
 
         U.stopLifecycleAware(log, lifecycleAwares(cache.configuration(), ctx.store().configuredStore()));
 

@@ -267,6 +267,11 @@ public class GridH2SpatialIndex extends GridH2IndexBase implements SpatialIndex 
     }
 
     /** {@inheritDoc} */
+    @Override public GridH2Row findOne(GridSearchRowPointer row) {
+        throw new UnsupportedOperationException();
+    }
+
+    /** {@inheritDoc} */
     @Override public boolean canGetFirstOrLast() {
         return true;
     }

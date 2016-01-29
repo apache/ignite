@@ -89,6 +89,14 @@ public abstract class GridH2IndexBase extends BaseIndex {
     public abstract GridH2Row remove(SearchRow row);
 
     /**
+     * Finds a single row by the given row.
+     *
+     * @param row Search row.
+     * @return Search result.
+     */
+    public abstract GridH2Row findOne(GridSearchRowPointer row);
+
+    /**
      * Takes or sets existing snapshot to be used in current thread.
      *
      * @param s Optional existing snapshot to use.
