@@ -88,11 +88,11 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         [Test]
         public void TestEmptyQuery()
         {
-            var cache = GetCache();
+            var cache = GetCacheOf<object>();
 
             var results = cache.ToQueryable().ToArray();
 
-            Assert.AreEqual(DataSize, results.Length);
+            Assert.AreEqual(DataSize + 2, results.Length);
         }
 
         [Test]
@@ -231,15 +231,15 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
 
         private static ICache<int, LinqPerson> GetCache()
         {
-            return GetCache0<LinqPerson>();
+            return GetCacheOf<LinqPerson>();
         }
 
         private static ICache<int, LinqOrganization> GetOrgCache()
         {
-            return GetCache0<LinqOrganization>();
+            return GetCacheOf<LinqOrganization>();
         }
 
-        private static ICache<int, T> GetCache0<T>()
+        private static ICache<int, T> GetCacheOf<T>()
         {
             return Ignition.GetIgnite()
                 .GetOrCreateCache<int, T>(new CacheConfiguration(CacheName,
