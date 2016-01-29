@@ -571,7 +571,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
             IgniteUuid valClsLdrId = null;
             IgniteUuid keyClsLdrId = null;
 
-            if (cctx.kernalContext().config().isPeerClassLoadingEnabled()) {
+            if (cctx.kernalContext().config().isPeerClassLoadingEnabled() && !cctx.binaryMarshaller()) {
                 if (val != null) {
                     valClsLdrId = cctx.deploy().getClassLoaderId(
                         U.detectObjectClassLoader(val.value(cctx.cacheObjectContext(), false)));
