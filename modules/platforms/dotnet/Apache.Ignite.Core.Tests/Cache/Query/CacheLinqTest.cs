@@ -32,7 +32,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
     public class CacheLinqTest
     {
         /** Cache name. */
-        private const string CacheName = "cache";
+        private const string CacheName = null;
 
         /** Role cache name. */
         private const string RoleCacheName = "role_cache";
