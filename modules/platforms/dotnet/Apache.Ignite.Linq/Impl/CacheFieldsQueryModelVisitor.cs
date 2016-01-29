@@ -61,7 +61,7 @@ namespace Apache.Ignite.Linq.Impl
                     resultBuilder.Append("max (");
                     parenCount++;
                 }
-                else if (resultOperator is FirstResultOperator)
+                else if (resultOperator is FirstResultOperator || resultOperator is SingleResultOperator)
                     visitor.Builder.Append("limit 1 ");
                 else
                     throw new NotSupportedException("Operator is not supported: " + resultOperator);
