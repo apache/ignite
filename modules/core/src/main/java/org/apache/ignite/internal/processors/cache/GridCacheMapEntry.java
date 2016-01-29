@@ -220,7 +220,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
         }
         else {
             try {
-                if (isPeerClassLoadingEnabled()) {
+                if (cctx.deploymentEnabled()) {
                     Object val0 = null;
 
                     if (val != null && val.cacheObjectType() != CacheObject.TYPE_BYTE_ARR) {
@@ -571,7 +571,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
             IgniteUuid valClsLdrId = null;
             IgniteUuid keyClsLdrId = null;
 
-            if (isPeerClassLoadingEnabled()) {
+            if (cctx.deploymentEnabled()) {
                 if (val != null) {
                     valClsLdrId = cctx.deploy().getClassLoaderId(
                         U.detectObjectClassLoader(val.value(cctx.cacheObjectContext(), false)));
@@ -595,13 +595,6 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
             if (log.isDebugEnabled())
                 log.debug("Wrote swap entry: " + this);
         }
-    }
-
-    /**
-     * @return {@code True} if peer class loading is enabled.
-     */
-    private boolean isPeerClassLoadingEnabled() {
-        return !cctx.binaryMarshaller() && cctx.kernalContext().config().isPeerClassLoadingEnabled();
     }
 
     /**
@@ -4052,7 +4045,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                     IgniteUuid valClsLdrId = null;
                     IgniteUuid keyClsLdrId = null;
 
-                    if (isPeerClassLoadingEnabled()) {
+                    if (cctx.deploymentEnabled()) {
                         if (val != null) {
                             valClsLdrId = cctx.deploy().getClassLoaderId(
                                 U.detectObjectClassLoader(val.value(cctx.cacheObjectContext(), false)));
