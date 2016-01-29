@@ -26,7 +26,7 @@ if defined JAVA_HOME  goto checkJdk
     echo JAVA_HOME environment variable is not found.
     echo Please point JAVA_HOME variable to location of JDK 1.7 or JDK 1.8.
     echo You can also download latest JDK at http://java.com/download.
-goto eof
+goto error_finish
 
 :checkJdk
 :: Check that JDK is where it should be.
@@ -35,7 +35,7 @@ if exist "%JAVA_HOME%\bin\java.exe" goto checkJdkVersion
     echo JAVA is not found in JAVA_HOME=%JAVA_HOME%.
     echo Please point JAVA_HOME variable to installation of JDK 1.7 or JDK 1.8.
     echo You can also download latest JDK at http://java.com/download.
-goto eof
+goto error_finish
 
 :checkJdkVersion
 "%JAVA_HOME%\bin\java.exe" -version 2>&1 | findstr "1\.[78]\." > nul
@@ -44,7 +44,7 @@ if %ERRORLEVEL% equ 0 goto run_java
     echo The version of JAVA installed in %JAVA_HOME% is incorrect.
     echo Please point JAVA_HOME variable to installation of JDK 1.7 or JDK 1.8.
     echo You can also download latest JDK at http://java.com/download.
-goto eof
+goto error_finish
 
 :run_java
 
@@ -56,3 +56,15 @@ goto eof
 if "%JVM_OPTS%" == "" set JVM_OPTS=-Xms1g -Xmx1g -server -XX:+AggressiveOpts -XX:MaxPermSize=256m
 
 "%JAVA_HOME%\bin\java.exe" %JVM_OPTS% -jar ignite-web-agent-${version}.jar %*
+
+set JAVA_ERRORLEVEL=%ERRORLEVEL%
+
+:: errorlevel 130 if aborted with Ctrl+c
+if %JAVA_ERRORLEVEL%==130 goto eof
+
+:error_finish
+
+if not "%NO_PAUSE%" == "1" pause
+
+goto :eof
+
