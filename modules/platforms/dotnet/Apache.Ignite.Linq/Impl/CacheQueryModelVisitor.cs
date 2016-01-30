@@ -25,6 +25,8 @@ namespace Apache.Ignite.Linq.Impl
     using System.Text;
     using Remotion.Linq;
     using Remotion.Linq.Clauses;
+    using Remotion.Linq.Clauses.Expressions;
+    using Remotion.Linq.Clauses.ResultOperators;
 
     /// <summary>
     /// Query visitor, transforms LINQ expression to SQL.
@@ -94,7 +96,28 @@ namespace Apache.Ignite.Linq.Impl
         {
             base.VisitJoinClause(joinClause, queryModel, index);
 
+            var subQuery = joinClause.InnerSequence as SubQueryExpression;
             var innerExpr = joinClause.InnerSequence as ConstantExpression;
+            bool isOuter = false;
+
+            if (subQuery != null)
+            {
+                if (!subQuery.QueryModel.IsIdentityQuery())
+                    throw new NotSupportedException("Unexpected JOIN inner sequence (squbqueries are not supported): " +
+                                                    joinClause.InnerSequence);
+
+                innerExpr = subQuery.QueryModel.MainFromClause.FromExpression as ConstantExpression;
+
+                foreach (var resultOperator in subQuery.QueryModel.ResultOperators)
+                {
+                    if (resultOperator is DefaultIfEmptyResultOperator)
+                        isOuter = true;
+                    else
+                        throw new NotSupportedException(
+                            "Unexpected JOIN inner sequence (squbqueries are not supported): " +
+                            joinClause.InnerSequence);
+                }
+            }
 
             if (innerExpr == null)
                 throw new NotSupportedException("Unexpected JOIN inner sequence (squbqueries are not supported): " +
@@ -105,7 +128,8 @@ namespace Apache.Ignite.Linq.Impl
                                                 "(only results of cache.ToQueryable() are supported): " +
                                                 innerExpr.Value);
 
-            Builder.AppendFormat("join {0} on ({1} = {2}) ", TableNameMapper.GetTableNameWithSchema(joinClause),
+            Builder.AppendFormat("{0} join {1} on ({2} = {3}) ", isOuter ? "outer" : "inner",
+                TableNameMapper.GetTableNameWithSchema(joinClause),
                 GetSqlExpression(joinClause.InnerKeySelector).QueryText,
                 GetSqlExpression(joinClause.OuterKeySelector).QueryText);
         }

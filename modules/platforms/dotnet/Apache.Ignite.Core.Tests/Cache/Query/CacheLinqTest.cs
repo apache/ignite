@@ -306,6 +306,22 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         }
 
         [Test]
+        public void TestOuterJoin()
+        {
+            var persons = GetCache().ToQueryable();
+            var roles = GetRoleCache().ToQueryable();
+
+            var res = persons.Join(roles.DefaultIfEmpty(), person => person.Key, role => role.Key.Foo,
+                (person, role) => new
+                {
+                    PersonName = person.Value.Name,
+                    RoleName = role.Value.Name
+                }).ToArray();
+
+            Assert.AreEqual(PersonCount, res.Length);
+        }
+
+        [Test]
         public void TestInvalidJoin()
         {
             // Join on non-IQueryable
