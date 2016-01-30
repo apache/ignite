@@ -266,7 +266,15 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
             Assert.AreEqual(PersonCount / 2, res2.Count);
 
             // Multi-key
-            // TODO
+            var multiKey =
+                from person in persons
+                join org in organizations on
+                    new {OrgId = person.Value.OrganizationId, person.Key} equals
+                    new {OrgId = org.Value.Id, Key = org.Key - 1000}
+                where person.Key == 3
+                select new {PersonName = person.Value.Name, OrgName = org.Value.Name};
+
+            Assert.AreEqual("Person_3", multiKey.Single().PersonName);
         }
 
         [Test]
