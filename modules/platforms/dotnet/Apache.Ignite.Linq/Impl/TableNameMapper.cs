@@ -94,6 +94,11 @@ namespace Apache.Ignite.Linq.Impl
 
         private static string GetSchemaName(Expression expression, string tableName)
         {
+            var subQueryExp = expression as SubQueryExpression;
+
+            if (subQueryExp != null)
+                return GetTableNameWithSchema(subQueryExp.QueryModel.MainFromClause);
+
             var constExpr = expression as ConstantExpression;
 
             if (constExpr == null)
