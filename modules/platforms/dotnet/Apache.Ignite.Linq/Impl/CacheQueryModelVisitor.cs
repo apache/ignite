@@ -103,7 +103,7 @@ namespace Apache.Ignite.Linq.Impl
             if (subQuery != null)
             {
                 if (!subQuery.QueryModel.IsIdentityQuery())
-                    throw new NotSupportedException("Unexpected JOIN inner sequence (squbqueries are not supported): " +
+                    throw new NotSupportedException("Unexpected JOIN inner sequence (subqueries are not supported): " +
                                                     joinClause.InnerSequence);
 
                 innerExpr = subQuery.QueryModel.MainFromClause.FromExpression as ConstantExpression;
@@ -114,13 +114,13 @@ namespace Apache.Ignite.Linq.Impl
                         isOuter = true;
                     else
                         throw new NotSupportedException(
-                            "Unexpected JOIN inner sequence (squbqueries are not supported): " +
+                            "Unexpected JOIN inner sequence (subqueries are not supported): " +
                             joinClause.InnerSequence);
                 }
             }
 
             if (innerExpr == null)
-                throw new NotSupportedException("Unexpected JOIN inner sequence (squbqueries are not supported): " +
+                throw new NotSupportedException("Unexpected JOIN inner sequence (subqueries are not supported): " +
                                                 joinClause.InnerSequence);
 
             if (!(innerExpr.Value is ICacheQueryable))
