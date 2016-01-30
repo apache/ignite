@@ -300,7 +300,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
             var res = roles.Join(persons, role => role.Key.Foo, person => person.Key,
                 (role, person) => new {person, role})
                 .Join(organizations, pr => pr.person.Value.OrganizationId, org => org.Value.Id,
-                    (pr, org) => new {org, pr}).ToArray();
+                    (pr, org) => new {org, pr.person, pr.role}).ToArray();
 
             Assert.AreEqual(2, res.Length);
         }
