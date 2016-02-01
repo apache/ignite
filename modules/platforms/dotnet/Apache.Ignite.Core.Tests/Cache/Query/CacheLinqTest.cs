@@ -264,15 +264,21 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
                 (person, org) => new {Person = person, Org = org}).Where(x => x.Org.Value.Name == "Org_0").ToList();
 
             Assert.AreEqual(PersonCount / 2, res2.Count);
+        }
 
-            // Multi-key
+        [Test]
+        public void TestMultiKeyJoin()
+        {
+            var organizations = GetOrgCache().ToQueryable();
+            var persons = GetCache().ToQueryable();
+
             var multiKey =
                 from person in persons
                 join org in organizations on
-                    new {OrgId = person.Value.OrganizationId, person.Key} equals
-                    new {OrgId = org.Value.Id, Key = org.Key - 1000}
+                    new { OrgId = person.Value.OrganizationId, person.Key } equals
+                    new { OrgId = org.Value.Id, Key = org.Key - 1000 }
                 where person.Key == 3
-                select new {PersonName = person.Value.Name, OrgName = org.Value.Name};
+                select new { PersonName = person.Value.Name, OrgName = org.Value.Name };
 
             Assert.AreEqual("Person_3", multiKey.Single().PersonName);
         }
