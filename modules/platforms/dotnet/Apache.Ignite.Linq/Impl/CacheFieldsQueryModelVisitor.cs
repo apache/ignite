@@ -73,6 +73,7 @@ namespace Apache.Ignite.Linq.Impl
 
                     resultBuilder.Append("union (");
 
+                    // TODO: SubQuery expression OR ?
                     var unionSql = GetSqlExpression(union.Source2);
 
                     resultOpParameters.AddRange(unionSql.Parameters);

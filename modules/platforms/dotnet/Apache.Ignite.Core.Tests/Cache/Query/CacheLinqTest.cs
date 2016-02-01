@@ -367,6 +367,17 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         [Test]
         public void TestUnions()
         {
+            var persons = GetCache();
+            var persons2 = GetCache();
+
+            var res = persons.Union(persons2).ToArray();
+
+            Assert.AreEqual(PersonCount, res.Length);
+        }
+
+        [Test]
+        public void TestUnionsSubquery()
+        {
             var persons = GetCache().ToQueryable().Select(x => x.Key);
             var roles = GetRoleCache().ToQueryable().Select(x => -x.Key.Foo);
 
