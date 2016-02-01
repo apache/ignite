@@ -19,7 +19,6 @@ namespace Apache.Ignite.Linq.Impl
 {
     using System;
     using System.Collections.Generic;
-    using System.Diagnostics;
     using System.Linq;
     using System.Linq.Expressions;
     using System.Text;
@@ -42,21 +41,11 @@ namespace Apache.Ignite.Linq.Impl
         /// <summary>
         /// Generates the query.
         /// </summary>
-        public static QueryData GenerateQuery(QueryModel queryModel)
-        {
-            Debug.Assert(queryModel != null);
-
-            return new CacheQueryModelVisitor().GenerateQuey(queryModel);
-        }
-
-        /// <summary>
-        /// Generates the query.
-        /// </summary>
-        private QueryData GenerateQuey(QueryModel queryModel)
+        public QueryData GenerateQuery(QueryModel queryModel)
         {
             VisitQueryModel(queryModel);
 
-            var resultBuilder = new StringBuilder("select ");
+            var resultBuilder = new StringBuilder("select ");  // TODO: Can we avoid extra builder?
             int parenCount = 0;
             var resultOpParameters = new List<object>();
 
