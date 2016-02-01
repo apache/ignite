@@ -279,10 +279,10 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
                 join org in organizations on
                     new { OrgId = person.Value.OrganizationId, person.Key } equals
                     new { OrgId = org.Value.Id, Key = org.Key - 1000 }
-                where person.Key == 3
+                where person.Key == 1
                 select new { PersonName = person.Value.Name, OrgName = org.Value.Name };
 
-            Assert.AreEqual("Person_3", multiKey.Single().PersonName);
+            Assert.AreEqual("Person_1", multiKey.Single().PersonName);
         }
 
         [Test]
