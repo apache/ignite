@@ -167,7 +167,7 @@ function _save(domains, res) {
                                     db.Cluster.update({_id: {$in: cache.clusters}}, {$addToSet: {caches: cacheId}}, {multi: true}, function (err) {
                                         if (db.processed(err, res)) {
                                             domain.caches = [cacheId];
-                                            generatedCaches.push({ value: cacheId, label: cache.name });
+                                            generatedCaches.push(cache);
 
                                             _saveDomainModel(domain, savedDomains, callback);
                                         }
