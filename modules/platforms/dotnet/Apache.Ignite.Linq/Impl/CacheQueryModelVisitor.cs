@@ -92,8 +92,8 @@ namespace Apache.Ignite.Linq.Impl
                     var unionSql = GetSqlExpression(union.Source2);
 
                     resultOpParameters.AddRange(unionSql.Parameters);
-                    resultBuilder.Append(unionSql.QueryText);
-                    resultBuilder.Append(")");
+                    _builder.Append(unionSql.QueryText);
+                    _builder.Append(") ");
                 }
                 else if (op is DistinctResultOperator)
                     resultBuilder.Append("distinct ");
