@@ -411,13 +411,25 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
             var roles = GetRoleCache().ToQueryable().Select(x => x.Key.Foo);
             var ids = GetPersonOrgCache().ToQueryable().Select(x => x.Key).Intersect(roles).ToArray();
 
-            Assert.AreEqual(PersonCount - RoleCount, ids.Length);
+            Assert.AreEqual(RoleCount, ids.Length);
         }
 
         [Test]
         public void TestExcept()
         {
-            // TODO
+            // Direct except
+            var persons = GetPersonOrgCache().ToQueryable();
+            var persons2 = GetSecondPersonCacheCache().ToQueryable();
+
+            var res = persons.Except(persons2).ToArray();
+
+            Assert.AreEqual(PersonCount, res.Length);
+
+            // Subquery
+            var roles = GetRoleCache().ToQueryable().Select(x => x.Key.Foo);
+            var ids = GetPersonOrgCache().ToQueryable().Select(x => x.Key).Except(roles).ToArray();
+
+            Assert.AreEqual(PersonCount - RoleCount, ids.Length);
         }
 
         [Test]
