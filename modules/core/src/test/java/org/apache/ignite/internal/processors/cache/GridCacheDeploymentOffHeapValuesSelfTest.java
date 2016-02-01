@@ -21,17 +21,17 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
-import static org.apache.ignite.cache.CacheMemoryMode.OFFHEAP_TIERED;
+import static org.apache.ignite.cache.CacheMemoryMode.OFFHEAP_VALUES;
 
 /**
  * Tests deployment with off-heap storage.
  */
-public class GridCacheDeploymentOffHeapSelfTest extends GridCacheDeploymentSelfTest {
+public class GridCacheDeploymentOffHeapValuesSelfTest extends GridCacheDeploymentSelfTest {
     /** {@inheritDoc} */
     @Override protected CacheConfiguration cacheConfiguration() throws Exception {
         CacheConfiguration cacheCfg = super.cacheConfiguration();
 
-        cacheCfg.setMemoryMode(OFFHEAP_TIERED);
+        cacheCfg.setMemoryMode(OFFHEAP_VALUES);
         cacheCfg.setOffHeapMaxMemory(0);
         cacheCfg.setAtomicityMode(TRANSACTIONAL);
         cacheCfg.setNearConfiguration(new NearCacheConfiguration());
