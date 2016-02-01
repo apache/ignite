@@ -250,7 +250,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
             var organizations = GetOrgCache().ToQueryable();
             var persons = GetCache().ToQueryable();
 
-            var res = persons.Join(organizations, person => person.Value.OrganizationId, org => org.Value.Id,
+            var res = persons.Join(organizations, person => person.Value.OrganizationId + 3, org => org.Value.Id + 3,
                 (person, org) => new {Person = person.Value, Org = org.Value})
                 .Where(x => x.Org.Name == "Org_1")
                 .ToList();
@@ -260,8 +260,10 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
             Assert.IsTrue(res.All(r => r.Person.OrganizationId == r.Org.Id));
 
             // Test full projection (selects pair of ICacheEntry)
-            var res2 = persons.Join(organizations, person => person.Value.OrganizationId, org => org.Value.Id,
-                (person, org) => new {Person = person, Org = org}).Where(x => x.Org.Value.Name == "Org_0").ToList();
+            var res2 = persons.Join(organizations, person => person.Value.OrganizationId - 1, org => org.Value.Id - 1,
+                (person, org) => new {Person = person, Org = org})
+                .Where(x => x.Org.Value.Name.ToLower() == "org_0")
+                .ToList();
 
             Assert.AreEqual(PersonCount / 2, res2.Count);
         }
