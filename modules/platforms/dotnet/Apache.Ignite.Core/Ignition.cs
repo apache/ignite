@@ -52,9 +52,6 @@ namespace Apache.Ignite.Core
         internal const string EnvIgniteSpringConfigUrlPrefix = "IGNITE_SPRING_CONFIG_URL_PREFIX";
 
         /** */
-        private const string DefaultCfg = "config/default-config.xml";
-
-        /** */
         private static readonly object SyncRoot = new object();
 
         /** GC warning flag. */
@@ -140,7 +137,9 @@ namespace Apache.Ignite.Core
 
                 var gridName = cfg.GridName;
 
-                var cfgPath = Environment.GetEnvironmentVariable(EnvIgniteSpringConfigUrlPrefix) + cfg.SpringConfigUrl;
+                var cfgPath = cfg.SpringConfigUrl == null 
+                    ? null 
+                    : Environment.GetEnvironmentVariable(EnvIgniteSpringConfigUrlPrefix) + cfg.SpringConfigUrl;
 
                 // 3. Create startup object which will guide us through the rest of the process.
                 _startup = new Startup(cfg, cbs);
