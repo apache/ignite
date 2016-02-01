@@ -565,7 +565,6 @@ consoleModule.service('$common', [
 
         function ensureActivePanel(ui, id, focusId) {
             if (ui) {
-                var headings = $('div.panel-heading');
                 var collapses = $('div.panel-collapse');
 
                 var idx = _.findIndex(collapses, function(collapse) {
@@ -587,11 +586,6 @@ consoleModule.service('$common', [
 
                         ui.activePanels = newActivePanels;
                     }
-
-                    if (!collapses[idx].firstElementChild)
-                        $timeout(function () {
-                            headings[idx].click();
-                        });
                 }
 
                 if (isDefined(focusId))
