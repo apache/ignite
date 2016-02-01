@@ -729,8 +729,8 @@ consoleModule.controller('domainsController', function ($filter, $http, $timeout
                         var lastItem;
                         var newItems = [];
 
-                        _.forEach(savedBatch.generatedCaches, function (generatedCache) {
-                            $scope.caches.push(generatedCache);
+                        _.forEach(_mapCaches(savedBatch.generatedCaches), function(cache) {
+                            $scope.caches.push(cache);
                         });
 
                         _.forEach(savedBatch.savedDomains, function (savedItem) {
