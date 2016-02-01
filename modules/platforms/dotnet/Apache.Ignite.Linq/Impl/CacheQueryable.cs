@@ -19,14 +19,12 @@ namespace Apache.Ignite.Linq.Impl
 {
     using System.Linq;
     using System.Linq.Expressions;
-    using Apache.Ignite.Core;
     using Apache.Ignite.Core.Cache;
-    using Remotion.Linq;
 
     /// <summary>
     /// <see cref="IQueryable{T}"/> implementation for <see cref="ICache{TK,TV}"/>.
     /// </summary>
-    internal class CacheQueryable<TKey, TValue> : QueryableBase<ICacheEntry<TKey, TValue>>, ICacheQueryable
+    internal class CacheQueryable<TKey, TValue> : CacheQueryableBase<ICacheEntry<TKey, TValue>>
     {
         /// <summary>
         /// Initializes a new instance of the <see cref="CacheQueryable{TKey, TValue}" /> class.
@@ -49,34 +47,6 @@ namespace Apache.Ignite.Linq.Impl
         public CacheQueryable(IQueryProvider provider, Expression expression) : base(provider, expression)
         {
             // No-op.
-        }
-
-        /** <inheritdoc /> */
-        public string CacheName
-        {
-            get { return CacheQueryProvider.CacheName; }
-        }
-
-        /** <inheritdoc /> */
-        public IIgnite Ignite
-        {
-            get { return CacheQueryProvider.Ignite; }
-        }
-
-        /// <summary>
-        /// Gets the cache query provider.
-        /// </summary>
-        private CacheFieldsQueryProvider CacheQueryProvider
-        {
-            get { return (CacheFieldsQueryProvider) Provider; }
-        }
-
-        /** <inheritdoc /> */
-        public string ToTraceString()
-        {
-            var model = CacheQueryProvider.GenerateQueryModel(Expression);
-
-            return ((ICacheQueryExecutor)CacheQueryProvider.Executor).GetQueryData(model).ToString();
         }
     }
 }
