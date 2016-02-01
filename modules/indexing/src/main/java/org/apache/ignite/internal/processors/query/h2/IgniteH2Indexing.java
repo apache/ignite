@@ -2032,10 +2032,15 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             int valCol,
             IndexColumn... cols
         ) {
-            if (idxProvider != null)
-                return idxProvider.createIndex(cacheId, name, tbl, pk, keyCol, valCol, cols);
+            try {
+                if (idxProvider != null)
+                    return idxProvider.createIndex(cacheId, name, tbl, pk, keyCol, valCol, cols);
 
-            return new GridH2TreeIndex(name, tbl, pk, keyCol, valCol, cols);
+                return new GridH2TreeIndex(name, tbl, pk, keyCol, valCol, cols);
+            }
+            catch (IgniteCheckedException e) {
+                throw new IgniteException(e);
+            }
         }
 
         /**
