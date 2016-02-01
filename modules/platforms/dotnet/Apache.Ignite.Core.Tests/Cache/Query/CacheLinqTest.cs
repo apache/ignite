@@ -379,25 +379,33 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         }
 
         [Test]
-        public void TestUnions()
+        public void TestUnion()
         {
+            // Direct union
             var persons = GetPersonOrgCache().ToQueryable();
             var persons2 = GetSecondPersonCacheCache().ToQueryable();
 
             var res = persons.Union(persons2).ToArray();
 
             Assert.AreEqual(PersonCount * 2, res.Length);
+
+            // Subquery
+            var roles = GetRoleCache().ToQueryable().Select(x => -x.Key.Foo);
+            var ids = GetPersonOrgCache().ToQueryable().Select(x => x.Key).Union(roles).ToArray();
+
+            Assert.AreEqual(RoleCount + PersonCount, ids.Length);
         }
 
         [Test]
-        public void TestUnionsSubquery()
+        public void TestIntersect()
         {
-            var persons = GetPersonOrgCache().ToQueryable().Select(x => x.Key);
-            var roles = GetRoleCache().ToQueryable().Select(x => -x.Key.Foo);
+            // TODO
+        }
 
-            var ids = persons.Union(roles).ToArray();
-
-            Assert.AreEqual(RoleCount + PersonCount, ids.Length);
+        [Test]
+        public void TestExcept()
+        {
+            // TODO
         }
 
         [Test]
