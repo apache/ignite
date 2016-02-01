@@ -168,15 +168,17 @@ namespace Apache.Ignite.Linq.Impl
                         if (innerExpr == null)
                             throw new NotSupportedException("Unexpected UNION inner sequence: " + source);
 
-                        var queryable = innerExpr.Value as ICacheQueryable;
+                        var queryable = innerExpr.Value as ICacheQueryableInternal;
 
                         if (queryable == null)
                             throw new NotSupportedException("Unexpected UNION inner sequence " +
                                                             "(only results of cache.ToQueryable() are supported): " +
                                                             innerExpr.Value);
 
-                        _builder.Append(TableNameMapper.GetTableNameWithSchema(queryable)).Append(")");
+                        VisitQueryModel(queryable.GetQueryModel());
                     }
+
+                    _builder.Append(")");
                 }
             }
         }

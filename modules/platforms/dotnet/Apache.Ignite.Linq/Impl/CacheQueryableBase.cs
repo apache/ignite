@@ -25,7 +25,7 @@ namespace Apache.Ignite.Linq.Impl
     /// <summary>
     /// Base class for cache queryables.
     /// </summary>
-    internal class CacheQueryableBase<T> : QueryableBase<T>, ICacheQueryable
+    internal class CacheQueryableBase<T> : QueryableBase<T>, ICacheQueryable, ICacheQueryableInternal
     {
         /** <inheritdoc /> */
         public CacheQueryableBase(IQueryProvider provider) : base(provider)
@@ -51,6 +51,18 @@ namespace Apache.Ignite.Linq.Impl
             get { return CacheQueryProvider.Ignite; }
         }
 
+        /** <inheritdoc /> */
+        public string ToTraceString()
+        {
+            return GetQueryData().ToString();
+        }
+
+        /** <inheritdoc /> */
+        public QueryModel GetQueryModel()
+        {
+            return CacheQueryProvider.GenerateQueryModel(Expression);
+        }
+
         /// <summary>
         /// Gets the cache query provider.
         /// </summary>
@@ -59,12 +71,15 @@ namespace Apache.Ignite.Linq.Impl
             get { return (CacheFieldsQueryProvider)Provider; }
         }
 
-        /** <inheritdoc /> */
-        public string ToTraceString()
+        /// <summary>
+        /// Gets the query data.
+        /// </summary>
+        /// <returns></returns>
+        private QueryData GetQueryData()
         {
-            var model = CacheQueryProvider.GenerateQueryModel(Expression);
+            var model = GetQueryModel();
 
-            return ((ICacheQueryExecutor)CacheQueryProvider.Executor).GetQueryData(model).ToString();
+            return ((ICacheQueryExecutor)CacheQueryProvider.Executor).GetQueryData(model);
         }
     }
 }
