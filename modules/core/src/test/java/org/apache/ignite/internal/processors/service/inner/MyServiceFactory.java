@@ -15,39 +15,16 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.stream.kafka;
-
-import kafka.producer.Partitioner;
-import kafka.utils.VerifiableProperties;
+package org.apache.ignite.internal.processors.service.inner;
 
 /**
- * Simple partitioner for Kafka.
+ * Service factory.
  */
-@SuppressWarnings("UnusedDeclaration")
-public class SimplePartitioner implements Partitioner {
+public class MyServiceFactory {
     /**
-     * Constructs instance.
-     *
-     * @param props Properties.
+     * @return Service.
      */
-    public SimplePartitioner(VerifiableProperties props) {
-        // No-op.
-    }
-
-    /**
-     * Partitions the key based on the key value.
-     *
-     * @param key Key.
-     * @param partSize Partition size.
-     * @return partition Partition.
-     */
-    public int partition(Object key, int partSize) {
-        String keyStr = (String)key;
-
-        String[] keyValues = keyStr.split("\\.");
-
-        Integer intKey = Integer.parseInt(keyValues[3]);
-
-        return intKey > 0 ? intKey % partSize : 0;
+    public static MyService create() {
+        return new MyServiceImpl();
     }
 }
