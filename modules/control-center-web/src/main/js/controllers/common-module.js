@@ -1012,6 +1012,7 @@ consoleModule.service('$common', [
                     ready: false,
                     expanded: false,
                     groups: [],
+                    errors: {},
                     addGroups: function (general, advanced) {
                         if (general)
                             $.merge(this.groups, general);

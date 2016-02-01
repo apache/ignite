@@ -194,10 +194,12 @@ consoleModule.controller('clustersController', function ($http, $timeout, $scope
                 }
 
                 $scope.$watch('backupItem', function (val) {
-                    if (__original_value === JSON.stringify(val))
-                        $scope.ui.inputForm.$setPristine();
-                    else 
-                        $scope.ui.inputForm.$setDirty();
+                    var form = $scope.ui.inputForm;
+
+                    if (form.$pristine || (form.$valid && __original_value === JSON.stringify(val)))
+                        form.$setPristine();
+                    else
+                        form.$setDirty();
 
                     if (val) {
                         var clusterCaches = _.reduce($scope.caches, function(caches, cache){
@@ -365,7 +367,8 @@ consoleModule.controller('clustersController', function ($http, $timeout, $scope
             if ($common.isEmptyString(item.name))
                 return showPopoverMessage($scope.ui, 'general', 'clusterName', 'Name should not be empty');
 
-            var errors = $scope.ui.inputForm.$error;
+            var form = $scope.ui.inputForm;
+            var errors = form.$error;
             var errKeys = Object.keys(errors);
 
             if (errKeys && errKeys.length > 0) {
@@ -374,7 +377,16 @@ consoleModule.controller('clustersController', function ($http, $timeout, $scope
                 var firstError = errors[firstErrorKey][0];
                 var actualError = firstError.$error[firstErrorKey][0];
 
-                return showPopoverMessage($scope.ui, firstError.$name, actualError.$name, 'Invalid value');
+                var msg = 'Invalid value';
+
+                try {
+                    msg = form[firstError.$name].$error[firstErrorKey][0].$errorMessages[firstErrorKey];
+                }
+                catch(ignored) {
+                    msg = 'Invalid value';
+                }
+
+                return showPopoverMessage($scope.ui, firstError.$name, actualError.$name, msg);
             }
 
             var caches = _.filter(_.map($scope.caches, function (scopeCache) {

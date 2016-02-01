@@ -29,16 +29,19 @@
     )
 
     i.fa.fa-exclamation-triangle.form-control-feedback(
+        ng-init='form[name].$errorMessages.min = "Value is less than allowable minimum"'
         ng-show='field.$error.min'
         bs-tooltip='"Value is less than allowable minimum"'
     )
     i.fa.fa-exclamation-triangle.form-control-feedback(
-        ng-show='field.$error.max' 
+        ng-init='form[name].$errorMessages.max = "Value is more than allowable maximum"'
+        ng-show='field.$error.max'
         bs-tooltip='"Value is more than allowable maximum"'
     )
 
     i.fa.fa-exclamation-triangle.form-control-feedback(
-        ng-show='field.$error.number' 
+        ng-init='form[name].$errorMessages.number = "Invalid value. Only numbers allowed"'
+        ng-show='field.$error.number'
         bs-tooltip='"Invalid value. Only numbers allowed"'
     )
     span(ng-transclude='')

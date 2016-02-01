@@ -1,7 +1,8 @@
 mixin feedback(error, message)
     i.fa.fa-exclamation-triangle.form-control-feedback(
+        ng-init='form[name].$errorMessages.#{error} = label.name + "#{message}"'
         ng-if='!form[name].$pristine && form[name].$error.#{error}'
-        bs-tooltip='"#{message}"'
+        bs-tooltip='"{{ label.name }}#{message}"'
     )
 
 div
@@ -28,8 +29,8 @@ div
     )
         span(ng-transclude)
 
-        +feedback('javaIdentifier', '{{ label.name }} is invalid!')
-        +feedback('required', '{{ label.name }} could not be empty!')
-        +feedback('javaKeywords', '{{ label.name }} could not contains reserved Java keyword!')
-        +feedback('javaBuiltInClass', '{{ label.name }} should not be the Java built-in class!')
-        +feedback('javaPackageSpecified', '{{ label.name }} does not have package specified!')
+        +feedback('javaIdentifier', ' is invalid Java identifier!')
+        +feedback('required', ' could not be empty!')
+        +feedback('javaKeywords', ' could not contains reserved Java keyword!')
+        +feedback('javaBuiltInClass', ' should not be the Java built-in class!')
+        +feedback('javaPackageSpecified', ' does not have package specified!')

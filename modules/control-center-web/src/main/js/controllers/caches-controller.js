@@ -563,7 +563,7 @@ consoleModule.controller('cachesController', [
 
                         if (_.findIndex(domains, $common.domainForStoreConfigured) < 0)
                             return showPopoverMessage($scope.ui, 'general', 'domains',
-                                'Cache with configured JDBC POJO store factory should be associated with at least one domain model for cache store');
+                                'Cache with configured JDBC POJO store factory should be associated with at least one domain model for cache store', 10000);
                     }
                 }
             }
