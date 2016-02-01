@@ -347,6 +347,22 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         }
 
         [Test]
+        public void TestMultipleFrom()
+        {
+            var persons = GetCache().ToQueryable();
+            var roles = GetRoleCache().ToQueryable();
+
+            var resQuery = from person in persons
+                from role in roles
+                where person.Key == role.Key.Foo
+                select new {Person = person.Value.Name, Role = role.Value.Name};
+
+            var res = resQuery.ToArray();
+
+            Assert.AreEqual(RoleCount, res.Length);
+        }
+
+        [Test]
         public void TestIntrospection()
         {
             var cache = GetCache();
