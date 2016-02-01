@@ -2441,21 +2441,39 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         }
 
         /** {@inheritDoc} */
-        @Override public GridH2Row createRow(CacheObject key, @Nullable CacheObject val, long expirationTime)
-            throws IgniteCheckedException {
+        @Override public GridH2Row createRow(CacheObject key, @Nullable CacheObject val, GridCacheVersion ver,
+            long expirationTime) throws IgniteCheckedException {
+            GridH2Row row;
+
             try {
                 if (val == null) // Only can happen for remove operation, can create simple search row.
-                    return new GridH2Row(wrap(key, keyType), null);
-
-                return schema.offheap == null ?
-                    new GridH2KeyValueRowOnheap(this, key, keyType, val, valType, expirationTime) :
-                    new GridH2KeyValueRowOffheap(this, key, keyType, val, valType, expirationTime);
+                    row = new GridH2Row(wrap(key, keyType), null);
+                else
+                    row = schema.offheap == null ?
+                        new GridH2KeyValueRowOnheap(this, key, keyType, val, valType, expirationTime) :
+                        new GridH2KeyValueRowOffheap(this, key, keyType, val, valType, expirationTime);
             }
             catch (ClassCastException e) {
                 throw new IgniteCheckedException("Failed to convert key to SQL type. " +
                     "Please make sure that you always store each value type with the same key type " +
                     "or configure key type as common super class for all actual keys for this value type.", e);
             }
+
+            if (val != null) {
+                row.ver = ver;
+
+                CacheObjectContext coctx = cacheContext(schema.spaceName).cacheObjectContext();
+
+                try {
+                    row.key = key.valueBytes(coctx);
+                    row.val = val.valueBytes(coctx);
+                }
+                catch (IgniteCheckedException e) {
+                    throw new IgniteException(e);
+                }
+            }
+
+            return row;
         }
 
         /** {@inheritDoc} */

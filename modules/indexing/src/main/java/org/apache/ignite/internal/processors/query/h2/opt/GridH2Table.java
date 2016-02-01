@@ -169,7 +169,7 @@ public class GridH2Table extends TableBase {
 
         assert desc != null;
 
-        GridH2Row searchRow = desc.createRow(key, null, 0);
+        GridH2Row searchRow = desc.createRow(key, null, null, 0);
 
         GridUnsafeMemory mem = desc.memory();
 
@@ -335,12 +335,7 @@ public class GridH2Table extends TableBase {
         throws IgniteCheckedException {
         assert desc != null;
 
-        // TODO use version here.
-
-        GridH2Row row = desc.createRow(key, val, expirationTime);
-
-        row.key = key;
-        row.val = val;
+        GridH2Row row = desc.createRow(key, val, ver, expirationTime);
 
         return doUpdate(row, rmv);
     }
