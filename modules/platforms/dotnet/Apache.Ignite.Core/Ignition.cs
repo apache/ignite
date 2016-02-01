@@ -42,7 +42,7 @@ namespace Apache.Ignite.Core
     /// <summary>
     /// This class defines a factory for the main Ignite API.
     /// <p/>
-    /// Use <see cref="Ignition.Start()"/> method to start Ignite with default configuration.
+    /// Use <see cref="Start()"/> method to start Ignite with default configuration.
     /// <para/>
     /// All members are thread-safe and may be used concurrently from multiple threads.
     /// </summary>
