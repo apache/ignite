@@ -507,21 +507,10 @@ namespace Apache.Ignite.Core.Impl.Binary
                 serializer, keepDeserialized, affKeyFieldName, isEnum);
 
             if (type != null)
-            {
-                if (_typeToDesc.ContainsKey(type))
-                    throw new InvalidOperationException("Duplicate type in BinaryConfiguration: " + type);
-
                 _typeToDesc[type] = descriptor;
-            }
 
             if (userType)
-            {
-                if (_typeNameToDesc.ContainsKey(typeName))
-                    throw new InvalidOperationException("Duplicate type in BinaryConfiguration: " + typeName);
-
-
                 _typeNameToDesc[typeName] = descriptor;
-            }
 
             _idToDesc[typeKey] = descriptor;            
         }
