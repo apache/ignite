@@ -350,8 +350,8 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         [Test]
         public void TestMultipleFrom()
         {
-            var persons = GetCache().ToQueryable();
-            var roles = GetRoleCache().ToQueryable();
+            var persons = GetCache().ToQueryable().Where(x => x.Key < PersonCount);
+            var roles = GetRoleCache().ToQueryable().Where(x => x.Value.Name != "1");
 
             var resQuery = 
                 from person in persons
@@ -362,8 +362,6 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
             var res = resQuery.ToArray();
 
             Assert.AreEqual(RoleCount, res.Length);
-
-            // TODO: Subqueries?
         }
 
         [Test]

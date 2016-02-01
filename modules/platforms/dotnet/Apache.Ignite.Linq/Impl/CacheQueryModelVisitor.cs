@@ -76,14 +76,9 @@ namespace Apache.Ignite.Linq.Impl
             base.VisitMainFromClause(fromClause, queryModel);
 
             Builder.AppendFormat("from {0} ", TableNameMapper.GetTableNameWithSchema(fromClause));
-        }
 
-        /** <inheritdoc /> */
-        public override void VisitAdditionalFromClause(AdditionalFromClause fromClause, QueryModel queryModel, int index)
-        {
-            base.VisitAdditionalFromClause(fromClause, queryModel, index);
-
-            Builder.AppendFormat(", {0} ", TableNameMapper.GetTableNameWithSchema(fromClause));
+            foreach (var additionalFrom in queryModel.BodyClauses.OfType<AdditionalFromClause>())
+                Builder.AppendFormat(", {0} ", TableNameMapper.GetTableNameWithSchema(additionalFrom));
         }
 
         /** <inheritdoc /> */
