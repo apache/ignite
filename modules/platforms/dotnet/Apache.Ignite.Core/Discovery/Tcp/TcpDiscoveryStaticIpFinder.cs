@@ -18,6 +18,7 @@
 namespace Apache.Ignite.Core.Discovery.Tcp
 {
     using System.Collections.Generic;
+    using System.Diagnostics.CodeAnalysis;
     using Apache.Ignite.Core.Binary;
 
     /// <summary>
@@ -28,6 +29,7 @@ namespace Apache.Ignite.Core.Discovery.Tcp
         /// <summary>
         /// Gets or sets the end points.
         /// </summary>
+        [SuppressMessage("Microsoft.Usage", "CA2227:CollectionPropertiesShouldBeReadOnly")]
         public ICollection<string> Endpoints { get; set; }
 
         /// <summary>

@@ -298,6 +298,7 @@
         /// <value>
         /// The cache configuration.
         /// </value>
+        [SuppressMessage("Microsoft.Usage", "CA2227:CollectionPropertiesShouldBeReadOnly")]
         public ICollection<CacheConfiguration> CacheConfiguration { get; set; }
 
         /// <summary>
@@ -383,6 +384,7 @@
         /// <summary>
         /// Gets or sets a set of event types (<see cref="EventType" />) to be recorded by Ignite. 
         /// </summary>
+        [SuppressMessage("Microsoft.Usage", "CA2227:CollectionPropertiesShouldBeReadOnly")]
         public ICollection<int> IncludedEventTypes { get; set; }
 
         /// <summary>
