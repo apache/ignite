@@ -43,15 +43,16 @@ namespace Apache.Ignite.Linq.Impl
         /// </summary>
         public QueryData GenerateQuery(QueryModel queryModel)
         {
+            // SELECT TOP 1
             _builder.Append("select ");
 
-            var parenCount = ProcessResultOperators(queryModel, _builder);
+            var parenCount = ProcessResultOperators(queryModel);
 
+            // FIELD1, FIELD2 FROM TABLE1, TABLE2
             var selectExp = GetSqlExpression(queryModel.SelectClause.Selector, parenCount > 0);
-            _builder.Append(selectExp.QueryText).Append(')', parenCount);
+            _builder.Append(selectExp.QueryText).Append(')', parenCount).Append(" ");
 
-            _builder.Append(" ");
-
+            // WHERE ... JOIN ...
             VisitQueryModel(queryModel);
 
             if (char.IsWhiteSpace(_builder[_builder.Length - 1]))
@@ -63,7 +64,10 @@ namespace Apache.Ignite.Linq.Impl
             return new QueryData(queryText, parameters.ToArray(), true);
         }
 
-        private static int ProcessResultOperators(QueryModel queryModel, StringBuilder resultBuilder)
+        /// <summary>
+        /// Processes the result operators.
+        /// </summary>
+        private int ProcessResultOperators(QueryModel queryModel)
         {
             int parenCount = 0;
 
@@ -71,22 +75,22 @@ namespace Apache.Ignite.Linq.Impl
             {
                 if (op is CountResultOperator)
                 {
-                    resultBuilder.Append("count (");
+                    _builder.Append("count (");
                     parenCount++;
                 }
                 else if (op is SumResultOperator)
                 {
-                    resultBuilder.Append("sum (");
+                    _builder.Append("sum (");
                     parenCount++;
                 }
                 else if (op is MinResultOperator)
                 {
-                    resultBuilder.Append("min (");
+                    _builder.Append("min (");
                     parenCount++;
                 }
                 else if (op is MaxResultOperator)
                 {
-                    resultBuilder.Append("max (");
+                    _builder.Append("max (");
                     parenCount++;
                 }
                 // TODO: This is incorrect, UNION should go at the very end
@@ -104,11 +108,11 @@ namespace Apache.Ignite.Linq.Impl
                     resultBuilder.Append(") ");
                 }*/
                 else if (op is DistinctResultOperator)
-                    resultBuilder.Append("distinct ");
+                    _builder.Append("distinct ");
                 else if (op is FirstResultOperator || op is SingleResultOperator)
-                    resultBuilder.Append("top 1 ");
+                    _builder.Append("top 1 ");
                 else if (op is TakeResultOperator)
-                    resultBuilder.AppendFormat("top {0} ", ((TakeResultOperator) op).Count);
+                    _builder.AppendFormat("top {0} ", ((TakeResultOperator) op).Count);
                 else
                     throw new NotSupportedException("Operator is not supported: " + op);
             }
@@ -242,6 +246,7 @@ namespace Apache.Ignite.Linq.Impl
         /// </summary>
         private static QueryData GetSqlExpression(Expression expression, bool aggregating = false)
         {
+            // TODO: Reuse string builder and parameter list!
             return CacheQueryExpressionVisitor.GetSqlExpression(expression, aggregating);
         }
     }
