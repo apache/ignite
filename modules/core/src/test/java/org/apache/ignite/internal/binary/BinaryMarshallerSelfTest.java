@@ -17,42 +17,6 @@
 
 package org.apache.ignite.internal.binary;
 
-import junit.framework.Assert;
-import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.binary.BinaryCollectionFactory;
-import org.apache.ignite.binary.BinaryField;
-import org.apache.ignite.binary.BinaryIdMapper;
-import org.apache.ignite.binary.BinaryMapFactory;
-import org.apache.ignite.binary.BinaryObject;
-import org.apache.ignite.binary.BinaryObjectBuilder;
-import org.apache.ignite.binary.BinaryObjectException;
-import org.apache.ignite.binary.BinaryRawReader;
-import org.apache.ignite.binary.BinaryRawWriter;
-import org.apache.ignite.binary.BinaryReader;
-import org.apache.ignite.binary.BinarySerializer;
-import org.apache.ignite.binary.BinaryType;
-import org.apache.ignite.binary.BinaryTypeConfiguration;
-import org.apache.ignite.binary.BinaryWriter;
-import org.apache.ignite.binary.Binarylizable;
-import org.apache.ignite.configuration.BinaryConfiguration;
-import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.internal.binary.builder.BinaryObjectBuilderImpl;
-import org.apache.ignite.internal.processors.cache.CacheObjectContext;
-import org.apache.ignite.internal.util.GridUnsafe;
-import org.apache.ignite.internal.util.IgniteUtils;
-import org.apache.ignite.internal.util.lang.GridMapEntry;
-import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.logger.NullLogger;
-import org.apache.ignite.marshaller.MarshallerContextTestImpl;
-import org.apache.ignite.testframework.GridTestUtils;
-import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
-import org.jsr166.ConcurrentHashMap8;
-import sun.misc.Unsafe;
-
 import java.io.Externalizable;
 import java.io.IOException;
 import java.io.ObjectInput;
@@ -87,21 +51,50 @@ import java.util.TreeSet;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentSkipListSet;
+import junit.framework.Assert;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.binary.BinaryCollectionFactory;
+import org.apache.ignite.binary.BinaryField;
+import org.apache.ignite.binary.BinaryIdMapper;
+import org.apache.ignite.binary.BinaryMapFactory;
+import org.apache.ignite.binary.BinaryObject;
+import org.apache.ignite.binary.BinaryObjectBuilder;
+import org.apache.ignite.binary.BinaryObjectException;
+import org.apache.ignite.binary.BinaryRawReader;
+import org.apache.ignite.binary.BinaryRawWriter;
+import org.apache.ignite.binary.BinaryReader;
+import org.apache.ignite.binary.BinarySerializer;
+import org.apache.ignite.binary.BinaryType;
+import org.apache.ignite.binary.BinaryTypeConfiguration;
+import org.apache.ignite.binary.BinaryWriter;
+import org.apache.ignite.binary.Binarylizable;
+import org.apache.ignite.configuration.BinaryConfiguration;
+import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.binary.builder.BinaryObjectBuilderImpl;
+import org.apache.ignite.internal.processors.cache.CacheObjectContext;
+import org.apache.ignite.internal.util.GridUnsafe;
+import org.apache.ignite.internal.util.IgniteUtils;
+import org.apache.ignite.internal.util.lang.GridMapEntry;
+import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.logger.NullLogger;
+import org.apache.ignite.marshaller.MarshallerContextTestImpl;
+import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
+import org.jsr166.ConcurrentHashMap8;
 
-import static org.apache.ignite.internal.binary.streams.BinaryMemoryAllocator.*;
-import static org.junit.Assert.*;
+import static org.apache.ignite.internal.binary.streams.BinaryMemoryAllocator.INSTANCE;
+import static org.junit.Assert.assertArrayEquals;
+import static org.junit.Assert.assertNotEquals;
 
 /**
  * Binary marshaller tests.
  */
 @SuppressWarnings({"OverlyStrongTypeCast", "ArrayHashCode", "ConstantConditions"})
 public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
-    /** */
-    private static final Unsafe UNSAFE = GridUnsafe.unsafe();
-
-    /** */
-    protected static final long BYTE_ARR_OFF = UNSAFE.arrayBaseOffset(byte[].class);
-
     /**
      * @throws Exception If failed.
      */
@@ -2035,13 +2028,13 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
             assertFalse(offheapObj2.equals(offheapObj));
         }
         finally {
-            UNSAFE.freeMemory(ptr);
+            GridUnsafe.freeMemory(ptr);
 
             if (ptr1 > 0)
-                UNSAFE.freeMemory(ptr1);
+                GridUnsafe.freeMemory(ptr1);
 
             if (ptr2 > 0)
-                UNSAFE.freeMemory(ptr2);
+                GridUnsafe.freeMemory(ptr2);
         }
     }
 
@@ -2617,9 +2610,9 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
     private long copyOffheap(BinaryObjectImpl obj) {
         byte[] arr = obj.array();
 
-        long ptr = UNSAFE.allocateMemory(arr.length);
+        long ptr = GridUnsafe.allocateMemory(arr.length);
 
-        UNSAFE.copyMemory(arr, BYTE_ARR_OFF, null, ptr, arr.length);
+        GridUnsafe.copyMemory(arr, GridUnsafe.BYTE_ARR_OFF, null, ptr, arr.length);
 
         return ptr;
     }
