@@ -220,7 +220,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
         }
         else {
             try {
-                if (cctx.kernalContext().config().isPeerClassLoadingEnabled()) {
+                if (cctx.deploymentEnabled()) {
                     Object val0 = null;
 
                     if (val != null && val.cacheObjectType() != CacheObject.TYPE_BYTE_ARR) {
@@ -571,7 +571,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
             IgniteUuid valClsLdrId = null;
             IgniteUuid keyClsLdrId = null;
 
-            if (cctx.kernalContext().config().isPeerClassLoadingEnabled()) {
+            if (cctx.deploymentEnabled()) {
                 if (val != null) {
                     valClsLdrId = cctx.deploy().getClassLoaderId(
                         U.detectObjectClassLoader(val.value(cctx.cacheObjectContext(), false)));
@@ -4045,7 +4045,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                     IgniteUuid valClsLdrId = null;
                     IgniteUuid keyClsLdrId = null;
 
-                    if (cctx.kernalContext().config().isPeerClassLoadingEnabled()) {
+                    if (cctx.deploymentEnabled()) {
                         if (val != null) {
                             valClsLdrId = cctx.deploy().getClassLoaderId(
                                 U.detectObjectClassLoader(val.value(cctx.cacheObjectContext(), false)));

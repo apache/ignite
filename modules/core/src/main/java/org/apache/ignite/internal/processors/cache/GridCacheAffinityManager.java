@@ -23,6 +23,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.internal.IgniteClientDisconnectedCheckedException;
@@ -41,6 +42,10 @@ import org.jetbrains.annotations.Nullable;
 public class GridCacheAffinityManager extends GridCacheManagerAdapter {
     /** */
     private static final AffinityTopologyVersion TOP_FIRST = new AffinityTopologyVersion(1);
+
+    /** */
+    public static final String FAILED_TO_FIND_CACHE_ERR_MSG = "Failed to find cache (cache was not started " +
+        "yet or cache was already stopped): ";
 
     /** Affinity cached function. */
     private GridAffinityAssignmentCache aff;
@@ -189,7 +194,12 @@ public class GridCacheAffinityManager extends GridCacheManagerAdapter {
      * @return Partition count.
      */
     public int partitions() {
-        return aff.partitions();
+        GridAffinityAssignmentCache aff0 = aff;
+
+        if (aff0 == null)
+            throw new IgniteException(FAILED_TO_FIND_CACHE_ERR_MSG + cctx.name());
+
+        return aff0.partitions();
     }
 
     /**
@@ -201,7 +211,12 @@ public class GridCacheAffinityManager extends GridCacheManagerAdapter {
      * @return Partition.
      */
     public int partition(Object key) {
-        return aff.partition(key);
+        GridAffinityAssignmentCache aff0 = aff;
+
+        if (aff0 == null)
+            throw new IgniteException(FAILED_TO_FIND_CACHE_ERR_MSG + cctx.name());
+
+        return aff0.partition(key);
     }
 
     /**
@@ -222,7 +237,12 @@ public class GridCacheAffinityManager extends GridCacheManagerAdapter {
         if (cctx.isLocal())
             topVer = new AffinityTopologyVersion(1);
 
-        return aff.nodes(part, topVer);
+        GridAffinityAssignmentCache aff0 = aff;
+
+        if (aff0 == null)
+            throw new IgniteException(FAILED_TO_FIND_CACHE_ERR_MSG + cctx.name());
+
+        return aff0.nodes(part, topVer);
     }
 
     /**
@@ -363,7 +383,12 @@ public class GridCacheAffinityManager extends GridCacheManagerAdapter {
         if (cctx.isLocal())
             topVer = new AffinityTopologyVersion(1);
 
-        return aff.primaryPartitions(nodeId, topVer);
+        GridAffinityAssignmentCache aff0 = aff;
+
+        if (aff0 == null)
+            throw new IgniteException(FAILED_TO_FIND_CACHE_ERR_MSG + cctx.name());
+
+        return aff0.primaryPartitions(nodeId, topVer);
     }
 
     /**
@@ -375,14 +400,24 @@ public class GridCacheAffinityManager extends GridCacheManagerAdapter {
         if (cctx.isLocal())
             topVer = new AffinityTopologyVersion(1);
 
-        return aff.backupPartitions(nodeId, topVer);
+        GridAffinityAssignmentCache aff0 = aff;
+
+        if (aff0 == null)
+            throw new IgniteException(FAILED_TO_FIND_CACHE_ERR_MSG + cctx.name());
+
+        return aff0.backupPartitions(nodeId, topVer);
     }
 
     /**
      * @return Affinity-ready topology version.
      */
     public AffinityTopologyVersion affinityTopologyVersion() {
-        return aff.lastVersion();
+        GridAffinityAssignmentCache aff0 = aff;
+
+        if (aff0 == null)
+            throw new IgniteException(FAILED_TO_FIND_CACHE_ERR_MSG + cctx.name());
+
+        return aff0.lastVersion();
     }
 
     /**
