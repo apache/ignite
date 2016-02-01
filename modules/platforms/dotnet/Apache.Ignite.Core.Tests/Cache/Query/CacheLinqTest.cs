@@ -158,15 +158,15 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
 
             // Test anonymous type (ctor invoke)
             var data = cache.Where(x => x.Key < 5)
-                .Select(x => new {x.Key, x.Value.Age, x.Value.Address})
+                .Select(x => new {Key = x.Key + 20, Age = x.Value.Age + 10, x.Value.Address})
                 .ToArray();
 
             Assert.AreEqual(5, data.Length);
 
             foreach (var t in data)
             {
-                Assert.AreEqual(t.Age, t.Key);
-                Assert.AreEqual(t.Age, t.Address.Zip);
+                Assert.AreEqual(t.Age - 10, t.Key - 20);
+                Assert.AreEqual(t.Age - 10, t.Address.Zip);
             }
 
             // Test static method call
