@@ -15,35 +15,16 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.testframework;
+package org.apache.ignite.testframework.config;
 
-import junit.framework.Test;
-import junit.framework.TestResult;
-import junit.framework.TestSuite;
-import org.apache.ignite.testframework.junits.GridAbstractTest;
+import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.IgniteConfiguration;
 
 /**
- * Grid test suite.
+ *
  */
-public class GridTestSuite extends TestSuite {
-    /** */
-    private final NewTestsConfiguration cfg;
+public interface ConfigurationFactory {
+    public IgniteConfiguration getConfiguration(String gridName, IgniteConfiguration cfg);
 
-    /**
-     * @param theClass Test class.
-     * @param cfg Configuration.
-     */
-    public GridTestSuite(Class<? extends GridAbstractTest> theClass, NewTestsConfiguration cfg) {
-        super(theClass);
-
-        this.cfg = cfg;
-    }
-
-    /** {@inheritDoc} */
-    @Override public void runTest(Test test, TestResult res) {
-        if (test instanceof GridAbstractTest)
-            ((GridAbstractTest)test).setNewTestsConfiguration(cfg);
-
-        super.runTest(test, res);
-    }
+    public CacheConfiguration cacheConfiguration(String gridName);
 }

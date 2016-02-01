@@ -84,6 +84,7 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.multicast.TcpDiscoveryMulticastIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.NewTestsConfiguration;
 import org.apache.ignite.testframework.config.GridTestProperties;
 import org.apache.ignite.testframework.junits.logger.GridTestLog4jLogger;
 import org.apache.ignite.testframework.junits.multijvm.IgniteCacheProcessProxy;
@@ -154,7 +155,7 @@ public abstract class GridAbstractTest extends TestCase {
     protected final static ThreadLocal<String> startingGrid = new ThreadLocal<>();
 
     /** */
-    private IgniteConfiguration igniteCfg;
+    protected NewTestsConfiguration newTestsCfg;
 
     /** */
     private String testClsNameSuffix;
@@ -205,10 +206,10 @@ public abstract class GridAbstractTest extends TestCase {
     }
 
     /**
-     * @param igniteCfg Ignite configuration.
+     * @param newTestsCfg New tests configuration.
      */
-    public void igniteConfiguration(IgniteConfiguration igniteCfg) {
-        this.igniteCfg = igniteCfg;
+    public void setNewTestsConfiguration(NewTestsConfiguration newTestsCfg) {
+        this.newTestsCfg = newTestsCfg;
     }
 
     /**
@@ -475,7 +476,15 @@ public abstract class GridAbstractTest extends TestCase {
      * @throws Exception If failed. {@link #afterTest()} will be called in this case.
      */
     protected void beforeTest() throws Exception {
-        // No-op.
+        if (newTestsCfg != null) {
+            if (Ignition.allGrids().size() != newTestsCfg.gridCount()) {
+                log.info("All nodes will be stopped, new " + newTestsCfg.gridCount() + " nodes will be started.");
+
+                Ignition.stopAll(true);
+
+                startGrids(newTestsCfg.gridCount());
+            }
+        }
     }
 
     /**
@@ -504,7 +513,8 @@ public abstract class GridAbstractTest extends TestCase {
      * @throws Exception If failed.
      */
     protected void afterTestsStopped() throws Exception {
-        // No-op.
+        if (newTestsCfg != null && newTestsCfg.isStopNodes())
+            stopAllGrids();
     }
 
     /** {@inheritDoc} */
@@ -1146,12 +1156,7 @@ public abstract class GridAbstractTest extends TestCase {
      */
     @SuppressWarnings("deprecation")
     protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg;
-
-        if (igniteCfg == null)
-            cfg = getConfiguration(gridName, getTestResources());
-        else
-            cfg = new IgniteConfiguration(igniteCfg); // TODO copy all params, especially cache cfg.
+        IgniteConfiguration cfg = getConfiguration(gridName, getTestResources());
 
         cfg.setNodeId(null);
 
@@ -1201,6 +1206,9 @@ public abstract class GridAbstractTest extends TestCase {
 
         if (isMultiJvm())
             ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(LOCAL_IP_FINDER);
+
+        if (newTestsCfg != null)
+            return newTestsCfg.configurationFactory().getConfiguration(gridName, cfg);
 
         return cfg;
     }
