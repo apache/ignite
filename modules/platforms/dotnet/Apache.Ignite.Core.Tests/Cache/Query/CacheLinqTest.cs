@@ -345,20 +345,24 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         }
 
         [Test]
+        public void TestSubqueryJoin()
+        {
+            var persons = GetPersonOrgCache().ToQueryable();
+
+            var orgs = GetOrgCache().ToQueryable();
+
+            var res = persons.Join(orgs.Where(x => x.Key > 10), p => p.Key, o => o.Key, (p, o) => p).ToList();
+
+            Assert.AreEqual(10, res.Count);
+        }
+
+        [Test]
         public void TestInvalidJoin()
         {
             // Join on non-IQueryable
             Assert.Throws<NotSupportedException>(() =>
                 // ReSharper disable once ReturnValueOfPureMethodIsNotUsed
                 GetPersonOrgCache().ToQueryable().Join(GetOrgCache(), p => p.Key, o => o.Key, (p, o) => p).ToList());
-
-            // Join with subexpression
-            Assert.Throws<NotSupportedException>(() =>
-                // ReSharper disable once ReturnValueOfPureMethodIsNotUsed
-                GetPersonOrgCache()
-                    .ToQueryable()
-                    .Join(GetOrgCache().ToQueryable().Where(x => x.Key > 10), p => p.Key, o => o.Key, (p, o) => p)
-                    .ToList());
         }
 
         [Test]

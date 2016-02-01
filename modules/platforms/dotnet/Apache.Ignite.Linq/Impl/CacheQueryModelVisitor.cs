@@ -39,6 +39,9 @@ namespace Apache.Ignite.Linq.Impl
         /** */
         private readonly List<object> _parameters = new List<object>();
 
+        /** */
+        private int _aliasIndex = 0;
+
         /// <summary>
         /// Generates the query.
         /// </summary>
@@ -110,8 +113,9 @@ namespace Apache.Ignite.Linq.Impl
                 else if (op is FirstResultOperator || op is SingleResultOperator)
                     _builder.Append("top 1 ");
                 else if (op is TakeResultOperator)
-                    _builder.AppendFormat("top {0} ", ((TakeResultOperator)op).Count);
-                else if (op is UnionResultOperator || op is IntersectResultOperator || op is ExceptResultOperator)
+                    _builder.AppendFormat("top {0} ", ((TakeResultOperator) op).Count);
+                else if (op is UnionResultOperator || op is IntersectResultOperator || op is ExceptResultOperator
+                         || op is DefaultIfEmptyResultOperator)
                     // Will be processed later
                     break;
                 else
@@ -212,41 +216,38 @@ namespace Apache.Ignite.Linq.Impl
             base.VisitJoinClause(joinClause, queryModel, index);
 
             var subQuery = joinClause.InnerSequence as SubQueryExpression;
-            var innerExpr = joinClause.InnerSequence as ConstantExpression;
-            bool isOuter = false;
+
+            string tableNameOverride = null;
 
             if (subQuery != null)
             {
-                if (!subQuery.QueryModel.IsIdentityQuery())
+                var isOuter = subQuery.QueryModel.ResultOperators.OfType<DefaultIfEmptyResultOperator>().Any();
+
+                _builder.AppendFormat("{0} join (", isOuter ? "left outer" : "inner");
+
+                VisitQueryModel(subQuery.QueryModel);
+
+                tableNameOverride = GetNextAlias();
+
+                _builder.AppendFormat(") as {0} on (", tableNameOverride);
+            }
+            else
+            {
+                var innerExpr = joinClause.InnerSequence as ConstantExpression;
+
+                if (innerExpr == null)
                     throw new NotSupportedException("Unexpected JOIN inner sequence (subqueries are not supported): " +
                                                     joinClause.InnerSequence);
 
-                innerExpr = subQuery.QueryModel.MainFromClause.FromExpression as ConstantExpression;
+                if (!(innerExpr.Value is ICacheQueryable))
+                    throw new NotSupportedException("Unexpected JOIN inner sequence " +
+                                                    "(only results of cache.ToQueryable() are supported): " +
+                                                    innerExpr.Value);
 
-                foreach (var resultOperator in subQuery.QueryModel.ResultOperators)
-                {
-                    if (resultOperator is DefaultIfEmptyResultOperator)
-                        isOuter = true;
-                    else
-                        throw new NotSupportedException(
-                            "Unexpected JOIN inner sequence (subqueries are not supported): " +
-                            joinClause.InnerSequence);
-                }
+                _builder.AppendFormat("inner join {0} on (", TableNameMapper.GetTableNameWithSchema(joinClause));
             }
 
-            if (innerExpr == null)
-                throw new NotSupportedException("Unexpected JOIN inner sequence (subqueries are not supported): " +
-                                                joinClause.InnerSequence);
-
-            if (!(innerExpr.Value is ICacheQueryable))
-                throw new NotSupportedException("Unexpected JOIN inner sequence " +
-                                                "(only results of cache.ToQueryable() are supported): " +
-                                                innerExpr.Value);
-
-            _builder.AppendFormat("{0} join {1} on (", isOuter ? "left outer" : "inner",
-                TableNameMapper.GetTableNameWithSchema(joinClause));
-
-            BuildJoinCondition(joinClause.InnerKeySelector, joinClause.OuterKeySelector);
+            BuildJoinCondition(joinClause.InnerKeySelector, joinClause.OuterKeySelector, tableNameOverride);
 
             _builder.Append(") ");
         }
@@ -256,15 +257,17 @@ namespace Apache.Ignite.Linq.Impl
         /// </summary>
         /// <param name="innerKey">The inner key selector.</param>
         /// <param name="outerKey">The outer key selector.</param>
-        /// <returns>Condition string.</returns>
-        private void BuildJoinCondition(Expression innerKey, Expression outerKey)
+        /// <param name="innerTableAlias">The inner table alias.</param>
+        /// <exception cref="System.NotSupportedException">
+        /// </exception>
+        private void BuildJoinCondition(Expression innerKey, Expression outerKey, string innerTableAlias)
         {
             var innerNew = innerKey as NewExpression;
             var outerNew = outerKey as NewExpression;
 
             if (innerNew == null && outerNew == null)
             {
-                BuildJoinSubCondition(innerKey, outerKey);
+                BuildJoinSubCondition(innerKey, outerKey, innerTableAlias);
                 return;
             }
 
@@ -280,7 +283,7 @@ namespace Apache.Ignite.Linq.Impl
                     if (i > 0)
                         _builder.Append(" and ");
 
-                    BuildJoinSubCondition(innerNew.Arguments[i], outerNew.Arguments[i]);
+                    BuildJoinSubCondition(innerNew.Arguments[i], outerNew.Arguments[i], innerTableAlias);
                 }
 
                 return;
@@ -296,10 +299,10 @@ namespace Apache.Ignite.Linq.Impl
         /// </summary>
         /// <param name="innerKey">The inner key.</param>
         /// <param name="outerKey">The outer key.</param>
-        /// <returns>Condition string</returns>
-        private void BuildJoinSubCondition(Expression innerKey, Expression outerKey)
+        /// <param name="innerTableAlias">The inner table alias.</param>
+        private void BuildJoinSubCondition(Expression innerKey, Expression outerKey, string innerTableAlias)
         {
-            BuildSqlExpression(innerKey);
+            BuildSqlExpression(innerKey, tableNameOverride: innerTableAlias);
             _builder.Append(" = ");
             BuildSqlExpression(outerKey);
         }
@@ -307,9 +310,18 @@ namespace Apache.Ignite.Linq.Impl
         /// <summary>
         /// Builds the SQL expression.
         /// </summary>
-        private void BuildSqlExpression(Expression expression, bool aggregating = false)
+        private void BuildSqlExpression(Expression expression, bool aggregating = false, 
+            string tableNameOverride = null)
         {
-            new CacheQueryExpressionVisitor(_builder, _parameters, aggregating).Visit(expression);
+            new CacheQueryExpressionVisitor(_builder, _parameters, aggregating, tableNameOverride).Visit(expression);
+        }
+
+        /// <summary>
+        /// Gets the next alias.
+        /// </summary>
+        private string GetNextAlias()
+        {
+            return "tbl" + _aliasIndex++;
         }
     }
 }

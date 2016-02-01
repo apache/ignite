@@ -60,10 +60,13 @@ namespace Apache.Ignite.Linq.Impl
         /** */
         private readonly List<object> _parameters;
 
+        /** */
+        private readonly string _tableNameOverride;
+
         /// <summary>
         /// Initializes a new instance of the <see cref="CacheQueryExpressionVisitor"/> class.
         /// </summary>
-        public CacheQueryExpressionVisitor(StringBuilder builder, List<object> parameters, bool aggregating)
+        public CacheQueryExpressionVisitor(StringBuilder builder, List<object> parameters, bool aggregating, string tableNameOverride)
         {
             Debug.Assert(builder != null);
             Debug.Assert(parameters != null);
@@ -71,6 +74,7 @@ namespace Apache.Ignite.Linq.Impl
             _resultBuilder = builder;
             _parameters = parameters;
             _aggregating = aggregating;
+            _tableNameOverride = tableNameOverride;
         }
 
         /** <inheritdoc /> */
@@ -174,7 +178,7 @@ namespace Apache.Ignite.Linq.Impl
             // In other cases we need both parts of cache entry
             var format = _aggregating ? "{0}.*" : "{0}._key, {0}._val";
 
-            var tableName = TableNameMapper.GetTableNameWithSchema(expression);
+            var tableName = _tableNameOverride ?? TableNameMapper.GetTableNameWithSchema(expression);
 
             _resultBuilder.AppendFormat(format, tableName);
 
@@ -193,7 +197,8 @@ namespace Apache.Ignite.Linq.Impl
                 ? expression.Member.Name
                 : queryFieldAttr.Name;
 
-            _resultBuilder.AppendFormat("{0}.{1}", TableNameMapper.GetTableNameWithSchema(expression), fieldName);
+            _resultBuilder.AppendFormat("{0}.{1}",
+                _tableNameOverride ?? TableNameMapper.GetTableNameWithSchema(expression), fieldName);
 
             return expression;
         }
