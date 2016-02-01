@@ -351,9 +351,12 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
 
             var orgs = GetOrgCache().ToQueryable();
 
-            var res = persons.Join(orgs.Where(x => x.Key > 10), p => p.Key, o => o.Key, (p, o) => p).ToList();
+            var res = persons.Join(orgs.Where(x => x.Key > 10),
+                p => p.Value.OrganizationId,
+                o => o.Value.Id, (p, o) => p)
+                .ToList();
 
-            Assert.AreEqual(10, res.Count);
+            Assert.AreEqual(PersonCount, res.Count);
         }
 
         [Test]

@@ -40,7 +40,7 @@ namespace Apache.Ignite.Linq.Impl
         private readonly List<object> _parameters = new List<object>();
 
         /** */
-        private int _aliasIndex = 0;
+        private int _aliasIndex;
 
         /// <summary>
         /// Generates the query.
