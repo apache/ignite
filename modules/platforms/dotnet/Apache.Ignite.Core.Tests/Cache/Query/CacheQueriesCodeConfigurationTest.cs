@@ -83,6 +83,9 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
             }
         }
 
+        /// <summary>
+        /// Tests the attribute configuration.
+        /// </summary>
         [Test]
         public void TestAttributeConfiguration()
         {
@@ -114,6 +117,9 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
             CollectionAssert.AreEquivalent(new[] {"FullTextField"}, idx[3].Fields.Select(f => f.Name));
         }
 
+        /// <summary>
+        /// Tests the attribute configuration query.
+        /// </summary>
         [Test]
         public void TestAttributeConfigurationQuery()
         {
@@ -161,39 +167,92 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
             }
         }
 
+        /// <summary>
+        /// Test person.
+        /// </summary>
         private class AttributeQueryPerson
         {
+            /// <summary>
+            /// Initializes a new instance of the <see cref="AttributeQueryPerson"/> class.
+            /// </summary>
+            /// <param name="name">The name.</param>
+            /// <param name="age">The age.</param>
             public AttributeQueryPerson(string name, int age)
             {
                 Name = name;
                 Age = age;
             }
 
+            /// <summary>
+            /// Gets or sets the name.
+            /// </summary>
+            /// <value>
+            /// The name.
+            /// </value>
             [QueryTextField]
             public string Name { get; set; }
 
+            /// <summary>
+            /// Gets or sets the age.
+            /// </summary>
+            /// <value>
+            /// The age.
+            /// </value>
             [QuerySqlField]
             public int Age { get; set; }
 
+            /// <summary>
+            /// Gets or sets the address.
+            /// </summary>
+            /// <value>
+            /// The address.
+            /// </value>
             [QuerySqlField]
             public AttributeQueryAddress Address { get; set; }
         }
 
+        /// <summary>
+        /// Address.
+        /// </summary>
         private class AttributeQueryAddress
         {
+            /// <summary>
+            /// Gets or sets the country.
+            /// </summary>
+            /// <value>
+            /// The country.
+            /// </value>
             [QuerySqlField]
             public string Country { get; set; }
 
+            /// <summary>
+            /// Gets or sets the street.
+            /// </summary>
+            /// <value>
+            /// The street.
+            /// </value>
             [QueryTextField]
             public string Street { get; set; }
         }
 
+        /// <summary>
+        /// Query.
+        /// </summary>
         private class RecursiveQuery
         {
+            /// <summary>
+            /// Gets or sets the inner.
+            /// </summary>
+            /// <value>
+            /// The inner.
+            /// </value>
             [QuerySqlField]
             public RecursiveQuery Inner { get; set; }
         }
 
+        /// <summary>
+        /// Attribute test class.
+        /// </summary>
         private class AttributeTest
         {
             [QuerySqlField]
@@ -218,8 +277,17 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
             public string GroupIndex3 { get; set; }
         }
 
+        /// <summary>
+        /// Inner class.
+        /// </summary>
         private class AttributeTestInner
         {
+            /// <summary>
+            /// Gets or sets the foo.
+            /// </summary>
+            /// <value>
+            /// The foo.
+            /// </value>
             [QuerySqlField]
             public string Foo { get; set; }
         }
