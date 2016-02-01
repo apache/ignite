@@ -17,7 +17,7 @@
 
 export default ['javaIdentifier', ['JavaTypes', (JavaTypes) => {
     const link = (scope, el, attrs, [ngModel]) => {
-        if (typeof attrs.validIdentifier === 'undefined' || !attrs.validIdentifier)
+        if (typeof attrs.javaIdentifier === 'undefined' || !attrs.javaIdentifier)
             return;
 
         ngModel.$validators.javaIdentifier = JavaTypes.validIdentifier;

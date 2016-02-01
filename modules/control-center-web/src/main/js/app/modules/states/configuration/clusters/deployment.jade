@@ -93,7 +93,7 @@ form.panel.panel-default(name='#{form}' novalidate)
                             data-ng-disabled='!#{enabled}'
                         )
                 .settings-row
-                    ignite-form-group(ng-init='__ = {};' ng-model='#{exclude}' ng-form='peerClassLoadingLocalClassPathExclude' )
+                    ignite-form-group(ng-init='__ = {};' ng-model='#{exclude}' ng-form='#{form}' )
                         ignite-form-field-label
                             | Local class path exclude
                         ignite-form-group-tooltip
