@@ -128,10 +128,50 @@ namespace Apache.Ignite.Linq.Impl
                                                 "(only results of cache.ToQueryable() are supported): " +
                                                 innerExpr.Value);
 
-            Builder.AppendFormat("{0} join {1} on ({2} = {3}) ", isOuter ? "left outer" : "inner",
+            Builder.AppendFormat("{0} join {1} on ({2}) ", isOuter ? "left outer" : "inner",
                 TableNameMapper.GetTableNameWithSchema(joinClause),
-                GetSqlExpression(joinClause.InnerKeySelector).QueryText,
-                GetSqlExpression(joinClause.OuterKeySelector).QueryText);
+                BuildJoinCondition(joinClause.InnerKeySelector, joinClause.OuterKeySelector));
+        }
+
+        /// <summary>
+        /// Builds the join condition ('x=y AND foo=bar').
+        /// </summary>
+        /// <param name="innerKey">The inner key selector.</param>
+        /// <param name="outerKey">The outer key selector.</param>
+        /// <returns>Condition string.</returns>
+        private static string BuildJoinCondition(Expression innerKey, Expression outerKey)
+        {
+            var innerNew = innerKey as NewExpression;
+            var outerNew = outerKey as NewExpression;
+
+            if (innerNew == null && outerNew == null)
+                return string.Format("{0} = {1}", GetSqlExpression(innerKey), GetSqlExpression(outerKey));
+
+            if (innerNew != null && outerNew != null)
+            {
+                if (innerNew.Constructor != outerNew.Constructor)
+                    throw new NotSupportedException(
+                        string.Format("Unexpected JOIN condition. Multi-key joins should have " +
+                                      "the same initializers on both sides: '{0} = {1}'", innerKey, outerKey));
+
+                var builder = new StringBuilder();
+
+                for (var i = 0; i < innerNew.Arguments.Count; i++)
+                {
+                    if (i > 0)
+                        builder.Append("and ");
+
+                    builder.AppendFormat("{0} = {1} ", 
+                        GetSqlExpression(innerNew.Arguments[i]),
+                        GetSqlExpression(outerNew.Arguments[i]));
+                }
+
+                return builder.ToString();
+            }
+
+            throw new NotSupportedException(
+                string.Format("Unexpected JOIN condition. Multi-key joins should have " +
+                              "anonymous type instances on both sides: '{0} = {1}'", innerKey, outerKey));
         }
 
         /// <summary>
