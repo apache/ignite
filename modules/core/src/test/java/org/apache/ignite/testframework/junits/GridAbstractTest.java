@@ -153,6 +153,12 @@ public abstract class GridAbstractTest extends TestCase {
     /** Starting grid name. */
     protected final static ThreadLocal<String> startingGrid = new ThreadLocal<>();
 
+    /** */
+    private IgniteConfiguration igniteCfg;
+
+    /** */
+    private String testClsNameSuffix;
+
     /**
      *
      */
@@ -196,6 +202,20 @@ public abstract class GridAbstractTest extends TestCase {
         log = new GridTestLog4jLogger();
 
         this.startGrid = startGrid;
+    }
+
+    /**
+     * @param igniteCfg Ignite configuration.
+     */
+    public void igniteConfiguration(IgniteConfiguration igniteCfg) {
+        this.igniteCfg = igniteCfg;
+    }
+
+    /**
+     * @param testClsNameSuffix Test class name suffix.
+     */
+    public void testClassNameSuffix(String testClsNameSuffix) {
+        this.testClsNameSuffix = testClsNameSuffix;
     }
 
     /**
@@ -518,7 +538,8 @@ public abstract class GridAbstractTest extends TestCase {
         }
 
         if (isFirstTest()) {
-            info(">>> Starting test class: " + GridTestUtils.fullSimpleName(getClass()) + " <<<");
+            info(">>> Starting test class: " + GridTestUtils.fullSimpleName(getClass())
+                + (testClsNameSuffix != null ? '-' + testClsNameSuffix : "") + " <<<");
 
             if (startGrid) {
                 IgniteConfiguration cfg = optimize(getConfiguration());
@@ -1125,7 +1146,12 @@ public abstract class GridAbstractTest extends TestCase {
      */
     @SuppressWarnings("deprecation")
     protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = getConfiguration(gridName, getTestResources());
+        IgniteConfiguration cfg;
+
+        if (igniteCfg == null)
+            cfg = getConfiguration(gridName, getTestResources());
+        else
+            cfg = new IgniteConfiguration(igniteCfg); // TODO copy all params, especially cache cfg.
 
         cfg.setNodeId(null);
 
