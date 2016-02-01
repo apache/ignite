@@ -38,7 +38,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         private const string RoleCacheName = "role_cache";
 
         /** */
-        private const int RoleCount = 2;
+        private const int RoleCount = 3;
 
         /** */
         private const int PersonCount = 100;
@@ -83,6 +83,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
 
             roleCache[new RoleKey(1, 101)] = new Role {Name = "Role_1"};
             roleCache[new RoleKey(2, 102)] = new Role {Name = "Role_2"};
+            roleCache[new RoleKey(3, 103)] = new Role {Name = null};
         }
 
         [TestFixtureTearDown]
@@ -113,8 +114,8 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
             Assert.AreEqual(15, cache.Where(x => x.Key < 15).ToArray().Length);
             Assert.AreEqual(15, cache.Where(x => -x.Key > -15).ToArray().Length);
 
-            Assert.AreEqual(1, GetRoleCache().ToQueryable().Where(x => x.Key.Foo > 1).ToArray().Length);
-            Assert.AreEqual(2, GetRoleCache().ToQueryable().Where(x => x.Key.Bar > 1 && x.Value.Name != "11")
+            Assert.AreEqual(1, GetRoleCache().ToQueryable().Where(x => x.Key.Foo < 2).ToArray().Length);
+            Assert.AreEqual(2, GetRoleCache().ToQueryable().Where(x => x.Key.Bar > 2 && x.Value.Name != "11")
                 .ToArray().Length);
         }
 
@@ -294,7 +295,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
             var res = persons.Join(roles, person => person.Key, role => role.Key.Foo, (person, role) => role)
                 .ToArray();
 
-            Assert.AreEqual(2, res.Length);
+            Assert.AreEqual(RoleCount, res.Length);
             Assert.AreEqual(101, res[0].Key.Bar);
         }
 
@@ -310,7 +311,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
                 .Join(organizations, pr => pr.person.Value.OrganizationId, org => org.Value.Id,
                     (pr, org) => new {org, pr.person, pr.role}).ToArray();
 
-            Assert.AreEqual(2, res.Length);
+            Assert.AreEqual(RoleCount, res.Length);
         }
 
         [Test]
@@ -361,6 +362,14 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
             var res = resQuery.ToArray();
 
             Assert.AreEqual(RoleCount, res.Length);
+
+            // TODO: Subqueries?
+        }
+
+        [Test]
+        public void TestNulls()
+        {
+            
         }
 
         [Test]
