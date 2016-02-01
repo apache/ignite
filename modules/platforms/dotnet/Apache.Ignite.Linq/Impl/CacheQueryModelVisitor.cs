@@ -46,9 +46,15 @@ namespace Apache.Ignite.Linq.Impl
         {
             Debug.Assert(queryModel != null);
 
-            var visitor = new CacheQueryModelVisitor();
+            return new CacheQueryModelVisitor().GenerateQuey(queryModel);
+        }
 
-            visitor.VisitQueryModel(queryModel);
+        /// <summary>
+        /// Generates the query.
+        /// </summary>
+        private QueryData GenerateQuey(QueryModel queryModel)
+        {
+            VisitQueryModel(queryModel);
 
             var resultBuilder = new StringBuilder("select ");
             int parenCount = 0;
@@ -78,7 +84,7 @@ namespace Apache.Ignite.Linq.Impl
                 }
                 else if (op is UnionResultOperator)
                 {
-                    var union = (UnionResultOperator)op;
+                    var union = (UnionResultOperator) op;
 
                     resultBuilder.Append("union (");
 
@@ -94,7 +100,7 @@ namespace Apache.Ignite.Linq.Impl
                 else if (op is FirstResultOperator || op is SingleResultOperator)
                     resultBuilder.Append("top 1 ");
                 else if (op is TakeResultOperator)
-                    resultBuilder.AppendFormat("top {0} ", ((TakeResultOperator)op).Count);
+                    resultBuilder.AppendFormat("top {0} ", ((TakeResultOperator) op).Count);
                 else
                     throw new NotSupportedException("Operator is not supported: " + op);
             }
@@ -102,20 +108,10 @@ namespace Apache.Ignite.Linq.Impl
             var selectExp = GetSqlExpression(queryModel.SelectClause.Selector, parenCount > 0);
             resultBuilder.Append(selectExp.QueryText).Append(')', parenCount);
 
-            var queryData = visitor.GetQuery();
-            var queryText = resultBuilder.Append(" ").Append(queryData.QueryText).ToString();
-            var parameters = selectExp.Parameters.Concat(queryData.Parameters).Concat(resultOpParameters);
+            var queryText = resultBuilder.Append(" ").Append(_builder.ToString().TrimEnd()).ToString();
+            var parameters = selectExp.Parameters.Concat(_parameters).Concat(resultOpParameters);
 
             return new QueryData(queryText, parameters.ToArray(), true);
-        }
-
-        /// <summary>
-        /// Gets the query.
-        /// </summary>
-        /// <returns>Query data.</returns>
-        private QueryData GetQuery()
-        {
-            return new QueryData(_builder.ToString().TrimEnd(), _parameters);
         }
 
         /** <inheritdoc /> */
