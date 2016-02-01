@@ -41,6 +41,9 @@ namespace Apache.Ignite.Core.Tests.Cache
         private static int _factoryProp;
 
 
+        /// <summary>
+        /// Fixture set up.
+        /// </summary>
         [TestFixtureSetUp]
         public void FixtureSetUp()
         {
@@ -60,12 +63,18 @@ namespace Apache.Ignite.Core.Tests.Cache
             _ignite = Ignition.Start(cfg);
         }
 
+        /// <summary>
+        /// Fixture tear down.
+        /// </summary>
         [TestFixtureTearDown]
         public void FixtureTearDown()
         {
             Ignition.StopAll(true);
         }
 
+        /// <summary>
+        /// Tests the default configuration.
+        /// </summary>
         [Test]
         public void TestDefaultConfiguration()
         {
@@ -76,6 +85,9 @@ namespace Apache.Ignite.Core.Tests.Cache
             AssertConfigIsDefault(_ignite.GetConfiguration().CacheConfiguration.Single(c => c.Name == null));
         }
 
+        /// <summary>
+        /// Tests the custom configuration.
+        /// </summary>
         [Test]
         public void TestCustomConfiguration()
         {
@@ -86,6 +98,9 @@ namespace Apache.Ignite.Core.Tests.Cache
                 _ignite.GetConfiguration().CacheConfiguration.Single(c => c.Name == CacheName));
         }
 
+        /// <summary>
+        /// Tests the create from configuration.
+        /// </summary>
         [Test]
         public void TestCreateFromConfiguration()
         {
@@ -103,6 +118,9 @@ namespace Apache.Ignite.Core.Tests.Cache
             Assert.AreEqual(1, cache[1].Foo);
         }
 
+        /// <summary>
+        /// Tests the get or create from configuration.
+        /// </summary>
         [Test]
         public void TestGetOrCreateFromConfiguration()
         {
@@ -120,6 +138,9 @@ namespace Apache.Ignite.Core.Tests.Cache
             Assert.AreEqual(1, cache[1].Foo);
         }
 
+        /// <summary>
+        /// Tests the cache store.
+        /// </summary>
         [Test]
         public void TestCacheStore()
         {
@@ -442,11 +463,26 @@ namespace Apache.Ignite.Core.Tests.Cache
             };
         }
 
+        /// <summary>
+        /// Test factory.
+        /// </summary>
         [Serializable]
         private class CacheStoreFactoryTest : IFactory<ICacheStore>
         {
+            /// <summary>
+            /// Gets or sets the test property.
+            /// </summary>
+            /// <value>
+            /// The test property.
+            /// </value>
             public int TestProperty { get; set; }
 
+            /// <summary>
+            /// Creates an instance of the cache store.
+            /// </summary>
+            /// <returns>
+            /// New instance of the cache store.
+            /// </returns>
             public ICacheStore CreateInstance()
             {
                 _factoryProp = TestProperty;
@@ -455,26 +491,38 @@ namespace Apache.Ignite.Core.Tests.Cache
             }
         }
 
+        /// <summary>
+        /// Test store.
+        /// </summary>
         private class CacheStoreTest : CacheStoreAdapter
         {
+            /** <inheritdoc /> */
             public override object Load(object key)
             {
                 return null;
             }
 
+            /** <inheritdoc /> */
             public override void Write(object key, object val)
             {
                 // No-op.
             }
 
+            /** <inheritdoc /> */
             public override void Delete(object key)
             {
                 // No-op.
             }
         }
 
+        /// <summary>
+        /// Test entity.
+        /// </summary>
         private class Entity
         {
+            /// <summary>
+            /// Gets or sets the foo.
+            /// </summary>
             public int Foo { get; set; }
         }
     }
