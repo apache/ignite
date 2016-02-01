@@ -58,7 +58,9 @@ namespace Apache.Ignite.Linq.Impl
                   cacheQueryableType.GetGenericTypeDefinition() == typeof (CacheQueryable<,>)))
                 throw new NotSupportedException("Unexpected cache query type: " + cacheQueryableType);
 
-            return GetTableNameFromEntryValueType(cacheQueryableType.GetGenericArguments()[1]);
+            var tableName = GetTableNameFromEntryValueType(cacheQueryableType.GetGenericArguments()[1]);
+
+            return string.Format("\"{0}\".{1}", cacheQueryable.CacheName, tableName);
         }
 
         public static string GetTableNameWithSchema(QuerySourceReferenceExpression expression)
