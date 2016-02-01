@@ -320,10 +320,8 @@ public class OdbcParser implements GridNioParser {
 
                     writer.writeInt(row.size());
 
-                    for (Object obj : row) {
-                        if (obj != null)
-                            writer.writeObjectDetached(obj);
-                    }
+                    for (Object obj : row)
+                        writer.writeObjectDetached(obj);
                 }
             }
         }
