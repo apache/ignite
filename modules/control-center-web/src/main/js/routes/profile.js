@@ -15,38 +15,25 @@
  * limitations under the License.
  */
 
+var _ = require('lodash');
+
 var router = require('express').Router();
 var db = require('../db');
 
-function _updateUser(res, user, params) {
-    if (params.userName)
-        user.username = params.userName;
+function _updateUser(res, params) {
+    db.Account.update({_id: params._id}, params, {upsert: true}, function (err, user) {
+        // TODO IGNITE-843 Send error to admin.
+        if (err)
+            return res.status(500).send('Failed to update profile!');
 
     if (params.email)
         user.email = params.email;
 
-    if (params.company)
-        user.company = params.company;
-
-    if (params.country)
-        user.country = params.country;
-
-    if (params.token)
-        user.token = params.token;
-
-    if (params.userName || params.email || params.company || params.country || params.token || params.newPassword)
-        user.save(function (err) {
-            if (err)
-                // TODO IGNITE-843 Send error to admin.
-                return res.status(500).send('Failed to update profile!');
-
-            res.json(user);
-        });
-    else
-        res.status(200);
+        res.sendStatus(200);
+    });
 }
 
-function _checkUserEmailAndUpdate(res, user, params) {
+function _checkEmail(res, user, params) {
     if (params.email && user.email != params.email) {
         db.Account.findOne({email: params.email}, function(err, userForEmail) {
             // TODO send error to admin
@@ -56,11 +43,11 @@ function _checkUserEmailAndUpdate(res, user, params) {
             if (userForEmail && userForEmail._id != user._id)
                 return res.status(500).send('User with this e-mail already registered!');
 
-            _updateUser(res, user, params);
+            _updateUser(res, params);
         });
     }
     else
-        _updateUser(res, user, params);
+        _updateUser(res, params);
 }
 
 /**
@@ -70,25 +57,28 @@ router.post('/save', function (req, res) {
     var params = req.body;
 
     db.Account.findById(params._id, function (err, user) {
-        if (err)
         // TODO IGNITE-843 Send error to admin
+        if (err)
             return res.status(500).send('Failed to find user!');
 
-        if (params.newPassword) {
-            var newPassword = params.newPassword;
-
-            if (!newPassword || newPassword.length == 0)
+        if (params.password) {
+            if (_.isEmpty(params.password))
                 return res.status(500).send('Wrong value for new password!');
 
-            user.setPassword(newPassword, function (err, user) {
+            user.setPassword(params.password, function (err, user) {
                 if (err)
                     return res.status(500).send(err.message);
 
-                _checkUserEmailAndUpdate(res, user, params);
+                user.save(function(err) {
+                    if (err)
+                        return res.status(500).send("Failed to change password!");
+
+                    _checkEmail(res, user, params);
+                });
             });
         }
         else
-            _checkUserEmailAndUpdate(res, user, params);
+            _checkEmail(res, user, params);
     });
 });
 
