@@ -1026,6 +1026,9 @@ public abstract class GridAbstractTest extends TestCase {
     protected IgniteConfiguration loadConfiguration(String springCfgPath) throws IgniteCheckedException {
         URL cfgLocation = U.resolveIgniteUrl(springCfgPath);
 
+        if (cfgLocation == null)
+            cfgLocation = U.resolveIgniteUrl(springCfgPath, false);
+
         assert cfgLocation != null;
 
         ApplicationContext springCtx;

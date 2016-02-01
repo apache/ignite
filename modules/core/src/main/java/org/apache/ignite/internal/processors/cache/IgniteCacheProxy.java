@@ -307,7 +307,7 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
 
         try {
             CacheOperationContext prj0 = opCtx != null ? opCtx.withExpiryPolicy(plc) :
-                new CacheOperationContext(false, null, false, plc, false);
+                new CacheOperationContext(false, null, false, plc, false, null);
 
             return new IgniteCacheProxy<>(ctx, delegate, prj0, isAsync(), lock);
         }
@@ -339,7 +339,7 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
                 return this;
 
             CacheOperationContext opCtx0 = opCtx != null ? opCtx.setNoRetries(true) :
-                new CacheOperationContext(false, null, false, null, true);
+                new CacheOperationContext(false, null, false, null, true, null);
 
             return new IgniteCacheProxy<>(ctx,
                 delegate,
@@ -1788,10 +1788,44 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
                     opCtx != null ? opCtx.subjectId() : null,
                     true,
                     opCtx != null ? opCtx.expiry() : null,
-                    opCtx != null && opCtx.noRetries());
+                    opCtx != null && opCtx.noRetries(),
+                    opCtx != null ? opCtx.dataCenterId() : null);
 
             return new IgniteCacheProxy<>((GridCacheContext<K1, V1>)ctx,
                 (GridCacheAdapter<K1, V1>)delegate,
+                opCtx0,
+                isAsync(),
+                lock);
+        }
+        finally {
+            onLeave(gate, prev);
+        }
+    }
+
+    /**
+     * @return Projection for data center id.
+     */
+    @SuppressWarnings("unchecked")
+    public IgniteCache<K, V> withDataCenterId(byte dataCenterId) {
+        CacheOperationContext prev = onEnter(gate, opCtx);
+
+        try {
+            Byte prevDataCenterId = opCtx != null ? opCtx.dataCenterId() : null;
+
+            if (prevDataCenterId != null && dataCenterId == prevDataCenterId)
+                return this;
+
+            CacheOperationContext opCtx0 =
+                new CacheOperationContext(
+                    opCtx != null && opCtx.skipStore(),
+                    opCtx != null ? opCtx.subjectId() : null,
+                    opCtx != null && opCtx.isKeepBinary(),
+                    opCtx != null ? opCtx.expiry() : null,
+                    opCtx != null && opCtx.noRetries(),
+                    dataCenterId);
+
+            return new IgniteCacheProxy<>(ctx,
+                delegate,
                 opCtx0,
                 isAsync(),
                 lock);
@@ -1820,7 +1854,8 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
                     opCtx != null ? opCtx.subjectId() : null,
                     opCtx != null && opCtx.isKeepBinary(),
                     opCtx != null ? opCtx.expiry() : null,
-                    opCtx != null && opCtx.noRetries());
+                    opCtx != null && opCtx.noRetries(),
+                    opCtx != null ? opCtx.dataCenterId() : null);
 
             return new IgniteCacheProxy<>(ctx,
                 delegate,
