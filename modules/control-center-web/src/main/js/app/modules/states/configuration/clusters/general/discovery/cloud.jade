@@ -17,7 +17,7 @@
 - var model = 'backupItem.discovery.Cloud';
 - var regions = model + '.regions';
 - var zones = model + '.zones';
-- var form = 'general'
+- var form = 'generalDiscoveryCloudRegions'
 
 div
     .details-row
@@ -70,7 +70,7 @@ div
                 data-ng-required='true'
             )
     .details-row(ng-if='true')
-        ignite-form-group(ng-init='__ = {};' ng-model='#{regions}' name='generalDiscoveryCloudRegions')
+        ignite-form-group(ng-init='__ = {};' ng-model='#{regions}' ng-form='generalDiscoveryCloudRegions')
             ignite-form-field-label
                 | Regions
             ignite-form-group-tooltip
@@ -153,7 +153,7 @@ div
             .group-content-empty(ng-if='!(#{regions}.length) && !__.add.length')
                 | Not defined
     .details-row(ng-if='true')
-         ignite-form-group(ng-init='__ = {};' ng-model='#{zones}' name='generalDiscoveryCloudZones')
+         ignite-form-group(ng-init='__ = {};' ng-model='#{zones}' ng-form='generalDiscoveryCloudZones')
             ignite-form-field-label
                 | Zones
             ignite-form-group-tooltip

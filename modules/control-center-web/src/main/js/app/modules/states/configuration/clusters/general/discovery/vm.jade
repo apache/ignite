@@ -16,10 +16,10 @@
 
 - var model = 'backupItem.discovery.Vm';
 - var addresses = model + '.addresses';
-- var form = 'general';
+- var form = 'discoveryVmAddresses';
 
 div
-    ignite-form-group(ng-init='__ = {};' ng-model='#{addresses}' name='discoveryVmAddresses')
+    ignite-form-group(ng-init='__ = {};' ng-model='#{addresses}' ng-form='discoveryVmAddresses')
         ignite-form-field-label
             | Addresses
         ignite-form-group-tooltip

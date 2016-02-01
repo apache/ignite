@@ -19,14 +19,13 @@ import template from './text.jade!';
 import './text.css!';
 
 export default ['igniteFormFieldInputText', ['IgniteFormGUID', (guid) => {
-    const link = (scope, el, attrs, [form, label]) => {
+    const link = (scope, el, attrs, [ngModel, form, label]) => {
         const {id, name} = scope;
-        const field = form[name];
 
-        scope.form = form;
-        scope.field = field;
         label.for = scope.id = id || guid();
 
+        scope.label = label;
+        scope.ngModel = ngModel;
         scope.$watch('required', (required) => {
             label.required = required || false;
         });
@@ -43,6 +42,24 @@ export default ['igniteFormFieldInputText', ['IgniteFormGUID', (guid) => {
 
         scope.$watch(() => form.$pristine, setAsDefault);
         scope.$watch('value', setAsDefault);
+
+        scope.ngChange = function() {
+            ngModel.$setViewValue(scope.value);
+
+            if (JSON.stringify(scope.value) !== JSON.stringify(form.$defaults[name]))
+                ngModel.$setDirty();
+            else
+                ngModel.$setPristine();
+
+            if (ngModel.$valid)
+                el.find('input').addClass('ng-valid').removeClass('ng-invalid');
+            else
+                el.find('input').removeClass('ng-valid').addClass('ng-invalid');
+        };
+
+        ngModel.$render = function() {
+            scope.value = ngModel.$modelValue;
+        };
     };
 
     return {
@@ -51,18 +68,10 @@ export default ['igniteFormFieldInputText', ['IgniteFormGUID', (guid) => {
             id: '@',
             name: '@',
             placeholder: '@',
-            unique: '=igniteUnique',
             required: '=ngRequired',
             disabled: '=ngDisabled',
 
-            value: '=ngModel',
             ngBlur: '&',
-
-            javaKeywords: '=',
-            javaIdentifier: '=',
-            javaPackageSpecified: '=',
-            javaBuiltInClass: '=',
-            javaPackageName: '=',
 
             autofocus: '=igniteFormFieldInputAutofocus'
         },
@@ -70,6 +79,6 @@ export default ['igniteFormFieldInputText', ['IgniteFormGUID', (guid) => {
         template,
         replace: true,
         transclude: true,
-        require: ['^form', '?^igniteFormField']
+        require: ['ngModel', '^form', '?^igniteFormField']
     };
 }]];

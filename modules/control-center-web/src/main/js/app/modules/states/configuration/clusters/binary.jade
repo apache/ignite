@@ -51,7 +51,7 @@ form.panel.panel-default(name='binary' novalidate)
                             data-ng-model='#{model}.serializer'
                         )
                 .settings-row
-                    ignite-form-group(name='typeConfigurations' ng-model='#{types}')
+                    ignite-form-group(ng-form='typeConfigurations' ng-model='#{types}')
                         ignite-form-field-label
                             | Type configurations
                         ignite-form-group-tooltip

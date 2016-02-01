@@ -17,23 +17,21 @@
 .input-tip
     input.form-control(
         id='{{ id }}'
-        name='{{ name }}' 
         placeholder='{{ placeholder }}' 
         type='text' 
 
         data-ng-model='value'
+        data-ng-blur='ngBlur()'
+        data-ng-change='ngChange()'
         data-ng-required='required || false'
         data-ng-disabled='disabled || false'
-        data-ng-blur='ngBlur()'
 
-        data-java-keywords='{{ javaKeywords }}'
-        data-java-identifier='{{ javaIdentifier }}'
-        data-java-package-specified='{{ javaPackageSpecified }}'
-        data-java-built-in-class='{{ javaBuiltInClass }}'
-        data-java-package-name='{{ javaPackageName }}'
-
-        data-ignite-unique='unique'
         data-ignite-form-field-input-autofocus='autofocus || false'
+    )
+
+    i.fa.fa-exclamation-triangle.form-control-feedback(
+        ng-if='!ngModel.$pristine && ngModel.$error.required'
+        bs-tooltip='"{{ label.name }} could not be empty!"'
     )
 
     span(ng-transclude='')

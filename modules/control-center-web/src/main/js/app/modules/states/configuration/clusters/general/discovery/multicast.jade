@@ -16,7 +16,7 @@
 
 - var model = 'backupItem.discovery.Multicast';
 - var addresses = model + '.addresses';
-- var form = 'general';
+- var form = 'discoveryMulticastAddresses';
 
 div
     .details-row
@@ -83,7 +83,7 @@ div
                 data-ng-model='#{model}.localAddress'
             )
     .details-row
-        ignite-form-group(ng-init='__ = {};' ng-model='#{addresses}' name='discoveryMulticastAddresses')
+        ignite-form-group(ng-init='__ = {};' ng-model='#{addresses}' ng-form='discoveryMulticastAddresses')
             ignite-form-field-label
                 | Addresses
             ignite-form-group-tooltip

@@ -18,7 +18,7 @@
 - var enabled = 'backupItem.sslEnabled'
 - var model = cluster + '.sslContextFactory'
 - var trust = model + '.trustManagers'
-- var form = 'sslContextFactory'
+- var form = 'trustManagers'
 
 mixin feedback(field, error, message)
     i.fa.fa-exclamation-triangle.form-control-feedback(
@@ -111,7 +111,7 @@ form.panel.panel-default(name='#{form}' novalidate)
                         )
 
                 .settings-row
-                    ignite-form-group(ng-init='__ = {};' name='trustManagers' ng-model='#{trust}')
+                    ignite-form-group(ng-init='__ = {};' ng-form='trustManagers' ng-model='#{trust}')
                         ignite-form-field-label
                             | Trust managers
                         ignite-form-group-tooltip
