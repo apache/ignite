@@ -18,6 +18,8 @@
 namespace Apache.Ignite.Core.Discovery.Tcp
 {
     using System.Diagnostics.CodeAnalysis;
+    using Apache.Ignite.Core.Discovery.Tcp.Multicast;
+    using Apache.Ignite.Core.Discovery.Tcp.Static;
 
     /// <summary>
     /// Represents an IP finder for <see cref="TcpDiscoverySpi"/>.

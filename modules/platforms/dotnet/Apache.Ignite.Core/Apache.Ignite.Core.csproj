@@ -146,14 +146,14 @@
     <Compile Include="Discovery\Tcp\TcpDiscoverySpi.cs" />
     <Compile Include="Cache\Configuration\QueryIndexField.cs" />
     <Compile Include="Discovery\IDiscoverySpi.cs" />
-    <Compile Include="Discovery\Tcp\TcpDiscoveryIpFinder.cs" />
-    <Compile Include="Discovery\Tcp\TcpDiscoveryMulticastIpFinder.cs" />
+    <Compile Include="Discovery\Tcp\TcpDiscoveryIpFinderBase.cs" />
+    <Compile Include="Discovery\Tcp\Multicast\TcpDiscoveryMulticastIpFinder.cs" />
     <Compile Include="Cache\Configuration\QueryEntity.cs" />
     <Compile Include="Cache\Configuration\QueryField.cs" />
     <Compile Include="Cache\Configuration\QueryIndex.cs" />
     <Compile Include="Cache\Configuration\QueryIndexType.cs" />
     <Compile Include="Cache\Configuration\QuerySqlFieldAttribute.cs" />
-    <Compile Include="Discovery\Tcp\TcpDiscoveryStaticIpFinder.cs" />
+    <Compile Include="Discovery\Tcp\Static\TcpDiscoveryStaticIpFinder.cs" />
     <Compile Include="Compute\Package-Info.cs" />
     <Compile Include="Datastream\IDataStreamer.cs" />
     <Compile Include="Datastream\IStreamReceiver.cs" />

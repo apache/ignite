@@ -70,7 +70,7 @@ namespace Apache.Ignite.Core.Discovery.Tcp
         /// <param name="reader">The reader.</param>
         internal TcpDiscoverySpi(BinaryReader reader)
         {
-            IpFinder = reader.ReadBoolean() ? TcpDiscoveryIpFinder.ReadInstance(reader) : null;
+            IpFinder = reader.ReadBoolean() ? TcpDiscoveryIpFinderBase.ReadInstance(reader) : null;
 
             SocketTimeout = reader.ReadLongAsTimespan();
             AckTimeout = reader.ReadLongAsTimespan();
@@ -124,7 +124,7 @@ namespace Apache.Ignite.Core.Discovery.Tcp
             {
                 writer.WriteBoolean(true);
 
-                var finder = ipFinder as TcpDiscoveryIpFinder;
+                var finder = ipFinder as TcpDiscoveryIpFinderBase;
 
                 if (finder == null)
                     throw new InvalidOperationException("Unsupported IP finder: " + ipFinder.GetType());

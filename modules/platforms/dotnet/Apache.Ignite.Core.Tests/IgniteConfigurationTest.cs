@@ -26,6 +26,8 @@ namespace Apache.Ignite.Core.Tests
     using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Discovery;
     using Apache.Ignite.Core.Discovery.Tcp;
+    using Apache.Ignite.Core.Discovery.Tcp.Multicast;
+    using Apache.Ignite.Core.Discovery.Tcp.Static;
     using Apache.Ignite.Core.Events;
     using NUnit.Framework;
 
@@ -203,7 +205,7 @@ namespace Apache.Ignite.Core.Tests
                 new TcpDiscoveryMulticastIpFinder {MulticastGroup = "228.111.111.223", MulticastPort = 54522});
         }
 
-        private static void TestIpFinders(TcpDiscoveryIpFinder ipFinder, TcpDiscoveryIpFinder ipFinder2)
+        private static void TestIpFinders(TcpDiscoveryIpFinderBase ipFinder, TcpDiscoveryIpFinderBase ipFinder2)
         {
             var cfg = new IgniteConfiguration
             {
