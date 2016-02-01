@@ -1977,8 +1977,14 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
         GridCacheContext cacheCtx,
         Map<KeyCacheObject, GridCacheDrInfo> drMap
     ) {
+        Map<KeyCacheObject, Object> map = F.viewReadOnly(drMap, new IgniteClosure<GridCacheDrInfo, Object>() {
+            @Override public Object apply(GridCacheDrInfo val) {
+                return val.value();
+            }
+        });
+
         return this.<Object, Object>putAllAsync0(cacheCtx,
-            null,
+            map,
             null,
             null,
             drMap,
@@ -2055,7 +2061,8 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
         final GridCacheReturn ret,
         boolean skipStore,
         final boolean singleRmv,
-        boolean keepBinary) {
+        boolean keepBinary,
+        Byte dataCenterId) {
         try {
             addActiveCache(cacheCtx);
 
@@ -2066,6 +2073,8 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
             if (entryProcessor != null)
                 transform = true;
 
+            GridCacheVersion drVer = dataCenterId != null ? cctx.versions().next(dataCenterId) : null;
+
             boolean loadMissed = enlistWriteEntry(cacheCtx,
                 cacheKey,
                 val,
@@ -2075,7 +2084,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                 retval,
                 lockOnly,
                 filter,
-                /*drVer*/null,
+                /*drVer*/drVer,
                 /*drTtl*/-1L,
                 /*drExpireTime*/-1L,
                 ret,
@@ -2125,6 +2134,8 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
      * @param drRmvMap DR remove map (optional).
      * @param skipStore Skip store flag.
      * @param singleRmv {@code True} for single key remove operation ({@link Cache#remove(Object)}.
+     * @param keepBinary Keep binary flag.
+     * @param dataCenterId Optional data center ID.
      * @return Future for missing values loading.
      */
     private <K, V> IgniteInternalFuture<Void> enlistWrite(
@@ -2143,7 +2154,8 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
         @Nullable Map<KeyCacheObject, GridCacheVersion> drRmvMap,
         boolean skipStore,
         final boolean singleRmv,
-        final boolean keepBinary
+        final boolean keepBinary,
+        Byte dataCenterId
     ) {
         assert retval || invokeMap == null;
 
@@ -2194,6 +2206,11 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                     assert drRmvMap.get(key) != null;
 
                     drVer = drRmvMap.get(key);
+                    drTtl = -1L;
+                    drExpireTime = -1L;
+                }
+                else if (dataCenterId != null) {
+                    drVer = cctx.versions().next(dataCenterId);
                     drTtl = -1L;
                     drExpireTime = -1L;
                 }
@@ -2938,6 +2955,8 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
 
             CacheOperationContext opCtx = cacheCtx.operationContextPerCall();
 
+            final Byte dataCenterId = opCtx != null ? opCtx.dataCenterId() : null;
+
             KeyCacheObject cacheKey = cacheCtx.toCacheKeyObject(key);
 
             boolean keepBinary = opCtx != null && opCtx.isKeepBinary();
@@ -2955,7 +2974,8 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                 ret,
                 opCtx != null && opCtx.skipStore(),
                 /*singleRmv*/false,
-                keepBinary);
+                keepBinary,
+                dataCenterId);
 
             if (pessimistic()) {
                 assert loadFut == null || loadFut.isDone() : loadFut;
@@ -3053,7 +3073,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
         @Nullable Map<? extends K, ? extends V> map,
         @Nullable Map<? extends K, ? extends EntryProcessor<K, V, Object>> invokeMap,
         @Nullable final Object[] invokeArgs,
-        @Nullable final Map<KeyCacheObject, GridCacheDrInfo> drMap,
+        @Nullable Map<KeyCacheObject, GridCacheDrInfo> drMap,
         final boolean retval,
         @Nullable final CacheEntryPredicate[] filter
     ) {
@@ -3066,25 +3086,22 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
             return new GridFinishedFuture(e);
         }
 
+        final CacheOperationContext opCtx = cacheCtx.operationContextPerCall();
+
+        final Byte dataCenterId;
+
+        if (opCtx != null && opCtx.hasDataCenterId()) {
+            assert drMap == null : drMap;
+            assert map != null || invokeMap != null;
+
+            dataCenterId = opCtx.dataCenterId();
+        }
+        else
+            dataCenterId = null;
+
         // Cached entry may be passed only from entry wrapper.
-        final Map<?, ?> map0;
-        final Map<?, EntryProcessor<K, V, Object>> invokeMap0;
-
-        if (drMap != null) {
-            assert map == null;
-
-            map0 = F.viewReadOnly(drMap, new IgniteClosure<GridCacheDrInfo, Object>() {
-                @Override public Object apply(GridCacheDrInfo val) {
-                    return val.value();
-                }
-            });
-
-            invokeMap0 = null;
-        }
-        else {
-            map0 = map;
-            invokeMap0 = (Map<K, EntryProcessor<K, V, Object>>)invokeMap;
-        }
+        final Map<?, ?> map0 = map;
+        final Map<?, EntryProcessor<K, V, Object>> invokeMap0 = (Map<K, EntryProcessor<K, V, Object>>)invokeMap;
 
         if (log.isDebugEnabled())
             log.debug("Called putAllAsync(...) [tx=" + this + ", map=" + map0 + ", retval=" + retval + "]");
@@ -3110,8 +3127,6 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
 
             final Collection<KeyCacheObject> enlisted = new ArrayList<>(keySet.size());
 
-            CacheOperationContext opCtx = cacheCtx.operationContextPerCall();
-
             final boolean keepBinary = opCtx != null && opCtx.isKeepBinary();
 
             final IgniteInternalFuture<Void> loadFut = enlistWrite(
@@ -3130,7 +3145,8 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                 null,
                 opCtx != null && opCtx.skipStore(),
                 false,
-                keepBinary);
+                keepBinary,
+                dataCenterId);
 
             if (pessimistic()) {
                 assert loadFut == null || loadFut.isDone() : loadFut;
@@ -3334,6 +3350,18 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
         else
             keys0 = keys;
 
+        CacheOperationContext opCtx = cacheCtx.operationContextPerCall();
+
+        final Byte dataCenterId;
+
+        if (opCtx != null && opCtx.hasDataCenterId()) {
+            assert drMap == null : drMap;
+
+            dataCenterId = opCtx.dataCenterId();
+        }
+        else
+            dataCenterId = null;
+
         assert keys0 != null;
 
         if (log.isDebugEnabled()) {
@@ -3367,8 +3395,6 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
 
         final Collection<KeyCacheObject> enlisted = new ArrayList<>();
 
-        CacheOperationContext opCtx = cacheCtx.operationContextPerCall();
-
         ExpiryPolicy plc;
 
         if (!F.isEmpty(filter))
@@ -3394,7 +3420,8 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
             drMap,
             opCtx != null && opCtx.skipStore(),
             singleRmv,
-            keepBinary
+            keepBinary,
+            dataCenterId
         );
 
         if (log.isDebugEnabled())

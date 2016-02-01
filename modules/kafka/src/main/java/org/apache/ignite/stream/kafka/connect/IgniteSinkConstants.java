@@ -15,28 +15,24 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.stream.kafka;
-
-import junit.framework.TestSuite;
-import org.apache.ignite.stream.kafka.connect.IgniteSinkConnectorTest;
+package org.apache.ignite.stream.kafka.connect;
 
 /**
- * Apache Kafka streamers tests.
+ * Sink configuration strings.
  */
-public class IgniteKafkaStreamerSelfTestSuite extends TestSuite {
-    /**
-     * @return Test suite.
-     * @throws Exception Thrown in case of the failure.
-     */
-    public static TestSuite suite() throws Exception {
-        TestSuite suite = new TestSuite("Apache Kafka streamer Test Suite");
+public class IgniteSinkConstants {
+    /** Ignite configuration file path. */
+    public static final String CACHE_CFG_PATH = "igniteCfg";
 
-        // Kafka streamer.
-        suite.addTest(new TestSuite(KafkaIgniteStreamerSelfTest.class));
+    /** Cache name. */
+    public static final String CACHE_NAME = "cacheName";
 
-        // Kafka streamer via Connect API.
-        suite.addTest(new TestSuite(IgniteSinkConnectorTest.class));
+    /** Flag to enable overwriting existing values in cache. */
+    public static final String CACHE_ALLOW_OVERWRITE = "cacheAllowOverwrite";
 
-        return suite;
-    }
+    /** Size of per-node buffer before data is sent to remote node. */
+    public static final String CACHE_PER_NODE_DATA_SIZE = "cachePerNodeDataSize";
+
+    /** Maximum number of parallel stream operations per node. */
+    public static final String CACHE_PER_NODE_PAR_OPS = "cachePerNodeParOps";
 }

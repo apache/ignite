@@ -1,3 +1,4 @@
+#!/bin/bash
 #
 # Licensed to the Apache Software Foundation (ASF) under one or more
 # contributor license agreements.  See the NOTICE file distributed with
@@ -15,26 +16,35 @@
 # limitations under the License.
 #
 
-# Start from a Java image.
-FROM java:7
+if [ ! -z "$OPTION_LIBS" ]; then
+  IFS=, LIBS_LIST=("$OPTION_LIBS")
 
-# Ignite version
-ENV IGNITE_VERSION 1.5.0.final
+  for lib in ${LIBS_LIST[@]}; do
+    cp -r $IGNITE_HOME/libs/optional/"$lib"/* \
+        $IGNITE_HOME/libs/
+  done
+fi
 
-WORKDIR /opt/ignite
+if [ ! -z "$EXTERNAL_LIBS" ]; then
+  IFS=, LIBS_LIST=("$EXTERNAL_LIBS")
 
-ADD http://www.us.apache.org/dist/ignite/1.5.0.final/apache-ignite-fabric-1.5.0.final-bin.zip /opt/ignite/ignite.zip
+  for lib in ${LIBS_LIST[@]}; do
+    echo $lib >> temp
+  done
 
-# Ignite home
-ENV IGNITE_HOME /opt/ignite/apache-ignite-fabric-1.5.0.final-bin
+  wget -i temp -P $IGNITE_HOME/libs
 
-RUN unzip ignite.zip
+  rm temp
+fi
 
-RUN rm ignite.zip
+QUIET=""
 
-# Copy sh files and set permission
-ADD ./run.sh $IGNITE_HOME/
+if [ "$IGNITE_QUIET" = "false" ]; then
+  QUIET="-v"
+fi
 
-RUN chmod +x $IGNITE_HOME/run.sh
-
-CMD $IGNITE_HOME/run.sh
+if [ -z $CONFIG_URI ]; then
+  $IGNITE_HOME/bin/ignite.sh $QUIET
+else
+  $IGNITE_HOME/bin/ignite.sh $QUIET $CONFIG_URI
+fi
