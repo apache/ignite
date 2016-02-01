@@ -159,7 +159,7 @@ namespace Apache.Ignite.Linq.Impl
                 for (var i = 0; i < innerNew.Arguments.Count; i++)
                 {
                     if (i > 0)
-                        builder.Append("and ");
+                        builder.Append(" and ");
 
                     builder.Append(BuildJoinSubCondition(innerNew.Arguments[i], outerNew.Arguments[i]));
                 }
