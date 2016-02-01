@@ -50,6 +50,7 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.Ignition;
+import org.apache.ignite.binary.BinaryBasicNameMapper;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.BinaryConfiguration;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -104,6 +105,7 @@ import org.springframework.context.support.FileSystemXmlApplicationContext;
 import static org.apache.ignite.cache.CacheAtomicWriteOrderMode.PRIMARY;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
+import static org.apache.ignite.testframework.config.GridTestProperties.BINARY_MARSHALLER_USE_SIMPLE_NAME_MAPPER;
 
 /**
  * Common abstract test for Ignite tests.
@@ -732,7 +734,14 @@ public abstract class GridAbstractTest extends TestCase {
             startingGrid.set(gridName);
 
             try {
-                return IgnitionEx.start(optimize(getConfiguration(gridName)), ctx);
+                Ignite node = IgnitionEx.start(optimize(getConfiguration(gridName)), ctx);
+
+                IgniteConfiguration cfg = node.configuration();
+
+                log.info("Node started with the following configuration [id=" + node.cluster().localNode().id()
+                    + ", marshaller=" + cfg.getMarshaller() + ", binaryCfg=" + cfg.getBinaryConfiguration() + "]");
+
+                return node;
             }
             finally {
                 startingGrid.set(null);
@@ -1141,6 +1150,18 @@ public abstract class GridAbstractTest extends TestCase {
 
                 bCfg.setCompactFooter(false);
             }
+        }
+
+        if (Boolean.valueOf(GridTestProperties.getProperty(BINARY_MARSHALLER_USE_SIMPLE_NAME_MAPPER))) {
+            BinaryConfiguration bCfg = cfg.getBinaryConfiguration();
+
+            if (bCfg == null) {
+                bCfg = new BinaryConfiguration();
+
+                cfg.setBinaryConfiguration(bCfg);
+            }
+
+            bCfg.setNameMapper(new BinaryBasicNameMapper(true));
         }
 
         if (gridName != null && gridName.matches(".*\\d")) {
