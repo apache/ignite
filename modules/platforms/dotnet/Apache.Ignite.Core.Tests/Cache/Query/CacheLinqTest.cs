@@ -369,7 +369,11 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         [Test]
         public void TestNulls()
         {
-            
+            var roles = GetRoleCache().ToQueryable();
+
+            var nullNameRole = roles.Single(x => x.Value.Name == null);
+
+            Assert.AreEqual(null, nullNameRole.Value.Name);
         }
 
         [Test]
