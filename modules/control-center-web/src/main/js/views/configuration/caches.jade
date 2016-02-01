@@ -15,15 +15,12 @@
     limitations under the License.
 
 include ../includes/controls
+include ../includes/infos
 
 .docs-header
     h1 Create and Configure Ignite Caches
 .docs-body(ng-controller='cachesController')
-    ignite-information(data-title='On this screen you can')
-        ul
-            li Configure caches
-            li Associate domain model with caches
-            li Preview XML and Java code for cache configuration
+    +ignite-caches-information
     div(dw-loading='loadingCachesScreen' dw-loading-options='{text: "Loading caches screen...", className: "page-loading-overlay"}')
         div(ng-show='ui.ready')
             hr

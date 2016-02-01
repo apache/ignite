@@ -15,6 +15,7 @@
     limitations under the License.
 
 include ../includes/controls
+include ../includes/infos
 
 mixin hard-link(ref, txt)
     a(style='color:#ec1c24' href=ref target='_blank') #{txt}
@@ -25,13 +26,7 @@ mixin ignite-form-field-tooltip(message)
 .docs-header
     h1 Configurations Summary
 .docs-body
-    ignite-information(data-title='On this screen you can preview')
-        ul
-            li XML configurations for server and client nodes
-            li Java classes with server and client nodes configuration from code
-            li POJO classes generated for configured domain model
-            li Maven pom.xml for generated project
-            li Dockerfile for server node
+    +ignite-summary-information
     ignite-loading
         hr
         .padding-dflt(ng-if='!clusters || clusters.length == 0')

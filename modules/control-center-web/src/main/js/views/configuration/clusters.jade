@@ -15,15 +15,12 @@
     limitations under the License.
 
 include ../includes/controls
+include ../includes/infos
 
 .docs-header
     h1 Create and Configure Ignite Clusters
 .docs-body(ng-controller='clustersController')
-    ignite-information(data-title='On this screen you can')
-        ul
-            li Configure clusters
-            li Associate caches with clusters
-            li Preview XML and Java code for cluster configuration
+    +ignite-clusters-information
     div(dw-loading='loadingClustersScreen' dw-loading-options='{text: "Loading clusters screen...", className: "page-loading-overlay"}')
         div(ng-show='ui.ready')
             hr

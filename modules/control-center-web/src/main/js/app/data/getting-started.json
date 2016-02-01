@@ -1,5 +1,11 @@
 [
     {
+        "title": "What is Apache Ignite",
+        "message": [
+            "Apache Ignite is a ..."
+        ]
+    },
+    {
         "title": "What is Apache Ignite Web Console",
         "message": [
             "Apache Ignite Web Console is a powerful tool for configuration of your cluster."
@@ -16,5 +22,35 @@
             "<li>See and download generated project for configured cluster on Summary screen</li>",
             "</ul>"
         ]
-    }
+    },
+    {
+        "title": "Cluster screen",
+        "message": [
+            "TODO"
+        ]
+    },
+    {
+        "title": "Domain model screen",
+        "message": [
+            "TODO"
+        ]
+    },
+    {
+        "title": "Caches screen",
+        "message": [
+            "TODO"
+        ]
+    },
+    {
+        "title": "IGFS screen",
+        "message": [
+          "TODO"
+        ]
+    },
+    {
+      "title": "Summary screen",
+      "message": [
+        "TODO"
+      ]
+  }
 ]
