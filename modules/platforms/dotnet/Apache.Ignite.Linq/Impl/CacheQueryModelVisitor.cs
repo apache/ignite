@@ -46,8 +46,23 @@ namespace Apache.Ignite.Linq.Impl
             VisitQueryModel(queryModel);
 
             var resultBuilder = new StringBuilder("select ");  // TODO: Can we avoid extra builder?
-            int parenCount = 0;
             var resultOpParameters = new List<object>();
+
+            var parenCount = ProcessResultOperators(queryModel, resultBuilder, resultOpParameters);
+
+            var selectExp = GetSqlExpression(queryModel.SelectClause.Selector, parenCount > 0);
+            resultBuilder.Append(selectExp.QueryText).Append(')', parenCount);
+
+            var queryText = resultBuilder.Append(" ").Append(_builder.ToString().TrimEnd()).ToString();
+            var parameters = selectExp.Parameters.Concat(_parameters).Concat(resultOpParameters);
+
+            return new QueryData(queryText, parameters.ToArray(), true);
+        }
+
+        private static int ProcessResultOperators(QueryModel queryModel, StringBuilder resultBuilder, 
+            List<object> resultOpParameters)
+        {
+            int parenCount = 0;
 
             foreach (var op in queryModel.ResultOperators.Reverse())
             {
@@ -81,8 +96,8 @@ namespace Apache.Ignite.Linq.Impl
                     var unionSql = GetSqlExpression(union.Source2);
 
                     resultOpParameters.AddRange(unionSql.Parameters);
-                    _builder.Append(unionSql.QueryText);
-                    _builder.Append(") ");
+                    resultBuilder.Append(unionSql.QueryText);
+                    resultBuilder.Append(") ");
                 }
                 else if (op is DistinctResultOperator)
                     resultBuilder.Append("distinct ");
@@ -93,14 +108,7 @@ namespace Apache.Ignite.Linq.Impl
                 else
                     throw new NotSupportedException("Operator is not supported: " + op);
             }
-
-            var selectExp = GetSqlExpression(queryModel.SelectClause.Selector, parenCount > 0);
-            resultBuilder.Append(selectExp.QueryText).Append(')', parenCount);
-
-            var queryText = resultBuilder.Append(" ").Append(_builder.ToString().TrimEnd()).ToString();
-            var parameters = selectExp.Parameters.Concat(_parameters).Concat(resultOpParameters);
-
-            return new QueryData(queryText, parameters.ToArray(), true);
+            return parenCount;
         }
 
         /** <inheritdoc /> */
