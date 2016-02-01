@@ -145,7 +145,9 @@ namespace Apache.Ignite.Linq.Impl
             var outerNew = outerKey as NewExpression;
 
             if (innerNew == null && outerNew == null)
-                return string.Format("{0} = {1}", GetSqlExpression(innerKey), GetSqlExpression(outerKey));
+                return string.Format("{0} = {1}", 
+                    GetSqlExpression(innerKey).QueryText,
+                    GetSqlExpression(outerKey).QueryText);
 
             if (innerNew != null && outerNew != null)
             {
@@ -162,8 +164,8 @@ namespace Apache.Ignite.Linq.Impl
                         builder.Append("and ");
 
                     builder.AppendFormat("{0} = {1} ", 
-                        GetSqlExpression(innerNew.Arguments[i]),
-                        GetSqlExpression(outerNew.Arguments[i]));
+                        GetSqlExpression(innerNew.Arguments[i]).QueryText,
+                        GetSqlExpression(outerNew.Arguments[i]).QueryText);
                 }
 
                 return builder.ToString();
