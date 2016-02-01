@@ -79,6 +79,14 @@ namespace Apache.Ignite.Linq.Impl
         }
 
         /** <inheritdoc /> */
+        public override void VisitAdditionalFromClause(AdditionalFromClause fromClause, QueryModel queryModel, int index)
+        {
+            base.VisitAdditionalFromClause(fromClause, queryModel, index);
+
+            Builder.AppendFormat(", {0} ", TableNameMapper.GetTableNameWithSchema(fromClause));
+        }
+
+        /** <inheritdoc /> */
         public override void VisitWhereClause(WhereClause whereClause, QueryModel queryModel, int index)
         {
             base.VisitWhereClause(whereClause, queryModel, index);
