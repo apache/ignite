@@ -385,7 +385,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
 
             var res = persons.Union(persons2).ToArray();
 
-            Assert.AreEqual(PersonCount, res.Length);
+            Assert.AreEqual(PersonCount * 2, res.Length);
         }
 
         [Test]
