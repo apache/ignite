@@ -18,6 +18,7 @@
 namespace Apache.Ignite.Linq.Impl
 {
     using System;
+    using System.Collections.Generic;
     using System.Diagnostics;
     using System.Linq;
     using System.Text;
@@ -42,6 +43,7 @@ namespace Apache.Ignite.Linq.Impl
 
             var resultBuilder = new StringBuilder("select ");
             int parenCount = 0;
+            var resultOpParameters = new List<object>();
 
             foreach (var op in queryModel.ResultOperators.Reverse())
             {
@@ -73,9 +75,8 @@ namespace Apache.Ignite.Linq.Impl
 
                     var unionSql = GetSqlExpression(union.Source2);
 
-                    // TODO: Parameters
+                    resultOpParameters.AddRange(unionSql.Parameters);
                     resultBuilder.Append(unionSql);
-
                     resultBuilder.Append(")");
                 }
                 else if (op is DistinctResultOperator)
@@ -88,16 +89,14 @@ namespace Apache.Ignite.Linq.Impl
                     throw new NotSupportedException("Operator is not supported: " + op);
             }
 
-            // TODO: Parameters
-            resultBuilder.Append(GetSqlExpression(queryModel.SelectClause.Selector, parenCount > 0).QueryText);
-
-            resultBuilder.Append(')', parenCount);
+            var selectExp = GetSqlExpression(queryModel.SelectClause.Selector, parenCount > 0);
+            resultBuilder.Append(selectExp.QueryText).Append(')', parenCount);
 
             var queryData = visitor.GetQuery();
-
             var queryText = resultBuilder.Append(" ").Append(queryData.QueryText).ToString();
+            var parameters = selectExp.Parameters.Concat(queryData.Parameters).Concat(resultOpParameters);
 
-            return new QueryData(queryText, queryData.Parameters, true);
+            return new QueryData(queryText, parameters.ToArray(), true);
         }
     }
 }
