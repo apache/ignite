@@ -41,6 +41,7 @@ import org.apache.ignite.internal.processors.cache.CacheEntryImpl;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.CacheObjectContext;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
+import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.QueryCursorImpl;
 import org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl;
 import org.apache.ignite.internal.processors.cache.query.CacheQueryFuture;
@@ -637,7 +638,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      * @throws IgniteCheckedException In case of error.
      */
     @SuppressWarnings("unchecked")
-    public void store(final String space, final CacheObject key, final CacheObject val,
+    public void store(final String space, final KeyCacheObject key, final CacheObject val,
         GridCacheVersion ver, long expirationTime) throws IgniteCheckedException {
         assert key != null;
         assert val != null;
@@ -699,6 +700,28 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             }
 
             idx.store(space, desc, key, val, ver, expirationTime);
+        }
+        finally {
+            busyLock.leaveBusy();
+        }
+    }
+
+    /**
+     * @param space Space name.
+     * @param key Key to read.
+     * @return Read versioned value.
+     * @throws IgniteCheckedException
+     */
+    public IgniteBiTuple<CacheObject, GridCacheVersion> read(final String space, final KeyCacheObject key)
+        throws IgniteCheckedException {
+        if (idx == null)
+            return null;
+
+        if (!busyLock.enterBusy())
+            throw new IllegalStateException("Failed to write to index (grid is stopping).");
+
+        try {
+            return idx.read(space, key);
         }
         finally {
             busyLock.leaveBusy();
@@ -993,7 +1016,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      * @param key Key.
      * @throws IgniteCheckedException Thrown in case of any errors.
      */
-    public void remove(String space, CacheObject key, CacheObject val, GridCacheVersion ver) throws IgniteCheckedException {
+    public void remove(String space, KeyCacheObject key, CacheObject val, GridCacheVersion ver) throws IgniteCheckedException {
         assert key != null;
 
         if (log.isDebugEnabled())
@@ -1167,7 +1190,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      * @param key key.
      * @throws IgniteCheckedException If failed.
      */
-    public void onSwap(String spaceName, CacheObject key) throws IgniteCheckedException {
+    public void onSwap(String spaceName, KeyCacheObject key) throws IgniteCheckedException {
         if (log.isDebugEnabled())
             log.debug("Swap [space=" + spaceName + ", key=" + key + "]");
 
@@ -1205,7 +1228,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      * @param val Value.
      * @throws IgniteCheckedException If failed.
      */
-    public void onUnswap(String spaceName, CacheObject key, CacheObject val)
+    public void onUnswap(String spaceName, KeyCacheObject key, CacheObject val)
         throws IgniteCheckedException {
         if (log.isDebugEnabled())
             log.debug("Unswap [space=" + spaceName + ", key=" + key + ", val=" + val + "]");

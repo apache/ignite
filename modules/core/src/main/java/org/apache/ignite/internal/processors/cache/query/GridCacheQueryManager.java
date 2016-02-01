@@ -342,7 +342,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
      * @param key Key.
      * @throws IgniteCheckedException If failed.
      */
-    public void onSwap(CacheObject key) throws IgniteCheckedException {
+    public void onSwap(KeyCacheObject key) throws IgniteCheckedException {
         if (!enterBusy())
             return; // Ignore index update when node is stopping.
 
@@ -361,7 +361,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
      * @param val Value
      * @throws IgniteCheckedException If failed.
      */
-    public void onUnswap(CacheObject key, CacheObject val) throws IgniteCheckedException {
+    public void onUnswap(KeyCacheObject key, CacheObject val) throws IgniteCheckedException {
         if (!enterBusy())
             return; // Ignore index update when node is stopping.
 
@@ -390,7 +390,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
      * @param expirationTime Expiration time or 0 if never expires.
      * @throws IgniteCheckedException In case of error.
      */
-    public void store(CacheObject key, CacheObject val, GridCacheVersion ver, long expirationTime)
+    public void store(KeyCacheObject key, CacheObject val, GridCacheVersion ver, long expirationTime)
         throws IgniteCheckedException {
         assert key != null;
         assert val != null;
@@ -413,12 +413,28 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
     }
 
     /**
+     * @param key Key to read.
+     * @return Value tuple, if available.
+     */
+    public IgniteBiTuple<CacheObject, GridCacheVersion> read(KeyCacheObject key) throws IgniteCheckedException {
+        if (!enterBusy())
+            return null; // Ignore index update when node is stopping.
+
+        try {
+            return qryProc.read(space, key);
+        }
+        finally {
+            leaveBusy();
+        }
+    }
+
+    /**
      * @param key Key.
      * @param val Value.
      * @throws IgniteCheckedException Thrown in case of any errors.
      */
     @SuppressWarnings("SimplifiableIfStatement")
-    public void remove(CacheObject key, CacheObject val, GridCacheVersion ver) throws IgniteCheckedException {
+    public void remove(KeyCacheObject key, CacheObject val, GridCacheVersion ver) throws IgniteCheckedException {
         assert key != null;
 
         if (!GridQueryProcessor.isEnabled(cctx.config()) && !(key instanceof GridCacheInternal))

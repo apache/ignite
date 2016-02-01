@@ -1861,7 +1861,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
 
                 final boolean storeEnabled = !skipVals && readThrough && ctx.readThrough();
 
-                final boolean needEntry = storeEnabled || ctx.isSwapOrOffheapEnabled();
+                final boolean needEntry = storeEnabled || ctx.isSwapOrOffheapEnabled() || ctx.isDatabaseEnabled();
 
                 Map<KeyCacheObject, GridCacheVersion> misses = null;
 
@@ -1878,7 +1878,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
 
                         try {
                             T2<CacheObject, GridCacheVersion> res = entry.innerGetVersioned(null,
-                                ctx.isSwapOrOffheapEnabled(),
+                                ctx.isSwapOrOffheapEnabled() || ctx.isDatabaseEnabled(),
                                 /*unmarshal*/true,
                                 /*update-metrics*/!skipVals,
                                 /*event*/!skipVals,

@@ -29,6 +29,7 @@ import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
+import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.query.GridCacheTwoStepQuery;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
@@ -186,7 +187,7 @@ public interface GridQueryIndexing {
      * @param expirationTime Expiration time or 0 if never expires.
      * @throws IgniteCheckedException If failed.
      */
-    public void store(@Nullable String spaceName, GridQueryTypeDescriptor type, CacheObject key, CacheObject val,
+    public void store(@Nullable String spaceName, GridQueryTypeDescriptor type, KeyCacheObject key, CacheObject val,
         GridCacheVersion ver, long expirationTime) throws IgniteCheckedException;
 
     /**
@@ -197,7 +198,14 @@ public interface GridQueryIndexing {
      * @param val Value.
      * @throws IgniteCheckedException If failed.
      */
-    public void remove(@Nullable String spaceName, CacheObject key, CacheObject val, GridCacheVersion ver) throws IgniteCheckedException;
+    public void remove(@Nullable String spaceName, KeyCacheObject key, CacheObject val, GridCacheVersion ver) throws IgniteCheckedException;
+
+    /**
+     * @param space Space name.
+     * @param key Key.
+     * @return Read versioned value.
+     */
+    IgniteBiTuple<CacheObject,GridCacheVersion> read(String space, KeyCacheObject key) throws IgniteCheckedException;
 
     /**
      * Will be called when entry with given key is swapped.
@@ -206,7 +214,7 @@ public interface GridQueryIndexing {
      * @param key Key.
      * @throws IgniteCheckedException If failed.
      */
-    public void onSwap(@Nullable String spaceName, CacheObject key) throws IgniteCheckedException;
+    public void onSwap(@Nullable String spaceName, KeyCacheObject key) throws IgniteCheckedException;
 
     /**
      * Will be called when entry with given key is unswapped.
@@ -216,7 +224,7 @@ public interface GridQueryIndexing {
      * @param val Value.
      * @throws IgniteCheckedException If failed.
      */
-    public void onUnswap(@Nullable String spaceName, CacheObject key, CacheObject val) throws IgniteCheckedException;
+    public void onUnswap(@Nullable String spaceName, KeyCacheObject key, CacheObject val) throws IgniteCheckedException;
 
     /**
      * Rebuilds all indexes of given type.

@@ -816,6 +816,14 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
     }
 
     /** {@inheritDoc} */
+    @Override public KeyCacheObject toKeyCacheObject(CacheObjectContext ctx, byte type, byte[] bytes) throws IgniteCheckedException {
+        if (type == BinaryObjectImpl.TYPE_BINARY)
+            return new BinaryObjectImpl(binaryContext(), bytes, 0);
+
+        return super.toKeyCacheObject(ctx, type, bytes);
+    }
+
+    /** {@inheritDoc} */
     @Override public CacheObject toCacheObject(GridCacheContext ctx, long valPtr, boolean tmp)
         throws IgniteCheckedException {
         if (!((CacheObjectBinaryContext)ctx.cacheObjectContext()).binaryEnabled())

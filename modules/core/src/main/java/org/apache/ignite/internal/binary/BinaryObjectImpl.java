@@ -133,6 +133,7 @@ public final class BinaryObjectImpl extends BinaryObjectExImpl implements Extern
         return arr0;
     }
 
+    /** {@inheritDoc} */
     @Override public boolean putValue(ByteBuffer buf, CacheObjectContext ctx) throws IgniteCheckedException {
         int len = length();
 
@@ -144,6 +145,11 @@ public final class BinaryObjectImpl extends BinaryObjectExImpl implements Extern
         buf.put(arr, start, len);
 
         return true;
+    }
+
+    /** {@inheritDoc} */
+    @Override public int valueBytesLength(CacheObjectContext ctx) throws IgniteCheckedException {
+        return length() + 5;
     }
 
     /** {@inheritDoc} */

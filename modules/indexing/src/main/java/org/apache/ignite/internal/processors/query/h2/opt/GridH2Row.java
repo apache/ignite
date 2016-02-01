@@ -17,6 +17,8 @@
 
 package org.apache.ignite.internal.processors.query.h2.opt;
 
+import org.apache.ignite.internal.processors.cache.CacheObject;
+import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.h2.result.Row;
 import org.h2.value.Value;
@@ -29,14 +31,13 @@ public class GridH2Row extends Row implements GridSearchRowPointer {
     public long link; // TODO remove
 
     /** */
-    public byte[] key; // TODO remove
+    public KeyCacheObject key; // TODO remove
 
     /** */
-    public byte[] val; // TODO remove
+    public CacheObject val; // TODO remove
 
     /** */
     public GridCacheVersion ver; // TODO remove
-
 
     /**
      * @param data Column values.

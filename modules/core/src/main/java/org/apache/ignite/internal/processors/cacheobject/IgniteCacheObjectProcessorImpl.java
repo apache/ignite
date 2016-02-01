@@ -170,6 +170,19 @@ public class IgniteCacheObjectProcessorImpl extends GridProcessorAdapter impleme
     }
 
     /** {@inheritDoc} */
+    @Override public KeyCacheObject toKeyCacheObject(CacheObjectContext ctx, byte type, byte[] bytes) throws IgniteCheckedException {
+        switch (type) {
+            case CacheObject.TYPE_BYTE_ARR:
+                throw new IllegalArgumentException("Byte arrays cannot be used as cache keys.");
+
+            case CacheObject.TYPE_REGULAR:
+                return new KeyCacheObjectImpl(ctx.processor().unmarshal(ctx, bytes, null), bytes);
+        }
+
+        throw new IllegalArgumentException("Invalid object type: " + type);
+    }
+
+    /** {@inheritDoc} */
     @Override public CacheObject toCacheObject(CacheObjectContext ctx, ByteBuffer buf) {
         byte type = buf.get();
 
@@ -180,6 +193,19 @@ public class IgniteCacheObjectProcessorImpl extends GridProcessorAdapter impleme
         buf.get(data);
 
         return toCacheObject(ctx, type, data);
+    }
+
+    /** {@inheritDoc} */
+    @Override public KeyCacheObject toKeyCacheObject(CacheObjectContext ctx, ByteBuffer buf) throws IgniteCheckedException {
+        byte type = buf.get();
+
+        int len = buf.getInt();
+
+        byte[] data = new byte[len];
+
+        buf.get(data);
+
+        return toKeyCacheObject(ctx, type, data);
     }
 
     /** {@inheritDoc} */
