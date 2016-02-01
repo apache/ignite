@@ -65,6 +65,19 @@ namespace Apache.Ignite.Linq.Impl
                     resultBuilder.Append("max (");
                     parenCount++;
                 }
+                else if (op is UnionResultOperator)
+                {
+                    var union = (UnionResultOperator) op;
+
+                    resultBuilder.Append("union (");
+
+                    var unionSql = GetSqlExpression(union.Source2);
+
+                    // TODO: Parameters
+                    resultBuilder.Append(unionSql);
+
+                    resultBuilder.Append(")");
+                }
                 else if (op is DistinctResultOperator)
                     resultBuilder.Append("distinct ");
                 else if (op is FirstResultOperator || op is SingleResultOperator)
@@ -75,6 +88,7 @@ namespace Apache.Ignite.Linq.Impl
                     throw new NotSupportedException("Operator is not supported: " + op);
             }
 
+            // TODO: Parameters
             resultBuilder.Append(GetSqlExpression(queryModel.SelectClause.Selector, parenCount > 0).QueryText);
 
             resultBuilder.Append(')', parenCount);
