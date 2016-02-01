@@ -30,27 +30,27 @@ namespace Apache.Ignite.Core.Discovery.Tcp
         /// <summary>
         /// Default socket timeout.
         /// </summary>
-        public readonly TimeSpan DefaultSocketTimeout = TimeSpan.FromMilliseconds(5000);
+        public static TimeSpan DefaultSocketTimeout = TimeSpan.FromMilliseconds(5000);
 
         /// <summary>
         /// Default acknowledgement timeout.
         /// </summary>
-        public readonly TimeSpan DefaultAckTimeout = TimeSpan.FromMilliseconds(5000);
+        public static readonly TimeSpan DefaultAckTimeout = TimeSpan.FromMilliseconds(5000);
 
         /// <summary>
         /// Default maximum acknowledgement timeout.
         /// </summary>
-        public readonly TimeSpan DefaultMaxAckTimeout = TimeSpan.FromMinutes(10);
+        public static readonly TimeSpan DefaultMaxAckTimeout = TimeSpan.FromMinutes(10);
 
         /// <summary>
         /// Default network timeout.
         /// </summary>
-        public readonly TimeSpan DefaultNetworkTimeout = TimeSpan.FromMilliseconds(5000);
+        public static readonly TimeSpan DefaultNetworkTimeout = TimeSpan.FromMilliseconds(5000);
 
         /// <summary>
         /// Default join timeout.
         /// </summary>
-        public readonly TimeSpan DefaultJoinTimeout = TimeSpan.Zero;
+        public static readonly TimeSpan DefaultJoinTimeout = TimeSpan.Zero;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="TcpDiscoverySpi"/> class.

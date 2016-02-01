@@ -17,11 +17,14 @@
 
 namespace Apache.Ignite.Core.Discovery.Tcp
 {
+    using System.Diagnostics.CodeAnalysis;
+
     /// <summary>
     /// Represents an IP finder for <see cref="TcpDiscoverySpi"/>.
     /// Only predefined implementations are supported now: 
     /// <see cref="TcpDiscoveryStaticIpFinder"/>, <see cref="TcpDiscoveryMulticastIpFinder"/>.
     /// </summary>
+    [SuppressMessage("Microsoft.Design", "CA1040:AvoidEmptyInterfaces")]
     public interface ITcpDiscoveryIpFinder
     {
         // No-op.
