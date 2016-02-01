@@ -381,7 +381,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         public void TestUnions()
         {
             var persons = GetPersonOrgCache().ToQueryable();
-            var persons2 = GetPersonOrgCache().ToQueryable();
+            var persons2 = GetSecondPersonCacheCache().ToQueryable();
 
             var res = persons.Union(persons2).ToArray();
 
