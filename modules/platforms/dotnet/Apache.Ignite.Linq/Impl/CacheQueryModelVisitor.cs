@@ -139,15 +139,13 @@ namespace Apache.Ignite.Linq.Impl
         /// <param name="innerKey">The inner key selector.</param>
         /// <param name="outerKey">The outer key selector.</param>
         /// <returns>Condition string.</returns>
-        private static string BuildJoinCondition(Expression innerKey, Expression outerKey)
+        private string BuildJoinCondition(Expression innerKey, Expression outerKey)
         {
             var innerNew = innerKey as NewExpression;
             var outerNew = outerKey as NewExpression;
 
             if (innerNew == null && outerNew == null)
-                return string.Format("{0} = {1}", 
-                    GetSqlExpression(innerKey).QueryText,
-                    GetSqlExpression(outerKey).QueryText);
+                return BuildJoinSubCondition(innerKey, outerKey);
 
             if (innerNew != null && outerNew != null)
             {
@@ -163,9 +161,7 @@ namespace Apache.Ignite.Linq.Impl
                     if (i > 0)
                         builder.Append("and ");
 
-                    builder.AppendFormat("{0} = {1} ", 
-                        GetSqlExpression(innerNew.Arguments[i]).QueryText,
-                        GetSqlExpression(outerNew.Arguments[i]).QueryText);
+                    builder.Append(BuildJoinSubCondition(innerNew.Arguments[i], outerNew.Arguments[i]));
                 }
 
                 return builder.ToString();
@@ -174,6 +170,23 @@ namespace Apache.Ignite.Linq.Impl
             throw new NotSupportedException(
                 string.Format("Unexpected JOIN condition. Multi-key joins should have " +
                               "anonymous type instances on both sides: '{0} = {1}'", innerKey, outerKey));
+        }
+
+        /// <summary>
+        /// Builds the join sub condition.
+        /// </summary>
+        /// <param name="innerKey">The inner key.</param>
+        /// <param name="outerKey">The outer key.</param>
+        /// <returns>Condition string</returns>
+        private string BuildJoinSubCondition(Expression innerKey, Expression outerKey)
+        {
+            var inner = GetSqlExpression(innerKey);
+            var outer = GetSqlExpression(outerKey);
+
+            _parameters.AddRange(inner.Parameters);
+            _parameters.AddRange(outer.Parameters);
+
+            return string.Format("{0} = {1}", inner.QueryText, outer.QueryText);
         }
 
         /// <summary>
