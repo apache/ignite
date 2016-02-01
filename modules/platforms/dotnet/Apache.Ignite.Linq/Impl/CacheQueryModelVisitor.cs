@@ -43,24 +43,27 @@ namespace Apache.Ignite.Linq.Impl
         /// </summary>
         public QueryData GenerateQuery(QueryModel queryModel)
         {
-            VisitQueryModel(queryModel);
+            _builder.Append("select ");
 
-            var resultBuilder = new StringBuilder("select ");  // TODO: Can we avoid extra builder?
-            var resultOpParameters = new List<object>();
-
-            var parenCount = ProcessResultOperators(queryModel, resultBuilder, resultOpParameters);
+            var parenCount = ProcessResultOperators(queryModel, _builder);
 
             var selectExp = GetSqlExpression(queryModel.SelectClause.Selector, parenCount > 0);
-            resultBuilder.Append(selectExp.QueryText).Append(')', parenCount);
+            _builder.Append(selectExp.QueryText).Append(')', parenCount);
 
-            var queryText = resultBuilder.Append(" ").Append(_builder.ToString().TrimEnd()).ToString();
-            var parameters = selectExp.Parameters.Concat(_parameters).Concat(resultOpParameters);
+            _builder.Append(" ");
+
+            VisitQueryModel(queryModel);
+
+            if (char.IsWhiteSpace(_builder[_builder.Length - 1]))
+                _builder.Remove(_builder.Length - 1, 1);  // TrimEnd
+
+            var queryText = _builder.ToString();
+            var parameters = selectExp.Parameters.Concat(_parameters);
 
             return new QueryData(queryText, parameters.ToArray(), true);
         }
 
-        private static int ProcessResultOperators(QueryModel queryModel, StringBuilder resultBuilder, 
-            List<object> resultOpParameters)
+        private static int ProcessResultOperators(QueryModel queryModel, StringBuilder resultBuilder)
         {
             int parenCount = 0;
 
@@ -86,7 +89,8 @@ namespace Apache.Ignite.Linq.Impl
                     resultBuilder.Append("max (");
                     parenCount++;
                 }
-                else if (op is UnionResultOperator)
+                // TODO: This is incorrect, UNION should go at the very end
+                /*else if (op is UnionResultOperator)  
                 {
                     var union = (UnionResultOperator) op;
 
@@ -98,7 +102,7 @@ namespace Apache.Ignite.Linq.Impl
                     resultOpParameters.AddRange(unionSql.Parameters);
                     resultBuilder.Append(unionSql.QueryText);
                     resultBuilder.Append(") ");
-                }
+                }*/
                 else if (op is DistinctResultOperator)
                     resultBuilder.Append("distinct ");
                 else if (op is FirstResultOperator || op is SingleResultOperator)
