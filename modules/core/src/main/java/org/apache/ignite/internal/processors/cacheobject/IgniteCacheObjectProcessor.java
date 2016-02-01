@@ -154,10 +154,25 @@ public interface IgniteCacheObjectProcessor extends GridProcessor {
 
     /**
      * @param ctx Cache context.
+     * @param type Object type.
+     * @param bytes Object bytes.
+     * @return Cache object.
+     */
+    public KeyCacheObject toKeyCacheObject(CacheObjectContext ctx, byte type, byte[] bytes) throws IgniteCheckedException;
+
+    /**
+     * @param ctx Cache context.
      * @param buf Buffer to read from.
      * @return Cache object.
      */
     public CacheObject toCacheObject(CacheObjectContext ctx, ByteBuffer buf);
+
+    /**
+     * @param ctx Cache context.
+     * @param buf Buffer to read from.
+     * @return Cache object.
+     */
+    public KeyCacheObject toKeyCacheObject(CacheObjectContext ctx, ByteBuffer buf) throws IgniteCheckedException;
 
     /**
      * @param ctx Context.

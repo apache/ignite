@@ -794,7 +794,7 @@ public class GridCacheEvictionManager extends GridCacheManagerAdapter {
             U.error(log, "Failed to evict entry from cache: " + e, ex);
         }
 
-        if (!cctx.isNear() && memoryMode == OFFHEAP_TIERED) {
+        if (!cctx.isNear() && (memoryMode == OFFHEAP_TIERED || cctx.isDatabaseEnabled())) {
             try {
                 evict0(cctx.cache(), e, cctx.versions().next(), null, false);
             }

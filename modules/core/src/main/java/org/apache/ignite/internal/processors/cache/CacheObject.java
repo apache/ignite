@@ -49,6 +49,20 @@ public interface CacheObject extends Message {
      */
     public byte[] valueBytes(CacheObjectContext ctx) throws IgniteCheckedException;
 
+    /**
+     * @param ctx Cache object context.
+     * @return Size required to store this value object.
+     * @throws IgniteCheckedException If failed.
+     */
+    public int valueBytesLength(CacheObjectContext ctx) throws IgniteCheckedException;
+
+    /**
+     * @param buf Buffer to write value to.
+     * @param ctx Cache object context.
+     * @return {@code True} if value was successfully written, {@code false} if there was not enough space in the
+     *      buffer.
+     * @throws IgniteCheckedException If failed.
+     */
     public boolean putValue(ByteBuffer buf, CacheObjectContext ctx) throws IgniteCheckedException;
 
     /**

@@ -31,6 +31,7 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.CacheObjectContext;
+import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.query.GridQueryFieldsResult;
 import org.apache.ignite.internal.processors.query.GridQueryIndexDescriptor;
@@ -191,7 +192,7 @@ public abstract class GridIndexingSpiAbstractSelfTest extends GridCommonAbstract
      * @param key Key.
      * @return Cache object.
      */
-    private CacheObject key(int key) {
+    private KeyCacheObject key(int key) {
         return new TestCacheObject(key);
     }
 
@@ -563,7 +564,7 @@ public abstract class GridIndexingSpiAbstractSelfTest extends GridCommonAbstract
 
     /**
      */
-    private static class TestCacheObject implements CacheObject {
+    private static class TestCacheObject implements KeyCacheObject {
         /** */
         private Object val;
 
@@ -587,6 +588,11 @@ public abstract class GridIndexingSpiAbstractSelfTest extends GridCommonAbstract
         /** {@inheritDoc} */
         @Override public boolean putValue(ByteBuffer buf, CacheObjectContext ctx) throws IgniteCheckedException {
             return false;
+        }
+
+        /** {@inheritDoc} */
+        @Override public int valueBytesLength(CacheObjectContext ctx) throws IgniteCheckedException {
+            return 0;
         }
 
         /** {@inheritDoc} */
@@ -632,6 +638,11 @@ public abstract class GridIndexingSpiAbstractSelfTest extends GridCommonAbstract
         /** {@inheritDoc} */
         @Override public byte fieldsCount() {
             throw new UnsupportedOperationException();
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean internal() {
+            return false;
         }
     }
 }

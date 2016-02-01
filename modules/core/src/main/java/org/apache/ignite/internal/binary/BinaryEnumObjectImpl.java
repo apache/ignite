@@ -113,7 +113,7 @@ public class BinaryEnumObjectImpl implements BinaryObjectEx, Externalizable, Cac
     @Override public <T> T deserialize() throws BinaryObjectException {
         Class cls = BinaryUtils.resolveClass(ctx, typeId, clsName, null, true);
 
-        return BinaryEnumCache.get(cls, ord);
+        return (T)BinaryEnumCache.get(cls, ord);
     }
 
     /** {@inheritDoc} */
@@ -208,6 +208,11 @@ public class BinaryEnumObjectImpl implements BinaryObjectEx, Externalizable, Cac
 
     /** {@inheritDoc} */
     @Override public boolean putValue(ByteBuffer buf, CacheObjectContext ctx) throws IgniteCheckedException {
+        throw new UnsupportedOperationException("TODO implement.");
+    }
+
+    /** {@inheritDoc} */
+    @Override public int valueBytesLength(CacheObjectContext ctx) throws IgniteCheckedException {
         throw new UnsupportedOperationException("TODO implement.");
     }
 

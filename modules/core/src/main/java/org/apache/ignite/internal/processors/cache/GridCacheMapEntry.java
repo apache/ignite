@@ -475,62 +475,78 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
         throws IgniteCheckedException, GridCacheEntryRemovedException {
         boolean swapEnabled = cctx.swap().swapEnabled();
 
-        if (!swapEnabled && !cctx.isOffHeapEnabled())
+        if (!swapEnabled && !cctx.isOffHeapEnabled() && !cctx.isDatabaseEnabled())
             return null;
 
         synchronized (this) {
             checkObsolete();
 
             if (isStartVersion() && ((flags & IS_UNSWAPPED_MASK) == 0)) {
-                GridCacheSwapEntry e;
+                if (cctx.isDatabaseEnabled()) {
+                    IgniteBiTuple<CacheObject, GridCacheVersion> read = cctx.queries().read(key);
 
-                if (cctx.offheapTiered()) {
-                    e = cctx.swap().readOffheapPointer(this);
+                    flags |= IS_UNSWAPPED_MASK;
 
-                    if (e != null) {
-                        if (e.offheapPointer() > 0) {
-                            offHeapPointer(e.offheapPointer());
-
-                            flags |= IS_OFFHEAP_PTR_MASK;
-
-                            if (needVal) {
-                                CacheObject val = cctx.fromOffheap(offHeapPointer(), false);
-
-                                e.value(val);
-                            }
-                        }
-                        else // Read from swap.
-                            offHeapPointer(0);
-                    }
-                }
-                else
-                    e = detached() ? cctx.swap().read(this, true, true, true, false) : cctx.swap().readAndRemove(this);
-
-                if (log.isDebugEnabled())
-                    log.debug("Read swap entry [swapEntry=" + e + ", cacheEntry=" + this + ']');
-
-                flags |= IS_UNSWAPPED_MASK;
-
-                // If there is a value.
-                if (e != null) {
-                    long delta = e.expireTime() == 0 ? 0 : e.expireTime() - U.currentTimeMillis();
-
-                    if (delta >= 0) {
-                        CacheObject val = e.value();
-
-                        val = cctx.kernalContext().cacheObjects().prepareForCache(val, cctx);
+                    if (read != null) {
+                        CacheObject idxVal = read.get1();
 
                         // Set unswapped value.
-                        update(val, e.expireTime(), e.ttl(), e.version());
+                        update(idxVal, 0, 0, read.get2());
 
-                        // Must update valPtr again since update() will reset it.
-                        if (cctx.offheapTiered() && e.offheapPointer() > 0)
-                            offHeapPointer(e.offheapPointer());
+                        return idxVal;
+                    }
+                }
+                else {
+                    GridCacheSwapEntry e;
 
-                        return val;
+                    if (cctx.offheapTiered()) {
+                        e = cctx.swap().readOffheapPointer(this);
+
+                        if (e != null) {
+                            if (e.offheapPointer() > 0) {
+                                offHeapPointer(e.offheapPointer());
+
+                                flags |= IS_OFFHEAP_PTR_MASK;
+
+                                if (needVal) {
+                                    CacheObject val = cctx.fromOffheap(offHeapPointer(), false);
+
+                                    e.value(val);
+                                }
+                            }
+                            else // Read from swap.
+                                offHeapPointer(0);
+                        }
                     }
                     else
-                        clearIndex(e.value(), e.version());
+                        e = detached() ? cctx.swap().read(this, true, true, true, false) : cctx.swap().readAndRemove(this);
+
+                    if (log.isDebugEnabled())
+                        log.debug("Read swap entry [swapEntry=" + e + ", cacheEntry=" + this + ']');
+
+                    flags |= IS_UNSWAPPED_MASK;
+
+                    // If there is a value.
+                    if (e != null) {
+                        long delta = e.expireTime() == 0 ? 0 : e.expireTime() - U.currentTimeMillis();
+
+                        if (delta >= 0) {
+                            CacheObject val = e.value();
+
+                            val = cctx.kernalContext().cacheObjects().prepareForCache(val, cctx);
+
+                            // Set unswapped value.
+                            update(val, e.expireTime(), e.ttl(), e.version());
+
+                            // Must update valPtr again since update() will reset it.
+                            if (cctx.offheapTiered() && e.offheapPointer() > 0)
+                                offHeapPointer(e.offheapPointer());
+
+                            return val;
+                        }
+                        else
+                            clearIndex(e.value(), e.version());
+                    }
                 }
             }
         }

@@ -1428,6 +1428,13 @@ public class GridCacheContext<K, V> implements Externalizable {
     }
 
     /**
+     * @return If database is enabled.
+     */
+    public boolean isDatabaseEnabled() {
+        return storeMgr.isDatabaseEnabled();
+    }
+
+    /**
      * @return {@code True} if store read-through mode is enabled.
      */
     public boolean readThrough() {

@@ -30,8 +30,13 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.processors.cache.CacheObject;
+import org.apache.ignite.internal.processors.cache.CacheObjectContext;
+import org.apache.ignite.internal.processors.cache.GridCacheContext;
+import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.offheap.unsafe.GridUnsafeMemory;
+import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.lang.IgniteBiTuple;
 import org.h2.api.TableEngine;
 import org.h2.command.ddl.CreateTableData;
 import org.h2.engine.Constants;
@@ -135,7 +140,7 @@ public class GridH2Table extends TableBase {
      * @return {@code true} If row was found.
      * @throws IgniteCheckedException If failed.
      */
-    public boolean onSwap(CacheObject key) throws IgniteCheckedException {
+    public boolean onSwap(KeyCacheObject key) throws IgniteCheckedException {
         return onSwapUnswap(key, null);
     }
 
@@ -147,7 +152,7 @@ public class GridH2Table extends TableBase {
      * @return {@code true} If row was found.
      * @throws IgniteCheckedException If failed.
      */
-    public boolean onUnswap(CacheObject key, CacheObject val) throws IgniteCheckedException {
+    public boolean onUnswap(KeyCacheObject key, CacheObject val) throws IgniteCheckedException {
         assert val != null : "Key=" + key;
 
         return onSwapUnswap(key, val);
@@ -162,7 +167,7 @@ public class GridH2Table extends TableBase {
      * @throws IgniteCheckedException If failed.
      */
     @SuppressWarnings("LockAcquiredButNotSafelyReleased")
-    private boolean onSwapUnswap(CacheObject key, @Nullable CacheObject val) throws IgniteCheckedException {
+    private boolean onSwapUnswap(KeyCacheObject key, @Nullable CacheObject val) throws IgniteCheckedException {
         assert key != null;
 
         GridH2IndexBase pk = pk();
@@ -331,13 +336,33 @@ public class GridH2Table extends TableBase {
      * @return {@code true} If operation succeeded.
      * @throws IgniteCheckedException If failed.
      */
-    public boolean update(CacheObject key, CacheObject val, GridCacheVersion ver, long expirationTime, boolean rmv)
+    public boolean update(KeyCacheObject key, CacheObject val, GridCacheVersion ver, long expirationTime, boolean rmv)
         throws IgniteCheckedException {
         assert desc != null;
 
         GridH2Row row = desc.createRow(key, val, ver, expirationTime);
 
         return doUpdate(row, rmv);
+    }
+
+    /**
+     * @param key Key to read.
+     * @return Read value.
+     * @throws IgniteCheckedException If failed.
+     */
+    public IgniteBiTuple<CacheObject, GridCacheVersion> read(
+        GridCacheContext cctx,
+        KeyCacheObject key
+    ) throws IgniteCheckedException {
+        assert desc != null;
+
+        GridH2Row row = desc.createRow(key, null, null, 0);
+
+        GridH2IndexBase primaryIdx = pk();
+
+        GridH2Row res = primaryIdx.findOne(row);
+
+        return res != null ? F.t(res.val, res.ver) : null;
     }
 
     /**
