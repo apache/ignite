@@ -95,27 +95,15 @@ namespace Apache.Ignite.Linq.Impl
                     _builder.Append("max (");
                     parenCount++;
                 }
-                // SELECT TOP 10 * FROM "person_cache".PERSON where _KEY>10 UNION (select * from "".PERSON where _key > 50 limit 20)
-                // TODO: This is incorrect, UNION should go at the very end
-                /*else if (op is UnionResultOperator)  
-                {
-                    var union = (UnionResultOperator) op;
-
-                    resultBuilder.Append("union (");
-
-                    // TODO: SubQuery expression OR ConstantExpression. See how Joins work..
-                    var unionSql = GetSqlExpression(union.Source2);
-
-                    resultOpParameters.AddRange(unionSql.Parameters);
-                    resultBuilder.Append(unionSql.QueryText);
-                    resultBuilder.Append(") ");
-                }*/
                 else if (op is DistinctResultOperator)
                     _builder.Append("distinct ");
                 else if (op is FirstResultOperator || op is SingleResultOperator)
                     _builder.Append("top 1 ");
                 else if (op is TakeResultOperator)
                     _builder.AppendFormat("top {0} ", ((TakeResultOperator)op).Count);
+                else if (op is UnionResultOperator || op is IntersectResultOperator || op is ExceptResultOperator)
+                    // Will be processed later
+                    break;
                 else
                     throw new NotSupportedException("Operator is not supported: " + op);
             }
@@ -130,13 +118,34 @@ namespace Apache.Ignite.Linq.Impl
             foreach (var op in queryModel.ResultOperators.Reverse())
             {
                 // SELECT TOP 10 * FROM "person_cache".PERSON where _KEY>10 UNION (select * from "".PERSON where _key > 50 limit 20)
-                var union = op as UnionResultOperator;
+                string keyword = null;
+                Expression source = null;
 
+                var union = op as UnionResultOperator;
                 if (union != null)
                 {
-                    _builder.Append("union ()");
+                    keyword = "union";
+                    source = union.Source2;
+                }
 
+                var intersect = op as IntersectResultOperator;
+                if (intersect != null)
+                {
+                    keyword = "intersect";
+                    source = intersect.Source2;
+                }
+
+                var except = op as IntersectResultOperator;
+                if (except != null)
+                {
+                    keyword = "except";
+                    source = except.Source2;
+                }
+
+                if (keyword != null)
+                {
                     // TODO: SubQuery expression OR ConstantExpression. See how Joins work..
+                    _builder.Append(keyword).Append(" ()");
                 }
             }
         }
