@@ -128,7 +128,7 @@ namespace Apache.Ignite.Linq.Impl
                                                 "(only results of cache.ToQueryable() are supported): " +
                                                 innerExpr.Value);
 
-            Builder.AppendFormat("{0} join {1} on ({2} = {3}) ", isOuter ? "outer" : "inner",
+            Builder.AppendFormat("{0} join {1} on ({2} = {3}) ", isOuter ? "left outer" : "inner",
                 TableNameMapper.GetTableNameWithSchema(joinClause),
                 GetSqlExpression(joinClause.InnerKeySelector).QueryText,
                 GetSqlExpression(joinClause.OuterKeySelector).QueryText);
