@@ -19,6 +19,7 @@ namespace Apache.Ignite.Linq.Impl
 {
     using System;
     using System.Collections.Generic;
+    using System.Diagnostics;
     using System.Linq;
     using System.Linq.Expressions;
     using System.Text;
@@ -43,6 +44,22 @@ namespace Apache.Ignite.Linq.Impl
         /// </summary>
         public QueryData GenerateQuery(QueryModel queryModel)
         {
+            Debug.Assert(_builder.Length == 0);
+            Debug.Assert(_parameters.Count == 0);
+
+            VisitQueryModel(queryModel);
+
+            if (char.IsWhiteSpace(_builder[_builder.Length - 1]))
+                _builder.Remove(_builder.Length - 1, 1);  // TrimEnd
+
+            var queryText = _builder.ToString();
+
+            return new QueryData(queryText, _parameters, true);
+        }
+
+        /** <inheritdoc /> */
+        public override void VisitQueryModel(QueryModel queryModel)
+        {
             // SELECT TOP 1
             _builder.Append("select ");
 
@@ -53,17 +70,10 @@ namespace Apache.Ignite.Linq.Impl
             _builder.Append(')', parenCount).Append(" ");
 
             // WHERE ... JOIN ...
-            VisitQueryModel(queryModel);
+            base.VisitQueryModel(queryModel);
 
             // UNION ...
             ProcessResultOperatorsEnd(queryModel);
-
-            if (char.IsWhiteSpace(_builder[_builder.Length - 1]))
-                _builder.Remove(_builder.Length - 1, 1);  // TrimEnd
-
-            var queryText = _builder.ToString();
-
-            return new QueryData(queryText, _parameters, true);
         }
 
         /// <summary>
@@ -144,8 +154,24 @@ namespace Apache.Ignite.Linq.Impl
 
                 if (keyword != null)
                 {
-                    // TODO: SubQuery expression OR ConstantExpression. See how Joins work..
-                    _builder.Append(keyword).Append(" ()");
+                    _builder.Append(keyword).Append(" (");
+
+                    var subQuery = source as SubQueryExpression;
+
+                    if (subQuery != null)
+                        VisitQueryModel(subQuery.QueryModel);
+                    else
+                    {
+                        var innerExpr = source as ConstantExpression;
+
+                        if (innerExpr == null)
+                            throw new NotSupportedException("Unexpected UNION inner sequence: " + source);
+
+                        if (!(innerExpr.Value is ICacheQueryable))
+                            throw new NotSupportedException("Unexpected UNION inner sequence " +
+                                                            "(only results of cache.ToQueryable() are supported): " +
+                                                            innerExpr.Value);
+                    }
                 }
             }
         }
