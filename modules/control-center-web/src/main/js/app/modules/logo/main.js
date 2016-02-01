@@ -15,7 +15,8 @@
  * limitations under the License.
  */
 
-import template from './logo.jade!';
+import templateLogo from './logo.jade!';
+import templatePoweredByApache from './powered-by-apache.jade!';
 
 import angular from 'angular';
 
@@ -41,17 +42,31 @@ angular
             };
         }];
     })
+    .directive('ignitePoweredByApache', ['igniteLogo', function(igniteLogo) {
+        function controller() {
+            const ctrl = this;
+
+            ctrl.show = igniteLogo.poweredBy;
+        }
+
+        return {
+            restrict: 'E',
+            template: templatePoweredByApache,
+            controller,
+            controllerAs: 'poweredBy',
+            replace: true
+        };
+    }])
     .directive('igniteLogo', ['igniteLogo', function(igniteLogo) {
         function controller() {
             const ctrl = this;
 
             ctrl.url = igniteLogo.url;
-            ctrl.poweredBy = igniteLogo.poweredBy;
         }
 
         return {
             restrict: 'E',
-            template,
+            template: templateLogo,
             controller,
             controllerAs: 'logo',
             replace: true

@@ -14,11 +14,5 @@
     See the License for the specific language governing permissions and
     limitations under the License.
 
-.container.container-footer
-    footer
-        .col-md-offset-1.col-md-10
-            center(ignite-terms)
-                p(ng-repeat='item in terms.footerRows' ng-bind-html='item')
-        .col-md-1
-            .pull-right
-                ignite-powered-by-apache
+a(ng-if='poweredBy.show' href='//ignite.apache.org' target='_blank')
+    img(ng-src='/images/pb-ignite.png' height='65')
