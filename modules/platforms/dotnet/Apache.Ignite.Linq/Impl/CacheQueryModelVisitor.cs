@@ -46,7 +46,7 @@ namespace Apache.Ignite.Linq.Impl
             // SELECT TOP 1
             _builder.Append("select ");
 
-            var parenCount = ProcessResultOperators(queryModel);
+            var parenCount = ProcessResultOperatorsBegin(queryModel);
 
             // FIELD1, FIELD2 FROM TABLE1, TABLE2
             BuildSqlExpression(queryModel.SelectClause.Selector, parenCount > 0);
@@ -54,6 +54,9 @@ namespace Apache.Ignite.Linq.Impl
 
             // WHERE ... JOIN ...
             VisitQueryModel(queryModel);
+
+            // UNION ...
+            ProcessResultOperatorsEnd(queryModel);
 
             if (char.IsWhiteSpace(_builder[_builder.Length - 1]))
                 _builder.Remove(_builder.Length - 1, 1);  // TrimEnd
@@ -66,7 +69,7 @@ namespace Apache.Ignite.Linq.Impl
         /// <summary>
         /// Processes the result operators.
         /// </summary>
-        private int ProcessResultOperators(QueryModel queryModel)
+        private int ProcessResultOperatorsBegin(QueryModel queryModel)
         {
             int parenCount = 0;
 
@@ -112,11 +115,30 @@ namespace Apache.Ignite.Linq.Impl
                 else if (op is FirstResultOperator || op is SingleResultOperator)
                     _builder.Append("top 1 ");
                 else if (op is TakeResultOperator)
-                    _builder.AppendFormat("top {0} ", ((TakeResultOperator) op).Count);
+                    _builder.AppendFormat("top {0} ", ((TakeResultOperator)op).Count);
                 else
                     throw new NotSupportedException("Operator is not supported: " + op);
             }
             return parenCount;
+        }
+
+        /// <summary>
+        /// Processes the result operators that go in the beginning of the query.
+        /// </summary>
+        private void ProcessResultOperatorsEnd(QueryModel queryModel)
+        {
+            foreach (var op in queryModel.ResultOperators.Reverse())
+            {
+                // SELECT TOP 10 * FROM "person_cache".PERSON where _KEY>10 UNION (select * from "".PERSON where _key > 50 limit 20)
+                var union = op as UnionResultOperator;
+
+                if (union != null)
+                {
+                    _builder.Append("union ()");
+
+                    // TODO: SubQuery expression OR ConstantExpression. See how Joins work..
+                }
+            }
         }
 
         /** <inheritdoc /> */
