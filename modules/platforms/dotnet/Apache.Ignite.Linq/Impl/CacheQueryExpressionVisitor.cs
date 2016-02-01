@@ -21,6 +21,7 @@ using System.Text;
 namespace Apache.Ignite.Linq.Impl
 {
     using System.Collections.Generic;
+    using System.Diagnostics;
     using System.Linq;
     using System.Linq.Expressions;
     using System.Reflection;
@@ -54,42 +55,22 @@ namespace Apache.Ignite.Linq.Impl
         private readonly bool _aggregating;
 
         /** */
-        private readonly StringBuilder _resultBuilder = new StringBuilder();
+        private readonly StringBuilder _resultBuilder;
 
         /** */
-        private readonly List<object> _parameters = new List<object>();
+        private readonly List<object> _parameters;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="CacheQueryExpressionVisitor"/> class.
         /// </summary>
-        private CacheQueryExpressionVisitor(bool aggregating)
+        public CacheQueryExpressionVisitor(StringBuilder builder, List<object> parameters, bool aggregating)
         {
+            Debug.Assert(builder != null);
+            Debug.Assert(parameters != null);
+
+            _resultBuilder = builder;
+            _parameters = parameters;
             _aggregating = aggregating;
-        }
-
-        /// <summary>
-        /// Gets the SQL statement.
-        /// </summary>
-        /// <param name="linqExpression">The linq expression.</param>
-        /// <param name="aggregating">Aggregate flag.</param>
-        /// <returns>
-        /// SQL statement for the expression.
-        /// </returns>
-        public static QueryData GetSqlExpression(Expression linqExpression, bool aggregating)
-        {
-            var visitor = new CacheQueryExpressionVisitor(aggregating);
-
-            visitor.Visit(linqExpression);
-
-            return visitor.GetSqlExpression();
-        }
-
-        /// <summary>
-        /// Gets the SQL expression.
-        /// </summary>
-        private QueryData GetSqlExpression()
-        {
-            return new QueryData(_resultBuilder.ToString(), _parameters);
         }
 
         /** <inheritdoc /> */

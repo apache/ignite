@@ -49,8 +49,8 @@ namespace Apache.Ignite.Linq.Impl
             var parenCount = ProcessResultOperators(queryModel);
 
             // FIELD1, FIELD2 FROM TABLE1, TABLE2
-            var selectExp = GetSqlExpression(queryModel.SelectClause.Selector, parenCount > 0);
-            _builder.Append(selectExp.QueryText).Append(')', parenCount).Append(" ");
+            BuildSqlExpression(queryModel.SelectClause.Selector, parenCount > 0);
+            _builder.Append(')', parenCount).Append(" ");
 
             // WHERE ... JOIN ...
             VisitQueryModel(queryModel);
@@ -59,9 +59,8 @@ namespace Apache.Ignite.Linq.Impl
                 _builder.Remove(_builder.Length - 1, 1);  // TrimEnd
 
             var queryText = _builder.ToString();
-            var parameters = selectExp.Parameters.Concat(_parameters);
 
-            return new QueryData(queryText, parameters.ToArray(), true);
+            return new QueryData(queryText, _parameters, true);
         }
 
         /// <summary>
@@ -135,12 +134,11 @@ namespace Apache.Ignite.Linq.Impl
         {
             base.VisitWhereClause(whereClause, queryModel, index);
 
-            var whereSql = GetSqlExpression(whereClause.Predicate);
+            _builder.Append(index > 0 ? "and " : "where ");
 
-            _builder.Append(_parameters.Any() ? "and" : "where");
-            _builder.AppendFormat(" {0} ", whereSql.QueryText);
+            BuildSqlExpression(whereClause.Predicate);
 
-            _parameters.AddRange(whereSql.Parameters);
+            _builder.Append(" ");
         }
 
         /** <inheritdoc /> */
@@ -180,9 +178,12 @@ namespace Apache.Ignite.Linq.Impl
                                                 "(only results of cache.ToQueryable() are supported): " +
                                                 innerExpr.Value);
 
-            _builder.AppendFormat("{0} join {1} on ({2}) ", isOuter ? "left outer" : "inner",
-                TableNameMapper.GetTableNameWithSchema(joinClause),
-                BuildJoinCondition(joinClause.InnerKeySelector, joinClause.OuterKeySelector));
+            _builder.AppendFormat("{0} join {1} on (", isOuter ? "left outer" : "inner",
+                TableNameMapper.GetTableNameWithSchema(joinClause));
+
+            BuildJoinCondition(joinClause.InnerKeySelector, joinClause.OuterKeySelector);
+
+            _builder.Append(") ");
         }
 
         /// <summary>
@@ -191,13 +192,16 @@ namespace Apache.Ignite.Linq.Impl
         /// <param name="innerKey">The inner key selector.</param>
         /// <param name="outerKey">The outer key selector.</param>
         /// <returns>Condition string.</returns>
-        private string BuildJoinCondition(Expression innerKey, Expression outerKey)
+        private void BuildJoinCondition(Expression innerKey, Expression outerKey)
         {
             var innerNew = innerKey as NewExpression;
             var outerNew = outerKey as NewExpression;
 
             if (innerNew == null && outerNew == null)
-                return BuildJoinSubCondition(innerKey, outerKey);
+            {
+                BuildJoinSubCondition(innerKey, outerKey);
+                return;
+            }
 
             if (innerNew != null && outerNew != null)
             {
@@ -206,17 +210,15 @@ namespace Apache.Ignite.Linq.Impl
                         string.Format("Unexpected JOIN condition. Multi-key joins should have " +
                                       "the same initializers on both sides: '{0} = {1}'", innerKey, outerKey));
 
-                var builder = new StringBuilder();
-
                 for (var i = 0; i < innerNew.Arguments.Count; i++)
                 {
                     if (i > 0)
-                        builder.Append(" and ");
+                        _builder.Append(" and ");
 
-                    builder.Append(BuildJoinSubCondition(innerNew.Arguments[i], outerNew.Arguments[i]));
+                    BuildJoinSubCondition(innerNew.Arguments[i], outerNew.Arguments[i]);
                 }
 
-                return builder.ToString();
+                return;
             }
 
             throw new NotSupportedException(
@@ -230,24 +232,19 @@ namespace Apache.Ignite.Linq.Impl
         /// <param name="innerKey">The inner key.</param>
         /// <param name="outerKey">The outer key.</param>
         /// <returns>Condition string</returns>
-        private string BuildJoinSubCondition(Expression innerKey, Expression outerKey)
+        private void BuildJoinSubCondition(Expression innerKey, Expression outerKey)
         {
-            var inner = GetSqlExpression(innerKey);
-            var outer = GetSqlExpression(outerKey);
-
-            _parameters.AddRange(inner.Parameters);
-            _parameters.AddRange(outer.Parameters);
-
-            return string.Format("{0} = {1}", inner.QueryText, outer.QueryText);
+            BuildSqlExpression(innerKey);
+            _builder.Append(" = ");
+            BuildSqlExpression(outerKey);
         }
 
         /// <summary>
-        /// Gets the SQL expression.
+        /// Builds the SQL expression.
         /// </summary>
-        private static QueryData GetSqlExpression(Expression expression, bool aggregating = false)
+        private void BuildSqlExpression(Expression expression, bool aggregating = false)
         {
-            // TODO: Reuse string builder and parameter list!
-            return CacheQueryExpressionVisitor.GetSqlExpression(expression, aggregating);
+            new CacheQueryExpressionVisitor(_builder, _parameters, aggregating).Visit(expression);
         }
     }
 }
