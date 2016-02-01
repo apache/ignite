@@ -48,6 +48,19 @@ namespace Apache.Ignite.Linq.Impl
             return GetTableNameFromEntryValueType(cacheEntryType.GetGenericArguments()[1]);
         }
 
+        public static string GetTableNameWithSchema(ICacheQueryable cacheQueryable)
+        {
+            Debug.Assert(cacheQueryable != null);
+
+            var cacheQueryableType = cacheQueryable.GetType();
+
+            if (!(cacheQueryableType.IsGenericType &&
+                  cacheQueryableType.GetGenericTypeDefinition() == typeof (CacheQueryable<,>)))
+                throw new NotSupportedException("Unexpected cache query type: " + cacheQueryableType);
+
+            return GetTableNameFromEntryValueType(cacheQueryableType.GetGenericArguments()[1]);
+        }
+
         public static string GetTableNameWithSchema(QuerySourceReferenceExpression expression)
         {
             Debug.Assert(expression != null);

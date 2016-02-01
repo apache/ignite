@@ -158,19 +158,24 @@ namespace Apache.Ignite.Linq.Impl
 
                     var subQuery = source as SubQueryExpression;
 
-                    if (subQuery != null)
+                    if (subQuery != null)  // Subquery union
                         VisitQueryModel(subQuery.QueryModel);
                     else
                     {
+                        // Direct cache union, source is ICacheQueryable
                         var innerExpr = source as ConstantExpression;
 
                         if (innerExpr == null)
                             throw new NotSupportedException("Unexpected UNION inner sequence: " + source);
 
-                        if (!(innerExpr.Value is ICacheQueryable))
+                        var queryable = innerExpr.Value as ICacheQueryable;
+
+                        if (queryable == null)
                             throw new NotSupportedException("Unexpected UNION inner sequence " +
                                                             "(only results of cache.ToQueryable() are supported): " +
                                                             innerExpr.Value);
+
+                        _builder.Append(TableNameMapper.GetTableNameWithSchema(queryable)).Append(")");
                     }
                 }
             }
