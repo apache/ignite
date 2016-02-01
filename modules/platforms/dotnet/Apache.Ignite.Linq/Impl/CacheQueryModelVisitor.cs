@@ -145,7 +145,7 @@ namespace Apache.Ignite.Linq.Impl
                     source = intersect.Source2;
                 }
 
-                var except = op as IntersectResultOperator;
+                var except = op as ExceptResultOperator;
                 if (except != null)
                 {
                     keyword = "except";

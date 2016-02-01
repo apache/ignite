@@ -399,7 +399,19 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         [Test]
         public void TestIntersect()
         {
-            // TODO
+            // Direct intersect
+            var persons = GetPersonOrgCache().ToQueryable();
+            var persons2 = GetSecondPersonCacheCache().ToQueryable();
+
+            var res = persons.Intersect(persons2).ToArray();
+
+            Assert.AreEqual(0, res.Length);
+
+            // Subquery
+            var roles = GetRoleCache().ToQueryable().Select(x => x.Key.Foo);
+            var ids = GetPersonOrgCache().ToQueryable().Select(x => x.Key).Intersect(roles).ToArray();
+
+            Assert.AreEqual(PersonCount - RoleCount, ids.Length);
         }
 
         [Test]
