@@ -139,6 +139,16 @@ consoleModule.controller('clustersController', function ($http, $timeout, $scope
                 $scope.selectItem($scope.clusters[0]);
         }
 
+        function clusterCaches(item) {
+            return _.reduce($scope.caches, function (memo, cache) {
+                if (item && _.contains(item.caches, cache.value)) {
+                    memo.push(cache.cache);
+                }
+
+                return memo;
+            }, []);
+        }
+
         $loading.start('loadingClustersScreen');
 
         // When landing on the page, get clusters and show them.
@@ -397,15 +407,6 @@ consoleModule.controller('clustersController', function ($http, $timeout, $scope
                         if ($common.isEmptyString(type.typeName))
                             return showPopoverMessage($scope.ui, 'binary', 'typeName' + typeIx, 'Type name should be specified');
 
-                        if (!$common.isEmptyString(type.typeName) && !$common.isValidJavaClass('Type name', type.typeName, false, 'typeName' + typeIx, false, $scope.ui, 'binary'))
-                            return false;
-
-                        if (!$common.isEmptyString(type.idMapper) && !$common.isValidJavaClass('ID mapper', type.idMapper, false, 'idMapper' + typeIx, false, $scope.ui, 'binary'))
-                            return false;
-
-                        if (!$common.isEmptyString(type.serializer) && !$common.isValidJavaClass('Serializer', type.serializer, false, 'serializer' + typeIx, false, $scope.ui, 'binary'))
-                            return false;
-
                         if (_.find(b.typeConfigurations, sameName))
                             return showPopoverMessage($scope.ui, 'binary', 'typeName' + typeIx, 'Type with such name is already specified');
                     }
@@ -415,12 +416,6 @@ consoleModule.controller('clustersController', function ($http, $timeout, $scope
             var c = item.communication;
 
             if ($common.isDefined(c)) {
-                if (!$common.isEmptyString(c.listener) && !$common.isValidJavaClass('Communication listener', c.listener, false, 'comListener', false, $scope.ui, 'communication'))
-                    return false;
-
-                if (!$common.isEmptyString(c.addressResolver) && !$common.isValidJavaClass('Address resolver', c.addressResolver, false, 'comAddressResolver', false, $scope.ui, 'communication'))
-                    return false;
-
                 if ($common.isDefined(c.unacknowledgedMessagesBufferSize)) {
                     if ($common.isDefined(c.messageQueueLimit))
                         if (c.unacknowledgedMessagesBufferSize < 5 * c.messageQueueLimit)
@@ -435,34 +430,13 @@ consoleModule.controller('clustersController', function ($http, $timeout, $scope
             var r = item.connector;
 
             if ($common.isDefined(r)) {
-                if (!$common.isEmptyString(r.messageInterceptor) && !$common.isValidJavaClass('Message interceptor', r.messageInterceptor, false, 'connectorMessageInterceptor', false, $scope.ui, 'connector'))
-                    return false;
-
                 if (r.sslEnabled && $common.isEmptyString(r.sslFactory))
                     return showPopoverMessage($scope.ui, 'connector', 'connectorSslFactory', 'SSL factory should not be empty');
-
-                if (r.sslEnabled && !$common.isEmptyString(r.sslFactory) && !$common.isValidJavaClass('SSL factory', r.sslFactory, false, 'connectorSslFactory', false, $scope.ui, 'connector'))
-                    return false;
             }
 
             var d = item.discovery;
 
             if (d) {
-                if (!$common.isEmptyString(d.addressResolver) && !$common.isValidJavaClass('Address resolver', d.addressResolver, false, 'discoAddressResolver', false, $scope.ui, 'discovery'))
-                    return false;
-
-                if (!$common.isEmptyString(d.listener) && !$common.isValidJavaClass('Discovery listener', d.listener, false, 'discoListener', false, $scope.ui, 'discovery'))
-                    return false;
-
-                if (!$common.isEmptyString(d.dataExchange) && !$common.isValidJavaClass('Data exchange', d.dataExchange, false, 'dataExchange', false, $scope.ui, 'discovery'))
-                    return false;
-
-                if (!$common.isEmptyString(d.metricsProvider) && !$common.isValidJavaClass('Metrics provider', d.metricsProvider, false, 'metricsProvider', false, $scope.ui, 'discovery'))
-                    return false;
-
-                if (!$common.isEmptyString(d.authenticator) && !$common.isValidJavaClass('Node authenticator', d.authenticator, false, 'authenticator', false, $scope.ui, 'discovery'))
-                    return false;
-
                 if (d.kind === 'Vm' && d.Vm && d.Vm.addresses.length === 0)
                     return showPopoverMessage($scope.ui, 'general', 'addresses', 'Addresses are not specified');
 
@@ -561,6 +535,11 @@ consoleModule.controller('clustersController', function ($http, $timeout, $scope
         // Save cluster.
         $scope.saveItem = function () {
             var item = $scope.backupItem;
+
+            var swapSpi = $common.autoClusterSwapSpiConfiguration(item, clusterCaches(item));
+
+            if (swapSpi)
+                angular.extend(item, swapSpi);
 
             if (validate(item))
                 save(item);

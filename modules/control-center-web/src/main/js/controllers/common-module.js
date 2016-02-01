@@ -1107,6 +1107,16 @@ consoleModule.service('$common', [
                         writeThrough: dflt || cache.writeThrough
                     };
                 }
+            },
+            autoClusterSwapSpiConfiguration: function (cluster, caches) {
+                var swapConfigured = cluster.swapSpaceSpi && cluster.swapSpaceSpi.kind;
+
+                if (!swapConfigured && _.find(caches, function (cache) {
+                    return cache.swapEnabled;
+                }))
+                    return {swapSpaceSpi: {kind: 'FileSwapSpaceSpi'}};
+
+                return undefined;
             }
         };
     }]);
