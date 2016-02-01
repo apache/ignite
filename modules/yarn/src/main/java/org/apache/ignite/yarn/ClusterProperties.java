@@ -48,6 +48,12 @@ public class ClusterProperties {
 
     /** */
     public static final double DEFAULT_MEM_PER_NODE = 2048;
+    
+    /**
+     * The minimum memory overhead: overhead is by default 0.1* MEMORY_PER_NODE,
+     * with a minimum of DEFAULT_MINIMUM_MEM_OVERHEAD_PER_NODE.
+     */
+    public static final double DEFAULT_MINIMUM_MEM_OVERHEAD_PER_NODE = 384;
 
     /** Cluster name. */
     private String clusterName = DEFAULT_CLUSTER_NAME;
@@ -63,6 +69,12 @@ public class ClusterProperties {
 
     /** Memory limit. */
     private double memPerNode = DEFAULT_MEM_PER_NODE;
+    
+    /** */
+    public static final String IGNITE_MEMORY_OVERHEAD_PER_NODE = "IGNITE_MEMORY_OVERHEAD_PER_NODE";
+
+    /** Memory over head to request yarn. */
+    private double memOverHeadPerNode = 0;
 
     /** */
     public static final String IGNITE_NODE_COUNT = "IGNITE_NODE_COUNT";
@@ -185,7 +197,30 @@ public class ClusterProperties {
     }
 
     /**
-     * @return instance count limit.
+     * @return Memory overhead for requested memory.
+     */
+    public double memoryOverHeadPerNode() {
+		return memOverHeadPerNode;
+	}
+
+    /**
+     * Sets memory overhead requested to YARN.
+     *
+     * @param memOverHeadPerNode Memory over head per node.
+     */
+	public void memoryOverHeadPerNode(double memOverHeadPerNode) {
+		this.memOverHeadPerNode = memOverHeadPerNode;
+	}
+	
+	/**
+	 * @return Provide the total memory requested to ResourceManagers (memoryPerNode + memoryOverheadPerNode).
+	 */
+	public double totalMemoryPerNode(){
+		return memoryPerNode() + memoryOverHeadPerNode();
+	}
+
+	/**
+     * @return Instance count limit.
      */
     public double instances() {
         return nodeCnt;
@@ -278,7 +313,50 @@ public class ClusterProperties {
     }
 
     /**
-     * @param config path to config file.
+     * Instantiate a ClusterProperties from a set of properties.
+     *
+     * @param props If {@code null} will be used system properties.
+     * @return Cluster properties.
+     */
+    private static ClusterProperties fromProperties(Properties props) {
+    	ClusterProperties prop = new ClusterProperties();
+
+        prop.clusterName = getStringProperty(IGNITE_CLUSTER_NAME, props, DEFAULT_CLUSTER_NAME);
+
+        prop.cpuPerNode = getDoubleProperty(IGNITE_RUN_CPU_PER_NODE, props, DEFAULT_CPU_PER_NODE);
+        prop.memPerNode = getDoubleProperty(IGNITE_MEMORY_PER_NODE, props, DEFAULT_MEM_PER_NODE);
+        // The minimum memory overhead: overhead is by default 0.1* MEMORY_PER_NODE,
+        // with a minimum of DEFAULT_MINIMUM_MEM_OVERHEAD_PER_NODE
+        prop.memOverHeadPerNode = getDoubleProperty(IGNITE_MEMORY_OVERHEAD_PER_NODE, props,
+            Math.max( 0.1 * prop.memPerNode, DEFAULT_MINIMUM_MEM_OVERHEAD_PER_NODE));
+        prop.nodeCnt = getDoubleProperty(IGNITE_NODE_COUNT, props, DEFAULT_IGNITE_NODE_COUNT);
+
+        prop.igniteUrl = getStringProperty(IGNITE_URL, props, null);
+        prop.ignitePath = getStringProperty(IGNITE_PATH, props, null);
+        prop.licencePath = getStringProperty(LICENCE_PATH, props, null);
+        prop.jvmOpts = getStringProperty(IGNITE_JVM_OPTS, props, null);
+        prop.igniteWorkDir = getStringProperty(IGNITE_WORKING_DIR, props, DEFAULT_IGNITE_WORK_DIR);
+        prop.igniteLocalWorkDir = getStringProperty(IGNITE_LOCAL_WORK_DIR, props, DEFAULT_IGNITE_LOCAL_WORK_DIR);
+        prop.igniteReleasesDir = getStringProperty(IGNITE_RELEASES_DIR, props, DEFAULT_IGNITE_RELEASES_DIR);
+        prop.igniteCfg = getStringProperty(IGNITE_CONFIG_XML, props, null);
+        prop.userLibs = getStringProperty(IGNITE_USERS_LIBS, props, null);
+
+        String pattern = getStringProperty(IGNITE_HOSTNAME_CONSTRAINT, props, null);
+
+        if (pattern != null) {
+            try {
+                prop.hostnameConstraint = Pattern.compile(pattern);
+            }
+            catch (PatternSyntaxException e) {
+                log.log(Level.WARNING, "IGNITE_HOSTNAME_CONSTRAINT has invalid pattern. It will be ignore.", e);
+            }
+        }
+
+        return prop;
+    }
+    
+    /**
+     * @param config Path to config file.
      * @return Cluster configuration.
      */
     public static ClusterProperties from(String config) {
@@ -291,36 +369,7 @@ public class ClusterProperties {
                 props.load(new FileInputStream(config));
             }
 
-            ClusterProperties prop = new ClusterProperties();
-
-            prop.clusterName = getStringProperty(IGNITE_CLUSTER_NAME, props, DEFAULT_CLUSTER_NAME);
-
-            prop.cpuPerNode = getDoubleProperty(IGNITE_RUN_CPU_PER_NODE, props, DEFAULT_CPU_PER_NODE);
-            prop.memPerNode = getDoubleProperty(IGNITE_MEMORY_PER_NODE, props, DEFAULT_MEM_PER_NODE);
-            prop.nodeCnt = getDoubleProperty(IGNITE_NODE_COUNT, props, DEFAULT_IGNITE_NODE_COUNT);
-
-            prop.igniteUrl = getStringProperty(IGNITE_URL, props, null);
-            prop.ignitePath = getStringProperty(IGNITE_PATH, props, null);
-            prop.licencePath = getStringProperty(LICENCE_PATH, props, null);
-            prop.jvmOpts = getStringProperty(IGNITE_JVM_OPTS, props, null);
-            prop.igniteWorkDir = getStringProperty(IGNITE_WORKING_DIR, props, DEFAULT_IGNITE_WORK_DIR);
-            prop.igniteLocalWorkDir = getStringProperty(IGNITE_LOCAL_WORK_DIR, props, DEFAULT_IGNITE_LOCAL_WORK_DIR);
-            prop.igniteReleasesDir = getStringProperty(IGNITE_RELEASES_DIR, props, DEFAULT_IGNITE_RELEASES_DIR);
-            prop.igniteCfg = getStringProperty(IGNITE_CONFIG_XML, props, null);
-            prop.userLibs = getStringProperty(IGNITE_USERS_LIBS, props, null);
-
-            String pattern = getStringProperty(IGNITE_HOSTNAME_CONSTRAINT, props, null);
-
-            if (pattern != null) {
-                try {
-                    prop.hostnameConstraint = Pattern.compile(pattern);
-                }
-                catch (PatternSyntaxException e) {
-                    log.log(Level.WARNING, "IGNITE_HOSTNAME_CONSTRAINT has invalid pattern. It will be ignore.", e);
-                }
-            }
-
-            return prop;
+            return fromProperties(props);
         }
         catch (IOException e) {
             throw new RuntimeException(e);
@@ -331,36 +380,7 @@ public class ClusterProperties {
      * @return Cluster configuration.
      */
     public static ClusterProperties from() {
-        ClusterProperties prop = new ClusterProperties();
-
-        prop.clusterName = getStringProperty(IGNITE_CLUSTER_NAME, null, DEFAULT_CLUSTER_NAME);
-
-        prop.cpuPerNode = getDoubleProperty(IGNITE_RUN_CPU_PER_NODE, null, DEFAULT_CPU_PER_NODE);
-        prop.memPerNode = getDoubleProperty(IGNITE_MEMORY_PER_NODE, null, DEFAULT_MEM_PER_NODE);
-        prop.nodeCnt = getDoubleProperty(IGNITE_NODE_COUNT, null, DEFAULT_IGNITE_NODE_COUNT);
-
-        prop.igniteUrl = getStringProperty(IGNITE_URL, null, null);
-        prop.ignitePath = getStringProperty(IGNITE_PATH, null, null);
-        prop.licencePath = getStringProperty(LICENCE_PATH, null, null);
-        prop.jvmOpts = getStringProperty(IGNITE_JVM_OPTS, null, null);
-        prop.igniteWorkDir = getStringProperty(IGNITE_WORKING_DIR, null, DEFAULT_IGNITE_WORK_DIR);
-        prop.igniteLocalWorkDir = getStringProperty(IGNITE_LOCAL_WORK_DIR, null, DEFAULT_IGNITE_LOCAL_WORK_DIR);
-        prop.igniteReleasesDir = getStringProperty(IGNITE_RELEASES_DIR, null, DEFAULT_IGNITE_RELEASES_DIR);
-        prop.igniteCfg = getStringProperty(IGNITE_CONFIG_XML, null, null);
-        prop.userLibs = getStringProperty(IGNITE_USERS_LIBS, null, null);
-
-        String pattern = getStringProperty(IGNITE_HOSTNAME_CONSTRAINT, null, null);
-
-        if (pattern != null) {
-            try {
-                prop.hostnameConstraint = Pattern.compile(pattern);
-            }
-            catch (PatternSyntaxException e) {
-                log.log(Level.WARNING, "IGNITE_HOSTNAME_CONSTRAINT has invalid pattern. It will be ignore.", e);
-            }
-        }
-
-        return prop;
+        return fromProperties(null);
     }
 
     /**
