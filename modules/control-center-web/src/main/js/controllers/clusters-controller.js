@@ -593,7 +593,7 @@ consoleModule.controller('clustersController', function ($http, $timeout, $scope
                                     if (clusters.length > 0)
                                         $scope.selectItem(clusters[0]);
                                     else
-                                        $scope.selectItem(undefined, undefined);
+                                        $scope.backupItem = undefined;
                                 }
                             })
                             .error(function (errMsg) {

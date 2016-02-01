@@ -76,7 +76,7 @@ form.panel.panel-default(name='#{form}' novalidate)
                             data-name='keyStoreFilePath'
                             data-ng-model='#{model}.keyStoreFilePath'
                             data-placeholder='Path to the key store file'
-                            data-ng-required='true'
+                            data-ng-required='#{enabled}'
                             data-ng-disabled='!#{enabled}'
                         )
 
