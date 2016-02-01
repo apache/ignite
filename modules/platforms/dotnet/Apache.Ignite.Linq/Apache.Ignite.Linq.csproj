@@ -73,13 +73,10 @@
     <Compile Include="ICacheQueryable.cs" />
     <Compile Include="Impl\CacheFieldsQueryable.cs" />
     <Compile Include="Impl\CacheFieldsQueryExecutor.cs" />
-    <Compile Include="Impl\CacheFieldsQueryModelVisitor.cs" />
     <Compile Include="Impl\CacheFieldsQueryProvider.cs" />
     <Compile Include="Impl\CacheQueryable.cs" />
-    <Compile Include="Impl\CacheQueryExecutor.cs" />
     <Compile Include="Impl\CacheQueryExpressionVisitor.cs" />
     <Compile Include="Impl\CacheQueryModelVisitor.cs" />
-    <Compile Include="Impl\CacheQueryProvider.cs" />
     <Compile Include="Impl\ICacheQueryExecutor.cs" />
     <Compile Include="Impl\QueryData.cs" />
     <Compile Include="Impl\TableNameMapper.cs" />

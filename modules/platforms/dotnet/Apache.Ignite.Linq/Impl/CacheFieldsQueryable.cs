@@ -20,6 +20,7 @@ namespace Apache.Ignite.Linq.Impl
     using System.Linq;
     using System.Linq.Expressions;
     using Apache.Ignite.Core;
+    using Apache.Ignite.Core.Cache;
     using Remotion.Linq;
 
     /// <summary>

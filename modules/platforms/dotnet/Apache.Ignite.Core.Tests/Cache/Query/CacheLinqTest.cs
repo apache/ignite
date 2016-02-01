@@ -15,6 +15,7 @@
  * limitations under the License.
  */
 
+// ReSharper disable SuspiciousTypeConversion.Global
 namespace Apache.Ignite.Core.Tests.Cache.Query
 {
     using System;
@@ -420,8 +421,8 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
 
             Assert.AreEqual(cache.Name, query.CacheName);
             Assert.AreEqual(cache.Ignite, query.Ignite);
-            Assert.AreEqual("SQL Query [SQL=from \"\".Person where (\"\".Person._key > ?), Parameters=10]",
-                query.ToTraceString());
+            Assert.AreEqual("Fields Query [SQL=select \"\".Person._key, \"\".Person._val from \"\".Person " +
+                            "where (\"\".Person._key > ?), Parameters=10]", query.ToTraceString());
 
             // Check fields query
             var fieldsQuery = (ICacheQueryable) cache.ToQueryable().Select(x => x.Value.Name);

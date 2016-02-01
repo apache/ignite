@@ -31,7 +31,7 @@ namespace Apache.Ignite.Linq.Impl
     /// <summary>
     /// Query visitor, transforms LINQ expression to SQL.
     /// </summary>
-    internal class CacheQueryModelVisitor : QueryModelVisitorBase
+    internal sealed class CacheQueryModelVisitor : QueryModelVisitorBase
     {
         /** */
         private readonly StringBuilder _builder = new StringBuilder();
@@ -50,24 +50,72 @@ namespace Apache.Ignite.Linq.Impl
 
             visitor.VisitQueryModel(queryModel);
 
-            return visitor.GetQuery();
+            var resultBuilder = new StringBuilder("select ");
+            int parenCount = 0;
+            var resultOpParameters = new List<object>();
+
+            foreach (var op in queryModel.ResultOperators.Reverse())
+            {
+                if (op is CountResultOperator)
+                {
+                    resultBuilder.Append("count (");
+                    parenCount++;
+                }
+                else if (op is SumResultOperator)
+                {
+                    resultBuilder.Append("sum (");
+                    parenCount++;
+                }
+                else if (op is MinResultOperator)
+                {
+                    resultBuilder.Append("min (");
+                    parenCount++;
+                }
+                else if (op is MaxResultOperator)
+                {
+                    resultBuilder.Append("max (");
+                    parenCount++;
+                }
+                else if (op is UnionResultOperator)
+                {
+                    var union = (UnionResultOperator)op;
+
+                    resultBuilder.Append("union (");
+
+                    // TODO: SubQuery expression OR ?
+                    var unionSql = GetSqlExpression(union.Source2);
+
+                    resultOpParameters.AddRange(unionSql.Parameters);
+                    resultBuilder.Append(unionSql.QueryText);
+                    resultBuilder.Append(")");
+                }
+                else if (op is DistinctResultOperator)
+                    resultBuilder.Append("distinct ");
+                else if (op is FirstResultOperator || op is SingleResultOperator)
+                    resultBuilder.Append("top 1 ");
+                else if (op is TakeResultOperator)
+                    resultBuilder.AppendFormat("top {0} ", ((TakeResultOperator)op).Count);
+                else
+                    throw new NotSupportedException("Operator is not supported: " + op);
+            }
+
+            var selectExp = GetSqlExpression(queryModel.SelectClause.Selector, parenCount > 0);
+            resultBuilder.Append(selectExp.QueryText).Append(')', parenCount);
+
+            var queryData = visitor.GetQuery();
+            var queryText = resultBuilder.Append(" ").Append(queryData.QueryText).ToString();
+            var parameters = selectExp.Parameters.Concat(queryData.Parameters).Concat(resultOpParameters);
+
+            return new QueryData(queryText, parameters.ToArray(), true);
         }
 
         /// <summary>
         /// Gets the query.
         /// </summary>
         /// <returns>Query data.</returns>
-        protected QueryData GetQuery()
+        private QueryData GetQuery()
         {
-            return new QueryData(Builder.ToString().TrimEnd(), _parameters);
-        }
-
-        /// <summary>
-        /// Gets the builder.
-        /// </summary>
-        private StringBuilder Builder
-        {
-            get { return _builder; }
+            return new QueryData(_builder.ToString().TrimEnd(), _parameters);
         }
 
         /** <inheritdoc /> */
@@ -75,10 +123,10 @@ namespace Apache.Ignite.Linq.Impl
         {
             base.VisitMainFromClause(fromClause, queryModel);
 
-            Builder.AppendFormat("from {0} ", TableNameMapper.GetTableNameWithSchema(fromClause));
+            _builder.AppendFormat("from {0} ", TableNameMapper.GetTableNameWithSchema(fromClause));
 
             foreach (var additionalFrom in queryModel.BodyClauses.OfType<AdditionalFromClause>())
-                Builder.AppendFormat(", {0} ", TableNameMapper.GetTableNameWithSchema(additionalFrom));
+                _builder.AppendFormat(", {0} ", TableNameMapper.GetTableNameWithSchema(additionalFrom));
         }
 
         /** <inheritdoc /> */
@@ -88,8 +136,8 @@ namespace Apache.Ignite.Linq.Impl
 
             var whereSql = GetSqlExpression(whereClause.Predicate);
 
-            Builder.Append(_parameters.Any() ? "and" : "where");
-            Builder.AppendFormat(" {0} ", whereSql.QueryText);
+            _builder.Append(_parameters.Any() ? "and" : "where");
+            _builder.AppendFormat(" {0} ", whereSql.QueryText);
 
             _parameters.AddRange(whereSql.Parameters);
         }
@@ -131,7 +179,7 @@ namespace Apache.Ignite.Linq.Impl
                                                 "(only results of cache.ToQueryable() are supported): " +
                                                 innerExpr.Value);
 
-            Builder.AppendFormat("{0} join {1} on ({2}) ", isOuter ? "left outer" : "inner",
+            _builder.AppendFormat("{0} join {1} on ({2}) ", isOuter ? "left outer" : "inner",
                 TableNameMapper.GetTableNameWithSchema(joinClause),
                 BuildJoinCondition(joinClause.InnerKeySelector, joinClause.OuterKeySelector));
         }
@@ -195,7 +243,7 @@ namespace Apache.Ignite.Linq.Impl
         /// <summary>
         /// Gets the SQL expression.
         /// </summary>
-        protected static QueryData GetSqlExpression(Expression expression, bool aggregating = false)
+        private static QueryData GetSqlExpression(Expression expression, bool aggregating = false)
         {
             return CacheQueryExpressionVisitor.GetSqlExpression(expression, aggregating);
         }

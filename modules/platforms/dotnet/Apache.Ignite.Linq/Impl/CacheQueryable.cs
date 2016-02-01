@@ -17,7 +17,6 @@
 
 namespace Apache.Ignite.Linq.Impl
 {
-    using System;
     using System.Linq;
     using System.Linq.Expressions;
     using Apache.Ignite.Core;
@@ -34,7 +33,9 @@ namespace Apache.Ignite.Linq.Impl
         /// </summary>
         /// <param name="cache">The cache.</param>
         public CacheQueryable(ICache<TKey, TValue> cache)
-            : base(new CacheQueryProvider<TKey, TValue>(cache))
+            : base(new CacheFieldsQueryProvider(Remotion.Linq.Parsing.Structure.QueryParser.CreateDefault(),
+                new CacheFieldsQueryExecutor(cache.QueryFields),
+                cache.Ignite, cache.Name))
         {
             // No-op.
         }
@@ -53,27 +54,29 @@ namespace Apache.Ignite.Linq.Impl
         /** <inheritdoc /> */
         public string CacheName
         {
-            get { return CacheQueryProvider.Cache.Name; }
+            get { return CacheQueryProvider.CacheName; }
         }
 
         /** <inheritdoc /> */
         public IIgnite Ignite
         {
-            get { return CacheQueryProvider.Cache.Ignite; }
+            get { return CacheQueryProvider.Ignite; }
         }
 
         /// <summary>
         /// Gets the cache query provider.
         /// </summary>
-        private CacheQueryProvider<TKey, TValue> CacheQueryProvider
+        private CacheFieldsQueryProvider CacheQueryProvider
         {
-            get { return (CacheQueryProvider<TKey, TValue>) Provider; }
+            get { return (CacheFieldsQueryProvider) Provider; }
         }
 
         /** <inheritdoc /> */
         public string ToTraceString()
         {
-            return CacheQueryProvider.GetQueryData(Expression).ToString();
+            var model = CacheQueryProvider.GenerateQueryModel(Expression);
+
+            return ((ICacheQueryExecutor)CacheQueryProvider.Executor).GetQueryData(model).ToString();
         }
     }
 }
