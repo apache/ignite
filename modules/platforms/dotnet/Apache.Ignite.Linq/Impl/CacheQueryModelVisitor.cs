@@ -92,6 +92,7 @@ namespace Apache.Ignite.Linq.Impl
                     _builder.Append("max (");
                     parenCount++;
                 }
+                // SELECT TOP 10 * FROM "person_cache".PERSON where _KEY>10 UNION (select * from "".PERSON where _key > 50 limit 20)
                 // TODO: This is incorrect, UNION should go at the very end
                 /*else if (op is UnionResultOperator)  
                 {
