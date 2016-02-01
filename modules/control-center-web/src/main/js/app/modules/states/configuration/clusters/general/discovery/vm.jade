@@ -95,7 +95,7 @@ div
                     data-ignite-unique='#{addresses}'
                     data-ignite-form-field-input-autofocus='true'
                     on-enter='#{valid} && #{push}; #{valid} && (stopblur = true) && (__.add = [{}])'
-                    on-escape='___.add = false'
+                    on-escape='__.add = []'
                     ng-blur='#{valid} && #{push}; !stopblur && (__.add = [])'
                 )
                     i.fa.fa-floppy-o(
