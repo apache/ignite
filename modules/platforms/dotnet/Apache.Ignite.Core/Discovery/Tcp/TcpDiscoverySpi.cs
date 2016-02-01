@@ -30,7 +30,7 @@ namespace Apache.Ignite.Core.Discovery.Tcp
         /// <summary>
         /// Default socket timeout.
         /// </summary>
-        public static TimeSpan DefaultSocketTimeout = TimeSpan.FromMilliseconds(5000);
+        public static readonly TimeSpan DefaultSocketTimeout = TimeSpan.FromMilliseconds(5000);
 
         /// <summary>
         /// Default acknowledgement timeout.

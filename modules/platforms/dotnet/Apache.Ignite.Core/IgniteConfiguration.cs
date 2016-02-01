@@ -176,7 +176,7 @@
             writer.WriteLong((long) NetworkSendRetryDelay.TotalMilliseconds);
             writer.WriteLong((long) NetworkTimeout.TotalMilliseconds);
             writer.WriteString(WorkDirectory);
-            writer.WriteString(LocalHost);
+            writer.WriteString(Localhost);
 
             // Cache config
             var caches = CacheConfiguration;
@@ -227,7 +227,7 @@
             NetworkSendRetryDelay = r.ReadLongAsTimespan();
             NetworkTimeout = r.ReadLongAsTimespan();
             WorkDirectory = r.ReadString();
-            LocalHost = r.ReadString();
+            Localhost = r.ReadString();
 
             // Cache config
             var cacheCfgCount = r.ReadInt();
@@ -445,6 +445,6 @@
         /// <para />
         /// It is strongly recommended to set this parameter for all production environments.
         /// </summary>
-        public string LocalHost { get; set; }
+        public string Localhost { get; set; }
     }
 }

@@ -35,6 +35,6 @@ namespace Apache.Ignite.Core.Cache.Configuration
         /// <summary>
         /// Geo-spatial index.
         /// </summary>
-        GeoSpatial
+        Geospatial
     }
 }

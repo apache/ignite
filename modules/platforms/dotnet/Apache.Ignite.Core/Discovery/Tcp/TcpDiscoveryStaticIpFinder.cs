@@ -28,7 +28,7 @@ namespace Apache.Ignite.Core.Discovery.Tcp
         /// <summary>
         /// Gets or sets the end points.
         /// </summary>
-        public ICollection<string> EndPoints { get; set; }
+        public ICollection<string> Endpoints { get; set; }
 
         /// <summary>
         /// Initializes a new instance of the <see cref="TcpDiscoveryStaticIpFinder"/> class.
@@ -48,10 +48,10 @@ namespace Apache.Ignite.Core.Discovery.Tcp
 
             if (count > 0)
             {
-                EndPoints = new List<string>(count);
+                Endpoints = new List<string>(count);
 
                 for (int i = 0; i < count; i++)
-                    EndPoints.Add(reader.ReadString());
+                    Endpoints.Add(reader.ReadString());
             }
         }
 
@@ -60,7 +60,7 @@ namespace Apache.Ignite.Core.Discovery.Tcp
         {
             base.Write(writer);
 
-            var eps = EndPoints;
+            var eps = Endpoints;
 
             if (eps != null)
             {

@@ -77,7 +77,7 @@ namespace Apache.Ignite.Core.Tests
                 var resIp = (TcpDiscoveryStaticIpFinder) resDisco.IpFinder;
 
                 // There can be extra IPv6 endpoints
-                Assert.AreEqual(ip.EndPoints, resIp.EndPoints.Take(2).Select(x => x.Trim('/')).ToArray());
+                Assert.AreEqual(ip.Endpoints, resIp.Endpoints.Take(2).Select(x => x.Trim('/')).ToArray());
 
                 Assert.AreEqual(cfg.GridName, resCfg.GridName);
                 Assert.AreEqual(cfg.IncludedEventTypes, resCfg.IncludedEventTypes);
@@ -92,7 +92,7 @@ namespace Apache.Ignite.Core.Tests
                 Assert.AreEqual(cfg.JvmClasspath, resCfg.JvmClasspath);
                 Assert.AreEqual(cfg.JvmOptions, resCfg.JvmOptions);
                 Assert.IsTrue(File.Exists(resCfg.JvmDllPath));
-                Assert.AreEqual(cfg.LocalHost, resCfg.LocalHost);
+                Assert.AreEqual(cfg.Localhost, resCfg.Localhost);
             }
         }
 
@@ -115,12 +115,12 @@ namespace Apache.Ignite.Core.Tests
         [Test]
         public void TestClientMode()
         {
-            using (var ignite = Ignition.Start(new IgniteConfiguration {LocalHost = "127.0.0.1"}))
+            using (var ignite = Ignition.Start(new IgniteConfiguration {Localhost = "127.0.0.1"}))
             using (var ignite2 = Ignition.Start(new IgniteConfiguration
             {
                 GridName = "client",
                 ClientMode = true,
-                LocalHost = "127.0.0.1"
+                Localhost = "127.0.0.1"
             }))
             {
                 const string cacheName = "cache";
@@ -151,7 +151,7 @@ namespace Apache.Ignite.Core.Tests
                     },
                 JvmClasspath = TestUtils.CreateTestClasspath(),
                 JvmOptions = TestUtils.TestJavaOptions(),
-                LocalHost = "127.0.0.1"
+                Localhost = "127.0.0.1"
             };
 
             using (var ignite = Ignition.Start(cfg))
@@ -188,10 +188,10 @@ namespace Apache.Ignite.Core.Tests
         {
             TestIpFinders(new TcpDiscoveryStaticIpFinder
             {
-                EndPoints = new[] {"127.0.0.1:47500"}
+                Endpoints = new[] {"127.0.0.1:47500"}
             }, new TcpDiscoveryStaticIpFinder
             {
-                EndPoints = new[] {"127.0.0.1:47501"}
+                Endpoints = new[] {"127.0.0.1:47501"}
             });
         }
 
@@ -214,7 +214,7 @@ namespace Apache.Ignite.Core.Tests
                     },
                 JvmClasspath = TestUtils.CreateTestClasspath(),
                 JvmOptions = TestUtils.TestJavaOptions(),
-                LocalHost = "127.0.0.1"
+                Localhost = "127.0.0.1"
             };
 
             using (var ignite = Ignition.Start(cfg))
@@ -280,7 +280,7 @@ namespace Apache.Ignite.Core.Tests
                     JoinTimeout = TimeSpan.FromSeconds(5),
                     IpFinder = new TcpDiscoveryStaticIpFinder
                     {
-                        EndPoints = new[] { "127.0.0.1:47500", "127.0.0.1:47501" }
+                        Endpoints = new[] { "127.0.0.1:47500", "127.0.0.1:47501" }
                     }
                 },
                 GridName = "gridName1",
@@ -295,7 +295,7 @@ namespace Apache.Ignite.Core.Tests
                 WorkDirectory = Path.GetTempPath(),
                 JvmOptions = TestUtils.TestJavaOptions(),
                 JvmClasspath = TestUtils.CreateTestClasspath(),
-                LocalHost = "127.0.0.1"
+                Localhost = "127.0.0.1"
             };
         }
     }
