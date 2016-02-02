@@ -253,7 +253,11 @@ namespace Apache.Ignite.Linq.Impl
                 if (i > 0)
                     _builder.Append(", ");
 
+                _builder.Append("(");
+
                 BuildSqlExpression(ordering.Expression);
+
+                _builder.Append(")");
 
                 _builder.Append(ordering.OrderingDirection == OrderingDirection.Asc ? " asc" : " desc");
             }
