@@ -210,6 +210,10 @@ namespace Apache.Ignite.Linq.Impl
             i = 0;
             foreach (var where in bodyClauses.OfType<WhereClause>())
                 VisitWhereClause(where, queryModel, i++);
+
+            i = 0;
+            foreach (var orderBy in bodyClauses.OfType<OrderByClause>())
+                VisitOrderByClause(orderBy, queryModel, i++);
         }
 
         /** <inheritdoc /> */
@@ -233,6 +237,14 @@ namespace Apache.Ignite.Linq.Impl
             BuildSqlExpression(whereClause.Predicate);
 
             _builder.Append(" ");
+        }
+
+        /** <inheritdoc /> */
+        public override void VisitOrderByClause(OrderByClause orderByClause, QueryModel queryModel, int index)
+        {
+            base.VisitOrderByClause(orderByClause, queryModel, index);
+
+
         }
 
         /** <inheritdoc /> */
