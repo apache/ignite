@@ -19,6 +19,7 @@ namespace Apache.Ignite.Linq.Impl
 {
     using System;
     using System.Collections.Generic;
+    using System.Collections.ObjectModel;
     using System.Diagnostics;
     using System.Linq;
     using System.Linq.Expressions;
@@ -197,6 +198,18 @@ namespace Apache.Ignite.Linq.Impl
                     _builder.Append(")");
                 }
             }
+        }
+
+        /** <inheritdoc /> */
+        protected override void VisitBodyClauses(ObservableCollection<IBodyClause> bodyClauses, QueryModel queryModel)
+        {
+            var i = 0;
+            foreach (var join in bodyClauses.OfType<JoinClause>())
+                VisitJoinClause(join, queryModel, i++);
+
+            i = 0;
+            foreach (var where in bodyClauses.OfType<WhereClause>())
+                VisitWhereClause(where, queryModel, i++);
         }
 
         /** <inheritdoc /> */
