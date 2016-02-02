@@ -51,7 +51,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         private bool _runDbConsole;
 
         /** */
-        private static readonly DateTime StartDateTime = new DateTime(2000, 1, 1);
+        private static readonly DateTime StartDateTime = new DateTime(2000, 1, 1, 0, 0, 0, DateTimeKind.Utc);
 
         [TestFixtureSetUp]
         public void FixtureSetUp()
@@ -476,6 +476,9 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         {
             // Test retrieval
             var dates = GetRoleCache().ToQueryable().Select(x => x.Value.Date).ToArray();
+            var expDates = new[] {StartDateTime, StartDateTime.AddYears(1), default(DateTime)};
+            Assert.AreEqual(expDates, dates);
+
         }
 
         [Test]
