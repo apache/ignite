@@ -219,7 +219,7 @@
                         </xs:sequence>
                     </xs:complexType>
                 </xs:element>
-                <xs:element name="discoveryConfiguration" minOccurs="0">
+                <xs:element name="discoverySpi" minOccurs="0">
                     <xs:complexType>
                         <xs:sequence>
                             <xs:element name="ipFinder" minOccurs="0">
@@ -274,7 +274,7 @@
             <xs:attribute name="networkSendRetryDelay" type="xs:string" />
             <xs:attribute name="networkTimeout" type="xs:string" />
             <xs:attribute name="workDirectory" type="xs:string" />
-            <xs:attribute name="localHost" type="xs:string" />
+            <xs:attribute name="localhost" type="xs:string" />
         </xs:complexType>
     </xs:element>    
 </xs:schema>

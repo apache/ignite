@@ -50,11 +50,11 @@ namespace Apache.Ignite.Core.Tests
         public void TestPredefinedXml()
         {
             var xml = @"<igniteConfig workDirectory='c:' JvmMaxMemoryMb='1024' MetricsLogFrequency='0:0:10'>
-                            <localHost>127.1.1.1</localHost>
+                            <localhost>127.1.1.1</localhost>
                             <binaryConfiguration>
                                 <defaultNameMapper type='Apache.Ignite.Core.Tests.IgniteConfigurationSerializerTest+NameMapper, Apache.Ignite.Core.Tests' bar='testBar' />
                                 <types>
-                                    <type>Apache.Ignite.Core.Tests.IgniteConfigurationSerializerTest+FooClass, Apache.Ignite.Core.Tests</type>
+                                    <string>Apache.Ignite.Core.Tests.IgniteConfigurationSerializerTest+FooClass, Apache.Ignite.Core.Tests</string>
                                 </types>
                             </binaryConfiguration>
                             <discoveryConfiguration joinTimeout='0:1:0'>
