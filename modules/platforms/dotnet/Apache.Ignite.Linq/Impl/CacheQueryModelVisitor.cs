@@ -204,14 +204,10 @@ namespace Apache.Ignite.Linq.Impl
         {
             base.VisitMainFromClause(fromClause, queryModel);
 
-            var tableName = TableNameMapper.GetTableNameWithSchema(fromClause);
-            _builder.AppendFormat("from {0} as {1} ", tableName, _aliases.GetAlias(tableName));
+            _aliases.AppendAsClause(_builder.AppendFormat("from "), fromClause).Append(" ");
 
             foreach (var additionalFrom in queryModel.BodyClauses.OfType<AdditionalFromClause>())
-            {
-                var tableNameWithSchema = TableNameMapper.GetTableNameWithSchema(additionalFrom);
-                _builder.AppendFormat(", {0} as {1} ", tableNameWithSchema, _aliases.GetAlias(tableNameWithSchema));
-            }
+                _aliases.AppendAsClause(_builder.AppendFormat(", "), additionalFrom).Append(" ");
         }
 
         /** <inheritdoc /> */

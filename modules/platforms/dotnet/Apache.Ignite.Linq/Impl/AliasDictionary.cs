@@ -18,6 +18,8 @@
 namespace Apache.Ignite.Linq.Impl
 {
     using System.Collections.Generic;
+    using System.Text;
+    using Remotion.Linq.Clauses;
 
     /// <summary>
     /// Alias dictionary.
@@ -66,6 +68,15 @@ namespace Apache.Ignite.Linq.Impl
             }
 
             return alias;
+        }
+
+        public StringBuilder AppendAsClause(StringBuilder builder, IFromClause clause)
+        {
+            var tableName = TableNameMapper.GetTableNameWithSchema(clause);
+
+            builder.AppendFormat("{0} as {1}", tableName, GetAlias(tableName));
+
+            return builder;
         }
     }
 }
