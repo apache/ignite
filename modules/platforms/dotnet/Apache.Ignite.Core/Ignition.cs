@@ -126,43 +126,6 @@ namespace Apache.Ignite.Core
         {
             var cfg = ConfigurationManager.OpenExeConfiguration(ConfigurationUserLevel.None);
 
-            var section = cfg.Sections.OfType<IgniteConfigurationSection>().FirstOrDefault();
-
-            if (section == null)
-                throw new ConfigurationErrorsException(
-                    string.Format("Could not find {0} in current application configuration",
-                        typeof (IgniteConfigurationSection).Name));
-
-            return Start(section.IgniteConfiguration);
-        }
-
-        /// <summary>
-        /// Reads <see cref="IgniteConfiguration"/> from application configuration 
-        /// <see cref="IgniteConfigurationSection"/> with specified name and starts Ignite.
-        /// </summary>
-        /// <param name="sectionName">Name of the section.</param>
-        /// <returns>Started Ignite.</returns>
-        public static IIgnite StartFromApplicationConfiguration(string sectionName)
-        {
-            IgniteArgumentCheck.NotNullOrEmpty(sectionName, "sectionName");
-
-            var section = ConfigurationManager.GetSection(sectionName) as IgniteConfigurationSection;
-
-            if (section == null)
-                throw new ConfigurationErrorsException(string.Format("Could not find {0} with name '{1}'",
-                    typeof (IgniteConfigurationSection).Name, sectionName));
-
-            return Start(section.IgniteConfiguration);
-        }
-
-        /// <summary>
-        /// Starts Ignite with given configuration.
-        /// </summary>
-        /// <returns>Started Ignite.</returns>
-        public unsafe static IIgnite Start(IgniteConfiguration cfg)
-        {
-            IgniteArgumentCheck.NotNull(cfg, "cfg");
-
             lock (SyncRoot)
             {
                 // 1. Check GC settings.

@@ -2193,6 +2193,13 @@ public abstract class IgniteUtils {
     }
 
     /**
+     * @return Class loader passed as an argument or classloader used to load Ignite itself in case argument is null.
+     */
+    public static ClassLoader resolveClassLoader(ClassLoader ldr) {
+        return ldr != null ? ldr : gridClassLoader;
+    }
+
+    /**
      * @param parent Parent to find.
      * @param ldr Loader to check.
      * @return {@code True} if parent found.
