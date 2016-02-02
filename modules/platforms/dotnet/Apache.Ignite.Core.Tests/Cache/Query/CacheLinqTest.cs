@@ -560,7 +560,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
 
             [QuerySqlField] public int OrganizationId { get; set; }
 
-            [QuerySqlField] public DateTime? Birthday { get; set; }
+            [QuerySqlField(TypeName = "java.sql.Timestamp")] public DateTime? Birthday { get; set; }
 
             public void WriteBinary(IBinaryWriter writer)
             {
