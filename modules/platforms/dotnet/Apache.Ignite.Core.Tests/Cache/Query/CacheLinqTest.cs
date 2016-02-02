@@ -475,8 +475,13 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
                 .ThenBy(x => x.PersonName)
                 .ToArray();
 
-            var expectedIds = Enumerable.Range(0, PersonCount).OrderBy(x => x%2).ThenBy(x => x).ToArray();
+            var expectedIds = Enumerable.Range(0, PersonCount)
+                .OrderBy(x => (x%2).ToString())
+                .ThenBy(x => x.ToString())
+                .ToArray();
+
             var actualIds = personsByOrg.Select(x => x.PersonId).ToArray();
+
             Assert.AreEqual(expectedIds, actualIds);
         }
 
