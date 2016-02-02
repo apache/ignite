@@ -40,10 +40,7 @@ namespace Apache.Ignite.Linq.Impl
         private readonly List<object> _parameters = new List<object>();
 
         /** */
-        private Dictionary<string, string> _aliases;
-
-        /** */
-        private int _aliasIndex;
+        private readonly AliasDictionary _aliases = new AliasDictionary();
 
         /// <summary>
         /// Generates the query.
@@ -74,8 +71,7 @@ namespace Apache.Ignite.Linq.Impl
         /// </summary>
         private void VisitQueryModel(QueryModel queryModel, bool forceStar)
         {
-            var oldAliases = _aliases; // Push aliases before processing subqueries
-            _aliases = new Dictionary<string, string>();
+            _aliases.Push();
 
             // SELECT TOP 1
             _builder.Append("select ");
@@ -92,7 +88,7 @@ namespace Apache.Ignite.Linq.Impl
             // UNION ...
             ProcessResultOperatorsEnd(queryModel);
 
-            _aliases = oldAliases;
+            _aliases.Pop();
         }
 
         /// <summary>
@@ -241,8 +237,8 @@ namespace Apache.Ignite.Linq.Impl
 
                 VisitQueryModel(subQuery.QueryModel, true);
 
-                var alias = GetNextAlias(TableNameMapper.GetTableNameWithSchema(subQuery.QueryModel.MainFromClause));
-
+                var tableName = TableNameMapper.GetTableNameWithSchema(subQuery.QueryModel.MainFromClause);
+                var alias = _aliases.GetNextAlias(tableName);
                 _builder.AppendFormat(") as {0} on (", alias);
             }
             else
@@ -325,18 +321,6 @@ namespace Apache.Ignite.Linq.Impl
         private void BuildSqlExpression(Expression expression, bool useStar = false)
         {
             new CacheQueryExpressionVisitor(_builder, _parameters, useStar, _aliases).Visit(expression);
-        }
-
-        /// <summary>
-        /// Gets the next alias.
-        /// </summary>
-        private string GetNextAlias(string tableName)
-        {
-            var alias = "tbl" + _aliasIndex++;
-
-            _aliases[tableName] = alias;
-
-            return alias;
         }
     }
 }

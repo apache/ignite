@@ -71,6 +71,7 @@
   <ItemGroup>
     <Compile Include="CacheExtensions.cs" />
     <Compile Include="ICacheQueryable.cs" />
+    <Compile Include="Impl\AliasDictionary.cs" />
     <Compile Include="Impl\CacheFieldsQueryable.cs" />
     <Compile Include="Impl\CacheFieldsQueryExecutor.cs" />
     <Compile Include="Impl\CacheFieldsQueryProvider.cs" />

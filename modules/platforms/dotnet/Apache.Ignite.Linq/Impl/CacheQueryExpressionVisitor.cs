@@ -61,7 +61,7 @@ namespace Apache.Ignite.Linq.Impl
         private readonly List<object> _parameters;
 
         /** */
-        private readonly IDictionary<string, string> _aliases;
+        private readonly AliasDictionary _aliases;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="CacheQueryExpressionVisitor" /> class.
@@ -72,7 +72,7 @@ namespace Apache.Ignite.Linq.Impl
         /// for the whole-table select instead of _key, _val.</param>
         /// <param name="aliases">The aliases.</param>
         public CacheQueryExpressionVisitor(StringBuilder builder, List<object> parameters, bool useStar, 
-            IDictionary<string, string> aliases)
+            AliasDictionary aliases)
         {
             Debug.Assert(builder != null);
             Debug.Assert(parameters != null);
@@ -185,7 +185,7 @@ namespace Apache.Ignite.Linq.Impl
             // In other cases we need both parts of cache entry
             var format = _useStar ? "{0}.*" : "{0}._key, {0}._val";
 
-            var tableName = GetTableAlias(TableNameMapper.GetTableNameWithSchema(expression));
+            var tableName = _aliases.GetNextAlias(TableNameMapper.GetTableNameWithSchema(expression));
 
             _resultBuilder.AppendFormat(format, tableName);
 
@@ -198,14 +198,15 @@ namespace Apache.Ignite.Linq.Impl
             // Field hierarchy is flattened, append as is, do not call Visit.
             // TODO: Aliases? How do they work? See email.
 
-            var queryFieldAttr = expression.Member.GetCustomAttributes(true).OfType<QuerySqlFieldAttribute>().FirstOrDefault();
+            var queryFieldAttr = expression.Member.GetCustomAttributes(true)
+                .OfType<QuerySqlFieldAttribute>().FirstOrDefault();
 
             var fieldName = queryFieldAttr == null || string.IsNullOrEmpty(queryFieldAttr.Name)
                 ? expression.Member.Name
                 : queryFieldAttr.Name;
 
-            _resultBuilder.AppendFormat("{0}.{1}", 
-                GetTableAlias(TableNameMapper.GetTableNameWithSchema(expression)), fieldName);
+            _resultBuilder.AppendFormat("{0}.{1}",
+                _aliases.GetTableAlias(TableNameMapper.GetTableNameWithSchema(expression)), fieldName);
 
             return expression;
         }
@@ -329,16 +330,6 @@ namespace Apache.Ignite.Linq.Impl
 
                 Visit(e);
             }
-        }
-
-        /// <summary>
-        /// Gets the table alias.
-        /// </summary>
-        private string GetTableAlias(string fullName)
-        {
-            string alias;
-
-            return _aliases.TryGetValue(fullName, out alias) ? alias : fullName;
         }
     }
 }
