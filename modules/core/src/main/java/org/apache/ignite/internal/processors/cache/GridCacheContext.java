@@ -49,12 +49,12 @@ import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.IgnitionEx;
+import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.managers.communication.GridIoManager;
 import org.apache.ignite.internal.managers.deployment.GridDeploymentManager;
 import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
 import org.apache.ignite.internal.managers.eventstorage.GridEventStorageManager;
 import org.apache.ignite.internal.managers.swapspace.GridSwapSpaceManager;
-import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.datastructures.CacheDataStructuresManager;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCacheAdapter;
@@ -91,6 +91,7 @@ import org.apache.ignite.internal.util.offheap.unsafe.GridUnsafeMemory;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.C1;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.GPC;
@@ -1882,6 +1883,7 @@ public class GridCacheContext<K, V> implements Externalizable {
      * @param keepCacheObjects Keep cache objects flag.
      * @param deserializeBinary Deserialize binary flag.
      * @param cpy Copy flag.
+     * @param ver GridCacheVersion.
      */
     @SuppressWarnings("unchecked")
     public <K1, V1> void addResult(Map<K1, V1> map,
@@ -1890,7 +1892,8 @@ public class GridCacheContext<K, V> implements Externalizable {
         boolean skipVals,
         boolean keepCacheObjects,
         boolean deserializeBinary,
-        boolean cpy) {
+        boolean cpy,
+        final GridCacheVersion ver) {
         assert key != null;
         assert val != null || skipVals;
 
@@ -1902,10 +1905,32 @@ public class GridCacheContext<K, V> implements Externalizable {
             assert key0 != null : key;
             assert val0 != null : val;
 
-            map.put((K1)key0, (V1)val0);
+            map.put((K1)key0, ver != null ? (V1)new T2<>(val0, ver) : (V1)val0);
         }
         else
-            map.put((K1)key, (V1)(skipVals ? true : val));
+            map.put((K1)key,
+                (V1)(ver != null ?
+                    (V1)new T2<>(skipVals ? true : val, ver) :
+                    skipVals ? true : val));
+    }
+
+    /**
+     * @param map Map.
+     * @param key Key.
+     * @param val Value.
+     * @param skipVals Skip values flag.
+     * @param keepCacheObjects Keep cache objects flag.
+     * @param deserializeBinary Deserialize binary flag.
+     * @param cpy Copy flag.
+     */
+    public <K1, V1> void addResult(Map<K1, V1> map,
+        KeyCacheObject key,
+        CacheObject val,
+        boolean skipVals,
+        boolean keepCacheObjects,
+        boolean deserializeBinary,
+        boolean cpy) {
+        addResult(map, key, val, skipVals, keepCacheObjects, deserializeBinary, cpy, null);
     }
 
     /**

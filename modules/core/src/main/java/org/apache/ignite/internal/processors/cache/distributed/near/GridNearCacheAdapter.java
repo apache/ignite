@@ -230,6 +230,7 @@ public abstract class GridNearCacheAdapter<K, V> extends GridDistributedCacheAda
      * @param skipVal Skip value flag.
      * @param skipStore Skip store flag.
      * @param canRemap Can remap flag.
+     * @param needVer Need version.
      * @return Loaded values.
      */
     public IgniteInternalFuture<Map<K, V>> loadAsync(@Nullable IgniteInternalTx tx,
@@ -241,7 +242,8 @@ public abstract class GridNearCacheAdapter<K, V> extends GridDistributedCacheAda
         @Nullable ExpiryPolicy expiryPlc,
         boolean skipVal,
         boolean skipStore,
-        boolean canRemap
+        boolean canRemap,
+        boolean needVer
     ) {
         if (F.isEmpty(keys))
             return new GridFinishedFuture<>(Collections.<K, V>emptyMap());
@@ -261,7 +263,7 @@ public abstract class GridNearCacheAdapter<K, V> extends GridDistributedCacheAda
             expiry,
             skipVal,
             canRemap,
-            false,
+            needVer,
             false);
 
         // init() will register future for responses if future has remote mappings.
