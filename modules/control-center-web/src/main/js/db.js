@@ -446,7 +446,7 @@ var ClusterSchema = new Schema({
         pessimisticTxLogLinger: Number,
         pessimisticTxLogSize: Number,
         txSerializableEnabled: Boolean,
-        txManagerLookupClassName: String
+        txManagerFactory: String
     },
     sslEnabled: Boolean,
     sslContextFactory: {

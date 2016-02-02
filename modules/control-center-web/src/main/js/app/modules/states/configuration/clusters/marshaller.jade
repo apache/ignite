@@ -37,11 +37,11 @@ form.panel.panel-default(name='marshaller' novalidate)
                         ignite-form-field-dropdown(
                             data-id='kind'
                             data-name='kind'
-                            data-options="[\
-                                {value: 'OptimizedMarshaller', label: 'OptimizedMarshaller'},\
-                                {value: 'JdkMarshaller', label: 'JdkMarshaller'},\
-                                {value: undefined, label: 'Not set'}\
-                            ]"
+                            data-options='[\
+                                {value: "OptimizedMarshaller", label: "OptimizedMarshaller"},\
+                                {value: "JdkMarshaller", label: "JdkMarshaller"},\
+                                {value: undefined, label: "Not set"}\
+                            ]'
                             data-ng-model='#{model}.kind'
                             data-placeholder='Choose marshaller'
                         )

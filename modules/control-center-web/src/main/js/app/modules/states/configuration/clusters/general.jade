@@ -46,7 +46,7 @@ form.panel.panel-default(name='general' novalidate)
                         ignite-form-field-dropdown(
                             data-id='caches'
                             data-name='caches'
-                            data-options="caches"
+                            data-options='caches'
                             data-multiple='true'
                             data-ng-model='#{model}.caches'
                             data-ng-disabled='!caches.length'
@@ -73,7 +73,7 @@ form.panel.panel-default(name='general' novalidate)
                         ignite-form-field-dropdown(
                             data-id='discovery'
                             data-name='discovery'
-                            data-options="discoveries"
+                            data-options='discoveries'
                             data-ng-model='#{model}.discovery.kind'
                             data-placeholder='Choose marshaller'
                         )

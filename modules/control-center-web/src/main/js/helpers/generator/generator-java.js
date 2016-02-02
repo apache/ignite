@@ -941,7 +941,7 @@ $generatorJava.clusterTransactions = function (cluster, res) {
 
     $generatorJava.beanProperty(res, 'cfg', cluster.transactionConfiguration, 'transactionConfiguration',
         'transactionConfiguration', $generatorCommon.TRANSACTION_CONFIGURATION.className,
-        $generatorCommon.TRANSACTION_CONFIGURATION.fields);
+        $generatorCommon.TRANSACTION_CONFIGURATION.fields, true);
 
     return res;
 };

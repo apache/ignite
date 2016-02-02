@@ -42,12 +42,9 @@ consoleModule.controller('clustersController', function ($http, $timeout, $scope
         $scope.ui.activePanels = [0];
         $scope.ui.topPanels = [0];
 
-        $scope.joinTip = $common.joinTip;
-        $scope.getModel = $common.getModel;
         $scope.compactJavaName = $common.compactJavaName;
         $scope.widthIsSufficient = $common.widthIsSufficient;
         $scope.saveBtnTipText = $common.saveBtnTipText;
-        $scope.panelExpanded = $common.panelExpanded;
 
         var previews = [];
 

@@ -380,13 +380,13 @@ $generatorCommon.SWAP_SPACE_SPI = {
 $generatorCommon.TRANSACTION_CONFIGURATION = {
     className: 'org.apache.ignite.configuration.TransactionConfiguration',
     fields: {
-        defaultTxConcurrency: {type: 'enum', enumClass: 'org.apache.ignite.transactions.TransactionConcurrency'},
-        defaultTxIsolation: {type: 'enum', enumClass: 'org.apache.ignite.transactions.TransactionIsolation'},
-        defaultTxTimeout: null,
-        pessimisticTxLogLinger: null,
+        defaultTxConcurrency: {type: 'enum', enumClass: 'org.apache.ignite.transactions.TransactionConcurrency', dflt: 'PESSIMISTIC'},
+        defaultTxIsolation: {type: 'enum', enumClass: 'org.apache.ignite.transactions.TransactionIsolation', dflt: 'REPEATABLE_READ'},
+        defaultTxTimeout: {dflt: 0},
+        pessimisticTxLogLinger: {dflt: 10000},
         pessimisticTxLogSize: null,
         txSerializableEnabled: null,
-        txManagerLookupClassName: null
+        txManagerFactory: {type: 'bean'}
     }
 };
 

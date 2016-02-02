@@ -690,7 +690,7 @@ $generatorXml.clusterTransactions = function (cluster, res) {
     if (!res)
         res = $generatorCommon.builder();
 
-    $generatorXml.beanProperty(res, cluster.transactionConfiguration, 'transactionConfiguration', $generatorCommon.TRANSACTION_CONFIGURATION);
+    $generatorXml.beanProperty(res, cluster.transactionConfiguration, 'transactionConfiguration', $generatorCommon.TRANSACTION_CONFIGURATION, true);
 
     res.needEmptyLine = true;
 
