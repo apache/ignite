@@ -470,8 +470,13 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
 
             var personsByOrg = GetPersonOrgCache().ToQueryable()
                 .Join(GetOrgCache().ToQueryable(), p => p.Value.OrganizationId, o => o.Value.Id,
-                    (p, o) => new {PersonId = p.Key, PersonName = p.Value.Name, OrgName = o.Value.Name})
-                .OrderBy(x => x.OrgName.ToLower())
+                    (p, o) => new
+                    {
+                        PersonId = p.Key,
+                        PersonName = p.Value.Name.ToUpperInvariant(),
+                        OrgName = o.Value.Name
+                    })
+                .OrderBy(x => x.OrgName.ToLowerInvariant())
                 .ThenBy(x => x.PersonName)
                 .ToArray();
 
