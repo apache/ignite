@@ -333,7 +333,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         {
             var organizations = GetOrgCache().ToQueryable().Where(x => x.Key == 1);
             var persons = GetPersonOrgCache().ToQueryable().Where(x => x.Key > 20);
-            var roles = GetRoleCache().ToQueryable().Where(x => x.Value.Name != " ");
+            var roles = GetRoleCache().ToQueryable().Where(x => x.Key.Foo >= 0);
 
             var res = roles.Join(persons, role => role.Key.Foo, person => person.Key,
                 (role, person) => new {person, role})
@@ -355,7 +355,9 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
                 {
                     PersonName = person.Value.Name,
                     RoleName = role.Value.Name
-                }).ToArray();
+                })
+                .Where(x => x.PersonName != " ")
+                .ToArray();
 
             Assert.AreEqual(PersonCount, res.Length);
         }
@@ -363,13 +365,14 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         [Test]
         public void TestSubqueryJoin()
         {
-            var persons = GetPersonOrgCache().ToQueryable();
+            var persons = GetPersonOrgCache().ToQueryable().Where(x => x.Key >= 0);
 
-            var orgs = GetOrgCache().ToQueryable();
+            var orgs = GetOrgCache().ToQueryable().Where(x => x.Key > 10);
 
-            var res = persons.Join(orgs.Where(x => x.Key > 10),
+            var res = persons.Join(orgs,
                 p => p.Value.OrganizationId,
                 o => o.Value.Id, (p, o) => p)
+                .Where(x => x.Key >= 0)
                 .ToList();
 
             Assert.AreEqual(PersonCount, res.Count);
