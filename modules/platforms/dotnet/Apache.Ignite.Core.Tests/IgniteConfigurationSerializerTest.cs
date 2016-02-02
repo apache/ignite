@@ -46,6 +46,9 @@ namespace Apache.Ignite.Core.Tests
     /// </summary>
     public class IgniteConfigurationSerializerTest
     {
+        /// <summary>
+        /// Tests the predefined XML.
+        /// </summary>
         [Test]
         public void TestPredefinedXml()
         {
@@ -129,6 +132,9 @@ namespace Apache.Ignite.Core.Tests
             Assert.AreEqual(true, queryEntity.Indexes.Single().Fields.Single().IsDescending);
         }
 
+        /// <summary>
+        /// Tests the serialize deserialize.
+        /// </summary>
         [Test]
         public void TestSerializeDeserialize()
         {
@@ -142,6 +148,9 @@ namespace Apache.Ignite.Core.Tests
             CheckSerializeDeserialize(new IgniteConfiguration());
         }
 
+        /// <summary>
+        /// Tests the schema validation.
+        /// </summary>
         [Test]
         public void TestSchemaValidation()
         {
@@ -158,7 +167,10 @@ namespace Apache.Ignite.Core.Tests
             Assert.Throws<XmlSchemaValidationException>(() => CheckSchemaValidation(invalidXml));
         }
 
-        public static void CheckSchemaValidation()
+        /// <summary>
+        /// Checks the schema validation.
+        /// </summary>
+        private static void CheckSchemaValidation()
         {
             var sb = new StringBuilder();
 
@@ -170,7 +182,11 @@ namespace Apache.Ignite.Core.Tests
             CheckSchemaValidation(sb.ToString());
         }
 
-        public static void CheckSchemaValidation(string xml)
+        /// <summary>
+        /// Checks the schema validation.
+        /// </summary>
+        /// <param name="xml">The XML.</param>
+        private static void CheckSchemaValidation(string xml)
         {
             var document = new XmlDocument();
 
@@ -182,6 +198,10 @@ namespace Apache.Ignite.Core.Tests
             document.Validate(null);
         }
 
+        /// <summary>
+        /// Checks the serialize deserialize.
+        /// </summary>
+        /// <param name="cfg">The config.</param>
         private static void CheckSerializeDeserialize(IgniteConfiguration cfg)
         {
             var resCfg = SerializeDeserialize(cfg);
@@ -189,6 +209,9 @@ namespace Apache.Ignite.Core.Tests
             AssertReflectionEqual(cfg, resCfg);
         }
 
+        /// <summary>
+        /// Serializes and deserializes a config.
+        /// </summary>
         private static IgniteConfiguration SerializeDeserialize(IgniteConfiguration cfg)
         {
             var sb = new StringBuilder();
@@ -207,6 +230,9 @@ namespace Apache.Ignite.Core.Tests
             }
         }
 
+        /// <summary>
+        /// Asserts equality with reflection.
+        /// </summary>
         private static void AssertReflectionEqual(object x, object y)
         {
             var type = x.GetType();
@@ -251,6 +277,9 @@ namespace Apache.Ignite.Core.Tests
             }
         }
 
+        /// <summary>
+        /// Gets the test configuration.
+        /// </summary>
         private static IgniteConfiguration GetTestConfig()
         {
             return new IgniteConfiguration
@@ -288,7 +317,7 @@ namespace Apache.Ignite.Core.Tests
                         AtomicityMode = CacheAtomicityMode.Transactional,
                         Backups = 15,
                         CacheMode = CacheMode.Partitioned,
-                        CacheStoreFactory = new TetsCacheStoreFactory(),
+                        CacheStoreFactory = new TestCacheStoreFactory(),
                         CopyOnRead = true,
                         EagerTtl = true,
                         EnableSwap = true,
@@ -379,12 +408,21 @@ namespace Apache.Ignite.Core.Tests
             };
         }
 
+        /// <summary>
+        /// Runs the with custom culture.
+        /// </summary>
+        /// <param name="action">The action.</param>
         private static void RunWithCustomCulture(Action action)
         {
             RunWithCulture(action, CultureInfo.InvariantCulture);
             RunWithCulture(action, CultureInfo.GetCultureInfo("ru-RU"));
         }
 
+        /// <summary>
+        /// Runs the with culture.
+        /// </summary>
+        /// <param name="action">The action.</param>
+        /// <param name="cultureInfo">The culture information.</param>
         private static void RunWithCulture(Action action, CultureInfo cultureInfo)
         {
             var oldCulture = Thread.CurrentThread.CurrentCulture;
@@ -401,51 +439,112 @@ namespace Apache.Ignite.Core.Tests
             }
         }
 
+        /// <summary>
+        /// Test bean.
+        /// </summary>
         public class LifecycleBean : ILifecycleBean
         {
+            /// <summary>
+            /// Gets or sets the foo.
+            /// </summary>
+            /// <value>
+            /// The foo.
+            /// </value>
             public int Foo { get; set; }
 
+            /// <summary>
+            /// This method is called when lifecycle event occurs.
+            /// </summary>
+            /// <param name="evt">Lifecycle event.</param>
             public void OnLifecycleEvent(LifecycleEventType evt)
             {
                 // No-op.
             }
         }
 
+        /// <summary>
+        /// Test mapper.
+        /// </summary>
         public class NameMapper : IBinaryNameMapper
         {
+            /// <summary>
+            /// Gets or sets the bar.
+            /// </summary>
+            /// <value>
+            /// The bar.
+            /// </value>
             public string Bar { get; set; }
 
+            /// <summary>
+            /// Gets the type name.
+            /// </summary>
+            /// <param name="name">The name.</param>
+            /// <returns>
+            /// Type name.
+            /// </returns>
             public string GetTypeName(string name)
             {
                 return name;
             }
 
+            /// <summary>
+            /// Gets the field name.
+            /// </summary>
+            /// <param name="name">The name.</param>
+            /// <returns>
+            /// Field name.
+            /// </returns>
             public string GetFieldName(string name)
             {
                 return name;
             }
         }
 
+        /// <summary>
+        /// Serializer.
+        /// </summary>
         public class TestSerializer : IBinarySerializer
         {
+            /// <summary>
+            /// Write portalbe object.
+            /// </summary>
+            /// <param name="obj">Object.</param>
+            /// <param name="writer">Poratble writer.</param>
             public void WriteBinary(object obj, IBinaryWriter writer)
             {
                 // No-op.
             }
 
+            /// <summary>
+            /// Read binary object.
+            /// </summary>
+            /// <param name="obj">Instantiated empty object.</param>
+            /// <param name="reader">Poratble reader.</param>
             public void ReadBinary(object obj, IBinaryReader reader)
             {
                 // No-op.
             }
         }
 
+        /// <summary>
+        /// Test class.
+        /// </summary>
         public class FooClass
         {
             // No-op.
         }
 
-        public class TetsCacheStoreFactory : IFactory<ICacheStore>
+        /// <summary>
+        /// Test factory.
+        /// </summary>
+        public class TestCacheStoreFactory : IFactory<ICacheStore>
         {
+            /// <summary>
+            /// Creates an instance of the cache store.
+            /// </summary>
+            /// <returns>
+            /// New instance of the cache store.
+            /// </returns>
             public ICacheStore CreateInstance()
             {
                 return null;

@@ -28,6 +28,9 @@ namespace Apache.Ignite.Core.Tests
     /// </summary>
     public class IgniteConfigurationSectionTest
     {
+        /// <summary>
+        /// Tests the read.
+        /// </summary>
         [Test]
         public void TestRead()
         {
@@ -37,6 +40,9 @@ namespace Apache.Ignite.Core.Tests
             Assert.AreEqual("cacheName", section.IgniteConfiguration.CacheConfiguration.Single().Name);
         }
 
+        /// <summary>
+        /// Tests the ignite start.
+        /// </summary>
         [Test]
         public void TestIgniteStart()
         {
