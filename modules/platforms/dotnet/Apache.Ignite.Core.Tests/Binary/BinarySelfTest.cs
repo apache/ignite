@@ -1341,6 +1341,15 @@ namespace Apache.Ignite.Core.Tests.Binary
             }
         }
 
+        [Test]
+        public void TestBinaryConfigurationValidation()
+        {
+            var cfg = new BinaryConfiguration(typeof (PropertyType)) {Types = new[] {"PropertyType"}};
+
+            // ReSharper disable once ObjectCreationAsStatement
+            Assert.Throws<BinaryObjectException>(() => new Marshaller(cfg));
+        }
+
         private static void CheckKeepSerialized(BinaryConfiguration cfg, bool expKeep)
         {
             if (cfg.TypeConfigurations == null)

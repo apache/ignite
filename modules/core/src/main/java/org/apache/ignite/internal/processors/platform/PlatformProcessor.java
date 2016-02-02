@@ -90,6 +90,24 @@ public interface PlatformProcessor extends GridProcessor {
     public PlatformTarget getOrCreateCache(@Nullable String name) throws IgniteCheckedException;
 
     /**
+     * Create cache.
+     *
+     * @param memPtr Stream with cache config.
+     * @return Cache.
+     * @throws IgniteCheckedException If failed.
+     */
+    public PlatformTarget createCacheFromConfig(long memPtr) throws IgniteCheckedException;
+
+    /**
+     * Get or create cache.
+     *
+     * @param memPtr Stream with cache config.
+     * @return Cache.
+     * @throws IgniteCheckedException If failed.
+     */
+    public PlatformTarget getOrCreateCacheFromConfig(long memPtr) throws IgniteCheckedException;
+
+    /**
      * Destroy dynamically created cache.
      *
      * @param name Cache name.
@@ -188,4 +206,11 @@ public interface PlatformProcessor extends GridProcessor {
      * @throws IgniteException
      */
     public PlatformTarget atomicLong(String name, long initVal, boolean create) throws IgniteException;
+
+    /**
+     * Gets the configuration of the current Ignite instance.
+     *
+     * @param memPtr Stream to write data to.
+     */
+    public void getIgniteConfiguration(long memPtr);
 }
