@@ -91,7 +91,7 @@ header#header.header
                         li Automatically load SQL domain models from any RDBMS
                         li Connect to Ignite cluster and run SQL analytics on it
             .col-xs-12.col-md-6
-                #carousel.carousel.slide(data-ride='carousel')
+                #carousel.carousel.slide
                     // Indicators
                     ol.carousel-indicators
                         li.active(data-target='#carousel', data-slide-to='0')
@@ -147,5 +147,8 @@ header#header.header
                         span.sr-only Next
 
 include includes/footer
+
+script.
+    $('.carousel').carousel()
 
 
