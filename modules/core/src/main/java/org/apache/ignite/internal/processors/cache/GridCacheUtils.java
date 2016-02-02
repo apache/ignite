@@ -82,7 +82,6 @@ import org.apache.ignite.internal.util.typedef.P2;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.CU;
-import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.lang.IgniteClosure;
@@ -1243,31 +1242,14 @@ public class GridCacheUtils {
     }
 
     /**
-     * Validates that cache value object implements {@link Externalizable}.
+     * Validates that cache key object has overridden equals and hashCode methods.
      *
-     * @param log Logger used to log warning message.
-     * @param val Value.
-     */
-    public static void validateCacheValue(IgniteLogger log, @Nullable Object val) {
-        if (val == null)
-            return;
-
-        validateExternalizable(log, val);
-    }
-
-    /**
-     * Validates that cache key object has overridden equals and hashCode methods and
-     * implements {@link Externalizable}.
-     *
-     * @param log Logger used to log warning message.
      * @param key Key.
      * @throws IllegalArgumentException If equals or hashCode is not implemented.
      */
-    public static void validateCacheKey(IgniteLogger log, @Nullable Object key) {
+    public static void validateCacheKey(@Nullable Object key) {
         if (key == null)
             return;
-
-        validateExternalizable(log, key);
 
         if (!U.overridesEqualsAndHashCode(key))
             throw new IllegalArgumentException("Cache key must override hashCode() and equals() methods: " +
@@ -1353,20 +1335,6 @@ public class GridCacheUtils {
         }
         else
             return 1;
-    }
-
-    /**
-     * Validates that cache key or cache value implements {@link Externalizable}
-     *
-     * @param log Logger used to log warning message.
-     * @param obj Cache key or cache value.
-     */
-    private static void validateExternalizable(IgniteLogger log, Object obj) {
-        Class<?> cls = obj.getClass();
-
-        if (!cls.isArray() && !U.isJdk(cls) && !(obj instanceof Externalizable) && !(obj instanceof GridCacheInternal))
-            LT.warn(log, null, "For best performance you should implement " +
-                "java.io.Externalizable for all cache keys and values: " + cls.getName());
     }
 
 //    /**

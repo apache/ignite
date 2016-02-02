@@ -20,8 +20,10 @@ package org.apache.ignite.configuration;
 import java.util.ArrayList;
 import java.util.Collection;
 import org.apache.ignite.binary.BinaryIdMapper;
+import org.apache.ignite.binary.BinaryNameMapper;
 import org.apache.ignite.binary.BinarySerializer;
 import org.apache.ignite.binary.BinaryTypeConfiguration;
+import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
  * Configuration object for Ignite Binary Objects.
@@ -33,6 +35,9 @@ public class BinaryConfiguration {
 
     /** ID mapper. */
     private BinaryIdMapper idMapper;
+
+    /** Name mapper. */
+    private BinaryNameMapper nameMapper;
 
     /** Serializer. */
     private BinarySerializer serializer;
@@ -72,6 +77,24 @@ public class BinaryConfiguration {
      */
     public void setIdMapper(BinaryIdMapper idMapper) {
         this.idMapper = idMapper;
+    }
+
+    /**
+     * Gets name mapper.
+     *
+     * @return Name mapper.
+     */
+    public BinaryNameMapper getNameMapper() {
+        return nameMapper;
+    }
+
+    /**
+     * Sets name mapper.
+     *
+     * @param nameMapper Name mapper.
+     */
+    public void setNameMapper(BinaryNameMapper nameMapper) {
+        this.nameMapper = nameMapper;
     }
 
     /**
@@ -135,5 +158,10 @@ public class BinaryConfiguration {
      */
     public void setCompactFooter(boolean compactFooter) {
         this.compactFooter = compactFooter;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(BinaryConfiguration.class, this);
     }
 }

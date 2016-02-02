@@ -55,6 +55,26 @@ namespace Apache.Ignite.Core.Cache.Configuration
         }
 
         /// <summary>
+        /// Initializes a new instance of the <see cref="QueryEntity"/> class.
+        /// </summary>
+        /// <param name="valueType">Type of the cache entry value.</param>
+        public QueryEntity(Type valueType)
+        {
+            ValueType = valueType;
+        }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="QueryEntity"/> class.
+        /// </summary>
+        /// <param name="keyType">Type of the key.</param>
+        /// <param name="valueType">Type of the value.</param>
+        public QueryEntity(Type keyType, Type valueType)
+        {
+            KeyType = keyType;
+            ValueType = valueType;
+        }
+
+        /// <summary>
         /// Gets or sets key Java type name.
         /// </summary>
         public string KeyTypeName
@@ -73,7 +93,7 @@ namespace Apache.Ignite.Core.Cache.Configuration
         /// This is a shortcut for <see cref="KeyTypeName"/>. Getter will return null for non-primitive types.
         /// <para />
         /// Setting this property will overwrite <see cref="Fields"/> and <see cref="Indexes"/> according to
-        /// <see cref="QueryFieldAttribute"/>, if any.
+        /// <see cref="QuerySqlFieldAttribute"/>, if any.
         /// </summary>
         public Type KeyType
         {
@@ -109,7 +129,7 @@ namespace Apache.Ignite.Core.Cache.Configuration
         /// This is a shortcut for <see cref="ValueTypeName"/>. Getter will return null for non-primitive types.
         /// <para />
         /// Setting this property will overwrite <see cref="Fields"/> and <see cref="Indexes"/> according to
-        /// <see cref="QueryFieldAttribute"/>, if any.
+        /// <see cref="QuerySqlFieldAttribute"/>, if any.
         /// </summary>
         public Type ValueType
         {
@@ -267,7 +287,7 @@ namespace Apache.Ignite.Core.Cache.Configuration
         }
 
         /// <summary>
-        /// Scans specified type for occurences of <see cref="QueryFieldAttribute"/>.
+        /// Scans specified type for occurences of <see cref="QuerySqlFieldAttribute"/>.
         /// </summary>
         /// <param name="type">The type.</param>
         /// <param name="fields">The fields.</param>
@@ -288,17 +308,36 @@ namespace Apache.Ignite.Core.Cache.Configuration
 
             foreach (var memberInfo in GetFieldsAndProperties(type))
             {
-                foreach (var attr in memberInfo.Key.GetCustomAttributes(true).OfType<QueryFieldAttribute>())
+                var customAttributes = memberInfo.Key.GetCustomAttributes(true);
+
+                foreach (var attr in customAttributes.OfType<QuerySqlFieldAttribute>())
                 {
                     var columnName = attr.Name ?? memberInfo.Key.Name;
 
+                    // Dot notation is required for nested SQL fields
                     if (parentPropName != null)
                         columnName = parentPropName + "." + columnName;
 
                     fields.Add(new QueryField(columnName, memberInfo.Value));
 
                     if (attr.IsIndexed)
-                        indexes.Add(new QueryIndexEx(columnName, attr.IsDescending, attr.IndexType, attr.IndexGroups));
+                        indexes.Add(new QueryIndexEx(columnName, attr.IsDescending, QueryIndexType.Sorted,
+                            attr.IndexGroups));
+
+                    ScanAttributes(memberInfo.Value, fields, indexes, columnName, visitedTypes);
+                }
+
+                foreach (var attr in customAttributes.OfType<QueryTextFieldAttribute>())
+                {
+                    var columnName = attr.Name ?? memberInfo.Key.Name;
+
+                    // No dot notation for FullText index names
+                    indexes.Add(new QueryIndexEx(columnName, false, QueryIndexType.FullText, null));
+
+                    if (parentPropName != null)
+                        columnName = parentPropName + "." + columnName;
+
+                    fields.Add(new QueryField(columnName, memberInfo.Value));
 
                     ScanAttributes(memberInfo.Value, fields, indexes, columnName, visitedTypes);
                 }
@@ -348,7 +387,7 @@ namespace Apache.Ignite.Core.Cache.Configuration
             /// <param name="groups">The groups.</param>
             public QueryIndexEx(string fieldName, bool isDescending, QueryIndexType indexType, 
                 ICollection<string> groups) 
-                : base(fieldName, isDescending, indexType)
+                : base(isDescending, indexType, fieldName)
             {
                 IndexGroups = groups;
             }

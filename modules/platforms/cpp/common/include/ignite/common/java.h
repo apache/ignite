@@ -288,7 +288,6 @@ namespace ignite
                 jmethodID m_PlatformIgnition_environmentPointer;
                 jmethodID m_PlatformIgnition_stop;
                 jmethodID m_PlatformIgnition_stopAll;
-                jmethodID m_PlatformIgnition_loadSpringConfig;
 
                 jclass c_PlatformMessaging;
                 jmethodID m_PlatformMessaging_withAsync;

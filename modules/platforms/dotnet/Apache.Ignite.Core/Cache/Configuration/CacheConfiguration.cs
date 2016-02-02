@@ -28,6 +28,7 @@ namespace Apache.Ignite.Core.Cache.Configuration
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Cache;
     using Apache.Ignite.Core.Cache.Store;
+    using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Impl.Binary;
 
     /// <summary>
@@ -195,11 +196,21 @@ namespace Apache.Ignite.Core.Cache.Configuration
         /// <param name="name">Cache name.</param>
         /// <param name="queryTypes">
         /// Collection of types to be registered as query entities. These types should use 
-        /// <see cref="QueryFieldAttribute"/> to configure query fields and properties.
+        /// <see cref="QuerySqlFieldAttribute"/> to configure query fields and properties.
         /// </param>
         public CacheConfiguration(string name, params Type[] queryTypes) : this(name)
         {
             QueryEntities = queryTypes.Select(type => new QueryEntity {ValueType = type}).ToArray();
+        }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="CacheConfiguration"/> class.
+        /// </summary>
+        /// <param name="name">Cache name.</param>
+        /// <param name="queryEntities">Query entities.</param>
+        public CacheConfiguration(string name, params QueryEntity[] queryEntities) : this(name)
+        {
+            QueryEntities = queryEntities;
         }
 
         /// <summary>
@@ -244,7 +255,7 @@ namespace Apache.Ignite.Core.Cache.Configuration
             WriteBehindFlushSize = reader.ReadInt();
             WriteBehindFlushThreadCount = reader.ReadInt();
             WriteSynchronizationMode = (CacheWriteSynchronizationMode) reader.ReadInt();
-            CacheStoreFactory = reader.ReadObject<ICacheStoreFactory>();
+            CacheStoreFactory = reader.ReadObject<IFactory<ICacheStore>>();
 
             var count = reader.ReadInt();
             QueryEntities = count == 0 ? null : Enumerable.Range(0, count).Select(x => new QueryEntity(reader)).ToList();
@@ -579,7 +590,7 @@ namespace Apache.Ignite.Core.Cache.Configuration
         /// <summary>
         /// Gets or sets the factory for underlying persistent storage for read-through and write-through operations.
         /// </summary>
-        public ICacheStoreFactory CacheStoreFactory { get; set; }
+        public IFactory<ICacheStore> CacheStoreFactory { get; set; }
 
         /// <summary>
         /// Gets or sets the query entity configuration.

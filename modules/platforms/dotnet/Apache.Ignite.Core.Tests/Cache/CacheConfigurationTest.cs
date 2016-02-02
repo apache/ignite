@@ -20,9 +20,12 @@ namespace Apache.Ignite.Core.Tests.Cache
     using System;
     using System.Collections.Generic;
     using System.Linq;
+    using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Cache.Configuration;
     using Apache.Ignite.Core.Cache.Store;
     using Apache.Ignite.Core.Common;
+    using Apache.Ignite.Core.Discovery.Tcp;
+    using Apache.Ignite.Core.Discovery.Tcp.Static;
     using NUnit.Framework;
 
     /// <summary>
@@ -40,6 +43,9 @@ namespace Apache.Ignite.Core.Tests.Cache
         private static int _factoryProp;
 
 
+        /// <summary>
+        /// Fixture set up.
+        /// </summary>
         [TestFixtureSetUp]
         public void FixtureSetUp()
         {
@@ -52,18 +58,32 @@ namespace Apache.Ignite.Core.Tests.Cache
                 },
                 JvmClasspath = TestUtils.CreateTestClasspath(),
                 JvmOptions = TestUtils.TestJavaOptions(),
-                GridName = CacheName
+                GridName = CacheName,
+                BinaryConfiguration = new BinaryConfiguration(typeof(Entity)),
+                DiscoverySpi = new TcpDiscoverySpi
+                {
+                    IpFinder = new TcpDiscoveryStaticIpFinder
+                    {
+                        Endpoints = new[] { "127.0.0.1:47500", "127.0.0.1:47501" }
+                    }
+                }
             };
 
             _ignite = Ignition.Start(cfg);
         }
 
+        /// <summary>
+        /// Fixture tear down.
+        /// </summary>
         [TestFixtureTearDown]
         public void FixtureTearDown()
         {
             Ignition.StopAll(true);
         }
 
+        /// <summary>
+        /// Tests the default configuration.
+        /// </summary>
         [Test]
         public void TestDefaultConfiguration()
         {
@@ -74,6 +94,9 @@ namespace Apache.Ignite.Core.Tests.Cache
             AssertConfigIsDefault(_ignite.GetConfiguration().CacheConfiguration.Single(c => c.Name == null));
         }
 
+        /// <summary>
+        /// Tests the custom configuration.
+        /// </summary>
         [Test]
         public void TestCustomConfiguration()
         {
@@ -84,32 +107,49 @@ namespace Apache.Ignite.Core.Tests.Cache
                 _ignite.GetConfiguration().CacheConfiguration.Single(c => c.Name == CacheName));
         }
 
+        /// <summary>
+        /// Tests the create from configuration.
+        /// </summary>
         [Test]
         public void TestCreateFromConfiguration()
         {
             var cacheName = Guid.NewGuid().ToString();
             var cfg = GetCustomCacheConfiguration(cacheName);
 
-            var cache = _ignite.CreateCache<int, int>(cfg);
+            var cache = _ignite.CreateCache<int, Entity>(cfg);
             AssertConfigsAreEqual(cfg, cache.GetConfiguration());
 
             // Can't create existing cache
             Assert.Throws<IgniteException>(() => _ignite.CreateCache<int, int>(cfg));
+            
+            // Check put-get
+            cache[1] = new Entity { Foo = 1 };
+            Assert.AreEqual(1, cache[1].Foo);
         }
 
+        /// <summary>
+        /// Tests the get or create from configuration.
+        /// </summary>
         [Test]
         public void TestGetOrCreateFromConfiguration()
         {
             var cacheName = Guid.NewGuid().ToString();
             var cfg = GetCustomCacheConfiguration(cacheName);
 
-            var cache = _ignite.GetOrCreateCache<int, int>(cfg);
+            var cache = _ignite.GetOrCreateCache<int, Entity>(cfg);
             AssertConfigsAreEqual(cfg, cache.GetConfiguration());
 
-            var cache2 = _ignite.GetOrCreateCache<int, int>(cfg);
+            var cache2 = _ignite.GetOrCreateCache<int, Entity>(cfg);
             AssertConfigsAreEqual(cfg, cache2.GetConfiguration());
+
+            // Check put-get
+            cache[1] = new Entity { Foo = 1 };
+            Assert.AreEqual(1, cache[1].Foo);
         }
 
+        /// <summary>
+        /// Tests the cache store.
+        /// </summary>
         [Test]
         public void TestCacheStore()
         {
@@ -298,7 +338,7 @@ namespace Apache.Ignite.Core.Tests.Cache
         /// <summary>
         /// Asserts that two configurations have the same properties.
         /// </summary>
-        private static void AssertConfigsAreEqual(ICollection<IndexField> x, ICollection<IndexField> y)
+        private static void AssertConfigsAreEqual(ICollection<QueryIndexField> x, ICollection<QueryIndexField> y)
         {
             if (x == null)
             {
@@ -353,7 +393,7 @@ namespace Apache.Ignite.Core.Tests.Cache
         /// <summary>
         /// Asserts that two configurations have the same properties.
         /// </summary>
-        private static void AssertConfigsAreEqual(IndexField x, IndexField y)
+        private static void AssertConfigsAreEqual(QueryIndexField x, QueryIndexField y)
         {
             Assert.IsNotNull(x);
             Assert.IsNotNull(y);
@@ -421,7 +461,7 @@ namespace Apache.Ignite.Core.Tests.Cache
                         Indexes = new[]
                         {
                             new QueryIndex("name") {Name = "index1" },
-                            new QueryIndex(new IndexField("location", true))
+                            new QueryIndex(new QueryIndexField("location", true))
                             {
                                 Name= "index2",
                                 IndexType = QueryIndexType.FullText
@@ -432,11 +472,26 @@ namespace Apache.Ignite.Core.Tests.Cache
             };
         }
 
+        /// <summary>
+        /// Test factory.
+        /// </summary>
         [Serializable]
-        private class CacheStoreFactoryTest : ICacheStoreFactory
+        private class CacheStoreFactoryTest : IFactory<ICacheStore>
         {
+            /// <summary>
+            /// Gets or sets the test property.
+            /// </summary>
+            /// <value>
+            /// The test property.
+            /// </value>
             public int TestProperty { get; set; }
 
+            /// <summary>
+            /// Creates an instance of the cache store.
+            /// </summary>
+            /// <returns>
+            /// New instance of the cache store.
+            /// </returns>
             public ICacheStore CreateInstance()
             {
                 _factoryProp = TestProperty;
@@ -445,22 +500,39 @@ namespace Apache.Ignite.Core.Tests.Cache
             }
         }
 
+        /// <summary>
+        /// Test store.
+        /// </summary>
         private class CacheStoreTest : CacheStoreAdapter
         {
+            /** <inheritdoc /> */
             public override object Load(object key)
             {
                 return null;
             }
 
+            /** <inheritdoc /> */
             public override void Write(object key, object val)
             {
                 // No-op.
             }
 
+            /** <inheritdoc /> */
             public override void Delete(object key)
             {
                 // No-op.
             }
+        }
+
+        /// <summary>
+        /// Test entity.
+        /// </summary>
+        private class Entity
+        {
+            /// <summary>
+            /// Gets or sets the foo.
+            /// </summary>
+            public int Foo { get; set; }
         }
     }
 }

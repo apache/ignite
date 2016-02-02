@@ -325,10 +325,7 @@ public class GridBinaryMarshaller {
      * @param oldCtx Old binary context.
      */
     public static void popContext(@Nullable BinaryContext oldCtx) {
-        if (oldCtx == null)
-            BINARY_CTX.remove();
-        else
-            BINARY_CTX.set(oldCtx);
+        BINARY_CTX.set(oldCtx);
     }
 
     /**

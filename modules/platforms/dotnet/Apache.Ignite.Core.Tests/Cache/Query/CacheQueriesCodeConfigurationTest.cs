@@ -40,7 +40,6 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         [Test]
         public void TestQueryEntityConfiguration()
         {
-
             var cfg = new IgniteConfiguration
             {
                 JvmOptions = TestUtils.TestJavaOptions(),
@@ -48,27 +47,18 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
                 BinaryConfiguration = new BinaryConfiguration(typeof (QueryPerson)),
                 CacheConfiguration = new[]
                 {
-                    new CacheConfiguration
+                    new CacheConfiguration(CacheName, new QueryEntity(typeof (int), typeof (QueryPerson))
                     {
-                        Name = CacheName,
-                        QueryEntities = new[]
+                        Fields = new[]
                         {
-                            new QueryEntity
-                            {
-                                KeyType = typeof (int),
-                                ValueType = typeof (QueryPerson),
-                                Fields = new[]
-                                {
-                                    new QueryField("Name", typeof (string)),
-                                    new QueryField("Age", typeof (int))
-                                },
-                                Indexes = new[]
-                                {
-                                    new QueryIndex("Name", false, QueryIndexType.FullText), new QueryIndex("Age")
-                                }
-                            }
+                            new QueryField("Name", typeof (string)),
+                            new QueryField("Age", typeof (int))
+                        },
+                        Indexes = new[]
+                        {
+                            new QueryIndex(false, QueryIndexType.FullText, "Name"), new QueryIndex("Age")
                         }
-                    }
+                    })
                 }
             };
 
@@ -93,11 +83,14 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
             }
         }
 
+        /// <summary>
+        /// Tests the attribute configuration.
+        /// </summary>
         [Test]
         public void TestAttributeConfiguration()
         {
             // ReSharper disable once ObjectCreationAsStatement
-            Assert.Throws<InvalidOperationException>(() => new QueryEntity {ValueType = typeof (RecursiveQuery)});
+            Assert.Throws<InvalidOperationException>(() => new QueryEntity(typeof (RecursiveQuery)));
 
             var qe = new QueryEntity {ValueType = typeof(AttributeTest) };
 
@@ -113,8 +106,8 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
 
             var idx = qe.Indexes.ToArray();
 
-            Assert.AreEqual(QueryIndexType.FullText, idx[0].IndexType);
-            Assert.AreEqual(QueryIndexType.FullText, idx[1].IndexType);
+            Assert.AreEqual(QueryIndexType.Sorted, idx[0].IndexType);
+            Assert.AreEqual(QueryIndexType.Sorted, idx[1].IndexType);
             Assert.AreEqual(QueryIndexType.Sorted, idx[2].IndexType);
             Assert.AreEqual(QueryIndexType.FullText, idx[3].IndexType);
 
@@ -124,6 +117,9 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
             CollectionAssert.AreEquivalent(new[] {"FullTextField"}, idx[3].Fields.Select(f => f.Name));
         }
 
+        /// <summary>
+        /// Tests the attribute configuration query.
+        /// </summary>
         [Test]
         public void TestAttributeConfigurationQuery()
         {
@@ -133,12 +129,12 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
                 JvmClasspath = TestUtils.CreateTestClasspath(),
                 BinaryConfiguration = new BinaryConfiguration(
                     typeof (AttributeQueryPerson), typeof (AttributeQueryAddress)),
-                CacheConfiguration = new[] {new CacheConfiguration(CacheName, typeof (AttributeQueryPerson))}
             };
 
             using (var ignite = Ignition.Start(cfg))
             {
-                var cache = ignite.GetOrCreateCache<int, AttributeQueryPerson>(CacheName);
+                var cache = ignite.GetOrCreateCache<int, AttributeQueryPerson>(new CacheConfiguration(CacheName,
+                        typeof (AttributeQueryPerson)));
 
                 Assert.IsNotNull(cache);
 
@@ -163,70 +159,136 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
                 {
                     Assert.AreEqual(1, cursor.GetAll().Single().Key);
                 }
+
+                using (var cursor = cache.Query(new TextQuery(typeof(AttributeQueryPerson), "Pin*")))
+                {
+                    Assert.AreEqual(1, cursor.GetAll().Single().Key);
+                }
             }
         }
 
+        /// <summary>
+        /// Test person.
+        /// </summary>
         private class AttributeQueryPerson
         {
+            /// <summary>
+            /// Initializes a new instance of the <see cref="AttributeQueryPerson"/> class.
+            /// </summary>
+            /// <param name="name">The name.</param>
+            /// <param name="age">The age.</param>
             public AttributeQueryPerson(string name, int age)
             {
                 Name = name;
                 Age = age;
             }
 
-            [QueryField(IsIndexed = true, IndexType = QueryIndexType.FullText)]
+            /// <summary>
+            /// Gets or sets the name.
+            /// </summary>
+            /// <value>
+            /// The name.
+            /// </value>
+            [QueryTextField]
             public string Name { get; set; }
 
-            [QueryField]
+            /// <summary>
+            /// Gets or sets the age.
+            /// </summary>
+            /// <value>
+            /// The age.
+            /// </value>
+            [QuerySqlField]
             public int Age { get; set; }
 
-            [QueryField]
+            /// <summary>
+            /// Gets or sets the address.
+            /// </summary>
+            /// <value>
+            /// The address.
+            /// </value>
+            [QuerySqlField]
             public AttributeQueryAddress Address { get; set; }
         }
 
+        /// <summary>
+        /// Address.
+        /// </summary>
         private class AttributeQueryAddress
         {
-            [QueryField]
+            /// <summary>
+            /// Gets or sets the country.
+            /// </summary>
+            /// <value>
+            /// The country.
+            /// </value>
+            [QuerySqlField]
             public string Country { get; set; }
 
-            [QueryField]
+            /// <summary>
+            /// Gets or sets the street.
+            /// </summary>
+            /// <value>
+            /// The street.
+            /// </value>
+            [QueryTextField]
             public string Street { get; set; }
         }
 
+        /// <summary>
+        /// Query.
+        /// </summary>
         private class RecursiveQuery
         {
-            [QueryField]
+            /// <summary>
+            /// Gets or sets the inner.
+            /// </summary>
+            /// <value>
+            /// The inner.
+            /// </value>
+            [QuerySqlField]
             public RecursiveQuery Inner { get; set; }
         }
 
+        /// <summary>
+        /// Attribute test class.
+        /// </summary>
         private class AttributeTest
         {
-            [QueryField]
+            [QuerySqlField]
             public double SqlField { get; set; }
 
-            [QueryField(IsIndexed = true, Name = "IndexedField1")]
+            [QuerySqlField(IsIndexed = true, Name = "IndexedField1")]
             public int IndexedField { get; set; }
 
-            [QueryField(IndexType = QueryIndexType.FullText, IsIndexed = true)]
+            [QueryTextField]
             public string FullTextField { get; set; }
 
-            [QueryField]
+            [QuerySqlField]
             public AttributeTestInner Inner { get; set; }
 
-            [QueryField(IsIndexed = true, IndexGroups = new [] {"group1", "group2"}, 
-                IndexType = QueryIndexType.FullText)]
+            [QuerySqlField(IsIndexed = true, IndexGroups = new[] {"group1", "group2"})]
             public string GroupIndex1 { get; set; }
 
-            [QueryField(IsIndexed = true, IndexGroups = new [] {"group1"}, IndexType = QueryIndexType.FullText)]
+            [QuerySqlField(IsIndexed = true, IndexGroups = new[] {"group1"})]
             public string GroupIndex2 { get; set; }
 
-            [QueryField(IsIndexed = true, IndexGroups = new [] {"group2"}, IndexType = QueryIndexType.FullText)]
+            [QuerySqlField(IsIndexed = true, IndexGroups = new[] {"group2"})]
             public string GroupIndex3 { get; set; }
         }
 
+        /// <summary>
+        /// Inner class.
+        /// </summary>
         private class AttributeTestInner
         {
-            [QueryField]
+            /// <summary>
+            /// Gets or sets the foo.
+            /// </summary>
+            /// <value>
+            /// The foo.
+            /// </value>
+            [QuerySqlField]
             public string Foo { get; set; }
         }
     }

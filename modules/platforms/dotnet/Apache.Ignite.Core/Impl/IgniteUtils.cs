@@ -19,6 +19,7 @@ namespace Apache.Ignite.Core.Impl
 {
     using System;
     using System.Collections.Generic;
+    using System.Diagnostics.CodeAnalysis;
     using System.Globalization;
     using System.IO;
     using System.Linq;
@@ -64,6 +65,8 @@ namespace Apache.Ignite.Core.Impl
         /// <summary>
         /// Initializes the <see cref="IgniteUtils"/> class.
         /// </summary>
+        [SuppressMessage("Microsoft.Performance", "CA1810:InitializeReferenceTypeStaticFieldsInline",
+            Justification = "Readability.")]
         static IgniteUtils()
         {
             TryCleanTempDirectories();
@@ -72,10 +75,10 @@ namespace Apache.Ignite.Core.Impl
         /// <summary>
         /// Gets thread local random.
         /// </summary>
-        /// <returns>Thread local random.</returns>
-        private static Random ThreadLocalRandom()
+        /// <value>Thread local random.</value>
+        public static Random ThreadLocalRandom
         {
-            return _rnd ?? (_rnd = new Random());
+            get { return _rnd ?? (_rnd = new Random()); }
         }
 
         /// <summary>
@@ -89,7 +92,7 @@ namespace Apache.Ignite.Core.Impl
             if (cnt > 1) {
                 List<T> res = new List<T>(list);
 
-                Random rnd = ThreadLocalRandom();
+                Random rnd = ThreadLocalRandom;
 
                 while (cnt > 1)
                 {

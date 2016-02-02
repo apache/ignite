@@ -22,7 +22,6 @@ namespace Apache.Ignite.Core.Cache.Configuration
     using System.Collections.Generic;
     using System.Linq;
     using Apache.Ignite.Core.Binary;
-    using Apache.Ignite.Core.Impl.Common;
 
     /// <summary>
     /// Represents cache query index configuration.
@@ -40,8 +39,8 @@ namespace Apache.Ignite.Core.Cache.Configuration
         /// <summary>
         /// Initializes a new instance of the <see cref="QueryIndex" /> class.
         /// </summary>
-        /// <param name="fieldName">Name of the field.</param>
-        public QueryIndex(string fieldName) : this(fieldName, false)
+        /// <param name="fieldNames">Names of the fields to index.</param>
+        public QueryIndex(params string[] fieldNames) : this(false, fieldNames)
         {
             // No-op.
         }
@@ -49,23 +48,21 @@ namespace Apache.Ignite.Core.Cache.Configuration
         /// <summary>
         /// Initializes a new instance of the <see cref="QueryIndex" /> class.
         /// </summary>
-        /// <param name="fieldName">Name of the field.</param>
         /// <param name="isDescending">Sort direction.</param>
-        public QueryIndex(string fieldName, bool isDescending)
+        /// <param name="fieldNames">Names of the fields to index.</param>
+        public QueryIndex(bool isDescending, params string[] fieldNames)
         {
-            IgniteArgumentCheck.NotNullOrEmpty(fieldName, "fieldName");
-
-            Fields = new[] {new IndexField(fieldName, isDescending)};
+            Fields = fieldNames.Select(f => new QueryIndexField(f, isDescending)).ToArray();
         }
 
         /// <summary>
         /// Initializes a new instance of the <see cref="QueryIndex" /> class.
         /// </summary>
-        /// <param name="fieldName">Name of the field.</param>
         /// <param name="isDescending">Sort direction.</param>
         /// <param name="indexType">Type of the index.</param>
-        public QueryIndex(string fieldName, bool isDescending, QueryIndexType indexType) 
-            : this(fieldName, isDescending)
+        /// <param name="fieldNames">Names of the fields to index.</param>
+        public QueryIndex(bool isDescending, QueryIndexType indexType, params string[] fieldNames) 
+            : this(isDescending, fieldNames)
         {
             IndexType = indexType;
         }
@@ -74,9 +71,9 @@ namespace Apache.Ignite.Core.Cache.Configuration
         /// Initializes a new instance of the <see cref="QueryIndex"/> class.
         /// </summary>
         /// <param name="fields">The fields.</param>
-        public QueryIndex(params IndexField[] fields)
+        public QueryIndex(params QueryIndexField[] fields)
         {
-            if (fields.Length == 0)
+            if (fields == null || fields.Length == 0)
                 throw new ArgumentException("Query index must have at least one field");
 
             if (fields.Any(f => f == null))
@@ -99,7 +96,7 @@ namespace Apache.Ignite.Core.Cache.Configuration
         /// <summary>
         /// Gets or sets a collection of fields to be indexed.
         /// </summary>
-        public ICollection<IndexField> Fields { get; private set; }
+        public ICollection<QueryIndexField> Fields { get; private set; }
 
         /// <summary>
         /// Initializes a new instance of the <see cref="QueryIndex"/> class.
@@ -112,7 +109,7 @@ namespace Apache.Ignite.Core.Cache.Configuration
 
             var count = reader.ReadInt();
             Fields = count == 0 ? null : Enumerable.Range(0, count).Select(x =>
-                new IndexField(reader.ReadString(), reader.ReadBoolean())).ToList();
+                new QueryIndexField(reader.ReadString(), reader.ReadBoolean())).ToList();
         }
 
         /// <summary>

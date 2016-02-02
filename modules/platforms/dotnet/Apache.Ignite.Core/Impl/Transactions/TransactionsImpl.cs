@@ -18,6 +18,7 @@
 namespace Apache.Ignite.Core.Impl.Transactions
 {
     using System;
+    using System.Diagnostics.CodeAnalysis;
     using System.Threading.Tasks;
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Impl.Binary;
@@ -90,6 +91,7 @@ namespace Apache.Ignite.Core.Impl.Transactions
         }
 
         /** <inheritDoc /> */
+        [SuppressMessage("Microsoft.Reliability", "CA2000:Dispose objects before losing scope")]
         public ITransaction TxStart(TransactionConcurrency concurrency, TransactionIsolation isolation,
             TimeSpan timeout, int txSize)
         {
