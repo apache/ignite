@@ -15,39 +15,33 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.stream.kafka;
+package org.apache.ignite.binary;
 
-import kafka.producer.Partitioner;
-import kafka.utils.VerifiableProperties;
+import org.apache.ignite.configuration.BinaryConfiguration;
 
 /**
- * Simple partitioner for Kafka.
+ * Maps type and field names to different names. Prepares class/type names
+ * and field names before pass them to {@link BinaryIdMapper}.
+ * <p>
+ * Binary name mapper can be configured for all binary objects via
+ * {@link BinaryConfiguration#getNameMapper()} method,
+ * or for a specific binary type via {@link BinaryTypeConfiguration#getNameMapper()} method.
+ * @see BinaryIdMapper
  */
-@SuppressWarnings("UnusedDeclaration")
-public class SimplePartitioner implements Partitioner {
+public interface BinaryNameMapper {
     /**
-     * Constructs instance.
+     * Gets type clsName.
      *
-     * @param props Properties.
+     * @param clsName Class came
+     * @return Type name.
      */
-    public SimplePartitioner(VerifiableProperties props) {
-        // No-op.
-    }
+    String typeName(String clsName);
 
     /**
-     * Partitions the key based on the key value.
+     * Gets field name.
      *
-     * @param key Key.
-     * @param partSize Partition size.
-     * @return partition Partition.
+     * @param fieldName Field name.
+     * @return Field name.
      */
-    public int partition(Object key, int partSize) {
-        String keyStr = (String)key;
-
-        String[] keyValues = keyStr.split("\\.");
-
-        Integer intKey = Integer.parseInt(keyValues[3]);
-
-        return intKey > 0 ? intKey % partSize : 0;
-    }
+    String fieldName(String fieldName);
 }
