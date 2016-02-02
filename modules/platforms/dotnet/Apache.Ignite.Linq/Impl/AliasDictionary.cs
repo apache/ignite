@@ -60,7 +60,7 @@ namespace Apache.Ignite.Linq.Impl
 
             if (!_aliases.TryGetValue(fullName, out alias))
             {
-                alias = "tbl" + _aliasIndex++;
+                alias = "T" + _aliasIndex++;
 
                 _aliases[fullName] = alias;
             }

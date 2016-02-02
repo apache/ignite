@@ -460,15 +460,15 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
 
             Assert.AreEqual(cache.Name, query.CacheName);
             Assert.AreEqual(cache.Ignite, query.Ignite);
-            Assert.AreEqual("Fields Query [SQL=select \"\".Person._key, \"\".Person._val from \"\".Person " +
-                            "where (\"\".Person._key > ?), Parameters=10]", query.ToTraceString());
+            Assert.AreEqual("Fields Query [SQL=select T0._key, T0._val from \"\".Person as T0 " +
+                            "where (T0._key > ?), Parameters=10]", query.ToTraceString());
 
             // Check fields query
             var fieldsQuery = (ICacheQueryable) cache.ToQueryable().Select(x => x.Value.Name);
 
             Assert.AreEqual(cache.Name, fieldsQuery.CacheName);
             Assert.AreEqual(cache.Ignite, fieldsQuery.Ignite);
-            Assert.AreEqual("Fields Query [SQL=select \"\".Person.Name from \"\".Person, Parameters=]",
+            Assert.AreEqual("Fields Query [SQL=select T0.Name from \"\".Person as T0, Parameters=]",
                 fieldsQuery.ToTraceString());
         }
 
