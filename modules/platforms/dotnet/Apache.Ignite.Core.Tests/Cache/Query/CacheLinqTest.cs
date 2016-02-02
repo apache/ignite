@@ -56,7 +56,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         [TestFixtureSetUp]
         public void FixtureSetUp()
         {
-            _runDbConsole = true;  // set to true to open H2 console
+            _runDbConsole = false;  // set to true to open H2 console
 
             if (_runDbConsole)
                 Environment.SetEnvironmentVariable("IGNITE_H2_DEBUG_CONSOLE", "true");
