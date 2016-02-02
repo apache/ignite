@@ -32,9 +32,9 @@ namespace Apache.Ignite.Core.Tests
             Debug.Listeners.Add(new TextWriterTraceListener(Console.Out));
             Debug.AutoFlush = true;
 
-            TestOne(typeof(IgniteConfigurationTest), "TestStaticIpFinder");
+            //TestOne(typeof(IgniteConfigurationTest), "TestStaticIpFinder");
 
-            //TestAll(typeof (CacheQueriesCodeConfigurationTest));
+            TestAll(typeof (CacheLinqTest));
             //TestAllInAssembly();
         }
 

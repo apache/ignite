@@ -56,7 +56,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         [TestFixtureSetUp]
         public void FixtureSetUp()
         {
-            _runDbConsole = false;  // set to true to open H2 console
+            _runDbConsole = true;  // set to true to open H2 console
 
             if (_runDbConsole)
                 Environment.SetEnvironmentVariable("IGNITE_H2_DEBUG_CONSOLE", "true");
@@ -99,7 +99,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
 
             roleCache[new RoleKey(1, 101)] = new Role {Name = "Role_1", Date = StartDateTime };
             roleCache[new RoleKey(2, 102)] = new Role {Name = "Role_2", Date = StartDateTime.AddYears(1)};
-            roleCache[new RoleKey(3, 103)] = new Role {Name = null};
+            roleCache[new RoleKey(3, 103)] = new Role {Name = null, Date = StartDateTime.AddYears(2)};
         }
 
         [TestFixtureTearDown]
@@ -482,7 +482,11 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
             Assert.AreEqual(expDates, dates);
 
             // Filtering
-            Assert.AreEqual(1, roles.Count(x => x.Value.Date > StartDateTime));
+            Assert.AreEqual(2, roles.Count(x => x.Value.Date > StartDateTime));
+            Assert.AreEqual(0, roles.Count(x => x.Value.Date < StartDateTime));
+            Assert.AreEqual(1, roles.Count(x => x.Value.Date == StartDateTime));
+            Assert.AreEqual(1, roles.Count(x => x.Value.Date == StartDateTime.AddYears(1)));
+            Assert.AreEqual(RoleCount, roles.Count(x => x.Value.Date == StartDateTime.AddYears(100)));
 
             // Joins
         }
