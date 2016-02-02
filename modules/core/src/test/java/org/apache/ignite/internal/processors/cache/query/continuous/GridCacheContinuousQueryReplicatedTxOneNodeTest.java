@@ -84,7 +84,8 @@ public class GridCacheContinuousQueryReplicatedTxOneNodeTest extends GridCommonA
      * @throws Exception If failed.
      */
     public void testLocal() throws Exception {
-        doTest(true);
+        if (cacheMode() == CacheMode.REPLICATED)
+            doTest(true);
     }
 
     /**
