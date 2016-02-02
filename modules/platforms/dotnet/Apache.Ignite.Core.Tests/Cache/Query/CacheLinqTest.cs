@@ -331,7 +331,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         [Test]
         public void TestMultiCacheJoinSubquery()
         {
-            var organizations = GetOrgCache().ToQueryable().Where(x => x.Key == 1);
+            var organizations = GetOrgCache().ToQueryable().Where(x => x.Key == 1001);
             var persons = GetPersonOrgCache().ToQueryable().Where(x => x.Key < 20);
             var roles = GetRoleCache().ToQueryable().Where(x => x.Key.Foo >= 0);
 
@@ -340,7 +340,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
                 .Join(organizations, pr => pr.person.Value.OrganizationId, org => org.Value.Id,
                     (pr, org) => new {org, pr.person, pr.role}).ToArray();
 
-            Assert.AreEqual(RoleCount, res.Length);
+            Assert.AreEqual(2, res.Length);
         }
 
         [Test]
