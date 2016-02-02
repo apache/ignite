@@ -21,14 +21,21 @@ export default ['igniteUnique', ['$parse', ($parse) => {
             return;
 
         ngModel.$validators.igniteUnique = (value) => {
-            let idx;
             const arr = $parse(attrs.igniteUnique)(scope);
 
-            // Return true in case if array not exist, array empty, or value is unique.
-            if (!arr || !arr.length || !~(idx = arr.indexOf(value)))
+            // Return true in case if array not exist, array empty.
+            if (!arr || !arr.length)
                 return true;
 
-            return !!(_.isNumber(scope.$index) && scope.$index === idx);
+            const name = attrs.name;
+            const idx = arr.indexOf(value);
+
+            // In case of new element check all items.
+            if (name === 'new')
+                return idx < 0;
+
+            // Check for $index in case of editing in-place.
+            return (_.isNumber(scope.$index) && (idx < 0 || scope.$index === idx));
         };
     };
 
