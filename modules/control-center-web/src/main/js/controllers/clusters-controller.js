@@ -101,24 +101,6 @@ consoleModule.controller('clustersController', function ($http, $timeout, $scope
             sslConfiguration: {xml: '', java: '', allDefaults: true}
         };
 
-        $scope.cacheModes = $common.mkOptions(['LOCAL', 'REPLICATED', 'PARTITIONED']);
-
-        $scope.deploymentModes = $common.mkOptions(['PRIVATE', 'ISOLATED', 'SHARED', 'CONTINUOUS']);
-
-        $scope.transactionConcurrency = $common.mkOptions(['OPTIMISTIC', 'PESSIMISTIC']);
-
-        $scope.transactionIsolation = $common.mkOptions(['READ_COMMITTED', 'REPEATABLE_READ', 'SERIALIZABLE']);
-
-        $scope.segmentationPolicy = $common.mkOptions(['RESTART_JVM', 'STOP', 'NOOP']);
-
-        $scope.marshallers = $common.mkOptions(['OptimizedMarshaller', 'JdkMarshaller', undefined]);
-
-        $scope.sslKeyAlgorithms = ['SumX509', 'X509'];
-
-        $scope.sslStoreType = ['JKS', 'PCKS11', 'PCKS12'];
-
-        $scope.sslProtocols = ['TSL', 'SSL'];
-
         $scope.toggleExpanded = function () {
             $scope.ui.expanded = !$scope.ui.expanded;
 
@@ -377,7 +359,7 @@ consoleModule.controller('clustersController', function ($http, $timeout, $scope
                 var msg = 'Invalid value';
 
                 try {
-                    msg = form[firstError.$name].$error[firstErrorKey][0].$errorMessages[firstErrorKey];
+                    msg = form[firstError.$name].$errorMessages[actualError.$name][firstErrorKey];
                 }
                 catch(ignored) {
                     msg = 'Invalid value';

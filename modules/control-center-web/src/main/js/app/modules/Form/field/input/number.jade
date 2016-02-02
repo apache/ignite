@@ -14,6 +14,14 @@
     See the License for the specific language governing permissions and
     limitations under the License.
 
+mixin feedback(error, message)
+    i.fa.fa-exclamation-triangle.form-control-feedback(
+        ng-show='field.$error.#{error}'
+        bs-tooltip='"#{message}"'
+        ignite-error='#{error}'
+        ignite-error-message='#{message}'
+    )
+
 .input-tip
     input.form-control(
         id='{{ id }}'
@@ -28,20 +36,8 @@
         data-ng-disabled='disabled || false'
     )
 
-    i.fa.fa-exclamation-triangle.form-control-feedback(
-        ng-init='form[name].$errorMessages.min = "Value is less than allowable minimum"'
-        ng-show='field.$error.min'
-        bs-tooltip='"Value is less than allowable minimum"'
-    )
-    i.fa.fa-exclamation-triangle.form-control-feedback(
-        ng-init='form[name].$errorMessages.max = "Value is more than allowable maximum"'
-        ng-show='field.$error.max'
-        bs-tooltip='"Value is more than allowable maximum"'
-    )
+    +feedback('min', 'Value is less than allowable minimum')
+    +feedback('max', 'Value is more than allowable maximum')
+    +feedback('number', 'Invalid value. Only numbers allowed')
 
-    i.fa.fa-exclamation-triangle.form-control-feedback(
-        ng-init='form[name].$errorMessages.number = "Invalid value. Only numbers allowed"'
-        ng-show='field.$error.number'
-        bs-tooltip='"Invalid value. Only numbers allowed"'
-    )
     span(ng-transclude='')

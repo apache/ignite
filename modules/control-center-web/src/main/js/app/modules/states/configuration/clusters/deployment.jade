@@ -51,7 +51,12 @@ form.panel.panel-default(name='#{form}' novalidate)
                         ignite-form-field-dropdown(
                             data-id='deploymentMode'
                             data-name='deploymentMode'
-                            data-options='deploymentModes'
+                            data-options='[\
+                                {value: "PRIVATE", label: "PRIVATE"},\
+                                {value: "ISOLATED", label: "ISOLATED"}, \
+                                {value: "SHARED", label: "SHARED"},\
+                                {value: "CONTINUOUS", label: "CONTINUOUS"}\
+                            ]'
                             data-ng-model='#{model}.deploymentMode'
                             data-placeholder='SHARED'
                         )
