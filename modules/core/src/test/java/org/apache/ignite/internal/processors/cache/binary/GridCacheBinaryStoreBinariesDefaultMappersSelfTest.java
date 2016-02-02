@@ -17,12 +17,14 @@
 package org.apache.ignite.internal.processors.cache.binary;
 
 import java.util.Map;
+import org.apache.ignite.binary.BinaryNameMapper;
 import org.apache.ignite.binary.BinaryObject;
+import org.apache.ignite.internal.binary.BinaryContext;
 
 /**
  * Tests for cache store with binary.
  */
-public class GridCacheBinaryStoreBinariesSelfTest extends GridCacheBinaryStoreAbstractSelfTest {
+public class GridCacheBinaryStoreBinariesDefaultMappersSelfTest extends GridCacheBinaryStoreAbstractSelfTest {
     /** {@inheritDoc} */
     @Override protected boolean keepBinaryInStore() {
         return true;
@@ -51,9 +53,22 @@ public class GridCacheBinaryStoreBinariesSelfTest extends GridCacheBinaryStoreAb
 
             BinaryObject po = (BinaryObject)val;
 
-            assertEquals("Value", po.type().typeName());
+            assertEquals(expectedTypeName(Value.class.getName()), po.type().typeName());
             assertEquals(new Integer(idx), po.field("idx"));
         }
+    }
+
+    /**
+     * @param clsName Class name.
+     * @return Type name.
+     */
+    private String expectedTypeName(String clsName) {
+        BinaryNameMapper nameMapper = cfg.getBinaryConfiguration().getNameMapper();
+
+        if (nameMapper == null)
+            nameMapper = BinaryContext.defaultNameMapper();
+
+        return nameMapper.typeName(clsName);
     }
 
     /**
