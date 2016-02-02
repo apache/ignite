@@ -95,8 +95,6 @@ public abstract class GridNewCacheAbstractSelfTest extends GridCommonAbstractTes
 
     /** {@inheritDoc} */
     @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
-
         map.clear();
     }
 
@@ -111,10 +109,10 @@ public abstract class GridNewCacheAbstractSelfTest extends GridCommonAbstractTes
 
         for (int i = 0; i < gridCount(); i++) {
             info("Starting cache on grid: " + i);
-            
+
             IgniteEx grid = grid(i);
 
-            grid.createCache(newTestsCfg.configurationFactory().cacheConfiguration(grid.name()));
+            grid.getOrCreateCache(newTestsCfg.configurationFactory().cacheConfiguration(grid.name()));
         }
 
         assert jcache().unwrap(Ignite.class).transactions().tx() == null;
@@ -123,83 +121,86 @@ public abstract class GridNewCacheAbstractSelfTest extends GridCommonAbstractTes
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
-        Transaction tx = jcache().unwrap(Ignite.class).transactions().tx();
+        try {
+            Transaction tx = jcache().unwrap(Ignite.class).transactions().tx();
 
-        if (tx != null) {
-            tx.close();
+            if (tx != null) {
+                tx.close();
 
-            fail("Cache transaction remained after test completion: " + tx);
-        }
-
-        for (int i = 0; i < gridCount(); i++) {
-            info("Checking grid: " + i);
-
-            while (true) {
-                try {
-                    final int fi = i;
-
-                    assertTrue(
-                        "Cache is not empty: " + " localSize = " + jcache(fi).localSize(CachePeekMode.ALL)
-                        + ", local entries " + entrySet(jcache(fi).localEntries()),
-                        GridTestUtils.waitForCondition(
-                            // Preloading may happen as nodes leave, so we need to wait.
-                            new GridAbsPredicateX() {
-                                @Override public boolean applyx() throws IgniteCheckedException {
-                                    jcache(fi).removeAll();
-
-                                    if (jcache(fi).size(CachePeekMode.ALL) > 0) {
-                                        for (Cache.Entry<String, ?> k : jcache(fi).localEntries())
-                                            jcache(fi).remove(k.getKey());
-                                    }
-
-                                    return jcache(fi).localSize(CachePeekMode.ALL) == 0;
-                                }
-                            },
-                            getTestTimeout()));
-
-                    int primaryKeySize = jcache(i).localSize(CachePeekMode.PRIMARY);
-                    int keySize = jcache(i).localSize();
-                    int size = jcache(i).localSize();
-                    int globalSize = jcache(i).size();
-                    int globalPrimarySize = jcache(i).size(CachePeekMode.PRIMARY);
-
-                    info("Size after [idx=" + i +
-                        ", size=" + size +
-                        ", keySize=" + keySize +
-                        ", primarySize=" + primaryKeySize +
-                        ", globalSize=" + globalSize +
-                        ", globalPrimarySize=" + globalPrimarySize +
-                        ", entrySet=" + jcache(i).localEntries() + ']');
-
-                    assertEquals("Cache is not empty [idx=" + i + ", entrySet=" + jcache(i).localEntries() + ']',
-                        0, jcache(i).localSize(CachePeekMode.ALL));
-
-                    break;
-                }
-                catch (Exception e) {
-                    if (X.hasCause(e, ClusterTopologyCheckedException.class)) {
-                        info("Got topology exception while tear down (will retry in 1000ms).");
-
-                        U.sleep(1000);
-                    }
-                    else
-                        throw e;
-                }
+                fail("Cache transaction remained after test completion: " + tx);
             }
 
-            for (Cache.Entry<String, Integer> entry : jcache(i).localEntries(CachePeekMode.SWAP))
-                jcache(i).remove(entry.getKey());
+            for (int i = 0; i < gridCount(); i++) {
+                info("Checking grid: " + i);
+
+                while (true) {
+                    try {
+                        final int fi = i;
+
+                        assertTrue(
+                            "Cache is not empty: " + " localSize = " + jcache(fi).localSize(CachePeekMode.ALL)
+                            + ", local entries " + entrySet(jcache(fi).localEntries()),
+                            GridTestUtils.waitForCondition(
+                                // Preloading may happen as nodes leave, so we need to wait.
+                                new GridAbsPredicateX() {
+                                    @Override public boolean applyx() throws IgniteCheckedException {
+                                        jcache(fi).removeAll();
+
+                                        if (jcache(fi).size(CachePeekMode.ALL) > 0) {
+                                            for (Cache.Entry<String, ?> k : jcache(fi).localEntries())
+                                                jcache(fi).remove(k.getKey());
+                                        }
+
+                                        return jcache(fi).localSize(CachePeekMode.ALL) == 0;
+                                    }
+                                },
+                                getTestTimeout()));
+
+                        int primaryKeySize = jcache(i).localSize(CachePeekMode.PRIMARY);
+                        int keySize = jcache(i).localSize();
+                        int size = jcache(i).localSize();
+                        int globalSize = jcache(i).size();
+                        int globalPrimarySize = jcache(i).size(CachePeekMode.PRIMARY);
+
+                        info("Size after [idx=" + i +
+                            ", size=" + size +
+                            ", keySize=" + keySize +
+                            ", primarySize=" + primaryKeySize +
+                            ", globalSize=" + globalSize +
+                            ", globalPrimarySize=" + globalPrimarySize +
+                            ", entrySet=" + jcache(i).localEntries() + ']');
+
+                        assertEquals("Cache is not empty [idx=" + i + ", entrySet=" + jcache(i).localEntries() + ']',
+                            0, jcache(i).localSize(CachePeekMode.ALL));
+
+                        break;
+                    }
+                    catch (Exception e) {
+                        if (X.hasCause(e, ClusterTopologyCheckedException.class)) {
+                            info("Got topology exception while tear down (will retry in 1000ms).");
+
+                            U.sleep(1000);
+                        }
+                        else
+                            throw e;
+                    }
+                }
+
+                for (Cache.Entry<String, Integer> entry : jcache(i).localEntries(CachePeekMode.SWAP))
+                    jcache(i).remove(entry.getKey());
+            }
+
+            assert jcache().unwrap(Ignite.class).transactions().tx() == null;
+            assertEquals("Cache is not empty", 0, jcache().localSize(CachePeekMode.ALL));
+
+            resetStore();
         }
+        finally {
+            for (int i = 0; i < gridCount(); i++) {
+                info("Destroing cache on grid: " + i);
 
-        assert jcache().unwrap(Ignite.class).transactions().tx() == null;
-        assertEquals("Cache is not empty", 0, jcache().localSize(CachePeekMode.ALL));
-
-        resetStore();
-
-        for (int i = 0; i < gridCount(); i++) {
-            info("Destroing cache on grid: " + i);
-            
-            jcache(i).destroy();
+                jcache(i).destroy();
+            }
         }
     }
 

@@ -208,7 +208,7 @@ public abstract class GridAbstractTest extends TestCase {
     public void setNewTestsConfiguration(NewTestsConfiguration newTestsCfg) {
         this.newTestsCfg = newTestsCfg;
     }
-    
+
     /**
      * @param cls Class to create.
      * @return Instance of class.
@@ -1394,7 +1394,7 @@ public abstract class GridAbstractTest extends TestCase {
             serializedObj.clear();
 
             if (isLastTest()) {
-                info(">>> Stopping test class: " + GridTestUtils.fullSimpleName(getClass()) 
+                info(">>> Stopping test class: " + GridTestUtils.fullSimpleName(getClass())
                     + (newTestsCfg != null ? '-' + newTestsCfg.suffix() : "") + " <<<");
 
                 TestCounters counters = getTestCounters();
