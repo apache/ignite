@@ -52,7 +52,7 @@ import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
 import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridNearAtomicUpdateResponse;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsFullMessage;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearGetResponse;
-import org.apache.ignite.internal.processors.cache.distributed.near.GridNearLockResponse;
+import org.apache.ignite.internal.processors.cache.distributed.near.GridNearLockResponseV1;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearSingleGetResponse;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxFinishResponse;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxPrepareResponse;
@@ -557,7 +557,7 @@ public class IgniteClientReconnectCacheTest extends IgniteClientReconnectAbstrac
 
         txInProgressFails(client, ccfg, GridNearTxFinishResponse.class, PESSIMISTIC, 4);
 
-        txInProgressFails(client, ccfg, GridNearLockResponse.class, PESSIMISTIC, 5);
+        txInProgressFails(client, ccfg, GridNearLockResponseV1.class, PESSIMISTIC, 5);
     }
 
     /**

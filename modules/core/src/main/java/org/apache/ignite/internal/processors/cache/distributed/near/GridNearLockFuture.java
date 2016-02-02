@@ -25,7 +25,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Queue;
 import java.util.UUID;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
+
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cluster.ClusterNode;
@@ -39,6 +41,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryRemovedException;
 import org.apache.ignite.internal.processors.cache.GridCacheLockTimeoutException;
+import org.apache.ignite.internal.processors.cache.GridCacheMessage;
 import org.apache.ignite.internal.processors.cache.GridCacheMvccCandidate;
 import org.apache.ignite.internal.processors.cache.GridCacheMvccFuture;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
@@ -75,6 +78,9 @@ import static org.apache.ignite.events.EventType.EVT_CACHE_OBJECT_READ;
  */
 public final class GridNearLockFuture extends GridCompoundIdentityFuture<Boolean>
     implements GridCacheMvccFuture<Boolean> {
+
+    private static final UUID DUMMY_UUID = new UUID(0L, 0L);
+
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -153,6 +159,8 @@ public final class GridNearLockFuture extends GridCompoundIdentityFuture<Boolean
 
     /** Keep binary context flag. */
     private final boolean keepBinary;
+
+    private final AtomicInteger counter = new AtomicInteger();
 
     /**
      * @param cctx Registry.
@@ -460,7 +468,14 @@ public final class GridNearLockFuture extends GridCompoundIdentityFuture<Boolean
             if (log.isDebugEnabled())
                 log.debug("Received lock response from node [nodeId=" + nodeId + ", res=" + res + ", fut=" + this + ']');
 
-            MiniFuture mini = miniFuture(res.miniId());
+            int miniId;
+
+            if (res instanceof GridNearLockResponseV1)
+                miniId = (int)((GridNearLockResponseV1)res).miniId().localId();
+            else
+                miniId = ((GridNearLockResponseV2)res).miniId();
+
+            MiniFuture mini = miniFuture(miniId);
 
             if (mini != null) {
                 assert mini.node().id().equals(nodeId);
@@ -492,7 +507,7 @@ public final class GridNearLockFuture extends GridCompoundIdentityFuture<Boolean
      * @return Mini future.
      */
     @SuppressWarnings({"ForLoopReplaceableByForEach", "IfMayBeConditional"})
-    private MiniFuture miniFuture(IgniteUuid miniId) {
+    private MiniFuture miniFuture(int miniId) {
         // We iterate directly over the futs collection here to avoid copy.
         synchronized (futs) {
             // Avoid iterator creation.
@@ -504,7 +519,7 @@ public final class GridNearLockFuture extends GridCompoundIdentityFuture<Boolean
 
                 MiniFuture mini = (MiniFuture)fut;
 
-                if (mini.futureId().equals(miniId)) {
+                if (mini.futureId() == miniId) {
                     if (!mini.isDone())
                         return mini;
                     else
@@ -515,7 +530,6 @@ public final class GridNearLockFuture extends GridCompoundIdentityFuture<Boolean
 
         return null;
     }
-
 
     /**
      * @param t Error.
@@ -732,8 +746,8 @@ public final class GridNearLockFuture extends GridCompoundIdentityFuture<Boolean
             topVer = tx.topologyVersionSnapshot();
 
         if (topVer != null) {
-            for (GridDhtTopologyFuture fut : cctx.shared().exchange().exchangeFutures()){
-                if (fut.topologyVersion().equals(topVer)){
+            for (GridDhtTopologyFuture fut : cctx.shared().exchange().exchangeFutures()) {
+                if (fut.topologyVersion().equals(topVer)) {
                     Throwable err = fut.validateCache(cctx);
 
                     if (err != null) {
@@ -996,31 +1010,60 @@ public final class GridNearLockFuture extends GridCompoundIdentityFuture<Boolean
                                                 first = false;
                                             }
 
-                                            req = new GridNearLockRequest(
-                                                cctx.cacheId(),
-                                                topVer,
-                                                cctx.nodeId(),
-                                                threadId,
-                                                futId,
-                                                lockVer,
-                                                inTx(),
-                                                implicitTx(),
-                                                implicitSingleTx(),
-                                                read,
-                                                retval,
-                                                isolation(),
-                                                isInvalidate(),
-                                                timeout,
-                                                mappedKeys.size(),
-                                                inTx() ? tx.size() : mappedKeys.size(),
-                                                inTx() && tx.syncCommit(),
-                                                inTx() ? tx.subjectId() : null,
-                                                inTx() ? tx.taskNameHash() : 0,
-                                                read ? accessTtl : -1L,
-                                                skipStore,
-                                                keepBinary,
-                                                clientFirst,
-                                                cctx.deploymentEnabled());
+                                            if (node.version().compareTo(cctx.localNode().version()) >= 0) {
+                                                req = new GridNearLockRequestV2(
+                                                    cctx.cacheId(),
+                                                    topVer,
+                                                    cctx.nodeId(),
+                                                    threadId,
+                                                    futId,
+                                                    lockVer,
+                                                    inTx(),
+                                                    implicitTx(),
+                                                    implicitSingleTx(),
+                                                    read,
+                                                    retval,
+                                                    isolation(),
+                                                    isInvalidate(),
+                                                    timeout,
+                                                    mappedKeys.size(),
+                                                    inTx() ? tx.size() : mappedKeys.size(),
+                                                    inTx() && tx.syncCommit(),
+                                                    inTx() ? tx.subjectId() : null,
+                                                    inTx() ? tx.taskNameHash() : 0,
+                                                    read ? accessTtl : -1L,
+                                                    skipStore,
+                                                    keepBinary,
+                                                    clientFirst,
+                                                    cctx.deploymentEnabled());
+                                            }
+                                            else {
+                                                req = new GridNearLockRequestV1(
+                                                    cctx.cacheId(),
+                                                    topVer,
+                                                    cctx.nodeId(),
+                                                    threadId,
+                                                    futId,
+                                                    lockVer,
+                                                    inTx(),
+                                                    implicitTx(),
+                                                    implicitSingleTx(),
+                                                    read,
+                                                    retval,
+                                                    isolation(),
+                                                    isInvalidate(),
+                                                    timeout,
+                                                    mappedKeys.size(),
+                                                    inTx() ? tx.size() : mappedKeys.size(),
+                                                    inTx() && tx.syncCommit(),
+                                                    inTx() ? tx.subjectId() : null,
+                                                    inTx() ? tx.taskNameHash() : 0,
+                                                    read ? accessTtl : -1L,
+                                                    skipStore,
+                                                    keepBinary,
+                                                    clientFirst,
+                                                    cctx.deploymentEnabled());
+                                            }
 
                                             mapping.request(req);
                                         }
@@ -1131,7 +1174,10 @@ public final class GridNearLockFuture extends GridCompoundIdentityFuture<Boolean
             req.filter(filter, cctx);
 
         if (node.isLocal()) {
-            req.miniId(IgniteUuid.randomUuid());
+            if (req instanceof GridNearLockRequestV1)
+                ((GridNearLockRequestV1)req).miniId(new IgniteUuid(GridNearLockRequestV2.DUMMY_UUID, counter.incrementAndGet()));
+            else
+                ((GridNearLockRequestV2)req).miniId(counter.incrementAndGet());
 
             if (log.isDebugEnabled())
                 log.debug("Before locally locking near request: " + req);
@@ -1271,7 +1317,10 @@ public final class GridNearLockFuture extends GridCompoundIdentityFuture<Boolean
         else {
             final MiniFuture fut = new MiniFuture(node, mappedKeys);
 
-            req.miniId(fut.futureId());
+            if (req instanceof GridNearLockRequestV1)
+                ((GridNearLockRequestV1)req).miniId(new IgniteUuid(GridNearLockRequestV2.DUMMY_UUID, fut.futureId()));
+            else
+                ((GridNearLockRequestV2)req).miniId(fut.futureId());
 
             add(fut); // Append new future.
 
@@ -1285,7 +1334,7 @@ public final class GridNearLockFuture extends GridCompoundIdentityFuture<Boolean
                     if (log.isDebugEnabled())
                         log.debug("Sending near lock request [node=" + node.id() + ", req=" + req + ']');
 
-                    cctx.io().send(node, req, cctx.ioPolicy());
+                    cctx.io().send(node, ((GridCacheMessage)req), cctx.ioPolicy());
                 }
                 catch (ClusterTopologyCheckedException ex) {
                     fut.onResult(ex);
@@ -1298,7 +1347,7 @@ public final class GridNearLockFuture extends GridCompoundIdentityFuture<Boolean
                             if (log.isDebugEnabled())
                                 log.debug("Sending near lock request [node=" + node.id() + ", req=" + req + ']');
 
-                            cctx.io().send(node, req, cctx.ioPolicy());
+                            cctx.io().send(node, ((GridCacheMessage)req), cctx.ioPolicy());
                         }
                         catch (ClusterTopologyCheckedException ex) {
                             fut.onResult(ex);
@@ -1404,7 +1453,7 @@ public final class GridNearLockFuture extends GridCompoundIdentityFuture<Boolean
         private static final long serialVersionUID = 0L;
 
         /** */
-        private final IgniteUuid futId = IgniteUuid.randomUuid();
+        private final int futId = counter.incrementAndGet();
 
         /** Node ID. */
         @GridToStringExclude
@@ -1432,7 +1481,7 @@ public final class GridNearLockFuture extends GridCompoundIdentityFuture<Boolean
         /**
          * @return Future ID.
          */
-        IgniteUuid futureId() {
+        int futureId() {
             return futId;
         }
 
