@@ -32,8 +32,9 @@ namespace Apache.Ignite.Core.Tests
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Cache.Configuration;
     using Apache.Ignite.Core.Cache.Store;
-    using Apache.Ignite.Core.Discovery;
-    using Apache.Ignite.Core.Discovery.Configuration;
+    using Apache.Ignite.Core.Common;
+    using Apache.Ignite.Core.Discovery.Tcp;
+    using Apache.Ignite.Core.Discovery.Tcp.Multicast;
     using Apache.Ignite.Core.Events;
     using Apache.Ignite.Core.Impl.Common;
     using Apache.Ignite.Core.Lifecycle;
@@ -96,11 +97,12 @@ namespace Apache.Ignite.Core.Tests
             var cfg = IgniteConfigurationXmlSerializer.Deserialize(reader);
 
             Assert.AreEqual("c:", cfg.WorkDirectory);
-            Assert.AreEqual("127.1.1.1", cfg.LocalHost);
+            Assert.AreEqual("127.1.1.1", cfg.Localhost);
             Assert.AreEqual(1024, cfg.JvmMaxMemoryMb);
             Assert.AreEqual(TimeSpan.FromSeconds(10), cfg.MetricsLogFrequency);
-            Assert.AreEqual(TimeSpan.FromMinutes(1), cfg.DiscoveryConfiguration.JoinTimeout);
-            Assert.AreEqual(7, ((MulticastIpFinder) cfg.DiscoveryConfiguration.IpFinder).AddressRequestAttempts);
+            Assert.AreEqual(TimeSpan.FromMinutes(1), ((TcpDiscoverySpi)cfg.DiscoverySpi).JoinTimeout);
+            Assert.AreEqual(7,
+                ((TcpDiscoveryMulticastIpFinder) ((TcpDiscoverySpi) cfg.DiscoverySpi).IpFinder).AddressRequestAttempts);
             Assert.AreEqual(new[] { "-Xms1g", "-Xmx4g" }, cfg.JvmOptions);
             Assert.AreEqual(15, ((LifecycleBean) cfg.LifecycleBeans.Single()).Foo);
             Assert.AreEqual("testBar", ((NameMapper) cfg.BinaryConfiguration.DefaultNameMapper).Bar);
@@ -120,7 +122,7 @@ namespace Apache.Ignite.Core.Tests
             Assert.AreEqual(typeof(int), queryEntity.Fields.Single().FieldType);
             Assert.AreEqual("somefield.field", queryEntity.Aliases.Single().FullName);
             Assert.AreEqual("shortField", queryEntity.Aliases.Single().Alias);
-            Assert.AreEqual(QueryIndexType.GeoSpatial, queryEntity.Indexes.Single().IndexType);
+            Assert.AreEqual(QueryIndexType.Geospatial, queryEntity.Indexes.Single().IndexType);
             Assert.AreEqual("indexFld", queryEntity.Indexes.Single().Fields.Single().Name);
             Assert.AreEqual(true, queryEntity.Indexes.Single().Fields.Single().IsDescending);
         }
@@ -253,7 +255,7 @@ namespace Apache.Ignite.Core.Tests
             {
                 GridName = "gridName",
                 JvmOptions = new[] {"1", "2"},
-                LocalHost = "localhost11",
+                Localhost = "localhost11",
                 JvmClasspath = "classpath",
                 Assemblies = new[] {"asm1", "asm2", "asm3"},
                 BinaryConfiguration = new BinaryConfiguration
@@ -311,7 +313,7 @@ namespace Apache.Ignite.Core.Tests
                                 },
                                 Indexes = new[]
                                 {
-                                    new QueryIndex("field", true) { IndexType = QueryIndexType.FullText }
+                                    new QueryIndex("field") { IndexType = QueryIndexType.FullText }
                                 },
                                 Aliases = new[]
                                 {
@@ -339,14 +341,14 @@ namespace Apache.Ignite.Core.Tests
                     }
                 },
                 ClientMode = true,
-                DiscoveryConfiguration = new DiscoveryConfiguration
+                DiscoverySpi = new TcpDiscoverySpi
                 {
                     NetworkTimeout = TimeSpan.FromSeconds(1),
                     SocketTimeout = TimeSpan.FromSeconds(2),
                     AckTimeout = TimeSpan.FromSeconds(3),
                     JoinTimeout = TimeSpan.FromSeconds(4),
                     MaxAckTimeout = TimeSpan.FromSeconds(5),
-                    IpFinder = new MulticastIpFinder
+                    IpFinder = new TcpDiscoveryMulticastIpFinder
                     {
                         TimeToLive = 110,
                         MulticastGroup = "multicastGroup",
@@ -354,7 +356,7 @@ namespace Apache.Ignite.Core.Tests
                         MulticastPort = 987,
                         ResponseTimeout = TimeSpan.FromDays(1),
                         LocalAddress = "127.0.0.2",
-                        EndPoints = new[] {"", "abc"}
+                        Endpoints = new[] {"", "abc"}
                     }
                 },
                 IgniteHome = "igniteHome",
@@ -440,7 +442,7 @@ namespace Apache.Ignite.Core.Tests
             // No-op.
         }
 
-        public class TetsCacheStoreFactory : ICacheStoreFactory
+        public class TetsCacheStoreFactory : IFactory<ICacheStore>
         {
             public ICacheStore CreateInstance()
             {

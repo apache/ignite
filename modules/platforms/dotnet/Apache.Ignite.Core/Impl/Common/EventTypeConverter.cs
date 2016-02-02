@@ -46,7 +46,7 @@ namespace Apache.Ignite.Core.Impl.Common
         /// The event type map.
         /// </summary>
         private static readonly Dictionary<string, int> EventNameToIdMap =
-            EventIdToNameMap.ToDictionary(p => p.Value, p => p.Key, StringComparer.InvariantCultureIgnoreCase);
+            EventIdToNameMap.ToDictionary(p => p.Value, p => p.Key, StringComparer.OrdinalIgnoreCase);
 
         /// <summary>
         /// Returns whether this converter can convert an object of the given type to the type of this converter, 

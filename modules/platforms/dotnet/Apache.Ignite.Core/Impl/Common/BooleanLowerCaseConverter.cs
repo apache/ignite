@@ -19,6 +19,7 @@ namespace Apache.Ignite.Core.Impl.Common
 {
     using System;
     using System.ComponentModel;
+    using System.Diagnostics.CodeAnalysis;
     using System.Globalization;
 
     /// <summary>
@@ -38,18 +39,20 @@ namespace Apache.Ignite.Core.Impl.Common
         /// <param name="culture">
         /// A <see cref="CultureInfo" />. If null is passed, the current culture is assumed.
         /// </param>
-        /// <param name="value">The <see cref="Object" /> to convert.</param>
+        /// <param name="value">The <see cref="object" /> to convert.</param>
         /// <param name="destinationType">
         /// The <see cref="Type" /> to convert the <paramref name="value" /> parameter to.
         /// </param>
         /// <returns>
         /// An <see cref="object" /> that represents the converted value.
         /// </returns>
+        [SuppressMessage("Microsoft.Globalization", "CA1308:NormalizeStringsToUppercase")]
+        [SuppressMessage("Microsoft.Design", "CA1062:Validate arguments of public methods", MessageId = "2")]
         public override object ConvertTo(ITypeDescriptorContext context, CultureInfo culture, object value, 
             Type destinationType)
         {
             if (destinationType == typeof (string))
-                return value.ToString().ToLower(CultureInfo.InvariantCulture);
+                return value.ToString().ToLowerInvariant();
 
             return base.ConvertTo(context, culture, value, destinationType);
         }

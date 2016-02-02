@@ -24,6 +24,7 @@ namespace Apache.Ignite.Core.Impl.Common
     using System.Configuration;
     using System.Diagnostics;
     using System.Diagnostics.CodeAnalysis;
+    using System.Globalization;
     using System.Linq;
     using System.Reflection;
     using System.Xml;
@@ -323,7 +324,7 @@ namespace Apache.Ignite.Core.Impl.Common
             if (name == "int")
                 return "Int32";  // allow aliases
 
-            return char.ToUpper(name[0]) + name.Substring(1);
+            return char.ToUpperInvariant(name[0]) + name.Substring(1);
         }
 
         /// <summary>
@@ -336,7 +337,7 @@ namespace Apache.Ignite.Core.Impl.Common
             if (name == "Int32")
                 return "int";  // allow aliases
 
-            return char.ToLower(name[0]) + name.Substring(1);
+            return char.ToLowerInvariant(name[0]) + name.Substring(1);
         }
 
         /// <summary>
