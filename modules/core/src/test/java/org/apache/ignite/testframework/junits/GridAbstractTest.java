@@ -157,9 +157,6 @@ public abstract class GridAbstractTest extends TestCase {
     /** */
     protected NewTestsConfiguration newTestsCfg;
 
-    /** */
-    private String testClsNameSuffix;
-
     /**
      *
      */
@@ -211,14 +208,7 @@ public abstract class GridAbstractTest extends TestCase {
     public void setNewTestsConfiguration(NewTestsConfiguration newTestsCfg) {
         this.newTestsCfg = newTestsCfg;
     }
-
-    /**
-     * @param testClsNameSuffix Test class name suffix.
-     */
-    public void testClassNameSuffix(String testClsNameSuffix) {
-        this.testClsNameSuffix = testClsNameSuffix;
-    }
-
+    
     /**
      * @param cls Class to create.
      * @return Instance of class.
@@ -549,7 +539,7 @@ public abstract class GridAbstractTest extends TestCase {
 
         if (isFirstTest()) {
             info(">>> Starting test class: " + GridTestUtils.fullSimpleName(getClass())
-                + (testClsNameSuffix != null ? '-' + testClsNameSuffix : "") + " <<<");
+                + (newTestsCfg != null ? '-' + newTestsCfg.suffix() : "") + " <<<");
 
             if (startGrid) {
                 IgniteConfiguration cfg = optimize(getConfiguration());
@@ -761,6 +751,8 @@ public abstract class GridAbstractTest extends TestCase {
     protected Ignite startGrid(String gridName, GridSpringResourceContext ctx) throws Exception {
         if (!isRemoteJvm(gridName)) {
             startingGrid.set(gridName);
+
+            Class<Ignite> aClass = Ignite.class;
 
             try {
                 return IgnitionEx.start(optimize(getConfiguration(gridName)), ctx);
@@ -1402,7 +1394,8 @@ public abstract class GridAbstractTest extends TestCase {
             serializedObj.clear();
 
             if (isLastTest()) {
-                info(">>> Stopping test class: " + GridTestUtils.fullSimpleName(getClass()) + " <<<");
+                info(">>> Stopping test class: " + GridTestUtils.fullSimpleName(getClass()) 
+                    + (newTestsCfg != null ? '-' + newTestsCfg.suffix() : "") + " <<<");
 
                 TestCounters counters = getTestCounters();
 
