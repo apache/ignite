@@ -474,11 +474,17 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         [Test]
         public void TestDateTime()
         {
+            var roles = GetRoleCache().ToQueryable();
+
             // Test retrieval
-            var dates = GetRoleCache().ToQueryable().Select(x => x.Value.Date).ToArray();
+            var dates = roles.Select(x => x.Value.Date).ToArray();
             var expDates = new[] {StartDateTime, StartDateTime.AddYears(1), default(DateTime)};
             Assert.AreEqual(expDates, dates);
 
+            // Filtering
+            Assert.AreEqual(1, roles.Count(x => x.Value.Date > StartDateTime));
+
+            // Joins
         }
 
         [Test]
