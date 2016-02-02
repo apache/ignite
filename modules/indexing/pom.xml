@@ -93,23 +93,6 @@
             <version>${spring.version}</version>
             <scope>test</scope>
         </dependency>
-        <dependency>
-            <groupId>javax.transaction</groupId>
-            <artifactId>jta</artifactId>
-            <version>1.1</version>
-            <scope>compile</scope>
-        </dependency>
-        <dependency>
-            <groupId>it.sauronsoftware.cron4j</groupId>
-            <artifactId>cron4j</artifactId>
-            <version>2.2.5</version>
-            <scope>compile</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.ow2.asm</groupId>
-            <artifactId>asm-all</artifactId>
-            <version>4.2</version>
-        </dependency>
     </dependencies>
 
     <build>
