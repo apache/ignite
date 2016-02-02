@@ -329,12 +329,28 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         }
 
         [Test]
+        public void TestMultiCacheJoinSubquery()
+        {
+            var organizations = GetOrgCache().ToQueryable().Where(x => x.Key == 1);
+            var persons = GetPersonOrgCache().ToQueryable().Where(x => x.Key > 20);
+            var roles = GetRoleCache().ToQueryable().Where(x => x.Value.Name != " ");
+
+            var res = roles.Join(persons, role => role.Key.Foo, person => person.Key,
+                (role, person) => new {person, role})
+                .Join(organizations, pr => pr.person.Value.OrganizationId, org => org.Value.Id,
+                    (pr, org) => new {org, pr.person, pr.role}).ToArray();
+
+            Assert.AreEqual(RoleCount, res.Length);
+        }
+
+        [Test]
         public void TestOuterJoin()
         {
             var persons = GetPersonOrgCache().ToQueryable();
             var roles = GetRoleCache().ToQueryable();
 
-            var res = persons.Join(roles.DefaultIfEmpty(), person => person.Key, role => role.Key.Foo,
+            var res = persons.Join(roles.Where(r => r.Key.Bar > 0).DefaultIfEmpty(),
+                person => person.Key, role => role.Key.Foo,
                 (person, role) => new
                 {
                     PersonName = person.Value.Name,
