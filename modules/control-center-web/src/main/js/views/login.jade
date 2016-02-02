@@ -21,9 +21,12 @@ mixin lblRequired(txt)
     label.col-xs-3.col-md-3.required #{txt}
 
 header#header.header
-    .container
-        ignite-logo
-        p.navbar-text(style='font-size: 18px;') Apache Ignite Web Console
+    table.container
+        tr
+            td.col-xs-3.col-sm-3.col-md-2(rowspan='2')
+                ignite-logo
+            td(style='padding-top: 20px')
+                ignite-title
 
 .container.body-container
     .main-content(ng-controller='auth')

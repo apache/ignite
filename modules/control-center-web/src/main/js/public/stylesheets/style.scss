@@ -66,7 +66,7 @@ hr {
 
 .navbar-brand {
     padding: 5px 0;
-    margin-right: 15px;
+    margin: 10px 0;
 }
 
 .modal.center .modal-dialog {
@@ -220,30 +220,28 @@ ul.navbar-nav, .sidebar-nav {
     font-size: 12px;
 }
 
-.header {
-    padding: 15px;
+.theme-line header {
+    border-bottom: 8px solid $ignite-border-bottom-color;
+
+    p {
+        color: $ignite-header-color;
+    }
 }
 
-.header .nav.navbar-nav.pull-right {
-    position: relative;
-    right: -15px;
+.header .nav.navbar-nav.pull-right > li > a {
+    padding-right: 0;
+}
+
+.header .title {
+    margin: 5px 0;
+    padding: 0 15px;
+
+    font-size: 1.4em;
 }
 
 .header .nav.navbar-nav .not-link {
     padding: 15px;
     display: inline-block;
-}
-
-.theme-line header {
-    border-bottom: 8px solid;
-}
-
-.theme-line header p {
-    color: $ignite-header-color;
-}
-
-.theme-line header {
-    border-bottom-color: $ignite-border-bottom-color;
 }
 
 .nav > li {
@@ -378,8 +376,7 @@ h1, h2, h3, h4, h5, h6 {
 
 @media (min-width: 768px) {
     .navbar-nav > li > a {
-        padding-top: 18px;
-        padding-bottom: 10px;
+        padding: 0 15px;
     }
 }
 
@@ -1368,13 +1365,8 @@ input.ng-dirty.ng-invalid, button.ng-dirty.ng-invalid {
 }
 
 .viewedUser {
-    position: absolute;
-    width: 100%;
-    left: 0;
-
     text-align: center;
-
-    margin-top: -15px;
+    background-color: $brand-warning;
 }
 
 a {

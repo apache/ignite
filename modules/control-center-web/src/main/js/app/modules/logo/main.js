@@ -16,6 +16,7 @@
  */
 
 import templateLogo from './logo.jade!';
+const templateTitle = `<label class= 'title'>{{::title.text}}</label>`;
 import templatePoweredByApache from './powered-by-apache.jade!';
 
 import angular from 'angular';
@@ -25,20 +26,27 @@ angular
 
     ])
     .provider('igniteLogo', function() {
-        let _poweredBy = false;
+        let poweredBy = false;
 
-        let _url = '/images/ignite_logo.png';
+        let url = '/images/ignite_logo.png';
 
-        this.url = function(url) {
-            _url = url;
+        let title = 'Management console for Apache Ignite';
 
-            _poweredBy = true;
+        this.url = function(_url) {
+            url = _url;
+
+            poweredBy = true;
+        };
+
+        this.title = function(_title) {
+            title = _title;
         };
 
         this.$get = [function() {
             return {
-                url: _url,
-                poweredBy: _poweredBy
+                url,
+                poweredBy,
+                title
             };
         }];
     })
@@ -71,4 +79,20 @@ angular
             controllerAs: 'logo',
             replace: true
         };
+    }])
+    .directive('igniteTitle', ['igniteLogo', function(igniteLogo) {
+        function controller() {
+            const ctrl = this;
+
+            ctrl.text = igniteLogo.title;
+        }
+
+        return {
+            restrict: 'E',
+            template: templateTitle,
+            controller,
+            controllerAs: 'title',
+            replace: true
+        };
     }]);
+
