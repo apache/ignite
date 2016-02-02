@@ -244,7 +244,21 @@ namespace Apache.Ignite.Linq.Impl
         {
             base.VisitOrderByClause(orderByClause, queryModel, index);
 
+            _builder.Append("order by ");
 
+            for (int i = 0; i < orderByClause.Orderings.Count; i++)
+            {
+                var ordering = orderByClause.Orderings[i];
+
+                if (i > 0)
+                    _builder.Append(", ");
+
+                BuildSqlExpression(ordering.Expression);
+
+                _builder.Append(ordering.OrderingDirection == OrderingDirection.Asc ? " asc" : " desc");
+            }
+
+            _builder.Append(" ");
         }
 
         /** <inheritdoc /> */
