@@ -464,8 +464,10 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
             var roles = GetRoleCache().ToQueryable();
 
             var nullNameRole = roles.Single(x => x.Value.Name == null);
-
             Assert.AreEqual(null, nullNameRole.Value.Name);
+
+            var nonNullNameRoles = roles.Where(x => x.Value.Name != null);
+            Assert.AreEqual(RoleCount - 1, nonNullNameRoles.Count());
         }
 
         [Test]
