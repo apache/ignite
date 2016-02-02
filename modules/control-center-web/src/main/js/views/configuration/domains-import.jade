@@ -30,7 +30,7 @@ mixin td-ellipses-lbl(w, lbl)
                 button.close(ng-click='$hide()' aria-hidden='true') &times;
                 h4.modal-title(ng-if='!importDomain.demo') Import domain models from database
                 h4.modal-title(ng-if='importDomain.demo') Import domain models from demo database
-            .import-domain-model-wizard-page(ng-show='importDomain.action == "drivers"' style="margin-bottom: 256px;")
+            .import-domain-model-wizard-page(ng-show='importDomain.action == "drivers"' style='margin-bottom: 256px')
                 div(ng-if='!importDomain.jdbcDriversFound')
                     label Domain model could not be imported
                         ul
@@ -167,7 +167,7 @@ mixin td-ellipses-lbl(w, lbl)
                         .col-xs-9.col-sm-10.col-md-10
                             i.tipField.fa.fa-question-circle(bs-tooltip='' data-title='Package that will be used for POJOs generation')
                             .input-tip
-                                input.form-control(id='domainPackageName' type="text" ng-model='ui.packageName' placeholder='Package for POJOs generation')
+                                input.form-control(id='domainPackageName' type='text' ng-model='ui.packageName' placeholder='Package for POJOs generation')
                     .settings-row
                         .checkbox
                             label

@@ -18,7 +18,7 @@
         .input-tip
             input.form-control(type='text' ng-model='metaFilter' placeholder='Filter matadata...')
     .popover-content(ng-if='metadata && metadata.length > 0')
-        treecontrol.tree-classic(tree-model='metadata' options='metaOptions' filter-expression="metaFilter")
+        treecontrol.tree-classic(tree-model='metadata' options='metaOptions' filter-expression='metaFilter')
             span(ng-switch='' on='node.type')
                 span(ng-switch-when='type' ng-dblclick='dblclickMetadata(paragraph, node)')
                     i.fa.fa-table
