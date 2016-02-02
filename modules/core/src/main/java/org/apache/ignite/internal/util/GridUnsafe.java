@@ -1236,7 +1236,7 @@ public abstract class GridUnsafe {
     /**
      * @param obj Object.
      * @param off Offset.
-     * @param bigEndian Big-endian byte order.
+     * @param bigEndian Order of value bytes in memory. If {@code true} - big-endian, otherwise little-endian.
      */
     private static short getShortByByte(Object obj, long off, boolean bigEndian) {
         if (bigEndian)
@@ -1249,7 +1249,7 @@ public abstract class GridUnsafe {
      * @param obj Object.
      * @param off Offset.
      * @param val Value.
-     * @param bigEndian Big-endian byte order.
+     * @param bigEndian Order of value bytes in memory. If {@code true} - big-endian, otherwise little-endian.
      */
     private static void putShortByByte(Object obj, long off, short val, boolean bigEndian) {
         if (bigEndian) {
@@ -1265,7 +1265,7 @@ public abstract class GridUnsafe {
     /**
      * @param obj Object.
      * @param off Offset.
-     * @param bigEndian Big-endian byte order.
+     * @param bigEndian Order of value bytes in memory. If {@code true} - big-endian, otherwise little-endian.
      */
     private static char getCharByByte(Object obj, long off, boolean bigEndian) {
         if (bigEndian)
@@ -1278,7 +1278,7 @@ public abstract class GridUnsafe {
      * @param obj Object.
      * @param addr Address.
      * @param val Value.
-     * @param bigEndian Big-endian byte order.
+     * @param bigEndian Order of value bytes in memory. If {@code true} - big-endian, otherwise little-endian.
      */
     private static void putCharByByte(Object obj, long addr, char val, boolean bigEndian) {
         if (bigEndian) {
@@ -1294,7 +1294,7 @@ public abstract class GridUnsafe {
     /**
      * @param obj Object.
      * @param addr Address.
-     * @param bigEndian Big-endian byte order.
+     * @param bigEndian Order of value bytes in memory. If {@code true} - big-endian, otherwise little-endian.
      */
     private static int getIntByByte(Object obj, long addr, boolean bigEndian) {
         if (bigEndian) {
@@ -1315,7 +1315,7 @@ public abstract class GridUnsafe {
      * @param obj Object.
      * @param addr Address.
      * @param val Value.
-     * @param bigEndian Big-endian byte order.
+     * @param bigEndian Order of value bytes in memory. If {@code true} - big-endian, otherwise little-endian.
      */
     private static void putIntByByte(Object obj, long addr, int val, boolean bigEndian) {
         if (bigEndian) {
@@ -1335,7 +1335,7 @@ public abstract class GridUnsafe {
     /**
      * @param obj Object.
      * @param addr Address.
-     * @param bigEndian Big-endian byte order.
+     * @param bigEndian Order of value bytes in memory. If {@code true} - big-endian, otherwise little-endian.
      */
     private static long getLongByByte(Object obj, long addr, boolean bigEndian) {
         if (bigEndian) {
@@ -1364,7 +1364,7 @@ public abstract class GridUnsafe {
      * @param obj Object.
      * @param addr Address.
      * @param val Value.
-     * @param bigEndian Big-endian byte order.
+     * @param bigEndian Order of value bytes in memory. If {@code true} - big-endian, otherwise little-endian.
      */
     private static void putLongByByte(Object obj, long addr, long val, boolean bigEndian) {
         if (bigEndian) {
@@ -1391,7 +1391,7 @@ public abstract class GridUnsafe {
 
     /**
      * @param addr Address.
-     * @param bigEndian Big-endian byte order.
+     * @param bigEndian Order of value bytes in memory. If {@code true} - big-endian, otherwise little-endian.
      */
     private static short getShortByByte(long addr, boolean bigEndian) {
         if (bigEndian)
@@ -1403,7 +1403,7 @@ public abstract class GridUnsafe {
     /**
      * @param addr Address.
      * @param val Value.
-     * @param bigEndian Big-endian byte order.
+     * @param bigEndian Order of value bytes in memory. If {@code true} - big-endian, otherwise little-endian.
      */
     private static void putShortByByte(long addr, short val, boolean bigEndian) {
         if (bigEndian) {
@@ -1418,7 +1418,7 @@ public abstract class GridUnsafe {
 
     /**
      * @param addr Address.
-     * @param bigEndian Big-endian byte order.
+     * @param bigEndian Order of value bytes in memory. If {@code true} - big-endian, otherwise little-endian.
      */
     private static char getCharByByte(long addr, boolean bigEndian) {
         if (bigEndian)
@@ -1430,7 +1430,7 @@ public abstract class GridUnsafe {
     /**
      * @param addr Address.
      * @param val Value.
-     * @param bigEndian Big-endian byte order.
+     * @param bigEndian Order of value bytes in memory. If {@code true} - big-endian, otherwise little-endian.
      */
     private static void putCharByByte(long addr, char val, boolean bigEndian) {
         if (bigEndian) {
@@ -1445,7 +1445,7 @@ public abstract class GridUnsafe {
 
     /**
      * @param addr Address.
-     * @param bigEndian Big-endian byte order.
+     * @param bigEndian Order of value bytes in memory. If {@code true} - big-endian, otherwise little-endian.
      */
     private static int getIntByByte(long addr, boolean bigEndian) {
         if (bigEndian) {
@@ -1465,7 +1465,7 @@ public abstract class GridUnsafe {
     /**
      * @param addr Address.
      * @param val Value.
-     * @param bigEndian Big-endian byte order.
+     * @param bigEndian Order of value bytes in memory. If {@code true} - big-endian, otherwise little-endian.
      */
     private static void putIntByByte(long addr, int val, boolean bigEndian) {
         if (bigEndian) {
@@ -1484,7 +1484,7 @@ public abstract class GridUnsafe {
 
     /**
      * @param addr Address.
-     * @param bigEndian Big-endian byte order.
+     * @param bigEndian Order of value bytes in memory. If {@code true} - big-endian, otherwise little-endian.
      */
     private static long getLongByByte(long addr, boolean bigEndian) {
         if (bigEndian) {
@@ -1512,7 +1512,7 @@ public abstract class GridUnsafe {
     /**
      * @param addr Address.
      * @param val Value.
-     * @param bigEndian Big-endian byte order.
+     * @param bigEndian Order of value bytes in memory. If {@code true} - big-endian, otherwise little-endian.
      */
     private static void putLongByByte(long addr, long val, boolean bigEndian) {
         if (bigEndian) {
