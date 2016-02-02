@@ -122,7 +122,8 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
         String taskName,
         final boolean deserializeBinary,
         final boolean skipVals,
-        boolean canRemap
+        boolean canRemap,
+        final boolean needVer
     ) {
         ctx.checkSecurity(SecurityPermission.CACHE_READ);
 
@@ -146,7 +147,8 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
                         deserializeBinary,
                         skipVals,
                         false,
-                        skipStore);
+                        skipStore,
+                        needVer);
                 }
             }, opCtx);
         }
@@ -162,7 +164,8 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
             skipVals ? null : opCtx != null ? opCtx.expiry() : null,
             skipVals,
             skipStore,
-            canRemap);
+            canRemap,
+            needVer);
     }
 
     /**

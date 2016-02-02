@@ -1,4 +1,4 @@
-﻿﻿/*
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -15,32 +15,33 @@
  * limitations under the License.
  */
 
-namespace Apache.Ignite.Linq
-{
-    using Apache.Ignite.Core;
+package org.apache.ignite.tests.p2p;
 
-    /// <summary>
-    /// Common interface for cache queryables.
-    /// </summary>
-    public interface ICacheQueryable
-    {
-        /// <summary>
-        /// Gets the name of the cache that is associated with this query.
-        /// </summary>
-        /// <value>
-        /// The name of the cache.
-        /// </value>
-        string CacheName { get; }
+/**
+ * Test enum for cache deployment tests.
+ */
+public enum CacheDeploymentTestEnumValue {
+    ONE("one"),
+    TWO("two"),
+    THREE("three");
 
-        /// <summary>
-        /// Gets the Ignite instance associated with this query.
-        /// </summary>
-        IIgnite Ignite { get; }
+    /** */
+    private String value;
 
-        /// <summary>
-        /// Returns the commands to execute against the data source.
-        /// </summary>
-        /// <returns>Commands to execute against the data source.</returns>
-        string ToTraceString();
+    /** */
+    CacheDeploymentTestEnumValue(String value) {
+        this.value = value;
+    }
+
+    /** */
+    public String getValue() {
+        return value;
+    }
+
+    /** */
+    @Override public String toString() {
+        return "CacheDeploymentTestEnumValue{" +
+            "value='" + value + '\'' +
+            '}';
     }
 }

@@ -1,4 +1,4 @@
-﻿﻿/*
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -15,32 +15,22 @@
  * limitations under the License.
  */
 
-namespace Apache.Ignite.Linq
-{
-    using Apache.Ignite.Core;
+package org.apache.ignite.internal.processors.cache;
 
-    /// <summary>
-    /// Common interface for cache queryables.
-    /// </summary>
-    public interface ICacheQueryable
-    {
-        /// <summary>
-        /// Gets the name of the cache that is associated with this query.
-        /// </summary>
-        /// <value>
-        /// The name of the cache.
-        /// </value>
-        string CacheName { get; }
+import org.apache.ignite.transactions.TransactionConcurrency;
+import org.apache.ignite.transactions.TransactionIsolation;
 
-        /// <summary>
-        /// Gets the Ignite instance associated with this query.
-        /// </summary>
-        IIgnite Ignite { get; }
+/**
+ * Test getEntry and getEntries methods.
+ */
+public class CacheGetEntryOptimisticSerializableSeltTest extends CacheGetEntryAbstractTest {
+    /** {@inheritDoc} */
+    @Override protected TransactionConcurrency concurrency() {
+        return TransactionConcurrency.OPTIMISTIC;
+    }
 
-        /// <summary>
-        /// Returns the commands to execute against the data source.
-        /// </summary>
-        /// <returns>Commands to execute against the data source.</returns>
-        string ToTraceString();
+    /** {@inheritDoc} */
+    @Override protected TransactionIsolation isolation() {
+        return TransactionIsolation.SERIALIZABLE;
     }
 }
