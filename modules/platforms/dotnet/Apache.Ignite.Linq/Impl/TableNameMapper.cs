@@ -24,45 +24,11 @@ namespace Apache.Ignite.Linq.Impl
     using Remotion.Linq.Clauses;
     using Remotion.Linq.Clauses.Expressions;
 
+    /// <summary>
+    /// Table name mapper.
+    /// </summary>
     internal static class TableNameMapper
     {
-        public static string GetTableName<TKey, TValue>(ICache<TKey, TValue> cache)
-        {
-            return GetTableNameFromEntryValueType(typeof (TValue));
-        }
-
-        public static string GetTableNameFromEntryValueType(Type entryValueType)
-        {
-            Debug.Assert(entryValueType != null);
-
-            return entryValueType.Name;
-        }
-
-        public static string GetTableNameFromEntryType(Type cacheEntryType)
-        {
-            Debug.Assert(cacheEntryType != null);
-            
-            if (!(cacheEntryType.IsGenericType && cacheEntryType.GetGenericTypeDefinition() == typeof(ICacheEntry<,>)))
-                throw new NotSupportedException("Unexpected cache query entry type: " + cacheEntryType);
-
-            return GetTableNameFromEntryValueType(cacheEntryType.GetGenericArguments()[1]);
-        }
-
-        public static string GetTableNameWithSchema(ICacheQueryable cacheQueryable)
-        {
-            Debug.Assert(cacheQueryable != null);
-
-            var cacheQueryableType = cacheQueryable.GetType();
-
-            if (!(cacheQueryableType.IsGenericType &&
-                  cacheQueryableType.GetGenericTypeDefinition() == typeof (CacheQueryable<,>)))
-                throw new NotSupportedException("Unexpected cache query type: " + cacheQueryableType);
-
-            var tableName = GetTableNameFromEntryValueType(cacheQueryableType.GetGenericArguments()[1]);
-
-            return string.Format("\"{0}\".{1}", cacheQueryable.CacheName, tableName);
-        }
-
         public static string GetTableNameWithSchema(QuerySourceReferenceExpression expression)
         {
             Debug.Assert(expression != null);
@@ -93,7 +59,7 @@ namespace Apache.Ignite.Linq.Impl
 
             if (innerMember != null)
                 return GetTableNameWithSchema(innerMember);
-;
+
             throw new NotSupportedException("Unexpected member expression, cannot find query source: " + expression);
         }
 
@@ -122,6 +88,23 @@ namespace Apache.Ignite.Linq.Impl
             var cacheQuery = (ICacheQueryable) constExpr.Value;
 
             return string.Format("\"{0}\".{1}", cacheQuery.CacheName, tableName);
+        }
+
+        private static string GetTableNameFromEntryValueType(Type entryValueType)
+        {
+            Debug.Assert(entryValueType != null);
+
+            return entryValueType.Name;
+        }
+
+        private static string GetTableNameFromEntryType(Type cacheEntryType)
+        {
+            Debug.Assert(cacheEntryType != null);
+
+            if (!(cacheEntryType.IsGenericType && cacheEntryType.GetGenericTypeDefinition() == typeof(ICacheEntry<,>)))
+                throw new NotSupportedException("Unexpected cache query entry type: " + cacheEntryType);
+
+            return GetTableNameFromEntryValueType(cacheEntryType.GetGenericArguments()[1]);
         }
     }
 }
