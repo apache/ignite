@@ -25,9 +25,9 @@ import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
  */
 public interface CustomEventListener<T extends DiscoveryCustomMessage> {
     /**
+     * @param topVer Current topology version.
      * @param snd Sender.
      * @param msg Message.
-     * @param topVer Current topology version.
      */
-    public void onCustomEvent(ClusterNode snd, T msg, AffinityTopologyVersion topVer);
+    public void onCustomEvent(AffinityTopologyVersion topVer, ClusterNode snd, T msg);
 }

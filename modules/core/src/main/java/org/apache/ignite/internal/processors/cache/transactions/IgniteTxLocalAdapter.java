@@ -29,8 +29,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicReference;
+import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
+import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import javax.cache.Cache;
 import javax.cache.CacheException;
 import javax.cache.expiry.Duration;
@@ -115,16 +115,24 @@ import static org.apache.ignite.transactions.TransactionState.UNKNOWN;
 /**
  * Transaction adapter for cache transactions.
  */
-public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
-    implements IgniteTxLocalEx {
+public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements IgniteTxLocalEx {
     /** */
     private static final long serialVersionUID = 0L;
+
+    /** Commit error updater. */
+    protected static final AtomicReferenceFieldUpdater<IgniteTxLocalAdapter, Throwable> COMMIT_ERR_UPD =
+        AtomicReferenceFieldUpdater.newUpdater(IgniteTxLocalAdapter.class, Throwable.class, "commitErr");
+
+    /** Done flag updater. */
+    protected static final AtomicIntegerFieldUpdater<IgniteTxLocalAdapter> DONE_FLAG_UPD =
+        AtomicIntegerFieldUpdater.newUpdater(IgniteTxLocalAdapter.class, "doneFlag");
 
     /** Minimal version encountered (either explicit lock or XID of this transaction). */
     protected GridCacheVersion minVer;
 
     /** Flag indicating with TM commit happened. */
-    protected AtomicBoolean doneFlag = new AtomicBoolean(false);
+    @SuppressWarnings("UnusedDeclaration")
+    protected volatile int doneFlag;
 
     /** Committed versions, relative to base. */
     private Collection<GridCacheVersion> committedVers = Collections.emptyList();
@@ -139,7 +147,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
     private boolean sndTransformedVals;
 
     /** Commit error. */
-    protected AtomicReference<Throwable> commitErr = new AtomicReference<>();
+    protected volatile Throwable commitErr;
 
     /** Need return value. */
     protected boolean needRetVal;
@@ -248,12 +256,12 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
 
     /** {@inheritDoc} */
     @Override public Throwable commitError() {
-        return commitErr.get();
+        return commitErr;
     }
 
     /** {@inheritDoc} */
     @Override public void commitError(Throwable e) {
-        commitErr.compareAndSet(null, e);
+        COMMIT_ERR_UPD.compareAndSet(this, null, e);
     }
 
     /** {@inheritDoc} */
@@ -801,7 +809,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
             catch (IgniteCheckedException ex) {
                 commitError(ex);
 
-                setRollbackOnly();
+                errorWhenCommitting();
 
                 // Safe to remove transaction from committed tx list because nothing was committed yet.
                 cctx.tm().removeCommittedTx(this);
@@ -811,7 +819,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
             catch (Throwable ex) {
                 commitError(ex);
 
-                setRollbackOnly();
+                errorWhenCommitting();
 
                 // Safe to remove transaction from committed tx list because nothing was committed yet.
                 cctx.tm().removeCommittedTx(this);
@@ -1153,7 +1161,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
                             // Set operation to NOOP.
                             txEntry.op(NOOP);
 
-                            setRollbackOnly();
+                            errorWhenCommitting();
 
                             throw ex;
                         }
@@ -1164,7 +1172,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
 
                             U.error(log, "Heuristic transaction failure.", err);
 
-                            commitErr.compareAndSet(null, err);
+                            COMMIT_ERR_UPD.compareAndSet(this, null, err);
 
                             state(UNKNOWN);
 
@@ -1194,7 +1202,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
 
         // Do not unlock transaction entries if one-phase commit.
         if (!onePhaseCommit()) {
-            if (doneFlag.compareAndSet(false, true)) {
+            if (DONE_FLAG_UPD.compareAndSet(this, 0, 1)) {
                 // Unlock all locks.
                 cctx.tm().commitTx(this);
 
@@ -1215,7 +1223,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
     public void tmFinish(boolean commit) {
         assert onePhaseCommit();
 
-        if (doneFlag.compareAndSet(false, true)) {
+        if (DONE_FLAG_UPD.compareAndSet(this, 0, 1)) {
             // Unlock all locks.
             if (commit)
                 cctx.tm().commitTx(this);
@@ -1272,8 +1280,8 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
         if (state != ROLLING_BACK && state != ROLLED_BACK) {
             setRollbackOnly();
 
-            throw new IgniteCheckedException("Invalid transaction state for rollback [state=" + state + ", tx=" + this + ']',
-                commitErr.get());
+            throw new IgniteCheckedException("Invalid transaction state for rollback [state=" + state +
+                ", tx=" + this + ']', commitErr);
         }
 
         if (near()) {
@@ -1283,7 +1291,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
                 evictNearEntry(e, false);
         }
 
-        if (doneFlag.compareAndSet(false, true)) {
+        if (DONE_FLAG_UPD.compareAndSet(this, 0, 1)) {
             try {
                 cctx.tm().rollbackTx(this);
 
@@ -1302,7 +1310,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
                 }
             }
             catch (Error | IgniteCheckedException | RuntimeException e) {
-                U.addLastCause(e, commitErr.get(), log);
+                U.addLastCause(e, commitErr, log);
 
                 throw e;
             }
@@ -1969,8 +1977,14 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
         GridCacheContext cacheCtx,
         Map<KeyCacheObject, GridCacheDrInfo> drMap
     ) {
+        Map<KeyCacheObject, Object> map = F.viewReadOnly(drMap, new IgniteClosure<GridCacheDrInfo, Object>() {
+            @Override public Object apply(GridCacheDrInfo val) {
+                return val.value();
+            }
+        });
+
         return this.<Object, Object>putAllAsync0(cacheCtx,
-            null,
+            map,
             null,
             null,
             drMap,
@@ -2047,7 +2061,8 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
         final GridCacheReturn ret,
         boolean skipStore,
         final boolean singleRmv,
-        boolean keepBinary) {
+        boolean keepBinary,
+        Byte dataCenterId) {
         try {
             addActiveCache(cacheCtx);
 
@@ -2058,6 +2073,8 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
             if (entryProcessor != null)
                 transform = true;
 
+            GridCacheVersion drVer = dataCenterId != null ? cctx.versions().next(dataCenterId) : null;
+
             boolean loadMissed = enlistWriteEntry(cacheCtx,
                 cacheKey,
                 val,
@@ -2067,7 +2084,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
                 retval,
                 lockOnly,
                 filter,
-                /*drVer*/null,
+                /*drVer*/drVer,
                 /*drTtl*/-1L,
                 /*drExpireTime*/-1L,
                 ret,
@@ -2117,6 +2134,8 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
      * @param drRmvMap DR remove map (optional).
      * @param skipStore Skip store flag.
      * @param singleRmv {@code True} for single key remove operation ({@link Cache#remove(Object)}.
+     * @param keepBinary Keep binary flag.
+     * @param dataCenterId Optional data center ID.
      * @return Future for missing values loading.
      */
     private <K, V> IgniteInternalFuture<Void> enlistWrite(
@@ -2135,7 +2154,8 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
         @Nullable Map<KeyCacheObject, GridCacheVersion> drRmvMap,
         boolean skipStore,
         final boolean singleRmv,
-        final boolean keepBinary
+        final boolean keepBinary,
+        Byte dataCenterId
     ) {
         assert retval || invokeMap == null;
 
@@ -2186,6 +2206,11 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
                     assert drRmvMap.get(key) != null;
 
                     drVer = drRmvMap.get(key);
+                    drTtl = -1L;
+                    drExpireTime = -1L;
+                }
+                else if (dataCenterId != null) {
+                    drVer = cctx.versions().next(dataCenterId);
                     drTtl = -1L;
                     drExpireTime = -1L;
                 }
@@ -2930,6 +2955,8 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
 
             CacheOperationContext opCtx = cacheCtx.operationContextPerCall();
 
+            final Byte dataCenterId = opCtx != null ? opCtx.dataCenterId() : null;
+
             KeyCacheObject cacheKey = cacheCtx.toCacheKeyObject(key);
 
             boolean keepBinary = opCtx != null && opCtx.isKeepBinary();
@@ -2947,7 +2974,8 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
                 ret,
                 opCtx != null && opCtx.skipStore(),
                 /*singleRmv*/false,
-                keepBinary);
+                keepBinary,
+                dataCenterId);
 
             if (pessimistic()) {
                 assert loadFut == null || loadFut.isDone() : loadFut;
@@ -3045,7 +3073,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
         @Nullable Map<? extends K, ? extends V> map,
         @Nullable Map<? extends K, ? extends EntryProcessor<K, V, Object>> invokeMap,
         @Nullable final Object[] invokeArgs,
-        @Nullable final Map<KeyCacheObject, GridCacheDrInfo> drMap,
+        @Nullable Map<KeyCacheObject, GridCacheDrInfo> drMap,
         final boolean retval,
         @Nullable final CacheEntryPredicate[] filter
     ) {
@@ -3058,25 +3086,22 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
             return new GridFinishedFuture(e);
         }
 
+        final CacheOperationContext opCtx = cacheCtx.operationContextPerCall();
+
+        final Byte dataCenterId;
+
+        if (opCtx != null && opCtx.hasDataCenterId()) {
+            assert drMap == null : drMap;
+            assert map != null || invokeMap != null;
+
+            dataCenterId = opCtx.dataCenterId();
+        }
+        else
+            dataCenterId = null;
+
         // Cached entry may be passed only from entry wrapper.
-        final Map<?, ?> map0;
-        final Map<?, EntryProcessor<K, V, Object>> invokeMap0;
-
-        if (drMap != null) {
-            assert map == null;
-
-            map0 = F.viewReadOnly(drMap, new IgniteClosure<GridCacheDrInfo, Object>() {
-                @Override public Object apply(GridCacheDrInfo val) {
-                    return val.value();
-                }
-            });
-
-            invokeMap0 = null;
-        }
-        else {
-            map0 = map;
-            invokeMap0 = (Map<K, EntryProcessor<K, V, Object>>)invokeMap;
-        }
+        final Map<?, ?> map0 = map;
+        final Map<?, EntryProcessor<K, V, Object>> invokeMap0 = (Map<K, EntryProcessor<K, V, Object>>)invokeMap;
 
         if (log.isDebugEnabled())
             log.debug("Called putAllAsync(...) [tx=" + this + ", map=" + map0 + ", retval=" + retval + "]");
@@ -3102,8 +3127,6 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
 
             final Collection<KeyCacheObject> enlisted = new ArrayList<>(keySet.size());
 
-            CacheOperationContext opCtx = cacheCtx.operationContextPerCall();
-
             final boolean keepBinary = opCtx != null && opCtx.isKeepBinary();
 
             final IgniteInternalFuture<Void> loadFut = enlistWrite(
@@ -3122,7 +3145,8 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
                 null,
                 opCtx != null && opCtx.skipStore(),
                 false,
-                keepBinary);
+                keepBinary,
+                dataCenterId);
 
             if (pessimistic()) {
                 assert loadFut == null || loadFut.isDone() : loadFut;
@@ -3326,6 +3350,18 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
         else
             keys0 = keys;
 
+        CacheOperationContext opCtx = cacheCtx.operationContextPerCall();
+
+        final Byte dataCenterId;
+
+        if (opCtx != null && opCtx.hasDataCenterId()) {
+            assert drMap == null : drMap;
+
+            dataCenterId = opCtx.dataCenterId();
+        }
+        else
+            dataCenterId = null;
+
         assert keys0 != null;
 
         if (log.isDebugEnabled()) {
@@ -3359,8 +3395,6 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
 
         final Collection<KeyCacheObject> enlisted = new ArrayList<>();
 
-        CacheOperationContext opCtx = cacheCtx.operationContextPerCall();
-
         ExpiryPolicy plc;
 
         if (!F.isEmpty(filter))
@@ -3386,7 +3420,8 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
             drMap,
             opCtx != null && opCtx.skipStore(),
             singleRmv,
-            keepBinary
+            keepBinary,
+            dataCenterId
         );
 
         if (log.isDebugEnabled())

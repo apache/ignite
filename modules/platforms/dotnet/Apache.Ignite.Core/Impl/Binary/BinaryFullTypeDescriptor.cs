@@ -64,7 +64,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         private readonly BinaryObjectSchema _schema = new BinaryObjectSchema();
 
         /** Enum flag. */
-        private bool _isEnum;
+        private readonly bool _isEnum;
 
         /// <summary>
         /// Constructor.

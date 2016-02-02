@@ -280,28 +280,28 @@ public class GridCacheQueryRequest extends GridCacheMessage implements GridCache
 
         GridCacheContext cctx = ctx.cacheContext(cacheId);
 
-        if (keyValFilter != null) {
+        if (keyValFilter != null && keyValFilterBytes == null) {
             if (addDepInfo)
                 prepareObject(keyValFilter, cctx);
 
             keyValFilterBytes = CU.marshal(cctx, keyValFilter);
         }
 
-        if (rdc != null) {
+        if (rdc != null && rdcBytes == null) {
             if (addDepInfo)
                 prepareObject(rdc, cctx);
 
             rdcBytes = CU.marshal(cctx, rdc);
         }
 
-        if (trans != null) {
+        if (trans != null && transBytes == null) {
             if (addDepInfo)
                 prepareObject(trans, cctx);
 
             transBytes = CU.marshal(cctx, trans);
         }
 
-        if (!F.isEmpty(args)) {
+        if (!F.isEmpty(args) && argsBytes == null) {
             if (addDepInfo) {
                 for (Object arg : args)
                     prepareObject(arg, cctx);
@@ -317,16 +317,16 @@ public class GridCacheQueryRequest extends GridCacheMessage implements GridCache
 
         Marshaller mrsh = ctx.marshaller();
 
-        if (keyValFilterBytes != null)
+        if (keyValFilterBytes != null && keyValFilter == null)
             keyValFilter = mrsh.unmarshal(keyValFilterBytes, ldr);
 
-        if (rdcBytes != null)
+        if (rdcBytes != null && rdc == null)
             rdc = mrsh.unmarshal(rdcBytes, ldr);
 
-        if (transBytes != null)
+        if (transBytes != null && trans == null)
             trans = mrsh.unmarshal(transBytes, ldr);
 
-        if (argsBytes != null)
+        if (argsBytes != null && args == null)
             args = mrsh.unmarshal(argsBytes, ldr);
     }
 

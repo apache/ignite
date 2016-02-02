@@ -48,7 +48,7 @@ public class HadoopTasksV2Test extends HadoopTasksAllVersionsTest {
         job.setOutputKeyClass(Text.class);
         job.setOutputValueClass(IntWritable.class);
 
-        HadoopWordCount2.setTasksClasses(job, true, true, true);
+        HadoopWordCount2.setTasksClasses(job, true, true, true, false);
 
         Configuration conf = job.getConfiguration();
 

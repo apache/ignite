@@ -19,8 +19,10 @@ namespace Apache.Ignite.Core.Impl.Compute.Closure
 {
     using System;
     using System.Collections.Generic;
+    using System.Diagnostics.CodeAnalysis;
     using Apache.Ignite.Core.Cluster;
     using Apache.Ignite.Core.Compute;
+    using Apache.Ignite.Core.Impl.Common;
 
     /// <summary>
     /// Base class for all tasks working with closures.
@@ -60,6 +62,7 @@ namespace Apache.Ignite.Core.Impl.Compute.Closure
         /// <returns>
         /// Result policy that dictates how to process further upcoming job results.
         /// </returns>
+        [SuppressMessage("Microsoft.Design", "CA1062:Validate arguments of public methods")]
         public ComputeJobResultPolicy OnResult(IComputeJobResult<T> res, IList<IComputeJobResult<T>> rcvd)
         {
             Exception err = res.Exception;
