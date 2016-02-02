@@ -50,6 +50,9 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         /** */
         private bool _runDbConsole;
 
+        /** */
+        private static readonly DateTime StartDateTime = new DateTime(2000, 1, 1);
+
         [TestFixtureSetUp]
         public void FixtureSetUp()
         {
@@ -75,7 +78,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
                 {
                     Address = new Address {Zip = i, Street = "Street " + i},
                     OrganizationId = i%2 + 1000,
-                    Birthday = DateTime.MinValue.AddYears(i)
+                    Birthday = StartDateTime.AddYears(i)
                 });
 
                 var i2 = i + PersonCount;
@@ -83,7 +86,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
                 {
                     Address = new Address {Zip = i2, Street = "Street " + i2},
                     OrganizationId = i%2 + 1000,
-                    Birthday = DateTime.MinValue.AddYears(i)
+                    Birthday = StartDateTime.AddYears(i)
                 });
             }
 
@@ -94,8 +97,8 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
 
             var roleCache = GetRoleCache();
 
-            roleCache[new RoleKey(1, 101)] = new Role {Name = "Role_1", Date = DateTime.MinValue};
-            roleCache[new RoleKey(2, 102)] = new Role {Name = "Role_2", Date = DateTime.MinValue.AddYears(1)};
+            roleCache[new RoleKey(1, 101)] = new Role {Name = "Role_1", Date = StartDateTime };
+            roleCache[new RoleKey(2, 102)] = new Role {Name = "Role_2", Date = StartDateTime.AddYears(1)};
             roleCache[new RoleKey(3, 103)] = new Role {Name = null};
         }
 
@@ -466,6 +469,13 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
 
             var nonNullNameRoles = roles.Where(x => x.Value.Name != null);
             Assert.AreEqual(RoleCount - 1, nonNullNameRoles.Count());
+        }
+
+        [Test]
+        public void TestDateTime()
+        {
+            // Test retrieval
+            var dates = GetRoleCache().ToQueryable().Select(x => x.Value.Date).ToArray();
         }
 
         [Test]
