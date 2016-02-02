@@ -78,6 +78,7 @@ import './modules/configuration/sidebar/main';
 import './modules/configuration/include-event-types/main';
 import './modules/terms/main';
 import './modules/logo/main';
+import './modules/getting-started/main';
 // endignite
 
 // Directives.
@@ -92,7 +93,6 @@ import igniteFormFieldJavaClass from './directives/form-field-java-class/form-fi
 
 // Services.
 import IgniteUiAceOnLoad from './services/UiAceOnLoad/service';
-import IgniteGettingStarted from './services/GettingStarted/index';
 
 // Providers
 import igniteCountries from './providers/Countries/index';
@@ -126,7 +126,8 @@ angular
     'ignite-console.configuration.sidebar',
     'ignite-console.configuration.include-event-types',
     'ignite-console.terms',
-    'ignite-console.logo'
+    'ignite-console.logo',
+    'ignite-console.getting-started'
 ])
 // Directives.
 .directive(...igniteLoading)
@@ -139,7 +140,6 @@ angular
 .directive(...igniteFormFieldJavaClass)
 // Services.
 .service(...IgniteUiAceOnLoad)
-.service(...IgniteGettingStarted)
 // Providers.
 .provider(...igniteCountries)
 // Filters.
