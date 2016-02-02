@@ -98,33 +98,6 @@ namespace Apache.Ignite.Linq.Impl
                 return fields => (T)newExpr.Constructor.Invoke(GetArguments(fields, newExpr.Arguments));
             }
 
-            var methodExpr = selectorExpression as MethodCallExpression;
-
-            if (methodExpr != null)
-            {
-                // TODO: Compile Func<IList, T>
-                var targetExpr = methodExpr.Object as ConstantExpression;
-
-                object target = targetExpr == null ? null : targetExpr.Value;
-
-                return fields => (T) methodExpr.Method.Invoke(target, GetArguments(fields, methodExpr.Arguments));
-            }
-
-            var invokeExpr = selectorExpression as InvocationExpression;
-
-            if (invokeExpr != null)
-            {
-                // TODO: Compile
-                var targetExpr = invokeExpr.Expression as ConstantExpression;
-
-                if (targetExpr == null)
-                    throw new NotSupportedException("Delegate expression is not supported: " + invokeExpr);
-
-                var del = (Delegate) targetExpr.Value;
-
-                return fields => (T) del.DynamicInvoke(GetArguments(fields, invokeExpr.Arguments));
-            }
-
             var entryCtor = GetCacheEntryCtor(typeof (T));
 
             if (entryCtor != null)

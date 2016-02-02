@@ -273,6 +273,8 @@ namespace Apache.Ignite.Linq.Impl
                 return expression;
             }
 
+            throw new NotSupportedException("Method not supported: " + expression.Method);
+
             // Attempt to postpone method call until query result materialization
             VisitArguments(expression.Arguments);
 
