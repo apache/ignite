@@ -131,7 +131,7 @@
                                                                                         <xs:element name="fields" minOccurs="1">
                                                                                             <xs:complexType>
                                                                                                 <xs:sequence>
-                                                                                                    <xs:element name="indexField" maxOccurs="unbounded">
+                                                                                                    <xs:element name="queryIndexField" maxOccurs="unbounded">
                                                                                                         <xs:complexType>
                                                                                                             <xs:attribute name="name" type="xs:string" use="required" />
                                                                                                             <xs:attribute name="isDescending" type="xs:boolean" />
@@ -225,7 +225,7 @@
                             <xs:element name="ipFinder" minOccurs="0">
                                 <xs:complexType>
                                     <xs:sequence>
-                                        <xs:element name="endPoints" minOccurs="0">
+                                        <xs:element name="endpoints" minOccurs="0">
                                             <xs:complexType>
                                                 <xs:sequence>
                                                     <xs:element maxOccurs="unbounded" name="string" type="xs:string" />
@@ -248,6 +248,7 @@
                         <xs:attribute name="maxAckTimeout" type="xs:string" />
                         <xs:attribute name="networkTimeout" type="xs:string" />
                         <xs:attribute name="joinTimeout" type="xs:string" />
+                        <xs:attribute name="type" type="xs:string" use="required" />
                     </xs:complexType>
                 </xs:element>
                 <xs:element name="includedEventTypes" minOccurs="0">
