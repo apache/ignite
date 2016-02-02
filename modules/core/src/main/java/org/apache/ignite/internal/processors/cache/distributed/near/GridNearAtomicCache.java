@@ -400,7 +400,8 @@ public class GridNearAtomicCache<K, V> extends GridNearCacheAdapter<K, V> {
         String taskName,
         boolean deserializeBinary,
         boolean skipVals,
-        boolean canRemap
+        boolean canRemap,
+        boolean needVer
     ) {
         ctx.checkSecurity(SecurityPermission.CACHE_READ);
 
@@ -423,7 +424,8 @@ public class GridNearAtomicCache<K, V> extends GridNearCacheAdapter<K, V> {
             skipVals ? null : opCtx != null ? opCtx.expiry() : null,
             skipVals,
             opCtx != null && opCtx.skipStore(),
-            canRemap);
+            canRemap,
+            needVer);
     }
 
     /** {@inheritDoc} */
