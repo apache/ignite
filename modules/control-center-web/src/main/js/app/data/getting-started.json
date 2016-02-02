@@ -2,17 +2,28 @@
     {
         "title": "What is Apache Ignite",
         "message": [
-            "Apache Ignite is a ..."
+            "<p><b>Apache Ignite</b>  is a high-performance, integrated and distributed in-memory platform for computing and transacting on large-scale data sets in real-time, orders of magnitude faster than possible with traditional disk-based or flash technologies.</p>",
+            "<img src=\"/images/apache-ignite.png\" width=\"100%\" />",
+            "<p><b>Apache Ignite</b> is designed to deliver uncompromised performance for a wide set of in-memory computing use cases from high performance computing, to the industry most advanced data grid, highly available service grid, and streaming.</p>"
         ]
     },
     {
         "title": "What is Apache Ignite Web Console",
         "message": [
-            "Apache Ignite Web Console is a powerful tool for configuration of your cluster."
+            "<p><b>Apache Ignite Web Console</b> is a powerful tool for configuration and management of your clusters.</p>",
+            "<p>With Apache Ignite Web Console you can:<p>",
+            "<ul>",
+            "<li>Configure clusters</li>",
+            "<li>Import domain model from database or describe it manually</li>",
+            "<li>Configure all needed caches</li>",
+            "<li>Configure IGFS in-memory file systems</li>",
+            "<li>Preview generated XML and Java code in browser</li>",
+            "<li>Download fully functional Maven project with generated XML and Java code</li>",
+            "</ul>"
         ]
     },
     {
-        "title": "Get started",
+        "title": "Cluster screen",
         "message": [
             "In cluster configuration you can follow next steps:",
             "<ul>",
@@ -21,12 +32,6 @@
             "<li>Configure clusters on Clusters screen</li>",
             "<li>See and download generated project for configured cluster on Summary screen</li>",
             "</ul>"
-        ]
-    },
-    {
-        "title": "Cluster screen",
-        "message": [
-            "TODO"
         ]
     },
     {
