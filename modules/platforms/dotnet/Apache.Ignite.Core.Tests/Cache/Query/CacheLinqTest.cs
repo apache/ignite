@@ -479,6 +479,8 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
             // We have info about parameter types when generating query. Need to have pluggable parameter writer or something.
             // TODO: QueryDateTimeField?
 
+            // OR we better ONLY allow UTC in queries. And maybe modify serializer to check for SqlQuery.
+
             var roles = GetRoleCache().ToQueryable();
             var persons = GetPersonOrgCache().ToQueryable();
 
