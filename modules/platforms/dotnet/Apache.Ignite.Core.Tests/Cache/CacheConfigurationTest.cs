@@ -24,6 +24,8 @@ namespace Apache.Ignite.Core.Tests.Cache
     using Apache.Ignite.Core.Cache.Configuration;
     using Apache.Ignite.Core.Cache.Store;
     using Apache.Ignite.Core.Common;
+    using Apache.Ignite.Core.Discovery.Tcp;
+    using Apache.Ignite.Core.Discovery.Tcp.Static;
     using NUnit.Framework;
 
     /// <summary>
@@ -57,7 +59,14 @@ namespace Apache.Ignite.Core.Tests.Cache
                 JvmClasspath = TestUtils.CreateTestClasspath(),
                 JvmOptions = TestUtils.TestJavaOptions(),
                 GridName = CacheName,
-                BinaryConfiguration = new BinaryConfiguration(typeof(Entity))
+                BinaryConfiguration = new BinaryConfiguration(typeof(Entity)),
+                DiscoverySpi = new TcpDiscoverySpi
+                {
+                    IpFinder = new TcpDiscoveryStaticIpFinder
+                    {
+                        Endpoints = new[] { "127.0.0.1:47500", "127.0.0.1:47501" }
+                    }
+                }
             };
 
             _ignite = Ignition.Start(cfg);

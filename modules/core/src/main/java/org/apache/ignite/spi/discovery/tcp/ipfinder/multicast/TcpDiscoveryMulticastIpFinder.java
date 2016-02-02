@@ -271,7 +271,7 @@ public class TcpDiscoveryMulticastIpFinder extends TcpDiscoveryVmIpFinder {
      * @param ttl Time to live.
      */
     @IgniteSpiConfiguration(optional = true)
-    public void setTimeToLive(Integer ttl) {
+    public void setTimeToLive(int ttl) {
         this.ttl = ttl;
     }
 
@@ -281,7 +281,7 @@ public class TcpDiscoveryMulticastIpFinder extends TcpDiscoveryVmIpFinder {
      *
      * @return Time to live.
      */
-    public Integer getTimeToLive() {
+    public int getTimeToLive() {
         return ttl;
     }
 
