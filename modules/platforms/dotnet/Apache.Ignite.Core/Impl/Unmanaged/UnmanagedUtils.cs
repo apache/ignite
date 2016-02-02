@@ -21,7 +21,6 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
     using System.Diagnostics.CodeAnalysis;
     using System.Runtime.InteropServices;
     using Apache.Ignite.Core.Common;
-
     using JNI = IgniteJniNativeMethods;
 
     /// <summary>
@@ -102,7 +101,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         {
             JNI.IgnitionStopAll(ctx, cancel);
         }
-        
+
         internal static void ProcessorReleaseStart(IUnmanagedTarget target)
         {
             JNI.ProcessorReleaseStart(target.Context, target.Target);
@@ -147,6 +146,13 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
             }
         }
 
+        internal static IUnmanagedTarget ProcessorCreateCache(IUnmanagedTarget target, long memPtr)
+        {
+            void* res = JNI.ProcessorCreateCacheFromConfig(target.Context, target.Target, memPtr);
+
+            return target.ChangeTarget(res);
+        }
+
         internal static IUnmanagedTarget ProcessorGetOrCreateCache(IUnmanagedTarget target, string name)
         {
             sbyte* name0 = IgniteUtils.StringToUtf8Unmanaged(name);
@@ -161,6 +167,13 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
             {
                 Marshal.FreeHGlobal(new IntPtr(name0));
             }
+        }
+
+        internal static IUnmanagedTarget ProcessorGetOrCreateCache(IUnmanagedTarget target, long memPtr)
+        {
+            void* res = JNI.ProcessorGetOrCreateCacheFromConfig(target.Context, target.Target, memPtr);
+
+            return target.ChangeTarget(res);
         }
 
         internal static void ProcessorDestroyCache(IUnmanagedTarget target, string name)
@@ -266,6 +279,11 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
             {
                 Marshal.FreeHGlobal(new IntPtr(name0));
             }
+        }
+
+        internal static void ProcessorGetIgniteConfiguration(IUnmanagedTarget target, long memPtr)
+        {
+            JNI.ProcessorGetIgniteConfiguration(target.Context, target.Target, memPtr);
         }
 
         #endregion

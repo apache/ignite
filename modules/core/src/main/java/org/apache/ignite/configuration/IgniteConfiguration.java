@@ -2002,8 +2002,10 @@ public class IgniteConfiguration {
      *
      * @param cacheKeyCfg Cache key configuration.
      */
-    public void setCacheKeyConfiguration(CacheKeyConfiguration... cacheKeyCfg) {
+    public IgniteConfiguration setCacheKeyConfiguration(CacheKeyConfiguration... cacheKeyCfg) {
         this.cacheKeyCfg = cacheKeyCfg;
+
+        return this;
     }
 
     /**
@@ -2020,8 +2022,10 @@ public class IgniteConfiguration {
      *
      * @param binaryCfg Binary configuration object.
      */
-    public void setBinaryConfiguration(BinaryConfiguration binaryCfg) {
+    public IgniteConfiguration setBinaryConfiguration(BinaryConfiguration binaryCfg) {
         this.binaryCfg = binaryCfg;
+
+        return this;
     }
 
     /**

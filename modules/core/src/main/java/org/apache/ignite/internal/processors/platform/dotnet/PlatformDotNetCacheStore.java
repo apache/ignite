@@ -29,11 +29,8 @@ import org.apache.ignite.internal.processors.platform.cache.store.PlatformCacheS
 import org.apache.ignite.internal.processors.platform.memory.PlatformMemory;
 import org.apache.ignite.internal.processors.platform.memory.PlatformOutputStream;
 import org.apache.ignite.internal.processors.platform.utils.PlatformUtils;
-import org.apache.ignite.internal.util.lang.GridMapEntry;
 import org.apache.ignite.internal.util.lang.GridTuple;
 import org.apache.ignite.internal.util.lang.IgniteInClosureX;
-import org.apache.ignite.internal.util.typedef.C1;
-import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiInClosure;
@@ -43,13 +40,9 @@ import org.jetbrains.annotations.Nullable;
 import javax.cache.Cache;
 import javax.cache.integration.CacheLoaderException;
 import javax.cache.integration.CacheWriterException;
-import java.util.AbstractMap;
-import java.util.AbstractSet;
 import java.util.Collection;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.Map;
-import java.util.Set;
 
 /**
  * Wrapper for .NET cache store implementations.
@@ -102,11 +95,30 @@ public class PlatformDotNetCacheStore<K, V> implements CacheStore<K, V>, Platfor
     /** Properties. */
     private Map<String, ?> props;
 
+    /** Native factory. */
+    private final Object nativeFactory;
+
     /** Interop processor. */
     protected PlatformContext platformCtx;
 
     /** Pointer to native store. */
     protected long ptr;
+
+    /**
+     * Default ctor.
+     */
+    public PlatformDotNetCacheStore() {
+        nativeFactory = null;
+    }
+
+    /**
+     * Native factory ctor.
+     */
+    public PlatformDotNetCacheStore(Object nativeFactory) {
+        assert nativeFactory != null;
+
+        this.nativeFactory = nativeFactory;
+    }
 
     /**
      * Gets .NET class name.
@@ -175,7 +187,7 @@ public class PlatformDotNetCacheStore<K, V> implements CacheStore<K, V>, Platfor
                     writer.writeByte(OP_LOAD_ALL);
                     writer.writeLong(session());
                     writer.writeString(ses.cacheName());
-                    writer.writeCollection((Collection) keys);
+                    writer.writeCollection((Collection)keys);
                 }
             }, new LoadAllCallback<>(platformCtx, loaded));
 
@@ -305,7 +317,8 @@ public class PlatformDotNetCacheStore<K, V> implements CacheStore<K, V>, Platfor
      * @throws org.apache.ignite.IgniteCheckedException
      */
     public void initialize(GridKernalContext ctx, boolean convertBinary) throws IgniteCheckedException {
-        A.notNull(typName, "typName");
+        A.ensure(typName != null || nativeFactory != null,
+                "Either typName or nativeFactory must be set in PlatformDotNetCacheStore");
 
         platformCtx = PlatformUtils.platformContext(ctx.grid());
 
@@ -329,9 +342,13 @@ public class PlatformDotNetCacheStore<K, V> implements CacheStore<K, V>, Platfor
      * @param convertBinary Convert binary flag.
      */
     protected void write(BinaryRawWriterEx writer, boolean convertBinary) {
-        writer.writeString(typName);
         writer.writeBoolean(convertBinary);
-        writer.writeMap(props);
+        writer.writeObjectDetached(nativeFactory);
+
+        if (nativeFactory == null) {
+            writer.writeString(typName);
+            writer.writeMap(props);
+        }
     }
 
     /**

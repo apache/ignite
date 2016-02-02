@@ -148,7 +148,7 @@ public class GridCacheNearOnlyTopologySelfTest extends GridCommonAbstractTest {
             Ignite compute = startGrid(4);
 
             for (int i = 0; i < 100; i++) {
-                ClusterNode node = compute.cluster().mapKeyToNode(null, i);
+                ClusterNode node = compute.affinity(null).mapKeyToNode(i);
 
                 assertFalse("For key: " + i, node.id().equals(compute.cluster().localNode().id()));
                 assertFalse("For key: " + i, node.id().equals(grid(0).localNode().id()));
