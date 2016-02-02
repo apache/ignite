@@ -476,6 +476,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         {
             // TODO: DateTimes in binary format (serializable) won't work in comparisons, what do we do?
             // TODO: QueryField.TypeName override allows storing timestamps, but query parameters are passed incorrectly
+            // We have info about parameter types when generating query. Need to have pluggable parameter writer or something.
             // TODO: QueryDateTimeField?
 
             var roles = GetRoleCache().ToQueryable();
