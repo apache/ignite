@@ -467,6 +467,16 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
                 .ToArray();
 
             Assert.AreEqual(Enumerable.Range(0, PersonCount).Reverse().ToArray(), persons.Select(x => x.Key).ToArray());
+
+            var personsByOrg = GetPersonOrgCache().ToQueryable()
+                .Join(GetOrgCache().ToQueryable(), p => p.Value.OrganizationId, o => o.Value.Id,
+                    (p, o) => new {PersonId = p.Key, PersonName = p.Value.Name, OrgName = o.Value.Name})
+                .OrderBy(x => x.OrgName)
+                .ThenBy(x => x.PersonName)
+                .ToArray();
+
+            var expectedIds = Enumerable.Range(0, PersonCount).OrderBy(x => x%2).ThenBy(x => x).ToArray();
+            Assert.AreEqual(expectedIds, personsByOrg.Select(x => x.PersonId).ToArray());
         }
 
         [Test]
