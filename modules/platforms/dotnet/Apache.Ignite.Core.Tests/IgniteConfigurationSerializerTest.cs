@@ -57,9 +57,9 @@ namespace Apache.Ignite.Core.Tests
                                     <string>Apache.Ignite.Core.Tests.IgniteConfigurationSerializerTest+FooClass, Apache.Ignite.Core.Tests</string>
                                 </types>
                             </binaryConfiguration>
-                            <discoveryConfiguration joinTimeout='0:1:0'>
-                                <ipFinder type='MulticastIpFinder' addressRequestAttempts='7' />
-                            </discoveryConfiguration>
+                            <discoverySpi type='TcpDiscoverySpi' joinTimeout='0:1:0'>
+                                <ipFinder type='TcpDiscoveryMulticastIpFinder' addressRequestAttempts='7' />
+                            </discoverySpi>
                             <jvmOptions><string>-Xms1g</string><string>-Xmx4g</string></jvmOptions>
                             <lifecycleBeans>
                                 <iLifecycleBean type='Apache.Ignite.Core.Tests.IgniteConfigurationSerializerTest+LifecycleBean, Apache.Ignite.Core.Tests' foo='15' />
@@ -75,9 +75,9 @@ namespace Apache.Ignite.Core.Tests
                                                 <queryAlias fullName='somefield.field' alias='shortField' />
                                             </aliases>
                                             <indexes>
-                                                <queryIndex name='idx' indexType='GeoSpatial'>
+                                                <queryIndex name='idx' indexType='Geospatial'>
                                                     <fields>
-                                                        <indexField name='indexFld' isDescending='true' />
+                                                        <queryIndexField name='indexFld' isDescending='true' />
                                                     </fields>
                                                 </queryIndex>
                                             </indexes>
