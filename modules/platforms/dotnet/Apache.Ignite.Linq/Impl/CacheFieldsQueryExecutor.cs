@@ -69,7 +69,7 @@ namespace Apache.Ignite.Linq.Impl
 
             var query = new SqlFieldsQuery(queryData.QueryText, queryData.Parameters.ToArray());
 
-            Debug.WriteLine("Fields Query: {0} | {1}", queryData.QueryText,
+            Debug.WriteLine("\nFields Query: {0} | {1}", queryData.QueryText,
                 string.Join(", ", queryData.Parameters.Select(x => x == null ? "null" : x.ToString())));
 
             var queryCursor = _executorFunc(query);
