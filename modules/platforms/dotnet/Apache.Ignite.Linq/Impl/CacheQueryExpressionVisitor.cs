@@ -118,6 +118,15 @@ namespace Apache.Ignite.Linq.Impl
             switch (expression.NodeType)
             {
                 case ExpressionType.Equal:
+                    var rightConst = expression.Right as ConstantExpression;
+
+                    if (rightConst != null && rightConst.Value == null)
+                    {
+                        // Special case for nulls, since "= null" does not work in SQL
+                        _resultBuilder.Append(" is null)");
+                        return expression;
+                    }
+
                     _resultBuilder.Append(" = ");
                     break;
 
