@@ -106,7 +106,9 @@ namespace Apache.Ignite.Core.Tests
             Assert.AreEqual(new[] { "-Xms1g", "-Xmx4g" }, cfg.JvmOptions);
             Assert.AreEqual(15, ((LifecycleBean) cfg.LifecycleBeans.Single()).Foo);
             Assert.AreEqual("testBar", ((NameMapper) cfg.BinaryConfiguration.DefaultNameMapper).Bar);
-            Assert.AreEqual(typeof(FooClass), cfg.BinaryConfiguration.Types.Single());
+            Assert.AreEqual(
+                "Apache.Ignite.Core.Tests.IgniteConfigurationSerializerTest+FooClass, Apache.Ignite.Core.Tests",
+                cfg.BinaryConfiguration.Types.Single());
             Assert.AreEqual(new[] {42, EventType.TaskFailed, EventType.JobFinished}, cfg.IncludedEventTypes);
 
             Assert.AreEqual("secondCache", cfg.CacheConfiguration.Last().Name);
