@@ -204,10 +204,14 @@ namespace Apache.Ignite.Linq.Impl
         {
             base.VisitMainFromClause(fromClause, queryModel);
 
-            _builder.AppendFormat("from {0} ", TableNameMapper.GetTableNameWithSchema(fromClause));
+            var tableName = TableNameMapper.GetTableNameWithSchema(fromClause);
+            _builder.AppendFormat("from {0} as {1} ", tableName, _aliases.GetAlias(tableName));
 
             foreach (var additionalFrom in queryModel.BodyClauses.OfType<AdditionalFromClause>())
-                _builder.AppendFormat(", {0} ", TableNameMapper.GetTableNameWithSchema(additionalFrom));
+            {
+                var tableNameWithSchema = TableNameMapper.GetTableNameWithSchema(additionalFrom);
+                _builder.AppendFormat(", {0} as {1} ", tableNameWithSchema, _aliases.GetAlias(tableNameWithSchema));
+            }
         }
 
         /** <inheritdoc /> */
@@ -238,7 +242,7 @@ namespace Apache.Ignite.Linq.Impl
                 VisitQueryModel(subQuery.QueryModel, true);
 
                 var tableName = TableNameMapper.GetTableNameWithSchema(subQuery.QueryModel.MainFromClause);
-                var alias = _aliases.GetNextAlias(tableName);
+                var alias = _aliases.GetAlias(tableName);
                 _builder.AppendFormat(") as {0} on (", alias);
             }
             else
@@ -254,7 +258,8 @@ namespace Apache.Ignite.Linq.Impl
                                                     "(only results of cache.ToQueryable() are supported): " +
                                                     innerExpr.Value);
 
-                _builder.AppendFormat("inner join {0} on (", TableNameMapper.GetTableNameWithSchema(joinClause));
+                var tableName = TableNameMapper.GetTableNameWithSchema(joinClause);
+                _builder.AppendFormat("inner join {0} as {1} on (", tableName, _aliases.GetAlias(tableName));
             }
 
             BuildJoinCondition(joinClause.InnerKeySelector, joinClause.OuterKeySelector);

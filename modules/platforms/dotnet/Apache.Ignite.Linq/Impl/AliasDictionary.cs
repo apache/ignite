@@ -52,25 +52,20 @@ namespace Apache.Ignite.Linq.Impl
         }
 
         /// <summary>
-        /// Gets the next alias.
-        /// </summary>
-        public string GetNextAlias(string tableName)
-        {
-            var alias = "tbl" + _aliasIndex++;
-
-            _aliases[tableName] = alias;
-
-            return alias;
-        }
-
-        /// <summary>
         /// Gets the table alias.
         /// </summary>
-        public string GetTableAlias(string fullName)
+        public string GetAlias(string fullName)
         {
             string alias;
 
-            return _aliases.TryGetValue(fullName, out alias) ? alias : fullName;
+            if (!_aliases.TryGetValue(fullName, out alias))
+            {
+                alias = "tbl" + _aliasIndex++;
+
+                _aliases[fullName] = alias;
+            }
+
+            return alias;
         }
     }
 }
