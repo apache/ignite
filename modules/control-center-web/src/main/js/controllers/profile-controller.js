@@ -44,10 +44,8 @@ consoleModule.controller('profileController',
     };
 
     $scope.saveBtnTipText = function () {
-        if (!$scope.profileForm.$valid)
-            return 'Invalid profile settings';
-
-        return _profileChanged() ? 'Save profile' : 'Nothing to save';
+        return _profileChanged()
+            ? ($scope.profileForm.$valid ? 'Save profile' : 'Invalid profile settings') : 'Nothing to save';
     };
 
     $scope.saveUser = function () {
