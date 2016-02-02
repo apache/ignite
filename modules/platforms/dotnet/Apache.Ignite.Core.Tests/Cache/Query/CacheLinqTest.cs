@@ -477,8 +477,8 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
             var roles = GetRoleCache().ToQueryable();
 
             // Test retrieval
-            var dates = roles.Select(x => x.Value.Date).ToArray();
-            var expDates = new[] {StartDateTime, StartDateTime.AddYears(1), default(DateTime)};
+            var dates = roles.Select(x => x.Value.Date).OrderBy(x => x).ToArray();
+            var expDates = new[] {StartDateTime, StartDateTime.AddYears(1), StartDateTime.AddYears(2)};
             Assert.AreEqual(expDates, dates);
 
             // Filtering
