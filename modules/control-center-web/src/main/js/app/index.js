@@ -92,6 +92,7 @@ import igniteUiAcePojos from './directives/ui-ace-pojos/ui-ace-pojos.directive';
 import igniteFormFieldJavaClass from './directives/form-field-java-class/form-field-java-class.directive';
 
 // Services.
+import cleanup from './services/cleanup/cleanup.service';
 import IgniteUiAceOnLoad from './services/UiAceOnLoad/service';
 
 // Providers
@@ -139,6 +140,7 @@ angular
 .directive(...igniteUiAcePojos)
 .directive(...igniteFormFieldJavaClass)
 // Services.
+.service(...cleanup)
 .service(...IgniteUiAceOnLoad)
 // Providers.
 .provider(...igniteCountries)

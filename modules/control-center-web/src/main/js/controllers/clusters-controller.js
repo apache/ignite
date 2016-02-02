@@ -17,7 +17,7 @@
 
 // Controller for Clusters screen.
 consoleModule.controller('clustersController', function ($http, $timeout, $scope, $state, $controller,
-    $common, $focus, $confirm, $clone, $preview, $loading, $unsavedChangesGuard, igniteIncludeEventGroups) {
+    $common, $focus, $confirm, $clone, $preview, $loading, $unsavedChangesGuard, $cleanup, igniteIncludeEventGroups) {
         $unsavedChangesGuard.install($scope);
 
         var __original_value;
@@ -175,7 +175,7 @@ consoleModule.controller('clustersController', function ($http, $timeout, $scope
                 $scope.$watch('backupItem', function (val) {
                     var form = $scope.ui.inputForm;
 
-                    if (form.$pristine || (form.$valid && __original_value === JSON.stringify(val)))
+                    if (form.$pristine || (form.$valid && __original_value === JSON.stringify($cleanup(val))))
                         form.$setPristine();
                     else
                         form.$setDirty();
@@ -299,7 +299,7 @@ consoleModule.controller('clustersController', function ($http, $timeout, $scope
 
                 $scope.backupItem = angular.extend({}, blank, $scope.backupItem);
 
-                __original_value = JSON.stringify($scope.backupItem);
+                __original_value = JSON.stringify($cleanup($scope.backupItem));
 
                 if ($common.getQueryVariable('new'))
                     $state.go('base.configuration.clusters');
