@@ -410,7 +410,8 @@ public final class GridDhtGetFuture<K, V> extends GridCompoundIdentityFuture<Col
                     /*deserialize binary*/false,
                     skipVals,
                     /*keep cache objects*/true,
-                    /*skip store*/!readThrough);
+                    /*skip store*/!readThrough,
+                    false);
             }
         }
         else {
@@ -440,7 +441,8 @@ public final class GridDhtGetFuture<K, V> extends GridCompoundIdentityFuture<Col
                                 /*deserialize binary*/false,
                                 skipVals,
                                 /*keep cache objects*/true,
-                                /*skip store*/!readThrough);
+                                /*skip store*/!readThrough,
+                                false);
                         }
                     }
                 }

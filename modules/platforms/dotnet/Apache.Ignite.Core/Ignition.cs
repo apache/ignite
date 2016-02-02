@@ -15,6 +15,7 @@
  * limitations under the License.
  */
 
+#pragma warning disable 618  // deprecated SpringConfigUrl
 namespace Apache.Ignite.Core 
 {
     using System;
@@ -41,7 +42,7 @@ namespace Apache.Ignite.Core
     /// <summary>
     /// This class defines a factory for the main Ignite API.
     /// <p/>
-    /// Use <see cref="Ignition.Start()"/> method to start Ignite with default configuration.
+    /// Use <see cref="Start()"/> method to start Ignite with default configuration.
     /// <para/>
     /// All members are thread-safe and may be used concurrently from multiple threads.
     /// </summary>
@@ -49,9 +50,6 @@ namespace Apache.Ignite.Core
     {
         /** */
         internal const string EnvIgniteSpringConfigUrlPrefix = "IGNITE_SPRING_CONFIG_URL_PREFIX";
-
-        /** */
-        private const string DefaultCfg = "config/default-config.xml";
 
         /** */
         private static readonly object SyncRoot = new object();
@@ -125,15 +123,6 @@ namespace Apache.Ignite.Core
         {
             IgniteArgumentCheck.NotNull(cfg, "cfg");
 
-            // Copy configuration to avoid changes to user-provided instance.
-            IgniteConfigurationEx cfgEx = cfg as IgniteConfigurationEx;
-
-            cfg = cfgEx == null ? new IgniteConfiguration(cfg) : new IgniteConfigurationEx(cfgEx);
-
-            // Set default Spring config if needed.
-            if (cfg.SpringConfigUrl == null)
-                cfg.SpringConfigUrl = DefaultCfg;
-
             lock (SyncRoot)
             {
                 // 1. Check GC settings.
@@ -146,9 +135,11 @@ namespace Apache.Ignite.Core
 
                 IgniteManager.CreateJvmContext(cfg, cbs);
 
-                var gridName = cfgEx != null ? cfgEx.GridName : null;
+                var gridName = cfg.GridName;
 
-                var cfgPath = Environment.GetEnvironmentVariable(EnvIgniteSpringConfigUrlPrefix) + cfg.SpringConfigUrl;
+                var cfgPath = cfg.SpringConfigUrl == null 
+                    ? null 
+                    : Environment.GetEnvironmentVariable(EnvIgniteSpringConfigUrlPrefix) + cfg.SpringConfigUrl;
 
                 // 3. Create startup object which will guide us through the rest of the process.
                 _startup = new Startup(cfg, cbs);
@@ -229,7 +220,7 @@ namespace Apache.Ignite.Core
             {
                 BinaryReader reader = BinaryUtils.Marshaller.StartUnmarshal(inStream);
 
-                PrepareConfiguration(reader);
+                PrepareConfiguration(reader, outStream);
 
                 PrepareLifecycleBeans(reader, outStream, handleRegistry);
             }
@@ -245,7 +236,8 @@ namespace Apache.Ignite.Core
         /// Preapare configuration.
         /// </summary>
         /// <param name="reader">Reader.</param>
-        private static void PrepareConfiguration(BinaryReader reader)
+        /// <param name="outStream">Response stream.</param>
+        private static void PrepareConfiguration(BinaryReader reader, PlatformMemoryStream outStream)
         {
             // 1. Load assemblies.
             IgniteConfiguration cfg = _startup.Configuration;
@@ -264,6 +256,9 @@ namespace Apache.Ignite.Core
                 cfg.BinaryConfiguration = binaryCfg;
 
             _startup.Marshaller = new Marshaller(cfg.BinaryConfiguration);
+
+            // 3. Send configuration details to Java
+            cfg.Write(_startup.Marshaller.StartMarshal(outStream));
         }
 
         /// <summary>
