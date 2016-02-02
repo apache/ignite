@@ -40,7 +40,7 @@ public abstract class AbstractConfigurationGenerator<T> implements Configuration
         A.notNull(params, "params");
 
         this.params = params;
-        stateIter = new StateIterator(params);
+        stateIter = new StateIterator(null);
     }
 
     /** {@inheritDoc} */
@@ -77,7 +77,7 @@ public abstract class AbstractConfigurationGenerator<T> implements Configuration
 
         /** {@inheritDoc} */
         @Override public T next() {
-            curState = stateIter.next();
+//            curState = stateIter.next(); // TODO
 
             return getConfiguration();
         }

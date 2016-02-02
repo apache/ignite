@@ -17,23 +17,53 @@
 
 package org.apache.ignite.testsuites;
 
+import java.util.Arrays;
 import junit.framework.TestSuite;
-import org.apache.ignite.cache.CacheMode;
-import org.apache.ignite.cache.store.CacheStore;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.processors.cache.GridCacheNewFullApiSelfTest;
-import org.apache.ignite.internal.processors.cache.GridNewCacheAbstractSelfTest;
+import org.apache.ignite.lang.IgniteClosure;
+import org.apache.ignite.marshaller.optimized.OptimizedMarshaller;
 import org.apache.ignite.testframework.GridTestSuite;
 import org.apache.ignite.testframework.NewTestsConfiguration;
 import org.apache.ignite.testframework.config.ConfigurationFactory;
+import org.apache.ignite.testframework.config.StateConfigurationFactory;
+import org.apache.ignite.testframework.config.generator.StateIterator;
+import org.apache.ignite.testframework.config.params.AtomicityModeProcessor;
+import org.apache.ignite.testframework.config.params.CacheMemoryModeProcessor;
+import org.apache.ignite.testframework.config.params.CacheModeProcessor;
+import org.apache.ignite.testframework.config.params.MarshallerProcessor;
+import org.apache.ignite.testframework.config.params.PeerClassLoadingProcessor;
 
-import static org.apache.ignite.testframework.junits.GridAbstractTest.defaultCacheConfiguration;
+import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
+import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
+import static org.apache.ignite.cache.CacheMemoryMode.OFFHEAP_TIERED;
+import static org.apache.ignite.cache.CacheMemoryMode.OFFHEAP_VALUES;
+import static org.apache.ignite.cache.CacheMemoryMode.ONHEAP_TIERED;
+import static org.apache.ignite.cache.CacheMode.LOCAL;
+import static org.apache.ignite.cache.CacheMode.PARTITIONED;
+import static org.apache.ignite.cache.CacheMode.REPLICATED;
 
 /**
  * Test suite for cache API.
  */
 public class IgniteCacheNewFullApiSelfTestSuite extends TestSuite {
+    /** */
+    @SuppressWarnings("unchecked")
+    private static final IgniteClosure<IgniteConfiguration, Void>[][] igniteParams = new IgniteClosure[][] {
+        {null, new MarshallerProcessor(new BinaryMarshaller()), new MarshallerProcessor(new OptimizedMarshaller(true))},
+        {null, new PeerClassLoadingProcessor(true), new PeerClassLoadingProcessor(false)},
+    };
+
+    /** */
+    @SuppressWarnings("unchecked")
+    private static final IgniteClosure<CacheConfiguration, Void>[][] cacheParams = new IgniteClosure[][] {
+        {null, new CacheModeProcessor(LOCAL), new CacheModeProcessor(PARTITIONED), new CacheModeProcessor(REPLICATED)},
+        {null, new AtomicityModeProcessor(ATOMIC), new AtomicityModeProcessor(TRANSACTIONAL)},
+        {null, new CacheMemoryModeProcessor(ONHEAP_TIERED), new CacheMemoryModeProcessor(OFFHEAP_VALUES), new CacheMemoryModeProcessor(OFFHEAP_TIERED)},
+    };
+
     /**
      * @return Cache API test suite.
      * @throws Exception If failed.
@@ -41,78 +71,29 @@ public class IgniteCacheNewFullApiSelfTestSuite extends TestSuite {
     public static TestSuite suite() throws Exception {
         TestSuite suite = new TestSuite("Cache New Full API Test Suite");
 
-        suite.addTest(new GridTestSuite(GridCacheNewFullApiSelfTest.class,
-            new NewTestsConfiguration(new SimpleConfigurationFactory() {
-                @Override public CacheConfiguration cacheConfiguration(String name) {
-                    CacheConfiguration cc = super.cacheConfiguration(name);
+        for (int gridCnt = 1; gridCnt <= 2; gridCnt++) {
+            for (StateIterator igniteIter = new StateIterator(igniteParams); igniteIter.hasNext();) {
+                int[] igniteCfgState = igniteIter.next();
 
-                    cc.setCacheMode(CacheMode.LOCAL);
+                for (StateIterator cacheIter = new StateIterator(cacheParams); cacheIter.hasNext();) {
+                    int[] cacheCfgState = cacheIter.next();
 
-                    return cc;
+                    ConfigurationFactory factory = new StateConfigurationFactory(igniteParams, igniteCfgState,
+                        cacheParams, cacheCfgState);
+
+                    // Stop all grids before starting new ignite configuration.
+                    boolean stop = !cacheIter.hasNext();
+
+                    String clsNameSuffix = "-[igniteCfg=" + Arrays.toString(igniteCfgState)
+                        + ", cacheCfgState=" + Arrays.toString(cacheCfgState) + "]";
+
+                    NewTestsConfiguration testCfg = new NewTestsConfiguration(factory, clsNameSuffix, stop, gridCnt);
+
+                    suite.addTest(new GridTestSuite(GridCacheNewFullApiSelfTest.class, testCfg));
                 }
-            }, "local-1", 1)));
-
-        suite.addTest(new GridTestSuite(GridCacheNewFullApiSelfTest.class,
-            new NewTestsConfiguration(new SimpleConfigurationFactory() {
-                @Override public CacheConfiguration cacheConfiguration(String name) {
-                    CacheConfiguration cc = super.cacheConfiguration(name);
-
-                    cc.setCacheMode(CacheMode.LOCAL);
-
-                    return cc;
-                }
-            }, "partitioned-1", 1)));
-
-        suite.addTest(new GridTestSuite(GridCacheNewFullApiSelfTest.class,
-            new NewTestsConfiguration(new SimpleConfigurationFactory() {
-                @Override public CacheConfiguration cacheConfiguration(String name) {
-                    CacheConfiguration cc = super.cacheConfiguration(name);
-
-                    cc.setCacheMode(CacheMode.LOCAL);
-
-                    return cc;
-                }
-            }, "partitioned-2", true, 2)));
+            }
+        }
 
         return suite;
-    }
-
-    private static IgniteConfiguration copyDefaults(IgniteConfiguration fromCfg, IgniteConfiguration toCfg) {
-        toCfg.setGridName(fromCfg.getGridName());
-        toCfg.setNodeId(fromCfg.getNodeId());
-        toCfg.setConsistentId(fromCfg.getConsistentId());
-        toCfg.setDiscoverySpi(fromCfg.getDiscoverySpi());
-        toCfg.setCommunicationSpi(fromCfg.getCommunicationSpi());
-        toCfg.setGridLogger(fromCfg.getGridLogger());
-        toCfg.setMBeanServer(fromCfg.getMBeanServer());
-
-        return toCfg;
-    }
-
-    private static CacheConfiguration cacheConfiguration() {
-        CacheConfiguration cfg = defaultCacheConfiguration();
-
-        CacheStore<?, ?> store = GridNewCacheAbstractSelfTest.cacheStore();
-
-        if (store != null) {
-            cfg.setCacheStoreFactory(new GridNewCacheAbstractSelfTest.TestStoreFactory());
-            cfg.setReadThrough(true);
-            cfg.setWriteThrough(true);
-            cfg.setLoadPreviousValue(true);
-        }
-
-        return cfg;
-    }
-
-    private static class SimpleConfigurationFactory implements ConfigurationFactory {
-        /** {@inheritDoc} */
-        @Override public IgniteConfiguration getConfiguration(String gridName, IgniteConfiguration cfg) {
-            return copyDefaults(cfg, new IgniteConfiguration());
-        }
-
-        /** {@inheritDoc} */
-        @Override public CacheConfiguration cacheConfiguration(String name) {
-            return IgniteCacheNewFullApiSelfTestSuite.cacheConfiguration();
-        }
     }
 }

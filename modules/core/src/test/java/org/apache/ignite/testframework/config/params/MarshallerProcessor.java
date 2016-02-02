@@ -15,16 +15,31 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.testframework.config;
+package org.apache.ignite.testframework.config.params;
 
-import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.lang.IgniteClosure;
+import org.apache.ignite.marshaller.Marshaller;
 
 /**
  *
  */
-public interface ConfigurationFactory {
-    public IgniteConfiguration getConfiguration(String gridName);
+@SuppressWarnings("serial")
+public class MarshallerProcessor implements IgniteClosure<IgniteConfiguration, Void> {
+    /** */
+    private Marshaller marsh;
 
-    public CacheConfiguration cacheConfiguration(String gridName);
+    /**
+     * @param marsh Marshaller.
+     */
+    public MarshallerProcessor(Marshaller marsh) {
+        this.marsh = marsh;
+    }
+
+    /** {@inheritDoc} */
+    @Override public Void apply(IgniteConfiguration configuration) {
+        configuration.setMarshaller(marsh);
+
+        return null;
+    }
 }

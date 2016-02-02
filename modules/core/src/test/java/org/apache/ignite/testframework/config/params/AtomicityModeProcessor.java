@@ -15,16 +15,31 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.testframework.config;
+package org.apache.ignite.testframework.config.params;
 
+import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.lang.IgniteClosure;
 
 /**
  *
  */
-public interface ConfigurationFactory {
-    public IgniteConfiguration getConfiguration(String gridName);
+@SuppressWarnings("serial")
+public class AtomicityModeProcessor implements IgniteClosure<CacheConfiguration, Void> {
+    /** */
+    private CacheAtomicityMode atomicityMode;
 
-    public CacheConfiguration cacheConfiguration(String gridName);
+    /**
+     * @param atomicityMode Mode.
+     */
+    public AtomicityModeProcessor(CacheAtomicityMode atomicityMode) {
+        this.atomicityMode = atomicityMode;
+    }
+
+    /** {@inheritDoc} */
+    @Override public Void apply(CacheConfiguration cfg) {
+        cfg.setAtomicityMode(atomicityMode);
+
+        return null;
+    }
 }

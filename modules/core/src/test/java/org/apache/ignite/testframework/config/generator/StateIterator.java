@@ -20,23 +20,124 @@ package org.apache.ignite.testframework.config.generator;
 import java.util.Iterator;
 
 /**
- * TODO: Add class description.
+ * State iterator.
  */
-public class StateIterator implements Iterator<State> {
-    private ConfigurationParamethers params;
+public class StateIterator implements Iterator<int[]> {
+    /** */
+    private Object[][] params;
 
-    public <T> StateIterator(ConfigurationParamethers params) {
+    /** */
+    private int[] vector;
+
+    /** */
+    private int position;
+
+    /**
+     * @param params Paramethers.
+     */
+    public StateIterator(Object[][] params) {
+        assert params != null;
+        assert params.length > 0;
+
+        for (int i = 0; i < params.length; i++) {
+            assert params[i] != null : i;
+            assert params[i].length > 0: i;
+        }
+
         this.params = params;
+
+        vector = new int[params.length];
+
+        for (int i = 0; i < vector.length; i++)
+            vector[i] = 0;
+
+        position = -1;
     }
 
     /** {@inheritDoc} */
     @Override public boolean hasNext() {
-        return false; // TODO: CODE: implement.
+        if (position == -1)
+            return true;
+
+        for (int i = params.length - 1 ; i >= 0; i--) {
+            if (vector[i] + 1 < params[i].length)
+                return true;
+        }
+
+        return false;
     }
 
     /** {@inheritDoc} */
-    @Override public State next() {
-        return null; // TODO: CODE: implement.
+    @Override public int[] next() {
+        // Only first call.
+        if (position == -1) {
+            position = 0;
+
+            return arraycopy(vector);
+        }
+
+        if (updateVector(vector, position))
+            return arraycopy(vector);
+
+        position++;
+
+        vector[position] = 1;
+
+        return arraycopy(vector);
+    }
+
+    /**
+     * Updates vector starting from position.
+     *
+     * @param vector Vector.
+     * @param position Position.
+     * @return {@code True} if vector has been updated. When {@code false} is returned it means that all positions
+     *          before has beedn set to {@code 0}.
+     */
+    private boolean updateVector(int[] vector, int position) {
+        if (position == 0) {
+            int val = vector[0];
+
+            if (val + 1 < params[0].length) {
+                vector[0] = val + 1;
+
+                return true;
+            }
+            else {
+                vector[0] = 0;
+
+                return false;
+            }
+        }
+
+        if (updateVector(vector, position - 1))
+            return true;
+
+        int val = vector[position];
+
+        if (val + 1 < params[position].length) {
+            vector[position] = val + 1;
+
+            return true;
+        }
+        else {
+            vector[position] = 0;
+
+            return false;
+        }
+
+    }
+
+    /**
+     * @param arr Array.
+     * @return Array copy.
+     */
+    private static int[] arraycopy(int[] arr) {
+        int[] dest = new int[arr.length];
+
+        System.arraycopy(arr, 0, dest, 0, arr.length);
+
+        return dest;
     }
 
     /** {@inheritDoc} */

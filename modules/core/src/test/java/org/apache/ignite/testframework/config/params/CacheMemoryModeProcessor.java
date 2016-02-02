@@ -15,16 +15,31 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.testframework.config;
+package org.apache.ignite.testframework.config.params;
 
+import org.apache.ignite.cache.CacheMemoryMode;
 import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.lang.IgniteClosure;
 
 /**
  *
  */
-public interface ConfigurationFactory {
-    public IgniteConfiguration getConfiguration(String gridName);
+@SuppressWarnings("serial")
+public class CacheMemoryModeProcessor implements IgniteClosure<CacheConfiguration, Void> {
+    /** */
+    private CacheMemoryMode memMode;
 
-    public CacheConfiguration cacheConfiguration(String gridName);
+    /**
+     * @param memMode Mode.
+     */
+    public CacheMemoryModeProcessor(CacheMemoryMode memMode) {
+        this.memMode = memMode;
+    }
+
+    /** {@inheritDoc} */
+    @Override public Void apply(CacheConfiguration cfg) {
+        cfg.setMemoryMode(memMode);
+
+        return null;
+    }
 }

@@ -15,16 +15,30 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.testframework.config;
+package org.apache.ignite.testframework.config.params;
 
-import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.lang.IgniteClosure;
 
 /**
  *
  */
-public interface ConfigurationFactory {
-    public IgniteConfiguration getConfiguration(String gridName);
+@SuppressWarnings("serial")
+public class PeerClassLoadingProcessor implements IgniteClosure<IgniteConfiguration, Void> {
+    /** */
+    private boolean enabled;
 
-    public CacheConfiguration cacheConfiguration(String gridName);
+    /**
+     * @param enabled Enabled.
+     */
+    public PeerClassLoadingProcessor(boolean enabled) {
+        this.enabled = enabled;
+    }
+
+    /** {@inheritDoc} */
+    @Override public Void apply(IgniteConfiguration configuration) {
+        configuration.setPeerClassLoadingEnabled(enabled);
+
+        return null;
+    }
 }

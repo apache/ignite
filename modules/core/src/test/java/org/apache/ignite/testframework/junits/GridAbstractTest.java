@@ -1199,8 +1199,20 @@ public abstract class GridAbstractTest extends TestCase {
         if (isMultiJvm())
             ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(LOCAL_IP_FINDER);
 
-        if (newTestsCfg != null)
-            return newTestsCfg.configurationFactory().getConfiguration(gridName, cfg);
+        if (newTestsCfg != null) {
+            IgniteConfiguration cfg2 = newTestsCfg.configurationFactory().getConfiguration(gridName);
+
+            // TODO review.
+            cfg2.setGridName(cfg.getGridName());
+            cfg2.setNodeId(cfg.getNodeId());
+            cfg2.setConsistentId(cfg.getConsistentId());
+            cfg2.setDiscoverySpi(cfg.getDiscoverySpi());
+            cfg2.setCommunicationSpi(cfg.getCommunicationSpi());
+            cfg2.setGridLogger(cfg.getGridLogger());
+            cfg2.setMBeanServer(cfg.getMBeanServer());
+
+            return cfg2;
+        }
 
         return cfg;
     }
