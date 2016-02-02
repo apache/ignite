@@ -52,7 +52,7 @@ namespace Apache.Ignite.Linq.Impl
         private static readonly MethodInfo StringToUpper = typeof (string).GetMethod("ToUpper", new Type[0]);
 
         /** */
-        private readonly bool _aggregating;
+        private readonly bool _useStar;
 
         /** */
         private readonly StringBuilder _resultBuilder;
@@ -61,20 +61,27 @@ namespace Apache.Ignite.Linq.Impl
         private readonly List<object> _parameters;
 
         /** */
-        private readonly string _tableNameOverride;
+        private readonly IDictionary<string, string> _aliases;
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="CacheQueryExpressionVisitor"/> class.
+        /// Initializes a new instance of the <see cref="CacheQueryExpressionVisitor" /> class.
         /// </summary>
-        public CacheQueryExpressionVisitor(StringBuilder builder, List<object> parameters, bool aggregating, string tableNameOverride)
+        /// <param name="builder">The builder.</param>
+        /// <param name="parameters">The parameters.</param>
+        /// <param name="useStar">Flag indicating that star '*' qualifier should be used 
+        /// for the whole-table select instead of _key, _val.</param>
+        /// <param name="aliases">The aliases.</param>
+        public CacheQueryExpressionVisitor(StringBuilder builder, List<object> parameters, bool useStar, 
+            IDictionary<string, string> aliases)
         {
             Debug.Assert(builder != null);
             Debug.Assert(parameters != null);
+            Debug.Assert(aliases != null);
 
             _resultBuilder = builder;
             _parameters = parameters;
-            _aggregating = aggregating;
-            _tableNameOverride = tableNameOverride;
+            _useStar = useStar;
+            _aliases = aliases;
         }
 
         /** <inheritdoc /> */
@@ -176,9 +183,9 @@ namespace Apache.Ignite.Linq.Impl
         {
             // Count, sum, max, min expect a single field or *
             // In other cases we need both parts of cache entry
-            var format = _aggregating ? "{0}.*" : "{0}._key, {0}._val";
+            var format = _useStar ? "{0}.*" : "{0}._key, {0}._val";
 
-            var tableName = _tableNameOverride ?? TableNameMapper.GetTableNameWithSchema(expression);
+            var tableName = GetTableAlias(TableNameMapper.GetTableNameWithSchema(expression));
 
             _resultBuilder.AppendFormat(format, tableName);
 
@@ -197,8 +204,8 @@ namespace Apache.Ignite.Linq.Impl
                 ? expression.Member.Name
                 : queryFieldAttr.Name;
 
-            _resultBuilder.AppendFormat("{0}.{1}",
-                _tableNameOverride ?? TableNameMapper.GetTableNameWithSchema(expression), fieldName);
+            _resultBuilder.AppendFormat("{0}.{1}", 
+                GetTableAlias(TableNameMapper.GetTableNameWithSchema(expression)), fieldName);
 
             return expression;
         }
@@ -312,7 +319,7 @@ namespace Apache.Ignite.Linq.Impl
             {
                 if (!first)
                 {
-                    if (_aggregating)
+                    if (_useStar)
                         throw new NotSupportedException("Aggregate functions do not support multiple fields");
 
                     _resultBuilder.Append(", ");
@@ -322,6 +329,16 @@ namespace Apache.Ignite.Linq.Impl
 
                 Visit(e);
             }
+        }
+
+        /// <summary>
+        /// Gets the table alias.
+        /// </summary>
+        private string GetTableAlias(string fullName)
+        {
+            string alias;
+
+            return _aliases.TryGetValue(fullName, out alias) ? alias : fullName;
         }
     }
 }
