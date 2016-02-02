@@ -222,15 +222,7 @@ public class GridCacheNewFullApiSelfTest extends GridNewCacheAbstractSelfTest {
     @Override protected void afterTest() throws Exception {
         super.afterTest();
 
-        IgniteCache<String, Integer> cache = jcache();
-
-        assertEquals(0, cache.localSize());
-        assertEquals(0, cache.size());
-
         dfltIgnite = null;
-
-        for (int i = 0; i < gridCount(); i++)
-            jcache(i).destroy();
     }
 
     /**

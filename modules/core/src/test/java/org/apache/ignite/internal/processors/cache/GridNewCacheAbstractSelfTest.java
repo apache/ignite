@@ -109,9 +109,9 @@ public abstract class GridNewCacheAbstractSelfTest extends GridCommonAbstractTes
         for (int i = 0; i < gridCount(); i++)
             info("Grid " + i + ": " + grid(i).localNode().id());
 
-        info("Starting caches...");
-
         for (int i = 0; i < gridCount(); i++) {
+            info("Starting cache on grid: " + i);
+            
             IgniteEx grid = grid(i);
 
             grid.createCache(newTestsCfg.configurationFactory().cacheConfiguration(grid.name()));
@@ -195,6 +195,12 @@ public abstract class GridNewCacheAbstractSelfTest extends GridCommonAbstractTes
         assertEquals("Cache is not empty", 0, jcache().localSize(CachePeekMode.ALL));
 
         resetStore();
+
+        for (int i = 0; i < gridCount(); i++) {
+            info("Destroing cache on grid: " + i);
+            
+            jcache(i).destroy();
+        }
     }
 
     /**

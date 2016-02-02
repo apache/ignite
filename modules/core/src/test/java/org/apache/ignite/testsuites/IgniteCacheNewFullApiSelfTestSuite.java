@@ -52,27 +52,27 @@ public class IgniteCacheNewFullApiSelfTestSuite extends TestSuite {
                 }
             }, "local-1", 1)));
 
-//        suite.addTest(new GridTestSuite(GridCacheNewFullApiSelfTest.class,
-//            new NewTestsConfiguration(new SimpleConfigurationFactory() {
-//                @Override public CacheConfiguration cacheConfiguration(String name) {
-//                    CacheConfiguration cc = super.cacheConfiguration(name);
-//
-//                    cc.setCacheMode(CacheMode.LOCAL);
-//
-//                    return cc;
-//                }
-//            }, "partitioned-1", true, 1)));
-//
-//        suite.addTest(new GridTestSuite(GridCacheNewFullApiSelfTest.class,
-//            new NewTestsConfiguration(new SimpleConfigurationFactory() {
-//                @Override public CacheConfiguration cacheConfiguration(String name) {
-//                    CacheConfiguration cc = super.cacheConfiguration(name);
-//
-//                    cc.setCacheMode(CacheMode.LOCAL);
-//
-//                    return cc;
-//                }
-//            }, "partitioned-2", true, 2)));
+        suite.addTest(new GridTestSuite(GridCacheNewFullApiSelfTest.class,
+            new NewTestsConfiguration(new SimpleConfigurationFactory() {
+                @Override public CacheConfiguration cacheConfiguration(String name) {
+                    CacheConfiguration cc = super.cacheConfiguration(name);
+
+                    cc.setCacheMode(CacheMode.LOCAL);
+
+                    return cc;
+                }
+            }, "partitioned-1", 1)));
+
+        suite.addTest(new GridTestSuite(GridCacheNewFullApiSelfTest.class,
+            new NewTestsConfiguration(new SimpleConfigurationFactory() {
+                @Override public CacheConfiguration cacheConfiguration(String name) {
+                    CacheConfiguration cc = super.cacheConfiguration(name);
+
+                    cc.setCacheMode(CacheMode.LOCAL);
+
+                    return cc;
+                }
+            }, "partitioned-2", true, 2)));
 
         return suite;
     }
