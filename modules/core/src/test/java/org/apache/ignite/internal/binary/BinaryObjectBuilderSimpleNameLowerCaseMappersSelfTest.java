@@ -15,27 +15,27 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache;
+package org.apache.ignite.internal.binary;
 
-import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.configuration.NearCacheConfiguration;
-
-import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
-import static org.apache.ignite.cache.CacheMemoryMode.OFFHEAP_TIERED;
+import org.apache.ignite.binary.BinaryBasicIdMapper;
+import org.apache.ignite.binary.BinaryBasicNameMapper;
+import org.apache.ignite.configuration.BinaryConfiguration;
+import org.apache.ignite.configuration.IgniteConfiguration;
 
 /**
- * Tests deployment with off-heap storage.
+ * Binary builder test.
  */
-public class GridCacheDeploymentOffHeapSelfTest extends GridCacheDeploymentSelfTest {
+@SuppressWarnings("ResultOfMethodCallIgnored")
+public class BinaryObjectBuilderSimpleNameLowerCaseMappersSelfTest extends BinaryObjectBuilderDefaultMappersSelfTest {
     /** {@inheritDoc} */
-    @Override protected CacheConfiguration cacheConfiguration() throws Exception {
-        CacheConfiguration cacheCfg = super.cacheConfiguration();
+    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(gridName);
 
-        cacheCfg.setMemoryMode(OFFHEAP_TIERED);
-        cacheCfg.setOffHeapMaxMemory(0);
-        cacheCfg.setAtomicityMode(TRANSACTIONAL);
-        cacheCfg.setNearConfiguration(new NearCacheConfiguration());
+        BinaryConfiguration bCfg = cfg.getBinaryConfiguration();
 
-        return cacheCfg;
+        bCfg.setIdMapper(new BinaryBasicIdMapper(true));
+        bCfg.setNameMapper(new BinaryBasicNameMapper(true));
+
+        return cfg;
     }
 }

@@ -1100,7 +1100,8 @@ public class GridNearAtomicUpdateFuture extends GridFutureAdapter<Object>
                             skipStore,
                             keepBinary,
                             cctx.kernalContext().clientNode(),
-                            cctx.deploymentEnabled());
+                            cctx.deploymentEnabled(),
+                            keys.size());
 
                         pendingMappings.put(nodeId, mapped);
                     }
@@ -1199,7 +1200,8 @@ public class GridNearAtomicUpdateFuture extends GridFutureAdapter<Object>
                 skipStore,
                 keepBinary,
                 cctx.kernalContext().clientNode(),
-                cctx.deploymentEnabled());
+                cctx.deploymentEnabled(),
+                1);
 
             req.addUpdateEntry(cacheKey,
                 val,

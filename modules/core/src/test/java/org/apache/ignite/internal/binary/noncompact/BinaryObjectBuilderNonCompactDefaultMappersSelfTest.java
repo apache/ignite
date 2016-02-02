@@ -15,27 +15,16 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache;
+package org.apache.ignite.internal.binary.noncompact;
 
-import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.configuration.NearCacheConfiguration;
-
-import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
-import static org.apache.ignite.cache.CacheMemoryMode.OFFHEAP_TIERED;
+import org.apache.ignite.internal.binary.BinaryObjectBuilderDefaultMappersSelfTest;
 
 /**
- * Tests deployment with off-heap storage.
+ * Binary builder test for objects with non-compact footer.
  */
-public class GridCacheDeploymentOffHeapSelfTest extends GridCacheDeploymentSelfTest {
+public class BinaryObjectBuilderNonCompactDefaultMappersSelfTest extends BinaryObjectBuilderDefaultMappersSelfTest {
     /** {@inheritDoc} */
-    @Override protected CacheConfiguration cacheConfiguration() throws Exception {
-        CacheConfiguration cacheCfg = super.cacheConfiguration();
-
-        cacheCfg.setMemoryMode(OFFHEAP_TIERED);
-        cacheCfg.setOffHeapMaxMemory(0);
-        cacheCfg.setAtomicityMode(TRANSACTIONAL);
-        cacheCfg.setNearConfiguration(new NearCacheConfiguration());
-
-        return cacheCfg;
+    @Override protected boolean compactFooter() {
+        return false;
     }
 }
