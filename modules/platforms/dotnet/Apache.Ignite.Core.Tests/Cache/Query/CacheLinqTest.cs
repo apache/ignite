@@ -74,14 +74,16 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
                 cache.Put(i, new Person(i, "Person_" + i)
                 {
                     Address = new Address {Zip = i, Street = "Street " + i},
-                    OrganizationId = i%2 + 1000
+                    OrganizationId = i%2 + 1000,
+                    Birthday = DateTime.MinValue.AddYears(i)
                 });
 
                 var i2 = i + PersonCount;
                 personCache.Put(i2, new Person(i2, "Person_" + i2)
                 {
                     Address = new Address {Zip = i2, Street = "Street " + i2},
-                    OrganizationId = i%2 + 1000
+                    OrganizationId = i%2 + 1000,
+                    Birthday = DateTime.MinValue.AddYears(i)
                 });
             }
 
@@ -92,8 +94,8 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
 
             var roleCache = GetRoleCache();
 
-            roleCache[new RoleKey(1, 101)] = new Role {Name = "Role_1"};
-            roleCache[new RoleKey(2, 102)] = new Role {Name = "Role_2"};
+            roleCache[new RoleKey(1, 101)] = new Role {Name = "Role_1", Date = DateTime.MinValue};
+            roleCache[new RoleKey(2, 102)] = new Role {Name = "Role_2", Date = DateTime.MinValue.AddYears(1)};
             roleCache[new RoleKey(3, 103)] = new Role {Name = null};
         }
 
@@ -536,12 +538,15 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
 
             [QuerySqlField] public int OrganizationId { get; set; }
 
+            [QuerySqlField] public DateTime? Birthday { get; set; }
+
             public void WriteBinary(IBinaryWriter writer)
             {
                 writer.WriteInt("age1", Age);
                 writer.WriteString("name", Name);
                 writer.WriteInt("OrganizationId", OrganizationId);
                 writer.WriteObject("Address", Address);
+                writer.WriteTimestamp("Birthday", Birthday);
             }
 
             public void ReadBinary(IBinaryReader reader)
@@ -550,6 +555,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
                 Name = reader.ReadString("name");
                 OrganizationId = reader.ReadInt("OrganizationId");
                 Address = reader.ReadObject<Address>("Address");
+                Birthday = reader.ReadTimestamp("Birthday");
             }
         }
 
@@ -568,6 +574,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         public class Role
         {
             [QuerySqlField] public string Name { get; set; }
+            [QuerySqlField] public DateTime Date { get; set; }
         }
 
         public struct RoleKey : IEquatable<RoleKey>
