@@ -20,8 +20,6 @@ namespace Apache.Ignite.Core
 {
     using System;
     using System.Collections.Generic;
-    using System.Configuration;
-    using System.Diagnostics;
     using System.Diagnostics.CodeAnalysis;
     using System.IO;
     using System.Linq;
@@ -118,13 +116,12 @@ namespace Apache.Ignite.Core
         }
 
         /// <summary>
-        /// Reads <see cref="IgniteConfiguration"/> from first <see cref="IgniteConfigurationSection"/> in the 
-        /// application configuration and starts Ignite.
+        /// Starts Ignite with given configuration.
         /// </summary>
         /// <returns>Started Ignite.</returns>
-        public static IIgnite StartFromApplicationConfiguration()
+        public unsafe static IIgnite Start(IgniteConfiguration cfg)
         {
-            var cfg = ConfigurationManager.OpenExeConfiguration(ConfigurationUserLevel.None);
+            IgniteArgumentCheck.NotNull(cfg, "cfg");
 
             lock (SyncRoot)
             {

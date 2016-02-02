@@ -25,6 +25,7 @@
     using System.Diagnostics.CodeAnalysis;
     using System.IO;
     using System.Linq;
+    using System.Xml;
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Cache.Configuration;
     using Apache.Ignite.Core.Discovery;
@@ -126,6 +127,26 @@
 
                 ReadCore(marsh.StartUnmarshal(stream));
             }
+        }
+
+        /// <summary>
+        /// Serializes this instance to XML writer.
+        /// </summary>
+        /// <param name="xmlWriter">The XML writer.</param>
+        /// <param name="rootElementName">Name of the root element.</param>
+        public void ToXml(XmlWriter xmlWriter, string rootElementName)
+        {
+            IgniteConfigurationXmlSerializer.Serialize(this, xmlWriter, rootElementName);
+        }
+
+        /// <summary>
+        /// Reads an <see cref="IgniteConfiguration"/> from XML reader.
+        /// </summary>
+        /// <param name="xmlReader">The XML reader.</param>
+        /// <returns>Resulting <see cref="IgniteConfiguration"/></returns>
+        public static IgniteConfiguration FromXml(XmlReader xmlReader)
+        {
+            return IgniteConfigurationXmlSerializer.Deserialize(xmlReader);
         }
 
         /// <summary>
