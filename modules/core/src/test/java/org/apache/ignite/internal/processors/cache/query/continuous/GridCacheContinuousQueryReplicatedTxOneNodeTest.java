@@ -24,6 +24,7 @@ import javax.cache.event.CacheEntryEvent;
 import javax.cache.event.CacheEntryListenerException;
 import javax.cache.event.CacheEntryUpdatedListener;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.CacheRebalanceMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
@@ -39,7 +40,7 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
  * Test for replicated cache with one node.
  */
 @SuppressWarnings("Duplicates")
-public class GridCacheContinuousQueryReplicatedOneNodeSelfTest extends GridCommonAbstractTest {
+public class GridCacheContinuousQueryReplicatedTxOneNodeTest extends GridCommonAbstractTest {
     /** IP finder. */
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
 
@@ -49,7 +50,8 @@ public class GridCacheContinuousQueryReplicatedOneNodeSelfTest extends GridCommo
 
         CacheConfiguration cacheCfg = defaultCacheConfiguration();
 
-        cacheCfg.setCacheMode(CacheMode.REPLICATED);
+        cacheCfg.setAtomicityMode(atomicMode());
+        cacheCfg.setCacheMode(cacheMode());
         cacheCfg.setRebalanceMode(CacheRebalanceMode.SYNC);
         cacheCfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
 
@@ -62,6 +64,20 @@ public class GridCacheContinuousQueryReplicatedOneNodeSelfTest extends GridCommo
         cfg.setDiscoverySpi(disco);
 
         return cfg;
+    }
+
+    /**
+     * @return Atomicity mode for a cache.
+     */
+    protected CacheAtomicityMode atomicMode() {
+        return CacheAtomicityMode.TRANSACTIONAL;
+    }
+
+    /**
+     * @return Cache mode.
+     */
+    protected CacheMode cacheMode() {
+        return CacheMode.REPLICATED;
     }
 
     /**
