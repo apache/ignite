@@ -459,6 +459,14 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         }
 
         [Test]
+        public void TestOrdering()
+        {
+            var persons = GetPersonOrgCache().OrderByDescending(x => x.Key).ToArray();
+
+            Assert.AreEqual(Enumerable.Range(0, PersonCount).Reverse().ToArray(), persons.Select(x => x.Key).ToArray());
+        }
+
+        [Test]
         public void TestNulls()
         {
             var roles = GetRoleCache().ToQueryable();
