@@ -693,6 +693,18 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
         }
     }
 
+    /** {@inheritDoc} */
+    @Override public boolean needForceKeys() {
+        if (cctx.rebalanceEnabled()) {
+            IgniteInternalFuture<Boolean> rebalanceFut = rebalanceFuture();
+
+            if (rebalanceFut.isDone() && Boolean.TRUE.equals(rebalanceFut.result()))
+                return false;
+        }
+
+        return true;
+    }
+
     /**
      * @param keys Keys to request.
      * @return Future for request.

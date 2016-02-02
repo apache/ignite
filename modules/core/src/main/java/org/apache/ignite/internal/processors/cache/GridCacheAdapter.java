@@ -1852,7 +1852,9 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
                         ctx.affinity().affinityTopologyVersion() : ctx.shared().exchange().readyAffinityVersion()) :
                         tx.topologyVersion();
 
-                final Map<K1, V1> map = U.newHashMap(keys.size());
+                final Map<K1, V1> map = keys.size() == 1 ?
+                    (Map<K1, V1>)new IgniteBiTuple<>() :
+                    U.<K1, V1>newHashMap(keys.size());
 
                 final boolean storeEnabled = !skipVals && readThrough && ctx.readThrough();
 
@@ -2046,17 +2048,9 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
                         }
                     );
                 }
-                else {
-                    // If misses is not empty and store is disabled, we should touch missed entries.
-                    if (misses != null) {
-                        for (KeyCacheObject key : misses.keySet()) {
-                            GridCacheEntryEx entry = peekEx(key);
-
-                            if (entry != null)
-                                ctx.evicts().touch(entry, topVer);
-                        }
-                    }
-                }
+                else
+                    // Misses can be non-zero only if store is enabled.
+                    assert misses == null;
 
                 return new GridFinishedFuture<>(map);
             }
