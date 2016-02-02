@@ -24,8 +24,9 @@ namespace Apache.Ignite.Core.Tests
     using System.Linq;
     using Apache.Ignite.Core.Cache.Configuration;
     using Apache.Ignite.Core.Common;
-    using Apache.Ignite.Core.Discovery;
     using Apache.Ignite.Core.Discovery.Tcp;
+    using Apache.Ignite.Core.Discovery.Tcp.Multicast;
+    using Apache.Ignite.Core.Discovery.Tcp.Static;
     using Apache.Ignite.Core.Events;
     using NUnit.Framework;
 
@@ -34,18 +35,27 @@ namespace Apache.Ignite.Core.Tests
     /// </summary>
     public class IgniteConfigurationTest
     {
+        /// <summary>
+        /// Fixture setup.
+        /// </summary>
         [TestFixtureSetUp]
         public void FixtureSetUp()
         {
             Ignition.StopAll(true);
         }
 
+        /// <summary>
+        /// Tests the default configuration properties.
+        /// </summary>
         [Test]
         public void TestDefaultConfigurationProperties()
         {
             CheckDefaultProperties(new IgniteConfiguration());
         }
 
+        /// <summary>
+        /// Tests the default value attributes.
+        /// </summary>
         [Test]
         public void TestDefaultValueAttributes()
         {
@@ -55,6 +65,9 @@ namespace Apache.Ignite.Core.Tests
             CheckDefaultValueAttributes(new TcpDiscoveryMulticastIpFinder());
         }
 
+        /// <summary>
+        /// Tests all configuration properties.
+        /// </summary>
         [Test]
         public void TestAllConfigurationProperties()
         {
@@ -77,7 +90,7 @@ namespace Apache.Ignite.Core.Tests
                 var resIp = (TcpDiscoveryStaticIpFinder) resDisco.IpFinder;
 
                 // There can be extra IPv6 endpoints
-                Assert.AreEqual(ip.EndPoints, resIp.EndPoints.Take(2).Select(x => x.Trim('/')).ToArray());
+                Assert.AreEqual(ip.Endpoints, resIp.Endpoints.Take(2).Select(x => x.Trim('/')).ToArray());
 
                 Assert.AreEqual(cfg.GridName, resCfg.GridName);
                 Assert.AreEqual(cfg.IncludedEventTypes, resCfg.IncludedEventTypes);
@@ -92,10 +105,13 @@ namespace Apache.Ignite.Core.Tests
                 Assert.AreEqual(cfg.JvmClasspath, resCfg.JvmClasspath);
                 Assert.AreEqual(cfg.JvmOptions, resCfg.JvmOptions);
                 Assert.IsTrue(File.Exists(resCfg.JvmDllPath));
-                Assert.AreEqual(cfg.LocalHost, resCfg.LocalHost);
+                Assert.AreEqual(cfg.Localhost, resCfg.Localhost);
             }
         }
 
+        /// <summary>
+        /// Tests the spring XML.
+        /// </summary>
         [Test]
         public void TestSpringXml()
         {
@@ -112,15 +128,18 @@ namespace Apache.Ignite.Core.Tests
             }
         }
 
+        /// <summary>
+        /// Tests the client mode.
+        /// </summary>
         [Test]
         public void TestClientMode()
         {
-            using (var ignite = Ignition.Start(new IgniteConfiguration {LocalHost = "127.0.0.1"}))
+            using (var ignite = Ignition.Start(new IgniteConfiguration {Localhost = "127.0.0.1"}))
             using (var ignite2 = Ignition.Start(new IgniteConfiguration
             {
                 GridName = "client",
                 ClientMode = true,
-                LocalHost = "127.0.0.1"
+                Localhost = "127.0.0.1"
             }))
             {
                 const string cacheName = "cache";
@@ -135,6 +154,9 @@ namespace Apache.Ignite.Core.Tests
             }
         }
 
+        /// <summary>
+        /// Tests the default spi.
+        /// </summary>
         [Test]
         public void TestDefaultSpi()
         {
@@ -151,7 +173,7 @@ namespace Apache.Ignite.Core.Tests
                     },
                 JvmClasspath = TestUtils.CreateTestClasspath(),
                 JvmOptions = TestUtils.TestJavaOptions(),
-                LocalHost = "127.0.0.1"
+                Localhost = "127.0.0.1"
             };
 
             using (var ignite = Ignition.Start(cfg))
@@ -165,6 +187,9 @@ namespace Apache.Ignite.Core.Tests
             }
         }
 
+        /// <summary>
+        /// Tests the invalid timeouts.
+        /// </summary>
         [Test]
         public void TestInvalidTimeouts()
         {
@@ -183,18 +208,24 @@ namespace Apache.Ignite.Core.Tests
             Assert.Throws<IgniteException>(() => Ignition.Start(cfg));
         }
 
+        /// <summary>
+        /// Tests the static ip finder.
+        /// </summary>
         [Test]
         public void TestStaticIpFinder()
         {
             TestIpFinders(new TcpDiscoveryStaticIpFinder
             {
-                EndPoints = new[] {"127.0.0.1:47500"}
+                Endpoints = new[] {"127.0.0.1:47500"}
             }, new TcpDiscoveryStaticIpFinder
             {
-                EndPoints = new[] {"127.0.0.1:47501"}
+                Endpoints = new[] {"127.0.0.1:47501"}
             });
         }
 
+        /// <summary>
+        /// Tests the multicast ip finder.
+        /// </summary>
         [Test]
         public void TestMulticastIpFinder()
         {
@@ -203,7 +234,12 @@ namespace Apache.Ignite.Core.Tests
                 new TcpDiscoveryMulticastIpFinder {MulticastGroup = "228.111.111.223", MulticastPort = 54522});
         }
 
-        private static void TestIpFinders(TcpDiscoveryIpFinder ipFinder, TcpDiscoveryIpFinder ipFinder2)
+        /// <summary>
+        /// Tests the ip finders.
+        /// </summary>
+        /// <param name="ipFinder">The ip finder.</param>
+        /// <param name="ipFinder2">The ip finder2.</param>
+        private static void TestIpFinders(TcpDiscoveryIpFinderBase ipFinder, TcpDiscoveryIpFinderBase ipFinder2)
         {
             var cfg = new IgniteConfiguration
             {
@@ -214,7 +250,7 @@ namespace Apache.Ignite.Core.Tests
                     },
                 JvmClasspath = TestUtils.CreateTestClasspath(),
                 JvmOptions = TestUtils.TestJavaOptions(),
-                LocalHost = "127.0.0.1"
+                Localhost = "127.0.0.1"
             };
 
             using (var ignite = Ignition.Start(cfg))
@@ -238,6 +274,10 @@ namespace Apache.Ignite.Core.Tests
             }
         }
 
+        /// <summary>
+        /// Checks the default properties.
+        /// </summary>
+        /// <param name="cfg">The CFG.</param>
         private static void CheckDefaultProperties(IgniteConfiguration cfg)
         {
             Assert.AreEqual(IgniteConfiguration.DefaultMetricsExpireTime, cfg.MetricsExpireTime);
@@ -249,6 +289,10 @@ namespace Apache.Ignite.Core.Tests
             Assert.AreEqual(IgniteConfiguration.DefaultNetworkSendRetryDelay, cfg.NetworkSendRetryDelay);
         }
 
+        /// <summary>
+        /// Checks the default value attributes.
+        /// </summary>
+        /// <param name="obj">The object.</param>
         private static void CheckDefaultValueAttributes(object obj)
         {
             var props = obj.GetType().GetProperties();
@@ -267,6 +311,9 @@ namespace Apache.Ignite.Core.Tests
             }
         }
 
+        /// <summary>
+        /// Gets the custom configuration.
+        /// </summary>
         private static IgniteConfiguration GetCustomConfig()
         {
             return new IgniteConfiguration
@@ -280,7 +327,7 @@ namespace Apache.Ignite.Core.Tests
                     JoinTimeout = TimeSpan.FromSeconds(5),
                     IpFinder = new TcpDiscoveryStaticIpFinder
                     {
-                        EndPoints = new[] { "127.0.0.1:47500", "127.0.0.1:47501" }
+                        Endpoints = new[] { "127.0.0.1:47500", "127.0.0.1:47501" }
                     }
                 },
                 GridName = "gridName1",
@@ -295,7 +342,7 @@ namespace Apache.Ignite.Core.Tests
                 WorkDirectory = Path.GetTempPath(),
                 JvmOptions = TestUtils.TestJavaOptions(),
                 JvmClasspath = TestUtils.CreateTestClasspath(),
-                LocalHost = "127.0.0.1"
+                Localhost = "127.0.0.1"
             };
         }
     }

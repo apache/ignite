@@ -644,7 +644,7 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
      */
     public boolean setTxTopologyHint(@Nullable AffinityTopologyVersion topVer) {
         if (topVer == null)
-            txTop.remove();
+            txTop.set(null);
         else {
             if (txTop.get() == null) {
                 txTop.set(topVer);

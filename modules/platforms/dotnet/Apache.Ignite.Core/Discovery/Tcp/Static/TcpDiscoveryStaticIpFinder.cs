@@ -15,20 +15,22 @@
  * limitations under the License.
  */
 
-namespace Apache.Ignite.Core.Discovery.Tcp
+namespace Apache.Ignite.Core.Discovery.Tcp.Static
 {
     using System.Collections.Generic;
+    using System.Diagnostics.CodeAnalysis;
     using Apache.Ignite.Core.Binary;
 
     /// <summary>
     /// IP Finder which works only with pre-configured list of IP addresses.
     /// </summary>
-    public class TcpDiscoveryStaticIpFinder : TcpDiscoveryIpFinder
+    public class TcpDiscoveryStaticIpFinder : TcpDiscoveryIpFinderBase
     {
         /// <summary>
         /// Gets or sets the end points.
         /// </summary>
-        public ICollection<string> EndPoints { get; set; }
+        [SuppressMessage("Microsoft.Usage", "CA2227:CollectionPropertiesShouldBeReadOnly")]
+        public ICollection<string> Endpoints { get; set; }
 
         /// <summary>
         /// Initializes a new instance of the <see cref="TcpDiscoveryStaticIpFinder"/> class.
@@ -48,10 +50,10 @@ namespace Apache.Ignite.Core.Discovery.Tcp
 
             if (count > 0)
             {
-                EndPoints = new List<string>(count);
+                Endpoints = new List<string>(count);
 
                 for (int i = 0; i < count; i++)
-                    EndPoints.Add(reader.ReadString());
+                    Endpoints.Add(reader.ReadString());
             }
         }
 
@@ -60,7 +62,7 @@ namespace Apache.Ignite.Core.Discovery.Tcp
         {
             base.Write(writer);
 
-            var eps = EndPoints;
+            var eps = Endpoints;
 
             if (eps != null)
             {

@@ -31,16 +31,21 @@ public class GridServicePackagePrivateSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testPackagePrivateService() throws Exception {
-        Ignite server = startGrid("server");
+        try {
+            Ignite server = startGrid("server");
 
-        server.services().deployClusterSingleton("my-service", MyServiceFactory.create());
+            server.services().deployClusterSingleton("my-service", MyServiceFactory.create());
 
-        Ignition.setClientMode(true);
+            Ignition.setClientMode(true);
 
-        Ignite client = startGrid("client");
+            Ignite client = startGrid("client");
 
-        MyService svc = client.services().serviceProxy("my-service", MyService.class, true);
+            MyService svc = client.services().serviceProxy("my-service", MyService.class, true);
 
-        assertEquals(42, svc.hello());
+            assertEquals(42, svc.hello());
+        }
+        finally {
+            stopAllGrids();
+        }
     }
 }

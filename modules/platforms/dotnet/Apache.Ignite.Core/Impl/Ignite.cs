@@ -367,8 +367,6 @@ namespace Apache.Ignite.Core.Impl
         {
             IgniteArgumentCheck.NotNull(configuration, "configuration");
 
-            IgniteArgumentCheck.NotNull(configuration, "configuration");
-
             using (var stream = IgniteManager.Memory.Allocate().GetStream())
             {
                 var writer = Marshaller.StartMarshal(stream);

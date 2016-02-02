@@ -15,11 +15,12 @@
  * limitations under the License.
  */
 
-namespace Apache.Ignite.Core.Discovery.Tcp
+namespace Apache.Ignite.Core.Discovery.Tcp.Multicast
 {
     using System;
     using System.ComponentModel;
     using Apache.Ignite.Core.Binary;
+    using Apache.Ignite.Core.Discovery.Tcp.Static;
 
     /// <summary>
     /// Multicast-based IP finder.
@@ -90,7 +91,7 @@ namespace Apache.Ignite.Core.Discovery.Tcp
         /// Gets or sets the time to live for multicast packets sent out on this
         /// IP finder in order to control the scope of the multicast.
         /// </summary>
-        public byte? TimeToLive { get; set; }
+        public byte? TimeToLive { get; set; }  // TODO: Nullable?
 
         /// <summary>
         /// Initializes a new instance of the <see cref="TcpDiscoveryMulticastIpFinder"/> class.

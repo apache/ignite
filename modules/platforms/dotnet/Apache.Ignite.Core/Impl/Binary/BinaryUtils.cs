@@ -227,15 +227,14 @@ namespace Apache.Ignite.Core.Impl.Binary
         private static readonly long JavaDateTicks = new DateTime(1970, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc).Ticks;
         
         /** Bindig flags for static search. */
-        private static BindingFlags _bindFlagsStatic = 
-            BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic;
+        private const BindingFlags BindFlagsStatic = BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic;
 
         /** Default poratble marshaller. */
         private static readonly Marshaller Marsh = new Marshaller(null);
 
         /** Method: ReadArray. */
         public static readonly MethodInfo MtdhReadArray =
-            typeof(BinaryUtils).GetMethod("ReadArray", _bindFlagsStatic);
+            typeof(BinaryUtils).GetMethod("ReadArray", BindFlagsStatic);
 
         /** Cached UTF8 encoding. */
         private static readonly Encoding Utf8 = Encoding.UTF8;
@@ -1125,7 +1124,7 @@ namespace Apache.Ignite.Core.Impl.Binary
                 res = factory.Invoke(len);
 
             if (adder == null)
-                adder = (col, elem) => { ((ArrayList) col).Add(elem); };
+                adder = (col, elem) => ((ArrayList) col).Add(elem);
 
             for (int i = 0; i < len; i++)
                 adder.Invoke(res, ctx.Deserialize<object>());

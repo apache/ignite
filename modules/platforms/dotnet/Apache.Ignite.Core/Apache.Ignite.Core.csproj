@@ -3,7 +3,7 @@
   <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
-    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <Platform Condition=" '$(Platform)' == '' ">x64</Platform>
     <ProjectGuid>{4CD2F726-7E2B-46C4-A5BA-057BB82EECB6}</ProjectGuid>
     <OutputType>Library</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
@@ -19,6 +19,8 @@
     <DefineConstants>DEBUG;CODE_ANALYSIS</DefineConstants>
     <CodeAnalysisRuleSet>Apache.Ignite.Core.ruleset</CodeAnalysisRuleSet>
     <DocumentationFile>bin\x64\Debug\Apache.Ignite.Core.XML</DocumentationFile>
+    <RunCodeAnalysis>true</RunCodeAnalysis>
+    <CodeAnalysisRuleSet>Apache.Ignite.Core.ruleset</CodeAnalysisRuleSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|x64'">
     <PlatformTarget>x64</PlatformTarget>
@@ -27,6 +29,7 @@
     <CodeAnalysisRuleSet>Apache.Ignite.Core.ruleset</CodeAnalysisRuleSet>
     <Optimize>true</Optimize>
     <DocumentationFile>bin\x64\Release\Apache.Ignite.Core.XML</DocumentationFile>
+    <CodeAnalysisRuleSet>Apache.Ignite.Core.ruleset</CodeAnalysisRuleSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|x86'">
     <PlatformTarget>x86</PlatformTarget>
@@ -35,6 +38,7 @@
     <DefineConstants>DEBUG;CODE_ANALYSIS</DefineConstants>
     <CodeAnalysisRuleSet>Apache.Ignite.Core.ruleset</CodeAnalysisRuleSet>
     <DocumentationFile>bin\x86\Debug\Apache.Ignite.Core.XML</DocumentationFile>
+    <CodeAnalysisRuleSet>Apache.Ignite.Core.ruleset</CodeAnalysisRuleSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|x86'">
     <PlatformTarget>x86</PlatformTarget>
@@ -43,6 +47,7 @@
     <CodeAnalysisRuleSet>Apache.Ignite.Core.ruleset</CodeAnalysisRuleSet>
     <Optimize>true</Optimize>
     <DocumentationFile>bin\x86\Release\Apache.Ignite.Core.XML</DocumentationFile>
+    <CodeAnalysisRuleSet>Apache.Ignite.Core.ruleset</CodeAnalysisRuleSet>
   </PropertyGroup>
   <PropertyGroup>
     <SignAssembly>true</SignAssembly>
@@ -141,14 +146,14 @@
     <Compile Include="Discovery\Tcp\TcpDiscoverySpi.cs" />
     <Compile Include="Cache\Configuration\QueryIndexField.cs" />
     <Compile Include="Discovery\IDiscoverySpi.cs" />
-    <Compile Include="Discovery\Tcp\TcpDiscoveryIpFinder.cs" />
-    <Compile Include="Discovery\Tcp\TcpDiscoveryMulticastIpFinder.cs" />
+    <Compile Include="Discovery\Tcp\TcpDiscoveryIpFinderBase.cs" />
+    <Compile Include="Discovery\Tcp\Multicast\TcpDiscoveryMulticastIpFinder.cs" />
     <Compile Include="Cache\Configuration\QueryEntity.cs" />
     <Compile Include="Cache\Configuration\QueryField.cs" />
     <Compile Include="Cache\Configuration\QueryIndex.cs" />
     <Compile Include="Cache\Configuration\QueryIndexType.cs" />
     <Compile Include="Cache\Configuration\QuerySqlFieldAttribute.cs" />
-    <Compile Include="Discovery\Tcp\TcpDiscoveryStaticIpFinder.cs" />
+    <Compile Include="Discovery\Tcp\Static\TcpDiscoveryStaticIpFinder.cs" />
     <Compile Include="Compute\Package-Info.cs" />
     <Compile Include="Datastream\IDataStreamer.cs" />
     <Compile Include="Datastream\IStreamReceiver.cs" />

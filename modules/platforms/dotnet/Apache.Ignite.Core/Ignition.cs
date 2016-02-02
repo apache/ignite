@@ -42,7 +42,7 @@ namespace Apache.Ignite.Core
     /// <summary>
     /// This class defines a factory for the main Ignite API.
     /// <p/>
-    /// Use <see cref="Ignition.Start()"/> method to start Ignite with default configuration.
+    /// Use <see cref="Start()"/> method to start Ignite with default configuration.
     /// <para/>
     /// All members are thread-safe and may be used concurrently from multiple threads.
     /// </summary>
@@ -50,9 +50,6 @@ namespace Apache.Ignite.Core
     {
         /** */
         internal const string EnvIgniteSpringConfigUrlPrefix = "IGNITE_SPRING_CONFIG_URL_PREFIX";
-
-        /** */
-        private const string DefaultCfg = "config/default-config.xml";
 
         /** */
         private static readonly object SyncRoot = new object();
@@ -140,8 +137,9 @@ namespace Apache.Ignite.Core
 
                 var gridName = cfg.GridName;
 
-                var cfgPath = Environment.GetEnvironmentVariable(EnvIgniteSpringConfigUrlPrefix) +
-                    (cfg.SpringConfigUrl ?? DefaultCfg);
+                var cfgPath = cfg.SpringConfigUrl == null 
+                    ? null 
+                    : Environment.GetEnvironmentVariable(EnvIgniteSpringConfigUrlPrefix) + cfg.SpringConfigUrl;
 
                 // 3. Create startup object which will guide us through the rest of the process.
                 _startup = new Startup(cfg, cbs);

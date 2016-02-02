@@ -73,7 +73,7 @@ namespace Apache.Ignite.Core.Cache.Configuration
         /// <param name="fields">The fields.</param>
         public QueryIndex(params QueryIndexField[] fields)
         {
-            if (fields.Length == 0)
+            if (fields == null || fields.Length == 0)
                 throw new ArgumentException("Query index must have at least one field");
 
             if (fields.Any(f => f == null))

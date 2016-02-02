@@ -255,9 +255,6 @@ namespace Apache.Ignite.Core.Impl
         }
 
         /** <inheritdoc /> */
-
-        /** <inheritdoc /> */
-
         public IClusterNode GetLocalNode()
         {
             return _ignite.GetCluster().GetLocalNode();

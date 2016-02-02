@@ -17,12 +17,14 @@
 
 namespace Apache.Ignite.Core.Discovery
 {
+    using System.Diagnostics.CodeAnalysis;
     using Apache.Ignite.Core.Discovery.Tcp;
 
     /// <summary>
     /// Represents a discovery service provider interface.
     /// Only predefined implementation is supported now: <see cref="TcpDiscoverySpi"/>.
     /// </summary>
+    [SuppressMessage("Microsoft.Design", "CA1040:AvoidEmptyInterfaces")]
     public interface IDiscoverySpi
     {
         // No-op.
