@@ -527,7 +527,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
             var floats = query.Select(x => x.Float);
 
             CheckFunc(x => Math.Abs(x), doubles);
-            CheckFunc(x => Math.Abs(x), bytes);
+            CheckFunc(x => Math.Abs((sbyte) x), bytes);
             CheckFunc(x => Math.Abs(x), sbytes);
             CheckFunc(x => Math.Abs(x), shorts);
             CheckFunc(x => Math.Abs(x), ushorts);
