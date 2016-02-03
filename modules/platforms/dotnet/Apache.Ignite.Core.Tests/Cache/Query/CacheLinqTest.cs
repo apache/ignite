@@ -360,6 +360,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         [Test]
         public void TestMultipleFrom()
         {
+            // TODO: SelectMany test
             var persons = GetPersonOrgCache().ToQueryable().Where(x => x.Key < PersonCount);
             var roles = GetRoleCache().ToQueryable().Where(x => x.Value.Name != "1");
 
@@ -537,6 +538,13 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
             CheckFunc(x => Math.Abs((long) x), ulongs);
             CheckFunc(x => Math.Abs(x), decimals);
             CheckFunc(x => Math.Abs(x), floats);
+        }
+
+        [Test]
+        public void TestSubCollection()
+        {
+            // TODO:
+            // http://www.linqpad.net/WhyLINQBeatsSQL.aspx
         }
 
         [Test]
