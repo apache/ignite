@@ -268,6 +268,8 @@ namespace Apache.Ignite.Linq.Impl
                 _resultBuilder.Append(", ");
                 Visit(expression.Arguments.Single());
                 _resultBuilder.Append(")");
+
+                return expression;
             }
 
             throw new NotSupportedException(string.Format("Method not supported: {0}.({1})",
