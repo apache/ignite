@@ -161,6 +161,11 @@ public class GridNearAtomicSingleUpdateRequest extends GridCacheMessage
     /**
      * Constructor.
      *
+     * @param key Key.
+     * @param val Value.
+     * @param conflictTtl Conflict TTL (optional).
+     * @param conflictExpireTime Conflict expire time (optional).
+     * @param conflictVer Conflict version (optional).
      * @param cacheId Cache ID.
      * @param nodeId Node ID.
      * @param futVer Future version.
@@ -181,7 +186,13 @@ public class GridNearAtomicSingleUpdateRequest extends GridCacheMessage
      * @param clientReq Client node request flag.
      * @param addDepInfo Deployment info flag.
      */
+    @SuppressWarnings("unchecked")
     public GridNearAtomicSingleUpdateRequest(
+        KeyCacheObject key,
+        @Nullable Object val,
+        long conflictTtl,
+        long conflictExpireTime,
+        @Nullable GridCacheVersion conflictVer,
         int cacheId,
         UUID nodeId,
         GridCacheVersion futVer,
@@ -204,6 +215,8 @@ public class GridNearAtomicSingleUpdateRequest extends GridCacheMessage
     ) {
         assert futVer != null;
 
+        this.key = key;
+
         this.cacheId = cacheId;
         this.nodeId = nodeId;
         this.futVer = futVer;
@@ -224,6 +237,32 @@ public class GridNearAtomicSingleUpdateRequest extends GridCacheMessage
         this.keepBinary = keepBinary;
         this.clientReq = clientReq;
         this.addDepInfo = addDepInfo;
+
+        EntryProcessor<Object, Object, Object> entryProc = null;
+
+        if (op == TRANSFORM) {
+            assert val instanceof EntryProcessor : val;
+
+            entryProc = (EntryProcessor<Object, Object, Object>) val;
+        }
+
+        assert val != null || op == DELETE;
+
+        if (entryProc != null)
+            this.entryProc = entryProc;
+        else if (val != null) {
+            assert val instanceof CacheObject : val;
+
+            this.val = (CacheObject)val;
+        }
+
+        this.conflictVer = conflictVer;
+
+        if (conflictTtl >= 0)
+            this.conflictTtl = conflictTtl;
+
+        if (conflictExpireTime >= 0)
+            this.conflictExpireTime = conflictExpireTime;
     }
 
     /** {@inheritDoc} */
@@ -341,48 +380,6 @@ public class GridNearAtomicSingleUpdateRequest extends GridCacheMessage
      */
     public boolean keepBinary() {
         return keepBinary;
-    }
-
-    /**
-     * @param key Key to add.
-     * @param val Optional update value.
-     * @param conflictTtl Conflict TTL (optional).
-     * @param conflictExpireTime Conflict expire time (optional).
-     * @param conflictVer Conflict version (optional).
-     */
-    @SuppressWarnings("unchecked")
-    public void addUpdateEntry(KeyCacheObject key,
-        @Nullable Object val,
-        long conflictTtl,
-        long conflictExpireTime,
-        @Nullable GridCacheVersion conflictVer) {
-        EntryProcessor<Object, Object, Object> entryProcessor = null;
-
-        if (op == TRANSFORM) {
-            assert val instanceof EntryProcessor : val;
-
-            entryProcessor = (EntryProcessor<Object, Object, Object>) val;
-        }
-
-        assert val != null || op == DELETE;
-
-        this.key = key;
-
-        if (entryProcessor != null)
-            this.entryProc = entryProcessor;
-        else if (val != null) {
-            assert val instanceof CacheObject : val;
-
-            this.val = (CacheObject)val;
-        }
-
-        this.conflictVer = conflictVer;
-
-        if (conflictTtl >= 0)
-            this.conflictTtl = conflictTtl;
-
-        if (conflictExpireTime >= 0)
-            this.conflictExpireTime = conflictExpireTime;
     }
 
     /**

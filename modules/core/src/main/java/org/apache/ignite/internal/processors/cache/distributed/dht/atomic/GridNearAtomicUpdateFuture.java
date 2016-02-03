@@ -1009,7 +1009,12 @@ public class GridNearAtomicUpdateFuture extends GridNearAbstractAtomicUpdateFutu
         }
 
         if (optimize) {
-            GridNearAtomicSingleUpdateRequest req = new GridNearAtomicSingleUpdateRequest(
+            return new GridNearAtomicSingleUpdateRequest(
+                cacheKey,
+                val,
+                conflictTtl,
+                conflictExpireTime,
+                conflictVer,
                 cctx.cacheId(),
                 primary.id(),
                 futVer,
@@ -1029,14 +1034,6 @@ public class GridNearAtomicUpdateFuture extends GridNearAbstractAtomicUpdateFutu
                 keepBinary,
                 cctx.kernalContext().clientNode(),
                 cctx.deploymentEnabled());
-
-            req.addUpdateEntry(cacheKey,
-                val,
-                conflictTtl,
-                conflictExpireTime,
-                conflictVer);
-
-            return req;
         }
         else {
             GridNearAtomicUpdateRequest req = new GridNearAtomicUpdateRequest(
