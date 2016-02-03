@@ -77,8 +77,8 @@ public abstract class CacheObjectAdapter implements CacheObject, Externalizable 
         if (buf.remaining() < valBytes.length + 5)
             return false;
 
-        buf.put(cacheObjectType());
         buf.putInt(valBytes.length);
+        buf.put(cacheObjectType());
         buf.put(valBytes);
 
         return true;

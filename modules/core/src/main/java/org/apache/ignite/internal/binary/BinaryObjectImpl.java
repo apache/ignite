@@ -140,8 +140,8 @@ public final class BinaryObjectImpl extends BinaryObjectExImpl implements Extern
         if (buf.remaining() < len + 5)
             return false;
 
-        buf.put(cacheObjectType());
         buf.putInt(len);
+        buf.put(cacheObjectType());
         buf.put(arr, start, len);
 
         return true;
