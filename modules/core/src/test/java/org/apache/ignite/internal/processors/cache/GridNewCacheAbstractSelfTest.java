@@ -314,7 +314,7 @@ public abstract class GridNewCacheAbstractSelfTest extends GridCommonAbstractTes
      * @return {@code True} if locking is enabled.
      */
     protected boolean lockingEnabled() {
-        return false; // TODO
+        return txEnabled();
     }
 
     /**

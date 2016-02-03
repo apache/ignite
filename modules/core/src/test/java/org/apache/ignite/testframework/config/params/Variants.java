@@ -20,7 +20,7 @@ package org.apache.ignite.testframework.config.params;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import org.apache.ignite.IgniteException;
-import org.apache.ignite.lang.IgniteClosure;
+import org.apache.ignite.testframework.config.generator.ConfigurationParameter;
 
 /**
  * Enum variants.
@@ -30,17 +30,17 @@ public class Variants {
      * Private constructor.
      */
     private Variants() {
-
+        // No-op.
     }
 
     /**
      * @return Array of configuration processors for given enum.
      */
     @SuppressWarnings("unchecked")
-    public static <T> IgniteClosure<T, Void>[] enumVariants(Class<?> enumClass, String mtdName) {
-        Object[] enumConstants = enumClass.getEnumConstants();
+    public static <T> ConfigurationParameter<T>[] enumVariants(Class<?> enumCls, String mtdName) {
+        Object[] enumConstants = enumCls.getEnumConstants();
 
-        IgniteClosure<T, Void>[] arr = new IgniteClosure[enumConstants.length];
+        ConfigurationParameter<T>[] arr = new ConfigurationParameter[enumConstants.length];
 
         for (int i = 0; i < arr.length; i++)
             arr[i] = new ReflectionConfigurationApplier<>(mtdName, enumConstants[i]);
@@ -52,8 +52,8 @@ public class Variants {
      * @return Array of configuration processors for given enum.
      */
     @SuppressWarnings("unchecked")
-    public static <T> IgniteClosure<T, Void>[] booleanVariants(String mtdName) {
-        IgniteClosure<T, Void>[] arr = new IgniteClosure[2];
+    public static <T> ConfigurationParameter<T>[] booleanVariants(String mtdName) {
+        ConfigurationParameter<T>[] arr = new ConfigurationParameter[2];
 
         arr[0] = new ReflectionConfigurationApplier<>(mtdName, true);
         arr[1] = new ReflectionConfigurationApplier<>(mtdName, false);
@@ -65,7 +65,7 @@ public class Variants {
      * Reflection configuration applier.
      */
     @SuppressWarnings("serial")
-    private static class ReflectionConfigurationApplier<T> implements IgniteClosure<T, Void> {
+    private static class ReflectionConfigurationApplier<T> implements ConfigurationParameter<T> {
         /** */
         private final String mtdName;
 
@@ -75,18 +75,30 @@ public class Variants {
         /**
          * @param mtdName Method name.
          */
-        public ReflectionConfigurationApplier(String mtdName, Object param) {
+        ReflectionConfigurationApplier(String mtdName, Object param) {
             this.mtdName = mtdName;
             this.param = param;
         }
 
         /** {@inheritDoc} */
-        @Override public Void apply(T cfg) {
+        @Override public String name() {
+            String mtdName0 = mtdName;
+
+            if (mtdName0.startsWith("set") && mtdName0.length() > 3)
+                mtdName0=mtdName0.substring(3, mtdName0.length());
+
+            return mtdName0 + "=" + param;
+        }
+
+        /** {@inheritDoc} */
+        @Override public T apply(T cfg) {
             try {
                 Class<?> paramCls = param.getClass();
 
                 if (param.getClass().equals(Boolean.class))
                     paramCls = Boolean.TYPE;
+                else if (param.getClass().equals(Integer.class))
+                    paramCls = Integer.TYPE;
 
                 Method mtd = cfg.getClass().getMethod(mtdName, paramCls);
 

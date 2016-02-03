@@ -26,15 +26,13 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.processors.cache.GridCacheNewFullApiSelfTest;
-import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.marshaller.optimized.OptimizedMarshaller;
 import org.apache.ignite.testframework.GridTestSuite;
 import org.apache.ignite.testframework.TestsConfiguration;
-import org.apache.ignite.testframework.config.ConfigurationFactory;
 import org.apache.ignite.testframework.config.StateConfigurationFactory;
-import org.apache.ignite.testframework.config.generator.StateIterator;
-import org.apache.ignite.testframework.config.params.Variants;
+import org.apache.ignite.testframework.config.generator.ConfigurationParameter;
 import org.apache.ignite.testframework.config.params.MarshallerProcessor;
+import org.apache.ignite.testframework.config.params.Variants;
 
 /**
  * Test suite for cache API.
@@ -42,14 +40,14 @@ import org.apache.ignite.testframework.config.params.MarshallerProcessor;
 public class IgniteCacheNewFullApiSelfTestSuite extends TestSuite {
     /** */
     @SuppressWarnings("unchecked")
-    private static final IgniteClosure<IgniteConfiguration, Void>[][] igniteParams = new IgniteClosure[][] {
+    private static final ConfigurationParameter<IgniteConfiguration>[][] igniteParams = new ConfigurationParameter[][] {
         {new MarshallerProcessor(new BinaryMarshaller()), new MarshallerProcessor(new OptimizedMarshaller(true))},
         Variants.booleanVariants("setPeerClassLoadingEnabled"),
     };
 
     /** */
     @SuppressWarnings("unchecked")
-    private static final IgniteClosure<CacheConfiguration, Void>[][] cacheParams = new IgniteClosure[][] {
+    private static final ConfigurationParameter<CacheConfiguration>[][] cacheParams = new ConfigurationParameter[][] {
         Variants.enumVariants(CacheMode.class, "setCacheMode"),
         Variants.enumVariants(CacheAtomicityMode.class, "setAtomicityMode"),
         Variants.enumVariants(CacheMemoryMode.class, "setMemoryMode"),
@@ -65,23 +63,37 @@ public class IgniteCacheNewFullApiSelfTestSuite extends TestSuite {
         final int[] igniteCfgState = new int[] {0, 0}; // Default configuration.
         final int gridsCnt = 1;
 
-        for (StateIterator cacheIter = new StateIterator(cacheParams); cacheIter.hasNext();) {
-            int[] cacheCfgState = cacheIter.next();
+//        for (StateIterator cacheIter = new StateIterator(cacheParams); cacheIter.hasNext();) {
+//            int[] cacheCfgState = cacheIter.next();
+//
+//            // Stop all grids before starting new ignite configuration.
+//            addTestSuite(suite, igniteCfgState, cacheCfgState, gridsCnt, !cacheIter.hasNext());
+//        }
 
-            ConfigurationFactory factory = new StateConfigurationFactory(igniteParams, igniteCfgState,
-                cacheParams, cacheCfgState);
-
-            // Stop all grids before starting new ignite configuration.
-            boolean stop = !cacheIter.hasNext();
-
-            String clsNameSuffix = "[igniteCfg=" + Arrays.toString(igniteCfgState)
-                + ", cacheCfgState=" + Arrays.toString(cacheCfgState) + "]";
-
-            TestsConfiguration testCfg = new TestsConfiguration(factory, clsNameSuffix, stop, gridsCnt);
-
-            suite.addTest(new GridTestSuite(GridCacheNewFullApiSelfTest.class, testCfg));
-        }
+        addTestSuite(suite, igniteCfgState, new int[] {0, 0, 0}, gridsCnt, true);
 
         return suite;
+    }
+
+    /**
+     * @param suite Suite.
+     * @param igniteCfgState Ignite config state.
+     * @param cacheCfgState Cache config state.
+     * @param gridsCnt Grids count.
+     * @param stop Stop.
+     */
+    private static void addTestSuite(TestSuite suite, int[] igniteCfgState, int[] cacheCfgState, int gridsCnt,
+        boolean stop) {
+        StateConfigurationFactory factory = new StateConfigurationFactory(igniteParams, igniteCfgState,
+            cacheParams, cacheCfgState);
+
+        String clsNameSuffix = "[igniteCfg=" + Arrays.toString(igniteCfgState)
+            + ", cacheCfgState=" + Arrays.toString(cacheCfgState) + "]"
+            + "-[igniteCfg=" + factory.getIgniteConfigurationDescription()
+            + ", cacheCfg=" + factory.getCacheConfigurationDescription() + "]";
+
+        TestsConfiguration testCfg = new TestsConfiguration(factory, clsNameSuffix, stop, gridsCnt);
+
+        suite.addTest(new GridTestSuite(GridCacheNewFullApiSelfTest.class, testCfg));
     }
 }

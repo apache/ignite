@@ -21,7 +21,7 @@ package org.apache.ignite.testframework.config.generator;
  * TODO: Add class description.
  */
 public interface ConfigurationParamethers<T> {
-    public ConfigurationParamether<T> get(int paramNum, int variantNum);
+    public ConfigurationParameter<T> get(int paramNum, int variantNum);
     public int paramethersCount();
     public int variablesCount(int paramNum);
     public String parametherName(int paramNum);

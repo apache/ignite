@@ -48,7 +48,7 @@ public abstract class AbstractConfigurationGenerator<T> implements Configuration
         T cfg = createNew();
 
         for (int i = 0; i < params.paramethersCount(); i++) {
-            ConfigurationParamether<T> param = params.get(i, curState.variableNumberAt(i));
+            ConfigurationParameter<T> param = params.get(i, curState.variableNumberAt(i));
 
             param.setParamether(cfg);
         }

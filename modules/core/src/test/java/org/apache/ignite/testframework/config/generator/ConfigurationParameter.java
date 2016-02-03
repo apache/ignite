@@ -18,12 +18,16 @@
 package org.apache.ignite.testframework.config.generator;
 
 /**
- * TODO: Add class description.
+ *
  */
-public interface ConfigurationParamether<T> {
+public interface ConfigurationParameter<T> {
+    /**
+     * @return Name
+     */
+    public String name();
     /**
      * @param cfg Configuration.
      * @return Configuration.
      */
-    public T setParamether(T cfg);
+    public T apply(T cfg);
 }

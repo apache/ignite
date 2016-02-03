@@ -25,7 +25,7 @@ import java.util.List;
  */
 public class State<T> {
 
-    public State(Collection<List<ConfigurationParamether<T>>> params) {
+    public State(Collection<List<ConfigurationParameter<T>>> params) {
 
     }
 

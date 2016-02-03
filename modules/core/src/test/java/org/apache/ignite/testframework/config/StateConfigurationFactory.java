@@ -19,20 +19,21 @@ package org.apache.ignite.testframework.config;
 
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.lang.IgniteClosure;
+import org.apache.ignite.internal.util.typedef.internal.SB;
+import org.apache.ignite.testframework.config.generator.ConfigurationParameter;
 
 /**
  *
  */
 public class StateConfigurationFactory implements ConfigurationFactory {
     /** */
-    private final IgniteClosure<IgniteConfiguration, Void>[][] igniteParams;
+    private final ConfigurationParameter<IgniteConfiguration>[][] igniteParams;
 
     /** */
     private final int[] igniteCfgState;
 
     /** */
-    private final IgniteClosure<CacheConfiguration, Void>[][] cacheParams;
+    private final ConfigurationParameter<CacheConfiguration>[][] cacheParams;
 
     /** */
     private final int[] cacheCfgState;
@@ -43,9 +44,9 @@ public class StateConfigurationFactory implements ConfigurationFactory {
      * @param cacheParams Cache Params.
      * @param cacheCfgState Cache configuration state.
      */
-    public StateConfigurationFactory(IgniteClosure<IgniteConfiguration, Void>[][] igniteParams,
+    public StateConfigurationFactory(ConfigurationParameter<IgniteConfiguration>[][] igniteParams,
         int[] igniteCfgState,
-        IgniteClosure<CacheConfiguration, Void>[][] cacheParams,
+        ConfigurationParameter<CacheConfiguration>[][] cacheParams,
         int[] cacheCfgState) {
         this.igniteParams = igniteParams;
         this.igniteCfgState = igniteCfgState;
@@ -58,7 +59,7 @@ public class StateConfigurationFactory implements ConfigurationFactory {
      * @param cacheParams Cache paramethers.
      */
     public StateConfigurationFactory(int[] cacheCfgState,
-        IgniteClosure<CacheConfiguration, Void>[][] cacheParams) {
+        ConfigurationParameter<CacheConfiguration>[][] cacheParams) {
         this(null, null, cacheParams, cacheCfgState);
     }
 
@@ -72,13 +73,41 @@ public class StateConfigurationFactory implements ConfigurationFactory {
         for (int i = 0; i < igniteCfgState.length; i++) {
             int var = igniteCfgState[i];
 
-            IgniteClosure<IgniteConfiguration, Void> cfgC = igniteParams[i][var];
+            ConfigurationParameter<IgniteConfiguration> cfgC = igniteParams[i][var];
 
             if (cfgC != null)
                 cfgC.apply(cfg);
         }
 
         return cfg;
+    }
+
+    /**
+     * @return Description.
+     */
+    public String getIgniteConfigurationDescription(){
+        if (igniteParams == null)
+            return "";
+
+        SB sb = new SB("[");
+
+        for (int i = 0; i < igniteCfgState.length; i++) {
+            int var = igniteCfgState[i];
+
+            ConfigurationParameter<IgniteConfiguration> cfgC = igniteParams[i][var];
+
+            if (cfgC != null) {
+                sb.a(cfgC.name());
+
+                if (i + 1 < igniteCfgState.length)
+                    sb.a(", ");
+            }
+        }
+
+        sb.a("]");
+
+        return sb.toString();
+
     }
 
     /** {@inheritDoc} */
@@ -88,12 +117,40 @@ public class StateConfigurationFactory implements ConfigurationFactory {
         for (int i = 0; i < cacheCfgState.length; i++) {
             int var = cacheCfgState[i];
 
-            IgniteClosure<CacheConfiguration, Void> cfgC = cacheParams[i][var];
+            ConfigurationParameter<CacheConfiguration> cfgC = cacheParams[i][var];
 
             if (cfgC != null)
                 cfgC.apply(cfg);
         }
 
         return cfg;
+    }
+
+    /**
+     * @return Description.
+     */
+    public String getCacheConfigurationDescription(){
+        if (cacheCfgState == null)
+            return "";
+
+        SB sb = new SB("[");
+
+        for (int i = 0; i < cacheCfgState.length; i++) {
+            int var = cacheCfgState[i];
+
+            ConfigurationParameter cfgC = cacheParams[i][var];
+
+            if (cfgC != null) {
+                sb.a(cfgC.name());
+
+                if (i + 1 < cacheCfgState.length)
+                    sb.a(", ");
+            }
+        }
+
+        sb.a("]");
+
+        return sb.toString();
+
     }
 }

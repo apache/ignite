@@ -18,14 +18,14 @@
 package org.apache.ignite.testframework.config.params;
 
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.marshaller.Marshaller;
+import org.apache.ignite.testframework.config.generator.ConfigurationParameter;
 
 /**
  *
  */
 @SuppressWarnings("serial")
-public class MarshallerProcessor implements IgniteClosure<IgniteConfiguration, Void> {
+public class MarshallerProcessor implements ConfigurationParameter<IgniteConfiguration> {
     /** */
     private Marshaller marsh;
 
@@ -37,7 +37,12 @@ public class MarshallerProcessor implements IgniteClosure<IgniteConfiguration, V
     }
 
     /** {@inheritDoc} */
-    @Override public Void apply(IgniteConfiguration configuration) {
+    @Override public String name() {
+        return "marsh=" + marsh;
+    }
+
+    /** {@inheritDoc} */
+    @Override public IgniteConfiguration apply(IgniteConfiguration configuration) {
         configuration.setMarshaller(marsh);
 
         return null;
