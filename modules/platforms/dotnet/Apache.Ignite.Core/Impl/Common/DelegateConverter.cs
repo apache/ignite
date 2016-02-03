@@ -20,7 +20,7 @@ namespace Apache.Ignite.Core.Impl.Common
     using System;
     using System.Collections.Generic;
     using System.Diagnostics;
-    using System.Diagnostics.CodeAnalysis;s
+    using System.Diagnostics.CodeAnalysis;
     using System.Linq.Expressions;
     using System.Reflection;
     using System.Reflection.Emit;

@@ -18,7 +18,6 @@
 namespace Apache.Ignite.Linq.Impl
 {
     using System.Linq;
-    using System.Linq.Expressions;
     using Apache.Ignite.Core.Cache;
 
     /// <summary>
@@ -34,17 +33,6 @@ namespace Apache.Ignite.Linq.Impl
             : base(new CacheFieldsQueryProvider(Remotion.Linq.Parsing.Structure.QueryParser.CreateDefault(),
                 new CacheFieldsQueryExecutor(new CacheQueryProxy<TKey, TValue>(cache)),
                 cache.Ignite, cache.Name))
-        {
-            // No-op.
-        }
-
-        /// <summary>
-        /// Initializes a new instance of the <see cref="CacheQueryable{TKey, TValue}"/> class.
-        /// </summary>
-        /// <param name="provider">The provider used to execute the query represented by this queryable 
-        /// and to construct new queries.</param>
-        /// <param name="expression">The expression representing the query.</param>
-        public CacheQueryable(IQueryProvider provider, Expression expression) : base(provider, expression)
         {
             // No-op.
         }
