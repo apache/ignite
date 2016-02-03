@@ -65,6 +65,6 @@ public class LocalAffinityFunctionTest extends GridCommonAbstractTest{
     public void testWronglySetAffinityFunctionForLocalCache(){
         Ignite node = ignite(NODE_CNT - 1);
         CacheConfiguration ccf = node.getOrCreateCache(CACHE1).getConfiguration(CacheConfiguration.class);
-        assertEquals("org.apache.ignite.internal.processors.cache.GridCacheProcessor$LocalAffinityFunction",ccf.getAffinity().getClass());
+        assertEquals("org.apache.ignite.internal.processors.cache.GridCacheProcessor$LocalAffinityFunction",ccf.getAffinity().getClass().getName());
     }
 }
