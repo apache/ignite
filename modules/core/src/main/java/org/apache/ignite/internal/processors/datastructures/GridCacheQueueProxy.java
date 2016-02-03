@@ -28,6 +28,8 @@ import java.util.Iterator;
 import java.util.concurrent.Callable;
 import java.util.concurrent.TimeUnit;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteCompute;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteQueue;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
@@ -36,6 +38,8 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
+import org.apache.ignite.lang.IgniteCallable;
+import org.apache.ignite.lang.IgniteRunnable;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -776,5 +780,50 @@ public class GridCacheQueueProxy<T> implements IgniteQueue<T>, Externalizable {
     /** {@inheritDoc} */
     @Override public String toString() {
         return delegate.toString();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void affinityRun(IgniteRunnable job) {
+        gate.enter();
+
+        try {
+            if (cctx.transactional())
+                CU.outTx(new Callable<Void>() {
+                    @Override
+                    public Void call() throws Exception {
+                        delegate.affinityRun(job);
+                        return null;
+                    }
+                }, cctx);
+            delegate.affinityRun(job);
+        }
+        catch (IgniteCheckedException e) {
+            throw U.convertException(e);
+        }
+        finally {
+            gate.leave();
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public <R> R affinityCall(IgniteCallable<R> job) {
+        gate.enter();
+
+        try {
+            if (cctx.transactional())
+                return CU.outTx(new Callable<R>() {
+                    @Override public R call() throws Exception {
+                        return delegate.affinityCall(job);
+                    }
+                }, cctx);
+
+            return delegate.affinityCall(job);
+        }
+        catch (IgniteCheckedException e) {
+            throw U.convertException(e);
+        }
+        finally {
+            gate.leave();
+        }
     }
 }

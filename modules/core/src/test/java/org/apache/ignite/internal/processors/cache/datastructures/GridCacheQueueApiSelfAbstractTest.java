@@ -32,6 +32,8 @@ import org.apache.ignite.configuration.CollectionConfiguration;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.lang.IgniteCallable;
+import org.apache.ignite.lang.IgniteRunnable;
 import org.apache.ignite.testframework.GridTestUtils;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
@@ -604,6 +606,22 @@ public abstract class GridCacheQueueApiSelfAbstractTest extends IgniteCollection
         assertNotNull(((IgniteKernal)grid(0)).internalCache(ccfg.getName()));
     }
 
+    public void testAffinityRun() throws Exception {
+        CollectionConfiguration colCfg = collectionConfiguration();
+        colCfg.setCollocated(true);
+
+        IgniteQueue queue = grid(0).queue("Queue1", 0, colCfg);
+        queue.affinityRun(new FailRunnable());
+    }
+
+    public void testAffinityCall() throws Exception {
+        CollectionConfiguration colCfg = collectionConfiguration();
+        colCfg.setCollocated(true);
+
+        IgniteQueue queue = grid(0).queue("Queue1", 0, colCfg);
+        queue.affinityCall(new FailCallable());
+    }
+
     /**
      *  Test class with the same hash code.
      */
@@ -640,6 +658,28 @@ public abstract class GridCacheQueueApiSelfAbstractTest extends IgniteCollection
         /** {@inheritDoc} */
         @Override public String toString() {
             return S.toString(SameHashItem.class, this);
+        }
+    }
+
+    /**
+     *
+     */
+    private static class FailRunnable implements IgniteRunnable {
+        /** {@inheritDoc} */
+        @Override public void run() {
+            fail();
+        }
+    }
+
+    /**
+     *
+     */
+    private static class FailCallable implements IgniteCallable<Object> {
+        /** {@inheritDoc} */
+        @Override public Object call() throws Exception {
+            fail();
+
+            return null;
         }
     }
 }

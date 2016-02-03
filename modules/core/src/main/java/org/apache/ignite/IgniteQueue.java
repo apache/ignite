@@ -22,6 +22,9 @@ import java.util.Collection;
 import java.util.Iterator;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.TimeUnit;
+import org.apache.ignite.lang.IgniteAsyncSupported;
+import org.apache.ignite.lang.IgniteRunnable;
+import org.apache.ignite.lang.IgniteCallable;
 
 /**
  * This interface provides a rich API for working with distributed queues based on In-Memory Data Grid.
@@ -181,4 +184,24 @@ public interface IgniteQueue<T> extends BlockingQueue<T>, Closeable {
      * @return {@code true} if queue was removed from cache {@code false} otherwise.
      */
     public boolean removed();
+
+    /**
+     * Executes given job on collocated queue on the node where the queue is located
+     * (a.k.a. affinity co-location).
+     *
+     * @param job Job which will be co-located on the node with given affinity key.
+     * @throws IgniteException If job failed.
+     */
+    @IgniteAsyncSupported
+    public void affinityRun(IgniteRunnable job) throws IgniteException;
+
+    /**
+     * Executes given job on collocated queue on the node where the queue is located
+     * (a.k.a. affinity co-location).
+     *
+     * @param job Job which will be co-located on the node with given affinity key.
+     * @throws IgniteException If job failed.
+     */
+    @IgniteAsyncSupported
+    public <R> R affinityCall(IgniteCallable<R> job) throws IgniteException;
 }
