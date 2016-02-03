@@ -122,15 +122,19 @@ router.post('/query/getAll', function (req, res) {
     _client(req.currentUserId())
         .then((client) => {
             // Create sql query.
-            var qry = new SqlFieldsQuery(req.body.query);
+            const qry = req.body.query ? new SqlFieldsQuery(req.body.query) : new ScanQuery();
 
             // Set page size for query.
             qry.setPageSize(1024);
 
             // Get query cursor.
-            return client.ignite(req.body.demo).cache(req.body.cacheName).query(qry).getAll();
+            const cursor = client.ignite(req.body.demo).cache(req.body.cacheName).query(qry);
+
+            return new Promise(function (resolve) {
+                cursor.getAll().then(rows => resolve({meta: cursor.fieldsMetadata(), rows}))
+            });
         })
-        .then((rows) => res.json({meta: cursor.fieldsMetadata(), rows: rows}))
+        .then(response => res.json(response))
         .catch(_handleException(res));
 });
 
