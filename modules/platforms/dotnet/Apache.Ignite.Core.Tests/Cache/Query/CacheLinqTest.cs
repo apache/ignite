@@ -637,6 +637,17 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
             [QuerySqlField] public double Weight { get; set; }
         }
 
+        public class Numerics
+        {
+            [QuerySqlField] public double Double { get; set; }
+            [QuerySqlField] public float Float { get; set; }
+            [QuerySqlField] public decimal Decimal { get; set; }
+            [QuerySqlField] public int Int { get; set; }
+            [QuerySqlField] public uint Uint { get; set; }
+            [QuerySqlField] public long Long { get; set; }
+            [QuerySqlField] public long Long { get; set; }
+        }
+
         public struct RoleKey : IEquatable<RoleKey>
         {
             private readonly int _foo;
