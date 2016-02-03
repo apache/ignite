@@ -28,7 +28,7 @@ angular
     .provider('igniteLogo', function() {
         let poweredBy = false;
 
-        let url = '/images/ignite_logo.png';
+        let url = '/images/ignite-logo.png';
 
         let title = 'Management console for Apache Ignite';
 
