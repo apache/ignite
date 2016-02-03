@@ -172,6 +172,12 @@ consoleModule.controller('clustersController', function ($http, $timeout, $scope
                         selectFirstItem();
                 }
 
+                $scope.$watch('ui.inputForm.$valid', function(valid) {
+                    if (valid && __original_value === JSON.stringify($cleanup($scope.backupItem))) {
+                        $scope.ui.inputForm.$setPristine();
+                    }
+                });
+
                 $scope.$watch('backupItem', function (val) {
                     var form = $scope.ui.inputForm;
 
