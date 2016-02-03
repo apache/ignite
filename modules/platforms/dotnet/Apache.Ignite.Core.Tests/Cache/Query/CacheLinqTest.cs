@@ -20,6 +20,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
 {
     using System;
     using System.Linq;
+    using System.Linq.Expressions;
     using System.Threading;
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Cache;
@@ -505,10 +506,10 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         [Test]
         public void TestNumerics()
         {
-            var nums = GetRoleCache().ToQueryable().Select(x => x.Value.Weight);
-            var num = nums.First();
+            // TODO: All numeric types
+            var doubles = GetRoleCache().ToQueryable().Select(x => x.Value.Weight);
 
-            Assert.AreEqual(Math.Abs(num), nums.Select(x => Math.Abs(x)).First());
+            CheckFunc(x => Math.Abs(x), doubles);
         }
 
         [Test]
@@ -563,6 +564,21 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
             return Ignition.GetIgnite()
                 .GetOrCreateCache<int, Person>(new CacheConfiguration(PersonSecondCacheName,
                     new QueryEntity(typeof(int), typeof(Person))));
+        }
+
+        /// <summary>
+        /// Checks that function maps to SQL function properly.
+        /// </summary>
+        private static void CheckFunc<T, TR>(Expression<Func<T, TR>> exp, IQueryable<T> query)
+        {
+            // Calculate result locally, using real method invocation
+            var expected = query.ToArray().AsQueryable().Select(exp).ToArray();
+
+            // Perform SQL query
+            var actual = query.Select(exp).ToArray();
+
+            // Compare results
+            Assert.AreEqual(expected, actual);
         }
 
         public class Person : IBinarizable
