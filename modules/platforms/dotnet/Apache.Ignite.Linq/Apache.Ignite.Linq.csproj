@@ -81,6 +81,7 @@
     <Compile Include="Impl\CacheQueryModelVisitor.cs" />
     <Compile Include="Impl\ICacheQueryableInternal.cs" />
     <Compile Include="Impl\ICacheQueryExecutor.cs" />
+    <Compile Include="Impl\Methods.cs" />
     <Compile Include="Impl\QueryData.cs" />
     <Compile Include="Impl\TableNameMapper.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

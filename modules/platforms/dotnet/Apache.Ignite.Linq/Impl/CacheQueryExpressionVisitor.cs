@@ -24,7 +24,6 @@ namespace Apache.Ignite.Linq.Impl
     using System.Diagnostics;
     using System.Linq;
     using System.Linq.Expressions;
-    using System.Reflection;
     using Apache.Ignite.Core.Cache.Configuration;
     using Remotion.Linq.Clauses.Expressions;
     using Remotion.Linq.Parsing;
@@ -34,23 +33,6 @@ namespace Apache.Ignite.Linq.Impl
     /// </summary>
     internal class CacheQueryExpressionVisitor : ThrowingExpressionVisitor
     {
-        /** */
-        private static readonly MethodInfo StringContains = typeof (string).GetMethod("Contains");
-
-        /** */
-        private static readonly MethodInfo StringStartsWith = typeof (string).GetMethod("StartsWith",
-            new[] {typeof (string)});
-
-        /** */
-        private static readonly MethodInfo StringEndsWith = typeof (string).GetMethod("EndsWith",
-            new[] {typeof (string)});
-
-        /** */
-        private static readonly MethodInfo StringToLower = typeof (string).GetMethod("ToLower", new Type[0]);
-
-        /** */
-        private static readonly MethodInfo StringToUpper = typeof (string).GetMethod("ToUpper", new Type[0]);
-
         /** */
         private readonly bool _useStar;
 
@@ -250,16 +232,18 @@ namespace Apache.Ignite.Linq.Impl
         /** <inheritdoc /> */
         protected override Expression VisitMethodCall(MethodCallExpression expression)
         {
-            if (expression.Method == StringContains)
+            var method = expression.Method;
+
+            if (method == Methods.StringContains)
                 return VisitSqlLike(expression, "%{0}%");
 
-            if (expression.Method == StringStartsWith)
+            if (method == Methods.StringStartsWith)
                 return VisitSqlLike(expression, "{0}%");
 
-            if (expression.Method == StringEndsWith)
+            if (method == Methods.StringEndsWith)
                 return VisitSqlLike(expression, "%{0}");
 
-            if (expression.Method == StringToLower)
+            if (method == Methods.StringToLower)
             {
                 _resultBuilder.Append("lower(");
                 Visit(expression.Object);
@@ -268,7 +252,7 @@ namespace Apache.Ignite.Linq.Impl
                 return expression;
             }
 
-            if (expression.Method == StringToUpper)
+            if (method == Methods.StringToUpper)
             {
                 _resultBuilder.Append("upper(");
                 Visit(expression.Object);
@@ -277,7 +261,8 @@ namespace Apache.Ignite.Linq.Impl
                 return expression;
             }
 
-            throw new NotSupportedException("Method not supported: " + expression.Method);
+            throw new NotSupportedException(string.Format("Method not supported: {0}.({1})",
+                method.DeclaringType == null ? "static" : method.DeclaringType.FullName, method));
         }
 
         /// <summary>
