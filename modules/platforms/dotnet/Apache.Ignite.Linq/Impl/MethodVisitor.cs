@@ -61,21 +61,28 @@ namespace Apache.Ignite.Linq.Impl
         /// </summary>
         private static VisitMethodDelegate GetFunc(string func)
         {
-            return (e, v) => VisitInstanceFunc(e, v, func);
+            return (e, v) => VisitFunc(e, v, func);
         }
 
         /// <summary>
         /// Visits the instance function.
         /// </summary>
-        private static void VisitInstanceFunc(MethodCallExpression expression, CacheQueryExpressionVisitor visitor, string func)
+        private static void VisitFunc(MethodCallExpression expression, CacheQueryExpressionVisitor visitor, string func)
         {
             visitor.ResultBuilder.Append(func).Append("(");
 
-            visitor.Visit(expression.Object);
+            var isInstanceMethod = expression.Object != null;
 
-            foreach (var arg in expression.Arguments)
+            if (isInstanceMethod)
+                visitor.Visit(expression.Object);
+
+            for (int i = 0; i < expression.Arguments.Count; i++)
             {
-                visitor.ResultBuilder.Append(", ");
+                var arg = expression.Arguments[i];
+
+                if (isInstanceMethod || (i > 0))
+                    visitor.ResultBuilder.Append(", ");
+
                 visitor.Visit(arg);
             }
 
