@@ -22,8 +22,9 @@ var concat = require('gulp-concat');
 var sequence = require('gulp-sequence');
 
 var paths = [
-    './app/**/*.js',
-    './app/**/*.jade'
+	'./app/**/*.js',
+	'./app/**/*.jade',
+	'./app/data/*.json'
 ];
 
 var legacy_paths = [

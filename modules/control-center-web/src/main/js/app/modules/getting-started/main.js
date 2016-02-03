@@ -25,8 +25,13 @@ angular
     .provider('igniteGettingStarted', function() {
         const items = PAGES;
 
-        this.push = (data) => {
-            items.splice(items.length - 1, 0, data);
+        this.push = (before, data) => {
+            const idx = _.findIndex(items, {title: before});
+
+            if (idx < 0)
+                items.push(data);
+            else
+                items.splice(idx, 0, data);
         };
 
         this.$get = [function() {
