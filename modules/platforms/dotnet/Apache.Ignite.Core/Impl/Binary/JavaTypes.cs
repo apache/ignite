@@ -20,6 +20,7 @@ namespace Apache.Ignite.Core.Impl.Binary
     using System;
     using System.Collections.Generic;
     using System.Linq;
+    using Apache.Ignite.Core.Impl.Common;
 
     /// <summary>
     /// Provides mapping between Java and .NET basic types.
@@ -49,6 +50,15 @@ namespace Apache.Ignite.Core.Impl.Binary
         };
 
         /** */
+        private static readonly HashSet<Type> IndirectMappingTypes = new HashSet<Type>
+        {
+            typeof(sbyte),
+            typeof(ushort),
+            typeof(uint),
+            typeof(ulong)
+        };
+
+        /** */
         private static readonly Dictionary<string, Type> JavaToNet =
             NetToJava.GroupBy(x => x.Value).ToDictionary(g => g.Key, g => g.First().Key);
 
@@ -63,9 +73,17 @@ namespace Apache.Ignite.Core.Impl.Binary
             if (type == null)
                 return null;
 
+
             string res;
 
-            return NetToJava.TryGetValue(type, out res) ? res : null;
+            if (!NetToJava.TryGetValue(type, out res))
+                return null;
+
+            if (IndirectMappingTypes.Contains(type))
+                Logger.LogWarning("Type '{0}' maps to Java type '{1}' using unchecked conversion. " +
+                                  "This may cause issues in SQL queries.", type, res);
+
+            return res;
         }
 
         /// <summary>

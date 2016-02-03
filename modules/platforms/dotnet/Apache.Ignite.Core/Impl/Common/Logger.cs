@@ -28,9 +28,10 @@ namespace Apache.Ignite.Core.Impl.Common
         /// Logs the warning.
         /// </summary>
         /// <param name="warning">The warning.</param>
-        public static void LogWarning(string warning)
+        /// <param name="args">The arguments.</param>
+        public static void LogWarning(string warning, params object[] args)
         {
-            Console.WriteLine("WARNING: " + warning);
+            Console.WriteLine("WARNING: " + string.Format(warning, args));
         }
     }
 }
