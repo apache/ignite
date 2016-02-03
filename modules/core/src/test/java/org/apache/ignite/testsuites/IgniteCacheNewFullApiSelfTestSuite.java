@@ -19,6 +19,9 @@ package org.apache.ignite.testsuites;
 
 import java.util.Arrays;
 import junit.framework.TestSuite;
+import org.apache.ignite.cache.CacheAtomicityMode;
+import org.apache.ignite.cache.CacheMemoryMode;
+import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
@@ -30,20 +33,8 @@ import org.apache.ignite.testframework.TestsConfiguration;
 import org.apache.ignite.testframework.config.ConfigurationFactory;
 import org.apache.ignite.testframework.config.StateConfigurationFactory;
 import org.apache.ignite.testframework.config.generator.StateIterator;
-import org.apache.ignite.testframework.config.params.AtomicityModeProcessor;
-import org.apache.ignite.testframework.config.params.CacheMemoryModeProcessor;
-import org.apache.ignite.testframework.config.params.CacheModeProcessor;
+import org.apache.ignite.testframework.config.params.Variants;
 import org.apache.ignite.testframework.config.params.MarshallerProcessor;
-import org.apache.ignite.testframework.config.params.PeerClassLoadingProcessor;
-
-import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
-import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
-import static org.apache.ignite.cache.CacheMemoryMode.OFFHEAP_TIERED;
-import static org.apache.ignite.cache.CacheMemoryMode.OFFHEAP_VALUES;
-import static org.apache.ignite.cache.CacheMemoryMode.ONHEAP_TIERED;
-import static org.apache.ignite.cache.CacheMode.LOCAL;
-import static org.apache.ignite.cache.CacheMode.PARTITIONED;
-import static org.apache.ignite.cache.CacheMode.REPLICATED;
 
 /**
  * Test suite for cache API.
@@ -53,15 +44,15 @@ public class IgniteCacheNewFullApiSelfTestSuite extends TestSuite {
     @SuppressWarnings("unchecked")
     private static final IgniteClosure<IgniteConfiguration, Void>[][] igniteParams = new IgniteClosure[][] {
         {new MarshallerProcessor(new BinaryMarshaller()), new MarshallerProcessor(new OptimizedMarshaller(true))},
-        {new PeerClassLoadingProcessor(true), new PeerClassLoadingProcessor(false)},
+        Variants.booleanVariants("setPeerClassLoadingEnabled"),
     };
 
     /** */
     @SuppressWarnings("unchecked")
     private static final IgniteClosure<CacheConfiguration, Void>[][] cacheParams = new IgniteClosure[][] {
-        {new CacheModeProcessor(LOCAL), new CacheModeProcessor(PARTITIONED), new CacheModeProcessor(REPLICATED)},
-        {new AtomicityModeProcessor(ATOMIC), new AtomicityModeProcessor(TRANSACTIONAL)},
-        {new CacheMemoryModeProcessor(ONHEAP_TIERED), new CacheMemoryModeProcessor(OFFHEAP_VALUES), new CacheMemoryModeProcessor(OFFHEAP_TIERED)},
+        Variants.enumVariants(CacheMode.class, "setCacheMode"),
+        Variants.enumVariants(CacheAtomicityMode.class, "setAtomicityMode"),
+        Variants.enumVariants(CacheMemoryMode.class, "setMemoryMode"),
     };
 
     /**

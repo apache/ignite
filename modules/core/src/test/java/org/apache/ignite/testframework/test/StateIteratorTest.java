@@ -26,7 +26,7 @@ import org.apache.ignite.testframework.config.generator.StateIterator;
 /**
  * Test start iterator.
  */
-public class StateItaratorTest extends TestCase {
+public class StateIteratorTest extends TestCase {
     /**
      * @throws Exception If failed.
      */
