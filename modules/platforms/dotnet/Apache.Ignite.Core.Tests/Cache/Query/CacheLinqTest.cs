@@ -499,8 +499,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
             Assert.AreEqual(RoleCount, join.Count());
 
             // Functions
-            Assert.AreEqual(StartDateTime.ToString("DD MM YYYY HH:mm:ss"),
-                dates.Select(x => x.ToString("DD MM YYYY HH:mm:ss")).First());
+            Assert.AreEqual("01 01 2000 03:00:00", dates.Select(x => x.ToString("DD MM YYYY HH:mm:ss")).First());
         }
 
         [Test]
