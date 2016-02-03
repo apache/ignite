@@ -18,7 +18,6 @@
 namespace Apache.Ignite.Linq.Impl
 {
     using System;
-    using System.Collections;
     using System.Collections.Generic;
     using System.Diagnostics;
     using System.Linq;
@@ -104,7 +103,7 @@ namespace Apache.Ignite.Linq.Impl
 
             if (entryCtor != null)
             {
-                return (reader, count) => (T) entryCtor(reader.ReadObject<object>(), reader.ReadObject<object>());
+                return (reader, count) => (T) entryCtor(reader);
             }
 
             return ConvertSingleField<T>;
@@ -147,7 +146,7 @@ namespace Apache.Ignite.Linq.Impl
             return reader.ReadObject<T>();
         }
 
-        private static Func<object, object, object> GetCacheEntryCtor(Type entryType)
+        private static Func<IBinaryRawReader, object> GetCacheEntryCtor(Type entryType)
         {
             // TODO: Cache ctor somewhere in Core, because this is a common task. Probably CacheEntry.CreateInstance(Type, Type) or something.
             if (!entryType.IsGenericType || entryType.GetGenericTypeDefinition() != typeof (ICacheEntry<,>))
@@ -157,7 +156,7 @@ namespace Apache.Ignite.Linq.Impl
 
             var targetType = typeof (CacheEntry<,>).MakeGenericType(args);
 
-            return DelegateConverter.CompileCtor<Func<object, object, object>>(targetType, args);
+            return DelegateConverter.CompileCtor<object>(targetType.GetConstructors().Single(), true);
         }
     }
 }
