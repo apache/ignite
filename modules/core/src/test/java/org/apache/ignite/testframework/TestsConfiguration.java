@@ -23,7 +23,7 @@ import org.apache.ignite.testframework.config.ConfigurationFactory;
 /**
  *
  */
-public class NewTestsConfiguration {
+public class TestsConfiguration {
     /** */
     private final ConfigurationFactory factory;
 
@@ -42,7 +42,7 @@ public class NewTestsConfiguration {
      * @param stopNodes Stope nodes.
      * @param gridCnt Grdi count.
      */
-    public NewTestsConfiguration(ConfigurationFactory factory, String suffix, boolean stopNodes, int gridCnt) {
+    public TestsConfiguration(ConfigurationFactory factory, String suffix, boolean stopNodes, int gridCnt) {
         A.ensure(gridCnt >= 1, "Grids count cannot be less then 1.");
 
         this.factory = factory;
@@ -56,7 +56,7 @@ public class NewTestsConfiguration {
      * @param suffix Class suffix.
      * @param gridCnt Grdi count.
      */
-    public NewTestsConfiguration(ConfigurationFactory factory, String suffix, int gridCnt) {
+    public TestsConfiguration(ConfigurationFactory factory, String suffix, int gridCnt) {
         this(factory, suffix, false, gridCnt);
     }
 
@@ -64,7 +64,7 @@ public class NewTestsConfiguration {
      * @param factory Factory.
      * @param suffix Class suffix.
      */
-    public NewTestsConfiguration(ConfigurationFactory factory, String suffix) {
+    public TestsConfiguration(ConfigurationFactory factory, String suffix) {
         this(factory, suffix, false, 1);
     }
 

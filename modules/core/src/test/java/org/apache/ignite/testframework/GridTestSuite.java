@@ -27,13 +27,13 @@ import org.apache.ignite.testframework.junits.GridAbstractTest;
  */
 public class GridTestSuite extends TestSuite {
     /** */
-    private final NewTestsConfiguration cfg;
+    private final TestsConfiguration cfg;
 
     /**
      * @param theClass Test class.
      * @param cfg Configuration.
      */
-    public GridTestSuite(Class<? extends GridAbstractTest> theClass, NewTestsConfiguration cfg) {
+    public GridTestSuite(Class<? extends GridAbstractTest> theClass, TestsConfiguration cfg) {
         super(theClass);
 
         this.cfg = cfg;
@@ -42,7 +42,7 @@ public class GridTestSuite extends TestSuite {
     /** {@inheritDoc} */
     @Override public void runTest(Test test, TestResult res) {
         if (test instanceof GridAbstractTest)
-            ((GridAbstractTest)test).setNewTestsConfiguration(cfg);
+            ((GridAbstractTest)test).setTestsConfiguration(cfg);
 
         super.runTest(test, res);
     }

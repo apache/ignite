@@ -84,7 +84,7 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.multicast.TcpDiscoveryMulticastIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
-import org.apache.ignite.testframework.NewTestsConfiguration;
+import org.apache.ignite.testframework.TestsConfiguration;
 import org.apache.ignite.testframework.config.GridTestProperties;
 import org.apache.ignite.testframework.junits.logger.GridTestLog4jLogger;
 import org.apache.ignite.testframework.junits.multijvm.IgniteCacheProcessProxy;
@@ -155,7 +155,7 @@ public abstract class GridAbstractTest extends TestCase {
     protected final static ThreadLocal<String> startingGrid = new ThreadLocal<>();
 
     /** */
-    protected NewTestsConfiguration newTestsCfg;
+    protected TestsConfiguration testsCfg;
 
     /**
      *
@@ -203,10 +203,10 @@ public abstract class GridAbstractTest extends TestCase {
     }
 
     /**
-     * @param newTestsCfg New tests configuration.
+     * @param testsCfg Tests configuration.
      */
-    public void setNewTestsConfiguration(NewTestsConfiguration newTestsCfg) {
-        this.newTestsCfg = newTestsCfg;
+    public void setTestsConfiguration(TestsConfiguration testsCfg) {
+        this.testsCfg = testsCfg;
     }
 
     /**
@@ -485,15 +485,15 @@ public abstract class GridAbstractTest extends TestCase {
      * @throws Exception If failed. {@link #afterTestsStopped()} will be called in this case.
      */
     protected void beforeTestsStarted() throws Exception {
-        if (newTestsCfg != null) {
-            if (Ignition.allGrids().size() != newTestsCfg.gridCount()) {
-                log.info("All nodes will be stopped, new " + newTestsCfg.gridCount() + " nodes will be started.");
+        if (testsCfg != null) {
+            if (Ignition.allGrids().size() != testsCfg.gridCount()) {
+                log.info("All nodes will be stopped, new " + testsCfg.gridCount() + " nodes will be started.");
 
                 Ignition.stopAll(true);
 
-                startGrids(newTestsCfg.gridCount());
+                startGrids(testsCfg.gridCount());
 
-                for (int i = 0; i < newTestsCfg.gridCount(); i++)
+                for (int i = 0; i < testsCfg.gridCount(); i++)
                     info("Grid " + i + ": " + grid(i).localNode().id());
             }
         }
@@ -506,7 +506,7 @@ public abstract class GridAbstractTest extends TestCase {
      * @throws Exception If failed.
      */
     protected void afterTestsStopped() throws Exception {
-        if (newTestsCfg != null && newTestsCfg.isStopNodes())
+        if (testsCfg != null && testsCfg.isStopNodes())
             stopAllGrids();
     }
 
@@ -543,8 +543,8 @@ public abstract class GridAbstractTest extends TestCase {
         if (isFirstTest()) {
             String newTestCfgSuffix = "";
 
-            if (newTestsCfg != null)
-                newTestCfgSuffix += '-' + newTestsCfg.suffix() + '-' + newTestsCfg.gridCount() + "-node(s)";
+            if (testsCfg != null)
+                newTestCfgSuffix += '-' + testsCfg.suffix() + '-' + testsCfg.gridCount() + "-node(s)";
 
             info(">>> Starting test class: " + GridTestUtils.fullSimpleName(getClass()) + newTestCfgSuffix + " <<<");
 
@@ -1206,8 +1206,8 @@ public abstract class GridAbstractTest extends TestCase {
         if (isMultiJvm())
             ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(LOCAL_IP_FINDER);
 
-        if (newTestsCfg != null) {
-            IgniteConfiguration cfg2 = newTestsCfg.configurationFactory().getConfiguration(gridName);
+        if (testsCfg != null) {
+            IgniteConfiguration cfg2 = testsCfg.configurationFactory().getConfiguration(gridName);
 
             // TODO review.
             cfg2.setGridName(cfg.getGridName());
@@ -1417,8 +1417,8 @@ public abstract class GridAbstractTest extends TestCase {
             if (isLastTest()) {
                 String newTestCfgSuffix = "";
 
-                if (newTestsCfg != null)
-                    newTestCfgSuffix += '-' + newTestsCfg.suffix() + '-' + newTestsCfg.gridCount() + "-node(s)";
+                if (testsCfg != null)
+                    newTestCfgSuffix += '-' + testsCfg.suffix() + '-' + testsCfg.gridCount() + "-node(s)";
 
                 info(">>> Stopping test class: " + GridTestUtils.fullSimpleName(getClass()) + newTestCfgSuffix + " <<<");
 

@@ -172,7 +172,7 @@ public class GridCacheNewFullApiSelfTest extends GridNewCacheAbstractSelfTest {
 
     /** {@inheritDoc} */
     @Override protected int gridCount() {
-        return newTestsCfg.gridCount();
+        return testsCfg.gridCount();
     }
 
     /** {@inheritDoc} */

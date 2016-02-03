@@ -26,7 +26,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheNewFullApiSelfTest;
 import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.marshaller.optimized.OptimizedMarshaller;
 import org.apache.ignite.testframework.GridTestSuite;
-import org.apache.ignite.testframework.NewTestsConfiguration;
+import org.apache.ignite.testframework.TestsConfiguration;
 import org.apache.ignite.testframework.config.ConfigurationFactory;
 import org.apache.ignite.testframework.config.StateConfigurationFactory;
 import org.apache.ignite.testframework.config.generator.StateIterator;
@@ -86,7 +86,7 @@ public class IgniteCacheNewFullApiSelfTestSuite extends TestSuite {
             String clsNameSuffix = "[igniteCfg=" + Arrays.toString(igniteCfgState)
                 + ", cacheCfgState=" + Arrays.toString(cacheCfgState) + "]";
 
-            NewTestsConfiguration testCfg = new NewTestsConfiguration(factory, clsNameSuffix, stop, gridsCnt);
+            TestsConfiguration testCfg = new TestsConfiguration(factory, clsNameSuffix, stop, gridsCnt);
 
             suite.addTest(new GridTestSuite(GridCacheNewFullApiSelfTest.class, testCfg));
         }

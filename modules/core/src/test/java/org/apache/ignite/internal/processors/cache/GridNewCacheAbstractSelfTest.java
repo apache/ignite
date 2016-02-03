@@ -91,7 +91,7 @@ public abstract class GridNewCacheAbstractSelfTest extends GridCommonAbstractTes
 
             IgniteEx grid = grid(i);
 
-            grid.getOrCreateCache(newTestsCfg.configurationFactory().cacheConfiguration(grid.name()));
+            grid.getOrCreateCache(testsCfg.configurationFactory().cacheConfiguration(grid.name()));
         }
 
         awaitPartitionMapExchange();
