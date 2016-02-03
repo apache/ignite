@@ -17,11 +17,9 @@
 
 package org.apache.ignite.testframework.config;
 
-import java.util.Arrays;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.lang.IgniteClosure;
-import org.jetbrains.annotations.Nullable;
 
 /**
  *
@@ -46,19 +44,28 @@ public class StateConfigurationFactory implements ConfigurationFactory {
      * @param cacheCfgState Cache configuration state.
      */
     public StateConfigurationFactory(IgniteClosure<IgniteConfiguration, Void>[][] igniteParams,
-        @Nullable int[] igniteCfgState,
+        int[] igniteCfgState,
         IgniteClosure<CacheConfiguration, Void>[][] cacheParams,
-        @Nullable int[] cacheCfgState) {
+        int[] cacheCfgState) {
         this.igniteParams = igniteParams;
         this.igniteCfgState = igniteCfgState;
         this.cacheParams = cacheParams;
         this.cacheCfgState = cacheCfgState;
     }
 
+    /**
+     * @param cacheCfgState Cache configuration state.
+     * @param cacheParams Cache paramethers.
+     */
+    public StateConfigurationFactory(int[] cacheCfgState,
+        IgniteClosure<CacheConfiguration, Void>[][] cacheParams) {
+        this(null, null, cacheParams, cacheCfgState);
+    }
+
     /** {@inheritDoc} */
     @Override public IgniteConfiguration getConfiguration(String gridName) {
-        System.out.println("[StateConfigurationFactory] Getting IgniteConfiguration with next state: " 
-            + Arrays.toString(igniteCfgState));
+        if (igniteParams == null)
+            return new IgniteConfiguration();
 
         IgniteConfiguration cfg = new IgniteConfiguration();
 
@@ -76,9 +83,6 @@ public class StateConfigurationFactory implements ConfigurationFactory {
 
     /** {@inheritDoc} */
     @Override public CacheConfiguration cacheConfiguration(String gridName) {
-        System.out.println("[StateConfigurationFactory] Getting CacheConfiguration with next state: " 
-            + Arrays.toString(cacheCfgState));
-        
         CacheConfiguration cfg = new CacheConfiguration();
 
         for (int i = 0; i < cacheCfgState.length; i++) {

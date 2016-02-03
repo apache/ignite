@@ -538,8 +538,12 @@ public abstract class GridAbstractTest extends TestCase {
         }
 
         if (isFirstTest()) {
-            info(">>> Starting test class: " + GridTestUtils.fullSimpleName(getClass())
-                + (newTestsCfg != null ? '-' + newTestsCfg.suffix() : "") + " <<<");
+            String newTestCfgSuffix = "";
+
+            if (newTestsCfg != null)
+                newTestCfgSuffix += '-' + newTestsCfg.suffix() + '-' + newTestsCfg.gridCount() + "-node(s)";
+
+            info(">>> Starting test class: " + GridTestUtils.fullSimpleName(getClass()) + newTestCfgSuffix + " <<<");
 
             if (startGrid) {
                 IgniteConfiguration cfg = optimize(getConfiguration());
@@ -1211,6 +1215,8 @@ public abstract class GridAbstractTest extends TestCase {
             cfg2.setGridLogger(cfg.getGridLogger());
             cfg2.setMBeanServer(cfg.getMBeanServer());
 
+            cfg2.setMetricsLogFrequency(0);
+
             return cfg2;
         }
 
@@ -1406,8 +1412,12 @@ public abstract class GridAbstractTest extends TestCase {
             serializedObj.clear();
 
             if (isLastTest()) {
-                info(">>> Stopping test class: " + GridTestUtils.fullSimpleName(getClass())
-                    + (newTestsCfg != null ? '-' + newTestsCfg.suffix() : "") + " <<<");
+                String newTestCfgSuffix = "";
+
+                if (newTestsCfg != null)
+                    newTestCfgSuffix += '-' + newTestsCfg.suffix() + '-' + newTestsCfg.gridCount() + "-node(s)";
+
+                info(">>> Stopping test class: " + GridTestUtils.fullSimpleName(getClass()) + newTestCfgSuffix + " <<<");
 
                 TestCounters counters = getTestCounters();
 

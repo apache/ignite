@@ -2968,6 +2968,8 @@ public class GridCacheNewFullApiSelfTest extends GridNewCacheAbstractSelfTest {
      */
     @SuppressWarnings("BusyWait")
     public void testLockUnlock() throws Exception {
+        fail("TODO");
+
         if (lockingEnabled()) {
             final CountDownLatch lockCnt = new CountDownLatch(1);
             final CountDownLatch unlockCnt = new CountDownLatch(1);

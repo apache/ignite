@@ -52,16 +52,16 @@ public class IgniteCacheNewFullApiSelfTestSuite extends TestSuite {
     /** */
     @SuppressWarnings("unchecked")
     private static final IgniteClosure<IgniteConfiguration, Void>[][] igniteParams = new IgniteClosure[][] {
-        {null, new MarshallerProcessor(new BinaryMarshaller()), new MarshallerProcessor(new OptimizedMarshaller(true))},
-        {null, new PeerClassLoadingProcessor(true), new PeerClassLoadingProcessor(false)},
+        {new MarshallerProcessor(new BinaryMarshaller()), new MarshallerProcessor(new OptimizedMarshaller(true))},
+        {new PeerClassLoadingProcessor(true), new PeerClassLoadingProcessor(false)},
     };
 
     /** */
     @SuppressWarnings("unchecked")
     private static final IgniteClosure<CacheConfiguration, Void>[][] cacheParams = new IgniteClosure[][] {
-        {null, new CacheModeProcessor(LOCAL), new CacheModeProcessor(PARTITIONED), new CacheModeProcessor(REPLICATED)},
-        {null, new AtomicityModeProcessor(ATOMIC), new AtomicityModeProcessor(TRANSACTIONAL)},
-        {null, new CacheMemoryModeProcessor(ONHEAP_TIERED), new CacheMemoryModeProcessor(OFFHEAP_VALUES), new CacheMemoryModeProcessor(OFFHEAP_TIERED)},
+        {new CacheModeProcessor(LOCAL), new CacheModeProcessor(PARTITIONED), new CacheModeProcessor(REPLICATED)},
+        {new AtomicityModeProcessor(ATOMIC), new AtomicityModeProcessor(TRANSACTIONAL)},
+        {new CacheMemoryModeProcessor(ONHEAP_TIERED), new CacheMemoryModeProcessor(OFFHEAP_VALUES), new CacheMemoryModeProcessor(OFFHEAP_TIERED)},
     };
 
     /**
@@ -71,27 +71,24 @@ public class IgniteCacheNewFullApiSelfTestSuite extends TestSuite {
     public static TestSuite suite() throws Exception {
         TestSuite suite = new TestSuite("Cache New Full API Test Suite");
 
-        for (int gridCnt = 1; gridCnt <= 2; gridCnt++) {
-            for (StateIterator igniteIter = new StateIterator(igniteParams); igniteIter.hasNext();) {
-                int[] igniteCfgState = igniteIter.next();
+        final int[] igniteCfgState = new int[] {0, 0}; // Default configuration.
+        final int gridsCnt = 1;
 
-                for (StateIterator cacheIter = new StateIterator(cacheParams); cacheIter.hasNext();) {
-                    int[] cacheCfgState = cacheIter.next();
+        for (StateIterator cacheIter = new StateIterator(cacheParams); cacheIter.hasNext();) {
+            int[] cacheCfgState = cacheIter.next();
 
-                    ConfigurationFactory factory = new StateConfigurationFactory(igniteParams, igniteCfgState,
-                        cacheParams, cacheCfgState);
+            ConfigurationFactory factory = new StateConfigurationFactory(igniteParams, igniteCfgState,
+                cacheParams, cacheCfgState);
 
-                    // Stop all grids before starting new ignite configuration.
-                    boolean stop = !cacheIter.hasNext();
+            // Stop all grids before starting new ignite configuration.
+            boolean stop = !cacheIter.hasNext();
 
-                    String clsNameSuffix = "-[igniteCfg=" + Arrays.toString(igniteCfgState)
-                        + ", cacheCfgState=" + Arrays.toString(cacheCfgState) + "]";
+            String clsNameSuffix = "[igniteCfg=" + Arrays.toString(igniteCfgState)
+                + ", cacheCfgState=" + Arrays.toString(cacheCfgState) + "]";
 
-                    NewTestsConfiguration testCfg = new NewTestsConfiguration(factory, clsNameSuffix, stop, gridCnt);
+            NewTestsConfiguration testCfg = new NewTestsConfiguration(factory, clsNameSuffix, stop, gridsCnt);
 
-                    suite.addTest(new GridTestSuite(GridCacheNewFullApiSelfTest.class, testCfg));
-                }
-            }
+            suite.addTest(new GridTestSuite(GridCacheNewFullApiSelfTest.class, testCfg));
         }
 
         return suite;
