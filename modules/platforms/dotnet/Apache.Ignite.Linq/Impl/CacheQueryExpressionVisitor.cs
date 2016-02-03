@@ -24,6 +24,7 @@ namespace Apache.Ignite.Linq.Impl
     using System.Diagnostics;
     using System.Linq;
     using System.Linq.Expressions;
+    using System.Reflection;
     using Apache.Ignite.Core.Cache.Configuration;
     using Remotion.Linq.Clauses.Expressions;
     using Remotion.Linq.Parsing;
@@ -64,6 +65,22 @@ namespace Apache.Ignite.Linq.Impl
             _parameters = parameters;
             _useStar = useStar;
             _aliases = aliases;
+        }
+
+        /// <summary>
+        /// Gets the result builder.
+        /// </summary>
+        public StringBuilder ResultBuilder
+        {
+            get { return _resultBuilder; }
+        }
+
+        /// <summary>
+        /// Gets the parameters.
+        /// </summary>
+        public List<object> Parameters
+        {
+            get { return _parameters; }
         }
 
         /** <inheritdoc /> */
@@ -232,77 +249,9 @@ namespace Apache.Ignite.Linq.Impl
         /** <inheritdoc /> */
         protected override Expression VisitMethodCall(MethodCallExpression expression)
         {
-            var method = expression.Method;
-
-            if (method == Methods.StringContains)
-                return VisitSqlLike(expression, "%{0}%");
-
-            if (method == Methods.StringStartsWith)
-                return VisitSqlLike(expression, "{0}%");
-
-            if (method == Methods.StringEndsWith)
-                return VisitSqlLike(expression, "%{0}");
-
-            if (method == Methods.StringToLower)
-            {
-                _resultBuilder.Append("lower(");
-                Visit(expression.Object);
-                _resultBuilder.Append(")");
-
-                return expression;
-            }
-
-            if (method == Methods.StringToUpper)
-            {
-                _resultBuilder.Append("upper(");
-                Visit(expression.Object);
-                _resultBuilder.Append(")");
-
-                return expression;
-            }
-
-            if (method == Methods.DateTimeToString)
-            {
-                _resultBuilder.Append("formatdatetime(");
-                Visit(expression.Object);
-                _resultBuilder.Append(", ");
-                Visit(expression.Arguments.Single());
-                _resultBuilder.Append(")");
-
-                return expression;
-            }
-
-            throw new NotSupportedException(string.Format("Method not supported: {0}.({1})",
-                method.DeclaringType == null ? "static" : method.DeclaringType.FullName, method));
-        }
-
-        /// <summary>
-        /// Visits the SQL like expression.
-        /// </summary>
-        private Expression VisitSqlLike(MethodCallExpression expression, string likeFormat)
-        {
-            _resultBuilder.Append("(");
-
-            Visit(expression.Object);
-
-            _resultBuilder.Append(" like ?) ");
-
-            _parameters.Add(string.Format(likeFormat, GetConstantValue(expression)));
+            Methods.VisitMethodCall(expression, this);
 
             return expression;
-        }
-
-        /// <summary>
-        /// Gets the single constant value.
-        /// </summary>
-        private static object GetConstantValue(MethodCallExpression expression)
-        {
-            var arg = expression.Arguments[0] as ConstantExpression;
-
-            if (arg == null)
-                throw new NotSupportedException("Only constant expression is supported inside Contains call: " + expression);
-
-            return arg.Value;
         }
 
         /** <inheritdoc /> */

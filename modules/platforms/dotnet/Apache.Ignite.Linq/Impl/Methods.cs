@@ -18,6 +18,8 @@
 namespace Apache.Ignite.Linq.Impl
 {
     using System;
+    using System.Collections.Generic;
+    using System.Linq.Expressions;
     using System.Reflection;
 
     /// <summary>
@@ -25,25 +27,77 @@ namespace Apache.Ignite.Linq.Impl
     /// </summary>
     internal static class Methods
     {
-        /** */
-        public static readonly MethodInfo StringContains = typeof(string).GetMethod("Contains");
+        private delegate void VisitMethodDelegate(MethodCallExpression expression, CacheQueryExpressionVisitor visitor);
 
-        /** */
-        public static readonly MethodInfo StringStartsWith = typeof(string).GetMethod("StartsWith",
-            new[] { typeof(string) });
+        private static Dictionary<MethodInfo, VisitMethodDelegate> _delegates = new Dictionary
+            <MethodInfo, VisitMethodDelegate>
+        {
+            {typeof (string).GetMethod("ToLower", new Type[0]), GetFunc("lower")},
+            {typeof (string).GetMethod("ToUpper", new Type[0]), GetFunc("upper")},
+            {typeof (string).GetMethod("Contains"), (e, v) => VisitSqlLike(e, v, "%{0}%")},
+            {typeof (string).GetMethod("StartsWith", new[] {typeof (string)}), (e, v) => VisitSqlLike(e, v, "{0}%")},
+            {typeof (string).GetMethod("EndsWith", new[] {typeof (string)}), (e, v) => VisitSqlLike(e, v, "%{0}")},
+            {typeof (DateTime).GetMethod("ToString", new[] {typeof (string)}), GetFunc("formatdatetime")}
+        };
 
-        /** */
-        public static readonly MethodInfo StringEndsWith = typeof(string).GetMethod("EndsWith",
-            new[] { typeof(string) });
+        public static void VisitMethodCall(MethodCallExpression expression, CacheQueryExpressionVisitor visitor)
+        {
+            var method = expression.Method;
 
-        /** */
-        public static readonly MethodInfo StringToLower = typeof(string).GetMethod("ToLower", new Type[0]);
+            VisitMethodDelegate del;
 
-        /** */
-        public static readonly MethodInfo StringToUpper = typeof(string).GetMethod("ToUpper", new Type[0]);
+            if (!_delegates.TryGetValue(method, out del))
+                throw new NotSupportedException(string.Format("Method not supported: {0}.({1})",
+                    method.DeclaringType == null ? "static" : method.DeclaringType.FullName, method));
 
-        /** */
-        public static readonly MethodInfo DateTimeToString = typeof (DateTime).GetMethod("ToString",
-            new[] {typeof (string)});
+            del(expression, visitor);
+        }
+
+        private static VisitMethodDelegate GetFunc(string func)
+        {
+            return (e, v) => VisitInstanceFunc(e, v, func);
+        }
+
+        private static void VisitInstanceFunc(MethodCallExpression expression, CacheQueryExpressionVisitor visitor, string func)
+        {
+            visitor.ResultBuilder.Append(func).Append("(");
+
+            visitor.Visit(expression.Object);
+
+            foreach (var arg in expression.Arguments)
+            {
+                visitor.ResultBuilder.Append(", ");
+                visitor.Visit(arg);
+            }
+
+            visitor.ResultBuilder.Append(")");
+        }
+
+        /// <summary>
+        /// Visits the SQL like expression.
+        /// </summary>
+        private static void VisitSqlLike(MethodCallExpression expression, CacheQueryExpressionVisitor visitor, string likeFormat)
+        {
+            visitor.ResultBuilder.Append("(");
+
+            visitor.Visit(expression.Object);
+
+            visitor.ResultBuilder.Append(" like ?) ");
+
+            visitor.Parameters.Add(string.Format(likeFormat, GetConstantValue(expression)));
+        }
+
+        /// <summary>
+        /// Gets the single constant value.
+        /// </summary>
+        private static object GetConstantValue(MethodCallExpression expression)
+        {
+            var arg = expression.Arguments[0] as ConstantExpression;
+
+            if (arg == null)
+                throw new NotSupportedException("Only constant expression is supported inside Contains call: " + expression);
+
+            return arg.Value;
+        }
     }
 }
