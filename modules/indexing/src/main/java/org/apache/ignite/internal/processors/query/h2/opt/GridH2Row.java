@@ -31,7 +31,7 @@ public class GridH2Row extends Row implements GridSearchRowPointer {
     public long link; // TODO remove
 
     /** */
-    public KeyCacheObject key; // TODO remove
+    public CacheObject key; // TODO remove
 
     /** */
     public CacheObject val; // TODO remove

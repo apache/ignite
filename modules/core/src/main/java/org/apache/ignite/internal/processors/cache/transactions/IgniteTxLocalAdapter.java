@@ -2520,7 +2520,8 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                 GridCacheEntryEx entry = entryEx(cacheCtx, txKey, topologyVersion());
 
                 try {
-                    entry.unswap(false);
+                    if (retval || transform || hasFilters || (optimistic() && serializable()))
+                        entry.unswap(false);
 
                     // Check if lock is being explicitly acquired by the same thread.
                     if (!implicit && cctx.kernalContext().config().isCacheSanityCheckEnabled() &&
