@@ -466,15 +466,7 @@ public abstract class GridAbstractTest extends TestCase {
      * @throws Exception If failed. {@link #afterTest()} will be called in this case.
      */
     protected void beforeTest() throws Exception {
-        if (newTestsCfg != null) {
-            if (Ignition.allGrids().size() != newTestsCfg.gridCount()) {
-                log.info("All nodes will be stopped, new " + newTestsCfg.gridCount() + " nodes will be started.");
-
-                Ignition.stopAll(true);
-
-                startGrids(newTestsCfg.gridCount());
-            }
-        }
+        // No-op.
     }
 
     /**
@@ -493,7 +485,18 @@ public abstract class GridAbstractTest extends TestCase {
      * @throws Exception If failed. {@link #afterTestsStopped()} will be called in this case.
      */
     protected void beforeTestsStarted() throws Exception {
-        // No-op.
+        if (newTestsCfg != null) {
+            if (Ignition.allGrids().size() != newTestsCfg.gridCount()) {
+                log.info("All nodes will be stopped, new " + newTestsCfg.gridCount() + " nodes will be started.");
+
+                Ignition.stopAll(true);
+
+                startGrids(newTestsCfg.gridCount());
+
+                for (int i = 0; i < newTestsCfg.gridCount(); i++)
+                    info("Grid " + i + ": " + grid(i).localNode().id());
+            }
+        }
     }
 
     /**
