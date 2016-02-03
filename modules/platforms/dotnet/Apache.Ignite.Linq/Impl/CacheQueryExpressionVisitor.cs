@@ -249,7 +249,7 @@ namespace Apache.Ignite.Linq.Impl
         /** <inheritdoc /> */
         protected override Expression VisitMethodCall(MethodCallExpression expression)
         {
-            Methods.VisitMethodCall(expression, this);
+            MethodVisitor.VisitMethodCall(expression, this);
 
             return expression;
         }

@@ -23,9 +23,9 @@ namespace Apache.Ignite.Linq.Impl
     using System.Reflection;
 
     /// <summary>
-    /// Helper class with MethodInfos for methods that are supported by LINQ provider.
+    /// MethodCall expression visitor.
     /// </summary>
-    internal static class Methods
+    internal static class MethodVisitor
     {
         private delegate void VisitMethodDelegate(MethodCallExpression expression, CacheQueryExpressionVisitor visitor);
 
@@ -40,6 +40,9 @@ namespace Apache.Ignite.Linq.Impl
             {typeof (DateTime).GetMethod("ToString", new[] {typeof (string)}), GetFunc("formatdatetime")}
         };
 
+        /// <summary>
+        /// Visits the method call expression.
+        /// </summary>
         public static void VisitMethodCall(MethodCallExpression expression, CacheQueryExpressionVisitor visitor)
         {
             var method = expression.Method;
@@ -53,11 +56,17 @@ namespace Apache.Ignite.Linq.Impl
             del(expression, visitor);
         }
 
+        /// <summary>
+        /// Gets the function.
+        /// </summary>
         private static VisitMethodDelegate GetFunc(string func)
         {
             return (e, v) => VisitInstanceFunc(e, v, func);
         }
 
+        /// <summary>
+        /// Visits the instance function.
+        /// </summary>
         private static void VisitInstanceFunc(MethodCallExpression expression, CacheQueryExpressionVisitor visitor, string func)
         {
             visitor.ResultBuilder.Append(func).Append("(");
