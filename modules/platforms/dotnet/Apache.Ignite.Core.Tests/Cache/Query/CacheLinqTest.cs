@@ -493,7 +493,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
             // Joins
             var join = 
                 from role in roles
-                join person in persons on role.Value.Date equals person.Value.Birthday.Value
+                join person in persons on role.Value.Date equals person.Value.Birthday
                 select person;
 
             Assert.AreEqual(RoleCount, join.Count());
