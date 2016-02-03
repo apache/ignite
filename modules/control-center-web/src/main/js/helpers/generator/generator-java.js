@@ -853,7 +853,7 @@ $generatorJava.clusterEvents = function (cluster, res) {
 
             res.line('int k = 0;');
 
-            _.forEach(cluster.includeEventTypes, function(value) {
+            _.forEach(cluster.includeEventTypes, function(value, idx) {
                 res.needEmptyLine = true;
 
                 var evtGrpDscr = _.find(evtGrps, {value: value});
@@ -861,7 +861,9 @@ $generatorJava.clusterEvents = function (cluster, res) {
                 evt = res.importStatic(evtGrpDscr.class + '.' + value);
 
                 res.line('System.arraycopy(' + evt + ', 0, events, k, ' + evt + '.length);');
-                res.line('k += ' + evt + '.length;');
+
+                if (idx < cluster.includeEventTypes.length - 1)
+                    res.line('k += ' + evt + '.length;');
             });
 
             res.needEmptyLine = true;
