@@ -41,5 +41,9 @@ namespace Apache.Ignite.Linq.Impl
 
         /** */
         public static readonly MethodInfo StringToUpper = typeof(string).GetMethod("ToUpper", new Type[0]);
+
+        /** */
+        public static readonly MethodInfo DateTimeToString = typeof (DateTime).GetMethod("ToString",
+            new[] {typeof (string)});
     }
 }

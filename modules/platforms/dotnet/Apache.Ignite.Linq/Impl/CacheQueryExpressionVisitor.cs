@@ -261,6 +261,15 @@ namespace Apache.Ignite.Linq.Impl
                 return expression;
             }
 
+            if (method == Methods.DateTimeToString)
+            {
+                _resultBuilder.Append("formatdatetime(");
+                Visit(expression.Object);
+                _resultBuilder.Append(", ");
+                Visit(expression.Arguments.Single());
+                _resultBuilder.Append(")");
+            }
+
             throw new NotSupportedException(string.Format("Method not supported: {0}.({1})",
                 method.DeclaringType == null ? "static" : method.DeclaringType.FullName, method));
         }
