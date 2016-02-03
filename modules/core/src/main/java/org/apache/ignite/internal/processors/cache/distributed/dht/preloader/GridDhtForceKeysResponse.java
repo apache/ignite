@@ -170,7 +170,8 @@ public class GridDhtForceKeysResponse extends GridCacheMessage implements GridCa
                 info.marshal(cctx);
         }
 
-        errBytes = ctx.marshaller().marshal(err);
+        if (err != null && errBytes == null)
+            errBytes = ctx.marshaller().marshal(err);
     }
 
     /** {@inheritDoc} */
@@ -187,7 +188,8 @@ public class GridDhtForceKeysResponse extends GridCacheMessage implements GridCa
                 info.unmarshal(cctx, ldr);
         }
 
-        err = ctx.marshaller().unmarshal(errBytes, ldr);
+        if (errBytes != null && err == null)
+            err = ctx.marshaller().unmarshal(errBytes, ldr);
     }
 
     /** {@inheritDoc} */

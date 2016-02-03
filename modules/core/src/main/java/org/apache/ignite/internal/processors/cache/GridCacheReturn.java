@@ -169,6 +169,7 @@ public class GridCacheReturn implements Externalizable, Message {
      * @param cctx Cache context.
      * @param cacheObj Value to set.
      * @param success Success flag to set.
+     * @param keepBinary Keep binary flag.
      * @return This instance for chaining.
      */
     public GridCacheReturn set(
@@ -187,6 +188,7 @@ public class GridCacheReturn implements Externalizable, Message {
     /**
      * @param cctx Cache context.
      * @param cacheObj Cache object.
+     * @param keepBinary Keep binary flag.
      */
     private void initValue(GridCacheContext cctx, @Nullable CacheObject cacheObj, boolean keepBinary) {
         if (loc)

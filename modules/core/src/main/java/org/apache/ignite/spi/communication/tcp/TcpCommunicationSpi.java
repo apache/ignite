@@ -620,7 +620,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
                 nioSrvr.resend(ses);
 
                 if (sndRes)
-                    nioSrvr.sendSystem(ses, new RecoveryLastReceivedMessage(recovery.receivedCount()));
+                    nioSrvr.sendSystem(ses, new RecoveryLastReceivedMessage(recovery.received()));
 
                 recovery.connected();
 
@@ -714,7 +714,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
                             }
                         };
 
-                        nioSrvr.sendSystem(ses, new RecoveryLastReceivedMessage(recoveryDesc.receivedCount()), lsnr);
+                        nioSrvr.sendSystem(ses, new RecoveryLastReceivedMessage(recoveryDesc.received()), lsnr);
                     }
                     else {
                         try {
@@ -1611,7 +1611,9 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
                     }
                 };
 
-                GridDirectParser parser = new GridDirectParser(msgFactory, readerFactory);
+                GridDirectParser parser = new GridDirectParser(log.getLogger(GridDirectParser.class),
+                    msgFactory,
+                    readerFactory);
 
                 IgnitePredicate<Message> skipRecoveryPred = new IgnitePredicate<Message>() {
                     @Override public boolean apply(Message msg) {
@@ -2587,16 +2589,16 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
                     else
                         ch.write(ByteBuffer.wrap(U.IGNITE_HEADER));
 
-                    ClusterNode localNode = getLocalNode();
+                    ClusterNode locNode = getLocalNode();
 
-                    if (localNode == null)
+                    if (locNode == null)
                         throw new IgniteCheckedException("Local node has not been started or " +
                             "fully initialized [isStopping=" + getSpiContext().isStopping() + ']');
 
                     if (recovery != null) {
-                        HandshakeMessage msg = new HandshakeMessage(localNode.id(),
+                        HandshakeMessage msg = new HandshakeMessage(locNode.id(),
                             recovery.incrementConnectCount(),
-                            recovery.receivedCount());
+                            recovery.received());
 
                         if (log.isDebugEnabled())
                             log.debug("Write handshake message [rmtNode=" + rmtNodeId + ", msg=" + msg + ']');
@@ -2983,7 +2985,10 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
                     endpoint,
                     srvLsnr,
                     writerFactory,
-                    new GridNioCodecFilter(new GridDirectParser(msgFactory, readerFactory), log, true),
+                    new GridNioCodecFilter(
+                        new GridDirectParser(log.getLogger(GridDirectParser.class),msgFactory, readerFactory),
+                        log,
+                        true),
                     new GridConnectionBytesVerifyFilter(log)
                 );
 

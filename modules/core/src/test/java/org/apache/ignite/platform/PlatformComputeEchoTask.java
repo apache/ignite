@@ -17,9 +17,8 @@
 
 package org.apache.ignite.platform;
 
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
+import java.util.ArrayList;
+import java.util.HashMap;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteException;
@@ -32,6 +31,10 @@ import org.apache.ignite.compute.ComputeTaskAdapter;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.jetbrains.annotations.Nullable;
+
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
 
 /**
  * Test task producing result without any arguments.
@@ -159,10 +162,10 @@ public class PlatformComputeEchoTask extends ComputeTaskAdapter<Integer, Object>
                     return new int[] { 1 };
 
                 case TYPE_COLLECTION:
-                    return Collections.singletonList(1);
+                    return new ArrayList<>(Collections.singletonList(1));
 
                 case TYPE_MAP:
-                    return Collections.singletonMap(1, 1);
+                    return new HashMap<>(Collections.singletonMap(1, 1));
 
                 case TYPE_BINARY:
                     return new PlatformComputeBinarizable(1);

@@ -40,6 +40,8 @@ import org.apache.ignite.cache.query.ScanQuery;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.SqlQuery;
 import org.apache.ignite.cache.query.TextQuery;
+import org.apache.ignite.configuration.*;
+import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.binary.BinaryRawReaderEx;
 import org.apache.ignite.internal.binary.BinaryRawWriterEx;
 import org.apache.ignite.internal.processors.cache.CacheOperationContext;
@@ -52,9 +54,11 @@ import org.apache.ignite.internal.processors.platform.PlatformNativeException;
 import org.apache.ignite.internal.processors.platform.cache.query.PlatformContinuousQuery;
 import org.apache.ignite.internal.processors.platform.cache.query.PlatformFieldsQueryCursor;
 import org.apache.ignite.internal.processors.platform.cache.query.PlatformQueryCursor;
+import org.apache.ignite.internal.processors.platform.utils.PlatformConfigurationUtils;
 import org.apache.ignite.internal.processors.platform.utils.PlatformFutureUtils;
 import org.apache.ignite.internal.processors.platform.utils.PlatformUtils;
 import org.apache.ignite.internal.util.GridConcurrentFactory;
+import org.apache.ignite.internal.util.future.IgniteFutureImpl;
 import org.apache.ignite.internal.util.typedef.C1;
 import org.apache.ignite.lang.IgniteFuture;
 import org.jetbrains.annotations.Nullable;
@@ -174,6 +178,9 @@ public class PlatformCache extends PlatformAbstractTarget {
 
     /** */
     public static final int OP_REPLACE_3 = 38;
+
+    /** */
+    public static final int OP_GET_CONFIG = 39;
 
     /** Underlying JCache. */
     private final IgniteCacheProxy cache;
@@ -513,6 +520,14 @@ public class PlatformCache extends PlatformAbstractTarget {
 
                 break;
 
+            case OP_GET_CONFIG:
+                CacheConfiguration ccfg = ((IgniteCache<Object, Object>)cache).
+                        getConfiguration(CacheConfiguration.class);
+
+                PlatformConfigurationUtils.writeCacheConfiguration(writer, ccfg);
+
+                break;
+
             default:
                 super.processOutStream(type, writer);
         }
@@ -683,8 +698,8 @@ public class PlatformCache extends PlatformAbstractTarget {
     }
 
     /** <inheritDoc /> */
-    @Override protected IgniteFuture currentFuture() throws IgniteCheckedException {
-        return cache.future();
+    @Override protected IgniteInternalFuture currentFuture() throws IgniteCheckedException {
+        return ((IgniteFutureImpl)cache.future()).internalFuture();
     }
 
     /** <inheritDoc /> */
@@ -702,8 +717,7 @@ public class PlatformCache extends PlatformAbstractTarget {
     }
 
     /**
-     * Clears the contents of the cache, without notifying listeners or
-     * {@ignitelink javax.cache.integration.CacheWriter}s.
+     * Clears the contents of the cache, without notifying listeners or CacheWriters.
      *
      * @throws IllegalStateException if the cache is closed.
      * @throws javax.cache.CacheException if there is a problem during the clear

@@ -24,7 +24,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
     /// Ignite JNI native methods.
     /// </summary>
     [SuppressUnmanagedCodeSecurity]
-    internal unsafe static class IgniteJniNativeMethods
+    internal static unsafe class IgniteJniNativeMethods
     {
         [DllImport(IgniteUtils.FileIgniteJniDll, EntryPoint = "IgniteReallocate")]
         public static extern int Reallocate(long memPtr, int cap);
@@ -52,8 +52,17 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         [DllImport(IgniteUtils.FileIgniteJniDll, EntryPoint = "IgniteProcessorCreateCache")]
         public static extern void* ProcessorCreateCache(void* ctx, void* obj, sbyte* name);
 
+        [DllImport(IgniteUtils.FileIgniteJniDll, EntryPoint = "IgniteProcessorCreateCacheFromConfig")]
+        public static extern void* ProcessorCreateCacheFromConfig(void* ctx, void* obj, long memPtr);
+
         [DllImport(IgniteUtils.FileIgniteJniDll, EntryPoint = "IgniteProcessorGetOrCreateCache")]
         public static extern void* ProcessorGetOrCreateCache(void* ctx, void* obj, sbyte* name);
+
+        [DllImport(IgniteUtils.FileIgniteJniDll, EntryPoint = "IgniteProcessorGetOrCreateCacheFromConfig")]
+        public static extern void* ProcessorGetOrCreateCacheFromConfig(void* ctx, void* obj, long memPtr);
+
+        [DllImport(IgniteUtils.FileIgniteJniDll, EntryPoint = "IgniteProcessorDestroyCache")]
+        public static extern void ProcessorDestroyCache(void* ctx, void* obj, sbyte* name);
 
         [DllImport(IgniteUtils.FileIgniteJniDll, EntryPoint = "IgniteProcessorAffinity")]
         public static extern void* ProcessorAffinity(void* ctx, void* obj, sbyte* name);
@@ -84,6 +93,9 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         public static extern void* ProcessorAtomicLong(void* ctx, void* obj, sbyte* name, long initVal,
             [MarshalAs(UnmanagedType.U1)] bool create);
 
+        [DllImport(IgniteUtils.FileIgniteJniDll, EntryPoint = "IgniteProcessorGetIgniteConfiguration")]
+        public static extern void ProcessorGetIgniteConfiguration(void* ctx, void* obj, long memPtr);
+
         [DllImport(IgniteUtils.FileIgniteJniDll, EntryPoint = "IgniteTargetInStreamOutLong")]
         public static extern long TargetInStreamOutLong(void* ctx, void* target, int opType, long memPtr);
 
@@ -112,6 +124,12 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
 
         [DllImport(IgniteUtils.FileIgniteJniDll, EntryPoint = "IgniteTargetListenFutureForOperation")]
         public static extern void TargetListenFutForOp(void* ctx, void* target, long futId, int typ, int opId);
+
+        [DllImport(IgniteUtils.FileIgniteJniDll, EntryPoint = "IgniteTargetListenFutureAndGet")]
+        public static extern void* TargetListenFutAndGet(void* ctx, void* target, long futId, int typ);
+
+        [DllImport(IgniteUtils.FileIgniteJniDll, EntryPoint = "IgniteTargetListenFutureForOperationAndGet")]
+        public static extern void* TargetListenFutForOpAndGet(void* ctx, void* target, long futId, int typ, int opId);
 
         [DllImport(IgniteUtils.FileIgniteJniDll, EntryPoint = "IgniteAffinityPartitions")]
         public static extern int AffinityParts(void* ctx, void* target);
@@ -178,7 +196,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         public static extern void ComputeWithTimeout(void* ctx, void* target, long timeout);
 
         [DllImport(IgniteUtils.FileIgniteJniDll, EntryPoint = "IgniteComputeExecuteNative")]
-        public static extern void ComputeExecuteNative(void* ctx, void* target, long taskPtr, long topVer);
+        public static extern void* ComputeExecuteNative(void* ctx, void* target, long taskPtr, long topVer);
 
         [DllImport(IgniteUtils.FileIgniteJniDll, EntryPoint = "IgniteContinuousQueryClose")]
         public static extern void ContinuousQryClose(void* ctx, void* target);
@@ -354,5 +372,13 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
 
         [DllImport(IgniteUtils.FileIgniteJniDll, EntryPoint = "IgniteAtomicLongClose")]
         public static extern void AtomicLongClose(void* ctx, void* target);
+
+        [DllImport(IgniteUtils.FileIgniteJniDll, EntryPoint = "IgniteListenableCancel")]
+        [return: MarshalAs(UnmanagedType.U1)]
+        public static extern bool ListenableCancel(void* ctx, void* target);
+
+        [DllImport(IgniteUtils.FileIgniteJniDll, EntryPoint = "IgniteListenableIsCancelled")]
+        [return: MarshalAs(UnmanagedType.U1)]
+        public static extern bool ListenableIsCancelled(void* ctx, void* target);
     }
 }

@@ -66,6 +66,18 @@ extern "C" {
         return ctx->ProcessorGetOrCreateCache(static_cast<jobject>(obj), name);
     }
 
+    void* IGNITE_CALL IgniteProcessorCreateCacheFromConfig(gcj::JniContext* ctx, void* obj, long memPtr) {
+        return ctx->ProcessorCreateCacheFromConfig(static_cast<jobject>(obj), memPtr);
+    }
+
+    void* IGNITE_CALL IgniteProcessorGetOrCreateCacheFromConfig(gcj::JniContext* ctx, void* obj, long memPtr) {
+        return ctx->ProcessorGetOrCreateCacheFromConfig(static_cast<jobject>(obj), memPtr);
+    }
+
+    void IGNITE_CALL IgniteProcessorDestroyCache(gcj::JniContext* ctx, void* obj, char* name) {
+        ctx->ProcessorDestroyCache(static_cast<jobject>(obj), name);
+    }
+
     void* IGNITE_CALL IgniteProcessorAffinity(gcj::JniContext* ctx, void* obj, char* name) {
         return ctx->ProcessorAffinity(static_cast<jobject>(obj), name);
     }
@@ -102,6 +114,10 @@ extern "C" {
         return ctx->ProcessorAtomicLong(static_cast<jobject>(obj), name, initVal, create);
     }
 
+	void IGNITE_CALL IgniteProcessorGetIgniteConfiguration(gcj::JniContext* ctx, void* obj, long memPtr) {
+        return ctx->ProcessorGetIgniteConfiguration(static_cast<jobject>(obj), memPtr);
+    }
+
     long long IGNITE_CALL IgniteTargetInStreamOutLong(gcj::JniContext* ctx, void* obj, int opType, long long memPtr) {
         return ctx->TargetInStreamOutLong(static_cast<jobject>(obj), opType, memPtr);
     }
@@ -136,6 +152,14 @@ extern "C" {
 
     void IGNITE_CALL IgniteTargetListenFutureForOperation(gcj::JniContext* ctx, void* obj, long long futId, int typ, int opId) {
         ctx->TargetListenFutureForOperation(static_cast<jobject>(obj), futId, typ, opId);
+    }
+
+    void* IGNITE_CALL IgniteTargetListenFutureAndGet(gcj::JniContext* ctx, void* obj, long long futId, int typ) {
+        return ctx->TargetListenFutureAndGet(static_cast<jobject>(obj), futId, typ);
+    }
+
+    void* IGNITE_CALL IgniteTargetListenFutureForOperationAndGet(gcj::JniContext* ctx, void* obj, long long futId, int typ, int opId) {
+        return ctx->TargetListenFutureForOperationAndGet(static_cast<jobject>(obj), futId, typ, opId);
     }
 
     int IGNITE_CALL IgniteAffinityPartitions(gcj::JniContext* ctx, void* obj) {
@@ -219,8 +243,8 @@ extern "C" {
         ctx->ComputeWithTimeout(static_cast<jobject>(obj), timeout);
     }
 
-    void IGNITE_CALL IgniteComputeExecuteNative(gcj::JniContext* ctx, void* obj, long long taskPtr, long long topVer) {
-        ctx->ComputeExecuteNative(static_cast<jobject>(obj), taskPtr, topVer);
+    void* IGNITE_CALL IgniteComputeExecuteNative(gcj::JniContext* ctx, void* obj, long long taskPtr, long long topVer) {
+        return ctx->ComputeExecuteNative(static_cast<jobject>(obj), taskPtr, topVer);
     }
 
     void IGNITE_CALL IgniteContinuousQueryClose(gcj::JniContext* ctx, void* obj) {
@@ -457,5 +481,13 @@ extern "C" {
 
     void IGNITE_CALL IgniteAtomicLongClose(gcj::JniContext* ctx, void* obj) {
         return ctx->AtomicLongClose(static_cast<jobject>(obj));
+    }
+    
+    bool IGNITE_CALL IgniteListenableCancel(gcj::JniContext* ctx, void* obj) {
+        return ctx->ListenableCancel(static_cast<jobject>(obj));
+    }
+
+    bool IGNITE_CALL IgniteListenableIsCancelled(gcj::JniContext* ctx, void* obj) {
+        return ctx->ListenableIsCancelled(static_cast<jobject>(obj));
     }
 }

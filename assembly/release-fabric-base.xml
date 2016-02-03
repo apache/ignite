@@ -104,6 +104,7 @@
             <outputDirectory>/platforms/cpp</outputDirectory>
             <includes>
                 <include>README.txt</include>
+                <include>DEVNOTES.txt</include>
             </includes>
         </fileSet>
 
@@ -117,6 +118,12 @@
         <fileSet>
             <directory>modules/platforms/cpp/core</directory>
             <outputDirectory>/platforms/cpp/core</outputDirectory>
+        </fileSet>
+
+        <!-- Move CPP "ignite" module. -->
+        <fileSet>
+            <directory>modules/platforms/cpp/ignite</directory>
+            <outputDirectory>/platforms/cpp/ignite</outputDirectory>
         </fileSet>
 
         <!-- Move CPP examples. -->

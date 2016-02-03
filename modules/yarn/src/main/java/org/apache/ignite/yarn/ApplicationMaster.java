@@ -137,8 +137,8 @@ public class ApplicationMaster implements AMRMClientAsync.CallbackHandler {
                             + "cp -r ./libs/* ./ignite/*/libs/ || true && "
                             + "./ignite/*/bin/ignite.sh "
                             + "./ignite-config.xml"
-                            + " -J-Xmx" + c.getResource().getMemory() + "m"
-                            + " -J-Xms" + c.getResource().getMemory() + "m"
+                            + " -J-Xmx" + ((int)props.memoryPerNode()) + "m"
+                            + " -J-Xms" + ((int)props.memoryPerNode()) + "m"
                             + IgniteYarnUtils.YARN_LOG_OUT
                         ));
 
@@ -178,7 +178,7 @@ public class ApplicationMaster implements AMRMClientAsync.CallbackHandler {
 
         // Check that slave satisfies min requirements.
         if (cont.getResource().getVirtualCores() < props.cpusPerNode()
-            || cont.getResource().getMemory() < props.memoryPerNode()) {
+            || cont.getResource().getMemory() < props.totalMemoryPerNode()) {
             log.log(Level.FINE, "Container resources not sufficient requirements. Host: {0}, cpu: {1}, mem: {2}",
                 new Object[]{cont.getNodeId().getHost(), cont.getResource().getVirtualCores(),
                    cont.getResource().getMemory()});
@@ -291,7 +291,7 @@ public class ApplicationMaster implements AMRMClientAsync.CallbackHandler {
                     // Resource requirements for worker containers.
                     Resource capability = Records.newRecord(Resource.class);
 
-                    capability.setMemory((int)props.memoryPerNode());
+                    capability.setMemory((int)props.totalMemoryPerNode());
                     capability.setVirtualCores((int)props.cpusPerNode());
 
                     for (int i = 0; i < props.instances() - runningCnt; ++i) {
@@ -302,7 +302,7 @@ public class ApplicationMaster implements AMRMClientAsync.CallbackHandler {
                         rmClient.addContainerRequest(containerAsk);
 
                         log.log(Level.INFO, "Making request. Memory: {0}, cpu {1}.",
-                            new Object[]{props.memoryPerNode(), props.cpusPerNode()});
+                            new Object[]{props.totalMemoryPerNode(), props.cpusPerNode()});
                     }
                 }
 
@@ -329,7 +329,7 @@ public class ApplicationMaster implements AMRMClientAsync.CallbackHandler {
     private boolean checkAvailableResource() {
         Resource availableRes = rmClient.getAvailableResources();
 
-        return availableRes == null || availableRes.getMemory() >= props.memoryPerNode()
+        return availableRes == null || availableRes.getMemory() >= props.totalMemoryPerNode()
             && availableRes.getVirtualCores() >= props.cpusPerNode();
     }
 

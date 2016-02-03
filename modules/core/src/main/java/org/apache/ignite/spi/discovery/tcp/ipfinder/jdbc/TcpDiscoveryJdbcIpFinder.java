@@ -19,6 +19,7 @@ package org.apache.ignite.spi.discovery.tcp.ipfinder.jdbc;
 
 import java.net.InetSocketAddress;
 import java.sql.Connection;
+import java.sql.DatabaseMetaData;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -58,6 +59,10 @@ import static java.sql.Connection.TRANSACTION_READ_COMMITTED;
  * The database will contain 1 table which will hold IP addresses.
  */
 public class TcpDiscoveryJdbcIpFinder extends TcpDiscoveryIpFinderAdapter {
+    /** Name of the address table, in upper case.  Mostly table names are not case-sensitive
+     * but databases such as Oracle require table names in upper-case when looking them up in the metadata. */
+    public static final String ADDRS_TABLE_NAME = "TBL_ADDRS";
+    
     /** Query to get addresses. */
     public static final String GET_ADDRS_QRY = "select hostname, port from tbl_addrs";
 
@@ -69,7 +74,7 @@ public class TcpDiscoveryJdbcIpFinder extends TcpDiscoveryIpFinderAdapter {
 
     /** Query to create addresses table. */
     public static final String CREATE_ADDRS_TABLE_QRY =
-        "create table if not exists tbl_addrs (" +
+        "create table tbl_addrs (" +
         "hostname VARCHAR(1024), " +
         "port INT)";
 
@@ -290,8 +295,6 @@ public class TcpDiscoveryJdbcIpFinder extends TcpDiscoveryIpFinderAdapter {
 
             Connection conn = null;
 
-            Statement stmt = null;
-
             boolean committed = false;
 
             try {
@@ -301,12 +304,38 @@ public class TcpDiscoveryJdbcIpFinder extends TcpDiscoveryIpFinderAdapter {
 
                 conn.setTransactionIsolation(TRANSACTION_READ_COMMITTED);
 
-                // Create tbl_addrs.
-                stmt = conn.createStatement();
+                DatabaseMetaData dbm = conn.getMetaData();
 
-                stmt.executeUpdate(CREATE_ADDRS_TABLE_QRY);
+                // Many JDBC implementations support an 'if not exists' clause
+                // in the create statement which will check and create atomically.
+                // However not all databases support it, for example Oracle,
+                // so we do not use it.
+                try (ResultSet tables = dbm.getTables(null, null, ADDRS_TABLE_NAME, null)) {
+                    if (!tables.next()) {
+                        // Table does not exist
+                        // Create tbl_addrs.
+                        try (Statement stmt = conn.createStatement()) {
+                            stmt.executeUpdate(CREATE_ADDRS_TABLE_QRY);
 
-                conn.commit();
+                            conn.commit();
+                        }
+                        catch (SQLException e) {
+                            // Due to a race condition, the table may have been
+                            // created since we tested above for its existence.
+                            // We must ignore the exception if this is the
+                            // cause.
+                            // However different JDBC driver implementations may
+                            // return different codes and messages in the
+                            // exception, so the safest way to determine if this
+                            // exception is to be ignored is to test again to
+                            // see if the table has been created.
+                            try (ResultSet tablesAgain = dbm.getTables(null, null, ADDRS_TABLE_NAME, null)) {
+                                if (!tablesAgain.next())
+                                    throw e;
+                            }
+                        }
+                    }
+                }
 
                 committed = true;
 
@@ -322,7 +351,6 @@ public class TcpDiscoveryJdbcIpFinder extends TcpDiscoveryIpFinderAdapter {
                 if (!committed)
                     U.rollbackConnectionQuiet(conn);
 
-                U.closeQuiet(stmt);
                 U.closeQuiet(conn);
 
                 initLatch.countDown();

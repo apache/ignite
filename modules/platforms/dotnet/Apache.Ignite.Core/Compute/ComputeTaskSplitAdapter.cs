@@ -17,11 +17,12 @@
 
 namespace Apache.Ignite.Core.Compute
 {
-    using System;
     using System.Collections.Generic;
-    using System.Diagnostics;
+    using System.Diagnostics.CodeAnalysis;
     using Apache.Ignite.Core.Cluster;
     using Apache.Ignite.Core.Common;
+    using Apache.Ignite.Core.Impl;
+    using Apache.Ignite.Core.Impl.Common;
     using Apache.Ignite.Core.Impl.Compute;
 
     /// <summary>
@@ -32,11 +33,6 @@ namespace Apache.Ignite.Core.Compute
     /// </summary>
     public abstract class ComputeTaskSplitAdapter<TArg, TJobRes, TTaskRes> : ComputeTaskAdapter<TArg, TJobRes, TTaskRes>
     {
-        /** Random generator */
-        [ThreadStatic]
-        // ReSharper disable once StaticMemberInGenericType
-        private static Random _rnd;
-
         /// <summary>
         /// This is a simplified version of <see cref="IComputeTask{A,T,R}.Map"/> method.
         /// <p/>
@@ -66,10 +62,9 @@ namespace Apache.Ignite.Core.Compute
         /// exception will be thrown.
         /// </returns>
         /// <exception cref="IgniteException">Split returned no jobs.</exception>
+        [SuppressMessage("Microsoft.Design", "CA1062:Validate arguments of public methods")]
         override public IDictionary<IComputeJob<TJobRes>, IClusterNode> Map(IList<IClusterNode> subgrid, TArg arg)
         {
-            Debug.Assert(subgrid != null && subgrid.Count > 0);
-
             var jobs = Split(subgrid.Count, arg);
 
             if (jobs == null || jobs.Count == 0)
@@ -77,12 +72,11 @@ namespace Apache.Ignite.Core.Compute
 
             var map = new Dictionary<IComputeJob<TJobRes>, IClusterNode>(jobs.Count);
 
-            if (_rnd == null)
-                _rnd = new Random();
+            var rnd = IgniteUtils.ThreadLocalRandom;
 
             foreach (var job in jobs)
             {
-                int idx = _rnd.Next(subgrid.Count);
+                int idx = rnd.Next(subgrid.Count);
 
                 IClusterNode node = subgrid[idx];
 
