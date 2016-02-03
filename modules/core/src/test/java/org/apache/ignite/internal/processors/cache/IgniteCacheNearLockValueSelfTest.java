@@ -26,7 +26,7 @@ import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.TestRecordingCommunicationSpi;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearCacheEntry;
-import org.apache.ignite.internal.processors.cache.distributed.near.GridNearLockRequest;
+import org.apache.ignite.internal.processors.cache.distributed.near.GridNearLockRequestV1;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
@@ -66,7 +66,7 @@ public class IgniteCacheNearLockValueSelfTest extends GridCommonAbstractTest {
 
         TestRecordingCommunicationSpi commSpi = new TestRecordingCommunicationSpi();
 
-        commSpi.record(GridNearLockRequest.class);
+        commSpi.record(GridNearLockRequestV1.class);
 
         cfg.setCommunicationSpi(commSpi);
 
@@ -94,7 +94,7 @@ public class IgniteCacheNearLockValueSelfTest extends GridCommonAbstractTest {
                 TestRecordingCommunicationSpi comm =
                     (TestRecordingCommunicationSpi)ignite(0).configuration().getCommunicationSpi();
 
-                Collection<GridNearLockRequest> reqs = (Collection)comm.recordedMessages();
+                Collection<GridNearLockRequestV1> reqs = (Collection)comm.recordedMessages();
 
                 assertEquals(1, reqs.size());
 
@@ -104,7 +104,7 @@ public class IgniteCacheNearLockValueSelfTest extends GridCommonAbstractTest {
 
                 assertNotNull(dhtEntry);
 
-                GridNearLockRequest req = reqs.iterator().next();
+                GridNearLockRequestV1 req = reqs.iterator().next();
 
                 assertEquals(dhtEntry.version(), req.dhtVersion(0));
 
