@@ -738,7 +738,7 @@ public class GridCacheEvictionManager extends GridCacheManagerAdapter {
      * @param txEntry Transactional entry.
      */
     public void touch(IgniteTxEntry txEntry, boolean loc) {
-        if (!plcEnabled && memoryMode != OFFHEAP_TIERED)
+        if (!plcEnabled && memoryMode != OFFHEAP_TIERED && !cctx.isDatabaseEnabled())
             return;
 
         if (!loc) {
@@ -762,7 +762,7 @@ public class GridCacheEvictionManager extends GridCacheManagerAdapter {
             U.error(log, "Failed to evict entry from cache: " + e, ex);
         }
 
-        if (memoryMode == OFFHEAP_TIERED) {
+        if (memoryMode == OFFHEAP_TIERED || cctx.isDatabaseEnabled()) {
             try {
                 evict0(cctx.cache(), e, cctx.versions().next(), null, false);
             }

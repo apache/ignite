@@ -1130,7 +1130,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
             // Load and remove from swap if it is new.
             boolean startVer = isStartVersion();
 
-            if (startVer)
+            if (startVer && (!cctx.isDatabaseEnabled() || retval || intercept))
                 unswap(retval);
 
             newVer = explicitVer != null ? explicitVer : tx == null ?
