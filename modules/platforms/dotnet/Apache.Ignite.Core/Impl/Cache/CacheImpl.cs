@@ -923,7 +923,22 @@ namespace Apache.Ignite.Core.Impl.Cache
         /** <inheritDoc /> */
         public IQueryCursor<IList> QueryFields(SqlFieldsQuery qry)
         {
+            return QueryFields(qry, (reader, count) =>
+            {
+                IList res = new ArrayList(count);
+
+                for (var i = 0; i < count; i++)
+                    res.Add(reader.ReadObject<object>());
+
+                return res;
+            });
+        }
+
+        /** <inheritDoc /> */
+        public IQueryCursor<T> QueryFields<T>(SqlFieldsQuery qry, Func<IBinaryRawReader, int, T> readerFunc)
+        {
             IgniteArgumentCheck.NotNull(qry, "qry");
+            IgniteArgumentCheck.NotNull(readerFunc, "readerFunc");
 
             if (string.IsNullOrEmpty(qry.Sql))
                 throw new ArgumentException("Sql cannot be null or empty");
@@ -945,7 +960,7 @@ namespace Apache.Ignite.Core.Impl.Cache
                 cursor = UU.CacheOutOpQueryCursor(Target, (int) CacheOp.QrySqlFields, stream.SynchronizeOutput());
             }
         
-            return new FieldsQueryCursor(cursor, Marshaller, _flagKeepBinary);
+            return new FieldsQueryCursor<T>(cursor, Marshaller, _flagKeepBinary, readerFunc);
         }
 
         /** <inheritDoc /> */
