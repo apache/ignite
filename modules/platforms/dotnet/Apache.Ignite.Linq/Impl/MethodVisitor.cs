@@ -29,7 +29,7 @@ namespace Apache.Ignite.Linq.Impl
     {
         private delegate void VisitMethodDelegate(MethodCallExpression expression, CacheQueryExpressionVisitor visitor);
 
-        private static Dictionary<MethodInfo, VisitMethodDelegate> _delegates = new Dictionary
+        private static readonly Dictionary<MethodInfo, VisitMethodDelegate> Delegates = new Dictionary
             <MethodInfo, VisitMethodDelegate>
         {
             {typeof (string).GetMethod("ToLower", new Type[0]), GetFunc("lower")},
@@ -37,7 +37,14 @@ namespace Apache.Ignite.Linq.Impl
             {typeof (string).GetMethod("Contains"), (e, v) => VisitSqlLike(e, v, "%{0}%")},
             {typeof (string).GetMethod("StartsWith", new[] {typeof (string)}), (e, v) => VisitSqlLike(e, v, "{0}%")},
             {typeof (string).GetMethod("EndsWith", new[] {typeof (string)}), (e, v) => VisitSqlLike(e, v, "%{0}")},
-            {typeof (DateTime).GetMethod("ToString", new[] {typeof (string)}), GetFunc("formatdatetime")}
+            {typeof (DateTime).GetMethod("ToString", new[] {typeof (string)}), GetFunc("formatdatetime")},
+            {typeof (Math).GetMethod("Abs", new[] {typeof (int)}), GetFunc("abs")},
+            {typeof (Math).GetMethod("Abs", new[] {typeof (long)}), GetFunc("abs")},
+            {typeof (Math).GetMethod("Abs", new[] {typeof (float)}), GetFunc("abs")},
+            {typeof (Math).GetMethod("Abs", new[] {typeof (double)}), GetFunc("abs")},
+            {typeof (Math).GetMethod("Abs", new[] {typeof (decimal)}), GetFunc("abs")},
+            {typeof (Math).GetMethod("Abs", new[] {typeof (sbyte)}), GetFunc("abs")},
+            {typeof (Math).GetMethod("Abs", new[] {typeof (short)}), GetFunc("abs")},
         };
 
         /// <summary>
@@ -49,7 +56,7 @@ namespace Apache.Ignite.Linq.Impl
 
             VisitMethodDelegate del;
 
-            if (!_delegates.TryGetValue(method, out del))
+            if (!Delegates.TryGetValue(method, out del))
                 throw new NotSupportedException(string.Format("Method not supported: {0}.({1})",
                     method.DeclaringType == null ? "static" : method.DeclaringType.FullName, method));
 
