@@ -17,14 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.dht.atomic;
 
-import java.io.Externalizable;
-import java.nio.ByteBuffer;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.UUID;
-import javax.cache.expiry.ExpiryPolicy;
-import javax.cache.processor.EntryProcessor;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.internal.GridDirectCollection;
@@ -50,6 +42,15 @@ import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import javax.cache.expiry.ExpiryPolicy;
+import javax.cache.processor.EntryProcessor;
+import java.io.Externalizable;
+import java.nio.ByteBuffer;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.UUID;
+
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.DELETE;
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.TRANSFORM;
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.UPDATE;
@@ -57,7 +58,7 @@ import static org.apache.ignite.internal.processors.cache.GridCacheOperation.UPD
 /**
  * Lite DHT cache update request sent from near node to primary node.
  */
-public class GridNearAtomicUpdateRequest extends GridCacheMessage
+public class GridNearAtomicSingleUpdateRequest extends GridCacheMessage
     implements GridNearAtomicUpdateRequestInterface, GridCacheDeployable {
     /** */
     private static final long serialVersionUID = 0L;
@@ -166,7 +167,7 @@ public class GridNearAtomicUpdateRequest extends GridCacheMessage
     /**
      * Empty constructor required by {@link Externalizable}.
      */
-    public GridNearAtomicUpdateRequest() {
+    public GridNearAtomicSingleUpdateRequest() {
         // No-op.
     }
 
@@ -194,7 +195,7 @@ public class GridNearAtomicUpdateRequest extends GridCacheMessage
      * @param addDepInfo Deployment info flag.
      * @param maxEntryCnt Maximum entries count.
      */
-    public GridNearAtomicUpdateRequest(
+    public GridNearAtomicSingleUpdateRequest(
         int cacheId,
         UUID nodeId,
         GridCacheVersion futVer,
@@ -1022,12 +1023,12 @@ public class GridNearAtomicUpdateRequest extends GridCacheMessage
 
         }
 
-        return reader.afterMessageRead(GridNearAtomicUpdateRequest.class);
+        return reader.afterMessageRead(GridNearAtomicSingleUpdateRequest.class);
     }
 
     /** {@inheritDoc} */
     @Override public byte directType() {
-        return 40;
+        return -23;
     }
 
     /** {@inheritDoc} */
@@ -1037,7 +1038,7 @@ public class GridNearAtomicUpdateRequest extends GridCacheMessage
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(GridNearAtomicUpdateRequest.class, this, "filter", Arrays.toString(filter),
+        return S.toString(GridNearAtomicSingleUpdateRequest.class, this, "filter", Arrays.toString(filter),
             "parent", super.toString());
     }
 }

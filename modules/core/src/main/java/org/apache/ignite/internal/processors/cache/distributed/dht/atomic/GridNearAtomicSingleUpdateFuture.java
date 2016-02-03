@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cache.distributed.dht.atomic;
 
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.IgniteInternalFuture;
@@ -26,12 +27,16 @@ import org.apache.ignite.internal.cluster.ClusterTopologyServerNotFoundException
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheEntryPredicate;
 import org.apache.ignite.internal.processors.cache.CachePartialUpdateCheckedException;
+import org.apache.ignite.internal.processors.cache.GridCacheAffinityManager;
+import org.apache.ignite.internal.processors.cache.GridCacheAtomicFuture;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
+import org.apache.ignite.internal.processors.cache.GridCacheMvccManager;
 import org.apache.ignite.internal.processors.cache.GridCacheOperation;
 import org.apache.ignite.internal.processors.cache.GridCacheReturn;
 import org.apache.ignite.internal.processors.cache.GridCacheTryPutFailedException;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTopologyFuture;
+import org.apache.ignite.internal.processors.cache.distributed.near.GridNearAtomicCache;
 import org.apache.ignite.internal.processors.cache.dr.GridCacheDrInfo;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
@@ -44,6 +49,7 @@ import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.Nullable;
 
 import javax.cache.expiry.ExpiryPolicy;
@@ -53,23 +59,43 @@ import java.util.Collections;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.atomic.AtomicReference;
 
 import static org.apache.ignite.cache.CacheAtomicWriteOrderMode.CLOCK;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_ASYNC;
+import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.PRIMARY_SYNC;
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.TRANSFORM;
 
 /**
- * DHT atomic cache near update future.
+ * DHT atomic cache single near update future.
  */
-public class GridNearAtomicUpdateFuture extends GridNearAbstractAtomicUpdateFuture
-    {
+public class GridNearAtomicSingleUpdateFuture extends GridFutureAdapter<Object>
+    implements GridCacheAtomicFuture<Object>{
+    /** Logger reference. */
+    private static final AtomicReference<IgniteLogger> logRef = new AtomicReference<>();
+
+    /** Logger. */
+    protected static IgniteLogger log;
+
+    /** Cache context. */
+    private final GridCacheContext cctx;
+
+    /** Cache. */
+    private GridDhtAtomicCache cache;
+
+    /** Update operation. */
+    private final GridCacheOperation op;
+
     /** Keys */
     private Collection<?> keys;
 
     /** Values. */
     @SuppressWarnings({"FieldAccessedSynchronizedAndUnsynchronized"})
     private Collection<?> vals;
+
+    /** Optional arguments for entry processor. */
+    private Object[] invokeArgs;
 
     /** Conflict put values. */
     @SuppressWarnings({"FieldAccessedSynchronizedAndUnsynchronized"})
@@ -78,6 +104,48 @@ public class GridNearAtomicUpdateFuture extends GridNearAbstractAtomicUpdateFutu
     /** Conflict remove values. */
     @SuppressWarnings({"FieldAccessedSynchronizedAndUnsynchronized"})
     private Collection<GridCacheVersion> conflictRmvVals;
+
+    /** Return value require flag. */
+    private final boolean retval;
+
+    /** Expiry policy. */
+    private final ExpiryPolicy expiryPlc;
+
+    /** Optional filter. */
+    private final CacheEntryPredicate[] filter;
+
+    /** Write synchronization mode. */
+    private final CacheWriteSynchronizationMode syncMode;
+
+    /** Raw return value flag. */
+    private final boolean rawRetval;
+
+    /** Fast map flag. */
+    private final boolean fastMap;
+
+    /** Near cache flag. */
+    private final boolean nearEnabled;
+
+    /** Subject ID. */
+    private final UUID subjId;
+
+    /** Task name hash. */
+    private final int taskNameHash;
+
+    /** Topology locked flag. Set if atomic update is performed inside a TX or explicit lock. */
+    private boolean topLocked;
+
+    /** Skip store flag. */
+    private final boolean skipStore;
+
+    /** */
+    private final boolean keepBinary;
+
+    /** Wait for topology future flag. */
+    private final boolean waitTopFut;
+
+    /** Remap count. */
+    private int remapCnt;
 
     /** State. */
     private final UpdateState state;
@@ -103,7 +171,7 @@ public class GridNearAtomicUpdateFuture extends GridNearAbstractAtomicUpdateFutu
      * @param remapCnt Maximum number of retries.
      * @param waitTopFut If {@code false} does not wait for affinity change future.
      */
-    public GridNearAtomicUpdateFuture(
+    public GridNearAtomicSingleUpdateFuture(
         GridCacheContext cctx,
         GridDhtAtomicCache cache,
         CacheWriteSynchronizationMode syncMode,
@@ -124,25 +192,64 @@ public class GridNearAtomicUpdateFuture extends GridNearAbstractAtomicUpdateFutu
         int remapCnt,
         boolean waitTopFut
     ) {
-        super(cctx, cache, syncMode, op, invokeArgs, retval, rawRetval, expiryPlc, filter, subjId, taskNameHash,
-            skipStore, keepBinary, remapCnt, waitTopFut);
+        this.rawRetval = rawRetval;
 
         assert vals == null || vals.size() == keys.size();
         assert conflictPutVals == null || conflictPutVals.size() == keys.size();
         assert conflictRmvVals == null || conflictRmvVals.size() == keys.size();
         assert subjId != null;
 
+        this.cctx = cctx;
+        this.cache = cache;
+        this.syncMode = syncMode;
+        this.op = op;
         this.keys = keys;
         this.vals = vals;
+        this.invokeArgs = invokeArgs;
         this.conflictPutVals = conflictPutVals;
         this.conflictRmvVals = conflictRmvVals;
+        this.retval = retval;
+        this.expiryPlc = expiryPlc;
+        this.filter = filter;
+        this.subjId = subjId;
+        this.taskNameHash = taskNameHash;
+        this.skipStore = skipStore;
+        this.keepBinary = keepBinary;
+        this.waitTopFut = waitTopFut;
+
+        if (log == null)
+            log = U.logger(cctx.kernalContext(), logRef, GridFutureAdapter.class);
+
+        fastMap = F.isEmpty(filter) && op != TRANSFORM && cctx.config().getWriteSynchronizationMode() == FULL_SYNC &&
+            cctx.config().getAtomicWriteOrderMode() == CLOCK &&
+            !(cctx.writeThrough() && cctx.config().getInterceptor() != null);
+
+        nearEnabled = CU.isNearEnabled(cctx);
+
+        if (!waitTopFut)
+            remapCnt = 1;
+
+        this.remapCnt = remapCnt;
 
         state = new UpdateState();
     }
 
     /** {@inheritDoc} */
+    @Override public IgniteUuid futureId() {
+        throw new UnsupportedOperationException();
+    }
+
+    /** {@inheritDoc} */
     @Override public GridCacheVersion version() {
         return state.futureVersion();
+    }
+
+    /**
+     * @return {@code True} if this future should block partition map exchange.
+     */
+    private boolean waitForPartitionExchange() {
+        // Wait fast-map near atomic update futures in CLOCK mode.
+        return fastMap;
     }
 
     /** {@inheritDoc} */
@@ -155,6 +262,16 @@ public class GridNearAtomicUpdateFuture extends GridNearAbstractAtomicUpdateFutu
         state.onNodeLeft(nodeId);
 
         return false;
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean trackable() {
+        return true;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void markNotTrackable() {
+        // No-op.
     }
 
     /**
@@ -229,6 +346,23 @@ public class GridNearAtomicUpdateFuture extends GridNearAbstractAtomicUpdateFutu
     }
 
     /**
+     * Updates near cache.
+     *
+     * @param req Update request.
+     * @param res Update response.
+     */
+    private void updateNear(GridNearAtomicUpdateRequest req, GridNearAtomicUpdateResponse res) {
+        assert nearEnabled;
+
+        if (res.remapKeys() != null || !req.hasPrimary())
+            return;
+
+        GridNearAtomicCache near = (GridNearAtomicCache)cctx.dht().near();
+
+        near.processNearAtomicUpdateResponse(req, res);
+    }
+
+    /**
      * Maps future on ready topology.
      */
     private void mapOnTopology() {
@@ -282,6 +416,35 @@ public class GridNearAtomicUpdateFuture extends GridNearAbstractAtomicUpdateFutu
         }
 
         state.map(topVer, null);
+    }
+
+    /**
+     * @return {@code True} future is stored by {@link GridCacheMvccManager#addAtomicFuture}.
+     */
+    private boolean storeFuture() {
+        return cctx.config().getAtomicWriteOrderMode() == CLOCK || syncMode != FULL_ASYNC;
+    }
+
+    /**
+     * Maps key to nodes. If filters are absent and operation is not TRANSFORM, then we can assign version on near
+     * node and send updates in parallel to all participating nodes.
+     *
+     * @param key Key to map.
+     * @param topVer Topology version to map.
+     * @param fastMap Flag indicating whether mapping is performed for fast-circuit update.
+     * @return Collection of nodes to which key is mapped.
+     */
+    private Collection<ClusterNode> mapKey(
+        KeyCacheObject key,
+        AffinityTopologyVersion topVer,
+        boolean fastMap
+    ) {
+        GridCacheAffinityManager affMgr = cctx.affinity();
+
+        // If we can send updates in parallel - do it.
+        return fastMap ?
+            cctx.topology().nodes(affMgr.partition(key), topVer) :
+            Collections.singletonList(affMgr.primary(key, topVer));
     }
 
     /**
@@ -726,7 +889,7 @@ public class GridNearAtomicUpdateFuture extends GridNearAbstractAtomicUpdateFutu
                         else
                             mappings0 = pendingMappings;
 
-                        assert !mappings0.isEmpty() || size == 0 : GridNearAtomicUpdateFuture.this;
+                        assert !mappings0.isEmpty() || size == 0 : GridNearAtomicSingleUpdateFuture.this;
                     }
                 }
 
@@ -757,8 +920,8 @@ public class GridNearAtomicUpdateFuture extends GridNearAbstractAtomicUpdateFutu
             }
 
             if (storeFuture()) {
-                if (!cctx.mvcc().addAtomicFuture(futVer, GridNearAtomicUpdateFuture.this)) {
-                    assert isDone() : GridNearAtomicUpdateFuture.this;
+                if (!cctx.mvcc().addAtomicFuture(futVer, GridNearAtomicSingleUpdateFuture.this)) {
+                    assert isDone() : GridNearAtomicSingleUpdateFuture.this;
 
                     return;
                 }
@@ -1096,6 +1259,6 @@ public class GridNearAtomicUpdateFuture extends GridNearAbstractAtomicUpdateFutu
 
     /** {@inheritDoc} */
     public String toString() {
-        return S.toString(GridNearAtomicUpdateFuture.class, this, super.toString());
+        return S.toString(GridNearAtomicSingleUpdateFuture.class, this, super.toString());
     }
 }
