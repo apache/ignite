@@ -18,11 +18,13 @@
 namespace Apache.Ignite.Core.Impl.Common
 {
     using System;
+    using System.Collections.Generic;
     using System.Diagnostics;
     using System.Diagnostics.CodeAnalysis;
     using System.Linq.Expressions;
     using System.Reflection;
     using System.Reflection.Emit;
+    using Apache.Ignite.Core.Binary;
 
     /// <summary>
     /// Converts generic and non-generic delegates.
@@ -31,6 +33,9 @@ namespace Apache.Ignite.Core.Impl.Common
     {
         /** */
         private const string DefaultMethodName = "Invoke";
+
+        /** */
+        private static readonly MethodInfo ReadObjectMethod = typeof (IBinaryRawReader).GetMethod("ReadObject");
 
         /// <summary>
         /// Compiles a function without arguments.
@@ -188,7 +193,7 @@ namespace Apache.Ignite.Core.Impl.Common
         /// <typeparam name="T">Result func type.</typeparam>
         /// <param name="type">Type to be created by ctor.</param>
         /// <param name="argTypes">Argument types.</param>
-        /// <param name="convertResultToObject">if set to <c>true</c> [convert result to object].
+        /// <param name="convertResultToObject">
         /// Flag that indicates whether ctor return value should be converted to object.
         /// </param>
         /// <returns>
@@ -200,6 +205,43 @@ namespace Apache.Ignite.Core.Impl.Common
             var ctor = type.GetConstructor(argTypes);
 
             return CompileCtor<T>(ctor, argTypes, convertResultToObject);
+        }
+
+        /// <summary>
+        /// Compiles a contructor that reads all arguments from a binary reader.
+        /// </summary>
+        /// <typeparam name="T">Result type</typeparam>
+        /// <param name="ctor">The ctor.</param>
+        /// <param name="convertResultToObject">
+        /// Flag that indicates whether ctor return value should be converted to object.
+        /// </param>
+        /// <returns></returns>
+        [SuppressMessage("Microsoft.Design", "CA1062:Validate arguments of public methods")]
+        public static Func<IBinaryRawReader, T> CompileCtor<T>(ConstructorInfo ctor, bool convertResultToObject = false)
+        {
+            Debug.Assert(ctor != null);
+
+            var readerParam = Expression.Parameter(typeof (IBinaryRawReader));
+
+            var ctorParams = ctor.GetParameters();
+
+            var paramsExpr = new List<Expression>(ctorParams.Length);
+
+            foreach (var param in ctorParams)
+            {
+                var readMethod = ReadObjectMethod.MakeGenericMethod(param.ParameterType);
+
+                var readExpr = Expression.Call(readerParam, readMethod);
+
+                paramsExpr.Add(readExpr);
+            }
+
+            Expression ctorExpr = Expression.New(ctor, paramsExpr);  // ctor takes args of specific types
+
+            if (convertResultToObject)
+                ctorExpr = Expression.Convert(ctorExpr, typeof(object)); // convert ctor result to object
+
+            return Expression.Lambda<Func<IBinaryRawReader, T>>(ctorExpr, readerParam).Compile();
         }
 
         /// <summary>
