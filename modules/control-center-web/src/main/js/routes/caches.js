@@ -44,6 +44,18 @@ router.post('/list', function (req, res) {
                             // Get all caches for spaces.
                             db.Cache.find({space: {$in: space_ids}}).sort('name').exec(function (err, caches) {
                                 if (db.processed(err, res)) {
+                                    _.forEach(clusters, function (cluster) {
+                                        cluster.caches = _.filter(cluster.caches, function (cacheId) {
+                                            return _.find(caches, {_id: cacheId});
+                                        });
+                                    });
+
+                                    _.forEach(domains, function (domain) {
+                                        domain.caches = _.filter(domain.caches, function (cacheId) {
+                                            return _.find(caches, {_id: cacheId});
+                                        });
+                                    });
+
                                     _.forEach(caches, function (cache) {
                                         // Remove deleted clusters.
                                         cache.clusters = _.filter(cache.clusters, function (clusterId) {

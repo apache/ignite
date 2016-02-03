@@ -45,12 +45,16 @@ router.post('/list', function (req, res) {
                             // Get all domain models for spaces.
                             db.DomainModel.find({space: {$in: space_ids}}).sort('valueType').exec(function (err, domains) {
                                 if (db.processed(err, res)) {
+                                    _.forEach(caches, function (cache) {
+                                        cache.domains = _.filter(cache.domains, function (metaId) {
+                                            return _.find(domains, {_id: metaId});
+                                        });
+                                    });
+
                                     // Remove deleted caches.
                                     _.forEach(domains, function (domain) {
                                         domain.caches = _.filter(domain.caches, function (cacheId) {
-                                            return _.findIndex(caches, function (cache) {
-                                                    return cache._id.equals(cacheId);
-                                                }) >= 0;
+                                            return _.find(caches, {_id: cacheId});
                                         });
                                     });
 
