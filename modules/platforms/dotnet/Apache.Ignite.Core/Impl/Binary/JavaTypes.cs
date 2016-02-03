@@ -43,7 +43,9 @@ namespace Apache.Ignite.Core.Impl.Binary
             {typeof (double), "java.lang.Double"},
             {typeof (string), "java.lang.String"},
             {typeof (decimal), "java.math.BigDecimal"},
-            {typeof (Guid), "java.util.UUID"}
+            {typeof (Guid), "java.util.UUID"},
+            {typeof (DateTime), "java.sql.Timestamp"},
+            {typeof (DateTime?), "java.sql.Timestamp"},
         };
 
         /** */
