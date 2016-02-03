@@ -482,9 +482,9 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
             Assert.Throws<InvalidOperationException>(() => roles.Where(x => x.Value.Date > DateTime.Now).ToArray());
 
             // Test retrieval
-            var dates = roles.OrderBy(x => x.Value.Date).Select(x => x.Value.Date).ToArray();
+            var dates = roles.OrderBy(x => x.Value.Date).Select(x => x.Value.Date);
             var expDates = new[] {StartDateTime, StartDateTime.AddYears(1), StartDateTime.AddYears(2)};
-            Assert.AreEqual(expDates, dates);
+            Assert.AreEqual(expDates, dates.ToArray());
 
             // Filtering
             Assert.AreEqual(1, persons.Count(x => x.Value.Birthday == StartDateTime));
@@ -497,6 +497,10 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
                 select person;
 
             Assert.AreEqual(RoleCount, join.Count());
+
+            // Functions
+            Assert.AreEqual(StartDateTime.ToString("DD MM YYYY HH:mm:ss"),
+                dates.Select(x => x.ToString("DD MM YYYY HH:mm:ss")).First());
         }
 
         [Test]
