@@ -253,115 +253,83 @@ public class GridNearAtomicUpdateRequest extends GridCacheMessage
         return CACHE_MSG_IDX;
     }
 
-    /**
-     * @return Mapped node ID.
-     */
-    public UUID nodeId() {
+    /** {@inheritDoc} */
+    @Override public UUID nodeId() {
         return nodeId;
     }
 
-    /**
-     * @param nodeId Node ID.
-     */
-    public void nodeId(UUID nodeId) {
+    /** {@inheritDoc} */
+    @Override public void nodeId(UUID nodeId) {
         this.nodeId = nodeId;
     }
 
-    /**
-     * @return Subject ID.
-     */
-    public UUID subjectId() {
+    /** {@inheritDoc} */
+    @Override public UUID subjectId() {
         return subjId;
     }
 
-    /**
-     * @return Task name hash.
-     */
-    public int taskNameHash() {
+    /** {@inheritDoc} */
+    @Override public int taskNameHash() {
         return taskNameHash;
     }
 
-    /**
-     * @return Future version.
-     */
-    public GridCacheVersion futureVersion() {
+    /** {@inheritDoc} */
+    @Override public GridCacheVersion futureVersion() {
         return futVer;
     }
 
-    /**
-     * @return Flag indicating whether this is fast-map udpate.
-     */
-    public boolean fastMap() {
+    /** {@inheritDoc} */
+    @Override public boolean fastMap() {
         return fastMap;
     }
 
-    /**
-     * @return Update version for fast-map request.
-     */
-    public GridCacheVersion updateVersion() {
+    /** {@inheritDoc} */
+    @Override public GridCacheVersion updateVersion() {
         return updateVer;
     }
 
-    /**
-     * @return Topology version.
-     */
+    /** {@inheritDoc} */
     @Override public AffinityTopologyVersion topologyVersion() {
         return topVer;
     }
 
-    /**
-     * @return Topology locked flag.
-     */
-    public boolean topologyLocked() {
+    /** {@inheritDoc} */
+    @Override public boolean topologyLocked() {
         return topLocked;
     }
 
-    /**
-     * @return {@code True} if request sent from client node.
-     */
-    public boolean clientRequest() {
+    /** {@inheritDoc} */
+    @Override public boolean clientRequest() {
         return clientReq;
     }
 
-    /**
-     * @return Cache write synchronization mode.
-     */
-    public CacheWriteSynchronizationMode writeSynchronizationMode() {
+    /** {@inheritDoc} */
+    @Override public CacheWriteSynchronizationMode writeSynchronizationMode() {
         return syncMode;
     }
 
-    /**
-     * @return Expiry policy.
-     */
-    public ExpiryPolicy expiry() {
+    /** {@inheritDoc} */
+    @Override public ExpiryPolicy expiry() {
         return expiryPlc;
     }
 
-    /**
-     * @return Return value flag.
-     */
-    public boolean returnValue() {
+    /** {@inheritDoc} */
+    @Override public boolean returnValue() {
         return retval;
     }
 
-    /**
-     * @return Filter.
-     */
+    /** {@inheritDoc} */
     @Nullable public CacheEntryPredicate[] filter() {
         return filter;
     }
 
-    /**
-     * @return Skip write-through to a persistent storage.
-     */
-    public boolean skipStore() {
+    /** {@inheritDoc} */
+    @Override public boolean skipStore() {
         return skipStore;
     }
 
-    /**
-     * @return Keep binary flag.
-     */
-    public boolean keepBinary() {
+    /** {@inheritDoc} */
+    @Override public boolean keepBinary() {
         return keepBinary;
     }
 
@@ -446,79 +414,57 @@ public class GridNearAtomicUpdateRequest extends GridCacheMessage
         }
     }
 
-    /**
-     * @return Keys for this update request.
-     */
-    public List<KeyCacheObject> keys() {
+    /** {@inheritDoc} */
+    @Override public List<KeyCacheObject> keys() {
         return keys;
     }
 
-    /**
-     * @return Values for this update request.
-     */
-    public List<?> values() {
+    /** {@inheritDoc} */
+    @Override public List<?> values() {
         return op == TRANSFORM ? entryProcessors : vals;
     }
 
-    /**
-     * @return Update operation.
-     */
-    public GridCacheOperation operation() {
+    /** {@inheritDoc} */
+    @Override public GridCacheOperation operation() {
         return op;
     }
 
-    /**
-     * @return Optional arguments for entry processor.
-     */
-    @Nullable public Object[] invokeArguments() {
+    /** {@inheritDoc} */
+    @Override @Nullable public Object[] invokeArguments() {
         return invokeArgs;
     }
 
-    /**
-     * @param idx Key index.
-     * @return Value.
-     */
+    /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
-    public CacheObject value(int idx) {
+    @Override public CacheObject value(int idx) {
         assert op == UPDATE : op;
 
         return vals.get(idx);
     }
 
-    /**
-     * @param idx Key index.
-     * @return Entry processor.
-     */
+    /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
-    public EntryProcessor<Object, Object, Object> entryProcessor(int idx) {
+    @Override public EntryProcessor<Object, Object, Object> entryProcessor(int idx) {
         assert op == TRANSFORM : op;
 
         return entryProcessors.get(idx);
     }
 
-    /**
-     * @param idx Index to get.
-     * @return Write value - either value, or transform closure.
-     */
-    public CacheObject writeValue(int idx) {
+    /** {@inheritDoc} */
+    @Override public CacheObject writeValue(int idx) {
         if (vals != null)
             return vals.get(idx);
 
         return null;
     }
 
-    /**
-     * @return Conflict versions.
-     */
-    @Nullable public List<GridCacheVersion> conflictVersions() {
+    /** {@inheritDoc} */
+    @Override @Nullable public List<GridCacheVersion> conflictVersions() {
         return conflictVers;
     }
 
-    /**
-     * @param idx Index.
-     * @return Conflict version.
-     */
-    @Nullable public GridCacheVersion conflictVersion(int idx) {
+    /** {@inheritDoc} */
+    @Override @Nullable public GridCacheVersion conflictVersion(int idx) {
         if (conflictVers != null) {
             assert idx >= 0 && idx < conflictVers.size();
 
@@ -528,11 +474,8 @@ public class GridNearAtomicUpdateRequest extends GridCacheMessage
         return null;
     }
 
-    /**
-     * @param idx Index.
-     * @return Conflict TTL.
-     */
-    public long conflictTtl(int idx) {
+    /** {@inheritDoc} */
+    @Override public long conflictTtl(int idx) {
         if (conflictTtls != null) {
             assert idx >= 0 && idx < conflictTtls.size();
 
@@ -542,11 +485,8 @@ public class GridNearAtomicUpdateRequest extends GridCacheMessage
         return CU.TTL_NOT_CHANGED;
     }
 
-    /**
-     * @param idx Index.
-     * @return Conflict expire time.
-     */
-    public long conflictExpireTime(int idx) {
+    /** {@inheritDoc} */
+    @Override public long conflictExpireTime(int idx) {
         if (conflictExpireTimes != null) {
             assert idx >= 0 && idx < conflictExpireTimes.size();
 
@@ -556,18 +496,13 @@ public class GridNearAtomicUpdateRequest extends GridCacheMessage
         return CU.EXPIRE_TIME_CALCULATE;
     }
 
-    /**
-     * @return Flag indicating whether this request contains primary keys.
-     */
-    public boolean hasPrimary() {
+    /** {@inheritDoc} */
+    @Override public boolean hasPrimary() {
         return hasPrimary;
     }
 
-    /**
-     * @param res Response.
-     * @return {@code True} if current response was {@code null}.
-     */
-    public boolean onResponse(GridNearAtomicUpdateResponse res) {
+    /** {@inheritDoc} */
+    @Override public boolean onResponse(GridNearAtomicUpdateResponse res) {
         if (this.res == null) {
             this.res = res;
 
@@ -577,15 +512,12 @@ public class GridNearAtomicUpdateRequest extends GridCacheMessage
         return false;
     }
 
-    /**
-     * @return Response.
-     */
-    @Nullable public GridNearAtomicUpdateResponse response() {
+    /** {@inheritDoc} */
+    @Override @Nullable public GridNearAtomicUpdateResponse response() {
         return res;
     }
 
-    /** {@inheritDoc}
-     * @param ctx*/
+    /** {@inheritDoc} */
     @Override public void prepareMarshal(GridCacheSharedContext ctx) throws IgniteCheckedException {
         super.prepareMarshal(ctx);
 

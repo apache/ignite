@@ -35,15 +35,35 @@ import java.util.UUID;
  * Base interface for near atomic update interfaces.
  */
 public interface GridNearAtomicUpdateRequestInterface {
-    public List<KeyCacheObject> keys();
+    /**
+     * @return Message ID.
+     */
+    public long messageId();
 
-    public AffinityTopologyVersion topologyVersion();
+    /**
+     * @return Mapped node ID.
+     */
+    public UUID nodeId();
 
-    public GridCacheVersion futureVersion();
+    /**
+     * @param nodeId Node ID.
+     */
+    public void nodeId(UUID nodeId);
 
-    public boolean returnValue();
+    /**
+     * @return Subject ID.
+     */
+    public UUID subjectId();
 
+    /**
+     * @return Task name hash.
+     */
     public int taskNameHash();
+
+    /**
+     * @return Future version.
+     */
+    public GridCacheVersion futureVersion();
 
     /**
      * @return Flag indicating whether this is fast-map udpate.
@@ -55,51 +75,125 @@ public interface GridNearAtomicUpdateRequestInterface {
      */
     public GridCacheVersion updateVersion();
 
-    public boolean clientRequest();
+    /**
+     * @return Topology version.
+     */
+    public AffinityTopologyVersion topologyVersion();
 
+    /**
+     * @return Topology locked flag.
+     */
     public boolean topologyLocked();
 
-    public ExpiryPolicy expiry();
+    /**
+     * @return {@code True} if request sent from client node.
+     */
+    public boolean clientRequest();
 
-    public boolean skipStore();
-
-    public GridCacheOperation operation();
-
+    /**
+     * @return Cache write synchronization mode.
+     */
     public CacheWriteSynchronizationMode writeSynchronizationMode();
 
-    public UUID subjectId();
+    /**
+     * @return Expiry policy.
+     */
+    public ExpiryPolicy expiry();
 
-    @Nullable public Object[] invokeArguments();
+    /**
+     * @return Return value flag.
+     */
+    public boolean returnValue();
 
-    public boolean keepBinary();
-
+    /**
+     * @return Filter.
+     */
     @Nullable public CacheEntryPredicate[] filter();
 
-    public UUID nodeId();
+    /**
+     * @return Skip write-through to a persistent storage.
+     */
+    public boolean skipStore();
 
-    public void nodeId(UUID nodeId);
+    /**
+     * @return Keep binary flag.
+     */
+    public boolean keepBinary();
 
-    public boolean hasPrimary();
+    /**
+     * @return Keys for this update request.
+     */
+    public List<KeyCacheObject> keys();
 
-    @Nullable public List<GridCacheVersion> conflictVersions();
-
-    @Nullable public GridCacheVersion conflictVersion(int idx);
-
-    public long conflictTtl(int idx);
-
-    public long conflictExpireTime(int idx);
-
+    /**
+     * @return Values for this update request.
+     */
     public List<?> values();
 
+    /**
+     * @return Update operation.
+     */
+    public GridCacheOperation operation();
+
+    /**
+     * @return Optional arguments for entry processor.
+     */
+    @Nullable public Object[] invokeArguments();
+
+    /**
+     * @param idx Key index.
+     * @return Value.
+     */
     public CacheObject value(int idx);
 
-    public long messageId();
-
+    /**
+     * @param idx Key index.
+     * @return Entry processor.
+     */
     public EntryProcessor<Object, Object, Object> entryProcessor(int idx);
 
+    /**
+     * @param idx Index to get.
+     * @return Write value - either value, or transform closure.
+     */
     public CacheObject writeValue(int idx);
 
-    @Nullable public GridNearAtomicUpdateResponse response();
+    /**
+     * @return Conflict versions.
+     */
+    @Nullable public List<GridCacheVersion> conflictVersions();
 
+    /**
+     * @param idx Index.
+     * @return Conflict version.
+     */
+    @Nullable public GridCacheVersion conflictVersion(int idx);
+
+    /**
+     * @param idx Index.
+     * @return Conflict TTL.
+     */
+    public long conflictTtl(int idx);
+
+    /**
+     * @param idx Index.
+     * @return Conflict expire time.
+     */
+    public long conflictExpireTime(int idx);
+
+    /**
+     * @return Flag indicating whether this request contains primary keys.
+     */
+    public boolean hasPrimary();
+
+    /**
+     * @param res Response.
+     * @return {@code True} if current response was {@code null}.
+     */
     public boolean onResponse(GridNearAtomicUpdateResponse res);
+
+    /**
+     * @return Response.
+     */
+    @Nullable public GridNearAtomicUpdateResponse response();
 }
