@@ -79,6 +79,7 @@ import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.resources.LoggerResource;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
+import org.apache.ignite.spi.swapspace.inmemory.GridTestSwapSpaceSpi;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
@@ -90,6 +91,7 @@ import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMemoryMode.OFFHEAP_TIERED;
+import static org.apache.ignite.cache.CacheMemoryMode.OFFHEAP_VALUES;
 import static org.apache.ignite.cache.CacheMemoryMode.ONHEAP_TIERED;
 import static org.apache.ignite.cache.CacheMode.LOCAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
@@ -175,11 +177,6 @@ public class GridCacheNewFullApiSelfTest extends GridNewCacheAbstractSelfTest {
         return testsCfg.gridCount();
     }
 
-    /** {@inheritDoc} */
-    @Override protected boolean swapEnabled() {
-        return true; // TODO from cfg.
-    }
-
     /**
      * @return {@code True} if values should be stored off-heap.
      */
@@ -194,6 +191,9 @@ public class GridCacheNewFullApiSelfTest extends GridNewCacheAbstractSelfTest {
         ((TcpCommunicationSpi)cfg.getCommunicationSpi()).setSharedMemoryPort(-1);
 
         ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setForceServerMode(true);
+
+        if (memoryMode() == OFFHEAP_TIERED || memoryMode() == OFFHEAP_VALUES)
+            cfg.setSwapSpaceSpi(new GridTestSwapSpaceSpi());
 
         return cfg;
     }
@@ -216,6 +216,11 @@ public class GridCacheNewFullApiSelfTest extends GridNewCacheAbstractSelfTest {
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
         super.afterTest();
+
+        IgniteCache<String, Integer> cache = jcache();
+
+        assertEquals(0, cache.localSize());
+        assertEquals(0, cache.size());
 
         dfltIgnite = null;
     }

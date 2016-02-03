@@ -28,7 +28,6 @@ import org.apache.ignite.IgniteTransactions;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.CachePeekMode;
-import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cache.store.CacheStore;
 import org.apache.ignite.cache.store.CacheStoreAdapter;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -56,8 +55,6 @@ import org.jsr166.ConcurrentHashMap8;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMemoryMode.OFFHEAP_TIERED;
-import static org.apache.ignite.cache.CacheMode.PARTITIONED;
-import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 
 /**
  * Abstract class for cache tests.
@@ -240,28 +237,23 @@ public abstract class GridNewCacheAbstractSelfTest extends GridCommonAbstractTes
      * @return Default cache mode.
      */
     protected CacheMode cacheMode() {
-        return CacheConfiguration.DFLT_CACHE_MODE;
+        CacheMode mode = cacheConfiguration().getCacheMode();
+
+        return mode == null ? CacheConfiguration.DFLT_CACHE_MODE : mode;
     }
 
     /**
      * @return Cache atomicity mode.
      */
     protected CacheAtomicityMode atomicityMode() {
-        return TRANSACTIONAL;
+        return cacheConfiguration().getAtomicityMode();
     }
 
     /**
      * @return Partitioned mode.
      */
     protected NearCacheConfiguration nearConfiguration() {
-        return new NearCacheConfiguration();
-    }
-
-    /**
-     * @return Write synchronization.
-     */
-    protected CacheWriteSynchronizationMode writeSynchronization() {
-        return FULL_SYNC;
+        return cacheConfiguration().getNearConfiguration();
     }
 
     /**
@@ -290,13 +282,6 @@ public abstract class GridNewCacheAbstractSelfTest extends GridCommonAbstractTes
     }
 
     /**
-     * @return {@code true} if swap should be enabled.
-     */
-    protected boolean swapEnabled() {
-        return true;
-    }
-
-    /**
      * @return {@code true} if near cache should be enabled.
      */
     protected boolean nearEnabled() {
@@ -308,7 +293,14 @@ public abstract class GridNewCacheAbstractSelfTest extends GridCommonAbstractTes
      * @see #txShouldBeUsed()
      */
     protected boolean txEnabled() {
-        return true;
+        return atomicityMode() == TRANSACTIONAL;
+    }
+
+    /**
+     * @return Cache configuration.
+     */
+    protected CacheConfiguration cacheConfiguration() {
+        return testsCfg.configurationFactory().cacheConfiguration(null);
     }
 
     /**
@@ -322,14 +314,7 @@ public abstract class GridNewCacheAbstractSelfTest extends GridCommonAbstractTes
      * @return {@code True} if locking is enabled.
      */
     protected boolean lockingEnabled() {
-        return true;
-    }
-
-    /**
-     * @return {@code True} for partitioned caches.
-     */
-    protected final boolean partitionedMode() {
-        return cacheMode() == PARTITIONED;
+        return false; // TODO
     }
 
     /**
@@ -381,7 +366,7 @@ public abstract class GridNewCacheAbstractSelfTest extends GridCommonAbstractTes
      * @param cache Cache.
      * @return {@code True} if cache has OFFHEAP_TIERED memory mode.
      */
-    protected <K, V> boolean offheapTiered(IgniteCache<K, V> cache) {
+    protected static <K, V> boolean offheapTiered(IgniteCache<K, V> cache) {
         return cache.getConfiguration(CacheConfiguration.class).getMemoryMode() == OFFHEAP_TIERED;
     }
 
@@ -392,7 +377,7 @@ public abstract class GridNewCacheAbstractSelfTest extends GridCommonAbstractTes
      * @param key Key.
      * @return Value.
      */
-    @Nullable protected <K, V> V peek(IgniteCache<K, V> cache, K key) {
+    @Nullable protected static <K, V> V peek(IgniteCache<K, V> cache, K key) {
         return offheapTiered(cache) ? cache.localPeek(key, CachePeekMode.SWAP, CachePeekMode.OFFHEAP) :
             cache.localPeek(key, CachePeekMode.ONHEAP);
     }
@@ -404,7 +389,7 @@ public abstract class GridNewCacheAbstractSelfTest extends GridCommonAbstractTes
      * @throws Exception If failed.
      */
     @SuppressWarnings("unchecked")
-    protected boolean containsKey(IgniteCache cache, Object key) throws Exception {
+    protected static boolean containsKey(IgniteCache cache, Object key) throws Exception {
         return offheapTiered(cache) ? cache.localPeek(key, CachePeekMode.OFFHEAP) != null : cache.containsKey(key);
     }
 
