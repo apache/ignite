@@ -373,6 +373,7 @@ public class GridNearAtomicUpdateRequest extends GridCacheMessage
      * @param conflictVer Conflict version (optional).
      * @param primary If given key is primary on this mapping.
      */
+    @SuppressWarnings("unchecked")
     public void addUpdateEntry(KeyCacheObject key,
         @Nullable Object val,
         long conflictTtl,
@@ -384,7 +385,7 @@ public class GridNearAtomicUpdateRequest extends GridCacheMessage
         if (op == TRANSFORM) {
             assert val instanceof EntryProcessor : val;
 
-            entryProcessor = (EntryProcessor<Object, Object, Object>) val;
+            entryProcessor = (EntryProcessor<Object, Object, Object>)val;
         }
 
         assert val != null || op == DELETE;

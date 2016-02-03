@@ -34,6 +34,7 @@ import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.Nullable;
 
@@ -53,6 +54,9 @@ import static org.apache.ignite.internal.processors.cache.GridCacheOperation.TRA
  */
 public abstract class GridNearAbstractAtomicUpdateFuture extends GridFutureAdapter<Object>
     implements GridCacheAtomicFuture<Object> {
+    /** */
+    public static final IgniteProductVersion SINGLE_PUT_MSG_SINCE = IgniteProductVersion.fromString("1.6.0");
+
     /** Logger reference. */
     protected static final AtomicReference<IgniteLogger> logRef = new AtomicReference<>();
 

@@ -98,4 +98,8 @@ public interface GridNearAtomicUpdateRequestInterface {
     public EntryProcessor<Object, Object, Object> entryProcessor(int idx);
 
     public CacheObject writeValue(int idx);
+
+    @Nullable public GridNearAtomicUpdateResponse response();
+
+    public boolean onResponse(GridNearAtomicUpdateResponse res);
 }
