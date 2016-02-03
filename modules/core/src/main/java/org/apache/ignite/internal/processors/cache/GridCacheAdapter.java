@@ -5619,7 +5619,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
         private final IgniteBiPredicate<K, V> p;
 
         /** */
-        private final Object[] args;
+        private final Object[] loadArgs;
 
         /** */
         private final ExpiryPolicy plc;
@@ -5628,15 +5628,15 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
          * @param cacheName Cache name.
          * @param topVer Affinity topology version.
          * @param p Predicate.
-         * @param args Arguments.
+         * @param loadArgs Arguments.
          * @param plc Policy.
          */
-        private LoadCacheJob(String cacheName, AffinityTopologyVersion topVer, IgniteBiPredicate<K, V> p, Object[] args,
+        private LoadCacheJob(String cacheName, AffinityTopologyVersion topVer, IgniteBiPredicate<K, V> p, Object[] loadArgs,
             ExpiryPolicy plc) {
             super(cacheName, topVer);
 
             this.p = p;
-            this.args = args;
+            this.loadArgs = loadArgs;
             this.plc = plc;
         }
 
@@ -5648,7 +5648,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
                 if (plc != null)
                     cache = cache.withExpiryPolicy(plc);
 
-                cache.localLoadCache(p, args);
+                cache.localLoadCache(p, loadArgs);
 
                 return null;
             }
