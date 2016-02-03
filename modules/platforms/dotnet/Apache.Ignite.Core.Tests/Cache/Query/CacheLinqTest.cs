@@ -97,9 +97,9 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
 
             var roleCache = GetRoleCache();
 
-            roleCache[new RoleKey(1, 101)] = new Role {Name = "Role_1", Date = StartDateTime };
-            roleCache[new RoleKey(2, 102)] = new Role {Name = "Role_2", Date = StartDateTime.AddYears(1)};
-            roleCache[new RoleKey(3, 103)] = new Role {Name = null, Date = StartDateTime.AddYears(2)};
+            roleCache[new RoleKey(1, 101)] = new Role {Name = "Role_1", Date = StartDateTime, Weight = -1.5};
+            roleCache[new RoleKey(2, 102)] = new Role {Name = "Role_2", Date = StartDateTime.AddYears(1), Weight = 0.7};
+            roleCache[new RoleKey(3, 103)] = new Role {Name = null, Date = StartDateTime.AddYears(2), Weight = 5.67};
         }
 
         [TestFixtureTearDown]
@@ -503,6 +503,12 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         }
 
         [Test]
+        public void TestNumerics()
+        {
+            var nums = GetRoleCache().AsQueryable().Select(x => x.Value.Weight);
+        }
+
+        [Test]
         public void TestIntrospection()
         {
             var cache = GetPersonOrgCache();
@@ -609,6 +615,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         {
             [QuerySqlField] public string Name { get; set; }
             [QuerySqlField] public DateTime Date { get; set; }
+            [QuerySqlField] public double Weight { get; set; }
         }
 
         public struct RoleKey : IEquatable<RoleKey>
