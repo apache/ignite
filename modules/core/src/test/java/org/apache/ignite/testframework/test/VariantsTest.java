@@ -22,7 +22,7 @@ import java.util.Set;
 import junit.framework.TestCase;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.lang.IgniteClosure;
+import org.apache.ignite.testframework.config.generator.ConfigurationParameter;
 import org.apache.ignite.testframework.config.params.Variants;
 
 /**
@@ -32,15 +32,14 @@ public class VariantsTest extends TestCase {
     /**
      * @throws Exception If failed.
      */
-    public void test() throws Exception {
-        IgniteClosure<CacheConfiguration, Void>[] modes =
-            Variants.enumVariants(CacheMode.class, "setCacheMode");
+    public void testEnumVariants() throws Exception {
+        ConfigurationParameter<CacheConfiguration>[] modes = Variants.enumVariants(CacheMode.class, "setCacheMode");
 
         assertEquals(CacheMode.values().length, modes.length);
 
         Set<CacheMode> res = new HashSet<>();
 
-        for (IgniteClosure<CacheConfiguration, Void> modeApplier : modes) {
+        for (ConfigurationParameter<CacheConfiguration> modeApplier : modes) {
             CacheConfiguration cfg = new CacheConfiguration();
 
             modeApplier.apply(cfg);
@@ -53,5 +52,34 @@ public class VariantsTest extends TestCase {
         }
 
         assertEquals(modes.length, res.size());
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testEnumVariantsWithNull() throws Exception {
+        ConfigurationParameter<CacheConfiguration>[] cfgParam = Variants.enumVariantsWithNull(CacheMode.class, "setCacheMode");
+
+        assertEquals(CacheMode.values().length + 1, cfgParam.length);
+
+        cfgParam[0] = null;
+
+        Set<CacheMode> set = new HashSet<>();
+
+        for (int i = 1; i < cfgParam.length; i++) {
+            ConfigurationParameter<CacheConfiguration> modeApplier = cfgParam[i];
+
+            CacheConfiguration cfg = new CacheConfiguration();
+
+            modeApplier.apply(cfg);
+
+            CacheMode mode = cfg.getCacheMode();
+
+            set.add(mode);
+
+            System.out.println(">>> " + mode);
+        }
+
+        assertEquals(CacheMode.values().length, set.size());
     }
 }

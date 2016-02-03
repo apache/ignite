@@ -40,6 +40,26 @@ public class Variants {
     public static <T> ConfigurationParameter<T>[] enumVariants(Class<?> enumCls, String mtdName) {
         Object[] enumConstants = enumCls.getEnumConstants();
 
+        return enumVariables0(mtdName, enumConstants);
+    }
+
+    /**
+     * @return Array of configuration processors for given enum.
+     */
+    @SuppressWarnings("unchecked")
+    public static <T> ConfigurationParameter<T>[] enumVariantsWithNull(Class<?> enumCls, String mtdName) {
+        Object[] src = enumCls.getEnumConstants();
+
+        Object[] enumConstants = new Object[src.length + 1];
+
+        enumConstants[0] = null;
+
+        System.arraycopy(src, 0, enumConstants, 1, enumConstants.length - 1);
+
+        return enumVariables0(mtdName, enumConstants);
+    }
+
+    private static <T> ConfigurationParameter<T>[] enumVariables0(String mtdName, Object[] enumConstants) {
         ConfigurationParameter<T>[] arr = new ConfigurationParameter[enumConstants.length];
 
         for (int i = 0; i < arr.length; i++)
@@ -92,6 +112,9 @@ public class Variants {
 
         /** {@inheritDoc} */
         @Override public T apply(T cfg) {
+            if (param == null)
+                return null;
+
             try {
                 Class<?> paramCls = param.getClass();
 

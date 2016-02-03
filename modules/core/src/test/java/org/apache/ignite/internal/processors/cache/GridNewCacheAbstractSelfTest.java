@@ -259,7 +259,7 @@ public abstract class GridNewCacheAbstractSelfTest extends GridCommonAbstractTes
     /**
      * @return Write through storage emulator.
      */
-    protected static CacheStore<?, ?> cacheStore() {
+    public static CacheStore<?, ?> cacheStore() {
         return new CacheStoreAdapter<Object, Object>() {
             @Override public void loadCache(IgniteBiInClosure<Object, Object> clo,
                 Object... args) {
@@ -519,7 +519,7 @@ public abstract class GridNewCacheAbstractSelfTest extends GridCommonAbstractTes
     /**
      * Serializable factory.
      */
-    protected static class TestStoreFactory implements Factory<CacheStore> {
+    public static class TestStoreFactory implements Factory<CacheStore> {
         @Override public CacheStore create() {
             return cacheStore();
         }
