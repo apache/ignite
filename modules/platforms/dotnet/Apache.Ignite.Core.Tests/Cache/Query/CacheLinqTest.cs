@@ -474,18 +474,15 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         [Test]
         public void TestDateTime()
         {
-            // TODO: DateTimes in binary format (serializable) won't work in comparisons, what do we do?
-            // TODO: QueryField.TypeName override allows storing timestamps, but query parameters are passed incorrectly
-            // We have info about parameter types when generating query. Need to have pluggable parameter writer or something.
-            // TODO: QueryDateTimeField?
-
-            // OR we better ONLY allow UTC in queries. And maybe modify serializer to check for SqlQuery.
-
             var roles = GetRoleCache().ToQueryable();
             var persons = GetPersonOrgCache().ToQueryable();
 
+            // Invalid dateTime
+            // ReSharper disable once ReturnValueOfPureMethodIsNotUsed
+            Assert.Throws<InvalidOperationException>(() => roles.Where(x => x.Value.Date > DateTime.Now).ToArray());
+
             // Test retrieval
-            var dates = roles.OrderBy(x => x.Key).Select(x => x.Value.Date).ToArray();
+            var dates = roles.OrderBy(x => x.Value.Date).Select(x => x.Value.Date).ToArray();
             var expDates = new[] {StartDateTime, StartDateTime.AddYears(1), StartDateTime.AddYears(2)};
             Assert.AreEqual(expDates, dates);
 
