@@ -184,9 +184,9 @@ public class IgniteCacheObjectProcessorImpl extends GridProcessorAdapter impleme
 
     /** {@inheritDoc} */
     @Override public CacheObject toCacheObject(CacheObjectContext ctx, ByteBuffer buf) {
-        byte type = buf.get();
-
         int len = buf.getInt();
+
+        byte type = buf.get();
 
         byte[] data = new byte[len];
 

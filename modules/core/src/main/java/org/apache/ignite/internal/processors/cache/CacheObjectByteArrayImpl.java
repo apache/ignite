@@ -79,8 +79,8 @@ public class CacheObjectByteArrayImpl implements CacheObject, Externalizable {
         if (buf.remaining() < val.length + 5)
             return false;
 
-        buf.put(cacheObjectType());
         buf.putInt(val.length);
+        buf.put(cacheObjectType());
         buf.put(val);
 
         return true;
