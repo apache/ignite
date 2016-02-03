@@ -1028,15 +1028,13 @@ public class GridNearAtomicUpdateFuture extends GridNearAbstractAtomicUpdateFutu
                 skipStore,
                 keepBinary,
                 cctx.kernalContext().clientNode(),
-                cctx.deploymentEnabled(),
-                1);
+                cctx.deploymentEnabled());
 
             req.addUpdateEntry(cacheKey,
                 val,
                 conflictTtl,
                 conflictExpireTime,
-                conflictVer,
-                true);
+                conflictVer);
 
             return req;
         }
