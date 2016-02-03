@@ -97,6 +97,10 @@ namespace Apache.Ignite.Linq.Impl
                 case ExpressionType.Not:
                     _resultBuilder.Append("not ");
                     break;
+                case ExpressionType.Convert:
+                    // Ignore, let the db do the conversion
+                    // (this case occurs when binary expression types do not match, like int/long, etc)
+                    break;
                 default:
                     return base.VisitUnary(expression);
             }
