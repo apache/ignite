@@ -83,7 +83,12 @@ public class Variants {
         /** {@inheritDoc} */
         @Override public Void apply(T cfg) {
             try {
-                Method mtd = cfg.getClass().getMethod(mtdName, param.getClass());
+                Class<?> paramCls = param.getClass();
+
+                if (param.getClass().equals(Boolean.class))
+                    paramCls = Boolean.TYPE;
+
+                Method mtd = cfg.getClass().getMethod(mtdName, paramCls);
 
                 mtd.invoke(cfg, param);
             }
