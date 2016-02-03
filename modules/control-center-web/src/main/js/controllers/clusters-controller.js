@@ -174,7 +174,7 @@ consoleModule.controller('clustersController', function ($http, $timeout, $scope
 
                 $scope.$watch('ui.inputForm.$valid', function(valid) {
                     if (valid && __original_value === JSON.stringify($cleanup($scope.backupItem))) {
-                        $scope.ui.inputForm.$setPristine();
+                        $scope.ui.inputForm.$dirty = false;
                     }
                 });
 
