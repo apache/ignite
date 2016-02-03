@@ -105,21 +105,12 @@ namespace Apache.Ignite.Linq.Impl
             if (entryCtor != null)
                 return (reader, count) => entryCtor(reader);
 
-            return ConvertSingleField<T>;
+            return (reader, count) => reader.ReadObject<T>();
         }
 
         /// <summary>
-        /// Converts the single field from the list to specified type.
+        /// Gets the cache entry ctor.
         /// </summary>
-        private static T ConvertSingleField<T>(IBinaryRawReader reader, int count)
-        {
-            if (count != 1)
-                throw new InvalidOperationException("Single-field query returned unexpected number of values: " + 
-                    count);
-
-            return reader.ReadObject<T>();
-        }
-
         private static Func<IBinaryRawReader, T> GetCacheEntryCtor<T>()
         {
             var ctor = GetCacheEntryCtor(typeof (T));
@@ -127,9 +118,11 @@ namespace Apache.Ignite.Linq.Impl
             return ctor == null ? null : DelegateConverter.CompileCtor<T>(ctor, null);
         }
 
+        /// <summary>
+        /// Gets the cache entry ctor.
+        /// </summary>
         private static ConstructorInfo GetCacheEntryCtor(Type entryType)
         {
-            // TODO: Cache ctor somewhere in Core, because this is a common task. Probably CacheEntry.CreateInstance(Type, Type) or something.
             if (!entryType.IsGenericType || entryType.GetGenericTypeDefinition() != typeof(ICacheEntry<,>))
                 return null;
 
