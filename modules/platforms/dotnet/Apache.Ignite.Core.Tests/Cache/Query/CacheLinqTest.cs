@@ -491,6 +491,12 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
             Assert.AreEqual(PersonCount, persons.Count(x => x.Value.Birthday >= StartDateTime));
 
             // Joins
+            var join = 
+                from role in roles
+                join person in persons on role.Value.Date equals person.Value.Birthday.Value
+                select person;
+
+            Assert.AreEqual(RoleCount, join.Count());
         }
 
         [Test]
