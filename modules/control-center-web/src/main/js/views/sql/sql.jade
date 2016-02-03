@@ -120,8 +120,8 @@ mixin chart-settings(mdl)
                                     hr(style='margin: 0')
                                 .col-sm-12
                                     .sql-controls
-                                        a.btn.btn-primary(ng-disabled='!actionAvailable(paragraph, true)' ng-click='actionAvailable(paragraph, true) ? explain(paragraph) : ""' data-placement='bottom' bs-tooltip data-title='{{actionTooltip(paragraph, "explain", true)}}') Explain
                                         a.btn.btn-primary(ng-disabled='!actionAvailable(paragraph, true)' ng-click='actionAvailable(paragraph, true) ? execute(paragraph) : ""' data-placement='bottom' bs-tooltip data-title='{{actionTooltip(paragraph, "execute", true)}}') Execute
+                                        a.btn.btn-primary(ng-disabled='!actionAvailable(paragraph, true)' ng-click='actionAvailable(paragraph, true) ? explain(paragraph) : ""' data-placement='bottom' bs-tooltip data-title='{{actionTooltip(paragraph, "explain", true)}}') Explain
                                         a.btn.btn-primary(ng-disabled='!actionAvailable(paragraph, false)' ng-click='actionAvailable(paragraph, false) ? scan(paragraph): ""' data-placement='bottom' bs-tooltip data-title='{{actionTooltip(paragraph, "execute scan", false)}}') Scan
                                         .pull-right
                                             labelHide System columns:
