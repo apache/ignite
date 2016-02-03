@@ -107,8 +107,10 @@ public class GridCacheSharedManagerAdapter<K, V> implements GridCacheSharedManag
     /** {@inheritDoc} */
     @Override public final void onKernalStop(boolean cancel) {
         if (!starting.get())
+        //if (!starting.compareAndSet(false, true))
             // Ignoring attempt to stop manager that has never been started.
             return;
+
 
         onKernalStop0(cancel);
 
