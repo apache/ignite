@@ -285,7 +285,7 @@ namespace Apache.Ignite.Core.Tests
         /// </summary>
         private static IIgnite StartGrid(string gridName = null)
         {
-            return Ignition.Start(new IgniteConfigurationEx
+            return Ignition.Start(new IgniteConfiguration
             {
                 SpringConfigUrl = "config\\native-client-test-cache.xml",
                 JvmOptions = TestUtils.TestJavaOptions(),

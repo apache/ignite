@@ -70,7 +70,7 @@ namespace Apache.Ignite.Core.Impl.Transactions
 
                 concurrency = (TransactionConcurrency) reader.ReadInt();
                 isolation = (TransactionIsolation) reader.ReadInt();
-                timeout = TimeSpan.FromMilliseconds(reader.ReadLong());
+                timeout = reader.ReadLongAsTimespan();
             });
 
             _dfltConcurrency = concurrency;

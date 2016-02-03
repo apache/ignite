@@ -1,4 +1,4 @@
-/*
+﻿/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -15,43 +15,52 @@
  * limitations under the License.
  */
 
-namespace Apache.Ignite.Core.Impl
+namespace Apache.Ignite.Core.Cache.Configuration
 {
+    using Apache.Ignite.Core.Impl.Common;
+
     /// <summary>
-    /// Internal extensions for IgniteConfiguration.
+    /// Represents an indexed field.
     /// </summary>
-    internal class IgniteConfigurationEx : IgniteConfiguration
+    public class QueryIndexField
     {
         /// <summary>
-        /// Default constructor.
+        /// Initializes a new instance of the <see cref="QueryIndexField"/> class.
         /// </summary>
-        public IgniteConfigurationEx()
+        public QueryIndexField()
         {
             // No-op.
         }
 
         /// <summary>
-        /// Copying constructor.
+        /// Initializes a new instance of the <see cref="QueryIndexField"/> class.
         /// </summary>
-        /// <param name="cfg">Configuration.</param>
-        public IgniteConfigurationEx(IgniteConfiguration cfg) : base(cfg)
+        /// <param name="name">The name.</param>
+        public QueryIndexField(string name)
         {
-            // No-op.
+            IgniteArgumentCheck.NotNullOrEmpty(name, "name");
+
+            Name = name;
         }
 
         /// <summary>
-        /// Copying constructor.
+        /// Initializes a new instance of the <see cref="QueryIndexField"/> class.
         /// </summary>
-        /// <param name="cfg">Configuration.</param>
-        public IgniteConfigurationEx(IgniteConfigurationEx cfg)
-            : this((IgniteConfiguration) cfg)
+        /// <param name="name">The name.</param>
+        /// <param name="isDescending">Sort direction.</param>
+        public QueryIndexField(string name, bool isDescending) : this (name)
         {
-            GridName = cfg.GridName;
+            IsDescending = isDescending;
         }
 
         /// <summary>
-        /// Grid name which is used if not provided in configuration file.
+        /// Gets the name.
         /// </summary>
-        public string GridName { get; set; }
+        public string Name { get; set; }
+
+        /// <summary>
+        /// Gets a value indicating whether this index is descending. Default is false.
+        /// </summary>
+        public bool IsDescending { get; set; }
     }
 }
