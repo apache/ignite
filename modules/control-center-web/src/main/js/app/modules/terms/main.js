@@ -24,7 +24,7 @@ angular
 .provider('igniteTerms', function() {
     let _rows = [
         'Apache Ignite Web Console',
-        '© 2015 The Apache Software Foundation.',
+        '© 2016 The Apache Software Foundation.',
         'Apache, Apache Ignite, the Apache feather and the Apache Ignite logo are trademarks of The Apache Software Foundation.'
     ];
 

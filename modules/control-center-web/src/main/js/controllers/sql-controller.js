@@ -833,14 +833,14 @@ consoleModule.controller('sqlController', function ($http, $timeout, $interval, 
         var csvContent = '';
 
         if (meta) {
-            csvContent += meta.map(_fullColName).join(',') + '\n';
+            csvContent += meta.map(_fullColName).join(';') + '\n';
         }
 
         rows.forEach(function (row) {
             if (Array.isArray(row)) {
                 csvContent += row.map(function (elem) {
                     return elem ? JSON.stringify(elem) : '';
-                }).join(',');
+                }).join(';');
             }
             else {
                 var first = true;
@@ -849,7 +849,7 @@ consoleModule.controller('sqlController', function ($http, $timeout, $interval, 
                     if (first)
                         first = false;
                     else
-                        csvContent += ',';
+                        csvContent += ';';
 
                     var elem = row[prop.fieldName];
 
@@ -874,9 +874,13 @@ consoleModule.controller('sqlController', function ($http, $timeout, $interval, 
     };
 
     $scope.exportCsvAll = function(paragraph) {
-        $http.post('/api/v1/agent/query/getAll', {demo: $scope.demo, query: paragraph.query, cacheName: paragraph.cacheName})
-            .success(function (item) {
-                _export(paragraph.name + '-all.csv', item.meta, item.rows);
+        $http.post('/api/v1/agent/query/getAll', {
+                demo: $scope.demo,
+                query: paragraph.queryArgs.query,
+                cacheName: paragraph.queryArgs.cacheName
+            })
+            .success(function (response) {
+                _export(paragraph.name + '-all.csv', response.meta, response.rows);
             })
             .error(function (errMsg) {
                 $common.showError(errMsg);
