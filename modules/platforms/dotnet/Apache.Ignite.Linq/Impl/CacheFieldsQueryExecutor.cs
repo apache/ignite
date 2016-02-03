@@ -148,7 +148,7 @@ namespace Apache.Ignite.Linq.Impl
             if (f is T)
                 return (T) f;
 
-            return (T) Convert.ChangeType(fields[0], typeof (T));
+            return (T) Convert.ChangeType(f, typeof (T));
         }
 
         private static Func<object, object, object> GetCacheEntryCtor(Type entryType)

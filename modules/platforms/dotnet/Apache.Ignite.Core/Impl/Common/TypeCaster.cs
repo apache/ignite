@@ -39,7 +39,19 @@ namespace Apache.Ignite.Core.Impl.Common
             Justification = "Intended usage to leverage compiler caching.")]
         public static T Cast<TFrom>(TFrom obj)
         {
+#if (DEBUG)
+            try
+            {
+                return Casters<TFrom>.Caster(obj);
+            }
+            catch (InvalidCastException)
+            {
+                throw new InvalidCastException(string.Format("Specified cast is not valid: {0} -> {1}", typeof (TFrom),
+                    typeof (T)));
+            }
+#else
             return Casters<TFrom>.Caster(obj);
+#endif
         }
 
         /// <summary>
