@@ -190,6 +190,35 @@ $generatorJava.property = function (res, varName, obj, propName, dataType, sette
         // Add to result if no default provided or value not equals to default.
         if (!hasDflt || (hasDflt && val !== dflt)) {
             res.line(varName + '.' + $generatorJava.setterName(propName, setterName) +
+                '(' + $generatorJava.toJavaCode(val, dataType) + ');');
+
+            return true;
+        }
+    }
+
+    return false;
+};
+
+/**
+ * Add enum property via setter / property name.
+ *
+ * @param res Resulting output with generated code.
+ * @param varName Variable name.
+ * @param obj Source object with data.
+ * @param propName Property name to take from source object.
+ * @param dataType Name of enum class
+ * @param setterName Optional special setter name.
+ * @param dflt Optional default value.
+ */
+$generatorJava.enumProperty = function (res, varName, obj, propName, dataType, setterName, dflt) {
+    var val = obj[propName];
+
+    if ($commonUtils.isDefinedAndNotEmpty(val)) {
+        var hasDflt = $commonUtils.isDefined(dflt);
+
+        // Add to result if no default provided or value not equals to default.
+        if (!hasDflt || (hasDflt && val !== dflt)) {
+            res.line(varName + '.' + $generatorJava.setterName(propName, setterName) +
                 '(' + $generatorJava.toJavaCode(val, dataType ? res.importClass(dataType) : null) + ');');
 
             return true;
@@ -320,7 +349,7 @@ $generatorJava.beanProperty = function (res, varName, bean, beanPropName, beanVa
                             break;
 
                         case 'enum':
-                            $generatorJava.property(res, beanVarName, bean, propName, descr.enumClass, descr.setterName, descr.dflt);
+                            $generatorJava.enumProperty(res, beanVarName, bean, propName, descr.enumClass, descr.setterName, descr.dflt);
                             break;
 
                         case 'float':
@@ -526,7 +555,7 @@ $generatorJava.clusterAtomics = function (cluster, res) {
 
         $generatorJava.declareVariable(res, 'atomicCfg', 'org.apache.ignite.configuration.AtomicConfiguration');
 
-        $generatorJava.property(res, 'atomicCfg', atomics, 'cacheMode', 'org.apache.ignite.cache.CacheMode');
+        $generatorJava.enumProperty(res, 'atomicCfg', atomics, 'cacheMode', 'org.apache.ignite.cache.CacheMode');
 
         var cacheMode = atomics.cacheMode ? atomics.cacheMode : 'PARTITIONED';
 
@@ -712,7 +741,7 @@ $generatorJava.clusterDeployment = function (cluster, res) {
     if (!res)
         res = $generatorCommon.builder();
 
-    $generatorJava.property(res, 'cfg', cluster, 'deploymentMode', null, null, 'SHARED');
+    $generatorJava.enumProperty(res, 'cfg', cluster, 'deploymentMode', 'org.apache.ignite.configuration.DeploymentMode', null, 'SHARED');
 
     res.needEmptyLine = true;
 
@@ -953,8 +982,8 @@ $generatorJava.cacheGeneral = function (cache, varName, res) {
 
     $generatorJava.property(res, varName, cache, 'name');
 
-    $generatorJava.property(res, varName, cache, 'cacheMode', 'org.apache.ignite.cache.CacheMode');
-    $generatorJava.property(res, varName, cache, 'atomicityMode', 'org.apache.ignite.cache.CacheAtomicityMode');
+    $generatorJava.enumProperty(res, varName, cache, 'cacheMode', 'org.apache.ignite.cache.CacheMode');
+    $generatorJava.enumProperty(res, varName, cache, 'atomicityMode', 'org.apache.ignite.cache.CacheAtomicityMode');
 
     if (cache.cacheMode === 'PARTITIONED')
         $generatorJava.property(res, varName, cache, 'backups');
@@ -973,7 +1002,7 @@ $generatorJava.cacheMemory = function (cache, varName, res) {
     if (!res)
         res = $generatorCommon.builder();
 
-    $generatorJava.property(res, varName, cache, 'memoryMode', 'org.apache.ignite.cache.CacheMemoryMode');
+    $generatorJava.enumProperty(res, varName, cache, 'memoryMode', 'org.apache.ignite.cache.CacheMemoryMode');
     $generatorJava.property(res, varName, cache, 'offHeapMaxMemory');
 
     res.needEmptyLine = true;
@@ -1290,8 +1319,8 @@ $generatorJava.cacheConcurrency = function (cache, varName, res) {
 
     $generatorJava.property(res, varName, cache, 'maxConcurrentAsyncOperations');
     $generatorJava.property(res, varName, cache, 'defaultLockTimeout');
-    $generatorJava.property(res, varName, cache, 'atomicWriteOrderMode', 'org.apache.ignite.cache.CacheAtomicWriteOrderMode');
-    $generatorJava.property(res, varName, cache, 'writeSynchronizationMode', 'org.apache.ignite.cache.CacheWriteSynchronizationMode');
+    $generatorJava.enumProperty(res, varName, cache, 'atomicWriteOrderMode', 'org.apache.ignite.cache.CacheAtomicWriteOrderMode');
+    $generatorJava.enumProperty(res, varName, cache, 'writeSynchronizationMode', 'org.apache.ignite.cache.CacheWriteSynchronizationMode');
 
     res.needEmptyLine = true;
 
@@ -1304,7 +1333,7 @@ $generatorJava.cacheRebalance = function (cache, varName, res) {
         res = $generatorCommon.builder();
 
     if (cache.cacheMode !== 'LOCAL') {
-        $generatorJava.property(res, varName, cache, 'rebalanceMode', 'org.apache.ignite.cache.CacheRebalanceMode', null, 'ASYNC');
+        $generatorJava.enumProperty(res, varName, cache, 'rebalanceMode', 'org.apache.ignite.cache.CacheRebalanceMode', null, 'ASYNC');
         $generatorJava.property(res, varName, cache, 'rebalanceThreadPoolSize', null, null, 1);
         $generatorJava.property(res, varName, cache, 'rebalanceBatchSize', null, null, 524288);
         $generatorJava.property(res, varName, cache, 'rebalanceBatchesPrefetchCount', null, null, 2);
@@ -1437,7 +1466,7 @@ $generatorJava.domainModelQueryIndexes = function (res, domain) {
                 $generatorJava.declareVariable(res, 'index', 'org.apache.ignite.cache.QueryIndex');
 
                 $generatorJava.property(res, 'index', index, 'name');
-                $generatorJava.property(res, 'index', index, 'indexType', 'org.apache.ignite.cache.QueryIndexType');
+                $generatorJava.enumProperty(res, 'index', index, 'indexType', 'org.apache.ignite.cache.QueryIndexType');
 
                 if (fields && fields.length > 0) {
                     $generatorJava.declareVariable(res, 'indFlds', 'java.util.LinkedHashMap', 'java.util.LinkedHashMap', 'String', 'Boolean');
@@ -2297,7 +2326,7 @@ $generatorJava.igfsGeneral = function(igfs, varName, res) {
         $generatorJava.property(res, varName, igfs, 'name');
         $generatorJava.property(res, varName, igfs, 'dataCacheName');
         $generatorJava.property(res, varName, igfs, 'metaCacheName');
-        $generatorJava.property(res, varName, igfs, 'defaultMode', 'org.apache.ignite.igfs.IgfsMode', undefined, "DUAL_ASYNC");
+        $generatorJava.enumProperty(res, varName, igfs, 'defaultMode', 'org.apache.ignite.igfs.IgfsMode', undefined, "DUAL_ASYNC");
 
         res.needEmptyLine = true;
     }

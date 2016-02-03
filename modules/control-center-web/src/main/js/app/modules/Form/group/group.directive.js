@@ -22,18 +22,20 @@ export default ['igniteFormGroup', [() => {
 
     const link = (scope, el, attrs, [ngModelCtrl, ownFormCtrl, parentFormCtrl]) => {
         const name = attrs.ngForm;
-
         ngModelCtrl.$name = name;
 
         parentFormCtrl.$addControl(ngModelCtrl);
         parentFormCtrl.$removeControl(ownFormCtrl);
 
+        scope.value = scope.value || [];
         parentFormCtrl.$defaults = parentFormCtrl.$defaults || {};
         parentFormCtrl.$defaults[name] = _.cloneDeep(scope.value);
 
         const setAsDefault = () => {
-            if (!parentFormCtrl.$pristine) return;
+            if (!parentFormCtrl.$pristine)
+                return;
 
+            scope.value = scope.value || [];
             parentFormCtrl.$defaults = parentFormCtrl.$defaults || {};
             parentFormCtrl.$defaults[name] = _.cloneDeep(scope.value);
         };

@@ -3,7 +3,7 @@
         "title": "What is Apache Ignite",
         "message": [
             "<p><b>Apache Ignite</b>  is a high-performance, integrated and distributed in-memory platform for computing and transacting on large-scale data sets in real-time, orders of magnitude faster than possible with traditional disk-based or flash technologies.</p>",
-            "<img src=\"/images/apache-ignite.png\" width=\"100%\" />",
+            "<img src=\"/images/ignite-puzzle.png\" width=\"100%\" />",
             "<p><b>Apache Ignite</b> is designed to deliver uncompromised performance for a wide set of in-memory computing use cases from high performance computing, to the industry most advanced data grid, highly available service grid, and streaming.</p>"
         ]
     },
@@ -25,13 +25,18 @@
     {
         "title": "Cluster screen",
         "message": [
-            "In cluster configuration you can follow next steps:",
+            "<div class=\"col-xs-6 col-sm-6 col-md-6\">",
+            "<img src=\"/images/cluster.png\" width=\"100%\" />",
+            "</div>",
+            "<div class=\"col-xs-6 col-sm-6 col-md-6\">",
+            "On clusters screen you can:",
             "<ul>",
-            "<li>Configure cluster configuration on Cluster screen</li>",
+            "<li>Configure all cluster properties grouped by logical </li>",
             "<li>Configure domain models on Model screen</li>",
             "<li>Configure clusters on Clusters screen</li>",
             "<li>See and download generated project for configured cluster on Summary screen</li>",
-            "</ul>"
+            "</ul>",
+            "</div>"
         ]
     },
     {
