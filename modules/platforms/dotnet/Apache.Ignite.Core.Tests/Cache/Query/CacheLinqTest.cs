@@ -609,10 +609,10 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
 
             // Perform intermediate anonymous type conversion to check type projection
             // TODO
-            /*actual = query.Select(exp).Select(x => new {Foo = x}).ToArray().Select(x => x.Foo).ToArray();
+            actual = query.Select(exp).Select(x => new {Foo = x}).ToArray().Select(x => x.Foo).ToArray();
 
             // Compare results
-            Assert.AreEqual(expected, actual);*/
+            Assert.AreEqual(expected, actual);
         }
 
         public class Person : IBinarizable
