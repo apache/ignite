@@ -505,7 +505,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         [Test]
         public void TestNumerics()
         {
-            var nums = GetRoleCache().AsQueryable().Select(x => x.Value.Weight);
+            var nums = GetRoleCache().ToQueryable().Select(x => x.Value.Weight);
             var num = nums.First();
 
             Assert.AreEqual(Math.Abs(num), nums.Select(x => Math.Abs(x)).First());
