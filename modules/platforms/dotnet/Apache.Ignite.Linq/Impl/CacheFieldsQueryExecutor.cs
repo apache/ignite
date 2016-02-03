@@ -22,6 +22,7 @@ namespace Apache.Ignite.Linq.Impl
     using System.Diagnostics;
     using System.Linq;
     using System.Linq.Expressions;
+    using System.Reflection;
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Cache;
     using Apache.Ignite.Core.Cache.Query;
@@ -94,44 +95,17 @@ namespace Apache.Ignite.Linq.Impl
 
             if (newExpr != null)
             {
-                // TODO: Compile func
-                return (reader, count) => 
-                (T) newExpr.Constructor.Invoke(GetArguments(reader, count, newExpr.Arguments));
+                var ctor = DelegateConverter.CompileCtor<T>(newExpr.Constructor, GetCacheEntryCtor);
+
+                return (reader, count) => ctor(reader);
             }
 
-            var entryCtor = GetCacheEntryCtor(typeof (T));
+            var entryCtor = GetCacheEntryCtor<T>();
 
             if (entryCtor != null)
-            {
-                return (reader, count) => (T) entryCtor(reader);
-            }
+                return (reader, count) => entryCtor(reader);
 
             return ConvertSingleField<T>;
-        }
-
-        /// <summary>
-        /// Gets the arguments.
-        /// </summary>
-        private static object[] GetArguments(IBinaryRawReader reader, int count, ICollection<Expression> arguments)
-        {
-            var result = new List<object>(count);
-
-            foreach (var arg in arguments)
-            {
-                if (arg.Type.IsGenericType && arg.Type.GetGenericTypeDefinition() == typeof (ICacheEntry<,>))
-                {
-                    // Construct cache entry from key and value
-                    var entryType = typeof (CacheEntry<,>).MakeGenericType(arg.Type.GetGenericArguments());
-
-                    var entry = Activator.CreateInstance(entryType, reader.ReadObject<object>(), reader.ReadObject<object>());
-
-                    result.Add(entry);
-                }
-                else
-                    result.Add(reader.ReadObject<object>());
-            }
-
-            return result.ToArray();
         }
 
         /// <summary>
@@ -146,17 +120,24 @@ namespace Apache.Ignite.Linq.Impl
             return reader.ReadObject<T>();
         }
 
-        private static Func<IBinaryRawReader, object> GetCacheEntryCtor(Type entryType)
+        private static Func<IBinaryRawReader, T> GetCacheEntryCtor<T>()
+        {
+            var ctor = GetCacheEntryCtor(typeof (T));
+
+            return ctor == null ? null : DelegateConverter.CompileCtor<T>(ctor, null);
+        }
+
+        private static ConstructorInfo GetCacheEntryCtor(Type entryType)
         {
             // TODO: Cache ctor somewhere in Core, because this is a common task. Probably CacheEntry.CreateInstance(Type, Type) or something.
-            if (!entryType.IsGenericType || entryType.GetGenericTypeDefinition() != typeof (ICacheEntry<,>))
+            if (!entryType.IsGenericType || entryType.GetGenericTypeDefinition() != typeof(ICacheEntry<,>))
                 return null;
 
             var args = entryType.GetGenericArguments();
 
             var targetType = typeof (CacheEntry<,>).MakeGenericType(args);
 
-            return DelegateConverter.CompileCtor<object>(targetType.GetConstructors().Single(), true);
+            return targetType.GetConstructors().Single();
         }
     }
 }

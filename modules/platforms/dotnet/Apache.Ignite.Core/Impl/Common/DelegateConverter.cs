@@ -20,7 +20,7 @@ namespace Apache.Ignite.Core.Impl.Common
     using System;
     using System.Collections.Generic;
     using System.Diagnostics;
-    using System.Diagnostics.CodeAnalysis;
+    using System.Diagnostics.CodeAnalysis;s
     using System.Linq.Expressions;
     using System.Reflection;
     using System.Reflection.Emit;
@@ -212,36 +212,66 @@ namespace Apache.Ignite.Core.Impl.Common
         /// </summary>
         /// <typeparam name="T">Result type</typeparam>
         /// <param name="ctor">The ctor.</param>
-        /// <param name="convertResultToObject">
-        /// Flag that indicates whether ctor return value should be converted to object.
-        /// </param>
+        /// <param name="innerCtorFunc">Function to retrieve reading constructor for an argument. 
+        /// Can be null or return null, in this case the argument will be read directly via ReadObject.</param>
         /// <returns></returns>
         [SuppressMessage("Microsoft.Design", "CA1062:Validate arguments of public methods")]
-        public static Func<IBinaryRawReader, T> CompileCtor<T>(ConstructorInfo ctor, bool convertResultToObject = false)
+        public static Func<IBinaryRawReader, T> CompileCtor<T>(ConstructorInfo ctor, 
+            Func<Type, ConstructorInfo> innerCtorFunc)
         {
             Debug.Assert(ctor != null);
 
             var readerParam = Expression.Parameter(typeof (IBinaryRawReader));
 
+            var ctorExpr = GetConstructorExpression(ctor, innerCtorFunc, readerParam, typeof(T));
+
+            return Expression.Lambda<Func<IBinaryRawReader, T>>(ctorExpr, readerParam).Compile();
+        }
+
+        /// <summary>
+        /// Gets the constructor expression.
+        /// </summary>
+        /// <param name="ctor">The ctor.</param>
+        /// <param name="innerCtorFunc">The inner ctor function.</param>
+        /// <param name="readerParam">The reader parameter.</param>
+        /// <param name="resultType">Type of the result.</param>
+        /// <returns>
+        /// Ctor call expression.
+        /// </returns>
+        private static Expression GetConstructorExpression(ConstructorInfo ctor, 
+            Func<Type, ConstructorInfo> innerCtorFunc, Expression readerParam, Type resultType)
+        {
             var ctorParams = ctor.GetParameters();
 
             var paramsExpr = new List<Expression>(ctorParams.Length);
 
             foreach (var param in ctorParams)
             {
-                var readMethod = ReadObjectMethod.MakeGenericMethod(param.ParameterType);
+                var paramType = param.ParameterType;
 
-                var readExpr = Expression.Call(readerParam, readMethod);
+                var innerCtor = innerCtorFunc != null ? innerCtorFunc(paramType) : null;
 
-                paramsExpr.Add(readExpr);
+                if (innerCtor != null)
+                {
+                    var readExpr = GetConstructorExpression(innerCtor, innerCtorFunc, readerParam, paramType);
+
+                    paramsExpr.Add(readExpr);
+                }
+                else
+                {
+                    var readMethod = ReadObjectMethod.MakeGenericMethod(paramType);
+
+                    var readExpr = Expression.Call(readerParam, readMethod);
+
+                    paramsExpr.Add(readExpr);
+                }
             }
 
-            Expression ctorExpr = Expression.New(ctor, paramsExpr);  // ctor takes args of specific types
+            Expression ctorExpr = Expression.New(ctor, paramsExpr);
 
-            if (convertResultToObject)
-                ctorExpr = Expression.Convert(ctorExpr, typeof(object)); // convert ctor result to object
+            ctorExpr = Expression.Convert(ctorExpr, resultType);
 
-            return Expression.Lambda<Func<IBinaryRawReader, T>>(ctorExpr, readerParam).Compile();
+            return ctorExpr;
         }
 
         /// <summary>
