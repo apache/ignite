@@ -67,7 +67,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
                 JvmClasspath = TestUtils.CreateTestClasspath(),
                 JvmOptions = TestUtils.TestJavaOptions(),
                 BinaryConfiguration = new BinaryConfiguration(typeof (Person),
-                    typeof (Organization), typeof (Address), typeof (Role), typeof (RoleKey))
+                    typeof (Organization), typeof (Address), typeof (Role), typeof (RoleKey), typeof(Numerics))
             });
 
             var cache = GetPersonOrgCache();
@@ -98,9 +98,9 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
 
             var roleCache = GetRoleCache();
 
-            roleCache[new RoleKey(1, 101)] = new Role {Name = "Role_1", Date = StartDateTime, Weight = -1.5};
-            roleCache[new RoleKey(2, 102)] = new Role {Name = "Role_2", Date = StartDateTime.AddYears(1), Weight = 0.7};
-            roleCache[new RoleKey(3, 103)] = new Role {Name = null, Date = StartDateTime.AddYears(2), Weight = 5.67};
+            roleCache[new RoleKey(1, 101)] = new Role {Name = "Role_1", Date = StartDateTime};
+            roleCache[new RoleKey(2, 102)] = new Role {Name = "Role_2", Date = StartDateTime.AddYears(1)};
+            roleCache[new RoleKey(3, 103)] = new Role {Name = null, Date = StartDateTime.AddYears(2)};
         }
 
         [TestFixtureTearDown]
@@ -506,10 +506,37 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         [Test]
         public void TestNumerics()
         {
-            // TODO: All numeric types
-            var doubles = GetRoleCache().ToQueryable().Select(x => x.Value.Weight);
+            var cache = Ignition.GetIgnite()
+                    .GetOrCreateCache<int, Numerics>(new CacheConfiguration("numerics", typeof (Numerics)));
+
+            for (var i = 0; i < 100; i++)
+                cache[i] = new Numerics(((double) i - 50)/3);
+
+            var query = cache.ToQueryable().Select(x => x.Value);
+
+            var bytes = query.Select(x => x.Byte);
+            var sbytes = query.Select(x => x.Sbyte);
+            var shorts = query.Select(x => x.Short);
+            var ushorts = query.Select(x => x.Ushort);
+            var ints = query.Select(x => x.Int);
+            var uints = query.Select(x => x.Uint);
+            var longs = query.Select(x => x.Long);
+            var ulongs = query.Select(x => x.Ulong);
+            var doubles = query.Select(x => x.Double);
+            var decimals = query.Select(x => x.Decimal);
+            var floats = query.Select(x => x.Float);
 
             CheckFunc(x => Math.Abs(x), doubles);
+            CheckFunc(x => Math.Abs(x), bytes);
+            CheckFunc(x => Math.Abs(x), sbytes);
+            CheckFunc(x => Math.Abs(x), shorts);
+            CheckFunc(x => Math.Abs(x), ushorts);
+            CheckFunc(x => Math.Abs(x), ints);
+            CheckFunc(x => Math.Abs(x), uints);
+            CheckFunc(x => Math.Abs(x), longs);
+            CheckFunc(x => Math.Abs((decimal) x), ulongs);
+            CheckFunc(x => Math.Abs(x), decimals);
+            CheckFunc(x => Math.Abs(x), floats);
         }
 
         [Test]
@@ -634,18 +661,36 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         {
             [QuerySqlField] public string Name { get; set; }
             [QuerySqlField] public DateTime Date { get; set; }
-            [QuerySqlField] public double Weight { get; set; }
         }
 
         public class Numerics
         {
+            public Numerics(double val)
+            {
+                Double = val;
+                Float = (float) val;
+                Decimal = (decimal) val;
+                Int = (int) val;
+                Uint = (uint) val;
+                Long = (long) val;
+                Ulong = (ulong) val;
+                Short = (short) val;
+                Ushort = (ushort) val;
+                Byte = (byte) val;
+                Sbyte =  (sbyte) val;
+            }
+
             [QuerySqlField] public double Double { get; set; }
             [QuerySqlField] public float Float { get; set; }
             [QuerySqlField] public decimal Decimal { get; set; }
             [QuerySqlField] public int Int { get; set; }
             [QuerySqlField] public uint Uint { get; set; }
             [QuerySqlField] public long Long { get; set; }
-            [QuerySqlField] public long Long { get; set; }
+            [QuerySqlField] public ulong Ulong { get; set; }
+            [QuerySqlField] public short Short { get; set; }
+            [QuerySqlField] public ushort Ushort { get; set; }
+            [QuerySqlField] public byte Byte { get; set; }
+            [QuerySqlField] public sbyte Sbyte { get; set; }
         }
 
         public struct RoleKey : IEquatable<RoleKey>
