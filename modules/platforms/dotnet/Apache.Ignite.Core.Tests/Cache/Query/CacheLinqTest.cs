@@ -500,7 +500,6 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
 
             // Functions
             Assert.AreEqual("01 01 2000 03:00:00", dates.Select(x => x.ToString("DD MM YYYY HH:mm:ss")).First());
-            Assert.AreEqual("01 01 2000 03:00:00", dates.Select(x => x - StartDateTime).ToArray().Last());
         }
 
         [Test]
