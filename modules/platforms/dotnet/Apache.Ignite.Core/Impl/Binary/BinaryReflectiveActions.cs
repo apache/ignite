@@ -20,9 +20,11 @@ namespace Apache.Ignite.Core.Impl.Binary
     using System;
     using System.Collections;
     using System.Diagnostics;
+    using System.Linq;
     using System.Linq.Expressions;
     using System.Reflection;
     using Apache.Ignite.Core.Binary;
+    using Apache.Ignite.Core.Cache.Configuration;
     using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Impl.Common;
 
@@ -267,6 +269,31 @@ namespace Apache.Ignite.Core.Impl.Binary
         }
 
         /// <summary>
+        /// Determines whether specified field is a query field (has QueryFieldAttribute).
+        /// </summary>
+        private static bool IsQueryField(FieldInfo fieldInfo)
+        {
+            Debug.Assert(fieldInfo != null && fieldInfo.DeclaringType != null);
+
+            var fieldName = BinaryUtils.CleanFieldName(fieldInfo.Name);
+
+            object[] attrs = null;
+
+            if (fieldName != fieldInfo.Name)
+            {
+                // Backing field, check corresponding property
+                var prop = fieldInfo.DeclaringType.GetProperty(fieldName, fieldInfo.FieldType);
+
+                if (prop != null)
+                    attrs = prop.GetCustomAttributes(true);
+            }
+
+            attrs = attrs ?? fieldInfo.GetCustomAttributes(true);
+
+            return attrs.OfType<QuerySqlFieldAttribute>().Any();
+        }
+
+        /// <summary>
         /// Handle other type.
         /// </summary>
         /// <param name="field">The field.</param>
@@ -317,6 +344,16 @@ namespace Apache.Ignite.Core.Impl.Binary
             {
                 writeAction = GetWriter<ICollection>(field, (f, w, o) => w.WriteCollection(f, o));
                 readAction = GetReader(field, (f, r) => r.ReadCollection(f));
+            }
+            else if (type == typeof (DateTime) && IsQueryField(field))
+            {
+                writeAction = GetWriter<DateTime>(field, (f, w, o) => w.WriteTimestamp(f, o));
+                readAction = GetReader(field, (f, r) => r.ReadObject<DateTime>(f));
+            }
+            else if (nullableType == typeof (DateTime) && IsQueryField(field))
+            {
+                writeAction = GetWriter<DateTime?>(field, (f, w, o) => w.WriteTimestamp(f, o));
+                readAction = GetReader(field, (f, r) => r.ReadTimestamp(f));
             }
             else
             {
