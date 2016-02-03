@@ -24,7 +24,6 @@ namespace Apache.Ignite.Linq.Impl
     using System.Diagnostics;
     using System.Linq;
     using System.Linq.Expressions;
-    using System.Reflection;
     using Apache.Ignite.Core.Cache.Configuration;
     using Remotion.Linq.Clauses.Expressions;
     using Remotion.Linq.Parsing;
