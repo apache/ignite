@@ -981,9 +981,18 @@ namespace Apache.Ignite.Core.Impl.Cache
             else
             {
                 writer.WriteInt(args.Length);
-        
+
                 foreach (var arg in args)
-                    writer.WriteObject(arg);
+                {
+                    // Write DateTime as TimeStamp always, otherwise it does not make sense
+                    // Wrapped DateTime comparison does not work in SQL
+                    var dt = arg as DateTime?;  // Works with DateTime also
+
+                    if (dt != null)
+                        writer.WriteTimestamp(dt);
+                    else
+                        writer.WriteObject(arg);
+                }
             }
         }
 
