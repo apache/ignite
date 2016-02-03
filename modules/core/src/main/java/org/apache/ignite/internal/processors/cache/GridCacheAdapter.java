@@ -1852,9 +1852,11 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
                         ctx.affinity().affinityTopologyVersion() : ctx.shared().exchange().readyAffinityVersion()) :
                         tx.topologyVersion();
 
-                final Map<K1, V1> map = keys.size() == 1 ?
+                int keysSize = keys.size();
+
+                final Map<K1, V1> map = keysSize == 1 ?
                     (Map<K1, V1>)new IgniteBiTuple<>() :
-                    U.<K1, V1>newHashMap(keys.size());
+                    U.<K1, V1>newHashMap(keysSize);
 
                 final boolean storeEnabled = !skipVals && readThrough && ctx.readThrough();
 
@@ -1910,7 +1912,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
                                 if (tx == null || (!tx.implicit() && tx.isolation() == READ_COMMITTED))
                                     ctx.evicts().touch(entry, topVer);
 
-                                if (keys.size() == 1)
+                                if (keysSize == 1)
                                     // Safe to return because no locks are required in READ_COMMITTED mode.
                                     return new GridFinishedFuture<>(map);
                             }

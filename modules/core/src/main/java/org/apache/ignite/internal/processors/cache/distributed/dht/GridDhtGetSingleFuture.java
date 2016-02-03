@@ -450,6 +450,9 @@ public final class GridDhtGetSingleFuture<K, V> extends GridFutureAdapter<GridCa
      * @return List of infos.
      */
     private GridCacheEntryInfo toEntryInfo(Map<KeyCacheObject, T2<CacheObject, GridCacheVersion>> map) {
+        if (map.isEmpty())
+            return null;
+
         Map.Entry<KeyCacheObject, T2<CacheObject, GridCacheVersion>> e = F.firstEntry(map);
 
         if (e != null) {

@@ -211,7 +211,7 @@ public final class GridDhtGetFuture<K, V> extends GridCompoundIdentityFuture<Col
         GridDhtFuture<Object> fut = cctx.dht().dhtPreloader().request(keys.keySet(), topVer);
 
         if (fut != null) {
-            if (F.isEmpty(fut.invalidPartitions())) {
+            if (!F.isEmpty(fut.invalidPartitions())) {
                 if (retries == null)
                     retries = new HashSet<>();
 
@@ -452,18 +452,8 @@ public final class GridDhtGetFuture<K, V> extends GridCompoundIdentityFuture<Col
         if (fut.isDone()) {
             if (fut.error() != null)
                 onDone(fut.error());
-            else {
-                Map<KeyCacheObject, T2<CacheObject, GridCacheVersion>> map = null;
-
-                try {
-                    map = fut.get();
-                }
-                catch (IgniteCheckedException e) {
-                    assert false; // Should never happen.
-                }
-
-                return new GridFinishedFuture<>(toEntryInfos(map));
-            }
+            else
+                return new GridFinishedFuture<>(toEntryInfos(fut.result()));
         }
 
         return new GridEmbeddedFuture<>(
@@ -488,6 +478,9 @@ public final class GridDhtGetFuture<K, V> extends GridCompoundIdentityFuture<Col
      * @return List of infos.
      */
     private Collection<GridCacheEntryInfo> toEntryInfos(Map<KeyCacheObject, T2<CacheObject, GridCacheVersion>> map) {
+        if (map.isEmpty())
+            return Collections.emptyList();
+
         Collection<GridCacheEntryInfo> infos = new ArrayList<>(map.size());
 
         for (Map.Entry<KeyCacheObject, T2<CacheObject, GridCacheVersion>> entry : map.entrySet()) {
