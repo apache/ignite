@@ -256,20 +256,26 @@ public class OdbcCommandHandler {
 
             String realSchema = removeQuotationMarksIfNeeded(req.schema());
 
-            Collection<GridQueryTypeDescriptor> tablesMeta = ctx.query().types(realSchema);
-
-            for (GridQueryTypeDescriptor table : tablesMeta) {
-                if (!matches(table.name(), req.table()))
+            for (String cacheName : ctx.cache().cacheNames())
+            {
+                if (!matches(cacheName, realSchema))
                     continue;
 
-                if (!matches("TABLE", req.tableType()))
-                    continue;
+                Collection<GridQueryTypeDescriptor> tablesMeta = ctx.query().types(cacheName);
 
-                OdbcTableMeta tableMeta = new OdbcTableMeta(req.catalog(), req.schema(),
-                        table.name(), "TABLE");
+                for (GridQueryTypeDescriptor table : tablesMeta) {
+                    if (!matches(table.name(), req.table()))
+                        continue;
 
-                if (!meta.contains(tableMeta))
-                    meta.add(tableMeta);
+                    if (!matches("TABLE", req.tableType()))
+                        continue;
+
+                    OdbcTableMeta tableMeta = new OdbcTableMeta(req.catalog(), cacheName,
+                            table.name(), "TABLE");
+
+                    if (!meta.contains(tableMeta))
+                        meta.add(tableMeta);
+                }
             }
 
             OdbcQueryGetTablesMetaResult res = new OdbcQueryGetTablesMetaResult(meta);
