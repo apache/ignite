@@ -23,6 +23,7 @@ namespace Apache.Ignite.Linq.Impl
     using System.Diagnostics;
     using System.Linq;
     using System.Linq.Expressions;
+    using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Cache;
     using Apache.Ignite.Core.Cache.Query;
     using Apache.Ignite.Core.Impl.Cache;
@@ -35,17 +36,17 @@ namespace Apache.Ignite.Linq.Impl
     internal class CacheFieldsQueryExecutor : ICacheQueryExecutor
     {
         /** */
-        private readonly Func<SqlFieldsQuery, IQueryCursor<IList>> _executorFunc;
+        private readonly ICacheQueryProxy _cache;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="CacheFieldsQueryExecutor" /> class.
         /// </summary>
-        /// <param name="executorFunc">The executor function.</param>
-        public CacheFieldsQueryExecutor(Func<SqlFieldsQuery, IQueryCursor<IList>> executorFunc)
+        /// <param name="cache">The executor function.</param>
+        public CacheFieldsQueryExecutor(ICacheQueryProxy cache)
         {
-            Debug.Assert(executorFunc != null);
+            Debug.Assert(cache != null);
 
-            _executorFunc = executorFunc;
+            _cache = cache;
         }
 
         /** <inheritdoc /> */
@@ -72,11 +73,11 @@ namespace Apache.Ignite.Linq.Impl
             Debug.WriteLine("\nFields Query: {0} | {1}", queryData.QueryText,
                 string.Join(", ", queryData.Parameters.Select(x => x == null ? "null" : x.ToString())));
 
-            var queryCursor = _executorFunc(query);
-
             var selector = GetResultSelector<T>(queryModel.SelectClause.Selector);
 
-            return queryCursor.Select(selector);
+            var queryCursor = _cache.QueryFields(query, selector);
+
+            return queryCursor;
         }
 
         /** <inheritdoc /> */
@@ -88,21 +89,22 @@ namespace Apache.Ignite.Linq.Impl
         /// <summary>
         /// Gets the result selector.
         /// </summary>
-        private static Func<IList, T> GetResultSelector<T>(Expression selectorExpression)
+        private static Func<IBinaryRawReader, int, T> GetResultSelector<T>(Expression selectorExpression)
         {
             var newExpr = selectorExpression as NewExpression;
 
             if (newExpr != null)
             {
-                // TODO: Compile Func<IList, T>
-                return fields => (T)newExpr.Constructor.Invoke(GetArguments(fields, newExpr.Arguments));
+                // TODO: Compile func
+                return (reader, count) => 
+                (T) newExpr.Constructor.Invoke(GetArguments(reader, count, newExpr.Arguments));
             }
 
             var entryCtor = GetCacheEntryCtor(typeof (T));
 
             if (entryCtor != null)
             {
-                return fields => (T) entryCtor(fields[0], fields[1]);
+                return (reader, count) => (T) entryCtor(reader.ReadObject<object>(), reader.ReadObject<object>());
             }
 
             return ConvertSingleField<T>;
@@ -111,10 +113,9 @@ namespace Apache.Ignite.Linq.Impl
         /// <summary>
         /// Gets the arguments.
         /// </summary>
-        private static object[] GetArguments(IList fields, ICollection<Expression> arguments)
+        private static object[] GetArguments(IBinaryRawReader reader, int count, ICollection<Expression> arguments)
         {
-            var result = new List<object>(fields.Count);
-            int idx = 0;
+            var result = new List<object>(count);
 
             foreach (var arg in arguments)
             {
@@ -123,12 +124,12 @@ namespace Apache.Ignite.Linq.Impl
                     // Construct cache entry from key and value
                     var entryType = typeof (CacheEntry<,>).MakeGenericType(arg.Type.GetGenericArguments());
 
-                    var entry = Activator.CreateInstance(entryType, fields[idx++], fields[idx++]);
+                    var entry = Activator.CreateInstance(entryType, reader.ReadObject<object>(), reader.ReadObject<object>());
 
                     result.Add(entry);
                 }
                 else
-                    result.Add(fields[idx++]);
+                    result.Add(reader.ReadObject<object>());
             }
 
             return result.ToArray();
@@ -137,18 +138,13 @@ namespace Apache.Ignite.Linq.Impl
         /// <summary>
         /// Converts the single field from the list to specified type.
         /// </summary>
-        private static T ConvertSingleField<T>(IList fields)
+        private static T ConvertSingleField<T>(IBinaryRawReader reader, int count)
         {
-            if (fields.Count != 1)
-                throw new InvalidOperationException("Single-field query returned unexpected number of values: " +
-                                                    fields.Count);
+            if (count != 1)
+                throw new InvalidOperationException("Single-field query returned unexpected number of values: " + 
+                    count);
 
-            var f = fields[0];
-
-            if (f is T)
-                return (T) f;
-
-            return (T) Convert.ChangeType(f, typeof (T));
+            return reader.ReadObject<T>();
         }
 
         private static Func<object, object, object> GetCacheEntryCtor(Type entryType)

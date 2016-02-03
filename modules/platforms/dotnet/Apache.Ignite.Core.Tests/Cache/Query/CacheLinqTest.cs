@@ -602,7 +602,13 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
             var expected = query.ToArray().AsQueryable().Select(exp).ToArray();
 
             // Perform SQL query
-            var actual = query.Select(exp).ToArray();
+            var actual = query.Select(exp).ToArray().ToArray();
+
+            // Compare results
+            Assert.AreEqual(expected, actual);
+
+            // Perform intermediate anonymous type conversion to check type projection
+            actual = query.Select(exp).Select(x => new {Foo = x}).ToArray().Select(x => x.Foo).ToArray();
 
             // Compare results
             Assert.AreEqual(expected, actual);

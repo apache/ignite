@@ -32,7 +32,7 @@ namespace Apache.Ignite.Linq.Impl
         /// <param name="cache">The cache.</param>
         public CacheQueryable(ICache<TKey, TValue> cache)
             : base(new CacheFieldsQueryProvider(Remotion.Linq.Parsing.Structure.QueryParser.CreateDefault(),
-                new CacheFieldsQueryExecutor(cache.QueryFields),
+                new CacheFieldsQueryExecutor(new CacheQueryProxy<TKey, TValue>(cache)),
                 cache.Ignite, cache.Name))
         {
             // No-op.
