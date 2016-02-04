@@ -16,10 +16,10 @@
 
 - var model = 'backupItem.discovery.Vm';
 - var addresses = model + '.addresses';
-- var form = 'general';
+- var form = 'discoveryVmAddresses';
 
 div
-    ignite-form-group(ng-init='__ = {}; ___ = {}' ng-model='#{addresses}' name='discoveryVmAddresses')
+    ignite-form-group(ng-model='#{addresses}' ng-form='discoveryVmAddresses')
         ignite-form-field-label
             | Addresses
         ignite-form-group-tooltip
@@ -34,29 +34,29 @@ div
             | If port range is provided (e.g. host:port1..port2) the following should be considered:#[br]
             ul: li port1 < port2 should be true
                 li Both port1 and port2 should be greater than 0
-        ignite-form-group-add(ng-click='__.add = [{}]')
-            | Add new address.
+        ignite-form-group-add(ng-click='group.add = [{}]')
+            | Add new address
 
         - var field = 'edit'
         - var valid = form + '.' + field + '.$valid'
         - var save = addresses + '[$index] = ' + field
 
         .group-content(ng-if='#{addresses}.length')
-            ignite-form-field(ng-repeat='model in #{addresses} track by $index' type='internal' ng-init='')
+            ignite-form-field(ng-repeat='model in #{addresses} track by $index' type='internal')
                 .indexField
                     | {{ $index+1 }}) 
                 i.tipField.fa.fa-remove(
-                    ng-hide='___.edit'
+                    ng-hide='field.edit'
                     bs-tooltip='"Remove address"'
                     ng-click='#{addresses}.splice(#{addresses}.indexOf(model), 1)'
                 )
 
-                ignite-form-field-down(ng-if='!$last' data-ng-model='model' data-models='#{addresses}')
-                ignite-form-field-up(ng-if='!$first' data-ng-model='model' data-models='#{addresses}')
+                ignite-form-field-down(ng-if='!$last' ng-hide='field.edit' data-ng-model='model' data-models='#{addresses}')
+                ignite-form-field-up(ng-if='!$first' ng-hide='field.edit' data-ng-model='model' data-models='#{addresses}')
                 
-                span(ng-hide='___.edit')
-                    a.labelFormField(ng-click='___.edit = true') {{ model }}
-                span(ng-if='___.edit' ng-init='#{field} = model')
+                span(ng-hide='field.edit')
+                    a.labelFormField(ng-click='field.edit = true') {{ model }}
+                span(ng-if='field.edit' ng-init='#{field} = model')
                     ignite-form-field-input-text(
                         data-name='#{field}'
                         data-ng-model='#{field}'
@@ -64,12 +64,13 @@ div
                         data-placeholder='IP address:port'
                         data-ignite-unique='#{addresses}'
                         data-ignite-form-field-input-autofocus='true'
-                        on-enter='#{valid} && (#{save}); #{valid} && (___.edit = false);'
-                        ng-blur='#{valid} && (#{save}); (___.edit = false)'
+                        on-enter='#{valid} && (#{save}); #{valid} && (field.edit = false);'
+                        on-escape='field.edit = false'
+                        ng-blur='#{valid} && (#{save}); (field.edit = false)'
                     )
                         i.fa.fa-floppy-o(
                             ng-show='#{valid}'
-                            ng-click='#{valid} && (#{save}); #{valid} && (___.edit = false);'
+                            ng-click='#{valid} && (#{save}); #{valid} && (field.edit = false);'
                             bs-tooltip 
                             data-title='Click icon or press [Enter] to save item' 
                         )
@@ -84,7 +85,7 @@ div
         - var valid = form + '.' + field + '.$valid'
         - var push = addresses + '.push(' + field + ')'
 
-        .group-content(ng-repeat='field in __.add')
+        .group-content(ng-repeat='field in group.add')
             ignite-form-field(type='internal')
                 ignite-form-field-input-text(
                     data-name='#{field}'
@@ -93,12 +94,13 @@ div
                     data-placeholder='IP address:port'
                     data-ignite-unique='#{addresses}'
                     data-ignite-form-field-input-autofocus='true'
-                    on-enter='#{valid} && #{push}; #{valid} && (stopblur = true) && (__.add = [{}])'
-                    ng-blur='#{valid} && #{push}; !stopblur && (__.add = [])'
+                    on-enter='#{valid} && #{push}; #{valid} && (stopblur = true) && (group.add = [{}])'
+                    on-escape='group.add = []'
+                    ng-blur='#{valid} && #{push}; !stopblur && (group.add = [])'
                 )
                     i.fa.fa-floppy-o(
                         ng-show='#{valid}'
-                        ng-click='#{valid} && #{push}; #{valid} && (__.add = [])'
+                        ng-click='#{valid} && #{push}; #{valid} && (group.add = [])'
                         bs-tooltip 
                         data-title='Click icon or press [Enter] to save item' 
                     )
@@ -109,5 +111,5 @@ div
                         data-title='Such IP address already exists!'
                     )
         
-        .group-content-empty(ng-if='!(#{addresses}.length) && !__.add.length')
+        .group-content-empty(id='addresses' ng-if='!(#{addresses}.length) && !group.add.length')
                 | Not defined

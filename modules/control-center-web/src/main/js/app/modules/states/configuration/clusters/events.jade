@@ -16,7 +16,7 @@
 
 - var model = 'backupItem'
 
-form.panel.panel-default(name='events')
+form.panel.panel-default(name='events' novalidate)
     .panel-heading(bs-collapse-toggle ng-click='__show__ = true')
         ignite-form-panel-chevron
         label Events
@@ -36,7 +36,7 @@ form.panel.panel-default(name='events')
                         ignite-form-field-dropdown(
                             data-id='includeEventTypes'
                             data-name='includeEventTypes'
-                            data-options="events"
+                            data-options='eventGroups'
                             data-multiple='true'
                             data-ng-model='#{model}.includeEventTypes'
                             data-placeholder='Choose recorded event types'

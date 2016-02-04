@@ -15,6 +15,7 @@
     limitations under the License.
 
 include ../includes/controls
+include ../includes/infos
 
 mixin hard-link(ref, txt)
     a(style='color:#ec1c24' href=ref target='_blank') #{txt}
@@ -25,36 +26,9 @@ mixin ignite-form-field-tooltip(message)
 .docs-header
     h1 Configurations Summary
 .docs-body
-    ignite-callout
-        ignite-callout-cel(data-title='On This Screen')
-            li Download Project
-            li Preview generated XML, Java and Docker files
-            li
-                ignite-dialog More info
-                    ignite-dialog-title Summary screen
-                    ignite-dialog-content 
-                        | On this screen you can preview:
-                        | <ul>
-                        | <li>XML configurations for server and client nodes</li>
-                        | <li>Java classes with server and client nodes configuration from code</li>
-                        | <li>POJO classes generated for configured domain model</li>
-                        | <li>Maven pom.xml for generated project</li>
-                        | <li>Dockerfile for server node</li>
-                        | </ul>
-                        | Also you can:
-                        | <ul>
-                        | <li>Read #[a(href='https://apacheignite.readme.io/docs' target='_blank') Ignite Documentation]</li>
-                        | <li>Download #[a(href='https://ignite.apache.org/download.cgi#binaries' target='_blank') Ignite Binary Release]</li>
-                        | </ul>
-
-        ignite-callout-cel(data-title='Next Steps')
-            li Deploy Ignite Servers
-            li Connect Ignite Clients
-            li Analyze with SQL
-
+    +ignite-summary-information
     ignite-loading
         hr
-
         .padding-dflt(ng-if='!clusters || clusters.length == 0')
             | You have no clusters configured. Please configure them #[a(ui-sref='base.configuration.clusters') here].
 
@@ -70,7 +44,7 @@ mixin ignite-form-field-tooltip(message)
                             label.tipLabel Project structure
                     button.btn.btn-primary(id='proprietary-jdbc-drivers' ng-if='downloadJdbcDriversVisible()' ng-click='downloadJdbcDrivers()' bs-tooltip='' data-title='Open proprietary JDBC drivers download pages' data-placement='bottom') Download JDBC drivers
                     hr
-                .panel-group(bs-collapse ng-init='panels.activePanels=[0,1]' ng-model='panels.activePanels' data-allow-multiple='true')
+                .panel-group(bs-collapse ng-init='ui.activePanels=[0,1]' ng-model='ui.activePanels' data-allow-multiple='true')
                     .panel.panel-default
                         .panel-heading(role='tab' bs-collapse-toggle)
                             i.fa(ng-class='panelExpanded(panels, "server") ? "fa-chevron-circle-down" : "fa-chevron-circle-right"')
@@ -94,12 +68,12 @@ mixin ignite-form-field-tooltip(message)
                             label Client
 
                         .panel-collapse(id='client' role='tabpanel' bs-collapse-target)
-                            form(name='clientForm')
+                            form(name='clientForm' novalidate)
                                 - var nearCfg = 'ctrl.cluster.clientNearCfg'
                                 - var nearCfgEvictionPolicy = nearCfg + '.nearEvictionPolicy[' + nearCfg + '.nearEvictionPolicy.kind]'
 
                                 .details-row
-                                    ignite-form-field.col-xs-8.col-sm-8.col-md-6(data-label='Near cache start size')
+                                    ignite-form-field.col-xs-8.col-sm-8.col-md-7(data-label='Near cache start size')
                                         +ignite-form-field-tooltip("Initial cache size for near cache which will be used to pre-create internal hash table after start")
                                         ignite-form-field-input-number(
                                             data-name='nearStartSize'
@@ -108,16 +82,16 @@ mixin ignite-form-field-tooltip(message)
                                         )
 
                                 .details-row
-                                    ignite-form-field.col-xs-8.col-sm-8.col-md-6(data-label='Near cache eviction policy')
+                                    ignite-form-field.col-xs-8.col-sm-8.col-md-7(data-label='Near cache eviction policy')
                                         +ignite-form-field-tooltip("Cache expiration policy")
                                         ignite-form-field-dropdown(
                                             data-name='evictionPolicies'
-                                            data-options="[\
-                                                {value: 'LRU', label: 'LRU'},\
-                                                {value: 'FIFO', label: 'FIFO'},\
-                                                {value: 'SORTED', label: 'Sorted'},\
-                                                {value: undefined, label: 'Not set'}\
-                                            ]"
+                                            data-options='[\
+                                                {value: "LRU", label: "LRU"},\
+                                                {value: "FIFO", label: "FIFO"},\
+                                                {value: "SORTED", label: "Sorted"},\
+                                                {value: undefined, label: "Not set"}\
+                                            ]'
                                             data-ng-model='#{nearCfg}.nearEvictionPolicy.kind'
                                         )
                                     span(ng-if='#{nearCfg}.nearEvictionPolicy.kind')
@@ -131,7 +105,7 @@ mixin ignite-form-field-tooltip(message)
                                         ) Show settings
 
                                 .details-row
-                                    .panel-details.col-xs-12.col-sm-12.col-md-6(ng-if='ctrl.__form.expanded && #{nearCfg}.nearEvictionPolicy.kind')
+                                    .panel-details.col-xs-12.col-sm-12.col-md-7(ng-if='ctrl.__form.expanded && #{nearCfg}.nearEvictionPolicy.kind')
                                         .details-row
                                             ignite-form-field(data-label='Batch size')
                                                 +ignite-form-field-tooltip("Number of entries to remove on shrink")

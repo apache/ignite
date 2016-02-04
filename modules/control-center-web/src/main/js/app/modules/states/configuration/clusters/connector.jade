@@ -16,7 +16,7 @@
 
 - var model = 'backupItem.connector'
 
-form.panel.panel-default(name='connector')
+form.panel.panel-default(name='connector' novalidate)
     .panel-heading(bs-collapse-toggle ng-click='__show__ = true')
         ignite-form-panel-chevron
         label Connector configuration
@@ -37,7 +37,7 @@ form.panel.panel-default(name='connector')
                         ignite-form-field-tooltip
                             | Flag indicating whether to configure connector configuration
                 .settings-row
-                   ignite-form-field
+                    ignite-form-field
                         ignite-form-field-label
                             | Jetty configuration path:
                         ignite-form-field-tooltip
@@ -51,7 +51,7 @@ form.panel.panel-default(name='connector')
                             data-ng-disabled='!#{model}.enabled'
                         )
                 .settings-row
-                   ignite-form-field
+                    ignite-form-field
                         ignite-form-field-label
                             | TCP host:
                         ignite-form-field-tooltip
@@ -93,6 +93,34 @@ form.panel.panel-default(name='connector')
                             data-ng-model='#{model}.portRange'
                             data-placeholder='100'
                             data-ng-disabled='!#{model}.enabled'
+                        )
+                .settings-row
+                    ignite-form-field
+                        ignite-form-field-label
+                            | Idle query cursor timeout:
+                        ignite-form-field-tooltip
+                            | Reject open query cursors that is not used timeout#[br]
+                            | If no fetch query request come within idle timeout, it will be removed on next check for old query cursors
+                        ignite-form-field-input-number(
+                        data-id='connectorIdleQueryCursorTimeout'
+                        data-name='connectorIdleQueryCursorTimeout'
+                        data-ng-model='#{model}.idleQueryCursorTimeout'
+                        data-placeholder='600000'
+                        data-ng-disabled='!#{model}.enabled'
+                        )
+                .settings-row
+                    ignite-form-field
+                        ignite-form-field-label
+                            | Idle query cursor check frequency:
+                        ignite-form-field-tooltip
+                            | Idle query cursors check frequency#[br]
+                            | This setting is used to reject open query cursors that is not used
+                        ignite-form-field-input-number(
+                        data-id='connectorIdleQueryCursorCheckFrequency'
+                        data-name='connectorIdleQueryCursorCheckFrequency'
+                        data-ng-model='#{model}.idleQueryCursorCheckFrequency'
+                        data-placeholder='60000'
+                        data-ng-disabled='!#{model}.enabled'
                         )
                 .settings-row
                     ignite-form-field
@@ -203,7 +231,7 @@ form.panel.panel-default(name='connector')
                             data-ng-disabled='!#{model}.enabled'
                         )
                 .settings-row
-                   ignite-form-field
+                    ignite-form-field
                         ignite-form-field-label
                             | Message interceptor:
                         ignite-form-field-tooltip
@@ -216,7 +244,7 @@ form.panel.panel-default(name='connector')
                             data-ng-disabled='!#{model}.enabled'
                         )
                 .settings-row
-                   ignite-form-field
+                    ignite-form-field
                         ignite-form-field-label
                             | Secret key:
                         ignite-form-field-tooltip
@@ -251,7 +279,7 @@ form.panel.panel-default(name='connector')
                         ignite-form-field-tooltip
                             | Flag indicating whether or not SSL client authentication is required
                 .settings-row
-                   ignite-form-field
+                    ignite-form-field
                         ignite-form-field-label
                             | SSL factory:
                         ignite-form-field-tooltip

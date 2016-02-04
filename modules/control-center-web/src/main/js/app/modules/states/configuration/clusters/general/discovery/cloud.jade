@@ -17,7 +17,7 @@
 - var model = 'backupItem.discovery.Cloud';
 - var regions = model + '.regions';
 - var zones = model + '.zones';
-- var form = 'general'
+- var form = 'generalDiscoveryCloudRegions'
 
 div
     .details-row
@@ -70,32 +70,32 @@ div
                 data-ng-required='true'
             )
     .details-row(ng-if='true')
-        ignite-form-group(ng-init='__ = {}; ___ = {}' ng-model='#{regions}' name='generalDiscoveryCloudRegions')
+        ignite-form-group(ng-model='#{regions}' ng-form='generalDiscoveryCloudRegions')
             ignite-form-field-label
                 | Regions
             ignite-form-group-tooltip
                 | List of regions where VMs are located#[br]
                 | If the regions are not set then every region, that a cloud provider has, will be investigated. This could lead to significant performance degradation#[br]
                 | Note, that some cloud providers, like Google Compute Engine, doesn't have a notion of a region. For such providers regions are redundant
-            ignite-form-group-add(ng-click='__.add = [{}]')
-                | Add new address.
+            ignite-form-group-add(ng-click='group.add = [{}]')
+                | Add new address
 
             - var field = 'edit'
             - var valid = form + '.' + field + '.$valid'
             - var save = addresses + '[$index] = ' + field
 
             .group-content(ng-if='#{regions}.length')
-                ignite-form-field(ng-repeat='model in #{regions} track by $index' type='internal' ng-init='')
+                ignite-form-field(ng-repeat='model in #{regions} track by $index' type='internal')
                     .indexField
                         | {{ $index+1 }}) 
                     i.tipField.fa.fa-remove(
-                        ng-hide='___.edit'
+                        ng-hide='field.edit'
                         bs-tooltip='"Remove region"'
                         ng-click='#{regions}.splice(#{regions}.indexOf(model), 1)'
                     )
-                    span(ng-hide='___.edit')
-                        a.labelFormField(ng-click='___.edit = true') {{ model }}
-                    span(ng-if='___.edit' ng-init='#{field} = model')
+                    span(ng-hide='field.edit')
+                        a.labelFormField(ng-click='field.edit = true') {{ model }}
+                    span(ng-if='field.edit' ng-init='#{field} = model')
                         ignite-form-field-input-text(
                             data-name='#{field}'
                             data-ng-model='#{field}'
@@ -103,12 +103,13 @@ div
                             data-placeholder='Region name'
                             data-ignite-unique='#{regions}'
                             data-ignite-form-field-input-autofocus='true'
-                            on-enter='#{valid} && (#{save}); #{valid} && (___.edit = false);'
-                            ng-blur='#{valid} && (#{save}); (___.edit = false)'
+                            on-enter='#{valid} && (#{save}); #{valid} && (field.edit = false);'
+                            on-escape='field.edit = false'
+                            ng-blur='#{valid} && (#{save}); (field.edit = false)'
                         )
                             i.fa.fa-floppy-o(
                                 ng-show='#{valid}'
-                                ng-click='#{valid} && (#{save}); #{valid} && (___.edit = false);'
+                                ng-click='#{valid} && (#{save}); #{valid} && (field.edit = false);'
                                 bs-tooltip 
                                 data-title='Click icon or press [Enter] to save item' 
                             )
@@ -123,7 +124,7 @@ div
             - var valid = form + '.' + field + '.$valid'
             - var push = regions + '.push(' + field + ')'
 
-            .group-content(ng-repeat='field in __.add')
+            .group-content(ng-repeat='field in group.add')
                 ignite-form-field(type='internal')
                     ignite-form-field-input-text(
                         data-name='#{field}'
@@ -132,12 +133,13 @@ div
                         data-placeholder='Region name'
                         data-ignite-unique='#{regions}'
                         data-ignite-form-field-input-autofocus='true'
-                        on-enter='#{valid} && #{push}; #{valid} && (stopblur = true) && (__.add = [{}])'
-                        ng-blur='#{valid} && #{push}; !stopblur && (__.add = [])'
+                        on-enter='#{valid} && #{push}; #{valid} && (stopblur = true) && (group.add = [{}])'
+                        on-escape='group.add = []'
+                        ng-blur='#{valid} && #{push}; !stopblur && (group.add = [])'
                     )
                         i.fa.fa-floppy-o(
                             ng-show='#{valid}'
-                            ng-click='#{valid} && #{push}; #{valid} && (__.add = [])'
+                            ng-click='#{valid} && #{push}; #{valid} && (group.add = [])'
                             bs-tooltip 
                             data-title='Click icon or press [Enter] to save item' 
                         )
@@ -148,35 +150,35 @@ div
                             data-title='Such region already exists!'
                         )
             
-            .group-content-empty(ng-if='!(#{regions}.length) && !__.add.length')
+            .group-content-empty(ng-if='!(#{regions}.length) && !group.add.length')
                 | Not defined
     .details-row(ng-if='true')
-         ignite-form-group(ng-init='__ = {}; ___ = {}' ng-model='#{zones}' name='generalDiscoveryCloudZones')
+         ignite-form-group(ng-model='#{zones}' ng-form='generalDiscoveryCloudZones')
             ignite-form-field-label
                 | Zones
             ignite-form-group-tooltip
                 | List of zones where VMs are located#[br]
                 | If the zones are not set then every zone from specified regions, will be taken into account#[br]
                 | Note, that some cloud providers, like Rackspace, doesn't have a notion of a zone. For such providers zones are redundant
-            ignite-form-group-add(ng-click='__.add = [{}]')
-                | Add new address.
+            ignite-form-group-add(ng-click='group.add = [{}]')
+                | Add new address
 
             - var field = 'edit'
             - var valid = form + '.' + field + '.$valid'
             - var save = addresses + '[$index] = ' + field
 
             .group-content(ng-if='#{zones}.length')
-                ignite-form-field(ng-repeat='model in #{zones} track by $index' type='internal' ng-init='')
+                ignite-form-field(ng-repeat='model in #{zones} track by $index' type='internal')
                     .indexField
                         | {{ $index+1 }}) 
                     i.tipField.fa.fa-remove(
-                        ng-hide='___.edit'
+                        ng-hide='field.edit'
                         bs-tooltip='"Remove zone"'
                         ng-click='#{zones}.splice(#{zones}.indexOf(model), 1)'
                     )
-                    span(ng-hide='___.edit')
-                        a.labelFormField(ng-click='___.edit = true') {{ model }}
-                    span(ng-if='___.edit' ng-init='#{field} = model')
+                    span(ng-hide='field.edit')
+                        a.labelFormField(ng-click='field.edit = true') {{ model }}
+                    span(ng-if='field.edit' ng-init='#{field} = model')
                         ignite-form-field-input-text(
                             data-name='#{field}'
                             data-ng-model='#{field}'
@@ -184,12 +186,13 @@ div
                             data-placeholder='Zone name'
                             data-ignite-unique='#{zones}'
                             data-ignite-form-field-input-autofocus='true'
-                            on-enter='#{valid} && (#{save}); #{valid} && (___.edit = false);'
-                            ng-blur='#{valid} && (#{save}); (___.edit = false)'
+                            on-enter='#{valid} && (#{save}); #{valid} && (field.edit = false);'
+                            on-escape='field.edit = false'
+                            ng-blur='#{valid} && (#{save}); (field.edit = false)'
                         )
                             i.fa.fa-floppy-o(
                                 ng-show='#{valid}'
-                                ng-click='#{valid} && (#{save}); #{valid} && (___.edit = false);'
+                                ng-click='#{valid} && (#{save}); #{valid} && (field.edit = false);'
                                 bs-tooltip 
                                 data-title='Click icon or press [Enter] to save item' 
                             )
@@ -204,7 +207,7 @@ div
             - var valid = form + '.' + field + '.$valid'
             - var push = zones + '.push(' + field + ')'
 
-            .group-content(ng-repeat='field in __.add')
+            .group-content(ng-repeat='field in group.add')
                 ignite-form-field(type='internal')
                     ignite-form-field-input-text(
                         data-name='#{field}'
@@ -213,12 +216,13 @@ div
                         data-placeholder='Zone name'
                         data-ignite-unique='#{zones}'
                         data-ignite-form-field-input-autofocus='true'
-                        on-enter='#{valid} && #{push}; #{valid} && (stopblur = true) && (__.add = [{}])'
-                        ng-blur='#{valid} && #{push}; !stopblur && (__.add = [])'
+                        on-enter='#{valid} && #{push}; #{valid} && (stopblur = true) && (group.add = [{}])'
+                        on-escape='group.add = []'
+                        ng-blur='#{valid} && #{push}; !stopblur && (group.add = [])'
                     )
                         i.fa.fa-floppy-o(
                             ng-show='#{valid}'
-                            ng-click='#{valid} && #{push}; #{valid} && (__.add = [])'
+                            ng-click='#{valid} && #{push}; #{valid} && (group.add = [])'
                             bs-tooltip 
                             data-title='Click icon or press [Enter] to save item' 
                         )
@@ -229,5 +233,5 @@ div
                             data-title='Such zone already exists!'
                         )
             
-            .group-content-empty(ng-if='!(#{zones}.length) && !__.add.length')
+            .group-content-empty(ng-if='!(#{zones}.length) && !group.add.length')
                 | Not defined

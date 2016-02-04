@@ -16,7 +16,7 @@
 
 - var model = 'backupItem.atomicConfiguration'
 
-form.panel.panel-default(name='atomic')
+form.panel.panel-default(name='atomics' novalidate)
     .panel-heading(bs-collapse-toggle='' ng-click='__show__ = true')
         ignite-form-panel-chevron
         label Atomic configuration
@@ -39,7 +39,11 @@ form.panel.panel-default(name='atomic')
                         ignite-form-field-dropdown(
                             data-id='cacheMode'
                             data-name='cacheMode'
-                            data-options="cacheModes"
+                            data-options='[\
+                                {value: "LOCAL", label: "LOCAL"},\
+                                {value: "REPLICATED", label: "REPLICATED"},\
+                                {value: "PARTITIONED", label: "PARTITIONED"}\
+                            ]'
                             data-ng-model='#{model}.cacheMode'
                             data-placeholder='PARTITIONED'
                         )

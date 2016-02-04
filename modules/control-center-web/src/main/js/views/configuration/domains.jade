@@ -15,26 +15,12 @@
     limitations under the License.
 
 include ../includes/controls
+include ../includes/infos
 
 .docs-header
     h1 Create and Configure Domain Models
 .docs-body(ng-controller='domainsController')
-    ignite-callout
-        ignite-callout-cel(data-title='On This Screen')
-            li Manually enter Domain models
-            li Import Domain models from Database
-            li
-                ignite-dialog More info
-                    ignite-dialog-title Domain model screen
-                    ignite-dialog-content 
-                        | Domain models can be assigned to specified #[a(ui-sref='base.configuration.caches') caches].#[br]
-                        | Generated cluster with caches and domain models configuration available on #[a(ui-sref='base.configuration.summary') summary] screen.
-                    
-        ignite-callout-cel(data-title='Next Steps')
-            li Continue to #[a(ui-sref='base.configuration.summary') Summary]
-            li Back to #[a(ui-sref='base.configuration.caches') Caches]
-            li Back to #[a(ui-sref='base.configuration.clusters') Clusters]
-                        
+    +ignite-domains-information
     div(dw-loading='loadingDomainModelsScreen' dw-loading-options='{text: "Loading domain models screen...", className: "page-loading-overlay"}')
         div(ng-show='ui.ready')
             hr
@@ -73,6 +59,6 @@ include ../includes/controls
                         button.btn.dropdown-toggle.btn-info(id='remove-demo-dropdown' ng-if='hasDemoItems()' data-toggle='dropdown' data-container='body' bs-dropdown='removeDemoDropdown' data-placement='bottom-right')
                             span.caret
                 hr
-            form.form-horizontal(name='ui.inputForm' ng-show='backupItem && tableVisibleRow((displayedRows | domainsValidation:ui.showValid:true), selectedItem)' novalidate unsaved-warning-form)
-                .panel-group(bs-collapse ng-model='panels.activePanels' data-allow-multiple='true')
+            form.form-horizontal(name='ui.inputForm' ng-show='backupItem && tableVisibleRow((displayedRows | domainsValidation:ui.showValid:true), selectedItem)' novalidate)
+                .panel-group(bs-collapse ng-model='ui.activePanels' data-allow-multiple='true')
                     +groups('domainModel', 'backupItem')

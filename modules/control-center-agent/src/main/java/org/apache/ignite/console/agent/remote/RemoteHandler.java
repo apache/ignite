@@ -30,6 +30,8 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.RejectedExecutionException;
+
 import org.apache.http.auth.AuthenticationException;
 import org.apache.log4j.Logger;
 
@@ -156,8 +158,14 @@ public class RemoteHandler implements AutoCloseable {
             }
         };
 
-        if (desc.async)
-            executorSrvc.submit(run);
+        if (desc.async) {
+            try {
+                executorSrvc.submit(run);
+            }
+            catch (RejectedExecutionException ignore) {
+                // No-op.
+            }
+        }
         else
             run.run();
     }

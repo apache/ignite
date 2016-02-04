@@ -15,17 +15,22 @@
  * limitations under the License.
  */
 
-import template from './callout-cel.jade!';
+export default ['formControlFeedback', [() => {
+    const link = ($scope, $element, $attrs, [form]) => {
+        const name = $scope.name;
+        const err = $attrs.igniteError;
+        const msg = $attrs.igniteErrorMessage;
 
-export default ['igniteCalloutCel', [() => {
+        if (name && err && msg) {
+            form.$errorMessages = form.$errorMessages || {};
+            form.$errorMessages[name] = form.$errorMessages[name] || {};
+            form.$errorMessages[name][err] = msg;
+        }
+    };
+
     return {
-        scope: {
-            title: '@'
-        },
-        restrict: 'E',
-        template,
-        replace: true,
-        transclude: true,
-        require: '^igniteCallout'
+        restrict: 'C',
+        link,
+        require: ['^form']
     };
 }]];

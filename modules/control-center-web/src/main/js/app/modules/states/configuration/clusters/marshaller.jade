@@ -16,7 +16,7 @@
 
 - var model = 'backupItem.marshaller'
 
-form.panel.panel-default(name='marshaller')
+form.panel.panel-default(name='marshaller' novalidate)
     .panel-heading(bs-collapse-toggle ng-click='__show__ = true')
         ignite-form-panel-chevron
         label Marshaller
@@ -37,11 +37,11 @@ form.panel.panel-default(name='marshaller')
                         ignite-form-field-dropdown(
                             data-id='kind'
                             data-name='kind'
-                            data-options="[\
-                                {value: 'OptimizedMarshaller', label: 'OptimizedMarshaller'},\
-                                {value: 'JdkMarshaller', label: 'JdkMarshaller'},\
-                                {value: undefined, label: 'Not set'}\
-                            ]"
+                            data-options='[\
+                                {value: "OptimizedMarshaller", label: "OptimizedMarshaller"},\
+                                {value: "JdkMarshaller", label: "JdkMarshaller"},\
+                                {value: undefined, label: "Not set"}\
+                            ]'
                             data-ng-model='#{model}.kind'
                             data-placeholder='Choose marshaller'
                         )

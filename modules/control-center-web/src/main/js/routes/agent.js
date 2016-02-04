@@ -55,32 +55,41 @@ router.get('/download/zip', function (req, res) {
 
     var agentFld = 'ignite-web-agent-1.5.0.final';
     var agentZip = agentFld + '.zip';
+    var agentPathZip = 'public/agent/' + agentFld + '.zip';
 
-    // Read a zip file.
-    fs.readFile('public/agent/' + agentZip, function(err, data) {
+    fs.stat(agentPathZip, function(err, stats) {
         if (err)
-            return res.download('public/agent/' + agentZip, agentZip);
+            return res.download(agentPathZip, agentZip);
 
-        var zip = new JSZip(data);
+        // Read a zip file.
+        fs.readFile(agentPathZip, function(err, data) {
+            if (err)
+                return res.download(agentPathZip, agentZip);
 
-        var prop = [];
+            var zip = new JSZip(data);
 
-        var host = req.hostname.match(/:/g) ? req.hostname.slice(0, req.hostname.indexOf(':')) : req.hostname;
+            var prop = [];
 
-        prop.push('token=' + req.user.token);
-        prop.push('server-uri=wss://' + host + ':' + config.get('agent-server:port'));
-        prop.push('#Uncomment following options if needed:');
-        prop.push('#node-uri=http://localhost:8080');
-        prop.push('#driver-folder=./jdbc-drivers');
+            var host = req.hostname.match(/:/g) ? req.hostname.slice(0, req.hostname.indexOf(':')) : req.hostname;
 
-        zip.file(agentFld + '/default.properties', prop.join('\n'));
+            prop.push('token=' + req.user.token);
+            prop.push('server-uri=wss://' + host + ':' + config.get('agent-server:port'));
+            prop.push('#Uncomment following options if needed:');
+            prop.push('#node-uri=http://localhost:8080');
+            prop.push('#driver-folder=./jdbc-drivers');
+            prop.push('');
+            prop.push("#Note: Don't change this auto generated line");
+            prop.push('rel-date=' + stats.birthtime.getTime());
 
-        var buffer = zip.generate({type: 'nodebuffer', platform: 'UNIX'});
+            zip.file(agentFld + '/default.properties', prop.join('\n'));
 
-        // Set the archive name.
-        res.attachment(agentZip);
+            var buffer = zip.generate({type: 'nodebuffer', platform: 'UNIX'});
 
-        res.send(buffer);
+            // Set the archive name.
+            res.attachment(agentZip);
+
+            res.send(buffer);
+        });
     });
 });
 
@@ -113,15 +122,19 @@ router.post('/query/getAll', function (req, res) {
     _client(req.currentUserId())
         .then((client) => {
             // Create sql query.
-            var qry = new SqlFieldsQuery(req.body.query);
+            const qry = req.body.query ? new SqlFieldsQuery(req.body.query) : new ScanQuery();
 
             // Set page size for query.
             qry.setPageSize(1024);
 
             // Get query cursor.
-            return client.ignite(req.body.demo).cache(req.body.cacheName).query(qry).getAll();
+            const cursor = client.ignite(req.body.demo).cache(req.body.cacheName).query(qry);
+
+            return new Promise(function (resolve) {
+                cursor.getAll().then(rows => resolve({meta: cursor.fieldsMetadata(), rows}))
+            });
         })
-        .then((rows) => res.json({meta: cursor.fieldsMetadata(), rows: rows}))
+        .then(response => res.json(response))
         .catch(_handleException(res));
 });
 

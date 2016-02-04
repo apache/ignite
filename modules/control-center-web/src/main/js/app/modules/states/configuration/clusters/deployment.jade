@@ -17,6 +17,7 @@
 - var model = 'backupItem'
 - var exclude = model + '.peerClassLoadingLocalClassPathExclude'
 - var form = 'deployment'
+- var enabled = 'backupItem.peerClassLoadingEnabled'
 
 mixin feedback(name, error, message)
     i.fa.fa-exclamation-triangle.form-control-feedback(
@@ -25,7 +26,7 @@ mixin feedback(name, error, message)
         data-title='#{message}'
     )
 
-form.panel.panel-default(name='#{form}')
+form.panel.panel-default(name='#{form}' novalidate)
     .panel-heading(bs-collapse-toggle ng-click='__show__ = true')
         ignite-form-panel-chevron
         label Class deployment
@@ -50,7 +51,12 @@ form.panel.panel-default(name='#{form}')
                         ignite-form-field-dropdown(
                             data-id='deploymentMode'
                             data-name='deploymentMode'
-                            data-options="deploymentModes"
+                            data-options='[\
+                                {value: "PRIVATE", label: "PRIVATE"},\
+                                {value: "ISOLATED", label: "ISOLATED"}, \
+                                {value: "SHARED", label: "SHARED"},\
+                                {value: "CONTINUOUS", label: "CONTINUOUS"}\
+                            ]'
                             data-ng-model='#{model}.deploymentMode'
                             data-placeholder='SHARED'
                         )
@@ -64,7 +70,7 @@ form.panel.panel-default(name='#{form}')
                         | Enable peer class loading
                         ignite-form-field-tooltip
                             | Enables/disables peer class loading
-                .settings-row(ng-if='#{model}.peerClassLoadingEnabled')
+                .settings-row
                     ignite-form-field
                         ignite-form-field-label
                             | Missed resources cache size:
@@ -76,8 +82,9 @@ form.panel.panel-default(name='#{form}')
                             data-name='peerClassLoadingMissedResourcesCacheSize'
                             data-ng-model='#{model}.peerClassLoadingMissedResourcesCacheSize'
                             data-placeholder='100'
+                            data-ng-disabled='!#{enabled}'
                         )
-                .settings-row(ng-if='#{model}.peerClassLoadingEnabled')
+                .settings-row
                     ignite-form-field
                         ignite-form-field-label
                             | Pool size:
@@ -88,15 +95,16 @@ form.panel.panel-default(name='#{form}')
                             data-name='peerClassLoadingThreadPoolSize'
                             data-ng-model='#{model}.peerClassLoadingThreadPoolSize'
                             data-placeholder='availableProcessors'
+                            data-ng-disabled='!#{enabled}'
                         )
-                .settings-row(ng-if='#{model}.peerClassLoadingEnabled')
-                    ignite-form-group(ng-init='__ = {}; ___ = {}' ng-model='#{exclude}' name='peerClassLoadingLocalClassPathExclude' )
+                .settings-row
+                    ignite-form-group(ng-model='#{exclude}' ng-form='#{form}' )
                         ignite-form-field-label
                             | Local class path exclude
                         ignite-form-group-tooltip
                             | List of packages from the system classpath that need to be peer-to-peer loaded from task originating node#[br]
                             | '*' is supported at the end of the package name which means that all sub-packages and their classes are included like in Java package import clause
-                        ignite-form-group-add(ng-click='(__.add = [{}])')
+                        ignite-form-group-add(ng-show='#{enabled}' ng-click='(group.add = [{}])')
                             | Add package name.
 
                         - var field = 'edit'
@@ -104,17 +112,17 @@ form.panel.panel-default(name='#{form}')
                         - var save = exclude + '[$index] = ' + field
 
                         .group-content(ng-if='#{exclude}.length')
-                            ignite-form-field(ng-repeat='model in #{exclude} track by $index' type='internal' ng-init='')
+                            ignite-form-field(ng-repeat='model in #{exclude} track by $index' type='internal')
                                 .indexField
                                     | {{ $index+1 }}) 
                                 i.tipField.fa.fa-remove(
-                                    ng-hide='___.edit'
+                                    ng-hide='field.edit'
                                     bs-tooltip='"Remove package name"'
                                     ng-click='#{exclude}.splice(#{exclude}.indexOf(model), 1)'
                                 )
-                                span(ng-hide='___.edit')
-                                    a.labelFormField(ng-click='___.edit = true') {{ model }}
-                                span(ng-if='___.edit' ng-form='form' ng-init='#{field} = model')
+                                span(ng-hide='field.edit')
+                                    a.labelFormField(ng-click='#{enabled} && (field.edit = true)') {{ model }}
+                                span(ng-if='field.edit' ng-init='#{field} = model')
                                     ignite-form-field-input-text(
                                         data-name='#{field}'
                                         data-ng-model='#{field}'
@@ -124,12 +132,13 @@ form.panel.panel-default(name='#{form}')
                                         data-java-package-name='true'
                                         data-ignite-unique='#{exclude}'
                                         data-ignite-form-field-input-autofocus='true'
-                                        on-enter='#{valid} && (#{save}); #{valid} && (___.edit = false);'
-                                        bng-blur='#{valid} && (#{save}); (___.edit = false)'
+                                        on-enter='#{valid} && (#{save}); #{valid} && (field.edit = false);'
+                                        on-escape='field.edit = false'
+                                        ng-blur='#{valid} && (#{save}); (field.edit = false)'
                                     )
                                         i.fa.fa-floppy-o(
                                             ng-show='#{valid}'
-                                            ng-click='#{valid} && (#{save}); #{valid} && (___.edit = false);'
+                                            ng-click='#{valid} && (#{save}); #{valid} && (field.edit = false);'
                                             bs-tooltip 
                                             data-title='Click icon or press [Enter] to save item' 
                                         )
@@ -143,7 +152,7 @@ form.panel.panel-default(name='#{form}')
                         - var valid = form + '.' + field + '.$valid'
                         - var push = exclude + '.push(' + field + ')'
 
-                        .group-content(ng-repeat='field in __.add')
+                        .group-content(ng-repeat='field in group.add')
                             ignite-form-field(type='internal')
                                 ignite-form-field-input-text(
                                     data-name='#{field}'
@@ -154,12 +163,13 @@ form.panel.panel-default(name='#{form}')
                                     data-java-package-name='true'
                                     data-ignite-unique='#{exclude}'
                                     data-ignite-form-field-input-autofocus='true'
-                                    on-enter='#{valid} && #{push}; #{valid} && (stopblur = true) && (__.add = [{}])'
-                                    bng-blur='#{valid} && #{push}; !stopblur && (__.add = [])'
+                                    on-enter='#{valid} && #{push}; #{valid} && (stopblur = true) && (group.add = [{}])'
+                                    on-escape='group.add = []'
+                                    ng-blur='#{valid} && #{push}; !stopblur && (group.add = [])'
                                 )
                                     i.fa.fa-floppy-o(
                                         ng-show='#{valid}'
-                                        ng-click='#{valid} && #{push}; #{valid} && (__.add = [])'
+                                        ng-click='#{valid} && #{push}; #{valid} && (group.add = [])'
                                         bs-tooltip 
                                         data-title='Click icon or press [Enter] to save item' 
                                     )
@@ -169,7 +179,7 @@ form.panel.panel-default(name='#{form}')
                                     +feedback(field, 'javaKeywords', 'Package name could not contains reserved java keyword: ""!')
                                     +feedback(field, 'igniteUnique', 'Such package already exists!')
             
-                        .group-content-empty(ng-if='!(#{exclude}.length) && !__.add.length')
+                        .group-content-empty(ng-if='!(#{exclude}.length) && !group.add.length')
                             | Not defined
             .col-sm-6
                 .preview-panel(ng-init='mode = false')

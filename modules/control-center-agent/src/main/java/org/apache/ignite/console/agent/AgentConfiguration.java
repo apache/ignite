@@ -75,6 +75,9 @@ public class AgentConfiguration {
         "      Default value: ./jdbc-drivers")
     private String driversFolder;
 
+    /** Release date. */
+    private long relDate;
+
     /** */
     @Parameter(names = { "-h", "--help" }, help = true, description = "Print this help message")
     private Boolean help;
@@ -157,6 +160,13 @@ public class AgentConfiguration {
     }
 
     /**
+     * @return Release date.
+     */
+    public long relDate() {
+        return relDate;
+    }
+
+    /**
      * @return {@code true} If agent options usage should be printed.
      */
     public Boolean help() {
@@ -192,6 +202,17 @@ public class AgentConfiguration {
 
         if (val != null)
             driversFolder(val);
+
+        val = (String)props.remove("rel-date");
+
+        if (val != null) {
+            try {
+                this.relDate = Long.parseLong(val);
+            }
+            catch (NumberFormatException ignored) {
+                // No-op.
+            }
+        }
     }
 
     /**
@@ -215,6 +236,8 @@ public class AgentConfiguration {
 
         if (driversFolder == null)
             driversFolder(cmd.driversFolder());
+
+        relDate = cmd.relDate();
     }
 
     /** {@inheritDoc} */

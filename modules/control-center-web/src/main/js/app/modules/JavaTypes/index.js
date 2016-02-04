@@ -51,7 +51,7 @@ angular
                  * @returns boolean 'true' if given text is valid Java package.
                  */
                 validPackage(value) {
-                    const regexp = /^(([a-zA-Z_$][a-zA-Z0-9_$]*)\.)*([a-zA-Z_$][a-zA-Z0-9_$]*(\.[*]|[*])?)$/igm;
+                    const regexp = /^(([a-zA-Z_$][a-zA-Z0-9_$]*)\.)*([a-zA-Z_$][a-zA-Z0-9_$]*(\.?\*)?)$/igm;
 
                     return value === '' || regexp.test(value);
                 },
@@ -59,8 +59,8 @@ angular
                  * @param value text to check.
                  * @returns boolean 'true' if given text non Java keyword.
                  */
-                nonKeywords(value) {
-                    return !JAVA_KEYWORDS.contains(value);
+                isKeywords(value) {
+                    return _.contains(JAVA_KEYWORDS, value);
                 }
             };
         }];

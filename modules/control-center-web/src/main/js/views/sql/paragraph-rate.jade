@@ -19,7 +19,7 @@
     h3.popover-title(style='color: black') Refresh rate
     button.close(id='paragraph-rate-close' ng-click='$hide()') &times;
     .popover-content
-        form(name='popoverForm')
+        form(name='popoverForm' novalidate)
             .form-group(style='padding: 5px')
                 .col-sm-4
                     input.form-control(id='paragraph-rate' ng-init='value = paragraph.rate.value' ng-model='value' type='number' min='1' required auto-focus)

@@ -271,24 +271,36 @@ Client.prototype._invokeRmtMethod = function(method, args, callback) {
 Client.prototype._rmtAuthMessage = function(msg) {
     var self = this;
 
-    db.Account.findOne({ token: msg.token }, function (err, account) {
-        if (err) {
-            self.authResult('Failed to authorize user');
-            // TODO IGNITE-1379 send error to web master.
-        }
-        else if (!account)
-            self.authResult('Invalid token, user not found');
-        else {
-            self.authResult(null);
+    var fs = require('fs');
 
-            self._user = account;
+    fs.stat('public/agent/ignite-web-agent-1.5.0.final.zip', function(err, stats) {
+        var relDate = 0;
 
-            self._manager._addClient(account._id, self);
+        if (!err)
+            relDate = stats.birthtime.getTime();
 
-            self._cluster = new apacheIgnite.Ignite(new AgentServer(self));
+        if ((msg.relDate || 0) < relDate)
+            self.authResult('You are using an older version of the agent. Please reload agent archive');
 
-            self._demo = new apacheIgnite.Ignite(new AgentServer(self, true));
-        }
+        db.Account.findOne({ token: msg.token }, function (err, account) {
+            if (err) {
+                self.authResult('Failed to authorize user');
+                // TODO IGNITE-1379 send error to web master.
+            }
+            else if (!account)
+                self.authResult('Invalid token, user not found');
+            else {
+                self.authResult(null);
+
+                self._user = account;
+
+                self._manager._addClient(account._id, self);
+
+                self._cluster = new apacheIgnite.Ignite(new AgentServer(self));
+
+                self._demo = new apacheIgnite.Ignite(new AgentServer(self, true));
+            }
+        });
     });
 };
 

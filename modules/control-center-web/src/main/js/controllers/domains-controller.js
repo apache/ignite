@@ -24,6 +24,8 @@ consoleModule.controller('domainsController', function ($filter, $http, $timeout
         angular.extend(this, $controller('save-remove', {$scope: $scope}));
 
         $scope.ui = $common.formUI();
+        $scope.ui.activePanels = [0, 1];
+        $scope.ui.topPanels = [];
 
         var IMPORT_DM_NEW_CACHE = 1;
         var IMPORT_DM_ASSOCIATE_CACHE = 2;
@@ -369,8 +371,6 @@ consoleModule.controller('domainsController', function ($filter, $http, $timeout
             {value: true, label: 'ASC'},
             {value: false, label: 'DESC'}
         ];
-
-        $scope.panels = {activePanels: [0, 1]};
 
         $scope.domains = [];
 
@@ -729,8 +729,8 @@ consoleModule.controller('domainsController', function ($filter, $http, $timeout
                         var lastItem;
                         var newItems = [];
 
-                        _.forEach(savedBatch.generatedCaches, function (generatedCache) {
-                            $scope.caches.push(generatedCache);
+                        _.forEach(_mapCaches(savedBatch.generatedCaches), function(cache) {
+                            $scope.caches.push(cache);
                         });
 
                         _.forEach(savedBatch.savedDomains, function (savedItem) {
@@ -757,7 +757,7 @@ consoleModule.controller('domainsController', function ($filter, $http, $timeout
 
                         $common.showInfo('Domain models imported from database.');
 
-                        $scope.panels.activePanels = [0, 1, 2];
+                        $scope.ui.activePanels = [0, 1, 2];
 
                         $scope.ui.showValid = true;
                     })
@@ -1251,8 +1251,8 @@ consoleModule.controller('domainsController', function ($filter, $http, $timeout
         $scope.createItem = function (cacheId) {
             if ($scope.tableReset(true)) {
                 $timeout(function () {
-                    $common.ensureActivePanel($scope.panels, 'query');
-                    $common.ensureActivePanel($scope.panels, 'general', 'keyType');
+                    $common.ensureActivePanel($scope.ui, 'query');
+                    $common.ensureActivePanel($scope.ui, 'general', 'keyType');
                 });
 
                 $scope.selectItem(undefined, prepareNewItem(cacheId));
@@ -1262,12 +1262,12 @@ consoleModule.controller('domainsController', function ($filter, $http, $timeout
         // Check domain model logical consistency.
         function validate(item) {
             if ($common.isEmptyString(item.keyType))
-                return showPopoverMessage($scope.panels, 'general', 'keyType', 'Key type should not be empty');
+                return showPopoverMessage($scope.ui, 'general', 'keyType', 'Key type should not be empty');
             else if (!$common.isValidJavaClass('Key type', item.keyType, true, 'keyType'))
                 return false;
 
             if ($common.isEmptyString(item.valueType))
-                return showPopoverMessage($scope.panels, 'general', 'valueType', 'Value type should not be empty');
+                return showPopoverMessage($scope.ui, 'general', 'valueType', 'Value type should not be empty');
             else if (!$common.isValidJavaClass('Value type', item.valueType, false, 'valueType'))
                 return false;
 
@@ -1276,14 +1276,14 @@ consoleModule.controller('domainsController', function ($filter, $http, $timeout
 
             if (item.queryMetadata === 'Configuration' && qry) {
                 if ($common.isEmptyArray(item.fields))
-                    return showPopoverMessage($scope.panels, 'query', 'fields-legend', 'Query fields should not be empty');
+                    return showPopoverMessage($scope.ui, 'query', 'fields-legend', 'Query fields should not be empty');
 
                 var indexes = item.indexes;
 
                 if (indexes && indexes.length > 0) {
                     if (_.find(indexes, function (index, i) {
                             if ($common.isEmptyArray(index.fields))
-                                return !showPopoverMessage($scope.panels, 'query', 'indexes' + i, 'Index fields are not specified');
+                                return !showPopoverMessage($scope.ui, 'query', 'indexes' + i, 'Index fields are not specified');
                         }))
                         return false;
                 }
@@ -1291,22 +1291,22 @@ consoleModule.controller('domainsController', function ($filter, $http, $timeout
 
             if (str) {
                 if ($common.isEmptyString(item.databaseSchema))
-                    return showPopoverMessage($scope.panels, 'store', 'databaseSchema', 'Database schema should not be empty');
+                    return showPopoverMessage($scope.ui, 'store', 'databaseSchema', 'Database schema should not be empty');
 
                 if ($common.isEmptyString(item.databaseTable))
-                    return showPopoverMessage($scope.panels, 'store', 'databaseTable', 'Database table should not be empty');
+                    return showPopoverMessage($scope.ui, 'store', 'databaseTable', 'Database table should not be empty');
 
                 if ($common.isEmptyArray(item.keyFields))
-                    return showPopoverMessage($scope.panels, 'store', 'keyFields-add', 'Key fields are not specified');
+                    return showPopoverMessage($scope.ui, 'store', 'keyFields-add', 'Key fields are not specified');
 
                 if ($common.isJavaBuiltInClass(item.keyType) && item.keyFields.length !== 1)
-                    return showPopoverMessage($scope.panels, 'store', 'keyFields-add', 'Only one field should be specified in case when key type is a Java built-in type');
+                    return showPopoverMessage($scope.ui, 'store', 'keyFields-add', 'Only one field should be specified in case when key type is a Java built-in type');
 
                 if ($common.isEmptyArray(item.valueFields))
-                    return showPopoverMessage($scope.panels, 'store', 'valueFields-add', 'Value fields are not specified');
+                    return showPopoverMessage($scope.ui, 'store', 'valueFields-add', 'Value fields are not specified');
             }
             else if (!qry && item.queryMetadata === 'Configuration') {
-                return showPopoverMessage($scope.panels, 'query', 'query-title', 'SQL query domain model should be configured');
+                return showPopoverMessage($scope.ui, 'query', 'query-title', 'SQL query domain model should be configured');
             }
 
             return true;
@@ -1505,7 +1505,7 @@ consoleModule.controller('domainsController', function ($filter, $http, $timeout
 
                     // Found duplicate by key.
                     if (idx >= 0 && idx !== index)
-                        return showPopoverMessage($scope.panels, 'query', $table.tableFieldId(index, pairField.idPrefix + pairField.id), 'Field with such ' + pairField.dupObjName + ' already exists!');
+                        return showPopoverMessage($scope.ui, 'query', $table.tableFieldId(index, pairField.idPrefix + pairField.id), 'Field with such ' + pairField.dupObjName + ' already exists!');
                 }
 
                 if (pairField.classValidation && !$common.isValidJavaClass(pairField.msg, pairValue.value, true, $table.tableFieldId(index, 'Value' + pairField.id)))
@@ -1563,7 +1563,7 @@ consoleModule.controller('domainsController', function ($filter, $http, $timeout
 
                     // Found duplicate.
                     if (idx >= 0 && index !== idx)
-                        return showPopoverMessage($scope.panels, 'store', $table.tableFieldId(index, 'DatabaseFieldName' + dbFieldTable.id), 'Field with such database name already exists!');
+                        return showPopoverMessage($scope.ui, 'store', $table.tableFieldId(index, 'DatabaseFieldName' + dbFieldTable.id), 'Field with such database name already exists!');
 
                     idx = _.findIndex(model, function (dbMeta) {
                         return dbMeta.javaFieldName === dbFieldValue.javaFieldName;
@@ -1571,7 +1571,7 @@ consoleModule.controller('domainsController', function ($filter, $http, $timeout
 
                     // Found duplicate.
                     if (idx >= 0 && index !== idx)
-                        return showPopoverMessage($scope.panels, 'store', $table.tableFieldId(index, 'JavaFieldName' + dbFieldTable.id), 'Field with such java name already exists!');
+                        return showPopoverMessage($scope.ui, 'store', $table.tableFieldId(index, 'JavaFieldName' + dbFieldTable.id), 'Field with such java name already exists!');
 
                     if (index < 0) {
                         model.push(dbFieldValue);
@@ -1633,7 +1633,7 @@ consoleModule.controller('domainsController', function ($filter, $http, $timeout
 
                 // Found duplicate.
                 if (idx >= 0 && idx !== curIdx)
-                    return showPopoverMessage($scope.panels, 'query', $table.tableFieldId(curIdx, 'IndexName'), 'Index with such name already exists!');
+                    return showPopoverMessage($scope.ui, 'query', $table.tableFieldId(curIdx, 'IndexName'), 'Index with such name already exists!');
             }
 
             $table.tableReset();
@@ -1750,7 +1750,7 @@ consoleModule.controller('domainsController', function ($filter, $http, $timeout
 
                 // Found duplicate.
                 if (idx >= 0 && idx !== curIdx)
-                    return showPopoverMessage($scope.panels, 'query', $table.tableFieldId(curIdx, 'FieldName' + (index.indexType === 'SORTED' ? 'S' : '') + indexIdx + (curIdx >= 0 ? '-' : '')), 'Field with such name already exists in index!');
+                    return showPopoverMessage($scope.ui, 'query', $table.tableFieldId(curIdx, 'FieldName' + (index.indexType === 'SORTED' ? 'S' : '') + indexIdx + (curIdx >= 0 ? '-' : '')), 'Field with such name already exists in index!');
             }
 
             $table.tableReset();

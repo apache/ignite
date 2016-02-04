@@ -20,7 +20,16 @@ export default ['javaKeywords', ['JavaTypes', (JavaTypes) => {
         if (typeof attrs.javaKeywords === 'undefined' || !attrs.javaKeywords)
             return;
 
-        ngModel.$validators.javaKeywords = JavaTypes.nonKeywords;
+        ngModel.$validators.javaKeywords = (value) => {
+            if (value) {
+                for (const item of value.split('.')) {
+                    if (JavaTypes.isKeywords(item))
+                        return false;
+                }
+            }
+
+            return true;
+        };
     };
 
     return {

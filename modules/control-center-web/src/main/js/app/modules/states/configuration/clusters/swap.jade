@@ -16,7 +16,7 @@
 
 - var model = 'backupItem.swapSpaceSpi'
 
-form.panel.panel-default(name='swapSpaceSpi')
+form.panel.panel-default(name='swapSpaceSpi' novalidate)
     .panel-heading(bs-collapse-toggle ng-click='__show__ = true')
         ignite-form-panel-chevron
         label Swap
@@ -36,10 +36,10 @@ form.panel.panel-default(name='swapSpaceSpi')
                         ignite-form-field-dropdown(
                             data-id='swapSpaceSpi'
                             data-name='swapSpaceSpi'
-                            data-options="[\
-                                {value: 'FileSwapSpaceSpi', label: 'File-based swap'},\
-                                {value: undefined, label: 'Not set'}\
-                            ]"
+                            data-options='[\
+                                {value: "FileSwapSpaceSpi", label: "File-based swap"},\
+                                {value: undefined, label: "Not set"}\
+                            ]'
                             data-ng-model='#{model}.kind'
                             data-placeholder='Choose swap SPI'
                         )
@@ -87,6 +87,8 @@ form.panel.panel-default(name='swapSpaceSpi')
                                     data-name='maximumSparsity'
                                     data-ng-model='#{model}.FileSwapSpaceSpi.maximumSparsity'
                                     data-placeholder='0.5'
+                                    data-max=0.999
+                                    data-min=0
                                 )
                         .details-row
                             ignite-form-field
@@ -112,7 +114,7 @@ form.panel.panel-default(name='swapSpaceSpi')
                                     data-id='writeBufferSize'
                                     data-name='writeBufferSize'
                                     data-ng-model='#{model}.FileSwapSpaceSpi.writeBufferSize'
-                                    data-placeholder='Available CPU cores'
+                                    data-placeholder='64 * 1024'
                                 )
 
 

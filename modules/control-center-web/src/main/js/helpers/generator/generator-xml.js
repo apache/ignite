@@ -352,7 +352,7 @@ $generatorXml.clusterGeneral = function (cluster, res) {
                 break;
 
             default:
-                throw "Unknown discovery kind: " + d.kind;
+                res.line('Unknown discovery kind: ' + d.kind);
         }
 
         res.endBlock('</property>');
@@ -583,9 +583,12 @@ $generatorXml.clusterEvents = function (cluster, res) {
 
                 res.line('<!-- EventType.' + eventGroup + ' -->');
 
-                _.forEach(evtGrps[eventGroup], function(event) {
-                    res.line('<util:constant static-field="org.apache.ignite.events.EventType.' + event + '"/>');
-                });
+                var evtGrp = _.find(evtGrps, {value: eventGroup});
+
+                if (evtGrp)
+                    _.forEach(evtGrp.events, function(event) {
+                        res.line('<util:constant static-field="' + evtGrp.class + '.' + event + '"/>');
+                    });
             });
 
             res.endBlock('</list>');
@@ -687,7 +690,7 @@ $generatorXml.clusterTransactions = function (cluster, res) {
     if (!res)
         res = $generatorCommon.builder();
 
-    $generatorXml.beanProperty(res, cluster.transactionConfiguration, 'transactionConfiguration', $generatorCommon.TRANSACTION_CONFIGURATION);
+    $generatorXml.beanProperty(res, cluster.transactionConfiguration, 'transactionConfiguration', $generatorCommon.TRANSACTION_CONFIGURATION, true);
 
     res.needEmptyLine = true;
 
@@ -1122,8 +1125,34 @@ $generatorXml.domainModelGeneral = function(domain, res) {
     if (!res)
         res = $generatorCommon.builder();
 
-    $generatorXml.classNameProperty(res, domain, 'keyType');
-    $generatorXml.property(res, domain, 'valueType');
+    switch ($generatorCommon.domainQueryMetadata(domain)) {
+        case 'Annotations':
+            if ($commonUtils.isDefinedAndNotEmpty(domain.keyType) || $commonUtils.isDefinedAndNotEmpty(domain.valueType)) {
+                res.startBlock('<property name="indexedTypes">');
+                res.startBlock('<list>');
+
+                if ($commonUtils.isDefinedAndNotEmpty(domain.keyType))
+                    res.line('<value>' + $dataStructures.fullClassName(domain.keyType) + '</value>');
+                else
+                    res.line('<value>???</value>');
+
+                if ($commonUtils.isDefinedAndNotEmpty(domain.valueType))
+                    res.line('<value>' + $dataStructures.fullClassName(domain.valueType) + '</value>');
+                else
+                    res.line('<value>>???</value>');
+
+                res.endBlock('</list>');
+                res.endBlock('</property>');
+            }
+
+            break;
+
+        case 'Configuration':
+            $generatorXml.classNameProperty(res, domain, 'keyType');
+            $generatorXml.property(res, domain, 'valueType');
+
+            break;
+    }
 
     res.needEmptyLine = true;
 

@@ -20,27 +20,42 @@ import template from './group.jade!';
 export default ['igniteFormGroup', [() => {
     const controller = [function() { }];
 
-    const link = (scope, el, attrs, [form]) => {
-        const {name} = scope;
+    const link = (scope, el, attrs, [ngModelCtrl, ownFormCtrl, parentFormCtrl]) => {
+        const name = attrs.ngForm;
+        ngModelCtrl.$name = name;
 
-        form.$defaults = form.$defaults || {};
-        form.$defaults[name] = _.cloneDeep(scope.value);
+        parentFormCtrl.$addControl(ngModelCtrl);
+        parentFormCtrl.$removeControl(ownFormCtrl);
+
+        scope.value = scope.value || [];
+        parentFormCtrl.$defaults = parentFormCtrl.$defaults || {};
+        parentFormCtrl.$defaults[name] = _.cloneDeep(scope.value);
 
         const setAsDefault = () => {
-            if (!form.$pristine) return;
+            if (!parentFormCtrl.$pristine)
+                return;
 
-            form.$defaults = form.$defaults || {};
-            form.$defaults[name] = _.cloneDeep(scope.value);
+            scope.value = scope.value || [];
+            parentFormCtrl.$defaults = parentFormCtrl.$defaults || {};
+            parentFormCtrl.$defaults[name] = _.cloneDeep(scope.value);
         };
 
-        scope.$watch(() => form.$pristine, setAsDefault);
+        const setAsDirty = () => {
+            if (JSON.stringify(scope.value) !== JSON.stringify(parentFormCtrl.$defaults[name]))
+                ngModelCtrl.$setDirty();
+            else
+                ngModelCtrl.$setPristine();
+        };
+
+        scope.$watch(() => parentFormCtrl.$pristine, setAsDefault);
+
         scope.$watch('value', setAsDefault);
+        scope.$watch('value', setAsDirty, true);
     };
 
     return {
         restrict: 'E',
         scope: {
-            name: '@',
             value: '=ngModel'
         },
         bindToController: {
@@ -52,6 +67,6 @@ export default ['igniteFormGroup', [() => {
         controllerAs: 'group',
         replace: true,
         transclude: true,
-        require: ['^form', '?^igniteFormField']
+        require: ['ngModel', '?form', '^^form']
     };
 }]];

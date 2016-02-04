@@ -119,7 +119,7 @@ mixin table-igfs-path-mode-edit(prefix, keyPlaceholder, valPlaceholder, focusId,
         label.placeholder #{valPlaceholder}
         +btn-save(btnVisible, btnSave)
         .input-tip
-            button.select-toggle.form-control(id=valFocusId bs-select ng-model=valModel data-placeholder=valPlaceholder bs-options="item.value as item.label for item in igfsModes" tabindex='0' on-enter=btnVisibleAndSave on-escape='tableReset()')
+            button.select-toggle.form-control(id=valFocusId bs-select ng-model=valModel data-placeholder=valPlaceholder bs-options='item.value as item.label for item in igfsModes' tabindex='0' on-enter=btnVisibleAndSave on-escape='tableReset()')
 
 mixin table-igfs-path-mode(header, tblMdl, keyFld, valFld, keyPlaceholder, valPlaceholder)
     .col-sm-12.group
@@ -172,9 +172,9 @@ mixin details-row(lblClasses, fieldClasses)
                 +tipField('detail.tip')
                 .input-tip
                     input.form-control(id='{{::detail.id}}' name='{{detail.model}}' type='number' placeholder='{{::detail.placeholder}}' min='{{detail.min ? detail.min : 0}}' max='{{detail.max ? detail.max : Number.MAX_VALUE}}' step='{{detail.step ? detail.step : 1}}')&attributes(detailCommon)
-                    +ico-exclamation('{{detail.model}}', 'min', 'Value is less than allowable minimum.')
-                    +ico-exclamation('{{detail.model}}', 'max', 'Value is more than allowable maximum.')
-                    +ico-exclamation('{{detail.model}}', 'number', 'Invalid value. Only numbers allowed.')
+                    +ico-exclamation('{{detail.model}}', 'min', 'Value is less than allowable minimum')
+                    +ico-exclamation('{{detail.model}}', 'max', 'Value is more than allowable maximum')
+                    +ico-exclamation('{{detail.model}}', 'number', 'Invalid value. Only numbers allowed')
         div(ng-switch-when='dropdown' ng-hide=detailHide)
             label(class=lblDetailClasses ng-class='{required: detail.required}') {{::detail.label}}:
             .div(class=fieldClasses)
@@ -209,7 +209,7 @@ mixin details-row(lblClasses, fieldClasses)
                                         +btn-save('tableSimpleSaveVisible(detail, index)', 'tableSimpleSave(tableSimpleValid, backupItem, detail, $index)')
                                         .input-tip.form-group.has-feedback
                                             input.form-control(id='cur{{::detail.focusId + $index}}' name='{{detail.model}}.edit' type='text' ng-model='detail.curValue' placeholder='{{::detail.placeholder}}' on-enter='tableSimpleSaveVisible(detail, index) && tableSimpleSave(tableSimpleValid, backupItem, detail, $index)' on-escape='tableReset()')&attributes(customValidators)
-                                            +ico-exclamation('{{detail.model}}.edit', 'ipaddress', 'Invalid address, see help for format description.')
+                                            +ico-exclamation('{{detail.model}}.edit', 'ipaddress', 'Invalid address, see help for format description')
                         tfoot(ng-show='tableNewItemActive(detail)')
                             tr
                                 td
@@ -217,7 +217,7 @@ mixin details-row(lblClasses, fieldClasses)
                                     +btn-save('tableSimpleSaveVisible(detail, -1)', 'tableSimpleSave(tableSimpleValid, backupItem, detail, -1)')
                                     .input-tip.form-group.has-feedback
                                         input.form-control(id='new{{::detail.focusId}}' name='{{detail.model}}' type='text' ng-model='detail.newValue' placeholder='{{::detail.placeholder}}' on-enter='tableSimpleSaveVisible(detail, -1) && tableSimpleSave(tableSimpleValid, backupItem, detail, -1)' on-escape='tableReset()')&attributes(customValidators)
-                                        +ico-exclamation('{{detail.model}}', 'ipaddress', 'Invalid address, see help for format description.')
+                                        +ico-exclamation('{{detail.model}}', 'ipaddress', 'Invalid address, see help for format description')
 
 mixin table-db-field-edit(prefix, focusId, index)
     -var databaseName = prefix + 'DatabaseFieldName'
@@ -368,9 +368,9 @@ mixin form-row-custom(lblClasses, fieldClasses, dataSource)
                 +tipField('field.tip')
                 .input-tip
                     input.form-control(id='{{::field.id}}' name='{{field.model}}' type='number' placeholder='{{::field.placeholder}}' min='{{field.min ? field.min : 0}}' max='{{field.max ? field.max : Number.MAX_VALUE}}' step='{{field.step ? field.step: 1}}')&attributes(fieldCommon)&attributes(fieldDisabled)
-                    +ico-exclamation('{{field.model}}', 'min', 'Value is less than allowable minimum.')
-                    +ico-exclamation('{{field.model}}', 'max', 'Value is more than allowable maximum.')
-                    +ico-exclamation('{{field.model}}', 'number', 'Invalid value. Only numbers allowed.')
+                    +ico-exclamation('{{field.model}}', 'min', 'Value is less than allowable minimum')
+                    +ico-exclamation('{{field.model}}', 'max', 'Value is more than allowable maximum')
+                    +ico-exclamation('{{field.model}}', 'number', 'Invalid value. Only numbers allowed')
         div(ng-switch-when='dropdown' ng-hide=fieldHide)
             label(class=lblClasses ng-class=fieldRequiredClass) {{::field.label}}:
             div(class=fieldClasses)
@@ -380,7 +380,7 @@ mixin form-row-custom(lblClasses, fieldClasses, dataSource)
         div(ng-switch-when='dropdown-multiple' ng-hide=fieldHide)
             div(class=lblClasses)
                 label(ng-class=fieldRequiredClass) {{::field.label}}:
-                a.customize(ng-if='field.addLink' ui-sref='{{field.addLink.ref}}({id: {{backupItem._id}}})') (add)
+                a.customize(ng-if='field.addLink' ui-sref='{{field.addLink.ref}}({id: backupItem._id})') (add)
             div(class=fieldClasses)
                 +tipField('field.tip')
                 .input-tip
@@ -491,7 +491,7 @@ mixin form-row-custom(lblClasses, fieldClasses, dataSource)
                                             label.placeholder Index type
                                             +btn-save('tableIndexSaveVisible(field, $index)', 'tableIndexSave(field, $index)')
                                             .input-tip
-                                                button.select-toggle.form-control(id='{{"curIndexType" + $index}}' bs-select ng-model='field.curIndexType' data-placeholder='Select index type' bs-options="item.value as item.label for item in indexType" tabindex='0' on-enter=btnVisibleAndSave on-escape='tableReset()')
+                                                button.select-toggle.form-control(id='{{"curIndexType" + $index}}' bs-select ng-model='field.curIndexType' data-placeholder='Select index type' bs-options='item.value as item.label for item in indexType' tabindex='0' on-enter=btnVisibleAndSave on-escape='tableReset()')
                                     .margin-left-dflt
                                         table.links-edit-sub(st-table='item.fields' ng-init='itemIndex = $index')
                                             tbody
@@ -514,12 +514,12 @@ mixin form-row-custom(lblClasses, fieldClasses, dataSource)
                                         label.placeholder Index name
                                         label.fieldSep /
                                         .input-tip
-                                            input#newIndexName.form-control(type='text' enter-focus-next="newIndexType" ng-model='field.newIndexName' placeholder='Index name' on-enter='tableIndexSaveVisible(field, -1) && tableIndexSave(field, -1)' on-escape='tableReset()')
+                                            input#newIndexName.form-control(type='text' enter-focus-next='newIndexType' ng-model='field.newIndexName' placeholder='Index name' on-enter='tableIndexSaveVisible(field, -1) && tableIndexSave(field, -1)' on-escape='tableReset()')
                                     .col-sm-5
                                         label.placeholder Index type
                                         +btn-save('tableIndexSaveVisible(field, -1)', 'tableIndexSave(field, -1)')
                                         .input-tip
-                                            button#newIndexType.select-toggle.form-control(bs-select ng-model='field.newIndexType' data-placeholder='Select index type' bs-options="item.value as item.label for item in indexType" tabindex='0' on-enter=btnVisibleAndSave on-escape='tableReset()')
+                                            button#newIndexType.select-toggle.form-control(bs-select ng-model='field.newIndexType' data-placeholder='Select index type' bs-options='item.value as item.label for item in indexType' tabindex='0' on-enter=btnVisibleAndSave on-escape='tableReset()')
 
 mixin main-table(title, rows, focusId, click, rowTemplate, searchField)
     .padding-bottom-dflt(ng-show='#{rows} && #{rows}.length > 0')

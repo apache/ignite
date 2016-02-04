@@ -17,7 +17,7 @@
 - var model = 'backupItem.binaryConfiguration'
 - var types = model + '.typeConfigurations'
 
-form.panel.panel-default(name='binary')
+form.panel.panel-default(name='binary' novalidate)
     .panel-heading(bs-collapse-toggle ng-click='__show__ = true')
         ignite-form-panel-chevron
         label Binary configuration
@@ -51,7 +51,7 @@ form.panel.panel-default(name='binary')
                             data-ng-model='#{model}.serializer'
                         )
                 .settings-row
-                    ignite-form-group(name='typeConfigurations' ng-model='#{types}')
+                    ignite-form-group(ng-form='typeConfigurations' ng-model='#{types}')
                         ignite-form-field-label
                             | Type configurations
                         ignite-form-group-tooltip

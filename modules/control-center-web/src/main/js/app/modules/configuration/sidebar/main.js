@@ -24,8 +24,8 @@ angular
 .provider('igniteConfigurationSidebar', function() {
     const items = [
         { text: 'Clusters', sref: 'base.configuration.clusters' },
-        { text: 'Caches', sref: 'base.configuration.caches' },
         { text: 'Model', sref: 'base.configuration.domains' },
+        { text: 'Caches', sref: 'base.configuration.caches' },
         { text: 'IGFS', sref: 'base.configuration.igfs' }
     ];
 

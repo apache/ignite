@@ -33,6 +33,7 @@ import 'angular-ui-grid';
 import 'angular-loading';
 import 'angular-drag-and-drop-lists';
 import 'angular-nvd3';
+import 'angular-retina';
 
 import 'bootstrap-carousel';
 import 'file-saver';
@@ -76,12 +77,12 @@ import './modules/settings/main';
 import './modules/configuration/sidebar/main';
 import './modules/configuration/include-event-types/main';
 import './modules/terms/main';
+import './modules/logo/main';
+import './modules/getting-started/main';
 // endignite
 
 // Directives.
 import igniteLoading from './directives/loading/loading.directive';
-import igniteCallout from './directives/callout/callout.directive';
-import igniteCalloutCel from './directives/callout/callout-cel.directive';
 import igniteInformation from './directives/information/information.directive';
 import igniteUiAce from './directives/ui-ace/ui-ace.directive';
 import igniteUiAceXml from './directives/ui-ace-xml/ui-ace-xml.directive';
@@ -92,6 +93,10 @@ import igniteUiAcePojos from './directives/ui-ace-pojos/ui-ace-pojos.directive';
 import igniteFormFieldJavaClass from './directives/form-field-java-class/form-field-java-class.directive';
 
 // Services.
+import cleanup from './services/cleanup/cleanup.service';
+
+// Providers
+import igniteCountries from './providers/Countries/index';
 
 // Filters.
 import hasPojo from './filters/hasPojo/hasPojo.filter';
@@ -100,6 +105,7 @@ angular
 .module('ignite-console', [
     'ui.router',
     'ui.router.title',
+    'ngRetina',
     // Base modules.
     'ignite-console.Auth',
     'ignite-console.User',
@@ -120,12 +126,12 @@ angular
     'ignite-console.userbar',
     'ignite-console.configuration.sidebar',
     'ignite-console.configuration.include-event-types',
-    'ignite-console.terms'
+    'ignite-console.terms',
+    'ignite-console.logo',
+    'ignite-console.getting-started'
 ])
 // Directives.
 .directive(...igniteLoading)
-.directive(...igniteCallout)
-.directive(...igniteCalloutCel)
 .directive(...igniteInformation)
 .directive(...igniteUiAce)
 .directive(...igniteUiAceXml)
@@ -135,6 +141,9 @@ angular
 .directive(...igniteUiAcePojos)
 .directive(...igniteFormFieldJavaClass)
 // Services.
+.service(...cleanup)
+// Providers.
+.provider(...igniteCountries)
 // Filters.
 .filter(...hasPojo)
 .config(['$stateProvider', '$locationProvider', '$urlRouterProvider', function($stateProvider, $locationProvider, $urlRouterProvider) {

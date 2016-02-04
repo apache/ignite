@@ -28,35 +28,45 @@ mixin lbl(txt)
                     .details-row
                         +lbl('User name:')
                         .col-xs-5.col-sm-4
-                            input.form-control(id='profile-username' type='text' ng-model='profileUser.username' placeholder='Input name' required auto-focus)
+                            input#profile-username.form-control(type='text' ng-model='user.username' placeholder='Input name' required auto-focus)
                     .details-row
                         +lbl('Email:')
                         .col-xs-5.col-sm-4
-                            input.form-control(id='profile-email' type='email' ng-model='profileUser.email' placeholder='you@domain.com' required)
+                            input#profile-email.form-control(type='email' ng-model='user.email' placeholder='you@domain.com' required)
+                    .details-row
+                        label.col-sm-2.labelFormField Company:
+                        .col-xs-5.col-sm-4
+                            input#profile-company.form-control(type='text' ng-model='user.company' placeholder='You company name')
+                    .details-row
+                        label.col-sm-2.labelFormField Country:
+                        .col-xs-5.col-sm-4
+                            button#profile-country.select-toggle.form-control(bs-select bs-options='item for item in countries' type='text' ng-model='user.country' placeholder='Choose you country')
                     .details-row
                         .advanced-options
-                            i.fa.fa-chevron-circle-down(ng-show='profileUser.showToken' ng-click='profileUser.showToken = ! profileUser.showToken')
-                            i.fa.fa-chevron-circle-right(ng-show='!profileUser.showToken' ng-click='profileUser.showToken = ! profileUser.showToken')
-                            a(ng-click='profileUser.showToken = ! profileUser.showToken') {{profileUser.showToken ? 'Hide security token...' : 'Show security token...'}}
-                    .details-row(ng-show='profileUser.showToken')
-                        +lbl('Security token:')
-                        label {{profileUser.token}}
-                        i.tipLabel.fa.fa-refresh(ng-click='generateToken()' bs-tooltip='' data-title='Generate random security token')
-                        i.tipLabel.fa.fa-clipboard(ng-click-copy='{{profileUser.token}}' bs-tooltip='' data-title='Copy security token to clipboard')
-                        i.tipLabel.fa.fa-question-circle(ng-if=lines bs-tooltip='' data-title='The security token is used for authorization of web agent')
+                            i.fa(
+                            ng-click='expandedToken = !expandedToken'
+                            ng-class='expandedToken ? "fa-chevron-circle-down" : "fa-chevron-circle-right"')
+                            a(ng-click='expandedToken = !expandedToken') {{expandedToken ? 'Hide security token...' : 'Show security token...'}}
+                        div(ng-show='expandedToken')
+                            +lbl('Security token:')
+                            label {{user.token}}
+                            i.tipLabel.fa.fa-refresh(ng-click='generateToken()' bs-tooltip='' data-title='Generate random security token')
+                            i.tipLabel.fa.fa-clipboard(ng-click-copy='{{user.token}}' bs-tooltip='' data-title='Copy security token to clipboard')
+                            i.tipLabel.fa.fa-question-circle(ng-if=lines bs-tooltip='' data-title='The security token is used for authorization of web agent')
                     .details-row
                         .advanced-options
-                            i.fa.fa-chevron-circle-down(ng-show='profileUser.changePassword' ng-click='profileUser.changePassword = ! profileUser.changePassword')
-                            i.fa.fa-chevron-circle-right(ng-show='!profileUser.changePassword' ng-click='profileUser.changePassword = ! profileUser.changePassword')
-                            a(ng-click='profileUser.changePassword = ! profileUser.changePassword') {{profileUser.changePassword ? 'Cancel password changing...' : 'Change password...'}}
-                    div(ng-if='profileUser.changePassword')
-                        .details-row
-                            +lbl('New password:')
-                            .col-xs-5.col-sm-4
-                                input.form-control(type='password' ng-model='profileUser.newPassword' placeholder='New password' ng-required='profileUser.changePassword')
-                        .details-row
-                            +lbl('Confirm:')
-                            .col-xs-5.col-sm-4
-                                input.form-control(type='password' ng-model='profileUser.confirmPassword' match='profileUser.newPassword' placeholder='Confirm new password' ng-required='profileUser.changePassword')
+                            i.fa(
+                            ng-click='expandedPassword = !expandedPassword'
+                            ng-class='expandedPassword ? "fa-chevron-circle-down" : "fa-chevron-circle-right"')
+                            a(ng-click='expandedPassword = !expandedPassword') {{expandedPassword ? 'Cancel password changing...' : 'Change password...'}}
+                        div(ng-show='expandedPassword')
+                            .details-row
+                                +lbl('New password:')
+                                .col-xs-5.col-sm-4
+                                    input.form-control(type='password' ng-model='newPassword' placeholder='New password')
+                            .details-row
+                                +lbl('Confirm:')
+                                .col-xs-5.col-sm-4
+                                    input.form-control(type='password' ng-model='confirmPassword' match='newPassword' placeholder='Confirm new password')
                 .col-xs-12.col-sm-12.details-row
                     a.btn.btn-primary(ng-disabled='!profileCouldBeSaved()' ng-click='profileCouldBeSaved() && saveUser()' bs-tooltip='' data-title='{{saveBtnTipText()}}' data-placement='bottom' data-trigger='hover') Save

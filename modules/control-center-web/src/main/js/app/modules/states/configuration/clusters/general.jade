@@ -16,7 +16,7 @@
 
 - var model = 'backupItem'
 
-form.panel.panel-default(name='general')
+form.panel.panel-default(name='general' novalidate)
     .panel-heading(bs-collapse-toggle)
         ignite-form-panel-chevron
         label General
@@ -29,7 +29,7 @@ form.panel.panel-default(name='general')
                         ignite-form-field-label
                             | Name:
                         ignite-form-field-tooltip
-                            | Local host address for socket binding
+                            | Grid name
                         ignite-form-field-input-text(
                             data-id='clusterName'
                             data-name='clusterName'
@@ -46,7 +46,7 @@ form.panel.panel-default(name='general')
                         ignite-form-field-dropdown(
                             data-id='caches'
                             data-name='caches'
-                            data-options="caches"
+                            data-options='caches'
                             data-multiple='true'
                             data-ng-model='#{model}.caches'
                             data-ng-disabled='!caches.length'
@@ -73,7 +73,7 @@ form.panel.panel-default(name='general')
                         ignite-form-field-dropdown(
                             data-id='discovery'
                             data-name='discovery'
-                            data-options="discoveries"
+                            data-options='discoveries'
                             data-ng-model='#{model}.discovery.kind'
                             data-placeholder='Choose marshaller'
                         )

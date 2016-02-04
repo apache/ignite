@@ -16,7 +16,7 @@
 
 - var model = 'backupItem.transactionConfiguration'
 
-form.panel.panel-default(name='transactionConfiguration')
+form.panel.panel-default(name='transactionConfiguration' novalidate)
     .panel-heading(bs-collapse-toggle ng-click='__show__ = true')
         ignite-form-panel-chevron
         label Transactions
@@ -35,10 +35,10 @@ form.panel.panel-default(name='transactionConfiguration')
                         ignite-form-field-dropdown(
                             data-id='defaultTxConcurrency'
                             data-name='defaultTxConcurrency'
-                            data-options="[\
-                                {value: 'OPTIMISTIC', label: 'OPTIMISTIC'},\
-                                {value: 'PESSIMISTIC', label: 'PESSIMISTIC'}\
-                            ]"
+                            data-options='[\
+                                {value: "OPTIMISTIC", label: "OPTIMISTIC"},\
+                                {value: "PESSIMISTIC", label: "PESSIMISTIC"}\
+                            ]'
                             data-ng-model='#{model}.defaultTxConcurrency'
                             data-placeholder='PESSIMISTIC'
                         )
@@ -49,14 +49,14 @@ form.panel.panel-default(name='transactionConfiguration')
                         ignite-form-field-tooltip
                             | Default transaction isolation
                         ignite-form-field-dropdown(
-                            data-id='transactionIsolation'
-                            data-name='transactionIsolation'
-                            data-options="[\
-                                {value: 'READ_COMMITTED', label: 'READ_COMMITTED'},\
-                                {value: 'REPEATABLE_READ', label: 'REPEATABLE_READ'},\
-                                {value: 'SERIALIZABLE', label: 'SERIALIZABLE'}\
-                            ]"
-                            data-ng-model='#{model}.transactionIsolation'
+                            data-id='defaultTxIsolation'
+                            data-name='defaultTxIsolation'
+                            data-options='[\
+                                {value: "READ_COMMITTED", label: "READ_COMMITTED"},\
+                                {value: "REPEATABLE_READ", label: "REPEATABLE_READ"},\
+                                {value: "SERIALIZABLE", label: "SERIALIZABLE"}\
+                            ]'
+                            data-ng-model='#{model}.defaultTxIsolation'
                             data-placeholder='REPEATABLE_READ'
                         )
                 .settings-row
@@ -98,13 +98,13 @@ form.panel.panel-default(name='transactionConfiguration')
                 .settings-row
                     ignite-form-field
                         ignite-form-field-label
-                            | Manager lookup
+                            | Manager factory
                         ignite-form-field-tooltip 
-                            | Class name of transaction manager finder for integration for JEE app servers
-                        ignite-form-field-input-text(
-                            data-id='txManagerLookupClassName'
-                            data-name='txManagerLookupClassName'
-                            data-ng-model='#{model}.txManagerLookupClassName'
+                            | Class name of transaction manager factory for integration with JEE app servers
+                        ignite-form-field-java-class(
+                            data-id='txManagerFactory'
+                            data-name='txManagerFactory'
+                            data-ng-model='#{model}.txManagerFactory'
                             data-placeholder='Enter fully qualified class name'
                         )
             .col-sm-6

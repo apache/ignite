@@ -16,5 +16,9 @@
 
 .container.container-footer
     footer
-        center(ignite-terms)
-            p(ng-repeat='item in terms.footerRows' ng-bind-html='item')
+        .col-md-offset-1.col-md-10
+            center(ignite-terms)
+                p(ng-repeat='item in terms.footerRows' ng-bind-html='item')
+        .col-md-1
+            .pull-right
+                ignite-powered-by-apache

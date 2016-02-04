@@ -33,6 +33,8 @@ mongoose.connect(config.get('mongoDB:url'), {server: {poolSize: 4}});
 var AccountSchema = new Schema({
     username: String,
     email: String,
+    company: String,
+    country: String,
     lastLogin: Date,
     admin: Boolean,
     token: String,
@@ -50,6 +52,8 @@ AccountSchema.set('toJSON', {
             _id: ret._id,
             email: ret.email,
             username: ret.username,
+            company: ret.company,
+            country: ret.country,
             admin: ret.admin,
             token: ret.token,
             lastLogin: ret.lastLogin
@@ -403,6 +407,8 @@ var ClusterSchema = new Schema({
         port: Number,
         portRange: Number,
         idleTimeout: Number,
+        idleQueryCursorTimeout: Number,
+        idleQueryCursorCheckFrequency: Number,
         receiveBufferSize: Number,
         sendBufferSize: Number,
         directBuffer: Boolean,
@@ -440,7 +446,7 @@ var ClusterSchema = new Schema({
         pessimisticTxLogLinger: Number,
         pessimisticTxLogSize: Number,
         txSerializableEnabled: Boolean,
-        txManagerLookupClassName: String
+        txManagerFactory: String
     },
     sslEnabled: Boolean,
     sslContextFactory: {

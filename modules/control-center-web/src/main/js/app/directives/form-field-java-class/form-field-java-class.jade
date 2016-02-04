@@ -1,8 +1,25 @@
+//-
+    Licensed to the Apache Software Foundation (ASF) under one or more
+    contributor license agreements.  See the NOTICE file distributed with
+    this work for additional information regarding copyright ownership.
+    The ASF licenses this file to You under the Apache License, Version 2.0
+    (the "License"); you may not use this file except in compliance with
+    the License.  You may obtain a copy of the License at
+
+         http://www.apache.org/licenses/LICENSE-2.0
+
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
+
 mixin feedback(error, message)
     i.fa.fa-exclamation-triangle.form-control-feedback(
-        ng-show='!form[name].$pristine && form[name].$error.#{error}'
-        bs-tooltip
-        data-title='#{message}'
+        ng-if='!form[name].$pristine && form[name].$error.#{error}'
+        bs-tooltip='"{{ label.name }} #{message}"'
+        ignite-error='#{error}'
+        ignite-error-message='{{ label.name }} #{message}'
     )
 
 div
@@ -24,12 +41,13 @@ div
         data-ignite-form-field-input-autofocus='autofocus || false '
 
         on-enter='onEnter()'
+        on-escape='onEscape()'
         data-ng-blur='ngBlur()'
     )
         span(ng-transclude)
 
-        +feedback('javaIdentifier', 'Trust manager is invalid!')
-        +feedback('required', 'Trust manager could not be empty!')
-        +feedback('javaKeywords', 'Trust manager could not contains reserved java keyword: ""!')
-        +feedback('javaBuiltInClass', 'Trust manager should not be the Java built-in class!')
-        +feedback('javaPackageSpecified', 'Trust manager does not have package specified!')
+        +feedback('javaIdentifier', 'is invalid Java identifier!')
+        +feedback('required', 'could not be empty!')
+        +feedback('javaKeywords', 'could not contains reserved Java keyword!')
+        +feedback('javaBuiltInClass', 'should not be the Java built-in class!')
+        +feedback('javaPackageSpecified', 'does not have package specified!')

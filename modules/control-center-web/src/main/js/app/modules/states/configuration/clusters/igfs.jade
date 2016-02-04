@@ -16,7 +16,7 @@
 
 - var model = 'backupItem'
 
-form.panel.panel-default(name='igfs')
+form.panel.panel-default(name='igfs' novalidate)
     .panel-heading(bs-collapse-toggle ng-click='__show__ = true')
         ignite-form-panel-chevron
         label IGFS
@@ -35,7 +35,7 @@ form.panel.panel-default(name='igfs')
                         ignite-form-field-dropdown(
                             data-id='igfss'
                             data-name='igfss'
-                            data-options="igfss"
+                            data-options='igfss'
                             data-multiple='true'
                             data-ng-model='#{model}.igfss'
                             data-ng-disabled='!igfss.length'

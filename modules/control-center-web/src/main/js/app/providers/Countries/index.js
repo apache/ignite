@@ -15,13 +15,11 @@
  * limitations under the License.
  */
 
-import template from './callout.jade!';
+// Java built-in short class names.
+import COUNTRIES from 'app/data/countries.json!';
 
-export default ['igniteCallout', [() => {
-    return {
-        restrict: 'E',
-        template,
-        replace: true,
-        transclude: true
-    };
-}]];
+export default ['igniteCountries', function() {
+    this.$get = [() => {
+        return COUNTRIES;
+    }];
+}];

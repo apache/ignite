@@ -50,7 +50,7 @@ $generatorJava.toJavaCode = function (val, type) {
     if (typeof(val) === 'number' || typeof(val) === 'boolean')
         return '' + val;
 
-    throw "Unknown type: " + typeof(val) + ' (' + val + ')';
+    return 'Unknown type: ' + typeof(val) + ' (' + val + ')';
 };
 
 /**
@@ -190,6 +190,35 @@ $generatorJava.property = function (res, varName, obj, propName, dataType, sette
         // Add to result if no default provided or value not equals to default.
         if (!hasDflt || (hasDflt && val !== dflt)) {
             res.line(varName + '.' + $generatorJava.setterName(propName, setterName) +
+                '(' + $generatorJava.toJavaCode(val, dataType) + ');');
+
+            return true;
+        }
+    }
+
+    return false;
+};
+
+/**
+ * Add enum property via setter / property name.
+ *
+ * @param res Resulting output with generated code.
+ * @param varName Variable name.
+ * @param obj Source object with data.
+ * @param propName Property name to take from source object.
+ * @param dataType Name of enum class
+ * @param setterName Optional special setter name.
+ * @param dflt Optional default value.
+ */
+$generatorJava.enumProperty = function (res, varName, obj, propName, dataType, setterName, dflt) {
+    var val = obj[propName];
+
+    if ($commonUtils.isDefinedAndNotEmpty(val)) {
+        var hasDflt = $commonUtils.isDefined(dflt);
+
+        // Add to result if no default provided or value not equals to default.
+        if (!hasDflt || (hasDflt && val !== dflt)) {
+            res.line(varName + '.' + $generatorJava.setterName(propName, setterName) +
                 '(' + $generatorJava.toJavaCode(val, dataType ? res.importClass(dataType) : null) + ');');
 
             return true;
@@ -320,7 +349,7 @@ $generatorJava.beanProperty = function (res, varName, bean, beanPropName, beanVa
                             break;
 
                         case 'enum':
-                            $generatorJava.property(res, beanVarName, bean, propName, descr.enumClass, descr.setterName, descr.dflt);
+                            $generatorJava.enumProperty(res, beanVarName, bean, propName, descr.enumClass, descr.setterName, descr.dflt);
                             break;
 
                         case 'float':
@@ -526,7 +555,7 @@ $generatorJava.clusterAtomics = function (cluster, res) {
 
         $generatorJava.declareVariable(res, 'atomicCfg', 'org.apache.ignite.configuration.AtomicConfiguration');
 
-        $generatorJava.property(res, 'atomicCfg', atomics, 'cacheMode', 'org.apache.ignite.cache.CacheMode');
+        $generatorJava.enumProperty(res, 'atomicCfg', atomics, 'cacheMode', 'org.apache.ignite.cache.CacheMode');
 
         var cacheMode = atomics.cacheMode ? atomics.cacheMode : 'PARTITIONED';
 
@@ -712,7 +741,7 @@ $generatorJava.clusterDeployment = function (cluster, res) {
     if (!res)
         res = $generatorCommon.builder();
 
-    $generatorJava.property(res, 'cfg', cluster, 'deploymentMode', null, null, 'SHARED');
+    $generatorJava.enumProperty(res, 'cfg', cluster, 'deploymentMode', 'org.apache.ignite.configuration.DeploymentMode', null, 'SHARED');
 
     res.needEmptyLine = true;
 
@@ -798,17 +827,24 @@ $generatorJava.clusterEvents = function (cluster, res) {
     if (cluster.includeEventTypes && cluster.includeEventTypes.length > 0) {
         res.emptyLineIfNeeded();
 
-        res.importClass('org.apache.ignite.events.EventType');
+        var evtGrps = angular.element(document.getElementById('app')).injector().get('igniteIncludeEventGroups');
+
+        var evtGrpDscr = _.find(evtGrps, {value: cluster.includeEventTypes[0]});
+
+        var evt = res.importStatic(evtGrpDscr.class + '.' + evtGrpDscr.value);
 
         if (cluster.includeEventTypes.length === 1)
-            res.line('cfg.setIncludeEventTypes(EventType.' + cluster.includeEventTypes[0] + ');');
+            res.line('cfg.setIncludeEventTypes(' + evt + ');');
         else {
-            res.line('int[] events = new int[EventType.' + cluster.includeEventTypes[0] + '.length');
+            _.forEach(cluster.includeEventTypes, function(value, ix) {
+                var evtGrpDscr = _.find(evtGrps, {value: value});
 
-            _.forEach(cluster.includeEventTypes, function(e, ix) {
-                if (ix > 0) {
-                    res.line('    + EventType.' + e + '.length');
-                }
+                var evt = res.importStatic(evtGrpDscr.class + '.' + evtGrpDscr.value);
+
+                if (ix === 0)
+                    res.line('int[] events = new int[' + evt + '.length');
+                else
+                    res.line('    + ' + evt + '.length');
             });
 
             res.line('];');
@@ -817,11 +853,17 @@ $generatorJava.clusterEvents = function (cluster, res) {
 
             res.line('int k = 0;');
 
-            _.forEach(cluster.includeEventTypes, function(e) {
+            _.forEach(cluster.includeEventTypes, function(value, idx) {
                 res.needEmptyLine = true;
 
-                res.line('System.arraycopy(EventType.' + e + ', 0, events, k, EventType.' + e + '.length);');
-                res.line('k += EventType.' + e + '.length;');
+                var evtGrpDscr = _.find(evtGrps, {value: value});
+
+                evt = res.importStatic(evtGrpDscr.class + '.' + value);
+
+                res.line('System.arraycopy(' + evt + ', 0, events, k, ' + evt + '.length);');
+
+                if (idx < cluster.includeEventTypes.length - 1)
+                    res.line('k += ' + evt + '.length;');
             });
 
             res.needEmptyLine = true;
@@ -930,7 +972,7 @@ $generatorJava.clusterTransactions = function (cluster, res) {
 
     $generatorJava.beanProperty(res, 'cfg', cluster.transactionConfiguration, 'transactionConfiguration',
         'transactionConfiguration', $generatorCommon.TRANSACTION_CONFIGURATION.className,
-        $generatorCommon.TRANSACTION_CONFIGURATION.fields);
+        $generatorCommon.TRANSACTION_CONFIGURATION.fields, true);
 
     return res;
 };
@@ -942,8 +984,8 @@ $generatorJava.cacheGeneral = function (cache, varName, res) {
 
     $generatorJava.property(res, varName, cache, 'name');
 
-    $generatorJava.property(res, varName, cache, 'cacheMode', 'org.apache.ignite.cache.CacheMode');
-    $generatorJava.property(res, varName, cache, 'atomicityMode', 'org.apache.ignite.cache.CacheAtomicityMode');
+    $generatorJava.enumProperty(res, varName, cache, 'cacheMode', 'org.apache.ignite.cache.CacheMode');
+    $generatorJava.enumProperty(res, varName, cache, 'atomicityMode', 'org.apache.ignite.cache.CacheAtomicityMode');
 
     if (cache.cacheMode === 'PARTITIONED')
         $generatorJava.property(res, varName, cache, 'backups');
@@ -962,7 +1004,7 @@ $generatorJava.cacheMemory = function (cache, varName, res) {
     if (!res)
         res = $generatorCommon.builder();
 
-    $generatorJava.property(res, varName, cache, 'memoryMode', 'org.apache.ignite.cache.CacheMemoryMode');
+    $generatorJava.enumProperty(res, varName, cache, 'memoryMode', 'org.apache.ignite.cache.CacheMemoryMode');
     $generatorJava.property(res, varName, cache, 'offHeapMaxMemory');
 
     res.needEmptyLine = true;
@@ -1279,8 +1321,8 @@ $generatorJava.cacheConcurrency = function (cache, varName, res) {
 
     $generatorJava.property(res, varName, cache, 'maxConcurrentAsyncOperations');
     $generatorJava.property(res, varName, cache, 'defaultLockTimeout');
-    $generatorJava.property(res, varName, cache, 'atomicWriteOrderMode', 'org.apache.ignite.cache.CacheAtomicWriteOrderMode');
-    $generatorJava.property(res, varName, cache, 'writeSynchronizationMode', 'org.apache.ignite.cache.CacheWriteSynchronizationMode');
+    $generatorJava.enumProperty(res, varName, cache, 'atomicWriteOrderMode', 'org.apache.ignite.cache.CacheAtomicWriteOrderMode');
+    $generatorJava.enumProperty(res, varName, cache, 'writeSynchronizationMode', 'org.apache.ignite.cache.CacheWriteSynchronizationMode');
 
     res.needEmptyLine = true;
 
@@ -1293,7 +1335,7 @@ $generatorJava.cacheRebalance = function (cache, varName, res) {
         res = $generatorCommon.builder();
 
     if (cache.cacheMode !== 'LOCAL') {
-        $generatorJava.property(res, varName, cache, 'rebalanceMode', 'org.apache.ignite.cache.CacheRebalanceMode', null, 'ASYNC');
+        $generatorJava.enumProperty(res, varName, cache, 'rebalanceMode', 'org.apache.ignite.cache.CacheRebalanceMode', null, 'ASYNC');
         $generatorJava.property(res, varName, cache, 'rebalanceThreadPoolSize', null, null, 1);
         $generatorJava.property(res, varName, cache, 'rebalanceBatchSize', null, null, 524288);
         $generatorJava.property(res, varName, cache, 'rebalanceBatchesPrefetchCount', null, null, 2);
@@ -1426,7 +1468,7 @@ $generatorJava.domainModelQueryIndexes = function (res, domain) {
                 $generatorJava.declareVariable(res, 'index', 'org.apache.ignite.cache.QueryIndex');
 
                 $generatorJava.property(res, 'index', index, 'name');
-                $generatorJava.property(res, 'index', index, 'indexType', 'org.apache.ignite.cache.QueryIndexType');
+                $generatorJava.enumProperty(res, 'index', index, 'indexType', 'org.apache.ignite.cache.QueryIndexType');
 
                 if (fields && fields.length > 0) {
                     $generatorJava.declareVariable(res, 'indFlds', 'java.util.LinkedHashMap', 'java.util.LinkedHashMap', 'String', 'Boolean');
@@ -1486,8 +1528,45 @@ $generatorJava.domainModelGeneral = function (domain, res) {
     if (!res)
         res = $generatorCommon.builder();
 
-    $generatorJava.classNameProperty(res, 'typeMeta', domain, 'keyType');
-    $generatorJava.property(res, 'typeMeta', domain, 'valueType');
+    switch ($generatorCommon.domainQueryMetadata(domain)) {
+        case 'Annotations':
+            if ($commonUtils.isDefinedAndNotEmpty(domain.keyType) || $commonUtils.isDefinedAndNotEmpty(domain.valueType)) {
+                var types = [];
+
+                if ($commonUtils.isDefinedAndNotEmpty(domain.keyType))
+                    types.push($generatorJava.toJavaCode(res.importClass(domain.keyType), 'class'));
+                else
+                    types.push('???');
+
+                if ($commonUtils.isDefinedAndNotEmpty(domain.valueType))
+                    types.push($generatorJava.toJavaCode(res.importClass(domain.valueType), 'class'));
+                else
+                    types.push('???');
+
+                if ($commonUtils.isDefinedAndNotEmpty(types)) {
+                    res.startBlock('cache.setIndexedTypes(');
+
+                    res.line(types.join(', '));
+
+                    res.endBlock(');');
+                }
+            }
+
+            break;
+
+        case 'Configuration':
+            $generatorJava.classNameProperty(res, 'jdbcTypes', domain, 'keyType');
+            $generatorJava.property(res, 'jdbcTypes', domain, 'valueType');
+
+            if ($commonUtils.isDefinedAndNotEmpty(domain.fields)) {
+                res.needEmptyLine = true;
+
+                $generatorJava.classNameProperty(res, 'qryMeta', domain, 'keyType');
+                $generatorJava.property(res, 'qryMeta', domain, 'valueType');
+            }
+
+            break;
+    }
 
     res.needEmptyLine = true;
 
@@ -1747,13 +1826,6 @@ $generatorJava.clusterCacheUse = function (caches, igfss, res) {
         clusterCacheInvoke(cache, names);
     });
 
-    if (names.length > 0) {
-        res.line('// Set data caches.');
-        res.line('cfg.setCacheConfiguration(' + names.join(', ') + ');');
-
-        res.needEmptyLine = true;
-    }
-
     var igfsNames = [];
 
     _.forEach(igfss, function (igfs) {
@@ -1761,9 +1833,12 @@ $generatorJava.clusterCacheUse = function (caches, igfss, res) {
         clusterCacheInvoke($generatorCommon.igfsMetaCache(igfs), igfsNames);
     });
 
-    if (igfsNames.length > 0) {
-        res.line('// Set IGFS caches.');
-        res.line('cfg.setCacheConfiguration(' + igfsNames.join(', ') + ');');
+    if (names.length > 0 || igfsNames.length > 0) {
+        _.forEach(igfsNames, function (igfsName) {
+            names.push(igfsName);
+        });
+
+        res.line('cfg.setCacheConfiguration(' + names.join(', ') + ');');
 
         res.needEmptyLine = true;
     }
@@ -2010,7 +2085,7 @@ $generatorJava.javaClassCode = function (domain, key, pkg, useConstructor, inclu
 
     res.endBlock('}');
 
-    return 'package ' + pkg + ';' + '\n\n' + res.generateImports() + '\n\n' + res.asString();
+    return 'package ' + pkg + ';' + '\n\n' + res.generateImports() + '\n\n' + res.generateStaticImports() + '\n\n' + res.asString();
 };
 
 /**
@@ -2253,7 +2328,7 @@ $generatorJava.igfsGeneral = function(igfs, varName, res) {
         $generatorJava.property(res, varName, igfs, 'name');
         $generatorJava.property(res, varName, igfs, 'dataCacheName');
         $generatorJava.property(res, varName, igfs, 'metaCacheName');
-        $generatorJava.property(res, varName, igfs, 'defaultMode', 'org.apache.ignite.igfs.IgfsMode', undefined, "DUAL_ASYNC");
+        $generatorJava.enumProperty(res, varName, igfs, 'defaultMode', 'org.apache.ignite.igfs.IgfsMode', undefined, "DUAL_ASYNC");
 
         res.needEmptyLine = true;
     }
@@ -2459,7 +2534,7 @@ $generatorJava.cluster = function (cluster, pkg, javaClass, clientNearCfg) {
 
         res.endBlock('}');
 
-        return 'package ' + pkg + ';\n\n' + res.generateImports() + '\n\n' + res.asString();
+        return 'package ' + pkg + ';\n\n' + res.generateImports() + '\n\n' + res.generateStaticImports()  + '\n\n' + res.asString();
     }
 
     return res.asString();
@@ -2487,6 +2562,278 @@ $generatorJava.dataSourceClassName = function (res, storeFactory) {
     return undefined;
 };
 
+// Defined queries for demo data.
+var PREDEFINED_QUERIES = [
+    {
+        schema: 'CARS',
+        type: 'PARKING',
+        create: 'CREATE TABLE IF NOT EXISTS CARS.PARKING (\n' +
+            'ID       INTEGER     NOT NULL PRIMARY KEY,\n' +
+            'NAME     VARCHAR(50) NOT NULL,\n' +
+            'CAPACITY INTEGER NOT NULL)',
+        fill: 'DELETE FROM CARS.PARKING;\n' +
+            'INSERT INTO CARS.PARKING(ID, NAME, CAPACITY) VALUES(0, \'Parking #1\', 10);\n' +
+            'INSERT INTO CARS.PARKING(ID, NAME, CAPACITY) VALUES(1, \'Parking #2\', 20);\n' +
+            'INSERT INTO CARS.PARKING(ID, NAME, CAPACITY) VALUES(2, \'Parking #3\', 30)',
+        selectQuery: [
+            "SELECT * FROM PARKING WHERE CAPACITY >= 20"
+        ]
+    },
+    {
+        schema: 'CARS',
+        type: 'CAR',
+        create: 'CREATE TABLE IF NOT EXISTS CARS.CAR (\n' +
+            'ID         INTEGER NOT NULL PRIMARY KEY,\n' +
+            'PARKING_ID INTEGER NOT NULL,\n' +
+            'NAME       VARCHAR(50) NOT NULL);',
+        fill: 'DELETE FROM CARS.CAR;\n' +
+            'INSERT INTO CARS.CAR(ID, PARKING_ID, NAME) VALUES(0, 0, \'Car #1\');\n' +
+            'INSERT INTO CARS.CAR(ID, PARKING_ID, NAME) VALUES(1, 0, \'Car #2\');\n' +
+            'INSERT INTO CARS.CAR(ID, PARKING_ID, NAME) VALUES(2, 0, \'Car #3\');\n' +
+            'INSERT INTO CARS.CAR(ID, PARKING_ID, NAME) VALUES(3, 1, \'Car #4\');\n' +
+            'INSERT INTO CARS.CAR(ID, PARKING_ID, NAME) VALUES(4, 1, \'Car #5\');\n' +
+            'INSERT INTO CARS.CAR(ID, PARKING_ID, NAME) VALUES(5, 2, \'Car #6\');\n' +
+            'INSERT INTO CARS.CAR(ID, PARKING_ID, NAME) VALUES(6, 2, \'Car #7\');\n' +
+            'INSERT INTO CARS.CAR(ID, PARKING_ID, NAME) VALUES(7, 2, \'Car #8\');\n' +
+            'INSERT INTO CARS.CAR(ID, PARKING_ID, NAME) VALUES(8, 2, \'Car #9\')',
+        selectQuery: [
+            "SELECT * FROM CAR WHERE PARKINGID = 2"
+        ]
+    },
+    {
+        type: 'COUNTRY',
+        create: 'CREATE TABLE IF NOT EXISTS COUNTRY (\n' +
+            'ID         INTEGER NOT NULL PRIMARY KEY,\n' +
+            'NAME       VARCHAR(50),\n' +
+            'POPULATION INTEGER NOT NULL);',
+        fill: 'DELETE FROM COUNTRY;\n' +
+            'INSERT INTO COUNTRY(ID, NAME, POPULATION) VALUES(0, \'Country #1\', 10000000);\n' +
+            'INSERT INTO COUNTRY(ID, NAME, POPULATION) VALUES(1, \'Country #2\', 20000000);\n' +
+            'INSERT INTO COUNTRY(ID, NAME, POPULATION) VALUES(2, \'Country #3\', 30000000);',
+        selectQuery: [
+            "SELECT * FROM COUNTRY WHERE POPULATION BETWEEN 15000000 AND 25000000"
+        ]
+    },
+    {
+        type: 'DEPARTMENT',
+        create: 'CREATE TABLE IF NOT EXISTS DEPARTMENT (\n' +
+            'ID         INTEGER NOT NULL PRIMARY KEY,\n' +
+            'COUNTRY_ID INTEGER NOT NULL,\n' +
+            'NAME       VARCHAR(50) NOT NULL);',
+        fill: 'DELETE FROM DEPARTMENT;\n' +
+            'INSERT INTO DEPARTMENT(ID, COUNTRY_ID, NAME) VALUES(0, 0, \'Department #1\');\n' +
+            'INSERT INTO DEPARTMENT(ID, COUNTRY_ID, NAME) VALUES(1, 0, \'Department #2\');\n' +
+            'INSERT INTO DEPARTMENT(ID, COUNTRY_ID, NAME) VALUES(2, 2, \'Department #3\');\n' +
+            'INSERT INTO DEPARTMENT(ID, COUNTRY_ID, NAME) VALUES(3, 1, \'Department #4\');\n' +
+            'INSERT INTO DEPARTMENT(ID, COUNTRY_ID, NAME) VALUES(4, 1, \'Department #5\');\n' +
+            'INSERT INTO DEPARTMENT(ID, COUNTRY_ID, NAME) VALUES(5, 1, \'Department #6\');',
+        selectQuery: [
+            "SELECT * FROM DEPARTMENT"
+        ]
+    },
+    {
+        type: 'EMPLOYEE',
+        create: 'CREATE TABLE IF NOT EXISTS EMPLOYEE (\n' +
+            'ID            INTEGER NOT NULL PRIMARY KEY,\n' +
+            'DEPARTMENT_ID INTEGER NOT NULL,\n' +
+            'MANAGER_ID    INTEGER,\n' +
+            'FIRST_NAME    VARCHAR(50) NOT NULL,\n' +
+            'LAST_NAME     VARCHAR(50) NOT NULL,\n' +
+            'EMAIL         VARCHAR(50) NOT NULL,\n' +
+            'PHONE_NUMBER  VARCHAR(50),\n' +
+            'HIRE_DATE     DATE        NOT NULL,\n' +
+            'JOB           VARCHAR(50) NOT NULL,\n' +
+            'SALARY        DOUBLE);',
+        fill: 'DELETE FROM EMPLOYEE;\n' +
+            'INSERT INTO EMPLOYEE(ID, DEPARTMENT_ID, FIRST_NAME, LAST_NAME, EMAIL, PHONE_NUMBER, HIRE_DATE, JOB, SALARY) VALUES(0, 0, \'First name manager #1\', \'Last name manager #1\', \'Email manager #1\', \'Phone number manager #1\', \'2014-01-01\', \'Job manager #1\', 1100.00);\n' +
+            'INSERT INTO EMPLOYEE(ID, DEPARTMENT_ID, FIRST_NAME, LAST_NAME, EMAIL, PHONE_NUMBER, HIRE_DATE, JOB, SALARY) VALUES(1, 1, \'First name manager #2\', \'Last name manager #2\', \'Email manager #2\', \'Phone number manager #2\', \'2014-01-01\', \'Job manager #2\', 2100.00);\n' +
+            'INSERT INTO EMPLOYEE(ID, DEPARTMENT_ID, FIRST_NAME, LAST_NAME, EMAIL, PHONE_NUMBER, HIRE_DATE, JOB, SALARY) VALUES(2, 2, \'First name manager #3\', \'Last name manager #3\', \'Email manager #3\', \'Phone number manager #3\', \'2014-01-01\', \'Job manager #3\', 3100.00);\n' +
+            'INSERT INTO EMPLOYEE(ID, DEPARTMENT_ID, FIRST_NAME, LAST_NAME, EMAIL, PHONE_NUMBER, HIRE_DATE, JOB, SALARY) VALUES(3, 3, \'First name manager #4\', \'Last name manager #4\', \'Email manager #4\', \'Phone number manager #4\', \'2014-01-01\', \'Job manager #4\', 1500.00);\n' +
+            'INSERT INTO EMPLOYEE(ID, DEPARTMENT_ID, FIRST_NAME, LAST_NAME, EMAIL, PHONE_NUMBER, HIRE_DATE, JOB, SALARY) VALUES(4, 4, \'First name manager #5\', \'Last name manager #5\', \'Email manager #5\', \'Phone number manager #5\', \'2014-01-01\', \'Job manager #5\', 1700.00);\n' +
+            'INSERT INTO EMPLOYEE(ID, DEPARTMENT_ID, FIRST_NAME, LAST_NAME, EMAIL, PHONE_NUMBER, HIRE_DATE, JOB, SALARY) VALUES(5, 5, \'First name manager #6\', \'Last name manager #6\', \'Email manager #6\', \'Phone number manager #6\', \'2014-01-01\', \'Job manager #6\', 1300.00);\n' +
+            'INSERT INTO EMPLOYEE(ID, DEPARTMENT_ID, MANAGER_ID, FIRST_NAME, LAST_NAME, EMAIL, PHONE_NUMBER, HIRE_DATE, JOB, SALARY) VALUES(101, 0, 0, \'First name employee #1\', \'Last name employee #1\', \'Email employee #1\', \'Phone number employee #1\', \'2014-01-01\', \'Job employee #1\', 600.00);\n' +
+            'INSERT INTO EMPLOYEE(ID, DEPARTMENT_ID, MANAGER_ID, FIRST_NAME, LAST_NAME, EMAIL, PHONE_NUMBER, HIRE_DATE, JOB, SALARY) VALUES(102, 0, 0, \'First name employee #2\', \'Last name employee #2\', \'Email employee #2\', \'Phone number employee #2\', \'2014-01-01\', \'Job employee #2\', 1600.00);\n' +
+            'INSERT INTO EMPLOYEE(ID, DEPARTMENT_ID, MANAGER_ID, FIRST_NAME, LAST_NAME, EMAIL, PHONE_NUMBER, HIRE_DATE, JOB, SALARY) VALUES(103, 1, 1, \'First name employee #3\', \'Last name employee #3\', \'Email employee #3\', \'Phone number employee #3\', \'2014-01-01\', \'Job employee #3\', 2600.00);\n' +
+            'INSERT INTO EMPLOYEE(ID, DEPARTMENT_ID, MANAGER_ID, FIRST_NAME, LAST_NAME, EMAIL, PHONE_NUMBER, HIRE_DATE, JOB, SALARY) VALUES(104, 2, 2, \'First name employee #4\', \'Last name employee #4\', \'Email employee #4\', \'Phone number employee #4\', \'2014-01-01\', \'Job employee #4\', 1000.00);\n' +
+            'INSERT INTO EMPLOYEE(ID, DEPARTMENT_ID, MANAGER_ID, FIRST_NAME, LAST_NAME, EMAIL, PHONE_NUMBER, HIRE_DATE, JOB, SALARY) VALUES(105, 2, 2, \'First name employee #5\', \'Last name employee #5\', \'Email employee #5\', \'Phone number employee #5\', \'2014-01-01\', \'Job employee #5\', 1200.00);\n' +
+            'INSERT INTO EMPLOYEE(ID, DEPARTMENT_ID, MANAGER_ID, FIRST_NAME, LAST_NAME, EMAIL, PHONE_NUMBER, HIRE_DATE, JOB, SALARY) VALUES(106, 2, 2, \'First name employee #6\', \'Last name employee #6\', \'Email employee #6\', \'Phone number employee #6\', \'2014-01-01\', \'Job employee #6\', 800.00);\n' +
+            'INSERT INTO EMPLOYEE(ID, DEPARTMENT_ID, MANAGER_ID, FIRST_NAME, LAST_NAME, EMAIL, PHONE_NUMBER, HIRE_DATE, JOB, SALARY) VALUES(107, 3, 3, \'First name employee #7\', \'Last name employee #7\', \'Email employee #7\', \'Phone number employee #7\', \'2014-01-01\', \'Job employee #7\', 1400.00);\n' +
+            'INSERT INTO EMPLOYEE(ID, DEPARTMENT_ID, MANAGER_ID, FIRST_NAME, LAST_NAME, EMAIL, PHONE_NUMBER, HIRE_DATE, JOB, SALARY) VALUES(108, 4, 4, \'First name employee #8\', \'Last name employee #8\', \'Email employee #8\', \'Phone number employee #8\', \'2014-01-01\', \'Job employee #8\', 800.00);\n' +
+            'INSERT INTO EMPLOYEE(ID, DEPARTMENT_ID, MANAGER_ID, FIRST_NAME, LAST_NAME, EMAIL, PHONE_NUMBER, HIRE_DATE, JOB, SALARY) VALUES(109, 4, 4, \'First name employee #9\', \'Last name employee #9\', \'Email employee #9\', \'Phone number employee #9\', \'2014-01-01\', \'Job employee #9\', 1490.00);\n' +
+            'INSERT INTO EMPLOYEE(ID, DEPARTMENT_ID, MANAGER_ID, FIRST_NAME, LAST_NAME, EMAIL, PHONE_NUMBER, HIRE_DATE, JOB, SALARY) VALUES(110, 4, 4, \'First name employee #10\', \'Last name employee #12\', \'Email employee #10\', \'Phone number employee #10\', \'2014-01-01\', \'Job employee #10\', 1600.00);\n' +
+            'INSERT INTO EMPLOYEE(ID, DEPARTMENT_ID, MANAGER_ID, FIRST_NAME, LAST_NAME, EMAIL, PHONE_NUMBER, HIRE_DATE, JOB, SALARY) VALUES(111, 5, 5, \'First name employee #11\', \'Last name employee #11\', \'Email employee #11\', \'Phone number employee #11\', \'2014-01-01\', \'Job employee #11\', 400.00);',
+        selectQuery: [
+            "SELECT * FROM EMPLOYEE WHERE MANAGERID IS NOT NULL"
+        ]
+    }
+];
+
+// Generate creation and execution of prepared statement.
+function _prepareStatement(res, conVar, query, select) {
+    if (query) {
+        var lines = query.split('\n');
+
+        _.forEach(lines, function (line, ix) {
+            if (ix == 0)
+                if (lines.length == 1)
+                    res.line(conVar + '.prepareStatement("' + line + '").execute' + (select ? 'Query' : 'Update') + '();');
+                else
+                    res.startBlock(conVar + '.prepareStatement("' + line + '" +');
+            else
+                res.line('"' + line + '"' + (ix === lines.length - 1 ? ').execute' + (select ? 'Query' : 'Update') + '();' : ' +'));
+        });
+
+        if (lines.length > 0)
+            res.needEmptyLine = true;
+
+        if (lines.length > 1)
+            res.endBlock();
+    }
+}
+
+// Generate creation and execution of cache query.
+function _multilineQuery(res, query, prefix, postfix) {
+    if (query) {
+        var lines = query.split('\n');
+
+        _.forEach(lines, function (line, ix) {
+            if (ix == 0)
+                if (lines.length == 1)
+                    res.line(prefix + '"' + line + '"' + postfix);
+                else
+                    res.startBlock(prefix + '"' + line + '" +');
+            else
+                res.line('"' + line + '"' + (ix === lines.length - 1 ? postfix : ' +'));
+        });
+
+        if (lines.length > 0)
+            res.needEmptyLine = true;
+
+        if (lines.length > 1)
+            res.endBlock();
+    }
+}
+
+$generatorJava.generateExample = function (cluster, res, factoryCls) {
+    var cachesWithDataSource = _.filter(cluster.caches, function (cache) {
+        if (cache.cacheStoreFactory && cache.cacheStoreFactory.kind) {
+            var storeFactory = cache.cacheStoreFactory[cache.cacheStoreFactory.kind];
+
+            return storeFactory.connectVia ? (storeFactory.connectVia === 'DataSource' ? storeFactory.dialect : undefined) : storeFactory.dialect;
+        }
+
+        return false;
+    });
+
+    // Prepare array of cache and his demo domain model list. Every domain is contained only in first cache.
+    var demoTypes = _.filter(_.map(cachesWithDataSource, function (curCache, curIx) {
+        return {
+            cache: curCache,
+            domains: _.filter(curCache.domains, function (domain) {
+                return domain.demo && $commonUtils.isDefinedAndNotEmpty(domain.valueFields) &&
+                    !_.find(cachesWithDataSource, function(checkCache, checkIx) {
+                        return checkIx < curIx && _.find(checkCache.domains, domain);
+                    });
+            })
+        }
+    }), function (cache) {
+        return $commonUtils.isDefinedAndNotEmpty(cache.domains);
+    });
+
+    if ($commonUtils.isDefinedAndNotEmpty(demoTypes)) {
+        var typeByDs = {};
+
+        // Group domain modes by data source
+        _.forEach(demoTypes, function (type) {
+            var ds = type.cache.cacheStoreFactory[type.cache.cacheStoreFactory.kind].dataSourceBean;
+
+            if (!typeByDs[ds])
+                typeByDs[ds] = [type];
+            else
+                typeByDs[ds].push(type);
+        });
+
+        // Generation of fill database method
+        res.line('/** Fill data for domain model demo example. */');
+        res.startBlock('private static void prepareExampleData() throws ' + res.importClass('java.sql.SQLException') + ' {');
+
+        _.forEach(typeByDs, function (types, ds) {
+            var conVar = ds + 'Con';
+
+            res.startBlock('try (' + res.importClass('java.sql.Connection') + ' ' + conVar + ' = ' + factoryCls + '.DataSources.INSTANCE_' + ds + '.getConnection()) {');
+
+            _.forEach(types, function (type) {
+                _.forEach(type.domains, function (domain) {
+                    var desc = _.find(PREDEFINED_QUERIES, function (desc) {
+                        return domain.valueType.toUpperCase().endsWith(desc.type);
+                    });
+
+                    if (desc) {
+                        if (desc.schema)
+                            _prepareStatement(res, conVar, 'CREATE SCHEMA IF NOT EXISTS ' + desc.schema);
+
+                        _prepareStatement(res, conVar, desc.create);
+                        _prepareStatement(res, conVar, desc.fill);
+
+                        res.line(conVar + '.commit();');
+
+                        res.needEmptyLine = true;
+                    }
+                });
+            });
+
+            res.endBlock('}');
+
+            res.needEmptyLine = true;
+        });
+
+        res.endBlock('}');
+
+        res.needEmptyLine = true;
+
+        // Generation of execute queries method.
+        res.line('/** Run demo examples. */');
+        res.startBlock('private static void runExamples(Ignite ignite) throws SQLException {');
+
+        var getType = function (fullType) {
+            return fullType.substr(fullType.lastIndexOf('.') + 1);
+        };
+
+        _.forEach(typeByDs, function (types, ds) {
+            var conVar = ds + 'Con';
+
+            res.startBlock('try (Connection ' + conVar + ' = ' + factoryCls + '.DataSources.INSTANCE_' + ds + '.getConnection()) {');
+
+            _.forEach(types, function (type) {
+                _.forEach(type.domains, function (domain) {
+                    var desc = _.find(PREDEFINED_QUERIES, function (desc) {
+                        return domain.valueType.toUpperCase().endsWith(desc.type);
+                    });
+
+                    if (desc) {
+                        _.forEach(desc.selectQuery, function (query) {
+                            _multilineQuery(res, query, 'ignite.cache("' + type.cache.name + '").query(new ' + res.importClass('org.apache.ignite.cache.query.SqlQuery') +
+                                '<>("' + getType(domain.valueType) + '", ', '));');
+
+                            res.needEmptyLine = true;
+                        })
+                    }
+                });
+            });
+
+            res.endBlock('}');
+
+            res.needEmptyLine = true;
+        });
+
+        res.endBlock('}');
+
+        res.needEmptyLine = true;
+    }
+
+    return demoTypes;
+};
+
 /**
  * Function to generate java class for node startup with cluster configuration.
  *
@@ -2505,6 +2852,9 @@ $generatorJava.nodeStartup = function (cluster, pkg, cls, cfg, factoryCls, clien
     res.line(' */');
     res.startBlock('public class ' + cls + ' {');
 
+    if (factoryCls)
+        var demoTypes = $generatorJava.generateExample(cluster, res, factoryCls);
+
     res.line('/**');
     res.line(' * Start up node with specified configuration.');
     res.line(' *');
@@ -2517,10 +2867,13 @@ $generatorJava.nodeStartup = function (cluster, pkg, cls, cfg, factoryCls, clien
     if (factoryCls)
         res.importClass(factoryCls);
 
-    if (clientNearCfg) {
+    if (clientNearCfg || $commonUtils.isDefinedAndNotEmpty(demoTypes))
         res.line(res.importClass('org.apache.ignite.Ignite') + ' ignite = ' +
             res.importClass('org.apache.ignite.Ignition') + '.start(' + cfg + ');');
+    else
+        res.line(res.importClass('org.apache.ignite.Ignition') + '.start(' + cfg + ');');
 
+    if (clientNearCfg) {
         res.needEmptyLine = true;
 
         if ($commonUtils.isDefinedAndNotEmpty(cluster.caches)) {
@@ -2539,12 +2892,20 @@ $generatorJava.nodeStartup = function (cluster, pkg, cls, cfg, factoryCls, clien
             res.needEmptyLine = true;
         }
     }
-    else
-        res.line(res.importClass('org.apache.ignite.Ignition') + '.start(' + cfg + ');');
+
+    if ($commonUtils.isDefinedAndNotEmpty(demoTypes)) {
+        res.needEmptyLine = true;
+
+        res.line('prepareExampleData();');
+
+        res.needEmptyLine = true;
+
+        res.line('runExamples(ignite);');
+    }
 
     res.endBlock('}');
 
     res.endBlock('}');
 
-    return 'package ' + pkg + ';\n\n' + res.generateImports() + '\n\n' + res.asString();
+    return 'package ' + pkg + ';\n\n' + res.generateImports() + '\n\n' + res.generateStaticImports() + '\n\n' + res.asString();
 };

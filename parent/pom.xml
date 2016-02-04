@@ -908,6 +908,9 @@
                                         <exclude>**/bin/x64/**</exclude>
                                         <exclude>**/bin/x86/**</exclude>
                                         <exclude>**/*.dxg</exclude>
+                                        <exclude>**/src/main/js/build/**</exclude>
+                                        <exclude>**/src/main/js/node_modules/**</exclude>
+                                        <exclude>**/src/main/js/jspm_packages/**</exclude>
                                     </excludes>
                                 </configuration>
                             </execution>

@@ -44,12 +44,24 @@ router.post('/list', function (req, res) {
                         // Get all clusters for spaces.
                             db.Cluster.find({space: {$in: space_ids}}).sort('name').deepPopulate(db.ClusterDefaultPopulate).exec(function (err, clusters) {
                                 if (db.processed(err, res)) {
+                                    _.forEach(caches, function (cache) {
+                                        // Remove deleted caches.
+                                        cache.clusters = _.filter(cache.clusters, function (clusterId) {
+                                            return _.find(clusters, {_id: clusterId});
+                                        });
+                                    });
+
+                                    _.forEach(igfss, function (igfs) {
+                                        // Remove deleted caches.
+                                        igfs.clusters = _.filter(igfs.clusters, function (clusterId) {
+                                            return _.find(clusters, {_id: clusterId});
+                                        });
+                                    });
+
                                     _.forEach(clusters, function (cluster) {
                                         // Remove deleted caches.
                                         cluster.caches = _.filter(cluster.caches, function (cacheId) {
-                                            return _.findIndex(caches, function (cache) {
-                                                    return cache._id.equals(cacheId);
-                                                }) >= 0;
+                                            return _.find(caches, {_id: cacheId});
                                         });
 
                                         // Remove deleted IGFS.

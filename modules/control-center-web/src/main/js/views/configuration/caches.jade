@@ -15,27 +15,12 @@
     limitations under the License.
 
 include ../includes/controls
+include ../includes/infos
 
 .docs-header
     h1 Create and Configure Ignite Caches
 .docs-body(ng-controller='cachesController')
-    ignite-callout
-        ignite-callout-cel(data-title='On This Screen')
-            li Configure Caches
-            li Link Domain model to Caches
-            li Link Caches to Clusters
-            li
-                ignite-dialog More info
-                    ignite-dialog-title Caches screen
-                    ignite-dialog-content 
-                        | Caches can be linked with specified #[a(ui-sref='base.configuration.clusters') clusters] and #[a(ui-sref='base.configuration.domains') domain model].#[br]
-                        | Generated cluster with caches configuration available on #[a(ui-sref='base.configuration.summary') summary] screen.
-                    
-        ignite-callout-cel(data-title='Next Steps')
-            li Continue to #[a(ui-sref='base.configuration.domains') Domain model]
-            li Continue to #[a(ui-sref='base.configuration.summary') Summary]
-            li Back to #[a(ui-sref='base.configuration.clusters') Clusters]
-
+    +ignite-caches-information
     div(dw-loading='loadingCachesScreen' dw-loading-options='{text: "Loading caches screen...", className: "page-loading-overlay"}')
         div(ng-show='ui.ready')
             hr
@@ -45,8 +30,8 @@ include ../includes/controls
                     button.btn.btn-primary(id='new-item' ng-click='createItem()') Add cache
                 +save-remove-buttons('cache')
                 hr
-            form.form-horizontal(name='ui.inputForm' ng-show='backupItem && tableVisibleRow(displayedRows, selectedItem)' novalidate unsaved-warning-form)
-                .panel-group(bs-collapse ng-model='panels.activePanels' data-allow-multiple='true')
+            form.form-horizontal(name='ui.inputForm' ng-show='backupItem && tableVisibleRow(displayedRows, selectedItem)' novalidate)
+                .panel-group(bs-collapse ng-model='ui.activePanels' data-allow-multiple='true')
                     +groups('general', 'backupItem')
                     div(ng-show='ui.expanded')
                         +advanced-options

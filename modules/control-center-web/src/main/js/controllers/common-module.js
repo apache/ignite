@@ -24,7 +24,9 @@ var consoleModule = angular.module('ignite-web-console',
         /* ignite:plugins */
         /* endignite */
     ])
-    .run(function ($rootScope, $http, $state, $common, Auth, User) {
+    .run(function ($rootScope, $http, $state, $common, Auth, User, IgniteGettingStarted) {
+        $rootScope.gettingStarted = IgniteGettingStarted;
+
         if (Auth.authorized)
             User.read().then(function (user) {
                 $rootScope.$broadcast('user', user);
@@ -561,23 +563,28 @@ consoleModule.service('$common', [
 
         var popover = null;
 
-        function ensureActivePanel(panels, id, focusId) {
-            if (panels) {
-                var idx = _.findIndex($('div.panel-collapse'), function(pnl) {
-                    return pnl.id === id;
+        function ensureActivePanel(ui, id, focusId) {
+            if (ui) {
+                var collapses = $('div.panel-collapse');
+
+                var idx = _.findIndex(collapses, function(collapse) {
+                    return collapse.id === id;
                 });
 
                 if (idx >= 0) {
-                    var activePanels = panels.activePanels;
+                    var activePanels = ui.activePanels;
+
+                    if (!_.includes(ui.topPanels))
+                        ui.expanded = true;
 
                     if (!activePanels || activePanels.length < 1)
-                        panels.activePanels = [idx];
+                        ui.activePanels = [idx];
                     else if (!_.contains(activePanels, idx)) {
                         var newActivePanels = angular.copy(activePanels);
 
                         newActivePanels.push(idx);
 
-                        panels.activePanels = newActivePanels;
+                        ui.activePanels = newActivePanels;
                     }
                 }
 
@@ -586,21 +593,23 @@ consoleModule.service('$common', [
             }
         }
 
-        function showPopoverMessage(panels, panelId, id, message, showTime) {
-            ensureActivePanel(panels, panelId, id);
-
-            var el = $('body').find('#' + id);
-
+        function showPopoverMessage(ui, panelId, id, message, showTime) {
             if (popover)
                 popover.hide();
 
-            var newPopover = $popover(el, {content: message});
+            ensureActivePanel(ui, panelId, id);
 
-            popover = newPopover;
+            var el = $('body').find('#' + id);
 
-            $timeout(function () { newPopover.$promise.then(newPopover.show); }, 400);
+            if (el && el.length > 0) {
+                var newPopover = $popover(el, {content: message});
 
-            $timeout(function () { newPopover.hide(); }, showTime ? showTime : 5000);
+                popover = newPopover;
+
+                $timeout(function () { newPopover.$promise.then(newPopover.show); }, 400);
+
+                $timeout(function () { newPopover.hide(); }, showTime ? showTime : 5000);
+            }
 
             return false;
         }
@@ -735,7 +744,7 @@ consoleModule.service('$common', [
                 var lines = _.map(arr, function (line) {
                     var rtrimmed = line.replace(/\s+$/g, '');
 
-                    if (rtrimmed.indexOf('>', this.length - 1) === -1)
+                    if (arr.length > 1 && rtrimmed.indexOf('>', rtrimmed.length - 1) === -1)
                         rtrimmed = rtrimmed + '<br/>';
 
                     return rtrimmed;
@@ -898,13 +907,13 @@ consoleModule.service('$common', [
             ensureActivePanel: function (panels, id, focusId) {
                 ensureActivePanel(panels, id, focusId);
             },
-            panelExpanded: function (panels, id) {
-                if (panels && panels.activePanels && panels.activePanels.length > 0) {
+            panelExpanded: function (ui, id) {
+                if (ui && ui.activePanels && ui.activePanels.length > 0) {
                     var idx = _.findIndex($('div.panel-collapse'), function(pnl) {
                         return pnl.id === id;
                     });
 
-                    return idx >= 0 && _.includes(panels.activePanels, idx);
+                    return idx >= 0 && _.includes(ui.activePanels, idx);
                 }
 
                 return false;
@@ -1003,6 +1012,7 @@ consoleModule.service('$common', [
                     ready: false,
                     expanded: false,
                     groups: [],
+                    errors: {},
                     addGroups: function (general, advanced) {
                         if (general)
                             $.merge(this.groups, general);
@@ -1098,6 +1108,16 @@ consoleModule.service('$common', [
                         writeThrough: dflt || cache.writeThrough
                     };
                 }
+            },
+            autoClusterSwapSpiConfiguration: function (cluster, caches) {
+                var swapConfigured = cluster.swapSpaceSpi && cluster.swapSpaceSpi.kind;
+
+                if (!swapConfigured && _.find(caches, function (cache) {
+                    return cache.swapEnabled;
+                }))
+                    return {swapSpaceSpi: {kind: 'FileSwapSpaceSpi'}};
+
+                return undefined;
             }
         };
     }]);
@@ -1144,7 +1164,7 @@ consoleModule.service('$unsavedChangesGuard', function ($rootScope) {
             });
 
             var unbind = $rootScope.$on('$stateChangeStart', function(event) {
-                if ($scope.ui && $scope.ui.isDirty()) {
+                if ($scope.ui && ($scope.ui.isDirty() || ($scope.ui.angularWay && $scope.ui.inputForm && $scope.ui.inputForm.$dirty))) {
                     if (!confirm('You have unsaved changes.\n\nAre you sure you want to discard them?')) {
                         event.preventDefault();
                     } else {
@@ -1942,23 +1962,8 @@ consoleModule.factory('$focus', function ($timeout) {
         $timeout(function () {
             var elem = $('#' + id);
 
-            if (elem.length > 0) {
-                var offset = elem.offset();
-
-                var elemOffset = offset.top;
-
-                var winOffset = window.pageYOffset;
-
-                var topHeight = $('.padding-top-dflt.affix').outerHeight();
-
-                if(elemOffset - 20 - topHeight < winOffset
-                    || elemOffset + elem.outerHeight(true) + 20 > winOffset + window.innerHeight)
-                    $('html, body').animate({
-                        scrollTop: elemOffset - 20 - topHeight
-                    }, 10);
-
+            if (elem.length > 0)
                 elem[0].focus();
-            }
         }, 100);
     };
 });
@@ -2036,15 +2041,14 @@ consoleModule.controller('resetPassword', [
 
 // Login popup controller.
 // TODO IGNITE-1936 Refactor this controller.
-consoleModule.controller('auth', [
-    '$scope', '$focus', 'Auth',
-    function ($scope, $focus, Auth) {
-        $scope.auth = Auth.auth;
+consoleModule.controller('auth', ['$scope', '$focus', 'Auth', 'igniteCountries', function ($scope, $focus, Auth, countries) {
+    $scope.auth = Auth.auth;
 
-        $scope.action = 'login';
+    $scope.action = 'login';
+    $scope.countries = countries;
 
-        $focus('user_email');
-    }]);
+    $focus('user_email');
+}]);
 
 // Download agent controller.
 consoleModule.service('$agentDownload', [

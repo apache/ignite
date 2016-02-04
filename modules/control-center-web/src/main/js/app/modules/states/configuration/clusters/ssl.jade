@@ -18,7 +18,7 @@
 - var enabled = 'backupItem.sslEnabled'
 - var model = cluster + '.sslContextFactory'
 - var trust = model + '.trustManagers'
-- var form = 'sslContextFactory'
+- var form = 'trustManagers'
 
 mixin feedback(field, error, message)
     i.fa.fa-exclamation-triangle.form-control-feedback(
@@ -27,10 +27,10 @@ mixin feedback(field, error, message)
         data-title='#{message}'
     )
 
-form.panel.panel-default(name='#{form}')
+form.panel.panel-default(name='#{form}' novalidate)
     .panel-heading(bs-collapse-toggle ng-click='__show__ = true')
         ignite-form-panel-chevron
-        label SSL configuration
+        label(id='sslConfiguration-title') SSL configuration
         ignite-form-field-tooltip.tipLabel
             | Settings for SSL configuration
         ignite-form-revert
@@ -58,7 +58,7 @@ form.panel.panel-default(name='#{form}')
                         ignite-form-field-input-datalist(
                             data-id='keyAlgorithm'
                             data-name='keyAlgorithm'
-                            data-options="['SumX509', 'X509']"
+                            data-options='["SumX509", "X509"]'
                             data-ng-model='#{model}.keyAlgorithm'
                             data-placeholder='SumX509'
                             data-ng-disabled='!#{enabled}'
@@ -76,7 +76,7 @@ form.panel.panel-default(name='#{form}')
                             data-name='keyStoreFilePath'
                             data-ng-model='#{model}.keyStoreFilePath'
                             data-placeholder='Path to the key store file'
-                            data-ng-required='true'
+                            data-ng-required='#{enabled}'
                             data-ng-disabled='!#{enabled}'
                         )
 
@@ -89,7 +89,7 @@ form.panel.panel-default(name='#{form}')
                         ignite-form-field-input-datalist(
                             data-id='keyStoreType'
                             data-name='keyStoreType'
-                            data-options="['JKS', 'PCKS11', 'PCKS12']"
+                            data-options='["JKS", "PCKS11", "PCKS12"]'
                             data-ng-model='#{model}.keyStoreType'
                             data-placeholder='JKS'
                             data-ng-disabled='!#{enabled}'
@@ -104,19 +104,19 @@ form.panel.panel-default(name='#{form}')
                         ignite-form-field-input-datalist(
                             data-id='protocol'
                             data-name='protocol'
-                            data-options="['TSL', 'SSL']"
+                            data-options='["TSL", "SSL"]'
                             data-ng-model='#{model}.protocol'
                             data-placeholder='TSL'
                             data-ng-disabled='!#{enabled}'
                         )
 
                 .settings-row
-                    ignite-form-group(ng-init='__ = {}; ___ = {}' name='trustManagers' ng-model='#{trust}')
+                    ignite-form-group(ng-form='trustManagers' ng-model='#{trust}')
                         ignite-form-field-label
                             | Trust managers
                         ignite-form-group-tooltip
                             | Pre-configured trust managers
-                        ignite-form-group-add(ng-show='#{enabled}' ng-click='(__.add = [{}])')
+                        ignite-form-group-add(ng-show='#{enabled}' ng-click='(group.add = [{}])')
                             | Add new trust manager.
 
                         - var field = 'edit'
@@ -124,30 +124,31 @@ form.panel.panel-default(name='#{form}')
                         - var save = trust + '[$index] = ' + field
 
                         .group-content(ng-if='#{trust}.length')
-                            ignite-form-field(ng-repeat='model in #{trust} track by $index' type='internal' ng-init='')
+                            ignite-form-field(ng-repeat='model in #{trust} track by $index' type='internal')
                                 .indexField
                                     | {{ $index+1 }}) 
                                 i.tipField.fa.fa-remove(
                                     ng-show='#{enabled}'
-                                    ng-hide='___.edit'
+                                    ng-hide='field.edit'
                                     bs-tooltip='"Remove trust manager"'
                                     ng-click='#{enabled} && (#{trust}.splice(#{trust}.indexOf(model), 1))'
                                 )
-                                span(ng-hide='___.edit')
-                                    a.labelFormField(ng-click='#{enabled} && (___.edit = true)') {{ model }}
-                                span(ng-if='___.edit' ng-init='#{field} = model')
+                                span(ng-hide='field.edit')
+                                    a.labelFormField(ng-click='#{enabled} && (field.edit = true)') {{ model }}
+                                span(ng-if='field.edit' ng-init='#{field} = model')
                                     ignite-form-field-java-class(
                                         data-name='#{field}'
                                         data-ng-model='#{field}'
                                         data-ng-required='true'
                                         data-ignite-unique='#{trust}'
                                         data-ignite-form-field-input-autofocus='true'
-                                        on-enter='#{valid} && (#{save}); #{valid} && (___.edit = false);'
-                                        ng-blur='#{valid} && (#{save}); (___.edit = false)'
+                                        on-enter='#{valid} && (#{save}); #{valid} && (field.edit = false);'
+                                        on-escape='field.edit = false'
+                                        ng-blur='#{valid} && (#{save}); (field.edit = false)'
                                     )
                                         i.fa.fa-floppy-o(
                                             ng-show='#{valid}'
-                                            ng-click='#{valid} && (#{save}); #{valid} && (___.edit = false);'
+                                            ng-click='#{valid} && (#{save}); #{valid} && (field.edit = false);'
                                             bs-tooltip 
                                             data-title='Click icon or press [Enter] to save item' 
                                         )
@@ -162,7 +163,7 @@ form.panel.panel-default(name='#{form}')
                         - var valid = form + '.' + field + '.$valid'
                         - var push = trust + '.push(' + field + ')'
 
-                        .group-content(ng-repeat='field in __.add')
+                        .group-content(ng-repeat='field in group.add')
                             ignite-form-field(type='internal')
                                 ignite-form-field-java-class(
                                     data-name='#{field}'
@@ -170,12 +171,13 @@ form.panel.panel-default(name='#{form}')
                                     data-ng-required='true'
                                     data-ignite-unique='#{trust}'
                                     data-ignite-form-field-input-autofocus='true'
-                                    on-enter='#{valid} && #{push}; #{valid} && (stopblur = true) && (__.add = [{}])'
-                                    ng-blur='#{valid} && #{push}; !stopblur && (__.add = [])'
+                                    on-enter='#{valid} && #{push}; #{valid} && (stopblur = true) && (group.add = [{}])'
+                                    on-escape='group.add = []'
+                                    ng-blur='#{valid} && #{push}; !stopblur && (group.add = [])'
                                 )
                                     i.fa.fa-floppy-o(
                                         ng-show='#{valid}'
-                                        ng-click='#{valid} && #{push}; #{valid} && (__.add = [])'
+                                        ng-click='#{valid} && #{push}; #{valid} && (group.add = [])'
                                         bs-tooltip 
                                         data-title='Click icon or press [Enter] to save item' 
                                     )
@@ -186,7 +188,7 @@ form.panel.panel-default(name='#{form}')
                                         data-title='Such trust manager already exists!'
                                     )
 
-                        .group-content-empty(ng-if='!(#{trust}.length) && !__.add.length')
+                        .group-content-empty(ng-if='!(#{trust}.length) && !group.add.length')
                             | Not defined
 
                 .settings-row(ng-if='!#{trust}.length')
@@ -212,7 +214,7 @@ form.panel.panel-default(name='#{form}')
                         ignite-form-field-input-datalist(
                             data-id='trustStoreType'
                             data-name='trustStoreType'
-                            data-options="['JKS', 'PCKS11', 'PCKS12']"
+                            data-options='["JKS", "PCKS11", "PCKS12"]'
                             data-ng-model='#{model}.trustStoreType'
                             data-placeholder='JKS'
                             data-ng-disabled='!#{enabled}'
