@@ -35,7 +35,7 @@ $generatorReadme.readme = function (res) {
     if (!res)
         res = $generatorCommon.builder();
 
-    generatedBy(res);
+    $generatorReadme.generatedBy(res);
 
     res.line('Project structure:');
     res.line('    /config - this folder contains client and server XML configurations.');
