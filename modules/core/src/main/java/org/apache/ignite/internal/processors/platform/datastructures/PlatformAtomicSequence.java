@@ -17,8 +17,9 @@
 
 package org.apache.ignite.internal.processors.platform.datastructures;
 
-import org.apache.ignite.*;
-import org.apache.ignite.internal.processors.platform.*;
+import org.apache.ignite.IgniteAtomicSequence;
+import org.apache.ignite.internal.processors.platform.PlatformAbstractTarget;
+import org.apache.ignite.internal.processors.platform.PlatformContext;
 
 /**
  * Platform atomic sequence wrapper.

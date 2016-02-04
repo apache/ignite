@@ -17,11 +17,14 @@
 
 package org.apache.ignite.internal.processors.platform.datastructures;
 
-import org.apache.ignite.*;
-import org.apache.ignite.internal.portable.*;
-import org.apache.ignite.internal.processors.datastructures.*;
-import org.apache.ignite.internal.processors.platform.*;
-import org.apache.ignite.internal.processors.platform.memory.*;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.binary.BinaryRawReaderEx;
+import org.apache.ignite.internal.binary.BinaryRawWriterEx;
+import org.apache.ignite.internal.processors.datastructures.GridCacheAtomicReferenceImpl;
+import org.apache.ignite.internal.processors.platform.PlatformAbstractTarget;
+import org.apache.ignite.internal.processors.platform.PlatformContext;
+import org.apache.ignite.internal.processors.platform.memory.PlatformMemory;
+import org.apache.ignite.internal.processors.platform.memory.PlatformOutputStream;
 import org.apache.ignite.internal.util.lang.IgnitePredicateX;
 
 /**
@@ -102,7 +105,7 @@ public class PlatformAtomicReference extends PlatformAbstractTarget {
     }
 
     /** {@inheritDoc} */
-    @Override protected void processOutStream(int type, PortableRawWriterEx writer) throws IgniteCheckedException {
+    @Override protected void processOutStream(int type, BinaryRawWriterEx writer) throws IgniteCheckedException {
         if (type == OP_GET)
             writer.writeObject(atomicRef.get());
         else
@@ -110,7 +113,7 @@ public class PlatformAtomicReference extends PlatformAbstractTarget {
     }
 
     /** {@inheritDoc} */
-    @Override protected long processInStreamOutLong(int type, PortableRawReaderEx reader)
+    @Override protected long processInStreamOutLong(int type, BinaryRawReaderEx reader)
             throws IgniteCheckedException {
         if (type == OP_SET) {
             atomicRef.set(reader.readObjectDetached());
@@ -122,8 +125,8 @@ public class PlatformAtomicReference extends PlatformAbstractTarget {
     }
 
     /** {@inheritDoc} */
-    @Override protected void processInStreamOutStream(int type, PortableRawReaderEx reader,
-                                                      PortableRawWriterEx writer) throws IgniteCheckedException {
+    @Override protected void processInStreamOutStream(int type, BinaryRawReaderEx reader,
+                                                      BinaryRawWriterEx writer) throws IgniteCheckedException {
         if (type == OP_COMPARE_AND_SET_AND_GET){
             Object val = reader.readObjectDetached();
             final Object cmp = reader.readObjectDetached();
@@ -161,7 +164,7 @@ public class PlatformAtomicReference extends PlatformAbstractTarget {
         try (PlatformMemory outMem = platformCtx.memory().allocate()) {
             PlatformOutputStream out = outMem.output();
 
-            PortableRawWriterEx writer = platformCtx.writer(out);
+            BinaryRawWriterEx writer = platformCtx.writer(out);
 
             writer.writeObject(x);
             writer.writeObject(y);

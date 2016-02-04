@@ -901,6 +901,51 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
             JNI.AtomicLongClose(target.Context, target.Target);
         }
 
+        internal static long AtomicSequenceGet(IUnmanagedTarget target)
+        {
+            return JNI.AtomicSequenceGet(target.Context, target.Target);
+        }
+
+        internal static long AtomicSequenceIncrementAndGet(IUnmanagedTarget target)
+        {
+            return JNI.AtomicSequenceIncrementAndGet(target.Context, target.Target);
+        }
+
+        internal static long AtomicSequenceAddAndGet(IUnmanagedTarget target, long value)
+        {
+            return JNI.AtomicSequenceAddAndGet(target.Context, target.Target, value);
+        }
+
+        internal static int AtomicSequenceGetBatchSize(IUnmanagedTarget target)
+        {
+            return JNI.AtomicSequenceGetBatchSize(target.Context, target.Target);
+        }
+
+        internal static void AtomicSequenceSetBatchSize(IUnmanagedTarget target, int size)
+        {
+            JNI.AtomicSequenceSetBatchSize(target.Context, target.Target, size);
+        }
+
+        internal static bool AtomicSequenceIsClosed(IUnmanagedTarget target)
+        {
+            return JNI.AtomicSequenceIsClosed(target.Context, target.Target);
+        }
+
+        internal static void AtomicSequenceClose(IUnmanagedTarget target)
+        {
+            JNI.AtomicSequenceClose(target.Context, target.Target);
+        }
+
+        internal static bool AtomicReferenceIsClosed(IUnmanagedTarget target)
+        {
+            return JNI.AtomicReferenceIsClosed(target.Context, target.Target);
+        }
+
+        internal static void AtomicReferenceClose(IUnmanagedTarget target)
+        {
+            JNI.AtomicReferenceClose(target.Context, target.Target);
+        }
+
         internal static bool ListenableCancel(IUnmanagedTarget target)
         {
             return JNI.ListenableCancel(target.Context, target.Target);
