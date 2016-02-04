@@ -64,11 +64,13 @@ public class StateConfigurationFactory implements ConfigurationFactory {
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteConfiguration getConfiguration(String gridName) {
+    @Override public IgniteConfiguration getConfiguration(String gridName, IgniteConfiguration srcCfg) {
         if (igniteParams == null)
             return new IgniteConfiguration();
 
         IgniteConfiguration cfg = new IgniteConfiguration();
+
+        copyDefaultsFromSource(cfg, srcCfg);
 
         for (int i = 0; i < igniteCfgState.length; i++) {
             int var = igniteCfgState[i];
@@ -80,6 +82,29 @@ public class StateConfigurationFactory implements ConfigurationFactory {
         }
 
         return cfg;
+    }
+
+    /**
+     * TODO: delete this method and usage.
+     *
+     * @param cfg Config.
+     * @param srcCfg Source config.
+     */
+    private static void copyDefaultsFromSource(IgniteConfiguration cfg, IgniteConfiguration srcCfg) {
+        cfg.setGridName(srcCfg.getGridName());
+        cfg.setGridLogger(srcCfg.getGridLogger());
+        cfg.setMarshaller(srcCfg.getMarshaller());
+        cfg.setNodeId(srcCfg.getNodeId());
+        cfg.setIgniteHome(srcCfg.getIgniteHome());
+        cfg.setMBeanServer(srcCfg.getMBeanServer());
+        cfg.setPeerClassLoadingEnabled(srcCfg.isPeerClassLoadingEnabled());
+        cfg.setMetricsLogFrequency(srcCfg.getMetricsLogFrequency());
+        cfg.setConnectorConfiguration(srcCfg.getConnectorConfiguration());
+        cfg.setCommunicationSpi(srcCfg.getCommunicationSpi());
+        cfg.setNetworkTimeout(srcCfg.getNetworkTimeout());
+        cfg.setDiscoverySpi(srcCfg.getDiscoverySpi());
+        cfg.setCheckpointSpi(srcCfg.getCheckpointSpi());
+        cfg.setIncludeEventTypes(srcCfg.getIncludeEventTypes());
     }
 
     /**

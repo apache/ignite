@@ -77,7 +77,6 @@ import org.apache.ignite.marshaller.MarshallerExclusions;
 import org.apache.ignite.marshaller.jdk.JdkMarshaller;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.spi.checkpoint.sharedfs.SharedFsCheckpointSpi;
-import org.apache.ignite.spi.communication.CommunicationSpi;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.TestTcpDiscoverySpi;
@@ -1207,36 +1206,8 @@ public abstract class GridAbstractTest extends TestCase {
         if (isMultiJvm())
             ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(LOCAL_IP_FINDER);
 
-        if (testsCfg != null) {
-            IgniteConfiguration cfg2 = testsCfg.configurationFactory().getConfiguration(gridName);
-
-            // TODO review.
-            cfg2.setGridName(cfg.getGridName());
-            cfg2.setGridLogger(cfg.getGridLogger());
-            cfg2.setMarshaller(cfg.getMarshaller());
-            cfg2.setNodeId(cfg.getNodeId());
-            cfg2.setIgniteHome(cfg.getIgniteHome());
-            cfg2.setMBeanServer(cfg.getMBeanServer());
-            cfg2.setPeerClassLoadingEnabled(cfg.isPeerClassLoadingEnabled());
-            cfg2.setMetricsLogFrequency(cfg.getMetricsLogFrequency());
-            cfg2.setConnectorConfiguration(cfg.getConnectorConfiguration());
-            CommunicationSpi commSpi = cfg.getCommunicationSpi();
-
-            // Hack.
-            ((TcpCommunicationSpi)commSpi).setSharedMemoryPort(-1);
-
-            cfg2.setCommunicationSpi(commSpi);
-            cfg2.setNetworkTimeout(cfg.getNetworkTimeout());
-
-            // Hack.
-            ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setForceServerMode(true);
-
-            cfg2.setDiscoverySpi(cfg.getDiscoverySpi());
-            cfg2.setCheckpointSpi(cfg.getCheckpointSpi());
-            cfg2.setIncludeEventTypes(cfg.getIncludeEventTypes());
-
-            return cfg2;
-        }
+        if (testsCfg != null)
+            return testsCfg.configurationFactory().getConfiguration(gridName,cfg);
 
         return cfg;
     }
@@ -1310,9 +1281,24 @@ public abstract class GridAbstractTest extends TestCase {
      * @param rsrcs Resources.
      * @throws Exception If failed.
      */
+    protected IgniteConfiguration getConfiguration(String gridName,
+        IgniteTestResources rsrcs) throws Exception {
+        return getConfiguration(null, gridName, rsrcs);
+    }
+
+    /**
+     * This method should be overridden by subclasses to change configuration parameters.
+     *
+     * @return Grid configuration used for starting of grid.
+     * @param gridName Grid name.
+     * @param rsrcs Resources.
+     * @throws Exception If failed.
+     */
     @SuppressWarnings("deprecation")
-    protected IgniteConfiguration getConfiguration(String gridName, IgniteTestResources rsrcs) throws Exception {
-        IgniteConfiguration cfg = new IgniteConfiguration();
+    protected IgniteConfiguration getConfiguration(@Nullable IgniteConfiguration cfg, String gridName,
+        IgniteTestResources rsrcs) throws Exception {
+        if (cfg == null)
+            cfg = new IgniteConfiguration();
 
         cfg.setGridName(gridName);
         cfg.setGridLogger(rsrcs.getLogger());

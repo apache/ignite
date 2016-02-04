@@ -24,7 +24,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
  *
  */
 public interface ConfigurationFactory {
-    public IgniteConfiguration getConfiguration(String gridName);
+    public IgniteConfiguration getConfiguration(String gridName, IgniteConfiguration srcCfg);
 
     public CacheConfiguration cacheConfiguration(String gridName);
 }

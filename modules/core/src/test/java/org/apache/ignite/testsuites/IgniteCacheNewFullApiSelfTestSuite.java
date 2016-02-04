@@ -29,6 +29,7 @@ import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.processors.cache.NewCacheAbstractSelfTest;
 import org.apache.ignite.internal.processors.cache.NewCacheFullApiSelfTest;
 import org.apache.ignite.marshaller.optimized.OptimizedMarshaller;
+import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestSuite;
@@ -55,21 +56,21 @@ public class IgniteCacheNewFullApiSelfTestSuite extends TestSuite {
         Variants.booleanVariants("setPeerClassLoadingEnabled"),
     };
 
-    /** */
-    @SuppressWarnings("unchecked")
-    private static final ConfigurationParameter<CacheConfiguration>[][] cacheParams = new ConfigurationParameter[][] {
-        Variants.enumVariants(CacheMode.class, "setCacheMode"),
-        Variants.enumVariants(CacheAtomicityMode.class, "setAtomicityMode"),
-//        Variants.enumVariantsWithNull(CacheMemoryMode.class, "setMemoryMode"),
-    };
-
 //    /** */
 //    @SuppressWarnings("unchecked")
 //    private static final ConfigurationParameter<CacheConfiguration>[][] cacheParams = new ConfigurationParameter[][] {
-//        Variants.enumSingleVariant(CacheMode.PARTITIONED, "setCacheMode"),
-//        Variants.enumSingleVariant(CacheAtomicityMode.TRANSACTIONAL, "setAtomicityMode"),
-//        Variants.enumSingleVariant(null, "setMemoryMode"),
+//        Variants.enumVariants(CacheMode.class, "setCacheMode"),
+//        Variants.enumVariants(CacheAtomicityMode.class, "setAtomicityMode"),
+////        Variants.enumVariantsWithNull(CacheMemoryMode.class, "setMemoryMode"),
 //    };
+
+    /** */
+    @SuppressWarnings("unchecked")
+    private static final ConfigurationParameter<CacheConfiguration>[][] cacheParams = new ConfigurationParameter[][] {
+        Variants.enumSingleVariant(CacheMode.PARTITIONED, "setCacheMode"),
+        Variants.enumSingleVariant(CacheAtomicityMode.TRANSACTIONAL, "setAtomicityMode"),
+        Variants.enumSingleVariant(null, "setMemoryMode"),
+    };
 
     /**
      * @return Cache API test suite.
@@ -129,8 +130,9 @@ public class IgniteCacheNewFullApiSelfTestSuite extends TestSuite {
             super(igniteParams, igniteCfgState, cacheParams, cacheCfgState);
         }
 
-        @Override public IgniteConfiguration getConfiguration(String gridName) {
-            IgniteConfiguration cfg = super.getConfiguration(gridName);
+        /** {@inheritDoc} */
+        @Override public IgniteConfiguration getConfiguration(String gridName, IgniteConfiguration srcCfg) {
+            IgniteConfiguration cfg = super.getConfiguration(gridName, srcCfg);
 
 //            // Cache abstract.
             TcpDiscoverySpi disco = new TcpDiscoverySpi();
@@ -146,6 +148,8 @@ public class IgniteCacheNewFullApiSelfTestSuite extends TestSuite {
 
 
             // Full API
+            ((TcpCommunicationSpi)cfg.getCommunicationSpi()).setSharedMemoryPort(-1);
+
             ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setForceServerMode(true);
 
 //            if (memoryMode() == OFFHEAP_TIERED || memoryMode() == OFFHEAP_VALUES)
