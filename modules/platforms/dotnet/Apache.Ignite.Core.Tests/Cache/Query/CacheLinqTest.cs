@@ -308,7 +308,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
                 where person.Key == 1
                 select new { PersonName = person.Value.Name, OrgName = org.Value.Name };
 
-            Assert.AreEqual("Person_1", multiKey.Single().PersonName);
+            Assert.AreEqual(" Person_1  ", multiKey.Single().PersonName);
         }
 
         [Test]
