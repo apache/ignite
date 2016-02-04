@@ -23,6 +23,7 @@ namespace Apache.Ignite.Linq.Impl
     using System.Linq;
     using System.Linq.Expressions;
     using System.Reflection;
+    using System.Text.RegularExpressions;
 
     /// <summary>
     /// MethodCall expression visitor.
@@ -50,6 +51,8 @@ namespace Apache.Ignite.Linq.Impl
             GetStringMethod("TrimStart", "ltrim", typeof(char[])),
             GetStringMethod("TrimEnd", "rtrim", typeof(char[])),
 
+            GetMethod(typeof (Regex), "Replace", new[] {typeof (string), typeof (string), typeof (string)}, 
+                GetFunc("regexp_replace")),
             GetMethod(typeof (DateTime), "ToString", new[] {typeof (string)}, GetFunc("formatdatetime")),
 
             GetMathMethod("Abs", typeof (int)),
