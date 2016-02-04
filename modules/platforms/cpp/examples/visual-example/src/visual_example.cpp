@@ -366,7 +366,7 @@ int main()
     cfg.jvmInitMem = 512;
     cfg.jvmMaxMem = 512;
 
-    cfg.springCfgPath = "platforms/cpp/examples/bigger-example/config/example-cache.xml";
+    cfg.springCfgPath = "platforms/cpp/examples/visual-example/config/example-cache.xml";
 
     try
     {
@@ -374,7 +374,7 @@ int main()
         Ignite grid = Ignition::Start(cfg);
 
         std::cout << std::endl;
-        std::cout << ">>> Cache bigger example started." << std::endl;
+        std::cout << ">>> Cache visual example started." << std::endl;
         std::cout << std::endl;
 
         std::cout << ">>> Generating example data..." << std::endl;
