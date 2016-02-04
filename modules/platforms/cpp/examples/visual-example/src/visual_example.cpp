@@ -80,8 +80,6 @@ void GenerateClients(std::map<int64_t, Client>& clients,
 {
     clients.clear();
 
-    int64_t idCounter = 0;
-
     std::vector<std::string> firstNames;
 
     firstNames.push_back("Emily");

@@ -23,17 +23,17 @@ DIST_SUBDIRS = .
 AM_CPPFLAGS = -I$(srcdir)/../include -I$(JAVA_HOME)/include -I$(JAVA_HOME)/include/linux -DIGNITE_IMPL
 AM_CXXFLAGS = -Wall -std=c++0x
 
-noinst_PROGRAMS = ignite-biggerexample
+noinst_PROGRAMS = ignite-visualexample
 
-ignite_biggerexample_SOURCES = src/bigger_example.cpp
+ignite_visualexample_SOURCES = src/visual_example.cpp
 
-ignite_biggerexample_LDFLAGS = -static-libtool-libs -L/usr/local/lib -lignite
+ignite_visualexample_LDFLAGS = -static-libtool-libs -L/usr/local/lib -lignite
 
 run-check: check
-	./ignite-biggerexample -p
+	./ignite-visualexample -p
 
 clean-local: clean-check
 	$(RM) *.gcno *.gcda
 
 clean-check:
-	$(RM) $(ignite_biggerexample_OBJECTS)
+	$(RM) $(ignite_visualexample_OBJECTS)
