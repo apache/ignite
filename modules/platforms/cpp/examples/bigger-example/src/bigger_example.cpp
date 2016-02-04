@@ -36,6 +36,9 @@ using namespace cache;
 
 using namespace examples;
 
+std::time_t now = std::time(0);
+boost::random::mt19937 gen(static_cast<uint32_t>(now));
+
 /**
  * Generates random integer number in range [begin, end) using stdlib rand().
  *
@@ -197,9 +200,6 @@ void GenerateAccounts(std::map<int64_t, Account>& accounts,
 {
     accounts.clear();
 
-    std::time_t now = std::time(0);
-    boost::random::mt19937 gen(static_cast<uint32_t>(now));
-
     // Account number per client distributed by exponential law.
     boost::random::exponential_distribution<double> accountCntDistr;
 
@@ -240,9 +240,6 @@ void GenerateProducts(std::map<int64_t, Product>& products, int64_t num)
 {
     products.clear();
 
-    std::time_t now = std::time(0);
-    boost::random::mt19937 gen(static_cast<uint32_t>(now));
-
     // Using uniform distribution for price (hundreds of currency).
     boost::random::uniform_int_distribution<int8_t> priceDistr(1, 100);
 
@@ -269,9 +266,6 @@ void GenerateClientProductRelations(std::map<int64_t, ClientProductRelation>& cl
     const std::map<int64_t, Client>& clients, const std::map<int64_t, Product>& products, int64_t num)
 {
     clientProductRels.clear();
-
-    std::time_t now = std::time(0);
-    boost::random::mt19937 gen(static_cast<uint32_t>(now));
 
     // Starting with generating weights for the products - their popularity.
     std::map<int64_t, int8_t> productPopularity;
