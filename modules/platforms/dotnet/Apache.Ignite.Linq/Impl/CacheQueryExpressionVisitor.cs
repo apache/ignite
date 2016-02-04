@@ -99,7 +99,6 @@ namespace Apache.Ignite.Linq.Impl
                     break;
                 case ExpressionType.Convert:
                     // Ignore, let the db do the conversion
-                    // (this case occurs when binary expression types do not match, like int/long, etc)
                     break;
                 default:
                     return base.VisitUnary(expression);
@@ -116,6 +115,18 @@ namespace Apache.Ignite.Linq.Impl
         [SuppressMessage("Microsoft.Design", "CA1062:Validate arguments of public methods")]
         protected override Expression VisitBinary(BinaryExpression expression)
         {
+            // Special case: string concat
+            if (expression.NodeType == ExpressionType.Add && expression.Left.Type == typeof (string))
+            {
+                _resultBuilder.Append("concat(");
+                Visit(expression.Left);
+                _resultBuilder.Append(", ");
+                Visit(expression.Right);
+                _resultBuilder.Append(")");
+
+                return expression;
+            }
+
             _resultBuilder.Append("(");
 
             Visit(expression.Left);
