@@ -543,6 +543,11 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
             CheckFunc(x => Math.Abs((long) x), ulongs);
             CheckFunc(x => Math.Abs(x), decimals);
             CheckFunc(x => Math.Abs(x), floats);
+
+            CheckFunc(x => Math.Acos(x), doubles);
+            CheckFunc(x => Math.Asin(x), doubles);
+            CheckFunc(x => Math.Atan(x), doubles);
+            CheckFunc(x => Math.Atan2(x, 0.5), doubles);
         }
 
         [Test]
