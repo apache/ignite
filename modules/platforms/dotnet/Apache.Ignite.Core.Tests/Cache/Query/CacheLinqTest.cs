@@ -360,19 +360,23 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         [Test]
         public void TestMultipleFrom()
         {
-            // TODO: SelectMany test
             var persons = GetPersonOrgCache().ToQueryable().Where(x => x.Key < PersonCount);
             var roles = GetRoleCache().ToQueryable().Where(x => x.Value.Name != "1");
 
-            var resQuery = 
+            var all = persons.SelectMany(person => roles.Select(role => new { role, person }));
+            Assert.AreEqual(RoleCount * PersonCount, all.Count());
+
+            var filtered = 
                 from person in persons
                 from role in roles
                 where person.Key == role.Key.Foo
                 select new {Person = person.Value.Name, Role = role.Value.Name};
 
-            var res = resQuery.ToArray();
+            var res = filtered.ToArray();
 
             Assert.AreEqual(RoleCount, res.Length);
+
+            // Subcollection
         }
 
         [Test]

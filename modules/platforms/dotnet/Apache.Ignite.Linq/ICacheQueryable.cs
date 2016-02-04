@@ -17,6 +17,7 @@
 
 namespace Apache.Ignite.Linq
 {
+    using System;
     using Apache.Ignite.Core;
 
     /// <summary>
@@ -42,5 +43,10 @@ namespace Apache.Ignite.Linq
         /// </summary>
         /// <returns>Commands to execute against the data source.</returns>
         string ToTraceString();
+
+        /// <summary>
+        /// Gets the type of the element.
+        /// </summary>
+        Type ElementType { get; }
     }
 }

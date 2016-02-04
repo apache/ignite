@@ -65,15 +65,15 @@ namespace Apache.Ignite.Linq.Impl
 
         public static string GetTableNameWithSchema(IFromClause fromClause)
         {
-            return GetSchemaName(fromClause.FromExpression, GetTableNameFromEntryType(fromClause.ItemType));
+            return GetTableNameWithSchema(fromClause.FromExpression);
         }
 
         public static string GetTableNameWithSchema(JoinClause joinClause)
         {
-            return GetSchemaName(joinClause.InnerSequence, GetTableNameFromEntryType(joinClause.ItemType));
+            return GetTableNameWithSchema(joinClause.InnerSequence);
         }
 
-        private static string GetSchemaName(Expression expression, string tableName)
+        private static string GetTableNameWithSchema(Expression expression)
         {
             var subQueryExp = expression as SubQueryExpression;
 
@@ -87,7 +87,8 @@ namespace Apache.Ignite.Linq.Impl
 
             var cacheQuery = (ICacheQueryable) constExpr.Value;
 
-            return string.Format("\"{0}\".{1}", cacheQuery.CacheName, tableName);
+            return string.Format("\"{0}\".{1}", cacheQuery.CacheName, 
+                GetTableNameFromEntryType(cacheQuery.ElementType));
         }
 
         private static string GetTableNameFromEntryValueType(Type entryValueType)
