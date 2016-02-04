@@ -104,7 +104,7 @@ public class GridAffinityNoCacheSelfTest extends GridCommonAbstractTest {
     private void checkAffinityImplCacheDeleted(Object key) {
         IgniteEx grid = grid(0);
 
-        final String cacheName = "cacheToBeDeleted";
+        final String cacheName = "cacheToBeDeleted" + key.hashCode();
 
         grid(1).getOrCreateCache(cacheName);
 
