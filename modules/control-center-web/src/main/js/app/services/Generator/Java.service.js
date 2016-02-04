@@ -15,16 +15,6 @@
  * limitations under the License.
  */
 
-const SERVER_CFG = 'ServerConfigurationFactory';
-const CLIENT_CFG = 'ClientConfigurationFactory';
-
-export default ['$scope', 'GeneratorJava', function($scope, java) {
-    const ctrl = this;
-
-    // Set default generator
-    ctrl.generator = (cluster) => {
-        const type = $scope.cfg ? CLIENT_CFG : SERVER_CFG;
-        // TODO IGNITE-2054: need move $generatorJava to services.
-        return java.cluster(cluster, 'config', type, $scope.cfg);
-    };
+export default ['GeneratorJava', () => {
+    return $generatorJava;
 }];

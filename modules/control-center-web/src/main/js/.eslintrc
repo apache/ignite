@@ -46,7 +46,7 @@ rules:
     consistent-this: [0, "that"]
     constructor-super: 2
     curly: [2, "multi-or-nest"]
-    default-case: 0
+    default-case: 2
     dot-location: 0
     dot-notation: [2, { "allowKeywords": true }]
     eol-last: 2
@@ -57,7 +57,7 @@ rules:
     guard-for-in: 1
     handle-callback-err: 0
     id-length: [2, {"min": 1, "max": 30}]
-    indent: 2
+    indent: [2, 4, {"SwitchCase": 1}]
     key-spacing: [2, { "beforeColon": false, "afterColon": true }]
     lines-around-comment: 0
     linebreak-style: [0, "unix"]

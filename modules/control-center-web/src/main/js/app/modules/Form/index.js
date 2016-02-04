@@ -21,7 +21,6 @@ import angular from 'angular';
 import igniteFormPanel from './panel/panel.directive';
 import igniteFormPanelChevron from './panel/chevron.directive';
 import igniteFormRevert from './panel/revert.directive';
-import previewPanel from './panel/preview-panel.directive';
 
 // Field.
 import igniteFormField from './field/field.directive';
@@ -60,7 +59,6 @@ angular
 .directive(...igniteFormPanel)
 .directive(...igniteFormPanelChevron)
 .directive(...igniteFormRevert)
-.directive(...previewPanel)
 // Field.
 .directive(...igniteFormField)
 .directive(...igniteFormFieldLabel)

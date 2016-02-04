@@ -291,19 +291,15 @@ form.panel.panel-default(name='connector' novalidate)
                             data-ng-required='#{model}.sslEnabled'
                             data-ng-disabled='!#{model}.enabled || !#{model}.sslEnabled'
                         )
-            .col-sm-6
+            ignite-ui-ace.col-sm-6
                 .preview-panel(ng-init='mode = false')
                     .preview-legend
                         a(ng-class='{active: !mode, inactive: mode}' ng-click='mode = false') XML
                         | &nbsp;
                         a(ng-class='{active: mode, inactive: !mode}' ng-click='mode = true') Java
-                    .preview-content(
-                        ng-if='!preview["connector"].allDefaults && mode'
-                        ui-ace='{onLoad: previewInit, onChange: previewChanged, mode: "java", rendererOptions: {minLines: group.previewMinLines || 3}}' 
-                        ng-model='preview["connector"].java')
-                    .preview-content(
-                        ng-if='!preview["connector"].allDefaults && !mode'
-                        ui-ace='{onLoad: previewInit, onChange: previewChanged, mode: "xml", rendererOptions: {minLines: group.previewMinLines || 3}}' 
-                        ng-model='preview["connector"].xml')
-                    .preview-content-empty(ng-if='preview["connector"].allDefaults')
+                    .preview-content(ng-if='mode')
+                        ignite-ui-ace-java(data-cluster='backupItem' data-generator='clusterConnector' ng-model='$parent.data')
+                    .preview-content(ng-if='!mode')
+                        ignite-ui-ace-xml(data-cluster='backupItem' data-generator='clusterConnector' ng-model='$parent.data')
+                    .preview-content-empty(ng-if='!data')
                         label All Defaults

@@ -41,19 +41,15 @@ form.panel.panel-default(name='igfs' novalidate)
                             data-ng-disabled='!igfss.length'
                             data-placeholder='{{ igfss.length ? "Choose IGFS": "No IGFS configured" }}'
                         )
-            .col-sm-6
+            ignite-ui-ace.col-sm-6
                 .preview-panel(ng-init='mode = false')
                     .preview-legend
                         a(ng-class='{active: !mode, inactive: mode}' ng-click='mode = false') XML
                         | &nbsp;
                         a(ng-class='{active: mode, inactive: !mode}' ng-click='mode = true') Java
-                    .preview-content(
-                        ng-if='!preview["igfs"].allDefaults && mode'
-                        ui-ace='{onLoad: previewInit, onChange: previewChanged, mode: "java", rendererOptions: {minLines: group.previewMinLines || 3}}' 
-                        ng-model='preview["igfs"].java')
-                    .preview-content(
-                        ng-if='!preview["igfs"].allDefaults && !mode'
-                        ui-ace='{onLoad: previewInit, onChange: previewChanged, mode: "xml", rendererOptions: {minLines: group.previewMinLines || 3}}' 
-                        ng-model='preview["igfs"].xml')
-                    .preview-content-empty(ng-if='preview["igfs"].allDefaults')
+                    .preview-content(ng-if='mode')
+                        ignite-ui-ace-java(data-cluster='backupItem' data-generator='igfss' data-igfss='igfss' ng-model='$parent.data')
+                    .preview-content(ng-if='!mode')
+                        ignite-ui-ace-xml(data-cluster='backupItem' data-generator='igfss' data-igfss='igfss' ng-model='$parent.data')
+                    .preview-content-empty(ng-if='!data')
                         label All Defaults

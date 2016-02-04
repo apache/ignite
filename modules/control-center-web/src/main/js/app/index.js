@@ -94,6 +94,8 @@ import igniteFormFieldJavaClass from './directives/form-field-java-class/form-fi
 
 // Services.
 import cleanup from './services/cleanup/cleanup.service';
+import GeneratorXml from './services/Generator/Xml.service';
+import GeneratorJava from './services/Generator/Java.service';
 
 // Providers
 import igniteCountries from './providers/Countries/index';
@@ -142,6 +144,8 @@ angular
 .directive(...igniteFormFieldJavaClass)
 // Services.
 .service(...cleanup)
+.service(...GeneratorXml)
+.service(...GeneratorJava)
 // Providers.
 .provider(...igniteCountries)
 // Filters.

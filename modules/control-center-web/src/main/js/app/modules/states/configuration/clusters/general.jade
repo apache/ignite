@@ -100,18 +100,6 @@ form.panel.panel-default(name='general' novalidate)
                         | &nbsp;
                         a(ng-class='{active: mode, inactive: !mode}' ng-click='mode = true') Java
                     .preview-content(ng-if='mode')
-                        ignite-ui-ace-java(data-cluster='backupItem' generator='')
+                        ignite-ui-ace-java(data-cluster='backupItem' data-generator='clusterCaches' data-caches='caches')
                     .preview-content(ng-if='!mode')
-                        ignite-ui-ace-xml(data-cluster='backupItem' generator='')
-
-
-                    .preview-content(
-                        ng-if='!preview["general"].allDefaults && mode'
-                        ui-ace='{onLoad: previewInit, onChange: previewChanged, mode: "java", rendererOptions: {minLines: group.previewMinLines || 3}}' 
-                        ng-model='preview["general"].java')
-                    .preview-content(
-                        ng-if='!preview["general"].allDefaults && !mode'
-                        ui-ace='{onLoad: previewInit, onChange: previewChanged, mode: "xml", rendererOptions: {minLines: group.previewMinLines || 3}}' 
-                        ng-model='preview["general"].xml')
-                    .preview-content-empty(ng-if='preview["general"].allDefaults')
-                        label All Defaults
+                        ignite-ui-ace-xml(data-cluster='backupItem' data-generator='clusterCaches' data-caches='caches')

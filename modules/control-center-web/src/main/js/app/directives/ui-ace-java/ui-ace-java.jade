@@ -14,4 +14,9 @@
     See the License for the specific language governing permissions and
     limitations under the License.
 
-div(ng-if='ctrl.data' ui-ace='{onLoad: onLoad, mode: "java"}' ng-model='ctrl.data')
+div(ng-if='ctrl.data' 
+    ui-ace='{onLoad: onLoad, \
+             onChange: onChange, \
+             renderOptions: renderOptions, \
+             mode: "java"}' 
+    ng-model='ctrl.data')
