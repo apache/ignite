@@ -123,6 +123,16 @@ namespace Apache.Ignite.Linq.Impl
                     _builder.Append("max (");
                     parenCount++;
                 }
+                else if (op is AllResultOperator)
+                {
+                    _builder.Append("bool_and (");
+                    parenCount++;
+                }
+                else if (op is AnyResultOperator)
+                {
+                    _builder.Append("bool_or (");
+                    parenCount++;
+                }
                 else if (op is DistinctResultOperator)
                     _builder.Append("distinct ");
                 else if (op is FirstResultOperator || op is SingleResultOperator)

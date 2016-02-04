@@ -260,14 +260,13 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
 
             Assert.AreEqual(PersonCount, cache.Count());
             Assert.AreEqual(PersonCount, cache.Select(x => x.Key).Count());
-            
+            Assert.AreEqual(2, cache.Select(x => x.Value.OrganizationId).Distinct().Count());
+
             // ReSharper disable once ReturnValueOfPureMethodIsNotUsed
             Assert.Throws<NotSupportedException>(() => cache.Select(x => new {x.Key, x.Value}).Count());
 
-            Assert.AreEqual(2, cache.Select(x => x.Value.OrganizationId).Distinct().Count());
-
+            // Min/max/sum
             var ints = cache.Select(x => x.Key);
-
             Assert.AreEqual(0, ints.Min());
             Assert.AreEqual(PersonCount - 1, ints.Max());
             Assert.AreEqual(ints.ToArray().Sum(), ints.Sum());
@@ -275,6 +274,13 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
             var dupInts = ints.Select(x => x/10);  // duplicate values
             CollectionAssert.AreEquivalent(dupInts.ToArray().Distinct().ToArray(), dupInts.Distinct().ToArray());
             Assert.AreEqual(dupInts.ToArray().Distinct().Sum(), dupInts.Distinct().Sum());
+
+            // All/any
+            Assert.IsTrue(ints.All(x => x < PersonCount));
+            Assert.IsFalse(ints.Any(x => x < PersonCount));
+
+            Assert.IsFalse(ints.All(x => x < PersonCount / 2));
+            Assert.IsTrue(ints.Any(x => x < PersonCount / 2));
         }
 
         [Test]
