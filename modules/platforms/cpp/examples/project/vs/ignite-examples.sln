@@ -7,6 +7,8 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "putget-example", "..\..\put
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "odbc-example", "..\..\odbc-example\project\vs\odbc-example.vcxproj", "{56839DFF-6C03-416B-BC5F-DDC6EBF8512D}"
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "bigger-example", "..\..\bigger-example\project\vs\bigger-example.vcxproj", "{9651F10D-43A0-4841-90BC-A239791C4C63}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Release|x64 = Release|x64
@@ -21,6 +23,10 @@ Global
 		{56839DFF-6C03-416B-BC5F-DDC6EBF8512D}.Release|x64.Build.0 = Release|x64
 		{56839DFF-6C03-416B-BC5F-DDC6EBF8512D}.Release|x86.ActiveCfg = Release|Win32
 		{56839DFF-6C03-416B-BC5F-DDC6EBF8512D}.Release|x86.Build.0 = Release|Win32
+		{9651F10D-43A0-4841-90BC-A239791C4C63}.Release|x64.ActiveCfg = Release|x64
+		{9651F10D-43A0-4841-90BC-A239791C4C63}.Release|x64.Build.0 = Release|x64
+		{9651F10D-43A0-4841-90BC-A239791C4C63}.Release|x86.ActiveCfg = Release|Win32
+		{9651F10D-43A0-4841-90BC-A239791C4C63}.Release|x86.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

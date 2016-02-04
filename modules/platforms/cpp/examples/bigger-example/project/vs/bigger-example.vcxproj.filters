@@ -11,15 +11,24 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\..\src\putget_example.cpp">
+    <ClCompile Include="..\..\src\bigger_example.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\..\..\include\ignite\examples\address.h">
+    <ClInclude Include="..\..\..\include\ignite\examples\client.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\include\ignite\examples\organization.h">
+    <ClInclude Include="..\..\..\include\ignite\examples\city.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\include\ignite\examples\account.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\include\ignite\examples\product.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\include\ignite\examples\client_product_relation.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
