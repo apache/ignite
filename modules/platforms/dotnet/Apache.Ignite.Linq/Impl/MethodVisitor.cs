@@ -41,8 +41,8 @@ namespace Apache.Ignite.Linq.Impl
             GetStringMethod("Contains", del:(e, v) => VisitSqlLike(e, v, "%{0}%")),
             GetStringMethod("StartsWith", new[] {typeof (string)}, (e, v) => VisitSqlLike(e, v, "{0}%")),
             GetStringMethod("EndsWith", new[] {typeof (string)}, (e, v) => VisitSqlLike(e, v, "{0}%")),
-            GetStringMethod("IndexOf", "instr", typeof(string)),
-            GetStringMethod("IndexOf", "instr", typeof(string), typeof(int)),
+            GetStringMethod("IndexOf", "instr| - 1", typeof(string)),  // TODO: Return value - 1 somehow
+            GetStringMethod("IndexOf", "instr| - 1", typeof(string), typeof(int)),
 
             GetMethod(typeof(DateTime), "ToString", new [] {typeof(string)}, GetFunc("formatdatetime")),
 
@@ -116,7 +116,9 @@ namespace Apache.Ignite.Linq.Impl
         /// </summary>
         private static void VisitFunc(MethodCallExpression expression, CacheQueryExpressionVisitor visitor, string func)
         {
-            visitor.ResultBuilder.Append(func).Append("(");
+            var funcParts = func.Split('|');
+
+            visitor.ResultBuilder.Append(funcParts[0]).Append("(");
 
             var isInstanceMethod = expression.Object != null;
 
@@ -134,6 +136,9 @@ namespace Apache.Ignite.Linq.Impl
             }
 
             visitor.ResultBuilder.Append(")");
+
+            if (funcParts.Length > 1)
+                visitor.ResultBuilder.Append(funcParts[1]);
         }
 
         /// <summary>
