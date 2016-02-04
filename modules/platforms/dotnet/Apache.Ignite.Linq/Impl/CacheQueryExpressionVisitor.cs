@@ -174,6 +174,10 @@ namespace Apache.Ignite.Linq.Impl
                     _resultBuilder.Append(" * ");
                     break;
 
+                case ExpressionType.Modulo:
+                    _resultBuilder.Append(" % ");
+                    break;
+
                 case ExpressionType.Divide:
                     _resultBuilder.Append(" / ");
                     break;
