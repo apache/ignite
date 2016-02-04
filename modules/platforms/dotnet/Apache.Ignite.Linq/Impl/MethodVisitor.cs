@@ -50,6 +50,7 @@ namespace Apache.Ignite.Linq.Impl
             GetStringMethod("Trim", "trim", typeof(char[])),
             GetStringMethod("TrimStart", "ltrim", typeof(char[])),
             GetStringMethod("TrimEnd", "rtrim", typeof(char[])),
+            GetStringMethod("Replace", "replace", typeof(string), typeof(string)),
 
             GetMethod(typeof (Regex), "Replace", new[] {typeof (string), typeof (string), typeof (string)}, 
                 GetFunc("regexp_replace")),
