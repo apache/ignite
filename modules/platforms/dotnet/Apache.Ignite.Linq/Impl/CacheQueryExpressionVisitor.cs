@@ -22,6 +22,7 @@ namespace Apache.Ignite.Linq.Impl
 {
     using System.Collections.Generic;
     using System.Diagnostics;
+    using System.Diagnostics.CodeAnalysis;
     using System.Linq;
     using System.Linq.Expressions;
     using Apache.Ignite.Core.Cache.Configuration;
@@ -83,6 +84,7 @@ namespace Apache.Ignite.Linq.Impl
         }
 
         /** <inheritdoc /> */
+        [SuppressMessage("Microsoft.Design", "CA1062:Validate arguments of public methods", MessageId = "0")]
         protected override Expression VisitUnary(UnaryExpression expression)
         {
             _resultBuilder.Append("(");
@@ -111,6 +113,7 @@ namespace Apache.Ignite.Linq.Impl
         }
 
         /** <inheritdoc /> */
+        [SuppressMessage("Microsoft.Design", "CA1062:Validate arguments of public methods")]
         protected override Expression VisitBinary(BinaryExpression expression)
         {
             _resultBuilder.Append("(");
@@ -217,6 +220,7 @@ namespace Apache.Ignite.Linq.Impl
         }
 
         /** <inheritdoc /> */
+        [SuppressMessage("Microsoft.Design", "CA1062:Validate arguments of public methods")]
         protected override Expression VisitMember(MemberExpression expression)
         {
             // Field hierarchy is flattened, append as is, do not call Visit.
@@ -236,6 +240,7 @@ namespace Apache.Ignite.Linq.Impl
         }
 
         /** <inheritdoc /> */
+        [SuppressMessage("Microsoft.Design", "CA1062:Validate arguments of public methods")]
         protected override Expression VisitConstant(ConstantExpression expression)
         {
             _resultBuilder.Append("?");
@@ -246,6 +251,7 @@ namespace Apache.Ignite.Linq.Impl
         }
 
         /** <inheritdoc /> */
+        [SuppressMessage("Microsoft.Design", "CA1062:Validate arguments of public methods")]
         protected override Expression VisitMethodCall(MethodCallExpression expression)
         {
             MethodVisitor.VisitMethodCall(expression, this);
@@ -254,6 +260,7 @@ namespace Apache.Ignite.Linq.Impl
         }
 
         /** <inheritdoc /> */
+        [SuppressMessage("Microsoft.Design", "CA1062:Validate arguments of public methods")]
         protected override Expression VisitNew(NewExpression expression)
         {
             VisitArguments(expression.Arguments);
@@ -262,6 +269,7 @@ namespace Apache.Ignite.Linq.Impl
         }
 
         /** <inheritdoc /> */
+        [SuppressMessage("Microsoft.Design", "CA1062:Validate arguments of public methods")]
         protected override Expression VisitInvocation(InvocationExpression expression)
         {
             VisitArguments(expression.Arguments);

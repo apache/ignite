@@ -20,6 +20,7 @@ namespace Apache.Ignite.Linq.Impl
     using System;
     using System.Collections.Generic;
     using System.Diagnostics;
+    using System.Diagnostics.CodeAnalysis;
     using System.Linq;
     using System.Linq.Expressions;
     using System.Reflection;
@@ -64,6 +65,7 @@ namespace Apache.Ignite.Linq.Impl
         }
 
         /** <inheritdoc /> */
+        [SuppressMessage("Microsoft.Design", "CA1062:Validate arguments of public methods")]
         public IEnumerable<T> ExecuteCollection<T>(QueryModel queryModel)
         {
             var queryData = GetQueryData(queryModel);

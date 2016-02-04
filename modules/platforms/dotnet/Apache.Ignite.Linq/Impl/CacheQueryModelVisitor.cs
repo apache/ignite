@@ -21,6 +21,7 @@ namespace Apache.Ignite.Linq.Impl
     using System.Collections.Generic;
     using System.Collections.ObjectModel;
     using System.Diagnostics;
+    using System.Diagnostics.CodeAnalysis;
     using System.Linq;
     using System.Linq.Expressions;
     using System.Text;
@@ -95,6 +96,7 @@ namespace Apache.Ignite.Linq.Impl
         /// <summary>
         /// Processes the result operators.
         /// </summary>
+        [SuppressMessage("Microsoft.Performance", "CA1800:DoNotCastUnnecessarily")]
         private int ProcessResultOperatorsBegin(QueryModel queryModel)
         {
             int parenCount = 0;
@@ -217,6 +219,7 @@ namespace Apache.Ignite.Linq.Impl
         }
 
         /** <inheritdoc /> */
+        [SuppressMessage("Microsoft.Design", "CA1062:Validate arguments of public methods")]
         public override void VisitMainFromClause(MainFromClause fromClause, QueryModel queryModel)
         {
             base.VisitMainFromClause(fromClause, queryModel);
@@ -228,6 +231,7 @@ namespace Apache.Ignite.Linq.Impl
         }
 
         /** <inheritdoc /> */
+        [SuppressMessage("Microsoft.Design", "CA1062:Validate arguments of public methods")]
         public override void VisitWhereClause(WhereClause whereClause, QueryModel queryModel, int index)
         {
             base.VisitWhereClause(whereClause, queryModel, index);
@@ -240,6 +244,7 @@ namespace Apache.Ignite.Linq.Impl
         }
 
         /** <inheritdoc /> */
+        [SuppressMessage("Microsoft.Design", "CA1062:Validate arguments of public methods")]
         public override void VisitOrderByClause(OrderByClause orderByClause, QueryModel queryModel, int index)
         {
             base.VisitOrderByClause(orderByClause, queryModel, index);
@@ -266,6 +271,7 @@ namespace Apache.Ignite.Linq.Impl
         }
 
         /** <inheritdoc /> */
+        [SuppressMessage("Microsoft.Design", "CA1062:Validate arguments of public methods")]
         public override void VisitJoinClause(JoinClause joinClause, QueryModel queryModel, int index)
         {
             base.VisitJoinClause(joinClause, queryModel, index);
