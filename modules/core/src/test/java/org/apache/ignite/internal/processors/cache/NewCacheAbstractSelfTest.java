@@ -44,7 +44,6 @@ import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiInClosure;
 import org.apache.ignite.lang.IgnitePredicate;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
@@ -212,19 +211,19 @@ public abstract class NewCacheAbstractSelfTest extends GridCommonAbstractTest {
     }
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
+    @Override protected final IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
-        TcpDiscoverySpi disco = new TcpDiscoverySpi();
-
-        disco.setMaxMissedHeartbeats(Integer.MAX_VALUE);
-
-        disco.setIpFinder(ipFinder);
-
-        if (isDebug())
-            disco.setAckTimeout(Integer.MAX_VALUE);
-
-        cfg.setDiscoverySpi(disco);
+//        TcpDiscoverySpi disco = new TcpDiscoverySpi();
+//
+//        disco.setMaxMissedHeartbeats(Integer.MAX_VALUE);
+//
+//        disco.setIpFinder(ipFinder);
+//
+//        if (isDebug())
+//            disco.setAckTimeout(Integer.MAX_VALUE);
+//
+//        cfg.setDiscoverySpi(disco);
 
         return cfg;
     }

@@ -19,6 +19,8 @@ package org.apache.ignite.testsuites;
 
 import java.util.Arrays;
 import junit.framework.TestSuite;
+import org.apache.ignite.cache.CacheAtomicityMode;
+import org.apache.ignite.cache.CacheMemoryMode;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.store.CacheStore;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -59,16 +61,16 @@ public class IgniteCacheNewFullApiSelfTestSuite extends TestSuite {
     @SuppressWarnings("unchecked")
     private static final ConfigurationParameter<CacheConfiguration>[][] cacheParams = new ConfigurationParameter[][] {
         Variants.enumVariants(CacheMode.class, "setCacheMode"),
-//        Variants.enumVariants(CacheAtomicityMode.class, "setAtomicityMode"),
-//        Variants.enumVariantsWithNull(CacheMemoryMode.class, "setMemoryMode"),
+        Variants.enumVariants(CacheAtomicityMode.class, "setAtomicityMode"),
+        Variants.enumVariantsWithNull(CacheMemoryMode.class, "setMemoryMode"),
     };
 
 //    /** */
 //    @SuppressWarnings("unchecked")
 //    private static final ConfigurationParameter<CacheConfiguration>[][] cacheParams = new ConfigurationParameter[][] {
-//        Variants.enumSingleVariant(CacheMode.PARTITIONED, "setCacheMode"),
+//        Variants.enumSingleVariant(CacheMode.LOCAL, "setCacheMode"),
 //        Variants.enumSingleVariant(CacheAtomicityMode.TRANSACTIONAL, "setAtomicityMode"),
-//        Variants.enumSingleVariant(null, "setMemoryMode"),
+////        Variants.enumSingleVariant(null, "setMemoryMode"),
 //    };
 
     /**
@@ -100,8 +102,10 @@ public class IgniteCacheNewFullApiSelfTestSuite extends TestSuite {
      */
     private static void addTestSuite(TestSuite suite, int[] igniteCfgState, int[] cacheCfgState, int gridsCnt,
         boolean stop) {
-        StateConfigurationFactory factory = new FullApiStateConfigurationFactory(igniteParams, igniteCfgState,
-            cacheParams, cacheCfgState);
+        // TODO
+//        StateConfigurationFactory factory = new FullApiStateConfigurationFactory(igniteParams, igniteCfgState,
+//            cacheParams, cacheCfgState);
+        StateConfigurationFactory factory = new FullApiStateConfigurationFactory(cacheParams, cacheCfgState);
 
         String clsNameSuffix = "[igniteCfg=" + Arrays.toString(igniteCfgState)
             + ", cacheCfgState=" + Arrays.toString(cacheCfgState) + "]"
@@ -129,6 +133,11 @@ public class IgniteCacheNewFullApiSelfTestSuite extends TestSuite {
             super(igniteParams, igniteCfgState, cacheParams, cacheCfgState);
         }
 
+        FullApiStateConfigurationFactory(
+            ConfigurationParameter<CacheConfiguration>[][] cacheParams, int[] cacheCfgState) {
+            super(cacheParams, cacheCfgState);
+        }
+
         /** {@inheritDoc} */
         @Override public IgniteConfiguration getConfiguration(String gridName, IgniteConfiguration srcCfg) {
             IgniteConfiguration cfg = super.getConfiguration(gridName, srcCfg);
@@ -145,7 +154,6 @@ public class IgniteCacheNewFullApiSelfTestSuite extends TestSuite {
 //
             cfg.setDiscoverySpi(disco);
 
-
             // Full API
             ((TcpCommunicationSpi)cfg.getCommunicationSpi()).setSharedMemoryPort(-1);
 
@@ -154,10 +162,14 @@ public class IgniteCacheNewFullApiSelfTestSuite extends TestSuite {
 //            if (memoryMode() == OFFHEAP_TIERED || memoryMode() == OFFHEAP_VALUES)
 //                cfg.setSwapSpaceSpi(new GridTestSwapSpaceSpi());
 
+            // Local cache.
+            cfg.getTransactionConfiguration().setTxSerializableEnabled(true);
+
             return cfg;
         }
 
         /** {@inheritDoc} */
+        @SuppressWarnings("unchecked")
         @Override public CacheConfiguration cacheConfiguration(String gridName) {
             CacheConfiguration cc = super.cacheConfiguration(gridName);
 

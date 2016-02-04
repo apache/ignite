@@ -59,7 +59,6 @@ import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.cache.affinity.Affinity;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.events.Event;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteKernal;
@@ -77,9 +76,6 @@ import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.resources.LoggerResource;
-import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.swapspace.inmemory.GridTestSwapSpaceSpi;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
@@ -91,7 +87,6 @@ import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMemoryMode.OFFHEAP_TIERED;
-import static org.apache.ignite.cache.CacheMemoryMode.OFFHEAP_VALUES;
 import static org.apache.ignite.cache.CacheMemoryMode.ONHEAP_TIERED;
 import static org.apache.ignite.cache.CacheMode.LOCAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
@@ -179,19 +174,19 @@ public class NewCacheFullApiSelfTest extends NewCacheAbstractSelfTest {
         return ONHEAP_TIERED; // TODO from cfg.
     }
 
-    /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
-
-        ((TcpCommunicationSpi)cfg.getCommunicationSpi()).setSharedMemoryPort(-1);
-
-        ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setForceServerMode(true);
-
-        if (memoryMode() == OFFHEAP_TIERED || memoryMode() == OFFHEAP_VALUES)
-            cfg.setSwapSpaceSpi(new GridTestSwapSpaceSpi());
-
-        return cfg;
-    }
+//    /** {@inheritDoc} */
+//    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
+//        IgniteConfiguration cfg = super.getConfiguration(gridName);
+//
+//        ((TcpCommunicationSpi)cfg.getCommunicationSpi()).setSharedMemoryPort(-1);
+//
+//        ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setForceServerMode(true);
+//
+//        if (memoryMode() == OFFHEAP_TIERED || memoryMode() == OFFHEAP_VALUES)
+//            cfg.setSwapSpaceSpi(new GridTestSwapSpaceSpi());
+//
+//        return cfg;
+//    }
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
@@ -5004,21 +4999,6 @@ public class NewCacheFullApiSelfTest extends NewCacheAbstractSelfTest {
         assertTrue(cache.size(ALL) == 0);
         assertTrue(cacheSkipStore.size(ALL) == 0);
         assertTrue(map.size() == 0);
-    }
-
-    /**
-     * @return Cache start mode.
-     */
-    protected CacheStartMode cacheStartType() {
-        String mode = System.getProperty("cache.start.mode");
-
-        if (CacheStartMode.NODES_THEN_CACHES.name().equalsIgnoreCase(mode))
-            return CacheStartMode.NODES_THEN_CACHES;
-
-        if (CacheStartMode.ONE_BY_ONE.name().equalsIgnoreCase(mode))
-            return CacheStartMode.ONE_BY_ONE;
-
-        return CacheStartMode.STATIC;
     }
 
     /**

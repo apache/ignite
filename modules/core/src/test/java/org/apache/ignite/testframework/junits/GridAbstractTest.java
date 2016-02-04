@@ -1207,7 +1207,7 @@ public abstract class GridAbstractTest extends TestCase {
             ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(LOCAL_IP_FINDER);
 
         if (testsCfg != null)
-            return testsCfg.configurationFactory().getConfiguration(gridName,cfg);
+            return testsCfg.configurationFactory().getConfiguration(gridName, cfg);
 
         return cfg;
     }

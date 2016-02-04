@@ -58,19 +58,18 @@ public class StateConfigurationFactory implements ConfigurationFactory {
      * @param cacheCfgState Cache configuration state.
      * @param cacheParams Cache paramethers.
      */
-    public StateConfigurationFactory(int[] cacheCfgState,
-        ConfigurationParameter<CacheConfiguration>[][] cacheParams) {
+    public StateConfigurationFactory(ConfigurationParameter<CacheConfiguration>[][] cacheParams, int[] cacheCfgState) {
         this(null, null, cacheParams, cacheCfgState);
     }
 
     /** {@inheritDoc} */
     @Override public IgniteConfiguration getConfiguration(String gridName, IgniteConfiguration srcCfg) {
-        if (igniteParams == null)
-            return new IgniteConfiguration();
-
         IgniteConfiguration cfg = new IgniteConfiguration();
 
         copyDefaultsFromSource(cfg, srcCfg);
+
+        if (igniteParams == null)
+            return cfg;
 
         for (int i = 0; i < igniteCfgState.length; i++) {
             int var = igniteCfgState[i];

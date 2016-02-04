@@ -232,6 +232,8 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
                     for (CacheConfiguration cfg : entry.getValue())
                         ignite.createCache(cfg);
                 }
+
+                awaitPartitionMapExchange();
             }
             else {
                 int cnt = gridCount();
