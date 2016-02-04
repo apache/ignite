@@ -2,21 +2,18 @@
     {
         "title": "What is Apache Ignite",
         "message": [
-            "<p><b>Apache Ignite</b>  is a high-performance, integrated and distributed in-memory platform for computing and transacting on large-scale data sets in real-time, orders of magnitude faster than possible with traditional disk-based or flash technologies.</p>",
-            "<img src='/images/ignite-puzzle.png' width='100%' />",
-            "<p><b>Apache Ignite</b> is designed to deliver uncompromised performance for a wide set of in-memory computing use cases from high performance computing, to the industry most advanced data grid, highly available service grid, and streaming.</p>"
+            "<p><b>Apache Ignite</b> is designed to deliver uncompromised performance for a wide set of in-memory computing use cases from high performance computing, to the industry most advanced data grid, highly available service grid, and streaming.</p>",
+            "<img src='/images/ignite-puzzle.png' width='100%' />"
         ]
     },
     {
         "title": "What is Apache Ignite Web Console",
         "message": [
-            "<p><b>Apache Ignite Web Console</b> is a powerful tool for configuration and management of your clusters.</p>",
-            "<p>With Apache Ignite Web Console you can:<p>",
+            "<p>You will be able to<p>",
             "<ul>",
-            "<li>Configure clusters</li>",
-            "<li>Import domain model from database or describe it manually</li>",
+            "<li>Generate cluster configuration</li>",
+            "<li>Import domain model from database</li>",
             "<li>Configure all needed caches</li>",
-            "<li>Configure IGFS in-memory file systems</li>",
             "<li>Preview generated XML and Java code in browser</li>",
             "<li>Download fully functional Maven project with generated XML and Java code</li>",
             "<li>Execute SQL queries on real clusters</li>",
@@ -24,83 +21,74 @@
         ]
     },
     {
-        "title": "Cluster screen",
+        "title": "Clusters",
         "message": [
             "<div class='col-xs-7'>",
             "<img src='/images/cluster.png' width='100%' />",
             "</div>",
             "<div class='col-xs-5 padding-left-dflt'>",
-            "On <b>Clusters screen</b> you can:",
             "<ul>",
             "<li>Configure cluster properties</li>",
             "<li>Associate cluster with caches</li>",
-            "<li>Preview XML and Java code</li>",
             "</ul>",
             "</div>"
         ]
     },
     {
-        "title": "Domain model screen",
+        "title": "Domain Model",
         "message": [
             "<div class='col-xs-7'>",
             "<img src='/images/domains.png' width='100%' />",
             "</div>",
             "<div class='col-xs-5 padding-left-dflt'>",
-            "On <b>Domain model screen</b> you can:",
             "<ul>",
             "<li>Import domain model from database</li>",
-            "<li>Try demo import</li>",
+            "<li>Try it in <span class='getting-started-demo'>Demo</span> mode</li>",
             "<li>Associate domain model with caches</li>",
-            "<li>Configure types for SQL queries</li>",
-            "<li>Preview XML and Java code</li>",
+            "<li>Configure SQL queries</li>",
             "</ul>",
             "</div>"
         ]
     },
     {
-        "title": "Caches screen",
+        "title": "Caches",
         "message": [
             "<div class='col-xs-7'>",
             "<img src='/images/cache.png' width='100%' />",
             "</div>",
             "<div class='col-xs-5 padding-left-dflt'>",
-            "On <b>Caches screen</b> you can:",
             "<ul>",
             "<li>Configure cache properties</li>",
             "<li>Associate cache with clusters</li>",
             "<li>Associate cache with domain model</li>",
             "<li>Configure cache store</li>",
-            "<li>Preview XML and Java code</li>",
             "</ul>",
             "</div>"
         ]
     },
     {
-        "title": "IGFS screen",
+        "title": "In-memory File System",
         "message": [
             "<div class='col-xs-7'>",
             "<img src='/images/igfs.png' width='100%' />",
             "</div>",
             "<div class='col-xs-5 padding-left-dflt'>",
-            "On <b>IGFS screen</b> you can:",
             "<ul>",
             "<li>Configure IGFS properties</li>",
             "<li>Associate IGFS with clusters</li>",
-            "<li>Preview XML and Java code</li>",
             "</ul>",
             "</div>"
         ]
     },
     {
-      "title": "Summary screen",
+      "title": "Summary",
       "message": [
           "<div class='col-xs-7'>",
           "<img src='/images/summary.png' width='100%' />",
           "</div>",
           "<div class='col-xs-5 padding-left-dflt'>",
-          "On <b>Summary screen</b> you can:",
           "<ul>",
-          "<li>Preview full XML configuration</li>",
+          "<li>Preview cluster XML configuration</li>",
           "<li>Preview generated Java code</li>",
           "<li>Preview Docker file</li>",
           "<li>Preview pom.xml</li>",
@@ -110,18 +98,17 @@
       ]
     },
     {
-        "title": "SQL screen",
+        "title": "SQL Queries",
         "message": [
             "<div class='col-xs-7'>",
             "<img src='/images/query-table.png' width='100%' />",
             "</div>",
             "<div class='col-xs-5 padding-left-dflt'>",
-            "On <b>SQL screen</b> you can:",
             "<ul>",
-            "<li>Execute any SQL against cluster</li>",
-            "<li>Explain SQL</li>",
+            "<li>Execute SQL queries</li>",
+            "<li>View execution plan</li>",
             "<li>View data in tabular format and charts</li>",
-            "<li>Execute any SQL with specified refresh rate</li>",
+            "<li>View streaming charts</li>",
             "</ul>",
             "</div>"
         ]

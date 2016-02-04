@@ -17,24 +17,24 @@
 mixin ignite-clusters-information
     ignite-information(data-title='On this screen you can')
         ul
-            li Configure clusters
-            li Associate caches with clusters
-            li Preview XML and Java code for cluster configuration
+            li Configure #[a(href='https://apacheignite.readme.io/docs/clustering' target='_blank') clusters] properties
+            li Associate clusters with caches and in-memory file systems
+            li Preview XML and Java code
 
 mixin ignite-caches-information
     ignite-information(data-title='On this screen you can')
         ul
-            li Configure caches
-            li Associate domain model with caches
-            li Preview XML and Java code for cache configuration
+            li Configure #[a(href='https://apacheignite.readme.io/docs/data-grid' target='_blank') caches] properties
+            li Associate caches with clusters and domain model
+            li Preview XML and Java code
 
 mixin ignite-domains-information
     ignite-information(data-title='On this screen you can')
         ul
-            li Manually enter domain model descriptions
             li Import Domain model from database
             li Associate domain model with caches
-            li Preview XML and Java code for cluster configuration
+            li Configure #[a(href='https://apacheignite.readme.io/docs/sql-queries' target='_blank') SQL queries]
+            li Preview XML and Java code
 
 mixin ignite-igfs-information
     ignite-information(data-title='Configure IGFS only if you are going to use In-memory File System')
@@ -44,10 +44,10 @@ mixin ignite-igfs-information
             li In addition IGFS provides API to execute map-reduce tasks over file system data
 
 mixin ignite-summary-information
-    ignite-information(data-title='On this screen you can preview')
+    ignite-information(data-title='On this screen you can')
         ul
-            li XML configurations for server and client nodes
-            li Java classes with server and client nodes configuration from code
-            li POJO classes generated for configured domain model
-            li Maven pom.xml for generated project
-            li Dockerfile for server node
+            li Preview XML configurations for server and client nodes
+            li Preview Java classes with server and client nodes configuration from code
+            li Preview Maven pom.xml
+            li Preview #[a(href='https://apacheignite.readme.io/docs/docker-deployment' target='_blank') Dockerfile] for server node
+            li Download fully functional Maven project

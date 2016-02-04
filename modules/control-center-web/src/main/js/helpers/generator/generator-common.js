@@ -254,15 +254,15 @@ $generatorCommon.builder = function (deep) {
 $generatorCommon.EVICTION_POLICIES = {
     LRU: {
         className: 'org.apache.ignite.cache.eviction.lru.LruEvictionPolicy',
-        fields: {batchSize: null, maxMemorySize: null, maxSize: null}
+        fields: {batchSize: {dflt: 1}, maxMemorySize: null, maxSize: {dflt: 100000}}
     },
     FIFO: {
         className: 'org.apache.ignite.cache.eviction.fifo.FifoEvictionPolicy',
-        fields: {batchSize: null, maxMemorySize: null, maxSize: null}
+        fields: {batchSize: {dflt: 1}, maxMemorySize: null, maxSize: {dflt: 100000}}
     },
     SORTED: {
         className: 'org.apache.ignite.cache.eviction.sorted.SortedEvictionPolicy',
-        fields: {batchSize: null, maxMemorySize: null, maxSize: null}
+        fields: {batchSize: {dflt: 1}, maxMemorySize: null, maxSize: {dflt: 100000}}
     }
 };
 

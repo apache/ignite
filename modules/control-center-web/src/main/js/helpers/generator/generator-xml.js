@@ -754,8 +754,8 @@ $generatorXml.cacheMemory = function(cache, res) {
     if (!res)
         res = $generatorCommon.builder();
 
-    $generatorXml.property(res, cache, 'memoryMode');
-    $generatorXml.property(res, cache, 'offHeapMaxMemory');
+    $generatorXml.property(res, cache, 'memoryMode', null, 'ONHEAP_TIERED');
+    $generatorXml.property(res, cache, 'offHeapMaxMemory', null, -1);
 
     res.needEmptyLine = true;
 
@@ -763,8 +763,8 @@ $generatorXml.cacheMemory = function(cache, res) {
 
     res.needEmptyLine = true;
 
-    $generatorXml.property(res, cache, 'swapEnabled');
-    $generatorXml.property(res, cache, 'startSize');
+    $generatorXml.property(res, cache, 'swapEnabled', null, false);
+    $generatorXml.property(res, cache, 'startSize', null, 1500000);
 
     res.needEmptyLine = true;
 
@@ -777,8 +777,8 @@ $generatorXml.cacheQuery = function(cache, res) {
         res = $generatorCommon.builder();
 
     $generatorXml.property(res, cache, 'sqlSchema');
-    $generatorXml.property(res, cache, 'sqlOnheapRowCacheSize');
-    $generatorXml.property(res, cache, 'longQueryWarningTimeout');
+    $generatorXml.property(res, cache, 'sqlOnheapRowCacheSize', null, 10240);
+    $generatorXml.property(res, cache, 'longQueryWarningTimeout', null, 3000);
     $generatorXml.property(res, cache, 'snapshotableIndex', null, false);
 
     var indexedTypes = _.filter(cache.domains, function (domain) {
@@ -802,7 +802,7 @@ $generatorXml.cacheQuery = function(cache, res) {
 
     $generatorXml.listProperty(res, cache, 'sqlFunctionClasses');
 
-    $generatorXml.property(res, cache, 'sqlEscapeAll');
+    $generatorXml.property(res, cache, 'sqlEscapeAll', null, false);
 
     res.needEmptyLine = true;
 
@@ -901,16 +901,18 @@ $generatorXml.cacheStore = function(cache, domains, res) {
 
     $generatorXml.property(res, cache, 'storeKeepBinary', null, false);
     $generatorXml.property(res, cache, 'loadPreviousValue', null, false);
-    $generatorXml.property(res, cache, 'readThrough', null, null, false);
-    $generatorXml.property(res, cache, 'writeThrough', null, null, false);
+    $generatorXml.property(res, cache, 'readThrough', null, false);
+    $generatorXml.property(res, cache, 'writeThrough', null, false);
 
     res.needEmptyLine = true;
 
-    $generatorXml.property(res, cache, 'writeBehindEnabled');
-    $generatorXml.property(res, cache, 'writeBehindBatchSize');
-    $generatorXml.property(res, cache, 'writeBehindFlushSize');
-    $generatorXml.property(res, cache, 'writeBehindFlushFrequency');
-    $generatorXml.property(res, cache, 'writeBehindFlushThreadCount');
+    if (cache.writeBehindEnabled) {
+        $generatorXml.property(res, cache, 'writeBehindEnabled', null, false);
+        $generatorXml.property(res, cache, 'writeBehindBatchSize', null, 512);
+        $generatorXml.property(res, cache, 'writeBehindFlushSize', null, 10240);
+        $generatorXml.property(res, cache, 'writeBehindFlushFrequency', null, 5000);
+        $generatorXml.property(res, cache, 'writeBehindFlushThreadCount', null, 1);
+    }
 
     res.needEmptyLine = true;
 
@@ -922,10 +924,10 @@ $generatorXml.cacheConcurrency = function(cache, res) {
     if (!res)
         res = $generatorCommon.builder();
 
-    $generatorXml.property(res, cache, 'maxConcurrentAsyncOperations');
-    $generatorXml.property(res, cache, 'defaultLockTimeout');
+    $generatorXml.property(res, cache, 'maxConcurrentAsyncOperations', null, 500);
+    $generatorXml.property(res, cache, 'defaultLockTimeout', null, 0);
     $generatorXml.property(res, cache, 'atomicWriteOrderMode');
-    $generatorXml.property(res, cache, 'writeSynchronizationMode');
+    $generatorXml.property(res, cache, 'writeSynchronizationMode', null, "PRIMARY_SYNC");
 
     res.needEmptyLine = true;
 
@@ -974,13 +976,10 @@ $generatorXml.cacheServerNearCache = function(cache, res) {
 
         if (cache.nearConfiguration) {
             if (cache.nearConfiguration.nearStartSize)
-                $generatorXml.property(res, cache.nearConfiguration, 'nearStartSize');
-
+                $generatorXml.property(res, cache.nearConfiguration, 'nearStartSize', null, 375000);
 
             $generatorXml.evictionPolicy(res, cache.nearConfiguration.nearEvictionPolicy, 'nearEvictionPolicy');
         }
-
-
 
         res.endBlock('</bean>');
         res.endBlock('</property>');
@@ -996,8 +995,8 @@ $generatorXml.cacheStatistics = function(cache, res) {
     if (!res)
         res = $generatorCommon.builder();
 
-    $generatorXml.property(res, cache, 'statisticsEnabled');
-    $generatorXml.property(res, cache, 'managementEnabled');
+    $generatorXml.property(res, cache, 'statisticsEnabled', null, false);
+    $generatorXml.property(res, cache, 'managementEnabled', null, false);
 
     res.needEmptyLine = true;
 
