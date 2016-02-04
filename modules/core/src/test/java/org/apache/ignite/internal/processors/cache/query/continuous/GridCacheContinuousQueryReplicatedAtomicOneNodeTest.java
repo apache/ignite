@@ -15,32 +15,17 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.binary.streams;
+package org.apache.ignite.internal.processors.cache.query.continuous;
+
+import org.apache.ignite.cache.CacheAtomicityMode;
 
 /**
- * Binary abstract stream.
+ *
  */
-public abstract class BinaryAbstractStream implements BinaryStream {
-    /** Byte: zero. */
-    protected static final byte BYTE_ZERO = 0;
-
-    /** Byte: one. */
-    protected static final byte BYTE_ONE = 1;
-
-    /** Position. */
-    protected int pos;
-
+public class GridCacheContinuousQueryReplicatedAtomicOneNodeTest
+    extends GridCacheContinuousQueryReplicatedTxOneNodeTest {
     /** {@inheritDoc} */
-    @Override public int position() {
-        return pos;
-    }
-
-    /**
-     * Shift position.
-     *
-     * @param cnt Byte count.
-     */
-    protected void shift(int cnt) {
-        pos += cnt;
+    @Override protected CacheAtomicityMode atomicMode() {
+        return CacheAtomicityMode.ATOMIC;
     }
 }

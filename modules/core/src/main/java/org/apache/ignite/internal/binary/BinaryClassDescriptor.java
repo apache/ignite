@@ -46,15 +46,11 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.marshaller.MarshallerExclusions;
 import org.apache.ignite.marshaller.optimized.OptimizedMarshaller;
 import org.jetbrains.annotations.Nullable;
-import sun.misc.Unsafe;
 
 /**
  * Binary class descriptor.
  */
 public class BinaryClassDescriptor {
-    /** */
-    public static final Unsafe UNSAFE = GridUnsafe.unsafe();
-
     /** */
     @GridToStringExclude
     private final BinaryContext ctx;
@@ -776,7 +772,7 @@ public class BinaryClassDescriptor {
      */
     private Object newInstance() throws BinaryObjectException {
         try {
-            return ctor != null ? ctor.newInstance() : UNSAFE.allocateInstance(cls);
+            return ctor != null ? ctor.newInstance() : GridUnsafe.allocateInstance(cls);
         }
         catch (InstantiationException | InvocationTargetException | IllegalAccessException e) {
             throw new BinaryObjectException("Failed to instantiate instance: " + cls, e);

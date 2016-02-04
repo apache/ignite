@@ -980,8 +980,6 @@ public class GridNioServer<T> {
 
                 NioOperationFuture<?> req = ses.removeMeta(NIO_OPERATION.ordinal());
 
-                List<NioOperationFuture<?>> doneFuts = null;
-
                 while (true) {
                     if (req == null) {
                         req = (NioOperationFuture<?>)ses.pollFuture();
@@ -1012,10 +1010,7 @@ public class GridNioServer<T> {
 
                     // Fill up as many messages as possible to write buffer.
                     while (finished) {
-                        if (doneFuts == null)
-                            doneFuts = new ArrayList<>();
-
-                        doneFuts.add(req);
+                        req.onDone();
 
                         req = (NioOperationFuture<?>)ses.pollFuture();
 
@@ -1058,13 +1053,6 @@ public class GridNioServer<T> {
 
                     if (!skipWrite) {
                         int cnt = sockCh.write(buf);
-
-                        if (!F.isEmpty(doneFuts)) {
-                            for (int i = 0; i < doneFuts.size(); i++)
-                                doneFuts.get(i).onDone();
-
-                            doneFuts.clear();
-                        }
 
                         if (log.isTraceEnabled())
                             log.trace("Bytes sent [sockCh=" + sockCh + ", cnt=" + cnt + ']');
@@ -1185,13 +1173,8 @@ public class GridNioServer<T> {
             }
 
             // Fill up as many messages as possible to write buffer.
-            List<NioOperationFuture<?>> doneFuts = null;
-
             while (finished) {
-                if (doneFuts == null)
-                    doneFuts = new ArrayList<>();
-
-                doneFuts.add(req);
+                req.onDone();
 
                 req = (NioOperationFuture<?>)ses.pollFuture();
 
@@ -1217,13 +1200,6 @@ public class GridNioServer<T> {
 
             if (!skipWrite) {
                 int cnt = sockCh.write(buf);
-
-                if (!F.isEmpty(doneFuts)) {
-                    for (int i = 0; i < doneFuts.size(); i++)
-                        doneFuts.get(i).onDone();
-
-                    doneFuts.clear();
-                }
 
                 if (log.isTraceEnabled())
                     log.trace("Bytes sent [sockCh=" + sockCh + ", cnt=" + cnt + ']');
