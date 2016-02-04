@@ -116,7 +116,7 @@ public class GridAffinitySelfTest extends GridCommonAbstractTest {
         return F.view(Arrays.asList(g.configuration().getCacheConfiguration()), new IgnitePredicate<CacheConfiguration>() {
             @Override public boolean apply(CacheConfiguration c) {
                 return !CU.MARSH_CACHE_NAME.equals(c.getName()) && !CU.UTILITY_CACHE_NAME.equals(c.getName()) &&
-                    !CU.ATOMICS_CACHE_NAME.equals(c.getName());
+                    !CU.ATOMICS_CACHE_NAME.equals(c.getName()) && !CU.SYS_CACHE_HADOOP_MR.equals(c.getName());
             }
         });
     }
