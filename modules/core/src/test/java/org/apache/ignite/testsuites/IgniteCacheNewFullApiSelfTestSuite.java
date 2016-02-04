@@ -19,7 +19,6 @@ package org.apache.ignite.testsuites;
 
 import java.util.Arrays;
 import junit.framework.TestSuite;
-import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.store.CacheStore;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -56,21 +55,21 @@ public class IgniteCacheNewFullApiSelfTestSuite extends TestSuite {
         Variants.booleanVariants("setPeerClassLoadingEnabled"),
     };
 
-//    /** */
-//    @SuppressWarnings("unchecked")
-//    private static final ConfigurationParameter<CacheConfiguration>[][] cacheParams = new ConfigurationParameter[][] {
-//        Variants.enumVariants(CacheMode.class, "setCacheMode"),
-//        Variants.enumVariants(CacheAtomicityMode.class, "setAtomicityMode"),
-////        Variants.enumVariantsWithNull(CacheMemoryMode.class, "setMemoryMode"),
-//    };
-
     /** */
     @SuppressWarnings("unchecked")
     private static final ConfigurationParameter<CacheConfiguration>[][] cacheParams = new ConfigurationParameter[][] {
-        Variants.enumSingleVariant(CacheMode.PARTITIONED, "setCacheMode"),
-        Variants.enumSingleVariant(CacheAtomicityMode.TRANSACTIONAL, "setAtomicityMode"),
-        Variants.enumSingleVariant(null, "setMemoryMode"),
+        Variants.enumVariants(CacheMode.class, "setCacheMode"),
+//        Variants.enumVariants(CacheAtomicityMode.class, "setAtomicityMode"),
+//        Variants.enumVariantsWithNull(CacheMemoryMode.class, "setMemoryMode"),
     };
+
+//    /** */
+//    @SuppressWarnings("unchecked")
+//    private static final ConfigurationParameter<CacheConfiguration>[][] cacheParams = new ConfigurationParameter[][] {
+//        Variants.enumSingleVariant(CacheMode.PARTITIONED, "setCacheMode"),
+//        Variants.enumSingleVariant(CacheAtomicityMode.TRANSACTIONAL, "setAtomicityMode"),
+//        Variants.enumSingleVariant(null, "setMemoryMode"),
+//    };
 
     /**
      * @return Cache API test suite.
