@@ -16,6 +16,9 @@
  */
 
 // ReSharper disable SuspiciousTypeConversion.Global
+// ReSharper disable MemberCanBePrivate.Global
+// ReSharper disable AutoPropertyCanBeMadeGetOnly.Global
+// ReSharper disable UnusedAutoPropertyAccessor.Global
 namespace Apache.Ignite.Core.Tests.Cache.Query
 {
     using System;
