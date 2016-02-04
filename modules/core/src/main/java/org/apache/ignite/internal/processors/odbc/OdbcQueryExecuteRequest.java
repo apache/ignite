@@ -38,7 +38,7 @@ public class OdbcQueryExecuteRequest extends OdbcRequest {
     public OdbcQueryExecuteRequest(String cacheName, String sqlQry, Object[] args) {
         super(EXECUTE_SQL_QUERY);
 
-        this.cacheName = cacheName;
+        this.cacheName = cacheName.isEmpty() ? null : cacheName;
         this.sqlQry = sqlQry;
         this.args = args;
     }

@@ -107,13 +107,6 @@ namespace ignite
                 return SQL_RESULT_ERROR;
             }
 
-            if (cache.empty())
-            {
-                AddStatusRecord(SQL_STATE_HY000_GENERAL_ERROR, "Cache is not specified.");
-
-                return SQL_RESULT_ERROR;
-            }
-
             this->cache = cache;
 
             connected = socket.Connect(host.c_str(), port);
