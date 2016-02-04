@@ -28,6 +28,7 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.managers.communication.GridIoMessage;
 import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridDhtAtomicUpdateRequest;
+import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridNearAtomicSingleUpdateRequest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridNearAtomicUpdateRequest;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.plugin.extensions.communication.Message;
@@ -138,6 +139,7 @@ public class GridCacheAtomicMessageCountSelfTest extends GridCommonAbstractTest 
             TestCommunicationSpi commSpi = (TestCommunicationSpi)grid(0).configuration().getCommunicationSpi();
 
             commSpi.registerMessage(GridNearAtomicUpdateRequest.class);
+            commSpi.registerMessage(GridNearAtomicSingleUpdateRequest.class);
             commSpi.registerMessage(GridDhtAtomicUpdateRequest.class);
 
             int putCnt = 15;
@@ -166,28 +168,49 @@ public class GridCacheAtomicMessageCountSelfTest extends GridCommonAbstractTest 
                 jcache(0).put(i, i);
             }
 
-            assertEquals(expNearCnt, commSpi.messageCount(GridNearAtomicUpdateRequest.class));
-            assertEquals(expDhtCnt, commSpi.messageCount(GridDhtAtomicUpdateRequest.class));
+            assertEquals(expNearCnt, nearRequestsCount(commSpi));
+            assertEquals(expDhtCnt, dhtRequestsCount(commSpi));
 
             if (writeOrderMode == CLOCK) {
                 for (int i = 1; i < 4; i++) {
                     commSpi = (TestCommunicationSpi)grid(i).configuration().getCommunicationSpi();
 
-                    assertEquals(0, commSpi.messageCount(GridNearAtomicUpdateRequest.class));
-                    assertEquals(0, commSpi.messageCount(GridDhtAtomicUpdateRequest.class));
+                    assertEquals(0, nearRequestsCount(commSpi));
+                    assertEquals(0, dhtRequestsCount(commSpi));
                 }
             }
             else {
                 for (int i = 1; i < 4; i++) {
                     commSpi = (TestCommunicationSpi)grid(i).configuration().getCommunicationSpi();
 
-                    assertEquals(0, commSpi.messageCount(GridNearAtomicUpdateRequest.class));
+                    assertEquals(0, nearRequestsCount(commSpi));
                 }
             }
         }
         finally {
             stopAllGrids();
         }
+    }
+
+    /**
+     * Get amount of near update requests.
+     *
+     * @param commSpi Communication SPI.
+     * @return Count.
+     */
+    private int nearRequestsCount(TestCommunicationSpi commSpi) {
+        return commSpi.messageCount(GridNearAtomicUpdateRequest.class) +
+            commSpi.messageCount(GridNearAtomicSingleUpdateRequest.class);
+    }
+
+    /**
+     * Get amount of DHT update requests.
+     *
+     * @param commSpi Communication SPI.
+     * @return Count.
+     */
+    private int dhtRequestsCount(TestCommunicationSpi commSpi) {
+        return commSpi.messageCount(GridDhtAtomicUpdateRequest.class);
     }
 
     /**
@@ -228,13 +251,6 @@ public class GridCacheAtomicMessageCountSelfTest extends GridCommonAbstractTest 
             AtomicInteger cntr = cntMap.get(cls);
 
             return cntr == null ? 0 : cntr.get();
-        }
-
-        /**
-         * Resets counter to zero.
-         */
-        public void resetCount() {
-            cntMap.clear();
         }
     }
 }
