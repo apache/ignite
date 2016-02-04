@@ -122,7 +122,7 @@ angular
         },
         resolve: {
             $title: () => {
-                return 'Configure Domain Models';
+                return 'Configure Domain Model';
             }
         }
     })
