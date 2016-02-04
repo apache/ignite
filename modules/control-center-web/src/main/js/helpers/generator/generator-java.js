@@ -555,16 +555,16 @@ $generatorJava.clusterAtomics = function (cluster, res) {
 
         $generatorJava.declareVariable(res, 'atomicCfg', 'org.apache.ignite.configuration.AtomicConfiguration');
 
-        $generatorJava.enumProperty(res, 'atomicCfg', atomics, 'cacheMode', 'org.apache.ignite.cache.CacheMode');
+        $generatorJava.enumProperty(res, 'atomicCfg', atomics, 'cacheMode', 'org.apache.ignite.cache.CacheMode', null, 'PARTITIONED');
 
         var cacheMode = atomics.cacheMode ? atomics.cacheMode : 'PARTITIONED';
 
         var hasData = cacheMode !== 'PARTITIONED';
 
-        hasData = $generatorJava.property(res, 'atomicCfg', atomics, 'atomicSequenceReserveSize') || hasData;
+        hasData = $generatorJava.property(res, 'atomicCfg', atomics, 'atomicSequenceReserveSize', null, null, 1000) || hasData;
 
         if (cacheMode === 'PARTITIONED')
-            hasData = $generatorJava.property(res, 'atomicCfg', atomics, 'backups') || hasData;
+            hasData = $generatorJava.property(res, 'atomicCfg', atomics, 'backups', null, null, 0) || hasData;
 
         res.needEmptyLine = true;
 
@@ -751,8 +751,8 @@ $generatorJava.clusterDeployment = function (cluster, res) {
         $generatorJava.property(res, 'cfg', cluster, 'peerClassLoadingEnabled', null, null, false);
 
         if (p2pEnabled) {
-            $generatorJava.property(res, 'cfg', cluster, 'peerClassLoadingMissedResourcesCacheSize');
-            $generatorJava.property(res, 'cfg', cluster, 'peerClassLoadingThreadPoolSize');
+            $generatorJava.property(res, 'cfg', cluster, 'peerClassLoadingMissedResourcesCacheSize', null, null, 100);
+            $generatorJava.property(res, 'cfg', cluster, 'peerClassLoadingThreadPoolSize', null, null, 2);
             $generatorJava.multiparamProperty(res, 'cfg', cluster, 'peerClassLoadingLocalClassPathExclude');
         }
 
@@ -785,7 +785,7 @@ $generatorJava.clusterDiscovery = function (disco, res) {
     $generatorJava.property(res, 'discovery', disco, 'heartbeatFrequency', null, null, 2000);
     $generatorJava.property(res, 'discovery', disco, 'maxMissedHeartbeats', null, null, 1);
     $generatorJava.property(res, 'discovery', disco, 'maxMissedClientHeartbeats', null, null, 5);
-    $generatorJava.property(res, 'discovery', disco, 'topHistorySize', null, null, 100);
+    $generatorJava.property(res, 'discovery', disco, 'topHistorySize', null, null, 1000);
 
     if ($commonUtils.isDefinedAndNotEmpty(disco.listener)) {
         $generatorJava.beanProperty(res, 'discovery', disco, 'listener', 'listener', disco.listener, {}, true);
@@ -896,7 +896,7 @@ $generatorJava.clusterMarshaller = function (cluster, res) {
     }
 
     $generatorJava.property(res, 'cfg', cluster, 'marshalLocalJobs', null, null, false);
-    $generatorJava.property(res, 'cfg', cluster, 'marshallerCacheKeepAliveTime');
+    $generatorJava.property(res, 'cfg', cluster, 'marshallerCacheKeepAliveTime', null, null, 10000);
     $generatorJava.property(res, 'cfg', cluster, 'marshallerCacheThreadPoolSize', null, 'setMarshallerCachePoolSize');
 
     res.needEmptyLine = true;
@@ -910,9 +910,9 @@ $generatorJava.clusterMetrics = function (cluster, res) {
         res = $generatorCommon.builder();
 
     $generatorJava.property(res, 'cfg', cluster, 'metricsExpireTime');
-    $generatorJava.property(res, 'cfg', cluster, 'metricsHistorySize');
-    $generatorJava.property(res, 'cfg', cluster, 'metricsLogFrequency');
-    $generatorJava.property(res, 'cfg', cluster, 'metricsUpdateFrequency');
+    $generatorJava.property(res, 'cfg', cluster, 'metricsHistorySize', null, null, 10000);
+    $generatorJava.property(res, 'cfg', cluster, 'metricsLogFrequency', null, null, 60000);
+    $generatorJava.property(res, 'cfg', cluster, 'metricsUpdateFrequency', null, null, 2000);
 
     res.needEmptyLine = true;
 

@@ -387,12 +387,12 @@ $generatorXml.clusterAtomics = function (cluster, res) {
 
         var hasData = cacheMode !== 'PARTITIONED';
 
-        $generatorXml.property(res, atomics, 'cacheMode');
+        $generatorXml.property(res, atomics, 'cacheMode', null, 'PARTITIONED');
 
-        hasData = $generatorXml.property(res, atomics, 'atomicSequenceReserveSize') || hasData;
+        hasData = $generatorXml.property(res, atomics, 'atomicSequenceReserveSize', null, 1000) || hasData;
 
         if (cacheMode === 'PARTITIONED')
-            hasData = $generatorXml.property(res, atomics, 'backups') || hasData;
+            hasData = $generatorXml.property(res, atomics, 'backups', null, 0) || hasData;
 
         res.endBlock('</bean>');
         res.endBlock('</property>');
@@ -510,8 +510,8 @@ $generatorXml.clusterDeployment = function (cluster, res) {
         $generatorXml.property(res, cluster, 'peerClassLoadingEnabled', null, false);
 
         if (p2pEnabled) {
-            $generatorXml.property(res, cluster, 'peerClassLoadingMissedResourcesCacheSize');
-            $generatorXml.property(res, cluster, 'peerClassLoadingThreadPoolSize');
+            $generatorXml.property(res, cluster, 'peerClassLoadingMissedResourcesCacheSize', null, 100);
+            $generatorXml.property(res, cluster, 'peerClassLoadingThreadPoolSize', null, 2);
             $generatorXml.listProperty(res, cluster, 'peerClassLoadingLocalClassPathExclude');
         }
 
@@ -540,7 +540,7 @@ $generatorXml.clusterDiscovery = function (disco, res) {
     $generatorXml.property(res, disco, 'heartbeatFrequency', null, 2000);
     $generatorXml.property(res, disco, 'maxMissedHeartbeats', null, 1);
     $generatorXml.property(res, disco, 'maxMissedClientHeartbeats', null, 5);
-    $generatorXml.property(res, disco, 'topHistorySize', null, 100);
+    $generatorXml.property(res, disco, 'topHistorySize', null, 1000);
     if ($commonUtils.isDefinedAndNotEmpty(disco.listener))
         $generatorXml.beanProperty(res, disco, 'listener', {className: disco.listener}, true);
     if ($commonUtils.isDefinedAndNotEmpty(disco.dataExchange))
@@ -616,7 +616,7 @@ $generatorXml.clusterMarshaller = function (cluster, res) {
     }
 
     $generatorXml.property(res, cluster, 'marshalLocalJobs', null, false);
-    $generatorXml.property(res, cluster, 'marshallerCacheKeepAliveTime');
+    $generatorXml.property(res, cluster, 'marshallerCacheKeepAliveTime', null, 10000);
     $generatorXml.property(res, cluster, 'marshallerCacheThreadPoolSize', 'marshallerCachePoolSize');
 
     res.needEmptyLine = true;
@@ -630,9 +630,9 @@ $generatorXml.clusterMetrics = function (cluster, res) {
         res = $generatorCommon.builder();
 
     $generatorXml.property(res, cluster, 'metricsExpireTime');
-    $generatorXml.property(res, cluster, 'metricsHistorySize');
-    $generatorXml.property(res, cluster, 'metricsLogFrequency');
-    $generatorXml.property(res, cluster, 'metricsUpdateFrequency');
+    $generatorXml.property(res, cluster, 'metricsHistorySize', null, 10000);
+    $generatorXml.property(res, cluster, 'metricsLogFrequency', null, 60000);
+    $generatorXml.property(res, cluster, 'metricsUpdateFrequency', null, 2000);
 
     res.needEmptyLine = true;
 
