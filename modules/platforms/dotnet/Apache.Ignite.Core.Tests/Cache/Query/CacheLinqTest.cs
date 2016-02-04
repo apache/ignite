@@ -251,6 +251,8 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
             CheckFunc(x => x.TrimEnd('P', 'e', '7'), strings);
 
             CheckFunc(x => Regex.Replace(x, @"son.\d", "kele!"), strings);
+            CheckFunc(x => x.Replace("son", ""), strings);
+            CheckFunc(x => x.Replace("son", "kele"), strings);
         }
 
         [Test]
