@@ -19,6 +19,7 @@ namespace Apache.Ignite.Linq.Impl
 {
     using System;
     using System.Collections.Generic;
+    using System.Linq;
     using System.Linq.Expressions;
     using System.Reflection;
 
@@ -30,6 +31,18 @@ namespace Apache.Ignite.Linq.Impl
         public static readonly MemberInfo StringLength = typeof (string).GetProperty("Length");
 
         private delegate void VisitMethodDelegate(MethodCallExpression expression, CacheQueryExpressionVisitor visitor);
+
+        private static readonly Dictionary<MethodInfo, VisitMethodDelegate> Delegates1 = new List
+            <KeyValuePair<MethodInfo, VisitMethodDelegate>>
+        {
+            GetStringMethod("ToLower", del:GetFunc("lower")),
+            GetStringMethod("ToUpper", del:GetFunc("upper")),
+            GetStringMethod("Contains", del:(e, v) => VisitSqlLike(e, v, "%{0}%")),
+            GetStringMethod("StartsWith", new[] {typeof (string)}, (e, v) => VisitSqlLike(e, v, "{0}%")),
+            GetStringMethod("EndsWith", new[] {typeof (string)}, (e, v) => VisitSqlLike(e, v, "{0}%")),
+            GetMethod(typeof(DateTime), "ToString", new [] {typeof(string)}, GetFunc("formatdatetime"))
+        }.ToDictionary(x => x.Key, x => x.Value);
+
 
         private static readonly Dictionary<MethodInfo, VisitMethodDelegate> Delegates = new Dictionary
             <MethodInfo, VisitMethodDelegate>
@@ -78,7 +91,7 @@ namespace Apache.Ignite.Linq.Impl
             {GetMathMethod("Tan", typeof(double)), GetFunc("tan")},
             {GetMathMethod("Tanh", typeof(double)), GetFunc("tanh")},
             {GetMathMethod("Truncate", typeof(double)), GetFunc("truncate")},
-            {GetMathMethod("Truncate", typeof(decimal)), GetFunc("truncate")}
+            {GetMathMethod("Truncate", typeof(decimal)), GetFunc("truncate")},
         };
 
         /// <summary>
@@ -156,6 +169,24 @@ namespace Apache.Ignite.Linq.Impl
 
             return arg.Value;
         }
+
+        private static KeyValuePair<MethodInfo, VisitMethodDelegate> GetStringMethod(string name,
+            Type[] argTypes = null, VisitMethodDelegate del = null)
+        {
+            return GetMethod(typeof(string), name, argTypes, del);
+        }
+
+        private static KeyValuePair<MethodInfo, VisitMethodDelegate> GetMethod(Type type, string name,
+            Type[] argTypes = null, VisitMethodDelegate del = null)
+        {
+            var method = argTypes == null ? type.GetMethod(name) : type.GetMethod(name, argTypes);
+
+            if (method == null)
+                throw new InvalidOperationException("Method not found: " + name);
+
+            return new KeyValuePair<MethodInfo, VisitMethodDelegate>(method, del ?? GetFunc(name));
+        }
+
 
         /// <summary>
         /// Gets the math method.
