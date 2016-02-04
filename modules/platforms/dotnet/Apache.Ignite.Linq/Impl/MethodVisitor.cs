@@ -45,6 +45,8 @@ namespace Apache.Ignite.Linq.Impl
             GetStringMethod("IndexOf", new[] {typeof (string), typeof (int)}, GetFunc("instr", -1)),
             GetStringMethod("Substring", new[] {typeof (int)}, GetFunc("substring", 0, 1)),
             GetStringMethod("Substring", new[] {typeof (int), typeof (int)}, GetFunc("substring", 0, 1)),
+            GetStringMethod("Trim", "trim"),
+            GetStringMethod("Trim", "trim", typeof(char[])),
 
             GetMethod(typeof (DateTime), "ToString", new[] {typeof (string)}, GetFunc("formatdatetime")),
 
@@ -202,11 +204,11 @@ namespace Apache.Ignite.Linq.Impl
             return GetMethod(typeof(string), name, argTypes, del);
         }
 
-        //private static KeyValuePair<MethodInfo, VisitMethodDelegate> GetStringMethod(string name, string sqlName,
-        //    params Type[] argTypes)
-        //{
-        //    return GetMethod(typeof(string), name, argTypes, GetFunc(sqlName));
-        //}
+        private static KeyValuePair<MethodInfo, VisitMethodDelegate> GetStringMethod(string name, string sqlName,
+            params Type[] argTypes)
+        {
+            return GetMethod(typeof(string), name, argTypes, GetFunc(sqlName));
+        }
 
         private static KeyValuePair<MethodInfo, VisitMethodDelegate> GetMathMethod(string name, string sqlName,
             params Type[] argTypes)

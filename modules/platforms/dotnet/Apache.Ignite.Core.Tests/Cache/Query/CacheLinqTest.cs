@@ -228,11 +228,6 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
             CheckFunc(x => x.Substring(4), strings);
             CheckFunc(x => x.Substring(4, 5), strings);
 
-            CheckFunc(x => x.PadLeft(3), strings);
-            CheckFunc(x => x.PadLeft(3, '*'), strings);
-            CheckFunc(x => x.PadRight(4), strings);
-            CheckFunc(x => x.PadLeft(4, '%'), strings);
-
             CheckFunc(x => x.Trim(), strings);
             CheckFunc(x => x.Trim('P'), strings);
             CheckFunc(x => x.Trim('3'), strings);
