@@ -18,7 +18,7 @@
 namespace Apache.Ignite.Core.DataStructures
 {
     /// <summary>
-    /// Represents a distibuted atomic sequence of numbers.
+    /// Represents a distributed atomic sequence of numbers.
     /// </summary>
     public interface IAtomicSequence
     {
