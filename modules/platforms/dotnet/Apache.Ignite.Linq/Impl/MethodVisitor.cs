@@ -58,6 +58,7 @@ namespace Apache.Ignite.Linq.Impl
             {GetMathMethod("Floor", typeof(decimal)), GetFunc("floor")},
             {GetMathMethod("Log", typeof(double)), GetFunc("log")},
             {GetMathMethod("Log10", typeof(double)), GetFunc("log10")},
+            {GetMathMethod("Pow", typeof(double), typeof(double)), GetFunc("power")},
             {GetMathMethod("Round", typeof(double)), GetFunc("round")},
             {GetMathMethod("Round", typeof(double), typeof(int)), GetFunc("round")},
             {GetMathMethod("Round", typeof(decimal)), GetFunc("round")},

@@ -563,6 +563,8 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
             CheckFunc(x => Math.Log(x), doubles);
             CheckFunc(x => Math.Log10(x), doubles);
 
+            CheckFunc(x => Math.Pow(x, 3.7), doubles);
+
             CheckFunc(x => Math.Round(x), doubles);
             CheckFunc(x => Math.Round(x, 3), doubles);
             CheckFunc(x => Math.Round(x), decimals);
@@ -584,6 +586,13 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
 
             CheckFunc(x => Math.Truncate(x), doubles);
             CheckFunc(x => Math.Truncate(x), decimals);
+
+            // Operators
+            CheckFunc(x => x*7, doubles);
+            CheckFunc(x => x/7, doubles);
+            CheckFunc(x => x%7, doubles);
+            CheckFunc(x => x+7, doubles);
+            CheckFunc(x => x-7, doubles);
         }
 
         [Test]
