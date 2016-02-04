@@ -360,7 +360,7 @@ void Populate(Ignite& grid)
     cityCache.Clear();
     clientCache.Clear();
     accountCache.Clear();
-    products.clear();
+    productCache.Clear();
     clientProductCache.Clear();
 
     // Loading entries into caches.
