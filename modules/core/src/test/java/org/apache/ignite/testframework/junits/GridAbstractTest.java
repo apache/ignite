@@ -154,7 +154,7 @@ public abstract class GridAbstractTest extends TestCase {
     private static long ts = System.currentTimeMillis();
 
     /** Starting grid name. */
-    protected final static ThreadLocal<String> startingGrid = new ThreadLocal<>();
+    protected static final ThreadLocal<String> startingGrid = new ThreadLocal<>();
 
     /** */
     protected TestsConfiguration testsCfg;
@@ -489,7 +489,7 @@ public abstract class GridAbstractTest extends TestCase {
     protected void beforeTestsStarted() throws Exception {
         if (testsCfg != null) {
             if (Ignition.allGrids().size() != testsCfg.gridCount()) {
-                log.info("All nodes will be stopped, new " + testsCfg.gridCount() + " nodes will be started.");
+                info("All nodes will be stopped, new " + testsCfg.gridCount() + " nodes will be started.");
 
                 Ignition.stopAll(true);
 
@@ -758,18 +758,29 @@ public abstract class GridAbstractTest extends TestCase {
      * @throws Exception If failed.
      */
     protected Ignite startGrid(String gridName, GridSpringResourceContext ctx) throws Exception {
+        return startGrid(gridName, optimize(getConfiguration(gridName)), ctx);
+    }
+    /**
+     * Starts new grid with given name.
+     *
+     * @param gridName Grid name.
+     * @param ctx Spring context.
+     * @return Started grid.
+     * @throws Exception If failed.
+     */
+    protected Ignite startGrid(String gridName, IgniteConfiguration cfg, GridSpringResourceContext ctx)
+        throws Exception {
         if (!isRemoteJvm(gridName)) {
             startingGrid.set(gridName);
 
-            Class<Ignite> aClass = Ignite.class;
-
             try {
-                Ignite node = IgnitionEx.start(optimize(getConfiguration(gridName)), ctx);
+                Ignite node = IgnitionEx.start(cfg, ctx);
 
-                IgniteConfiguration cfg = node.configuration();
+                IgniteConfiguration nodeCfg = node.configuration();
 
                 log.info("Node started with the following configuration [id=" + node.cluster().localNode().id()
-                    + ", marshaller=" + cfg.getMarshaller() + ", binaryCfg=" + cfg.getBinaryConfiguration() + "]");
+                    + ", marshaller=" + nodeCfg.getMarshaller()
+                    + ", binaryCfg=" + nodeCfg.getBinaryConfiguration() + "]");
 
                 return node;
             }

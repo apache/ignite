@@ -36,6 +36,9 @@ public class TestsConfiguration {
     /** */
     private final int gridCnt;
 
+    /** */
+    private CacheStartMode cacheStartMode = CacheStartMode.NODES_THEN_CACHES;
+
     /**
      * @param factory Factory.
      * @param suffix Class suffix.
@@ -94,5 +97,19 @@ public class TestsConfiguration {
      */
     public boolean isStopNodes() {
         return stopNodes;
+    }
+
+    /**
+     * @return Cache start type.
+     */
+    public CacheStartMode cacheStartMode() {
+        return cacheStartMode;
+    }
+
+    /**
+     * @param cacheStartMode Cache start mode.
+     */
+    public void cacheStartMode(CacheStartMode cacheStartMode) {
+        this.cacheStartMode = cacheStartMode;
     }
 }

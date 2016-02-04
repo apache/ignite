@@ -25,6 +25,7 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteTransactions;
+import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.CachePeekMode;
@@ -46,6 +47,7 @@ import org.apache.ignite.lang.IgniteBiInClosure;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
+import org.apache.ignite.testframework.CacheStartMode;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
@@ -82,18 +84,49 @@ public abstract class CacheAbstractNewSelfTest extends GridCommonAbstractTest {
     }
 
     /** {@inheritDoc} */
-    @Override protected void beforeTestsStarted() throws Exception {
-        super.beforeTestsStarted();
+    @Override protected final void beforeTestsStarted() throws Exception {
+        assert testsCfg != null;
 
-        for (int i = 0; i < gridCount(); i++) {
-            info("Starting cache on grid: " + i);
+        final CacheStartMode cacheStartMode = testsCfg.cacheStartMode();
+        final int cnt = testsCfg.gridCount();
 
-            IgniteEx grid = grid(i);
+        if (cacheStartMode == CacheStartMode.STATIC) {
+            info("All nodes will be stopped, new " + cnt + " nodes will be started.");
 
-            grid.getOrCreateCache(testsCfg.configurationFactory().cacheConfiguration(grid.name()));
+            Ignition.stopAll(true);
+
+            for (int i = 0; i < cnt; i++) {
+                String gridName = getTestGridName(i);
+
+                IgniteConfiguration cfg1 = optimize(getConfiguration(gridName));
+
+                cfg1.setCacheConfiguration(testsCfg.configurationFactory().cacheConfiguration(gridName));
+
+                startGrid(gridName, cfg1, null);
+            }
         }
+        else if (cacheStartMode == null || cacheStartMode == CacheStartMode.NODES_THEN_CACHES) {
+            super.beforeTestsStarted();
+
+            for (int i = 0; i < gridCount(); i++) {
+                info("Starting cache dinamically on grid: " + i);
+
+                IgniteEx grid = grid(i);
+
+                grid.createCache(testsCfg.configurationFactory().cacheConfiguration(grid.name()));
+            }
+        }
+        else
+            throw new IllegalArgumentException("Unknown cache start mode: " + cacheStartMode);
+
+        if (testsCfg.gridCount() > 1)
+            checkTopology(testsCfg.gridCount());
 
         awaitPartitionMapExchange();
+
+        for (int i = 0; i < gridCount(); i++)
+            info("Grid " + i + ": " + grid(i).localNode().id());
+
     }
 
     /** {@inheritDoc} */

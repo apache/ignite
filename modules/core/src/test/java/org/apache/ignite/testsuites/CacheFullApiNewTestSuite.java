@@ -45,6 +45,7 @@ import static org.apache.ignite.cache.CacheAtomicWriteOrderMode.PRIMARY;
 import static org.apache.ignite.cache.CacheMemoryMode.OFFHEAP_TIERED;
 import static org.apache.ignite.cache.CacheMemoryMode.OFFHEAP_VALUES;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
+import static org.apache.ignite.testframework.CacheStartMode.STATIC;
 
 /**
  * Test suite for cache API.
@@ -113,6 +114,8 @@ public class CacheFullApiNewTestSuite extends TestSuite {
             + ", cacheCfg=" + factory.getCacheConfigurationDescription() + "]";
 
         TestsConfiguration testCfg = new TestsConfiguration(factory, clsNameSuffix, stop, gridsCnt);
+
+        testCfg.cacheStartMode(STATIC);
 
         suite.addTest(new GridTestSuite(CacheFullApiNewSelfTest.class, testCfg));
     }
