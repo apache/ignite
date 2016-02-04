@@ -15,12 +15,12 @@
  * limitations under the License.
  */
 
-export default ['$scope', 'GeneratorXml', function($scope, xml) {
+export default ['$scope', 'GeneratorXml', function($scope, generator) {
     const ctrl = this;
 
     // Set default generator
     ctrl.generator = (cluster) => {
         // TODO IGNITE-2052: need move $generatorXml to services.
-        return xml.cluster(cluster, $scope.cfg);
+        return generator.cluster(cluster, $scope.cfg);
     };
 }];

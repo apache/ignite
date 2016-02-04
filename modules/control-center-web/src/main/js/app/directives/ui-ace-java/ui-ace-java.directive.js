@@ -18,8 +18,11 @@
 import template from './ui-ace-java.jade!';
 import controller from './ui-ace-java.controller';
 
-export default ['igniteUiAceJava', ['GeneratorJava', (java) => {
-    const link = (scope, $el, attrs, [ctrl, igniteUiAce]) => {
+export default ['igniteUiAceJava', ['GeneratorJava', (generator) => {
+    const link = (scope, $el, attrs, [ctrl, igniteUiAce, formCtrl, ngModelCtrl]) => {
+        if (formCtrl && ngModelCtrl)
+            formCtrl.$removeControl(ngModelCtrl);
+
         if (typeof attrs.clusterCfg !== 'undefined') {
             scope.$watch('cfg', (cfg) => {
                 if (typeof cfg !== 'undefined')
@@ -29,13 +32,18 @@ export default ['igniteUiAceJava', ['GeneratorJava', (java) => {
             });
         }
 
-        if (igniteUiAce && igniteUiAce.onLoad)
-            scope.onLoad = igniteUiAce.onLoad;
+        if (igniteUiAce && igniteUiAce.onLoad) {
+            scope.onLoad = (editor) => {
+                igniteUiAce.onLoad(editor);
+
+                scope.$watch('cluster', () => editor.attractAttention = false);
+            };
+        }
 
         if (igniteUiAce && igniteUiAce.onChange)
             scope.onChange = igniteUiAce.onChange;
 
-        const generator = (data) => {
+        const render = (data) => {
             delete ctrl.data;
 
             if (!data)
@@ -46,36 +54,37 @@ export default ['igniteUiAceJava', ['GeneratorJava', (java) => {
 
         // Setup watchers.
         scope.$watch('generator', (method) => {
-            if (method) {
-                switch (method) {
-                    case 'clusterCaches':
-                        ctrl.generator = (cluster) => {
-                            let caches;
+            if (!method)
+                return;
 
-                            caches = _.reduce(scope.caches, (acc, cache) => {
-                                if (_.contains(cluster.caches, cache.value))
-                                    acc.push(cache.cache);
+            switch (method) {
+                case 'clusterCaches':
+                    ctrl.generator = (cluster) => {
+                        let caches;
 
-                                return caches;
-                            }, []);
+                        caches = _.reduce(scope.caches, (acc, cache) => {
+                            if (_.contains(cluster.caches, cache.value))
+                                acc.push(cache.cache);
 
-                            return java.clusterCaches(caches, null, true, java.clusterGeneral(cluster)).asString();
-                        };
+                            return acc;
+                        }, []);
 
-                        break;
+                        return generator.clusterCaches(caches, null, true, generator.clusterGeneral(cluster)).asString();
+                    };
 
-                    case 'igfss':
-                        ctrl.generator = () => java[method](scope.igfss, 'cfg').asString();
+                    break;
 
-                        break;
+                case 'igfss':
+                    ctrl.generator = () => generator.igfss(scope.igfss, 'cfg').asString();
 
-                    default:
-                        ctrl.generator = (cluster) => java[method](cluster).asString();
-                }
+                    break;
+
+                default:
+                    ctrl.generator = (cluster) => generator[method](cluster).asString();
             }
         });
-        scope.$watch('cfg', (data) => ctrl.data = generator(data), true);
-        scope.$watch('cluster', (data) => ctrl.data = generator(data), true);
+        scope.$watch('cfg', (data) => ctrl.data = render(data), true);
+        scope.$watch('cluster', (data) => ctrl.data = render(data), true);
     };
 
     return {
@@ -86,15 +95,15 @@ export default ['igniteUiAceJava', ['GeneratorJava', (java) => {
 
             generator: '@',
             cluster: '=',
-            cfg: '=clusterCfg'
+            cfg: '=?clusterCfg'
         },
         bindToController: {
-            data: '=ngModel'
+            data: '=?ngModel'
         },
         link,
         template,
         controller,
         controllerAs: 'ctrl',
-        require: ['igniteUiAceJava', '?^igniteUiAce']
+        require: ['igniteUiAceJava', '?^igniteUiAce', '?^form', '?ngModel']
     };
 }]];

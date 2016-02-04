@@ -17,7 +17,7 @@
 
 // Controller for Clusters screen.
 consoleModule.controller('clustersController', function ($http, $timeout, $scope, $state, $controller,
-    $common, $focus, $confirm, $clone, $preview, $loading, $unsavedChangesGuard, $cleanup, igniteIncludeEventGroups) {
+    $common, $focus, $confirm, $clone, $loading, $unsavedChangesGuard, $cleanup, igniteIncludeEventGroups) {
         $unsavedChangesGuard.install($scope);
 
         var __original_value;
@@ -46,20 +46,10 @@ consoleModule.controller('clustersController', function ($http, $timeout, $scope
         $scope.widthIsSufficient = $common.widthIsSufficient;
         $scope.saveBtnTipText = $common.saveBtnTipText;
 
-        var previews = [];
-
-        $scope.previewInit = function (preview) {
-            previews.push(preview);
-
-            $preview.previewInit(preview);
-        };
-
         $scope.trustManagersConfigured = function() {
             return $scope.backupItem.sslEnabled && $common.isDefined($scope.backupItem.sslContextFactory) &&
                 !$common.isEmptyArray($scope.backupItem.sslContextFactory.trustManagers);
         };
-
-        $scope.previewChanged = $preview.previewChanged;
 
         $scope.hidePopover = $common.hidePopover;
 
@@ -81,25 +71,6 @@ consoleModule.controller('clustersController', function ($http, $timeout, $scope
         ];
 
         $scope.eventGroups = igniteIncludeEventGroups;
-
-        $scope.preview = {
-            general: {xml: '', java: '', allDefaults: true},
-            atomics: {xml: '', java: '', allDefaults: true},
-            binary: {xml: '', java: '', allDefaults: true},
-            communication: {xml: '', java: '', allDefaults: true},
-            connector: {xml: '', java: '', allDefaults: true},
-            deployment: {xml: '', java: '', allDefaults: true},
-            discovery: {xml: '', java: '', allDefaults: true},
-            events: {xml: '', java: '', allDefaults: true},
-            igfs: {xml: '', java: '', allDefaults: true},
-            marshaller: {xml: '', java: '', allDefaults: true},
-            metrics: {xml: '', java: '', allDefaults: true},
-            swap: {xml: '', java: '', allDefaults: true},
-            time: {xml: '', java: '', allDefaults: true},
-            pools: {xml: '', java: '', allDefaults: true},
-            transactions: {xml: '', java: '', allDefaults: true},
-            sslConfiguration: {xml: '', java: '', allDefaults: true}
-        };
 
         $scope.toggleExpanded = function () {
             $scope.ui.expanded = !$scope.ui.expanded;
@@ -207,10 +178,6 @@ consoleModule.controller('clustersController', function ($http, $timeout, $scope
                         sessionStorage.removeItem('lastSelectedCluster');
                 }
                 catch (error) { }
-
-                _.forEach(previews, function(preview) {
-                    preview.attractAttention = false;
-                });
 
                 if (backup)
                     $scope.backupItem = backup;
