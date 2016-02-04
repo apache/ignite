@@ -15,16 +15,17 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.binary.noncompact;
+package org.apache.ignite.internal.processors.cache.query.continuous;
 
-import org.apache.ignite.internal.binary.BinaryObjectBuilderSelfTest;
+import org.apache.ignite.cache.CacheAtomicityMode;
 
 /**
- * Binary builder test for objects with non-compact footer.
+ *
  */
-public class BinaryObjectBuilderNonCompactSelfTest extends BinaryObjectBuilderSelfTest {
+public class GridCacheContinuousQueryReplicatedAtomicOneNodeTest
+    extends GridCacheContinuousQueryReplicatedTxOneNodeTest {
     /** {@inheritDoc} */
-    @Override protected boolean compactFooter() {
-        return false;
+    @Override protected CacheAtomicityMode atomicMode() {
+        return CacheAtomicityMode.ATOMIC;
     }
 }

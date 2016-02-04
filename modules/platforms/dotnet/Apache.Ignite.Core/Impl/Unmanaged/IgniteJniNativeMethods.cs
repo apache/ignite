@@ -24,7 +24,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
     /// Ignite JNI native methods.
     /// </summary>
     [SuppressUnmanagedCodeSecurity]
-    internal unsafe static class IgniteJniNativeMethods
+    internal static unsafe class IgniteJniNativeMethods
     {
         [DllImport(IgniteUtils.FileIgniteJniDll, EntryPoint = "IgniteReallocate")]
         public static extern int Reallocate(long memPtr, int cap);
@@ -52,8 +52,14 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         [DllImport(IgniteUtils.FileIgniteJniDll, EntryPoint = "IgniteProcessorCreateCache")]
         public static extern void* ProcessorCreateCache(void* ctx, void* obj, sbyte* name);
 
+        [DllImport(IgniteUtils.FileIgniteJniDll, EntryPoint = "IgniteProcessorCreateCacheFromConfig")]
+        public static extern void* ProcessorCreateCacheFromConfig(void* ctx, void* obj, long memPtr);
+
         [DllImport(IgniteUtils.FileIgniteJniDll, EntryPoint = "IgniteProcessorGetOrCreateCache")]
         public static extern void* ProcessorGetOrCreateCache(void* ctx, void* obj, sbyte* name);
+
+        [DllImport(IgniteUtils.FileIgniteJniDll, EntryPoint = "IgniteProcessorGetOrCreateCacheFromConfig")]
+        public static extern void* ProcessorGetOrCreateCacheFromConfig(void* ctx, void* obj, long memPtr);
 
         [DllImport(IgniteUtils.FileIgniteJniDll, EntryPoint = "IgniteProcessorDestroyCache")]
         public static extern void ProcessorDestroyCache(void* ctx, void* obj, sbyte* name);
@@ -86,6 +92,9 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         [DllImport(IgniteUtils.FileIgniteJniDll, EntryPoint = "IgniteProcessorAtomicLong")]
         public static extern void* ProcessorAtomicLong(void* ctx, void* obj, sbyte* name, long initVal,
             [MarshalAs(UnmanagedType.U1)] bool create);
+
+        [DllImport(IgniteUtils.FileIgniteJniDll, EntryPoint = "IgniteProcessorGetIgniteConfiguration")]
+        public static extern void ProcessorGetIgniteConfiguration(void* ctx, void* obj, long memPtr);
 
         [DllImport(IgniteUtils.FileIgniteJniDll, EntryPoint = "IgniteTargetInStreamOutLong")]
         public static extern long TargetInStreamOutLong(void* ctx, void* target, int opType, long memPtr);

@@ -95,7 +95,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
             GC.Collect();
             TestUtils.JvmDebug = true;
 
-            IgniteConfigurationEx cfg = new IgniteConfigurationEx();
+            IgniteConfiguration cfg = new IgniteConfiguration();
 
             BinaryConfiguration portCfg = new BinaryConfiguration();
 

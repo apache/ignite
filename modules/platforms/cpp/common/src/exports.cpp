@@ -66,6 +66,14 @@ extern "C" {
         return ctx->ProcessorGetOrCreateCache(static_cast<jobject>(obj), name);
     }
 
+    void* IGNITE_CALL IgniteProcessorCreateCacheFromConfig(gcj::JniContext* ctx, void* obj, long memPtr) {
+        return ctx->ProcessorCreateCacheFromConfig(static_cast<jobject>(obj), memPtr);
+    }
+
+    void* IGNITE_CALL IgniteProcessorGetOrCreateCacheFromConfig(gcj::JniContext* ctx, void* obj, long memPtr) {
+        return ctx->ProcessorGetOrCreateCacheFromConfig(static_cast<jobject>(obj), memPtr);
+    }
+
     void IGNITE_CALL IgniteProcessorDestroyCache(gcj::JniContext* ctx, void* obj, char* name) {
         ctx->ProcessorDestroyCache(static_cast<jobject>(obj), name);
     }
@@ -104,6 +112,10 @@ extern "C" {
 
     void* IGNITE_CALL IgniteProcessorAtomicLong(gcj::JniContext* ctx, void* obj, char* name, long long initVal, bool create) {
         return ctx->ProcessorAtomicLong(static_cast<jobject>(obj), name, initVal, create);
+    }
+
+	void IGNITE_CALL IgniteProcessorGetIgniteConfiguration(gcj::JniContext* ctx, void* obj, long memPtr) {
+        return ctx->ProcessorGetIgniteConfiguration(static_cast<jobject>(obj), memPtr);
     }
 
     long long IGNITE_CALL IgniteTargetInStreamOutLong(gcj::JniContext* ctx, void* obj, int opType, long long memPtr) {

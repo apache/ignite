@@ -90,7 +90,7 @@ public class BinaryObjectBuilderImpl implements BinaryObjectBuilder {
      * @param ctx Binary context.
      */
     public BinaryObjectBuilderImpl(BinaryContext ctx, String clsName) {
-        this(ctx, ctx.typeId(clsName), BinaryContext.typeName(clsName));
+        this(ctx, ctx.typeId(clsName), ctx.userTypeName(clsName));
     }
 
     /**

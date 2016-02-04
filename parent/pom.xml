@@ -837,6 +837,7 @@
                                         <exclude>**/*.slnrel</exclude>
                                         <exclude>**/*.DotSettings</exclude>
                                         <exclude>**/*.FxCop</exclude>
+                                        <exclude>**/*.ruleset</exclude>
                                         <exclude>**/*.csproj</exclude>
                                         <exclude>**/*.csprojrel</exclude>
                                         <exclude>**/*.vcxproj</exclude>
