@@ -131,7 +131,7 @@ public class GridCacheOffHeapValuesEvictionSelfTest extends GridCacheAbstractSel
         assertTrue((MAX_VALS_AMOUNT - 5) * VAL_SIZE < cache.metrics().getOffHeapAllocatedSize());
     }
 
-    private static void fillCache(IgniteCache<Integer, Object> cache, long timeout) throws Exception{
+    private static void fillCache(final IgniteCache<Integer, Object> cache, long timeout) throws Exception{
         final byte[] val = new byte[VAL_SIZE];
         final AtomicInteger keyStart = new AtomicInteger(0);
         final CountDownLatch latch = new CountDownLatch(4);
