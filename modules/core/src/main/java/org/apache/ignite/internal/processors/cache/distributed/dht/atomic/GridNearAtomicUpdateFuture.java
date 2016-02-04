@@ -348,7 +348,7 @@ public class GridNearAtomicUpdateFuture extends GridFutureAdapter<Object> implem
      * @param req Update request.
      * @param res Update response.
      */
-    private void updateNear(GridNearAtomicUpdateRequestInterface req, GridNearAtomicUpdateResponse res) {
+    private void updateNear(GridNearAtomicUpdateRequestBase req, GridNearAtomicUpdateResponse res) {
         assert nearEnabled;
 
         if (res.remapKeys() != null || !req.hasPrimary())
@@ -450,11 +450,11 @@ public class GridNearAtomicUpdateFuture extends GridFutureAdapter<Object> implem
      * @param nodeId Node ID.
      * @param req Request.
      */
-    private void mapSingle(UUID nodeId, GridNearAtomicUpdateRequestInterface req) {
+    private void mapSingle(UUID nodeId, GridNearAtomicUpdateRequestBase req) {
         if (cctx.localNodeId().equals(nodeId)) {
             cache.updateAllAsyncInternal(nodeId, req,
-                new CI2<GridNearAtomicUpdateRequestInterface, GridNearAtomicUpdateResponse>() {
-                    @Override public void apply(GridNearAtomicUpdateRequestInterface req,
+                new CI2<GridNearAtomicUpdateRequestBase, GridNearAtomicUpdateResponse>() {
+                    @Override public void apply(GridNearAtomicUpdateRequestBase req,
                         GridNearAtomicUpdateResponse res) {
                         onResult(res.nodeId(), res);
                     }
@@ -559,7 +559,7 @@ public class GridNearAtomicUpdateFuture extends GridFutureAdapter<Object> implem
         private Collection<KeyCacheObject> remapKeys;
 
         /** Not null is operation is mapped to single node. */
-        private GridNearAtomicUpdateRequestInterface singleReq;
+        private GridNearAtomicUpdateRequestBase singleReq;
 
         /** Operation result. */
         private GridCacheReturn opRes;
@@ -578,7 +578,7 @@ public class GridNearAtomicUpdateFuture extends GridFutureAdapter<Object> implem
             GridNearAtomicUpdateResponse res = null;
 
             synchronized (this) {
-                GridNearAtomicUpdateRequestInterface req;
+                GridNearAtomicUpdateRequestBase req;
 
                 if (singleReq != null)
                     req = singleReq.nodeId().equals(nodeId) ? singleReq : null;
@@ -611,7 +611,7 @@ public class GridNearAtomicUpdateFuture extends GridFutureAdapter<Object> implem
          */
         @SuppressWarnings({"unchecked", "ThrowableResultOfMethodCallIgnored"})
         void onResult(UUID nodeId, GridNearAtomicUpdateResponse res, boolean nodeErr) {
-            GridNearAtomicUpdateRequestInterface req;
+            GridNearAtomicUpdateRequestBase req;
 
             AffinityTopologyVersion remapTopVer = null;
 
@@ -815,7 +815,7 @@ public class GridNearAtomicUpdateFuture extends GridFutureAdapter<Object> implem
          * @param req Request.
          * @param e Error.
          */
-        void onSendError(GridNearAtomicUpdateRequestInterface req, IgniteCheckedException e) {
+        void onSendError(GridNearAtomicUpdateRequestBase req, IgniteCheckedException e) {
             synchronized (this) {
                 GridNearAtomicUpdateResponse res = new GridNearAtomicUpdateResponse(cctx.cacheId(),
                     req.nodeId(),
@@ -843,7 +843,7 @@ public class GridNearAtomicUpdateFuture extends GridFutureAdapter<Object> implem
             }
 
             Exception err = null;
-            GridNearAtomicUpdateRequestInterface singleReq0 = null;
+            GridNearAtomicUpdateRequestBase singleReq0 = null;
             Map<UUID, GridNearAtomicUpdateRequest> mappings0 = null;
 
             int size = keys.size();
@@ -1128,7 +1128,7 @@ public class GridNearAtomicUpdateFuture extends GridFutureAdapter<Object> implem
          * @return Request.
          * @throws Exception If failed.
          */
-        private GridNearAtomicUpdateRequestInterface mapSingleUpdate(AffinityTopologyVersion topVer,
+        private GridNearAtomicUpdateRequestBase mapSingleUpdate(AffinityTopologyVersion topVer,
             Collection<ClusterNode> topNodes, GridCacheVersion futVer, @Nullable GridCacheVersion updVer)
             throws Exception {
             Object key = F.first(keys);

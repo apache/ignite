@@ -32,9 +32,9 @@ import java.util.List;
 import java.util.UUID;
 
 /**
- * Base interface for near atomic update interfaces.
+ * Base interface for near atomic update requests.
  */
-public interface GridNearAtomicUpdateRequestInterface {
+public interface GridNearAtomicUpdateRequestBase {
     /**
      * @return Message ID.
      */
