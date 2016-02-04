@@ -143,11 +143,6 @@ public class GridCacheOffHeapValuesEvictionSelfTest extends GridCacheAbstractSel
                 for (int i = start; i < start + VALS_AMOUNT; i++)
                     cache.put(i, val);
 
-                for (CachePeekMode mode : CachePeekMode.values()) {
-                    System.out.println(Thread.currentThread().getName() + ": " + mode.name() + "=" + cache.size(mode));
-                }
-                System.out.println(Thread.currentThread().getName() + ": " + cache.metrics().getOffHeapAllocatedSize());
-
                 latch.countDown();
 
                 return null;
