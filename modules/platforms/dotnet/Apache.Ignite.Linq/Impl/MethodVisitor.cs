@@ -45,10 +45,10 @@ namespace Apache.Ignite.Linq.Impl
             {typeof (Math).GetMethod("Abs", new[] {typeof (decimal)}), GetFunc("abs")},
             {typeof (Math).GetMethod("Abs", new[] {typeof (sbyte)}), GetFunc("abs")},
             {typeof (Math).GetMethod("Abs", new[] {typeof (short)}), GetFunc("abs")},
-            {typeof (Math).GetMethod("Acos", new[] {typeof (double)}), GetFunc("acos")},
-            {typeof (Math).GetMethod("Asin", new[] {typeof (short)}), GetFunc("asin")},
-            {typeof (Math).GetMethod("Atan", new[] {typeof (short)}), GetFunc("atan")},
-            {typeof (Math).GetMethod("Atan2", new[] {typeof (short)}), GetFunc("atan2")},
+            {typeof (Math).GetMethod("Acos"), GetFunc("acos")},
+            {typeof (Math).GetMethod("Asin"), GetFunc("asin")},
+            {typeof (Math).GetMethod("Atan"), GetFunc("atan")},
+            {typeof (Math).GetMethod("Atan2"), GetFunc("atan2")},
         };
 
         /// <summary>
