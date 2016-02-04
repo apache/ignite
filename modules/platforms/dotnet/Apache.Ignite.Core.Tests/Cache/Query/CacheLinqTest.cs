@@ -696,10 +696,13 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         /// <summary>
         /// Checks that function maps to SQL function properly.
         /// </summary>
-        private static void CheckFunc<T, TR>(Expression<Func<T, TR>> exp, IQueryable<T> query)
+        private static void CheckFunc<T, TR>(Expression<Func<T, TR>> exp, IQueryable<T> query, 
+            Func<TR, TR> localResultFunc = null)
         {
+            localResultFunc = localResultFunc ?? (x => x);
+
             // Calculate result locally, using real method invocation
-            var expected = query.ToArray().AsQueryable().Select(exp).ToArray();
+            var expected = query.ToArray().AsQueryable().Select(exp).Select(localResultFunc).ToArray();
 
             // Perform SQL query
             var actual = query.Select(exp).ToArray().ToArray();

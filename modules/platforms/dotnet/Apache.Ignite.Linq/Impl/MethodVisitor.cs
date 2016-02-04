@@ -41,8 +41,8 @@ namespace Apache.Ignite.Linq.Impl
             GetStringMethod("Contains", del:(e, v) => VisitSqlLike(e, v, "%{0}%")),
             GetStringMethod("StartsWith", new[] {typeof (string)}, (e, v) => VisitSqlLike(e, v, "{0}%")),
             GetStringMethod("EndsWith", new[] {typeof (string)}, (e, v) => VisitSqlLike(e, v, "{0}%")),
-            GetStringMethod("IndexOf", "locate", typeof(string)),
-            GetStringMethod("IndexOf", "locate", typeof(string), typeof(int)),
+            GetStringMethod("IndexOf", "instr", typeof(string)),
+            GetStringMethod("IndexOf", "instr", typeof(string), typeof(int)),
 
             GetMethod(typeof(DateTime), "ToString", new [] {typeof(string)}, GetFunc("formatdatetime")),
 
