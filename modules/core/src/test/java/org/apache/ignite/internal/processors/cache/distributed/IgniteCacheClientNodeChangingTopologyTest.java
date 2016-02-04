@@ -108,6 +108,7 @@ import static org.apache.ignite.transactions.TransactionIsolation.SERIALIZABLE;
 /**
  *
  */
+@SuppressWarnings({"unchecked", "unused", "NullArgumentToVariableArgMethod", "ConstantConditions", "UnusedAssignment"})
 public class IgniteCacheClientNodeChangingTopologyTest extends GridCommonAbstractTest {
     /** */
     protected static TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
@@ -374,8 +375,7 @@ public class IgniteCacheClientNodeChangingTopologyTest extends GridCommonAbstrac
         spi.blockMessages(GridNearAtomicUpdateRequest.class, ignite2.localNode().id());
         spi.blockMessages(GridNearAtomicSingleUpdateRequest.class, ignite2.localNode().id());
 
-        spi.record(GridNearAtomicUpdateRequest.class);
-        spi.record(GridNearAtomicSingleUpdateRequest.class);
+        spi.record(GridNearAtomicUpdateRequest.class, GridNearAtomicSingleUpdateRequest.class);
 
         final IgniteCache<Integer, Integer> cache = ignite3.cache(null);
 
@@ -2019,7 +2019,7 @@ public class IgniteCacheClientNodeChangingTopologyTest extends GridCommonAbstrac
         private Map<Class<?>, Set<UUID>> blockCls = new HashMap<>();
 
         /** */
-        private Class<?> recordCls;
+        private Class<?>[] recordClss;
 
         /** */
         private List<Object> recordedMsgs = new ArrayList<>();
@@ -2031,7 +2031,7 @@ public class IgniteCacheClientNodeChangingTopologyTest extends GridCommonAbstrac
                 Object msg0 = ((GridIoMessage)msg).message();
 
                 synchronized (this) {
-                    if (recordCls != null && msg0.getClass().equals(recordCls))
+                    if (isRecordMessage(msg0.getClass()))
                         recordedMsgs.add(msg0);
 
                     Set<UUID> blockNodes = blockCls.get(msg0.getClass());
@@ -2053,9 +2053,9 @@ public class IgniteCacheClientNodeChangingTopologyTest extends GridCommonAbstrac
         /**
          * @param recordCls Message class to record.
          */
-        void record(@Nullable Class<?> recordCls) {
+        void record(@Nullable Class... recordCls) {
             synchronized (this) {
-                this.recordCls = recordCls;
+                this.recordClss = recordCls;
             }
         }
 
@@ -2108,6 +2108,23 @@ public class IgniteCacheClientNodeChangingTopologyTest extends GridCommonAbstrac
 
                 blockedMsgs.clear();
             }
+        }
+
+        /**
+         * Decide whether to record message or not.
+         *
+         * @param msgCls Message class.
+         * @return {@code True} if message should be recorded.
+         */
+        private boolean isRecordMessage(Class msgCls) {
+            if (recordClss != null) {
+                for (Class recordCls : recordClss) {
+                    if (msgCls.equals(recordCls))
+                        return true;
+                }
+            }
+
+            return false;
         }
     }
 
