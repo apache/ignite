@@ -19,7 +19,6 @@ namespace Apache.Ignite.Linq.Impl
 {
     using System;
     using System.Collections.Generic;
-    using System.Diagnostics;
     using System.Linq.Expressions;
     using System.Reflection;
 
@@ -55,6 +54,14 @@ namespace Apache.Ignite.Linq.Impl
             {GetMathMethod("Cos", typeof(double)), GetFunc("cos")},
             {GetMathMethod("Cosh", typeof(double)), GetFunc("cosh")},
             {GetMathMethod("Exp", typeof(double)), GetFunc("exp")},
+            {GetMathMethod("Floor", typeof(double)), GetFunc("floor")},
+            {GetMathMethod("Floor", typeof(decimal)), GetFunc("floor")},
+            {GetMathMethod("Log", typeof(double)), GetFunc("log")},
+            {GetMathMethod("Log10", typeof(double)), GetFunc("log10")},
+            {GetMathMethod("Round", typeof(double)), GetFunc("round")},
+            {GetMathMethod("Round", typeof(double), typeof(double)), GetFunc("round")},
+            {GetMathMethod("Round", typeof(decimal)), GetFunc("round")},
+            {GetMathMethod("Round", typeof(decimal), typeof(decimal)), GetFunc("round")},
         };
 
         /// <summary>
@@ -140,7 +147,8 @@ namespace Apache.Ignite.Linq.Impl
         {
             var method = typeof(Math).GetMethod(name, argTypes);
 
-            Debug.Assert(method != null);
+            if (method == null)
+                throw new InvalidOperationException("Math method not found: " + name);
 
             return method;
         }
