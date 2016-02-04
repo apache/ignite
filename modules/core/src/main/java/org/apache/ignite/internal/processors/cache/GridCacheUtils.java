@@ -61,6 +61,7 @@ import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteClientDisconnectedCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteNodeAttributes;
+import org.apache.ignite.internal.cluster.ClusterGroupEmptyCheckedException;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.cluster.ClusterTopologyServerNotFoundException;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
@@ -81,7 +82,6 @@ import org.apache.ignite.internal.util.typedef.P2;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.CU;
-import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.lang.IgniteClosure;
@@ -93,6 +93,7 @@ import org.apache.ignite.plugin.CachePluginConfiguration;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
+import org.apache.ignite.transactions.TransactionRollbackException;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.jsr166.ConcurrentHashMap8;
@@ -1241,31 +1242,14 @@ public class GridCacheUtils {
     }
 
     /**
-     * Validates that cache value object implements {@link Externalizable}.
+     * Validates that cache key object has overridden equals and hashCode methods.
      *
-     * @param log Logger used to log warning message.
-     * @param val Value.
-     */
-    public static void validateCacheValue(IgniteLogger log, @Nullable Object val) {
-        if (val == null)
-            return;
-
-        validateExternalizable(log, val);
-    }
-
-    /**
-     * Validates that cache key object has overridden equals and hashCode methods and
-     * implements {@link Externalizable}.
-     *
-     * @param log Logger used to log warning message.
      * @param key Key.
      * @throws IllegalArgumentException If equals or hashCode is not implemented.
      */
-    public static void validateCacheKey(IgniteLogger log, @Nullable Object key) {
+    public static void validateCacheKey(@Nullable Object key) {
         if (key == null)
             return;
-
-        validateExternalizable(log, key);
 
         if (!U.overridesEqualsAndHashCode(key))
             throw new IllegalArgumentException("Cache key must override hashCode() and equals() methods: " +
@@ -1351,20 +1335,6 @@ public class GridCacheUtils {
         }
         else
             return 1;
-    }
-
-    /**
-     * Validates that cache key or cache value implements {@link Externalizable}
-     *
-     * @param log Logger used to log warning message.
-     * @param obj Cache key or cache value.
-     */
-    private static void validateExternalizable(IgniteLogger log, Object obj) {
-        Class<?> cls = obj.getClass();
-
-        if (!cls.isArray() && !U.isJdk(cls) && !(obj instanceof Externalizable) && !(obj instanceof GridCacheInternal))
-            LT.warn(log, null, "For best performance you should implement " +
-                "java.io.Externalizable for all cache keys and values: " + cls.getName());
     }
 
 //    /**
@@ -1576,23 +1546,7 @@ public class GridCacheUtils {
     ) {
         return new CacheEntryPredicateAdapter() {
             @Override public boolean apply(GridCacheEntryEx e) {
-                return aff.isPrimary(n, e.key().value(e.context().cacheObjectContext(), false));
-            }
-        };
-    }
-
-    /**
-     * @param aff Affinity.
-     * @param n Node.
-     * @return Predicate that evaulates to {@code true} if entry is primary for node.
-     */
-    public static <K, V> IgnitePredicate<Cache.Entry<K, V>> cachePrimary0(
-        final Affinity<K> aff,
-        final ClusterNode n
-    ) {
-        return new IgnitePredicate<Cache.Entry<K, V>>() {
-            @Override public boolean apply(Cache.Entry<K, V> e) {
-                return aff.isPrimary(n, e.getKey());
+                return aff.isPrimary(n, e.key());
             }
         };
     }
@@ -1783,28 +1737,41 @@ public class GridCacheUtils {
     public static <S> Callable<S> retryTopologySafe(final Callable<S> c ) {
         return new Callable<S>() {
             @Override public S call() throws Exception {
-                int retries = GridCacheAdapter.MAX_RETRIES;
-
                 IgniteCheckedException err = null;
 
-                for (int i = 0; i < retries; i++) {
+                for (int i = 0; i < GridCacheAdapter.MAX_RETRIES; i++) {
                     try {
                         return c.call();
                     }
-                    catch (IgniteCheckedException e) {
-                        if (X.hasCause(e, ClusterTopologyCheckedException.class) ||
-                            X.hasCause(e, IgniteTxRollbackCheckedException.class) ||
-                            X.hasCause(e, CachePartialUpdateCheckedException.class)) {
-                            if (i < retries - 1) {
-                                err = e;
-
-                                U.sleep(1);
-
-                                continue;
-                            }
-
+                    catch (ClusterGroupEmptyCheckedException | ClusterTopologyServerNotFoundException e) {
+                        throw e;
+                    }
+                    catch (TransactionRollbackException e) {
+                        if (i + 1 == GridCacheAdapter.MAX_RETRIES)
                             throw e;
+
+                        U.sleep(1);
+                    }
+                    catch (IgniteCheckedException e) {
+                        if (i + 1 == GridCacheAdapter.MAX_RETRIES)
+                            throw e;
+
+                        if (X.hasCause(e, ClusterTopologyCheckedException.class)) {
+                            ClusterTopologyCheckedException topErr = e.getCause(ClusterTopologyCheckedException.class);
+
+                            if (topErr instanceof ClusterGroupEmptyCheckedException || topErr instanceof
+                                ClusterTopologyServerNotFoundException)
+                                throw e;
+
+                            // IGNITE-1948: remove this check when the issue is fixed
+                            if (topErr.retryReadyFuture() != null)
+                                topErr.retryReadyFuture().get();
+                            else
+                                U.sleep(1);
                         }
+                        else if (X.hasCause(e, IgniteTxRollbackCheckedException.class,
+                            CachePartialUpdateCheckedException.class))
+                            U.sleep(1);
                         else
                             throw e;
                     }

@@ -17,7 +17,7 @@
 
 package org.apache.ignite.mxbean;
 
-import java.util.Collection;
+import java.util.List;
 import java.util.UUID;
 import javax.management.JMException;
 
@@ -75,7 +75,7 @@ public interface IgniteMXBean {
     public long getUpTime();
 
     /**
-     * Gets a collection of formatted user-defined attributes added to this node.
+     * Gets a list of formatted user-defined attributes added to this node.
      * <p>
      * Note that grid will add all System properties and environment properties
      * to grid node attributes also. SPIs may also add node attributes that are
@@ -84,7 +84,7 @@ public interface IgniteMXBean {
      * @return User defined attributes for this node.
      */
     @MXBeanDescription("Collection of formatted user-defined attributes added to this node.")
-    public Collection<String> getUserAttributesFormatted();
+    public List<String> getUserAttributesFormatted();
 
     /**
      * Gets a formatted instance of logger that is in grid.
@@ -149,7 +149,7 @@ public interface IgniteMXBean {
      *      with Ignite.
      */
     @MXBeanDescription("String representation of lifecycle beans.")
-    public Collection<String> getLifecycleBeansFormatted();
+    public List<String> getLifecycleBeansFormatted();
 
     /**
      * This method allows manually remove the checkpoint with given {@code key}.

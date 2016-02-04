@@ -33,12 +33,19 @@
                     <bean class="org.apache.ignite.platform.dotnet.PlatformDotNetBinaryConfiguration">
                         <property name="types">
                             <list>
-                                <value>Apache.Ignite.Examples.Dll.Portable.Account</value>
-                                <value>Apache.Ignite.Examples.Dll.Portable.Address</value>
-                                <value>Apache.Ignite.Examples.Dll.Portable.Employee</value>
-                                <value>Apache.Ignite.Examples.Dll.Portable.EmployeeKey</value>
-                                <value>Apache.Ignite.Examples.Dll.Portable.Organization</value>
-                                <value>Apache.Ignite.Examples.Dll.Portable.OrganizationType</value>
+                                <value>Apache.Ignite.ExamplesDll.Binary.Account</value>
+                                <value>Apache.Ignite.ExamplesDll.Binary.Address</value>
+                                <value>Apache.Ignite.ExamplesDll.Binary.Employee</value>
+                                <value>Apache.Ignite.ExamplesDll.Binary.EmployeeKey</value>
+                                <value>Apache.Ignite.ExamplesDll.Binary.Organization</value>
+                            </list>
+                        </property>
+                        <property name="typesConfiguration">
+                            <list>
+                                <bean class="org.apache.ignite.platform.dotnet.PlatformDotNetBinaryTypeConfiguration">
+                                    <property name="typeName" value="Apache.Ignite.ExamplesDll.Binary.OrganizationType" />
+                                    <property name="enum" value="true" />
+                                </bean>
                             </list>
                         </property>
                     </bean>

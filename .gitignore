@@ -24,6 +24,8 @@ git-patch-prop-local.sh
 *.vcxproj.user
 *.sdf
 *.opensdf
+*.opendb
 **/cpp/**/vs/x64/
 **/cpp/**/vs/Win32/
 **/dotnet/**/obj/
+/modules/platforms/cpp/doc/

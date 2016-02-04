@@ -34,6 +34,7 @@ import javax.cache.processor.EntryProcessorResult;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCompute;
+import org.apache.ignite.cache.CacheEntry;
 import org.apache.ignite.cache.CacheEntryProcessor;
 import org.apache.ignite.cache.CacheMetrics;
 import org.apache.ignite.cache.CachePeekMode;
@@ -129,7 +130,7 @@ public class IgniteCacheProcessProxy<K, V> implements IgniteCache<K, V> {
     }
 
     /** {@inheritDoc} */
-    @Override public void loadCache(@Nullable IgniteBiPredicate<K, V> p, @Nullable Object... args) 
+    @Override public void loadCache(@Nullable IgniteBiPredicate<K, V> p, @Nullable Object... args)
         throws CacheException {
         throw new UnsupportedOperationException("Method should be supported.");
     }
@@ -196,8 +197,18 @@ public class IgniteCacheProcessProxy<K, V> implements IgniteCache<K, V> {
     }
 
     /** {@inheritDoc} */
+    @Override public long sizeLong(CachePeekMode... peekModes) throws CacheException {
+        return compute.call(new SizeLongTask(cacheName, isAsync, peekModes, false));
+    }
+
+    /** {@inheritDoc} */
     @Override public int localSize(CachePeekMode... peekModes) {
         return compute.call(new SizeTask(cacheName, isAsync, peekModes, true));
+    }
+
+    /** {@inheritDoc} */
+    @Override public long localSizeLong(CachePeekMode... peekModes) {
+        return compute.call(new SizeLongTask(cacheName, isAsync, peekModes, true));
     }
 
     /** {@inheritDoc} */
@@ -214,8 +225,18 @@ public class IgniteCacheProcessProxy<K, V> implements IgniteCache<K, V> {
     }
 
     /** {@inheritDoc} */
+    @Override public CacheEntry<K, V> getEntry(K key) {
+        return compute.call(new GetEntryTask<K, V>(cacheName, isAsync, key));
+    }
+
+    /** {@inheritDoc} */
     @Override public Map<K, V> getAll(Set<? extends K> keys) {
         return compute.call(new GetAllTask<K, V>(cacheName, isAsync, keys));
+    }
+
+    /** {@inheritDoc} */
+    @Override public Collection<CacheEntry<K, V>> getEntries(Set<? extends K> keys) {
+        return compute.call(new GetEntriesTask<K, V>(cacheName, isAsync, keys));
     }
 
     /** {@inheritDoc} */
@@ -649,6 +670,34 @@ public class IgniteCacheProcessProxy<K, V> implements IgniteCache<K, V> {
     /**
      *
      */
+    private static class SizeLongTask extends CacheTaskAdapter<Void, Void, Long> {
+        /** Peek modes. */
+        private final CachePeekMode[] peekModes;
+
+        /** Local. */
+        private final boolean loc;
+
+        /**
+         * @param cacheName Cache name.
+         * @param async Async.
+         * @param peekModes Peek modes.
+         * @param loc Local.
+         */
+        public SizeLongTask(String cacheName, boolean async, CachePeekMode[] peekModes, boolean loc) {
+            super(cacheName, async);
+            this.loc = loc;
+            this.peekModes = peekModes;
+        }
+
+        /** {@inheritDoc} */
+        @Override public Long call() throws Exception {
+            return loc ? cache().localSizeLong(peekModes) : cache().sizeLong(peekModes);
+        }
+    }
+
+    /**
+     *
+     */
     private static class GetTask<K, V> extends CacheTaskAdapter<K, V, V> {
         /** Key. */
         private final K key;
@@ -666,6 +715,29 @@ public class IgniteCacheProcessProxy<K, V> implements IgniteCache<K, V> {
         /** {@inheritDoc} */
         @Override public V call() throws Exception {
             return cache().get(key);
+        }
+    }
+
+    /**
+     *
+     */
+    private static class GetEntryTask<K, V> extends CacheTaskAdapter<K, V, CacheEntry<K, V>> {
+        /** Key. */
+        private final K key;
+
+        /**
+         * @param cacheName Cache name.
+         * @param async Async.
+         * @param key Key.
+         */
+        public GetEntryTask(String cacheName, boolean async, K key) {
+            super(cacheName, async);
+            this.key = key;
+        }
+
+        /** {@inheritDoc} */
+        @Override public CacheEntry<K, V> call() throws Exception {
+            return cache().getEntry(key);
         }
     }
 
@@ -929,6 +1001,29 @@ public class IgniteCacheProcessProxy<K, V> implements IgniteCache<K, V> {
         /** {@inheritDoc} */
         @Override public Map<K, V> call() throws Exception {
             return cache().getAll(keys);
+        }
+    }
+
+    /**
+     *
+     */
+    private static class GetEntriesTask<K, V> extends CacheTaskAdapter<K, V, Collection<CacheEntry<K, V>> > {
+        /** Keys. */
+        private final Set<? extends K> keys;
+
+        /**
+         * @param cacheName Cache name.
+         * @param async Async.
+         * @param keys Keys.
+         */
+        public GetEntriesTask(String cacheName, boolean async, Set<? extends K> keys) {
+            super(cacheName, async);
+            this.keys = keys;
+        }
+
+        /** {@inheritDoc} */
+        @Override public Collection<CacheEntry<K, V>>  call() throws Exception {
+            return cache().getEntries(keys);
         }
     }
 

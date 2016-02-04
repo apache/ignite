@@ -35,13 +35,13 @@
     </properties>
 
     <artifactId>ignite-schema-import-demo</artifactId>
-    <version>1.5.0-SNAPSHOT</version>
+    <version>1.6.0-SNAPSHOT</version>
 
     <dependencies>
         <dependency>
             <groupId>javax.cache</groupId>
             <artifactId>cache-api</artifactId>
-            <version>1.0.0</version>
+            <version>${javax.cache.version}</version>
         </dependency>
 
         <dependency>

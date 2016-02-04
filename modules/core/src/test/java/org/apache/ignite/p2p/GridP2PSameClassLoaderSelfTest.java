@@ -23,7 +23,11 @@ import java.net.URLClassLoader;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.configuration.DeploymentMode;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.util.typedef.PA;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
+import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.config.GridTestProperties;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.common.GridCommonTest;
@@ -39,6 +43,9 @@ public class GridP2PSameClassLoaderSelfTest extends GridCommonAbstractTest {
 
     /** Class Name of task 2. */
     private static final String TEST_TASK2_NAME = "org.apache.ignite.tests.p2p.P2PTestTaskExternalPath2";
+
+    /** */
+    private static final TcpDiscoveryIpFinder FINDER = new TcpDiscoveryVmIpFinder(true);
 
     /** */
     private static final ClassLoader CLASS_LOADER;
@@ -66,6 +73,7 @@ public class GridP2PSameClassLoaderSelfTest extends GridCommonAbstractTest {
         cfg.setDeploymentMode(depMode);
 
         ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setHeartbeatFrequency(500);
+        ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(FINDER);
 
         cfg.setCacheConfiguration();
 
@@ -81,9 +89,15 @@ public class GridP2PSameClassLoaderSelfTest extends GridCommonAbstractTest {
     @SuppressWarnings({"unchecked"})
     private void processTest(boolean isIsolatedDifferentTask, boolean isIsolatedDifferentNode) throws Exception {
         try {
-            Ignite ignite1 = startGrid(1);
+            final Ignite ignite1 = startGrid(1);
             Ignite ignite2 = startGrid(2);
             Ignite ignite3 = startGrid(3);
+
+            assert GridTestUtils.waitForCondition(new PA() {
+                @Override public boolean apply() {
+                    return ignite1.cluster().nodes().size() == 3;
+                }
+            }, 20000L);
 
             Class task1 = CLASS_LOADER.loadClass(TEST_TASK1_NAME);
             Class task2 = CLASS_LOADER.loadClass(TEST_TASK2_NAME);

@@ -134,7 +134,7 @@ public abstract class ClientAbstractConnectivitySelfTest extends GridCommonAbstr
 
     /**
      * Simple test of address list filtering.
-     * @throws Exception
+     * @throws Exception If failed.
      */
     public void testResolveReachableOneAddress() throws Exception {
         InetAddress addr = InetAddress.getByAddress(new byte[] {127, 0, 0, 1} );

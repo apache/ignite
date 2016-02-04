@@ -24,7 +24,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Mirror of .Net class Configuration.cs
+ * Mirror of .Net class IgniteConfiguration.cs
  */
 public class PlatformDotNetConfiguration implements PlatformConfiguration {
     /** */
@@ -61,10 +61,10 @@ public class PlatformDotNetConfiguration implements PlatformConfiguration {
     }
 
     /**
-     * @param portableCfg Configuration.
+     * @param binaryCfg Configuration.
      */
-    public void setBinaryConfiguration(PlatformDotNetBinaryConfiguration portableCfg) {
-        this.binaryCfg = portableCfg;
+    public void setBinaryConfiguration(PlatformDotNetBinaryConfiguration binaryCfg) {
+        this.binaryCfg = binaryCfg;
     }
 
     /**

@@ -28,23 +28,26 @@ import org.apache.ignite.cache.query.ScanQuery;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.SqlQuery;
 import org.apache.ignite.cache.query.TextQuery;
-import org.apache.ignite.internal.portable.BinaryRawReaderEx;
-import org.apache.ignite.internal.portable.BinaryRawWriterEx;
+import org.apache.ignite.configuration.*;
+import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.binary.BinaryRawReaderEx;
+import org.apache.ignite.internal.binary.BinaryRawWriterEx;
 import org.apache.ignite.internal.processors.cache.CacheOperationContext;
 import org.apache.ignite.internal.processors.cache.CachePartialUpdateCheckedException;
 import org.apache.ignite.internal.processors.cache.IgniteCacheProxy;
 import org.apache.ignite.internal.processors.cache.query.QueryCursorEx;
 import org.apache.ignite.internal.processors.platform.PlatformAbstractTarget;
 import org.apache.ignite.internal.processors.platform.PlatformContext;
+import org.apache.ignite.internal.processors.platform.PlatformNativeException;
 import org.apache.ignite.internal.processors.platform.cache.query.PlatformContinuousQuery;
 import org.apache.ignite.internal.processors.platform.cache.query.PlatformFieldsQueryCursor;
 import org.apache.ignite.internal.processors.platform.cache.query.PlatformQueryCursor;
-import org.apache.ignite.internal.processors.platform.PlatformNativeException;
+import org.apache.ignite.internal.processors.platform.utils.PlatformConfigurationUtils;
 import org.apache.ignite.internal.processors.platform.utils.PlatformFutureUtils;
 import org.apache.ignite.internal.processors.platform.utils.PlatformUtils;
 import org.apache.ignite.internal.util.GridConcurrentFactory;
+import org.apache.ignite.internal.util.future.IgniteFutureImpl;
 import org.apache.ignite.internal.util.typedef.C1;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteFuture;
 import org.jetbrains.annotations.Nullable;
 
@@ -177,11 +180,14 @@ public class PlatformCache extends PlatformAbstractTarget {
     /** */
     public static final int OP_REPLACE_3 = 38;
 
+    /** */
+    public static final int OP_GET_CONFIG = 39;
+
     /** Underlying JCache. */
     private final IgniteCacheProxy cache;
 
     /** Whether this cache is created with "keepBinary" flag on the other side. */
-    private final boolean keepPortable;
+    private final boolean keepBinary;
 
     /** */
     private static final GetAllWriter WRITER_GET_ALL = new GetAllWriter();
@@ -203,13 +209,13 @@ public class PlatformCache extends PlatformAbstractTarget {
      *
      * @param platformCtx Context.
      * @param cache Underlying cache.
-     * @param keepPortable Keep portable flag.
+     * @param keepBinary Keep binary flag.
      */
-    public PlatformCache(PlatformContext platformCtx, IgniteCache cache, boolean keepPortable) {
+    public PlatformCache(PlatformContext platformCtx, IgniteCache cache, boolean keepBinary) {
         super(platformCtx);
 
         this.cache = (IgniteCacheProxy)cache;
-        this.keepPortable = keepPortable;
+        this.keepBinary = keepBinary;
     }
 
     /**
@@ -221,16 +227,16 @@ public class PlatformCache extends PlatformAbstractTarget {
         if (cache.delegate().skipStore())
             return this;
 
-        return new PlatformCache(platformCtx, cache.withSkipStore(), keepPortable);
+        return new PlatformCache(platformCtx, cache.withSkipStore(), keepBinary);
     }
 
     /**
-     * Gets cache with "keep portable" flag.
+     * Gets cache with "keep binary" flag.
      *
-     * @return Cache with "keep portable" flag set.
+     * @return Cache with "keep binary" flag set.
      */
-    public PlatformCache withKeepPortable() {
-        if (keepPortable)
+    public PlatformCache withKeepBinary() {
+        if (keepBinary)
             return this;
 
         return new PlatformCache(platformCtx, cache.withKeepBinary(), true);
@@ -247,7 +253,7 @@ public class PlatformCache extends PlatformAbstractTarget {
     public PlatformCache withExpiryPolicy(final long create, final long update, final long access) {
         IgniteCache cache0 = cache.withExpiryPolicy(new InteropExpiryPolicy(create, update, access));
 
-        return new PlatformCache(platformCtx, cache0, keepPortable);
+        return new PlatformCache(platformCtx, cache0, keepBinary);
     }
 
     /**
@@ -259,7 +265,7 @@ public class PlatformCache extends PlatformAbstractTarget {
         if (cache.isAsync())
             return this;
 
-        return new PlatformCache(platformCtx, (IgniteCache)cache.withAsync(), keepPortable);
+        return new PlatformCache(platformCtx, (IgniteCache)cache.withAsync(), keepBinary);
     }
 
     /**
@@ -273,7 +279,7 @@ public class PlatformCache extends PlatformAbstractTarget {
         if (opCtx != null && opCtx.noRetries())
             return this;
 
-        return new PlatformCache(platformCtx, cache.withNoRetries(), keepPortable);
+        return new PlatformCache(platformCtx, cache.withNoRetries(), keepBinary);
     }
 
     /** {@inheritDoc} */
@@ -373,13 +379,13 @@ public class PlatformCache extends PlatformAbstractTarget {
     /**
      * Loads cache via localLoadCache or loadCache.
      */
-    private void loadCache0(BinaryRawReaderEx reader, boolean loc) throws IgniteCheckedException {
+    private void loadCache0(BinaryRawReaderEx reader, boolean loc) {
         PlatformCacheEntryFilter filter = null;
 
         Object pred = reader.readObjectDetached();
 
         if (pred != null)
-            filter = platformCtx.createCacheEntryFilter(pred, reader.readLong());
+            filter = platformCtx.createCacheEntryFilter(pred, 0);
 
         Object[] args = reader.readObjectArray();
 
@@ -515,6 +521,14 @@ public class PlatformCache extends PlatformAbstractTarget {
 
                 break;
 
+            case OP_GET_CONFIG:
+                CacheConfiguration ccfg = ((IgniteCache<Object, Object>)cache).
+                        getConfiguration(CacheConfiguration.class);
+
+                PlatformConfigurationUtils.writeCacheConfiguration(writer, ccfg);
+
+                break;
+
             default:
                 super.processOutStream(type, writer);
         }
@@ -624,10 +638,10 @@ public class PlatformCache extends PlatformAbstractTarget {
     @Override public Exception convertException(Exception e) {
         if (e instanceof CachePartialUpdateException)
             return new PlatformCachePartialUpdateException((CachePartialUpdateCheckedException)e.getCause(),
-                platformCtx, keepPortable);
+                platformCtx, keepBinary);
 
         if (e instanceof CachePartialUpdateCheckedException)
-            return new PlatformCachePartialUpdateException((CachePartialUpdateCheckedException)e, platformCtx, keepPortable);
+            return new PlatformCachePartialUpdateException((CachePartialUpdateCheckedException)e, platformCtx, keepBinary);
 
         if (e.getCause() instanceof EntryProcessorException)
             return (EntryProcessorException) e.getCause();
@@ -685,8 +699,8 @@ public class PlatformCache extends PlatformAbstractTarget {
     }
 
     /** <inheritDoc /> */
-    @Override protected IgniteFuture currentFuture() throws IgniteCheckedException {
-        return cache.future();
+    @Override protected IgniteInternalFuture currentFuture() throws IgniteCheckedException {
+        return ((IgniteFutureImpl)cache.future()).internalFuture();
     }
 
     /** <inheritDoc /> */
@@ -704,8 +718,7 @@ public class PlatformCache extends PlatformAbstractTarget {
     }
 
     /**
-     * Clears the contents of the cache, without notifying listeners or
-     * {@ignitelink javax.cache.integration.CacheWriter}s.
+     * Clears the contents of the cache, without notifying listeners or CacheWriters.
      *
      * @throws IllegalStateException if the cache is closed.
      * @throws javax.cache.CacheException if there is a problem during the clear
@@ -955,7 +968,7 @@ public class PlatformCache extends PlatformAbstractTarget {
         Object pred = reader.readObjectDetached();
 
         if (pred != null)
-            qry.setFilter(platformCtx.createCacheEntryFilter(pred, reader.readLong()));
+            qry.setFilter(platformCtx.createCacheEntryFilter(pred, 0));
 
         qry.setLocal(loc);
 

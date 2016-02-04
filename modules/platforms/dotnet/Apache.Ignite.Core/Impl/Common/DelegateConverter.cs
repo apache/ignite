@@ -19,6 +19,7 @@ namespace Apache.Ignite.Core.Impl.Common
 {
     using System;
     using System.Diagnostics;
+    using System.Diagnostics.CodeAnalysis;
     using System.Linq.Expressions;
     using System.Reflection;
     using System.Reflection.Emit;
@@ -30,12 +31,13 @@ namespace Apache.Ignite.Core.Impl.Common
     {
         /** */
         private const string DefaultMethodName = "Invoke";
-        
+
         /// <summary>
         /// Compiles a function without arguments.
         /// </summary>
         /// <param name="targetType">Type of the target.</param>
         /// <returns>Compiled function that calls specified method on specified target.</returns>
+        [SuppressMessage("Microsoft.Design", "CA1062:Validate arguments of public methods")]
         public static Func<object, object> CompileFunc(Type targetType)
         {
             var method = targetType.GetMethod(DefaultMethodName);
@@ -62,6 +64,7 @@ namespace Apache.Ignite.Core.Impl.Common
         /// <returns>
         /// Compiled function that calls specified method on specified target.
         /// </returns>
+        [SuppressMessage("Microsoft.Design", "CA1062:Validate arguments of public methods")]
         public static T CompileFunc<T>(Type targetType, Type[] argTypes, bool[] convertToObject = null,
             string methodName = null)
             where T : class
@@ -84,6 +87,7 @@ namespace Apache.Ignite.Core.Impl.Common
         /// <returns>
         /// Compiled function that calls specified method on specified target.
         /// </returns>
+        [SuppressMessage("Microsoft.Design", "CA1062:Validate arguments of public methods")]
         public static T CompileFunc<T>(Type targetType, MethodInfo method, Type[] argTypes, 
             bool[] convertToObject = null)
             where T : class
@@ -155,6 +159,7 @@ namespace Apache.Ignite.Core.Impl.Common
         /// <returns>
         /// Compiled generic constructor.
         /// </returns>
+        [SuppressMessage("Microsoft.Design", "CA1062:Validate arguments of public methods")]
         public static T CompileCtor<T>(ConstructorInfo ctor, Type[] argTypes, bool convertResultToObject = true)
         {
             Debug.Assert(ctor != null);
@@ -189,6 +194,7 @@ namespace Apache.Ignite.Core.Impl.Common
         /// <returns>
         /// Compiled generic constructor.
         /// </returns>
+        [SuppressMessage("Microsoft.Design", "CA1062:Validate arguments of public methods")]
         public static T CompileCtor<T>(Type type, Type[] argTypes, bool convertResultToObject = true)
         {
             var ctor = type.GetConstructor(argTypes);
@@ -201,6 +207,7 @@ namespace Apache.Ignite.Core.Impl.Common
         /// </summary>
         /// <param name="field">The field.</param>
         /// <returns>Compiled field setter.</returns>
+        [SuppressMessage("Microsoft.Design", "CA1062:Validate arguments of public methods")]
         public static Action<object, object> CompileFieldSetter(FieldInfo field)
         {
             Debug.Assert(field != null);
@@ -222,6 +229,7 @@ namespace Apache.Ignite.Core.Impl.Common
         /// </summary>
         /// <param name="prop">The property.</param>
         /// <returns>Compiled property setter.</returns>
+        [SuppressMessage("Microsoft.Design", "CA1062:Validate arguments of public methods")]
         public static Action<object, object> CompilePropertySetter(PropertyInfo prop)
         {
             Debug.Assert(prop != null);
@@ -246,24 +254,30 @@ namespace Apache.Ignite.Core.Impl.Common
         /// </summary>
         /// <param name="field">The field.</param>
         /// <returns>Resulting MethodInfo.</returns>
+        [SuppressMessage("Microsoft.Design", "CA1062:Validate arguments of public methods")]
         public static DynamicMethod GetWriteFieldMethod(FieldInfo field)
         {
             Debug.Assert(field != null);
 
-            var module = Assembly.GetExecutingAssembly().GetModules()[0];
+            var declaringType = field.DeclaringType;
 
-            var method = new DynamicMethod(string.Empty, null, new[] { field.DeclaringType, field.FieldType }, module,
-                true);
+            Debug.Assert(declaringType != null);  // static fields are not supported
+
+            var method = new DynamicMethod(string.Empty, null, new[] { typeof(object), field.FieldType }, 
+                declaringType, true);
 
             var il = method.GetILGenerator();
-
+            
             il.Emit(OpCodes.Ldarg_0);
+
+            if (declaringType.IsValueType)
+                il.Emit(OpCodes.Unbox, declaringType);   // modify boxed copy
+
             il.Emit(OpCodes.Ldarg_1);
             il.Emit(OpCodes.Stfld, field);
             il.Emit(OpCodes.Ret);
 
             return method;
         }
-
     }
 }

@@ -63,6 +63,9 @@ namespace Apache.Ignite.Core.Impl.Binary
         /** Type schema. */
         private readonly BinaryObjectSchema _schema = new BinaryObjectSchema();
 
+        /** Enum flag. */
+        private readonly bool _isEnum;
+
         /// <summary>
         /// Constructor.
         /// </summary>
@@ -75,6 +78,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// <param name="serializer">Serializer.</param>
         /// <param name="keepDeserialized">Whether to cache deserialized value in IBinaryObject</param>
         /// <param name="affKeyFieldName">Affinity field key name.</param>
+        /// <param name="isEnum">Enum flag.</param>
         public BinaryFullTypeDescriptor(
             Type type, 
             int typeId, 
@@ -84,7 +88,8 @@ namespace Apache.Ignite.Core.Impl.Binary
             IBinaryIdMapper idMapper, 
             IBinarySerializer serializer, 
             bool keepDeserialized, 
-            string affKeyFieldName)
+            string affKeyFieldName,
+            bool isEnum)
         {
             _type = type;
             _typeId = typeId;
@@ -95,6 +100,7 @@ namespace Apache.Ignite.Core.Impl.Binary
             _serializer = serializer;
             _keepDeserialized = keepDeserialized;
             _affKeyFieldName = affKeyFieldName;
+            _isEnum = isEnum;
         }
 
         /// <summary>
@@ -167,6 +173,12 @@ namespace Apache.Ignite.Core.Impl.Binary
         public string AffinityKeyFieldName
         {
             get { return _affKeyFieldName; }
+        }
+
+        /** <inheritdoc/> */
+        public bool IsEnum
+        {
+            get { return _isEnum; }
         }
 
         /** <inheritDoc /> */

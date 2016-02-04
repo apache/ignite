@@ -19,9 +19,11 @@ package org.apache.ignite.internal.processors.continuous;
 
 import java.io.Externalizable;
 import java.util.Collection;
+import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -98,6 +100,22 @@ public interface GridContinuousHandler extends Externalizable, Cloneable {
     public void p2pUnmarshal(UUID nodeId, GridKernalContext ctx) throws IgniteCheckedException;
 
     /**
+     * Creates new batch.
+     *
+     * @return New batch.
+     */
+    public GridContinuousBatch createBatch();
+
+    /**
+     * Called when ack for a batch is received from client.
+     *
+     * @param routineId Routine ID.
+     * @param batch Acknowledged batch.
+     * @param ctx Kernal context.
+     */
+    public void onBatchAcknowledged(UUID routineId, GridContinuousBatch batch, GridKernalContext ctx);
+
+    /**
      * @return Topic for ordered notifications. If {@code null}, notifications
      * will be sent in non-ordered messages.
      */
@@ -113,20 +131,31 @@ public interface GridContinuousHandler extends Externalizable, Cloneable {
     /**
      * @return {@code True} if for events.
      */
-    public boolean isForEvents();
+    public boolean isEvents();
 
     /**
      * @return {@code True} if for messaging.
      */
-    public boolean isForMessaging();
+    public boolean isMessaging();
 
     /**
      * @return {@code True} if for continuous queries.
      */
-    public boolean isForQuery();
+    public boolean isQuery();
+
+    /**
+     * @return {@code True} if Ignite Binary objects should be passed to the listener and filter.
+     */
+    public boolean keepBinary();
 
     /**
      * @return Cache name if this is a continuous query handler.
      */
     public String cacheName();
+
+    /**
+     * @param cntrs Init state for partition counters.
+     * @param topVer Topology version.
+     */
+    public void updateCounters(AffinityTopologyVersion topVer, Map<Integer, Long> cntrs);
 }

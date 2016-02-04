@@ -19,18 +19,20 @@ namespace Apache.Ignite.Core.Cache.Store
 {
     using System;
     using System.Collections;
+    using System.Diagnostics.CodeAnalysis;
     using System.Linq;
+    using Apache.Ignite.Core.Impl.Common;
 
     /// <summary>
     /// Cache storage convenience adapter. It provides default implementation for 
-    /// bulk operations, such as <code>LoadAll</code>, <code>PutAll</code> and
-    /// <code>RemoveAll</code> by sequentially calling corresponding <code>Load</code>,
-    /// <code>Put</code> and <code>Remove</code> operations. Use this adapter whenever 
+    /// bulk operations, such as <c>LoadAll</c>, <c>PutAll</c> and
+    /// <c>RemoveAll</c> by sequentially calling corresponding <c>Load</c>,
+    /// <c>Put</c> and <c>Remove</c> operations. Use this adapter whenever 
     /// such behaviour is acceptable. However in many cases it maybe more preferable 
     /// to take advantage of database batch update functionality, and therefore default 
     /// adapter implementation may not be the best option.
     /// <para/>
-    /// Note that <code>LoadCache</code> method has empty implementation because it is 
+    /// Note that <c>LoadCache</c> method has empty implementation because it is 
     /// essentially up to the user to invoke it with specific arguments.
     /// </summary>
     public abstract class CacheStoreAdapter : ICacheStore
@@ -72,6 +74,7 @@ namespace Apache.Ignite.Core.Cache.Store
         /// Writes all.
         /// </summary>
         /// <param name="entries">The map.</param>
+        [SuppressMessage("Microsoft.Design", "CA1062:Validate arguments of public methods")]
         public virtual void WriteAll(IDictionary entries)
         {
             foreach (DictionaryEntry entry in entries)
@@ -95,6 +98,7 @@ namespace Apache.Ignite.Core.Cache.Store
         /// <param name="keys">a mutable collection of keys for entries to delete. Upon invocation,
         /// it contains the keys to delete for write-through. Upon return the collection must only contain
         /// the keys that were not successfully deleted.</param>
+        [SuppressMessage("Microsoft.Design", "CA1062:Validate arguments of public methods")]
         public virtual void DeleteAll(ICollection keys)
         {
             foreach (object key in keys)
@@ -115,12 +119,12 @@ namespace Apache.Ignite.Core.Cache.Store
         /// Loads an object. Application developers should implement this method to customize the loading
         /// of a value for a cache entry.
         /// This method is called by a cache when a requested entry is not in the cache.
-        /// If the object can't be loaded <code>null</code> should be returned.
+        /// If the object can't be loaded <c>null</c> should be returned.
         /// </summary>
         /// <param name="key">The key identifying the object being loaded.</param>
         /// <returns>
         /// The value for the entry that is to be stored in the cache
-        /// or <code>null</code> if the object can't be loaded
+        /// or <c>null</c> if the object can't be loaded
         /// </returns>
         public abstract object Load(object key);
 

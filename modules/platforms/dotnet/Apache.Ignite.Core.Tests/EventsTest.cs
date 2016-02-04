@@ -365,7 +365,7 @@ namespace Apache.Ignite.Core.Tests
         [Test]
         public void TestRemoteListen(
             [Values(true, false)] bool async, 
-            [Values(true, false)] bool portable,
+            [Values(true, false)] bool binarizable,
             [Values(true, false)] bool autoUnsubscribe)
         {
             foreach (var g in _grids)
@@ -378,8 +378,8 @@ namespace Apache.Ignite.Core.Tests
 
             var expectedType = EventType.JobStarted;
 
-            var remoteFilter = portable 
-                ?  (IEventFilter<IEvent>) new RemoteEventPortableFilter(expectedType)
+            var remoteFilter = binary 
+                ?  (IEventFilter<IEvent>) new RemoteEventBinarizableFilter(expectedType)
                 :  new RemoteEventFilter(expectedType);
 
             var localListener = EventsTestHelper.GetListener();
@@ -568,7 +568,8 @@ namespace Apache.Ignite.Core.Tests
             Assert.AreEqual(EventType.SwapSpaceCleared, evt.Type);
             Assert.IsNotNullOrEmpty(evt.Name);
             Assert.AreNotEqual(Guid.Empty, evt.Id.GlobalId);
-            Assert.IsTrue((evt.Timestamp - DateTime.Now).TotalSeconds < 10);
+            Assert.IsTrue(Math.Abs((evt.Timestamp - DateTime.UtcNow).TotalSeconds) < 20, 
+                "Invalid event timestamp: '{0}', current time: '{1}'", evt.Timestamp, DateTime.Now);
         }
 
         /// <summary>
@@ -616,7 +617,7 @@ namespace Apache.Ignite.Core.Tests
                 {
                     TypeConfigurations = new List<BinaryTypeConfiguration>
                     {
-                        new BinaryTypeConfiguration(typeof (RemoteEventPortableFilter))
+                        new BinaryTypeConfiguration(typeof (RemoteEventBinarizableFilter))
                     }
                 }
             };
@@ -882,18 +883,18 @@ namespace Apache.Ignite.Core.Tests
     }
 
     /// <summary>
-    /// Portable remote event filter.
+    /// Binary remote event filter.
     /// </summary>
-    public class RemoteEventPortableFilter : IEventFilter<IEvent>, IBinarizable
+    public class RemoteEventBinarizableFilter : IEventFilter<IEvent>, IBinarizable
     {
         /** */
         private int _type;
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="RemoteEventPortableFilter"/> class.
+        /// Initializes a new instance of the <see cref="RemoteEventBinarizableFilter"/> class.
         /// </summary>
         /// <param name="type">The event type.</param>
-        public RemoteEventPortableFilter(int type)
+        public RemoteEventBinarizableFilter(int type)
         {
             _type = type;
         }

@@ -19,13 +19,18 @@ package org.apache.ignite.internal.processors.platform.cpp;
 
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.binary.BinaryIdMapper;
+import org.apache.ignite.binary.BinaryBasicIdMapper;
+import org.apache.ignite.binary.BinaryNameMapper;
+import org.apache.ignite.binary.BinaryBasicNameMapper;
+import org.apache.ignite.configuration.BinaryConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.PlatformConfiguration;
 import org.apache.ignite.internal.processors.platform.PlatformAbstractConfigurationClosure;
 import org.apache.ignite.internal.processors.platform.memory.PlatformMemoryManagerImpl;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.marshaller.Marshaller;
-import org.apache.ignite.marshaller.portable.PortableMarshaller;
+import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.platform.cpp.PlatformCppConfiguration;
 
 import java.util.Collections;
@@ -71,14 +76,56 @@ public class PlatformCppConfigurationClosure extends PlatformAbstractConfigurati
         Marshaller marsh = igniteCfg.getMarshaller();
 
         if (marsh == null) {
-            igniteCfg.setMarshaller(new PortableMarshaller());
+            igniteCfg.setMarshaller(new BinaryMarshaller());
 
             cppCfg0.warnings(Collections.singleton("Marshaller is automatically set to " +
-                PortableMarshaller.class.getName() + " (other nodes must have the same marshaller type)."));
+                BinaryMarshaller.class.getName() + " (other nodes must have the same marshaller type)."));
         }
-        else if (!(marsh instanceof PortableMarshaller))
-            throw new IgniteException("Unsupported marshaller (only " + PortableMarshaller.class.getName() +
+        else if (!(marsh instanceof BinaryMarshaller))
+            throw new IgniteException("Unsupported marshaller (only " + BinaryMarshaller.class.getName() +
                 " can be used when running Apache Ignite C++): " + marsh.getClass().getName());
+
+        BinaryConfiguration bCfg = igniteCfg.getBinaryConfiguration();
+
+        if (bCfg == null) {
+            bCfg = new BinaryConfiguration();
+
+            bCfg.setCompactFooter(false);
+            bCfg.setNameMapper(new BinaryBasicNameMapper(true));
+            bCfg.setIdMapper(new BinaryBasicIdMapper(true));
+
+            igniteCfg.setBinaryConfiguration(bCfg);
+
+            cppCfg0.warnings(Collections.singleton("Binary configuration is automatically initiated, " +
+                "note that binary name mapper is set to " + bCfg.getNameMapper()
+                + " and binary ID mapper is set to " + bCfg.getIdMapper()
+                + " (other nodes must have the same binary name and ID mapper types)."));
+        }
+        else {
+            BinaryNameMapper nameMapper = bCfg.getNameMapper();
+
+            if (nameMapper == null) {
+                bCfg.setNameMapper(new BinaryBasicNameMapper(true));
+
+                cppCfg0.warnings(Collections.singleton("Binary name mapper is automatically set to " +
+                    bCfg.getNameMapper()
+                    + " (other nodes must have the same binary name mapper type)."));
+            }
+
+            BinaryIdMapper idMapper = bCfg.getIdMapper();
+
+            if (idMapper == null) {
+                bCfg.setIdMapper(new BinaryBasicIdMapper(true));
+
+                cppCfg0.warnings(Collections.singleton("Binary ID mapper is automatically set to " +
+                    bCfg.getIdMapper()
+                    + " (other nodes must have the same binary ID mapper type)."));
+            }
+        }
+
+        if (bCfg.isCompactFooter())
+            throw new IgniteException("Unsupported " + BinaryMarshaller.class.getName() +
+                " \"compactFooter\" flag: must be false when running Apache Ignite C++.");
 
         // Set Ignite home so that marshaller context works.
         String ggHome = igniteCfg.getIgniteHome();

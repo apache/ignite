@@ -59,10 +59,7 @@ public abstract class GridH2IndexBase extends BaseIndex {
      * @param fs Filters.
      */
     public static void setFiltersForThread(IndexingQueryFilter fs) {
-        if (fs == null)
-            filters.remove();
-        else
-            filters.set(fs);
+        filters.set(fs);
     }
 
     /**

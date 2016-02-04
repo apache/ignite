@@ -18,6 +18,7 @@
 namespace Apache.Ignite.Core.Impl.Transactions
 {
     using System;
+    using System.Diagnostics.CodeAnalysis;
     using System.Threading.Tasks;
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Impl.Binary;
@@ -67,9 +68,9 @@ namespace Apache.Ignite.Core.Impl.Transactions
             {
                 var reader = marsh.StartUnmarshal(stream).GetRawReader();
 
-                concurrency = reader.ReadEnum<TransactionConcurrency>();
-                isolation = reader.ReadEnum<TransactionIsolation>();
-                timeout = TimeSpan.FromMilliseconds(reader.ReadLong());
+                concurrency = (TransactionConcurrency) reader.ReadInt();
+                isolation = (TransactionIsolation) reader.ReadInt();
+                timeout = reader.ReadLongAsTimespan();
             });
 
             _dfltConcurrency = concurrency;
@@ -90,6 +91,7 @@ namespace Apache.Ignite.Core.Impl.Transactions
         }
 
         /** <inheritDoc /> */
+        [SuppressMessage("Microsoft.Reliability", "CA2000:Dispose objects before losing scope")]
         public ITransaction TxStart(TransactionConcurrency concurrency, TransactionIsolation isolation,
             TimeSpan timeout, int txSize)
         {

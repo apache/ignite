@@ -103,6 +103,58 @@ public class IgniteApplicationMasterSelfTest extends TestCase {
             assertEquals(1024, req.getCapability().getMemory());
         }
     }
+    
+    /**
+     * Tests whether memory overhead is allocated within container memory.
+     *
+     * @throws Exception If failed.
+     */
+    public void testMemoryOverHeadAllocation() throws Exception {
+        appMaster.setRmClient(rmMock);
+        appMaster.setNmClient(new NMMock());
+
+        props.cpusPerNode(2);
+        props.memoryPerNode(1024);
+        props.memoryOverHeadPerNode(512);
+        props.instances(3);
+
+        Thread thread = runAppMaster(appMaster);
+
+        List<AMRMClient.ContainerRequest> contRequests = collectRequests(rmMock, 1, 1000);
+
+        interruptedThread(thread);
+
+        assertEquals(3, contRequests.size());
+
+        for (AMRMClient.ContainerRequest req : contRequests) {
+            assertEquals(2, req.getCapability().getVirtualCores());
+            assertEquals(1024 + 512, req.getCapability().getMemory());
+        }
+    }
+
+    /**
+     * Tests whether memory overhead prevents from allocating container.
+     *
+     * @throws Exception If failed.
+     */
+     public void testMemoryOverHeadPreventAllocation() throws Exception {
+        rmMock.availableRes(new MockResource(1024, 2));
+        appMaster.setRmClient(rmMock);
+        appMaster.setNmClient(new NMMock());
+
+        props.cpusPerNode(2);
+        props.memoryPerNode(1024);
+        props.memoryOverHeadPerNode(512);
+        props.instances(3);
+
+        Thread thread = runAppMaster(appMaster);
+
+        List<AMRMClient.ContainerRequest> contRequests = collectRequests(rmMock, 1, 1000);
+
+        interruptedThread(thread);
+
+        assertEquals(0, contRequests.size());
+     }
 
     /**
      * @throws Exception If failed.
@@ -382,8 +434,15 @@ public class IgniteApplicationMasterSelfTest extends TestCase {
             return 0;
         }
 
-        /** {@inheritDoc} */
-        @Override public void updateBlacklist(List blacklistAdditions, List blacklistRemovals) {
+        /**
+         * Update application's blacklist with addition or removal resources.
+         *
+         * @param blacklistAdditions list of resources which should be added to the
+         *        application blacklist
+         * @param blacklistRemovals list of resources which should be removed from the
+         *        application blacklist
+         */
+        public void updateBlacklist(List blacklistAdditions, List blacklistRemovals) {
             // No-op.
         }
     }

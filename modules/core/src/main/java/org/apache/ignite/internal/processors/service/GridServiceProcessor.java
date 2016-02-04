@@ -515,9 +515,9 @@ public class GridServiceProcessor extends GridProcessorAdapter {
      */
     @SuppressWarnings("unchecked")
     public IgniteInternalFuture<?> cancelAll() {
-        Collection<IgniteInternalFuture<?>> futs = new ArrayList<>();
-
         Iterator<Cache.Entry<Object, Object>> it = serviceEntries(ServiceDeploymentPredicate.INSTANCE);
+
+        GridCompoundFuture res = null;
 
         while (it.hasNext()) {
             Cache.Entry<Object, Object> e = it.next();
@@ -527,11 +527,20 @@ public class GridServiceProcessor extends GridProcessorAdapter {
 
             GridServiceDeployment dep = (GridServiceDeployment)e.getValue();
 
+            if (res == null)
+                res = new GridCompoundFuture<>();
+
             // Cancel each service separately.
-            futs.add(cancel(dep.configuration().getName()));
+            res.add(cancel(dep.configuration().getName()));
         }
 
-        return futs.isEmpty() ? new GridFinishedFuture<>() : new GridCompoundFuture(null, futs);
+        if (res != null) {
+            res.markInitialized();
+
+            return res;
+        }
+        else
+            return new GridFinishedFuture<>();
     }
 
     /**
@@ -704,12 +713,32 @@ public class GridServiceProcessor extends GridProcessorAdapter {
         Object affKey = cfg.getAffinityKey();
 
         while (true) {
+            GridServiceAssignments assigns = new GridServiceAssignments(cfg, dep.nodeId(), topVer);
+
+             Collection<ClusterNode> nodes;
+
+             // Call node filter outside of transaction.
+            if (affKey == null) {
+                nodes = ctx.discovery().nodes(topVer);
+
+                if (assigns.nodeFilter() != null) {
+                    Collection<ClusterNode> nodes0 = new ArrayList<>();
+
+                    for (ClusterNode node : nodes) {
+                        if (assigns.nodeFilter().apply(node))
+                            nodes0.add(node);
+                    }
+
+                    nodes = nodes0;
+                }
+            }
+            else
+                nodes = null;
+
             try (IgniteInternalTx tx = cache.txStartEx(PESSIMISTIC, REPEATABLE_READ)) {
                 GridServiceAssignmentsKey key = new GridServiceAssignmentsKey(cfg.getName());
 
                 GridServiceAssignments oldAssigns = (GridServiceAssignments)cache.get(key);
-
-                GridServiceAssignments assigns = new GridServiceAssignments(cfg, dep.nodeId(), topVer);
 
                 Map<UUID, Integer> cnts = new HashMap<>();
 
@@ -723,10 +752,6 @@ public class GridServiceProcessor extends GridProcessorAdapter {
                     }
                 }
                 else {
-                    Collection<ClusterNode> nodes = assigns.nodeFilter() == null ?
-                        ctx.discovery().nodes(topVer) :
-                        F.view(ctx.discovery().nodes(topVer), assigns.nodeFilter());
-
                     if (!nodes.isEmpty()) {
                         int size = nodes.size();
 
@@ -805,7 +830,7 @@ public class GridServiceProcessor extends GridProcessorAdapter {
 
                 assigns.assigns(cnts);
 
-                cache.getAndPut(key, assigns);
+                cache.put(key, assigns);
 
                 tx.commit();
 

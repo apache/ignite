@@ -24,7 +24,7 @@ import org.apache.ignite.cache.CacheMemoryMode;
  * Ignite benchmark that performs transactional put operations
  * with {@link CacheMemoryMode#OFFHEAP_TIERED OFFHEAP TIRED} memory mode.
  */
-public class IgnitePutTxOffHeapBenchmark extends IgnitePutTxBenchmark {
+public class IgnitePutTxOffHeapBenchmark extends IgnitePutTxImplicitBenchmark {
     /** {@inheritDoc} */
     @Override protected IgniteCache<Integer, Object> cache() {
         return ignite().cache("tx-offheap");

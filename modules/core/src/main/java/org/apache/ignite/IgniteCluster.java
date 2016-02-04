@@ -22,6 +22,7 @@ import java.util.Collection;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentMap;
+import org.apache.ignite.cache.affinity.Affinity;
 import org.apache.ignite.cache.affinity.AffinityFunction;
 import org.apache.ignite.cluster.ClusterGroup;
 import org.apache.ignite.cluster.ClusterNode;
@@ -124,7 +125,9 @@ public interface IgniteCluster extends ClusterGroup, IgniteAsyncSupport {
      * @param keys Cache keys to map to nodes.
      * @return Map of nodes to cache keys or empty map if there are no alive nodes for this cache.
      * @throws IgniteException If failed to map cache keys.
+     * @deprecated Use {@link Affinity#mapKeysToNodes(Collection)} instead.
      */
+    @Deprecated
     public <K> Map<ClusterNode, Collection<K>> mapKeysToNodes(@Nullable String cacheName,
         @Nullable Collection<? extends K> keys) throws IgniteException;
 
@@ -148,7 +151,9 @@ public interface IgniteCluster extends ClusterGroup, IgniteAsyncSupport {
      * @return Primary node for the key or {@code null} if cache with given name
      *      is not present in the grid.
      * @throws IgniteException If failed to map key.
+     * @deprecated Use {@link Affinity#mapKeyToNode(Object)} instead.
      */
+    @Deprecated
     public <K> ClusterNode mapKeyToNode(@Nullable String cacheName, K key) throws IgniteException;
 
     /**

@@ -31,12 +31,8 @@
     </parent>
 
     <artifactId>ignite-zookeeper</artifactId>
-    <version>1.5.0-SNAPSHOT</version>
+    <version>1.6.0-SNAPSHOT</version>
     <url>http://ignite.apache.org</url>
-
-    <properties>
-        <curator.version>2.8.0</curator.version>
-    </properties>
 
     <dependencies>
         <dependency>
@@ -86,5 +82,15 @@
             <scope>test</scope>
         </dependency>
     </dependencies>
+
+    <build>
+        <plugins>
+            <!-- Generate the OSGi MANIFEST.MF for this bundle. -->
+            <plugin>
+                <groupId>org.apache.felix</groupId>
+                <artifactId>maven-bundle-plugin</artifactId>
+            </plugin>
+        </plugins>
+    </build>
 
 </project>

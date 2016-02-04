@@ -21,11 +21,12 @@ import java.util.Collection;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import javax.cache.expiry.ExpiryPolicy;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryRemovedException;
-import org.apache.ignite.internal.processors.cache.GridCacheFuture;
+import org.apache.ignite.internal.processors.cache.GridCacheMvccFuture;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedTxMapping;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxMapping;
@@ -48,10 +49,14 @@ import static org.apache.ignite.internal.processors.cache.GridCacheOperation.NOO
 /**
  * Common code for tx prepare in optimistic and pessimistic modes.
  */
-public abstract class GridNearTxPrepareFutureAdapter extends GridCompoundFuture<GridNearTxPrepareResponse, IgniteInternalTx>
-    implements GridCacheFuture<IgniteInternalTx> {
+public abstract class GridNearTxPrepareFutureAdapter extends
+    GridCompoundFuture<GridNearTxPrepareResponse, IgniteInternalTx> implements GridCacheMvccFuture<IgniteInternalTx> {
     /** Logger reference. */
     protected static final AtomicReference<IgniteLogger> logRef = new AtomicReference<>();
+
+    /** Error updater. */
+    protected static final AtomicReferenceFieldUpdater<GridNearTxPrepareFutureAdapter, Throwable> ERR_UPD =
+        AtomicReferenceFieldUpdater.newUpdater(GridNearTxPrepareFutureAdapter.class, Throwable.class, "err");
 
     /** */
     private static final IgniteReducer<GridNearTxPrepareResponse, IgniteInternalTx> REDUCER =
@@ -81,7 +86,7 @@ public abstract class GridNearTxPrepareFutureAdapter extends GridCompoundFuture<
 
     /** Error. */
     @GridToStringExclude
-    protected AtomicReference<Throwable> err = new AtomicReference<>(null);
+    protected volatile Throwable err;
 
     /** Trackable flag. */
     protected boolean trackable = true;
@@ -165,12 +170,15 @@ public abstract class GridNearTxPrepareFutureAdapter extends GridCompoundFuture<
      * @param m Mapping.
      * @param res Response.
      */
+    @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
     protected final void onPrepareResponse(GridDistributedTxMapping m, GridNearTxPrepareResponse res) {
         if (res == null)
             return;
 
         assert res.error() == null : res;
         assert F.isEmpty(res.invalidPartitions()) : res;
+
+        UUID nodeId = m.node().id();
 
         for (Map.Entry<IgniteTxKey, CacheVersionedValue> entry : res.ownedValues().entrySet()) {
             IgniteTxEntry txEntry = tx.entry(entry.getKey());
@@ -187,7 +195,7 @@ public abstract class GridNearTxPrepareFutureAdapter extends GridCompoundFuture<
                         CacheVersionedValue tup = entry.getValue();
 
                         nearEntry.resetFromPrimary(tup.value(), tx.xidVersion(),
-                            tup.version(), m.node().id(), tx.topologyVersion());
+                            tup.version(), nodeId, tx.topologyVersion());
                     }
                     else if (txEntry.cached().detached()) {
                         GridDhtDetachedCacheEntry detachedEntry = (GridDhtDetachedCacheEntry)txEntry.cached();
@@ -229,10 +237,16 @@ public abstract class GridNearTxPrepareFutureAdapter extends GridCompoundFuture<
             if (writeVer == null)
                 writeVer = res.dhtVersion();
 
-            // Register DHT version.
-            tx.addDhtVersion(m.node().id(), res.dhtVersion(), writeVer);
+            // This step is very important as near and DHT versions grow separately.
+            cctx.versions().onReceived(nodeId, res.dhtVersion());
 
+            // Register DHT version.
             m.dhtVersion(res.dhtVersion(), writeVer);
+
+            GridDistributedTxMapping map = tx.mappings().get(nodeId);
+
+            if (map != null)
+                map.dhtVersion(res.dhtVersion(), writeVer);
 
             if (m.near())
                 tx.readyNearLocks(m, res.pending(), res.committedVersions(), res.rolledbackVersions());

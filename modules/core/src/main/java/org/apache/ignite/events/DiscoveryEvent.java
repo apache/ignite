@@ -113,9 +113,9 @@ public class DiscoveryEvent extends EventAdapter {
     /**
      * Gets node that caused this event to be generated. It is potentially different from the node
      * on which this event was recorded. For example, node {@code A} locally recorded the event that a remote node
-     * {@code B} joined the topology. In this case this method will return ID of {@code B}.
+     * {@code B} joined the topology. In this case this method will return node {@code B}.
      *
-     * @return Event node ID.
+     * @return Event node.
      */
     public ClusterNode eventNode() {
         return evtNode;

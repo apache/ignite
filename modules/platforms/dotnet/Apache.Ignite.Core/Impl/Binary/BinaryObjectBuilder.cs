@@ -37,7 +37,7 @@ namespace Apache.Ignite.Core.Impl.Binary
             new Dictionary<int, BinaryBuilderField>();
         
         /** Binary. */
-        private readonly IgniteBinary _igniteBinary;
+        private readonly Binary _binary;
 
         /** */
         private readonly BinaryObjectBuilder _parent;
@@ -79,18 +79,18 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// <summary>
         /// Constructor.
         /// </summary>
-        /// <param name="igniteBinary">Binary.</param>
+        /// <param name="binary">Binary.</param>
         /// <param name="parent">Parent builder.</param>
         /// <param name="obj">Initial binary object.</param>
         /// <param name="desc">Type descriptor.</param>
-        public BinaryObjectBuilder(IgniteBinary igniteBinary, BinaryObjectBuilder parent, 
+        public BinaryObjectBuilder(Binary binary, BinaryObjectBuilder parent, 
             BinaryObject obj, IBinaryTypeDescriptor desc)
         {
-            Debug.Assert(igniteBinary != null);
+            Debug.Assert(binary != null);
             Debug.Assert(obj != null);
             Debug.Assert(desc != null);
 
-            _igniteBinary = igniteBinary;
+            _binary = binary;
             _parent = parent ?? this;
             _obj = obj;
             _desc = desc;
@@ -352,38 +352,35 @@ namespace Apache.Ignite.Core.Impl.Binary
         /** <inheritDoc /> */
         public IBinaryObject Build()
         {
-            BinaryHeapStream inStream = new BinaryHeapStream(_obj.Data);
-
-            inStream.Seek(_obj.Offset, SeekOrigin.Begin);
-
             // Assume that resulting length will be no less than header + [fields_cnt] * 12;
             int estimatedCapacity = BinaryObjectHeader.Size + (_vals == null ? 0 : _vals.Count*12);
 
-            BinaryHeapStream outStream = new BinaryHeapStream(estimatedCapacity);
+            using (var outStream = new BinaryHeapStream(estimatedCapacity))
+            {
+                BinaryWriter writer = _binary.Marshaller.StartMarshal(outStream);
 
-            BinaryWriter writer = _igniteBinary.Marshaller.StartMarshal(outStream);
+                writer.SetBuilder(this);
 
-            writer.SetBuilder(this);
-
-            // All related builders will work in this context with this writer.
-            _parent._ctx = new Context(writer);
+                // All related builders will work in this context with this writer.
+                _parent._ctx = new Context(writer);
             
-            try
-            {
-                // Write.
-                writer.Write(this);
+                try
+                {
+                    // Write.
+                    writer.Write(this);
                 
-                // Process metadata.
-                _igniteBinary.Marshaller.FinishMarshal(writer);
+                    // Process metadata.
+                    _binary.Marshaller.FinishMarshal(writer);
 
-                // Create binary object once metadata is processed.
-                return new BinaryObject(_igniteBinary.Marshaller, outStream.InternalArray, 0, 
-                    BinaryObjectHeader.Read(outStream, 0));
-            }
-            finally
-            {
-                // Cleanup.
-                _parent._ctx.Closed = true;
+                    // Create binary object once metadata is processed.
+                    return new BinaryObject(_binary.Marshaller, outStream.InternalArray, 0, 
+                        BinaryObjectHeader.Read(outStream, 0));
+                }
+                finally
+                {
+                    // Cleanup.
+                    _parent._ctx.Closed = true;
+                }
             }
         }
 
@@ -394,9 +391,9 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// <returns>Child builder.</returns>
         public BinaryObjectBuilder Child(BinaryObject obj)
         {
-            var desc = _igniteBinary.Marshaller.GetDescriptor(true, obj.TypeId);
+            var desc = _binary.Marshaller.GetDescriptor(true, obj.TypeId);
 
-            return new BinaryObjectBuilder(_igniteBinary, null, obj, desc);
+            return new BinaryObjectBuilder(_binary, null, obj, desc);
         }
         
         /// <summary>
@@ -436,7 +433,7 @@ namespace Apache.Ignite.Core.Impl.Binary
 
             var hdr = _obj.Data[pos];
 
-            var field = new BinaryBuilderField(typeof(T), val, hdr, GetWriteAction(hdr));
+            var field = new BinaryBuilderField(typeof(T), val, hdr, GetWriteAction(hdr, pos));
             
             _parent._cache[pos] = field;
 
@@ -447,8 +444,9 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// Gets the write action by header.
         /// </summary>
         /// <param name="header">The header.</param>
+        /// <param name="pos">Position.</param>
         /// <returns>Write action.</returns>
-        private static Action<BinaryWriter, object> GetWriteAction(byte header)
+        private Action<BinaryWriter, object> GetWriteAction(byte header, int pos)
         {
             // We need special actions for all cases where SetField(X) produces different result from SetSpecialField(X)
             // Arrays, Collections, Dates
@@ -466,9 +464,20 @@ namespace Apache.Ignite.Core.Impl.Binary
 
                 case BinaryUtils.TypeArrayTimestamp:
                     return WriteTimestampArrayAction;
-            }
 
-            return null;
+                case BinaryUtils.TypeArrayEnum:
+                    using (var stream = new BinaryHeapStream(_obj.Data))
+                    {
+                        stream.Seek(pos, SeekOrigin.Begin + 1);
+
+                        var elementTypeId = stream.ReadInt();
+
+                        return (w, o) => w.WriteEnumArrayInternal((Array) o, elementTypeId);
+                    }
+
+                default:
+                    return null;
+            }
         }
 
         /// <summary>
@@ -510,7 +519,7 @@ namespace Apache.Ignite.Core.Impl.Binary
             try
             {
                 // Prepare fields.
-                IBinaryTypeHandler metaHnd = _igniteBinary.Marshaller.GetBinaryTypeHandler(desc);
+                IBinaryTypeHandler metaHnd = _binary.Marshaller.GetBinaryTypeHandler(desc);
 
                 IDictionary<int, BinaryBuilderField> vals0;
 
@@ -546,7 +555,7 @@ namespace Apache.Ignite.Core.Impl.Binary
                     IDictionary<string, int> meta = metaHnd.OnObjectWriteFinished();
 
                     if (meta != null)
-                        _parent._ctx.Writer.SaveMetadata(desc.TypeId, desc.TypeName, desc.AffinityKeyFieldName, meta);
+                        _parent._ctx.Writer.SaveMetadata(desc, meta);
                 }
             }
             finally
@@ -678,28 +687,37 @@ namespace Apache.Ignite.Core.Impl.Binary
                                 WriteField(ctx, valEntry.Value);
                             }
 
+                            var flags = inHeader.IsUserType
+                                ? BinaryObjectHeader.Flag.UserType
+                                : BinaryObjectHeader.Flag.None;
+
                             // Write raw data.
                             int outRawOff = outStream.Position - outStartPos;
 
-                            int inRawOff = inHeader.GetRawOffset(inStream, inStartPos);
-                            int inRawLen = inHeader.SchemaOffset - inRawOff;
+                            if (inHeader.HasRaw)
+                            {
+                                var inRawOff = inHeader.GetRawOffset(inStream, inStartPos);
+                                var inRawLen = inHeader.SchemaOffset - inRawOff;
 
-                            if (inRawLen > 0)
+                                flags |= BinaryObjectHeader.Flag.HasRaw;
+
                                 outStream.Write(inStream.InternalArray, inStartPos + inRawOff, inRawLen);
+                            }
 
                             // Write schema
                             int outSchemaOff = outRawOff;
                             var schemaPos = outStream.Position;
                             int outSchemaId;
-                            short flags;
 
-                            var hasSchema = outSchema.WriteSchema(outStream, schemaIdx, out outSchemaId, out flags);
+                            var hasSchema = outSchema.WriteSchema(outStream, schemaIdx, out outSchemaId, ref flags);
 
                             if (hasSchema)
                             {
                                 outSchemaOff = schemaPos - outStartPos;
+                                
+                                flags |= BinaryObjectHeader.Flag.HasSchema;
 
-                                if (inRawLen > 0)
+                                if (inHeader.HasRaw)
                                     outStream.WriteInt(outRawOff);
                             }
 
@@ -707,8 +725,8 @@ namespace Apache.Ignite.Core.Impl.Binary
 
                             var outHash = changeHash ? hash : inHeader.HashCode;
 
-                            var outHeader = new BinaryObjectHeader(inHeader.IsUserType, inHeader.TypeId, outHash,
-                                outLen, outSchemaId, outSchemaOff, !hasSchema, flags);
+                            var outHeader = new BinaryObjectHeader(inHeader.TypeId, outHash, outLen, 
+                                outSchemaId, outSchemaOff, flags);
 
                             BinaryObjectHeader.Write(outHeader, outStream, outStartPos);
 
@@ -762,12 +780,13 @@ namespace Apache.Ignite.Core.Impl.Binary
         internal void ProcessBinary(IBinaryStream outStream, BinaryObject port)
         {
             // Special case: writing binary object with correct inversions.
-            BinaryHeapStream inStream = new BinaryHeapStream(port.Data);
+            using (var inStream = new BinaryHeapStream(port.Data))
+            {
+                inStream.Seek(port.Offset, SeekOrigin.Begin);
 
-            inStream.Seek(port.Offset, SeekOrigin.Begin);
-
-            // Use fresh context to ensure correct binary inversion.
-            Mutate0(new Context(), inStream, outStream, false, 0, EmptyVals);
+                // Use fresh context to ensure correct binary inversion.
+                Mutate0(new Context(), inStream, outStream, false, 0, EmptyVals);
+            }
         }
 
         /// <summary>
@@ -777,18 +796,19 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// <param name="builder">Builder.</param>
         internal void ProcessBuilder(IBinaryStream outStream, BinaryObjectBuilder builder)
         {
-            BinaryHeapStream inStream = new BinaryHeapStream(builder._obj.Data);
+            using (var inStream = new BinaryHeapStream(builder._obj.Data))
+            {
+                inStream.Seek(builder._obj.Offset, SeekOrigin.Begin);
 
-            inStream.Seek(builder._obj.Offset, SeekOrigin.Begin);
+                // Builder parent context might be null only in one case: if we never met this group of
+                // builders before. In this case we set context to their parent and track it. Context
+                // cleanup will be performed at the very end of build process.
+                if (builder._parent._ctx == null || builder._parent._ctx.Closed)
+                    builder._parent._ctx = new Context(_parent._ctx);
 
-            // Builder parent context might be null only in one case: if we never met this group of
-            // builders before. In this case we set context to their parent and track it. Context
-            // cleanup will be performed at the very end of build process.
-            if (builder._parent._ctx == null || builder._parent._ctx.Closed)
-                builder._parent._ctx = new Context(_parent._ctx);
-
-            builder.Mutate(inStream, outStream as BinaryHeapStream, builder._desc,
+                builder.Mutate(inStream, (BinaryHeapStream) outStream, builder._desc,
                     builder._hashCode, builder._vals);
+            }
         }
 
         /// <summary>
@@ -951,13 +971,7 @@ namespace Apache.Ignite.Core.Impl.Binary
                     }
 
                     break;
-
-                case BinaryUtils.TypeMapEntry:
-                    Mutate0(ctx, inStream, outStream, false, 0, EmptyVals);
-                    Mutate0(ctx, inStream, outStream, false, 0, EmptyVals);
-
-                    break;
-
+                    
                 case BinaryUtils.TypeBinary:
                     TransferArray(inStream, outStream, 1); // Data array.
                     TransferBytes(inStream, outStream, 4); // Offset in array.

@@ -426,13 +426,13 @@ public class PlatformCallbackGateway {
      * @param ptr Receiver native pointer.
      * @param cache Cache object.
      * @param memPtr Stream pointer.
-     * @param keepPortable Portable flag.
+     * @param keepBinary Binary flag.
      */
-    public void dataStreamerStreamReceiverInvoke(long ptr, Object cache, long memPtr, boolean keepPortable) {
+    public void dataStreamerStreamReceiverInvoke(long ptr, Object cache, long memPtr, boolean keepBinary) {
         enter();
 
         try {
-            PlatformCallbackUtils.dataStreamerStreamReceiverInvoke(envPtr, ptr, cache, memPtr, keepPortable);
+            PlatformCallbackUtils.dataStreamerStreamReceiverInvoke(envPtr, ptr, cache, memPtr, keepBinary);
         }
         finally {
             leave();
