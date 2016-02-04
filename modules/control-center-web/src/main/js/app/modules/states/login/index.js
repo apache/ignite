@@ -31,7 +31,7 @@ angular
         templateUrl: '/login.html',
         resolve: {
             $title: () => {
-                return 'Sign In - Ignite Console';
+                return 'Sign In';
             }
         }
     });

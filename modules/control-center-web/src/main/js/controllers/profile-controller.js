@@ -17,7 +17,7 @@
 
 // Controller for Profile screen.
 consoleModule.controller('profileController',
-    ['$rootScope', '$scope', '$http', '$common', '$focus', '$confirm', 'igniteCountries', function ($rootScope, $scope, $http, $common, $focus, $confirm, countries) {
+    ['$rootScope', '$scope', '$http', '$common', '$focus', '$confirm', 'IgniteCountries', function ($rootScope, $scope, $http, $common, $focus, $confirm, countries) {
     $scope.user = angular.copy($scope.$root.user);
 
     $scope.countries = countries;
@@ -37,7 +37,7 @@ consoleModule.controller('profileController',
         var cur = $scope.user;
 
         return !_.isEqual(old, cur) || ($scope.expandedPassword && !$common.isEmptyString($scope.newPassword));
-    };
+    }
 
     $scope.profileCouldBeSaved = function () {
         return $scope.profileForm.$valid && _profileChanged();

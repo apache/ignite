@@ -96,7 +96,7 @@ angular
         },
         resolve: {
             $title: () => {
-                return 'Configure Clusters - Ignite Console';
+                return 'Configure Clusters';
             }
         }
     })
@@ -111,7 +111,7 @@ angular
         },
         resolve: {
             $title: () => {
-                return 'Configure Caches - Ignite Console';
+                return 'Configure Caches';
             }
         }
     })
@@ -126,7 +126,7 @@ angular
         },
         resolve: {
             $title: () => {
-                return 'Configure Domain Models - Ignite Console';
+                return 'Configure Domain Model';
             }
         }
     })
@@ -141,7 +141,7 @@ angular
         },
         resolve: {
             $title: () => {
-                return 'Configure IGFS - Ignite Console';
+                return 'Configure IGFS';
             }
         }
     })
@@ -155,7 +155,7 @@ angular
         },
         resolve: {
             $title: () => {
-                return 'Configurations Summary - Ignite Console';
+                return 'Configurations Summary';
             }
         }
     });

@@ -34,6 +34,13 @@ angular
                 items.splice(idx, 0, data);
         };
 
+        this.update = (before, data) => {
+            const idx = _.findIndex(items, {title: before});
+
+            if (idx >= 0)
+                items[idx] = data;
+        };
+
         this.$get = [function() {
             return items;
         }];

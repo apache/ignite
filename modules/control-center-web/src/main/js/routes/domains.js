@@ -234,7 +234,10 @@ router.post('/remove/all', function (req, res) {
                 if (err)
                     return res.status(500).send(err.message);
 
-                res.sendStatus(200);
+                db.Cache.update({space: {$in: space_ids}}, {domains: []}, {multi: true}, function (err) {
+                    if (db.processed(err, res))
+                        res.sendStatus(200);
+                });
             })
         }
     });

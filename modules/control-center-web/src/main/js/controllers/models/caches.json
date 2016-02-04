@@ -785,7 +785,7 @@
           "id": "writeSynchronizationMode",
           "type": "dropdown",
           "model": "writeSynchronizationMode",
-          "placeholder": "Choose write synchronization mode",
+          "placeholder": "PRIMARY_SYNC",
           "items": "writeSynchronizationMode",
           "tip": [
             "Write synchronization mode",
@@ -911,7 +911,7 @@
           "type": "number",
           "path": "nearConfiguration",
           "model": "nearStartSize",
-          "hide": "!backupItem.nearCacheEnabled",
+          "disabled": "!backupItem.nearCacheEnabled",
           "placeholder": 375000,
           "tip": [
             "Initial cache size for near cache which will be used to pre-create internal hash table after start"
@@ -926,7 +926,7 @@
           "model": "kind",
           "placeholder": "Choose eviction policy",
           "items": "evictionPolicies",
-          "hide": "!backupItem.nearCacheEnabled",
+          "disabled": "!backupItem.nearCacheEnabled",
           "tip": [
             "Cache expiration policy"
           ],

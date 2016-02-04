@@ -555,16 +555,16 @@ $generatorJava.clusterAtomics = function (cluster, res) {
 
         $generatorJava.declareVariable(res, 'atomicCfg', 'org.apache.ignite.configuration.AtomicConfiguration');
 
-        $generatorJava.enumProperty(res, 'atomicCfg', atomics, 'cacheMode', 'org.apache.ignite.cache.CacheMode');
+        $generatorJava.enumProperty(res, 'atomicCfg', atomics, 'cacheMode', 'org.apache.ignite.cache.CacheMode', null, 'PARTITIONED');
 
         var cacheMode = atomics.cacheMode ? atomics.cacheMode : 'PARTITIONED';
 
         var hasData = cacheMode !== 'PARTITIONED';
 
-        hasData = $generatorJava.property(res, 'atomicCfg', atomics, 'atomicSequenceReserveSize') || hasData;
+        hasData = $generatorJava.property(res, 'atomicCfg', atomics, 'atomicSequenceReserveSize', null, null, 1000) || hasData;
 
         if (cacheMode === 'PARTITIONED')
-            hasData = $generatorJava.property(res, 'atomicCfg', atomics, 'backups') || hasData;
+            hasData = $generatorJava.property(res, 'atomicCfg', atomics, 'backups', null, null, 0) || hasData;
 
         res.needEmptyLine = true;
 
@@ -751,8 +751,8 @@ $generatorJava.clusterDeployment = function (cluster, res) {
         $generatorJava.property(res, 'cfg', cluster, 'peerClassLoadingEnabled', null, null, false);
 
         if (p2pEnabled) {
-            $generatorJava.property(res, 'cfg', cluster, 'peerClassLoadingMissedResourcesCacheSize');
-            $generatorJava.property(res, 'cfg', cluster, 'peerClassLoadingThreadPoolSize');
+            $generatorJava.property(res, 'cfg', cluster, 'peerClassLoadingMissedResourcesCacheSize', null, null, 100);
+            $generatorJava.property(res, 'cfg', cluster, 'peerClassLoadingThreadPoolSize', null, null, 2);
             $generatorJava.multiparamProperty(res, 'cfg', cluster, 'peerClassLoadingLocalClassPathExclude');
         }
 
@@ -785,7 +785,7 @@ $generatorJava.clusterDiscovery = function (disco, res) {
     $generatorJava.property(res, 'discovery', disco, 'heartbeatFrequency', null, null, 2000);
     $generatorJava.property(res, 'discovery', disco, 'maxMissedHeartbeats', null, null, 1);
     $generatorJava.property(res, 'discovery', disco, 'maxMissedClientHeartbeats', null, null, 5);
-    $generatorJava.property(res, 'discovery', disco, 'topHistorySize', null, null, 100);
+    $generatorJava.property(res, 'discovery', disco, 'topHistorySize', null, null, 1000);
 
     if ($commonUtils.isDefinedAndNotEmpty(disco.listener)) {
         $generatorJava.beanProperty(res, 'discovery', disco, 'listener', 'listener', disco.listener, {}, true);
@@ -896,7 +896,7 @@ $generatorJava.clusterMarshaller = function (cluster, res) {
     }
 
     $generatorJava.property(res, 'cfg', cluster, 'marshalLocalJobs', null, null, false);
-    $generatorJava.property(res, 'cfg', cluster, 'marshallerCacheKeepAliveTime');
+    $generatorJava.property(res, 'cfg', cluster, 'marshallerCacheKeepAliveTime', null, null, 10000);
     $generatorJava.property(res, 'cfg', cluster, 'marshallerCacheThreadPoolSize', null, 'setMarshallerCachePoolSize');
 
     res.needEmptyLine = true;
@@ -910,9 +910,9 @@ $generatorJava.clusterMetrics = function (cluster, res) {
         res = $generatorCommon.builder();
 
     $generatorJava.property(res, 'cfg', cluster, 'metricsExpireTime');
-    $generatorJava.property(res, 'cfg', cluster, 'metricsHistorySize');
-    $generatorJava.property(res, 'cfg', cluster, 'metricsLogFrequency');
-    $generatorJava.property(res, 'cfg', cluster, 'metricsUpdateFrequency');
+    $generatorJava.property(res, 'cfg', cluster, 'metricsHistorySize', null, null, 10000);
+    $generatorJava.property(res, 'cfg', cluster, 'metricsLogFrequency', null, null, 60000);
+    $generatorJava.property(res, 'cfg', cluster, 'metricsUpdateFrequency', null, null, 2000);
 
     res.needEmptyLine = true;
 
@@ -1004,15 +1004,15 @@ $generatorJava.cacheMemory = function (cache, varName, res) {
     if (!res)
         res = $generatorCommon.builder();
 
-    $generatorJava.enumProperty(res, varName, cache, 'memoryMode', 'org.apache.ignite.cache.CacheMemoryMode');
-    $generatorJava.property(res, varName, cache, 'offHeapMaxMemory');
+    $generatorJava.enumProperty(res, varName, cache, 'memoryMode', 'org.apache.ignite.cache.CacheMemoryMode', null, 'ONHEAP_TIERED');
+    $generatorJava.property(res, varName, cache, 'offHeapMaxMemory', null, null, -1);
 
     res.needEmptyLine = true;
 
     $generatorJava.evictionPolicy(res, varName, cache.evictionPolicy, 'evictionPolicy');
 
-    $generatorJava.property(res, varName, cache, 'swapEnabled');
-    $generatorJava.property(res, varName, cache, 'startSize');
+    $generatorJava.property(res, varName, cache, 'swapEnabled', null, null, false);
+    $generatorJava.property(res, varName, cache, 'startSize', null, null, 1500000);
 
     res.needEmptyLine = true;
 
@@ -1025,8 +1025,8 @@ $generatorJava.cacheQuery = function (cache, varName, res) {
         res = $generatorCommon.builder();
 
     $generatorJava.property(res, varName, cache, 'sqlSchema');
-    $generatorJava.property(res, varName, cache, 'sqlOnheapRowCacheSize');
-    $generatorJava.property(res, varName, cache, 'longQueryWarningTimeout');
+    $generatorJava.property(res, varName, cache, 'sqlOnheapRowCacheSize', null, null, 10240);
+    $generatorJava.property(res, varName, cache, 'longQueryWarningTimeout', null, null, 3000);
     $generatorJava.property(res, varName, cache, 'snapshotableIndex', null, null, false);
 
     var indexedTypes = _.filter(cache.domains, function (domain) {
@@ -1052,7 +1052,7 @@ $generatorJava.cacheQuery = function (cache, varName, res) {
 
     $generatorJava.multiparamProperty(res, varName, cache, 'sqlFunctionClasses', 'class');
 
-    $generatorJava.property(res, varName, cache, 'sqlEscapeAll');
+    $generatorJava.property(res, varName, cache, 'sqlEscapeAll', null, null, false);
 
     res.needEmptyLine = true;
 
@@ -1303,11 +1303,13 @@ $generatorJava.cacheStore = function (cache, domains, cacheVarName, res) {
 
     res.needEmptyLine = true;
 
-    $generatorJava.property(res, cacheVarName, cache, 'writeBehindEnabled');
-    $generatorJava.property(res, cacheVarName, cache, 'writeBehindBatchSize');
-    $generatorJava.property(res, cacheVarName, cache, 'writeBehindFlushSize');
-    $generatorJava.property(res, cacheVarName, cache, 'writeBehindFlushFrequency');
-    $generatorJava.property(res, cacheVarName, cache, 'writeBehindFlushThreadCount');
+    if (cache.writeBehindEnabled) {
+        $generatorJava.property(res, cacheVarName, cache, 'writeBehindEnabled', null, null, false);
+        $generatorJava.property(res, cacheVarName, cache, 'writeBehindBatchSize', null, null, 512);
+        $generatorJava.property(res, cacheVarName, cache, 'writeBehindFlushSize', null, null, 10240);
+        $generatorJava.property(res, cacheVarName, cache, 'writeBehindFlushFrequency', null, null, 5000);
+        $generatorJava.property(res, cacheVarName, cache, 'writeBehindFlushThreadCount', null, null, 1);
+    }
 
     res.needEmptyLine = true;
 
@@ -1319,10 +1321,10 @@ $generatorJava.cacheConcurrency = function (cache, varName, res) {
     if (!res)
         res = $generatorCommon.builder();
 
-    $generatorJava.property(res, varName, cache, 'maxConcurrentAsyncOperations');
-    $generatorJava.property(res, varName, cache, 'defaultLockTimeout');
+    $generatorJava.property(res, varName, cache, 'maxConcurrentAsyncOperations', null, null, 500);
+    $generatorJava.property(res, varName, cache, 'defaultLockTimeout', null, null, 0);
     $generatorJava.enumProperty(res, varName, cache, 'atomicWriteOrderMode', 'org.apache.ignite.cache.CacheAtomicWriteOrderMode');
-    $generatorJava.enumProperty(res, varName, cache, 'writeSynchronizationMode', 'org.apache.ignite.cache.CacheWriteSynchronizationMode');
+    $generatorJava.enumProperty(res, varName, cache, 'writeSynchronizationMode', 'org.apache.ignite.cache.CacheWriteSynchronizationMode', null, null, "PRIMARY_SYNC");
 
     res.needEmptyLine = true;
 
@@ -1370,7 +1372,7 @@ $generatorJava.cacheServerNearCache = function (cache, varName, res) {
             res.needEmptyLine = true;
 
             if (cache.nearConfiguration.nearStartSize) {
-                $generatorJava.property(res, 'nearCfg', cache.nearConfiguration, 'nearStartSize');
+                $generatorJava.property(res, 'nearCfg', cache.nearConfiguration, 'nearStartSize', null, null, 375000);
 
                 res.needEmptyLine = true;
             }
@@ -1395,8 +1397,8 @@ $generatorJava.cacheStatistics = function (cache, varName, res) {
     if (!res)
         res = $generatorCommon.builder();
 
-    $generatorJava.property(res, varName, cache, 'statisticsEnabled');
-    $generatorJava.property(res, varName, cache, 'managementEnabled');
+    $generatorJava.property(res, varName, cache, 'statisticsEnabled', null, null, false);
+    $generatorJava.property(res, varName, cache, 'managementEnabled', null, null, false);
 
     res.needEmptyLine = true;
 

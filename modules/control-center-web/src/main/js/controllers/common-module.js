@@ -2041,7 +2041,7 @@ consoleModule.controller('resetPassword', [
 
 // Login popup controller.
 // TODO IGNITE-1936 Refactor this controller.
-consoleModule.controller('auth', ['$scope', '$focus', 'Auth', 'igniteCountries', function ($scope, $focus, Auth, countries) {
+consoleModule.controller('auth', ['$scope', '$focus', 'Auth', 'IgniteCountries', function ($scope, $focus, Auth, countries) {
     $scope.auth = Auth.auth;
 
     $scope.action = 'login';

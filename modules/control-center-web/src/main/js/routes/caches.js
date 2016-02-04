@@ -167,7 +167,13 @@ router.post('/remove/all', function (req, res) {
                 if (err)
                     return res.status(500).send(err.message);
 
-                res.sendStatus(200);
+                db.Cluster.update({space: {$in: space_ids}}, {caches: []}, {multi: true}, function (err) {
+                    if (db.processed(err, res))
+                        db.DomainModel.update({space: {$in: space_ids}}, {caches: []}, {multi: true}, function (err) {
+                            if (db.processed(err, res))
+                                res.sendStatus(200);
+                        });
+                });
             })
         }
     });
