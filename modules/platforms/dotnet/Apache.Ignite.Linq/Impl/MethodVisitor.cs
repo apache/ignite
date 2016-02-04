@@ -62,6 +62,13 @@ namespace Apache.Ignite.Linq.Impl
             {GetMathMethod("Round", typeof(double), typeof(int)), GetFunc("round")},
             {GetMathMethod("Round", typeof(decimal)), GetFunc("round")},
             {GetMathMethod("Round", typeof(decimal), typeof(int)), GetFunc("round")},
+            {GetMathMethod("Sign", typeof(double)), GetFunc("sign")},
+            {GetMathMethod("Sign", typeof(decimal)), GetFunc("sign")},
+            {GetMathMethod("Sign", typeof(float)), GetFunc("sign")},
+            {GetMathMethod("Sign", typeof(int)), GetFunc("sign")},
+            {GetMathMethod("Sign", typeof(long)), GetFunc("sign")},
+            {GetMathMethod("Sign", typeof(short)), GetFunc("sign")},
+            {GetMathMethod("Sign", typeof(sbyte)), GetFunc("sign")},
         };
 
         /// <summary>
