@@ -61,7 +61,9 @@ import org.apache.ignite.internal.processors.affinity.GridAffinityFunctionContex
 import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
 import org.apache.ignite.internal.processors.cache.GridCacheAffinityManager;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
+import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridNearAtomicSingleUpdateRequest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridNearAtomicUpdateRequest;
+import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridNearAtomicUpdateRequestInterface;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearCacheAdapter;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearCacheEntry;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearLockRequest;
@@ -231,7 +233,10 @@ public class IgniteCacheClientNodeChangingTopologyTest extends GridCommonAbstrac
 
         // Block messages requests for both nodes.
         spi.blockMessages(GridNearAtomicUpdateRequest.class, ignite0.localNode().id());
+        spi.blockMessages(GridNearAtomicSingleUpdateRequest.class, ignite0.localNode().id());
+
         spi.blockMessages(GridNearAtomicUpdateRequest.class, ignite1.localNode().id());
+        spi.blockMessages(GridNearAtomicSingleUpdateRequest.class, ignite1.localNode().id());
 
         final IgniteCache<Integer, Integer> cache = ignite2.cache(null);
 
@@ -273,6 +278,7 @@ public class IgniteCacheClientNodeChangingTopologyTest extends GridCommonAbstrac
 
         // Block messages requests for single node.
         spi.blockMessages(GridNearAtomicUpdateRequest.class, ignite0.localNode().id());
+        spi.blockMessages(GridNearAtomicSingleUpdateRequest.class, ignite0.localNode().id());
 
         putFut = GridTestUtils.runAsync(new Callable<Object>() {
             @Override public Object call() throws Exception {
@@ -360,10 +366,16 @@ public class IgniteCacheClientNodeChangingTopologyTest extends GridCommonAbstrac
 
         // Block messages requests for both nodes.
         spi.blockMessages(GridNearAtomicUpdateRequest.class, ignite0.localNode().id());
+        spi.blockMessages(GridNearAtomicSingleUpdateRequest.class, ignite0.localNode().id());
+
         spi.blockMessages(GridNearAtomicUpdateRequest.class, ignite1.localNode().id());
+        spi.blockMessages(GridNearAtomicSingleUpdateRequest.class, ignite1.localNode().id());
+
         spi.blockMessages(GridNearAtomicUpdateRequest.class, ignite2.localNode().id());
+        spi.blockMessages(GridNearAtomicSingleUpdateRequest.class, ignite2.localNode().id());
 
         spi.record(GridNearAtomicUpdateRequest.class);
+        spi.record(GridNearAtomicSingleUpdateRequest.class);
 
         final IgniteCache<Integer, Integer> cache = ignite3.cache(null);
 
@@ -400,7 +412,7 @@ public class IgniteCacheClientNodeChangingTopologyTest extends GridCommonAbstrac
         assertEquals(3, msgs.size());
 
         for (Object msg : msgs)
-            assertTrue(((GridNearAtomicUpdateRequest)msg).clientRequest());
+            assertTrue(((GridNearAtomicUpdateRequestInterface)msg).clientRequest());
 
         map.put(primaryKey(ignite0.cache(null)), 3);
         map.put(primaryKey(ignite1.cache(null)), 4);
@@ -458,7 +470,10 @@ public class IgniteCacheClientNodeChangingTopologyTest extends GridCommonAbstrac
 
         // Block messages requests for both nodes.
         spi.blockMessages(GridNearAtomicUpdateRequest.class, ignite0.localNode().id());
+        spi.blockMessages(GridNearAtomicSingleUpdateRequest.class, ignite0.localNode().id());
+
         spi.blockMessages(GridNearAtomicUpdateRequest.class, ignite1.localNode().id());
+        spi.blockMessages(GridNearAtomicSingleUpdateRequest.class, ignite1.localNode().id());
 
         final IgniteCache<Integer, Integer> cache = ignite2.cache(null);
 
