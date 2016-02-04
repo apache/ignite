@@ -58,7 +58,7 @@ import static org.apache.ignite.cache.CacheMemoryMode.OFFHEAP_TIERED;
 /**
  * Abstract class for cache tests.
  */
-public abstract class NewCacheAbstractSelfTest extends GridCommonAbstractTest {
+public abstract class CacheAbstractNewSelfTest extends GridCommonAbstractTest {
     /** Test timeout */
     private static final long TEST_TIMEOUT = 30 * 1000;
 

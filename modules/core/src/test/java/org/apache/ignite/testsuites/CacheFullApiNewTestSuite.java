@@ -27,8 +27,8 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
-import org.apache.ignite.internal.processors.cache.NewCacheAbstractSelfTest;
-import org.apache.ignite.internal.processors.cache.NewCacheFullApiSelfTest;
+import org.apache.ignite.internal.processors.cache.CacheAbstractNewSelfTest;
+import org.apache.ignite.internal.processors.cache.CacheFullApiNewSelfTest;
 import org.apache.ignite.marshaller.optimized.OptimizedMarshaller;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
@@ -49,7 +49,7 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 /**
  * Test suite for cache API.
  */
-public class IgniteCacheNewFullApiSelfTestSuite extends TestSuite {
+public class CacheFullApiNewTestSuite extends TestSuite {
     /** */
     @SuppressWarnings("unchecked")
     private static final ConfigurationParameter<IgniteConfiguration>[][] igniteParams = new ConfigurationParameter[][] {
@@ -114,7 +114,7 @@ public class IgniteCacheNewFullApiSelfTestSuite extends TestSuite {
 
         TestsConfiguration testCfg = new TestsConfiguration(factory, clsNameSuffix, stop, gridsCnt);
 
-        suite.addTest(new GridTestSuite(NewCacheFullApiSelfTest.class, testCfg));
+        suite.addTest(new GridTestSuite(CacheFullApiNewSelfTest.class, testCfg));
     }
 
     /**
@@ -181,10 +181,10 @@ public class IgniteCacheNewFullApiSelfTestSuite extends TestSuite {
             cc.setEvictionPolicy(null);
 
             // Cache
-            CacheStore<?, ?> store = NewCacheAbstractSelfTest.cacheStore();
+            CacheStore<?, ?> store = CacheAbstractNewSelfTest.cacheStore();
 
             if (store != null) {
-                cc.setCacheStoreFactory(new NewCacheAbstractSelfTest.TestStoreFactory());
+                cc.setCacheStoreFactory(new CacheAbstractNewSelfTest.TestStoreFactory());
                 cc.setReadThrough(true);
                 cc.setWriteThrough(true);
                 cc.setLoadPreviousValue(true);

@@ -113,7 +113,7 @@ import static org.apache.ignite.transactions.TransactionState.COMMITTED;
  * Full API cache test.
  */
 @SuppressWarnings("TransientFieldInNonSerializableClass")
-public class NewCacheFullApiSelfTest extends NewCacheAbstractSelfTest {
+public class CacheFullApiNewSelfTest extends CacheAbstractNewSelfTest {
     /** Test timeout */
     private static final long TEST_TIMEOUT = 60 * 1000;
 
