@@ -16,26 +16,26 @@ System.config({
   map: {
     "Blob": "github:eligrey/Blob.js@master",
     "FileSaver": "github:eligrey/FileSaver.js@master",
-    "ace": "github:ajaxorg/ace-builds@1.2.2",
-    "angular": "github:angular/bower-angular@1.4.8",
+    "ace": "github:ajaxorg/ace-builds@1.2.3",
+    "angular": "github:angular/bower-angular@1.4.9",
     "angular-ag-grid": "github:ceolter/ag-grid@2.3.5",
-    "angular-animate": "github:angular/bower-angular-animate@1.4.8",
+    "angular-animate": "github:angular/bower-angular-animate@1.4.9",
     "angular-drag-and-drop-lists": "github:marceljuenemann/angular-drag-and-drop-lists@1.3.0",
     "angular-grid": "github:ceolter/ag-grid@2.3.5",
     "angular-loading": "github:darthwade/angular-loading@0.1.4",
     "angular-motion": "github:mgcrea/angular-motion@0.4.3",
     "angular-nvd3": "github:krispo/angular-nvd3@1.0.5",
-    "angular-retina": "npm:angular-retina@0.3.1",
-    "angular-sanitize": "github:angular/bower-angular-sanitize@1.4.8",
-    "angular-smart-table": "github:lorenzofox3/Smart-Table@2.1.6",
+    "angular-retina": "npm:angular-retina@0.3.7",
+    "angular-sanitize": "github:angular/bower-angular-sanitize@1.4.9",
+    "angular-smart-table": "github:lorenzofox3/Smart-Table@2.1.7",
     "angular-strap": "github:akuznetsov-gridgain/angular-strap@fix-1852-2.3.6",
     "angular-tree-control": "github:wix/angular-tree-control@0.2.23",
     "angular-ui-ace": "github:angular-ui/ui-ace@0.2.3",
-    "angular-ui-grid": "github:angular-ui/bower-ui-grid@3.0.7",
-    "angular-ui-router": "github:angular-ui/ui-router@0.2.15",
+    "angular-ui-grid": "github:angular-ui/bower-ui-grid@3.1.0",
+    "angular-ui-router": "github:angular-ui/ui-router@0.2.17",
     "angular-ui-router-title": "github:nonplus/angular-ui-router-title@0.0.4",
-    "babel": "npm:babel-core@5.8.34",
-    "babel-runtime": "npm:babel-runtime@5.8.34",
+    "babel": "npm:babel-core@5.8.35",
+    "babel-runtime": "npm:babel-runtime@5.8.35",
     "blob": "github:eligrey/Blob.js@master",
     "bootstrap": "github:twbs/bootstrap@3.3.6",
     "bootstrap-carousel": "github:twbs/bootstrap@3.3.6",
@@ -54,26 +54,26 @@ System.config({
     "query-command-supported": "github:zenorocha/document.queryCommandSupported@1.0.0",
     "spinjs": "github:fgnass/spin.js@2.3.2",
     "github:akuznetsov-gridgain/angular-strap@fix-1852-2.3.6": {
-      "angular-animate": "github:angular/bower-angular-animate@1.4.8",
+      "angular-animate": "github:angular/bower-angular-animate@1.4.9",
       "angular-motion": "github:mgcrea/angular-motion@0.4.3",
-      "angular-sanitize": "github:angular/bower-angular-sanitize@1.4.8"
+      "angular-sanitize": "github:angular/bower-angular-sanitize@1.4.9"
     },
-    "github:angular-ui/bower-ui-grid@3.0.7": {
+    "github:angular-ui/bower-ui-grid@3.1.0": {
       "pdfmake": "github:bpampuch/pdfmake@0.1.20"
     },
     "github:angular-ui/ui-ace@0.2.3": {
-      "ace": "github:ajaxorg/ace-builds@1.2.2"
+      "ace": "github:ajaxorg/ace-builds@1.2.3"
     },
-    "github:angular-ui/ui-router@0.2.15": {
-      "angular": "github:angular/bower-angular@1.4.8"
+    "github:angular-ui/ui-router@0.2.17": {
+      "angular": "github:angular/bower-angular@1.4.9"
     },
-    "github:angular/bower-angular-animate@1.4.8": {
-      "angular": "github:angular/bower-angular@1.4.8"
+    "github:angular/bower-angular-animate@1.4.9": {
+      "angular": "github:angular/bower-angular@1.4.9"
     },
-    "github:angular/bower-angular-sanitize@1.4.8": {
-      "angular": "github:angular/bower-angular@1.4.8"
+    "github:angular/bower-angular-sanitize@1.4.9": {
+      "angular": "github:angular/bower-angular@1.4.9"
     },
-    "github:angular/bower-angular@1.4.8": {
+    "github:angular/bower-angular@1.4.9": {
       "jquery": "github:components/jquery@2.2.0"
     },
     "github:darthwade/angular-loading@0.1.4": {
@@ -130,22 +130,22 @@ System.config({
       "vm-browserify": "npm:vm-browserify@0.0.4"
     },
     "github:krispo/angular-nvd3@1.0.5": {
-      "angular": "github:angular/bower-angular@1.4.8",
-      "d3": "npm:d3@3.5.10",
+      "angular": "github:angular/bower-angular@1.4.9",
+      "d3": "npm:d3@3.5.14",
       "nvd3": "npm:nvd3@1.8.1"
     },
     "github:marceljuenemann/angular-drag-and-drop-lists@1.3.0": {
-      "angular": "github:angular/bower-angular@1.4.8"
+      "angular": "github:angular/bower-angular@1.4.9"
     },
     "github:mgcrea/angular-motion@0.4.3": {
-      "angular": "github:angular/bower-angular@1.4.8",
+      "angular": "github:angular/bower-angular@1.4.9",
       "css": "github:systemjs/plugin-css@0.1.20"
     },
     "github:twbs/bootstrap@3.3.6": {
       "jquery": "github:components/jquery@2.2.0"
     },
     "github:wix/angular-tree-control@0.2.23": {
-      "angular": "github:angular/bower-angular@1.4.8"
+      "angular": "github:angular/bower-angular@1.4.9"
     },
     "npm:acorn-globals@1.0.9": {
       "acorn": "npm:acorn@2.7.0"
@@ -162,8 +162,8 @@ System.config({
       "process": "github:jspm/nodelibs-process@0.1.2",
       "stream": "github:jspm/nodelibs-stream@0.1.0"
     },
-    "npm:align-text@0.1.3": {
-      "kind-of": "npm:kind-of@2.0.1",
+    "npm:align-text@0.1.4": {
+      "kind-of": "npm:kind-of@3.0.2",
       "longest": "npm:longest@1.0.1",
       "repeat-string": "npm:repeat-string@1.5.2"
     },
@@ -182,7 +182,7 @@ System.config({
     "npm:async@0.2.10": {
       "process": "github:jspm/nodelibs-process@0.1.2"
     },
-    "npm:babel-runtime@5.8.34": {
+    "npm:babel-runtime@5.8.35": {
       "process": "github:jspm/nodelibs-process@0.1.2"
     },
     "npm:buffer@3.6.0": {
@@ -193,9 +193,9 @@ System.config({
       "isarray": "npm:isarray@1.0.0",
       "process": "github:jspm/nodelibs-process@0.1.2"
     },
-    "npm:center-align@0.1.2": {
-      "align-text": "npm:align-text@0.1.3",
-      "lazy-cache": "npm:lazy-cache@0.2.7"
+    "npm:center-align@0.1.3": {
+      "align-text": "npm:align-text@0.1.4",
+      "lazy-cache": "npm:lazy-cache@1.0.3"
     },
     "npm:clean-css@3.4.9": {
       "buffer": "github:jspm/nodelibs-buffer@0.1.0",
@@ -211,7 +211,7 @@ System.config({
       "util": "github:jspm/nodelibs-util@0.1.0"
     },
     "npm:cliui@2.1.0": {
-      "center-align": "npm:center-align@0.1.2",
+      "center-align": "npm:center-align@0.1.3",
       "right-align": "npm:right-align@0.1.3",
       "wordwrap": "npm:wordwrap@0.0.2"
     },
@@ -263,7 +263,7 @@ System.config({
     "npm:inherits@2.0.1": {
       "util": "github:jspm/nodelibs-util@0.1.0"
     },
-    "npm:is-buffer@1.1.1": {
+    "npm:is-buffer@1.1.2": {
       "buffer": "github:jspm/nodelibs-buffer@0.1.0"
     },
     "npm:jade@1.11.0": {
@@ -288,11 +288,11 @@ System.config({
       "is-promise": "npm:is-promise@2.1.0",
       "promise": "npm:promise@6.1.0"
     },
-    "npm:kind-of@2.0.1": {
+    "npm:kind-of@3.0.2": {
       "buffer": "github:jspm/nodelibs-buffer@0.1.0",
-      "is-buffer": "npm:is-buffer@1.1.1"
+      "is-buffer": "npm:is-buffer@1.1.2"
     },
-    "npm:lazy-cache@0.2.7": {
+    "npm:lazy-cache@1.0.3": {
       "process": "github:jspm/nodelibs-process@0.1.2"
     },
     "npm:lodash@3.10.1": {
@@ -305,7 +305,7 @@ System.config({
       "process": "github:jspm/nodelibs-process@0.1.2"
     },
     "npm:nvd3@1.8.1": {
-      "d3": "npm:d3@3.5.10"
+      "d3": "npm:d3@3.5.14"
     },
     "npm:optimist@0.3.7": {
       "path": "github:jspm/nodelibs-path@0.1.0",
@@ -342,7 +342,7 @@ System.config({
       "string_decoder": "npm:string_decoder@0.10.31"
     },
     "npm:right-align@0.1.3": {
-      "align-text": "npm:align-text@0.1.3"
+      "align-text": "npm:align-text@0.1.4"
     },
     "npm:source-map@0.1.43": {
       "amdefine": "npm:amdefine@1.0.0",
