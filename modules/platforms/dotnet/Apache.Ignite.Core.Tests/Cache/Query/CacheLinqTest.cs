@@ -225,9 +225,6 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
             CheckFunc(x => x.IndexOf("9"), strings);
             CheckFunc(x => x.IndexOf("7", 4), strings);
 
-            CheckFunc(x => x.CompareTo("Person_14"), strings);
-            CheckFunc(x => string.Compare(x, "Person_64"), strings);
-
             CheckFunc(x => x.Substring(4), strings);
             CheckFunc(x => x.Substring(4, 5), strings);
 

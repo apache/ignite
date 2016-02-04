@@ -38,13 +38,15 @@ namespace Apache.Ignite.Linq.Impl
         {
             GetStringMethod("ToLower", new Type[0], GetFunc("lower")),
             GetStringMethod("ToUpper", new Type[0], GetFunc("upper")),
-            GetStringMethod("Contains", del:(e, v) => VisitSqlLike(e, v, "%{0}%")),
+            GetStringMethod("Contains", del: (e, v) => VisitSqlLike(e, v, "%{0}%")),
             GetStringMethod("StartsWith", new[] {typeof (string)}, (e, v) => VisitSqlLike(e, v, "{0}%")),
             GetStringMethod("EndsWith", new[] {typeof (string)}, (e, v) => VisitSqlLike(e, v, "{0}%")),
-            GetStringMethod("IndexOf", "instr| - 1", typeof(string)),  // TODO: Return value - 1 somehow
-            GetStringMethod("IndexOf", "instr| - 1", typeof(string), typeof(int)),
+            GetStringMethod("IndexOf", new[] {typeof (string)}, GetFunc("instr", -1)),
+            GetStringMethod("IndexOf", new[] {typeof (string), typeof (int)}, GetFunc("instr", -1)),
+            GetStringMethod("Substring", new[] {typeof (int)}, GetFunc("substring", 0, 1)),
+            GetStringMethod("Substring", new[] {typeof (int), typeof (int)}, GetFunc("substring", 0, 1)),
 
-            GetMethod(typeof(DateTime), "ToString", new [] {typeof(string)}, GetFunc("formatdatetime")),
+            GetMethod(typeof (DateTime), "ToString", new[] {typeof (string)}, GetFunc("formatdatetime")),
 
             GetMathMethod("Abs", typeof (int)),
             GetMathMethod("Abs", typeof (long)),
@@ -53,38 +55,38 @@ namespace Apache.Ignite.Linq.Impl
             GetMathMethod("Abs", typeof (decimal)),
             GetMathMethod("Abs", typeof (sbyte)),
             GetMathMethod("Abs", typeof (short)),
-            GetMathMethod("Acos", typeof(double)),
-            GetMathMethod("Asin", typeof(double)),
-            GetMathMethod("Atan", typeof(double)),
-            GetMathMethod("Atan2", typeof(double), typeof(double)),
-            GetMathMethod("Ceiling", typeof(double)),
-            GetMathMethod("Ceiling", typeof(decimal)),
-            GetMathMethod("Cos", typeof(double)),
-            GetMathMethod("Cosh", typeof(double)),
-            GetMathMethod("Exp", typeof(double)),
-            GetMathMethod("Floor", typeof(double)),
-            GetMathMethod("Floor", typeof(decimal)),
-            GetMathMethod("Log", typeof(double)),
-            GetMathMethod("Log10", typeof(double)),
-            GetMathMethod("Pow", "Power", typeof(double), typeof(double)),
-            GetMathMethod("Round", typeof(double)),
-            GetMathMethod("Round", typeof(double), typeof(int)),
-            GetMathMethod("Round", typeof(decimal)),
-            GetMathMethod("Round", typeof(decimal), typeof(int)),
-            GetMathMethod("Sign", typeof(double)),
-            GetMathMethod("Sign", typeof(decimal)),
-            GetMathMethod("Sign", typeof(float)),
-            GetMathMethod("Sign", typeof(int)),
-            GetMathMethod("Sign", typeof(long)),
-            GetMathMethod("Sign", typeof(short)),
-            GetMathMethod("Sign", typeof(sbyte)),
-            GetMathMethod("Sin", typeof(double)),
-            GetMathMethod("Sinh", typeof(double)),
-            GetMathMethod("Sqrt", typeof(double)),
-            GetMathMethod("Tan", typeof(double)),
-            GetMathMethod("Tanh", typeof(double)),
-            GetMathMethod("Truncate", typeof(double)),
-            GetMathMethod("Truncate", typeof(decimal)),
+            GetMathMethod("Acos", typeof (double)),
+            GetMathMethod("Asin", typeof (double)),
+            GetMathMethod("Atan", typeof (double)),
+            GetMathMethod("Atan2", typeof (double), typeof (double)),
+            GetMathMethod("Ceiling", typeof (double)),
+            GetMathMethod("Ceiling", typeof (decimal)),
+            GetMathMethod("Cos", typeof (double)),
+            GetMathMethod("Cosh", typeof (double)),
+            GetMathMethod("Exp", typeof (double)),
+            GetMathMethod("Floor", typeof (double)),
+            GetMathMethod("Floor", typeof (decimal)),
+            GetMathMethod("Log", typeof (double)),
+            GetMathMethod("Log10", typeof (double)),
+            GetMathMethod("Pow", "Power", typeof (double), typeof (double)),
+            GetMathMethod("Round", typeof (double)),
+            GetMathMethod("Round", typeof (double), typeof (int)),
+            GetMathMethod("Round", typeof (decimal)),
+            GetMathMethod("Round", typeof (decimal), typeof (int)),
+            GetMathMethod("Sign", typeof (double)),
+            GetMathMethod("Sign", typeof (decimal)),
+            GetMathMethod("Sign", typeof (float)),
+            GetMathMethod("Sign", typeof (int)),
+            GetMathMethod("Sign", typeof (long)),
+            GetMathMethod("Sign", typeof (short)),
+            GetMathMethod("Sign", typeof (sbyte)),
+            GetMathMethod("Sin", typeof (double)),
+            GetMathMethod("Sinh", typeof (double)),
+            GetMathMethod("Sqrt", typeof (double)),
+            GetMathMethod("Tan", typeof (double)),
+            GetMathMethod("Tanh", typeof (double)),
+            GetMathMethod("Truncate", typeof (double)),
+            GetMathMethod("Truncate", typeof (decimal)),
         }.ToDictionary(x => x.Key, x => x.Value);
 
         /// <summary>
@@ -106,19 +108,18 @@ namespace Apache.Ignite.Linq.Impl
         /// <summary>
         /// Gets the function.
         /// </summary>
-        private static VisitMethodDelegate GetFunc(string func)
+        private static VisitMethodDelegate GetFunc(string func, params int[] adjust)
         {
-            return (e, v) => VisitFunc(e, v, func);
+            return (e, v) => VisitFunc(e, v, func, adjust);
         }
 
         /// <summary>
         /// Visits the instance function.
         /// </summary>
-        private static void VisitFunc(MethodCallExpression expression, CacheQueryExpressionVisitor visitor, string func)
+        private static void VisitFunc(MethodCallExpression expression, CacheQueryExpressionVisitor visitor, 
+            string func, params int[] adjust)
         {
-            var funcParts = func.Split('|');
-
-            visitor.ResultBuilder.Append(funcParts[0]).Append("(");
+            visitor.ResultBuilder.Append(func).Append("(");
 
             var isInstanceMethod = expression.Object != null;
 
@@ -133,12 +134,26 @@ namespace Apache.Ignite.Linq.Impl
                     visitor.ResultBuilder.Append(", ");
 
                 visitor.Visit(arg);
+
+                AppendAdjustment(visitor, adjust, i + 1);
             }
 
             visitor.ResultBuilder.Append(")");
 
-            if (funcParts.Length > 1)
-                visitor.ResultBuilder.Append(funcParts[1]);
+            AppendAdjustment(visitor, adjust, 0);
+        }
+
+        private static void AppendAdjustment(CacheQueryExpressionVisitor visitor, int[] adjust, int idx)
+        {
+            if (idx < adjust.Length)
+            {
+                var delta = adjust[idx];
+
+                if (delta > 0)
+                    visitor.ResultBuilder.AppendFormat(" + {0}", delta);
+                else if (delta < 0)
+                    visitor.ResultBuilder.AppendFormat(" {0}", delta);
+            }
         }
 
         /// <summary>
@@ -187,12 +202,11 @@ namespace Apache.Ignite.Linq.Impl
             return GetMethod(typeof(string), name, argTypes, del);
         }
 
-        private static KeyValuePair<MethodInfo, VisitMethodDelegate> GetStringMethod(string name, string sqlName,
-            params Type[] argTypes)
-        {
-            return GetMethod(typeof(string), name, argTypes, GetFunc(sqlName));
-        }
-
+        //private static KeyValuePair<MethodInfo, VisitMethodDelegate> GetStringMethod(string name, string sqlName,
+        //    params Type[] argTypes)
+        //{
+        //    return GetMethod(typeof(string), name, argTypes, GetFunc(sqlName));
+        //}
 
         private static KeyValuePair<MethodInfo, VisitMethodDelegate> GetMathMethod(string name, string sqlName,
             params Type[] argTypes)
