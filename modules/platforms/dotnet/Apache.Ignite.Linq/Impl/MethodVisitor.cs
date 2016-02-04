@@ -38,17 +38,22 @@ namespace Apache.Ignite.Linq.Impl
             {typeof (string).GetMethod("StartsWith", new[] {typeof (string)}), (e, v) => VisitSqlLike(e, v, "{0}%")},
             {typeof (string).GetMethod("EndsWith", new[] {typeof (string)}), (e, v) => VisitSqlLike(e, v, "%{0}")},
             {typeof (DateTime).GetMethod("ToString", new[] {typeof (string)}), GetFunc("formatdatetime")},
-            {typeof (Math).GetMethod("Abs", new[] {typeof (int)}), GetFunc("abs")},
-            {typeof (Math).GetMethod("Abs", new[] {typeof (long)}), GetFunc("abs")},
-            {typeof (Math).GetMethod("Abs", new[] {typeof (float)}), GetFunc("abs")},
-            {typeof (Math).GetMethod("Abs", new[] {typeof (double)}), GetFunc("abs")},
-            {typeof (Math).GetMethod("Abs", new[] {typeof (decimal)}), GetFunc("abs")},
-            {typeof (Math).GetMethod("Abs", new[] {typeof (sbyte)}), GetFunc("abs")},
-            {typeof (Math).GetMethod("Abs", new[] {typeof (short)}), GetFunc("abs")},
-            {typeof (Math).GetMethod("Acos"), GetFunc("acos")},
-            {typeof (Math).GetMethod("Asin"), GetFunc("asin")},
-            {typeof (Math).GetMethod("Atan"), GetFunc("atan")},
-            {typeof (Math).GetMethod("Atan2"), GetFunc("atan2")},
+            {GetMathMethod("Abs", typeof (int)), GetFunc("abs")},
+            {GetMathMethod("Abs", typeof (long)), GetFunc("abs")},
+            {GetMathMethod("Abs", typeof (float)), GetFunc("abs")},
+            {GetMathMethod("Abs", typeof (double)), GetFunc("abs")},
+            {GetMathMethod("Abs", typeof (decimal)), GetFunc("abs")},
+            {GetMathMethod("Abs", typeof (sbyte)), GetFunc("abs")},
+            {GetMathMethod("Abs", typeof (short)), GetFunc("abs")},
+            {GetMathMethod("Acos", typeof(double)), GetFunc("acos")},
+            {GetMathMethod("Asin", typeof(double)), GetFunc("asin")},
+            {GetMathMethod("Atan", typeof(double)), GetFunc("atan")},
+            {GetMathMethod("Atan2", typeof(double)), GetFunc("atan2")},
+            {GetMathMethod("Ceiling", typeof(double)), GetFunc("ceiling")},
+            {GetMathMethod("Ceiling", typeof(decimal)), GetFunc("ceiling")},
+            {GetMathMethod("Cos", typeof(double)), GetFunc("cos")},
+            {GetMathMethod("Cosh", typeof(double)), GetFunc("cosh")},
+            {GetMathMethod("Exp", typeof(double)), GetFunc("exp")},
         };
 
         /// <summary>
@@ -125,6 +130,14 @@ namespace Apache.Ignite.Linq.Impl
                 throw new NotSupportedException("Only constant expression is supported inside Contains call: " + expression);
 
             return arg.Value;
+        }
+
+        /// <summary>
+        /// Gets the math method.
+        /// </summary>
+        private static MethodInfo GetMathMethod(string name, params Type[] argTypes)
+        {
+            return GetMathMethod(name, argTypes);
         }
     }
 }
