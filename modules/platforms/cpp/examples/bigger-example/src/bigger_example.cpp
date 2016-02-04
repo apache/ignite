@@ -14,7 +14,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include <cstdlib>
 #include <ctime>
 
 #include <iostream>
@@ -38,23 +37,6 @@ using namespace examples;
 
 std::time_t now = std::time(0);
 boost::random::mt19937 gen(static_cast<uint32_t>(now));
-
-/**
- * Generates random integer number in range [begin, end) using stdlib rand().
- *
- * @param begin Range beginning.
- * @param end Range end.
- */
-int64_t RandIntInRange(int64_t begin, int64_t end)
-{
-    int64_t rnum64 = static_cast<int64_t>(rand() & 0xFFFF) | 
-                     static_cast<int64_t>(rand() & 0xFFFF) << 16 |
-                     static_cast<int64_t>(rand() & 0xFFFF) << 24 |
-                     static_cast<int64_t>(rand() & 0xFFFF) << 32 |
-                     static_cast<int64_t>(rand() & 0xFFFF) << 48;
-
-    return (rnum64 % (end - begin)) + begin;
-}
 
 /**
  * Fill collection with test cities data.
@@ -160,20 +142,27 @@ void GenerateClients(std::map<int64_t, Client>& clients,
     for (it = cities.begin(); it != cities.end(); ++it)
         allPopulation += it->second.population;
 
-    srand(static_cast<unsigned>(time(NULL)));
+    // Selecting random city considering its weight - population.
+    boost::random::uniform_int_distribution<int64_t> cityPopulationDistr(0, allPopulation);
+
+    // First name distribution.
+    boost::random::uniform_int_distribution<size_t> firstNameDistr(0, firstNames.size());
+
+    // Last name distribution.
+    boost::random::uniform_int_distribution<size_t> lastNameDistr(0, lastNames.size());
 
     for (int64_t i = 1; i <= num; ++i)
     {
         int64_t cityId = 0;
 
         // Generating cityId depending on city weight - population.
-        int64_t populationPos = RandIntInRange(0, allPopulation);
+        int64_t populationPos = cityPopulationDistr(gen);
 
         for (it = cities.begin(); it != cities.end(); ++it)
         {
             populationPos -= it->second.population;
 
-            if (populationPos < 0)
+            if (populationPos <= 0)
             {
                 cityId = it->first;
 
@@ -181,8 +170,8 @@ void GenerateClients(std::map<int64_t, Client>& clients,
             }
         }
 
-        size_t firstNameIdx = RandIntInRange(0, static_cast<int>(firstNames.size()));
-        size_t lastNameIdx = RandIntInRange(0, static_cast<int>(lastNames.size()));
+        size_t firstNameIdx = firstNameDistr(gen);
+        size_t lastNameIdx = lastNameDistr(gen);
 
         clients[i] = Client(i, cityId, firstNames[firstNameIdx], lastNames[lastNameIdx]);
     }
