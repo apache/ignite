@@ -72,7 +72,7 @@ form.panel.panel-default(name='communication' novalidate)
                             data-id='discoveryStartupDelay'
                             data-name='discoveryStartupDelay'
                             data-ng-model='backupItem.discoveryStartupDelay'
-                            data-placeholder='600000'
+                            data-placeholder='60000'
                         )
                 .settings-row
                    ignite-form-field
@@ -309,7 +309,7 @@ form.panel.panel-default(name='communication' novalidate)
                             data-id='selectorsCount'
                             data-name='selectorsCount'
                             data-ng-model='#{model}.selectorsCount'
-                            data-placeholder='4'
+                            data-placeholder='min(4, availableProcessors)'
                         )
                 .settings-row
                    ignite-form-field

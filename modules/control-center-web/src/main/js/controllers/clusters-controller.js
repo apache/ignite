@@ -320,6 +320,12 @@ consoleModule.controller('clustersController', function ($http, $timeout, $scope
                 binaryConfiguration: {
                     typeConfigurations: [],
                     compactFooter: true
+                },
+                communication: {
+                    tcpNoDelay: true
+                },
+                connector: {
+                    noDelay: true
                 }
             };
 
