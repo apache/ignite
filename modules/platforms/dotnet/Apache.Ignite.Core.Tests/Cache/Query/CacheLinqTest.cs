@@ -549,6 +549,19 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
             CheckFunc(x => Math.Asin(x), doubles);
             CheckFunc(x => Math.Atan(x), doubles);
             CheckFunc(x => Math.Atan2(x, 0.5), doubles);
+            CheckFunc(x => Math.Ceiling(x), doubles);
+            CheckFunc(x => Math.Ceiling(x), decimals);
+            CheckFunc(x => Math.Cos(x), doubles);
+            CheckFunc(x => Math.Cosh(x), doubles);
+            CheckFunc(x => Math.Exp(x), doubles);
+            CheckFunc(x => Math.Floor(x), doubles);
+            CheckFunc(x => Math.Floor(x), decimals);
+            CheckFunc(x => Math.Log(x), doubles);
+            CheckFunc(x => Math.Log10(x), doubles);
+            CheckFunc(x => Math.Round(x), doubles);
+            CheckFunc(x => Math.Round(x, 3), doubles);
+            CheckFunc(x => Math.Round(x), decimals);
+            CheckFunc(x => Math.Round(x, 3), decimals);
         }
 
         [Test]
