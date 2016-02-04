@@ -19,7 +19,6 @@ namespace Apache.Ignite.Linq.Impl
 {
     using System;
     using System.Collections.Generic;
-    using System.Diagnostics;
     using System.Linq;
     using System.Linq.Expressions;
     using System.Reflection;
@@ -194,12 +193,7 @@ namespace Apache.Ignite.Linq.Impl
         private static KeyValuePair<MethodInfo, VisitMethodDelegate> GetMethod(Type type, string name,
             Type[] argTypes = null, VisitMethodDelegate del = null)
         {
-            Debug.WriteLine("Looking up method: " + name);
-
             var method = argTypes == null ? type.GetMethod(name) : type.GetMethod(name, argTypes);
-
-            if (method == null)
-                Debug.WriteLine("Null method: " + name);
 
             return new KeyValuePair<MethodInfo, VisitMethodDelegate>(method, del ?? GetFunc(name));
         }
