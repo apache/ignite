@@ -137,7 +137,7 @@ namespace Apache.Ignite.Linq.Impl
         /// </summary>
         private static MethodInfo GetMathMethod(string name, params Type[] argTypes)
         {
-            return GetMathMethod(name, argTypes);
+            return typeof(Math).GetMethod(name, argTypes);
         }
     }
 }
