@@ -375,8 +375,6 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
             var res = filtered.ToArray();
 
             Assert.AreEqual(RoleCount, res.Length);
-
-            // Subcollection
         }
 
         [Test]
