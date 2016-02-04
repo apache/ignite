@@ -106,7 +106,7 @@ public class BinaryFieldImpl implements BinaryFieldEx {
 
     /** {@inheritDoc} */
     @Override public long fieldAddress(long addr, int len) {
-        int typeId = GridUnsafe.unsafe().getInt(addr + GridBinaryMarshaller.TYPE_ID_POS);
+        int typeId = GridUnsafe.getInt(addr + GridBinaryMarshaller.TYPE_ID_POS);
 
         if (typeId != this.typeId) {
             throw new BinaryObjectException("Failed to get field because type ID of passed object differs" +
@@ -114,7 +114,7 @@ public class BinaryFieldImpl implements BinaryFieldEx {
                 ", actual=" + typeId + ']');
         }
 
-        int schemaId = GridUnsafe.unsafe().getInt(addr + GridBinaryMarshaller.SCHEMA_ID_POS);
+        int schemaId = GridUnsafe.getInt(addr + GridBinaryMarshaller.SCHEMA_ID_POS);
 
         BinarySchema schema = schemas.schema(schemaId);
 

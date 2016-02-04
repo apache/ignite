@@ -2070,7 +2070,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
          * @throws IgniteCheckedException If failed.
          */
         private boolean hasField(long addr, int len, String fieldName) throws IgniteCheckedException {
-            byte type = GridUnsafe.unsafe().getByte(addr);
+            byte type = GridUnsafe.getByte(addr);
 
             if (type != GridBinaryMarshaller.BINARY_OBJ)
                 return false;
@@ -2136,7 +2136,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             BinaryField field0 = field;
 
             if (field0 == null && !fieldTaken) {
-                int typeId = GridUnsafe.unsafe().getInt(addr + GridBinaryMarshaller.TYPE_ID_POS);
+                int typeId = GridUnsafe.getInt(addr + GridBinaryMarshaller.TYPE_ID_POS);
 
                 BinaryType type = binaryCtx.metadata(typeId);
 
