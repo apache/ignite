@@ -19,6 +19,7 @@ namespace Apache.Ignite.Linq.Impl
 {
     using System;
     using System.Collections.Generic;
+    using System.Diagnostics;
     using System.Linq.Expressions;
     using System.Reflection;
 
@@ -48,7 +49,7 @@ namespace Apache.Ignite.Linq.Impl
             {GetMathMethod("Acos", typeof(double)), GetFunc("acos")},
             {GetMathMethod("Asin", typeof(double)), GetFunc("asin")},
             {GetMathMethod("Atan", typeof(double)), GetFunc("atan")},
-            {GetMathMethod("Atan2", typeof(double)), GetFunc("atan2")},
+            {GetMathMethod("Atan2", typeof(double), typeof(double)), GetFunc("atan2")},
             {GetMathMethod("Ceiling", typeof(double)), GetFunc("ceiling")},
             {GetMathMethod("Ceiling", typeof(decimal)), GetFunc("ceiling")},
             {GetMathMethod("Cos", typeof(double)), GetFunc("cos")},
@@ -137,7 +138,11 @@ namespace Apache.Ignite.Linq.Impl
         /// </summary>
         private static MethodInfo GetMathMethod(string name, params Type[] argTypes)
         {
-            return typeof(Math).GetMethod(name, argTypes);
+            var method = typeof(Math).GetMethod(name, argTypes);
+
+            Debug.Assert(method != null);
+
+            return method;
         }
     }
 }

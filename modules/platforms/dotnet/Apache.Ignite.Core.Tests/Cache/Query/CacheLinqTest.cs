@@ -819,8 +819,15 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
 
                 if (x is double)
                 {
+                    var dx = (double) x;
+                    var dy = (double) y;
+
+                    // Epsilon is proportional to the min value, but not too small.
+                    var min = Math.Min(Math.Abs(dx), Math.Abs(dy));
+                    var epsilon = Math.Max(min*2E-14d, 2E-14d);
+
                     // Compare with epsilon because some funcs return slightly different results.
-                    return Math.Abs((double) x - (double) y) < 2E-14d ? 0 : 1;
+                    return Math.Abs((double) x - (double) y) < epsilon ? 0 : 1;
                 }
 
                 return ((IComparable) x).CompareTo(y);
