@@ -245,6 +245,8 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
             CheckFunc(x => Regex.Replace(x, @"son.\d", "kele!"), strings);
             CheckFunc(x => x.Replace("son", ""), strings);
             CheckFunc(x => x.Replace("son", "kele"), strings);
+
+            CheckFunc(x => x + x, strings);
         }
 
         [Test]
