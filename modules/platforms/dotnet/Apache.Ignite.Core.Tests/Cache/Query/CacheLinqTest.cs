@@ -208,14 +208,14 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         [Test]
         public void TestStrings()
         {
-            var cache = GetPersonOrgCache().ToQueryable();
+            var strings = GetPersonOrgCache().ToQueryable().Select(x => x.Value.Name);
 
-            Assert.AreEqual(PersonCount, cache.Count(x => x.Value.Name.Contains("erson")));
-            Assert.AreEqual(11, cache.Count(x => x.Value.Name.StartsWith("Person_9")));
-            Assert.AreEqual(1, cache.Count(x => x.Value.Name.EndsWith("_99")));
+            Assert.AreEqual(PersonCount, strings.Count(x => x.Contains("erson")));
+            Assert.AreEqual(11, strings.Count(x => x.StartsWith("Person_9")));
+            Assert.AreEqual(1, strings.Count(x => x.EndsWith("_99")));
 
-            Assert.AreEqual(PersonCount, cache.Count(x => x.Value.Name.ToLower().StartsWith("person")));
-            Assert.AreEqual(PersonCount, cache.Count(x => x.Value.Name.ToUpper().StartsWith("PERSON")));
+            Assert.AreEqual(PersonCount, strings.Count(x => x.ToLower().StartsWith("person")));
+            Assert.AreEqual(PersonCount, strings.Count(x => x.ToUpper().StartsWith("PERSON")));
         }
 
         [Test]
