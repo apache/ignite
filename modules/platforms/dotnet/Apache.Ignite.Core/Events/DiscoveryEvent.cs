@@ -71,7 +71,9 @@ namespace Apache.Ignite.Core.Events
         /// </summary>
         public ICollection<IClusterNode> TopologyNodes { get { return _topologyNodes; } }
 
-        /** <inheritDoc /> */
+        /// <summary>
+        /// Gets shortened version of ToString result.
+        /// </summary>
 	    public override string ToShortString()
 	    {
             return string.Format(CultureInfo.InvariantCulture, 

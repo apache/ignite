@@ -54,7 +54,13 @@ namespace Apache.Ignite.Core.Impl.Binary
 
             var writer0 = (BinaryWriter)writer.GetRawWriter();
 
-            writer0.WithDetach(w => new BinaryFormatter().Serialize(new BinaryStreamAdapter(w.Stream), Item));
+            writer0.WithDetach(w =>
+            {
+                using (var streamAdapter = new BinaryStreamAdapter(w.Stream))
+                {
+                    new BinaryFormatter().Serialize(streamAdapter, Item);
+                }
+            });
         }
 
         /// <summary>
@@ -67,7 +73,10 @@ namespace Apache.Ignite.Core.Impl.Binary
 
             var reader0 = (BinaryReader) reader.GetRawReader();
 
-            _item = new BinaryFormatter().Deserialize(new BinaryStreamAdapter(reader0.Stream), null);
+            using (var streamAdapter = new BinaryStreamAdapter(reader0.Stream))
+            {
+                _item = new BinaryFormatter().Deserialize(streamAdapter, null);
+            }
         }
     }
 }

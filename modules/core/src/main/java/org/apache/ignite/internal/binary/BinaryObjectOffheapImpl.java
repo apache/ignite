@@ -17,22 +17,6 @@
 
 package org.apache.ignite.internal.binary;
 
-import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.binary.BinaryObject;
-import org.apache.ignite.binary.BinaryObjectBuilder;
-import org.apache.ignite.binary.BinaryObjectException;
-import org.apache.ignite.binary.BinaryType;
-import org.apache.ignite.internal.binary.builder.BinaryObjectBuilderImpl;
-import org.apache.ignite.internal.binary.streams.BinaryOffheapInputStream;
-import org.apache.ignite.internal.processors.cache.CacheObject;
-import org.apache.ignite.internal.processors.cache.CacheObjectContext;
-import org.apache.ignite.internal.util.GridUnsafe;
-import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.plugin.extensions.communication.MessageReader;
-import org.apache.ignite.plugin.extensions.communication.MessageWriter;
-import org.jetbrains.annotations.Nullable;
-import sun.misc.Unsafe;
-
 import java.io.Externalizable;
 import java.io.IOException;
 import java.io.ObjectInput;
@@ -43,6 +27,19 @@ import java.nio.ByteBuffer;
 import java.sql.Timestamp;
 import java.util.Date;
 import java.util.UUID;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.binary.BinaryObject;
+import org.apache.ignite.binary.BinaryObjectBuilder;
+import org.apache.ignite.binary.BinaryObjectException;
+import org.apache.ignite.binary.BinaryType;
+import org.apache.ignite.internal.binary.builder.BinaryObjectBuilderImpl;
+import org.apache.ignite.internal.binary.streams.BinaryOffheapInputStream;
+import org.apache.ignite.internal.processors.cache.CacheObject;
+import org.apache.ignite.internal.processors.cache.CacheObjectContext;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.plugin.extensions.communication.MessageReader;
+import org.apache.ignite.plugin.extensions.communication.MessageWriter;
+import org.jetbrains.annotations.Nullable;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 
@@ -52,9 +49,6 @@ import static java.nio.charset.StandardCharsets.UTF_8;
 public class BinaryObjectOffheapImpl extends BinaryObjectExImpl implements Externalizable, CacheObject {
     /** */
     private static final long serialVersionUID = 0L;
-
-    /** */
-    private static final Unsafe UNSAFE = GridUnsafe.unsafe();
 
     /** */
     private final BinaryContext ctx;
@@ -97,22 +91,22 @@ public class BinaryObjectOffheapImpl extends BinaryObjectExImpl implements Exter
 
     /** {@inheritDoc} */
     @Override public int typeId() {
-        return UNSAFE.getInt(ptr + start + GridBinaryMarshaller.TYPE_ID_POS);
+        return BinaryPrimitives.readInt(ptr, start + GridBinaryMarshaller.TYPE_ID_POS);
     }
 
     /** {@inheritDoc} */
     @Override public int length() {
-        return UNSAFE.getInt(ptr + start + GridBinaryMarshaller.TOTAL_LEN_POS);
+        return BinaryPrimitives.readInt(ptr, start + GridBinaryMarshaller.TOTAL_LEN_POS);
     }
 
     /** {@inheritDoc} */
     @Override public int hashCode() {
-        return UNSAFE.getInt(ptr + start + GridBinaryMarshaller.HASH_CODE_POS);
+        return BinaryPrimitives.readInt(ptr, start + GridBinaryMarshaller.HASH_CODE_POS);
     }
 
     /** {@inheritDoc} */
     @Override protected int schemaId() {
-        return UNSAFE.getInt(ptr + start + GridBinaryMarshaller.SCHEMA_ID_POS);
+        return BinaryPrimitives.readInt(ptr, start + GridBinaryMarshaller.SCHEMA_ID_POS);
     }
 
     /** {@inheritDoc} */
