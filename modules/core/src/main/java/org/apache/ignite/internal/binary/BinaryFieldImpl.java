@@ -26,6 +26,8 @@ import java.util.Date;
 import java.util.UUID;
 import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.internal.binary.streams.BinaryByteBufferInputStream;
+import org.apache.ignite.internal.binary.streams.BinaryOffheapInputStream;
+import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.binary.BinaryObject;
@@ -100,6 +102,58 @@ public class BinaryFieldImpl implements BinaryFieldEx {
         int order = fieldOrder(obj0);
 
         return order != BinarySchema.ORDER_NOT_FOUND ? (T)obj0.fieldByOrder(order) : null;
+    }
+
+    /** {@inheritDoc} */
+    @Override public long fieldAddress(long addr, int len) {
+        int typeId = GridUnsafe.unsafe().getInt(addr + GridBinaryMarshaller.TYPE_ID_POS);
+
+        if (typeId != this.typeId) {
+            throw new BinaryObjectException("Failed to get field because type ID of passed object differs" +
+                " from type ID this " + BinaryField.class.getSimpleName() + " belongs to [expected=" + this.typeId +
+                ", actual=" + typeId + ']');
+        }
+
+        int schemaId = GridUnsafe.unsafe().getInt(addr + GridBinaryMarshaller.SCHEMA_ID_POS);
+
+        BinarySchema schema = schemas.schema(schemaId);
+
+        if (schema == null) {
+            BinaryOffheapInputStream in = new BinaryOffheapInputStream(addr, len);
+
+            BinaryObjectExImpl obj = (BinaryObjectExImpl)BinaryUtils.unmarshal(in, ctx, null);
+
+            assert obj != null;
+
+            schema = obj.createSchema();
+        }
+
+        assert schema != null;
+
+        int order = schema.order(fieldId);
+
+        if (order == BinarySchema.ORDER_NOT_FOUND)
+            return -1L;
+
+        int schemaOff = BinaryPrimitives.readInt(addr, GridBinaryMarshaller.SCHEMA_OR_RAW_OFF_POS);
+
+        short flags = BinaryPrimitives.readShort(addr, GridBinaryMarshaller.FLAGS_POS);
+
+        int fieldIdLen = BinaryUtils.isCompactFooter(flags) ? 0 : BinaryUtils.FIELD_ID_LEN;
+        int fieldOffLen = BinaryUtils.fieldOffsetLength(flags);
+
+        int fieldOffPos = schemaOff + order * (fieldIdLen + fieldOffLen) + fieldIdLen;
+
+        int fieldPos;
+
+        if (fieldOffLen == BinaryUtils.OFFSET_1)
+            fieldPos = ((int)BinaryPrimitives.readByte(addr, fieldOffPos) & 0xFF);
+        else if (fieldOffLen == BinaryUtils.OFFSET_2)
+            fieldPos = ((int)BinaryPrimitives.readShort(addr, fieldOffPos) & 0xFFFF);
+        else
+            fieldPos = BinaryPrimitives.readInt(addr, fieldOffPos);
+
+        return addr + fieldPos;
     }
 
     /** {@inheritDoc} */

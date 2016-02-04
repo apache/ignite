@@ -78,6 +78,15 @@ public class GridH2Utils {
         return ValueTimestamp.fromDateValueAndNanos(dateValue, nanos);
     }
 
+    public static long dateValueFromDate(long ms) {
+        Calendar calendar = getLocalCalendar();
+
+        calendar.clear();
+        calendar.setTimeInMillis(ms);
+
+        return dateValueFromCalendar(calendar);
+    }
+
     /**
      * Calculate the nanoseconds since midnight from a given calendar.
      *

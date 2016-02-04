@@ -35,7 +35,11 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.events.CacheQueryExecutedEvent;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.binary.BinaryContext;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
+import org.apache.ignite.internal.binary.BinaryUtils;
+import org.apache.ignite.internal.binary.GridBinaryMarshaller;
+import org.apache.ignite.internal.binary.streams.BinaryOffheapInputStream;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
 import org.apache.ignite.internal.processors.cache.CacheEntryImpl;
 import org.apache.ignite.internal.processors.cache.CacheObject;
@@ -48,7 +52,9 @@ import org.apache.ignite.internal.processors.cache.query.CacheQueryFuture;
 import org.apache.ignite.internal.processors.cache.query.CacheQueryType;
 import org.apache.ignite.internal.processors.cache.query.GridCacheTwoStepQuery;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
+import org.apache.ignite.internal.processors.cacheobject.IgniteCacheObjectProcessor;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
+import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.lang.GridCloseableIterator;
@@ -1880,6 +1886,16 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         }
 
         /** {@inheritDoc} */
+        @Override public long valueAddress(long keyAddr, int keyLen, long valAddr, int valLen) {
+            throw new UnsupportedOperationException();
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean keyProperty() {
+            return false;
+        }
+
+        /** {@inheritDoc} */
         @Override public Object value(Object key, Object val) throws IgniteCheckedException {
             Object x = unwrap(this.key ? key : val);
 
@@ -1972,6 +1988,9 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         /** Flag indicating that we already tried to take a field. */
         private volatile boolean fieldTaken;
 
+        /** */
+        private BinaryContext binaryCtx;
+
         /**
          * Constructor.
          *
@@ -1984,6 +2003,85 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             this.alias = F.isEmpty(alias) ? propName : alias;
             this.parent = parent;
             this.type = type;
+
+            IgniteCacheObjectProcessor proc = ctx.cacheObjects();
+
+            if (proc instanceof CacheObjectBinaryProcessorImpl)
+                binaryCtx = ((CacheObjectBinaryProcessorImpl)proc).binaryContext();
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean keyProperty() {
+            int isKeyProp0 = isKeyProp;
+
+            assert isKeyProp0 != 0;
+
+            return isKeyProp0 == 1;
+        }
+
+        /** {@inheritDoc} */
+        @Override public long valueAddress(long keyAddr, int keyLen, long valAddr, int valLen) throws IgniteCheckedException {
+            if (binaryCtx == null)
+                throw new UnsupportedOperationException("BinaryObjects are not enabled.");
+
+            int isKeyProp0 = isKeyProp;
+
+            if (isKeyProp0 == 0) {
+                // Key is allowed to be a non-binary object here.
+                // We check key before value consistently with ClassProperty.
+                if (hasField(keyAddr, keyLen, propName))
+                    isKeyProp = isKeyProp0 = 1;
+                else if (hasField(valAddr, valLen, propName))
+                    isKeyProp = isKeyProp0 = -1;
+                else {
+                    U.warn(log, "Neither key nor value have property [propName=" + propName + "]");
+
+                    return -1L;
+                }
+            }
+
+            long addr;
+            int len;
+
+            if (isKeyProp0 == 1) {
+                addr = keyAddr;
+                len = keyLen;
+            }
+            else {
+                addr = valAddr;
+                len = valLen;
+            }
+
+            BinaryField field = binaryField(addr);
+
+            if (field != null)
+                return field.fieldAddress(addr, len);
+
+            // TODO: try to get address from object.
+
+            return -1L;
+        }
+
+        /**
+         * @param addr Marshalled object address.
+         * @param len Marshalled data length.
+         * @param fieldName Field name.
+         * @return {@code True} if object has field with given name.
+         * @throws IgniteCheckedException If failed.
+         */
+        private boolean hasField(long addr, int len, String fieldName) throws IgniteCheckedException {
+            byte type = GridUnsafe.unsafe().getByte(addr);
+
+            if (type != GridBinaryMarshaller.BINARY_OBJ)
+                return false;
+
+            BinaryOffheapInputStream in = new BinaryOffheapInputStream(addr, len);
+
+            BinaryObject obj = (BinaryObject)BinaryUtils.unmarshal(in, binaryCtx, null);
+
+            assert obj != null;
+
+            return obj.hasField(fieldName);
         }
 
         /** {@inheritDoc} */
@@ -2026,6 +2124,34 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             BinaryObject obj0 = (BinaryObject)obj;
 
             return fieldValue(obj0);
+        }
+
+        /**
+         * Get binary field for the property.
+         *
+         * @param addr Marshalled object address.
+         * @return Binary field.
+         */
+        private BinaryField binaryField(long addr) {
+            BinaryField field0 = field;
+
+            if (field0 == null && !fieldTaken) {
+                int typeId = GridUnsafe.unsafe().getInt(addr + GridBinaryMarshaller.TYPE_ID_POS);
+
+                BinaryType type = binaryCtx.metadata(typeId);
+
+                if (type != null) {
+                    field0 = type.field(propName);
+
+                    assert field0 != null;
+
+                    field = field0;
+                }
+
+                fieldTaken = true;
+            }
+
+            return field0;
         }
 
         /**

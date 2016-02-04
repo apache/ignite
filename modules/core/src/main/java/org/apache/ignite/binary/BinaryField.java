@@ -43,4 +43,11 @@ public interface BinaryField {
      * @return Value.
      */
     public <T> T value(BinaryObject obj);
+
+    /**
+     * @param addr Marshalled object address.
+     * @param len Marshalled data length.
+     * @return Field address.
+     */
+    public long fieldAddress(long addr, int len);
 }

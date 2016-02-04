@@ -2521,6 +2521,16 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         }
 
         /** {@inheritDoc} */
+        @Override public int keyType() {
+            return keyType;
+        }
+
+        /** {@inheritDoc} */
+        @Override public GridQueryProperty property(int col) {
+            return props[col];
+        }
+
+        /** {@inheritDoc} */
         @Override public int valueType() {
             return valType;
         }

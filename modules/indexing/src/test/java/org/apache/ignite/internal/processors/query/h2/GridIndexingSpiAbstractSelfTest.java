@@ -518,9 +518,16 @@ public abstract class GridIndexingSpiAbstractSelfTest extends GridCommonAbstract
                     return name;
                 }
 
-                @Override
-                public Class<?> type() {
+                @Override public Class<?> type() {
                     return Object.class;
+                }
+
+                @Override public long valueAddress(long keyAddr, int keyLen, long valAddr, int valLen) {
+                    throw new UnsupportedOperationException();
+                }
+
+                @Override public boolean keyProperty() {
+                    return false;
                 }
             };
         }

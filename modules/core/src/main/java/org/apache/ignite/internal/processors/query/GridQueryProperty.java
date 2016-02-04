@@ -42,4 +42,17 @@ public abstract class GridQueryProperty {
      * @return Class member type.
      */
     public abstract Class<?> type();
+
+    /**
+     * @param keyAddr Marshaled key address.
+     * @param valAddr Marshalled value address.
+     * @return Value address of -1 if property not found.
+     * @throws IgniteCheckedException If failed.
+     */
+    public abstract long valueAddress(long keyAddr, int keyLen, long valAddr, int valLen) throws IgniteCheckedException;
+
+    /**
+     * @return {@code True} if property belongs to cache key.
+     */
+    public abstract boolean keyProperty();
 }
