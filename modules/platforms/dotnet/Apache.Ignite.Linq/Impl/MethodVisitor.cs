@@ -19,6 +19,7 @@ namespace Apache.Ignite.Linq.Impl
 {
     using System;
     using System.Collections.Generic;
+    using System.Diagnostics;
     using System.Linq;
     using System.Linq.Expressions;
     using System.Reflection;
@@ -35,64 +36,53 @@ namespace Apache.Ignite.Linq.Impl
         private static readonly Dictionary<MethodInfo, VisitMethodDelegate> Delegates1 = new List
             <KeyValuePair<MethodInfo, VisitMethodDelegate>>
         {
-            GetStringMethod("ToLower", del:GetFunc("lower")),
-            GetStringMethod("ToUpper", del:GetFunc("upper")),
+            GetStringMethod("ToLower", new Type[0], del:GetFunc("lower")),
+            GetStringMethod("ToUpper", new Type[0], del:GetFunc("upper")),
             GetStringMethod("Contains", del:(e, v) => VisitSqlLike(e, v, "%{0}%")),
             GetStringMethod("StartsWith", new[] {typeof (string)}, (e, v) => VisitSqlLike(e, v, "{0}%")),
             GetStringMethod("EndsWith", new[] {typeof (string)}, (e, v) => VisitSqlLike(e, v, "{0}%")),
-            GetMethod(typeof(DateTime), "ToString", new [] {typeof(string)}, GetFunc("formatdatetime"))
+            GetMethod(typeof(DateTime), "ToString", new [] {typeof(string)}, GetFunc("formatdatetime")),
+
+            GetMathMethod1("Abs", typeof (int)),
+            GetMathMethod1("Abs", typeof (long)),
+            GetMathMethod1("Abs", typeof (float)),
+            GetMathMethod1("Abs", typeof (double)),
+            GetMathMethod1("Abs", typeof (decimal)),
+            GetMathMethod1("Abs", typeof (sbyte)),
+            GetMathMethod1("Abs", typeof (short)),
+            GetMathMethod1("Acos", typeof(double)),
+            GetMathMethod1("Asin", typeof(double)),
+            GetMathMethod1("Atan", typeof(double)),
+            GetMathMethod1("Atan2", typeof(double), typeof(double)),
+            GetMathMethod1("Ceiling", typeof(double)),
+            GetMathMethod1("Ceiling", typeof(decimal)),
+            GetMathMethod1("Cos", typeof(double)),
+            GetMathMethod1("Cosh", typeof(double)),
+            GetMathMethod1("Exp", typeof(double)),
+            GetMathMethod1("Floor", typeof(double)),
+            GetMathMethod1("Floor", typeof(decimal)),
+            GetMathMethod1("Log", typeof(double)),
+            GetMathMethod1("Log10", typeof(double)),
+            GetMathMethod1("Pow", "Power", typeof(double), typeof(double)),
+            GetMathMethod1("Round", typeof(double)),
+            GetMathMethod1("Round", typeof(double), typeof(int)),
+            GetMathMethod1("Round", typeof(decimal)),
+            GetMathMethod1("Round", typeof(decimal), typeof(int)),
+            GetMathMethod1("Sign", typeof(double)),
+            GetMathMethod1("Sign", typeof(decimal)),
+            GetMathMethod1("Sign", typeof(float)),
+            GetMathMethod1("Sign", typeof(int)),
+            GetMathMethod1("Sign", typeof(long)),
+            GetMathMethod1("Sign", typeof(short)),
+            GetMathMethod1("Sign", typeof(sbyte)),
+            GetMathMethod1("Sin", typeof(double)),
+            GetMathMethod1("Sinh", typeof(double)),
+            GetMathMethod1("Sqrt", typeof(double)),
+            GetMathMethod1("Tan", typeof(double)),
+            GetMathMethod1("Tanh", typeof(double)),
+            GetMathMethod1("Truncate", typeof(double)),
+            GetMathMethod1("Truncate", typeof(decimal)),
         }.ToDictionary(x => x.Key, x => x.Value);
-
-
-        private static readonly Dictionary<MethodInfo, VisitMethodDelegate> Delegates = new Dictionary
-            <MethodInfo, VisitMethodDelegate>
-        {
-            {typeof (string).GetMethod("ToLower", new Type[0]), GetFunc("lower")},
-            {typeof (string).GetMethod("ToUpper", new Type[0]), GetFunc("upper")},
-            {typeof (string).GetMethod("Contains"), (e, v) => VisitSqlLike(e, v, "%{0}%")},
-            {typeof (string).GetMethod("StartsWith", new[] {typeof (string)}), (e, v) => VisitSqlLike(e, v, "{0}%")},
-            {typeof (string).GetMethod("EndsWith", new[] {typeof (string)}), (e, v) => VisitSqlLike(e, v, "%{0}")},
-            {typeof (DateTime).GetMethod("ToString", new[] {typeof (string)}), GetFunc("formatdatetime")},
-            {GetMathMethod("Abs", typeof (int)), GetFunc("abs")},
-            {GetMathMethod("Abs", typeof (long)), GetFunc("abs")},
-            {GetMathMethod("Abs", typeof (float)), GetFunc("abs")},
-            {GetMathMethod("Abs", typeof (double)), GetFunc("abs")},
-            {GetMathMethod("Abs", typeof (decimal)), GetFunc("abs")},
-            {GetMathMethod("Abs", typeof (sbyte)), GetFunc("abs")},
-            {GetMathMethod("Abs", typeof (short)), GetFunc("abs")},
-            {GetMathMethod("Acos", typeof(double)), GetFunc("acos")},
-            {GetMathMethod("Asin", typeof(double)), GetFunc("asin")},
-            {GetMathMethod("Atan", typeof(double)), GetFunc("atan")},
-            {GetMathMethod("Atan2", typeof(double), typeof(double)), GetFunc("atan2")},
-            {GetMathMethod("Ceiling", typeof(double)), GetFunc("ceiling")},
-            {GetMathMethod("Ceiling", typeof(decimal)), GetFunc("ceiling")},
-            {GetMathMethod("Cos", typeof(double)), GetFunc("cos")},
-            {GetMathMethod("Cosh", typeof(double)), GetFunc("cosh")},
-            {GetMathMethod("Exp", typeof(double)), GetFunc("exp")},
-            {GetMathMethod("Floor", typeof(double)), GetFunc("floor")},
-            {GetMathMethod("Floor", typeof(decimal)), GetFunc("floor")},
-            {GetMathMethod("Log", typeof(double)), GetFunc("log")},
-            {GetMathMethod("Log10", typeof(double)), GetFunc("log10")},
-            {GetMathMethod("Pow", typeof(double), typeof(double)), GetFunc("power")},
-            {GetMathMethod("Round", typeof(double)), GetFunc("round")},
-            {GetMathMethod("Round", typeof(double), typeof(int)), GetFunc("round")},
-            {GetMathMethod("Round", typeof(decimal)), GetFunc("round")},
-            {GetMathMethod("Round", typeof(decimal), typeof(int)), GetFunc("round")},
-            {GetMathMethod("Sign", typeof(double)), GetFunc("sign")},
-            {GetMathMethod("Sign", typeof(decimal)), GetFunc("sign")},
-            {GetMathMethod("Sign", typeof(float)), GetFunc("sign")},
-            {GetMathMethod("Sign", typeof(int)), GetFunc("sign")},
-            {GetMathMethod("Sign", typeof(long)), GetFunc("sign")},
-            {GetMathMethod("Sign", typeof(short)), GetFunc("sign")},
-            {GetMathMethod("Sign", typeof(sbyte)), GetFunc("sign")},
-            {GetMathMethod("Sin", typeof(double)), GetFunc("sin")},
-            {GetMathMethod("Sinh", typeof(double)), GetFunc("sinh")},
-            {GetMathMethod("Sqrt", typeof(double)), GetFunc("sqrt")},
-            {GetMathMethod("Tan", typeof(double)), GetFunc("tan")},
-            {GetMathMethod("Tanh", typeof(double)), GetFunc("tanh")},
-            {GetMathMethod("Truncate", typeof(double)), GetFunc("truncate")},
-            {GetMathMethod("Truncate", typeof(decimal)), GetFunc("truncate")},
-        };
 
         /// <summary>
         /// Visits the method call expression.
@@ -103,7 +93,7 @@ namespace Apache.Ignite.Linq.Impl
 
             VisitMethodDelegate del;
 
-            if (!Delegates.TryGetValue(method, out del))
+            if (!Delegates1.TryGetValue(method, out del))
                 throw new NotSupportedException(string.Format("Method not supported: {0}.({1})",
                     method.DeclaringType == null ? "static" : method.DeclaringType.FullName, method));
 
@@ -170,35 +160,34 @@ namespace Apache.Ignite.Linq.Impl
             return arg.Value;
         }
 
+        private static KeyValuePair<MethodInfo, VisitMethodDelegate> GetMethod(Type type, string name,
+            Type[] argTypes = null, VisitMethodDelegate del = null)
+        {
+            Debug.WriteLine("Looking up method: " + name);
+
+            var method = argTypes == null ? type.GetMethod(name) : type.GetMethod(name, argTypes);
+
+            if (method == null)
+                Debug.WriteLine("Null method: " + name);
+
+            return new KeyValuePair<MethodInfo, VisitMethodDelegate>(method, del ?? GetFunc(name));
+        }
+
         private static KeyValuePair<MethodInfo, VisitMethodDelegate> GetStringMethod(string name,
             Type[] argTypes = null, VisitMethodDelegate del = null)
         {
             return GetMethod(typeof(string), name, argTypes, del);
         }
 
-        private static KeyValuePair<MethodInfo, VisitMethodDelegate> GetMethod(Type type, string name,
-            Type[] argTypes = null, VisitMethodDelegate del = null)
+        private static KeyValuePair<MethodInfo, VisitMethodDelegate> GetMathMethod1(string name, string sqlName,
+            params Type[] argTypes)
         {
-            var method = argTypes == null ? type.GetMethod(name) : type.GetMethod(name, argTypes);
-
-            if (method == null)
-                throw new InvalidOperationException("Method not found: " + name);
-
-            return new KeyValuePair<MethodInfo, VisitMethodDelegate>(method, del ?? GetFunc(name));
+            return GetMethod(typeof(Math), name, argTypes, GetFunc(sqlName));
         }
 
-
-        /// <summary>
-        /// Gets the math method.
-        /// </summary>
-        private static MethodInfo GetMathMethod(string name, params Type[] argTypes)
+        private static KeyValuePair<MethodInfo, VisitMethodDelegate> GetMathMethod1(string name, params Type[] argTypes)
         {
-            var method = typeof(Math).GetMethod(name, argTypes);
-
-            if (method == null)
-                throw new InvalidOperationException("Math method not found: " + name);
-
-            return method;
+            return GetMathMethod1(name, name, argTypes);
         }
     }
 }
