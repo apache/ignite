@@ -281,6 +281,40 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
             }
         }
 
+        internal static IUnmanagedTarget ProcessorAtomicSequence(IUnmanagedTarget target, string name, long initialValue, 
+            bool create)
+        {
+            var name0 = IgniteUtils.StringToUtf8Unmanaged(name);
+
+            try
+            {
+                var res = JNI.ProcessorAtomicSequence(target.Context, target.Target, name0, initialValue, create);
+
+                return res == null ? null : target.ChangeTarget(res);
+            }
+            finally
+            {
+                Marshal.FreeHGlobal(new IntPtr(name0));
+            }
+        }
+
+        internal static IUnmanagedTarget ProcessorAtomicReference(IUnmanagedTarget target, string name, long memPtr, 
+            bool create)
+        {
+            var name0 = IgniteUtils.StringToUtf8Unmanaged(name);
+
+            try
+            {
+                var res = JNI.ProcessorAtomicReference(target.Context, target.Target, name0, memPtr, create);
+
+                return res == null ? null : target.ChangeTarget(res);
+            }
+            finally
+            {
+                Marshal.FreeHGlobal(new IntPtr(name0));
+            }
+        }
+
         internal static void ProcessorGetIgniteConfiguration(IUnmanagedTarget target, long memPtr)
         {
             JNI.ProcessorGetIgniteConfiguration(target.Context, target.Target, memPtr);

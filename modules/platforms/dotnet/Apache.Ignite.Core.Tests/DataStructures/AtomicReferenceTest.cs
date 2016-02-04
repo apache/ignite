@@ -19,7 +19,7 @@ namespace Apache.Ignite.Core.Tests.DataStructures
 {
     using System;
     using System.Linq;
-    using Apache.Ignite.Core.Portable;
+    using Apache.Ignite.Core.Binary;
     using NUnit.Framework;
 
     /// <summary>
@@ -52,10 +52,7 @@ namespace Apache.Ignite.Core.Tests.DataStructures
         {
             var cfg = base.GetConfiguration(springConfigUrl);
 
-            cfg.PortableConfiguration = new PortableConfiguration
-            {
-                TypeConfigurations = new[] { new PortableTypeConfiguration(typeof(PortableObj)) }
-            };
+            cfg.BinaryConfiguration = new BinaryConfiguration(typeof(BinaryObj));
 
             return cfg;
         }
@@ -143,7 +140,7 @@ namespace Apache.Ignite.Core.Tests.DataStructures
         [Test]
         public void TestPortable()
         {
-            TestOperations(new PortableObj {Foo = 16}, new PortableObj {Foo = -5});
+            TestOperations(new BinaryObj {Foo = 16}, new BinaryObj {Foo = -5});
         }
 
         /// <summary>
@@ -221,9 +218,9 @@ namespace Apache.Ignite.Core.Tests.DataStructures
         }
 
         /// <summary>
-        /// Portable.
+        /// Binary.
         /// </summary>
-        private sealed class PortableObj : SerializableObj
+        private sealed class BinaryObj : SerializableObj
         {
             // No-op.
         }

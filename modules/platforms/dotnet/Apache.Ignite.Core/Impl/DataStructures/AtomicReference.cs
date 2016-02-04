@@ -19,7 +19,7 @@ namespace Apache.Ignite.Core.Impl.DataStructures
 {
     using System.Diagnostics;
     using Apache.Ignite.Core.DataStructures;
-    using Apache.Ignite.Core.Impl.Portable;
+    using Apache.Ignite.Core.Impl.Binary;
     using Apache.Ignite.Core.Impl.Unmanaged;
 
     /// <summary>
@@ -39,7 +39,7 @@ namespace Apache.Ignite.Core.Impl.DataStructures
         private readonly string _name;
 
         /** <inheritDoc /> */
-        public AtomicReference(IUnmanagedTarget target, PortableMarshaller marsh, string name)
+        public AtomicReference(IUnmanagedTarget target, Marshaller marsh, string name)
             : base(target, marsh)
         {
             Debug.Assert(!string.IsNullOrEmpty(name));

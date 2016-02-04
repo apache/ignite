@@ -19,7 +19,7 @@ namespace Apache.Ignite.Core.Impl.DataStructures
 {
     using System.Diagnostics;
     using Apache.Ignite.Core.DataStructures;
-    using Apache.Ignite.Core.Impl.Portable;
+    using Apache.Ignite.Core.Impl.Binary;
     using Apache.Ignite.Core.Impl.Unmanaged;
 
     /// <summary>
@@ -36,7 +36,7 @@ namespace Apache.Ignite.Core.Impl.DataStructures
         /// <param name="target">The target.</param>
         /// <param name="marsh">The marshaller.</param>
         /// <param name="name">The name.</param>
-        public AtomicSequence(IUnmanagedTarget target, PortableMarshaller marsh, string name)
+        public AtomicSequence(IUnmanagedTarget target, Marshaller marsh, string name)
             : base(target, marsh)
         {
             Debug.Assert(!string.IsNullOrEmpty(name));
