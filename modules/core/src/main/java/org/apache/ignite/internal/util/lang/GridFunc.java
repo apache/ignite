@@ -4057,17 +4057,17 @@ public class GridFunc {
         return Collections.singletonList(t);
     }
 
-//    /**
-//     * Creates read-only list with given values.
-//     *
-//     * @param t1 First element.
-//     * @param t2 Second element.
-//     * @param <T> Element's type.
-//     * @return Created list.
-//     */
-//    public static <T> List<T> asList(@Nullable T t1, @Nullable T t2) {
-//        return new DoubletonList<>(t1, t2);
-//    }
+    /**
+     * Creates read-only list with given values.
+     *
+     * @param t1 First element.
+     * @param t2 Second element.
+     * @param <T> Element's type.
+     * @return Created list.
+     */
+    public static <T> List<T> asList(@Nullable T t1, @Nullable T t2) {
+        return new DoubletonList<>(t1, t2);
+    }
 
     private static class DoubletonList<T> extends AbstractList<T> implements RandomAccess, Serializable {
 
