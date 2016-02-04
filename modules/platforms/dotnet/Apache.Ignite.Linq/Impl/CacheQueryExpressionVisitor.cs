@@ -227,8 +227,20 @@ namespace Apache.Ignite.Linq.Impl
         [SuppressMessage("Microsoft.Design", "CA1062:Validate arguments of public methods")]
         protected override Expression VisitMember(MemberExpression expression)
         {
-            // Field hierarchy is flattened, append as is, do not call Visit.
+            // Field hierarchy is flattened (Person.Address.Street is just Street), append as is, do not call Visit.
             // TODO: Aliases? How do they work? See email.
+
+            // Special case: string.Length
+            if (expression.Member == MethodVisitor.StringLength)
+            {
+                _resultBuilder.Append("length(");
+
+                VisitMember((MemberExpression) expression.Expression);
+
+                _resultBuilder.Append(")");
+
+                return expression;
+            }
 
             var queryFieldAttr = expression.Member.GetCustomAttributes(true)
                 .OfType<QuerySqlFieldAttribute>().FirstOrDefault();

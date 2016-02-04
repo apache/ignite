@@ -27,6 +27,8 @@ namespace Apache.Ignite.Linq.Impl
     /// </summary>
     internal static class MethodVisitor
     {
+        public static readonly MemberInfo StringLength = typeof (string).GetProperty("Length");
+
         private delegate void VisitMethodDelegate(MethodCallExpression expression, CacheQueryExpressionVisitor visitor);
 
         private static readonly Dictionary<MethodInfo, VisitMethodDelegate> Delegates = new Dictionary
