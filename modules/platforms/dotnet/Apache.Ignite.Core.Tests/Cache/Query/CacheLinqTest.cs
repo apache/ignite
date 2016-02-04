@@ -66,7 +66,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         [TestFixtureSetUp]
         public void FixtureSetUp()
         {
-            _runDbConsole = false;  // set to true to open H2 console
+            _runDbConsole = true;  // set to true to open H2 console
 
             if (_runDbConsole)
                 Environment.SetEnvironmentVariable("IGNITE_H2_DEBUG_CONSOLE", "true");
@@ -246,7 +246,11 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
             CheckFunc(x => x.Replace("son", ""), strings);
             CheckFunc(x => x.Replace("son", "kele"), strings);
 
+            // Concat
             CheckFunc(x => x + x, strings);
+
+            // String + int
+            CheckFunc(x => x + 10, strings);
         }
 
         [Test]
