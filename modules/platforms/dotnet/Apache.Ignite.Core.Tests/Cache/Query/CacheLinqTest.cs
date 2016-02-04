@@ -22,6 +22,7 @@
 namespace Apache.Ignite.Core.Tests.Cache.Query
 {
     using System;
+    using System.Collections;
     using System.Linq;
     using System.Linq.Expressions;
     using System.Threading;
@@ -623,14 +624,13 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
             var actual = query.Select(exp).ToArray().ToArray();
 
             // Compare results
-            Assert.AreEqual(expected, actual);
+            CollectionAssert.AreEqual(expected, actual, new NumericComparer());
 
             // Perform intermediate anonymous type conversion to check type projection
-            // TODO
             actual = query.Select(exp).Select(x => new {Foo = x}).ToArray().Select(x => x.Foo).ToArray();
 
             // Compare results
-            Assert.AreEqual(expected, actual);
+            CollectionAssert.AreEqual(expected, actual, new NumericComparer());
         }
 
         public class Person : IBinarizable
@@ -768,6 +768,27 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
             public static bool operator !=(RoleKey left, RoleKey right)
             {
                 return !left.Equals(right);
+            }
+        }
+
+        /// <summary>
+        /// Epsilon comparer.
+        /// </summary>
+        private class NumericComparer : IComparer
+        {
+            /** <inheritdoc /> */
+            public int Compare(object x, object y)
+            {
+                if (Equals(x, y))
+                    return 0;
+
+                if (x is double)
+                {
+                    // Compare with epsilon because some funcs return slightly different results.
+                    return Math.Abs((double) x - (double) y) < 2E-14d ? 0 : 1;
+                }
+
+                return ((IComparable) x).CompareTo(y);
             }
         }
     }
