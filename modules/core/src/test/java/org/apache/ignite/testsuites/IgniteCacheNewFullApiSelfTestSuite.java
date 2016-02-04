@@ -20,16 +20,17 @@ package org.apache.ignite.testsuites;
 import java.util.Arrays;
 import junit.framework.TestSuite;
 import org.apache.ignite.cache.CacheAtomicityMode;
-import org.apache.ignite.cache.CacheMemoryMode;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.store.CacheStore;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
-import org.apache.ignite.internal.processors.cache.GridCacheNewFullApiSelfTest;
-import org.apache.ignite.internal.processors.cache.GridNewCacheAbstractSelfTest;
+import org.apache.ignite.internal.processors.cache.NewCacheAbstractSelfTest;
+import org.apache.ignite.internal.processors.cache.NewCacheFullApiSelfTest;
 import org.apache.ignite.marshaller.optimized.OptimizedMarshaller;
+import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestSuite;
 import org.apache.ignite.testframework.TestsConfiguration;
 import org.apache.ignite.testframework.config.StateConfigurationFactory;
@@ -59,8 +60,16 @@ public class IgniteCacheNewFullApiSelfTestSuite extends TestSuite {
     private static final ConfigurationParameter<CacheConfiguration>[][] cacheParams = new ConfigurationParameter[][] {
         Variants.enumVariants(CacheMode.class, "setCacheMode"),
         Variants.enumVariants(CacheAtomicityMode.class, "setAtomicityMode"),
-        Variants.enumVariantsWithNull(CacheMemoryMode.class, "setMemoryMode"),
+//        Variants.enumVariantsWithNull(CacheMemoryMode.class, "setMemoryMode"),
     };
+
+//    /** */
+//    @SuppressWarnings("unchecked")
+//    private static final ConfigurationParameter<CacheConfiguration>[][] cacheParams = new ConfigurationParameter[][] {
+//        Variants.enumSingleVariant(CacheMode.PARTITIONED, "setCacheMode"),
+//        Variants.enumSingleVariant(CacheAtomicityMode.TRANSACTIONAL, "setAtomicityMode"),
+//        Variants.enumSingleVariant(null, "setMemoryMode"),
+//    };
 
     /**
      * @return Cache API test suite.
@@ -101,7 +110,7 @@ public class IgniteCacheNewFullApiSelfTestSuite extends TestSuite {
 
         TestsConfiguration testCfg = new TestsConfiguration(factory, clsNameSuffix, stop, gridsCnt);
 
-        suite.addTest(new GridTestSuite(GridCacheNewFullApiSelfTest.class, testCfg));
+        suite.addTest(new GridTestSuite(NewCacheFullApiSelfTest.class, testCfg));
     }
 
     /**
@@ -120,6 +129,31 @@ public class IgniteCacheNewFullApiSelfTestSuite extends TestSuite {
             super(igniteParams, igniteCfgState, cacheParams, cacheCfgState);
         }
 
+        @Override public IgniteConfiguration getConfiguration(String gridName) {
+            IgniteConfiguration cfg = super.getConfiguration(gridName);
+
+//            // Cache abstract.
+            TcpDiscoverySpi disco = new TcpDiscoverySpi();
+
+            disco.setMaxMissedHeartbeats(Integer.MAX_VALUE);
+
+            disco.setIpFinder(new TcpDiscoveryVmIpFinder(true));
+//
+//            if (isDebug())
+//                disco.setAckTimeout(Integer.MAX_VALUE);
+//
+            cfg.setDiscoverySpi(disco);
+
+
+            // Full API
+            ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setForceServerMode(true);
+
+//            if (memoryMode() == OFFHEAP_TIERED || memoryMode() == OFFHEAP_VALUES)
+//                cfg.setSwapSpaceSpi(new GridTestSwapSpaceSpi());
+
+            return cfg;
+        }
+
         /** {@inheritDoc} */
         @Override public CacheConfiguration cacheConfiguration(String gridName) {
             CacheConfiguration cc = super.cacheConfiguration(gridName);
@@ -132,10 +166,10 @@ public class IgniteCacheNewFullApiSelfTestSuite extends TestSuite {
             cc.setEvictionPolicy(null);
 
             // Cache
-            CacheStore<?, ?> store = GridNewCacheAbstractSelfTest.cacheStore();
+            CacheStore<?, ?> store = NewCacheAbstractSelfTest.cacheStore();
 
             if (store != null) {
-                cc.setCacheStoreFactory(new GridNewCacheAbstractSelfTest.TestStoreFactory());
+                cc.setCacheStoreFactory(new NewCacheAbstractSelfTest.TestStoreFactory());
                 cc.setReadThrough(true);
                 cc.setWriteThrough(true);
                 cc.setLoadPreviousValue(true);

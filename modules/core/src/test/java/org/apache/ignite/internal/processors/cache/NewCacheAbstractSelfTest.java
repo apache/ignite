@@ -59,7 +59,7 @@ import static org.apache.ignite.cache.CacheMemoryMode.OFFHEAP_TIERED;
 /**
  * Abstract class for cache tests.
  */
-public abstract class GridNewCacheAbstractSelfTest extends GridCommonAbstractTest {
+public abstract class NewCacheAbstractSelfTest extends GridCommonAbstractTest {
     /** Test timeout */
     private static final long TEST_TIMEOUT = 30 * 1000;
 
@@ -72,7 +72,10 @@ public abstract class GridNewCacheAbstractSelfTest extends GridCommonAbstractTes
     /**
      * @return Grids count to start.
      */
-    protected abstract int gridCount();
+    /** {@inheritDoc} */
+    protected final int gridCount() {
+        return testsCfg.gridCount();
+    }
 
     /** {@inheritDoc} */
     @Override protected long getTestTimeout() {

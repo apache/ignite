@@ -118,7 +118,7 @@ import static org.apache.ignite.transactions.TransactionState.COMMITTED;
  * Full API cache test.
  */
 @SuppressWarnings("TransientFieldInNonSerializableClass")
-public class GridCacheNewFullApiSelfTest extends GridNewCacheAbstractSelfTest {
+public class NewCacheFullApiSelfTest extends NewCacheAbstractSelfTest {
     /** Test timeout */
     private static final long TEST_TIMEOUT = 60 * 1000;
 
@@ -172,11 +172,6 @@ public class GridCacheNewFullApiSelfTest extends GridNewCacheAbstractSelfTest {
         return TEST_TIMEOUT;
     }
 
-    /** {@inheritDoc} */
-    @Override protected int gridCount() {
-        return testsCfg.gridCount();
-    }
-
     /**
      * @return {@code True} if values should be stored off-heap.
      */
@@ -206,6 +201,8 @@ public class GridCacheNewFullApiSelfTest extends GridNewCacheAbstractSelfTest {
 
         assertEquals(0, cache.localSize());
         assertEquals(0, cache.size());
+
+        // TODO review.
 
         assertEquals(0, cache.localSize());
         assertEquals(0, cache.size());
@@ -2968,8 +2965,6 @@ public class GridCacheNewFullApiSelfTest extends GridNewCacheAbstractSelfTest {
      */
     @SuppressWarnings("BusyWait")
     public void testLockUnlock() throws Exception {
-        fail("TODO");
-
         if (lockingEnabled()) {
             final CountDownLatch lockCnt = new CountDownLatch(1);
             final CountDownLatch unlockCnt = new CountDownLatch(1);

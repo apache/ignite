@@ -77,6 +77,7 @@ import org.apache.ignite.marshaller.MarshallerExclusions;
 import org.apache.ignite.marshaller.jdk.JdkMarshaller;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.spi.checkpoint.sharedfs.SharedFsCheckpointSpi;
+import org.apache.ignite.spi.communication.CommunicationSpi;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.TestTcpDiscoverySpi;
@@ -1211,14 +1212,28 @@ public abstract class GridAbstractTest extends TestCase {
 
             // TODO review.
             cfg2.setGridName(cfg.getGridName());
-            cfg2.setNodeId(cfg.getNodeId());
-            cfg2.setConsistentId(cfg.getConsistentId());
-            cfg2.setDiscoverySpi(cfg.getDiscoverySpi());
-            cfg2.setCommunicationSpi(cfg.getCommunicationSpi());
             cfg2.setGridLogger(cfg.getGridLogger());
+            cfg2.setMarshaller(cfg.getMarshaller());
+            cfg2.setNodeId(cfg.getNodeId());
+            cfg2.setIgniteHome(cfg.getIgniteHome());
             cfg2.setMBeanServer(cfg.getMBeanServer());
+            cfg2.setPeerClassLoadingEnabled(cfg.isPeerClassLoadingEnabled());
+            cfg2.setMetricsLogFrequency(cfg.getMetricsLogFrequency());
+            cfg2.setConnectorConfiguration(cfg.getConnectorConfiguration());
+            CommunicationSpi commSpi = cfg.getCommunicationSpi();
 
-            cfg2.setMetricsLogFrequency(0);
+            // Hack.
+            ((TcpCommunicationSpi)commSpi).setSharedMemoryPort(-1);
+
+            cfg2.setCommunicationSpi(commSpi);
+            cfg2.setNetworkTimeout(cfg.getNetworkTimeout());
+
+            // Hack.
+            ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setForceServerMode(true);
+
+            cfg2.setDiscoverySpi(cfg.getDiscoverySpi());
+            cfg2.setCheckpointSpi(cfg.getCheckpointSpi());
+            cfg2.setIncludeEventTypes(cfg.getIncludeEventTypes());
 
             return cfg2;
         }

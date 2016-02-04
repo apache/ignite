@@ -47,6 +47,16 @@ public class Variants {
      * @return Array of configuration processors for given enum.
      */
     @SuppressWarnings("unchecked")
+    public static <T> ConfigurationParameter<T>[] enumSingleVariant(Enum instance, String mtdName) {
+        Object[] enumConstants = new Object[] {instance};
+
+        return enumVariables0(mtdName, enumConstants);
+    }
+
+    /**
+     * @return Array of configuration processors for given enum.
+     */
+    @SuppressWarnings("unchecked")
     public static <T> ConfigurationParameter<T>[] enumVariantsWithNull(Class<?> enumCls, String mtdName) {
         Object[] src = enumCls.getEnumConstants();
 
