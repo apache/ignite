@@ -19,6 +19,10 @@
 // ReSharper disable MemberCanBePrivate.Global
 // ReSharper disable AutoPropertyCanBeMadeGetOnly.Global
 // ReSharper disable UnusedAutoPropertyAccessor.Global
+// ReSharper disable StringIndexOfIsCultureSpecific.1
+// ReSharper disable StringIndexOfIsCultureSpecific.2
+// ReSharper disable StringCompareToIsCultureSpecific
+// ReSharper disable StringCompareIsCultureSpecific.1
 namespace Apache.Ignite.Core.Tests.Cache.Query
 {
     using System;
@@ -79,7 +83,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
 
             for (var i = 0; i < PersonCount; i++)
             {
-                cache.Put(i, new Person(i, "Person_" + i)
+                cache.Put(i, new Person(i, string.Format(" Person_{0}  ", i))
                 {
                     Address = new Address {Zip = i, Street = "Street " + i},
                     OrganizationId = i%2 + 1000,
@@ -215,6 +219,30 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
             CheckFunc(x => x.StartsWith("Person_9"), strings);
             CheckFunc(x => x.EndsWith("_99"), strings);
             CheckFunc(x => x.Contains("son_3"), strings);
+            CheckFunc(x => x.Length, strings);
+            CheckFunc(x => x.IndexOf("9"), strings);
+            CheckFunc(x => x.IndexOf("7", 4), strings);
+            CheckFunc(x => x.CompareTo("Person_14"), strings);
+            CheckFunc(x => string.Compare(x, "Person_64"), strings);
+            CheckFunc(x => x.Substring(4), strings);
+            CheckFunc(x => x.Substring(4, 5), strings);
+            CheckFunc(x => x.PadLeft(3), strings);
+            CheckFunc(x => x.PadLeft(3, '*'), strings);
+            CheckFunc(x => x.PadRight(4), strings);
+            CheckFunc(x => x.PadLeft(4, '%'), strings);
+            CheckFunc(x => x.Trim(), strings);
+            CheckFunc(x => x.Trim('P'), strings);
+            CheckFunc(x => x.Trim('3'), strings);
+            CheckFunc(x => x.Trim('P', 'e'), strings);
+            CheckFunc(x => x.Trim('P', 'e', '7'), strings);
+            CheckFunc(x => x.TrimStart('P'), strings);
+            CheckFunc(x => x.TrimStart('3'), strings);
+            CheckFunc(x => x.TrimStart('P', 'e'), strings);
+            CheckFunc(x => x.TrimStart('P', 'e', '7'), strings);
+            CheckFunc(x => x.TrimEnd('P'), strings);
+            CheckFunc(x => x.TrimEnd('3'), strings);
+            CheckFunc(x => x.TrimEnd('P', 'e'), strings);
+            CheckFunc(x => x.TrimEnd('P', 'e', '7'), strings);
         }
 
         [Test]
