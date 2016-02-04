@@ -29,7 +29,7 @@ public class GridCacheOffHeapValuesEvictionSelfTest extends GridCacheAbstractSel
     /**
      * @throws Exception If failed.
      */
-    public void testPutOffHeapValues() throws Exception {
+    public void testPutOnHeap() throws Exception {
         CacheConfiguration<Integer, Object> ccfg = cacheConfiguration(grid(0).name());
         ccfg.setName("testPutOffHeapValues");
         ccfg.setStatisticsEnabled(true);
@@ -89,6 +89,9 @@ public class GridCacheOffHeapValuesEvictionSelfTest extends GridCacheAbstractSel
         assertTrue(MAX_VALS_AMOUNT - 5 <= cache.size(CachePeekMode.OFFHEAP));
         assertEquals(cache.size(CachePeekMode.ALL) - cache.size(CachePeekMode.ONHEAP) - cache.size(CachePeekMode.OFFHEAP),
             cache.size(CachePeekMode.SWAP));
+
+        assertTrue((MAX_VALS_AMOUNT + 5) * VAL_SIZE > cache.metrics().getOffHeapAllocatedSize());
+        assertTrue((MAX_VALS_AMOUNT - 5) * VAL_SIZE < cache.metrics().getOffHeapAllocatedSize());
     }
 
     /**
@@ -123,6 +126,9 @@ public class GridCacheOffHeapValuesEvictionSelfTest extends GridCacheAbstractSel
         assertTrue(PLC_MAX_SIZE - 5 <= cache.size(CachePeekMode.ONHEAP));
         assertTrue(MAX_VALS_AMOUNT >= cache.size(CachePeekMode.OFFHEAP));
         assertTrue(MAX_VALS_AMOUNT - 5 <= cache.size(CachePeekMode.OFFHEAP));
+
+        assertTrue((MAX_VALS_AMOUNT + 5) * VAL_SIZE > cache.metrics().getOffHeapAllocatedSize());
+        assertTrue((MAX_VALS_AMOUNT - 5) * VAL_SIZE < cache.metrics().getOffHeapAllocatedSize());
     }
 
     private static void fillCache(IgniteCache<Integer, Object> cache, long timeout) throws Exception{
@@ -136,6 +142,11 @@ public class GridCacheOffHeapValuesEvictionSelfTest extends GridCacheAbstractSel
 
                 for (int i = start; i < start + VALS_AMOUNT; i++)
                     cache.put(i, val);
+
+                for (CachePeekMode mode : CachePeekMode.values()) {
+                    System.out.println(Thread.currentThread().getName() + ": " + mode.name() + "=" + cache.size(mode));
+                }
+                System.out.println(Thread.currentThread().getName() + ": " + cache.metrics().getOffHeapAllocatedSize());
 
                 latch.countDown();
 
