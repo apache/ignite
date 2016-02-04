@@ -18,8 +18,6 @@
 // Java built-in short class names.
 import COUNTRIES from 'app/data/countries.json!';
 
-export default ['igniteCountries', function() {
-    this.$get = [() => {
-        return COUNTRIES;
-    }];
+export default ['IgniteCountries', function() {
+    return COUNTRIES;
 }];

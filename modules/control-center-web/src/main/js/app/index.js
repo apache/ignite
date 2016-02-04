@@ -94,9 +94,9 @@ import igniteFormFieldJavaClass from './directives/form-field-java-class/form-fi
 // Services.
 import cleanup from './services/cleanup/cleanup.service';
 import IgniteUiAceOnLoad from './services/UiAceOnLoad/service';
+import IgniteCountries from './services/Countries/index';
 
 // Providers
-import igniteCountries from './providers/Countries/index';
 
 // Filters.
 import hasPojo from './filters/hasPojo/hasPojo.filter';
@@ -142,8 +142,8 @@ angular
 // Services.
 .service(...cleanup)
 .service(...IgniteUiAceOnLoad)
+.service(...IgniteCountries)
 // Providers.
-.provider(...igniteCountries)
 // Filters.
 .filter(...hasPojo)
 .config(['$stateProvider', '$locationProvider', '$urlRouterProvider', function($stateProvider, $locationProvider, $urlRouterProvider) {
