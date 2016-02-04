@@ -47,6 +47,8 @@ namespace Apache.Ignite.Linq.Impl
             GetStringMethod("Substring", new[] {typeof (int), typeof (int)}, GetFunc("substring", 0, 1)),
             GetStringMethod("Trim", "trim"),
             GetStringMethod("Trim", "trim", typeof(char[])),
+            GetStringMethod("TrimStart", "ltrim", typeof(char[])),
+            GetStringMethod("TrimEnd", "rtrim", typeof(char[])),
 
             GetMethod(typeof (DateTime), "ToString", new[] {typeof (string)}, GetFunc("formatdatetime")),
 
