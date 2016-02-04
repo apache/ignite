@@ -131,7 +131,10 @@ router.post('/remove/all', function (req, res) {
                 if (err)
                     return res.status(500).send(err.message);
 
-                res.sendStatus(200);
+                db.Cluster.update({space: {$in: space_ids}}, {igfss: []}, {multi: true}, function (err) {
+                    if (db.processed(err, res))
+                        res.sendStatus(200);
+                });
             })
         }
     });
