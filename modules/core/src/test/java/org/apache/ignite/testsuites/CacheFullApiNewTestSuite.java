@@ -64,6 +64,7 @@ public class CacheFullApiNewTestSuite extends TestSuite {
         Variants.enumVariants(CacheMode.class, "setCacheMode"),
         Variants.enumVariants(CacheAtomicityMode.class, "setAtomicityMode"),
         Variants.enumVariantsWithNull(CacheMemoryMode.class, "setMemoryMode"),
+        Variants.booleanVariants("setEvictSynchronized"),
     };
 
 //    /** */

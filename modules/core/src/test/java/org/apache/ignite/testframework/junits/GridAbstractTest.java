@@ -581,7 +581,13 @@ public abstract class GridAbstractTest extends TestCase {
             }
         }
 
-        info(">>> Starting test: " + getName() + " <<<");
+        String newTestCfgSuffix = "";
+
+        if (testsCfg != null)
+            newTestCfgSuffix += '-' + testsCfg.suffix() + '-' + testsCfg.gridCount() + "-node(s)";
+        
+        info(">>> Starting test: " + GridTestUtils.fullSimpleName(getClass()) + "#" + getName() 
+            + newTestCfgSuffix + " <<<");
 
         try {
             beforeTest();
@@ -1433,7 +1439,13 @@ public abstract class GridAbstractTest extends TestCase {
     @Override protected void tearDown() throws Exception {
         long dur = System.currentTimeMillis() - ts;
 
-        info(">>> Stopping test: " + getName() + " in " + dur + " ms <<<");
+        String newTestCfgSuffix = "";
+        
+        if (testsCfg != null)
+            newTestCfgSuffix += '-' + testsCfg.suffix() + '-' + testsCfg.gridCount() + "-node(s)";
+
+        info(">>> Stopping test: " + GridTestUtils.fullSimpleName(getClass()) + getName() + newTestCfgSuffix 
+            + " in " + dur + " ms <<<");
 
         TestCounters cntrs = getTestCounters();
 
@@ -1448,12 +1460,8 @@ public abstract class GridAbstractTest extends TestCase {
             serializedObj.clear();
 
             if (isLastTest()) {
-                String newTestCfgSuffix = "";
-
-                if (testsCfg != null)
-                    newTestCfgSuffix += '-' + testsCfg.suffix() + '-' + testsCfg.gridCount() + "-node(s)";
-
-                info(">>> Stopping test class: " + GridTestUtils.fullSimpleName(getClass()) + newTestCfgSuffix + " <<<");
+                info(">>> Stopping test class: " + GridTestUtils.fullSimpleName(getClass()) 
+                    + newTestCfgSuffix + " <<<");
 
                 TestCounters counters = getTestCounters();
 
