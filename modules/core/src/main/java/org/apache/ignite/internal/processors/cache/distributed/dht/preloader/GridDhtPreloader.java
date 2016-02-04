@@ -711,12 +711,8 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
      */
     @SuppressWarnings( {"unchecked", "RedundantCast"})
     @Override public GridDhtFuture<Object> request(Collection<KeyCacheObject> keys, AffinityTopologyVersion topVer) {
-        if (cctx.rebalanceEnabled()) {
-            IgniteInternalFuture<Boolean> rebalanceFut = rebalanceFuture();
-
-            if (rebalanceFut.isDone() && Boolean.TRUE.equals(rebalanceFut.result()))
-                return null;
-        }
+        if (!needForceKeys())
+            return null;
 
         final GridDhtForceKeysFuture<?, ?> fut = new GridDhtForceKeysFuture<>(cctx, topVer, keys, this);
 

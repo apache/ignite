@@ -105,7 +105,7 @@ public class GridNioServer<T> {
 
     /** */
     private static final boolean DISABLE_KEYSET_OPTIMIZATION =
-        IgniteSystemProperties.getBoolean("IGNITE_NO_SELECTOR_OPTS", false);
+        IgniteSystemProperties.getBoolean(IgniteSystemProperties.IGNITE_NO_SELECTOR_OPTS);
 
     /**
      *

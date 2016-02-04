@@ -453,24 +453,18 @@ public final class GridDhtGetSingleFuture<K, V> extends GridFutureAdapter<GridCa
         if (map.isEmpty())
             return null;
 
-        Map.Entry<KeyCacheObject, T2<CacheObject, GridCacheVersion>> e = F.firstEntry(map);
+        T2<CacheObject, GridCacheVersion> val = map.get(key);
 
-        if (e != null) {
-            GridCacheEntryInfo info = new GridCacheEntryInfo();
+        assert val != null;
 
-            T2<CacheObject, GridCacheVersion> val = e.getValue();
+        GridCacheEntryInfo info = new GridCacheEntryInfo();
 
-            assert val != null;
+        info.cacheId(cctx.cacheId());
+        info.key(key);
+        info.value(skipVals ? null : val.get1());
+        info.version(val.get2());
 
-            info.cacheId(cctx.cacheId());
-            info.key(e.getKey());
-            info.value(skipVals ? null : val.get1());
-            info.version(val.get2());
-
-            return info;
-        }
-
-        return null;
+        return info;
     }
 
     /**

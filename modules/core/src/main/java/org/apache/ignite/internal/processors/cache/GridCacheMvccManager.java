@@ -77,12 +77,7 @@ public class GridCacheMvccManager extends GridCacheSharedManagerAdapter {
     private static final int MAX_REMOVED_LOCKS = 10240;
 
     /** Pending locks per thread. */
-    private final ThreadLocal<Deque<GridCacheMvccCandidate>> pending =
-        new ThreadLocal<Deque<GridCacheMvccCandidate>>() {
-            @Override protected Deque<GridCacheMvccCandidate> initialValue() {
-                return new ArrayDeque<>();
-            }
-        };
+    private final ThreadLocal<Deque<GridCacheMvccCandidate>> pending = new ThreadLocal<>();
 
     /** Pending near local locks and topology version per thread. */
     private ConcurrentMap<Long, GridCacheExplicitLockSpan> pendingExplicit;
@@ -728,6 +723,9 @@ public class GridCacheMvccManager extends GridCacheSharedManagerAdapter {
 
         Deque<GridCacheMvccCandidate> queue = pending.get();
 
+        if (queue == null)
+            pending.set(queue = new ArrayDeque<>());
+
         GridCacheMvccCandidate prev = null;
 
         if (!queue.isEmpty())
@@ -751,7 +749,7 @@ public class GridCacheMvccManager extends GridCacheSharedManagerAdapter {
      * Reset MVCC context.
      */
     public void contextReset() {
-        pending.remove();
+        pending.set(null);
     }
 
     /**
