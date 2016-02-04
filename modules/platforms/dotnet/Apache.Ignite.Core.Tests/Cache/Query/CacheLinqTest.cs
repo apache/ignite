@@ -29,6 +29,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
     using System.Collections;
     using System.Linq;
     using System.Linq.Expressions;
+    using System.Text.RegularExpressions;
     using System.Threading;
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Cache;
@@ -220,16 +221,21 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
             CheckFunc(x => x.EndsWith("_99"), strings);
             CheckFunc(x => x.Contains("son_3"), strings);
             CheckFunc(x => x.Length, strings);
+
             CheckFunc(x => x.IndexOf("9"), strings);
             CheckFunc(x => x.IndexOf("7", 4), strings);
+
             CheckFunc(x => x.CompareTo("Person_14"), strings);
             CheckFunc(x => string.Compare(x, "Person_64"), strings);
+
             CheckFunc(x => x.Substring(4), strings);
             CheckFunc(x => x.Substring(4, 5), strings);
+
             CheckFunc(x => x.PadLeft(3), strings);
             CheckFunc(x => x.PadLeft(3, '*'), strings);
             CheckFunc(x => x.PadRight(4), strings);
             CheckFunc(x => x.PadLeft(4, '%'), strings);
+
             CheckFunc(x => x.Trim(), strings);
             CheckFunc(x => x.Trim('P'), strings);
             CheckFunc(x => x.Trim('3'), strings);
@@ -243,6 +249,8 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
             CheckFunc(x => x.TrimEnd('3'), strings);
             CheckFunc(x => x.TrimEnd('P', 'e'), strings);
             CheckFunc(x => x.TrimEnd('P', 'e', '7'), strings);
+
+            CheckFunc(x => Regex.Replace(x, @"son.\d", "kele!"), strings);
         }
 
         [Test]
