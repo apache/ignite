@@ -63,8 +63,8 @@ void GenerateCities(std::map<int64_t, City>& cities)
     cities[idCounter] = City(++idCounter, "Denver",        663862);
     cities[idCounter] = City(++idCounter, "Boston",        655884);
     cities[idCounter] = City(++idCounter, "Las Vegas",     613599);
-    cities[idCounter] = City(++idCounter, "Kansas City",   470800);
     cities[idCounter] = City(++idCounter, "Atlanta",       456002);
+    cities[idCounter] = City(++idCounter, "Omaha",         446599);
     cities[idCounter] = City(++idCounter, "Miami",         430332);
 }
 
@@ -143,13 +143,13 @@ void GenerateClients(std::map<int64_t, Client>& clients,
         allPopulation += it->second.population;
 
     // Selecting random city considering its weight - population.
-    boost::random::uniform_int_distribution<int64_t> cityPopulationDistr(0, allPopulation);
+    boost::random::uniform_int_distribution<int64_t> cityPopulationDistr(0, allPopulation - 1);
 
     // First name distribution.
-    boost::random::uniform_int_distribution<size_t> firstNameDistr(0, firstNames.size());
+    boost::random::uniform_int_distribution<size_t> firstNameDistr(0, firstNames.size() - 1);
 
     // Last name distribution.
-    boost::random::uniform_int_distribution<size_t> lastNameDistr(0, lastNames.size());
+    boost::random::uniform_int_distribution<size_t> lastNameDistr(0, lastNames.size() - 1);
 
     for (int64_t i = 1; i <= num; ++i)
     {
@@ -162,7 +162,7 @@ void GenerateClients(std::map<int64_t, Client>& clients,
         {
             populationPos -= it->second.population;
 
-            if (populationPos <= 0)
+            if (populationPos < 0)
             {
                 cityId = it->first;
 
