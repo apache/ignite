@@ -394,17 +394,14 @@ int main()
         std::cout << ">>> Cache bigger example started." << std::endl;
         std::cout << std::endl;
 
-        std::cout << std::endl;
         std::cout << ">>> Generating example data..." << std::endl;
-        std::cout << std::endl;
 
         Populate(grid);
 
-        std::cout << std::endl;
         std::cout << ">>> Data is generated and loaded to cache successfully." << std::endl;
-        std::cout << std::endl;
 
-        Sleep(1000000);
+        std::cout << ">>> Example is running, press any key to stop ..." << std::endl;
+        std::cin.get();
 
         // Stop node.
         Ignition::StopAll(false);
@@ -415,10 +412,8 @@ int main()
     }
 
     std::cout << std::endl;
-    std::cout << ">>> Example finished, press any key to exit ..." << std::endl;
+    std::cout << ">>> Example finished, exiting." << std::endl;
     std::cout << std::endl;
-
-    std::cin.get();
 
     return 0;
 }
