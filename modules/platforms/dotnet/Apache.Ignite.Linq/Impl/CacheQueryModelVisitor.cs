@@ -126,6 +126,7 @@ namespace Apache.Ignite.Linq.Impl
                 else if (op is AllResultOperator)
                 {
                     _builder.Append("bool_and (");
+                    BuildSqlExpression(((AllResultOperator) op).Predicate);
                     parenCount++;
                 }
                 else if (op is AnyResultOperator)
