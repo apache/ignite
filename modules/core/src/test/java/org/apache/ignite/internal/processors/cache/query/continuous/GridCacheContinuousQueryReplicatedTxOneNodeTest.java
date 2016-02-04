@@ -24,6 +24,7 @@ import javax.cache.event.CacheEntryEvent;
 import javax.cache.event.CacheEntryListenerException;
 import javax.cache.event.CacheEntryUpdatedListener;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.CacheRebalanceMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
@@ -38,7 +39,8 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 /**
  * Test for replicated cache with one node.
  */
-public class GridCacheContinuousQueryReplicatedOneNodeSelfTest extends GridCommonAbstractTest {
+@SuppressWarnings("Duplicates")
+public class GridCacheContinuousQueryReplicatedTxOneNodeTest extends GridCommonAbstractTest {
     /** IP finder. */
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
 
@@ -48,7 +50,8 @@ public class GridCacheContinuousQueryReplicatedOneNodeSelfTest extends GridCommo
 
         CacheConfiguration cacheCfg = defaultCacheConfiguration();
 
-        cacheCfg.setCacheMode(CacheMode.REPLICATED);
+        cacheCfg.setAtomicityMode(atomicMode());
+        cacheCfg.setCacheMode(cacheMode());
         cacheCfg.setRebalanceMode(CacheRebalanceMode.SYNC);
         cacheCfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
 
@@ -64,10 +67,25 @@ public class GridCacheContinuousQueryReplicatedOneNodeSelfTest extends GridCommo
     }
 
     /**
+     * @return Atomicity mode for a cache.
+     */
+    protected CacheAtomicityMode atomicMode() {
+        return CacheAtomicityMode.TRANSACTIONAL;
+    }
+
+    /**
+     * @return Cache mode.
+     */
+    protected CacheMode cacheMode() {
+        return CacheMode.REPLICATED;
+    }
+
+    /**
      * @throws Exception If failed.
      */
     public void testLocal() throws Exception {
-        doTest(true);
+        if (cacheMode() == CacheMode.REPLICATED)
+            doTest(true);
     }
 
     /**
@@ -75,6 +93,20 @@ public class GridCacheContinuousQueryReplicatedOneNodeSelfTest extends GridCommo
      */
     public void testDistributed() throws Exception {
         doTest(false);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testLocalOneNode() throws Exception {
+        doTestOneNode(true);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testDistributedOneNode() throws Exception {
+        doTestOneNode(false);
     }
 
     /**
@@ -105,6 +137,47 @@ public class GridCacheContinuousQueryReplicatedOneNodeSelfTest extends GridCommo
             startGrid(1);
 
             awaitPartitionMapExchange();
+
+            for (int i = 0; i < 10; i++)
+                cache.put("key" + i, i);
+
+            assert latch.await(5000, TimeUnit.MILLISECONDS);
+
+            assertEquals(10, cnt.get());
+        }
+        finally {
+            stopAllGrids();
+        }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    private void doTestOneNode(boolean loc) throws Exception {
+        try {
+            IgniteCache<String, Integer> cache = startGrid(0).cache(null);
+
+            ContinuousQuery<String, Integer> qry = new ContinuousQuery<>();
+
+            final AtomicInteger cnt = new AtomicInteger();
+            final CountDownLatch latch = new CountDownLatch(10);
+
+            for (int i = 0; i < 10; i++)
+                cache.put("key" + i, i);
+
+            cache.clear();
+
+            qry.setLocalListener(new CacheEntryUpdatedListener<String, Integer>() {
+                @Override public void onUpdated(Iterable<CacheEntryEvent<? extends String, ? extends Integer>> evts)
+                        throws CacheEntryListenerException {
+                    for (CacheEntryEvent<? extends String, ? extends Integer> evt : evts) {
+                        cnt.incrementAndGet();
+                        latch.countDown();
+                    }
+                }
+            });
+
+            cache.query(qry.setLocal(loc));
 
             for (int i = 0; i < 10; i++)
                 cache.put("key" + i, i);
