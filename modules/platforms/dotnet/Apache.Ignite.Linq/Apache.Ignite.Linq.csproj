@@ -85,6 +85,7 @@
     <Compile Include="Impl\ICacheQueryProxy.cs" />
     <Compile Include="Impl\MethodVisitor.cs" />
     <Compile Include="Impl\QueryData.cs" />
+    <Compile Include="Impl\SqlTypes.cs" />
     <Compile Include="Impl\TableNameMapper.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>

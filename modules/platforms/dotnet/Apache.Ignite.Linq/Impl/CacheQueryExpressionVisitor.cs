@@ -308,11 +308,15 @@ namespace Apache.Ignite.Linq.Impl
         [SuppressMessage("Microsoft.Design", "CA1062:Validate arguments of public methods")]
         protected override Expression VisitConditional(ConditionalExpression expression)
         {
-            _resultBuilder.Append("CASEWHEN(");
+            _resultBuilder.Append("casewhen(");
+
             Visit(expression.Test);
-            _resultBuilder.Append(", ");
+
+            // Explicit type specification is required when all arguments of CASEWHEN are parameters
+            _resultBuilder.Append(", cast(");
             Visit(expression.IfTrue);
-            _resultBuilder.Append(", ");
+            _resultBuilder.AppendFormat(" as {0}), ", SqlTypes.GetSqlTypeName(expression.Type) ?? "other");
+
             Visit(expression.IfFalse);
             _resultBuilder.Append(")");
 
