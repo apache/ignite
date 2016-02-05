@@ -22,7 +22,6 @@ namespace Apache.Ignite.Core.Compute
     using System.Diagnostics.CodeAnalysis;
     using Apache.Ignite.Core.Cluster;
     using Apache.Ignite.Core.Common;
-    using Apache.Ignite.Core.Impl.Common;
 
     /// <summary>
     /// Convenience adapter for <see cref="IComputeTask{TArg,TJobRes,TTaskRes}"/> interface
