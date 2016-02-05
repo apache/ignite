@@ -614,8 +614,8 @@ consoleModule.controller('clustersController', function ($http, $timeout, $scope
                                 $common.showInfo('All clusters have been removed');
 
                                 $scope.clusters = [];
-
                                 $scope.backupItem = undefined;
+                                $scope.ui.inputForm.$setPristine();
                             })
                             .error(function (errMsg) {
                                 $common.showError(errMsg);
