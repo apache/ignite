@@ -63,6 +63,7 @@ form.panel.panel-default(name='discovery' novalidate)
                             data-name='discoLocalPortRange'
                             data-ng-model='#{model}.localPortRange'
                             data-placeholder='100'
+                            data-min='1'
                         )
                 .settings-row
                    ignite-form-field
@@ -119,8 +120,8 @@ form.panel.panel-default(name='discovery' novalidate)
                         ignite-form-field-tooltip
                             | Network timeout
                         ignite-form-field-input-number(
-                            data-id='networkTimeout'
-                            data-name='networkTimeout'
+                            data-id='discoNetworkTimeout'
+                            data-name='discoNetworkTimeout'
                             data-ng-model='#{model}.networkTimeout'
                             data-placeholder='5000'
                             data-min='1'

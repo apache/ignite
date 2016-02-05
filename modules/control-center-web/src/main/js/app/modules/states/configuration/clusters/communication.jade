@@ -33,10 +33,11 @@ form.panel.panel-default(name='communication' novalidate)
                         ignite-form-field-tooltip
                             | Maximum timeout in milliseconds for network requests
                         ignite-form-field-input-number(
-                            data-id='networkTimeout'
-                            data-name='networkTimeout'
+                            data-id='commNetworkTimeout'
+                            data-name='commNetworkTimeout'
                             data-ng-model='backupItem.networkTimeout'
                             data-placeholder='5000'
+                            data-min='1'
                         )
                 .settings-row
                     ignite-form-field
@@ -75,6 +76,7 @@ form.panel.panel-default(name='communication' novalidate)
                             data-name='discoveryStartupDelay'
                             data-ng-model='backupItem.discoveryStartupDelay'
                             data-placeholder='60000'
+                            data-min='1'
                         )
                 .settings-row
                    ignite-form-field
@@ -124,6 +126,7 @@ form.panel.panel-default(name='communication' novalidate)
                             data-name='comLocalPortRange'
                             data-ng-model='#{model}.localPortRange'
                             data-placeholder='100'
+                            data-min='1'
                         )
                 .settings-row
                     ignite-form-field
@@ -172,6 +175,7 @@ form.panel.panel-default(name='communication' novalidate)
                             data-name='idleConnectionTimeout'
                             data-ng-model='#{model}.idleConnectionTimeout'
                             data-placeholder='30000'
+                            data-min='1'
                         )
                 .settings-row
                     ignite-form-field
@@ -208,6 +212,7 @@ form.panel.panel-default(name='communication' novalidate)
                             data-name='comReconnectCount'
                             data-ng-model='#{model}.reconnectCount'
                             data-placeholder='10'
+                            data-min='1'
                         )
                 .settings-row
                     ignite-form-field
@@ -278,6 +283,7 @@ form.panel.panel-default(name='communication' novalidate)
                             data-name='ackSendThreshold'
                             data-ng-model='#{model}.ackSendThreshold'
                             data-placeholder='16'
+                            data-min='1'
                         )
                 .settings-row
                     ignite-form-field
@@ -314,6 +320,7 @@ form.panel.panel-default(name='communication' novalidate)
                             data-name='selectorsCount'
                             data-ng-model='#{model}.selectorsCount'
                             data-placeholder='min(4, availableProcessors)'
+                            data-min='1'
                         )
                 .settings-row
                    ignite-form-field
