@@ -29,10 +29,6 @@ public class RendezvousAffinityRebalancingSelfTest extends AbstractAffinityRebal
 
     /** {@inheritDoc} */
     @Override protected AffinityFunction affinityFunction(Ignite ignite) {
-        AffinityFunction aff = new RendezvousAffinityFunction();
-
-        GridTestUtils.setFieldValue(aff, "ignite", ignite);
-
-        return aff;
+        return new RendezvousAffinityFunction();
     }
 }

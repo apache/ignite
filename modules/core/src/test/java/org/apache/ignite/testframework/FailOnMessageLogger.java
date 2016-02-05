@@ -35,6 +35,7 @@ public class FailOnMessageLogger implements IgniteLogger {
     /** */
     private final IgniteLogger echo;
 
+    /** Stores message in which {@code checkMsg} was found. */
     private volatile String failOnMessage;
 
     /**

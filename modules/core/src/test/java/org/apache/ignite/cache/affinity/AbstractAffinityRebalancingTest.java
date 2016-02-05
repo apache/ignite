@@ -101,7 +101,7 @@ public abstract class AbstractAffinityRebalancingTest extends GridCommonAbstract
             @Override public Void call() throws Exception {
 
                 for(int start = 0; Ignition.allGrids().contains(ignite1); start += delta) {
-                    fillWithCache(ignite2, delta, start);
+                    fillWithCache(ignite2, delta, start, affinityFunction(ignite2));
 
                     for (String victim : ignite2.cacheNames())
                         ignite2.getOrCreateCache(victim).put(start, delta);
@@ -126,13 +126,14 @@ public abstract class AbstractAffinityRebalancingTest extends GridCommonAbstract
         assert log.getFailOnMessage() == null : log.getFailOnMessage();
     }
 
-    private static void fillWithCache(Ignite ignite, int iterations, int start) {
+    private static void fillWithCache(Ignite ignite, int iterations, int start, AffinityFunction affinityFunction) {
         for(int i = start; i < iterations + start; i++) {
             CacheConfiguration<Integer, Integer> cachePCfg = new CacheConfiguration<>();
 
             cachePCfg.setName(CACHE_NAME_DHT_PARTITIONED + i);
             cachePCfg.setCacheMode(CacheMode.PARTITIONED);
             cachePCfg.setBackups(1);
+            cachePCfg.setAffinity(affinityFunction);
 
             ignite.getOrCreateCache(cachePCfg);
 
@@ -141,6 +142,7 @@ public abstract class AbstractAffinityRebalancingTest extends GridCommonAbstract
             cacheRCfg.setName(CACHE_NAME_DHT_REPLICATED + i);
             cacheRCfg.setCacheMode(CacheMode.REPLICATED);
             cachePCfg.setBackups(0);
+            cachePCfg.setAffinity(affinityFunction);
 
             ignite.getOrCreateCache(cacheRCfg);
         }
