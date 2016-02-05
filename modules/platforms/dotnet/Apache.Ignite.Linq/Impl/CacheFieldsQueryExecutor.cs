@@ -75,7 +75,7 @@ namespace Apache.Ignite.Linq.Impl
             Debug.WriteLine("\nFields Query: {0} | {1}", queryData.QueryText,
                 string.Join(", ", queryData.Parameters.Select(x => x == null ? "null" : x.ToString())));
 
-            var selector = GetResultSelector<T>(queryModel.SelectClause.Selector);
+            var selector = GetResultSelector<T>(queryModel);
 
             var queryCursor = _cache.QueryFields(query, selector);
 
@@ -91,8 +91,10 @@ namespace Apache.Ignite.Linq.Impl
         /// <summary>
         /// Gets the result selector.
         /// </summary>
-        private static Func<IBinaryRawReader, int, T> GetResultSelector<T>(Expression selectorExpression)
+        private static Func<IBinaryRawReader, int, T> GetResultSelector<T>(QueryModel model)
         {
+            var selectorExpression = model.SelectClause.Selector;
+
             var newExpr = selectorExpression as NewExpression;
 
             if (newExpr != null)
@@ -107,7 +109,29 @@ namespace Apache.Ignite.Linq.Impl
             if (entryCtor != null)
                 return (reader, count) => entryCtor(reader);
 
+            if (typeof(T) == typeof(bool))
+                return ReadBool<T>;
+
             return (reader, count) => reader.ReadObject<T>();
+        }
+
+        /// <summary>
+        /// Reads the bool. Actual data may be bool or int/long.
+        /// </summary>
+        private static T ReadBool<T>(IBinaryRawReader reader, int count)
+        {
+            var obj = reader.ReadObject<object>();
+
+            if (obj is bool)
+                return (T) obj;
+
+            if (obj is long)
+                return TypeCaster<T>.Cast((long) obj != 0);
+
+            if (obj is int)
+                return TypeCaster<T>.Cast((int) obj != 0);
+
+            throw new InvalidOperationException("Expected bool, got: " + obj);
         }
 
         /// <summary>

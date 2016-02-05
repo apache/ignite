@@ -105,7 +105,7 @@ namespace Apache.Ignite.Linq.Impl
 
             foreach (var op in queryModel.ResultOperators.Reverse())
             {
-                if (op is CountResultOperator)
+                if (op is CountResultOperator || op is AnyResultOperator)
                 {
                     _builder.Append("count (");
                     parenCount++;
@@ -129,11 +129,6 @@ namespace Apache.Ignite.Linq.Impl
                 {
                     _builder.Append("bool_and (");
                     BuildSqlExpression(((AllResultOperator) op).Predicate);
-                    parenCount++;
-                }
-                else if (op is AnyResultOperator)
-                {
-                    _builder.Append("bool_or (");
                     parenCount++;
                 }
                 else if (op is DistinctResultOperator)
