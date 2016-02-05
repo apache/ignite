@@ -229,6 +229,7 @@ form.panel.panel-default(name='connector' novalidate)
                             data-ng-model='#{model}.threadPoolSize'
                             data-placeholder='max(8, availableProcessors) * 2'
                             data-ng-disabled='!#{model}.enabled'
+                            data-min='1'
                         )
                 .settings-row
                     ignite-form-field

@@ -35,6 +35,7 @@ form.panel.panel-default(name='thread' novalidate)
                             data-name='publicThreadPoolSize'
                             data-ng-model='#{model}.publicThreadPoolSize'
                             data-placeholder='max(8, availableProcessors) * 2'
+                            data-min='1'
                         )
                 .settings-row
                     ignite-form-field(data-label='System')
@@ -45,6 +46,7 @@ form.panel.panel-default(name='thread' novalidate)
                             data-name='systemThreadPoolSize'
                             data-ng-model='#{model}.systemThreadPoolSize'
                             data-placeholder='max(8, availableProcessors) * 2'
+                            data-min='1'
                         )
                 .settings-row
                     ignite-form-field(data-label='Management')
@@ -55,6 +57,7 @@ form.panel.panel-default(name='thread' novalidate)
                             data-name='managementThreadPoolSize'
                             data-ng-model='#{model}.managementThreadPoolSize'
                             data-placeholder='4'
+                            data-min='1'
                         )
                 .settings-row
                     ignite-form-field(data-label='IGFS')
@@ -65,6 +68,7 @@ form.panel.panel-default(name='thread' novalidate)
                             data-name='igfsThreadPoolSize'
                             data-ng-model='#{model}.igfsThreadPoolSize'
                             data-placeholder='availableProcessors'
+                            data-min='1'
                         )
                 .settings-row
                     ignite-form-field(data-label='Rebalance')
@@ -75,6 +79,7 @@ form.panel.panel-default(name='thread' novalidate)
                             data-name='rebalanceThreadPoolSize'
                             data-ng-model='#{model}.rebalanceThreadPoolSize'
                             data-placeholder='1'
+                            data-min='1'
                         )
             ignite-ui-ace.col-sm-6
                 .preview-panel(ng-init='mode = false')

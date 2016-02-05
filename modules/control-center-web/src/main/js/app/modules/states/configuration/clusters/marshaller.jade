@@ -100,8 +100,8 @@ form.panel.panel-default(name='marshaller' novalidate)
                         ignite-form-field-tooltip
                             | Keep alive time of thread pool that is in charge of processing marshaller messages
                         ignite-form-field-input-number(
-                            data-id='igfsThreadPoolSize'
-                            data-name='igfsThreadPoolSize'
+                            data-id='marshallerCacheKeepAliveTime'
+                            data-name='marshallerCacheKeepAliveTime'
                             data-ng-model='backupItem.marshallerCacheKeepAliveTime'
                             data-placeholder='10000'
                         )
@@ -113,8 +113,8 @@ form.panel.panel-default(name='marshaller' novalidate)
                         ignite-form-field-tooltip
                             | Default size of thread pool that is in charge of processing marshaller messages
                         ignite-form-field-input-number(
-                            data-id='igfsThreadPoolSize'
-                            data-name='igfsThreadPoolSize'
+                            data-id='marshallerCacheThreadPoolSize'
+                            data-name='marshallerCacheThreadPoolSize'
                             data-ng-model='backupItem.marshallerCacheThreadPoolSize'
                             data-placeholder='max(8, availableProcessors) * 2'
                         )

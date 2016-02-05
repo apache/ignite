@@ -49,6 +49,7 @@ form.panel.panel-default(name='communication' novalidate)
                             data-name='networkSendRetryDelay'
                             data-ng-model='backupItem.networkSendRetryDelay'
                             data-placeholder='1000'
+                            data-min='1'
                         )
                 .settings-row
                     ignite-form-field
@@ -61,6 +62,7 @@ form.panel.panel-default(name='communication' novalidate)
                             data-name='networkSendRetryCount'
                             data-ng-model='backupItem.networkSendRetryCount'
                             data-placeholder='3'
+                            data-min='1'
                         )
                 .settings-row
                     ignite-form-field
