@@ -305,6 +305,20 @@ namespace Apache.Ignite.Linq.Impl
         }
 
         /** <inheritdoc /> */
+        protected override Expression VisitConditional(ConditionalExpression expression)
+        {
+            _resultBuilder.Append("CASEWHEN((");
+            Visit(expression.Test);
+            _resultBuilder.Append("), (");
+            Visit(expression.IfTrue);
+            _resultBuilder.Append("), (");
+            Visit(expression.IfFalse);
+            _resultBuilder.Append("))");
+
+            return expression;
+        }
+
+        /** <inheritdoc /> */
         protected override Exception CreateUnhandledItemException<T>(T unhandledItem, string visitMethod)
         {
             return new NotSupportedException(string.Format("The expression '{0}' (type: {1}) is not supported by this LINQ provider.", unhandledItem, typeof (T)));
