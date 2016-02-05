@@ -59,11 +59,11 @@ export default ['previewPanel', ['$interval', '$timeout', ($interval, $timeout) 
      * @param editor Editor to show selection animation.
      * @param selections Array of selection intervals.
      * @param step Step of animation (1 or -1).
-     * @param startStage Start stage of animaiton.
+     * @param stage Start stage of animation.
      * @param finalStage Final stage of animation.
      * @param clearOnFinal Boolean flat to clear selection on animation finish.
      */
-    const _fade = (editor, selections, step, startStage, finalStage, clearOnFinal) => {
+    const _fade = (editor, selections, step, stage, finalStage, clearOnFinal) => {
         const promise = editor.animatePromise;
 
         if (promise) {
@@ -72,7 +72,7 @@ export default ['previewPanel', ['$interval', '$timeout', ($interval, $timeout) 
             _clearSelection(editor);
         }
 
-        animation = {editor, selections, step, startStage, finalStage, clearOnFinal};
+        animation = {editor, selections, step, stage, finalStage, clearOnFinal};
 
         editor.animatePromise = $interval(_animate, 100, 10, false);
     };
