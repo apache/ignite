@@ -276,8 +276,8 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
             Assert.AreEqual(dupInts.ToArray().Distinct().Sum(), dupInts.Distinct().Sum());
 
             // All/any
-            Assert.IsTrue(ints.All(x => x < PersonCount));
-            Assert.IsFalse(ints.Any(x => x < PersonCount));
+            Assert.IsTrue(ints.All(x => x < PersonCount && x >= 0));
+            Assert.IsFalse(ints.Any(x => x > PersonCount && x > 0));
 
             Assert.IsFalse(ints.All(x => x < PersonCount / 2));
             Assert.IsTrue(ints.Any(x => x < PersonCount / 2));
