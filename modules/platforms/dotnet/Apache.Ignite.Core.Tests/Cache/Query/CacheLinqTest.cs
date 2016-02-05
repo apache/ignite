@@ -277,10 +277,18 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
 
             // All/any
             Assert.IsFalse(ints.Where(x => x > -5).Any(x => x > PersonCount && x > 0));
+            Assert.IsTrue(ints.Any(x => x < PersonCount / 2));
+        }
+
+        [Test]
+        [Ignore("IGNITE-2563")]
+        public void TestAggregatesAll()
+        {
+            var ints = GetPersonOrgCache().ToQueryable().Select(x => x.Key);
+
             Assert.IsTrue(ints.Where(x => x > -10).All(x => x < PersonCount && x >= 0));
 
             Assert.IsFalse(ints.All(x => x < PersonCount / 2));
-            Assert.IsTrue(ints.Any(x => x < PersonCount / 2));
         }
 
         [Test]

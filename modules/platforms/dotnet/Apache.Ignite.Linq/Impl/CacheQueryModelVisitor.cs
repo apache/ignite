@@ -128,13 +128,14 @@ namespace Apache.Ignite.Linq.Impl
                     _builder.Append("max (");
                     parenCount++;
                 }
-                else if (op is AllResultOperator)
+                // TODO: IGNITE-2563
+                /*else if (op is AllResultOperator)
                 {
                     _builder.Append("bool_and (");
                     BuildSqlExpression(((AllResultOperator) op).Predicate);
-                    _builder.Append(")");
+                    _builder.Append(") ");
                     return -1;  // Ignore select clause
-                }
+                }*/
                 else if (op is DistinctResultOperator)
                     _builder.Append("distinct ");
                 else if (op is FirstResultOperator || op is SingleResultOperator)
