@@ -110,7 +110,6 @@ public class GridCacheSharedManagerAdapter<K, V> implements GridCacheSharedManag
             // Ignoring attempt to stop manager that has never been started.
             return;
 
-
         onKernalStop0(cancel);
 
         if (log != null && log.isDebugEnabled())
