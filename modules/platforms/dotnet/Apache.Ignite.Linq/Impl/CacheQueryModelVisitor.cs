@@ -82,9 +82,12 @@ namespace Apache.Ignite.Linq.Impl
 
             var parenCount = ProcessResultOperatorsBegin(queryModel);
 
-            // FIELD1, FIELD2 FROM TABLE1, TABLE2
-            BuildSqlExpression(queryModel.SelectClause.Selector, forceStar || parenCount > 0);
-            _builder.Append(')', parenCount).Append(" ");
+            if (parenCount >= 0)
+            {
+                // FIELD1, FIELD2 FROM TABLE1, TABLE2
+                BuildSqlExpression(queryModel.SelectClause.Selector, forceStar || parenCount > 0);
+                _builder.Append(')', parenCount).Append(" ");
+            }
 
             // WHERE ... JOIN ...
             base.VisitQueryModel(queryModel);
@@ -129,7 +132,8 @@ namespace Apache.Ignite.Linq.Impl
                 {
                     _builder.Append("bool_and (");
                     BuildSqlExpression(((AllResultOperator) op).Predicate);
-                    parenCount++;
+                    _builder.Append(")");
+                    return -1;  // Ignore select clause
                 }
                 else if (op is DistinctResultOperator)
                     _builder.Append("distinct ");
