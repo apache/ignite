@@ -78,6 +78,8 @@ namespace Apache.Ignite.Linq.Impl
             // SELECT TOP 1
             _builder.Append("select ");
 
+            // TODO: If (ProcessPredicateAggregates) ignore select where?
+
             var parenCount = ProcessResultOperatorsBegin(queryModel);
 
             // FIELD1, FIELD2 FROM TABLE1, TABLE2
