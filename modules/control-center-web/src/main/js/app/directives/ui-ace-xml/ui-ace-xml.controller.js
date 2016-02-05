@@ -18,6 +18,8 @@
 export default ['$scope', 'GeneratorXml', function($scope, generator) {
     const ctrl = this;
 
+    delete ctrl.data;
+
     // Set default generator
     ctrl.generator = (cluster) => {
         return generator.cluster(cluster, $scope.cfg);

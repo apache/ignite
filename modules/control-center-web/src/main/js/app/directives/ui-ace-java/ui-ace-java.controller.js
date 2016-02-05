@@ -21,6 +21,8 @@ const CLIENT_CFG = 'ClientConfigurationFactory';
 export default ['$scope', 'GeneratorJava', function($scope, generator) {
     const ctrl = this;
 
+    delete ctrl.data;
+
     // Set default generator
     ctrl.generator = (cluster) => {
         const type = $scope.cfg ? CLIENT_CFG : SERVER_CFG;

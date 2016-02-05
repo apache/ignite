@@ -23,15 +23,6 @@ export default ['igniteUiAceXml', ['GeneratorXml', (generator) => {
         if (formCtrl && ngModelCtrl)
             formCtrl.$removeControl(ngModelCtrl);
 
-        if (typeof attrs.clusterCfg !== 'undefined') {
-            scope.$watch('cfg', (cfg) => {
-                if (typeof cfg !== 'undefined')
-                    return;
-
-                scope.cfg = {};
-            });
-        }
-
         if (igniteUiAce && igniteUiAce.onLoad) {
             scope.onLoad = (editor) => {
                 igniteUiAce.onLoad(editor);
@@ -52,10 +43,9 @@ export default ['igniteUiAceXml', ['GeneratorXml', (generator) => {
             return ctrl.generator(scope.cluster);
         };
 
-        // Setup watchers.
-        scope.$watch('generator', (method) => {
-            if (!method)
-                return;
+        // Setup generator.
+        if (scope.generator) {
+            const method = scope.generator;
 
             switch (method) {
                 case 'clusterCaches':
@@ -74,6 +64,11 @@ export default ['igniteUiAceXml', ['GeneratorXml', (generator) => {
 
                     break;
 
+                case 'clusterDiscovery':
+                    ctrl.generator = (cluster) => generator.clusterDiscovery(cluster.discovery).asString();
+
+                    break;
+
                 case 'igfss':
                     ctrl.generator = () => generator.igfss(scope.igfss).asString();
 
@@ -82,8 +77,20 @@ export default ['igniteUiAceXml', ['GeneratorXml', (generator) => {
                 default:
                     ctrl.generator = (cluster) => generator[method](cluster).asString();
             }
-        });
-        scope.$watch('cfg', (data) => ctrl.data = render(data), true);
+        }
+
+        if (typeof attrs.clusterCfg !== 'undefined') {
+            scope.$watch('cfg', (cfg) => {
+                if (typeof cfg !== 'undefined')
+                    return;
+
+                scope.cfg = {};
+            });
+
+            scope.$watch('cfg', (data) => ctrl.data = render(data), true);
+        }
+
+        // Setup watchers.
         scope.$watch('cluster', (data) => ctrl.data = render(data), true);
     };
 
