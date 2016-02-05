@@ -106,8 +106,9 @@ public class GridCacheSharedManagerAdapter<K, V> implements GridCacheSharedManag
 
     /** {@inheritDoc} */
     @Override public final void onKernalStop(boolean cancel) {
+        assert !stop.get();
+
         if (!starting.get())
-        //if (!starting.compareAndSet(false, true))
             // Ignoring attempt to stop manager that has never been started.
             return;
 
@@ -116,6 +117,8 @@ public class GridCacheSharedManagerAdapter<K, V> implements GridCacheSharedManag
 
         if (log != null && log.isDebugEnabled())
             log.debug(kernalStopInfo());
+
+        assert !stop.get();
     }
 
     /**

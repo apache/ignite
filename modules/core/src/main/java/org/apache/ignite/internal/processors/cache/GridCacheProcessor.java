@@ -69,6 +69,7 @@ import org.apache.ignite.internal.IgniteComponentType;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteNodeAttributes;
 import org.apache.ignite.internal.IgniteTransactionsEx;
+import org.apache.ignite.internal.NodeStoppingException;
 import org.apache.ignite.internal.binary.BinaryContext;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.binary.GridBinaryMarshaller;
@@ -1711,17 +1712,20 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         Collection<DynamicCacheChangeRequest> reqs,
         Throwable err
     ) {
-        for (GridCacheAdapter<?, ?> cache : caches.values()) {
-            GridCacheContext<?, ?> cacheCtx = cache.context();
+        if (err instanceof NodeStoppingException)
+            log.warning("Skipping exchange completion for caches, since node is stopping: " + err.getMessage());
+        else
+            for (GridCacheAdapter<?, ?> cache : caches.values()) {
+                GridCacheContext<?, ?> cacheCtx = cache.context();
 
-            if (F.eq(cacheCtx.startTopologyVersion(), topVer)) {
-                cacheCtx.preloader().onInitialExchangeComplete(err);
+                if (F.eq(cacheCtx.startTopologyVersion(), topVer)) {
+                    cacheCtx.preloader().onInitialExchangeComplete(err);
 
-                String masked = maskNull(cacheCtx.name());
+                    String masked = maskNull(cacheCtx.name());
 
-                jCacheProxies.put(masked, new IgniteCacheProxy(cache.context(), cache, null, false));
+                    jCacheProxies.put(masked, new IgniteCacheProxy(cache.context(), cache, null, false));
+                }
             }
-        }
 
         if (!F.isEmpty(reqs) && err == null) {
             for (DynamicCacheChangeRequest req : reqs) {
