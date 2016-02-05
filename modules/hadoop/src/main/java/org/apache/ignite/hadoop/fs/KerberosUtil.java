@@ -17,10 +17,8 @@
  
 package org.apache.ignite.hadoop.fs;
 
-import org.apache.commons.lang.StringUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.security.UserGroupInformation;
-import org.apache.hadoop.util.ThreadUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -30,71 +28,58 @@ import java.io.IOException;
  * KerberosUtil
  */
 public class KerberosUtil {
-
+    /** Logger */
     private static final Logger LOG = LoggerFactory.getLogger(KerberosUtil.class);
-
-//
-//    public static final String KERBEROS_PRINCIPLE_PROPERTY_SUFFIX = "kerberos.principal";
-//    public static final String KEYTAB_FILE_PROPERTY_SUFFIX = "keytab.file";
-//    public static final String PROPERTY_SEPERATOR = ".";
-
-
-    /** Leave 10 minutes between relogin attempts. */
-    // TODO: make it configurable: should be a factory parameter:
-    private static final long MIN_TIME_BEFORE_RELOGIN = 1 * 30 * 1000L; // was 10 min
-
-//    public static String getKerberosPrincipleProperty(String appName){
-//        return new String(appName + PROPERTY_SEPERATOR + KERBEROS_PRINCIPLE_PROPERTY_SUFFIX).intern();
-//    }
-//
-//    public static String getKeyTabFileProperty(String appName){
-//        return new String(appName + PROPERTY_SEPERATOR + KEYTAB_FILE_PROPERTY_SUFFIX).intern();
-//    }
 
     /**
      *
      * @param configuration
      * @throws IOException
      */
-    public synchronized static void loginFromKeyTabAndAutoReLogin(Configuration configuration,
-            String keyTabFile, String kerberosPrinciple)
-                    ///                                                          String appName)
+    public synchronized static UserGroupInformation loginFromKeyTabAndAutoReLogin(Configuration configuration,
+            String keyTabFile, String kerberosPrinciple, long reloginInterval)
         throws IOException {
         UserGroupInformation.setConfiguration(configuration);
 
-        //String keyTabFile = configuration.get(getKeyTabFileProperty(appName));
-        LOG.info("keyTabFile=" + keyTabFile);
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("keyTabFile=" + keyTabFile);
 
-        //String kerberosPrinciple = configuration.get(getKerberosPrincipleProperty(appName));
-        LOG.info("kerberosPrinciple=" + kerberosPrinciple);
-
-        if (StringUtils.isNotEmpty(keyTabFile)
-                && StringUtils.isNotEmpty(kerberosPrinciple)) {
-            UserGroupInformation.loginUserFromKeytab(kerberosPrinciple, keyTabFile);
-
-            UserGroupInformation loginUser = UserGroupInformation.getLoginUser();
-
-            spawnAutoReloginThreadForKerberosKeyTab(loginUser);
-
-            LOG.info("KeyTab TGT Login Success for " + loginUser.getUserName());
-        } else {
-            LOG.error("KeyTab File or Kerberos Principle is not found in configuration");
-            throw new IllegalStateException("KeyTab File or Kerberos Principle is not found in configuration");
+            LOG.debug("kerberosPrinciple=" + kerberosPrinciple);
         }
+
+        UserGroupInformation.loginUserFromKeytab(kerberosPrinciple, keyTabFile);
+
+        UserGroupInformation loginUser = UserGroupInformation.getLoginUser();
+
+        spawnAutoReloginThreadForKerberosKeyTab(loginUser, reloginInterval);
+
+        if (LOG.isDebugEnabled())
+            LOG.debug("KeyTab TGT Login Success for " + loginUser.getUserName());
+
+        return loginUser;
     }
 
     /**
      *
      */
-    private static void spawnAutoReloginThreadForKerberosKeyTab(final UserGroupInformation loginUser) {
-        if (loginUser.isSecurityEnabled()
+    private static void spawnAutoReloginThreadForKerberosKeyTab(final UserGroupInformation loginUser,
+             final long reloginInterval) {
+        if (UserGroupInformation.isSecurityEnabled()
                 && loginUser.getAuthenticationMethod() == UserGroupInformation.AuthenticationMethod.KERBEROS
                 && loginUser.isFromKeytab()) {
             Thread t = new Thread(new Runnable() {
                 @Override public void run() {
                     while (true) {
-                        // TODO: honor interrupts
-                        ThreadUtil.sleepAtLeastIgnoreInterrupts(MIN_TIME_BEFORE_RELOGIN);
+                        try {
+                            Thread.sleep(reloginInterval);
+                        }
+                        catch (InterruptedException ie) {
+                            Thread.currentThread().interrupt();
+
+                            LOG.warn("TGT Relogin thread interrupted.");
+
+                            break;
+                        }
 
                         try {
                             loginUser.checkTGTAndReloginFromKeytab();
@@ -106,8 +91,11 @@ public class KerberosUtil {
                     }
                 }
             });
+
             t.setDaemon(true);
+
             t.setName("TGT Relogin for " + loginUser.getUserName());
+
             t.start();
         }
     }

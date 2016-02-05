@@ -17,11 +17,8 @@
 
 package org.apache.ignite.hadoop.fs;
 
-import java.io.OutputStream;
 import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
-import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.security.UserGroupInformation;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.hadoop.fs.v1.IgniteHadoopFileSystem;
@@ -43,11 +40,25 @@ import java.security.PrivilegedExceptionAction;
 import java.util.Arrays;
 
 /**
- * Simple Hadoop file system factory which delegates to {@code FileSystem.get()} on each call.
+ * Secure Hadoop file system factory that can work with underlying file system protected with Kerberos.
+ * It uses "impersonation" mechanism, to be able to work on behalf of arbitrary client user.
+ * Please see https://hadoop.apache.org/docs/current/hadoop-project-dist/hadoop-common/Superusers.html for details.
+ * The principal and the key tab name to be used for Kerberos authentication are set explicitly
+ * in the factory configuration.
+ *
+ * <p>The factory spawns a dedicated thread to periodically check and re-login from the key tab to
+ * prevent the ticket expiration.
+ *
  * <p>
- * If {@code "fs.[prefix].impl.disable.cache"} is set to {@code true}, file system instances will be cached by Hadoop.
+ * This factory does not cache any file system instances. If {@code "fs.[prefix].impl.disable.cache"} is set
+ * to {@code true}, file system instances will be cached by Hadoop.
  */
 public class SecureHadoopFileSystemFactory implements HadoopFileSystemFactory, Externalizable, LifecycleAware {
+    /**
+     * The default interval used to re-login from the key tab, in milliseconds.
+     */
+    private static final long DFLT_RELOGIN_INTERVAL = 10 * 60 * 1000L;
+
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -57,9 +68,14 @@ public class SecureHadoopFileSystemFactory implements HadoopFileSystemFactory, E
     /** File system config paths. */
     protected String[] cfgPaths;
 
+    /** Keytab full file name (e.g. "/etc/security/keytabs/hdfs.headless.keytab" or "/etc/krb5.keytab"). */
     protected String keyTab;
 
-    protected String keyTabUser;
+    /** Keytab principal short name (e.g. "hdfs-Sandbox"). */
+    protected String keyTabPrincipal;
+
+    /** The interval used to re-login from the key tab, in milliseconds. */
+    protected long reloginInterval = DFLT_RELOGIN_INTERVAL;
 
     /** Configuration of the secondary filesystem, never null. */
     protected transient Configuration cfg;
@@ -91,10 +107,11 @@ public class SecureHadoopFileSystemFactory implements HadoopFileSystemFactory, E
 
         UserGroupInformation.getLoginUser().checkTGTAndReloginFromKeytab();
 
-        UserGroupInformation ugi = UserGroupInformation.createProxyUser(userName, UserGroupInformation.getLoginUser());
+        UserGroupInformation proxyUgi = UserGroupInformation.createProxyUser(userName,
+            UserGroupInformation.getLoginUser());
 
         try {
-            return ugi.doAs(new PrivilegedExceptionAction<FileSystem>() {
+            return proxyUgi.doAs(new PrivilegedExceptionAction<FileSystem>() {
                 @Override public FileSystem run() throws Exception {
                     return getFileSystem(fullUri, cfg);
                 }
@@ -106,13 +123,24 @@ public class SecureHadoopFileSystemFactory implements HadoopFileSystemFactory, E
         }
     }
 
+    /**
+     * Service method to get the file system using given URI and Configuration objects.
+     *
+     * @param uri The uri.
+     * @param cfg The configuration.
+     * @return The file system.
+     * @throws IOException On error.
+     */
     protected FileSystem getFileSystem(URI uri, Configuration cfg) throws IOException {
         ClassLoader ctxClsLdr = Thread.currentThread().getContextClassLoader();
+
         ClassLoader clsLdr = getClass().getClassLoader();
+
         if (ctxClsLdr == clsLdr)
             return FileSystem.get(uri, cfg);
         else {
             Thread.currentThread().setContextClassLoader(clsLdr);
+
             try {
                 return FileSystem.get(uri, cfg);
             }
@@ -145,18 +173,38 @@ public class SecureHadoopFileSystemFactory implements HadoopFileSystemFactory, E
         this.uri = uri;
     }
 
-    @Nullable public String getKeyTabUser() {
-        return keyTabUser;
+    /**
+     * Gets the key tab principal name.
+     *
+     * @return The key tab principal.
+     */
+    @Nullable public String getKeyTabPrincipal() {
+        return keyTabPrincipal;
     }
 
-    public void setKeyTabUser(@Nullable String keyTabUser) {
-        this.keyTabUser = keyTabUser;
+    /**
+     * Set the key tab principal name.
+     *
+     * @param keyTabPrincipal The key tab principal name.
+     */
+    public void setKeyTabPrincipal(@Nullable String keyTabPrincipal) {
+        this.keyTabPrincipal = keyTabPrincipal;
     }
 
+    /**
+     * Gets the key tab file name.
+     *
+     * @return The key tab file name.
+     */
     @Nullable public String getKeyTab() {
         return keyTab;
     }
 
+    /**
+     * Sets the key tab file name.
+     *
+     * @param keyTab The key tab file name.
+     */
     public void setKeyTab(@Nullable String keyTab) {
         this.keyTab = keyTab;
     }
@@ -188,6 +236,24 @@ public class SecureHadoopFileSystemFactory implements HadoopFileSystemFactory, E
         this.cfgPaths = cfgPaths;
     }
 
+    /**
+     * Gets the re-login interval
+     *
+     * @return The re-login interval, in millisecoonds.
+     */
+    public long getReloginInterval() {
+        return reloginInterval;
+    }
+
+    /**
+     * Sets the relogin interval in milliseconds.
+     *
+     * @param reloginInterval The re-login interval, in milliseconds.
+     */
+    public void setReloginInterval(long reloginInterval) {
+        this.reloginInterval = reloginInterval;
+    }
+
     /** {@inheritDoc} */
     @Override public void start() throws IgniteException {
         cfg = HadoopUtils.safeCreateConfiguration();
@@ -210,14 +276,12 @@ public class SecureHadoopFileSystemFactory implements HadoopFileSystemFactory, E
             }
         }
 
-        if (!F.isEmpty(keyTab) && !F.isEmpty(keyTabUser)) {
+        if (!F.isEmpty(keyTab) && !F.isEmpty(keyTabPrincipal)) {
             try {
-                KerberosUtil.loginFromKeyTabAndAutoReLogin(cfg, keyTab, keyTabUser);
-            } catch (IOException ioe){
-                ioe.printStackTrace();
-
-                throw new IgniteException("Failed login from keytab for keyTab: "
-                    + keyTab + " keyTabUser: " + keyTabUser, ioe);
+                KerberosUtil.loginFromKeyTabAndAutoReLogin(cfg, keyTab, keyTabPrincipal, reloginInterval);
+            } catch (IOException ioe) {
+                throw new IgniteException("Failed login from keytab. [keyTab="
+                    + keyTab + ", keyTabPrincipal=" + keyTabPrincipal + ']', ioe);
             }
         }
 
@@ -237,30 +301,27 @@ public class SecureHadoopFileSystemFactory implements HadoopFileSystemFactory, E
     /** {@inheritDoc} */
     @Override public void stop() throws IgniteException {
         // No-op.
-        // TODO: join the renewer thread.
+        // TODO: join the re-login thread.
     }
 
     /** {@inheritDoc} */
     @Override public void writeExternal(ObjectOutput out) throws IOException {
         U.writeString(out, uri);
 
-        // TODO: check up serialization logic
-        if (!F.isEmpty(keyTab) && !F.isEmpty(keyTabUser)) {
+        if (!F.isEmpty(keyTab) && !F.isEmpty(keyTabPrincipal)) {
             out.writeBoolean(true);
             U.writeString(out, keyTab);
-            U.writeString(out, keyTabUser);
-        } else {
+            U.writeString(out, keyTabPrincipal);
+        } else
             out.writeBoolean(false);
-        }
 
         if (cfgPaths != null) {
             out.writeInt(cfgPaths.length);
 
             for (String cfgPath : cfgPaths)
                 U.writeString(out, cfgPath);
-        } else {
+        } else
             out.writeInt(-1);
-        }
     }
 
     /** {@inheritDoc} */
@@ -268,9 +329,11 @@ public class SecureHadoopFileSystemFactory implements HadoopFileSystemFactory, E
         uri = U.readString(in);
 
         boolean isKeyTab = in.readBoolean();
+
         if (isKeyTab) {
             keyTab = U.readString(in);
-            keyTabUser = U.readString(in);
+
+            keyTabPrincipal = U.readString(in);
         }
 
         int cfgPathsCnt = in.readInt();
@@ -282,54 +345,4 @@ public class SecureHadoopFileSystemFactory implements HadoopFileSystemFactory, E
                 cfgPaths[i] = U.readString(in);
         }
     }
-
-    // TODO: possibly have to remove later
-    public static void main(String[] args) throws Exception {
-        if (args.length < 4)
-            System.out.println("args: <user> <keyTabFile> <keyTabPrincipal> <fsUri> [<cfgPath1> <cfgPath2> ...]");
-
-        final String user = args[0];
-        System.out.println("fs user=" + user);
-
-        SecureHadoopFileSystemFactory fac = new SecureHadoopFileSystemFactory();
-
-        fac.setKeyTab(args[1]);
-        System.out.println("keyTab=" + fac.getKeyTab());
-
-        fac.setKeyTabUser(args[2]);
-        System.out.println("keyTabPrincipal=" + fac.getKeyTabUser());
-
-        fac.setUri(args[3]);
-        System.out.println("uri=" + fac.getUri());
-
-        if (args.length > 4) {
-            String[] cfgPaths = Arrays.copyOfRange(args, 4, args.length);
-
-            System.out.println("cfgPaths=" + cfgPaths);
-
-            fac.setConfigPaths(cfgPaths);
-        }
-
-        fac.start();
-        try {
-            FileSystem fs = fac.get(user);
-
-            System.out.println("Root listing:");
-
-            // Check read access:
-            FileStatus[] ss = fs.listStatus(new Path("/"));
-
-            for (FileStatus s : ss)
-                System.out.println(s);
-
-            // Check write access:
-            String name = "/tmp/" + System.currentTimeMillis();
-            System.out.println("Writing file: " + name);
-            try (OutputStream os = fs.create(new Path(name), false)) {}
-        }
-        finally {
-            fac.stop();
-        }
-    }
 }
-
