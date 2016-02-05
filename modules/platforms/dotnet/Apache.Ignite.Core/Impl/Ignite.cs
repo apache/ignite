@@ -519,9 +519,9 @@ namespace Apache.Ignite.Core.Impl
         {
             IgniteArgumentCheck.NotNullOrEmpty(name, "name");
 
-            // Do not allocate memory to pass default value.
-            if (EqualityComparer<T>.Default.Equals(initialValue, default(T)))
-                return UU.ProcessorAtomicReference(_proc, name, 0, create);
+            // Do not allocate memory when default is not used.
+            if (!create)
+                return UU.ProcessorAtomicReference(_proc, name, 0, false);
             
             using (var stream = IgniteManager.Memory.Allocate().GetStream())
             {
@@ -531,7 +531,7 @@ namespace Apache.Ignite.Core.Impl
 
                 var memPtr = stream.SynchronizeOutput();
 
-                return UU.ProcessorAtomicReference(_proc, name, memPtr, create);
+                return UU.ProcessorAtomicReference(_proc, name, memPtr, true);
             }
         }
 
