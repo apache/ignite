@@ -54,6 +54,7 @@ System.config({
     "query-command-supported": "github:zenorocha/document.queryCommandSupported@1.0.0",
     "spinjs": "github:fgnass/spin.js@2.3.2",
     "github:akuznetsov-gridgain/angular-strap@fix-1852-2.3.6": {
+      "angular": "github:angular/bower-angular@1.4.9",
       "angular-animate": "github:angular/bower-angular-animate@1.4.9",
       "angular-motion": "github:mgcrea/angular-motion@0.4.3",
       "angular-sanitize": "github:angular/bower-angular-sanitize@1.4.9"

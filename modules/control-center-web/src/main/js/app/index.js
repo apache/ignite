@@ -21,12 +21,15 @@ import ace from 'ace';
 import angular from 'angular';
 import pdfMake from 'pdfmake';
 
+window._ = _;
+window.jQuery = jQuery;
+window.ace = ace;
+window.require = ace.require;
+window.angular = angular;
+window.pdfMake = pdfMake;
+
 import 'angular-ui-router';
 import 'angular-ui-router-title';
-import 'angular-strap';
-import 'angular-ui-ace';
-import 'angular-tree-control';
-import 'angular-smart-table';
 import 'angular-animate';
 import 'angular-sanitize';
 import 'angular-ui-grid';
@@ -34,6 +37,10 @@ import 'angular-loading';
 import 'angular-drag-and-drop-lists';
 import 'angular-nvd3';
 import 'angular-retina';
+import 'angular-strap';
+import 'angular-ui-ace';
+import 'angular-tree-control';
+import 'angular-smart-table';
 
 import 'bootstrap-carousel';
 import 'file-saver';
@@ -48,13 +55,6 @@ import 'angular-tree-control/css/tree-control.css!';
 import 'angular-ui-grid/ui-grid.css!';
 import 'angular-loading/angular-loading.css!';
 import 'angular-motion/dist/angular-motion.css!';
-
-window._ = _;
-window.jQuery = jQuery;
-window.ace = ace;
-window.require = ace.require;
-window.angular = angular;
-window.pdfMake = pdfMake;
 
 import './modules/User/index';
 import './modules/Auth/index';
