@@ -88,6 +88,7 @@ export default ['igniteUiAceJava', ['GeneratorJava', (generator) => {
     };
 
     return {
+        priority: 1,
         restrict: 'E',
         scope: {
             caches: '=',

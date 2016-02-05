@@ -16,7 +16,12 @@
  */
 
 export default ['summaryTabs', [() => {
-    const link = (scope, $element, $attrs, [igniteUiAce]) => {
+    const link = (scope, $element, $attrs, [igniteUiAce1, igniteUiAce2]) => {
+        const igniteUiAce = igniteUiAce1 || igniteUiAce2;
+
+        if (!igniteUiAce)
+            return;
+
         igniteUiAce.onLoad = (editor) => {
             editor.setReadOnly(true);
             editor.setOption('highlightActiveLine', false);
@@ -37,8 +42,9 @@ export default ['summaryTabs', [() => {
     };
 
     return {
+        priority: 1000,
         restrict: 'C',
         link,
-        require: ['^igniteUiAce']
+        require: ['?igniteUiAce', '?^igniteUiAce']
     };
 }]];

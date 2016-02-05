@@ -19,7 +19,7 @@ export default ['igniteUiAce', [() => {
     const controller = () => {};
 
     return {
-        restrict: 'E',
+        restrict: 'AE',
         controller
     };
 }]];
