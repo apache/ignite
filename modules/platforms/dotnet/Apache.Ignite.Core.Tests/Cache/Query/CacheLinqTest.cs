@@ -294,11 +294,14 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         [Test]
         public void TestConditions()
         {
-            var cache = GetPersonOrgCache().ToQueryable();
+            var persons = GetPersonOrgCache().ToQueryable();
 
-            var res = cache.Select(x => new {Foo = x.Key%2 == 0 ? "even" : "odd", x.Value}).ToArray();
+            var res = persons.Select(x => new {Foo = x.Key%2 == 0 ? "even" : "odd", x.Value}).ToArray();
             Assert.AreEqual("even", res[0].Foo);
             Assert.AreEqual("odd", res[1].Foo);
+
+            var roles = GetRoleCache().ToQueryable();
+            CheckFunc(x => x.Value.Name ?? "def_name", roles);
         }
 
         [Test]
