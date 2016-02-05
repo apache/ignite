@@ -284,6 +284,19 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         }
 
         [Test]
+        public void TestTypeConversion()
+        {
+            var cache = GetPersonOrgCache().ToQueryable();
+
+            var ints = cache.Select(x => x.Key);
+            var strings = ints.Cast<string>();
+            var doubles = strings.Cast<double>();
+
+            Assert.AreEqual(ints.ToArray().Select(x => x.ToString()).ToArray(), strings.ToArray());
+            Assert.AreEqual(ints.ToArray().Select(x => (double) x).ToArray(), doubles.ToArray());
+        }
+
+        [Test]
         public void TestSameCacheJoin()
         {
             // Select persons in specific organization
