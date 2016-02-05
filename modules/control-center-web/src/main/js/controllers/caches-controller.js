@@ -488,6 +488,10 @@ consoleModule.controller('cachesController', [
             if ($common.isEmptyString(item.name))
                 return showPopoverMessage($scope.ui, 'general', 'cacheName', 'Name should not be empty');
 
+            if (item.memoryMode === 'OFFHEAP_VALUES' && !$common.isEmptyArray(item.domains))
+                return showPopoverMessage($scope.ui, 'memory', 'memoryMode',
+                    'Cannot have query indexing enabled while values are stored off-heap');
+
             if (item.memoryMode === 'OFFHEAP_TIERED' && !$common.isDefined(item.offHeapMaxMemory))
                 return showPopoverMessage($scope.ui, 'memory', 'offHeapMaxMemory',
                     'Off-heap max memory should be specified');
@@ -567,6 +571,10 @@ consoleModule.controller('cachesController', [
                     }
                 }
             }
+
+            if (item.cacheMode !== 'LOCAL' && item.rebalanceMode !== 'NONE' && item.rebalanceBatchSize === 0)
+                return showPopoverMessage($scope.ui, 'rebalance', 'rebalanceBatchSize',
+                    'Batch size should be more than 0 for not "NONE" rebalance mode', 10000);
 
             return true;
         }
