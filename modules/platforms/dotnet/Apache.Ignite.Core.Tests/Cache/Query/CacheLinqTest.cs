@@ -292,6 +292,16 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         }
 
         [Test]
+        public void TestConditions()
+        {
+            var cache = GetPersonOrgCache().ToQueryable();
+
+            var res = cache.Select(x => new {Foo = x.Key%2 == 0 ? "even" : "odd", x.Value}).ToArray();
+            Assert.AreEqual("even", res[0].Foo);
+            Assert.AreEqual("odd", res[1].Foo);
+        }
+
+        [Test]
         public void TestTypeConversion()
         {
             // TODO: ?? See EF OfType/Cast
