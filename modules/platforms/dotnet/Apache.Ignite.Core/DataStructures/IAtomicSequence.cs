@@ -39,14 +39,14 @@ namespace Apache.Ignite.Core.DataStructures
         /// <summary>
         /// Increments current value and returns result.
         /// </summary>
-        /// <returns>Current value of the atomic sequence.</returns>
+        /// <returns>The new value of the atomic sequence.</returns>
         long Increment();
 
         /// <summary>
         /// Adds specified value to the current value and returns result.
         /// </summary>
         /// <param name="value">The value to add.</param>
-        /// <returns>Current value of the atomic sequence.</returns>
+        /// <returns>The new value of the atomic sequence.</returns>
         long Add(long value);
 
         /// <summary>
