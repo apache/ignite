@@ -36,6 +36,7 @@ import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
+import java.lang.reflect.Proxy;
 import java.math.BigDecimal;
 import java.sql.Timestamp;
 import java.util.ArrayList;
@@ -129,6 +130,9 @@ public class BinaryClassDescriptor {
 
     /** */
     private final boolean excluded;
+
+    /** */
+    private final Class<?>[] intfs;
 
     /**
      * @param ctx Context.
@@ -250,6 +254,16 @@ public class BinaryClassDescriptor {
                 fields = null;
                 stableFieldsMeta = null;
                 stableSchema = null;
+                intfs = null;
+
+                break;
+
+            case PROXY:
+                ctor = null;
+                fields = null;
+                stableFieldsMeta = null;
+                stableSchema = null;
+                intfs = cls.getInterfaces();
 
                 break;
 
@@ -258,6 +272,7 @@ public class BinaryClassDescriptor {
                 fields = null;
                 stableFieldsMeta = null;
                 stableSchema = null;
+                intfs = null;
 
                 break;
 
@@ -311,6 +326,8 @@ public class BinaryClassDescriptor {
                 fields = fields0.toArray(new BinaryFieldAccessor[fields0.size()]);
 
                 stableSchema = schemaBuilder.build();
+
+                intfs = null;
 
                 break;
 
@@ -629,6 +646,11 @@ public class BinaryClassDescriptor {
 
             case CLASS:
                 writer.doWriteClass((Class)obj);
+
+                break;
+
+            case PROXY:
+                writer.doWriteProxy((Proxy)obj, intfs);
 
                 break;
 
