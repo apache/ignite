@@ -128,12 +128,14 @@ form.panel.panel-default(name='communication' novalidate)
                         ignite-form-field-label
                             | Shared memory port:
                         ignite-form-field-tooltip
-                            | Local port to accept shared memory connections
+                            | Local port to accept shared memory connections#[br]
+                            | If set to #[b -1] shared memory communication will be disabled
                         ignite-form-field-input-number(
                             data-id='sharedMemoryPort'
                             data-name='sharedMemoryPort'
                             data-ng-model='#{model}.sharedMemoryPort'
                             data-placeholder='48100'
+                            data-min='-1'
                             data-max='65535'
                         )
                 .settings-row

@@ -433,7 +433,7 @@ $generatorCommon.CONNECTOR_CONFIGURATION = {
         sendBufferSize: {dflt: 32768},
         sendQueueLimit: {dflt: 0},
         directBuffer: {dflt: false},
-        noDelay: {dflt: false},
+        noDelay: {dflt: true},
         selectorCount: null,
         threadPoolSize: null,
         messageInterceptor: {type: 'bean'},

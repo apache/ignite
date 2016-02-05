@@ -311,6 +311,9 @@ consoleModule.controller('clustersController', function ($http, $timeout, $scope
                         if (c.unacknowledgedMessagesBufferSize < 5 * c.ackSendThreshold)
                             return showPopoverMessage($scope.ui, 'communication', 'unacknowledgedMessagesBufferSize', 'Maximum number of stored unacknowledged messages should be at least 5 * ack send threshold');
                 }
+
+                if (c.sharedMemoryPort === 0)
+                    return showPopoverMessage($scope.ui, 'communication', 'sharedMemoryPort', 'Shared memory port should be more than 0 or -1');
             }
 
             var r = item.connector;
