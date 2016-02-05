@@ -34,6 +34,7 @@ mixin feedback(error, message)
         data-ng-model='value'
         data-ng-required='required || false'
         data-ng-disabled='disabled || false'
+        data-ng-model-options='{debounce: 150}'
     )
 
     +feedback('min', 'Value is less than allowable minimum')
