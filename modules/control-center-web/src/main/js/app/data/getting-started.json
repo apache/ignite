@@ -3,7 +3,7 @@
         "title": "What is Apache Ignite",
         "message": [
             "<p><b>Apache Ignite</b> is designed to deliver uncompromised performance for a wide set of in-memory computing use cases from high performance computing, to the industry most advanced data grid, highly available service grid, and streaming.</p>",
-            "<img src='/images/ignite-puzzle.png' width='100%' />"
+            "<img src='/images/ignite-puzzle.png' width='100%' ng-click='console.log(\"click\")' />"
         ]
     },
     {
@@ -26,7 +26,7 @@
             "<div class='col-xs-7'>",
             "<img src='/images/cluster.png' width='100%' />",
             "</div>",
-            "<div class='col-xs-5 padding-left-dflt'>",
+            "<div class='col-xs-5'>",
             "<ul>",
             "<li>Configure cluster properties</li>",
             "<li>Associate cluster with caches</li>",
@@ -40,7 +40,7 @@
             "<div class='col-xs-7'>",
             "<img src='/images/domains.png' width='100%' />",
             "</div>",
-            "<div class='col-xs-5 padding-left-dflt'>",
+            "<div class='col-xs-5'>",
             "<ul>",
             "<li>Import domain model from database</li>",
             "<li>Try it in <span class='getting-started-demo'>Demo</span> mode</li>",
@@ -56,7 +56,7 @@
             "<div class='col-xs-7'>",
             "<img src='/images/cache.png' width='100%' />",
             "</div>",
-            "<div class='col-xs-5 padding-left-dflt'>",
+            "<div class='col-xs-5'>",
             "<ul>",
             "<li>Configure cache properties</li>",
             "<li>Associate cache with clusters</li>",
@@ -72,7 +72,7 @@
             "<div class='col-xs-7'>",
             "<img src='/images/igfs.png' width='100%' />",
             "</div>",
-            "<div class='col-xs-5 padding-left-dflt'>",
+            "<div class='col-xs-5'>",
             "<ul>",
             "<li>Configure IGFS properties</li>",
             "<li>Associate IGFS with clusters</li>",
@@ -86,7 +86,7 @@
           "<div class='col-xs-7'>",
           "<img src='/images/summary.png' width='100%' />",
           "</div>",
-          "<div class='col-xs-5 padding-left-dflt'>",
+          "<div class='col-xs-5'>",
           "<ul>",
           "<li>Preview cluster XML configuration</li>",
           "<li>Preview generated Java code</li>",
@@ -103,7 +103,7 @@
             "<div class='col-xs-7'>",
             "<img src='/images/query-table.png' width='100%' />",
             "</div>",
-            "<div class='col-xs-5 padding-left-dflt'>",
+            "<div class='col-xs-5'>",
             "<ul>",
             "<li>Execute SQL queries</li>",
             "<li>View execution plan</li>",
