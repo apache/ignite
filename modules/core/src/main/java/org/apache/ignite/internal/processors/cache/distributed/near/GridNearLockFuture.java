@@ -517,7 +517,7 @@ public final class GridNearLockFuture extends GridFutureAdapter<Boolean>
             if (res.error() instanceof GridCacheLockTimeoutException)
                 onDone(false);
             else
-                onError(res.error());
+                onDone(res.error());
 
             return;
         }
@@ -537,7 +537,7 @@ public final class GridNearLockFuture extends GridFutureAdapter<Boolean>
                             remap();
                         }
                         catch (IgniteCheckedException e) {
-                            onError(e);
+                            onDone(e);
                         }
                         finally {
                             cctx.shared().txContextReset();
@@ -704,9 +704,7 @@ public final class GridNearLockFuture extends GridFutureAdapter<Boolean>
             proceedMapping();
         }
         catch (IgniteCheckedException ex) {
-            onError(ex);
-
-            onDone(false);
+            onDone(false, ex);
         }
     }
 
@@ -738,7 +736,7 @@ public final class GridNearLockFuture extends GridFutureAdapter<Boolean>
             return true;
         }
         catch (IgniteCheckedException e) {
-            onError(e);
+            onDone(e);
 
             return false;
         }
@@ -913,7 +911,7 @@ public final class GridNearLockFuture extends GridFutureAdapter<Boolean>
                     Throwable err = fut.validateCache(cctx);
 
                     if (err != null) {
-                        onError(err);
+                        onDone(err);
 
                         return;
                     }
@@ -959,7 +957,7 @@ public final class GridNearLockFuture extends GridFutureAdapter<Boolean>
                 Throwable err = fut.validateCache(cctx);
 
                 if (err != null) {
-                    onError(err);
+                    onDone(err);
 
                     return;
                 }
@@ -991,7 +989,7 @@ public final class GridNearLockFuture extends GridFutureAdapter<Boolean>
                             mapOnTopology(remap);
                         }
                         catch (IgniteCheckedException e) {
-                            onError(e);
+                            onDone(e);
                         }
                         finally {
                             cctx.shared().txContextReset();
@@ -1010,7 +1008,7 @@ public final class GridNearLockFuture extends GridFutureAdapter<Boolean>
             return;
 
         if (err != null)
-            onDone(false, err);
+            onDone(err);
 
         if (!hasPending())
             onDone(true);
@@ -1270,7 +1268,7 @@ public final class GridNearLockFuture extends GridFutureAdapter<Boolean>
             checkComplete();
         }
         catch (IgniteCheckedException ex) {
-            onError(ex);
+            onDone(ex);
         }
     }
 
@@ -1338,7 +1336,7 @@ public final class GridNearLockFuture extends GridFutureAdapter<Boolean>
                             onResult(node.id(), future.get());
                         }
                         catch (IgniteCheckedException e) {
-                            onError(e);
+                            onDone(e);
                         }
                     }
                 }
@@ -1358,7 +1356,7 @@ public final class GridNearLockFuture extends GridFutureAdapter<Boolean>
                     cctx.io().send(node, req, cctx.ioPolicy());
                 }
                 catch (ClusterTopologyCheckedException ex) {
-                    onError(ex);
+                    onDone(ex);
                 }
             }
             else {
@@ -1375,7 +1373,7 @@ public final class GridNearLockFuture extends GridFutureAdapter<Boolean>
                             onError(newTopologyException(ex, node.id()));
                         }
                         catch (IgniteCheckedException e) {
-                            onError(e);
+                            onDone(e);
                         }
                     }
                 });
