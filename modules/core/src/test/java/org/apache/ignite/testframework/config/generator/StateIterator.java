@@ -25,13 +25,19 @@ import java.util.Iterator;
  */
 public class StateIterator implements Iterator<int[]> {
     /** */
-    private Object[][] params;
+    private final Object[][] params;
 
     /** */
-    private int[] vector;
+    private final int[] vector;
 
     /** */
     private int position;
+
+    /** */
+    private final int expCntOfVectors;
+
+    /** */
+    private int cntOfVectors;
 
     /**
      * @param params Paramethers.
@@ -53,19 +59,20 @@ public class StateIterator implements Iterator<int[]> {
             vector[i] = 0;
 
         position = -1;
+
+        int cntOfVectors0 = 1;
+
+        for (int i = 0; i < params.length; i++)
+            cntOfVectors0 *= params[i].length;
+
+        expCntOfVectors = cntOfVectors0;
+
+        cntOfVectors = 0;
     }
 
     /** {@inheritDoc} */
     @Override public boolean hasNext() {
-        if (position == -1)
-            return true;
-
-        for (int i = params.length - 1 ; i >= 0; i--) {
-            if (vector[i] + 1 < params[i].length)
-                return true;
-        }
-
-        return false;
+        return cntOfVectors < expCntOfVectors;
     }
 
     /** {@inheritDoc} */
@@ -74,10 +81,12 @@ public class StateIterator implements Iterator<int[]> {
         if (position == -1) {
             position = 0;
 
+            cntOfVectors++;
+
             return arraycopy(vector);
         }
 
-        while (!updateVector(vector, position)) {
+        if (!updateVector(vector, position)) {
             if (position + 1 == params.length)
                 throw new IllegalStateException("[position=" + position + ", vector=" +
                     Arrays.toString(vector) + ", params=" + Arrays.deepToString(params));
@@ -94,8 +103,12 @@ public class StateIterator implements Iterator<int[]> {
 
             vector[position] = 1;
 
+            cntOfVectors++;
+
             return arraycopy(vector);
         }
+
+        cntOfVectors++;
 
         return arraycopy(vector);
     }

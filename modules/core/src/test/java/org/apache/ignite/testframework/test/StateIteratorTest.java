@@ -125,6 +125,8 @@ public class StateIteratorTest extends TestCase {
             expSize *= objects.length;
         }
 
+        System.out.println("Expected size: " + expSize);
+
         Set<int[]> states = new HashSet<>();
 
         int step = 0;
