@@ -21,12 +21,15 @@ import ace from 'ace';
 import angular from 'angular';
 import pdfMake from 'pdfmake';
 
+window._ = _;
+window.jQuery = jQuery;
+window.ace = ace;
+window.require = ace.require;
+window.angular = angular;
+window.pdfMake = pdfMake;
+
 import 'angular-ui-router';
 import 'angular-ui-router-title';
-import 'angular-strap';
-import 'angular-ui-ace';
-import 'angular-tree-control';
-import 'angular-smart-table';
 import 'angular-animate';
 import 'angular-sanitize';
 import 'angular-ui-grid';
@@ -34,6 +37,10 @@ import 'angular-loading';
 import 'angular-drag-and-drop-lists';
 import 'angular-nvd3';
 import 'angular-retina';
+import 'angular-strap';
+import 'angular-ui-ace';
+import 'angular-tree-control';
+import 'angular-smart-table';
 
 import 'bootstrap-carousel';
 import 'file-saver';
@@ -48,13 +55,6 @@ import 'angular-tree-control/css/tree-control.css!';
 import 'angular-ui-grid/ui-grid.css!';
 import 'angular-loading/angular-loading.css!';
 import 'angular-motion/dist/angular-motion.css!';
-
-window._ = _;
-window.jQuery = jQuery;
-window.ace = ace;
-window.require = ace.require;
-window.angular = angular;
-window.pdfMake = pdfMake;
 
 import './modules/User/index';
 import './modules/Auth/index';
@@ -84,6 +84,7 @@ import './modules/getting-started/main';
 // Directives.
 import igniteLoading from './directives/loading/loading.directive';
 import igniteInformation from './directives/information/information.directive';
+import igniteUiAce from './directives/ui-ace/ui-ace.directive';
 import igniteUiAceXml from './directives/ui-ace-xml/ui-ace-xml.directive';
 import igniteUiAceJava from './directives/ui-ace-java/ui-ace-java.directive';
 import igniteUiAcePom from './directives/ui-ace-pom/ui-ace-pom.directive';
@@ -93,7 +94,8 @@ import igniteFormFieldJavaClass from './directives/form-field-java-class/form-fi
 
 // Services.
 import cleanup from './services/cleanup/cleanup.service';
-import IgniteUiAceOnLoad from './services/UiAceOnLoad/service';
+import GeneratorXml from './services/Generator/Xml.service';
+import GeneratorJava from './services/Generator/Java.service';
 import IgniteCountries from './services/Countries/index';
 
 // Providers
@@ -133,6 +135,7 @@ angular
 // Directives.
 .directive(...igniteLoading)
 .directive(...igniteInformation)
+.directive(...igniteUiAce)
 .directive(...igniteUiAceXml)
 .directive(...igniteUiAceJava)
 .directive(...igniteUiAcePom)
@@ -141,7 +144,8 @@ angular
 .directive(...igniteFormFieldJavaClass)
 // Services.
 .service(...cleanup)
-.service(...IgniteUiAceOnLoad)
+.service(...GeneratorXml)
+.service(...GeneratorJava)
 .service(...IgniteCountries)
 // Providers.
 // Filters.

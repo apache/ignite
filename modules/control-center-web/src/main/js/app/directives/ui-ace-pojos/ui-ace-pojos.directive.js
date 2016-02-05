@@ -19,6 +19,13 @@ import template from './ui-ace-pojos.jade!';
 import controller from './ui-ace-pojos.controller';
 
 export default ['igniteUiAcePojos', [() => {
+    const link = ($scope, $el, $attrs, [igniteUiAce]) => {
+        if (igniteUiAce.onLoad)
+            $scope.onLoad = igniteUiAce.onLoad;
+
+        if (igniteUiAce.onChange)
+            $scope.onChange = igniteUiAce.onChange;
+    };
 
     return {
         restrict: 'E',
@@ -30,8 +37,10 @@ export default ['igniteUiAcePojos', [() => {
             cluster: '=',
             pojos: '=ngModel'
         },
+        link,
         template,
         controller,
-        controllerAs: 'ctrl'
+        controllerAs: 'ctrl',
+        require: ['?^igniteUiAce']
     };
 }]];

@@ -18,27 +18,92 @@
 import template from './ui-ace-java.jade!';
 import controller from './ui-ace-java.controller';
 
-export default ['igniteUiAceJava', [() => {
-    const link = ($scope, $el, {clusterCfg}) => {
-        if (typeof clusterCfg !== 'undefined') {
-            $scope.$watch('cfg', (cfg) => {
+export default ['igniteUiAceJava', ['GeneratorJava', (generator) => {
+    const link = (scope, $el, attrs, [ctrl, igniteUiAce, formCtrl, ngModelCtrl]) => {
+        if (formCtrl && ngModelCtrl)
+            formCtrl.$removeControl(ngModelCtrl);
+
+        if (typeof attrs.clusterCfg !== 'undefined') {
+            scope.$watch('cfg', (cfg) => {
                 if (typeof cfg !== 'undefined')
                     return;
 
-                $scope.cfg = {};
+                scope.cfg = {};
             });
         }
+
+        if (igniteUiAce && igniteUiAce.onLoad) {
+            scope.onLoad = (editor) => {
+                igniteUiAce.onLoad(editor);
+
+                scope.$watch('cluster', () => editor.attractAttention = false);
+            };
+        }
+
+        if (igniteUiAce && igniteUiAce.onChange)
+            scope.onChange = igniteUiAce.onChange;
+
+        const render = (data) => {
+            delete ctrl.data;
+
+            if (!data)
+                return;
+
+            return ctrl.generator(scope.cluster);
+        };
+
+        // Setup watchers.
+        scope.$watch('generator', (method) => {
+            if (!method)
+                return;
+
+            switch (method) {
+                case 'clusterCaches':
+                    ctrl.generator = (cluster) => {
+                        let caches;
+
+                        caches = _.reduce(scope.caches, (acc, cache) => {
+                            if (_.contains(cluster.caches, cache.value))
+                                acc.push(cache.cache);
+
+                            return acc;
+                        }, []);
+
+                        return generator.clusterCaches(caches, null, true, generator.clusterGeneral(cluster)).asString();
+                    };
+
+                    break;
+
+                case 'igfss':
+                    ctrl.generator = () => generator.igfss(scope.igfss, 'cfg').asString();
+
+                    break;
+
+                default:
+                    ctrl.generator = (cluster) => generator[method](cluster).asString();
+            }
+        });
+        scope.$watch('cfg', (data) => ctrl.data = render(data), true);
+        scope.$watch('cluster', (data) => ctrl.data = render(data), true);
     };
 
     return {
         restrict: 'E',
         scope: {
+            caches: '=',
+            igfss: '=',
+
+            generator: '@',
             cluster: '=',
-            cfg: '=clusterCfg'
+            cfg: '=?clusterCfg'
+        },
+        bindToController: {
+            data: '=?ngModel'
         },
         link,
         template,
         controller,
-        controllerAs: 'ctrl'
+        controllerAs: 'ctrl',
+        require: ['igniteUiAceJava', '?^igniteUiAce', '?^form', '?ngModel']
     };
 }]];

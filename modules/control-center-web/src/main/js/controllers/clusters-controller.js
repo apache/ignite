@@ -17,7 +17,7 @@
 
 // Controller for Clusters screen.
 consoleModule.controller('clustersController', function ($http, $timeout, $scope, $state, $controller,
-    $common, $focus, $confirm, $clone, $preview, $loading, $unsavedChangesGuard, $cleanup, igniteIncludeEventGroups) {
+    $common, $focus, $confirm, $clone, $loading, $unsavedChangesGuard, $cleanup, igniteIncludeEventGroups) {
         $unsavedChangesGuard.install($scope);
 
         var __original_value;
@@ -46,20 +46,10 @@ consoleModule.controller('clustersController', function ($http, $timeout, $scope
         $scope.widthIsSufficient = $common.widthIsSufficient;
         $scope.saveBtnTipText = $common.saveBtnTipText;
 
-        var previews = [];
-
-        $scope.previewInit = function (preview) {
-            previews.push(preview);
-
-            $preview.previewInit(preview);
-        };
-
         $scope.trustManagersConfigured = function() {
             return $scope.backupItem.sslEnabled && $common.isDefined($scope.backupItem.sslContextFactory) &&
                 !$common.isEmptyArray($scope.backupItem.sslContextFactory.trustManagers);
         };
-
-        $scope.previewChanged = $preview.previewChanged;
 
         $scope.hidePopover = $common.hidePopover;
 
@@ -81,25 +71,6 @@ consoleModule.controller('clustersController', function ($http, $timeout, $scope
         ];
 
         $scope.eventGroups = igniteIncludeEventGroups;
-
-        $scope.preview = {
-            general: {xml: '', java: '', allDefaults: true},
-            atomics: {xml: '', java: '', allDefaults: true},
-            binary: {xml: '', java: '', allDefaults: true},
-            communication: {xml: '', java: '', allDefaults: true},
-            connector: {xml: '', java: '', allDefaults: true},
-            deployment: {xml: '', java: '', allDefaults: true},
-            discovery: {xml: '', java: '', allDefaults: true},
-            events: {xml: '', java: '', allDefaults: true},
-            igfs: {xml: '', java: '', allDefaults: true},
-            marshaller: {xml: '', java: '', allDefaults: true},
-            metrics: {xml: '', java: '', allDefaults: true},
-            swap: {xml: '', java: '', allDefaults: true},
-            time: {xml: '', java: '', allDefaults: true},
-            pools: {xml: '', java: '', allDefaults: true},
-            transactions: {xml: '', java: '', allDefaults: true},
-            sslConfiguration: {xml: '', java: '', allDefaults: true}
-        };
 
         $scope.toggleExpanded = function () {
             $scope.ui.expanded = !$scope.ui.expanded;
@@ -185,90 +156,6 @@ consoleModule.controller('clustersController', function ($http, $timeout, $scope
                         form.$setPristine();
                     else
                         form.$setDirty();
-
-                    if (val) {
-                        var clusterCaches = _.reduce($scope.caches, function(caches, cache){
-                            if (_.contains(val.caches, cache.value)) {
-                                caches.push(cache.cache);
-                            }
-
-                            return caches;
-                        }, []);
-
-                        var srcItem = $scope.selectedItem ? $scope.selectedItem : prepareNewItem();
-
-                        var igfss = _.map(_.filter($scope.igfss, function(igfs) {
-                            return _.indexOf(val.igfss, igfs.value) >= 0;
-                        }), function(igfs) {
-                            return igfs.igfs;
-                        });
-
-                        $scope.ui.checkDirty(val, srcItem);
-
-                        $scope.preview.general.xml = $generatorXml.clusterCaches(clusterCaches, null, true, $generatorXml.clusterGeneral(val)).asString();
-                        $scope.preview.general.java = $generatorJava.clusterCaches(clusterCaches, null, true, $generatorJava.clusterGeneral(val)).asString();
-                        $scope.preview.general.allDefaults = $common.isEmptyString($scope.preview.general.xml);
-
-                        $scope.preview.atomics.xml = $generatorXml.clusterAtomics(val).asString();
-                        $scope.preview.atomics.java = $generatorJava.clusterAtomics(val).asString();
-                        $scope.preview.atomics.allDefaults = $common.isEmptyString($scope.preview.atomics.xml);
-
-                        $scope.preview.binary.xml = $generatorXml.clusterBinary(val).asString();
-                        $scope.preview.binary.java = $generatorJava.clusterBinary(val).asString();
-                        $scope.preview.binary.allDefaults = $common.isEmptyString($scope.preview.binary.xml);
-
-                        $scope.preview.communication.xml = $generatorXml.clusterCommunication(val).asString();
-                        $scope.preview.communication.java = $generatorJava.clusterCommunication(val).asString();
-                        $scope.preview.communication.allDefaults = $common.isEmptyString($scope.preview.communication.xml);
-
-                        $scope.preview.connector.xml = $generatorXml.clusterConnector(val).asString();
-                        $scope.preview.connector.java = $generatorJava.clusterConnector(val).asString();
-                        $scope.preview.connector.allDefaults = $common.isEmptyString($scope.preview.connector.xml);
-
-                        $scope.preview.deployment.xml = $generatorXml.clusterDeployment(val).asString();
-                        $scope.preview.deployment.java = $generatorJava.clusterDeployment(val).asString();
-                        $scope.preview.deployment.allDefaults = $common.isEmptyString($scope.preview.deployment.xml);
-
-                        $scope.preview.discovery.xml = $generatorXml.clusterDiscovery(val.discovery).asString();
-                        $scope.preview.discovery.java = $generatorJava.clusterDiscovery(val.discovery).asString();
-                        $scope.preview.discovery.allDefaults = $common.isEmptyString($scope.preview.discovery.xml);
-
-                        $scope.preview.events.xml = $generatorXml.clusterEvents(val).asString();
-                        $scope.preview.events.java = $generatorJava.clusterEvents(val).asString();
-                        $scope.preview.events.allDefaults = $common.isEmptyString($scope.preview.events.xml);
-
-                        $scope.preview.igfs.xml = $generatorXml.igfss(igfss).asString();
-                        $scope.preview.igfs.java = $generatorJava.igfss(igfss, 'cfg').asString();
-                        $scope.preview.igfs.allDefaults = $common.isEmptyString($scope.preview.igfs.xml);
-
-                        $scope.preview.marshaller.xml = $generatorXml.clusterMarshaller(val).asString();
-                        $scope.preview.marshaller.java = $generatorJava.clusterMarshaller(val).asString();
-                        $scope.preview.marshaller.allDefaults = $common.isEmptyString($scope.preview.marshaller.xml);
-
-                        $scope.preview.metrics.xml = $generatorXml.clusterMetrics(val).asString();
-                        $scope.preview.metrics.java = $generatorJava.clusterMetrics(val).asString();
-                        $scope.preview.metrics.allDefaults = $common.isEmptyString($scope.preview.metrics.xml);
-
-                        $scope.preview.swap.xml = $generatorXml.clusterSwap(val).asString();
-                        $scope.preview.swap.java = $generatorJava.clusterSwap(val).asString();
-                        $scope.preview.swap.allDefaults = $common.isEmptyString($scope.preview.swap.xml);
-
-                        $scope.preview.time.xml = $generatorXml.clusterTime(val).asString();
-                        $scope.preview.time.java = $generatorJava.clusterTime(val).asString();
-                        $scope.preview.time.allDefaults = $common.isEmptyString($scope.preview.time.xml);
-
-                        $scope.preview.pools.xml = $generatorXml.clusterPools(val).asString();
-                        $scope.preview.pools.java = $generatorJava.clusterPools(val).asString();
-                        $scope.preview.pools.allDefaults = $common.isEmptyString($scope.preview.pools.xml);
-
-                        $scope.preview.transactions.xml = $generatorXml.clusterTransactions(val).asString();
-                        $scope.preview.transactions.java = $generatorJava.clusterTransactions(val).asString();
-                        $scope.preview.transactions.allDefaults = $common.isEmptyString($scope.preview.transactions.xml);
-
-                        $scope.preview.sslConfiguration.xml = $generatorXml.clusterSsl(val).asString();
-                        $scope.preview.sslConfiguration.java = $generatorJava.clusterSsl(val).asString();
-                        $scope.preview.sslConfiguration.allDefaults = $common.isEmptyString($scope.preview.sslConfiguration.xml);
-                    }
                 }, true);
             })
             .catch(function (errMsg) {
@@ -291,10 +178,6 @@ consoleModule.controller('clustersController', function ($http, $timeout, $scope
                         sessionStorage.removeItem('lastSelectedCluster');
                 }
                 catch (error) { }
-
-                _.forEach(previews, function(preview) {
-                    preview.attractAttention = false;
-                });
 
                 if (backup)
                     $scope.backupItem = backup;

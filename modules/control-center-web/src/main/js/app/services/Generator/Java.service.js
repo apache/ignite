@@ -15,23 +15,6 @@
  * limitations under the License.
  */
 
-// TODO IGNITE-2055: use set version.
-const igniteVersion = '1.5.0.final';
-
-export default ['$scope', function($scope) {
-    const ctrl = this;
-
-    // Watchers definition.
-    const clusterWatcher = (value) => {
-        delete ctrl.data;
-
-        if (!value)
-            return;
-
-        // TODO IGNITE-2053: need move $generatorPom to services.
-        ctrl.data = $generatorPom.pom($scope.cluster, igniteVersion).asString();
-    };
-
-    // Setup watchers.
-    $scope.$watch('cluster', clusterWatcher);
+export default ['GeneratorJava', () => {
+    return $generatorJava;
 }];

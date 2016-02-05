@@ -322,19 +322,15 @@ form.panel.panel-default(name='communication' novalidate)
                             data-name='comAddressResolver'
                             data-ng-model='#{model}.addressResolver'
                         )
-            .col-sm-6
+            ignite-ui-ace.col-sm-6
                 .preview-panel(ng-init='mode = false')
                     .preview-legend
                         a(ng-class='{active: !mode, inactive: mode}' ng-click='mode = false') XML
                         | &nbsp;
                         a(ng-class='{active: mode, inactive: !mode}' ng-click='mode = true') Java
-                    .preview-content(
-                        ng-if='!preview["communication"].allDefaults && mode'
-                        ui-ace='{onLoad: previewInit, onChange: previewChanged, mode: "java", rendererOptions: {minLines: group.previewMinLines || 3}}' 
-                        ng-model='preview["communication"].java')
-                    .preview-content(
-                        ng-if='!preview["communication"].allDefaults && !mode'
-                        ui-ace='{onLoad: previewInit, onChange: previewChanged, mode: "xml", rendererOptions: {minLines: group.previewMinLines || 3}}' 
-                        ng-model='preview["communication"].xml')
-                    .preview-content-empty(ng-if='preview["communication"].allDefaults')
+                    .preview-content(ng-if='mode')
+                        ignite-ui-ace-java(data-cluster='backupItem' data-generator='clusterCommunication' ng-model='$parent.data')
+                    .preview-content(ng-if='!mode')
+                        ignite-ui-ace-xml(data-cluster='backupItem' data-generator='clusterCommunication' ng-model='$parent.data')
+                    .preview-content-empty(ng-if='!data')
                         label All Defaults

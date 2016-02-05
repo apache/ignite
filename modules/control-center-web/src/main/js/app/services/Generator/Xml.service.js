@@ -15,22 +15,6 @@
  * limitations under the License.
  */
 
-export default ['IgniteUiAceOnLoad', () => {
-    return (editor) => {
-        editor.setReadOnly(true);
-        editor.setOption('highlightActiveLine', false);
-        editor.setAutoScrollEditorIntoView(true);
-        editor.$blockScrolling = Infinity;
-
-        const renderer = editor.renderer;
-
-        renderer.setHighlightGutterLine(false);
-        renderer.setShowPrintMargin(false);
-        renderer.setOption('fontFamily', 'monospace');
-        renderer.setOption('fontSize', '12px');
-        renderer.setOption('minLines', '25');
-        renderer.setOption('maxLines', '25');
-
-        editor.setTheme('ace/theme/chrome');
-    };
+export default ['GeneratorXml', () => {
+    return $generatorXml;
 }];

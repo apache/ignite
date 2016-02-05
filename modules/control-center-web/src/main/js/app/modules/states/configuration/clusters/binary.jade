@@ -124,19 +124,15 @@ form.panel.panel-default(name='binary' novalidate)
                         | Compact footer
                         ignite-form-field-tooltip
                             | When enabled, Ignite will not write fields metadata when serializing objects(this will increase serialization performance), because internally #[b BinaryMarshaller] already distribute metadata inside cluster
-            .col-sm-6
+            ignite-ui-ace.col-sm-6
                 .preview-panel(ng-init='mode = false')
                     .preview-legend
                         a(ng-class='{active: !mode, inactive: mode}' ng-click='mode = false') XML
                         | &nbsp;
                         a(ng-class='{active: mode, inactive: !mode}' ng-click='mode = true') Java
-                    .preview-content(
-                        ng-if='!preview["binary"].allDefaults && mode'
-                        ui-ace='{onLoad: previewInit, onChange: previewChanged, mode: "java", rendererOptions: {minLines: group.previewMinLines || 3}}' 
-                        ng-model='preview["binary"].java')
-                    .preview-content(
-                        ng-if='!preview["binary"].allDefaults && !mode'
-                        ui-ace='{onLoad: previewInit, onChange: previewChanged, mode: "xml", rendererOptions: {minLines: group.previewMinLines || 3}}' 
-                        ng-model='preview["binary"].xml')
-                    .preview-content-empty(ng-if='preview["binary"].allDefaults')
+                    .preview-content(ng-if='mode')
+                        ignite-ui-ace-java(data-cluster='backupItem' data-generator='clusterBinary' ng-model='$parent.data')
+                    .preview-content(ng-if='!mode')
+                        ignite-ui-ace-xml(data-cluster='backupItem' data-generator='clusterBinary' ng-model='$parent.data')
+                    .preview-content-empty(ng-if='!data')
                         label All Defaults

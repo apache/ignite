@@ -15,24 +15,12 @@
  * limitations under the License.
  */
 
-export default ['$scope', 'IgniteUiAceOnLoad', function($scope, onLoad) {
+export default ['$scope', 'GeneratorXml', function($scope, generator) {
     const ctrl = this;
 
-    // Scope methods.
-    $scope.onLoad = onLoad;
-
-    // Watchers definition.
-    const clusterWatcher = (value) => {
-        delete ctrl.data;
-
-        if (!value)
-            return;
-
+    // Set default generator
+    ctrl.generator = (cluster) => {
         // TODO IGNITE-2052: need move $generatorXml to services.
-        ctrl.data = $generatorXml.cluster($scope.cluster, $scope.cfg);
+        return generator.cluster(cluster, $scope.cfg);
     };
-
-    // Setup watchers.
-    $scope.$watch('cfg', clusterWatcher, true);
-    $scope.$watch('cluster', clusterWatcher);
 }];

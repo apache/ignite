@@ -15,32 +15,30 @@
  * limitations under the License.
  */
 
-import template from './ui-ace-docker.jade!';
-import controller from './ui-ace-docker.controller';
+export default ['summaryTabs', [() => {
+    const link = (scope, $element, $attrs, [igniteUiAce]) => {
+        igniteUiAce.onLoad = (editor) => {
+            editor.setReadOnly(true);
+            editor.setOption('highlightActiveLine', false);
+            editor.setAutoScrollEditorIntoView(true);
+            editor.$blockScrolling = Infinity;
 
-export default ['igniteUiAceDocker', [() => {
-    const link = ($scope, $el, $attrs, [igniteUiAce]) => {
-        if (igniteUiAce.onLoad)
-            $scope.onLoad = igniteUiAce.onLoad;
+            const renderer = editor.renderer;
 
-        if (igniteUiAce.onChange)
-            $scope.onChange = igniteUiAce.onChange;
+            renderer.setHighlightGutterLine(false);
+            renderer.setShowPrintMargin(false);
+            renderer.setOption('fontFamily', 'monospace');
+            renderer.setOption('fontSize', '12px');
+            renderer.setOption('minLines', '25');
+            renderer.setOption('maxLines', '25');
+
+            editor.setTheme('ace/theme/chrome');
+        };
     };
 
     return {
-        restrict: 'E',
-        scope: {
-            cluster: '=',
-            data: '=ngModel'
-        },
-        bindToController: {
-            cluster: '=',
-            data: '=ngModel'
-        },
+        restrict: 'C',
         link,
-        template,
-        controller,
-        controllerAs: 'ctrl',
-        require: ['?^igniteUiAce']
+        require: ['^igniteUiAce']
     };
 }]];
