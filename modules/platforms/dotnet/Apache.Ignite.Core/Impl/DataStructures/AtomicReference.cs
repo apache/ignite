@@ -78,9 +78,9 @@ namespace Apache.Ignite.Core.Impl.DataStructures
         }
 
         /** <inheritDoc /> */
-        public bool IsClosed()
+        public bool IsClosed
         {
-            return UnmanagedUtils.AtomicReferenceIsClosed(Target);
+            get { return UnmanagedUtils.AtomicReferenceIsClosed(Target); }
         }
 
         /** <inheritDoc /> */

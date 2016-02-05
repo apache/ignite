@@ -54,7 +54,7 @@ namespace Apache.Ignite.Core.DataStructures
         /// Determines whether this instance was removed from cache.
         /// </summary>
         /// <returns>True if this atomic was removed from cache; otherwise, false.</returns>
-        bool IsClosed();
+        bool IsClosed { get; }
 
         /// <summary>
         /// Closes this instance.

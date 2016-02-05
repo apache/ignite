@@ -72,25 +72,25 @@ namespace Apache.Ignite.Core.Tests.DataStructures
             var al = Grid.GetAtomicReference(AtomicRefName, 10, true);
             Assert.AreEqual(AtomicRefName, al.Name);
             Assert.AreEqual(10, al.Read());
-            Assert.AreEqual(false, al.IsClosed());
+            Assert.AreEqual(false, al.IsClosed);
 
             // Get existing with create flag
             var al2 = Grid.GetAtomicReference(AtomicRefName, 5, true);
             Assert.AreEqual(AtomicRefName, al2.Name);
             Assert.AreEqual(10, al2.Read());
-            Assert.AreEqual(false, al2.IsClosed());
+            Assert.AreEqual(false, al2.IsClosed);
 
             // Get existing without create flag
             var al3 = Grid.GetAtomicReference(AtomicRefName, 5, false);
             Assert.AreEqual(AtomicRefName, al3.Name);
             Assert.AreEqual(10, al3.Read());
-            Assert.AreEqual(false, al3.IsClosed());
+            Assert.AreEqual(false, al3.IsClosed);
 
             al.Close();
 
-            Assert.AreEqual(true, al.IsClosed());
-            Assert.AreEqual(true, al2.IsClosed());
-            Assert.AreEqual(true, al3.IsClosed());
+            Assert.AreEqual(true, al.IsClosed);
+            Assert.AreEqual(true, al2.IsClosed);
+            Assert.AreEqual(true, al3.IsClosed);
 
             Assert.IsNull(Grid.GetAtomicReference(AtomicRefName, 10, false));
         }

@@ -60,25 +60,25 @@ namespace Apache.Ignite.Core.Tests.DataStructures
             var al = Grid.GetAtomicSequence(AtomicSeqName, 10, true);
             Assert.AreEqual(AtomicSeqName, al.Name);
             Assert.AreEqual(10, al.Read());
-            Assert.AreEqual(false, al.IsClosed());
+            Assert.AreEqual(false, al.IsClosed);
 
             // Get existing with create flag
             var al2 = Grid.GetAtomicSequence(AtomicSeqName, 5, true);
             Assert.AreEqual(AtomicSeqName, al2.Name);
             Assert.AreEqual(10, al2.Read());
-            Assert.AreEqual(false, al2.IsClosed());
+            Assert.AreEqual(false, al2.IsClosed);
 
             // Get existing without create flag
             var al3 = Grid.GetAtomicSequence(AtomicSeqName, 5, false);
             Assert.AreEqual(AtomicSeqName, al3.Name);
             Assert.AreEqual(10, al3.Read());
-            Assert.AreEqual(false, al3.IsClosed());
+            Assert.AreEqual(false, al3.IsClosed);
 
             al.Close();
 
-            Assert.AreEqual(true, al.IsClosed());
-            Assert.AreEqual(true, al2.IsClosed());
-            Assert.AreEqual(true, al3.IsClosed());
+            Assert.AreEqual(true, al.IsClosed);
+            Assert.AreEqual(true, al2.IsClosed);
+            Assert.AreEqual(true, al3.IsClosed);
 
             Assert.IsNull(Grid.GetAtomicSequence(AtomicSeqName, 10, false));
         }
@@ -100,8 +100,8 @@ namespace Apache.Ignite.Core.Tests.DataStructures
             Assert.AreEqual(11, atomics[0].Increment());
             atomics.ForEach(x => Assert.AreEqual(11, x.Read()));
 
-            atomics.ForEach(x => x.SetBatchSize(42));
-            atomics.ForEach(x => Assert.AreEqual(42, x.GetBatchSize()));
+            atomics.ForEach(x => x.BatchSize = 42);
+            atomics.ForEach(x => Assert.AreEqual(42, x.BatchSize));
         }
 
         /// <summary>

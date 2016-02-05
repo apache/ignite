@@ -69,21 +69,16 @@ namespace Apache.Ignite.Core.Impl.DataStructures
         }
 
         /** <inheritDoc /> */
-        public int GetBatchSize()
+        public int BatchSize
         {
-            return UnmanagedUtils.AtomicSequenceGetBatchSize(Target);
+            get { return UnmanagedUtils.AtomicSequenceGetBatchSize(Target); }
+            set { UnmanagedUtils.AtomicSequenceSetBatchSize(Target, value); }
         }
 
         /** <inheritDoc /> */
-        public void SetBatchSize(int batchSize)
+        public bool IsClosed
         {
-            UnmanagedUtils.AtomicSequenceSetBatchSize(Target, batchSize);
-        }
-
-        /** <inheritDoc /> */
-        public bool IsClosed()
-        {
-            return UnmanagedUtils.AtomicSequenceIsClosed(Target);
+            get { return UnmanagedUtils.AtomicSequenceIsClosed(Target); }
         }
 
         /** <inheritDoc /> */

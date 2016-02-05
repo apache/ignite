@@ -53,19 +53,13 @@ namespace Apache.Ignite.Core.DataStructures
         /// Gets local batch size for this atomic sequence.
         /// </summary>
         /// <returns>Sequence batch size.</returns>
-        int GetBatchSize();
-
-        /// <summary>
-        /// Sets local batch size for this atomic sequence.
-        /// </summary>
-        /// <param name="batchSize">Size of the batch.</param>
-        void SetBatchSize(int batchSize);
+        int BatchSize { get; set; }
 
         /// <summary>
         /// Determines whether this instance was removed from cache.
         /// </summary>
         /// <returns>True if this atomic was removed from cache; otherwise, false.</returns>
-        bool IsClosed();
+        bool IsClosed { get; }
 
         /// <summary>
         /// Closes this instance.
