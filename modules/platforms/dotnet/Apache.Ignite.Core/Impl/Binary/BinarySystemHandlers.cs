@@ -208,11 +208,7 @@ namespace Apache.Ignite.Core.Impl.Binary
                 supportsHandles = true;
                 return WriteHashtable;
             }
-            if (type == typeof (DictionaryEntry))
-            {
-                supportsHandles = true;
-                return WriteMapEntry;
-            }
+
             if (type.IsArray)
             {
                 // We know how to write any array type.
