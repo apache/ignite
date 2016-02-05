@@ -38,6 +38,7 @@ import org.apache.ignite.internal.processors.cache.CachePartialUpdateCheckedExce
 import org.apache.ignite.internal.processors.cache.GridCacheAffinityManager;
 import org.apache.ignite.internal.processors.cache.GridCacheAtomicFuture;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
+import org.apache.ignite.internal.processors.cache.GridCacheMessage;
 import org.apache.ignite.internal.processors.cache.GridCacheMvccManager;
 import org.apache.ignite.internal.processors.cache.GridCacheOperation;
 import org.apache.ignite.internal.processors.cache.GridCacheReturn;
@@ -465,13 +466,7 @@ public class GridNearAtomicUpdateFuture extends GridFutureAdapter<Object> implem
                 if (log.isDebugEnabled())
                     log.debug("Sending near atomic update request [nodeId=" + req.nodeId() + ", req=" + req + ']');
 
-                if (req instanceof GridNearAtomicMultipleUpdateRequest)
-                    cctx.io().send(req.nodeId(), (GridNearAtomicMultipleUpdateRequest)req, cctx.ioPolicy());
-                else {
-                    assert req instanceof GridNearAtomicSingleUpdateRequest;
-
-                    cctx.io().send(req.nodeId(), (GridNearAtomicSingleUpdateRequest)req, cctx.ioPolicy());
-                }
+                cctx.io().send(req.nodeId(), (GridCacheMessage)req, cctx.ioPolicy());
 
                 if (syncMode == FULL_ASYNC)
                     onDone(new GridCacheReturn(cctx, true, true, null, true));
