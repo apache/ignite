@@ -53,7 +53,14 @@ namespace ignite
             SharedPointer<IgniteEnvironment>* ptr = static_cast<SharedPointer<IgniteEnvironment>*>(target);
 
             delete ptr;
-        } 
+        }
+
+        void IGNITE_CALL MemoryReallocate(void* target, long long memPtr, int cap)
+        {
+            InteropExternalMemory mem(reinterpret_cast<int8_t*>(memPtr));
+
+            mem.Reallocate(static_cast<int32_t>(cap));
+        }
 
         IgniteEnvironment::IgniteEnvironment() : ctx(SharedPointer<JniContext>()), latch(new SingleLatch), name(NULL),
             metaMgr(new BinaryTypeManager())
@@ -79,6 +86,8 @@ namespace ignite
 
             hnds.onStart = OnStart;
             hnds.onStop = OnStop;
+
+            hnds.memRealloc = MemoryReallocate;
 
             hnds.error = NULL;
 
