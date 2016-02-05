@@ -19,9 +19,12 @@ package org.apache.ignite.testsuites;
 
 import java.util.Arrays;
 import junit.framework.TestSuite;
+import org.apache.ignite.cache.CacheAtomicWriteOrderMode;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMemoryMode;
 import org.apache.ignite.cache.CacheMode;
+import org.apache.ignite.cache.CacheRebalanceMode;
+import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cache.store.CacheStore;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -61,10 +64,64 @@ public class CacheFullApiNewTestSuite extends TestSuite {
     /** */
     @SuppressWarnings("unchecked")
     private static final ConfigurationParameter<CacheConfiguration>[][] cacheParams = new ConfigurationParameter[][] {
-        Variants.enumVariants(CacheMode.class, "setCacheMode"),
-        Variants.enumVariants(CacheAtomicityMode.class, "setAtomicityMode"),
-        Variants.enumVariantsWithNull(CacheMemoryMode.class, "setMemoryMode"),
+        Variants.enumVariants("setCacheMode", CacheMode.class),
+        Variants.enumVariants("setAtomicityMode", CacheAtomicityMode.class),
+        Variants.enumVariantsWithNull("setMemoryMode", CacheMemoryMode.class),
         Variants.booleanVariants("setEvictSynchronized"),
+        Variants.objectVariantsWithNull("setEvictionPolicy"),// TODO
+        Variants.objectVariantsWithNull("setNearConfiguration"),// TODO
+        Variants.enumVariantsWithNull("setWriteSynchronizationMode", CacheWriteSynchronizationMode.class),// TODO
+        Variants.objectVariantsWithNull("setNodeFilter"),// TODO
+        Variants.objectVariantsWithNull("setEvictSynchronizedKeyBufferSize"),// TODO
+        Variants.objectVariantsWithNull("setEvictSynchronizedConcurrencyLevel"),// TODO
+        Variants.objectVariantsWithNull("setEvictSynchronizedTimeout"),// TODO
+        Variants.objectVariantsWithNull("setEvictMaxOverflowRatio"),// TODO
+        Variants.objectVariantsWithNull("setEvictionFilter"),// TODO
+        Variants.booleanVariantsWithNull("setEagerTtl"),// TODO
+        Variants.objectVariantsWithNull("setStartSize"),// TODO
+        Variants.booleanVariantsWithNull("setLoadPreviousValue"),// TODO
+//        Variants.objectVariantsWithNull("setCacheStoreFactory"),// TODO
+        Variants.booleanVariantsWithNull("setStoreKeepBinary"),// TODO
+        Variants.objectVariantsWithNull("setStoreConcurrentLoadAllThreshold"),// TODO
+        Variants.objectVariantsWithNull("setAffinity"),// TODO
+        Variants.enumVariants("setAtomicWriteOrderMode", CacheAtomicWriteOrderMode.class),
+        Variants.objectVariantsWithNull("setBackups"),// TODO
+        Variants.objectVariantsWithNull("setDefaultLockTimeout"),// TODO
+        Variants.booleanVariantsWithNull("setInvalidate"),
+        Variants.objectVariantsWithNull("setTransactionManagerLookupClassName"),// TODO deprecated?!
+        Variants.enumVariantsWithNull("setRebalanceMode", CacheRebalanceMode.class),
+        Variants.objectVariantsWithNull("setRebalanceOrder"),// TODO
+        Variants.objectVariantsWithNull("setRebalanceBatchSize"),// TODO
+        Variants.objectVariantsWithNull("setRebalanceBatchesPrefetchCount"),// TODO
+        Variants.booleanVariantsWithNull("setSwapEnabled"),
+        Variants.objectVariantsWithNull("setMaxConcurrentAsyncOperations"),// TODO
+        Variants.booleanVariantsWithNull("setWriteBehindEnabled"),
+        Variants.objectVariantsWithNull("setWriteBehindFlushSize"),// TODO
+        Variants.objectVariantsWithNull("setWriteBehindFlushFrequency"),// TODO
+        Variants.objectVariantsWithNull("setWriteBehindFlushThreadCount"),// TODO
+        Variants.objectVariantsWithNull("setWriteBehindBatchSize"),// TODO
+        Variants.objectVariantsWithNull("setRebalanceThreadPoolSize"),// TODO
+        Variants.objectVariantsWithNull("setRebalanceTimeout"),// TODO
+        Variants.objectVariantsWithNull("setRebalanceDelay"),// TODO
+        Variants.objectVariantsWithNull("setRebalanceThrottle"),// TODO
+        Variants.objectVariantsWithNull("setAffinityMapper"),// TODO
+        Variants.objectVariantsWithNull("setOffHeapMaxMemory"),// TODO
+        Variants.objectVariantsWithNull("setInterceptor"),// TODO
+        Variants.objectVariantsWithNull("setTypeMetadata"),// TODO deprecated
+        Variants.booleanVariantsWithNull("setReadFromBackup"),
+        Variants.booleanVariantsWithNull("setCopyOnRead"),// TODO
+        Variants.objectVariantsWithNull("setSqlFunctionClasses"),// TODO
+        Variants.objectVariantsWithNull("setLongQueryWarningTimeout"),// TODO
+        Variants.objectVariantsWithNull("setSqlSchema"),// TODO
+        Variants.booleanVariantsWithNull("setSqlEscapeAll"),// TODO
+        Variants.objectVariantsWithNull("setIndexedTypes"),// TODO
+        Variants.objectVariantsWithNull("setSqlOnheapRowCacheSize"),// TODO
+        Variants.booleanVariantsWithNull("setSnapshotableIndex"),// TODO
+        Variants.objectVariantsWithNull("setPluginConfigurations"),// TODO plugin
+        Variants.objectVariantsWithNull("setQueryEntities"),// TODO
+        Variants.objectVariantsWithNull("setTopologyValidator"),// TODO
+        Variants.objectVariantsWithNull("setCacheStoreSessionListenerFactories"),// TODO
+//        Variants.objectVariantsWithNull("addCacheEntryListenerConfiguration"),// TODO ?!
     };
 
 //    /** */
