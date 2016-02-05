@@ -19,12 +19,9 @@ header#header.header
         | Currently assuming #[strong {{$root.user.username}}], #[a(ng-click='$root.revertIdentity()') revert to your identity].
     table.container
         tr
-            td.col-xs-3.col-sm-3.col-md-2(rowspan='2')
+            td.col-xs-3.col-sm-3.col-md-2
                 ignite-logo
-            td
-                ignite-title
-        tr
-            td.navbar-collapse.collapse(ng-if='$root.user')
+            td(ng-if='$root.user' style='padding-top: 20px')
                 ul.nav.navbar-nav(ignite-configuration-sidebar ignite-navbar)
                     li(ng-class='{active: $state.includes("base.configuration")}')
                         a.dropdown-toggle(data-toggle='dropdown' bs-dropdown='sidebar.items' data-placement='bottom-right') Configuration
