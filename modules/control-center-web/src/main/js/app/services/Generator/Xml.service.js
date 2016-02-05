@@ -15,6 +15,7 @@
  * limitations under the License.
  */
 
+// TODO IGNITE-2052: need move $generatorXml to services.
 export default ['GeneratorXml', () => {
     return $generatorXml;
 }];

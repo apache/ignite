@@ -24,7 +24,7 @@ export default ['$scope', 'GeneratorJava', function($scope, generator) {
     // Set default generator
     ctrl.generator = (cluster) => {
         const type = $scope.cfg ? CLIENT_CFG : SERVER_CFG;
-        // TODO IGNITE-2054: need move $generatorJava to services.
+
         return generator.cluster(cluster, 'config', type, $scope.cfg);
     };
 }];

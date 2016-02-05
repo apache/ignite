@@ -15,6 +15,7 @@
  * limitations under the License.
  */
 
+// TODO IGNITE-2054: need move $generatorJava to services.
 export default ['GeneratorJava', () => {
     return $generatorJava;
 }];

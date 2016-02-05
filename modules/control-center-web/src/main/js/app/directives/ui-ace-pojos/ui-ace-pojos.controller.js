@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-export default ['$scope', 'JavaTypes', function($scope, JavaTypes) {
+export default ['$scope', 'JavaTypes', 'GeneratorJava', function($scope, JavaTypes, generator) {
     const ctrl = this;
 
     // Watchers definition.
@@ -33,8 +33,7 @@ export default ['$scope', 'JavaTypes', function($scope, JavaTypes) {
         if (!ctrl.cluster || !ctrl.cluster.caches)
             return;
 
-        // TODO IGNITE-2054: need move $generatorJava to services.
-        ctrl.pojos = $generatorJava.pojos(ctrl.cluster.caches, ctrl.useConstructor, ctrl.includeKeyFields);
+        ctrl.pojos = generator.pojos(ctrl.cluster.caches, ctrl.useConstructor, ctrl.includeKeyFields);
     };
 
     // Watcher update classes after

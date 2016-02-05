@@ -24,7 +24,7 @@ import pdfMake from 'pdfmake';
 window._ = _;
 window.jQuery = jQuery;
 window.ace = ace;
-window.require = ace.require;
+window.require = ace.require; // TODO Should be removed after full refactoring to directives.
 window.angular = angular;
 window.pdfMake = pdfMake;
 

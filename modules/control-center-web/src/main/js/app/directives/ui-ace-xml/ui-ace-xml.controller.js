@@ -20,7 +20,6 @@ export default ['$scope', 'GeneratorXml', function($scope, generator) {
 
     // Set default generator
     ctrl.generator = (cluster) => {
-        // TODO IGNITE-2052: need move $generatorXml to services.
         return generator.cluster(cluster, $scope.cfg);
     };
 }];
