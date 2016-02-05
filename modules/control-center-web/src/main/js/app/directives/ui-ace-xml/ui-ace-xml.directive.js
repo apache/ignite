@@ -70,7 +70,18 @@ export default ['igniteUiAceXml', ['GeneratorXml', (generator) => {
                     break;
 
                 case 'igfss':
-                    ctrl.generator = () => generator.igfss(scope.igfss).asString();
+                    ctrl.generator = (cluster) => {
+                        let igfss;
+
+                        igfss = _.reduce(scope.igfss, (acc, igfs) => {
+                            if (_.contains(cluster.igfss, igfs.value))
+                                acc.push(igfs.igfs);
+
+                            return acc;
+                        }, []);
+
+                        return generator.igfss(igfss).asString();
+                    };
 
                     break;
 
