@@ -17,6 +17,7 @@
 
 package org.apache.ignite.testframework.config.generator;
 
+import java.util.Arrays;
 import java.util.Iterator;
 
 /**
@@ -76,12 +77,25 @@ public class StateIterator implements Iterator<int[]> {
             return arraycopy(vector);
         }
 
-        if (updateVector(vector, position))
+        while (!updateVector(vector, position)) {
+            if (position + 1 == params.length)
+                throw new IllegalStateException("[position=" + position + ", vector=" +
+                    Arrays.toString(vector) + ", params=" + Arrays.deepToString(params));
+
+            position++;
+
+            // Skip params with length 1. We cannot set 1 at this position.
+            while (position < params.length && params[position].length < 2)
+                position++;
+
+            if (position == params.length)
+                throw new IllegalStateException("[position=" + position + ", vector=" +
+                    Arrays.toString(vector) + ", params=" + Arrays.deepToString(params));
+
+            vector[position] = 1;
+
             return arraycopy(vector);
-
-        position++;
-
-        vector[position] = 1;
+        }
 
         return arraycopy(vector);
     }
@@ -92,7 +106,7 @@ public class StateIterator implements Iterator<int[]> {
      * @param vector Vector.
      * @param position Position.
      * @return {@code True} if vector has been updated. When {@code false} is returned it means that all positions
-     *          before has beedn set to {@code 0}.
+     *          before has been set to {@code 0}.
      */
     private boolean updateVector(int[] vector, int position) {
         if (position == 0) {

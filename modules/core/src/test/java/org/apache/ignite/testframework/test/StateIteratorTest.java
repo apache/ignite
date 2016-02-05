@@ -37,7 +37,7 @@ public class StateIteratorTest extends TestCase {
             {0, 1},
         };
 
-        checkIterator(arr, 2 * 2 * 2);
+        checkIterator(arr);
     }
 
     /**
@@ -52,7 +52,7 @@ public class StateIteratorTest extends TestCase {
             {0, 1, 2, 3, 4, 5},
         };
 
-        checkIterator(arr, 1 * 3 * 2 * 6);
+        checkIterator(arr);
     }
 
     /**
@@ -67,7 +67,25 @@ public class StateIteratorTest extends TestCase {
             {0},
         };
 
-        checkIterator(arr, 6 * 3 * 2 * 1);
+        checkIterator(arr);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @SuppressWarnings("PointlessArithmeticExpression")
+    public void test4() throws Exception {
+        Object[][] arr = new Object[][]{
+            {0,1,2},
+            {0,1},
+            {0,1,2,4},
+            {0,1},
+            {0},
+            {0},
+            {0,1,2,4},
+        };
+
+        checkIterator(arr);
     }
 
     /**
@@ -78,7 +96,7 @@ public class StateIteratorTest extends TestCase {
             {0},
         };
 
-        checkIterator(arr, 1);
+        checkIterator(arr);
     }
 
     /**
@@ -90,14 +108,23 @@ public class StateIteratorTest extends TestCase {
             {0},
         };
 
-        checkIterator(arr, 1);
+        checkIterator(arr);
     }
 
     /**
      * @param arr Array.
-     * @param expStatesNum Number.
      */
-    private void checkIterator(Object[][] arr, int expStatesNum) {
+    private void checkIterator(Object[][] arr) {
+        int expSize = 1;
+
+        for (int i = 0; i < arr.length; i++) {
+            Object[] objects = arr[i];
+
+            System.out.println(">>> " + i + ": " + objects.length);
+
+            expSize *= objects.length;
+        }
+
         Set<int[]> states = new HashSet<>();
 
         int step = 0;
@@ -118,6 +145,6 @@ public class StateIteratorTest extends TestCase {
             step++;
         }
 
-        assertEquals(expStatesNum, states.size());
+        assertEquals(expSize, states.size());
     }
 }
