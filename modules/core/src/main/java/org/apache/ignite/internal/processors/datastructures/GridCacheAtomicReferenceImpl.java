@@ -153,7 +153,7 @@ public final class GridCacheAtomicReferenceImpl<T> implements GridCacheAtomicRef
 
     /** {@inheritDoc} */
     @Override public boolean compareAndSet(T expVal, T newVal) {
-        return compareAndSetAndGet(expVal, newVal, wrapperPredicate(expVal)) == expVal;
+        return compareAndSetAndGet(newVal, wrapperPredicate(expVal)) == expVal;
     }
 
     /**
@@ -163,7 +163,7 @@ public final class GridCacheAtomicReferenceImpl<T> implements GridCacheAtomicRef
      * @param newVal New value to set.
      * @return Original value.
      */
-    public T compareAndSetAndGet(T expVal, T newVal, final IgnitePredicate<T> expValPred) {
+    public T compareAndSetAndGet(T newVal, final IgnitePredicate<T> expValPred) {
         checkRemoved();
 
         try {

@@ -131,7 +131,7 @@ public class PlatformAtomicReference extends PlatformAbstractTarget {
             Object val = reader.readObjectDetached();
             final Object cmp = reader.readObjectDetached();
 
-            Object res = atomicRef.compareAndSetAndGet(cmp, val, new IgnitePredicateX<Object>() {
+            Object res = atomicRef.compareAndSetAndGet(val, new IgnitePredicateX<Object>() {
                 @Override public boolean applyx(Object e) throws IgniteCheckedException {
                     return compareObjects(cmp, e);
                 }
