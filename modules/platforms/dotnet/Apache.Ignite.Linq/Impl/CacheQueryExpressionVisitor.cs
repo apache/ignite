@@ -111,21 +111,35 @@ namespace Apache.Ignite.Linq.Impl
             return expression;
         }
 
+        /// <summary>
+        /// Visits the binary function.
+        /// </summary>
+        /// <param name="expression">The expression.</param>
+        /// <returns>True if function detected, otherwise false.</returns>
+        private bool VisitBinaryFunc(BinaryExpression expression)
+        {
+            if (expression.NodeType == ExpressionType.Add && expression.Left.Type == typeof (string))
+                _resultBuilder.Append("concat(");
+            else if (expression.NodeType == ExpressionType.Coalesce)
+                _resultBuilder.Append("coalesce(");
+            else
+                return false;
+
+            Visit(expression.Left);
+            _resultBuilder.Append(", ");
+            Visit(expression.Right);
+            _resultBuilder.Append(")");
+
+            return true;
+        }
+
         /** <inheritdoc /> */
         [SuppressMessage("Microsoft.Design", "CA1062:Validate arguments of public methods")]
         protected override Expression VisitBinary(BinaryExpression expression)
         {
-            // Special case: string concat
-            if (expression.NodeType == ExpressionType.Add && expression.Left.Type == typeof (string))
-            {
-                _resultBuilder.Append("concat(");
-                Visit(expression.Left);
-                _resultBuilder.Append(", ");
-                Visit(expression.Right);
-                _resultBuilder.Append(")");
-
+            // Either func or operator
+            if (VisitBinaryFunc(expression))
                 return expression;
-            }
 
             _resultBuilder.Append("(");
 
@@ -207,6 +221,9 @@ namespace Apache.Ignite.Linq.Impl
 
                 case ExpressionType.LessThanOrEqual:
                     _resultBuilder.Append(" <= ");
+                    break;
+
+                case ExpressionType.Coalesce:
                     break;
 
                 default:
@@ -322,6 +339,8 @@ namespace Apache.Ignite.Linq.Impl
 
             return expression;
         }
+
+
 
         /** <inheritdoc /> */
         protected override Exception CreateUnhandledItemException<T>(T unhandledItem, string visitMethod)
