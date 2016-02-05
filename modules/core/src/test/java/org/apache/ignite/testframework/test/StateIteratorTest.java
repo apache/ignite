@@ -116,6 +116,7 @@ public class StateIteratorTest extends TestCase {
      */
     private void checkIterator(Object[][] arr) {
         int expSize = 1;
+        int significantParamsCnt = 1;
 
         for (int i = 0; i < arr.length; i++) {
             Object[] objects = arr[i];
@@ -123,9 +124,12 @@ public class StateIteratorTest extends TestCase {
             System.out.println(">>> " + i + ": " + objects.length);
 
             expSize *= objects.length;
+
+            if (objects.length > 1)
+                significantParamsCnt++;
         }
 
-        System.out.println("Expected size: " + expSize);
+        System.out.println("Iteration info [expSize=" + expSize + ", significantParamsCnt=" + significantParamsCnt + "]");
 
         Set<int[]> states = new HashSet<>();
 

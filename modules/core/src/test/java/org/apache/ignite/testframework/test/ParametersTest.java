@@ -23,17 +23,17 @@ import junit.framework.TestCase;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.testframework.config.generator.ConfigurationParameter;
-import org.apache.ignite.testframework.config.params.Variants;
+import org.apache.ignite.testframework.config.params.Parameters;
 
 /**
  * Test.
  */
-public class VariantsTest extends TestCase {
+public class ParametersTest extends TestCase {
     /**
      * @throws Exception If failed.
      */
     public void testEnumVariants() throws Exception {
-        ConfigurationParameter<CacheConfiguration>[] modes = Variants.enumVariants(CacheMode.class, "setCacheMode");
+        ConfigurationParameter<CacheConfiguration>[] modes = Parameters.enumParameters("setCacheMode", CacheMode.class);
 
         assertEquals(CacheMode.values().length, modes.length);
 
@@ -57,8 +57,10 @@ public class VariantsTest extends TestCase {
     /**
      * @throws Exception If failed.
      */
-    public void testEnumVariantsWithNull() throws Exception {
-        ConfigurationParameter<CacheConfiguration>[] cfgParam = Variants.enumVariantsWithNull(CacheMode.class, "setCacheMode");
+    @SuppressWarnings("unchecked")
+    public void test2() throws Exception {
+        ConfigurationParameter<CacheConfiguration>[] cfgParam =
+            Parameters.objectParameters("setCacheMode", CacheMode.class);
 
         assertEquals(CacheMode.values().length + 1, cfgParam.length);
 
