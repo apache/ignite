@@ -348,7 +348,7 @@ public class GridNearAtomicUpdateFuture extends GridFutureAdapter<Object> implem
      * @param req Update request.
      * @param res Update response.
      */
-    private void updateNear(GridNearAtomicUpdateRequestBase req, GridNearAtomicUpdateResponse res) {
+    private void updateNear(GridNearAtomicUpdateRequest req, GridNearAtomicUpdateResponse res) {
         assert nearEnabled;
 
         if (res.remapKeys() != null || !req.hasPrimary())
@@ -450,11 +450,11 @@ public class GridNearAtomicUpdateFuture extends GridFutureAdapter<Object> implem
      * @param nodeId Node ID.
      * @param req Request.
      */
-    private void mapSingle(UUID nodeId, GridNearAtomicUpdateRequestBase req) {
+    private void mapSingle(UUID nodeId, GridNearAtomicUpdateRequest req) {
         if (cctx.localNodeId().equals(nodeId)) {
             cache.updateAllAsyncInternal(nodeId, req,
-                new CI2<GridNearAtomicUpdateRequestBase, GridNearAtomicUpdateResponse>() {
-                    @Override public void apply(GridNearAtomicUpdateRequestBase req,
+                new CI2<GridNearAtomicUpdateRequest, GridNearAtomicUpdateResponse>() {
+                    @Override public void apply(GridNearAtomicUpdateRequest req,
                         GridNearAtomicUpdateResponse res) {
                         onResult(res.nodeId(), res);
                     }
@@ -465,8 +465,8 @@ public class GridNearAtomicUpdateFuture extends GridFutureAdapter<Object> implem
                 if (log.isDebugEnabled())
                     log.debug("Sending near atomic update request [nodeId=" + req.nodeId() + ", req=" + req + ']');
 
-                if (req instanceof GridNearAtomicUpdateRequest)
-                    cctx.io().send(req.nodeId(), (GridNearAtomicUpdateRequest)req, cctx.ioPolicy());
+                if (req instanceof GridNearAtomicMultipleUpdateRequest)
+                    cctx.io().send(req.nodeId(), (GridNearAtomicMultipleUpdateRequest)req, cctx.ioPolicy());
                 else {
                     assert req instanceof GridNearAtomicSingleUpdateRequest;
 
@@ -487,13 +487,13 @@ public class GridNearAtomicUpdateFuture extends GridFutureAdapter<Object> implem
      *
      * @param mappings Mappings to send.
      */
-    private void doUpdate(Map<UUID, GridNearAtomicUpdateRequest> mappings) {
+    private void doUpdate(Map<UUID, GridNearAtomicMultipleUpdateRequest> mappings) {
         UUID locNodeId = cctx.localNodeId();
 
-        GridNearAtomicUpdateRequest locUpdate = null;
+        GridNearAtomicMultipleUpdateRequest locUpdate = null;
 
         // Send messages to remote nodes first, then run local update.
-        for (GridNearAtomicUpdateRequest req : mappings.values()) {
+        for (GridNearAtomicMultipleUpdateRequest req : mappings.values()) {
             if (locNodeId.equals(req.nodeId())) {
                 assert locUpdate == null : "Cannot have more than one local mapping [locUpdate=" + locUpdate +
                     ", req=" + req + ']';
@@ -515,8 +515,8 @@ public class GridNearAtomicUpdateFuture extends GridFutureAdapter<Object> implem
 
         if (locUpdate != null) {
             cache.updateAllAsyncInternal(cctx.localNodeId(), locUpdate,
-                new CI2<GridNearAtomicUpdateRequest, GridNearAtomicUpdateResponse>() {
-                    @Override public void apply(GridNearAtomicUpdateRequest req, GridNearAtomicUpdateResponse res) {
+                new CI2<GridNearAtomicMultipleUpdateRequest, GridNearAtomicUpdateResponse>() {
+                    @Override public void apply(GridNearAtomicMultipleUpdateRequest req, GridNearAtomicUpdateResponse res) {
                         onResult(res.nodeId(), res);
                     }
                 });
@@ -541,7 +541,7 @@ public class GridNearAtomicUpdateFuture extends GridFutureAdapter<Object> implem
 
         /** Mappings if operations is mapped to more than one node. */
         @GridToStringInclude
-        private Map<UUID, GridNearAtomicUpdateRequest> mappings;
+        private Map<UUID, GridNearAtomicMultipleUpdateRequest> mappings;
 
         /** */
         private int resCnt;
@@ -559,7 +559,7 @@ public class GridNearAtomicUpdateFuture extends GridFutureAdapter<Object> implem
         private Collection<KeyCacheObject> remapKeys;
 
         /** Not null is operation is mapped to single node. */
-        private GridNearAtomicUpdateRequestBase singleReq;
+        private GridNearAtomicUpdateRequest singleReq;
 
         /** Operation result. */
         private GridCacheReturn opRes;
@@ -578,7 +578,7 @@ public class GridNearAtomicUpdateFuture extends GridFutureAdapter<Object> implem
             GridNearAtomicUpdateResponse res = null;
 
             synchronized (this) {
-                GridNearAtomicUpdateRequestBase req;
+                GridNearAtomicUpdateRequest req;
 
                 if (singleReq != null)
                     req = singleReq.nodeId().equals(nodeId) ? singleReq : null;
@@ -611,7 +611,7 @@ public class GridNearAtomicUpdateFuture extends GridFutureAdapter<Object> implem
          */
         @SuppressWarnings({"unchecked", "ThrowableResultOfMethodCallIgnored"})
         void onResult(UUID nodeId, GridNearAtomicUpdateResponse res, boolean nodeErr) {
-            GridNearAtomicUpdateRequestBase req;
+            GridNearAtomicUpdateRequest req;
 
             AffinityTopologyVersion remapTopVer = null;
 
@@ -741,7 +741,7 @@ public class GridNearAtomicUpdateFuture extends GridFutureAdapter<Object> implem
 
             if (rcvAll && nearEnabled) {
                 if (mappings != null) {
-                    for (GridNearAtomicUpdateRequest req0 : mappings.values()) {
+                    for (GridNearAtomicMultipleUpdateRequest req0 : mappings.values()) {
                         GridNearAtomicUpdateResponse res0 = req0.response();
 
                         assert res0 != null : req0;
@@ -815,7 +815,7 @@ public class GridNearAtomicUpdateFuture extends GridFutureAdapter<Object> implem
          * @param req Request.
          * @param e Error.
          */
-        void onSendError(GridNearAtomicUpdateRequestBase req, IgniteCheckedException e) {
+        void onSendError(GridNearAtomicUpdateRequest req, IgniteCheckedException e) {
             synchronized (this) {
                 GridNearAtomicUpdateResponse res = new GridNearAtomicUpdateResponse(cctx.cacheId(),
                     req.nodeId(),
@@ -843,8 +843,8 @@ public class GridNearAtomicUpdateFuture extends GridFutureAdapter<Object> implem
             }
 
             Exception err = null;
-            GridNearAtomicUpdateRequestBase singleReq0 = null;
-            Map<UUID, GridNearAtomicUpdateRequest> mappings0 = null;
+            GridNearAtomicUpdateRequest singleReq0 = null;
+            Map<UUID, GridNearAtomicMultipleUpdateRequest> mappings0 = null;
 
             int size = keys.size();
 
@@ -873,7 +873,7 @@ public class GridNearAtomicUpdateFuture extends GridFutureAdapter<Object> implem
                     singleReq0 = mapSingleUpdate(topVer, topNodes, futVer, updVer);
                 }
                 else {
-                    Map<UUID, GridNearAtomicUpdateRequest> pendingMappings = mapUpdate(topNodes,
+                    Map<UUID, GridNearAtomicMultipleUpdateRequest> pendingMappings = mapUpdate(topNodes,
                         topVer,
                         futVer,
                         updVer,
@@ -885,7 +885,7 @@ public class GridNearAtomicUpdateFuture extends GridFutureAdapter<Object> implem
                         if (syncMode == PRIMARY_SYNC) {
                             mappings0 = U.newHashMap(pendingMappings.size());
 
-                            for (GridNearAtomicUpdateRequest req : pendingMappings.values()) {
+                            for (GridNearAtomicMultipleUpdateRequest req : pendingMappings.values()) {
                                 if (req.hasPrimary())
                                     mappings0.put(req.nodeId(), req);
                             }
@@ -996,7 +996,7 @@ public class GridNearAtomicUpdateFuture extends GridFutureAdapter<Object> implem
          * @throws Exception If failed.
          */
         @SuppressWarnings("ConstantConditions")
-        private Map<UUID, GridNearAtomicUpdateRequest> mapUpdate(Collection<ClusterNode> topNodes,
+        private Map<UUID, GridNearAtomicMultipleUpdateRequest> mapUpdate(Collection<ClusterNode> topNodes,
             AffinityTopologyVersion topVer,
             GridCacheVersion futVer,
             @Nullable GridCacheVersion updVer,
@@ -1016,7 +1016,7 @@ public class GridNearAtomicUpdateFuture extends GridFutureAdapter<Object> implem
             if (conflictRmvVals != null)
                 conflictRmvValsIt = conflictRmvVals.iterator();
 
-            Map<UUID, GridNearAtomicUpdateRequest> pendingMappings = U.newHashMap(topNodes.size());
+            Map<UUID, GridNearAtomicMultipleUpdateRequest> pendingMappings = U.newHashMap(topNodes.size());
 
             // Create mappings first, then send messages.
             for (Object key : keys) {
@@ -1084,10 +1084,10 @@ public class GridNearAtomicUpdateFuture extends GridFutureAdapter<Object> implem
 
                     UUID nodeId = affNode.id();
 
-                    GridNearAtomicUpdateRequest mapped = pendingMappings.get(nodeId);
+                    GridNearAtomicMultipleUpdateRequest mapped = pendingMappings.get(nodeId);
 
                     if (mapped == null) {
-                        mapped = new GridNearAtomicUpdateRequest(
+                        mapped = new GridNearAtomicMultipleUpdateRequest(
                             cctx.cacheId(),
                             nodeId,
                             futVer,
@@ -1128,7 +1128,7 @@ public class GridNearAtomicUpdateFuture extends GridFutureAdapter<Object> implem
          * @return Request.
          * @throws Exception If failed.
          */
-        private GridNearAtomicUpdateRequestBase mapSingleUpdate(AffinityTopologyVersion topVer,
+        private GridNearAtomicUpdateRequest mapSingleUpdate(AffinityTopologyVersion topVer,
             Collection<ClusterNode> topNodes, GridCacheVersion futVer, @Nullable GridCacheVersion updVer)
             throws Exception {
             Object key = F.first(keys);
@@ -1226,7 +1226,7 @@ public class GridNearAtomicUpdateFuture extends GridFutureAdapter<Object> implem
                     cctx.deploymentEnabled());
             }
             else {
-                GridNearAtomicUpdateRequest req = new GridNearAtomicUpdateRequest(
+                GridNearAtomicMultipleUpdateRequest req = new GridNearAtomicMultipleUpdateRequest(
                     cctx.cacheId(),
                     primary.id(),
                     futVer,
