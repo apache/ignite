@@ -71,19 +71,19 @@ namespace Apache.Ignite.Core.Tests.DataStructures
             // Create new
             var al = Grid.GetAtomicReference(AtomicRefName, 10, true);
             Assert.AreEqual(AtomicRefName, al.Name);
-            Assert.AreEqual(10, al.Get());
+            Assert.AreEqual(10, al.Read());
             Assert.AreEqual(false, al.IsClosed());
 
             // Get existing with create flag
             var al2 = Grid.GetAtomicReference(AtomicRefName, 5, true);
             Assert.AreEqual(AtomicRefName, al2.Name);
-            Assert.AreEqual(10, al2.Get());
+            Assert.AreEqual(10, al2.Read());
             Assert.AreEqual(false, al2.IsClosed());
 
             // Get existing without create flag
             var al3 = Grid.GetAtomicReference(AtomicRefName, 5, false);
             Assert.AreEqual(AtomicRefName, al3.Name);
-            Assert.AreEqual(10, al3.Get());
+            Assert.AreEqual(10, al3.Read());
             Assert.AreEqual(false, al3.IsClosed());
 
             al.Close();
@@ -104,13 +104,13 @@ namespace Apache.Ignite.Core.Tests.DataStructures
             var atomics = Enumerable.Range(1, 10)
                 .Select(x => Grid.GetAtomicReference(AtomicRefName, 5, true)).ToList();
 
-            atomics.ForEach(x => Assert.AreEqual(5, x.Get()));
+            atomics.ForEach(x => Assert.AreEqual(5, x.Read()));
 
-            atomics[0].Set(15);
-            atomics.ForEach(x => Assert.AreEqual(15, x.Get()));
+            atomics[0].Write(15);
+            atomics.ForEach(x => Assert.AreEqual(15, x.Read()));
 
             Assert.AreEqual(15, atomics[0].CompareExchange(42, 15));
-            atomics.ForEach(x => Assert.AreEqual(42, x.Get()));
+            atomics.ForEach(x => Assert.AreEqual(42, x.Read()));
         }
 
         /// <summary>
@@ -155,29 +155,29 @@ namespace Apache.Ignite.Core.Tests.DataStructures
 
             var atomic = Grid.GetAtomicReference(AtomicRefName, x, true);
 
-            Assert.AreEqual(x, atomic.Get());
+            Assert.AreEqual(x, atomic.Read());
 
-            atomic.Set(y);
-            Assert.AreEqual(y, atomic.Get());
+            atomic.Write(y);
+            Assert.AreEqual(y, atomic.Read());
 
             var old = atomic.CompareExchange(x, y);
             Assert.AreEqual(y, old);
-            Assert.AreEqual(x, atomic.Get());
+            Assert.AreEqual(x, atomic.Read());
 
             old = atomic.CompareExchange(x, y);
             Assert.AreEqual(x, old);
-            Assert.AreEqual(x, atomic.Get());
+            Assert.AreEqual(x, atomic.Read());
 
             // Check nulls
             var nul = default(T);
 
             old = atomic.CompareExchange(nul, x);
             Assert.AreEqual(x, old);
-            Assert.AreEqual(nul, atomic.Get());
+            Assert.AreEqual(nul, atomic.Read());
 
             old = atomic.CompareExchange(y, nul);
             Assert.AreEqual(nul, old);
-            Assert.AreEqual(y, atomic.Get());
+            Assert.AreEqual(y, atomic.Read());
         }
 
         /// <summary>

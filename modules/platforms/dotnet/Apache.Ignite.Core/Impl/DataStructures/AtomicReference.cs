@@ -54,13 +54,13 @@ namespace Apache.Ignite.Core.Impl.DataStructures
         }
 
         /** <inheritDoc /> */
-        public T Get()
+        public T Read()
         {
             return DoInOp<T>((int) Op.Get);
         }
 
         /** <inheritDoc /> */
-        public void Set(T value)
+        public void Write(T value)
         {
             DoOutOp((int) Op.Set, value);
         }

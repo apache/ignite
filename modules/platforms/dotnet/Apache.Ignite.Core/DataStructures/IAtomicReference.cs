@@ -31,16 +31,16 @@ namespace Apache.Ignite.Core.DataStructures
         string Name { get; }
 
         /// <summary>
-        /// Gets current value of an atomic reference.
+        /// Reads current value of an atomic reference.
         /// </summary>
         /// <returns>Current value of an atomic reference.</returns>
-        T Get();
+        T Read();
 
         /// <summary>
-        /// Sets current value of an atomic reference.
+        /// Writes current value of an atomic reference.
         /// </summary>
         /// <param name="value">The value to set.</param>
-        void Set(T value);
+        void Write(T value);
 
         /// <summary>
         /// Compares current value with specified value for equality and, if they are equal, replaces current value.
