@@ -305,15 +305,16 @@ namespace Apache.Ignite.Linq.Impl
         }
 
         /** <inheritdoc /> */
+        [SuppressMessage("Microsoft.Design", "CA1062:Validate arguments of public methods")]
         protected override Expression VisitConditional(ConditionalExpression expression)
         {
-            _resultBuilder.Append("CASEWHEN((");
+            _resultBuilder.Append("CASEWHEN(");
             Visit(expression.Test);
-            _resultBuilder.Append("), (");
+            _resultBuilder.Append(", ");
             Visit(expression.IfTrue);
-            _resultBuilder.Append("), (");
+            _resultBuilder.Append(", ");
             Visit(expression.IfFalse);
-            _resultBuilder.Append("))");
+            _resultBuilder.Append(")");
 
             return expression;
         }
