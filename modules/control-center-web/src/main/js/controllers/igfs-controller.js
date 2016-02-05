@@ -418,7 +418,7 @@ consoleModule.controller('igfsController', [
                                     $common.showInfo('All IGFS have been removed');
 
                                 $scope.igfss = [];
-
+                                $scope.ui.markPristine();
                                 $scope.selectItem(undefined, undefined);
                             })
                             .error(function (errMsg) {
@@ -443,6 +443,7 @@ consoleModule.controller('igfsController', [
                 $confirm.confirm('Are you sure you want to undo all changes for current IGFS?')
                     .then(function() {
                         $scope.backupItem = $scope.selectedItem ? angular.copy($scope.selectedItem) : prepareNewItem();
+                        $scope.ui.markPristine();
                     });
             };
         }]

@@ -1449,9 +1449,8 @@ consoleModule.controller('domainsController', function ($filter, $http, $timeout
                             $common.showInfo('All domain models have been removed');
 
                             $scope.domains = [];
-
+                            $scope.ui.markPristine();
                             $scope.selectItem(undefined, undefined);
-
                             $scope.ui.showValid = true;
                         })
                         .error(function (errMsg) {
@@ -1801,6 +1800,7 @@ consoleModule.controller('domainsController', function ($filter, $http, $timeout
             $confirm.confirm('Are you sure you want to undo all changes for current domain model?')
                 .then(function () {
                     $scope.backupItem = $scope.selectedItem ? angular.copy($scope.selectedItem) : prepareNewItem();
+                    $scope.ui.markPristine();
                 });
         };
     }
