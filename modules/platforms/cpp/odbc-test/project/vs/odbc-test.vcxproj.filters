@@ -8,16 +8,19 @@
     <Filter Include="Externals">
       <UniqueIdentifier>{cc75fc86-c08d-428a-8ae3-f9979e4588ab}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Code\teamcity">
+    <Filter Include="Code\CacheTypes">
+      <UniqueIdentifier>{43a56b9a-0f5c-4c22-8836-1102252497a4}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Code\TeamCity">
       <UniqueIdentifier>{5438a56d-1009-412a-86e3-ceb1112af275}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Configs">
+      <UniqueIdentifier>{fe8a65d3-4f84-4051-ac62-cf4e0f788b43}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\src\configuration_test.cpp">
       <Filter>Code</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\..\odbc-driver\src\utility.cpp">
-      <Filter>Externals</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\connection_info_test.cpp">
       <Filter>Code</Filter>
@@ -25,55 +28,69 @@
     <ClCompile Include="..\..\src\parser_test.cpp">
       <Filter>Code</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\teamcity_boost.cpp">
-      <Filter>Code\teamcity</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\teamcity_messages.cpp">
-      <Filter>Code\teamcity</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\src\application_data_buffer_test.cpp">
       <Filter>Code</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\row_test.cpp">
       <Filter>Code</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\odbc-driver\src\row.cpp">
-      <Filter>Externals</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\..\odbc-driver\src\result_page.cpp">
-      <Filter>Externals</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\src\cursor_test.cpp">
       <Filter>Code</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\..\odbc-driver\src\cursor.cpp">
-      <Filter>Externals</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\utility_test.cpp">
       <Filter>Code</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\odbc-driver\src\config\configuration.cpp">
-      <Filter>Externals</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\..\odbc-driver\src\config\connection_info.cpp">
-      <Filter>Externals</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\..\odbc-driver\src\app\application_data_buffer.cpp">
-      <Filter>Externals</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\..\odbc-driver\src\decimal.cpp">
-      <Filter>Externals</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\..\odbc-driver\src\column.cpp">
-      <Filter>Externals</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\src\column_test.cpp">
+      <Filter>Code</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\odbc\src\app\application_data_buffer.cpp">
+      <Filter>Externals</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\odbc\src\column.cpp">
+      <Filter>Externals</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\odbc\src\config\configuration.cpp">
+      <Filter>Externals</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\odbc\src\config\connection_info.cpp">
+      <Filter>Externals</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\odbc\src\cursor.cpp">
+      <Filter>Externals</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\odbc\src\decimal.cpp">
+      <Filter>Externals</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\odbc\src\result_page.cpp">
+      <Filter>Externals</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\odbc\src\row.cpp">
+      <Filter>Externals</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\odbc\src\utility.cpp">
+      <Filter>Externals</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\teamcity\teamcity_boost.cpp">
+      <Filter>Code\TeamCity</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\teamcity\teamcity_messages.cpp">
+      <Filter>Code\TeamCity</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\queries_test.cpp">
       <Filter>Code</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\include\teamcity_messages.h">
-      <Filter>Code\teamcity</Filter>
+      <Filter>Code\TeamCity</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\include\test_type.h">
+      <Filter>Code\CacheTypes</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="..\..\config\queries-test.xml">
+      <Filter>Configs</Filter>
+    </None>
   </ItemGroup>
 </Project>
