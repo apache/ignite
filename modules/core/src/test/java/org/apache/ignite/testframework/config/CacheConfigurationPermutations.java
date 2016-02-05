@@ -23,14 +23,11 @@ import javax.cache.configuration.CacheEntryListenerConfiguration;
 import javax.cache.configuration.Factory;
 import javax.cache.event.CacheEntryEventFilter;
 import javax.cache.event.CacheEntryListener;
-import org.apache.ignite.cache.CacheAtomicWriteOrderMode;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheInterceptor;
 import org.apache.ignite.cache.CacheMemoryMode;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.CacheRebalanceMode;
-import org.apache.ignite.cache.CacheWriteSynchronizationMode;
-import org.apache.ignite.cache.affinity.fair.FairAffinityFunction;
 import org.apache.ignite.cache.eviction.EvictionFilter;
 import org.apache.ignite.cache.eviction.fifo.FifoEvictionPolicy;
 import org.apache.ignite.cache.store.CacheStoreSession;
@@ -43,7 +40,6 @@ import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.testframework.config.generator.ConfigurationParameter;
 import org.jetbrains.annotations.Nullable;
 
-import static org.apache.ignite.testframework.config.params.Parameters.asArray;
 import static org.apache.ignite.testframework.config.params.Parameters.booleanParameters;
 import static org.apache.ignite.testframework.config.params.Parameters.complexParameter;
 import static org.apache.ignite.testframework.config.params.Parameters.enumParameters;
@@ -55,39 +51,49 @@ import static org.apache.ignite.testframework.config.params.Parameters.parameter
  */
 public class CacheConfigurationPermutations {
     /** */
+    public static final ConfigurationParameter<Object> EVICTION_PARAM = complexParameter(
+        parameter("setEvictionPolicy", new FifoEvictionPolicy<>()),
+        parameter("setEvictionFilter", new NoopEvictionFilter()));
+
+    /** */
+    public static final ConfigurationParameter<Object> CACHE_STORE_PARAM = complexParameter(
+        parameter("setCacheStoreFactory", new CacheAbstractNewSelfTest.TestStoreFactory()),
+        parameter("setCacheStoreSessionListenerFactories", new NoopCacheStoreSessionListenerFactory()));
+
+    /** */
+    public static final ConfigurationParameter<Object> REBALANCING_PARAM = complexParameter(parameter("setRebalanceBatchSize", 1024),
+        parameter("setRebalanceBatchesPrefetchCount", 5),
+        parameter("setRebalanceThreadPoolSize", 5),
+        parameter("setRebalanceTimeout", CacheConfiguration.DFLT_REBALANCE_TIMEOUT * 2),
+        parameter("setRebalanceDelay", 1000),
+        parameter("setRebalanceThrottle", 100));
+
+    /** */
     @SuppressWarnings("unchecked")
-    public static final ConfigurationParameter<CacheConfiguration>[][] params = new ConfigurationParameter[][] {
+    public static final ConfigurationParameter<CacheConfiguration>[][] DEFAULT_SET = new ConfigurationParameter[][] {
         enumParameters("setCacheMode", CacheMode.class),
         enumParameters("setAtomicityMode", CacheAtomicityMode.class),
         enumParameters("setMemoryMode", CacheMemoryMode.class),
-        asArray(null, complexParameter(
-            parameter("setEvictionPolicy", new FifoEvictionPolicy<>()),
-            parameter("setEvictionFilter", new NoopEvictionFilter()))),
         booleanParameters("setLoadPreviousValue"), // TODO add check in tests.
         booleanParameters("setReadFromBackup"), // TODO: add check in tests (disable for tests with localPeek)
-        asArray(null, complexParameter(
-            parameter("setCacheStoreFactory", new CacheAbstractNewSelfTest.TestStoreFactory()),
-            parameter("setCacheStoreSessionListenerFactories", new NoopCacheStoreSessionListenerFactory()))),
         booleanParameters("setStoreKeepBinary"),
-        objectParameters(true, "setAffinity", new FairAffinityFunction()),
         objectParameters("setRebalanceMode", CacheRebalanceMode.SYNC, CacheRebalanceMode.ASYNC),
-        asArray(null, complexParameter(parameter("setRebalanceBatchSize", 1024),
-            parameter("setRebalanceBatchesPrefetchCount", 5),
-            parameter("setRebalanceThreadPoolSize", 5),
-            parameter("setRebalanceTimeout", CacheConfiguration.DFLT_REBALANCE_TIMEOUT * 2),
-            parameter("setRebalanceDelay", 1000),
-            parameter("setRebalanceThrottle", 100))),
         booleanParameters("setSwapEnabled"),
-        objectParameters(true, "setOffHeapMaxMemory", 10 * 1024 * 1024),
-        objectParameters(true, "setInterceptor", new NoopInterceptor()),
         booleanParameters("setCopyOnRead"),
-        objectParameters(true, "setTopologyValidator", new NoopTopologyValidator()),
-        objectParameters("addCacheEntryListenerConfiguration", new EmptyCacheEntryListenerConfiguration()),
+        // TODO uncomment.
+//        asArray(null, complexParameter(EVICTION_PARAM, CACHE_STORE_PARAM, REBALANCING_PARAM,
+//            parameter("setAffinity", new FairAffinityFunction()),
+//            parameter("setOffHeapMaxMemory", 10 * 1024 * 1024),
+//            parameter("setInterceptor", new NoopInterceptor()),
+//            parameter("setTopologyValidator", new NoopTopologyValidator()),
+//            parameter("addCacheEntryListenerConfiguration", new EmptyCacheEntryListenerConfiguration())
+//        )),
 
-        // Set default parameters.
-        objectParameters("setWriteSynchronizationMode", CacheWriteSynchronizationMode.FULL_SYNC), // One value.
-        objectParameters("setAtomicWriteOrderMode", CacheAtomicWriteOrderMode.PRIMARY), // One value.
-        objectParameters("setBackups", 0, 1, 2),// TODO set depending to nodes count.
+        // Set default parameters (TODO make it in builder).
+//        objectParameters("setWriteSynchronizationMode", CacheWriteSynchronizationMode.FULL_SYNC), // One value.
+//        objectParameters("setAtomicWriteOrderMode", CacheAtomicWriteOrderMode.PRIMARY), // One value.
+
+//        objectParameters("setBackups", 0, 1, 2),// TODO set depending to nodes count.
 
         // TODO add test for indexes.
 //        objectParameters("setIndexedTypes"),// TODO index enabled
@@ -105,7 +111,7 @@ public class CacheConfigurationPermutations {
      * @return Default matrix of availiable permutations.
      */
     public static ConfigurationParameter<CacheConfiguration>[][] defaultSet() {
-        return params;
+        return DEFAULT_SET;
     }
 
     /**

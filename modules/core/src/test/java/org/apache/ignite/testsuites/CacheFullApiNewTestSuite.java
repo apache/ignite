@@ -19,12 +19,9 @@ package org.apache.ignite.testsuites;
 
 import java.util.Arrays;
 import junit.framework.TestSuite;
-import org.apache.ignite.cache.store.CacheStore;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
-import org.apache.ignite.internal.processors.cache.CacheAbstractNewSelfTest;
 import org.apache.ignite.internal.processors.cache.CacheFullApiNewSelfTest;
 import org.apache.ignite.marshaller.optimized.OptimizedMarshaller;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
@@ -58,7 +55,7 @@ public class CacheFullApiNewTestSuite extends TestSuite {
 
     /** */
     @SuppressWarnings("unchecked")
-    private static final ConfigurationParameter<CacheConfiguration>[][] cacheParams = 
+    private static final ConfigurationParameter<CacheConfiguration>[][] cacheParams =
         CacheConfigurationPermutations.defaultSet();
 
 
@@ -175,23 +172,24 @@ public class CacheFullApiNewTestSuite extends TestSuite {
             CacheConfiguration cc = super.cacheConfiguration(gridName);
 
             // Default
+            // TODO make it in builder
             cc.setStartSize(1024);
             cc.setAtomicWriteOrderMode(PRIMARY);
-            cc.setNearConfiguration(new NearCacheConfiguration());
+//            cc.setNearConfiguration(new NearCacheConfiguration());
             cc.setWriteSynchronizationMode(FULL_SYNC);
-            cc.setEvictionPolicy(null);
+//            cc.setEvictionPolicy(null);
 
             // Cache
-            CacheStore<?, ?> store = CacheAbstractNewSelfTest.cacheStore();
+//            CacheStore<?, ?> store = CacheAbstractNewSelfTest.cacheStore();
+//
+//            if (store != null) {
+//                cc.setCacheStoreFactory(new CacheAbstractNewSelfTest.TestStoreFactory());
+//                cc.setReadThrough(true);
+//                cc.setWriteThrough(true);
+//                cc.setLoadPreviousValue(true);
+//            }
 
-            if (store != null) {
-                cc.setCacheStoreFactory(new CacheAbstractNewSelfTest.TestStoreFactory());
-                cc.setReadThrough(true);
-                cc.setWriteThrough(true);
-                cc.setLoadPreviousValue(true);
-            }
-
-            cc.setSwapEnabled(true);
+//            cc.setSwapEnabled(true);
 
 //            Class<?>[] idxTypes = indexedTypes();
 //
