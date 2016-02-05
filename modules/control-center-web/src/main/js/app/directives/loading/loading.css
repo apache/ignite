@@ -15,14 +15,7 @@
  * limitations under the License.
  */
 
-import template from './loading.jade!';
-import './loading.css!';
-
-export default ['igniteLoading', [() => {
-    return {
-        restrict: 'E',
-        template,
-        replace: true,
-        transclude: true
-    };
-}]];
+.dw-loading.dw-loading-overlay,
+.page-loading-overlay {
+    background: unset none;
+}
