@@ -33,6 +33,7 @@ import org.apache.ignite.marshaller.optimized.OptimizedMarshaller;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
+import org.apache.ignite.testframework.CacheStartMode;
 import org.apache.ignite.testframework.GridTestSuite;
 import org.apache.ignite.testframework.TestsConfiguration;
 import org.apache.ignite.testframework.config.StateConfigurationFactory;
@@ -79,6 +80,15 @@ public class CacheFullApiNewTestSuite extends TestSuite {
      * @throws Exception If failed.
      */
     public static TestSuite suite() throws Exception {
+        return suite(CacheStartMode.NODES_THEN_CACHES);
+    }
+
+    /**
+     * @param cacheStartMode Cache start mode.
+     * @return Cache API test suite.
+     * @throws Exception If failed.
+     */
+    public static TestSuite suite(CacheStartMode cacheStartMode) throws Exception {
         TestSuite suite = new TestSuite("Cache New Full API Test Suite");
 
         final int[] igniteCfgState = new int[] {0, 0}; // Default configuration.
@@ -88,7 +98,7 @@ public class CacheFullApiNewTestSuite extends TestSuite {
             int[] cacheCfgState = cacheIter.next();
 
             // Stop all grids before starting new ignite configuration.
-            addTestSuite(suite, igniteCfgState, cacheCfgState, gridsCnt, !cacheIter.hasNext());
+            addTestSuite(suite, igniteCfgState, cacheCfgState, gridsCnt, !cacheIter.hasNext(), cacheStartMode);
         }
 
         return suite;
@@ -100,9 +110,10 @@ public class CacheFullApiNewTestSuite extends TestSuite {
      * @param cacheCfgState Cache config state.
      * @param gridsCnt Grids count.
      * @param stop Stop.
+     * @param cacheStartMode Cache start mode.
      */
     private static void addTestSuite(TestSuite suite, int[] igniteCfgState, int[] cacheCfgState, int gridsCnt,
-        boolean stop) {
+        boolean stop, CacheStartMode cacheStartMode) {
         // TODO
 //        StateConfigurationFactory factory = new FullApiStateConfigurationFactory(igniteParams, igniteCfgState,
 //            cacheParams, cacheCfgState);
@@ -115,7 +126,7 @@ public class CacheFullApiNewTestSuite extends TestSuite {
 
         TestsConfiguration testCfg = new TestsConfiguration(factory, clsNameSuffix, stop, gridsCnt);
 
-//        testCfg.cacheStartMode(STATIC);
+        testCfg.cacheStartMode(cacheStartMode);
 
         suite.addTest(new GridTestSuite(CacheFullApiNewSelfTest.class, testCfg));
     }
