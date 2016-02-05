@@ -82,7 +82,7 @@ public class IgniteCacheSizeFailoverTest extends GridCommonAbstractTest {
 
         IgniteInternalFuture<?> fut = GridTestUtils.runMultiThreadedAsync(new Callable<Object>() {
             @Override public Object call() throws Exception {
-                int idx = cntr.getAndIncrement();
+                int idx = cntr.getAndIncrement() % 2;
 
                 IgniteCache<Object, Object> cache = ignite(idx).cache(null);
 
@@ -97,7 +97,7 @@ public class IgniteCacheSizeFailoverTest extends GridCommonAbstractTest {
 
                 return null;
             }
-        }, 2, "size-thread");
+        }, 10, "size-thread");
 
         try {
             for (int i = 0; i < 10; i++) {

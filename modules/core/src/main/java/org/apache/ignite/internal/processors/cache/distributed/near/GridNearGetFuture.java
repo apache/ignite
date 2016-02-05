@@ -21,6 +21,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicReference;
@@ -91,7 +92,7 @@ public final class GridNearGetFuture<K, V> extends CacheDistributedGetFutureAdap
      * @param tx Transaction.
      * @param subjId Subject ID.
      * @param taskName Task name.
-     * @param deserializePortable Deserialize portable flag.
+     * @param deserializeBinary Deserialize binary flag.
      * @param expiryPlc Expiry policy.
      * @param skipVals Skip values flag.
      * @param canRemap Flag indicating whether future can be remapped on a newer topology version.
@@ -106,7 +107,7 @@ public final class GridNearGetFuture<K, V> extends CacheDistributedGetFutureAdap
         @Nullable IgniteTxLocalEx tx,
         @Nullable UUID subjId,
         String taskName,
-        boolean deserializePortable,
+        boolean deserializeBinary,
         @Nullable IgniteCacheExpiryPolicy expiryPlc,
         boolean skipVals,
         boolean canRemap,
@@ -119,7 +120,7 @@ public final class GridNearGetFuture<K, V> extends CacheDistributedGetFutureAdap
             forcePrimary,
             subjId,
             taskName,
-            deserializePortable,
+            deserializeBinary,
             expiryPlc,
             skipVals,
             canRemap,
@@ -142,11 +143,20 @@ public final class GridNearGetFuture<K, V> extends CacheDistributedGetFutureAdap
      * Initializes future.
      */
     public void init() {
-        AffinityTopologyVersion topVer = tx == null ?
-            (canRemap ? cctx.affinity().affinityTopologyVersion() : cctx.shared().exchange().readyAffinityVersion()) :
-            tx.topologyVersion();
+        AffinityTopologyVersion lockedTopVer = cctx.shared().lockedTopologyVersion(null);
 
-        map(keys, Collections.<ClusterNode, LinkedHashMap<KeyCacheObject, Boolean>>emptyMap(), topVer);
+        if (lockedTopVer != null) {
+            canRemap = false;
+
+            map(keys, Collections.<ClusterNode, LinkedHashMap<KeyCacheObject, Boolean>>emptyMap(), lockedTopVer);
+        }
+        else {
+            AffinityTopologyVersion topVer = tx == null ?
+                (canRemap ? cctx.affinity().affinityTopologyVersion() : cctx.shared().exchange().readyAffinityVersion()) :
+                tx.topologyVersion();
+
+            map(keys, Collections.<ClusterNode, LinkedHashMap<KeyCacheObject, Boolean>>emptyMap(), topVer);
+        }
 
         markInitialized();
     }
@@ -396,10 +406,20 @@ public final class GridNearGetFuture<K, V> extends CacheDistributedGetFutureAdap
         Map<ClusterNode, LinkedHashMap<KeyCacheObject, Boolean>> mapped,
         Map<KeyCacheObject, GridNearCacheEntry> saved
     ) {
+        int part = cctx.affinity().partition(key);
+
+        List<ClusterNode> affNodes = cctx.affinity().nodes(part, topVer);
+
+        if (affNodes.isEmpty()) {
+            onDone(serverNotFoundError(topVer));
+
+            return null;
+        }
+
         final GridNearCacheAdapter near = cache();
 
         // Allow to get cached value from the local node.
-        boolean allowLocRead = !forcePrimary || cctx.affinity().primary(cctx.localNode(), key, topVer);
+        boolean allowLocRead = !forcePrimary || cctx.localNode().equals(affNodes.get(0));
 
         while (true) {
             GridNearCacheEntry entry = allowLocRead ? (GridNearCacheEntry)near.peekEx(key) : null;
@@ -423,7 +443,7 @@ public final class GridNearGetFuture<K, V> extends CacheDistributedGetFutureAdap
                             null,
                             taskName,
                             expiryPlc,
-                            !deserializePortable);
+                            !deserializeBinary);
 
                         if (res != null) {
                             v = res.get1();
@@ -443,132 +463,31 @@ public final class GridNearGetFuture<K, V> extends CacheDistributedGetFutureAdap
                             null,
                             taskName,
                             expiryPlc,
-                            !deserializePortable);
+                            !deserializeBinary);
                     }
                 }
 
-                ClusterNode affNode = null;
+                if (v == null) {
+                    boolean fastLocGet = allowLocRead && cctx.allowFastLocalRead(part, affNodes, topVer);
 
-                if (v == null && allowLocRead && cctx.affinityNode()) {
-                    GridDhtCacheAdapter<K, V> dht = cache().dht();
+                    if (fastLocGet && localDhtGet(key, part, topVer, isNear))
+                        break;
 
-                    GridCacheEntryEx dhtEntry = null;
+                    ClusterNode affNode = affinityNode(affNodes);
 
-                    try {
-                        dhtEntry = dht.context().isSwapOrOffheapEnabled() ? dht.entryEx(key) : dht.peekEx(key);
-
-                        // If near cache does not have value, then we peek DHT cache.
-                        if (dhtEntry != null) {
-                            boolean isNew = dhtEntry.isNewLocked() || !dhtEntry.valid(topVer);
-
-                            if (needVer) {
-                                T2<CacheObject, GridCacheVersion> res = dhtEntry.innerGetVersioned(
-                                    null,
-                                    /*swap*/true,
-                                    /*unmarshal*/true,
-                                    /**update-metrics*/false,
-                                    /*event*/!isNear && !skipVals,
-                                    subjId,
-                                    null,
-                                    taskName,
-                                    expiryPlc,
-                                    !deserializePortable);
-
-                                if (res != null) {
-                                    v = res.get1();
-                                    ver = res.get2();
-                                }
-                            }
-                            else {
-                                v = dhtEntry.innerGet(tx,
-                                    /*swap*/true,
-                                    /*read-through*/false,
-                                    /*fail-fast*/true,
-                                    /*unmarshal*/true,
-                                    /*update-metrics*/false,
-                                    /*events*/!isNear && !skipVals,
-                                    /*temporary*/false,
-                                    subjId,
-                                    null,
-                                    taskName,
-                                    expiryPlc,
-                                    !deserializePortable);
-                            }
-
-                            // Entry was not in memory or in swap, so we remove it from cache.
-                            if (v == null && isNew && dhtEntry.markObsoleteIfEmpty(ver))
-                                dht.removeIfObsolete(key);
-                        }
-
-                        if (v != null) {
-                            if (cctx.cache().configuration().isStatisticsEnabled() && !skipVals)
-                                near.metrics0().onRead(true);
-                        }
-                        else {
-                            affNode = affinityNode(key, topVer);
-
-                            if (affNode == null) {
-                                onDone(new ClusterTopologyServerNotFoundException("Failed to map keys for cache " +
-                                    "(all partition nodes left the grid)."));
-
-                                return saved;
-                            }
-
-                            if (!affNode.isLocal() && cctx.cache().configuration().isStatisticsEnabled() && !skipVals)
-                                near.metrics0().onRead(false);
-                        }
-                    }
-                    catch (GridDhtInvalidPartitionException | GridCacheEntryRemovedException ignored) {
-                        // No-op.
-                    }
-                    finally {
-                        if (dhtEntry != null && (tx == null || (!tx.implicit() && tx.isolation() == READ_COMMITTED))) {
-                            dht.context().evicts().touch(dhtEntry, topVer);
-
-                            entry = null;
-                        }
-                    }
-                }
-
-                if (v != null) {
-                    if (needVer) {
-                        V val0 = (V)new T2<>(skipVals ? true : v, ver);
-
-                        add(new GridFinishedFuture<>(Collections.singletonMap((K)key, val0)));
-                    }
-                    else {
-                        if (keepCacheObjects) {
-                            K key0 = (K)key;
-                            V val0 = (V)(skipVals ? true : v);
-
-                            add(new GridFinishedFuture<>(Collections.singletonMap(key0, val0)));
-                        }
-                        else {
-                            K key0 = (K)cctx.unwrapPortableIfNeeded(key, !deserializePortable, false);
-                            V val0 = !skipVals ?
-                                (V)cctx.unwrapPortableIfNeeded(v, !deserializePortable, false) :
-                                (V)Boolean.TRUE;
-
-                            add(new GridFinishedFuture<>(Collections.singletonMap(key0, val0)));
-                        }
-                    }
-                }
-                else {
                     if (affNode == null) {
-                        affNode = affinityNode(key, topVer);
+                        onDone(serverNotFoundError(topVer));
 
-                        if (affNode == null) {
-                            onDone(new ClusterTopologyServerNotFoundException("Failed to map keys for cache " +
-                                "(all partition nodes left the grid)."));
-
-                            return saved;
-                        }
+                        return saved;
                     }
+
+                    if (cctx.cache().configuration().isStatisticsEnabled() && !skipVals && !affNode.isLocal())
+                        cache().metrics0().onRead(false);
 
                     LinkedHashMap<KeyCacheObject, Boolean> keys = mapped.get(affNode);
 
                     if (keys != null && keys.containsKey(key)) {
-                        if (remapCnt.incrementAndGet() > MAX_REMAP_CNT) {
+                        if (REMAP_CNT_UPD.incrementAndGet(this) > MAX_REMAP_CNT) {
                             onDone(new ClusterTopologyCheckedException("Failed to remap key to a new node after " +
                                 MAX_REMAP_CNT + " attempts (key got remapped to the same node) " +
                                 "[key=" + key + ", node=" + U.toShortString(affNode) + ", mappings=" + mapped + ']'));
@@ -577,7 +496,7 @@ public final class GridNearGetFuture<K, V> extends CacheDistributedGetFutureAdap
                         }
                     }
 
-                    if (!cctx.affinity().localNode(key, topVer)) {
+                    if (!affNodes.contains(cctx.localNode())) {
                         GridNearCacheEntry nearEntry = entry != null ? entry : near.entryExx(key, topVer);
 
                         nearEntry.reserveEviction();
@@ -603,6 +522,8 @@ public final class GridNearGetFuture<K, V> extends CacheDistributedGetFutureAdap
 
                     old.put(key, addRdr);
                 }
+                else
+                    addResult(key, v, ver);
 
                 break;
             }
@@ -621,6 +542,134 @@ public final class GridNearGetFuture<K, V> extends CacheDistributedGetFutureAdap
         }
 
         return saved;
+    }
+
+    /**
+     * @param key Key.
+     * @param part Partition.
+     * @param topVer Topology version.
+     * @param nearRead {@code True} if already tried to read from near cache.
+     * @return {@code True} if there is no need to further search value.
+     */
+    private boolean localDhtGet(KeyCacheObject key,
+        int part,
+        AffinityTopologyVersion topVer,
+        boolean nearRead) {
+        GridDhtCacheAdapter<K, V> dht = cache().dht();
+
+        assert dht.context().affinityNode() : this;
+
+        while (true) {
+            GridCacheEntryEx dhtEntry = null;
+
+            try {
+                dhtEntry = dht.context().isSwapOrOffheapEnabled() ? dht.entryEx(key) : dht.peekEx(key);
+
+                CacheObject v = null;
+
+                // If near cache does not have value, then we peek DHT cache.
+                if (dhtEntry != null) {
+                    boolean isNew = dhtEntry.isNewLocked() || !dhtEntry.valid(topVer);
+
+                    if (needVer) {
+                        T2<CacheObject, GridCacheVersion> res = dhtEntry.innerGetVersioned(
+                            null,
+                            /*swap*/true,
+                            /*unmarshal*/true,
+                            /**update-metrics*/false,
+                            /*event*/!nearRead && !skipVals,
+                            subjId,
+                            null,
+                            taskName,
+                            expiryPlc,
+                            !deserializeBinary);
+
+                        if (res != null) {
+                            v = res.get1();
+                            ver = res.get2();
+                        }
+                    }
+                    else {
+                        v = dhtEntry.innerGet(tx,
+                            /*swap*/true,
+                            /*read-through*/false,
+                            /*fail-fast*/true,
+                            /*unmarshal*/true,
+                            /*update-metrics*/false,
+                            /*events*/!nearRead && !skipVals,
+                            /*temporary*/false,
+                            subjId,
+                            null,
+                            taskName,
+                            expiryPlc,
+                            !deserializeBinary);
+                    }
+
+                    // Entry was not in memory or in swap, so we remove it from cache.
+                    if (v == null && isNew && dhtEntry.markObsoleteIfEmpty(ver))
+                        dht.removeIfObsolete(key);
+                }
+
+                if (v != null) {
+                    if (cctx.cache().configuration().isStatisticsEnabled() && !skipVals)
+                        cache().metrics0().onRead(true);
+
+                    addResult(key, v, ver);
+
+                    return true;
+                }
+                else {
+                    boolean topStable = cctx.isReplicated() || topVer.equals(cctx.topology().topologyVersion());
+
+                    // Entry not found, do not continue search if topology did not change and there is no store.
+                    return !cctx.readThroughConfigured() && (topStable || partitionOwned(part));
+                }
+            }
+            catch (GridCacheEntryRemovedException ignored) {
+                // Retry.
+            }
+            catch (GridDhtInvalidPartitionException e) {
+                return false;
+            }
+            catch (IgniteCheckedException e) {
+                onDone(e);
+
+                return false;
+            }
+            finally {
+                if (dhtEntry != null && (tx == null || (!tx.implicit() && tx.isolation() == READ_COMMITTED)))
+                    dht.context().evicts().touch(dhtEntry, topVer);
+            }
+        }
+    }
+
+    /**
+     * @param key Key.
+     * @param v Value.
+     * @param ver Version.
+     */
+    @SuppressWarnings("unchecked")
+    private void addResult(KeyCacheObject key, CacheObject v, GridCacheVersion ver) {
+        if (keepCacheObjects) {
+            K key0 = (K)key;
+            V val0 = needVer ?
+                (V)new T2<>(skipVals ? true : v, ver) :
+                (V)(skipVals ? true : v);
+
+            add(new GridFinishedFuture<>(Collections.singletonMap(key0, val0)));
+        }
+        else {
+            K key0 = (K)cctx.unwrapBinaryIfNeeded(key, !deserializeBinary, false);
+            V val0 = needVer ?
+                (V)new T2<>(!skipVals ?
+                    (V)cctx.unwrapBinaryIfNeeded(v, !deserializeBinary, false) :
+                    (V)Boolean.TRUE, ver) :
+                !skipVals ?
+                    (V)cctx.unwrapBinaryIfNeeded(v, !deserializeBinary, false) :
+                    (V)Boolean.TRUE;
+
+            add(new GridFinishedFuture<>(Collections.singletonMap(key0, val0)));
+        }
     }
 
     /**
@@ -681,7 +730,7 @@ public final class GridNearGetFuture<K, V> extends CacheDistributedGetFutureAdap
                             info.ttl(),
                             info.expireTime(),
                             true,
-                            !deserializePortable,
+                            !deserializeBinary,
                             topVer,
                             subjId);
                     }
@@ -691,16 +740,14 @@ public final class GridNearGetFuture<K, V> extends CacheDistributedGetFutureAdap
 
                     assert skipVals == (info.value() == null);
 
-                    if (needVer)
-                        versionedResult(map, key, val, info.version());
-                    else
-                        cctx.addResult(map,
-                            key,
-                            val,
-                            skipVals,
-                            keepCacheObjects,
-                            deserializePortable,
-                            false);
+                    cctx.addResult(map,
+                        key,
+                        val,
+                        skipVals,
+                        keepCacheObjects,
+                        deserializeBinary,
+                        false,
+                        needVer ? info.version() : null);
                 }
                 catch (GridCacheEntryRemovedException ignore) {
                     if (log.isDebugEnabled())

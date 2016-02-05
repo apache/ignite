@@ -21,6 +21,8 @@ import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.nio.ByteBuffer;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
@@ -37,19 +39,24 @@ public class GridDirectParser implements GridNioParser {
     private static final int READER_META_KEY = GridNioSessionMetaKey.nextUniqueKey();
 
     /** */
+    private final IgniteLogger log;
+
+    /** */
     private final MessageFactory msgFactory;
 
     /** */
     private final GridNioMessageReaderFactory readerFactory;
 
     /**
+     * @param log Logger.
      * @param msgFactory Message factory.
      * @param readerFactory Message reader factory.
      */
-    public GridDirectParser(MessageFactory msgFactory, GridNioMessageReaderFactory readerFactory) {
+    public GridDirectParser(IgniteLogger log, MessageFactory msgFactory, GridNioMessageReaderFactory readerFactory) {
         assert msgFactory != null;
         assert readerFactory != null;
 
+        this.log = log;
         this.msgFactory = msgFactory;
         this.readerFactory = readerFactory;
     }
@@ -64,28 +71,39 @@ public class GridDirectParser implements GridNioParser {
 
         Message msg = ses.removeMeta(MSG_META_KEY);
 
-        if (msg == null && buf.hasRemaining())
-            msg = msgFactory.create(buf.get());
+        try {
+            if (msg == null && buf.hasRemaining())
+                msg = msgFactory.create(buf.get());
 
-        boolean finished = false;
+            boolean finished = false;
 
-        if (buf.hasRemaining()) {
-            if (reader != null)
-                reader.setCurrentReadClass(msg.getClass());
+            if (buf.hasRemaining()) {
+                if (reader != null)
+                    reader.setCurrentReadClass(msg.getClass());
 
-            finished = msg.readFrom(buf, reader);
+                finished = msg.readFrom(buf, reader);
+            }
+
+            if (finished) {
+                if (reader != null)
+                    reader.reset();
+
+                return msg;
+            }
+            else {
+                ses.addMeta(MSG_META_KEY, msg);
+
+                return null;
+            }
         }
+        catch (Throwable e) {
+            U.error(log, "Failed to read message [msg=" + msg +
+                ", buf=" + buf +
+                ", reader=" + reader +
+                ", ses=" + ses + "]",
+                e);
 
-        if (finished) {
-            if (reader != null)
-                reader.reset();
-
-            return msg;
-        }
-        else {
-            ses.addMeta(MSG_META_KEY, msg);
-
-            return null;
+            throw e;
         }
     }
 

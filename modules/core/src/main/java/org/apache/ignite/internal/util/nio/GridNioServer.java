@@ -41,8 +41,9 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.Queue;
 import java.util.Set;
+import java.util.concurrent.ConcurrentLinkedQueue;
+
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
@@ -65,7 +66,6 @@ import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 import org.apache.ignite.thread.IgniteThread;
 import org.jetbrains.annotations.Nullable;
-import org.jsr166.ConcurrentLinkedDeque8;
 import sun.nio.ch.DirectBuffer;
 
 import static org.apache.ignite.internal.util.nio.GridNioSessionMetaKey.ACK_CLOSURE;
@@ -309,6 +309,13 @@ public class GridNioServer<T> {
     }
 
     /**
+     * @return Configured port.
+     */
+    public int port() {
+        return locAddr != null ? locAddr.getPort() : -1;
+    }
+
+    /**
      * Creates and returns a builder for a new instance of this class.
      *
      * @return Builder for new instance.
@@ -425,10 +432,10 @@ public class GridNioServer<T> {
 
         int msgCnt = sys ? ses.offerSystemFuture(fut) : ses.offerFuture(fut);
 
-        IgniteInClosure<IgniteException> ackClosure;
+        IgniteInClosure<IgniteException> ackC;
 
-        if (!sys && (ackClosure = ses.removeMeta(ACK_CLOSURE.ordinal())) != null)
-            fut.ackClosure(ackClosure);
+        if (!sys && (ackC = ses.removeMeta(ACK_CLOSURE.ordinal())) != null)
+            fut.ackClosure(ackC);
 
         if (ses.closed()) {
             if (ses.removeFuture(fut))
@@ -876,24 +883,23 @@ public class GridNioServer<T> {
 
                 return;
             }
-            else if (cnt == 0 && !readBuf.hasRemaining())
-                return;
 
             if (log.isTraceEnabled())
                 log.trace("Bytes received [sockCh=" + sockCh + ", cnt=" + cnt + ']');
+
+            if (cnt == 0)
+                return;
 
             if (metricsLsnr != null)
                 metricsLsnr.onBytesReceived(cnt);
 
             ses.bytesReceived(cnt);
 
-            // Sets limit to current position and
-            // resets position to 0.
             readBuf.flip();
 
-            try {
-                assert readBuf.hasRemaining();
+            assert readBuf.hasRemaining();
 
+            try {
                 filterChain.onMessageReceived(ses, readBuf);
 
                 if (readBuf.hasRemaining())
@@ -974,8 +980,6 @@ public class GridNioServer<T> {
 
                 NioOperationFuture<?> req = ses.removeMeta(NIO_OPERATION.ordinal());
 
-                List<NioOperationFuture<?>> doneFuts = null;
-
                 while (true) {
                     if (req == null) {
                         req = (NioOperationFuture<?>)ses.pollFuture();
@@ -995,6 +999,9 @@ public class GridNioServer<T> {
 
                         assert msg != null;
 
+                        if (writer != null)
+                            writer.setCurrentWriteClass(msg.getClass());
+
                         finished = msg.writeTo(buf, writer);
 
                         if (finished && writer != null)
@@ -1003,10 +1010,7 @@ public class GridNioServer<T> {
 
                     // Fill up as many messages as possible to write buffer.
                     while (finished) {
-                        if (doneFuts == null)
-                            doneFuts = new ArrayList<>();
-
-                        doneFuts.add(req);
+                        req.onDone();
 
                         req = (NioOperationFuture<?>)ses.pollFuture();
 
@@ -1016,6 +1020,9 @@ public class GridNioServer<T> {
                         msg = req.directMessage();
 
                         assert msg != null;
+
+                        if (writer != null)
+                            writer.setCurrentWriteClass(msg.getClass());
 
                         finished = msg.writeTo(buf, writer);
 
@@ -1046,13 +1053,6 @@ public class GridNioServer<T> {
 
                     if (!skipWrite) {
                         int cnt = sockCh.write(buf);
-
-                        if (!F.isEmpty(doneFuts)) {
-                            for (int i = 0; i < doneFuts.size(); i++)
-                                doneFuts.get(i).onDone();
-
-                            doneFuts.clear();
-                        }
 
                         if (log.isTraceEnabled())
                             log.trace("Bytes sent [sockCh=" + sockCh + ", cnt=" + cnt + ']');
@@ -1099,7 +1099,9 @@ public class GridNioServer<T> {
          */
         private void writeSslSystem(GridSelectorNioSessionImpl ses, WritableByteChannel sockCh)
             throws IOException {
-            ConcurrentLinkedDeque8<ByteBuffer> queue = ses.meta(BUF_SSL_SYSTEM_META_KEY);
+            ConcurrentLinkedQueue<ByteBuffer> queue = ses.meta(BUF_SSL_SYSTEM_META_KEY);
+
+            assert queue != null;
 
             ByteBuffer buf;
 
@@ -1161,6 +1163,9 @@ public class GridNioServer<T> {
 
                 assert msg != null;
 
+                if (writer != null)
+                    writer.setCurrentWriteClass(msg.getClass());
+
                 finished = msg.writeTo(buf, writer);
 
                 if (finished && writer != null)
@@ -1168,13 +1173,8 @@ public class GridNioServer<T> {
             }
 
             // Fill up as many messages as possible to write buffer.
-            List<NioOperationFuture<?>> doneFuts = null;
-
             while (finished) {
-                if (doneFuts == null)
-                    doneFuts = new ArrayList<>();
-
-                doneFuts.add(req);
+                req.onDone();
 
                 req = (NioOperationFuture<?>)ses.pollFuture();
 
@@ -1184,6 +1184,9 @@ public class GridNioServer<T> {
                 msg = req.directMessage();
 
                 assert msg != null;
+
+                if (writer != null)
+                    writer.setCurrentWriteClass(msg.getClass());
 
                 finished = msg.writeTo(buf, writer);
 
@@ -1197,13 +1200,6 @@ public class GridNioServer<T> {
 
             if (!skipWrite) {
                 int cnt = sockCh.write(buf);
-
-                if (!F.isEmpty(doneFuts)) {
-                    for (int i = 0; i < doneFuts.size(); i++)
-                        doneFuts.get(i).onDone();
-
-                    doneFuts.clear();
-                }
 
                 if (log.isTraceEnabled())
                     log.trace("Bytes sent [sockCh=" + sockCh + ", cnt=" + cnt + ']');
@@ -1238,7 +1234,7 @@ public class GridNioServer<T> {
      */
     private abstract class AbstractNioClientWorker extends GridWorker {
         /** Queue of change requests on this selector. */
-        private final Queue<NioOperationFuture> changeReqs = new ConcurrentLinkedDeque8<>();
+        private final ConcurrentLinkedQueue<NioOperationFuture> changeReqs = new ConcurrentLinkedQueue<>();
 
         /** Selector to select read events. */
         private Selector selector;
@@ -1610,15 +1606,14 @@ public class GridNioServer<T> {
 
             sessions.remove(ses);
 
-            if (closed)
-                ses.onServerStopped();
-
             SelectionKey key = ses.key();
 
             // Shutdown input and output so that remote client will see correct socket close.
             Socket sock = ((SocketChannel)key.channel()).socket();
 
             if (ses.setClosed()) {
+                ses.onClosed();
+
                 if (directBuf) {
                     if (ses.writeBuffer() != null)
                         ((DirectBuffer)ses.writeBuffer()).cleaner().clean();
@@ -2100,7 +2095,7 @@ public class GridNioServer<T> {
         /** {@inheritDoc} */
         @Override public void onSessionOpened(GridNioSession ses) throws IgniteCheckedException {
             if (directMode && sslFilter != null)
-                ses.addMeta(BUF_SSL_SYSTEM_META_KEY, new ConcurrentLinkedDeque8<>());
+                ses.addMeta(BUF_SSL_SYSTEM_META_KEY, new ConcurrentLinkedQueue<>());
 
             proceedSessionOpened(ses);
         }
@@ -2121,7 +2116,9 @@ public class GridNioServer<T> {
                 boolean sslSys = sslFilter != null && msg instanceof ByteBuffer;
 
                 if (sslSys) {
-                    ConcurrentLinkedDeque8<ByteBuffer> queue = ses.meta(BUF_SSL_SYSTEM_META_KEY);
+                    ConcurrentLinkedQueue<ByteBuffer> queue = ses.meta(BUF_SSL_SYSTEM_META_KEY);
+
+                    assert queue != null;
 
                     queue.offer((ByteBuffer)msg);
 

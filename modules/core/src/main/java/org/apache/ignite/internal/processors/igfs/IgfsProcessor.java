@@ -297,9 +297,6 @@ public class IgfsProcessor extends IgfsProcessorAdapter {
             if (GridQueryProcessor.isEnabled(metaCacheCfg))
                 throw new IgniteCheckedException("IGFS metadata cache cannot start with enabled query indexing.");
 
-            if (GridQueryProcessor.isEnabled(metaCacheCfg))
-                throw new IgniteCheckedException("IGFS metadata cache cannot start with enabled query indexing.");
-
             if (metaCacheCfg.getAtomicityMode() != TRANSACTIONAL)
                 throw new IgniteCheckedException("Meta cache should be transactional: " + cfg.getMetaCacheName());
 

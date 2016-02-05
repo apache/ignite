@@ -433,7 +433,7 @@ namespace Apache.Ignite.Core.Impl.Binary
             return hdr;
         }
 
-        /** <inheritdoc> */
+        /** <inheritdoc /> */
         public bool Equals(BinaryObjectHeader other)
         {
             return Header == other.Header &&
@@ -446,7 +446,7 @@ namespace Apache.Ignite.Core.Impl.Binary
                    SchemaOffset == other.SchemaOffset;
         }
 
-        /** <inheritdoc> */
+        /** <inheritdoc /> */
         public override bool Equals(object obj)
         {
             if (ReferenceEquals(null, obj)) return false;
@@ -454,7 +454,7 @@ namespace Apache.Ignite.Core.Impl.Binary
             return obj is BinaryObjectHeader && Equals((BinaryObjectHeader) obj);
         }
 
-        /** <inheritdoc> */
+        /** <inheritdoc /> */
         public override int GetHashCode()
         {
             unchecked
@@ -471,13 +471,13 @@ namespace Apache.Ignite.Core.Impl.Binary
             }
         }
 
-        /** <inheritdoc> */
+        /** <inheritdoc /> */
         public static bool operator ==(BinaryObjectHeader left, BinaryObjectHeader right)
         {
             return left.Equals(right);
         }
 
-        /** <inheritdoc> */
+        /** <inheritdoc /> */
         public static bool operator !=(BinaryObjectHeader left, BinaryObjectHeader right)
         {
             return !left.Equals(right);

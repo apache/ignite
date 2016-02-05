@@ -39,6 +39,7 @@ import org.apache.ignite.cache.CacheEntryEventSerializableFilter;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.cluster.ClusterTopologyException;
 import org.apache.ignite.internal.IgniteKernal;
+import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
 import org.apache.ignite.internal.processors.cache.GridCacheAffinityManager;
@@ -311,10 +312,15 @@ public class CacheDataStructuresManager extends GridCacheManagerAdapter {
      *
      * @param key Key.
      * @param rmv {@code True} if entry was removed.
-     * @param keepPortable Keep portable flag.
+     * @param keepBinary Keep binary flag.
      */
-    public void onEntryUpdated(KeyCacheObject key, boolean rmv, boolean keepPortable) {
-        Object key0 = cctx.cacheObjectContext().unwrapPortableIfNeeded(key, keepPortable, false);
+    public void onEntryUpdated(KeyCacheObject key, boolean rmv, boolean keepBinary) {
+        // No need to notify data structures manager for a user cache since all DS objects are stored
+        // in system caches.
+        if (cctx.userCache())
+            return;
+
+        Object key0 = cctx.cacheObjectContext().unwrapBinaryIfNeeded(key, keepBinary, false);
 
         if (key0 instanceof SetItemKey)
             onSetItemUpdated((SetItemKey)key0, rmv);
@@ -488,7 +494,7 @@ public class CacheDataStructuresManager extends GridCacheManagerAdapter {
                         true).get();
                 }
                 catch (IgniteCheckedException e) {
-                    if (e.hasCause(ClusterTopologyException.class)) {
+                    if (e.hasCause(ClusterTopologyCheckedException.class)) {
                         if (log.isDebugEnabled())
                             log.debug("RemoveSetData job failed, will retry: " + e);
 
@@ -511,7 +517,7 @@ public class CacheDataStructuresManager extends GridCacheManagerAdapter {
                         true).get();
                 }
                 catch (IgniteCheckedException e) {
-                    if (e.hasCause(ClusterTopologyException.class)) {
+                    if (e.hasCause(ClusterTopologyCheckedException.class)) {
                         if (log.isDebugEnabled())
                             log.debug("RemoveSetData job failed, will retry: " + e);
 

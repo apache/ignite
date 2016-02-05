@@ -17,9 +17,10 @@
 
 package org.apache.ignite.binary;
 
-import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.BinaryConfiguration;
+import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.util.typedef.internal.A;
+import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
  * Defines configuration properties for a specific binary type. Providing per-type
@@ -35,6 +36,9 @@ public class BinaryTypeConfiguration {
     /** ID mapper. */
     private BinaryIdMapper idMapper;
 
+    /** Name mapper. */
+    private BinaryNameMapper nameMapper;
+
     /** Serializer. */
     private BinarySerializer serializer;
 
@@ -42,9 +46,24 @@ public class BinaryTypeConfiguration {
     private boolean isEnum;
 
     /**
+     * Constructor.
      */
     public BinaryTypeConfiguration() {
         // No-op.
+    }
+
+    /**
+     * Copying constructor.
+     *
+     * @param other Other instance.
+     */
+    public BinaryTypeConfiguration(BinaryTypeConfiguration other) {
+        A.notNull(other, "other");
+
+        typeName = other.typeName;
+        idMapper = other.idMapper;
+        serializer = other.serializer;
+        isEnum = other.isEnum;
     }
 
     /**
@@ -88,6 +107,24 @@ public class BinaryTypeConfiguration {
      */
     public void setIdMapper(BinaryIdMapper idMapper) {
         this.idMapper = idMapper;
+    }
+
+    /**
+     * Gets name mapper.
+     *
+     * @return Name mapper.
+     */
+    public BinaryNameMapper getNameMapper() {
+        return nameMapper;
+    }
+
+    /**
+     * Sets name mapper.
+     *
+     * @param nameMapper Name mapper.
+     */
+    public void setNameMapper(BinaryNameMapper nameMapper) {
+        this.nameMapper = nameMapper;
     }
 
     /**

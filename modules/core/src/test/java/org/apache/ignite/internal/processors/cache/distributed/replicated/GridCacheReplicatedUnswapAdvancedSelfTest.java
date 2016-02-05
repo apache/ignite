@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.replicated;
 
-import java.io.Serializable;
 import java.util.Collections;
 import java.util.concurrent.CountDownLatch;
 import org.apache.ignite.Ignite;
@@ -26,13 +25,12 @@ import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.events.Event;
-import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.spi.swapspace.file.FileSwapSpaceSpi;
-import org.apache.ignite.testframework.GridTestClassLoader;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
@@ -50,9 +48,6 @@ public class GridCacheReplicatedUnswapAdvancedSelfTest extends GridCommonAbstrac
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
-        cfg.setPeerClassLoadingLocalClassPathExclude(GridCacheReplicatedUnswapAdvancedSelfTest.class.getName(),
-            TestClass.class.getName());
-
         TcpDiscoverySpi discoSpi = new TcpDiscoverySpi();
 
         discoSpi.setIpFinder(IP_FINDER);
@@ -67,6 +62,9 @@ public class GridCacheReplicatedUnswapAdvancedSelfTest extends GridCommonAbstrac
         cfg.setCacheConfiguration(cacheCfg);
 
         cfg.setSwapSpaceSpi(new FileSwapSpaceSpi());
+
+        if (getTestGridName(1).equals(gridName) || cfg.getMarshaller() instanceof BinaryMarshaller)
+            cfg.setClassLoader(getExternalClassLoader());
 
         return cfg;
     }
@@ -84,11 +82,9 @@ public class GridCacheReplicatedUnswapAdvancedSelfTest extends GridCommonAbstrac
         IgniteCache<Object, Object> cache2 = g2.cache(null);
 
         try {
-            ClassLoader ldr = new GridTestClassLoader(
-                GridCacheReplicatedUnswapAdvancedSelfTest.class.getName(),
-                TestClass.class.getName());
+            ClassLoader ldr = grid(1).configuration().getClassLoader();
 
-            Object v = ldr.loadClass(TestClass.class.getName()).newInstance();
+            Object v = ldr.loadClass("org.apache.ignite.tests.p2p.CacheDeploymentTestValue3").newInstance();
 
             info("v loader: " + v.getClass().getClassLoader());
 
@@ -132,7 +128,8 @@ public class GridCacheReplicatedUnswapAdvancedSelfTest extends GridCommonAbstrac
             assert v2 != null;
             assert v2.toString().equals(v.toString());
             assert !v2.getClass().getClassLoader().equals(getClass().getClassLoader());
-            assert v2.getClass().getClassLoader().getClass().getName().contains("GridDeploymentClassLoader");
+            assert v2.getClass().getClassLoader().getClass().getName().contains("GridDeploymentClassLoader")||
+                grid(2).configuration().getMarshaller() instanceof BinaryMarshaller;
 
             // To swap storage.
             cache2.localEvict(Collections.<Object>singleton(key));
@@ -145,31 +142,12 @@ public class GridCacheReplicatedUnswapAdvancedSelfTest extends GridCommonAbstrac
 
             assert v2 != null;
 
-            assert v2.getClass().getClassLoader().getClass().getName().contains("GridDeploymentClassLoader");
+            assert v2.getClass().getClassLoader().getClass().getName().contains("GridDeploymentClassLoader")|
+                grid(2).configuration().getMarshaller() instanceof BinaryMarshaller;
         }
         finally {
             stopGrid(1);
             stopGrid(2);
-        }
-    }
-    /**
-     * Test class.
-     */
-    @SuppressWarnings("PublicInnerClass")
-    public static class TestClass implements Serializable {
-        /** String value. */
-        private String s = "Test string";
-
-        /**
-         * @return String value.
-         */
-        public String getStr() {
-            return s;
-        }
-
-        /** {@inheritDoc} */
-        @Override public String toString() {
-            return S.toString(TestClass.class, this);
         }
     }
 }

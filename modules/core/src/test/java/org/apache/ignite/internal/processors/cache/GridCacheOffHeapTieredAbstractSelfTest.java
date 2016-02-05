@@ -66,7 +66,7 @@ public abstract class GridCacheOffHeapTieredAbstractSelfTest extends GridCacheAb
     }
 
     /** {@inheritDoc} */
-    protected boolean portableEnabled() {
+    protected boolean binaryEnabled() {
         return false;
     }
 
@@ -444,14 +444,14 @@ public abstract class GridCacheOffHeapTieredAbstractSelfTest extends GridCacheAb
 
         TestValue val2 = new TestValue(new byte[10]);
 
-        if (portableEnabled()) // TODO: IGNITE-608, check return value when fixed.
+        if (binaryEnabled()) // TODO: IGNITE-608, check return value when fixed.
             c.put(key, val);
         else
             assertEquals(val, c.getAndPut(key, val));
 
         checkValue(key, val2);
 
-        if (portableEnabled()) // TODO: IGNITE-608, check return value when fixed.
+        if (binaryEnabled()) // TODO: IGNITE-608, check return value when fixed.
             c.remove(key);
         else
             assertEquals(val2, c.getAndRemove(key));

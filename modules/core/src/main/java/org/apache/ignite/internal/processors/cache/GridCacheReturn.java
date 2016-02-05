@@ -169,6 +169,7 @@ public class GridCacheReturn implements Externalizable, Message {
      * @param cctx Cache context.
      * @param cacheObj Value to set.
      * @param success Success flag to set.
+     * @param keepBinary Keep binary flag.
      * @return This instance for chaining.
      */
     public GridCacheReturn set(
@@ -187,10 +188,11 @@ public class GridCacheReturn implements Externalizable, Message {
     /**
      * @param cctx Cache context.
      * @param cacheObj Cache object.
+     * @param keepBinary Keep binary flag.
      */
     private void initValue(GridCacheContext cctx, @Nullable CacheObject cacheObj, boolean keepBinary) {
         if (loc)
-            v = cctx.cacheObjectContext().unwrapPortableIfNeeded(cacheObj, keepBinary, true);
+            v = cctx.cacheObjectContext().unwrapBinaryIfNeeded(cacheObj, keepBinary, true);
         else {
             assert cacheId == 0 || cacheId == cctx.cacheId();
 
@@ -318,7 +320,7 @@ public class GridCacheReturn implements Externalizable, Message {
         if (cacheObj != null) {
             cacheObj.finishUnmarshal(ctx.cacheObjectContext(), ldr);
 
-            v = ctx.cacheObjectContext().unwrapPortableIfNeeded(cacheObj, true, false);
+            v = ctx.cacheObjectContext().unwrapBinaryIfNeeded(cacheObj, true, false);
         }
 
         if (invokeRes && invokeResCol != null) {
@@ -329,10 +331,10 @@ public class GridCacheReturn implements Externalizable, Message {
 
             for (CacheInvokeDirectResult res : invokeResCol) {
                 CacheInvokeResult<?> res0 = res.error() == null ?
-                    CacheInvokeResult.fromResult(ctx.cacheObjectContext().unwrapPortableIfNeeded(res.result(), true, false)) :
+                    CacheInvokeResult.fromResult(ctx.cacheObjectContext().unwrapBinaryIfNeeded(res.result(), true, false)) :
                     CacheInvokeResult.fromError(res.error());
 
-                map0.put(ctx.cacheObjectContext().unwrapPortableIfNeeded(res.key(), true, false), res0);
+                map0.put(ctx.cacheObjectContext().unwrapBinaryIfNeeded(res.key(), true, false), res0);
             }
 
             v = map0;

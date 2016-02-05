@@ -22,11 +22,12 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.PlatformConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteComputeImpl;
+import org.apache.ignite.internal.binary.*;
 import org.apache.ignite.internal.cluster.ClusterGroupAdapter;
-import org.apache.ignite.internal.portable.BinaryRawWriterEx;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
 import org.apache.ignite.internal.processors.cache.IgniteCacheProxy;
 import org.apache.ignite.internal.processors.datastreamer.DataStreamerImpl;
@@ -45,6 +46,7 @@ import org.apache.ignite.internal.processors.platform.memory.PlatformOutputStrea
 import org.apache.ignite.internal.processors.platform.messaging.PlatformMessaging;
 import org.apache.ignite.internal.processors.platform.services.PlatformServices;
 import org.apache.ignite.internal.processors.platform.transactions.PlatformTransactions;
+import org.apache.ignite.internal.processors.platform.utils.PlatformConfigurationUtils;
 import org.apache.ignite.internal.processors.platform.utils.PlatformUtils;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -136,7 +138,7 @@ public class PlatformProcessorImpl extends GridProcessorAdapter implements Platf
 
         try {
             for (StoreInfo store : pendingStores)
-                registerStore0(store.store, store.convertPortable);
+                registerStore0(store.store, store.convertBinary);
 
             pendingStores.clear();
 
@@ -222,7 +224,7 @@ public class PlatformProcessorImpl extends GridProcessorAdapter implements Platf
         if (cache == null)
             throw new IllegalArgumentException("Cache doesn't exist: " + name);
 
-        return new PlatformCache(platformCtx, cache.keepPortable(), false);
+        return new PlatformCache(platformCtx, cache.keepBinary(), false);
     }
 
     /** {@inheritDoc} */
@@ -231,7 +233,7 @@ public class PlatformProcessorImpl extends GridProcessorAdapter implements Platf
 
         assert cache != null;
 
-        return new PlatformCache(platformCtx, cache.keepPortable(), false);
+        return new PlatformCache(platformCtx, cache.keepBinary(), false);
     }
 
     /** {@inheritDoc} */
@@ -240,7 +242,32 @@ public class PlatformProcessorImpl extends GridProcessorAdapter implements Platf
 
         assert cache != null;
 
-        return new PlatformCache(platformCtx, cache.keepPortable(), false);
+        return new PlatformCache(platformCtx, cache.keepBinary(), false);
+    }
+
+    /** {@inheritDoc} */
+    @Override public PlatformTarget createCacheFromConfig(long memPtr) throws IgniteCheckedException {
+        BinaryRawReaderEx reader = platformCtx.reader(platformCtx.memory().get(memPtr));
+        CacheConfiguration cfg = PlatformConfigurationUtils.readCacheConfiguration(reader);
+
+        IgniteCacheProxy cache = (IgniteCacheProxy)ctx.grid().createCache(cfg);
+
+        return new PlatformCache(platformCtx, cache.keepBinary(), false);
+    }
+
+    /** {@inheritDoc} */
+    @Override public PlatformTarget getOrCreateCacheFromConfig(long memPtr) throws IgniteCheckedException {
+        BinaryRawReaderEx reader = platformCtx.reader(platformCtx.memory().get(memPtr));
+        CacheConfiguration cfg = PlatformConfigurationUtils.readCacheConfiguration(reader);
+
+        IgniteCacheProxy cache = (IgniteCacheProxy)ctx.grid().getOrCreateCache(cfg);
+
+        return new PlatformCache(platformCtx, cache.keepBinary(), false);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void destroyCache(@Nullable String name) throws IgniteCheckedException {
+        ctx.grid().destroyCache(name);
     }
 
     /** {@inheritDoc} */
@@ -249,13 +276,13 @@ public class PlatformProcessorImpl extends GridProcessorAdapter implements Platf
     }
 
     /** {@inheritDoc} */
-    @Override public PlatformTarget dataStreamer(@Nullable String cacheName, boolean keepPortable)
+    @Override public PlatformTarget dataStreamer(@Nullable String cacheName, boolean keepBinary)
         throws IgniteCheckedException {
         IgniteDataStreamer ldr = ctx.dataStream().dataStreamer(cacheName);
 
         ldr.keepBinary(true);
 
-        return new PlatformDataStreamer(platformCtx, cacheName, (DataStreamerImpl)ldr, keepPortable);
+        return new PlatformDataStreamer(platformCtx, cacheName, (DataStreamerImpl)ldr, keepBinary);
     }
 
     /** {@inheritDoc} */
@@ -304,7 +331,7 @@ public class PlatformProcessorImpl extends GridProcessorAdapter implements Platf
     }
 
     /** {@inheritDoc} */
-    @Override public void registerStore(PlatformCacheStore store, boolean convertPortable)
+    @Override public void registerStore(PlatformCacheStore store, boolean convertBinary)
         throws IgniteCheckedException {
         storeLock.readLock().lock();
 
@@ -314,9 +341,9 @@ public class PlatformProcessorImpl extends GridProcessorAdapter implements Platf
                     store);
 
             if (started)
-                registerStore0(store, convertPortable);
+                registerStore0(store, convertBinary);
             else
-                pendingStores.add(new StoreInfo(store, convertPortable));
+                pendingStores.add(new StoreInfo(store, convertBinary));
         }
         finally {
             storeLock.readLock().unlock();
@@ -333,18 +360,28 @@ public class PlatformProcessorImpl extends GridProcessorAdapter implements Platf
         return new PlatformAtomicLong(platformCtx, atomicLong);
     }
 
+    /** {@inheritDoc} */
+    @Override public void getIgniteConfiguration(long memPtr) {
+        PlatformOutputStream stream = platformCtx.memory().get(memPtr).output();
+        BinaryRawWriterEx writer = platformCtx.writer(stream);
+
+        PlatformConfigurationUtils.writeIgniteConfiguration(writer, ignite().configuration());
+
+        stream.synchronize();
+    }
+
     /**
      * Internal store initialization routine.
      *
      * @param store Store.
-     * @param convertPortable Convert portable flag.
+     * @param convertBinary Convert binary flag.
      * @throws IgniteCheckedException If failed.
      */
-    private void registerStore0(PlatformCacheStore store, boolean convertPortable) throws IgniteCheckedException {
+    private void registerStore0(PlatformCacheStore store, boolean convertBinary) throws IgniteCheckedException {
         if (store instanceof PlatformDotNetCacheStore) {
             PlatformDotNetCacheStore store0 = (PlatformDotNetCacheStore)store;
 
-            store0.initialize(ctx, convertPortable);
+            store0.initialize(ctx, convertBinary);
         }
         else
             throw new IgniteCheckedException("Unsupported interop store: " + store);
@@ -357,18 +394,18 @@ public class PlatformProcessorImpl extends GridProcessorAdapter implements Platf
         /** Store. */
         private final PlatformCacheStore store;
 
-        /** Convert portable flag. */
-        private final boolean convertPortable;
+        /** Convert binary flag. */
+        private final boolean convertBinary;
 
         /**
          * Constructor.
          *
          * @param store Store.
-         * @param convertPortable Convert portable flag.
+         * @param convertBinary Convert binary flag.
          */
-        private StoreInfo(PlatformCacheStore store, boolean convertPortable) {
+        private StoreInfo(PlatformCacheStore store, boolean convertBinary) {
             this.store = store;
-            this.convertPortable = convertPortable;
+            this.convertBinary = convertBinary;
         }
     }
 }

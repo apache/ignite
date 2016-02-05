@@ -20,8 +20,10 @@ package org.apache.ignite.configuration;
 import java.util.ArrayList;
 import java.util.Collection;
 import org.apache.ignite.binary.BinaryIdMapper;
+import org.apache.ignite.binary.BinaryNameMapper;
 import org.apache.ignite.binary.BinarySerializer;
 import org.apache.ignite.binary.BinaryTypeConfiguration;
+import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
  * Configuration object for Ignite Binary Objects.
@@ -34,6 +36,9 @@ public class BinaryConfiguration {
     /** ID mapper. */
     private BinaryIdMapper idMapper;
 
+    /** Name mapper. */
+    private BinaryNameMapper nameMapper;
+
     /** Serializer. */
     private BinarySerializer serializer;
 
@@ -44,7 +49,7 @@ public class BinaryConfiguration {
     private boolean compactFooter = DFLT_COMPACT_FOOTER;
 
     /**
-     * Sets class names of portable objects explicitly.
+     * Sets class names of binary objects explicitly.
      *
      * @param clsNames Class names.
      */
@@ -72,6 +77,24 @@ public class BinaryConfiguration {
      */
     public void setIdMapper(BinaryIdMapper idMapper) {
         this.idMapper = idMapper;
+    }
+
+    /**
+     * Gets name mapper.
+     *
+     * @return Name mapper.
+     */
+    public BinaryNameMapper getNameMapper() {
+        return nameMapper;
+    }
+
+    /**
+     * Sets name mapper.
+     *
+     * @param nameMapper Name mapper.
+     */
+    public void setNameMapper(BinaryNameMapper nameMapper) {
+        this.nameMapper = nameMapper;
     }
 
     /**
@@ -112,7 +135,7 @@ public class BinaryConfiguration {
 
     /**
      * Get whether to write footers in compact form. When enabled, Ignite will not write fields metadata
-     * when serializing objects, because internally {@code PortableMarshaller} already distribute metadata inside
+     * when serializing objects, because internally {@code BinaryMarshaller} already distribute metadata inside
      * cluster. This increases serialization performance.
      * <p>
      * <b>WARNING!</b> This mode should be disabled when already serialized data can be taken from some external
@@ -135,5 +158,10 @@ public class BinaryConfiguration {
      */
     public void setCompactFooter(boolean compactFooter) {
         this.compactFooter = compactFooter;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(BinaryConfiguration.class, this);
     }
 }

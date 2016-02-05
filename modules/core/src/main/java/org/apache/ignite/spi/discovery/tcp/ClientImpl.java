@@ -1054,7 +1054,7 @@ class ClientImpl extends TcpDiscoveryImpl {
                     }
                 }
 
-                for (IgniteInClosure<TcpDiscoveryAbstractMessage> msgLsnr : spi.sendMsgLsnrs)
+                for (IgniteInClosure<TcpDiscoveryAbstractMessage> msgLsnr : spi.sndMsgLsnrs)
                     msgLsnr.apply(msg);
 
                 boolean ack = clientAck && !(msg instanceof TcpDiscoveryPingResponse);
@@ -1665,7 +1665,8 @@ class ClientImpl extends TcpDiscoveryImpl {
 
                     if (dataMap != null) {
                         for (Map.Entry<UUID, Map<Integer, byte[]>> entry : dataMap.entrySet())
-                            spi.onExchange(getLocalNodeId(), entry.getKey(), entry.getValue(), null);
+                            spi.onExchange(getLocalNodeId(), entry.getKey(), entry.getValue(),
+                                U.resolveClassLoader(spi.ignite().configuration().getClassLoader()));
                     }
 
                     locNode.setAttributes(msg.clientNodeAttributes());
@@ -1828,36 +1829,42 @@ class ClientImpl extends TcpDiscoveryImpl {
                 return;
             }
 
-            if (!getLocalNodeId().equals(msg.creatorNodeId())) {
-                TcpDiscoveryNode node = rmtNodes.remove(msg.failedNodeId());
+            if (nodeAdded()) {
+                if (!getLocalNodeId().equals(msg.creatorNodeId())) {
+                    TcpDiscoveryNode node = rmtNodes.remove(msg.failedNodeId());
 
-                if (node == null) {
-                    if (log.isDebugEnabled())
-                        log.debug("Discarding node failed message since node is not found [msg=" + msg + ']');
+                    if (node == null) {
+                        if (log.isDebugEnabled())
+                            log.debug("Discarding node failed message since node is not found [msg=" + msg + ']');
 
-                    return;
+                        return;
+                    }
+
+                    Collection<ClusterNode> top = updateTopologyHistory(msg.topologyVersion(), msg);
+
+                    if (state != CONNECTED) {
+                        if (log.isDebugEnabled())
+                            log.debug("Discarding node failed message (join process is not finished): " + msg);
+
+                        return;
+                    }
+
+                    if (msg.warning() != null) {
+                        ClusterNode creatorNode = rmtNodes.get(msg.creatorNodeId());
+
+                        U.warn(log, "Received EVT_NODE_FAILED event with warning [" +
+                            "nodeInitiatedEvt=" + (creatorNode != null ? creatorNode : msg.creatorNodeId()) +
+                            ", msg=" + msg.warning() + ']');
+                    }
+
+                    notifyDiscovery(EVT_NODE_FAILED, msg.topologyVersion(), node, top);
+
+                    spi.stats.onNodeFailed();
                 }
-
-                Collection<ClusterNode> top = updateTopologyHistory(msg.topologyVersion(), msg);
-
-                if (state != CONNECTED) {
-                    if (log.isDebugEnabled())
-                        log.debug("Discarding node failed message (join process is not finished): " + msg);
-
-                    return;
-                }
-
-                if (msg.warning() != null) {
-                    ClusterNode creatorNode = rmtNodes.get(msg.creatorNodeId());
-
-                    U.warn(log, "Received EVT_NODE_FAILED event with warning [" +
-                        "nodeInitiatedEvt=" + (creatorNode != null ? creatorNode : msg.creatorNodeId()) +
-                        ", msg=" + msg.warning() + ']');
-                }
-
-                notifyDiscovery(EVT_NODE_FAILED, msg.topologyVersion(), node, top);
-
-                spi.stats.onNodeFailed();
+            }
+            else {
+                if (log.isDebugEnabled())
+                    log.debug("Ignore topology message, local node not added to topology: " + msg);
             }
         }
 
@@ -1955,7 +1962,8 @@ class ClientImpl extends TcpDiscoveryImpl {
 
                     if (node != null && node.visible()) {
                         try {
-                            DiscoverySpiCustomMessage msgObj = msg.message(spi.marsh);
+                            DiscoverySpiCustomMessage msgObj = msg.message(spi.marsh,
+                                spi.ignite().configuration().getClassLoader());
 
                             notifyDiscovery(EVT_DISCOVERY_CUSTOM_EVT, topVer, node, allVisibleNodes(), msgObj);
                         }

@@ -141,6 +141,21 @@ public interface BinaryObject extends Serializable, Cloneable {
     public BinaryObject clone() throws CloneNotSupportedException;
 
     /**
+     * Creates a new {@link BinaryObjectBuilder} based on this binary object. The following code
+     * <pre name=code class=java>
+     * BinaryObjectBuilder builder = binaryObject.toBuilder();
+     * </pre>
+     * is equivalent to
+     * <pre name=code class=java>
+     * BinaryObjectBuilder builder = ignite.binary().builder(binaryObject);
+     * </pre>
+     *
+     * @return Binary object builder.
+     * @throws BinaryObjectException If builder cannot be created.
+     */
+    public BinaryObjectBuilder toBuilder() throws BinaryObjectException;
+
+    /**
      * Get ordinal for this enum object. Use {@link BinaryType#isEnum()} to check if object is of enum type.
      *
      * @return Ordinal.

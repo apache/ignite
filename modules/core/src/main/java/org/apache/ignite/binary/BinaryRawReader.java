@@ -206,11 +206,11 @@ public interface BinaryRawReader {
     @Nullable public <T> Collection<T> readCollection() throws BinaryObjectException;
 
     /**
-     * @param colCls Collection class.
+     * @param factory Collection factory.
      * @return Collection.
      * @throws BinaryObjectException In case of error.
      */
-    @Nullable public <T> Collection<T> readCollection(Class<? extends Collection<T>> colCls)
+    @Nullable public <T> Collection<T> readCollection(BinaryCollectionFactory<T> factory)
         throws BinaryObjectException;
 
     /**
@@ -220,11 +220,11 @@ public interface BinaryRawReader {
     @Nullable public <K, V> Map<K, V> readMap() throws BinaryObjectException;
 
     /**
-     * @param mapCls Map class.
+     * @param factory Map factory.
      * @return Map.
      * @throws BinaryObjectException In case of error.
      */
-    @Nullable public <K, V> Map<K, V> readMap(Class<? extends Map<K, V>> mapCls) throws BinaryObjectException;
+    @Nullable public <K, V> Map<K, V> readMap(BinaryMapFactory<K, V> factory) throws BinaryObjectException;
 
     /**
      * @return Value.

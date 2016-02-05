@@ -18,7 +18,7 @@
 package org.apache.ignite.internal.processors.platform.messaging;
 
 import org.apache.ignite.internal.GridKernalContext;
-import org.apache.ignite.internal.portable.BinaryRawWriterEx;
+import org.apache.ignite.internal.binary.BinaryRawWriterEx;
 import org.apache.ignite.internal.processors.platform.PlatformAbstractPredicate;
 import org.apache.ignite.internal.processors.platform.PlatformContext;
 import org.apache.ignite.internal.processors.platform.memory.PlatformMemory;
@@ -46,7 +46,7 @@ public class PlatformMessageFilterImpl extends PlatformAbstractPredicate impleme
     /**
      * Constructor.
      *
-     * @param pred .Net portable predicate.
+     * @param pred .Net binary predicate.
      * @param ptr Pointer to predicate in the native platform.
      * @param ctx Kernal context.
      */

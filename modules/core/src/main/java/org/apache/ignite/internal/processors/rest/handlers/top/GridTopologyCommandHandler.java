@@ -30,13 +30,17 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cluster.ClusterMetrics;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.client.GridClientCacheMode;
+import org.apache.ignite.internal.processors.cache.GridCacheProcessor;
 import org.apache.ignite.internal.processors.port.GridPortRecord;
 import org.apache.ignite.internal.processors.rest.GridRestCommand;
 import org.apache.ignite.internal.processors.rest.GridRestProtocol;
 import org.apache.ignite.internal.processors.rest.GridRestResponse;
 import org.apache.ignite.internal.processors.rest.client.message.GridClientNodeBean;
+import org.apache.ignite.internal.processors.rest.client.message.GridClientCacheBean;
 import org.apache.ignite.internal.processors.rest.client.message.GridClientNodeMetricsBean;
 import org.apache.ignite.internal.processors.rest.handlers.GridRestCommandHandlerAdapter;
 import org.apache.ignite.internal.processors.rest.request.GridRestRequest;
@@ -175,6 +179,22 @@ public class GridTopologyCommandHandler extends GridRestCommandHandlerAdapter {
     }
 
     /**
+     * Creates cache bean.
+     *
+     * @param ccfg Cache configuration.
+     * @return Cache bean.
+     */
+    public GridClientCacheBean createCacheBean(CacheConfiguration ccfg) {
+        GridClientCacheBean cacheBean = new GridClientCacheBean();
+
+        cacheBean.setName(ccfg.getName());
+        cacheBean.setMode(GridClientCacheMode.valueOf(ccfg.getCacheMode().toString()));
+        cacheBean.setSqlSchema(ccfg.getSqlSchema());
+
+        return cacheBean;
+    }
+
+    /**
      * Creates node bean out of grid node. Notice that cache attribute is handled separately.
      *
      * @param node Grid node.
@@ -194,22 +214,16 @@ public class GridTopologyCommandHandler extends GridRestCommandHandlerAdapter {
         nodeBean.setTcpAddresses(nonEmptyList(node.<Collection<String>>attribute(ATTR_REST_TCP_ADDRS)));
         nodeBean.setTcpHostNames(nonEmptyList(node.<Collection<String>>attribute(ATTR_REST_TCP_HOST_NAMES)));
 
+        GridCacheProcessor cacheProc = ctx.cache();
+
         Map<String, CacheMode> nodeCaches = ctx.discovery().nodeCaches(node);
 
-        Map<String, String> cacheMap = U.newHashMap(nodeCaches.size());
+        Collection<GridClientCacheBean> caches = new ArrayList<>(nodeCaches.size());
 
-        for (Map.Entry<String, CacheMode> cache : nodeCaches.entrySet()) {
-            String cacheName = cache.getKey();
+        for (String cacheName : nodeCaches.keySet())
+            caches.add(createCacheBean(cacheProc.cacheConfiguration(cacheName)));
 
-            String mode = cache.getValue().toString();
-
-            if (cacheName != null)
-                cacheMap.put(cacheName, mode);
-            else
-                nodeBean.setDefaultCacheMode(mode);
-        }
-
-        nodeBean.setCaches(cacheMap);
+        nodeBean.setCaches(caches);
 
         if (mtr) {
             ClusterMetrics metrics = node.metrics();
