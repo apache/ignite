@@ -79,6 +79,7 @@ import './modules/configuration/include-event-types/main';
 import './modules/terms/main';
 import './modules/logo/main';
 import './modules/getting-started/main';
+import './modules/Version/main';
 // endignite
 
 // Directives.
@@ -130,7 +131,8 @@ angular
     'ignite-console.configuration.include-event-types',
     'ignite-console.terms',
     'ignite-console.logo',
-    'ignite-console.getting-started'
+    'ignite-console.getting-started',
+    'ignite-console.version'
 ])
 // Directives.
 .directive(...igniteLoading)

@@ -18,10 +18,9 @@
 import JSZip from 'jszip';
 
 export default [
-    '$scope', '$http', '$common', '$loading', '$table', '$filter', '$timeout', 'ConfigurationSummaryResource', 'JavaTypes',
-    function($scope, $http, $common, $loading, $table, $filter, $timeout, Resource, JavaTypes) {
+    '$scope', '$http', '$common', '$loading', '$table', '$filter', '$timeout', 'ConfigurationSummaryResource', 'JavaTypes', 'IgniteVersion',
+    function($scope, $http, $common, $loading, $table, $filter, $timeout, Resource, JavaTypes, IgniteVersion) {
         const ctrl = this;
-        const igniteVersion = '1.5.0.final';
 
         $loading.start('loading');
 
@@ -255,7 +254,7 @@ export default [
             zip.file(srcPath + 'startup/ClientNodeCodeStartup.java', $generatorJava.nodeStartup(cluster, 'startup', 'ClientNodeCodeStartup',
                 'ClientConfigurationFactory.createConfiguration()', 'config.ClientConfigurationFactory', clientNearCfg));
 
-            zip.file('pom.xml', $generatorPom.pom(cluster, igniteVersion).asString());
+            zip.file('pom.xml', $generatorPom.pom(cluster, IgniteVersion.version).asString());
 
             zip.file('README.txt', $generatorReadme.readme().asString());
             zip.file('jdbc-drivers/README.txt', $generatorReadme.readmeJdbc().asString());

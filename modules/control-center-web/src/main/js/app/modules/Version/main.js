@@ -15,20 +15,18 @@
  * limitations under the License.
  */
 
-export default ['$scope', 'IgniteVersion', function($scope, IgniteVersion) {
-    const ctrl = this;
+import angular from 'angular';
 
-    // Watchers definition.
-    const clusterWatcher = (value) => {
-        delete ctrl.data;
+angular
+    .module('ignite-console.version', [])
+    .provider('IgniteVersion', function() {
+        const version = {
+            version: '1.5.0-final'
+        };
 
-        if (!value)
-            return;
+        this.update = (newVersion) => {
+            version.version = newVersion;
+        };
 
-        // TODO IGNITE-2053: need move $generatorPom to services.
-        ctrl.data = $generatorPom.pom($scope.cluster, IgniteVersion.version).asString();
-    };
-
-    // Setup watchers.
-    $scope.$watch('cluster', clusterWatcher);
-}];
+        this.$get = [() => version];
+    });
