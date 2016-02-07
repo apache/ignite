@@ -35,51 +35,43 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
  * REST log command handler tests.
  */
 public class GridLogCommandHandlerTest extends GridCommonAbstractTest {
+    /** */
+    private String igniteHome = System.getProperty("user.dir");
 
-    /**
-     * Create test.log file
-     * @throws Exception If file is not created.
-     */
-    public void logSetUp() throws Exception {
+    /** {@inheritDoc} */
+    @Override protected void beforeTestsStarted() throws Exception {
+        super.beforeTestsStarted();
+
         List<String> lines = Arrays.asList("[22:01:30,329][INFO ][grid-load-test-thread-12][GridDeploymentLocalStore] ",
-                "[22:01:30,329][INFO ][grid-load-test-thread-18][GridDeploymentLocalStore] Removed undeployed class: \n",
-                "[22:01:30,329][INFO ][grid-load-test-thread-18][GridDeploymentLocalStore] Task locally undeployed: \n"
-                );
-        Path file = Paths.get("test.log");
-        Files.write(file, lines, Charset.forName("UTF-8"));
-    }
-
-    /**
-     * Delete test.log file
-     * @throws Exception If file is not deleted.
-     */
-    public void logTearDown() throws Exception {
-        Path file = Paths.get("test.log");
-        Files.delete(file);
-    }
-
-    /**
-     * Create ignite.log file in specified path
-     * @throws Exception If file is not deleted.
-     */
-    public void logSetUp(String igniteHome) throws Exception {
-        List<String> lines = Arrays.asList("[22:01:30,329][INFO ][grid-load-test-thread-12][GridDeploymentLocalStore] ",
-                "[22:01:30,329][INFO ][grid-load-test-thread-18][GridDeploymentLocalStore] Removed undeployed class: \n",
-                "[22:01:30,329][INFO ][grid-load-test-thread-18][GridDeploymentLocalStore] Task locally undeployed: \n"
+            "[22:01:30,329][INFO ][grid-load-test-thread-18][GridDeploymentLocalStore] Removed undeployed class: \n",
+            "[22:01:30,329][INFO ][grid-load-test-thread-18][GridDeploymentLocalStore] Task locally undeployed: \n"
         );
-        Path dir = Paths.get(igniteHome+"work/log");
+
+        Path file = Paths.get("test.log");
+        Files.write(file, lines, Charset.forName("UTF-8"));
+
+        lines = Arrays.asList("[22:01:30,329][INFO ][grid-load-test-thread-12][GridDeploymentLocalStore] ",
+            "[22:01:30,329][INFO ][grid-load-test-thread-18][GridDeploymentLocalStore] Removed undeployed class: \n",
+            "[22:01:30,329][INFO ][grid-load-test-thread-18][GridDeploymentLocalStore] Task locally undeployed: \n"
+        );
+
+        Path dir = Paths.get(igniteHome + "/work/log");
         Files.createDirectories(dir);
-        Path file = Paths.get(igniteHome+"work/log/"+"ignite.log");
+
+        file = Paths.get(igniteHome + "/work/log/" + "ignite.log");
         Files.write(file, lines, Charset.forName("UTF-8"));
     }
 
-    /**
-     * Delete ignite.log file in specified path
-     * @throws Exception If file is not deleted.
-     */
-    public void logTearDown(String igniteHome) throws Exception {
-        Path file = Paths.get(igniteHome+"work/log/"+"ignite.log");
+    /** {@inheritDoc} */
+    @Override protected void afterTestsStopped() throws Exception {
+        Path file = Paths.get("test.log");
         Files.delete(file);
+
+        Files.delete(Paths.get(igniteHome + "/work/log/" + "ignite.log"));
+        Files.delete(Paths.get(igniteHome + "/work/log/"));
+        Files.delete(Paths.get(igniteHome + "/work/"));
+
+        super.afterTestsStopped();
     }
 
     /**
@@ -110,7 +102,6 @@ public class GridLogCommandHandlerTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testHandleAsync() throws Exception {
-        logSetUp();
         GridLogCommandHandler cmdHandler = new GridLogCommandHandler(newContext());
         GridRestLogRequest req = new GridRestLogRequest();
 
@@ -123,14 +114,12 @@ public class GridLogCommandHandlerTest extends GridCommonAbstractTest {
         assertNull(resp.result().getError());
         assertEquals(GridRestResponse.STATUS_SUCCESS, resp.result().getSuccessStatus());
         assertNotNull(resp.result().getResponse());
-        logTearDown();
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testHandleAsyncFromAndToNotSet() throws Exception {
-        logSetUp();
         GridLogCommandHandler cmdHandler = new GridLogCommandHandler(newContext());
         GridRestLogRequest req = new GridRestLogRequest();
 
@@ -141,7 +130,6 @@ public class GridLogCommandHandlerTest extends GridCommonAbstractTest {
         assertNull(resp.result().getError());
         assertEquals(GridRestResponse.STATUS_SUCCESS, resp.result().getSuccessStatus());
         assertNotNull(resp.result().getResponse());
-        logTearDown();
     }
 
     /**
@@ -149,8 +137,8 @@ public class GridLogCommandHandlerTest extends GridCommonAbstractTest {
      */
     public void testHandleAsyncPathNotSet() throws Exception {
         GridTestKernalContext ctx = newContext();
-        ctx.config().setIgniteHome(getClass().getResource("/").getFile());
-        logSetUp(ctx.config().getIgniteHome());
+        ctx.config().setIgniteHome(igniteHome);
+
         GridLogCommandHandler cmdHandler = new GridLogCommandHandler(ctx);
         GridRestLogRequest req = new GridRestLogRequest();
 
@@ -162,14 +150,12 @@ public class GridLogCommandHandlerTest extends GridCommonAbstractTest {
         assertNull(resp.result().getError());
         assertEquals(GridRestResponse.STATUS_SUCCESS, resp.result().getSuccessStatus());
         assertNotNull(resp.result().getResponse());
-        logTearDown(ctx.config().getIgniteHome());
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testHandleAsyncFromGreaterThanTo() throws Exception {
-        logSetUp();
         GridLogCommandHandler cmdHandler = new GridLogCommandHandler(newContext());
         GridRestLogRequest req = new GridRestLogRequest();
 
@@ -177,20 +163,17 @@ public class GridLogCommandHandlerTest extends GridCommonAbstractTest {
         req.from(5);
         req.path("test.log");
 
-
         IgniteInternalFuture<GridRestResponse> resp = cmdHandler.handleAsync(req);
 
         assertEquals("Request parameter 'from' must be less than 'to'.", resp.result().getError());
         assertEquals(GridRestResponse.STATUS_FAILED, resp.result().getSuccessStatus());
         assertNull(resp.result().getResponse());
-        logTearDown();
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testHandleAsyncFromEqualTo() throws Exception {
-        logSetUp();
         GridLogCommandHandler cmdHandler = new GridLogCommandHandler(newContext());
         GridRestLogRequest req = new GridRestLogRequest();
 
@@ -203,6 +186,5 @@ public class GridLogCommandHandlerTest extends GridCommonAbstractTest {
         assertEquals("Request parameter 'from' must be less than 'to'.", resp.result().getError());
         assertEquals(GridRestResponse.STATUS_FAILED, resp.result().getSuccessStatus());
         assertNull(resp.result().getResponse());
-        logTearDown();
     }
 }

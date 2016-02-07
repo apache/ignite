@@ -31,6 +31,7 @@ import javax.cache.processor.EntryProcessorResult;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.cache.CacheAtomicityMode;
+import org.apache.ignite.cache.CacheEntry;
 import org.apache.ignite.cache.CacheMetrics;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.CachePeekMode;
@@ -335,6 +336,28 @@ public interface IgniteInternalCache<K, V> extends Iterable<Cache.Entry<K, V>> {
     @Nullable public V get(K key) throws IgniteCheckedException;
 
     /**
+     * Retrieves value mapped to the specified key from cache. Value will only be returned if
+     * its entry passed the optional filter provided. Filter check is atomic, and therefore the
+     * returned value is guaranteed to be consistent with the filter. The return value of {@code null}
+     * means entry did not pass the provided filter or cache has no mapping for the
+     * key.
+     * <p>
+     * If the value is not present in cache, then it will be looked up from swap storage. If
+     * it's not present in swap, or if swap is disable, and if read-through is allowed, value
+     * will be loaded from {@link CacheStore} persistent storage via
+     * <code>CacheStore#load(Transaction, Object)</code> method.
+     * <h2 class="header">Transactions</h2>
+     * This method is transactional and will enlist the entry into ongoing transaction
+     * if there is one.
+     *
+     * @param key Key to retrieve the value for.
+     * @return Value for the given key.
+     * @throws IgniteCheckedException If get operation failed.
+     * @throws NullPointerException if the key is {@code null}.
+     */
+    @Nullable public CacheEntry<K, V> getEntry(K key) throws IgniteCheckedException;
+
+    /**
      * Asynchronously retrieves value mapped to the specified key from cache. Value will only be returned if
      * its entry passed the optional filter provided. Filter check is atomic, and therefore the
      * returned value is guaranteed to be consistent with the filter. The return value of {@code null}
@@ -354,6 +377,27 @@ public interface IgniteInternalCache<K, V> extends Iterable<Cache.Entry<K, V>> {
      * @throws NullPointerException if the key is {@code null}.
      */
     public IgniteInternalFuture<V> getAsync(K key);
+
+    /**
+     * Asynchronously retrieves value mapped to the specified key from cache. Value will only be returned if
+     * its entry passed the optional filter provided. Filter check is atomic, and therefore the
+     * returned value is guaranteed to be consistent with the filter. The return value of {@code null}
+     * means entry did not pass the provided filter or cache has no mapping for the
+     * key.
+     * <p>
+     * If the value is not present in cache, then it will be looked up from swap storage. If
+     * it's not present in swap, or if swap is disabled, and if read-through is allowed, value
+     * will be loaded from {@link CacheStore} persistent storage via
+     * <code>CacheStore#load(Transaction, Object)</code> method.
+     * <h2 class="header">Transactions</h2>
+     * This method is transactional and will enlist the entry into ongoing transaction
+     * if there is one.
+     *
+     * @param key Key for the value to get.
+     * @return Future for the get operation.
+     * @throws NullPointerException if the key is {@code null}.
+     */
+    public IgniteInternalFuture<CacheEntry<K, V>> getEntryAsync(K key);
 
     /**
      * Retrieves values mapped to the specified keys from cache. Value will only be returned if
@@ -377,6 +421,27 @@ public interface IgniteInternalCache<K, V> extends Iterable<Cache.Entry<K, V>> {
     public Map<K, V> getAll(@Nullable Collection<? extends K> keys) throws IgniteCheckedException;
 
     /**
+     * Retrieves values mapped to the specified keys from cache. Value will only be returned if
+     * its entry passed the optional filter provided. Filter check is atomic, and therefore the
+     * returned value is guaranteed to be consistent with the filter. If requested key-value pair
+     * is not present in the returned map, then it means that its entry did not pass the provided
+     * filter or cache has no mapping for the key.
+     * <p>
+     * If some value is not present in cache, then it will be looked up from swap storage. If
+     * it's not present in swap, or if swap is disabled, and if read-through is allowed, value
+     * will be loaded from {@link CacheStore} persistent storage via
+     * <code>CacheStore#loadAll(Transaction, Collection, org.apache.ignite.lang.IgniteBiInClosure)</code> method.
+     * <h2 class="header">Transactions</h2>
+     * This method is transactional and will enlist the entry into ongoing transaction
+     * if there is one.
+     *
+     * @param keys Keys to get.
+     * @return Map of key-value pairs.
+     * @throws IgniteCheckedException If get operation failed.
+     */
+    public Collection<CacheEntry<K, V>> getEntries(@Nullable Collection<? extends K> keys) throws IgniteCheckedException;
+
+    /**
      * Asynchronously retrieves values mapped to the specified keys from cache. Value will only be returned if
      * its entry passed the optional filter provided. Filter check is atomic, and therefore the
      * returned value is guaranteed to be consistent with the filter. If requested key-value pair
@@ -395,6 +460,26 @@ public interface IgniteInternalCache<K, V> extends Iterable<Cache.Entry<K, V>> {
      * @return Future for the get operation.
      */
     public IgniteInternalFuture<Map<K, V>> getAllAsync(@Nullable Collection<? extends K> keys);
+
+    /**
+     * Asynchronously retrieves values mapped to the specified keys from cache. Value will only be returned if
+     * its entry passed the optional filter provided. Filter check is atomic, and therefore the
+     * returned value is guaranteed to be consistent with the filter. If requested key-value pair
+     * is not present in the returned map, then it means that its entry did not pass the provided
+     * filter or cache has no mapping for the key.
+     * <p>
+     * If some value is not present in cache, then it will be looked up from swap storage. If
+     * it's not present in swap, or if swap is disabled, and if read-through is allowed, value
+     * will be loaded from {@link CacheStore} persistent storage via
+     * <code>CacheStore#loadAll(Transaction, Collection, org.apache.ignite.lang.IgniteBiInClosure)</code> method.
+     * <h2 class="header">Transactions</h2>
+     * This method is transactional and will enlist the entry into ongoing transaction
+     * if there is one.
+     *
+     * @param keys Key for the value to get.
+     * @return Future for the get operation.
+     */
+    public IgniteInternalFuture<Collection<CacheEntry<K, V>>> getEntriesAsync(@Nullable Collection<? extends K> keys);
 
     /**
      * Stores given key-value pair in cache. If filters are provided, then entries will

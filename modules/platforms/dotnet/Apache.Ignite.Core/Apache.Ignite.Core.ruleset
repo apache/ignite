@@ -1,0 +1,26 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<RuleSet Name="Rules for Apache.Ignite.Core" Description="Code analysis rules for Apache.Ignite.Core.csproj." ToolsVersion="14.0">
+  <IncludeAll Action="Error" />
+  <Rules AnalyzerId="Microsoft.Analyzers.ManagedCodeAnalysis" RuleNamespace="Microsoft.Rules.Managed">
+    <Rule Id="CA1004" Action="None" />
+    <Rule Id="CA1005" Action="None" />
+    <Rule Id="CA1006" Action="None" />
+    <Rule Id="CA1020" Action="None" />
+    <Rule Id="CA1021" Action="None" />
+    <Rule Id="CA1024" Action="None" />
+    <Rule Id="CA1026" Action="None" />
+    <Rule Id="CA1303" Action="None" />
+    <Rule Id="CA1305" Action="None" />
+    <Rule Id="CA1307" Action="None" />
+    <Rule Id="CA1502" Action="None" />
+    <Rule Id="CA1506" Action="None" />
+    <Rule Id="CA1704" Action="None" />
+    <Rule Id="CA1709" Action="None" />
+    <Rule Id="CA1716" Action="None" />
+    <Rule Id="CA1720" Action="None" />
+    <Rule Id="CA1726" Action="None" />
+    <Rule Id="CA2001" Action="None" />
+    <Rule Id="CA2204" Action="None" />
+    <Rule Id="CA2243" Action="None" />
+  </Rules>
+</RuleSet>

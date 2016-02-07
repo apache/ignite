@@ -70,10 +70,10 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
 import org.jsr166.ConcurrentHashMap8;
-import org.jsr166.ConcurrentLinkedDeque8;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
+
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.LOCAL;
@@ -581,7 +581,7 @@ public abstract class GridCacheContinuousQueryAbstractSelfTest extends GridCommo
             int key = 0;
 
             while (true) {
-                ClusterNode n = grid(0).cluster().mapKeyToNode(null, key);
+                ClusterNode n = grid(0).affinity(null).mapKeyToNode(key);
 
                 assert n != null;
 
@@ -655,7 +655,7 @@ public abstract class GridCacheContinuousQueryAbstractSelfTest extends GridCommo
             int key = 0;
 
             while (true) {
-                ClusterNode n = grid(0).cluster().mapKeyToNode(null, key);
+                ClusterNode n = grid(0).affinity(null).mapKeyToNode(key);
 
                 assert n != null;
 
@@ -741,7 +741,7 @@ public abstract class GridCacheContinuousQueryAbstractSelfTest extends GridCommo
             int key = 0;
 
             while (true) {
-                ClusterNode n = grid(0).cluster().mapKeyToNode(null, key);
+                ClusterNode n = grid(0).affinity(null).mapKeyToNode(key);
 
                 assert n != null;
 

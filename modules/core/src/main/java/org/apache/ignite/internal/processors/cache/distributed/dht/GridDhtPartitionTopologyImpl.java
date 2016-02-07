@@ -36,6 +36,7 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.processors.affinity.GridAffinityAssignment;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionExchangeId;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionFullMap;
@@ -611,6 +612,15 @@ class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
     }
 
     /** {@inheritDoc} */
+    @Override public void releasePartitions(int... parts) {
+        assert parts != null;
+        assert parts.length > 0;
+
+        for (int i = 0; i < parts.length; i++)
+            locParts.get(parts[i]).release();
+    }
+
+    /** {@inheritDoc} */
     @Override public GridDhtLocalPartition localPartition(Object key, boolean create) {
         return localPartition(cctx.affinity().partition(key), AffinityTopologyVersion.NONE, create);
     }
@@ -693,7 +703,9 @@ class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
 
     /** {@inheritDoc} */
     @Override public Collection<ClusterNode> nodes(int p, AffinityTopologyVersion topVer) {
-        Collection<ClusterNode> affNodes = cctx.affinity().nodes(p, topVer);
+        GridAffinityAssignment affAssignment = cctx.affinity().assignment(topVer);
+
+        Collection<ClusterNode> affNodes = affAssignment.get(p);
 
         lock.readLock().lock();
 
@@ -708,9 +720,9 @@ class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
             Collection<UUID> nodeIds = part2node.get(p);
 
             if (!F.isEmpty(nodeIds)) {
-                Collection<UUID> affIds = new HashSet<>(F.viewReadOnly(affNodes, F.node2id()));
-
                 for (UUID nodeId : nodeIds) {
+                    HashSet<UUID> affIds = affAssignment.getIds(p);
+
                     if (!affIds.contains(nodeId) && hasState(p, nodeId, OWNING, MOVING, RENTING)) {
                         ClusterNode n = cctx.discovery().node(nodeId);
 

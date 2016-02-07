@@ -22,11 +22,11 @@ import java.util.Collection;
 import java.util.Map;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
-import org.apache.ignite.IgniteCluster;
 import org.apache.ignite.IgniteCompute;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.CacheMode;
+import org.apache.ignite.cache.affinity.Affinity;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.examples.ExampleNodeStartup;
@@ -105,7 +105,7 @@ public final class CacheAffinityExample {
     }
 
     /**
-     * Collocates jobs with keys they need to work on using {@link IgniteCluster#mapKeysToNodes(String, Collection)}
+     * Collocates jobs with keys they need to work on using {@link Affinity#mapKeysToNodes(Collection)}
      * method. The difference from {@code affinityRun(...)} method is that here we process multiple keys
      * in a single job.
      */
@@ -118,7 +118,7 @@ public final class CacheAffinityExample {
             keys.add(i);
 
         // Map all keys to nodes.
-        Map<ClusterNode, Collection<Integer>> mappings = ignite.cluster().mapKeysToNodes(CACHE_NAME, keys);
+        Map<ClusterNode, Collection<Integer>> mappings = ignite.<Integer>affinity(CACHE_NAME).mapKeysToNodes(keys);
 
         for (Map.Entry<ClusterNode, Collection<Integer>> mapping : mappings.entrySet()) {
             ClusterNode node = mapping.getKey();

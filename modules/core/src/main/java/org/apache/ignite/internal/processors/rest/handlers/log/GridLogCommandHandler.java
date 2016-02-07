@@ -46,11 +46,6 @@ public class GridLogCommandHandler extends GridRestCommandHandlerAdapter {
     private static final Collection<GridRestCommand> SUPPORTED_COMMANDS = U.sealList(LOG);
 
     /**
-     * Default log file name *
-     */
-    private final String DEFAULT_LOG_PATH = getDefaultLogPath();
-
-    /**
      * Default log file start line number *
      */
     private static final int DEFAULT_FROM = 0;
@@ -121,7 +116,9 @@ public class GridLogCommandHandler extends GridRestCommandHandlerAdapter {
                 if (req0.path() != null)
                     logFile = new File(req0.path());
                 else
-                    logFile = new File(DEFAULT_LOG_PATH);
+                    logFile = new File(log.fileName() == null ?
+                        ctx.config().getIgniteHome() + "/" + "work/log/ignite.log" :
+                        log.fileName());
             }
             catch (InvalidPathException e) {
                 return new GridFinishedFuture<>(new GridRestResponse(GridRestResponse.STATUS_FAILED,
@@ -170,15 +167,5 @@ public class GridLogCommandHandler extends GridRestCommandHandlerAdapter {
         }
 
         return content.toString();
-    }
-
-    /**
-     * Gets name of the file being logged to if one is configured or
-     * ignite.log filename in IgniteHome/work/log dir otherwise.
-     *
-     * @return log file name
-     */
-    public String getDefaultLogPath() {
-       return log.fileName() == null ? ctx.config().getIgniteHome() + "/" + "work/log/ignite.log" : log.fileName();
     }
 }
