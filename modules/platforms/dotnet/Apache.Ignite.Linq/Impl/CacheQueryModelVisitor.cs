@@ -140,8 +140,10 @@ namespace Apache.Ignite.Linq.Impl
 
             if (groupBy != null)
             {
-                // TODO: Handle GROUP BY here
                 _builder.Append("group by ");
+                BuildSqlExpression(groupBy.KeySelector);
+
+                // TODO: validate ElementSelector, must be direct select
             }
         }
 
