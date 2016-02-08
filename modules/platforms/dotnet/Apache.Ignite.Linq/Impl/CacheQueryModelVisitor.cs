@@ -114,10 +114,27 @@ namespace Apache.Ignite.Linq.Impl
             // FROM ... WHERE ... JOIN ...
             base.VisitQueryModel(queryModel);
 
+            // GROUP BY
+            ProcessGroupings(queryModel);
+
             // UNION ...
             ProcessResultOperatorsEnd(queryModel);
 
             _aliases.Pop();
+        }
+
+        /// <summary>
+        /// Processes the groupings.
+        /// </summary>
+        private void ProcessGroupings(QueryModel queryModel)
+        {
+            var subQuery = queryModel.MainFromClause.FromExpression as SubQueryExpression;
+
+            if (subQuery != null)
+            {
+                // TODO: Handle GROUP BY here
+
+            }
         }
 
         /// <summary>
@@ -260,15 +277,6 @@ namespace Apache.Ignite.Linq.Impl
             base.VisitMainFromClause(fromClause, queryModel);
 
             _builder.AppendFormat("from ");
-
-            var subQuery = fromClause.FromExpression as SubQueryExpression;
-
-            if (subQuery != null)
-            {
-                // TODO: Handle GROUP BY here
-
-            }
-
             _aliases.AppendAsClause(_builder, fromClause).Append(" ");
 
             foreach (var additionalFrom in queryModel.BodyClauses.OfType<AdditionalFromClause>())
