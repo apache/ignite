@@ -351,9 +351,7 @@ namespace ignite
 
             JniMethod M_PLATFORM_CALLBACK_UTILS_EXTENSION_CALLBACK_IN_LONG_OUT_LONG = JniMethod("extensionCallbackInLongOutLong", "(JIJ)J", true);
             JniMethod M_PLATFORM_CALLBACK_UTILS_EXTENSION_CALLBACK_IN_LONG_LONG_OUT_LONG = JniMethod("extensionCallbackInLongLongOutLong", "(JIJJ)J", true);
-            
-            JniMethod M_PLATFORM_CALLBACK_UTILS_COMPARE_OBJECTS = JniMethod("compareObjects", "(JJ)J", true);
-            
+
             const char* C_PLATFORM_UTILS = "org/apache/ignite/internal/processors/platform/utils/PlatformUtils";
             JniMethod M_PLATFORM_UTILS_REALLOC = JniMethod("reallocate", "(JI)V", true);
             JniMethod M_PLATFORM_UTILS_ERR_DATA = JniMethod("errorData", "(Ljava/lang/Throwable;)[B", true);
@@ -810,7 +808,7 @@ namespace ignite
 
             void RegisterNatives(JNIEnv* env) {
                 {
-					JNINativeMethod methods[53];
+					JNINativeMethod methods[52];
 
                     int idx = 0;
 
@@ -883,8 +881,6 @@ namespace ignite
 
                     AddNativeMethod(methods + idx++, M_PLATFORM_CALLBACK_UTILS_EXTENSION_CALLBACK_IN_LONG_OUT_LONG, reinterpret_cast<void*>(JniExtensionCallbackInLongOutLong));
                     AddNativeMethod(methods + idx++, M_PLATFORM_CALLBACK_UTILS_EXTENSION_CALLBACK_IN_LONG_LONG_OUT_LONG, reinterpret_cast<void*>(JniExtensionCallbackInLongLongOutLong));
-                    
-                    AddNativeMethod(methods + idx++, M_PLATFORM_CALLBACK_UTILS_COMPARE_OBJECTS, reinterpret_cast<void*>(JniCompareObjects));
 
                     jint res = env->RegisterNatives(FindClass(env, C_PLATFORM_CALLBACK_UTILS), methods, idx);
 
@@ -2719,10 +2715,6 @@ namespace ignite
 
             JNIEXPORT jlong JNICALL JniExtensionCallbackInLongLongOutLong(JNIEnv *env, jclass cls, jlong envPtr, jint typ, jlong arg1, jlong arg2) {
                 IGNITE_SAFE_FUNC(env, envPtr, ExtensionCallbackInLongLongOutLongHandler, extensionCallbackInLongLongOutLong, typ, arg1, arg2);
-            }
-
-            JNIEXPORT jlong JNICALL JniCompareObjects(JNIEnv *env, jclass cls, jlong envPtr, jlong memPtr) {
-                IGNITE_SAFE_FUNC(env, envPtr, CompareObjectsHandler, compareObjects, memPtr);
             }
         }
     }

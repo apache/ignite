@@ -102,8 +102,6 @@ namespace ignite
 
             typedef long long(JNICALL *ExtensionCallbackInLongOutLongHandler)(void* target, int typ, long long arg1);
             typedef long long(JNICALL *ExtensionCallbackInLongLongOutLongHandler)(void* target, int typ, long long arg1, long long arg2);
-            
-            typedef long long(JNICALL *CompareObjectsHandler)(void* target, long long memPtr);
 
             /**
              * JNI handlers holder.
@@ -179,8 +177,6 @@ namespace ignite
 
                 ExtensionCallbackInLongOutLongHandler extensionCallbackInLongOutLong;
                 ExtensionCallbackInLongLongOutLongHandler extensionCallbackInLongLongOutLong;
-                
-                CompareObjectsHandler compareObjects;
             };
 
             /**
@@ -731,8 +727,6 @@ namespace ignite
 
             JNIEXPORT jlong JNICALL JniExtensionCallbackInLongOutLong(JNIEnv *env, jclass cls, jlong envPtr, jint typ, jlong arg1);
             JNIEXPORT jlong JNICALL JniExtensionCallbackInLongLongOutLong(JNIEnv *env, jclass cls, jlong envPtr, jint typ, jlong arg1, jlong arg2);
-
-            JNIEXPORT jlong JNICALL JniCompareObjects(JNIEnv *env, jclass cls, jlong envPtr, jlong memPtr);
         }
     }
 }

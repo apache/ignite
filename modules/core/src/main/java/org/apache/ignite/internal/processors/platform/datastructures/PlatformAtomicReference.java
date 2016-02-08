@@ -24,7 +24,6 @@ import org.apache.ignite.internal.processors.datastructures.GridCacheAtomicRefer
 import org.apache.ignite.internal.processors.platform.PlatformAbstractTarget;
 import org.apache.ignite.internal.processors.platform.PlatformContext;
 import org.apache.ignite.internal.processors.platform.memory.PlatformMemory;
-import org.apache.ignite.internal.processors.platform.memory.PlatformOutputStream;
 import org.apache.ignite.internal.util.lang.IgnitePredicateX;
 
 /**
@@ -132,7 +131,7 @@ public class PlatformAtomicReference extends PlatformAbstractTarget {
             final Object cmp = reader.readObjectDetached();
 
             Object res = atomicRef.compareAndSetAndGet(val, new IgnitePredicateX<Object>() {
-                @Override public boolean applyx(Object e) throws IgniteCheckedException {
+                @Override public boolean applyx(Object e) {
                     return compareObjects(cmp, e);
                 }
             });
@@ -149,29 +148,14 @@ public class PlatformAtomicReference extends PlatformAbstractTarget {
      * @param x First object.
      * @param y Second object.
      * @return True if objects are equal, false otherwise.
-     * @throws IgniteCheckedException
      */
-    private boolean compareObjects(Object x, Object y) throws IgniteCheckedException {
+    private boolean compareObjects(Object x, Object y) {
         if (x == null && y == null)
             return true;
 
         if (x == null || y == null)
             return false;
 
-        if (x.equals(y))
-            return true;  // primitives and some portables can be compared without a platform call
-
-        try (PlatformMemory outMem = platformCtx.memory().allocate()) {
-            PlatformOutputStream out = outMem.output();
-
-            BinaryRawWriterEx writer = platformCtx.writer(out);
-
-            writer.writeObject(x);
-            writer.writeObject(y);
-
-            out.synchronize();
-
-            return platformCtx.gateway().compareObjects(outMem.pointer()) == 0;
-        }
+        return x.equals(y);
     }
 }

@@ -161,8 +161,6 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
 
         private delegate long ExtensionCallbackInLongOutLongDelegate(void* target, int typ, long arg1);
         private delegate long ExtensionCallbackInLongLongOutLongDelegate(void* target, int typ, long arg1, long arg2);
-        
-        private delegate long CompareObjectsCallbackDelegate(void* target, long memPtr);
 
         /// <summary>
         /// constructor.
@@ -243,9 +241,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
                 error = CreateFunctionPointer((ErrorCallbackDelegate)Error),
                 
                 extensionCbInLongOutLong = CreateFunctionPointer((ExtensionCallbackInLongOutLongDelegate)ExtensionCallbackInLongOutLong),
-                extensionCbInLongLongOutLong = CreateFunctionPointer((ExtensionCallbackInLongLongOutLongDelegate)ExtensionCallbackInLongLongOutLong),
-
-                compareObjects = CreateFunctionPointer((CompareObjectsCallbackDelegate)CompareObjects)
+                extensionCbInLongLongOutLong = CreateFunctionPointer((ExtensionCallbackInLongLongOutLongDelegate)ExtensionCallbackInLongLongOutLong)
             };
 
             _cbsPtr = Marshal.AllocHGlobal(UU.HandlersSize());
@@ -1061,23 +1057,6 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
                 default:
                     throw new IgniteException("Unknown exception [cls=" + errCls + ", msg=" + errMsg + ']');
             }
-        }
-
-        private long CompareObjects(void* target, long memPtr)
-        {
-            return SafeCall(() =>
-            {
-                using (var stream = IgniteManager.Memory.Get(memPtr).GetStream())
-                {
-                    var reader = _ignite.Marshaller.StartUnmarshal(stream);
-
-                    var x = reader.ReadObject<object>();
-
-                    var y = reader.ReadObject<object>();
-
-                    return Equals(x, y) ? 0 : 1;
-                }
-            });
         }
 
         #endregion
