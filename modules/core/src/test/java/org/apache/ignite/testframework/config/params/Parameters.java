@@ -19,9 +19,14 @@ package org.apache.ignite.testframework.config.params;
 
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.util.ArrayDeque;
+import java.util.Arrays;
+import java.util.Queue;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.SB;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.config.generator.ConfigurationParameter;
 
 /**
@@ -180,11 +185,40 @@ public class Parameters {
                 else if (val.getClass().equals(Integer.class))
                     paramCls = Integer.TYPE;
 
-                Method mtd = cfg.getClass().getMethod(mtdName, paramCls);
+                Method mtd;
+
+                Queue<Class> queue = new ArrayDeque<>();
+
+                while (true) {
+                    try {
+                        mtd = cfg.getClass().getMethod(mtdName, paramCls);
+
+                        break;
+                    }
+                    catch (NoSuchMethodException e) {
+                        U.warn(null, "Method not found [cfgCls=" + cfg.getClass() + ", mtdName=" + mtdName
+                            + ", paramCls=" + paramCls + "]");
+
+                        Class<?>[] interfaces = paramCls.getInterfaces();
+
+                        Class<?> superclass = paramCls.getSuperclass();
+
+                        if (superclass != null)
+                            queue.add(superclass);
+
+                        if (!F.isEmpty(interfaces))
+                            queue.addAll(Arrays.asList(interfaces));
+
+                        if (queue.isEmpty())
+                            throw new IgniteException("Method not found. ", e);
+
+                        paramCls = queue.remove();
+                    }
+                }
 
                 mtd.invoke(cfg, val);
             }
-            catch (NoSuchMethodException | InvocationTargetException | IllegalAccessException e) {
+            catch (InvocationTargetException | IllegalAccessException e) {
                 throw new IgniteException(e);
             }
 
