@@ -56,7 +56,7 @@ import 'angular-ui-grid/ui-grid.css!';
 import 'angular-loading/angular-loading.css!';
 import 'angular-motion/dist/angular-motion.css!';
 
-import './modules/Form/form.module';
+import './modules/form/form.module';
 import './modules/JavaTypes/JavaTypes.provider';
 import './modules/QueryNotebooks/QueryNotebooks.provider';
 
