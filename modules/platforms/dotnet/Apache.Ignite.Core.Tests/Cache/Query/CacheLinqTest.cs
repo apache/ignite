@@ -473,6 +473,9 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         {
             var persons = GetPersonOrgCache().ToQueryable();
 
+            var counts = persons.GroupBy(x => x.Value.OrganizationId, x => x.Key, (count, ints) => count).ToArray();
+            Assert.AreEqual(new[] {50, 50}, counts);
+
             var res = 
                 from p in persons
                 group p by p.Value.OrganizationId
