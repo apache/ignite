@@ -150,6 +150,18 @@ namespace ignite_test
                 return reader.ReadGuid();
             }
 
+            template<>
+            inline void Write(BinaryRawWriter& writer, Date val)
+            {
+                writer.WriteDate(val);
+            }
+
+            template<>
+            inline Date Read(BinaryRawReader& reader)
+            {
+                return reader.ReadDate();
+            }
+
             template<typename T>
             inline void WriteArray(BinaryRawWriter& writer, T* val, int32_t len)
             {
@@ -268,6 +280,18 @@ namespace ignite_test
             inline int32_t ReadArray(BinaryRawReader& reader, Guid* val, int32_t len)
             {
                 return reader.ReadGuidArray(val, len);
+            }
+
+            template<>
+            inline void WriteArray(BinaryRawWriter& writer, Date* val, int32_t len)
+            {
+                writer.WriteDateArray(val, len);
+            }
+
+            template<>
+            inline int32_t ReadArray(BinaryRawReader& reader, Date* val, int32_t len)
+            {
+                return reader.ReadDateArray(val, len);
             }
 
             template<typename T>
@@ -390,6 +414,18 @@ namespace ignite_test
                 return reader.ReadGuid(fieldName);
             }
 
+            template<>
+            inline void Write(BinaryWriter& writer, const char* fieldName, Date val)
+            {
+                writer.WriteDate(fieldName, val);
+            }
+
+            template<>
+            inline Date Read(BinaryReader& reader, const char* fieldName)
+            {
+                return reader.ReadDate(fieldName);
+            }
+
             template<typename T>
             inline void WriteArray(BinaryWriter& writer, const char* fieldName, T* val, int32_t len)
             {
@@ -508,6 +544,18 @@ namespace ignite_test
             inline int32_t ReadArray(BinaryReader& reader, const char* fieldName, Guid* val, int32_t len)
             {
                 return reader.ReadGuidArray(fieldName, val, len);
+            }
+
+            template<>
+            inline void WriteArray(BinaryWriter& writer, const char* fieldName, Date* val, int32_t len)
+            {
+                writer.WriteDateArray(fieldName, val, len);
+            }
+
+            template<>
+            inline int32_t ReadArray(BinaryReader& reader, const char* fieldName, Date* val, int32_t len)
+            {
+                return reader.ReadDateArray(fieldName, val, len);
             }
         }
     }

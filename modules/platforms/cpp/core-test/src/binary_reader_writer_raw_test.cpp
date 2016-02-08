@@ -210,6 +210,19 @@ void CheckRawWritesRestricted(BinaryRawWriter& writer)
 
     try
     {
+        Date val(1);
+
+        writer.WriteDate(val);
+
+        BOOST_FAIL("Not restricted.");
+    }
+    catch (IgniteError& err)
+    {
+        BOOST_REQUIRE(err.GetCode() == IgniteError::IGNITE_ERR_BINARY);
+    }
+
+    try
+    {
         writer.WriteString("test");
 
         BOOST_FAIL("Not restricted.");
@@ -282,6 +295,17 @@ void CheckRawReadsRestricted(BinaryRawReader& reader)
     try
     {
         reader.ReadGuid();
+
+        BOOST_FAIL("Not restricted.");
+    }
+    catch (IgniteError& err)
+    {
+        BOOST_REQUIRE(err.GetCode() == IgniteError::IGNITE_ERR_BINARY);
+    }
+
+    try
+    {
+        reader.ReadDate();
 
         BOOST_FAIL("Not restricted.");
     }
@@ -764,6 +788,13 @@ BOOST_AUTO_TEST_CASE(TestPrimitiveGuid)
     CheckRawPrimitive<Guid>(val);
 }
 
+BOOST_AUTO_TEST_CASE(TestPrimitiveDate)
+{
+    Date val(time(NULL) * 1000);
+
+    CheckRawPrimitive<Date>(val);
+}
+
 BOOST_AUTO_TEST_CASE(TestPrimitiveArrayInt8)
 {
     CheckRawPrimitiveArray<int8_t>(1, 2, 3);
@@ -813,6 +844,15 @@ BOOST_AUTO_TEST_CASE(TestPrimitiveArrayGuid)
     CheckRawPrimitiveArray<Guid>(dflt, val1, val2);
 }
 
+BOOST_AUTO_TEST_CASE(TestPrimitiveArrayDate)
+{
+    Date dflt(1);
+    Date val1(2);
+    Date val2(3);
+
+    CheckRawPrimitiveArray<Date>(dflt, val1, val2);
+}
+
 BOOST_AUTO_TEST_CASE(TestGuidNull)
 {
     InteropUnpooledMemory mem(1024);
@@ -831,6 +871,28 @@ BOOST_AUTO_TEST_CASE(TestGuidNull)
 
     Guid expVal;
     Guid actualVal = rawReader.ReadGuid();
+
+    BOOST_REQUIRE(actualVal == expVal);
+}
+
+BOOST_AUTO_TEST_CASE(TestDateNull)
+{
+    InteropUnpooledMemory mem(1024);
+
+    InteropOutputStream out(&mem);
+    BinaryWriterImpl writer(&out, NULL);
+    BinaryRawWriter rawWriter(&writer);
+
+    rawWriter.WriteNull();
+
+    out.Synchronize();
+
+    InteropInputStream in(&mem);
+    BinaryReaderImpl reader(&in);
+    BinaryRawReader rawReader(&reader);
+
+    Date expVal;
+    Date actualVal = rawReader.ReadDate();
 
     BOOST_REQUIRE(actualVal == expVal);
 }
@@ -1588,63 +1650,6 @@ BOOST_AUTO_TEST_CASE(TestMapTyped)
     MapType typ = IGNITE_MAP_LINKED_HASH_MAP;
 
     CheckRawMap(&typ);
-}
-
-BOOST_AUTO_TEST_CASE(TestDate)
-{
-    InteropUnpooledMemory mem(1024);
-
-    InteropOutputStream out(&mem);
-    BinaryWriterImpl writer(&out, NULL);
-    BinaryRawWriter rawWriter(&writer);
-
-    Date writeVal(time(NULL) * 1000LL);
-
-    rawWriter.WriteDate(writeVal);
-
-    out.Synchronize();
-
-    InteropInputStream in(&mem);
-    BinaryReaderImpl reader(&in);
-    BinaryRawReader rawReader(&reader);
-
-    Date readVal = rawReader.ReadDate();
-
-    BOOST_REQUIRE(readVal == writeVal);
-}
-
-BOOST_AUTO_TEST_CASE(TestDateArray)
-{
-    InteropUnpooledMemory mem(1024);
-
-    InteropOutputStream out(&mem);
-    BinaryWriterImpl writer(&out, NULL);
-    BinaryRawWriter rawWriter(&writer);
-
-    Date writeVal[] = { Date(3), Date(143), Date(2342395) };
-
-    int32_t writeValSize = sizeof(writeVal) / sizeof(Date);
-
-    rawWriter.WriteDateArray(writeVal, writeValSize);
-
-    out.Synchronize();
-
-    InteropInputStream in(&mem);
-    BinaryReaderImpl reader(&in);
-    BinaryRawReader rawReader(&reader);
-
-    int32_t readValSize = rawReader.ReadDateArray(0, 0);
-
-    BOOST_REQUIRE_EQUAL(readValSize, writeValSize);
-
-    Date* readVal = new Date[readValSize];
-
-    readValSize = rawReader.ReadDateArray(readVal, readValSize);
-
-    BOOST_REQUIRE_EQUAL(readValSize, writeValSize);
-
-    for (int32_t i = 0; i < readValSize; ++i)
-        BOOST_REQUIRE(readVal[i] == writeVal[i]);
 }
 
 BOOST_AUTO_TEST_SUITE_END()
