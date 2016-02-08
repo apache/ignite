@@ -24,7 +24,6 @@ import org.apache.ignite.internal.processors.datastructures.GridCacheAtomicRefer
 import org.apache.ignite.internal.processors.platform.PlatformAbstractTarget;
 import org.apache.ignite.internal.processors.platform.PlatformContext;
 import org.apache.ignite.internal.processors.platform.memory.PlatformMemory;
-import org.apache.ignite.internal.util.lang.IgnitePredicateX;
 
 /**
  * Platform atomic reference wrapper.
@@ -52,7 +51,8 @@ public class PlatformAtomicReference extends PlatformAbstractTarget {
      * @param create Create flag.
      * @return Instance of a PlatformAtomicReference, or null when Ignite reference with specific name is null.
      */
-    public static PlatformAtomicReference createInstance(PlatformContext ctx, String name, long memPtr, boolean create) {
+    public static PlatformAtomicReference createInstance(PlatformContext ctx, String name, long memPtr,
+        boolean create) {
         assert ctx != null;
         assert name != null;
 
@@ -65,7 +65,7 @@ public class PlatformAtomicReference extends PlatformAbstractTarget {
         }
 
         GridCacheAtomicReferenceImpl atomicRef =
-                (GridCacheAtomicReferenceImpl)ctx.kernalContext().grid().atomicReference(name, initVal, create);
+            (GridCacheAtomicReferenceImpl)ctx.kernalContext().grid().atomicReference(name, initVal, create);
 
         if (atomicRef == null)
             return null;
@@ -113,7 +113,7 @@ public class PlatformAtomicReference extends PlatformAbstractTarget {
 
     /** {@inheritDoc} */
     @Override protected long processInStreamOutLong(int type, BinaryRawReaderEx reader)
-            throws IgniteCheckedException {
+        throws IgniteCheckedException {
         if (type == OP_SET) {
             atomicRef.set(reader.readObjectDetached());
 
@@ -125,37 +125,17 @@ public class PlatformAtomicReference extends PlatformAbstractTarget {
 
     /** {@inheritDoc} */
     @Override protected void processInStreamOutStream(int type, BinaryRawReaderEx reader,
-                                                      BinaryRawWriterEx writer) throws IgniteCheckedException {
-        if (type == OP_COMPARE_AND_SET_AND_GET){
+        BinaryRawWriterEx writer) throws IgniteCheckedException {
+        if (type == OP_COMPARE_AND_SET_AND_GET) {
             Object val = reader.readObjectDetached();
             final Object cmp = reader.readObjectDetached();
 
-            Object res = atomicRef.compareAndSetAndGet(val, new IgnitePredicateX<Object>() {
-                @Override public boolean applyx(Object e) {
-                    return compareObjects(cmp, e);
-                }
-            });
+            Object res = atomicRef.compareAndSetAndGet(val, cmp);
 
             writer.writeObject(res);
         }
         else
             super.processInStreamOutStream(type, reader, writer);
     }
-
-    /**
-     * Compares two native objects for equality.
-     *
-     * @param x First object.
-     * @param y Second object.
-     * @return True if objects are equal, false otherwise.
-     */
-    private boolean compareObjects(Object x, Object y) {
-        if (x == null && y == null)
-            return true;
-
-        if (x == null || y == null)
-            return false;
-
-        return x.equals(y);
-    }
 }
+
