@@ -241,6 +241,9 @@ public abstract class CacheAbstractNewSelfTest extends GridCommonAbstractTest {
      * @param val Value.
      */
     protected void putToStore(Object key, Object val) {
+        if (!storeEnabled())
+            throw new IllegalStateException("Failed to put to store because store is disabled.");
+
         map.put(key, val);
     }
 

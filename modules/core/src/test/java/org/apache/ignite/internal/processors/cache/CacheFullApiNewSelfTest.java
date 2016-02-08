@@ -4467,6 +4467,9 @@ public class CacheFullApiNewSelfTest extends CacheAbstractNewSelfTest {
         if(isMultiJvm())
             fail("https://issues.apache.org/jira/browse/IGNITE-1088");
 
+        if (!storeEnabled())
+            return;
+
         IgniteCache<String, Integer> cache = grid(0).cache(null);
 
         IgniteCache<String, Integer> cacheSkipStore = cache.withSkipStore();
@@ -4682,6 +4685,9 @@ public class CacheFullApiNewSelfTest extends CacheAbstractNewSelfTest {
         if (atomicityMode() == TRANSACTIONAL || (atomicityMode() == ATOMIC && nearEnabled())) // TODO IGNITE-373.
             return;
 
+        if (!storeEnabled())
+            return;
+
         IgniteCache<String, Integer> cache = grid(0).cache(null);
 
         IgniteCache<String, Integer> cacheSkipStore = cache.withSkipStore();
@@ -4720,7 +4726,7 @@ public class CacheFullApiNewSelfTest extends CacheAbstractNewSelfTest {
      * @throws Exception If failed.
      */
     public void testWithSkipStoreTx() throws Exception {
-        if (txShouldBeUsed()) {
+        if (txShouldBeUsed() && storeEnabled()) {
             IgniteCache<String, Integer> cache = grid(0).cache(null);
 
             IgniteCache<String, Integer> cacheSkipStore = cache.withSkipStore();
