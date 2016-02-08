@@ -1,15 +1,8 @@
 [
     {
-        "title": "What is Apache Ignite",
+        "title": "With Apache Ignite Web Console You Can",
         "message": [
-            "<p><b>Apache Ignite</b> is designed to deliver uncompromised performance for a wide set of in-memory computing use cases from high performance computing, to the industry most advanced data grid, highly available service grid, and streaming.</p>",
-            "<img src='/images/ignite-puzzle.png' width='100%' ng-click='console.log(\"click\")' />"
-        ]
-    },
-    {
-        "title": "What is Apache Ignite Web Console",
-        "message": [
-            "<p>You will be able to<p>",
+            "<img src='/images/ignite-puzzle.png' width='100%' />",
             "<ul>",
             "<li>Generate cluster configuration</li>",
             "<li>Import domain model from database</li>",
@@ -42,10 +35,8 @@
             "</div>",
             "<div class='col-xs-5'>",
             "<ul>",
-            "<li>Import domain model from database</li>",
-            "<li>Try it in <span class='getting-started-demo'>Demo</span> mode</li>",
-            "<li>Associate domain model with caches</li>",
-            "<li>Configure SQL queries</li>",
+            "<li>Import database schemas</li>",
+            "<li>Try in <span class='getting-started-demo'>Demo</span> mode</li>",
             "</ul>",
             "</div>"
         ]
@@ -58,10 +49,8 @@
             "</div>",
             "<div class='col-xs-5'>",
             "<ul>",
-            "<li>Configure cache properties</li>",
-            "<li>Associate cache with clusters</li>",
-            "<li>Associate cache with domain model</li>",
-            "<li>Configure cache store</li>",
+            "<li>Configure memory settings</li>",
+            "<li>Configure persistence</li>",
             "</ul>",
             "</div>"
         ]
@@ -88,11 +77,11 @@
           "</div>",
           "<div class='col-xs-5'>",
           "<ul>",
-          "<li>Preview cluster XML configuration</li>",
-          "<li>Preview generated Java code</li>",
+          "<li>Preview XML Configuration</li>",
+          "<li>Preview code configuration</li>",
           "<li>Preview Docker file</li>",
-          "<li>Preview pom.xml</li>",
-          "<li>Download ZIP with fully functional project</li>",
+          "<li>Preview POM dependencies</li>",
+          "<li>Download ready-to-use project</li>",
           "</ul>",
           "</div>"
       ]
@@ -105,10 +94,10 @@
             "</div>",
             "<div class='col-xs-5'>",
             "<ul>",
-            "<li>Execute SQL queries</li>",
-            "<li>View execution plan</li>",
-            "<li>View data in tabular format and charts</li>",
-            "<li>View streaming charts</li>",
+            "<li>Execute SQL Queries</li>",
+            "<li>View Execution Paln</li>",
+            "<li>View In-Memory Schema</li>",
+            "<li>View Streaming Charts</li>",
             "</ul>",
             "</div>"
         ]

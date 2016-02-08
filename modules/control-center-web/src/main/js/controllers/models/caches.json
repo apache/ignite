@@ -335,6 +335,7 @@
           "type": "number",
           "model": "sqlOnheapRowCacheSize",
           "placeholder": 10240,
+          "min": 1,
           "tip": [
             "Number of SQL rows which will be cached onheap to avoid deserialization on each SQL index access"
           ]
@@ -690,6 +691,7 @@
               "model": "writeBehindBatchSize",
               "disabled": "!backupItem.writeBehindEnabled",
               "placeholder": 512,
+              "min": 1,
               "tip": [
                 "Maximum batch size for write-behind cache store operations",
                 "Store operations (get or remove) are combined in a batch of this size to be passed to cache store"
@@ -725,6 +727,7 @@
               "model": "writeBehindFlushThreadCount",
               "disabled": "!backupItem.writeBehindEnabled",
               "placeholder": 1,
+              "min": 1,
               "tip": [
                 "Number of threads that will perform cache flushing"
               ]
