@@ -17,7 +17,9 @@
 
 namespace Apache.Ignite.Linq.Impl
 {
+    using System;
     using System.Collections.Generic;
+    using System.Linq.Expressions;
     using System.Text;
     using Remotion.Linq.Clauses;
 
@@ -70,6 +72,9 @@ namespace Apache.Ignite.Linq.Impl
             return alias;
         }
 
+        /// <summary>
+        /// Appends as clause.
+        /// </summary>
         public StringBuilder AppendAsClause(StringBuilder builder, IFromClause clause)
         {
             var tableName = TableNameMapper.GetTableNameWithSchema(clause);

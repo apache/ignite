@@ -237,10 +237,25 @@ namespace Apache.Ignite.Linq.Impl
         {
             base.VisitMainFromClause(fromClause, queryModel);
 
-            _aliases.AppendAsClause(_builder.AppendFormat("from "), fromClause).Append(" ");
+            _builder.AppendFormat("from ");
+
+            SubQueryExpression subQuery;
+
+            if (fromClause.FromExpression is ConstantExpression)
+                _aliases.AppendAsClause(_builder, fromClause).Append(" ");
+            else if ((subQuery = fromClause.FromExpression as SubQueryExpression) != null)
+            {
+                // TODO: Handle GROUP BY here
+
+            }
+            else
+                throw new NotSupportedException("Unexpected main FROM expression: " + fromClause.FromExpression);
 
             foreach (var additionalFrom in queryModel.BodyClauses.OfType<AdditionalFromClause>())
-                _aliases.AppendAsClause(_builder.AppendFormat(", "), additionalFrom).Append(" ");
+            {
+                _builder.AppendFormat(", ");
+                _aliases.AppendAsClause(_builder, additionalFrom).Append(" ");
+            }
         }
 
         /** <inheritdoc /> */
