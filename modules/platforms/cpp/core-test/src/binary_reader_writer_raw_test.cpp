@@ -1590,4 +1590,27 @@ BOOST_AUTO_TEST_CASE(TestMapTyped)
     CheckRawMap(&typ);
 }
 
+BOOST_AUTO_TEST_CASE(TestDate)
+{
+    InteropUnpooledMemory mem(1024);
+
+    InteropOutputStream out(&mem);
+    BinaryWriterImpl writer(&out, NULL);
+    BinaryRawWriter rawWriter(&writer);
+
+    IgniteDate writeVal(time(NULL));
+
+    rawWriter.WriteDate(writeVal);
+
+    out.Synchronize();
+
+    InteropInputStream in(&mem);
+    BinaryReaderImpl reader(&in);
+    BinaryRawReader rawReader(&reader);
+
+    IgniteDate readVal = rawReader.ReadDate();
+
+    BOOST_REQUIRE_EQUAL(readVal, writeVal);
+}
+
 BOOST_AUTO_TEST_SUITE_END()
