@@ -38,6 +38,8 @@ import java.net.URISyntaxException;
 import java.net.URL;
 import java.security.PrivilegedExceptionAction;
 import java.util.Arrays;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Secure Hadoop file system factory that can work with underlying file system protected with Kerberos.
@@ -54,9 +56,10 @@ import java.util.Arrays;
  * to {@code true}, file system instances will be cached by Hadoop.
  */
 public class SecureHadoopFileSystemFactory implements HadoopFileSystemFactory, Externalizable, LifecycleAware {
-    /**
-     * The default interval used to re-login from the key tab, in milliseconds.
-     */
+    /** Logger */
+    private static final Logger LOG = LoggerFactory.getLogger(SecureHadoopFileSystemFactory.class);
+
+    /** The default interval used to re-login from the key tab, in milliseconds. */
     private static final long DFLT_RELOGIN_INTERVAL = 10 * 60 * 1000L;
 
     /** */
@@ -74,7 +77,13 @@ public class SecureHadoopFileSystemFactory implements HadoopFileSystemFactory, E
     /** Keytab principal short name (e.g. "hdfs-Sandbox"). */
     protected String keyTabPrincipal;
 
-    /** The interval used to re-login from the key tab, in milliseconds. */
+    /**
+     * The interval used to re-login from the key tab, in milliseconds.
+     * Important that the value should not be large than the Kerberos ticket life time multiplied by 0.2. This is
+     * because the ticket renew window starts from {@code 0.8 * ticket life time}.
+     * Default ticket life time is 1 day (24 hours), so the default re-login interval (10 min)
+     * is obeys this rule well.
+     */
     protected long reloginInterval = DFLT_RELOGIN_INTERVAL;
 
     /** Configuration of the secondary filesystem, never null. */
@@ -84,14 +93,46 @@ public class SecureHadoopFileSystemFactory implements HadoopFileSystemFactory, E
     protected transient URI fullUri;
 
     /**
+     * Time of last re-login attempt, in system milliseconds.
+     * It is transient because server and client may be on different hosts, so
+     * After de-serialization a re-login is needed any way.
+     */
+    protected transient volatile long lastReloginTime;
+
+    /**
      * Constructor.
      */
     public SecureHadoopFileSystemFactory() {
         // No-op.
     }
 
+    /**
+     * Re-logins the user if needed.
+     * First, the re-login interval defined in factory is checked. The re-login attempts will be not more
+     * frequent than one attempt per {@code reloginInterval}.
+     * Second, {@link UserGroupInformation#checkTGTAndReloginFromKeytab()} method invoked that gets existing
+     * TGT and checks its validity. If the TGT is expired or is close to expiry, it performs re-login.
+     *
+     * <p>This operation expected to be called upon each operation with the file system created with the factory.
+     * As long as {@link #get(String)} operation is invoked upon each file {@link IgniteHadoopFileSystem}, there
+     * is no need to invoke it otherwise specially.
+     *
+     * @throws IOException If login fails.
+     */
+    public void reloginIfNeeded() throws IOException {
+        long now = System.currentTimeMillis();
+
+        if (now >= lastReloginTime + reloginInterval) {
+            UserGroupInformation.getLoginUser().checkTGTAndReloginFromKeytab();
+
+            lastReloginTime = now;
+        }
+    }
+
     /** {@inheritDoc} */
     @Override public FileSystem get(String userName) throws IOException {
+        reloginIfNeeded();
+
         return create0(IgfsUtils.fixUserName(userName));
     }
 
@@ -104,8 +145,6 @@ public class SecureHadoopFileSystemFactory implements HadoopFileSystemFactory, E
      */
     protected FileSystem create0(String userName) throws IOException {
         assert cfg != null;
-
-        UserGroupInformation.getLoginUser().checkTGTAndReloginFromKeytab();
 
         UserGroupInformation proxyUgi = UserGroupInformation.createProxyUser(userName,
             UserGroupInformation.getLoginUser());
@@ -276,9 +315,10 @@ public class SecureHadoopFileSystemFactory implements HadoopFileSystemFactory, E
             }
         }
 
-        if (!F.isEmpty(keyTab) && !F.isEmpty(keyTabPrincipal)) {
+        if (!F.isEmpty(keyTab)
+                && !F.isEmpty(keyTabPrincipal)) {
             try {
-                KerberosUtil.loginFromKeyTabAndAutoReLogin(cfg, keyTab, keyTabPrincipal, reloginInterval);
+                loginFromKeyTab();
             } catch (IOException ioe) {
                 throw new IgniteException("Failed login from keytab. [keyTab="
                     + keyTab + ", keyTabPrincipal=" + keyTabPrincipal + ']', ioe);
@@ -300,8 +340,6 @@ public class SecureHadoopFileSystemFactory implements HadoopFileSystemFactory, E
 
     /** {@inheritDoc} */
     @Override public void stop() throws IgniteException {
-        // No-op.
-        // TODO: join the re-login thread.
     }
 
     /** {@inheritDoc} */
@@ -343,6 +381,30 @@ public class SecureHadoopFileSystemFactory implements HadoopFileSystemFactory, E
 
             for (int i = 0; i < cfgPathsCnt; i++)
                 cfgPaths[i] = U.readString(in);
+        }
+    }
+
+    /**
+     * Implements initial key tab login.
+     *
+     * @throws IOException If login failed.
+     */
+    private void loginFromKeyTab() throws IOException {
+        synchronized (UserGroupInformation.class) {
+            UserGroupInformation.setConfiguration(cfg);
+
+            if (LOG.isDebugEnabled()) {
+                LOG.debug("keyTabFile=" + keyTab);
+
+                LOG.debug("kerberosPrinciple=" + keyTabPrincipal);
+            }
+
+            UserGroupInformation.loginUserFromKeytab(keyTabPrincipal, keyTab);
+
+            UserGroupInformation loginUser = UserGroupInformation.getLoginUser();
+
+            if (LOG.isDebugEnabled())
+                LOG.debug("KeyTab TGT Login Success for " + loginUser.getUserName());
         }
     }
 }
