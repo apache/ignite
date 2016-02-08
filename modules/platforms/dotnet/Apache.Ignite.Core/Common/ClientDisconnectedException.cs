@@ -18,14 +18,17 @@
 namespace Apache.Ignite.Core.Common
 {
     using System;
+    using System.Diagnostics.CodeAnalysis;
     using System.Runtime.Serialization;
     using System.Threading.Tasks;
 
     /// <summary>
     /// Indicates that client-mode local node has been disconnected from the cluster.
     /// </summary>
+    [SuppressMessage("Microsoft.Usage", "CA2240:ImplementISerializableCorrectly", 
+        Justification = "No need to implement GetObjectData because there are no custom fields.")]
     [Serializable]
-    public class ClientDisconnectedException : IgniteException
+    public sealed class ClientDisconnectedException : IgniteException
     {
         /// <summary>
         /// The client reconnect task.
@@ -75,7 +78,7 @@ namespace Apache.Ignite.Core.Common
         /// </summary>
         /// <param name="info">Serialization information.</param>
         /// <param name="ctx">Streaming context.</param>
-        protected ClientDisconnectedException(SerializationInfo info, StreamingContext ctx) : base(info, ctx)
+        private ClientDisconnectedException(SerializationInfo info, StreamingContext ctx) : base(info, ctx)
         {
             // No-op.
         }
