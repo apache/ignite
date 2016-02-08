@@ -1613,4 +1613,38 @@ BOOST_AUTO_TEST_CASE(TestDate)
     BOOST_REQUIRE(readVal == writeVal);
 }
 
+BOOST_AUTO_TEST_CASE(TestDateArray)
+{
+    InteropUnpooledMemory mem(1024);
+
+    InteropOutputStream out(&mem);
+    BinaryWriterImpl writer(&out, NULL);
+    BinaryRawWriter rawWriter(&writer);
+
+    Date writeVal[] = { Date(3), Date(143), Date(2342395) };
+
+    int32_t writeValSize = sizeof(writeVal) / sizeof(Date);
+
+    rawWriter.WriteDateArray(writeVal, writeValSize);
+
+    out.Synchronize();
+
+    InteropInputStream in(&mem);
+    BinaryReaderImpl reader(&in);
+    BinaryRawReader rawReader(&reader);
+
+    int32_t readValSize = rawReader.ReadDateArray(0, 0);
+
+    BOOST_REQUIRE_EQUAL(readValSize, writeValSize);
+
+    Date* readVal = new Date[readValSize];
+
+    readValSize = rawReader.ReadDateArray(readVal, readValSize);
+
+    BOOST_REQUIRE_EQUAL(readValSize, writeValSize);
+
+    for (int32_t i = 0; i < readValSize; ++i)
+        BOOST_REQUIRE(readVal[i] == writeVal[i]);
+}
+
 BOOST_AUTO_TEST_SUITE_END()
