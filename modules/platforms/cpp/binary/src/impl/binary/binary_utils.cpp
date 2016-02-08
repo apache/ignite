@@ -201,6 +201,18 @@ namespace ignite
                 stream->WriteInt64(val.GetLeastSignificantBits());
             }
 
+            Date BinaryUtils::ReadDate(interop::InteropInputStream * stream)
+            {
+                int64_t milliseconds = stream->ReadInt64();
+
+                return Date(milliseconds);
+            }
+
+            void BinaryUtils::WriteDate(interop::InteropOutputStream* stream, const Date& val)
+            {
+                stream->WriteInt64(val.GetMilliseconds());
+            }
+
             void BinaryUtils::WriteString(interop::InteropOutputStream* stream, const char* val, const int32_t len)
             {
                 stream->WriteInt32(len);
