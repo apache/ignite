@@ -30,6 +30,7 @@
 #include "ignite/binary/binary_consts.h"
 #include "ignite/binary/binary_type.h"
 #include "ignite/guid.h"
+#include "ignite/date.h"
 
 namespace ignite
 {
@@ -428,6 +429,46 @@ namespace ignite
                  *     -1 will be returned in case array in stream was null.
                  */
                 int32_t ReadGuidArray(const char* fieldName, Guid* res, const int32_t len);
+
+                /**
+                 * Read Date. Maps to "Date" type in Java.
+                 *
+                 * @return Result.
+                 */
+                Date ReadDate();
+
+                /**
+                 * Read array of Dates. Maps to "Date[]" type in Java.
+                 *
+                 * @param res Array to store data to.
+                 * @param len Expected length of array.             
+                 * @return Actual amount of elements read. If "len" argument is less than actual
+                 *     array size or resulting array is set to null, nothing will be written
+                 *     to resulting array and returned value will contain required array length.
+                 *     -1 will be returned in case array in stream was null.
+                 */
+                int32_t ReadDateArray(Date* res, int32_t len);
+
+                /**
+                 * Read Date. Maps to "Date" type in Java.
+                 *
+                 * @param fieldName Field name.
+                 * @return Result.
+                 */
+                Date ReadDate(const char* fieldName);
+
+                /**
+                 * Read array of Dates. Maps to "Date[]" type in Java.
+                 *
+                 * @param fieldName Field name.
+                 * @param res Array to store data to.
+                 * @param len Expected length of array.
+                 * @return Actual amount of elements read. If "len" argument is less than actual
+                 *     array size or resulting array is set to null, nothing will be written
+                 *     to resulting array and returned value will contain required array length.
+                 *     -1 will be returned in case array in stream was null.
+                 */
+                int32_t ReadDateArray(const char* fieldName, Date* res, const int32_t len);
 
                 /**
                  * Read string.
@@ -926,6 +967,19 @@ namespace ignite
                 );
 
                 /**
+                 * Internal routine to read Date array.
+                 *
+                 * @param stream Stream.
+                 * @param res Resulting array.
+                 * @param len Length.
+                 */
+                static void ReadDateArrayInternal(
+                    interop::InteropInputStream* stream, 
+                    Date* res,
+                    const int32_t len
+                );
+
+                /**
                  * Read single value in raw mode.
                  * 
                  * @param stream Stream.
@@ -1113,11 +1167,11 @@ namespace ignite
                         if (hdr == expHdr)
                             return func(stream);
                         else if (hdr == IGNITE_HDR_NULL)
-                            return Guid();
+                            return T();
                         else {
                             ThrowOnInvalidHeader(stream->Position() - 1, expHdr, hdr);
 
-                            return Guid();
+                            return T();
                         }
                     }
                 }

@@ -269,6 +269,62 @@ namespace ignite
                     *(res + i) = ReadNullable<Guid>(stream, BinaryUtils::ReadGuid, IGNITE_TYPE_UUID);
             }
 
+            Date BinaryReaderImpl::ReadDate()
+            {
+                CheckRawMode(true);
+                CheckSingleMode(true);
+
+                return ReadNullable(stream, BinaryUtils::ReadDate, IGNITE_TYPE_DATE);
+            }
+
+            int32_t BinaryReaderImpl::ReadDateArray(Date* res, int32_t len)
+            {
+                CheckRawMode(true);
+                CheckSingleMode(true);
+
+                return ReadArrayInternal<Date>(res, len, stream, ReadDateArrayInternal, IGNITE_TYPE_ARRAY_DATE);
+            }
+
+            Date BinaryReaderImpl::ReadDate(const char* fieldName)
+            {
+                CheckRawMode(false);
+                CheckSingleMode(true);
+
+                int32_t fieldId = idRslvr->GetFieldId(typeId, fieldName);
+                int32_t fieldPos = FindField(fieldId);
+
+                if (fieldPos <= 0)
+                    return Date();
+
+                stream->Position(fieldPos);
+
+                return ReadNullable(stream, BinaryUtils::ReadDate, IGNITE_TYPE_DATE);
+            }
+
+            int32_t BinaryReaderImpl::ReadDateArray(const char* fieldName, Date* res, const int32_t len)
+            {
+                CheckRawMode(false);
+                CheckSingleMode(true);
+
+                int32_t fieldId = idRslvr->GetFieldId(typeId, fieldName);
+                int32_t fieldPos = FindField(fieldId);
+
+                if (fieldPos <= 0)
+                    return -1;
+
+                stream->Position(fieldPos);
+
+                int32_t realLen = ReadArrayInternal<Date>(res, len, stream, ReadDateArrayInternal, IGNITE_TYPE_ARRAY_DATE);
+
+                return realLen;
+            }
+
+            void BinaryReaderImpl::ReadDateArrayInternal(InteropInputStream* stream, Date* res, const int32_t len)
+            {
+                for (int i = 0; i < len; i++)
+                    *(res + i) = ReadNullable<Date>(stream, BinaryUtils::ReadDate, IGNITE_TYPE_DATE);
+            }
+
             int32_t BinaryReaderImpl::ReadString(char* res, const int32_t len)
             {
                 CheckRawMode(true);
