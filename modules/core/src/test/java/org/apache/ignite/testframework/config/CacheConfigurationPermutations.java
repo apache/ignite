@@ -34,6 +34,7 @@ import org.apache.ignite.cache.store.CacheStoreSession;
 import org.apache.ignite.cache.store.CacheStoreSessionListener;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.configuration.TopologyValidator;
 import org.apache.ignite.internal.processors.cache.CacheAbstractNewSelfTest;
 import org.apache.ignite.lang.IgniteBiTuple;
@@ -69,6 +70,9 @@ public class CacheConfigurationPermutations {
         parameter("setRebalanceThrottle", 100));
 
     /** */
+    public static final NearCacheConfiguration NEAR_CACHE_CONFIGURATION = new NearCacheConfiguration();
+
+    /** */
     @SuppressWarnings("unchecked")
     public static final ConfigurationParameter<CacheConfiguration>[][] DEFAULT_SET = new ConfigurationParameter[][] {
         enumParameters("setCacheMode", CacheMode.class),
@@ -81,6 +85,7 @@ public class CacheConfigurationPermutations {
         booleanParameters("setSwapEnabled"),
         booleanParameters("setCopyOnRead"),
         // TODO uncomment.
+//        objectParameters(true, "setNearConfiguration", NEAR_CACHE_CONFIGURATION)
 //        asArray(null, complexParameter(EVICTION_PARAM, CACHE_STORE_PARAM, REBALANCING_PARAM,
 //            parameter("setAffinity", new FairAffinityFunction()),
 //            parameter("setOffHeapMaxMemory", 10 * 1024 * 1024),
@@ -99,6 +104,11 @@ public class CacheConfigurationPermutations {
 //        objectParameters("setIndexedTypes"),// TODO index enabled
 //        booleanParameters("setSnapshotableIndex"),// TODO index enabled
     };
+
+    static {
+        //noinspection unchecked
+        NEAR_CACHE_CONFIGURATION.setNearEvictionPolicy(new FifoEvictionPolicy());
+    }
 
     /**
      * Private constructor.
