@@ -94,7 +94,7 @@ public class StripedCompositeReadWriteLock implements ReadWriteLock {
         }
 
         @Override public boolean tryLock(long time, TimeUnit unit) throws InterruptedException {
-            return false;
+            throw new RuntimeException("Not supported");
         }
 
         @Override public void unlock() {
@@ -103,7 +103,7 @@ public class StripedCompositeReadWriteLock implements ReadWriteLock {
         }
 
         @NotNull @Override public Condition newCondition() {
-            return null;
+            throw new RuntimeException("Not supported");
         }
     }
 }
