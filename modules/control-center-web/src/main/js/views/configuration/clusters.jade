@@ -48,6 +48,7 @@ include ../includes/infos
                     .panel-tip-container(ng-show='backupItem')
                         i.btn.btn-primary.fa.fa-undo(id='undo-item' ng-disabled='!ui.inputForm.$dirty' ng-click='ui.inputForm.$dirty && resetAll()' bs-tooltip=undoTip data-placement='bottom' data-trigger='hover')
                 hr
+            .bs-affix-fix
             div(bs-collapse='' data-allow-multiple='true' ng-model='ui.activePanels')
                 form.form-horizontal(name='ui.inputForm' ng-show='backupItem' novalidate)
                     .panel-group(ng-click='triggerDigest = true')

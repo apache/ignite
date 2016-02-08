@@ -948,6 +948,10 @@ button.form-control {
     }
 }
 
+.affix + .bs-affix-fix {
+    height: 78px;
+}
+
 .panel-details {
     margin-top: 5px;
     padding: 5px;
