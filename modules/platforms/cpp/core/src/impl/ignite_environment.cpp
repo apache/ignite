@@ -65,9 +65,11 @@ namespace ignite
          */
         void IGNITE_CALL MemoryReallocate(void* target, long long memPtr, int cap)
         {
-            InteropExternalMemory mem(reinterpret_cast<int8_t*>(memPtr));
+            SharedPointer<IgniteEnvironment>* env = static_cast<SharedPointer<IgniteEnvironment>*>(target);
 
-            mem.Reallocate(static_cast<int32_t>(cap));
+            SharedPointer<InteropMemory> mem = env->Get()->GetMemory(memPtr);
+
+            mem.Get()->Reallocate(cap);
         }
 
         IgniteEnvironment::IgniteEnvironment() : ctx(SharedPointer<JniContext>()), latch(new SingleLatch), name(NULL),
@@ -101,14 +103,14 @@ namespace ignite
 
             return hnds;
         }
-            
+
         void IgniteEnvironment::Initialize(SharedPointer<JniContext> ctx)
         {
             this->ctx = ctx;
-                
+
             latch->CountDown();
         }
-        
+
         const char* IgniteEnvironment::InstanceName() const
         {
             return name;
@@ -164,7 +166,7 @@ namespace ignite
             InteropInputStream stream(&mem);
 
             BinaryReaderImpl reader(&stream);
-            
+
             int32_t nameLen = reader.ReadString(NULL, 0);
 
             if (nameLen >= 0)
