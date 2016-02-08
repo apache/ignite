@@ -18,14 +18,7 @@
 // Events groups.
 import GROUPS from 'app/data/event-types.json!';
 
-import angular from 'angular';
-
-// Ignite events groups.
-angular
-    .module('ignite-console.configuration.include-event-types', [
-
-    ])
-.provider('igniteIncludeEventGroups', function() {
+export default ['igniteEventGroups', function() {
     const groups = GROUPS;
 
     this.push = (data) => groups.push(data);
@@ -33,4 +26,5 @@ angular
     this.$get = [() => {
         return groups;
     }];
-});
+}];
+

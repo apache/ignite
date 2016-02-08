@@ -17,7 +17,7 @@
 .row
     .col-xs-3.col-sm-3.col-md-2.border-right.section-left.greedy
         .sidebar-nav(bs-affix)
-            ul.menu(ignite-configuration-sidebar)
+            ul.menu(ignite-sidebar)
                 li(ng-repeat='item in sidebar.items')
                     a(ui-sref-active='active' ui-sref='{{::item.sref}}')
                         span.fa-stack

@@ -15,33 +15,17 @@
  * limitations under the License.
  */
 
-import angular from 'angular';
-
-angular
-.module('ignite-console.navbar', [
-
-])
-.provider('igniteNavbar', function() {
-    const items = [];
-
-    this.push = function(data) {
-        items.push(data);
-    };
-
-    this.$get = [function() {
-        return items;
-    }];
-})
-.directive('igniteNavbar', ['igniteNavbar', function(igniteNavbar) {
+export default ['igniteTerms', ['IgniteTerms', (IgniteTerms) => {
     function controller() {
         const ctrl = this;
 
-        ctrl.items = igniteNavbar;
+        ctrl.footerRows = IgniteTerms.footerRows;
+        ctrl.termsState = IgniteTerms.termsState;
     }
 
     return {
         restrict: 'A',
         controller,
-        controllerAs: 'navbar'
+        controllerAs: 'terms'
     };
-}]);
+}]];

@@ -17,7 +17,7 @@
 
 // Controller for Clusters screen.
 consoleModule.controller('clustersController', function ($http, $timeout, $scope, $state, $controller,
-    $common, $focus, $confirm, $clone, $loading, $unsavedChangesGuard, $cleanup, igniteIncludeEventGroups) {
+    $common, $focus, $confirm, $clone, $loading, $unsavedChangesGuard, $cleanup, igniteEventGroups) {
         $unsavedChangesGuard.install($scope);
 
         var __original_value;
@@ -70,7 +70,7 @@ consoleModule.controller('clustersController', function ($http, $timeout, $scope
             {value: undefined, label: 'Not set'}
         ];
 
-        $scope.eventGroups = igniteIncludeEventGroups;
+        $scope.eventGroups = igniteEventGroups;
 
         $scope.toggleExpanded = function () {
             $scope.ui.expanded = !$scope.ui.expanded;

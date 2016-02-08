@@ -56,11 +56,9 @@ import 'angular-ui-grid/ui-grid.css!';
 import 'angular-loading/angular-loading.css!';
 import 'angular-motion/dist/angular-motion.css!';
 
-import './modules/User/index';
-import './modules/Auth/index';
-import './modules/Form/index';
-import './modules/JavaTypes/index';
-import './modules/QueryNotebooks/index';
+import './modules/Form/form.module';
+import './modules/JavaTypes/JavaTypes.provider';
+import './modules/QueryNotebooks/QueryNotebooks.provider';
 
 import './modules/states/login/index';
 import './modules/states/logout/index';
@@ -71,15 +69,13 @@ import './modules/states/profile/index';
 import './modules/states/admin/index';
 
 // ignite:modules
-import './modules/dialog/index';
-import './modules/navbar/main';
-import './modules/settings/main';
-import './modules/configuration/sidebar/main';
-import './modules/configuration/include-event-types/main';
-import './modules/terms/main';
-import './modules/logo/main';
-import './modules/getting-started/main';
-import './modules/Version/main';
+import './modules/user/user.module';
+import './modules/branding/branding.module';
+import './modules/navbar/navbar.module';
+import './modules/configuration/configuration.module';
+import './modules/getting-started/GettingStarted.provider';
+import './modules/dialog/dialog.module';
+import './modules/Version/Version.provider';
 // endignite
 
 // Directives.
@@ -97,7 +93,7 @@ import igniteFormFieldJavaClass from './directives/form-field-java-class/form-fi
 import cleanup from './services/cleanup/cleanup.service';
 import GeneratorXml from './services/Generator/Xml.service';
 import GeneratorJava from './services/Generator/Java.service';
-import IgniteCountries from './services/Countries/index';
+import IgniteCountries from './services/Countries/Countries.service';
 
 // Providers
 
@@ -110,8 +106,8 @@ angular
     'ui.router.title',
     'ngRetina',
     // Base modules.
-    'ignite-console.Auth',
-    'ignite-console.User',
+    'ignite-console.user',
+    'ignite-console.branding',
     'ignite-console.Form',
     'ignite-console.JavaTypes',
     'ignite-console.QueryNotebooks',
@@ -126,11 +122,7 @@ angular
     // Common modules.
     'ignite-console.dialog',
     'ignite-console.navbar',
-    'ignite-console.userbar',
-    'ignite-console.configuration.sidebar',
-    'ignite-console.configuration.include-event-types',
-    'ignite-console.terms',
-    'ignite-console.logo',
+    'ignite-console.configuration',
     'ignite-console.getting-started',
     'ignite-console.version'
 ])
@@ -170,6 +162,11 @@ angular
 
     $locationProvider.html5Mode(true);
 }])
-.run(['$rootScope', '$state', ($root, $state) => {
+.run(['$rootScope', '$state', 'Auth', 'User', ($root, $state, Auth, User) => {
     $root.$state = $state;
+
+    if (Auth.authorized) {
+        User.read()
+            .then((user) => $root.$broadcast('user', user));
+    }
 }]);

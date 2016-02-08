@@ -16,16 +16,13 @@
  */
 
 import angular from 'angular';
-import igniteDialog from './dialog.directive';
-import igniteDialogTitle from './dialog-title.directive';
-import igniteDialogContent from './dialog-content.directive';
-import IgniteDialog from './dialog.factory';
+
+import Auth from './Auth.service';
+import User from './User.service';
 
 angular
-.module('ignite-console.dialog', [
+.module('ignite-console.user', [
 
 ])
-.factory(...IgniteDialog)
-.directive(...igniteDialog)
-.directive(...igniteDialogTitle)
-.directive(...igniteDialogContent);
+.service(...Auth)
+.service(...User);

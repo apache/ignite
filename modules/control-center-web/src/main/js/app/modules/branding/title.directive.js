@@ -15,42 +15,21 @@
  * limitations under the License.
  */
 
-import angular from 'angular';
+const templateTitle = `<label class= 'title'>{{::title.text}}</label>`;
 
-angular
-.module('ignite-console.configuration.sidebar', [
-
-])
-.provider('igniteConfigurationSidebar', function() {
-    const items = [
-        { text: 'Clusters', sref: 'base.configuration.clusters' },
-        { text: 'Model', sref: 'base.configuration.domains' },
-        { text: 'Caches', sref: 'base.configuration.caches' },
-        { text: 'IGFS', sref: 'base.configuration.igfs' }
-    ];
-
-    this.push = function(data) {
-        items.push(data);
-    };
-
-    this.$get = [function() {
-        const r = angular.copy(items);
-
-        r.push({ text: 'Summary', sref: 'base.configuration.summary' });
-
-        return r;
-    }];
-})
-.directive('igniteConfigurationSidebar', ['igniteConfigurationSidebar', function(igniteConfigurationSidebar) {
+export default ['igniteTitle', ['IgniteLogo', (IgniteLogo) => {
     function controller() {
         const ctrl = this;
 
-        ctrl.items = igniteConfigurationSidebar;
+        ctrl.text = IgniteLogo.title;
     }
 
     return {
-        restrict: 'A',
+        restrict: 'E',
+        template: templateTitle,
         controller,
-        controllerAs: 'sidebar'
+        controllerAs: 'title',
+        replace: true
     };
-}]);
+}]];
+

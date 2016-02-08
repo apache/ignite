@@ -22,7 +22,7 @@ header#header.header
             td.col-xs-3.col-sm-3.col-md-2
                 ignite-logo
             td(ng-if='$root.user' style='padding-top: 20px')
-                ul.nav.navbar-nav(ignite-configuration-sidebar ignite-navbar)
+                ul.nav.navbar-nav(ignite-sidebar ignite-navbar)
                     li(ng-class='{active: $state.includes("base.configuration")}')
                         a.dropdown-toggle(data-toggle='dropdown' bs-dropdown='sidebar.items' data-placement='bottom-right') Configuration
                             span.caret
@@ -34,7 +34,7 @@ header#header.header
                     li(ui-sref-active='active'  ng-repeat='item in navbar.items')
                         a(ui-sref='{{::item.sref}}') {{::item.text}}
 
-                ul.nav.navbar-nav.pull-right(ignite-settings)
+                ul.nav.navbar-nav.pull-right(ignite-userbar)
                     li(ng-class='{active: $state.includes("settings")}')
-                        a.dropdown-toggle(data-toggle='dropdown' bs-dropdown='settings.items' data-placement='bottom-right') {{user.username}}
+                        a.dropdown-toggle(data-toggle='dropdown' bs-dropdown='userbar.items' data-placement='bottom-right') {{user.username}}
                             span.caret

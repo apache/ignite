@@ -15,47 +15,16 @@
  * limitations under the License.
  */
 
-import angular from 'angular';
-
-angular
-.module('ignite-console.terms', [
-
-])
-.provider('igniteTerms', function() {
-    let _rows = [
-        'Apache Ignite Web Console',
-        '© 2016 The Apache Software Foundation.',
-        'Apache, Apache Ignite, the Apache feather and the Apache Ignite logo are trademarks of The Apache Software Foundation.'
-    ];
-
-    let _state;
-
-    this.footerRows = function(rows) {
-        _rows = rows;
-    };
-
-    this.termsState = function(state) {
-        _state = state;
-    };
-
-    this.$get = [function() {
-        return {
-            footerRows: _rows,
-            termsState: _state
-        };
-    }];
-})
-.directive('igniteTerms', ['igniteTerms', function(igniteTerms) {
+export default ['igniteNavbar', ['IgniteNavbar', (IgniteNavbar) => {
     function controller() {
         const ctrl = this;
 
-        ctrl.footerRows = igniteTerms.footerRows;
-        ctrl.termsState = igniteTerms.termsState;
+        ctrl.items = IgniteNavbar;
     }
 
     return {
         restrict: 'A',
         controller,
-        controllerAs: 'terms'
+        controllerAs: 'navbar'
     };
-}]);
+}]];
