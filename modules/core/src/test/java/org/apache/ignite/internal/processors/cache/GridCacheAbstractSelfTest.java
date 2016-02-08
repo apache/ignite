@@ -279,7 +279,7 @@ public abstract class GridCacheAbstractSelfTest extends GridCommonAbstractTest {
      * @return Partitioned mode.
      */
     protected NearCacheConfiguration nearConfiguration() {
-        return new NearCacheConfiguration();
+        return null;
     }
 
     /**
