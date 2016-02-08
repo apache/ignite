@@ -106,12 +106,12 @@ namespace Apache.Ignite.Linq.Impl
 
             if (parenCount >= 0)
             {
-                // FIELD1, FIELD2 FROM TABLE1, TABLE2
+                // FIELD1, FIELD2
                 BuildSqlExpression(queryModel.SelectClause.Selector, forceStar || parenCount > 0);
                 _builder.Append(')', parenCount).Append(" ");
             }
 
-            // WHERE ... JOIN ...
+            // FROM... WHERE ... JOIN ...
             base.VisitQueryModel(queryModel);
 
             // UNION ...

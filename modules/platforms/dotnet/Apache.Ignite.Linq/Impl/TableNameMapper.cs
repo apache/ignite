@@ -80,6 +80,11 @@ namespace Apache.Ignite.Linq.Impl
             if (subQueryExp != null)
                 return GetTableNameWithSchema(subQueryExp.QueryModel.MainFromClause);
 
+            var srcRefExp = expression as QuerySourceReferenceExpression;
+
+            if (srcRefExp != null)
+                return GetTableNameWithSchema(srcRefExp);
+
             var constExpr = expression as ConstantExpression;
 
             if (constExpr == null)
