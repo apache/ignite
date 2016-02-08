@@ -54,7 +54,6 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteTransactions;
 import org.apache.ignite.cache.CacheEntryProcessor;
-import org.apache.ignite.cache.CacheMemoryMode;
 import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.cache.affinity.Affinity;
 import org.apache.ignite.cluster.ClusterNode;
@@ -86,7 +85,6 @@ import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMemoryMode.OFFHEAP_TIERED;
-import static org.apache.ignite.cache.CacheMemoryMode.ONHEAP_TIERED;
 import static org.apache.ignite.cache.CacheMode.LOCAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
@@ -3163,16 +3161,18 @@ public class CacheFullApiNewSelfTest extends CacheAbstractNewSelfTest {
 
         assertTrue(cache.localSize() == 0);
 
-        load(cache, key, true);
+        if (storeEnabled()) {
+            load(cache, key, true);
 
-        Affinity<String> aff = ignite(0).affinity(null);
+            Affinity<String> aff = ignite(0).affinity(null);
 
-        for (int i = 0; i < gridCount(); i++) {
-            if (aff.isPrimary(grid(i).cluster().localNode(), key))
-                assertEquals((Integer)1, peek(jcache(i), key));
+            for (int i = 0; i < gridCount(); i++) {
+                if (aff.isPrimary(grid(i).cluster().localNode(), key))
+                    assertEquals((Integer)1, peek(jcache(i), key));
 
-            if (aff.isBackup(grid(i).cluster().localNode(), key))
-                assertEquals((Integer)1, peek(jcache(i), key));
+                if (aff.isBackup(grid(i).cluster().localNode(), key))
+                    assertEquals((Integer)1, peek(jcache(i), key));
+            }
         }
     }
 

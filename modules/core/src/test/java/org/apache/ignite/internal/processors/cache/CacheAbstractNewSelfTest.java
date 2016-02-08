@@ -293,6 +293,13 @@ public abstract class CacheAbstractNewSelfTest extends GridCommonAbstractTest {
     }
 
     /**
+     * @return {@code True} if store is enabled.
+     */
+    protected boolean storeEnabled() {
+        return cacheConfiguration().getCacheStoreFactory() != null;
+    }
+
+    /**
      * @return Partitioned mode.
      */
     protected NearCacheConfiguration nearConfiguration() {
