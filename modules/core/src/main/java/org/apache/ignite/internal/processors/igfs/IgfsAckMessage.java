@@ -90,7 +90,7 @@ public class IgfsAckMessage extends IgfsCommunicationMessage {
     @Override public void prepareMarshal(Marshaller marsh) throws IgniteCheckedException {
         super.prepareMarshal(marsh);
 
-        if (err != null)
+        if (err != null && errBytes == null)
             errBytes = marsh.marshal(err);
     }
 
@@ -98,7 +98,7 @@ public class IgfsAckMessage extends IgfsCommunicationMessage {
     @Override public void finishUnmarshal(Marshaller marsh, @Nullable ClassLoader ldr) throws IgniteCheckedException {
         super.finishUnmarshal(marsh, ldr);
 
-        if (errBytes != null)
+        if (errBytes != null && err == null)
             err = marsh.unmarshal(errBytes, ldr);
     }
 

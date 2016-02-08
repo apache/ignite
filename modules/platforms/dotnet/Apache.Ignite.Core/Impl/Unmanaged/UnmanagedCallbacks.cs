@@ -77,6 +77,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         private readonly GCHandle _thisHnd;
 
         /** Callbacks pointer. */
+        [SuppressMessage("Microsoft.Reliability", "CA2006:UseSafeHandleToEncapsulateNativeResources")]
         private readonly IntPtr _cbsPtr;
 
         /** Error type: generic. */
@@ -281,7 +282,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
                         if (_ignite != null)
                             cacheStore.Init(_ignite);
                         else
-                            _initActions.Add(g => cacheStore.Init(g));
+                            _initActions.Add(cacheStore.Init);
                     }
                 }
 
@@ -289,6 +290,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
             }, true);
         }
 
+        [SuppressMessage("Microsoft.Reliability", "CA2000:Dispose objects before losing scope")]
         private int CacheStoreInvoke(void* target, long objPtr, long memPtr, void* cb)
         {
             return SafeCall(() =>
@@ -609,6 +611,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
             });
         }
 
+        [SuppressMessage("Microsoft.Reliability", "CA2000:Dispose objects before losing scope")]
         private void DataStreamerStreamReceiverInvoke(void* target, long rcvPtr, void* cache, long memPtr, 
             byte keepBinary)
         {

@@ -17,17 +17,15 @@
 
 package org.apache.ignite.internal.binary.builder;
 
-import org.apache.ignite.binary.BinaryObject;
-import org.apache.ignite.internal.binary.BinaryMetadata;
-import org.apache.ignite.internal.binary.BinaryObjectExImpl;
-import org.apache.ignite.internal.binary.BinaryWriterExImpl;
-import org.apache.ignite.internal.binary.GridBinaryMarshaller;
-import org.apache.ignite.internal.binary.BinaryContext;
-import org.apache.ignite.internal.binary.BinaryUtils;
-
 import java.util.Collection;
 import java.util.IdentityHashMap;
 import java.util.Map;
+import org.apache.ignite.binary.BinaryObject;
+import org.apache.ignite.internal.binary.BinaryMetadata;
+import org.apache.ignite.internal.binary.BinaryObjectExImpl;
+import org.apache.ignite.internal.binary.BinaryUtils;
+import org.apache.ignite.internal.binary.BinaryWriterExImpl;
+import org.apache.ignite.internal.binary.GridBinaryMarshaller;
 
 /**
  *
@@ -100,8 +98,10 @@ class BinaryBuilderSerializer {
         }
 
         if (val.getClass().isEnum()) {
-            String typeName = BinaryContext.typeName(val.getClass().getName());
-            int typeId = writer.context().typeId(typeName);
+            String clsName = val.getClass().getName();
+
+            int typeId = writer.context().typeId(clsName);
+            String typeName = writer.context().userTypeName(clsName);
 
             BinaryMetadata meta = new BinaryMetadata(typeId, typeName, null, null, null, true);
             writer.context().updateMetadata(typeId, meta);

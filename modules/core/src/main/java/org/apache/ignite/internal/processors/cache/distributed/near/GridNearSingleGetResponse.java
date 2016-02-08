@@ -167,7 +167,7 @@ public class GridNearSingleGetResponse extends GridCacheMessage implements GridC
                 ((GridCacheEntryInfo)res).marshal(cctx);
         }
 
-        if (err != null)
+        if (err != null && errBytes == null)
             errBytes = ctx.marshaller().marshal(err);
     }
 

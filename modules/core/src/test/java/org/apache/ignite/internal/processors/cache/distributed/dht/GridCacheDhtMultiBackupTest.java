@@ -70,7 +70,7 @@ public class GridCacheDhtMultiBackupTest extends GridCommonAbstractTest {
             for (int key = 0; key < 1000; key++) {
                 SampleKey key1 = new SampleKey(key);
 
-                if (!g.cluster().localNode().id().equals(g.cluster().mapKeyToNode("partitioned", key1).id())) {
+                if (!g.cluster().localNode().id().equals(g.affinity("partitioned").mapKeyToNode(key1).id())) {
                     cache.put(key1, new SampleValue(key));
 
                     cnt++;

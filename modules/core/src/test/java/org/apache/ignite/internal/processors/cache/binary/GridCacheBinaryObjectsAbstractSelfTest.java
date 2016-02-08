@@ -30,6 +30,7 @@ import javax.cache.processor.MutableEntry;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteBinary;
+import org.apache.ignite.binary.BinaryNameMapper;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.CachePeekMode;
@@ -38,6 +39,7 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.internal.IgniteKernal;
+import org.apache.ignite.internal.binary.BinaryContext;
 import org.apache.ignite.internal.binary.BinaryObjectImpl;
 import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
@@ -77,6 +79,9 @@ public abstract class GridCacheBinaryObjectsAbstractSelfTest extends GridCommonA
     /** */
     private static final int ENTRY_CNT = 100;
 
+    /** */
+    private static IgniteConfiguration cfg;
+
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
@@ -108,6 +113,8 @@ public abstract class GridCacheBinaryObjectsAbstractSelfTest extends GridCommonA
         cfg.setCacheConfiguration(cacheCfg);
 
         cfg.setMarshaller(new BinaryMarshaller());
+
+        this.cfg = cfg;
 
         return cfg;
     }
@@ -200,8 +207,14 @@ public abstract class GridCacheBinaryObjectsAbstractSelfTest extends GridCommonA
 
         assertNotNull(str);
 
-        assertTrue("Unexpected toString: " + str,
-            str.startsWith("TestReferenceObject") && str.contains("obj=TestReferenceObject ["));
+        BinaryNameMapper nameMapper = BinaryContext.defaultNameMapper();
+
+        if (cfg.getBinaryConfiguration() != null && cfg.getBinaryConfiguration().getNameMapper() != null)
+            nameMapper = cfg.getBinaryConfiguration().getNameMapper();
+
+        String typeName = nameMapper.typeName(TestReferenceObject.class.getName());
+
+        assertTrue("Unexpected toString: " + str, str.startsWith(typeName) && str.contains("obj=" + typeName + " ["));
 
         TestReferenceObject obj1_r = po.deserialize();
 
