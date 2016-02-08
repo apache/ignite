@@ -340,7 +340,13 @@ namespace Apache.Ignite.Linq.Impl
             return expression;
         }
 
-
+        /** <inheritdoc /> */
+        protected override Expression VisitSubQuery(SubQueryExpression expression)
+        {
+            // This happens when New expression uses a subquery
+            // TODO
+            return expression;
+        }
 
         /** <inheritdoc /> */
         protected override Exception CreateUnhandledItemException<T>(T unhandledItem, string visitMethod)
