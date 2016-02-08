@@ -2680,6 +2680,9 @@ public class CacheFullApiNewSelfTest extends CacheAbstractNewSelfTest {
      * @throws Exception In case of error.
      */
     public void testLoadAll() throws Exception {
+        if (!storeEnabled())
+            return;
+
         IgniteCache<String, Integer> cache = jcache();
 
         Set<String> keys = new HashSet<>(primaryKeysForCache(cache, 2));
@@ -3556,19 +3559,21 @@ public class CacheFullApiNewSelfTest extends CacheAbstractNewSelfTest {
         assert cache.localPeek(key2, ONHEAP) == null;
         assert peek(cache, key3) == 3;
 
-        loadAll(cache, ImmutableSet.of(key1, key2), true);
+        if (storeEnabled()) {
+            loadAll(cache, ImmutableSet.of(key1, key2), true);
 
-        Affinity<String> aff = ignite(0).affinity(null);
+            Affinity<String> aff = ignite(0).affinity(null);
 
-        for (int i = 0; i < gridCount(); i++) {
-            if (aff.isPrimaryOrBackup(grid(i).cluster().localNode(), key1))
-                assertEquals((Integer)1, peek(jcache(i), key1));
+            for (int i = 0; i < gridCount(); i++) {
+                if (aff.isPrimaryOrBackup(grid(i).cluster().localNode(), key1))
+                    assertEquals((Integer)1, peek(jcache(i), key1));
 
-            if (aff.isPrimaryOrBackup(grid(i).cluster().localNode(), key2))
-                assertEquals((Integer)2, peek(jcache(i), key2));
+                if (aff.isPrimaryOrBackup(grid(i).cluster().localNode(), key2))
+                    assertEquals((Integer)2, peek(jcache(i), key2));
 
-            if (aff.isPrimaryOrBackup(grid(i).cluster().localNode(), key3))
-                assertEquals((Integer)3, peek(jcache(i), key3));
+                if (aff.isPrimaryOrBackup(grid(i).cluster().localNode(), key3))
+                    assertEquals((Integer)3, peek(jcache(i), key3));
+            }
         }
     }
 
