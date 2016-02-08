@@ -101,7 +101,7 @@ public class GridAffinityNoCacheSelfTest extends GridCommonAbstractTest {
     /**
      * @param key Key.
      */
-    private void checkAffinityImplCacheDeleted(Object key) throws InterruptedException{
+    private void checkAffinityImplCacheDeleted(Object key) throws InterruptedException {
         IgniteEx grid = grid(0);
 
         final String cacheName = "cacheToBeDeleted";
@@ -118,7 +118,9 @@ public class GridAffinityNoCacheSelfTest extends GridCommonAbstractTest {
 
         grid.cache(cacheName).destroy();
 
-        assertAffinityMethodsException(affinity, key, n);
+        awaitPartitionMapExchange();
+
+        assertAffinityMethodsException(grid.affinity(cacheName), key, n);
     }
 
     /**
