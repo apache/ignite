@@ -8,7 +8,7 @@
             "<li>Import domain model from database</li>",
             "<li>Configure all needed caches</li>",
             "<li>Preview generated XML and Java code in browser</li>",
-            "<li>Download fully functional Maven project with generated XML and Java code</li>",
+            "<li>Download ready-to-use Maven project</li>",
             "<li>Execute SQL queries on real clusters</li>",
             "</ul>"
         ]

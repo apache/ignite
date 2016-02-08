@@ -345,6 +345,14 @@ h1, h2, h3, h4, h5, h6 {
         float: left;
         margin: 0;
     }
+
+    .btn:last-child {
+        margin-right: 0;
+    }
+
+    .checkbox {
+        margin: 0;
+    }
 }
 
 .login-header {
@@ -1813,20 +1821,6 @@ treecontrol.tree-classic {
 
 .getting-started {
     margin: 15px 15px 300px;
-}
-
-.getting-started-footer {
-    @extend .modal-footer;
-
-    padding: 10px 15px;
-
-    .btn:last-child {
-        margin-right: 0;
-    }
-
-    .checkbox {
-        margin: 0;
-    }
 }
 
 .getting-started-demo {
