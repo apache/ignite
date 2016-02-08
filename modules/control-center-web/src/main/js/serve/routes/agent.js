@@ -84,7 +84,7 @@ module.exports.factory = function (_, express, apacheIgnite, fs, JSZip, settings
                     var host = req.hostname.match(/:/g) ? req.hostname.slice(0, req.hostname.indexOf(':')) : req.hostname;
 
                     prop.push('token=' + req.user.token);
-                    prop.push('server-uri=wss://' + host + ':' + settings.agentPort);
+                    prop.push('server-uri=wss://' + host + ':' + settings.agent.port);
                     prop.push('#Uncomment following options if needed:');
                     prop.push('#node-uri=http://localhost:8080');
                     prop.push('#driver-folder=./jdbc-drivers');
