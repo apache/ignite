@@ -133,7 +133,7 @@ namespace Apache.Ignite.Linq.Impl
             if (subQuery != null)
             {
                 // TODO: Handle GROUP BY here
-
+                _builder.Append("group by ");
             }
         }
 
