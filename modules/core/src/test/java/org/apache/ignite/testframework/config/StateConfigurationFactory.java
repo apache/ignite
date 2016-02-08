@@ -92,11 +92,11 @@ public class StateConfigurationFactory implements ConfigurationFactory {
     private static void copyDefaultsFromSource(IgniteConfiguration cfg, IgniteConfiguration srcCfg) {
         cfg.setGridName(srcCfg.getGridName());
         cfg.setGridLogger(srcCfg.getGridLogger());
-        cfg.setMarshaller(srcCfg.getMarshaller());
+//        cfg.setMarshaller(srcCfg.getMarshaller());
         cfg.setNodeId(srcCfg.getNodeId());
         cfg.setIgniteHome(srcCfg.getIgniteHome());
         cfg.setMBeanServer(srcCfg.getMBeanServer());
-        cfg.setPeerClassLoadingEnabled(srcCfg.isPeerClassLoadingEnabled());
+//        cfg.setPeerClassLoadingEnabled(srcCfg.isPeerClassLoadingEnabled());
         cfg.setMetricsLogFrequency(srcCfg.getMetricsLogFrequency());
         cfg.setConnectorConfiguration(srcCfg.getConnectorConfiguration());
         cfg.setCommunicationSpi(srcCfg.getCommunicationSpi());

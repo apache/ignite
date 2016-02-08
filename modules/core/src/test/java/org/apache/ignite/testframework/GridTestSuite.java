@@ -18,6 +18,7 @@
 package org.apache.ignite.testframework;
 
 import junit.framework.Test;
+import junit.framework.TestCase;
 import junit.framework.TestResult;
 import junit.framework.TestSuite;
 import org.apache.ignite.testframework.junits.GridAbstractTest;
@@ -30,11 +31,24 @@ public class GridTestSuite extends TestSuite {
     private final TestsConfiguration cfg;
 
     /**
-     * @param theClass Test class.
+     * @param cls Test class.
      * @param cfg Configuration.
      */
-    public GridTestSuite(Class<? extends GridAbstractTest> theClass, TestsConfiguration cfg) {
-        super(theClass);
+    public GridTestSuite(Class<? extends GridAbstractTest> cls, TestsConfiguration cfg) {
+        super(cls);
+
+        this.cfg = cfg;
+    }
+
+    /**
+     * Constructs a TestSuite from the given class with the given name.
+     *
+     * @param cfg Tests config.
+     * @see TestSuite#TestSuite(Class)
+     */
+    public GridTestSuite(Class<? extends TestCase> cls, String name,
+        TestsConfiguration cfg) {
+        super(cls, name);
 
         this.cfg = cfg;
     }

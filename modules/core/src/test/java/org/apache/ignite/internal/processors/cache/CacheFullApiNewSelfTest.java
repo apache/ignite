@@ -166,13 +166,6 @@ public class CacheFullApiNewSelfTest extends CacheAbstractNewSelfTest {
         return TEST_TIMEOUT;
     }
 
-    /**
-     * @return {@code True} if values should be stored off-heap.
-     */
-    protected CacheMemoryMode memoryMode() {
-        return ONHEAP_TIERED; // TODO from cfg.
-    }
-
 //    /** {@inheritDoc} */
 //    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
 //        IgniteConfiguration cfg = super.getConfiguration(gridName);

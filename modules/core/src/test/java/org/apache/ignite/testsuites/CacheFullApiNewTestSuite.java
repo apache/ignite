@@ -99,12 +99,13 @@ public class CacheFullApiNewTestSuite extends TestSuite {
     private static void addTestSuite(TestSuite suite, int[] igniteCfgState, int[] cacheCfgState, int gridsCnt,
         boolean stop, CacheStartMode cacheStartMode) {
         // TODO
-//        StateConfigurationFactory factory = new FullApiStateConfigurationFactory(igniteParams, igniteCfgState,
-//            cacheParams, cacheCfgState);
-        StateConfigurationFactory factory = new FullApiStateConfigurationFactory(cacheParams, cacheCfgState);
+        StateConfigurationFactory factory = new FullApiStateConfigurationFactory(igniteParams, igniteCfgState,
+            cacheParams, cacheCfgState);
 
-        String clsNameSuffix = "[igniteCfg=" + Arrays.toString(igniteCfgState)
-            + ", cacheCfgState=" + Arrays.toString(cacheCfgState) + "]"
+        String vectorsInfo = "[igniteCfg=" + Arrays.toString(igniteCfgState)
+            + ", cacheCfgState=" + Arrays.toString(cacheCfgState) + "]";
+
+        String clsNameSuffix = vectorsInfo
             + "-[igniteCfg=" + factory.getIgniteConfigurationDescription()
             + ", cacheCfg=" + factory.getCacheConfigurationDescription() + "]";
 
@@ -112,7 +113,8 @@ public class CacheFullApiNewTestSuite extends TestSuite {
 
         testCfg.cacheStartMode(cacheStartMode);
 
-        suite.addTest(new GridTestSuite(CacheFullApiNewSelfTest.class, testCfg));
+        suite.addTest(new GridTestSuite(CacheFullApiNewSelfTest.class, CacheFullApiNewSelfTest.class.getName()
+            + '-' + vectorsInfo, testCfg));
     }
 
     /**
