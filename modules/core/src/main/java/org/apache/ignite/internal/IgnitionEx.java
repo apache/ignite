@@ -118,7 +118,6 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 import static org.apache.ignite.configuration.IgniteConfiguration.DFLT_PUBLIC_KEEP_ALIVE_TIME;
 import static org.apache.ignite.configuration.IgniteConfiguration.DFLT_PUBLIC_THREADPOOL_QUEUE_CAP;
 import static org.apache.ignite.configuration.IgniteConfiguration.DFLT_SYSTEM_KEEP_ALIVE_TIME;
-import static org.apache.ignite.configuration.IgniteConfiguration.DFLT_SYSTEM_MAX_THREAD_CNT;
 import static org.apache.ignite.configuration.IgniteConfiguration.DFLT_SYSTEM_THREADPOOL_QUEUE_CAP;
 import static org.apache.ignite.internal.IgniteComponentType.SPRING;
 import static org.apache.ignite.plugin.segmentation.SegmentationPolicy.RESTART_JVM;
@@ -986,7 +985,7 @@ public class IgnitionEx {
 
         if (old != null) {
             if (name == null)
-                throw new IgniteCheckedException("Default grid instance has already been started.");
+                throw new IgniteCheckedException("Default Ignite instance has already been started.");
             else
                 throw new IgniteCheckedException("Ignite instance with this name has already been started: " + name);
         }

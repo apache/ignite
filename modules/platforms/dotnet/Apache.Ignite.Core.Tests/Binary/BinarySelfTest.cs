@@ -26,12 +26,15 @@ namespace Apache.Ignite.Core.Tests.Binary
     using System.Collections;
     using System.Collections.Generic;
     using System.Diagnostics.CodeAnalysis;
+    using System.IO;
     using System.Linq;
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Impl.Binary;
     using Apache.Ignite.Core.Impl.Binary.IO;
     using NUnit.Framework;
+    using BinaryReader = Apache.Ignite.Core.Impl.Binary.BinaryReader;
+    using BinaryWriter = Apache.Ignite.Core.Impl.Binary.BinaryWriter;
 
     /// <summary>
     /// 
@@ -474,6 +477,35 @@ namespace Apache.Ignite.Core.Tests.Binary
             Guid?[] newVals = _marsh.Unmarshal<Guid?[]>(_marsh.Marshal(vals));
 
             Assert.AreEqual(vals, newVals);
+        }
+
+        /// <summary>
+        /// Checks that both methods produce identical results.
+        /// </summary>
+        [Test]
+        public void TestGuidSlowFast()
+        {
+            var stream = new BinaryHeapStream(128);
+
+            var guid = Guid.NewGuid();
+
+            BinaryUtils.WriteGuidFast(guid, stream);
+
+            stream.Seek(0, SeekOrigin.Begin);
+            Assert.AreEqual(guid, BinaryUtils.ReadGuidFast(stream));
+
+            stream.Seek(0, SeekOrigin.Begin);
+            Assert.AreEqual(guid, BinaryUtils.ReadGuidSlow(stream));
+
+
+            stream.Seek(0, SeekOrigin.Begin);
+            BinaryUtils.WriteGuidFast(guid, stream);
+
+            stream.Seek(0, SeekOrigin.Begin);
+            Assert.AreEqual(guid, BinaryUtils.ReadGuidFast(stream));
+
+            stream.Seek(0, SeekOrigin.Begin);
+            Assert.AreEqual(guid, BinaryUtils.ReadGuidSlow(stream));
         }
 
         /**

@@ -988,7 +988,7 @@ public final class GridDhtTxPrepareFuture extends GridCompoundFuture<IgniteInter
 
             lastForceFut = cctx.cacheContext(cacheId).preloader().request(keys, tx.topologyVersion());
 
-            if (compFut != null)
+            if (compFut != null && lastForceFut != null)
                 compFut.add(lastForceFut);
         }
 
@@ -997,11 +997,8 @@ public final class GridDhtTxPrepareFuture extends GridCompoundFuture<IgniteInter
 
             return compFut;
         }
-        else {
-            assert lastForceFut != null;
-
+        else
             return lastForceFut;
-        }
     }
 
     /**
