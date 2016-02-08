@@ -47,7 +47,13 @@ public interface BinaryField {
     /**
      * @param addr Marshalled object address.
      * @param len Marshalled data length.
-     * @return Field address.
+     * @return Field offset.
      */
-    public long fieldAddress(long addr, int len);
+    public int fieldOffset(long addr, int len);
+
+    /**
+     * @param obj Object.
+     * @return Field offset.
+     */
+    public int fieldOffset(BinaryObject obj);
 }

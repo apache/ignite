@@ -75,12 +75,18 @@ public abstract class BinaryObjectExImpl implements BinaryObjectEx {
     }
 
     /**
-     * Get field by offset.
+     * @param order Field order.
+     * @return Field offset.
+     */
+    protected abstract int fieldOffsetByOrder(int order);
+
+    /**
+     * Get field by order.
      *
-     * @param fieldOffset Field offset.
+     * @param order Field order.
      * @return Field value.
      */
-    @Nullable protected abstract <F> F fieldByOrder(int fieldOffset);
+    @Nullable protected abstract <F> F fieldByOrder(int order);
 
     /**
      * Writes field value defined by the given field offset to the given byte buffer.

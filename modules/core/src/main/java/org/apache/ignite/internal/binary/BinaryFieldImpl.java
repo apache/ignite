@@ -105,7 +105,16 @@ public class BinaryFieldImpl implements BinaryFieldEx {
     }
 
     /** {@inheritDoc} */
-    @Override public long fieldAddress(long addr, int len) {
+    @Override public int fieldOffset(BinaryObject obj) {
+        BinaryObjectExImpl obj0 = (BinaryObjectExImpl)obj;
+
+        int order = fieldOrder(obj0);
+
+        return order != BinarySchema.ORDER_NOT_FOUND ? obj0.fieldOffsetByOrder(order) : -1;
+    }
+
+    /** {@inheritDoc} */
+    @Override public int fieldOffset(long addr, int len) {
         int typeId = GridUnsafe.getInt(addr + GridBinaryMarshaller.TYPE_ID_POS);
 
         if (typeId != this.typeId) {
@@ -133,7 +142,7 @@ public class BinaryFieldImpl implements BinaryFieldEx {
         int order = schema.order(fieldId);
 
         if (order == BinarySchema.ORDER_NOT_FOUND)
-            return -1L;
+            return -1;
 
         int schemaOff = BinaryPrimitives.readInt(addr, GridBinaryMarshaller.SCHEMA_OR_RAW_OFF_POS);
 
@@ -144,16 +153,16 @@ public class BinaryFieldImpl implements BinaryFieldEx {
 
         int fieldOffPos = schemaOff + order * (fieldIdLen + fieldOffLen) + fieldIdLen;
 
-        int fieldPos;
+        int fieldOff;
 
         if (fieldOffLen == BinaryUtils.OFFSET_1)
-            fieldPos = ((int)BinaryPrimitives.readByte(addr, fieldOffPos) & 0xFF);
+            fieldOff = ((int)BinaryPrimitives.readByte(addr, fieldOffPos) & 0xFF);
         else if (fieldOffLen == BinaryUtils.OFFSET_2)
-            fieldPos = ((int)BinaryPrimitives.readShort(addr, fieldOffPos) & 0xFFFF);
+            fieldOff = ((int)BinaryPrimitives.readShort(addr, fieldOffPos) & 0xFFFF);
         else
-            fieldPos = BinaryPrimitives.readInt(addr, fieldOffPos);
+            fieldOff = BinaryPrimitives.readInt(addr, fieldOffPos);
 
-        return addr + fieldPos;
+        return fieldOff;
     }
 
     /** {@inheritDoc} */

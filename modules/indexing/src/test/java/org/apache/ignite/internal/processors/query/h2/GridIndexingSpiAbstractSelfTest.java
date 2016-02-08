@@ -522,7 +522,11 @@ public abstract class GridIndexingSpiAbstractSelfTest extends GridCommonAbstract
                     return Object.class;
                 }
 
-                @Override public long valueAddress(long keyAddr, int keyLen, long valAddr, int valLen) {
+                @Override public int propertyOffset(long keyAddr, int keyLen, long valAddr, int valLen) {
+                    throw new UnsupportedOperationException();
+                }
+
+                @Override public int propertyOffset(CacheObject key, CacheObject val) throws IgniteCheckedException {
                     throw new UnsupportedOperationException();
                 }
 

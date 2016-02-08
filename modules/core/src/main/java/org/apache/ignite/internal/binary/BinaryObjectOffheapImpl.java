@@ -124,6 +124,7 @@ public class BinaryObjectOffheapImpl extends BinaryObjectExImpl implements Exter
         return null;
     }
 
+    /** {@inheritDoc} */
     @Override public boolean putValue(ByteBuffer buf, CacheObjectContext ctx) throws IgniteCheckedException {
         throw new UnsupportedOperationException("TODO implement");
     }
@@ -164,28 +165,35 @@ public class BinaryObjectOffheapImpl extends BinaryObjectExImpl implements Exter
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
-    @Nullable @Override protected <F> F fieldByOrder(int order) {
-        Object val;
-
+    @Override protected int fieldOffsetByOrder(int order) {
         // Calculate field position.
-        int schemaOffset = BinaryPrimitives.readInt(ptr, start + GridBinaryMarshaller.SCHEMA_OR_RAW_OFF_POS);
+        int schemaOff = BinaryPrimitives.readInt(ptr, start + GridBinaryMarshaller.SCHEMA_OR_RAW_OFF_POS);
 
         short flags = BinaryPrimitives.readShort(ptr, start + GridBinaryMarshaller.FLAGS_POS);
 
         int fieldIdLen = BinaryUtils.isCompactFooter(flags) ? 0 : BinaryUtils.FIELD_ID_LEN;
-        int fieldOffsetLen = BinaryUtils.fieldOffsetLength(flags);
+        int fieldOffLen = BinaryUtils.fieldOffsetLength(flags);
 
-        int fieldOffsetPos = start + schemaOffset + order * (fieldIdLen + fieldOffsetLen) + fieldIdLen;
+        int fieldOffPos = start + schemaOff + order * (fieldIdLen + fieldOffLen) + fieldIdLen;
 
-        int fieldPos;
+        int fieldOff;
 
-        if (fieldOffsetLen == BinaryUtils.OFFSET_1)
-            fieldPos = start + ((int)BinaryPrimitives.readByte(ptr, fieldOffsetPos) & 0xFF);
-        else if (fieldOffsetLen == BinaryUtils.OFFSET_2)
-            fieldPos = start + ((int)BinaryPrimitives.readShort(ptr, fieldOffsetPos) & 0xFFFF);
+        if (fieldOffLen == BinaryUtils.OFFSET_1)
+            fieldOff = ((int)BinaryPrimitives.readByte(ptr, fieldOffPos) & 0xFF);
+        else if (fieldOffLen == BinaryUtils.OFFSET_2)
+            fieldOff = ((int)BinaryPrimitives.readShort(ptr, fieldOffPos) & 0xFFFF);
         else
-            fieldPos = start + BinaryPrimitives.readInt(ptr, fieldOffsetPos);
+            fieldOff = BinaryPrimitives.readInt(ptr, fieldOffPos);
+
+        return fieldOff;
+    }
+
+    /** {@inheritDoc} */
+    @SuppressWarnings("unchecked")
+    @Nullable @Override protected <F> F fieldByOrder(int order) {
+        Object val;
+
+        int fieldPos = start + fieldOffsetByOrder(order);
 
         // Read header and try performing fast lookup for well-known types (the most common types go first).
         byte hdr = BinaryPrimitives.readByte(ptr, fieldPos);

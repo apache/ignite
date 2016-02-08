@@ -265,28 +265,34 @@ public final class BinaryObjectImpl extends BinaryObjectExImpl implements Extern
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
-    @Nullable @Override protected <F> F fieldByOrder(int order) {
-        Object val;
-
-        // Calculate field position.
-        int schemaOffset = BinaryPrimitives.readInt(arr, start + GridBinaryMarshaller.SCHEMA_OR_RAW_OFF_POS);
+    @Override protected int fieldOffsetByOrder(int order) {
+        int schemaOff = BinaryPrimitives.readInt(arr, start + GridBinaryMarshaller.SCHEMA_OR_RAW_OFF_POS);
 
         short flags = BinaryPrimitives.readShort(arr, start + GridBinaryMarshaller.FLAGS_POS);
 
         int fieldIdLen = BinaryUtils.isCompactFooter(flags) ? 0 : BinaryUtils.FIELD_ID_LEN;
-        int fieldOffsetLen = BinaryUtils.fieldOffsetLength(flags);
+        int fieldOffLen = BinaryUtils.fieldOffsetLength(flags);
 
-        int fieldOffsetPos = start + schemaOffset + order * (fieldIdLen + fieldOffsetLen) + fieldIdLen;
+        int fieldOffPos = start + schemaOff + order * (fieldIdLen + fieldOffLen) + fieldIdLen;
 
-        int fieldPos;
+        int fieldOff;
 
-        if (fieldOffsetLen == BinaryUtils.OFFSET_1)
-            fieldPos = start + ((int)BinaryPrimitives.readByte(arr, fieldOffsetPos) & 0xFF);
-        else if (fieldOffsetLen == BinaryUtils.OFFSET_2)
-            fieldPos = start + ((int)BinaryPrimitives.readShort(arr, fieldOffsetPos) & 0xFFFF);
+        if (fieldOffLen == BinaryUtils.OFFSET_1)
+            fieldOff = ((int)BinaryPrimitives.readByte(arr, fieldOffPos) & 0xFF);
+        else if (fieldOffLen == BinaryUtils.OFFSET_2)
+            fieldOff = ((int)BinaryPrimitives.readShort(arr, fieldOffPos) & 0xFFFF);
         else
-            fieldPos = start + BinaryPrimitives.readInt(arr, fieldOffsetPos);
+            fieldOff = BinaryPrimitives.readInt(arr, fieldOffPos);
+
+        return fieldOff;
+    }
+
+    /** {@inheritDoc} */
+    @SuppressWarnings("unchecked")
+    @Nullable @Override protected <F> F fieldByOrder(int order) {
+        Object val;
+
+        int fieldPos = start + fieldOffsetByOrder(order);
 
         // Read header and try performing fast lookup for well-known types (the most common types go first).
         byte hdr = BinaryPrimitives.readByte(arr, fieldPos);

@@ -1886,13 +1886,18 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         }
 
         /** {@inheritDoc} */
-        @Override public long valueAddress(long keyAddr, int keyLen, long valAddr, int valLen) {
+        @Override public int propertyOffset(long keyAddr, int keyLen, long valAddr, int valLen) {
+            throw new UnsupportedOperationException();
+        }
+
+        /** {@inheritDoc} */
+        @Override public int propertyOffset(CacheObject key, CacheObject val) throws IgniteCheckedException {
             throw new UnsupportedOperationException();
         }
 
         /** {@inheritDoc} */
         @Override public boolean keyProperty() {
-            return false;
+            return key;
         }
 
         /** {@inheritDoc} */
@@ -2020,7 +2025,53 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         }
 
         /** {@inheritDoc} */
-        @Override public long valueAddress(long keyAddr, int keyLen, long valAddr, int valLen) throws IgniteCheckedException {
+        @Override public int propertyOffset(CacheObject key, CacheObject val) throws IgniteCheckedException {
+            if (parent != null)
+                return parent.propertyOffset(key, val);
+
+            if (binaryCtx == null)
+                throw new UnsupportedOperationException("BinaryObjects are not enabled.");
+
+            Object obj;
+
+            int isKeyProp0 = isKeyProp;
+
+            if (isKeyProp0 == 0) {
+                // Key is allowed to be a non-binary object here.
+                // We check key before value consistently with ClassProperty.
+                if (key instanceof BinaryObject && ((BinaryObject)key).hasField(propName))
+                    isKeyProp = isKeyProp0 = 1;
+                else if (val instanceof BinaryObject && ((BinaryObject)val).hasField(propName))
+                    isKeyProp = isKeyProp0 = -1;
+                else {
+                    U.warn(log, "Neither key nor value have property " +
+                        "[propName=" + propName + ", key=" + key + ", val=" + val + "]");
+
+                    return -1;
+                }
+            }
+
+            obj = isKeyProp0 == 1 ? key : val;
+
+            assert obj instanceof BinaryObject : obj;
+
+            BinaryObject obj0 = (BinaryObject)obj;
+
+            BinaryField field = binaryField(obj0);
+
+            if (field != null)
+                return field.fieldOffset(obj0);
+
+            // TODO: try to get address from object.
+
+            return -1;
+        }
+
+        /** {@inheritDoc} */
+        @Override public int propertyOffset(long keyAddr, int keyLen, long valAddr, int valLen) throws IgniteCheckedException {
+            if (parent != null)
+                return parent.propertyOffset(keyAddr, keyLen, valAddr, valLen);
+
             if (binaryCtx == null)
                 throw new UnsupportedOperationException("BinaryObjects are not enabled.");
 
@@ -2036,7 +2087,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                 else {
                     U.warn(log, "Neither key nor value have property [propName=" + propName + "]");
 
-                    return -1L;
+                    return -1;
                 }
             }
 
@@ -2055,11 +2106,11 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             BinaryField field = binaryField(addr);
 
             if (field != null)
-                return field.fieldAddress(addr, len);
+                return field.fieldOffset(addr, len);
 
-            // TODO: try to get address from object.
+            // TODO: try to get offset from object.
 
-            return -1L;
+            return -1;
         }
 
         /**
