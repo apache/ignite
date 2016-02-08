@@ -192,6 +192,7 @@
     <ClInclude Include="..\..\include\ignite\binary\binary_reader.h" />
     <ClInclude Include="..\..\include\ignite\binary\binary_type.h" />
     <ClInclude Include="..\..\include\ignite\binary\binary_writer.h" />
+    <ClInclude Include="..\..\include\ignite\date.h" />
     <ClInclude Include="..\..\include\ignite\guid.h" />
     <ClInclude Include="..\..\include\ignite\impl\binary\binary_common.h" />
     <ClInclude Include="..\..\include\ignite\impl\binary\binary_id_resolver.h" />
@@ -218,6 +219,7 @@
     <ClCompile Include="..\..\src\binary\binary_reader.cpp" />
     <ClCompile Include="..\..\src\binary\binary_type.cpp" />
     <ClCompile Include="..\..\src\binary\binary_writer.cpp" />
+    <ClCompile Include="..\..\src\date.cpp" />
     <ClCompile Include="..\..\src\guid.cpp" />
     <ClCompile Include="..\..\src\impl\binary\binary_reader_impl.cpp" />
     <ClCompile Include="..\..\src\impl\binary\binary_schema.cpp" />
