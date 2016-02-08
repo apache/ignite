@@ -270,6 +270,13 @@ namespace Apache.Ignite.Linq.Impl
                 return expression;
             }
 
+            // Special case: grouping
+            var srcRef = expression.Expression as QuerySourceReferenceExpression;
+            if (srcRef != null)
+            {
+                
+            }
+
             var queryFieldAttr = expression.Member.GetCustomAttributes(true)
                 .OfType<QuerySqlFieldAttribute>().FirstOrDefault();
 
@@ -345,6 +352,7 @@ namespace Apache.Ignite.Linq.Impl
         {
             // This happens when New expression uses a subquery
             // TODO
+            expression.QueryModel
             return expression;
         }
 
