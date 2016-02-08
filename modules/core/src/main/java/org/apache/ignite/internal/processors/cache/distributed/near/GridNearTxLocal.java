@@ -661,55 +661,61 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter {
         Collection<GridCacheVersion> committedVers,
         Collection<GridCacheVersion> rolledbackVers)
     {
-        readyNearLocks(mapping.writes(), mapping.dhtVersion(), pendingVers, committedVers, rolledbackVers);
-        readyNearLocks(mapping.reads(), mapping.dhtVersion(), pendingVers, committedVers, rolledbackVers);
+        // Process writes, then reads.
+        for (IgniteTxEntry txEntry : mapping.entries()) {
+            if (CU.writes().apply(txEntry))
+                readyNearLock(txEntry, mapping.dhtVersion(), pendingVers, committedVers, rolledbackVers);
+        }
+
+        for (IgniteTxEntry txEntry : mapping.entries()) {
+            if (CU.reads().apply(txEntry))
+                readyNearLock(txEntry, mapping.dhtVersion(), pendingVers, committedVers, rolledbackVers);
+        }
     }
 
     /**
-     * @param entries Entries.
+     * @param txEntry TX entry.
      * @param dhtVer DHT version.
      * @param pendingVers Pending versions.
      * @param committedVers Committed versions.
      * @param rolledbackVers Rolled back versions.
      */
-    void readyNearLocks(Collection<IgniteTxEntry> entries,
+    void readyNearLock(IgniteTxEntry txEntry,
         GridCacheVersion dhtVer,
         Collection<GridCacheVersion> pendingVers,
         Collection<GridCacheVersion> committedVers,
         Collection<GridCacheVersion> rolledbackVers)
     {
-        for (IgniteTxEntry txEntry : entries) {
-            while (true) {
-                GridCacheContext cacheCtx = txEntry.cached().context();
+        while (true) {
+            GridCacheContext cacheCtx = txEntry.cached().context();
 
-                assert cacheCtx.isNear();
+            assert cacheCtx.isNear();
 
-                GridDistributedCacheEntry entry = (GridDistributedCacheEntry)txEntry.cached();
+            GridDistributedCacheEntry entry = (GridDistributedCacheEntry)txEntry.cached();
 
-                try {
-                    // Handle explicit locks.
-                    GridCacheVersion explicit = txEntry.explicitVersion();
+            try {
+                // Handle explicit locks.
+                GridCacheVersion explicit = txEntry.explicitVersion();
 
-                    if (explicit == null) {
-                        entry.readyNearLock(xidVer,
-                            dhtVer,
-                            committedVers,
-                            rolledbackVers,
-                            pendingVers);
-                    }
-
-                    break;
+                if (explicit == null) {
+                    entry.readyNearLock(xidVer,
+                        dhtVer,
+                        committedVers,
+                        rolledbackVers,
+                        pendingVers);
                 }
-                catch (GridCacheEntryRemovedException ignored) {
-                    assert entry.obsoleteVersion() != null;
 
-                    if (log.isDebugEnabled())
-                        log.debug("Replacing obsolete entry in remote transaction [entry=" + entry +
-                            ", tx=" + this + ']');
+                break;
+            }
+            catch (GridCacheEntryRemovedException ignored) {
+                assert entry.obsoleteVersion() != null;
 
-                    // Replace the entry.
-                    txEntry.cached(txEntry.context().cache().entryEx(txEntry.key()));
-                }
+                if (log.isDebugEnabled())
+                    log.debug("Replacing obsolete entry in remote transaction [entry=" + entry +
+                        ", tx=" + this + ']');
+
+                // Replace the entry.
+                txEntry.cached(txEntry.context().cache().entryEx(txEntry.key()));
             }
         }
     }
