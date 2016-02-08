@@ -122,6 +122,15 @@ namespace Apache.Ignite.Core.Tests.DataStructures
             TestOperations(1, 2);
             TestOperations("1", "2");
             TestOperations(Guid.NewGuid(), Guid.NewGuid());
+        }
+
+        /// <summary>
+        /// Tests DateTime in the atomic.
+        /// </summary>
+        [Test]
+        [Ignore("IGNITE-2578")]
+        public void TestDateTime()
+        {
             TestOperations(DateTime.Now, DateTime.Now.AddDays(-1));
         }
 
@@ -129,16 +138,17 @@ namespace Apache.Ignite.Core.Tests.DataStructures
         /// Tests serializable objects in the atomic.
         /// </summary>
         [Test]
+        [Ignore("IGNITE-2578")]
         public void TestSerializable()
         {
             TestOperations(new SerializableObj {Foo = 16}, new SerializableObj {Foo = -5});
         }
 
         /// <summary>
-        /// Tests portable objects in the atomic.
+        /// Tests binarizable objects in the atomic.
         /// </summary>
         [Test]
-        public void TestPortable()
+        public void TestBinarizable()
         {
             TestOperations(new BinaryObj {Foo = 16}, new BinaryObj {Foo = -5});
         }
