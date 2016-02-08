@@ -332,7 +332,7 @@ namespace ignite
 
                     for (int i = 0; i < len; i++)
                     {
-                        Date elem = *(val + i);
+                        const Date& elem = *(val + i);
 
                         WriteTopObject(elem);
                     }
@@ -624,6 +624,12 @@ namespace ignite
             void BinaryWriterImpl::WriteTopObject<Guid>(const Guid& obj)
             {
                 WriteTopObject0<Guid>(obj, BinaryUtils::WriteGuid, IGNITE_TYPE_UUID);
+            }
+
+            template <>
+            void BinaryWriterImpl::WriteTopObject<Date>(const Date& obj)
+            {
+                WriteTopObject0<Date>(obj, BinaryUtils::WriteDate, IGNITE_TYPE_DATE);
             }
 
             void BinaryWriterImpl::PostWrite()

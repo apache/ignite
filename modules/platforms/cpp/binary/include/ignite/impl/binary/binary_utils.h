@@ -343,7 +343,7 @@ namespace ignite
                  * @param stream Stream.
                  * @param val Value.
                  */
-                static void WriteDate(interop::InteropOutputStream* stream, const Date& val);
+                static void WriteDate(interop::InteropOutputStream* stream, const Date val);
 
                 /**
                  * Utility method to write string to stream.

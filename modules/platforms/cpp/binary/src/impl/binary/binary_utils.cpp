@@ -208,7 +208,7 @@ namespace ignite
                 return Date(milliseconds);
             }
 
-            void BinaryUtils::WriteDate(interop::InteropOutputStream* stream, const Date& val)
+            void BinaryUtils::WriteDate(interop::InteropOutputStream* stream, const Date val)
             {
                 stream->WriteInt64(val.GetMilliseconds());
             }

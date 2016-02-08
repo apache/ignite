@@ -37,6 +37,8 @@ namespace ignite
     Date& Date::operator=(const Date& another)
     {
         milliseconds = another.milliseconds;
+
+        return *this;
     }
 
     int64_t Date::GetMilliseconds() const

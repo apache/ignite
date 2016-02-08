@@ -929,6 +929,9 @@ namespace ignite
             void IGNITE_IMPORT_EXPORT BinaryWriterImpl::WriteTopObject(const Guid& obj);
 
             template<>
+            void IGNITE_IMPORT_EXPORT BinaryWriterImpl::WriteTopObject(const Date& obj);
+
+            template<>
             inline void IGNITE_IMPORT_EXPORT BinaryWriterImpl::WriteTopObject(const std::string& obj)
             {
                 const char* obj0 = obj.c_str();
