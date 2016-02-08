@@ -1712,8 +1712,9 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         Collection<DynamicCacheChangeRequest> reqs,
         Throwable err
     ) {
-        if (err instanceof NodeStoppingException && log.isDebugEnabled())
-            log.debug("Skipping exchange completion for caches, since node is stopping: " + err.getMessage());
+        if (err instanceof NodeStoppingException)
+            if (log.isDebugEnabled())
+                log.debug("Skipping exchange completion for caches, since node is stopping: " + err.getMessage());
         else
             for (GridCacheAdapter<?, ?> cache : caches.values()) {
                 GridCacheContext<?, ?> cacheCtx = cache.context();
