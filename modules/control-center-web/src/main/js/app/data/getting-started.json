@@ -3,7 +3,7 @@
         "title": "With Apache Ignite Web Console You Can",
         "message": [
             "<img src='/images/ignite-puzzle.png' width='100%' />",
-            "<ul>",
+            "<ul class='margin-top-dflt'>",
             "<li>Generate cluster configuration</li>",
             "<li>Import domain model from database</li>",
             "<li>Configure all needed caches</li>",

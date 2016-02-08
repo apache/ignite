@@ -1813,9 +1813,19 @@ treecontrol.tree-classic {
 
 .getting-started {
     margin: 15px 15px 300px;
+}
 
-    ul {
-        padding-left: 20px;
+.getting-started-footer {
+    @extend .modal-footer;
+
+    padding: 10px 15px;
+
+    .btn:last-child {
+        margin-right: 0;
+    }
+
+    .checkbox {
+        margin: 0;
     }
 }
 
