@@ -55,6 +55,13 @@ namespace ignite
             delete ptr;
         }
 
+        /**
+         * Memory reallocate callback.
+         *
+         * @param target Target environment.
+         * @param memPtr Memory pointer.
+         * @param cap Required capasity.
+         */
         void IGNITE_CALL MemoryReallocate(void* target, long long memPtr, int cap)
         {
             InteropExternalMemory mem(reinterpret_cast<int8_t*>(memPtr));
