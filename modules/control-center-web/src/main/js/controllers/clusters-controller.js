@@ -326,6 +326,9 @@ consoleModule.controller('clustersController', function ($http, $timeout, $scope
             var d = item.discovery;
 
             if (d) {
+                if ((d.maxAckTimeout != undefined ? d.maxAckTimeout : 600000) < (d.ackTimeout || 5000))
+                    return showPopoverMessage($scope.ui, 'discovery', 'ackTimeout', 'Acknowledgement timeout should be less than max acknowledgement timeout');
+
                 if (d.kind === 'Vm' && d.Vm && d.Vm.addresses.length === 0)
                     return showPopoverMessage($scope.ui, 'general', 'addresses', 'Addresses are not specified');
 

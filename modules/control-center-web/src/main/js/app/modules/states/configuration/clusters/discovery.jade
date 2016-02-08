@@ -149,6 +149,7 @@ form.panel.panel-default(name='discovery' novalidate)
                             data-name='threadPriority'
                             data-ng-model='#{model}.threadPriority'
                             data-placeholder='10'
+                            data-min='1'
                         )
                 .settings-row
                     ignite-form-field
@@ -161,6 +162,7 @@ form.panel.panel-default(name='discovery' novalidate)
                             data-name='heartbeatFrequency'
                             data-ng-model='#{model}.heartbeatFrequency'
                             data-placeholder='2000'
+                            data-min='1'
                         )
                 .settings-row
                     ignite-form-field
@@ -173,6 +175,7 @@ form.panel.panel-default(name='discovery' novalidate)
                             data-name='maxMissedHeartbeats'
                             data-ng-model='#{model}.maxMissedHeartbeats'
                             data-placeholder='1'
+                            data-min='1'
                         )
                 .settings-row
                     ignite-form-field
@@ -185,6 +188,7 @@ form.panel.panel-default(name='discovery' novalidate)
                             data-name='maxMissedClientHeartbeats'
                             data-ng-model='#{model}.maxMissedClientHeartbeats'
                             data-placeholder='5'
+                            data-min='1'
                         )
                 .settings-row
                     ignite-form-field
@@ -242,6 +246,7 @@ form.panel.panel-default(name='discovery' novalidate)
                             data-name='discoReconnectCount'
                             data-ng-model='#{model}.reconnectCount'
                             data-placeholder='10'
+                            data-min='1'
                         )
                 .settings-row
                     ignite-form-field
@@ -254,6 +259,7 @@ form.panel.panel-default(name='discovery' novalidate)
                             data-name='statisticsPrintFrequency'
                             data-ng-model='#{model}.statisticsPrintFrequency'
                             data-placeholder='0'
+                            data-min='1'
                         )
                 .settings-row
                     ignite-form-field
@@ -266,6 +272,7 @@ form.panel.panel-default(name='discovery' novalidate)
                             data-name='ipFinderCleanFrequency'
                             data-ng-model='#{model}.ipFinderCleanFrequency'
                             data-placeholder='60000'
+                            data-min='1'
                         )
                 .settings-row
                     ignite-form-field
