@@ -118,6 +118,16 @@ namespace ignite
         {
             return impl->ReadGuidArray(fieldName, res, len);
         }
+
+        Date BinaryReader::ReadDate(const char * fieldName)
+        {
+            return impl->ReadDate(fieldName);
+        }
+
+        int32_t BinaryReader::ReadDateArray(const char * fieldName, Date * res, const int32_t len)
+        {
+            return impl->ReadDateArray(fieldName, res, len);
+        }
         
         int32_t BinaryReader::ReadString(const char* fieldName, char* res, int32_t len)
         {
