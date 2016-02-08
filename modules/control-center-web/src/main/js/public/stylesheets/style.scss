@@ -1811,6 +1811,14 @@ treecontrol.tree-classic {
     background-image: none;
 }
 
+.getting-started {
+    margin: 15px 15px 300px;
+
+    ul {
+        padding-left: 20px;
+    }
+}
+
 .getting-started-demo {
     color: $brand-info;
 }
