@@ -176,7 +176,7 @@ namespace Apache.Ignite.Core.Tests
 
             using (var xmlWriter = XmlWriter.Create(sb))
             {
-                GetTestConfig().ToXml(xmlWriter, "igniteConfiguration");
+                IgniteConfigurationXmlSerializer.Serialize(GetTestConfig(), xmlWriter, "igniteConfiguration");
             }
 
             CheckSchemaValidation(sb.ToString());
@@ -218,7 +218,7 @@ namespace Apache.Ignite.Core.Tests
 
             using (var xmlWriter = XmlWriter.Create(sb))
             {
-                cfg.ToXml(xmlWriter, "igniteConfig");
+                IgniteConfigurationXmlSerializer.Serialize(cfg, xmlWriter, "igniteConfig");
             }
 
             var xml = sb.ToString();
@@ -226,7 +226,7 @@ namespace Apache.Ignite.Core.Tests
             using (var xmlReader = XmlReader.Create(new StringReader(xml)))
             {
                 xmlReader.MoveToContent();
-                return IgniteConfiguration.FromXml(xmlReader);
+                return IgniteConfigurationXmlSerializer.Deserialize(xmlReader);
             }
         }
 
