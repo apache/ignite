@@ -13,15 +13,15 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
  */
 public class StripedCompositeReadWriteLock implements ReadWriteLock {
 
-    private final ReadWriteLock[] locks;
+    private final PaddedReentrantReadWriteLock[] locks;
 
     private final CompositeWriteLock compositeWriteLock;
 
     public StripedCompositeReadWriteLock(int concurrencyLevel) {
-        locks = new ReadWriteLock[concurrencyLevel];
+        locks = new PaddedReentrantReadWriteLock[concurrencyLevel];
 
         for (int i = 0; i < concurrencyLevel; i++)
-            locks[i] = new ReentrantReadWriteLock();
+            locks[i] = new PaddedReentrantReadWriteLock();
 
         compositeWriteLock = new CompositeWriteLock();
     }
@@ -33,6 +33,10 @@ public class StripedCompositeReadWriteLock implements ReadWriteLock {
 
     @NotNull @Override public Lock writeLock() {
         return compositeWriteLock;
+    }
+
+    private static class PaddedReentrantReadWriteLock extends ReentrantReadWriteLock {
+        long p0, p1, p2, p3, p4, p5, p6, p7;
     }
 
     private class CompositeWriteLock implements Lock {
