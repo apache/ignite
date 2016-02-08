@@ -17,9 +17,7 @@
 
 namespace Apache.Ignite.Linq.Impl
 {
-    using System;
     using System.Collections.Generic;
-    using System.Linq.Expressions;
     using System.Text;
     using Remotion.Linq.Clauses;
 
@@ -58,7 +56,7 @@ namespace Apache.Ignite.Linq.Impl
         /// <summary>
         /// Gets the table alias.
         /// </summary>
-        public string GetAlias(string fullName)
+        public string GetTableAlias(string fullName)
         {
             string alias;
 
@@ -79,7 +77,7 @@ namespace Apache.Ignite.Linq.Impl
         {
             var tableName = TableNameMapper.GetTableNameWithSchema(clause);
 
-            builder.AppendFormat("{0} as {1}", tableName, GetAlias(tableName));
+            builder.AppendFormat("{0} as {1}", tableName, GetTableAlias(tableName));
 
             return builder;
         }

@@ -313,7 +313,7 @@ namespace Apache.Ignite.Linq.Impl
                 VisitQueryModel(subQuery.QueryModel, true);
 
                 var tableName = TableNameMapper.GetTableNameWithSchema(subQuery.QueryModel.MainFromClause);
-                var alias = _aliases.GetAlias(tableName);
+                var alias = _aliases.GetTableAlias(tableName);
                 _builder.AppendFormat(") as {0} on (", alias);
             }
             else
@@ -330,7 +330,7 @@ namespace Apache.Ignite.Linq.Impl
                                                     innerExpr.Value);
 
                 var tableName = TableNameMapper.GetTableNameWithSchema(joinClause);
-                _builder.AppendFormat("inner join {0} as {1} on (", tableName, _aliases.GetAlias(tableName));
+                _builder.AppendFormat("inner join {0} as {1} on (", tableName, _aliases.GetTableAlias(tableName));
             }
 
             BuildJoinCondition(joinClause.InnerKeySelector, joinClause.OuterKeySelector);
