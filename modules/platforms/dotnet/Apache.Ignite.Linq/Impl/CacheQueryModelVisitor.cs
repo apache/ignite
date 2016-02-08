@@ -62,6 +62,30 @@ namespace Apache.Ignite.Linq.Impl
             return new QueryData(queryText, _parameters, true);
         }
 
+        /// <summary>
+        /// Gets the builder.
+        /// </summary>
+        public StringBuilder Builder
+        {
+            get { return _builder; }
+        }
+
+        /// <summary>
+        /// Gets the parameters.
+        /// </summary>
+        public IList<object> Parameters
+        {
+            get { return _parameters; }
+        }
+
+        /// <summary>
+        /// Gets the aliases.
+        /// </summary>
+        public AliasDictionary Aliases
+        {
+            get { return _aliases; }
+        }
+
         /** <inheritdoc /> */
         public override void VisitQueryModel(QueryModel queryModel)
         {
@@ -394,7 +418,7 @@ namespace Apache.Ignite.Linq.Impl
         /// </summary>
         private void BuildSqlExpression(Expression expression, bool useStar = false)
         {
-            new CacheQueryExpressionVisitor(_builder, _parameters, useStar, _aliases).Visit(expression);
+            new CacheQueryExpressionVisitor(this, useStar).Visit(expression);
         }
     }
 }

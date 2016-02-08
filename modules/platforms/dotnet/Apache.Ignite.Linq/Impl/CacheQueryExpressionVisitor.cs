@@ -38,33 +38,20 @@ namespace Apache.Ignite.Linq.Impl
         private readonly bool _useStar;
 
         /** */
-        private readonly StringBuilder _resultBuilder;
-
-        /** */
-        private readonly List<object> _parameters;
-
-        /** */
-        private readonly AliasDictionary _aliases;
+        private readonly CacheQueryModelVisitor _modelVisitor;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="CacheQueryExpressionVisitor" /> class.
         /// </summary>
-        /// <param name="builder">The builder.</param>
-        /// <param name="parameters">The parameters.</param>
-        /// <param name="useStar">Flag indicating that star '*' qualifier should be used 
+        /// <param name="modelVisitor">The _model visitor.</param>
+        /// <param name="useStar">Flag indicating that star '*' qualifier should be used
         /// for the whole-table select instead of _key, _val.</param>
-        /// <param name="aliases">The aliases.</param>
-        public CacheQueryExpressionVisitor(StringBuilder builder, List<object> parameters, bool useStar, 
-            AliasDictionary aliases)
+        public CacheQueryExpressionVisitor(CacheQueryModelVisitor modelVisitor, bool useStar)
         {
-            Debug.Assert(builder != null);
-            Debug.Assert(parameters != null);
-            Debug.Assert(aliases != null);
+            Debug.Assert(modelVisitor != null);
 
-            _resultBuilder = builder;
-            _parameters = parameters;
+            _modelVisitor = modelVisitor;
             _useStar = useStar;
-            _aliases = aliases;
         }
 
         /// <summary>
@@ -72,30 +59,38 @@ namespace Apache.Ignite.Linq.Impl
         /// </summary>
         public StringBuilder ResultBuilder
         {
-            get { return _resultBuilder; }
+            get { return _modelVisitor.Builder; }
         }
 
         /// <summary>
         /// Gets the parameters.
         /// </summary>
-        public List<object> Parameters
+        public IList<object> Parameters
         {
-            get { return _parameters; }
+            get { return _modelVisitor.Parameters; }
+        }
+
+        /// <summary>
+        /// Gets the aliases.
+        /// </summary>
+        private AliasDictionary Aliases
+        {
+            get { return _modelVisitor.Aliases; }
         }
 
         /** <inheritdoc /> */
         [SuppressMessage("Microsoft.Design", "CA1062:Validate arguments of public methods", MessageId = "0")]
         protected override Expression VisitUnary(UnaryExpression expression)
         {
-            _resultBuilder.Append("(");
+            ResultBuilder.Append("(");
 
             switch (expression.NodeType)
             {
                 case ExpressionType.Negate:
-                    _resultBuilder.Append("-");
+                    ResultBuilder.Append("-");
                     break;
                 case ExpressionType.Not:
-                    _resultBuilder.Append("not ");
+                    ResultBuilder.Append("not ");
                     break;
                 case ExpressionType.Convert:
                     // Ignore, let the db do the conversion
@@ -106,7 +101,7 @@ namespace Apache.Ignite.Linq.Impl
 
             Visit(expression.Operand);
 
-            _resultBuilder.Append(")");
+            ResultBuilder.Append(")");
 
             return expression;
         }
@@ -119,16 +114,16 @@ namespace Apache.Ignite.Linq.Impl
         private bool VisitBinaryFunc(BinaryExpression expression)
         {
             if (expression.NodeType == ExpressionType.Add && expression.Left.Type == typeof (string))
-                _resultBuilder.Append("concat(");
+                ResultBuilder.Append("concat(");
             else if (expression.NodeType == ExpressionType.Coalesce)
-                _resultBuilder.Append("coalesce(");
+                ResultBuilder.Append("coalesce(");
             else
                 return false;
 
             Visit(expression.Left);
-            _resultBuilder.Append(", ");
+            ResultBuilder.Append(", ");
             Visit(expression.Right);
-            _resultBuilder.Append(")");
+            ResultBuilder.Append(")");
 
             return true;
         }
@@ -141,7 +136,7 @@ namespace Apache.Ignite.Linq.Impl
             if (VisitBinaryFunc(expression))
                 return expression;
 
-            _resultBuilder.Append("(");
+            ResultBuilder.Append("(");
 
             Visit(expression.Left);
 
@@ -154,11 +149,11 @@ namespace Apache.Ignite.Linq.Impl
                     if (rightConst != null && rightConst.Value == null)
                     {
                         // Special case for nulls, since "= null" does not work in SQL
-                        _resultBuilder.Append(" is null)");
+                        ResultBuilder.Append(" is null)");
                         return expression;
                     }
 
-                    _resultBuilder.Append(" = ");
+                    ResultBuilder.Append(" = ");
                     break;
                 }
 
@@ -169,58 +164,58 @@ namespace Apache.Ignite.Linq.Impl
                     if (rightConst != null && rightConst.Value == null)
                     {
                         // Special case for nulls, since "<> null" does not work in SQL
-                        _resultBuilder.Append(" is not null)");
+                        ResultBuilder.Append(" is not null)");
                         return expression;
                     }
 
-                    _resultBuilder.Append(" <> ");
+                    ResultBuilder.Append(" <> ");
                     break;
                 }
 
                 case ExpressionType.AndAlso:
                 case ExpressionType.And:
-                    _resultBuilder.Append(" and ");
+                    ResultBuilder.Append(" and ");
                     break;
 
                 case ExpressionType.OrElse:
                 case ExpressionType.Or:
-                    _resultBuilder.Append(" or ");
+                    ResultBuilder.Append(" or ");
                     break;
 
                 case ExpressionType.Add:
-                    _resultBuilder.Append(" + ");
+                    ResultBuilder.Append(" + ");
                     break;
 
                 case ExpressionType.Subtract:
-                    _resultBuilder.Append(" - ");
+                    ResultBuilder.Append(" - ");
                     break;
 
                 case ExpressionType.Multiply:
-                    _resultBuilder.Append(" * ");
+                    ResultBuilder.Append(" * ");
                     break;
 
                 case ExpressionType.Modulo:
-                    _resultBuilder.Append(" % ");
+                    ResultBuilder.Append(" % ");
                     break;
 
                 case ExpressionType.Divide:
-                    _resultBuilder.Append(" / ");
+                    ResultBuilder.Append(" / ");
                     break;
 
                 case ExpressionType.GreaterThan:
-                    _resultBuilder.Append(" > ");
+                    ResultBuilder.Append(" > ");
                     break;
 
                 case ExpressionType.GreaterThanOrEqual:
-                    _resultBuilder.Append(" >= ");
+                    ResultBuilder.Append(" >= ");
                     break;
 
                 case ExpressionType.LessThan:
-                    _resultBuilder.Append(" < ");
+                    ResultBuilder.Append(" < ");
                     break;
 
                 case ExpressionType.LessThanOrEqual:
-                    _resultBuilder.Append(" <= ");
+                    ResultBuilder.Append(" <= ");
                     break;
 
                 case ExpressionType.Coalesce:
@@ -232,7 +227,7 @@ namespace Apache.Ignite.Linq.Impl
             }
 
             Visit(expression.Right);
-            _resultBuilder.Append(")");
+            ResultBuilder.Append(")");
 
             return expression;
         }
@@ -244,9 +239,9 @@ namespace Apache.Ignite.Linq.Impl
             // In other cases we need both parts of cache entry
             var format = _useStar ? "{0}.*" : "{0}._key, {0}._val";
 
-            var tableName = _aliases.GetTableAlias(TableNameMapper.GetTableNameWithSchema(expression));
+            var tableName = Aliases.GetTableAlias(TableNameMapper.GetTableNameWithSchema(expression));
 
-            _resultBuilder.AppendFormat(format, tableName);
+            ResultBuilder.AppendFormat(format, tableName);
 
             return expression;
         }
@@ -261,11 +256,11 @@ namespace Apache.Ignite.Linq.Impl
             // Special case: string.Length
             if (expression.Member == MethodVisitor.StringLength)
             {
-                _resultBuilder.Append("length(");
+                ResultBuilder.Append("length(");
 
                 VisitMember((MemberExpression) expression.Expression);
 
-                _resultBuilder.Append(")");
+                ResultBuilder.Append(")");
 
                 return expression;
             }
@@ -284,8 +279,8 @@ namespace Apache.Ignite.Linq.Impl
                 ? expression.Member.Name
                 : queryFieldAttr.Name;
 
-            _resultBuilder.AppendFormat("{0}.{1}",
-                _aliases.GetTableAlias(TableNameMapper.GetTableNameWithSchema(expression)), fieldName);
+            ResultBuilder.AppendFormat("{0}.{1}",
+                Aliases.GetTableAlias(TableNameMapper.GetTableNameWithSchema(expression)), fieldName);
 
             return expression;
         }
@@ -294,9 +289,9 @@ namespace Apache.Ignite.Linq.Impl
         [SuppressMessage("Microsoft.Design", "CA1062:Validate arguments of public methods")]
         protected override Expression VisitConstant(ConstantExpression expression)
         {
-            _resultBuilder.Append("?");
+            ResultBuilder.Append("?");
 
-            _parameters.Add(expression.Value);
+            _modelVisitor.Parameters.Add(expression.Value);
 
             return expression;
         }
@@ -332,27 +327,28 @@ namespace Apache.Ignite.Linq.Impl
         [SuppressMessage("Microsoft.Design", "CA1062:Validate arguments of public methods")]
         protected override Expression VisitConditional(ConditionalExpression expression)
         {
-            _resultBuilder.Append("casewhen(");
+            ResultBuilder.Append("casewhen(");
 
             Visit(expression.Test);
 
             // Explicit type specification is required when all arguments of CASEWHEN are parameters
-            _resultBuilder.Append(", cast(");
+            ResultBuilder.Append(", cast(");
             Visit(expression.IfTrue);
-            _resultBuilder.AppendFormat(" as {0}), ", SqlTypes.GetSqlTypeName(expression.Type) ?? "other");
+            ResultBuilder.AppendFormat(" as {0}), ", SqlTypes.GetSqlTypeName(expression.Type) ?? "other");
 
             Visit(expression.IfFalse);
-            _resultBuilder.Append(")");
+            ResultBuilder.Append(")");
 
             return expression;
         }
 
         /** <inheritdoc /> */
+        [SuppressMessage("Microsoft.Design", "CA1062:Validate arguments of public methods")]
         protected override Expression VisitSubQuery(SubQueryExpression expression)
         {
             // This happens when New expression uses a subquery
             // TODO
-            expression.QueryModel
+            _modelVisitor.VisitQueryModel(expression.QueryModel);
             return expression;
         }
 
@@ -377,7 +373,7 @@ namespace Apache.Ignite.Linq.Impl
                     if (_useStar)
                         throw new NotSupportedException("Aggregate functions do not support multiple fields");
 
-                    _resultBuilder.Append(", ");
+                    ResultBuilder.Append(", ");
                 }
 
                 first = false;
