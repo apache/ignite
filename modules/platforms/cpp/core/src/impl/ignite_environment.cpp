@@ -25,6 +25,7 @@ using namespace ignite::impl::interop;
 using namespace ignite::impl::binary;
 using namespace ignite::binary;
 
+
 namespace ignite 
 {
     namespace impl 
@@ -120,7 +121,7 @@ namespace ignite
 
         SharedPointer<InteropMemory> IgniteEnvironment::AllocateMemory()
         {
-            SharedPointer<InteropMemory> ptr(new InteropUnpooledMemory(1024));
+            SharedPointer<InteropMemory> ptr(new InteropUnpooledMemory(DEFAULT_ALLOCATION_SIZE));
 
             return ptr;
         }
