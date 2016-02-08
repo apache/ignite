@@ -35,8 +35,6 @@ import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
-import org.apache.ignite.lang.IgniteClosure;
-import org.apache.ignite.lang.IgnitePredicate;
 
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
 import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_READ;
@@ -166,7 +164,7 @@ public final class GridCacheAtomicReferenceImpl<T> implements GridCacheAtomicRef
         checkRemoved();
 
         try {
-            return CU.outTx(internalCompareAndSetAndGet(wrapperPredicate(expVal), wrapperClosure(newVal)), ctx);
+            return CU.outTx(internalCompareAndSetAndGet(expVal, newVal), ctx);
         }
         catch (IgniteCheckedException e) {
             throw U.convertException(e);
@@ -207,34 +205,6 @@ public final class GridCacheAtomicReferenceImpl<T> implements GridCacheAtomicRef
     }
 
     /**
-     * Method make wrapper predicate for existing value.
-     *
-     * @param val Value.
-     * @return Predicate.
-     */
-    private IgnitePredicate<T> wrapperPredicate(final T val) {
-        return new IgnitePredicate<T>() {
-            @Override public boolean apply(T e) {
-                return F.eq(val, e);
-            }
-        };
-    }
-
-    /**
-     * Method make wrapper closure for existing value.
-     *
-     * @param val Value.
-     * @return Closure.
-     */
-    private IgniteClosure<T, T> wrapperClosure(final T val) {
-        return new IgniteClosure<T, T>() {
-            @Override public T apply(T e) {
-                return val;
-            }
-        };
-    }
-
-    /**
      * Method returns callable for execution {@link #set(Object)} operation in async and sync mode.
      *
      * @param val Value will be set in reference .
@@ -270,12 +240,12 @@ public final class GridCacheAtomicReferenceImpl<T> implements GridCacheAtomicRef
      * Conditionally sets the new value. It will be set if {@code expValPred} is
      * evaluate to {@code true}.
      *
-     * @param expValPred Predicate which should evaluate to {@code true} for value to be set.
-     * @param newValClos Closure which generates new value.
+     * @param expVal Expected value.
+     * @param newVal New value.
      * @return Callable for execution in async and sync mode.
      */
-    private Callable<T> internalCompareAndSetAndGet(final IgnitePredicate<T> expValPred,
-                                                    final IgniteClosure<T, T> newValClos) {
+    private Callable<T> internalCompareAndSetAndGet(final T expVal,
+                                                    final T newVal) {
         return retryTopologySafe(new Callable<T>() {
             @Override public T call() throws Exception {
                 try (IgniteInternalTx tx = CU.txStartInternal(ctx, atomicView, PESSIMISTIC, REPEATABLE_READ)) {
@@ -286,11 +256,12 @@ public final class GridCacheAtomicReferenceImpl<T> implements GridCacheAtomicRef
 
                     T origVal = ref.get();
 
-                    if (!expValPred.apply(origVal)) {
+                    if (!F.eq(expVal, origVal)) {
                         tx.setRollbackOnly();
+                        return expVal;
                     }
                     else {
-                        ref.set(newValClos.apply(origVal));
+                        ref.set(newVal);
 
                         atomicView.getAndPut(key, ref);
 
@@ -300,8 +271,8 @@ public final class GridCacheAtomicReferenceImpl<T> implements GridCacheAtomicRef
                     return origVal;
                 }
                 catch (Error | Exception e) {
-                    U.error(log, "Failed to compare and value [expValPred=" + expValPred + ", newValClos" +
-                        newValClos + ", atomicReference" + this + ']', e);
+                    U.error(log, "Failed to compare and value [expVal=" + expVal + ", newVal" +
+                        newVal + ", atomicReference" + this + ']', e);
 
                     throw e;
                 }
