@@ -113,7 +113,7 @@ public abstract class CacheAbstractNewSelfTest extends GridCommonAbstractTest {
 
                 IgniteEx grid = grid(i);
 
-                grid.createCache(testsCfg.configurationFactory().cacheConfiguration(grid.name()));
+                grid.getOrCreateCache(testsCfg.configurationFactory().cacheConfiguration(grid.name()));
             }
         }
         else

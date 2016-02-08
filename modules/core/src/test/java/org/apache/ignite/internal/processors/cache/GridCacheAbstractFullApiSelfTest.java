@@ -231,7 +231,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
                     Ignite ignite = grid(entry.getKey());
 
                     for (CacheConfiguration cfg : entry.getValue())
-                        ignite.createCache(cfg);
+                        ignite.getOrCreateCache(cfg);
                 }
 
                 awaitPartitionMapExchange();
@@ -5243,7 +5243,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
         if (CacheStartMode.ONE_BY_ONE.name().equalsIgnoreCase(mode))
             return CacheStartMode.ONE_BY_ONE;
 
-        return CacheStartMode.STATIC;
+        return CacheStartMode.NODES_THEN_CACHES;
     }
 
     /**
