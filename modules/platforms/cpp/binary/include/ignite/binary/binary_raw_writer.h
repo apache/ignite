@@ -31,6 +31,7 @@
 #include "ignite/binary/binary_consts.h"
 #include "ignite/binary/binary_containers.h"
 #include "ignite/guid.h"
+#include "ignite/date.h"
 
 namespace ignite
 {
@@ -183,6 +184,21 @@ namespace ignite
              * @param len Array length.
              */
             void WriteGuidArray(const Guid* val, int32_t len);
+
+            /**
+             * Write Date. Maps to "Date" type in Java.
+             *
+             * @param val Value.
+             */
+            void WriteDate(const Date& val);
+
+            /**
+             * Write array of Dates. Maps to "Date[]" type in Java.
+             *
+             * @param val Array.
+             * @param len Array length.
+             */
+            void WriteDateArray(const Date* val, int32_t len);
 
             /**
              * Write string.
