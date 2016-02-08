@@ -1598,7 +1598,7 @@ BOOST_AUTO_TEST_CASE(TestDate)
     BinaryWriterImpl writer(&out, NULL);
     BinaryRawWriter rawWriter(&writer);
 
-    Date writeVal(time(NULL));
+    Date writeVal(time(NULL) * 1000LL);
 
     rawWriter.WriteDate(writeVal);
 
@@ -1610,7 +1610,7 @@ BOOST_AUTO_TEST_CASE(TestDate)
 
     Date readVal = rawReader.ReadDate();
 
-    BOOST_REQUIRE_EQUAL(readVal, writeVal);
+    BOOST_REQUIRE(readVal == writeVal);
 }
 
 BOOST_AUTO_TEST_SUITE_END()
