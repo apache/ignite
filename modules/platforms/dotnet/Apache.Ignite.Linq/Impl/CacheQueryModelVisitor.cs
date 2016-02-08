@@ -130,7 +130,15 @@ namespace Apache.Ignite.Linq.Impl
         {
             var subQuery = queryModel.MainFromClause.FromExpression as SubQueryExpression;
 
-            if (subQuery != null)
+            if (subQuery == null)
+                return;
+
+            if (subQuery.QueryModel.ResultOperators.Count != 1)
+                throw new NotSupportedException("Unexpected subquery: " + subQuery);
+
+            var groupBy = subQuery.QueryModel.ResultOperators[0] as GroupResultOperator;
+
+            if (groupBy != null)
             {
                 // TODO: Handle GROUP BY here
                 _builder.Append("group by ");
