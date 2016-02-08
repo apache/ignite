@@ -16,62 +16,58 @@
  */
 
 export default ['Auth', ['$http', '$rootScope', '$state', '$common', 'IgniteGettingStarted', 'User',
-    function($http, $root, $state, $common, gettingStarted, User) {
-    let _auth = false;
+    ($http, $root, $state, $common, gettingStarted, User) => {
+        let _auth = false;
 
-    try {
-        _auth = localStorage.authorized === 'true';
-    }
-    catch (ignore) {
-        // No-op.
-    }
-
-    function _authorized(value) {
         try {
-            return _auth = localStorage.authorized = !!value;
-        } catch (ignore) {
-            return _auth = !!value;
+            _auth = localStorage.authorized === 'true';
         }
-    }
-
-    return {
-        get authorized() {
-            return _auth;
-        },
-        set authorized(auth) {
-            _authorized(auth);
-        },
-        auth(action, userInfo) {
-            $http.post('/api/v1/' + action, userInfo)
-                .then(User.read)
-                .then((user) => {
-                    if (action !== 'password/forgot') {
-                        _authorized(true);
-
-                        $root.$broadcast('user', user);
-
-                        $state.go('base.configuration.clusters');
-
-                        $root.gettingStarted.tryShow();
-                    } else
-                        $state.go('password.send');
-                })
-                .catch(function(errMsg) {
-                    $common.showPopoverMessage(null, null, 'user_email', errMsg.data);
-                });
-        },
-        logout() {
-            $http.post('/api/v1/logout')
-                .then(function() {
-                    User.clean();
-
-                    _authorized(false);
-
-                    $state.go('login');
-                })
-                .catch(function(errMsg) {
-                    $common.showError(errMsg);
-                });
+        catch (ignore) {
+            // No-op.
         }
-    };
-}]];
+
+        function _authorized(value) {
+            try {
+                return _auth = localStorage.authorized = !!value;
+            } catch (ignore) {
+                return _auth = !!value;
+            }
+        }
+
+        return {
+            get authorized() {
+                return _auth;
+            },
+            set authorized(auth) {
+                _authorized(auth);
+            },
+            auth(action, userInfo) {
+                $http.post('/api/v1/' + action, userInfo)
+                    .then(User.read)
+                    .then((user) => {
+                        if (action !== 'password/forgot') {
+                            _authorized(true);
+
+                            $root.$broadcast('user', user);
+
+                            $state.go('base.configuration.clusters');
+
+                            $root.gettingStarted.tryShow();
+                        } else
+                            $state.go('password.send');
+                    })
+                    .catch((errMsg) => $common.showPopoverMessage(null, null, 'user_email', errMsg.data));
+            },
+            logout() {
+                $http.post('/api/v1/logout')
+                    .then(() => {
+                        User.clean();
+
+                        _authorized(false);
+
+                        $state.go('login');
+                    })
+                    .catch((errMsg) => $common.showError(errMsg));
+            }
+        };
+    }]];
