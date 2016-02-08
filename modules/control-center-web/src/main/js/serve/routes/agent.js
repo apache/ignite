@@ -64,7 +64,7 @@ module.exports.factory = function (_, express, apacheIgnite, fs, JSZip, settings
 
         /* Get grid topology. */
         router.get('/download/zip', function (req, res) {
-            var agentFld = settings.agentFile;
+            var agentFld = settings.agent.file;
             var agentZip = agentFld + '.zip';
             var agentPathZip = 'public/agent/' + agentFld + '.zip';
 
