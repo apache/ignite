@@ -536,7 +536,7 @@ mixin main-table(title, rows, focusId, click, rowTemplate, searchField)
                             .scrollable-y(ng-show='displayedRows.length > 0' style='max-height: 200px')
                                 table
                                     tbody
-                                        tr(ng-repeat='row in displayedRows track by row._id')
+                                        tr(ng-repeat='row in displayedRows track by row._id' ignite-bs-affix-update)
                                             td
                                                 a(ng-class='{active: row._id == selectedItem._id}' on-click-focus=focusId ng-click=click) #{rowTemplate}
                             label.placeholder(ng-show='displayedRows.length == 0') No #{rows} found

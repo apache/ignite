@@ -569,7 +569,7 @@ consoleModule.service('$common', [
                 if (idx >= 0) {
                     var activePanels = ui.activePanels;
 
-                    if (!_.includes(ui.topPanels))
+                    if (!_.includes(ui.topPanels, idx))
                         ui.expanded = true;
 
                     if (!activePanels || activePanels.length < 1)
