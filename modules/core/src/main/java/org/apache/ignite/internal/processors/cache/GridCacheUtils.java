@@ -751,23 +751,28 @@ public class GridCacheUtils {
      * @param <T> Collection element type.
      * @return Reducer.
      */
-    public static <T> IgniteReducer<Collection<T>, Collection<T>> collectionsReducer() {
+    public static <T> IgniteReducer<Collection<T>, Collection<T>> collectionsReducer(final int size) {
         return new IgniteReducer<Collection<T>, Collection<T>>() {
-            private final Collection<T> ret = new ConcurrentLinkedQueue<>();
+            private List<T> ret;
 
-            @Override public boolean collect(Collection<T> c) {
-                if (c != null)
-                    ret.addAll(c);
+            @Override public synchronized boolean collect(Collection<T> c) {
+                if (c == null)
+                    return true;
+
+                if (ret == null)
+                    ret = new ArrayList<>(size);
+
+                ret.addAll(c);
 
                 return true;
             }
 
-            @Override public Collection<T> reduce() {
-                return ret;
+            @Override public synchronized Collection<T> reduce() {
+                return ret == null ? Collections.<T>emptyList() : ret;
             }
 
             /** {@inheritDoc} */
-            @Override public String toString() {
+            @Override public synchronized String toString() {
                 return "Collection reducer: " + ret;
             }
         };
