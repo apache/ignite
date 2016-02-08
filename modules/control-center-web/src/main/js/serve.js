@@ -15,108 +15,94 @@
  * limitations under the License.
  */
 
-/**
- * Module dependencies.
- */
-var http = require('http');
-var https = require('https');
-var config = require('./helpers/configuration-loader.js');
-var app = require('./app');
-var agentManager = require('./agents/agent-manager');
-
-var fs = require('fs');
-
-var debug = require('debug')('ignite-web-console:server');
-
-/**
- * Get port from environment and store in Express.
- */
-var port = config.normalizePort(config.get('server:port') || process.env.PORT || 80);
-
-// Create HTTP server.
-var server = http.createServer(app);
-
-app.set('port', port);
-
-/**
- * Listen on provided port, on all network interfaces.
- */
-server.listen(port);
-server.on('error', onError);
-server.on('listening', onListening);
-
-if (config.get('server:ssl')) {
-    httpsServer = https.createServer({
-        key: fs.readFileSync(config.get('server:key')),
-        cert: fs.readFileSync(config.get('server:cert')),
-        passphrase: config.get('server:keyPassphrase')
-    }, app);
-
-    var httpsPort = config.normalizePort(config.get('server:https-port') || 443);
-
-    /**
-     * Listen on provided port, on all network interfaces.
-     */
-    httpsServer.listen(httpsPort);
-    httpsServer.on('error', onError);
-    httpsServer.on('listening', onListening);
-}
-
-/**
- * Start agent server.
- */
-var agentServer;
-
-if (config.get('agent-server:ssl')) {
-    agentServer = https.createServer({
-    key: fs.readFileSync(config.get('agent-server:key')),
-    cert: fs.readFileSync(config.get('agent-server:cert')),
-    passphrase: config.get('agent-server:keyPassphrase')
-  });
-}
-else {
-  agentServer = http.createServer();
-}
-
-agentServer.listen(config.get('agent-server:port'));
-
-agentManager.createManager(agentServer);
+const http = require('http'),
+    https = require('https'),
+    path = require('path');
 
 /**
  * Event listener for HTTP server "error" event.
  */
-function onError(error) {
-  if (error.syscall !== 'listen') {
-    throw error;
-  }
+const _onError = (port, error) => {
+    if (error.syscall !== 'listen')
+        throw error;
 
-  var bind = typeof port === 'string'
-    ? 'Pipe ' + port
-    : 'Port ' + port;
+    var bind = typeof port === 'string' ? 'Pipe ' + port : 'Port ' + port;
 
-  // Handle specific listen errors with friendly messages.
-  switch (error.code) {
-    case 'EACCES':
-      console.error(bind + ' requires elevated privileges');
-      process.exit(1);
-      break;
-    case 'EADDRINUSE':
-      console.error(bind + ' is already in use');
-      process.exit(1);
-      break;
-    default:
-      throw error;
-  }
-}
+    // Handle specific listen errors with friendly messages.
+    switch (error.code) {
+        case 'EACCES':
+            console.error(bind + ' requires elevated privileges');
+            process.exit(1);
+
+            break;
+        case 'EADDRINUSE':
+            console.error(bind + ' is already in use');
+            process.exit(1);
+
+            break;
+        default:
+            throw error;
+    }
+};
 
 /**
  * Event listener for HTTP server "listening" event.
  */
-function onListening() {
-  var addr = server.address();
-  var bind = typeof addr === 'string'
-    ? 'pipe ' + addr
-    : 'port ' + addr.port;
+const _onListening = (addr) => {
+    var bind = typeof addr === 'string' ? 'pipe ' + addr : 'port ' + addr.port;
 
-  console.log('Start listening on ' + bind);
-}
+    console.log('Start listening on ' + bind);
+};
+
+const igniteModules = (process.env.IGNITE_MODULES && path.relative(__dirname, process.env.IGNITE_MODULES)) || './ignite_modules';
+
+const fireUp = require('fire-up').newInjector({
+    basePath: __dirname,
+    modules: [
+        './serve/**/*.js',
+        `${igniteModules}/**/*.js`
+    ]
+});
+
+Promise.all([fireUp('settings'), fireUp('app'), fireUp('agent')])
+    .then((values) => {
+        const settings = values[0], app = values[1], agent = values[2];
+
+        // Create HTTP server.
+        const server = http.createServer(app);
+
+        app.set('port', settings.server.port);
+
+        server.listen(settings.server.port);
+        server.on('error', _onError.bind(null, settings.server.port));
+        server.on('listening', _onListening.bind(null, server.address()));
+
+        // Create HTTPS server if needed.
+        if (settings.serverSSLOptions) {
+            const httpsServer = https.createServer(settings.server.SSLOptions, app);
+
+            const httpsPort = settings.server.SSLOptions.port;
+
+            httpsServer.listen(httpsPort);
+            httpsServer.on('error', _onError.bind(null, httpsPort));
+            httpsServer.on('listening', _onListening.bind(null, httpsServer.address()));
+        }
+
+        // Start agent server.
+        const agentServer = settings.agent.SSLOptions
+            ? https.createServer(settings.agent.SSLOptions) : http.createServer();
+
+        agentServer.listen(settings.agent.port);
+        agentServer.on('error', _onError.bind(null, settings.agent.port));
+        agentServer.on('listening', _onListening.bind(null, agentServer.address()));
+
+        agent.listen(agentServer);
+
+        // Used for automated test.
+        if (process.send)
+            process.send('running');
+    }).catch((err) => {
+        console.error(err);
+
+        process.exit(1);
+    });
