@@ -349,7 +349,7 @@ public class GridNearAtomicUpdateFuture extends GridFutureAdapter<Object> implem
      * @param req Update request.
      * @param res Update response.
      */
-    private void updateNear(GridNearAtomicUpdateRequest req, GridNearAtomicMultipleUpdateResponse res) {
+    private void updateNear(GridNearAtomicUpdateRequest req, GridNearAtomicUpdateResponse res) {
         assert nearEnabled;
 
         if (res.remapKeys() != null || !req.hasPrimary())
@@ -570,7 +570,7 @@ public class GridNearAtomicUpdateFuture extends GridFutureAdapter<Object> implem
          * @param nodeId Left node ID.
          */
         void onNodeLeft(UUID nodeId) {
-            GridNearAtomicMultipleUpdateResponse res = null;
+            GridNearAtomicUpdateResponse res = null;
 
             synchronized (this) {
                 GridNearAtomicUpdateRequest req;
@@ -581,10 +581,16 @@ public class GridNearAtomicUpdateFuture extends GridFutureAdapter<Object> implem
                     req = mappings != null ? mappings.get(nodeId) : null;
 
                 if (req != null && req.response() == null) {
-                    res = new GridNearAtomicMultipleUpdateResponse(cctx.cacheId(),
-                        nodeId,
-                        req.futureVersion(),
-                        cctx.deploymentEnabled());
+                    if (req instanceof GridNearAtomicSingleUpdateRequest)
+                        res = new GridNearAtomicSingleUpdateResponse(cctx.cacheId(),
+                            nodeId,
+                            req.futureVersion(),
+                            cctx.deploymentEnabled());
+                    else
+                        res = new GridNearAtomicMultipleUpdateResponse(cctx.cacheId(),
+                            nodeId,
+                            req.futureVersion(),
+                            cctx.deploymentEnabled());
 
                     ClusterTopologyCheckedException e = new ClusterTopologyCheckedException("Primary node left grid " +
                         "before response is received: " + nodeId);
@@ -605,7 +611,7 @@ public class GridNearAtomicUpdateFuture extends GridFutureAdapter<Object> implem
          * @param nodeErr {@code True} if response was created on node failure.
          */
         @SuppressWarnings({"unchecked", "ThrowableResultOfMethodCallIgnored"})
-        void onResult(UUID nodeId, GridNearAtomicMultipleUpdateResponse res, boolean nodeErr) {
+        void onResult(UUID nodeId, GridNearAtomicUpdateResponse res, boolean nodeErr) {
             GridNearAtomicUpdateRequest req;
 
             AffinityTopologyVersion remapTopVer = null;
@@ -737,7 +743,7 @@ public class GridNearAtomicUpdateFuture extends GridFutureAdapter<Object> implem
             if (rcvAll && nearEnabled) {
                 if (mappings != null) {
                     for (GridNearAtomicMultipleUpdateRequest req0 : mappings.values()) {
-                        GridNearAtomicMultipleUpdateResponse res0 = req0.response();
+                        GridNearAtomicUpdateResponse res0 = req0.response();
 
                         assert res0 != null : req0;
 
