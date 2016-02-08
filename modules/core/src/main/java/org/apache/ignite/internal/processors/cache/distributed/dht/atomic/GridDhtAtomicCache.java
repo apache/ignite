@@ -139,7 +139,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
         Integer.getInteger(IGNITE_ATOMIC_DEFERRED_ACK_TIMEOUT, 500);
 
     /** Update reply closure. */
-    private CI2<GridNearAtomicUpdateRequest, GridNearAtomicUpdateResponse> updateReplyClos;
+    private CI2<GridNearAtomicUpdateRequest, GridNearAtomicMultipleUpdateResponse> updateReplyClos;
 
     /** Pending  */
     private ConcurrentMap<UUID, DeferredResponseBuffer> pendingResponses = new ConcurrentHashMap8<>();
@@ -192,9 +192,9 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
             }
         });
 
-        updateReplyClos = new CI2<GridNearAtomicUpdateRequest, GridNearAtomicUpdateResponse>() {
+        updateReplyClos = new CI2<GridNearAtomicUpdateRequest, GridNearAtomicMultipleUpdateResponse>() {
             @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
-            @Override public void apply(GridNearAtomicUpdateRequest req, GridNearAtomicUpdateResponse res) {
+            @Override public void apply(GridNearAtomicUpdateRequest req, GridNearAtomicMultipleUpdateResponse res) {
                 if (ctx.config().getAtomicWriteOrderMode() == CLOCK) {
                     assert req.writeSynchronizationMode() != FULL_ASYNC : req;
 
@@ -262,8 +262,8 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
             }
         });
 
-        ctx.io().addHandler(ctx.cacheId(), GridNearAtomicUpdateResponse.class, new CI2<UUID, GridNearAtomicUpdateResponse>() {
-            @Override public void apply(UUID nodeId, GridNearAtomicUpdateResponse res) {
+        ctx.io().addHandler(ctx.cacheId(), GridNearAtomicMultipleUpdateResponse.class, new CI2<UUID, GridNearAtomicMultipleUpdateResponse>() {
+            @Override public void apply(UUID nodeId, GridNearAtomicMultipleUpdateResponse res) {
                 processNearAtomicUpdateResponse(nodeId, res);
             }
         });
@@ -1311,7 +1311,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
     public void updateAllAsyncInternal(
         final UUID nodeId,
         final GridNearAtomicUpdateRequest req,
-        final CI2<GridNearAtomicUpdateRequest, GridNearAtomicUpdateResponse> completionCb
+        final CI2<GridNearAtomicUpdateRequest, GridNearAtomicMultipleUpdateResponse> completionCb
     ) {
         IgniteInternalFuture<Object> forceFut = preldr.request(req.keys(), req.topologyVersion());
 
@@ -1336,9 +1336,9 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
     public void updateAllAsyncInternal0(
         UUID nodeId,
         GridNearAtomicUpdateRequest req,
-        CI2<GridNearAtomicUpdateRequest, GridNearAtomicUpdateResponse> completionCb
+        CI2<GridNearAtomicUpdateRequest, GridNearAtomicMultipleUpdateResponse> completionCb
     ) {
-        GridNearAtomicUpdateResponse res = new GridNearAtomicUpdateResponse(ctx.cacheId(), nodeId, req.futureVersion(),
+        GridNearAtomicMultipleUpdateResponse res = new GridNearAtomicMultipleUpdateResponse(ctx.cacheId(), nodeId, req.futureVersion(),
             ctx.deploymentEnabled());
 
         List<KeyCacheObject> keys = req.keys();
@@ -1559,11 +1559,11 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
         ClusterNode node,
         boolean hasNear,
         GridNearAtomicUpdateRequest req,
-        GridNearAtomicUpdateResponse res,
+        GridNearAtomicMultipleUpdateResponse res,
         List<GridDhtCacheEntry> locked,
         GridCacheVersion ver,
         @Nullable GridDhtAtomicUpdateFuture dhtFut,
-        CI2<GridNearAtomicUpdateRequest, GridNearAtomicUpdateResponse> completionCb,
+        CI2<GridNearAtomicUpdateRequest, GridNearAtomicMultipleUpdateResponse> completionCb,
         boolean replicate,
         String taskName,
         @Nullable IgniteCacheExpiryPolicy expiry,
@@ -1975,11 +1975,11 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
         ClusterNode node,
         boolean hasNear,
         GridNearAtomicUpdateRequest req,
-        GridNearAtomicUpdateResponse res,
+        GridNearAtomicMultipleUpdateResponse res,
         List<GridDhtCacheEntry> locked,
         GridCacheVersion ver,
         @Nullable GridDhtAtomicUpdateFuture dhtFut,
-        CI2<GridNearAtomicUpdateRequest, GridNearAtomicUpdateResponse> completionCb,
+        CI2<GridNearAtomicUpdateRequest, GridNearAtomicMultipleUpdateResponse> completionCb,
         boolean replicate,
         String taskName,
         @Nullable IgniteCacheExpiryPolicy expiry,
@@ -2214,9 +2214,9 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
         @Nullable Collection<KeyCacheObject> rmvKeys,
         @Nullable Map<KeyCacheObject, EntryProcessor<Object, Object, Object>> entryProcessorMap,
         @Nullable GridDhtAtomicUpdateFuture dhtFut,
-        CI2<GridNearAtomicUpdateRequest, GridNearAtomicUpdateResponse> completionCb,
+        CI2<GridNearAtomicUpdateRequest, GridNearAtomicMultipleUpdateResponse> completionCb,
         final GridNearAtomicUpdateRequest req,
-        final GridNearAtomicUpdateResponse res,
+        final GridNearAtomicMultipleUpdateResponse res,
         boolean replicate,
         UpdateBatchResult batchRes,
         String taskName,
@@ -2594,7 +2594,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
      * @return {@code True} if filter evaluation succeeded.
      */
     private boolean checkFilter(GridCacheEntryEx entry, GridNearAtomicUpdateRequest req,
-        GridNearAtomicUpdateResponse res) {
+        GridNearAtomicMultipleUpdateResponse res) {
         try {
             return ctx.isAllLocked(entry, req.filter());
         }
@@ -2688,8 +2688,8 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
     @Nullable private GridDhtAtomicUpdateFuture createDhtFuture(
         GridCacheVersion writeVer,
         GridNearAtomicUpdateRequest updateReq,
-        GridNearAtomicUpdateResponse updateRes,
-        CI2<GridNearAtomicUpdateRequest, GridNearAtomicUpdateResponse> completionCb,
+        GridNearAtomicMultipleUpdateResponse updateRes,
+        CI2<GridNearAtomicUpdateRequest, GridNearAtomicMultipleUpdateResponse> completionCb,
         boolean force
     ) {
         if (!force) {
@@ -2734,7 +2734,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
      * @param res Near atomic update response.
      */
     @SuppressWarnings("unchecked")
-    private void processNearAtomicUpdateResponse(UUID nodeId, GridNearAtomicUpdateResponse res) {
+    private void processNearAtomicUpdateResponse(UUID nodeId, GridNearAtomicMultipleUpdateResponse res) {
         if (log.isDebugEnabled())
             log.debug("Processing near atomic update response [nodeId=" + nodeId + ", res=" + res + ']');
 
@@ -2944,7 +2944,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
      * @param nodeId Originating node ID.
      * @param res Near update response.
      */
-    private void sendNearUpdateReply(UUID nodeId, GridNearAtomicUpdateResponse res) {
+    private void sendNearUpdateReply(UUID nodeId, GridNearAtomicMultipleUpdateResponse res) {
         try {
             ctx.io().send(nodeId, res, ctx.ioPolicy());
         }

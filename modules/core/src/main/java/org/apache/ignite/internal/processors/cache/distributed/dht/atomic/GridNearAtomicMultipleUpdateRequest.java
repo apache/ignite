@@ -157,7 +157,7 @@ public class GridNearAtomicMultipleUpdateRequest extends GridCacheMessage
 
     /** */
     @GridDirectTransient
-    private GridNearAtomicUpdateResponse res;
+    private GridNearAtomicMultipleUpdateResponse res;
 
     /** Maximum possible size of inner collections. */
     @GridDirectTransient
@@ -502,7 +502,7 @@ public class GridNearAtomicMultipleUpdateRequest extends GridCacheMessage
     }
 
     /** {@inheritDoc} */
-    @Override public boolean onResponse(GridNearAtomicUpdateResponse res) {
+    @Override public boolean onResponse(GridNearAtomicMultipleUpdateResponse res) {
         if (this.res == null) {
             this.res = res;
 
@@ -513,7 +513,7 @@ public class GridNearAtomicMultipleUpdateRequest extends GridCacheMessage
     }
 
     /** {@inheritDoc} */
-    @Override @Nullable public GridNearAtomicUpdateResponse response() {
+    @Override @Nullable public GridNearAtomicMultipleUpdateResponse response() {
         return res;
     }
 

@@ -149,7 +149,7 @@ public class GridNearAtomicSingleUpdateRequest extends GridCacheMessage
 
     /** */
     @GridDirectTransient
-    private GridNearAtomicUpdateResponse res;
+    private GridNearAtomicMultipleUpdateResponse res;
 
     /**
      * Empty constructor required by {@link Externalizable}.
@@ -427,7 +427,7 @@ public class GridNearAtomicSingleUpdateRequest extends GridCacheMessage
     }
 
     /** {@inheritDoc} */
-    @Override public boolean onResponse(GridNearAtomicUpdateResponse res) {
+    @Override public boolean onResponse(GridNearAtomicMultipleUpdateResponse res) {
         if (this.res == null) {
             this.res = res;
 
@@ -438,7 +438,7 @@ public class GridNearAtomicSingleUpdateRequest extends GridCacheMessage
     }
 
     /** {@inheritDoc} */
-    @Override @Nullable public GridNearAtomicUpdateResponse response() {
+    @Override @Nullable public GridNearAtomicMultipleUpdateResponse response() {
         return res;
     }
 

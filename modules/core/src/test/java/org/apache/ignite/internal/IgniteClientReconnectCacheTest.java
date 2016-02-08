@@ -49,7 +49,7 @@ import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.events.Event;
 import org.apache.ignite.internal.managers.communication.GridIoMessage;
 import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
-import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridNearAtomicUpdateResponse;
+import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridNearAtomicMultipleUpdateResponse;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsFullMessage;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearGetResponse;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearLockResponse;
@@ -806,7 +806,7 @@ public class IgniteClientReconnectCacheTest extends IgniteClientReconnectAbstrac
 
                     if (syncMode != FULL_ASYNC) {
                         Class<?> cls = (ccfg.getAtomicityMode() == ATOMIC) ?
-                            GridNearAtomicUpdateResponse.class : GridNearTxPrepareResponse.class;
+                            GridNearAtomicMultipleUpdateResponse.class : GridNearTxPrepareResponse.class;
 
                         log.info("Test cache put [atomicity=" + atomicityMode +
                             ", writeOrder=" + writeOrder +

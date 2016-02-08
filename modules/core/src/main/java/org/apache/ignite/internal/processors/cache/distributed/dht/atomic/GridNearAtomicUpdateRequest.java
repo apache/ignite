@@ -190,10 +190,10 @@ public interface GridNearAtomicUpdateRequest {
      * @param res Response.
      * @return {@code True} if current response was {@code null}.
      */
-    public boolean onResponse(GridNearAtomicUpdateResponse res);
+    public boolean onResponse(GridNearAtomicMultipleUpdateResponse res);
 
     /**
      * @return Response.
      */
-    @Nullable public GridNearAtomicUpdateResponse response();
+    @Nullable public GridNearAtomicMultipleUpdateResponse response();
 }

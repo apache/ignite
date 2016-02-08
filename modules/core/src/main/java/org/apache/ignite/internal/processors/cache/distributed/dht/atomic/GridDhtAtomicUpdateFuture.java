@@ -77,7 +77,7 @@ public class GridDhtAtomicUpdateFuture extends GridFutureAdapter<Void> implement
 
     /** Completion callback. */
     @GridToStringExclude
-    private final CI2<GridNearAtomicUpdateRequest, GridNearAtomicUpdateResponse> completionCb;
+    private final CI2<GridNearAtomicUpdateRequest, GridNearAtomicMultipleUpdateResponse> completionCb;
 
     /** Mappings. */
     @GridToStringInclude
@@ -90,7 +90,7 @@ public class GridDhtAtomicUpdateFuture extends GridFutureAdapter<Void> implement
     private final GridNearAtomicUpdateRequest updateReq;
 
     /** Update response. */
-    private final GridNearAtomicUpdateResponse updateRes;
+    private final GridNearAtomicMultipleUpdateResponse updateRes;
 
     /** Future keys. */
     private final Collection<KeyCacheObject> keys;
@@ -110,10 +110,10 @@ public class GridDhtAtomicUpdateFuture extends GridFutureAdapter<Void> implement
      */
     public GridDhtAtomicUpdateFuture(
         GridCacheContext cctx,
-        CI2<GridNearAtomicUpdateRequest, GridNearAtomicUpdateResponse> completionCb,
+        CI2<GridNearAtomicUpdateRequest, GridNearAtomicMultipleUpdateResponse> completionCb,
         GridCacheVersion writeVer,
         GridNearAtomicUpdateRequest updateReq,
-        GridNearAtomicUpdateResponse updateRes
+        GridNearAtomicMultipleUpdateResponse updateRes
     ) {
         this.cctx = cctx;
         this.writeVer = writeVer;
