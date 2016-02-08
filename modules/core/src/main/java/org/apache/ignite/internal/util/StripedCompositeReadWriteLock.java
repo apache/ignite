@@ -36,6 +36,9 @@ public class StripedCompositeReadWriteLock implements ReadWriteLock {
     }
 
     private static class PaddedReentrantReadWriteLock extends ReentrantReadWriteLock {
+
+        private static final long serialVersionUID = 0L;
+
         long p0, p1, p2, p3, p4, p5, p6, p7;
     }
 
