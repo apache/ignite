@@ -258,7 +258,8 @@ public final class GridCacheAtomicReferenceImpl<T> implements GridCacheAtomicRef
 
                     if (!F.eq(expVal, origVal)) {
                         tx.setRollbackOnly();
-                        return expVal;
+
+                        return origVal;
                     }
                     else {
                         ref.set(newVal);
@@ -266,9 +267,9 @@ public final class GridCacheAtomicReferenceImpl<T> implements GridCacheAtomicRef
                         atomicView.getAndPut(key, ref);
 
                         tx.commit();
-                    }
 
-                    return origVal;
+                        return expVal;
+                    }
                 }
                 catch (Error | Exception e) {
                     U.error(log, "Failed to compare and value [expVal=" + expVal + ", newVal" +
