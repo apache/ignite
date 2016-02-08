@@ -442,7 +442,6 @@ public class PlatformCallbackUtils {
     static native void serviceCancel(long envPtr, long svcPtr, long memPtr);
 
     /**
-     /**
      * Invokes service method.
      *
      * @param envPtr Environment pointer.
