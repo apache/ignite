@@ -27,11 +27,6 @@ var consoleModule = angular.module('ignite-web-console',
     .run(function ($rootScope, $http, $state, $common, Auth, User, IgniteGettingStarted) {
         $rootScope.gettingStarted = IgniteGettingStarted;
 
-        if (Auth.authorized)
-            User.read().then(function (user) {
-                $rootScope.$broadcast('user', user);
-            });
-
         $rootScope.revertIdentity = function () {
             $http
                 .get('/api/v1/admin/revert/identity')

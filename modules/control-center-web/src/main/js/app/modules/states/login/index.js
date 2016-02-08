@@ -21,7 +21,7 @@ angular
 .module('ignite-console.states.login', [
     'ui.router',
     // services
-    'ignite-console.Auth'
+    'ignite-console.user'
 ])
 .config(['$stateProvider', function($stateProvider) {
     // set up the states
@@ -36,9 +36,9 @@ angular
         }
     });
 }])
-.run(['$rootScope', '$state', 'Auth', 'igniteTerms', function($root, $state, Auth, igniteTerms) {
+.run(['$rootScope', '$state', 'Auth', 'IgniteTerms', function($root, $state, Auth, IgniteTerms) {
     $root.$on('$stateChangeStart', function(event, toState) {
-        if (toState.name === igniteTerms.termsState)
+        if (toState.name === IgniteTerms.termsState)
             return;
 
         if (!Auth.authorized && (toState.name !== 'login' && !_.startsWith(toState.name, 'password.'))) {

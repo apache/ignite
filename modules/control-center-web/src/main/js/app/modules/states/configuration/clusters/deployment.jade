@@ -96,6 +96,7 @@ form.panel.panel-default(name='#{form}' novalidate)
                             data-ng-model='#{model}.peerClassLoadingThreadPoolSize'
                             data-placeholder='2'
                             data-ng-disabled='!#{enabled}'
+                            data-min='1'
                         )
                 .settings-row
                     ignite-form-group(ng-model='#{exclude}' ng-form='#{form}' )

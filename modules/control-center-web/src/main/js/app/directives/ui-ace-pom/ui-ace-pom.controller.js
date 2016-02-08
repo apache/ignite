@@ -15,10 +15,7 @@
  * limitations under the License.
  */
 
-// TODO IGNITE-2055: use set version.
-const igniteVersion = '1.5.0.final';
-
-export default ['$scope', function($scope) {
+export default ['$scope', 'IgniteVersion', function($scope, IgniteVersion) {
     const ctrl = this;
 
     // Watchers definition.
@@ -29,7 +26,7 @@ export default ['$scope', function($scope) {
             return;
 
         // TODO IGNITE-2053: need move $generatorPom to services.
-        ctrl.data = $generatorPom.pom($scope.cluster, igniteVersion).asString();
+        ctrl.data = $generatorPom.pom($scope.cluster, IgniteVersion.version).asString();
     };
 
     // Setup watchers.

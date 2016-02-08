@@ -575,7 +575,7 @@ $generatorXml.clusterEvents = function (cluster, res) {
         else {
             res.startBlock('<list>');
 
-            var evtGrps = angular.element(document.getElementById('app')).injector().get('igniteIncludeEventGroups');
+            var evtGrps = angular.element(document.getElementById('app')).injector().get('igniteEventGroups');
 
             _.forEach(cluster.includeEventTypes, function(eventGroup, ix) {
                 if (ix > 0)

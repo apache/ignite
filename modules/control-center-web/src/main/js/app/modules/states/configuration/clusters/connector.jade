@@ -93,6 +93,7 @@ form.panel.panel-default(name='connector' novalidate)
                             data-ng-model='#{model}.portRange'
                             data-placeholder='100'
                             data-ng-disabled='!#{model}.enabled'
+                            data-min='1'
                         )
                 .settings-row
                     ignite-form-field
@@ -216,6 +217,7 @@ form.panel.panel-default(name='connector' novalidate)
                             data-ng-model='#{model}.selectorCount'
                             data-placeholder='min(4, availableProcessors)'
                             data-ng-disabled='!#{model}.enabled'
+                            data-min='1'
                         )
                 .settings-row
                     ignite-form-field
@@ -229,6 +231,7 @@ form.panel.panel-default(name='connector' novalidate)
                             data-ng-model='#{model}.threadPoolSize'
                             data-placeholder='max(8, availableProcessors) * 2'
                             data-ng-disabled='!#{model}.enabled'
+                            data-min='1'
                         )
                 .settings-row
                     ignite-form-field

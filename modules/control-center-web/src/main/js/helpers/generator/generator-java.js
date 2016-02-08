@@ -827,7 +827,7 @@ $generatorJava.clusterEvents = function (cluster, res) {
     if (cluster.includeEventTypes && cluster.includeEventTypes.length > 0) {
         res.emptyLineIfNeeded();
 
-        var evtGrps = angular.element(document.getElementById('app')).injector().get('igniteIncludeEventGroups');
+        var evtGrps = angular.element(document.getElementById('app')).injector().get('igniteEventGroups');
 
         var evtGrpDscr = _.find(evtGrps, {value: cluster.includeEventTypes[0]});
 

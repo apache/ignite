@@ -15,26 +15,24 @@
     limitations under the License.
 
 mixin ignite-clusters-information
-    ignite-information(data-title='On this screen you can')
+    ignite-information
         ul
             li Configure #[a(href='https://apacheignite.readme.io/docs/clustering' target='_blank') clusters] properties
             li Associate clusters with caches and in-memory file systems
-            li Preview XML and Java code
-
-mixin ignite-caches-information
-    ignite-information(data-title='On this screen you can')
-        ul
-            li Configure #[a(href='https://apacheignite.readme.io/docs/data-grid' target='_blank') caches] properties
-            li Associate caches with clusters and domain model
-            li Preview XML and Java code
 
 mixin ignite-domains-information
-    ignite-information(data-title='On this screen you can')
+    ignite-information
         ul
-            li Import Domain model from database
-            li Associate domain model with caches
-            li Configure #[a(href='https://apacheignite.readme.io/docs/sql-queries' target='_blank') SQL queries]
-            li Preview XML and Java code
+            li Import database schemas
+            li Try in
+                span.getting-started-demo(ng-click='showImportDomainModal(true)' style='cursor: pointer') &nbsp;Demo&nbsp;
+                | mode
+
+mixin ignite-caches-information
+    ignite-information
+        ul
+            li Configure memory settings
+            li Configure persistence
 
 mixin ignite-igfs-information
     ignite-information(data-title='Configure IGFS only if you are going to use In-memory File System')
@@ -44,10 +42,10 @@ mixin ignite-igfs-information
             li In addition IGFS provides API to execute map-reduce tasks over file system data
 
 mixin ignite-summary-information
-    ignite-information(data-title='On this screen you can')
+    ignite-information
         ul
             li Preview XML configurations for #[a(href='https://apacheignite.readme.io/docs/clients-vs-servers' target='_blank') server and client] nodes
-            li Preview Java classes with server and client nodes configuration from code
-            li Preview Maven pom.xml
-            li Preview #[a(href='https://apacheignite.readme.io/docs/docker-deployment' target='_blank') Dockerfile] for server node
-            li Download fully functional Maven project
+            li Preview code configuration
+            li Preview #[a(href='https://apacheignite.readme.io/docs/docker-deployment' target='_blank') Docker file]
+            li Preview POM dependencies
+            li Download ready-to-use Maven project

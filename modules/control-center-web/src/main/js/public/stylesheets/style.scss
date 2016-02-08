@@ -345,6 +345,14 @@ h1, h2, h3, h4, h5, h6 {
         float: left;
         margin: 0;
     }
+
+    .btn:last-child {
+        margin-right: 0;
+    }
+
+    .checkbox {
+        margin: 0;
+    }
 }
 
 .login-header {
@@ -1813,6 +1821,10 @@ treecontrol.tree-classic {
 
 .carousel-control.right {
     background-image: none;
+}
+
+.getting-started {
+    margin: 15px 15px 300px;
 }
 
 .getting-started-demo {
