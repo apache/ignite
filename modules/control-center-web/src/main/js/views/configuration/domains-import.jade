@@ -30,13 +30,13 @@ mixin td-ellipses-lbl(w, lbl)
                 button.close(ng-click='$hide()' aria-hidden='true') &times;
                 h4.modal-title(ng-if='!importDomain.demo') Import domain models from database
                 h4.modal-title(ng-if='importDomain.demo') Import domain models from demo database
-            .import-domain-model-wizard-page(ng-show='importDomain.action == "drivers"' style='margin-bottom: 256px')
-                div(ng-if='!importDomain.jdbcDriversFound')
-                    label Domain model could not be imported
-                        ul
-                            li Agent not found JDBC drivers
-                            li Copy required JDBC drivers into agent '\jdbc-drivers' folder and try again
-                            li Refer to agent README.txt for more information
+            .import-domain-model-wizard-page(ng-if='importDomain.action == "drivers" && !importDomain.jdbcDriversNotFound' style='margin-bottom: 321px')
+            .import-domain-model-wizard-page(ng-if='importDomain.action == "drivers" && importDomain.jdbcDriversNotFound' style='margin-bottom: 220px')
+                | Domain model could not be imported
+                ul
+                    li Agent failed to find JDBC drivers
+                    li Copy required JDBC drivers into agent '\jdbc-drivers' folder and try again
+                    li Refer to agent README.txt for more information
             .import-domain-model-wizard-page(ng-show='importDomain.action == "connect" && importDomain.demo' style='margin-bottom: 211px')
                 div(ng-if='demoConnection.db == "H2"')
                     label Demo description:
