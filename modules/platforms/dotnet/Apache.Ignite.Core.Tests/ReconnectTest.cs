@@ -27,6 +27,9 @@ namespace Apache.Ignite.Core.Tests
     /// </summary>
     public class ReconnectTest
     {
+        /// <summary>
+        /// Tests the disconnected exception.
+        /// </summary>
         [Test]
         public void TestDisconnectedException()
         {
@@ -69,6 +72,9 @@ namespace Apache.Ignite.Core.Tests
             }
         }
 
+        /// <summary>
+        /// Starts the server process.
+        /// </summary>
         private static IgniteProcess StartServerProcess(IgniteConfiguration cfg)
         {
             return new IgniteProcess(
@@ -76,6 +82,9 @@ namespace Apache.Ignite.Core.Tests
                 "-J-DIGNITE_QUIET=false");
         }
 
+        /// <summary>
+        /// Fixture tear down.
+        /// </summary>
         [TestFixtureTearDown]
         public void FixtureTearDown()
         {
