@@ -28,6 +28,7 @@ namespace Apache.Ignite.Core.Impl.Common
     using System.Linq;
     using System.Reflection;
     using System.Xml;
+    using Apache.Ignite.Core.Impl.Events;
 
     /// <summary>
     /// Serializes <see cref="IgniteConfiguration"/> to XML.

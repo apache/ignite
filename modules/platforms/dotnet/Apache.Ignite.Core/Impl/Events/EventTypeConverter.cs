@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-namespace Apache.Ignite.Core.Impl.Common
+namespace Apache.Ignite.Core.Impl.Events
 {
     using System;
     using System.Collections.Generic;
