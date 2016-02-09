@@ -279,6 +279,8 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
             // All/any
             Assert.IsFalse(ints.Where(x => x > -5).Any(x => x > PersonCount && x > 0));
             Assert.IsTrue(ints.Any(x => x < PersonCount / 2));
+
+            // Skip/take
         }
 
         [Test]
@@ -820,6 +822,8 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
 
             [QuerySqlField] public DateTime? Birthday { get; set; }
 
+            [QuerySqlField] public int AliasTest { get; set; }
+
             public void WriteBinary(IBinaryWriter writer)
             {
                 writer.WriteInt("age1", Age);
@@ -843,6 +847,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         {
             [QuerySqlField] public int Zip { get; set; }
             [QuerySqlField] public string Street { get; set; }
+            [QuerySqlField] public int AliasTest { get; set; }
         }
 
         public class Organization
