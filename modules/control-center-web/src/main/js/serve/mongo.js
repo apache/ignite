@@ -131,7 +131,7 @@ module.exports.factory = function (deepPopulatePlugin, passportMongo, settings, 
         swapEnabled: Boolean,
 
         evictionPolicy: {
-            kind: {type: String, enum: ['LRU', 'FIFO', 'Sorted']},
+            kind: {type: String, enum: ['LRU', 'FIFO', 'SORTED']},
             LRU: {
                 batchSize: Number,
                 maxMemorySize: Number,
@@ -142,7 +142,7 @@ module.exports.factory = function (deepPopulatePlugin, passportMongo, settings, 
                 maxMemorySize: Number,
                 maxSize: Number
             },
-            Sorted: {
+            SORTED: {
                 batchSize: Number,
                 maxMemorySize: Number,
                 maxSize: Number
@@ -220,7 +220,7 @@ module.exports.factory = function (deepPopulatePlugin, passportMongo, settings, 
         nearConfiguration: {
             nearStartSize: Number,
             nearEvictionPolicy: {
-                kind: {type: String, enum: ['LRU', 'FIFO', 'Sorted']},
+                kind: {type: String, enum: ['LRU', 'FIFO', 'SORTED']},
                 LRU: {
                     batchSize: Number,
                     maxMemorySize: Number,
@@ -231,7 +231,7 @@ module.exports.factory = function (deepPopulatePlugin, passportMongo, settings, 
                     maxMemorySize: Number,
                     maxSize: Number
                 },
-                Sorted: {
+                SORTED: {
                     batchSize: Number,
                     maxMemorySize: Number,
                     maxSize: Number
