@@ -183,16 +183,17 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
             var cache = GetPersonOrgCache().ToQueryable();
 
             // Test anonymous type (ctor invoke)
-            var data = cache.Where(x => x.Key < 5)
-                .Select(x => new {Key = x.Key + 20, Age = x.Value.Age + 10, x.Value.Address})
+            var data = cache
+                .Select(x => new {Id = x.Key + 20, Age_ = x.Value.Age + 10, Addr = x.Value.Address})
+                .Where(x => x.Id < 25)
                 .ToArray();
 
             Assert.AreEqual(5, data.Length);
 
             foreach (var t in data)
             {
-                Assert.AreEqual(t.Age - 10, t.Key - 20);
-                Assert.AreEqual(t.Age - 10, t.Address.Zip);
+                Assert.AreEqual(t.Age_ - 10, t.Id - 20);
+                Assert.AreEqual(t.Age_ - 10, t.Addr.Zip);
             }
         }
 
