@@ -483,6 +483,9 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
             CollectionAssert.AreEquivalent(new[] {1000, 1001},
                 persons.GroupBy(x => x.Value.OrganizationId).Select(x => x.Key).ToArray());
 
+            // Aggregate
+            Assert.AreEqual(1000, persons.GroupBy(x => x.Value.OrganizationId).Select(x => x.Key).Take(1).Sum());
+
             // Ordering and count
             var res =
                 from p in persons
