@@ -487,18 +487,6 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         }
 
         [Test]
-        public void TestGroupJoin()
-        {
-            var persons = GetPersonOrgCache().ToQueryable();
-            var orgs = GetOrgCache().ToQueryable();
-
-            var res = orgs.GroupJoin(persons, o => o.Value.Id, p => p.Value.OrganizationId,
-                (org, people) => new {org, people}).ToArray();
-
-            Assert.AreEqual(2, res.Length);
-        }
-
-        [Test]
         public void TestUnion()
         {
             // Direct union

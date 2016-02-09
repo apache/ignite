@@ -295,20 +295,19 @@ namespace Apache.Ignite.Linq.Impl
 
             var from = srcRef.ReferencedQuerySource as IFromClause;
             if (from == null)
-                throw new NotSupportedException("Unexpected subquery in a member expression: " + expression);
+                return false;
 
             var subQuery = from.FromExpression as SubQueryExpression;
             if (subQuery == null)
-                throw new NotSupportedException("Unexpected subquery in a member expression: " + from);
+                return false;
 
             var resOp = subQuery.QueryModel.ResultOperators;
             if (resOp.Count != 1)
-                throw new NotSupportedException("Unexpected subquery in a member expression: " + from);
+                return false;
 
             var groupBy = resOp[0] as GroupResultOperator;
-
             if (groupBy == null)
-                throw new NotSupportedException("Unexpected subquery in a member expression: " + from);
+                return false;
 
             Visit(groupBy.KeySelector);
 
