@@ -142,7 +142,7 @@ module.exports.factory = function (deepPopulatePlugin, passportMongo, settings, 
                 maxMemorySize: Number,
                 maxSize: Number
             },
-            SORTED: {
+            Sorted: {
                 batchSize: Number,
                 maxMemorySize: Number,
                 maxSize: Number
@@ -231,7 +231,7 @@ module.exports.factory = function (deepPopulatePlugin, passportMongo, settings, 
                     maxMemorySize: Number,
                     maxSize: Number
                 },
-                SORTED: {
+                Sorted: {
                     batchSize: Number,
                     maxMemorySize: Number,
                     maxSize: Number
