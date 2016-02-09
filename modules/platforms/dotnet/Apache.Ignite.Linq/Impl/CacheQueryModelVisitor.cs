@@ -171,10 +171,8 @@ namespace Apache.Ignite.Linq.Impl
                     _builder.Append("distinct ");
                 else if (op is FirstResultOperator || op is SingleResultOperator)
                     _builder.Append("top 1 ");
-                else if (op is TakeResultOperator)
-                    _builder.AppendFormat("top {0} ", ((TakeResultOperator) op).Count);
                 else if (op is UnionResultOperator || op is IntersectResultOperator || op is ExceptResultOperator
-                         || op is DefaultIfEmptyResultOperator || op is SkipResultOperator)
+                         || op is DefaultIfEmptyResultOperator || op is SkipResultOperator || op is TakeResultOperator)
                     // Will be processed later
                     break;
                 else
@@ -188,16 +186,10 @@ namespace Apache.Ignite.Linq.Impl
         /// </summary>
         private void ProcessResultOperatorsEnd(QueryModel queryModel)
         {
+            ProcessPagination(queryModel);
+
             foreach (var op in queryModel.ResultOperators.Reverse())
             {
-                var skip = op as SkipResultOperator;
-                if (skip != null)
-                {
-                    _builder.Append("offset ");
-                    BuildSqlExpression(skip.Count);
-                    continue;
-                }
-
                 // SELECT TOP 10 * FROM "person_cache".PERSON where _KEY>10 UNION (select * from "".PERSON where _key > 50 limit 20)
                 string keyword = null;
                 Expression source = null;
@@ -251,6 +243,32 @@ namespace Apache.Ignite.Linq.Impl
 
                     _builder.Append(")");
                 }
+            }
+        }
+
+        /// <summary>
+        /// Processes the pagination (skip/take).
+        /// </summary>
+        private void ProcessPagination(QueryModel queryModel)
+        {
+            var limit = queryModel.ResultOperators.OfType<TakeResultOperator>().FirstOrDefault();
+            var offset = queryModel.ResultOperators.OfType<SkipResultOperator>().FirstOrDefault();
+
+            if (limit == null && offset == null)
+                return;
+
+            // "limit" is mandatory if there is "offset", but not vice versa
+            _builder.Append("limit ");
+
+            if (limit == null)
+                _builder.Append("-1");  // unlimited
+            else
+                BuildSqlExpression(limit.Count);
+
+            if (offset != null)
+            {
+                _builder.Append(" offset ");
+                BuildSqlExpression(offset.Count);
             }
         }
 
