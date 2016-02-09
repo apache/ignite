@@ -186,7 +186,7 @@ namespace Apache.Ignite.Linq.Impl
         /// </summary>
         private void ProcessResultOperatorsEnd(QueryModel queryModel)
         {
-            ProcessPagination(queryModel);
+            ProcessSkipTake(queryModel);
 
             foreach (var op in queryModel.ResultOperators.Reverse())
             {
@@ -249,7 +249,7 @@ namespace Apache.Ignite.Linq.Impl
         /// <summary>
         /// Processes the pagination (skip/take).
         /// </summary>
-        private void ProcessPagination(QueryModel queryModel)
+        private void ProcessSkipTake(QueryModel queryModel)
         {
             var limit = queryModel.ResultOperators.OfType<TakeResultOperator>().FirstOrDefault();
             var offset = queryModel.ResultOperators.OfType<SkipResultOperator>().FirstOrDefault();
@@ -261,7 +261,13 @@ namespace Apache.Ignite.Linq.Impl
             _builder.Append("limit ");
 
             if (limit == null)
-                _builder.Append("-1");  // unlimited
+            {
+                // Workaround for unlimited offset
+                // H2 allows NULL & -1 for unlimited, but Ignite indexing does not
+                // Maximum limit that works is (int.MaxValue - offset) 
+                var offsetInt = (int) ((ConstantExpression) offset.Count).Value;
+                _builder.Append((int.MaxValue - offsetInt).ToString());
+            }
             else
                 BuildSqlExpression(limit.Count);
 
