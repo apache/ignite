@@ -2,28 +2,32 @@
     {
         "title": "With Apache Ignite Web Console You Can",
         "message": [
-            "<img src='/images/ignite-puzzle.png' width='100%' />",
-            "<ul class='margin-top-dflt'>",
-            "<li>Generate cluster configuration</li>",
-            "<li>Import domain model from database</li>",
-            "<li>Configure all needed caches</li>",
-            "<li>Preview generated XML and Java code in browser</li>",
-            "<li>Download ready-to-use Maven project</li>",
-            "<li>Execute SQL queries on real clusters</li>",
-            "</ul>"
+            "<div class='col-xs-4'>",
+            " <img src='/images/ignite-puzzle.png' width='80%' class='getting-started-puzzle' />",
+            "</div>",
+            "<div class='col-xs-8'>",
+            " <ul>",
+            "  <li>Generate cluster configuration</li>",
+            "  <li>Import domain model from database</li>",
+            "  <li>Configure all needed caches</li>",
+            "  <li>Preview generated XML and Java code in browser</li>",
+            "  <li>Download ready-to-use Maven project</li>",
+            "  <li>Execute SQL queries on real clusters</li>",
+            " </ul>",
+            "</div>"
         ]
     },
     {
         "title": "Clusters",
         "message": [
             "<div class='col-xs-7'>",
-            "<img src='/images/cluster.png' width='100%' />",
+            " <img src='/images/cluster.png' width='100%' />",
             "</div>",
             "<div class='col-xs-5'>",
-            "<ul>",
-            "<li>Configure cluster properties</li>",
-            "<li>Associate cluster with caches</li>",
-            "</ul>",
+            " <ul>",
+            "  <li>Configure cluster properties</li>",
+            "  <li>Associate cluster with caches</li>",
+            " </ul>",
             "</div>"
         ]
     },
@@ -31,13 +35,13 @@
         "title": "Domain Model",
         "message": [
             "<div class='col-xs-7'>",
-            "<img src='/images/domains.png' width='100%' />",
+            " <img src='/images/domains.png' width='100%' />",
             "</div>",
             "<div class='col-xs-5'>",
-            "<ul>",
-            "<li>Import database schemas</li>",
-            "<li>Try in <span class='getting-started-demo'>Demo</span> mode</li>",
-            "</ul>",
+            " <ul>",
+            "  <li>Import database schemas</li>",
+            "  <li>Try in <span class='getting-started-demo'>Demo</span> mode</li>",
+            " </ul>",
             "</div>"
         ]
     },
@@ -45,13 +49,13 @@
         "title": "Caches",
         "message": [
             "<div class='col-xs-7'>",
-            "<img src='/images/cache.png' width='100%' />",
+            " <img src='/images/cache.png' width='100%' />",
             "</div>",
             "<div class='col-xs-5'>",
-            "<ul>",
-            "<li>Configure memory settings</li>",
-            "<li>Configure persistence</li>",
-            "</ul>",
+            " <ul>",
+            "  <li>Configure memory settings</li>",
+            "  <li>Configure persistence</li>",
+            " </ul>",
             "</div>"
         ]
     },
@@ -59,13 +63,13 @@
         "title": "In-memory File System",
         "message": [
             "<div class='col-xs-7'>",
-            "<img src='/images/igfs.png' width='100%' />",
+            " <img src='/images/igfs.png' width='100%' />",
             "</div>",
             "<div class='col-xs-5'>",
-            "<ul>",
-            "<li>Configure IGFS properties</li>",
-            "<li>Associate IGFS with clusters</li>",
-            "</ul>",
+            " <ul>",
+            "  <li>Configure IGFS properties</li>",
+            "  <li>Associate IGFS with clusters</li>",
+            " </ul>",
             "</div>"
         ]
     },
@@ -73,16 +77,16 @@
       "title": "Summary",
       "message": [
           "<div class='col-xs-7'>",
-          "<img src='/images/summary.png' width='100%' />",
+          " <img src='/images/summary.png' width='100%' />",
           "</div>",
           "<div class='col-xs-5'>",
-          "<ul>",
-          "<li>Preview XML Configuration</li>",
-          "<li>Preview code configuration</li>",
-          "<li>Preview Docker file</li>",
-          "<li>Preview POM dependencies</li>",
-          "<li>Download ready-to-use project</li>",
-          "</ul>",
+          " <ul>",
+          "  <li>Preview XML Configuration</li>",
+          "  <li>Preview code configuration</li>",
+          "  <li>Preview Docker file</li>",
+          "  <li>Preview POM dependencies</li>",
+          "  <li>Download ready-to-use project</li>",
+          " </ul>",
           "</div>"
       ]
     },
@@ -90,15 +94,15 @@
         "title": "SQL Queries",
         "message": [
             "<div class='col-xs-7'>",
-            "<img src='/images/query-table.png' width='100%' />",
+            " <img src='/images/query-table.png' width='100%' />",
             "</div>",
             "<div class='col-xs-5'>",
-            "<ul>",
-            "<li>Execute SQL Queries</li>",
-            "<li>View Execution Paln</li>",
-            "<li>View In-Memory Schema</li>",
-            "<li>View Streaming Charts</li>",
-            "</ul>",
+            " <ul>",
+            "  <li>Execute SQL Queries</li>",
+            "  <li>View Execution Paln</li>",
+            "  <li>View In-Memory Schema</li>",
+            "  <li>View Streaming Charts</li>",
+            " </ul>",
             "</div>"
         ]
     }
