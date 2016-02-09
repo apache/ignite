@@ -65,6 +65,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheOffHeapTieredAtomicS
 import org.apache.ignite.internal.processors.cache.GridCacheOffHeapTieredEvictionAtomicSelfTest;
 import org.apache.ignite.internal.processors.cache.GridCacheOffHeapTieredEvictionSelfTest;
 import org.apache.ignite.internal.processors.cache.GridCacheOffHeapTieredSelfTest;
+import org.apache.ignite.internal.processors.cache.GridCacheOffHeapValuesEvictionSelfTest;
 import org.apache.ignite.internal.processors.cache.GridCacheP2PUndeploySelfTest;
 import org.apache.ignite.internal.processors.cache.GridCachePartitionedLocalStoreSelfTest;
 import org.apache.ignite.internal.processors.cache.GridCachePartitionedOffHeapLocalStoreSelfTest;
@@ -247,6 +248,7 @@ public class IgniteCacheTestSuite extends TestSuite {
         suite.addTestSuite(GridCacheStorePutxSelfTest.class);
         suite.addTestSuite(GridCacheOffHeapMultiThreadedUpdateSelfTest.class);
         suite.addTestSuite(GridCacheOffHeapAtomicMultiThreadedUpdateSelfTest.class);
+        suite.addTestSuite(GridCacheOffHeapValuesEvictionSelfTest.class);
         suite.addTestSuite(GridCacheColocatedTxStoreExceptionSelfTest.class);
         suite.addTestSuite(GridCacheReplicatedTxStoreExceptionSelfTest.class);
         suite.addTestSuite(GridCacheLocalTxStoreExceptionSelfTest.class);

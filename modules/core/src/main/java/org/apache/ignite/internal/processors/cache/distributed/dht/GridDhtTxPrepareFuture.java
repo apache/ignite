@@ -1202,8 +1202,6 @@ public final class GridDhtTxPrepareFuture extends GridCompoundFuture<IgniteInter
 
                 for (GridDistributedTxMapping nearMapping : tx.nearMap().values()) {
                     if (!tx.dhtMap().containsKey(nearMapping.node().id())) {
-                        assert nearMapping.writes() != null;
-
                         MiniFuture fut = new MiniFuture(nearMapping.node().id(), null, nearMapping);
 
                         add(fut); // Append new future.
@@ -1223,24 +1221,25 @@ public final class GridDhtTxPrepareFuture extends GridCompoundFuture<IgniteInter
                             tx.taskNameHash(),
                             tx.activeCachesDeploymentEnabled());
 
-                        for (IgniteTxEntry entry : nearMapping.writes()) {
-                            try {
-                                if (entry.explicitVersion() == null) {
-                                    GridCacheMvccCandidate added = entry.cached().candidate(version());
+                        for (IgniteTxEntry entry : nearMapping.entries()) {
+                            if (CU.writes().apply(entry)) {
+                                try {
+                                    if (entry.explicitVersion() == null) {
+                                        GridCacheMvccCandidate added = entry.cached().candidate(version());
 
-                                assert added != null : "Null candidate for non-group-lock entry " +
-                                    "[added=" + added + ", entry=" + entry + ']';
-                                assert added.dhtLocal() : "Got non-dht-local candidate for prepare future" +
-                                    "[added=" + added + ", entry=" + entry + ']';
+                                        assert added != null : "Null candidate for non-group-lock entry " +
+                                            "[added=" + added + ", entry=" + entry + ']';
+                                        assert added.dhtLocal() : "Got non-dht-local candidate for prepare future" +
+                                            "[added=" + added + ", entry=" + entry + ']';
 
-                                    if (added != null && added.ownerVersion() != null)
-                                        req.owned(entry.txKey(), added.ownerVersion());
+                                        if (added != null && added.ownerVersion() != null)
+                                            req.owned(entry.txKey(), added.ownerVersion());
+                                    }
+
+                                    break;
+                                } catch (GridCacheEntryRemovedException ignore) {
+                                    assert false : "Got removed exception on entry with dht local candidate: " + entry;
                                 }
-
-                                break;
-                            }
-                            catch (GridCacheEntryRemovedException ignore) {
-                                assert false : "Got removed exception on entry with dht local candidate: " + entry;
                             }
                         }
 

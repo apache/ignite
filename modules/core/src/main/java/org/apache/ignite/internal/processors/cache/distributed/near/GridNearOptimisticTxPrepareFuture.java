@@ -436,7 +436,7 @@ public class GridNearOptimisticTxPrepareFuture extends GridNearOptimisticTxPrepa
                 m.clientFirst(),
                 tx.activeCachesDeploymentEnabled());
 
-            for (IgniteTxEntry txEntry : m.writes()) {
+            for (IgniteTxEntry txEntry : m.entries()) {
                 if (txEntry.op() == TRANSFORM)
                     req.addDhtVersion(txEntry.txKey(), null);
             }
