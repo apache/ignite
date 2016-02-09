@@ -626,10 +626,23 @@ button.form-control {
         color: $ignite-placeholder-color;
     }
 
-    .sql-error-result {
-        margin-bottom: 10px;
-        text-align: center;
-        color: $brand-danger;
+    .sql-next {
+        float: right;
+
+        .disabled {
+            cursor: default;
+            text-decoration: none;
+        }
+
+        a {
+            margin-right: 5px;
+            margin-bottom: 5px;
+        }
+
+        i {
+            margin-top: 3px;
+            margin-right: 10px;
+        }
     }
 }
 
