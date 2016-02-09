@@ -486,7 +486,8 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
                 persons.GroupBy(x => x.Value.OrganizationId).Select(x => x.Key).ToArray());
 
             // Aggregate
-            Assert.AreEqual(1000, persons.GroupBy(x => x.Value.OrganizationId).Select(x => x.Key).Take(1).Sum());
+            Assert.AreEqual(1000,
+                persons.GroupBy(x => x.Value.OrganizationId).Select(x => x.Key).OrderBy(x => x).First());
 
             // Ordering and count
             var res =
