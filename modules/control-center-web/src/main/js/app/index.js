@@ -171,4 +171,11 @@ angular
         User.read()
             .then((user) => $root.$broadcast('user', user));
     }
+}])
+.run(['$rootScope', ($root) => {
+    $root.$on('$stateChangeStart', () => { 
+        _.each(angular.element('.modal'), (m) => {
+            angular.element(m).scope().$hide();
+        });
+    });
 }]);
