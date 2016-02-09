@@ -37,6 +37,7 @@ import java.io.Externalizable;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 
 public class GridDhtAtomicSingleUpdateResponse extends GridCacheMessage implements GridCacheDeployable, GridDhtAtomicUpdateResponse {
@@ -49,10 +50,11 @@ public class GridDhtAtomicSingleUpdateResponse extends GridCacheMessage implemen
     /** Future version. */
     private GridCacheVersion futVer;
 
-    /** Failed keys. */
     @GridToStringInclude
-    @GridDirectCollection(KeyCacheObject.class)
-    private List<KeyCacheObject> failedKeys;
+    private KeyCacheObject failedKey;
+
+    @GridToStringInclude
+    private KeyCacheObject nearEvicted;
 
     /** Update error. */
     @GridDirectTransient
@@ -60,11 +62,6 @@ public class GridDhtAtomicSingleUpdateResponse extends GridCacheMessage implemen
 
     /** Serialized update error. */
     private byte[] errBytes;
-
-    /** Evicted readers. */
-    @GridToStringInclude
-    @GridDirectCollection(KeyCacheObject.class)
-    private List<KeyCacheObject> nearEvicted;
 
     /**
      * Empty constructor required by {@link Externalizable}.
@@ -114,7 +111,7 @@ public class GridDhtAtomicSingleUpdateResponse extends GridCacheMessage implemen
      * @return Failed keys.
      */
     @Override public Collection<KeyCacheObject> failedKeys() {
-        return failedKeys;
+        return failedKey != null ? Collections.singletonList(failedKey) : null;
     }
 
     /**
@@ -124,10 +121,7 @@ public class GridDhtAtomicSingleUpdateResponse extends GridCacheMessage implemen
      * @param e Error cause.
      */
     @Override public void addFailedKey(KeyCacheObject key, Throwable e) {
-        if (failedKeys == null)
-            failedKeys = new ArrayList<>();
-
-        failedKeys.add(key);
+        failedKey = key;
 
         if (err == null)
             err = new IgniteCheckedException("Failed to update keys on primary node.");
@@ -139,7 +133,7 @@ public class GridDhtAtomicSingleUpdateResponse extends GridCacheMessage implemen
      * @return Evicted readers.
      */
     @Override public Collection<KeyCacheObject> nearEvicted() {
-        return nearEvicted;
+        return nearEvicted != null ? Collections.singletonList(nearEvicted) : null;
     }
 
     /**
@@ -148,10 +142,7 @@ public class GridDhtAtomicSingleUpdateResponse extends GridCacheMessage implemen
      * @param key Evicted key.
      */
     @Override public void addNearEvicted(KeyCacheObject key) {
-        if (nearEvicted == null)
-            nearEvicted = new ArrayList<>();
-
-        nearEvicted.add(key);
+        nearEvicted = key;
     }
 
     /** {@inheritDoc} */
@@ -160,9 +151,9 @@ public class GridDhtAtomicSingleUpdateResponse extends GridCacheMessage implemen
 
         GridCacheContext cctx = ctx.cacheContext(cacheId);
 
-        prepareMarshalCacheObjects(failedKeys, cctx);
+        prepareMarshalCacheObject(failedKey, cctx);
 
-        prepareMarshalCacheObjects(nearEvicted, cctx);
+        prepareMarshalCacheObject(nearEvicted, cctx);
 
         if (errBytes == null)
             errBytes = ctx.marshaller().marshal(err);
@@ -174,9 +165,9 @@ public class GridDhtAtomicSingleUpdateResponse extends GridCacheMessage implemen
 
         GridCacheContext cctx = ctx.cacheContext(cacheId);
 
-        finishUnmarshalCacheObjects(failedKeys, cctx, ldr);
+        finishUnmarshalCacheObject(failedKey, cctx, ldr);
 
-        finishUnmarshalCacheObjects(nearEvicted, cctx, ldr);
+        finishUnmarshalCacheObject(nearEvicted, cctx, ldr);
 
         if (errBytes != null && err == null)
             err = ctx.marshaller().unmarshal(errBytes, ldr);
@@ -209,7 +200,7 @@ public class GridDhtAtomicSingleUpdateResponse extends GridCacheMessage implemen
                 writer.incrementState();
 
             case 4:
-                if (!writer.writeCollection("failedKeys", failedKeys, MessageCollectionItemType.MSG))
+                if (!writer.writeMessage("failedKey", failedKey))
                     return false;
 
                 writer.incrementState();
@@ -221,7 +212,7 @@ public class GridDhtAtomicSingleUpdateResponse extends GridCacheMessage implemen
                 writer.incrementState();
 
             case 6:
-                if (!writer.writeCollection("nearEvicted", nearEvicted, MessageCollectionItemType.MSG))
+                if (!writer.writeMessage("nearEvicted", nearEvicted))
                     return false;
 
                 writer.incrementState();
@@ -251,7 +242,7 @@ public class GridDhtAtomicSingleUpdateResponse extends GridCacheMessage implemen
                 reader.incrementState();
 
             case 4:
-                failedKeys = reader.readCollection("failedKeys", MessageCollectionItemType.MSG);
+                failedKey = reader.readMessage("failedKey");
 
                 if (!reader.isLastRead())
                     return false;
@@ -267,7 +258,7 @@ public class GridDhtAtomicSingleUpdateResponse extends GridCacheMessage implemen
                 reader.incrementState();
 
             case 6:
-                nearEvicted = reader.readCollection("nearEvicted", MessageCollectionItemType.MSG);
+                nearEvicted = reader.readMessage("nearEvicted");
 
                 if (!reader.isLastRead())
                     return false;
@@ -281,7 +272,7 @@ public class GridDhtAtomicSingleUpdateResponse extends GridCacheMessage implemen
 
     /** {@inheritDoc} */
     @Override public byte directType() {
-        return 39;
+        return -26;
     }
 
     /** {@inheritDoc} */
