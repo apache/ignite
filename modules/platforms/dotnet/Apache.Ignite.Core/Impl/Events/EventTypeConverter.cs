@@ -37,7 +37,7 @@ namespace Apache.Ignite.Core.Impl.Events
         /// <summary>
         /// The event type map.
         /// </summary>
-        private static readonly Dictionary<int, string> EventIdToNameMap =
+        private static readonly Dictionary<int, string> EvtIdToNameMap =
             typeof (EventType).GetFields()
                 .Where(p => p.FieldType == typeof (int))
                 .ToDictionary(f => (int) f.GetValue(null), f => f.Name);
@@ -45,8 +45,8 @@ namespace Apache.Ignite.Core.Impl.Events
         /// <summary>
         /// The event type map.
         /// </summary>
-        private static readonly Dictionary<string, int> EventNameToIdMap =
-            EventIdToNameMap.ToDictionary(p => p.Value, p => p.Key, StringComparer.OrdinalIgnoreCase);
+        private static readonly Dictionary<string, int> EvtNameToIdMap =
+            EvtIdToNameMap.ToDictionary(p => p.Value, p => p.Key, StringComparer.OrdinalIgnoreCase);
 
         /// <summary>
         /// Returns whether this converter can convert an object of the given type to the type of this converter, 
@@ -95,7 +95,7 @@ namespace Apache.Ignite.Core.Impl.Events
             var s = value.ToString();
             int intResult;
 
-            if (int.TryParse(s, out intResult) || EventNameToIdMap.TryGetValue(s, out intResult))
+            if (int.TryParse(s, out intResult) || EvtNameToIdMap.TryGetValue(s, out intResult))
                 return intResult;
 
             throw new InvalidOperationException(string.Format("Cannot convert value to {0}: {1}",
@@ -124,7 +124,7 @@ namespace Apache.Ignite.Core.Impl.Events
 
             string eventName;
 
-            if (EventIdToNameMap.TryGetValue((int)value, out eventName))
+            if (EvtIdToNameMap.TryGetValue((int)value, out eventName))
                 return eventName;
 
             return value.ToString();

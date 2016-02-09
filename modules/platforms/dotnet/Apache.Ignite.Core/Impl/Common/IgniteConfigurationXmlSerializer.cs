@@ -24,7 +24,6 @@ namespace Apache.Ignite.Core.Impl.Common
     using System.Configuration;
     using System.Diagnostics;
     using System.Diagnostics.CodeAnalysis;
-    using System.Globalization;
     using System.Linq;
     using System.Reflection;
     using System.Xml;
@@ -36,7 +35,7 @@ namespace Apache.Ignite.Core.Impl.Common
     internal static class IgniteConfigurationXmlSerializer
     {
         /** Attribute that specifies a type for abstract properties, such as IpFinder. */
-        private const string TypeNameAttribute = "type";
+        private const string TypNameAttribute = "type";
 
         /** Xmlns. */
         private const string XmlnsAttribute = "xmlns";
@@ -133,7 +132,7 @@ namespace Apache.Ignite.Core.Impl.Common
 
             // Specify type for interfaces and abstract classes
             if (valueType.IsAbstract)
-                writer.WriteAttributeString(TypeNameAttribute, TypeStringConverter.Convert(obj.GetType()));
+                writer.WriteAttributeString(TypNameAttribute, TypeStringConverter.Convert(obj.GetType()));
 
             // Write attributes
             foreach (var prop in props.Where(p => IsBasicType(p.PropertyType)))
@@ -202,7 +201,7 @@ namespace Apache.Ignite.Core.Impl.Common
         {
             if (propType.IsAbstract)
             {
-                var typeName = reader.GetAttribute(TypeNameAttribute);
+                var typeName = reader.GetAttribute(TypNameAttribute);
 
                 var derivedTypes = GetConcreteDerivedTypes(propType);
 
@@ -278,7 +277,7 @@ namespace Apache.Ignite.Core.Impl.Common
         /// </summary>
         private static void SetProperty(object target, string propName, string propVal)
         {
-            if (propName == TypeNameAttribute || propName == XmlnsAttribute)
+            if (propName == TypNameAttribute || propName == XmlnsAttribute)
                 return;
 
             var type = target.GetType();
