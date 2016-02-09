@@ -108,9 +108,6 @@ namespace Apache.Ignite.Linq.Impl
             // FROM ... WHERE ... JOIN ...
             base.VisitQueryModel(queryModel);
 
-            // GROUP BY
-            ProcessGroupings(queryModel);
-
             // UNION ...
             ProcessResultOperatorsEnd(queryModel);
 
@@ -150,9 +147,11 @@ namespace Apache.Ignite.Linq.Impl
             if (groupBy == null)
                 throw new NotSupportedException("Unexpected subquery: " + subQuery);
 
-            _builder.Append("group by ");
+            _builder.Append("group by (");
+
             BuildSqlExpression(groupBy.KeySelector);
 
+            _builder.Append(") ");
             // TODO: validate ElementSelector, must be direct select
         }
 
@@ -279,6 +278,8 @@ namespace Apache.Ignite.Linq.Impl
             var i = 0;
             foreach (var join in bodyClauses.OfType<JoinClause>())
                 VisitJoinClause(join, queryModel, i++);
+
+            ProcessGroupings(queryModel);
 
             i = 0;
             foreach (var where in bodyClauses.OfType<WhereClause>())
