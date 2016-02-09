@@ -72,6 +72,11 @@ namespace ignite
         return seconds;
     }
 
+    int32_t Timestamp::GetNanoseconds() const
+    {
+        return nanoseconds;
+    }
+
     Date Timestamp::GetDate() const
     {
         return Date(GetMilliseconds());
