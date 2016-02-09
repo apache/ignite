@@ -86,9 +86,10 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
             {
                 cache.Put(i, new Person(i, string.Format(" Person_{0}  ", i))
                 {
-                    Address = new Address {Zip = i, Street = "Street " + i},
+                    Address = new Address {Zip = i, Street = "Street " + i, AliasTest = i},
                     OrganizationId = i%2 + 1000,
-                    Birthday = StartDateTime.AddYears(i)
+                    Birthday = StartDateTime.AddYears(i),
+                    AliasTest = -i
                 });
 
                 var i2 = i + PersonCount;
@@ -734,6 +735,18 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         {
             // TODO:
             // http://www.linqpad.net/WhyLINQBeatsSQL.aspx
+        }
+
+        [Test]
+        public void TestAliases()
+        {
+            var cache = GetPersonCache().AsCacheQueryable();
+
+            var res = cache.Where(x => x.Key == 1)
+                .Select(x => new {X = x.Value.AliasTest, Y = x.Value.Address.AliasTest})
+                .Single();
+
+            Assert.AreEqual(new {X = -1, Y = 1}, res);
         }
 
         [Test]
