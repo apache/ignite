@@ -47,15 +47,19 @@ namespace Apache.Ignite.Core
         }
 
         /// <summary>
-        /// Creates an XML string containing an unmerged view of the <see cref="T:System.Configuration.ConfigurationSection" /> object as a single section to write to a file.
+        /// Creates an XML string containing an unmerged view of the <see cref="ConfigurationSection" /> 
+        /// object as a single section to write to a file.
         /// </summary>
-        /// <param name="parentElement">The <see cref="T:System.Configuration.ConfigurationElement" /> instance to use as the parent when performing the un-merge.</param>
+        /// <param name="parentElement">The <see cref="ConfigurationElement" /> 
+        /// instance to use as the parent when performing the un-merge.</param>
         /// <param name="name">The name of the section to create.</param>
-        /// <param name="saveMode">The <see cref="T:System.Configuration.ConfigurationSaveMode" /> instance to use when writing to a string.</param>
+        /// <param name="saveMode">The <see cref="ConfigurationSaveMode" /> instance 
+        /// to use when writing to a string.</param>
         /// <returns>
-        /// An XML string containing an unmerged view of the <see cref="T:System.Configuration.ConfigurationSection" /> object.
+        /// An XML string containing an unmerged view of the <see cref="ConfigurationSection" /> object.
         /// </returns>
-        protected override string SerializeSection(ConfigurationElement parentElement, string name, ConfigurationSaveMode saveMode)
+        protected override string SerializeSection(ConfigurationElement parentElement, string name, 
+            ConfigurationSaveMode saveMode)
         {
             IgniteArgumentCheck.NotNull(parentElement, "parentElement");
             IgniteArgumentCheck.NotNullOrEmpty(name, "name");
