@@ -144,6 +144,26 @@ $generatorPom.pom = function (cluster, igniteVersion, mvnRepositories, res) {
     res.needEmptyLine = true;
 
     addDependency('org.apache.ignite', 'ignite-core', igniteVersion);
+
+    switch (cluster.discovery.kind) {
+        case 'Cloud':
+            addDependency('org.apache.ignite', 'ignite-cloud', igniteVersion);
+
+            break;
+
+        case 'S3':
+            addDependency('org.apache.ignite', 'ignite-aws', igniteVersion);
+
+            break;
+
+        case 'GoogleStorage':
+            addDependency('org.apache.ignite', 'ignite-gce', igniteVersion);
+
+            break;
+
+        default:
+    }
+
     addDependency('org.apache.ignite', 'ignite-spring', igniteVersion);
     addDependency('org.apache.ignite', 'ignite-indexing', igniteVersion);
     addDependency('org.apache.ignite', 'ignite-rest-http', igniteVersion);
