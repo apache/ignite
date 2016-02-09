@@ -489,8 +489,8 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
 
             // Multiple key and a join
             var res2 = persons.Join(orgs.Where(o => o.Key > 10), p => p.Value.OrganizationId, o => o.Key,
-                (p, o) => new {p.Value.Age, Org = o.Value.Name})
-                .GroupBy(x => x.Org).Select(g => new {Org = g.Key, AgeSum = g.Select(x => x.Age).Sum()});
+                (p, o) => new {PersonAge = p.Value.Age, Org = o.Value.Name})
+                .GroupBy(x => x.Org).Select(g => new {Org = g.Key, AgeSum = g.Select(x => x.PersonAge).Sum()});
 
             var resArr2 = res2.ToArray();
 
