@@ -130,34 +130,6 @@ namespace Apache.Ignite.Linq.Impl
         }
 
         /// <summary>
-        /// Processes the groupings.
-        /// </summary>
-        private void ProcessGroupings(QueryModel queryModel)
-        {
-            var subQuery = queryModel.MainFromClause.FromExpression as SubQueryExpression;
-
-            if (subQuery == null)
-                return;
-
-            if (subQuery.QueryModel.ResultOperators.Count != 1)
-                throw new NotSupportedException("Unexpected subquery: " + subQuery);
-
-            var groupBy = subQuery.QueryModel.ResultOperators[0] as GroupResultOperator;
-
-            if (groupBy == null)
-                throw new NotSupportedException("Unexpected subquery: " + subQuery);
-
-            // TODO: JOIN, WHERE, GROUP, ORDER
-            VisitBodyClauses(subQuery.QueryModel.BodyClauses, subQuery.QueryModel);
-
-            _builder.Append("group by (");
-
-            BuildSqlExpression(groupBy.KeySelector);
-
-            _builder.Append(") ");
-        }
-
-        /// <summary>
         /// Processes the result operators.
         /// </summary>
         [SuppressMessage("Microsoft.Performance", "CA1800:DoNotCastUnnecessarily")]
@@ -290,6 +262,34 @@ namespace Apache.Ignite.Linq.Impl
             i = 0;
             foreach (var orderBy in bodyClauses.OfType<OrderByClause>())
                 VisitOrderByClause(orderBy, queryModel, i++);
+        }
+
+        /// <summary>
+        /// Processes the groupings.
+        /// </summary>
+        private void ProcessGroupings(QueryModel queryModel)
+        {
+            var subQuery = queryModel.MainFromClause.FromExpression as SubQueryExpression;
+
+            if (subQuery == null)
+                return;
+
+            if (subQuery.QueryModel.ResultOperators.Count != 1)
+                throw new NotSupportedException("Unexpected subquery: " + subQuery);
+
+            var groupBy = subQuery.QueryModel.ResultOperators[0] as GroupResultOperator;
+
+            if (groupBy == null)
+                throw new NotSupportedException("Unexpected subquery: " + subQuery);
+
+            // TODO: JOIN, WHERE, GROUP, ORDER
+            VisitBodyClauses(subQuery.QueryModel.BodyClauses, subQuery.QueryModel);
+
+            _builder.Append("group by (");
+
+            BuildSqlExpression(groupBy.KeySelector);
+
+            _builder.Append(") ");
         }
 
         /** <inheritdoc /> */
