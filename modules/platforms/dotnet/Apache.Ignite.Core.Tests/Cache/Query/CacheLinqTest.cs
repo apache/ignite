@@ -79,7 +79,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
                     typeof (Organization), typeof (Address), typeof (Role), typeof (RoleKey), typeof(Numerics))
             });
 
-            var cache = GetPersonOrgCache();
+            var cache = GetPersonCache();
             var personCache = GetSecondPersonCacheCache();
 
             for (var i = 0; i < PersonCount; i++)
@@ -124,14 +124,14 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         public void TestEmptyQuery()
         {
             // There are both persons and organizations in the same cache, but query should only return specific type
-            Assert.AreEqual(PersonCount, GetPersonOrgCache().AsCacheQueryable().ToArray().Length);
+            Assert.AreEqual(PersonCount, GetPersonCache().AsCacheQueryable().ToArray().Length);
             Assert.AreEqual(RoleCount, GetRoleCache().AsCacheQueryable().ToArray().Length);
         }
 
         [Test]
         public void TestWhere()
         {
-            var cache = GetPersonOrgCache().AsCacheQueryable();
+            var cache = GetPersonCache().AsCacheQueryable();
 
             Assert.AreEqual(10, cache.Where(x => x.Value.Age < 10).ToArray().Length);
             Assert.AreEqual(10, cache.Where(x => x.Value.Address.Zip < 10).ToArray().Length);
@@ -148,7 +148,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         [Test]
         public void TestSingleFieldQuery()
         {
-            var cache = GetPersonOrgCache().AsCacheQueryable();
+            var cache = GetPersonCache().AsCacheQueryable();
 
             // Multiple values
             Assert.AreEqual(new[] {0, 1, 2},
@@ -171,7 +171,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         [Test]
         public void TestFieldProjection()
         {
-            var cache = GetPersonOrgCache().AsCacheQueryable();
+            var cache = GetPersonCache().AsCacheQueryable();
 
             // Project whole cache entry to anonymous class
             Assert.AreEqual(5, cache.Where(x => x.Key == 5).Select(x => new { Foo = x }).Single().Foo.Key);
@@ -180,7 +180,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         [Test]
         public void TestMultiFieldQuery()
         {
-            var cache = GetPersonOrgCache().AsCacheQueryable();
+            var cache = GetPersonCache().AsCacheQueryable();
 
             // Test anonymous type (ctor invoke)
             var data = cache
@@ -200,7 +200,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         [Test]
         public void TestScalarQuery()
         {
-            var cache = GetPersonOrgCache().AsCacheQueryable();
+            var cache = GetPersonCache().AsCacheQueryable();
 
             Assert.AreEqual(PersonCount - 1, cache.Max(x => x.Value.Age));
             Assert.AreEqual(0, cache.Min(x => x.Value.Age));
@@ -214,7 +214,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         [Test]
         public void TestStrings()
         {
-            var strings = GetPersonOrgCache().AsCacheQueryable().Select(x => x.Value.Name);
+            var strings = GetPersonCache().AsCacheQueryable().Select(x => x.Value.Name);
 
             CheckFunc(x => x.ToLower(), strings);
             CheckFunc(x => x.ToUpper(), strings);
@@ -257,7 +257,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         [Test]
         public void TestAggregates()
         {
-            var cache = GetPersonOrgCache().AsCacheQueryable();
+            var cache = GetPersonCache().AsCacheQueryable();
 
             Assert.AreEqual(PersonCount, cache.Count());
             Assert.AreEqual(PersonCount, cache.Select(x => x.Key).Count());
@@ -281,13 +281,14 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
             Assert.IsTrue(ints.Any(x => x < PersonCount / 2));
 
             // Skip/take
+            Assert.AreEqual(new[] {51, 52}, cache.Skip(50).Take(2).Select(x => x.Key).ToArray());
         }
 
         [Test]
         [Ignore("IGNITE-2563")]
         public void TestAggregatesAll()
         {
-            var ints = GetPersonOrgCache().AsCacheQueryable().Select(x => x.Key);
+            var ints = GetPersonCache().AsCacheQueryable().Select(x => x.Key);
 
             Assert.IsTrue(ints.Where(x => x > -10).All(x => x < PersonCount && x >= 0));
 
@@ -297,7 +298,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         [Test]
         public void TestConditions()
         {
-            var persons = GetPersonOrgCache().AsCacheQueryable();
+            var persons = GetPersonCache().AsCacheQueryable();
 
             var res = persons.Select(x => new {Foo = x.Key%2 == 0 ? "even" : "odd", x.Value}).ToArray();
             Assert.AreEqual("even", res[0].Foo);
@@ -327,7 +328,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         {
             // Select persons in specific organization
             var organizations = GetOrgCache().AsCacheQueryable();
-            var persons = GetPersonOrgCache().AsCacheQueryable();
+            var persons = GetPersonCache().AsCacheQueryable();
 
             var res = persons.Join(organizations, person => person.Value.OrganizationId + 3, org => org.Value.Id + 3,
                 (person, org) => new {Person = person.Value, Org = org.Value})
@@ -351,7 +352,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         public void TestMultiKeyJoin()
         {
             var organizations = GetOrgCache().AsCacheQueryable();
-            var persons = GetPersonOrgCache().AsCacheQueryable();
+            var persons = GetPersonCache().AsCacheQueryable();
 
             var multiKey =
                 from person in persons
@@ -367,7 +368,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         [Test]
         public void TestCrossCacheJoin()
         {
-            var persons = GetPersonOrgCache().AsCacheQueryable();
+            var persons = GetPersonCache().AsCacheQueryable();
             var roles = GetRoleCache().AsCacheQueryable();
 
             var res = persons.Join(roles, person => person.Key, role => role.Key.Foo, (person, role) => role)
@@ -381,7 +382,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         public void TestMultiCacheJoin()
         {
             var organizations = GetOrgCache().AsCacheQueryable();
-            var persons = GetPersonOrgCache().AsCacheQueryable();
+            var persons = GetPersonCache().AsCacheQueryable();
             var roles = GetRoleCache().AsCacheQueryable();
 
             var res = roles.Join(persons, role => role.Key.Foo, person => person.Key,
@@ -396,7 +397,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         public void TestMultiCacheJoinSubquery()
         {
             var organizations = GetOrgCache().AsCacheQueryable().Where(x => x.Key == 1001);
-            var persons = GetPersonOrgCache().AsCacheQueryable().Where(x => x.Key < 20);
+            var persons = GetPersonCache().AsCacheQueryable().Where(x => x.Key < 20);
             var roles = GetRoleCache().AsCacheQueryable().Where(x => x.Key.Foo >= 0);
 
             var res = roles.Join(persons, role => role.Key.Foo, person => person.Key,
@@ -410,7 +411,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         [Test]
         public void TestOuterJoin()
         {
-            var persons = GetPersonOrgCache().AsCacheQueryable();
+            var persons = GetPersonCache().AsCacheQueryable();
             var roles = GetRoleCache().AsCacheQueryable();
 
             var res = persons.Join(roles.Where(r => r.Key.Bar > 0).DefaultIfEmpty(),
@@ -429,7 +430,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         [Test]
         public void TestSubqueryJoin()
         {
-            var persons = GetPersonOrgCache().AsCacheQueryable().Where(x => x.Key >= 0);
+            var persons = GetPersonCache().AsCacheQueryable().Where(x => x.Key >= 0);
 
             var orgs = GetOrgCache().AsCacheQueryable().Where(x => x.Key > 10);
 
@@ -448,13 +449,13 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
             // Join on non-IQueryable
             Assert.Throws<NotSupportedException>(() =>
                 // ReSharper disable once ReturnValueOfPureMethodIsNotUsed
-                GetPersonOrgCache().AsCacheQueryable().Join(GetOrgCache(), p => p.Key, o => o.Key, (p, o) => p).ToList());
+                GetPersonCache().AsCacheQueryable().Join(GetOrgCache(), p => p.Key, o => o.Key, (p, o) => p).ToList());
         }
 
         [Test]
         public void TestMultipleFrom()
         {
-            var persons = GetPersonOrgCache().AsCacheQueryable().Where(x => x.Key < PersonCount);
+            var persons = GetPersonCache().AsCacheQueryable().Where(x => x.Key < PersonCount);
             var roles = GetRoleCache().AsCacheQueryable().Where(x => x.Value.Name != "1");
 
             var all = persons.SelectMany(person => roles.Select(role => new { role, person }));
@@ -474,7 +475,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         [Test]
         public void TestGroupBy()
         {
-            var persons = GetPersonOrgCache().AsCacheQueryable();
+            var persons = GetPersonCache().AsCacheQueryable();
             var orgs = GetOrgCache().AsCacheQueryable();
 
             // Simple, unordered
@@ -509,7 +510,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         public void TestUnion()
         {
             // Direct union
-            var persons = GetPersonOrgCache().AsCacheQueryable();
+            var persons = GetPersonCache().AsCacheQueryable();
             var persons2 = GetSecondPersonCacheCache().AsCacheQueryable();
 
             var res = persons.Union(persons2).ToArray();
@@ -518,7 +519,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
 
             // Subquery
             var roles = GetRoleCache().AsCacheQueryable().Select(x => -x.Key.Foo);
-            var ids = GetPersonOrgCache().AsCacheQueryable().Select(x => x.Key).Union(roles).ToArray();
+            var ids = GetPersonCache().AsCacheQueryable().Select(x => x.Key).Union(roles).ToArray();
 
             Assert.AreEqual(RoleCount + PersonCount, ids.Length);
         }
@@ -527,7 +528,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         public void TestIntersect()
         {
             // Direct intersect
-            var persons = GetPersonOrgCache().AsCacheQueryable();
+            var persons = GetPersonCache().AsCacheQueryable();
             var persons2 = GetSecondPersonCacheCache().AsCacheQueryable();
 
             var res = persons.Intersect(persons2).ToArray();
@@ -536,7 +537,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
 
             // Subquery
             var roles = GetRoleCache().AsCacheQueryable().Select(x => x.Key.Foo);
-            var ids = GetPersonOrgCache().AsCacheQueryable().Select(x => x.Key).Intersect(roles).ToArray();
+            var ids = GetPersonCache().AsCacheQueryable().Select(x => x.Key).Intersect(roles).ToArray();
 
             Assert.AreEqual(RoleCount, ids.Length);
         }
@@ -545,7 +546,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         public void TestExcept()
         {
             // Direct except
-            var persons = GetPersonOrgCache().AsCacheQueryable();
+            var persons = GetPersonCache().AsCacheQueryable();
             var persons2 = GetSecondPersonCacheCache().AsCacheQueryable();
 
             var res = persons.Except(persons2).ToArray();
@@ -554,7 +555,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
 
             // Subquery
             var roles = GetRoleCache().AsCacheQueryable().Select(x => x.Key.Foo);
-            var ids = GetPersonOrgCache().AsCacheQueryable().Select(x => x.Key).Except(roles).ToArray();
+            var ids = GetPersonCache().AsCacheQueryable().Select(x => x.Key).Except(roles).ToArray();
 
             Assert.AreEqual(PersonCount - RoleCount, ids.Length);
         }
@@ -562,14 +563,14 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         [Test]
         public void TestOrdering()
         {
-            var persons = GetPersonOrgCache().AsCacheQueryable()
+            var persons = GetPersonCache().AsCacheQueryable()
                 .OrderByDescending(x => x.Key)
                 .ThenBy(x => x.Value.Age)
                 .ToArray();
 
             Assert.AreEqual(Enumerable.Range(0, PersonCount).Reverse().ToArray(), persons.Select(x => x.Key).ToArray());
 
-            var personsByOrg = GetPersonOrgCache().AsCacheQueryable()
+            var personsByOrg = GetPersonCache().AsCacheQueryable()
                 .Join(GetOrgCache().AsCacheQueryable(), p => p.Value.OrganizationId, o => o.Value.Id,
                     (p, o) => new
                     {
@@ -607,7 +608,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         public void TestDateTime()
         {
             var roles = GetRoleCache().AsCacheQueryable();
-            var persons = GetPersonOrgCache().AsCacheQueryable();
+            var persons = GetPersonCache().AsCacheQueryable();
 
             // Invalid dateTime
             // ReSharper disable once ReturnValueOfPureMethodIsNotUsed
@@ -729,7 +730,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         [Test]
         public void TestIntrospection()
         {
-            var cache = GetPersonOrgCache();
+            var cache = GetPersonCache();
 
             // Check regular query
             var query = (ICacheQueryable) cache.AsCacheQueryable().Where(x => x.Key > 10);
@@ -748,7 +749,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
                 fieldsQuery.ToTraceString());
         }
 
-        private static ICache<int, Person> GetPersonOrgCache()
+        private static ICache<int, Person> GetPersonCache()
         {
             return GetCacheOf<Person>();
         }
