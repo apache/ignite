@@ -472,21 +472,22 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         public void TestGroupBy()
         {
             var persons = GetPersonOrgCache().ToQueryable();
+            var orgs = GetOrgCache().ToQueryable();
 
-            var res = 
+            // Single key with ordering
+            var res =
                 from p in persons
+                orderby p.Value.Name
                 group p by p.Value.OrganizationId
                 into gs
                 orderby gs.Key
-                let cnt = gs.Count()
-                let key = gs.Key
-                select new {cnt, key};
+                select new {Count = gs.Count(), OrgId = gs.Key};
 
             var resArr = res.ToArray();
 
-            Assert.AreEqual(new[] {new {cnt = 50, key = 1000}, new {cnt = 50, key = 1001}}, resArr);
+            Assert.AreEqual(new[] {new {Count = 50, OrgId = 1000}, new {Count = 50, OrgId = 1001}}, resArr);
 
-            // TODO: Multiple keys, joins, etc
+            // Multiple key and a join
         }
 
         [Test]
