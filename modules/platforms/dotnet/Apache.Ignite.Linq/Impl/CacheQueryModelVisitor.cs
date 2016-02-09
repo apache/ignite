@@ -147,12 +147,12 @@ namespace Apache.Ignite.Linq.Impl
             if (groupBy == null)
                 throw new NotSupportedException("Unexpected subquery: " + subQuery);
 
+            // TODO: JOIN, WHERE, GROUP, ORDER
+            VisitBodyClauses(subQuery.QueryModel.BodyClauses, subQuery.QueryModel);
+
             _builder.Append("group by (");
 
             BuildSqlExpression(groupBy.KeySelector);
-
-            if (!(groupBy.ElementSelector is QuerySourceReferenceExpression))
-                throw new NotSupportedException("Unexpected GroupBy element selector: " + groupBy.ElementSelector);
 
             _builder.Append(") ");
         }

@@ -41,6 +41,7 @@ namespace Apache.Ignite.Linq
         /// <returns><see cref="IQueryable{T}"/> instance over this cache.</returns>
         public static IQueryable<ICacheEntry<TKey, TValue>> ToQueryable<TKey, TValue>(this ICache<TKey, TValue> cache)
         {
+            // TODO: AsCacheQueryable?
             return new CacheQueryable<TKey, TValue>(cache);
         }
     }

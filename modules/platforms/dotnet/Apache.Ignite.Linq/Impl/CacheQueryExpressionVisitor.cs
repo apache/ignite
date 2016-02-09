@@ -311,9 +311,6 @@ namespace Apache.Ignite.Linq.Impl
 
             Visit(groupBy.KeySelector);
 
-            if (!(groupBy.ElementSelector is QuerySourceReferenceExpression))
-                throw new NotSupportedException("Unexpected GroupBy element selector: " + groupBy.ElementSelector);
-
             return true;
         }
 

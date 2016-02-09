@@ -488,7 +488,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
             Assert.AreEqual(new[] {new {Count = 50, OrgId = 1000}, new {Count = 50, OrgId = 1001}}, resArr);
 
             // Multiple key and a join
-            var res2 = persons.Join(orgs, p => p.Value.OrganizationId, o => o.Key,
+            var res2 = persons.Join(orgs.Where(o => o.Key > 10), p => p.Value.OrganizationId, o => o.Key,
                 (p, o) => new {p.Value.Age, Org = o.Value.Name})
                 .GroupBy(x => x.Org).Select(g => new {Org = g.Key, AgeSum = g.Select(x => x.Age).Sum()});
 
