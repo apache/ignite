@@ -30,6 +30,7 @@ include ../includes/infos
                     button.btn.btn-primary(id='new-item' ng-click='createItem()') Add cache
                 +save-remove-buttons('cache')
                 hr
+            .bs-affix-fix
             form.form-horizontal(name='ui.inputForm' ng-show='backupItem && tableVisibleRow(displayedRows, selectedItem)' novalidate)
                 .panel-group(bs-collapse ng-model='ui.activePanels' data-allow-multiple='true')
                     +groups('general', 'backupItem')

@@ -29,8 +29,8 @@ Demo of Ignite Web Agent:
    2) Demo for SQL.
      How to evaluate:
      In this mode internal Ignite node will be started. Cache created and populated with data.
-       2.1) Go to Ignite Web Console "SQL" menu and select "SQL demo" menu item.
-       2.2) "SQL demo" notebook contains preconfigured queries: "Simple query", "Query with aggregates", "Query with refresh rate".
+       2.1) Go to Ignite Web Console "SQL" menu and select "Demo" menu item.
+       2.2) "Demo" notebook contains preconfigured queries: "Simple query", "Query with aggregates", "Query with refresh rate".
        2.3) You can also execute any SQL queries for tables: "Country, Department, Employee", "Parking, Car".
 
  For example:

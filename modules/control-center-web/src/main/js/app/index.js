@@ -56,7 +56,7 @@ import 'angular-ui-grid/ui-grid.css!';
 import 'angular-loading/angular-loading.css!';
 import 'angular-motion/dist/angular-motion.css!';
 
-import './modules/Form/form.module';
+import './modules/form/form.module';
 import './modules/JavaTypes/JavaTypes.provider';
 import './modules/QueryNotebooks/QueryNotebooks.provider';
 
@@ -88,6 +88,7 @@ import igniteUiAcePom from './directives/ui-ace-pom/ui-ace-pom.directive';
 import igniteUiAceDocker from './directives/ui-ace-docker/ui-ace-docker.directive';
 import igniteUiAcePojos from './directives/ui-ace-pojos/ui-ace-pojos.directive';
 import igniteFormFieldJavaClass from './directives/form-field-java-class/form-field-java-class.directive';
+import igniteBsAffixUpdate from './directives/bs-affix-update/bs-affix-update.directive';
 
 // Services.
 import cleanup from './services/cleanup/cleanup.service';
@@ -136,6 +137,7 @@ angular
 .directive(...igniteUiAceDocker)
 .directive(...igniteUiAcePojos)
 .directive(...igniteFormFieldJavaClass)
+.directive(...igniteBsAffixUpdate)
 // Services.
 .service(...cleanup)
 .service(...GeneratorXml)

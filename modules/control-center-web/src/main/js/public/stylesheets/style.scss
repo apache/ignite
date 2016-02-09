@@ -956,6 +956,10 @@ button.form-control {
     }
 }
 
+.affix + .bs-affix-fix {
+    height: 78px;
+}
+
 .panel-details {
     margin-top: 5px;
     padding: 5px;
@@ -1859,12 +1863,16 @@ treecontrol.tree-classic {
 }
 
 .grid {
+    .ui-grid-column-menu-button {
+        right: -5px;
+    }
+
     .ui-grid-menu-button {
         margin-top: -1px;
     }
 
     .ui-grid-column-menu-button-last-col {
-        margin-right: 10px
+        margin-right: 0
     }
 }
 

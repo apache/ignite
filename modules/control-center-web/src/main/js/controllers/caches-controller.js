@@ -560,16 +560,6 @@ consoleModule.controller('cachesController', [
                 if (!item.readThrough && !item.writeThrough)
                     return showPopoverMessage($scope.ui, 'store', 'readThrough',
                         'Store is configured but read/write through are not enabled!');
-
-                if (item.cacheStoreFactory.kind === 'CacheJdbcPojoStoreFactory') {
-                    if ($common.isDefined(item.domains)) {
-                        var domains = cacheDomains($scope.backupItem);
-
-                        if (_.findIndex(domains, $common.domainForStoreConfigured) < 0)
-                            return showPopoverMessage($scope.ui, 'general', 'domains',
-                                'Cache with configured JDBC POJO store factory should be associated with at least one domain model for cache store', 10000);
-                    }
-                }
             }
 
             if (item.writeBehindFlushSize === 0 && item.writeBehindFlushFrequency === 0)

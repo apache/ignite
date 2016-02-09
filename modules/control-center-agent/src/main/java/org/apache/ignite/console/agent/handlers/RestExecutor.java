@@ -91,10 +91,20 @@ public class RestExecutor {
         String mtd, Map<String, String> headers, String body) throws IOException, URISyntaxException {
         log.debug("Start execute REST command [method=" + mtd + ", uri=/" + uri + ", parameters=" + params + "]");
 
-        if (demo)
+        final URIBuilder builder;
+
+        if (demo) {
+            // try start demo if needed.
             AgentSqlDemo.testDrive(cfg);
 
-        URIBuilder builder = new URIBuilder(demo ? cfg.demoNodeUri() : cfg.nodeUri());
+            // null if demo node not started yet.
+            if (cfg.demoNodeUri() == null)
+                return RestResult.fail(404, "Demo node is not started yet.");
+
+            builder = new URIBuilder(cfg.demoNodeUri());
+        }
+        else
+            builder = new URIBuilder(cfg.nodeUri());
 
         if (builder.getPort() == -1)
             builder.setPort(DFLT_NODE_PORT);

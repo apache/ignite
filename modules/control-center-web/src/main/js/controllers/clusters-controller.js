@@ -238,6 +238,8 @@ consoleModule.controller('clustersController', function ($http, $timeout, $scope
 
         // Check cluster logical consistency.
         function validate(item) {
+            $common.hidePopover();
+
             if ($common.isEmptyString(item.name))
                 return showPopoverMessage($scope.ui, 'general', 'clusterName', 'Name should not be empty');
 

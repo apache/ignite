@@ -138,15 +138,15 @@ module.exports.factory = function (express, passport, nodemailer, settings, mong
                 if (!user)
                     return res.status(401).send('No account with that email address exists!');
 
-                if (err)
                 // TODO IGNITE-843 Send email to admin
+                if (err)
                     return res.status(401).send('Failed to reset password!');
 
                 user.resetPasswordToken = token;
 
                 user.save(function (err) {
-                    if (err)
                     // TODO IGNITE-843 Send email to admin
+                    if (err)
                         return res.status(401).send('Failed to reset password!');
 
                     var mailer = nodemailer.createTransport(transporter);
@@ -160,7 +160,7 @@ module.exports.factory = function (express, passport, nodemailer, settings, mong
                         'http://' + req.headers.host + '/password/reset?token=' + token + '\n\n' +
                         'If you did not request this, please ignore this email and your password will remain unchanged.\n\n' +
                         '--------------\n' +
-                        'Apache Ignite Web Console\n'
+                        settings.smtp.username + '\n'
                     };
 
                     mailer.sendMail(mailOptions, function (err) {

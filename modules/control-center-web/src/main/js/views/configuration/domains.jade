@@ -59,6 +59,7 @@ include ../includes/infos
                         button.btn.dropdown-toggle.btn-info(id='remove-demo-dropdown' ng-if='hasDemoItems()' data-toggle='dropdown' data-container='body' bs-dropdown='removeDemoDropdown' data-placement='bottom-right')
                             span.caret
                 hr
+            .bs-affix-fix
             form.form-horizontal(name='ui.inputForm' ng-show='backupItem && tableVisibleRow((displayedRows | domainsValidation:ui.showValid:true), selectedItem)' novalidate)
                 .panel-group(bs-collapse ng-model='ui.activePanels' data-allow-multiple='true')
                     +groups('domainModel', 'backupItem')

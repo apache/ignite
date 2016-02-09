@@ -118,8 +118,8 @@ module.exports.factory = function (fs, ws, apacheIgnite, mongo) {
     AgentServer.prototype.runCommand = function (cmd, callback) {
         var params = {cmd: cmd.name()};
 
-        for (var key in cmd._params)
-            params[key] = cmd._params[key];
+        for (var param of cmd._params)
+            params[param.key] = param.value;
 
         var body = undefined;
 

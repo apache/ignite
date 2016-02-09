@@ -268,7 +268,7 @@ export default [
 
             $generatorOptional.optionalContent(zip, cluster);
 
-            const blob = zip.generate({type: 'blob', mimeType: 'application/octet-stream'});
+            const blob = zip.generate({type: 'blob', compression: 'DEFLATE', mimeType: 'application/octet-stream'});
 
             // Download archive.
             saveAs(blob, cluster.name + '-configuration.zip');

@@ -441,7 +441,7 @@ consoleModule.controller('domainsController', function ($filter, $http, $timeout
                 $scope.importDomain = {
                     demo: demo,
                     action: 'drivers',
-                    jdbcDriversFound: false,
+                    jdbcDriversNotFound: false,
                     schemas: [],
                     allSchemasSelected: false,
                     tables: [],
@@ -476,8 +476,6 @@ consoleModule.controller('domainsController', function ($filter, $http, $timeout
                                 }
 
                                 if (drivers && drivers.length > 0) {
-                                    $scope.importDomain.jdbcDriversFound = true;
-
                                     drivers = _.sortBy(drivers, 'jdbcDriverJar');
 
                                     if ($scope.importDomain.demo) {
@@ -519,6 +517,7 @@ consoleModule.controller('domainsController', function ($filter, $http, $timeout
                                     });
                                 }
                                 else {
+                                    $scope.importDomain.jdbcDriversNotFound = true;
                                     $scope.importDomain.button = 'Cancel';
                                 }
                             })
@@ -984,7 +983,7 @@ consoleModule.controller('domainsController', function ($filter, $http, $timeout
 
             var act = $scope.importDomain.action;
 
-            if (act === 'drivers' && !$scope.importDomain.jdbcDriversFound)
+            if (act === 'drivers' && $scope.importDomain.jdbcDriversNotFound)
                 importDomainModal.hide();
             else if (act === 'connect') {
                 if ($scope.importDomain.demo && $scope.demoConnection.db !== 'H2')
@@ -1005,7 +1004,7 @@ consoleModule.controller('domainsController', function ($filter, $http, $timeout
 
             var act = $scope.importDomain.action;
 
-            if (act === 'drivers' && !$scope.importDomain.jdbcDriversFound)
+            if (act === 'drivers' && $scope.importDomain.jdbcDriversNotFound)
                 return 'Resolve issue with JDBC drivers<br>Close this dialog and try again';
 
             if (act === 'connect') {
