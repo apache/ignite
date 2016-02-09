@@ -120,9 +120,9 @@ mixin chart-settings(mdl)
                                     hr(style='margin: 0')
                                 .col-sm-12
                                     .sql-controls
-                                        a.btn.btn-primary(ng-disabled='!actionAvailable(paragraph, true)' ng-click='actionAvailable(paragraph, true) ? execute(paragraph) : ""' data-placement='bottom' bs-tooltip data-title='{{actionTooltip(paragraph, "execute", true)}}') Execute
-                                        a.btn.btn-primary(ng-disabled='!actionAvailable(paragraph, true)' ng-click='actionAvailable(paragraph, true) ? explain(paragraph) : ""' data-placement='bottom' bs-tooltip data-title='{{actionTooltip(paragraph, "explain", true)}}') Explain
-                                        a.btn.btn-primary(ng-disabled='!actionAvailable(paragraph, false)' ng-click='actionAvailable(paragraph, false) ? scan(paragraph): ""' data-placement='bottom' bs-tooltip data-title='{{actionTooltip(paragraph, "execute scan", false)}}') Scan
+                                        a.btn.btn-primary(ng-disabled='!actionAvailable(paragraph, true)' ng-click='actionAvailable(paragraph, true) && execute(paragraph)' data-placement='bottom' bs-tooltip data-title='{{actionTooltip(paragraph, "execute", true)}}') Execute
+                                        a.btn.btn-primary(ng-disabled='!actionAvailable(paragraph, true)' ng-click='actionAvailable(paragraph, true) && explain(paragraph)' data-placement='bottom' bs-tooltip data-title='{{actionTooltip(paragraph, "explain", true)}}') Explain
+                                        a.btn.btn-primary(ng-disabled='!actionAvailable(paragraph, false)' ng-click='actionAvailable(paragraph, false) && scan(paragraph)' data-placement='bottom' bs-tooltip data-title='{{actionTooltip(paragraph, "execute scan", false)}}') Scan
                                         .pull-right
                                             labelHide System columns:
                                             a.btn.btn-default.fa.fa-bars.tipLabel(ng-class='{"btn-info": paragraph.systemColumns}' ng-click='toggleSystemColumns(paragraph)' ng-disabled='paragraph.disabledSystemColumns' bs-tooltip data-title='Show "_KEY", "_VAL" columns')
@@ -178,4 +178,4 @@ mixin chart-settings(mdl)
                                         hr(style='margin-top: 0; margin-bottom: 5px')
                                         a(ng-show='paragraph.queryArgs.type' style='float: left; margin-left: 10px; margin-bottom: 5px' ng-click='showResultQuery(paragraph)') Show query
                                         i.fa.fa-chevron-circle-right(ng-show=nextVisibleCondition style='float: right;margin-right: 10px; margin-top: 3px' ng-click='nextPage(paragraph)')
-                                        a(ng-show=nextVisibleCondition style='float: right; margin-bottom: 5px;margin-right: 5px;' ng-click='nextPage(paragraph)') Next
+                                        a(ng-show=nextVisibleCondition ng-disabled='paragraph.loading' ng-click='!paragraph.loading && nextPage(paragraph)' style='float: right; margin-bottom: 5px;margin-right: 5px;') Next
