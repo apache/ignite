@@ -291,7 +291,7 @@ public class GridNearAtomicSingleUpdateResponse extends GridCacheMessage impleme
      * @return Indexes of keys for which update was skipped
      */
     @Override @Nullable public List<Integer> skippedIndexes() {
-        if (nearSkip && key != null)
+        if (nearSkip)
             return Collections.singletonList(0);
 
         return null;
@@ -301,7 +301,7 @@ public class GridNearAtomicSingleUpdateResponse extends GridCacheMessage impleme
      * @return Indexes of keys for which values were generated on primary node.
      */
     @Override @Nullable public List<Integer> nearValuesIndexes() {
-        if (hasNearVal && key != null)
+        if (hasNearVal)
             return Collections.singletonList(0);
 
         return null;
