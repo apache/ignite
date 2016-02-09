@@ -301,11 +301,7 @@ namespace Apache.Ignite.Linq.Impl
             if (subQuery == null)
                 return false;
 
-            var resOp = subQuery.QueryModel.ResultOperators;
-            if (resOp.Count != 1)
-                return false;
-
-            var groupBy = resOp[0] as GroupResultOperator;
+            var groupBy = subQuery.QueryModel.ResultOperators.OfType<GroupResultOperator>().FirstOrDefault();
             if (groupBy == null)
                 return false;
 

@@ -274,13 +274,10 @@ namespace Apache.Ignite.Linq.Impl
             if (subQuery == null)
                 return;
 
-            if (subQuery.QueryModel.ResultOperators.Count != 1)
-                throw new NotSupportedException("Unexpected subquery: " + subQuery);
-
-            var groupBy = subQuery.QueryModel.ResultOperators[0] as GroupResultOperator;
+            var groupBy = subQuery.QueryModel.ResultOperators.OfType<GroupResultOperator>().FirstOrDefault();
 
             if (groupBy == null)
-                throw new NotSupportedException("Unexpected subquery: " + subQuery);
+                return;
 
             // Visit inner joins before grouping
             var i = 0;
