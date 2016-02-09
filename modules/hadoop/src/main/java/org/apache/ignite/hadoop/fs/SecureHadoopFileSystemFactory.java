@@ -22,9 +22,8 @@ import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.security.UserGroupInformation;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.hadoop.fs.v1.IgniteHadoopFileSystem;
-import org.apache.ignite.internal.processors.hadoop.HadoopUtils;
-import org.apache.ignite.internal.processors.igfs.IgfsUtils;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lifecycle.LifecycleAware;
 import org.jetbrains.annotations.Nullable;
@@ -34,10 +33,7 @@ import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import java.net.URI;
-import java.net.URISyntaxException;
-import java.net.URL;
 import java.security.PrivilegedExceptionAction;
-import java.util.Arrays;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -55,21 +51,16 @@ import org.slf4j.LoggerFactory;
  * This factory does not cache any file system instances. If {@code "fs.[prefix].impl.disable.cache"} is set
  * to {@code true}, file system instances will be cached by Hadoop.
  */
-public class SecureHadoopFileSystemFactory implements HadoopFileSystemFactory, Externalizable, LifecycleAware {
-    /** Logger */
-    private static final Logger LOG = LoggerFactory.getLogger(SecureHadoopFileSystemFactory.class);
+public class SecureHadoopFileSystemFactory extends BasicHadoopFileSystemFactory
+        implements HadoopFileSystemFactory, Externalizable, LifecycleAware {
+    /** */
+    private static final long serialVersionUID = 0L;
 
     /** The default interval used to re-login from the key tab, in milliseconds. */
     private static final long DFLT_RELOGIN_INTERVAL = 10 * 60 * 1000L;
 
-    /** */
-    private static final long serialVersionUID = 0L;
-
-    /** File system URI. */
-    protected String uri;
-
-    /** File system config paths. */
-    protected String[] cfgPaths;
+    /** Logger */
+    private static final Logger LOG = LoggerFactory.getLogger(SecureHadoopFileSystemFactory.class);
 
     /** Keytab full file name (e.g. "/etc/security/keytabs/hdfs.headless.keytab" or "/etc/krb5.keytab"). */
     protected String keyTab;
@@ -83,14 +74,9 @@ public class SecureHadoopFileSystemFactory implements HadoopFileSystemFactory, E
      * because the ticket renew window starts from {@code 0.8 * ticket life time}.
      * Default ticket life time is 1 day (24 hours), so the default re-login interval (10 min)
      * is obeys this rule well.
+     * Zero value means that re-login should be attempted on each operation.
      */
     protected long reloginInterval = DFLT_RELOGIN_INTERVAL;
-
-    /** Configuration of the secondary filesystem, never null. */
-    protected transient Configuration cfg;
-
-    /** Resulting URI. */
-    protected transient URI fullUri;
 
     /**
      * Time of last re-login attempt, in system milliseconds.
@@ -119,10 +105,11 @@ public class SecureHadoopFileSystemFactory implements HadoopFileSystemFactory, E
      *
      * @throws IOException If login fails.
      */
-    public void reloginIfNeeded() throws IOException {
-        long now = System.currentTimeMillis();
+    protected void reloginIfNeeded() throws IOException {
+        long now = 0;
 
-        if (now >= lastReloginTime + reloginInterval) {
+        if (reloginInterval == 0
+                || (now = System.currentTimeMillis()) >= lastReloginTime + reloginInterval) {
             UserGroupInformation.getLoginUser().checkTGTAndReloginFromKeytab();
 
             lastReloginTime = now;
@@ -133,7 +120,7 @@ public class SecureHadoopFileSystemFactory implements HadoopFileSystemFactory, E
     @Override public FileSystem get(String userName) throws IOException {
         reloginIfNeeded();
 
-        return create0(IgfsUtils.fixUserName(userName));
+        return super.get(userName);
     }
 
     /**
@@ -190,29 +177,6 @@ public class SecureHadoopFileSystemFactory implements HadoopFileSystemFactory, E
     }
 
     /**
-     * Gets file system URI.
-     * <p>
-     * This URI will be used as a first argument when calling {@link FileSystem#get(URI, Configuration, String)}.
-     * <p>
-     * If not set, default URI will be picked from file system configuration using
-     * {@link FileSystem#getDefaultUri(Configuration)} method.
-     *
-     * @return File system URI.
-     */
-    @Nullable public String getUri() {
-        return uri;
-    }
-
-    /**
-     * Sets file system URI. See {@link #getUri()} for more information.
-     *
-     * @param uri File system URI.
-     */
-    public void setUri(@Nullable String uri) {
-        this.uri = uri;
-    }
-
-    /**
      * Gets the key tab principal name.
      *
      * @return The key tab principal.
@@ -249,33 +213,6 @@ public class SecureHadoopFileSystemFactory implements HadoopFileSystemFactory, E
     }
 
     /**
-     * Gets paths to additional file system configuration files (e.g. core-site.xml).
-     * <p>
-     * Path could be either absolute or relative to {@code IGNITE_HOME} environment variable.
-     * <p>
-     * All provided paths will be loaded in the order they provided and then applied to {@link Configuration}. It means
-     * that path order might be important in some cases.
-     * <p>
-     * <b>NOTE!</b> Factory can be serialized and transferred to other machines where instance of
-     * {@link IgniteHadoopFileSystem} resides. Corresponding paths must exist on these machines as well.
-     *
-     * @return Paths to file system configuration files.
-     */
-    @Nullable public String[] getConfigPaths() {
-        return cfgPaths;
-    }
-
-    /**
-     * Set paths to additional file system configuration files (e.g. core-site.xml). See {@link #getConfigPaths()} for
-     * more information.
-     *
-     * @param cfgPaths Paths to file system configuration files.
-     */
-    public void setConfigPaths(String... cfgPaths) {
-        this.cfgPaths = cfgPaths;
-    }
-
-    /**
      * Gets the re-login interval
      *
      * @return The re-login interval, in millisecoonds.
@@ -295,93 +232,25 @@ public class SecureHadoopFileSystemFactory implements HadoopFileSystemFactory, E
 
     /** {@inheritDoc} */
     @Override public void start() throws IgniteException {
-        cfg = HadoopUtils.safeCreateConfiguration();
+        validateValues();
 
-        if (cfgPaths != null) {
-            for (String cfgPath : cfgPaths) {
-                if (cfgPath == null)
-                    throw new NullPointerException("Configuration path cannot be null: " + Arrays.toString(cfgPaths));
-                else {
-                    URL url = U.resolveIgniteUrl(cfgPath);
+        super.start();
 
-                    if (url == null) {
-                        // If secConfPath is given, it should be resolvable:
-                        throw new IgniteException("Failed to resolve secondary file system configuration path " +
-                            "(ensure that it exists locally and you have read access to it): " + cfgPath);
-                    }
-
-                    cfg.addResource(url);
-                }
-            }
-        }
-
-        if (!F.isEmpty(keyTab)
-                && !F.isEmpty(keyTabPrincipal)) {
-            try {
-                loginFromKeyTab();
-            } catch (IOException ioe) {
-                throw new IgniteException("Failed login from keytab. [keyTab="
-                    + keyTab + ", keyTabPrincipal=" + keyTabPrincipal + ']', ioe);
-            }
-        }
-
-        // If secondary fs URI is not given explicitly, try to get it from the configuration:
-        if (uri == null)
-            fullUri = FileSystem.getDefaultUri(cfg);
-        else {
-            try {
-                fullUri = new URI(uri);
-            }
-            catch (URISyntaxException use) {
-                throw new IgniteException("Failed to resolve secondary file system URI: " + uri);
-            }
+        try {
+            loginFromKeyTab();
+        } catch (IOException ioe) {
+            throw new IgniteException("Failed login from keytab. [keyTab="
+                + keyTab + ", keyTabPrincipal=" + keyTabPrincipal + ']', ioe);
         }
     }
 
-    /** {@inheritDoc} */
-    @Override public void stop() throws IgniteException {
-    }
+    /**
+     * Checks that the values injected via the setters are correct.
+     */
+    protected void validateValues() {
+        A.ensure(!F.isEmpty(keyTab), "keyTab property should not be empty.");
 
-    /** {@inheritDoc} */
-    @Override public void writeExternal(ObjectOutput out) throws IOException {
-        U.writeString(out, uri);
-
-        if (!F.isEmpty(keyTab) && !F.isEmpty(keyTabPrincipal)) {
-            out.writeBoolean(true);
-            U.writeString(out, keyTab);
-            U.writeString(out, keyTabPrincipal);
-        } else
-            out.writeBoolean(false);
-
-        if (cfgPaths != null) {
-            out.writeInt(cfgPaths.length);
-
-            for (String cfgPath : cfgPaths)
-                U.writeString(out, cfgPath);
-        } else
-            out.writeInt(-1);
-    }
-
-    /** {@inheritDoc} */
-    @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-        uri = U.readString(in);
-
-        boolean isKeyTab = in.readBoolean();
-
-        if (isKeyTab) {
-            keyTab = U.readString(in);
-
-            keyTabPrincipal = U.readString(in);
-        }
-
-        int cfgPathsCnt = in.readInt();
-
-        if (cfgPathsCnt != -1) {
-            cfgPaths = new String[cfgPathsCnt];
-
-            for (int i = 0; i < cfgPathsCnt; i++)
-                cfgPaths[i] = U.readString(in);
-        }
+        A.ensure(!F.isEmpty(keyTabPrincipal), "keyTabPrincipal property should not be empty.");
     }
 
     /**
@@ -400,11 +269,24 @@ public class SecureHadoopFileSystemFactory implements HadoopFileSystemFactory, E
             }
 
             UserGroupInformation.loginUserFromKeytab(keyTabPrincipal, keyTab);
-
-            UserGroupInformation loginUser = UserGroupInformation.getLoginUser();
-
-            if (LOG.isDebugEnabled())
-                LOG.debug("KeyTab TGT Login Success for " + loginUser.getUserName());
         }
+    }
+
+    /** {@inheritDoc} */
+    @Override public void writeExternal(ObjectOutput out) throws IOException {
+        super.writeExternal(out);
+
+        U.writeString(out, keyTab);
+        U.writeString(out, keyTabPrincipal);
+        out.writeLong(reloginInterval);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
+        super.readExternal(in);
+
+        keyTab = U.readString(in);
+        keyTabPrincipal = U.readString(in);
+        reloginInterval = in.readLong();
     }
 }

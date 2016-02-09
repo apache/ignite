@@ -152,7 +152,7 @@ public class BasicHadoopFileSystemFactory implements HadoopFileSystemFactory, Ex
      *
      * @param cfgPaths Paths to file system configuration files.
      */
-    public void setConfigPaths(String... cfgPaths) {
+    public void setConfigPaths(@Nullable String... cfgPaths) {
         this.cfgPaths = cfgPaths;
     }
 
