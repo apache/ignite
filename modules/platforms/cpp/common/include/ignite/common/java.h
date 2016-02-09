@@ -103,6 +103,9 @@ namespace ignite
             typedef long long(JNICALL *ExtensionCallbackInLongOutLongHandler)(void* target, int typ, long long arg1);
             typedef long long(JNICALL *ExtensionCallbackInLongLongOutLongHandler)(void* target, int typ, long long arg1, long long arg2);
 
+            typedef void(JNICALL *OnClientDisconnectedHandler)(void* target);
+            typedef void(JNICALL *OnClientReconnectedHandler)(void* target, unsigned char clusterRestarted);
+
             /**
              * JNI handlers holder.
              */
@@ -177,6 +180,9 @@ namespace ignite
 
                 ExtensionCallbackInLongOutLongHandler extensionCallbackInLongOutLong;
                 ExtensionCallbackInLongLongOutLongHandler extensionCallbackInLongLongOutLong;
+
+                OnClientDisconnectedHandler onClientDisconnected;
+                OnClientReconnectedHandler onClientReconnected;
             };
 
             /**
@@ -695,6 +701,9 @@ namespace ignite
 
             JNIEXPORT jlong JNICALL JniExtensionCallbackInLongOutLong(JNIEnv *env, jclass cls, jlong envPtr, jint typ, jlong arg1);
             JNIEXPORT jlong JNICALL JniExtensionCallbackInLongLongOutLong(JNIEnv *env, jclass cls, jlong envPtr, jint typ, jlong arg1, jlong arg2);
+
+            JNIEXPORT void JNICALL JniOnClientDisconnected(JNIEnv *env, jclass cls, jlong envPtr);
+            JNIEXPORT void JNICALL JniOnClientReconnected(JNIEnv *env, jclass cls, jlong envPtr, jboolean clusterRestarted);
         }
     }
 }

@@ -26,6 +26,7 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.PlatformConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteComputeImpl;
+import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.binary.*;
 import org.apache.ignite.internal.cluster.ClusterGroupAdapter;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
@@ -50,6 +51,7 @@ import org.apache.ignite.internal.processors.platform.utils.PlatformConfiguratio
 import org.apache.ignite.internal.processors.platform.utils.PlatformUtils;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteFuture;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.Collection;
@@ -358,6 +360,17 @@ public class PlatformProcessorImpl extends GridProcessorAdapter implements Platf
             return null;
 
         return new PlatformAtomicLong(platformCtx, atomicLong);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void onDisconnected(IgniteFuture<?> reconnectFut) throws IgniteCheckedException {
+        platformCtx.gateway().onClientDisconnected();
+    }
+
+    /** {@inheritDoc} */
+    @Override public IgniteInternalFuture<?> onReconnected(boolean clusterRestarted) throws IgniteCheckedException {
+        platformCtx.gateway().onClientReconnected(clusterRestarted);
+        return null;
     }
 
     /** {@inheritDoc} */
