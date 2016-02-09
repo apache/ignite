@@ -39,9 +39,9 @@ namespace Apache.Ignite.Linq
         /// <typeparam name="TValue">The type of the value.</typeparam>
         /// <param name="cache">The cache.</param>
         /// <returns><see cref="IQueryable{T}"/> instance over this cache.</returns>
-        public static IQueryable<ICacheEntry<TKey, TValue>> ToQueryable<TKey, TValue>(this ICache<TKey, TValue> cache)
+        public static IQueryable<ICacheEntry<TKey, TValue>> AsCacheQueryable<TKey, TValue>(
+            this ICache<TKey, TValue> cache)
         {
-            // TODO: AsCacheQueryable?
             return new CacheQueryable<TKey, TValue>(cache);
         }
     }
