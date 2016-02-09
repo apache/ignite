@@ -282,8 +282,10 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
             Assert.IsTrue(ints.Any(x => x < PersonCount / 2));
 
             // Skip/take
-            Assert.AreEqual(new[] {51, 52}, cache.Select(x => x.Key).Skip(50).Take(2).ToArray());
-            Assert.AreEqual(new[] {51, 52}, cache.Skip(50).Take(2).Select(x => x.Key).ToArray());
+            var keys = cache.Select(x => x.Key).OrderBy(x => x);
+            Assert.AreEqual(new[] {0, 1}, keys.Take(2).ToArray());
+            Assert.AreEqual(new[] {1, 2}, keys.Skip(1).Take(2).ToArray());
+            Assert.AreEqual(new[] {98, 99}, keys.Skip(98).ToArray());
         }
 
         [Test]
