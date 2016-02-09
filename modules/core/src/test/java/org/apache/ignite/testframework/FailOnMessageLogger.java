@@ -22,7 +22,8 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * Used for log monitoring in order to track down any undesirable exception.
+ * Used for log monitoring in order to track down any undesirable exception. This implementation stores
+ * only the last message at which undesirable exception was detected.
  */
 public class FailOnMessageLogger implements IgniteLogger {
 
@@ -135,12 +136,15 @@ public class FailOnMessageLogger implements IgniteLogger {
     }
 
     /**
-     * @return String on which {@code checkMsg} was detected and test was failed. Null if everything is ok.
+     * @return String on which {@code checkMsg} was detected. Null if everything is ok.
      */
     @Nullable public String getFailOnMessage() {
         return failOnMessage;
     }
 
+    /**
+     * Clears string on which {@code checkMsg} was detected.
+     */
     public void reset() {
         failOnMessage = null;
     }
