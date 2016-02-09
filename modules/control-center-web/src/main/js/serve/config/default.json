@@ -19,7 +19,7 @@
     },
     "smtp": {
         "service": "",
-        "username": "",
+        "username": "Apache Ignite Web Console",
         "email": "",
         "password": ""
     }
