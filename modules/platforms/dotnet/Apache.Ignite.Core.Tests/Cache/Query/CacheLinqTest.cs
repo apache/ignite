@@ -787,6 +787,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
                 .GetOrCreateCache<int, T>(new CacheConfiguration(PersonOrgCacheName,
                     new QueryEntity(typeof (int), typeof (Person))
                     {
+                        // TODO: attributes
                         Aliases = new[] {new QueryAlias("Address.AliasTest", "AddrAliasTest")}
                     },
                     new QueryEntity(typeof (int), typeof (Organization))));
