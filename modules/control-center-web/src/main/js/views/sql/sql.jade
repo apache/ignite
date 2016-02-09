@@ -177,5 +177,6 @@ mixin chart-settings(mdl)
 
                                         hr(style='margin-top: 0; margin-bottom: 5px')
                                         a(ng-show='paragraph.queryArgs.type' style='float: left; margin-left: 10px; margin-bottom: 5px' ng-click='showResultQuery(paragraph)') Show query
-                                        i.fa.fa-chevron-circle-right(ng-show=nextVisibleCondition style='float: right;margin-right: 10px; margin-top: 3px' ng-click='nextPage(paragraph)')
-                                        a(ng-show=nextVisibleCondition ng-disabled='paragraph.loading' ng-click='!paragraph.loading && nextPage(paragraph)' style='float: right; margin-bottom: 5px;margin-right: 5px;') Next
+                                        .sql-next(ng-show=nextVisibleCondition )
+                                            i.fa.fa-chevron-circle-right(ng-class='{disabled: paragraph.loading}' ng-click='!paragraph.loading && nextPage(paragraph)')
+                                            a(ng-class='{disabled: paragraph.loading}' ng-click='!paragraph.loading && nextPage(paragraph)') Next
