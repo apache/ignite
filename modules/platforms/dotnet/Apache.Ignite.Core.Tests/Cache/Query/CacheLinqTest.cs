@@ -469,7 +469,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         }
 
         [Test]
-        public void TestGroup()
+        public void TestGroupBy()
         {
             var persons = GetPersonOrgCache().ToQueryable();
 
