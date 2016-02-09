@@ -66,8 +66,10 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxPrep
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxPrepareResponse;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtUnlockRequest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridDhtAtomicDeferredUpdateResponse;
-import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridDhtAtomicUpdateRequest;
-import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridDhtAtomicUpdateResponse;
+import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridDhtAtomicMultipleUpdateRequest;
+import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridDhtAtomicSingleUpdateRequest;
+import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridDhtAtomicMultipleUpdateResponse;
+import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridDhtAtomicSingleUpdateResponse;
 import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridNearAtomicMultipleUpdateResponse;
 import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridNearAtomicSingleUpdateRequest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridNearAtomicMultipleUpdateRequest;
@@ -354,12 +356,12 @@ public class GridIoMessageFactory implements MessageFactory {
                 break;
 
             case 38:
-                msg = new GridDhtAtomicUpdateRequest();
+                msg = new GridDhtAtomicMultipleUpdateRequest();
 
                 break;
 
             case 39:
-                msg = new GridDhtAtomicUpdateResponse();
+                msg = new GridDhtAtomicMultipleUpdateResponse();
 
                 break;
 
@@ -735,6 +737,16 @@ public class GridIoMessageFactory implements MessageFactory {
 
             case -24:
                 msg = new GridNearAtomicSingleUpdateResponse();
+
+                break;
+
+            case -25:
+                msg = new GridDhtAtomicSingleUpdateRequest();
+
+                break;
+
+            case -26:
+                msg = new GridDhtAtomicSingleUpdateResponse();
 
                 break;
 

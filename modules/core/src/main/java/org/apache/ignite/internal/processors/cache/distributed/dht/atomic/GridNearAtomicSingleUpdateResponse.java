@@ -593,7 +593,7 @@ public class GridNearAtomicSingleUpdateResponse extends GridCacheMessage impleme
 
         }
 
-        return reader.afterMessageRead(GridNearAtomicMultipleUpdateResponse.class);
+        return reader.afterMessageRead(GridNearAtomicSingleUpdateResponse.class);
     }
 
     /** {@inheritDoc} */

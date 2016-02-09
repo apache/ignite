@@ -480,7 +480,7 @@ public class GridCacheAtomicInvalidPartitionHandlingSelfTest extends GridCommonA
             return delay && (
                 (origMsg instanceof GridNearAtomicMultipleUpdateRequest) ||
                 (origMsg instanceof GridNearAtomicSingleUpdateRequest) ||
-                (origMsg instanceof GridDhtAtomicUpdateRequest)
+                (origMsg instanceof GridDhtAtomicMultipleUpdateRequest)
             );
         }
     }

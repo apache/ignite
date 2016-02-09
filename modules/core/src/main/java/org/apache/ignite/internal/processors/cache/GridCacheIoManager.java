@@ -42,6 +42,10 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLockRe
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxPrepareRequest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxPrepareResponse;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridPartitionedSingleGetFuture;
+import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridDhtAtomicMultipleUpdateRequest;
+import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridDhtAtomicMultipleUpdateResponse;
+import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridDhtAtomicSingleUpdateRequest;
+import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridDhtAtomicSingleUpdateResponse;
 import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridDhtAtomicUpdateRequest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridDhtAtomicUpdateResponse;
 import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridNearAtomicSingleUpdateRequest;
@@ -398,14 +402,22 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
             case 38: {
                 GridDhtAtomicUpdateRequest req = (GridDhtAtomicUpdateRequest)msg;
 
-                GridDhtAtomicUpdateResponse res = new GridDhtAtomicUpdateResponse(
-                    ctx.cacheId(),
-                    req.futureVersion(),
-                    ctx.deploymentEnabled());
+                GridDhtAtomicUpdateResponse res;
+
+                if (req instanceof GridDhtAtomicSingleUpdateRequest)
+                    res = new GridDhtAtomicSingleUpdateResponse(
+                        ctx.cacheId(),
+                        req.futureVersion(),
+                        ctx.deploymentEnabled());
+                else
+                    res = new GridDhtAtomicMultipleUpdateResponse(
+                        ctx.cacheId(),
+                        req.futureVersion(),
+                        ctx.deploymentEnabled());
 
                 res.onError(req.classError());
 
-                sendResponseOnFailedMessage(nodeId, res, cctx, ctx.ioPolicy());
+                sendResponseOnFailedMessage(nodeId, (GridCacheMessage) res, cctx, ctx.ioPolicy());
             }
 
             break;

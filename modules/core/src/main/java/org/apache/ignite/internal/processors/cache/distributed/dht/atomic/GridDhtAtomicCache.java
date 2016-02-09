@@ -275,14 +275,26 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
             }
         });
 
-        ctx.io().addHandler(ctx.cacheId(), GridDhtAtomicUpdateRequest.class, new CI2<UUID, GridDhtAtomicUpdateRequest>() {
-            @Override public void apply(UUID nodeId, GridDhtAtomicUpdateRequest req) {
+        ctx.io().addHandler(ctx.cacheId(), GridDhtAtomicMultipleUpdateRequest.class, new CI2<UUID, GridDhtAtomicMultipleUpdateRequest>() {
+            @Override public void apply(UUID nodeId, GridDhtAtomicMultipleUpdateRequest req) {
                 processDhtAtomicUpdateRequest(nodeId, req);
             }
         });
 
-        ctx.io().addHandler(ctx.cacheId(), GridDhtAtomicUpdateResponse.class, new CI2<UUID, GridDhtAtomicUpdateResponse>() {
-            @Override public void apply(UUID nodeId, GridDhtAtomicUpdateResponse res) {
+        ctx.io().addHandler(ctx.cacheId(), GridDhtAtomicSingleUpdateRequest.class, new CI2<UUID, GridDhtAtomicSingleUpdateRequest>() {
+            @Override public void apply(UUID nodeId, GridDhtAtomicSingleUpdateRequest req) {
+                processDhtAtomicUpdateRequest(nodeId, req);
+            }
+        });
+
+        ctx.io().addHandler(ctx.cacheId(), GridDhtAtomicMultipleUpdateResponse.class, new CI2<UUID, GridDhtAtomicMultipleUpdateResponse>() {
+            @Override public void apply(UUID nodeId, GridDhtAtomicMultipleUpdateResponse res) {
+                processDhtAtomicUpdateResponse(nodeId, res);
+            }
+        });
+
+        ctx.io().addHandler(ctx.cacheId(), GridDhtAtomicSingleUpdateResponse.class, new CI2<UUID, GridDhtAtomicSingleUpdateResponse>() {
+            @Override public void apply(UUID nodeId, GridDhtAtomicSingleUpdateResponse res) {
                 processDhtAtomicUpdateResponse(nodeId, res);
             }
         });
@@ -2774,8 +2786,14 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
         GridCacheVersion ver = req.writeVersion();
 
         // Always send update reply.
-        GridDhtAtomicUpdateResponse res = new GridDhtAtomicUpdateResponse(ctx.cacheId(), req.futureVersion(),
-            ctx.deploymentEnabled());
+        GridDhtAtomicUpdateResponse res;
+
+        if (req instanceof GridDhtAtomicSingleUpdateRequest)
+            res = new GridDhtAtomicSingleUpdateResponse(ctx.cacheId(), req.futureVersion(),
+                ctx.deploymentEnabled());
+        else
+            res = new GridDhtAtomicMultipleUpdateResponse(ctx.cacheId(), req.futureVersion(),
+                ctx.deploymentEnabled());
 
         Boolean replicate = ctx.isDrEnabled();
 
@@ -2871,7 +2889,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
         try {
             if (res.failedKeys() != null || res.nearEvicted() != null || req.writeSynchronizationMode() == FULL_SYNC)
-                ctx.io().send(nodeId, res, ctx.ioPolicy());
+                ctx.io().send(nodeId, (GridCacheMessage) res, ctx.ioPolicy());
             else {
                 // No failed keys and sync mode is not FULL_SYNC, thus sending deferred response.
                 sendDeferredUpdateResponse(nodeId, req.futureVersion());

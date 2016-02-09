@@ -35,6 +35,7 @@ import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.GridCacheAtomicFuture;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryRemovedException;
+import org.apache.ignite.internal.processors.cache.GridCacheMessage;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCacheEntry;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
@@ -237,19 +238,34 @@ public class GridDhtAtomicUpdateFuture extends GridFutureAdapter<Void> implement
                 GridDhtAtomicUpdateRequest updateReq = mappings.get(nodeId);
 
                 if (updateReq == null) {
-                    updateReq = new GridDhtAtomicUpdateRequest(
-                        cctx.cacheId(),
-                        nodeId,
-                        futVer,
-                        writeVer,
-                        syncMode,
-                        topVer,
-                        forceTransformBackups,
-                        this.updateReq.subjectId(),
-                        this.updateReq.taskNameHash(),
-                        forceTransformBackups ? this.updateReq.invokeArguments() : null,
-                        cctx.deploymentEnabled(),
-                        this.updateReq.keepBinary());
+                    if (this.updateReq instanceof GridNearAtomicSingleUpdateRequest)
+                        updateReq = new GridDhtAtomicSingleUpdateRequest(
+                            cctx.cacheId(),
+                            nodeId,
+                            futVer,
+                            writeVer,
+                            syncMode,
+                            topVer,
+                            forceTransformBackups,
+                            this.updateReq.subjectId(),
+                            this.updateReq.taskNameHash(),
+                            forceTransformBackups ? this.updateReq.invokeArguments() : null,
+                            cctx.deploymentEnabled(),
+                            this.updateReq.keepBinary());
+                    else
+                        updateReq = new GridDhtAtomicMultipleUpdateRequest(
+                            cctx.cacheId(),
+                            nodeId,
+                            futVer,
+                            writeVer,
+                            syncMode,
+                            topVer,
+                            forceTransformBackups,
+                            this.updateReq.subjectId(),
+                            this.updateReq.taskNameHash(),
+                            forceTransformBackups ? this.updateReq.invokeArguments() : null,
+                            cctx.deploymentEnabled(),
+                            this.updateReq.keepBinary());
 
                     mappings.put(nodeId, updateReq);
                 }
@@ -309,19 +325,34 @@ public class GridDhtAtomicUpdateFuture extends GridFutureAdapter<Void> implement
                 if (node == null)
                     continue;
 
-                updateReq = new GridDhtAtomicUpdateRequest(
-                    cctx.cacheId(),
-                    nodeId,
-                    futVer,
-                    writeVer,
-                    syncMode,
-                    topVer,
-                    forceTransformBackups,
-                    this.updateReq.subjectId(),
-                    this.updateReq.taskNameHash(),
-                    forceTransformBackups ? this.updateReq.invokeArguments() : null,
-                    cctx.deploymentEnabled(),
-                    this.updateReq.keepBinary());
+                if (this.updateReq instanceof GridNearAtomicSingleUpdateRequest)
+                    updateReq = new GridDhtAtomicSingleUpdateRequest(
+                        cctx.cacheId(),
+                        nodeId,
+                        futVer,
+                        writeVer,
+                        syncMode,
+                        topVer,
+                        forceTransformBackups,
+                        this.updateReq.subjectId(),
+                        this.updateReq.taskNameHash(),
+                        forceTransformBackups ? this.updateReq.invokeArguments() : null,
+                        cctx.deploymentEnabled(),
+                        this.updateReq.keepBinary());
+                else
+                    updateReq = new GridDhtAtomicMultipleUpdateRequest(
+                        cctx.cacheId(),
+                        nodeId,
+                        futVer,
+                        writeVer,
+                        syncMode,
+                        topVer,
+                        forceTransformBackups,
+                        this.updateReq.subjectId(),
+                        this.updateReq.taskNameHash(),
+                        forceTransformBackups ? this.updateReq.invokeArguments() : null,
+                        cctx.deploymentEnabled(),
+                        this.updateReq.keepBinary());
 
                 mappings.put(nodeId, updateReq);
             }
@@ -348,7 +379,8 @@ public class GridDhtAtomicUpdateFuture extends GridFutureAdapter<Void> implement
                 if (!mappings.isEmpty()) {
                     Collection<KeyCacheObject> hndKeys = new ArrayList<>(keys.size());
 
-                    exit: for (GridDhtAtomicUpdateRequest req : mappings.values()) {
+                    exit:
+                    for (GridDhtAtomicUpdateRequest req : mappings.values()) {
                         for (int i = 0; i < req.size(); i++) {
                             KeyCacheObject key = req.key(i);
 
@@ -416,7 +448,7 @@ public class GridDhtAtomicUpdateFuture extends GridFutureAdapter<Void> implement
                     if (log.isDebugEnabled())
                         log.debug("Sending DHT atomic update request [nodeId=" + req.nodeId() + ", req=" + req + ']');
 
-                    cctx.io().send(req.nodeId(), req, cctx.ioPolicy());
+                    cctx.io().send(req.nodeId(), (GridCacheMessage)req, cctx.ioPolicy());
                 }
                 catch (ClusterTopologyCheckedException ignored) {
                     U.warn(log, "Failed to send update request to backup node because it left grid: " +
