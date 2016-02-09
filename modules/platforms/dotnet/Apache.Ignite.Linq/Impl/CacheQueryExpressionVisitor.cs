@@ -269,7 +269,7 @@ namespace Apache.Ignite.Linq.Impl
             var srcRef = expression.Expression as QuerySourceReferenceExpression;
             if (srcRef != null)
             {
-                
+                // TODO: Find the groupBy expression and substitute here
             }
 
             var queryFieldAttr = expression.Member.GetCustomAttributes(true)
