@@ -21,6 +21,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.Map;
+import org.apache.ignite.igfs.IgfsFile;
 import org.apache.ignite.igfs.IgfsOutputStream;
 import org.apache.ignite.igfs.IgfsPath;
 
@@ -61,7 +62,12 @@ public class IgfsExUniversalFileSystemAdapter implements UniversalFileSystemAdap
 
     /** {@inheritDoc} */
     @Override public Map<String, String> properties(String path) {
-        return igfsEx.info(new IgfsPath(path)).properties();
+        IgfsFile file = igfsEx.info(new IgfsPath(path));
+
+        if (file == null)
+            return null;
+
+        return file.properties();
     }
 
     /** {@inheritDoc} */

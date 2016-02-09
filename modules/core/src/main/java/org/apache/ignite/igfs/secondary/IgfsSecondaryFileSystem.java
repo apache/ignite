@@ -23,6 +23,7 @@ import java.util.Map;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.igfs.IgfsFile;
 import org.apache.ignite.igfs.IgfsPath;
+import org.apache.ignite.internal.processors.igfs.IgfsEx;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -50,6 +51,8 @@ public interface IgfsSecondaryFileSystem {
      * <li>{@code grpName} - file owner group;</li>
      * <li>{@code permission} - Unix-style string representing file permissions.</li>
      * </ul>
+     *
+     * See {@link IgfsEx#PROP_USER_NAME}, {@link IgfsEx#PROP_GROUP_NAME}, {@link IgfsEx#PROP_PERMISSION}.
      *
      * @param path File path to set properties for.
      * @param props Properties to update.

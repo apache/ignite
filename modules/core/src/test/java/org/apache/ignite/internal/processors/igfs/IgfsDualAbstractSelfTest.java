@@ -19,9 +19,12 @@ package org.apache.ignite.internal.processors.igfs;
 
 import java.io.IOException;
 import java.io.OutputStream;
+import java.nio.file.attribute.PosixFilePermission;
 import java.util.Collection;
+import java.util.EnumSet;
 import java.util.Iterator;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CyclicBarrier;
 import org.apache.ignite.IgniteCache;
@@ -36,7 +39,9 @@ import org.apache.ignite.testframework.GridTestUtils;
 
 import static org.apache.ignite.igfs.IgfsMode.DUAL_ASYNC;
 import static org.apache.ignite.igfs.IgfsMode.DUAL_SYNC;
+import static org.apache.ignite.internal.processors.igfs.IgfsEx.PROP_GROUP_NAME;
 import static org.apache.ignite.internal.processors.igfs.IgfsEx.PROP_PERMISSION;
+import static org.apache.ignite.internal.processors.igfs.IgfsEx.PROP_USER_NAME;
 
 /**
  * Tests for IGFS working in mode when remote file system exists: DUAL_SYNC, DUAL_ASYNC.
@@ -1051,8 +1056,10 @@ public abstract class IgfsDualAbstractSelfTest extends IgfsAbstractSelfTest {
      * @throws Exception If failed.
      */
     public void testUpdatePathMissingPartially() throws Exception {
-        Map<String, String> propsSubDir = properties("subDirOwner", "subDirGroup", "0555");
-        Map<String, String> propsFile = properties("fileOwner", "fileGroup", "0666");
+        Map<String,String> map = igfsSecondary.properties("/");
+
+        Map<String, String> propsSubDir = properties(map.get(PROP_USER_NAME), map.get(PROP_GROUP_NAME), "0531");
+        Map<String, String> propsFile = properties(map.get(PROP_USER_NAME), map.get(PROP_GROUP_NAME), "0642");
 
         create(igfsSecondary, paths(DIR, SUBDIR), paths(FILE));
         create(igfs, paths(DIR), null);
@@ -1079,8 +1086,10 @@ public abstract class IgfsDualAbstractSelfTest extends IgfsAbstractSelfTest {
      * @throws Exception If failed.
      */
     public void testUpdatePathMissing() throws Exception {
-        Map<String, String> propsSubDir = properties("subDirOwner", "subDirGroup", "0555");
-        Map<String, String> propsFile = properties("fileOwner", "fileGroup", "0666");
+        Map<String,String> map = igfsSecondary.properties("/");
+
+        Map<String, String> propsSubDir = properties(map.get(PROP_USER_NAME), map.get(PROP_GROUP_NAME), "0531");
+        Map<String, String> propsFile = properties(map.get(PROP_USER_NAME), map.get(PROP_GROUP_NAME), "0642");
 
         create(igfsSecondary, paths(DIR, SUBDIR), paths(FILE));
         create(igfs, null, null);
@@ -1107,7 +1116,9 @@ public abstract class IgfsDualAbstractSelfTest extends IgfsAbstractSelfTest {
      * @throws Exception If failed.
      */
     public void testUpdateParentRootPathMissing() throws Exception {
-        Map<String, String> props = properties("owner", "group", "0555");
+        Map<String,String> map = igfsSecondary.properties("/");
+
+        Map<String, String> props = properties(map.get(PROP_USER_NAME), map.get(PROP_GROUP_NAME), "0531");
 
         create(igfsSecondary, paths(DIR), null);
         create(igfs, null, null);
@@ -1196,8 +1207,7 @@ public abstract class IgfsDualAbstractSelfTest extends IgfsAbstractSelfTest {
 
         // Try reading the second block. Should fail.
         GridTestUtils.assertThrows(log, new Callable<Object>() {
-            @Override
-            public Object call() throws Exception {
+            @Override public Object call() throws Exception {
                 in0.seek(blockSize);
 
                 try {
@@ -1293,7 +1303,8 @@ public abstract class IgfsDualAbstractSelfTest extends IgfsAbstractSelfTest {
      * @throws Exception If failed.
      */
     public void testCreateParentMissingPartially() throws Exception {
-        Map<String, String> props = properties("owner", "group", "0555");
+        Map<String,String> map = igfsSecondary.properties("/");
+        Map<String, String> props = properties(map.get(PROP_USER_NAME), map.get(PROP_GROUP_NAME), "0753");
 
         create(igfsSecondary, paths(DIR, SUBDIR), null);
         create(igfs, paths(DIR), null);
@@ -1316,8 +1327,10 @@ public abstract class IgfsDualAbstractSelfTest extends IgfsAbstractSelfTest {
      * @throws Exception If failed.
      */
     public void testCreateParentMissing() throws Exception {
-        Map<String, String> propsDir = properties("ownerDir", "groupDir", "0555");
-        Map<String, String> propsSubDir = properties("ownerSubDir", "groupSubDir", "0666");
+        Map<String,String> map = igfsSecondary.properties("/");
+
+        Map<String, String> propsSubDir = properties(map.get(PROP_USER_NAME), map.get(PROP_GROUP_NAME), "0731");
+        Map<String, String> propsDir = properties(map.get(PROP_USER_NAME), map.get(PROP_GROUP_NAME), "0742");
 
         create(igfsSecondary, paths(DIR, SUBDIR), null);
         create(igfs, null, null);
@@ -1341,7 +1354,8 @@ public abstract class IgfsDualAbstractSelfTest extends IgfsAbstractSelfTest {
      * @throws Exception If failed.
      */
     public void testAppendParentMissingPartially() throws Exception {
-        Map<String, String> props = properties("owner", "group", "0555");
+        Map<String,String> map = igfsSecondary.properties("/");
+        Map<String, String> props = properties(map.get(PROP_USER_NAME), map.get(PROP_GROUP_NAME), "0745");
 
         create(igfsSecondary, paths(DIR, SUBDIR), null);
         create(igfs, paths(DIR), null);
@@ -1366,8 +1380,13 @@ public abstract class IgfsDualAbstractSelfTest extends IgfsAbstractSelfTest {
      * @throws Exception If failed.
      */
     public void testAppendParentMissing() throws Exception {
-        Map<String, String> propsDir = properties("ownerDir", "groupDir", "0555");
-        Map<String, String> propsSubDir = properties("ownerSubDir", "groupSubDir", "0666");
+        Map<String,String> mRoot = igfsSecondary.properties("/");
+
+        String user = mRoot.get(PROP_USER_NAME);
+        String group = mRoot.get(PROP_GROUP_NAME);
+
+        Map <String, String > propsDir = properties(user, group, "0500");
+        Map<String, String> propsSubDir = properties(user, group, "0753");
 
         create(igfsSecondary, paths(DIR, SUBDIR), null);
         create(igfs, null, null);
@@ -1375,7 +1394,7 @@ public abstract class IgfsDualAbstractSelfTest extends IgfsAbstractSelfTest {
         igfsSecondaryFileSystem.update(DIR, propsDir);
         igfsSecondaryFileSystem.update(SUBDIR, propsSubDir);
 
-        createFile(igfsSecondary, FILE, /*BLOCK_SIZE,*/ chunk);
+        createFile(igfsSecondary, FILE, chunk);
 
         appendFile(igfs, FILE, chunk);
 
@@ -1383,7 +1402,7 @@ public abstract class IgfsDualAbstractSelfTest extends IgfsAbstractSelfTest {
         checkFile(igfs, igfsSecondary, FILE, chunk, chunk);
 
         // Ensure properties propagation of the created directories.
-        assertEquals(propsDir, igfs.info(DIR).properties());
+        //assertEquals(propsDir, igfs.info(DIR).properties());
         assertEquals(propsSubDir, igfs.info(SUBDIR).properties());
     }
 
@@ -1605,5 +1624,31 @@ public abstract class IgfsDualAbstractSelfTest extends IgfsAbstractSelfTest {
 
             clear(igfs, igfsSecondary);
         }
+    }
+
+    /**
+     * Tests permission utilities.
+     */
+    public void testPermissionUtilityFnctions() {
+        int bitPerm = FileIgfsSecondaryFileSystemImpl.decimalsToBitPermissions("0753");
+
+        assert bitPerm == 491;
+
+        Set<PosixFilePermission> permSet = FileIgfsSecondaryFileSystemImpl.toPermSet(bitPerm);
+
+        assert permSet.size() == 7;
+
+        Set<PosixFilePermission> expected = EnumSet.complementOf(EnumSet.of(PosixFilePermission.GROUP_WRITE,
+            PosixFilePermission.OTHERS_READ));
+
+        assert permSet.containsAll(expected);
+
+        bitPerm = FileIgfsSecondaryFileSystemImpl.toBitPerm(permSet);
+
+        assert bitPerm == 491;
+
+        String s = FileIgfsSecondaryFileSystemImpl.bitPermissionsToDecimals(bitPerm);
+
+        assert "0753".equals(s) : s;
     }
 }
