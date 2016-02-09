@@ -174,7 +174,7 @@ namespace Apache.Ignite.Linq.Impl
                 else if (op is TakeResultOperator)
                     _builder.AppendFormat("top {0} ", ((TakeResultOperator) op).Count);
                 else if (op is UnionResultOperator || op is IntersectResultOperator || op is ExceptResultOperator
-                         || op is DefaultIfEmptyResultOperator)
+                         || op is DefaultIfEmptyResultOperator || op is SkipResultOperator)
                     // Will be processed later
                     break;
                 else
@@ -190,6 +190,14 @@ namespace Apache.Ignite.Linq.Impl
         {
             foreach (var op in queryModel.ResultOperators.Reverse())
             {
+                var skip = op as SkipResultOperator;
+                if (skip != null)
+                {
+                    _builder.Append("offset ");
+                    BuildSqlExpression(skip.Count);
+                    continue;
+                }
+
                 // SELECT TOP 10 * FROM "person_cache".PERSON where _KEY>10 UNION (select * from "".PERSON where _key > 50 limit 20)
                 string keyword = null;
                 Expression source = null;
