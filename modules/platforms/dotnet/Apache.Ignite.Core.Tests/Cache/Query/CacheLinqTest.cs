@@ -477,13 +477,16 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
                 from p in persons
                 group p by p.Value.OrganizationId
                 into gs
+                orderby gs.Key
                 let cnt = gs.Count()
                 let key = gs.Key
                 select new {cnt, key};
 
             var resArr = res.ToArray();
 
-            Assert.AreEqual(2, resArr.Length);
+            Assert.AreEqual(new[] {new {cnt = 50, key = 1000}, new {cnt = 50, key = 1001}}, resArr);
+
+            // TODO: Multiple keys, joins, etc
         }
 
         [Test]
