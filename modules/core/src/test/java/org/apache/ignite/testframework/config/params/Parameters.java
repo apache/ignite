@@ -22,8 +22,11 @@ import java.lang.reflect.Method;
 import java.util.ArrayDeque;
 import java.util.Arrays;
 import java.util.Queue;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -120,7 +123,7 @@ public class Parameters {
     /**
      * @param mtdName Method name.
      * @param val Value.
-     * @return Array of configuration processors for given classes.
+     * @return Configuration parameter.
      */
     public static <T> ConfigurationParameter<T> parameter(String mtdName, Object val) {
         return new ReflectionConfigurationApplier<>(mtdName, val);
@@ -135,19 +138,13 @@ public class Parameters {
     }
 
     /**
-     * @param params Params
-     * @return Array of params.
-     */
-    @SuppressWarnings({"unchecked", "MethodNamesDifferingOnlyByCase"})
-    public static <T> ConfigurationParameter<T>[] asArray(ConfigurationParameter<T>... params) {
-        return params;
-    }
-
-    /**
      * Reflection configuration applier.
      */
     @SuppressWarnings("serial")
     private static class ReflectionConfigurationApplier<T> implements ConfigurationParameter<T> {
+        /** Classes of marameters cache. */
+        private static final ConcurrentMap<T2<Class, String>, Class> paramClasses = new ConcurrentHashMap();
+
         /** */
         private final String mtdName;
 
@@ -178,24 +175,49 @@ public class Parameters {
                 return null;
 
             try {
-                Class<?> paramCls = val.getClass();
+                Class<?> paramCls = paramClasses.get(new T2<Class, String>(cfg.getClass(), mtdName));
+
+                if (paramCls == null)
+                    paramCls = val.getClass();
+                else if (!paramCls.isInstance(val))
+                    throw new IgniteException("Class parameter from cache does not match value argument class " +
+                        "[paramCls=" + paramCls + ", val=" + val + "]");
 
                 if (val.getClass().equals(Boolean.class))
                     paramCls = Boolean.TYPE;
+                else if (val.getClass().equals(Byte.class))
+                    paramCls = Byte.TYPE;
+                else if (val.getClass().equals(Short.class))
+                    paramCls = Short.TYPE;
+                else if (val.getClass().equals(Character.class))
+                    paramCls = Character.TYPE;
                 else if (val.getClass().equals(Integer.class))
                     paramCls = Integer.TYPE;
+                else if (val.getClass().equals(Long.class))
+                    paramCls = Long.TYPE;
+                else if (val.getClass().equals(Float.class))
+                    paramCls = Float.TYPE;
+                else if (val.getClass().equals(Double.class))
+                    paramCls = Double.TYPE;
 
                 Method mtd;
 
                 Queue<Class> queue = new ArrayDeque<>();
 
+                boolean failed = false;
+
                 while (true) {
                     try {
                         mtd = cfg.getClass().getMethod(mtdName, paramCls);
 
+                        if (failed)
+                            paramClasses.put(new T2<Class, String>(cfg.getClass(), mtdName), paramCls);
+
                         break;
                     }
                     catch (NoSuchMethodException e) {
+                        failed = true;
+
                         U.warn(null, "Method not found [cfgCls=" + cfg.getClass() + ", mtdName=" + mtdName
                             + ", paramCls=" + paramCls + "]");
 
@@ -210,7 +232,8 @@ public class Parameters {
                             queue.addAll(Arrays.asList(interfaces));
 
                         if (queue.isEmpty())
-                            throw new IgniteException("Method not found. ", e);
+                            throw new IgniteException("Method not found [cfgCls=" + cfg.getClass() + ", mtdName="
+                                + mtdName + ", paramCls=" + val.getClass() + "]", e);
 
                         paramCls = queue.remove();
                     }

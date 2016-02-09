@@ -282,6 +282,13 @@ public abstract class CacheAbstractNewSelfTest extends GridCommonAbstractTest {
     }
 
     /**
+     * @return Load previous value flag.
+     */
+    protected boolean isLoadPreviousValue() {
+        return cacheConfiguration().isLoadPreviousValue();
+    }
+
+    /**
      * @return Cache atomicity mode.
      */
     protected CacheAtomicityMode atomicityMode() {

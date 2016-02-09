@@ -21,10 +21,13 @@ import java.util.Collection;
 import javax.cache.Cache;
 import javax.cache.configuration.CacheEntryListenerConfiguration;
 import javax.cache.configuration.Factory;
+import javax.cache.configuration.MutableCacheEntryListenerConfiguration;
+import javax.cache.event.CacheEntryCreatedListener;
 import javax.cache.event.CacheEntryEventFilter;
 import javax.cache.event.CacheEntryListener;
+import javax.cache.event.CacheEntryListenerException;
 import org.apache.ignite.cache.CacheAtomicityMode;
-import org.apache.ignite.cache.CacheInterceptor;
+import org.apache.ignite.cache.CacheInterceptorAdapter;
 import org.apache.ignite.cache.CacheMemoryMode;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.CacheRebalanceMode;
@@ -37,10 +40,9 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.configuration.TopologyValidator;
 import org.apache.ignite.internal.processors.cache.CacheAbstractNewSelfTest;
-import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.testframework.config.generator.ConfigurationParameter;
-import org.jetbrains.annotations.Nullable;
 
+import static org.apache.ignite.internal.util.lang.GridFunc.asArray;
 import static org.apache.ignite.testframework.config.params.Parameters.booleanParameters;
 import static org.apache.ignite.testframework.config.params.Parameters.complexParameter;
 import static org.apache.ignite.testframework.config.params.Parameters.enumParameters;
@@ -54,20 +56,25 @@ public class CacheConfigurationPermutations {
     /** */
     public static final ConfigurationParameter<Object> EVICTION_PARAM = complexParameter(
         parameter("setEvictionPolicy", new FifoEvictionPolicy<>()),
-        parameter("setEvictionFilter", new NoopEvictionFilter()));
+        parameter("setEvictionFilter", new NoopEvictionFilter())
+    );
 
     /** */
     public static final ConfigurationParameter<Object> CACHE_STORE_PARAM = complexParameter(
         parameter("setCacheStoreFactory", new CacheAbstractNewSelfTest.TestStoreFactory()),
-        parameter("setCacheStoreSessionListenerFactories", new NoopCacheStoreSessionListenerFactory()));
+        parameter("setReadThrough", true),
+        parameter("setWriteThrough", true),
+        parameter("setCacheStoreSessionListenerFactories", new Factory[] {new NoopCacheStoreSessionListenerFactory()})
+    );
 
     /** */
-    public static final ConfigurationParameter<Object> REBALANCING_PARAM = complexParameter(parameter("setRebalanceBatchSize", 1024),
-        parameter("setRebalanceBatchesPrefetchCount", 5),
+    public static final ConfigurationParameter<Object> REBALANCING_PARAM = complexParameter(
+        parameter("setRebalanceBatchSize", 2028 * 1024),
+        parameter("setRebalanceBatchesPrefetchCount", 5L),
         parameter("setRebalanceThreadPoolSize", 5),
         parameter("setRebalanceTimeout", CacheConfiguration.DFLT_REBALANCE_TIMEOUT * 2),
-        parameter("setRebalanceDelay", 1000),
-        parameter("setRebalanceThrottle", 100));
+        parameter("setRebalanceDelay", 1000L)
+    );
 
     /** */
     public static final NearCacheConfiguration NEAR_CACHE_CONFIGURATION = new NearCacheConfiguration();
@@ -86,13 +93,18 @@ public class CacheConfigurationPermutations {
         booleanParameters("setCopyOnRead"),
         // TODO uncomment.
 //        objectParameters(true, "setNearConfiguration", NEAR_CACHE_CONFIGURATION)
-//        asArray(null, complexParameter(EVICTION_PARAM, CACHE_STORE_PARAM, REBALANCING_PARAM,
+        asArray(/* // TODO add null variant. */
+            complexParameter(
+            EVICTION_PARAM,
+            CACHE_STORE_PARAM,
+            REBALANCING_PARAM,
+                // TODO enable "custom" affinity function.
 //            parameter("setAffinity", new FairAffinityFunction()),
-//            parameter("setOffHeapMaxMemory", 10 * 1024 * 1024),
-//            parameter("setInterceptor", new NoopInterceptor()),
-//            parameter("setTopologyValidator", new NoopTopologyValidator()),
-//            parameter("addCacheEntryListenerConfiguration", new EmptyCacheEntryListenerConfiguration())
-//        )),
+            parameter("setOffHeapMaxMemory", 10 * 1024 * 1024L),
+            parameter("setInterceptor", new NoopInterceptor()),
+            parameter("setTopologyValidator", new NoopTopologyValidator()),
+            parameter("addCacheEntryListenerConfiguration", new EmptyCacheEntryListenerConfiguration())
+        )),
 
         // Set default parameters (TODO make it in builder).
 //        objectParameters("setWriteSynchronizationMode", CacheWriteSynchronizationMode.FULL_SYNC), // One value.
@@ -140,34 +152,11 @@ public class CacheConfigurationPermutations {
     /**
      *
      */
-    private static class NoopInterceptor implements CacheInterceptor {
+    private static class NoopInterceptor extends CacheInterceptorAdapter {
         /** */
         private static final long serialVersionUID = 0L;
 
-        /** {@inheritDoc} */
-        @Nullable @Override public Object onGet(Object key, @Nullable Object val) {
-            return null; // TODO: CODE: implement.
-        }
-
-        /** {@inheritDoc} */
-        @Nullable @Override public Object onBeforePut(Cache.Entry entry, Object newVal) {
-            return null; // TODO: CODE: implement.
-        }
-
-        /** {@inheritDoc} */
-        @Override public void onAfterPut(Cache.Entry entry) {
-            // TODO: CODE: implement.
-        }
-
-        /** {@inheritDoc} */
-        @Nullable @Override public IgniteBiTuple onBeforeRemove(Cache.Entry entry) {
-            return null; // TODO: CODE: implement.
-        }
-
-        /** {@inheritDoc} */
-        @Override public void onAfterRemove(Cache.Entry entry) {
-            // TODO: CODE: implement.
-        }
+        // No-op.
     }
 
     /**
@@ -214,28 +203,53 @@ public class CacheConfigurationPermutations {
     /**
      *
      */
-    private static class EmptyCacheEntryListenerConfiguration implements CacheEntryListenerConfiguration {
-        /** */
-        private static final long serialVersionUID = 0L;
+    @SuppressWarnings({"serial", "unchecked"})
+    private static class EmptyCacheEntryListenerConfiguration extends MutableCacheEntryListenerConfiguration {
+        /**
+         *
+         */
+        EmptyCacheEntryListenerConfiguration() {
+            super(new NoopCacheEntryListenerConfiguration());
+        }
+    }
 
+    /**
+     *
+     */
+    @SuppressWarnings("serial")
+    public static class NoopCacheEntryListenerConfiguration implements CacheEntryListenerConfiguration {
         /** {@inheritDoc} */
         @Override public Factory<CacheEntryListener> getCacheEntryListenerFactory() {
-            return null; // TODO: CODE: implement.
+            return new Factory<CacheEntryListener>() {
+                @Override public CacheEntryListener create() {
+                    return new NoopCacheEntryListener();
+                }
+            };
         }
 
         /** {@inheritDoc} */
         @Override public boolean isOldValueRequired() {
-            return false; // TODO: CODE: implement.
+            return false;
         }
 
         /** {@inheritDoc} */
         @Override public Factory<CacheEntryEventFilter> getCacheEntryEventFilterFactory() {
-            return null; // TODO: CODE: implement.
+            return null;
         }
 
         /** {@inheritDoc} */
         @Override public boolean isSynchronous() {
-            return false; // TODO: CODE: implement.
+            return false;
+        }
+    }
+
+    /**
+     *
+     */
+    private static class NoopCacheEntryListener implements CacheEntryCreatedListener {
+        /** {@inheritDoc} */
+        @Override public void onCreated(Iterable iterable) throws CacheEntryListenerException {
+            // No-op.
         }
     }
 }
