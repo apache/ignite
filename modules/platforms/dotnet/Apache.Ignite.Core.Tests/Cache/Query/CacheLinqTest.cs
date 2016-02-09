@@ -489,12 +489,13 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
 
             // Multiple key and a join
             var res2 = persons.Join(orgs.Where(o => o.Key > 10), p => p.Value.OrganizationId, o => o.Key,
-                (p, o) => new {PersonAge = p.Value.Age, Org = o.Value.Name})
-                .GroupBy(x => x.Org).Select(g => new {Org = g.Key, AgeSum = g.Select(x => x.PersonAge).Sum()});
+                (p, o) => new {p, o})
+                .GroupBy(x => x.o.Value.Name)
+                .Select(g => new {Org = g.Key, AgeSum = g.Select(x => x.p.Value.Age).Sum()});
 
             var resArr2 = res2.ToArray();
 
-            Assert.AreEqual(new[] {new {Org = "Org_0", AgeSum = 1000}, new {Org = "Org_0", AgeSum = 1000}}, resArr2);
+            Assert.AreEqual(new[] {new {Org = "Org_0", AgeSum = 2450}, new {Org = "Org_1", AgeSum = 2500}}, resArr2);
         }
 
         [Test]
