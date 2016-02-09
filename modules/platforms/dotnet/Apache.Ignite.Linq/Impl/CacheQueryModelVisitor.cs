@@ -261,11 +261,11 @@ namespace Apache.Ignite.Linq.Impl
             foreach (var join in bodyClauses.OfType<JoinClause>())
                 VisitJoinClause(join, queryModel, i++);
 
-            ProcessGroupings(queryModel);
+            var hasGroups = ProcessGroupings(queryModel);
 
             i = 0;
             foreach (var where in bodyClauses.OfType<WhereClause>())
-                VisitWhereClause(where, queryModel, i++);
+                VisitWhereClause(where, i++, hasGroups);
 
             i = 0;
             foreach (var orderBy in bodyClauses.OfType<OrderByClause>())
@@ -275,17 +275,17 @@ namespace Apache.Ignite.Linq.Impl
         /// <summary>
         /// Processes the groupings.
         /// </summary>
-        private void ProcessGroupings(QueryModel queryModel)
+        private bool ProcessGroupings(QueryModel queryModel)
         {
             var subQuery = queryModel.MainFromClause.FromExpression as SubQueryExpression;
 
             if (subQuery == null)
-                return;
+                return false;
 
             var groupBy = subQuery.QueryModel.ResultOperators.OfType<GroupResultOperator>().FirstOrDefault();
 
             if (groupBy == null)
-                return;
+                return false;
 
             // Visit inner joins before grouping
             var i = 0;
@@ -298,6 +298,8 @@ namespace Apache.Ignite.Linq.Impl
             BuildSqlExpression(groupBy.KeySelector);
 
             _builder.Append(") ");
+
+            return true;
         }
 
         /** <inheritdoc /> */
@@ -322,7 +324,19 @@ namespace Apache.Ignite.Linq.Impl
         {
             base.VisitWhereClause(whereClause, queryModel, index);
 
-            _builder.Append(index > 0 ? "and " : "where ");
+            VisitWhereClause(whereClause, index, false);
+        }
+
+        /// <summary>
+        /// Visits the where clause.
+        /// </summary>
+        private void VisitWhereClause(WhereClause whereClause, int index, bool hasGroups)
+        {
+            _builder.Append(index > 0
+                ? "and "
+                : hasGroups
+                    ? "having"
+                    : "where ");
 
             BuildSqlExpression(whereClause.Predicate);
 
