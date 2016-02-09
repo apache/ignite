@@ -1749,7 +1749,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
         try {
             id = igfs.context().meta().fileId(FILE);
 
-            os = igfs.append(FILE, false);
+            os = igfs.append(FILE, false/*create*/);
 
             boolean del = igfs.delete(FILE, false);
 
