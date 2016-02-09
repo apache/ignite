@@ -785,8 +785,11 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         {
             return Ignition.GetIgnite()
                 .GetOrCreateCache<int, T>(new CacheConfiguration(PersonOrgCacheName,
-                    new QueryEntity(typeof (int), typeof (Person)),
-                        new QueryEntity(typeof (int), typeof (Organization))));
+                    new QueryEntity(typeof (int), typeof (Person))
+                    {
+                        Aliases = new[] {new QueryAlias("Address.AliasTest", "AddrAliasTest")}
+                    },
+                    new QueryEntity(typeof (int), typeof (Organization))));
         }
 
         private static ICache<RoleKey, Role> GetRoleCache()
