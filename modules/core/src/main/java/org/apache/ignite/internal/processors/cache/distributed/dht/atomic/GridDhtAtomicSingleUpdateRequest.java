@@ -112,68 +112,11 @@ public class GridDhtAtomicSingleUpdateRequest extends GridCacheMessage implement
     @GridDirectTransient
     private CacheObject locPrevVal;
 
-    /** Keys to update. */
-    @GridToStringInclude
-    @GridDirectCollection(KeyCacheObject.class)
-    private List<KeyCacheObject> keys;
-
-    /** Values to update. */
-    @GridToStringInclude
-    @GridDirectCollection(CacheObject.class)
-    private List<CacheObject> vals;
-
-    /** Previous values. */
-    @GridToStringInclude
-    @GridDirectCollection(CacheObject.class)
-    private List<CacheObject> prevVals;
-
-    /** Conflict versions. */
-    @GridDirectCollection(GridCacheVersion.class)
-    private List<GridCacheVersion> conflictVers;
-
-    /** TTLs. */
-    private GridLongList ttls;
-
-    /** Conflict expire time. */
-    private GridLongList conflictExpireTimes;
-
-    /** Near TTLs. */
-    private GridLongList nearTtls;
-
-    /** Near expire times. */
-    private GridLongList nearExpireTimes;
-
     /** Write synchronization mode. */
     private CacheWriteSynchronizationMode syncMode;
 
-    /** Near cache keys to update. */
-    @GridToStringInclude
-    @GridDirectCollection(KeyCacheObject.class)
-    private List<KeyCacheObject> nearKeys;
-
-    /** Values to update. */
-    @GridToStringInclude
-    @GridDirectCollection(CacheObject.class)
-    private List<CacheObject> nearVals;
-
     /** Force transform backups flag. */
     private boolean forceTransformBackups;
-
-    /** Entry processors. */
-    @GridDirectTransient
-    private List<EntryProcessor<Object, Object, Object>> entryProcessors;
-
-    /** Entry processors bytes. */
-    @GridDirectCollection(byte[].class)
-    private List<byte[]> entryProcessorsBytes;
-
-    /** Near entry processors. */
-    @GridDirectTransient
-    private List<EntryProcessor<Object, Object, Object>> nearEntryProcessors;
-
-    /** Near entry processors bytes. */
-    @GridDirectCollection(byte[].class)
-    private List<byte[]> nearEntryProcessorsBytes;
 
     /** Optional arguments for entry processor. */
     @GridDirectTransient
@@ -188,20 +131,9 @@ public class GridDhtAtomicSingleUpdateRequest extends GridCacheMessage implement
     /** Task name hash. */
     private int taskNameHash;
 
-    /** Partition. */
-    private GridLongList updateCntrs;
-
     /** On response flag. Access should be synced on future. */
     @GridDirectTransient
     private boolean onRes;
-
-    /** */
-    @GridDirectTransient
-    private List<Integer> partIds;
-
-    /** */
-    @GridDirectTransient
-    private List<CacheObject> locPrevVals;
 
     /** Keep binary flag. */
     private boolean keepBinary;
@@ -256,17 +188,6 @@ public class GridDhtAtomicSingleUpdateRequest extends GridCacheMessage implement
         this.invokeArgs = invokeArgs;
         this.addDepInfo = addDepInfo;
         this.keepBinary = keepBinary;
-
-        keys = new ArrayList<>();
-        partIds = new ArrayList<>();
-        locPrevVals = new ArrayList<>();
-
-        if (forceTransformBackups) {
-            entryProcessors = new ArrayList<>();
-            entryProcessorsBytes = new ArrayList<>();
-        }
-        else
-            vals = new ArrayList<>();
     }
 
     /**
