@@ -151,8 +151,10 @@ namespace Apache.Ignite.Linq.Impl
 
             BuildSqlExpression(groupBy.KeySelector);
 
+            if (!(groupBy.ElementSelector is QuerySourceReferenceExpression))
+                throw new NotSupportedException("Unexpected GroupBy element selector: " + groupBy.ElementSelector);
+
             _builder.Append(") ");
-            // TODO: validate ElementSelector, must be direct select
         }
 
         /// <summary>
