@@ -174,12 +174,8 @@ angular
 }])
 .run(['$rootScope', ($root) => {
     $root.$on('$stateChangeStart', () => { 
-        const modals = jQuery('.modal');
-
-        if (modals.size()) {
-            _.each(modals, (m) => {
-                jQuery(m).scope().$hide();
-            });
-        }
+        _.each(angular.element('.modal'), (m) => {
+            angular.element(m).scope().$hide();
+        });
     });
 }]);
