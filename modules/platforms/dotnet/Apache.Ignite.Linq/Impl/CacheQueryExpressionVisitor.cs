@@ -346,9 +346,9 @@ namespace Apache.Ignite.Linq.Impl
         [SuppressMessage("Microsoft.Design", "CA1062:Validate arguments of public methods")]
         protected override Expression VisitSubQuery(SubQueryExpression expression)
         {
-            // This happens when New expression uses a subquery
-            // TODO
-            _modelVisitor.VisitQueryModel(expression.QueryModel);
+            // This happens when New expression uses a subquery, in a GroupBy.
+            _modelVisitor.VisitSelectors(expression.QueryModel, false);
+
             return expression;
         }
 

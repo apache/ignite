@@ -99,17 +99,11 @@ namespace Apache.Ignite.Linq.Impl
         {
             _aliases.Push();
 
-            // SELECT TOP 1
+            // SELECT
             _builder.Append("select ");
 
-            var parenCount = ProcessResultOperatorsBegin(queryModel);
-
-            if (parenCount >= 0)
-            {
-                // FIELD1, FIELD2
-                BuildSqlExpression(queryModel.SelectClause.Selector, forceStar || parenCount > 0);
-                _builder.Append(')', parenCount).Append(" ");
-            }
+            // TOP 1 FLD1, FLD2
+            VisitSelectors(queryModel, forceStar);
 
             // FROM ... WHERE ... JOIN ...
             base.VisitQueryModel(queryModel);
@@ -121,6 +115,21 @@ namespace Apache.Ignite.Linq.Impl
             ProcessResultOperatorsEnd(queryModel);
 
             _aliases.Pop();
+        }
+
+        /// <summary>
+        /// Visits the selectors.
+        /// </summary>
+        public void VisitSelectors(QueryModel queryModel, bool forceStar)
+        {
+            var parenCount = ProcessResultOperatorsBegin(queryModel);
+
+            if (parenCount >= 0)
+            {
+                // FIELD1, FIELD2
+                BuildSqlExpression(queryModel.SelectClause.Selector, forceStar || parenCount > 0);
+                _builder.Append(')', parenCount).Append(" ");
+            }
         }
 
         /// <summary>
