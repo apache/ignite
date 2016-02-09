@@ -44,17 +44,47 @@ BOOST_AUTO_TEST_CASE(MemoryReallocationTest)
     BOOST_CHECK(mem.Get()->Data() != NULL);
 
     // Checking memory for write access.
-    memset(mem.Get()->Data(), 0xF0F0F0F0, mem.Get()->Capacity());
+    int32_t capBeforeReallocation = mem.Get()->Capacity();
+
+    for (int32_t i = 0; i <capBeforeReallocation; ++i)
+    {
+        int8_t *data = mem.Get()->Data();
+
+        data[i] = static_cast<int8_t>(i);
+    }
 
     mem.Get()->Reallocate(mem.Get()->Capacity() * 3);
 
     BOOST_CHECK(mem.Get()->Capacity() >= IgniteEnvironment::DEFAULT_ALLOCATION_SIZE * 3);
 
+    // Checking memory data.
+    for (int32_t i = 0; i <capBeforeReallocation; ++i)
+    {
+        int8_t *data = mem.Get()->Data();
+
+        BOOST_REQUIRE_EQUAL(data[i], static_cast<int8_t>(i));
+    }
+
     // Checking memory for write access.
-    memset(mem.Get()->Data(), 0xF0F0F0F0, mem.Get()->Capacity());
+    capBeforeReallocation = mem.Get()->Capacity();
+
+    for (int32_t i = 0; i <capBeforeReallocation; ++i)
+    {
+        int8_t *data = mem.Get()->Data();
+
+        data[i] = static_cast<int8_t>(i + 42);
+    }
 
     // Trying reallocate memory once more.
     mem.Get()->Reallocate(mem.Get()->Capacity() * 3);
+
+    // Checking memory data.
+    for (int32_t i = 0; i <capBeforeReallocation; ++i)
+    {
+        int8_t *data = mem.Get()->Data();
+
+        BOOST_REQUIRE_EQUAL(data[i], static_cast<int8_t>(i + 42));
+    }
 
     BOOST_CHECK(mem.Get()->Capacity() >= IgniteEnvironment::DEFAULT_ALLOCATION_SIZE * 9);
 
