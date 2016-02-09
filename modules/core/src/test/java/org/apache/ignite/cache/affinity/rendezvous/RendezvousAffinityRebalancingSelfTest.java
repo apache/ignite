@@ -17,10 +17,8 @@
 
 package org.apache.ignite.cache.affinity.rendezvous;
 
-import org.apache.ignite.Ignite;
 import org.apache.ignite.cache.affinity.AbstractAffinityRebalancingTest;
 import org.apache.ignite.cache.affinity.AffinityFunction;
-import org.apache.ignite.testframework.GridTestUtils;
 
 /**
  * RendezvousAffinityFunction under rebalancing and cache recreations test.
@@ -28,7 +26,7 @@ import org.apache.ignite.testframework.GridTestUtils;
 public class RendezvousAffinityRebalancingSelfTest extends AbstractAffinityRebalancingTest {
 
     /** {@inheritDoc} */
-    @Override protected AffinityFunction affinityFunction(Ignite ignite) {
+    @Override protected AffinityFunction affinityFunction() {
         return new RendezvousAffinityFunction();
     }
 }

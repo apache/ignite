@@ -56,14 +56,15 @@ public abstract class AbstractAffinityRebalancingTest extends GridCommonAbstract
     /** Ignite. */
     private static Ignite ignite3;
 
+    /** This logger fails test in case of NPE. */
     private FailOnMessageLogger log = new FailOnMessageLogger(NullPointerException.class.getSimpleName(), false, null);
 
     /**
      * Should be parametrized by inheritances.
-     * @param ignite Affinity function would be set in it.
+     *
      * @return Affinity function to test.
      */
-    protected abstract AffinityFunction affinityFunction(Ignite ignite);
+    protected abstract AffinityFunction affinityFunction();
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
@@ -88,12 +89,13 @@ public abstract class AbstractAffinityRebalancingTest extends GridCommonAbstract
         return iCfg;
     }
 
+    /**
+     * Repeatedly creates and destroys cache and third node.
+     *
+     * @throws Exception In case of error.
+     */
     public void testCacheStopping() throws Exception {
         log.reset();
-
-        affinityFunction(ignite1);
-        affinityFunction(ignite2);
-        affinityFunction(ignite3);
 
         final int delta = 5;
 
@@ -101,7 +103,7 @@ public abstract class AbstractAffinityRebalancingTest extends GridCommonAbstract
             @Override public Void call() throws Exception {
 
                 for(int start = 0; Ignition.allGrids().contains(ignite1); start += delta) {
-                    fillWithCache(ignite2, delta, start, affinityFunction(ignite2));
+                    fillWithCache(ignite2, delta, start, affinityFunction());
 
                     for (String victim : ignite2.cacheNames())
                         ignite2.getOrCreateCache(victim).put(start, delta);
@@ -114,11 +116,10 @@ public abstract class AbstractAffinityRebalancingTest extends GridCommonAbstract
             }
         }, "CacheSerialKiller");
 
-        for(int i = 5; i < ITERATIONS + 5; i++) {
+        for(int i = delta; i < ITERATIONS + delta; i++) {
             assert log.getFailOnMessage() == null : log.getFailOnMessage();
 
-            Ignite ignite4 = startGrid(i);
-            affinityFunction(ignite4);
+            startGrid(i);
 
             stopGrid(i);
         }
@@ -126,6 +127,7 @@ public abstract class AbstractAffinityRebalancingTest extends GridCommonAbstract
         assert log.getFailOnMessage() == null : log.getFailOnMessage();
     }
 
+    /** Put 2 * {@code iterations} caches inside ignite. */
     private static void fillWithCache(Ignite ignite, int iterations, int start, AffinityFunction affinityFunction) {
         for(int i = start; i < iterations + start; i++) {
             CacheConfiguration<Integer, Integer> cachePCfg = new CacheConfiguration<>();
