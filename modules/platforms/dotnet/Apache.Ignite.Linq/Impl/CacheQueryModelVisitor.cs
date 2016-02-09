@@ -147,13 +147,13 @@ namespace Apache.Ignite.Linq.Impl
 
             var groupBy = subQuery.QueryModel.ResultOperators[0] as GroupResultOperator;
 
-            if (groupBy != null)
-            {
-                _builder.Append("group by ");
-                BuildSqlExpression(groupBy.KeySelector);
+            if (groupBy == null)
+                throw new NotSupportedException("Unexpected subquery: " + subQuery);
 
-                // TODO: validate ElementSelector, must be direct select
-            }
+            _builder.Append("group by ");
+            BuildSqlExpression(groupBy.KeySelector);
+
+            // TODO: validate ElementSelector, must be direct select
         }
 
         /// <summary>

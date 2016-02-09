@@ -26,7 +26,9 @@ namespace Apache.Ignite.Linq.Impl
     using System.Linq;
     using System.Linq.Expressions;
     using Apache.Ignite.Core.Cache.Configuration;
+    using Remotion.Linq.Clauses;
     using Remotion.Linq.Clauses.Expressions;
+    using Remotion.Linq.Clauses.ResultOperators;
     using Remotion.Linq.Parsing;
 
     /// <summary>
@@ -266,11 +268,8 @@ namespace Apache.Ignite.Linq.Impl
             }
 
             // Special case: grouping
-            var srcRef = expression.Expression as QuerySourceReferenceExpression;
-            if (srcRef != null)
-            {
-                // TODO: Find the groupBy expression and substitute here
-            }
+            if (VisitGroupByMember(expression.Expression))
+                return expression;
 
             var queryFieldAttr = expression.Member.GetCustomAttributes(true)
                 .OfType<QuerySqlFieldAttribute>().FirstOrDefault();
@@ -283,6 +282,37 @@ namespace Apache.Ignite.Linq.Impl
                 Aliases.GetTableAlias(TableNameMapper.GetTableNameWithSchema(expression)), fieldName);
 
             return expression;
+        }
+
+        /// <summary>
+        /// Visits the group by member.
+        /// </summary>
+        private bool VisitGroupByMember(Expression expression)
+        {
+            var srcRef = expression as QuerySourceReferenceExpression;
+            if (srcRef == null)
+                return false;
+
+            var from = srcRef.ReferencedQuerySource as IFromClause;
+            if (from == null)
+                throw new NotSupportedException("Unexpected subquery in a member expression: " + expression);
+
+            var subQuery = from.FromExpression as SubQueryExpression;
+            if (subQuery == null)
+                throw new NotSupportedException("Unexpected subquery in a member expression: " + from);
+
+            var resOp = subQuery.QueryModel.ResultOperators;
+            if (resOp.Count != 1)
+                throw new NotSupportedException("Unexpected subquery in a member expression: " + from);
+
+            var groupBy = resOp[0] as GroupResultOperator;
+
+            if (groupBy == null)
+                throw new NotSupportedException("Unexpected subquery in a member expression: " + from);
+
+            Visit(groupBy.KeySelector);
+
+            return true;
         }
 
         /** <inheritdoc /> */
