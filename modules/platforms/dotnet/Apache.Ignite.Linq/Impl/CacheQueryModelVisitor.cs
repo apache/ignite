@@ -262,7 +262,7 @@ namespace Apache.Ignite.Linq.Impl
 
             if (limit == null)
             {
-                // Workaround for unlimited offset
+                // Workaround for unlimited offset (IGNITE-2602)
                 // H2 allows NULL & -1 for unlimited, but Ignite indexing does not
                 // Maximum limit that works is (int.MaxValue - offset) 
                 var offsetInt = (int) ((ConstantExpression) offset.Count).Value;
