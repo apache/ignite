@@ -623,6 +623,10 @@ consoleModule.controller('domainsController', function ($filter, $http, $timeout
 
             $http.post('/api/v1/agent/tables', preset)
                 .success(function (tables) {
+                    _importCachesOrTemplates = [DFLT_PARTITIONED_CACHE, DFLT_REPLICATED_CACHE].concat($scope.caches);
+
+                    _fillCommonCachesOrTemplates($scope.importCommon)($scope.importCommon.action);
+
                     _.forEach(tables, function (tbl, idx) {
                         tbl.id = idx;
                         tbl.action = IMPORT_DM_NEW_CACHE;
@@ -1094,7 +1098,7 @@ consoleModule.controller('domainsController', function ($filter, $http, $timeout
 
         $scope.importCommon = {};
 
-    function _fillCommonCachesOrTemplates(item) {
+        function _fillCommonCachesOrTemplates(item) {
             return function (action) {
                 if (item.cachesOrTemplates)
                     item.cachesOrTemplates.length = 0;
@@ -1131,8 +1135,6 @@ consoleModule.controller('domainsController', function ($filter, $http, $timeout
                 $scope.clusters = data.clusters;
                 $scope.caches = _mapCaches(data.caches);
                 $scope.domains = data.domains;
-
-                _importCachesOrTemplates = [DFLT_PARTITIONED_CACHE, DFLT_REPLICATED_CACHE].concat($scope.caches);
 
                 _.forEach($scope.clusters, function (cluster) {
                     $scope.ui.generatedCachesClusters.push(cluster.value);
