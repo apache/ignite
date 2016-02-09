@@ -111,7 +111,7 @@ mixin td-ellipses-lbl(w, lbl)
                                                     td(width='30px')
                                                         input(type='checkbox' ng-model='schema.use' ng-change='selectSchema()')
                                                     td
-                                                        label {{::schema.name}}
+                                                        label {{schema.name}}
             .import-domain-model-wizard-page(ng-show='importDomain.action == "tables"')
                 table.table.metadata(st-table='importDomain.displayedTables' st-safe-src='importDomain.tables')
                     thead
@@ -138,8 +138,8 @@ mixin td-ellipses-lbl(w, lbl)
                                             tr(ng-repeat='table in importDomain.displayedTables track by $index')
                                                 td(width='30px' style='min-width: 30px; max-width: 30px')
                                                     input(type='checkbox' ng-model='table.use' ng-change='selectTable()')
-                                                +td-ellipses-lbl('130px', '{{::table.schema}}')
-                                                +td-ellipses-lbl('160px', '{{::table.tbl}}')
+                                                +td-ellipses-lbl('130px', '{{table.schema}}')
+                                                +td-ellipses-lbl('160px', '{{table.tbl}}')
                                                 td(colspan='2' width='288px' style='min-width: 160px; max-width: 160px')
                                                     div.td-ellipsis
                                                         a(ng-if='!table.edit' ng-click='startEditDbTableCache(table)') {{tableActionView(table)}}
