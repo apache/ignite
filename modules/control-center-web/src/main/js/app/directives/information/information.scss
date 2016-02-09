@@ -36,6 +36,8 @@ $ignite-block-information-icon: #4a6785;
     }
 
     > .icon {
+        cursor: default;
+
         color: $ignite-block-information-icon;
 
         position: absolute;

@@ -173,9 +173,7 @@ angular
     }
 }])
 .run(['$rootScope', ($root) => {
-    $root.$on('$stateChangeStart', () => { 
-        _.each(angular.element('.modal'), (m) => {
-            angular.element(m).scope().$hide();
-        });
+    $root.$on('$stateChangeStart', () => {
+        _.each(angular.element('.modal'), (m) => angular.element(m).scope().$hide());
     });
 }]);
