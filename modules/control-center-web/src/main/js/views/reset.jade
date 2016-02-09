@@ -15,10 +15,12 @@
     limitations under the License.
 
 header#header.header
-    .container
-        h1.navbar-brand
-            a(href='/') Apache Ignite Web Configurator
-        p.navbar-text(style='font-size: 18px;') Apache Ignite Web Console
+    table.container
+        tr
+            td.col-xs-3.col-sm-3.col-md-2
+                ignite-logo
+            td
+                ignite-title
 
 .container.body-container
     .main-content(ng-controller='resetPassword')
