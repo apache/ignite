@@ -71,7 +71,7 @@ import static org.apache.ignite.internal.processors.cache.GridCacheOperation.TRA
 /**
  * DHT atomic cache near update future.
  */
-public class GridNearAtomicUpdateFuture extends GridFutureAdapter<Object> implements GridCacheAtomicFuture<Object>{
+public class GridNearAtomicUpdateFuture extends GridFutureAdapter<Object> implements GridCacheAtomicFuture<Object> {
     /** Version where single-put optimization appeared.*/
     public static final IgniteProductVersion SINGLE_PUT_MSG_SINCE = IgniteProductVersion.fromString("1.6.0");
 
@@ -511,7 +511,8 @@ public class GridNearAtomicUpdateFuture extends GridFutureAdapter<Object> implem
         if (locUpdate != null) {
             cache.updateAllAsyncInternal(cctx.localNodeId(), locUpdate,
                 new CI2<GridNearAtomicMultipleUpdateRequest, GridNearAtomicMultipleUpdateResponse>() {
-                    @Override public void apply(GridNearAtomicMultipleUpdateRequest req, GridNearAtomicMultipleUpdateResponse res) {
+                    @Override public void apply(GridNearAtomicMultipleUpdateRequest req,
+                        GridNearAtomicMultipleUpdateResponse res) {
                         onResult(res.nodeId(), res);
                     }
                 });
@@ -610,8 +611,8 @@ public class GridNearAtomicUpdateFuture extends GridFutureAdapter<Object> implem
          * @param res Response.
          * @param nodeErr {@code True} if response was created on node failure.
          */
-        @SuppressWarnings({"unchecked", "ThrowableResultOfMethodCallIgnored"})
-        void onResult(UUID nodeId, GridNearAtomicUpdateResponse res, boolean nodeErr) {
+        @SuppressWarnings({"unchecked", "ThrowableResultOfMethodCallIgnored"}) void onResult(UUID nodeId,
+            GridNearAtomicUpdateResponse res, boolean nodeErr) {
             GridNearAtomicUpdateRequest req;
 
             AffinityTopologyVersion remapTopVer = null;
@@ -818,10 +819,18 @@ public class GridNearAtomicUpdateFuture extends GridFutureAdapter<Object> implem
          */
         void onSendError(GridNearAtomicUpdateRequest req, IgniteCheckedException e) {
             synchronized (this) {
-                GridNearAtomicMultipleUpdateResponse res = new GridNearAtomicMultipleUpdateResponse(cctx.cacheId(),
-                    req.nodeId(),
-                    req.futureVersion(),
-                    cctx.deploymentEnabled());
+                GridNearAtomicUpdateResponse res;
+
+                if (req instanceof GridNearAtomicSingleUpdateRequest)
+                    res = new GridNearAtomicSingleUpdateResponse(cctx.cacheId(),
+                        req.nodeId(),
+                        req.futureVersion(),
+                        cctx.deploymentEnabled());
+                else
+                    res = new GridNearAtomicMultipleUpdateResponse(cctx.cacheId(),
+                        req.nodeId(),
+                        req.futureVersion(),
+                        cctx.deploymentEnabled());
 
                 res.addFailedKeys(req.keys(), e);
 
@@ -1043,7 +1052,7 @@ public class GridNearAtomicUpdateFuture extends GridFutureAdapter<Object> implem
 
                     val = conflictPutVal.valueEx();
                     conflictVer = conflictPutVal.version();
-                    conflictTtl =  conflictPutVal.ttl();
+                    conflictTtl = conflictPutVal.ttl();
                     conflictExpireTime = conflictPutVal.expireTime();
                 }
                 else if (conflictRmvVals != null) {
@@ -1298,7 +1307,7 @@ public class GridNearAtomicUpdateFuture extends GridFutureAdapter<Object> implem
         }
 
         /** {@inheritDoc} */
-        @Override public synchronized  String toString() {
+        @Override public synchronized String toString() {
             return S.toString(UpdateState.class, this);
         }
     }
