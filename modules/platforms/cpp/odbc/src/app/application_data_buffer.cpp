@@ -575,6 +575,14 @@ namespace ignite
                 }
             }
 
+            void ApplicationDataBuffer::PutDate(const Date& value)
+            {
+            }
+
+            void ApplicationDataBuffer::PutTimestamp(const Timestamp& value)
+            {
+            }
+
             std::string ApplicationDataBuffer::GetString(size_t maxLen) const
             {
                 using namespace type_traits;

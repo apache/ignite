@@ -23,6 +23,8 @@
 #include <map>
 
 #include <ignite/guid.h>
+#include <ignite/date.h>
+#include <ignite/timestamp.h>
 
 #include "ignite/odbc/decimal.h"
 #include "ignite/odbc/common_types.h"
@@ -163,6 +165,10 @@ namespace ignite
                  * @param value Value to put.
                  */
                 void PutDecimal(const Decimal& value);
+
+                void PutDate(const Date& value);
+
+                void PutTimestamp(const Timestamp& value);
 
                 /**
                  * Get string.
