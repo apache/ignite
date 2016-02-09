@@ -17,42 +17,59 @@
 
 /**
  * @file
- * Declares ignite::Date class.
+ * Declares ignite::Timestamp class.
  */
 
-#ifndef _IGNITE_DATE
-#define _IGNITE_DATE
+#ifndef _IGNITE_TIMESTAMP
+#define _IGNITE_TIMESTAMP
 
 #include <stdint.h>
 
 #include <ignite/common/common.h>
 
+#include <ignite/date.h>
+
 namespace ignite
 {
     /**
-     * Date type.
+     * Timestamp type.
      */
-    class IGNITE_IMPORT_EXPORT Date
+    class IGNITE_IMPORT_EXPORT Timestamp
     {
     public:
         /**
          * Default constructor.
          */
-        Date();
+        Timestamp();
 
         /**
          * Copy constructor.
          *
          * @param another Another instance.
          */
-        Date(const Date& another);
+        Timestamp(const Timestamp& another);
 
         /**
          * Constructor.
          *
          * @param ms Number of milliseconds since 00:00 hours, Jan 1, 1970 UTC.
          */
-        Date(int64_t ms);
+        Timestamp(int64_t ms);
+
+        /**
+         * Constructor.
+         *
+         * @param date Date.
+         */
+        Timestamp(Date date);
+
+        /**
+         * Constructor.
+         *
+         * @param seconds Number of seconds since 00:00 hours, Jan 1, 1970 UTC.
+         * @param nanoseconds Fractional seconds component. Must be in range [0..999999999].
+         */
+        Timestamp(int64_t seconds, int32_t nanoseconds);
 
         /**
          * Copy operator.
@@ -60,7 +77,7 @@ namespace ignite
          * @param another Another instance.
          * @return This.
          */
-        Date& operator=(const Date& another);
+        Timestamp& operator=(const Timestamp& another);
 
         /**
          * Returns number of milliseconds since 00:00 hours, Jan 1, 1970 UTC.
@@ -77,13 +94,27 @@ namespace ignite
         int64_t GetSeconds() const;
 
         /**
+         * Returns number of nanoseconds - fractional seconds component.
+         *
+         * @return Number of nanoseconds.
+         */
+        int32_t GetNanoseconds() const;
+
+        /**
+         * Returns corresponding date.
+         *
+         * @return Corresponding date.
+         */
+        Date GetDate() const;
+
+        /**
          * Comparison operator override.
          *
          * @param val1 First value.
          * @param val2 Second value.
          * @return True if equal.
          */
-        friend bool IGNITE_IMPORT_EXPORT operator==(Date& val1, Date& val2);
+        friend bool IGNITE_IMPORT_EXPORT operator==(Timestamp& val1, Timestamp& val2);
 
         /**
          * Comparison operator override.
@@ -92,7 +123,7 @@ namespace ignite
          * @param val2 Second value.
          * @return True if not equal.
          */
-        friend bool IGNITE_IMPORT_EXPORT operator!=(Date& val1, Date& val2);
+        friend bool IGNITE_IMPORT_EXPORT operator!=(Timestamp& val1, Timestamp& val2);
 
         /**
          * Comparison operator override.
@@ -101,7 +132,7 @@ namespace ignite
          * @param val2 Second value.
          * @return True if less.
          */
-        friend bool IGNITE_IMPORT_EXPORT operator<(Date& val1, Date& val2);
+        friend bool IGNITE_IMPORT_EXPORT operator<(Timestamp& val1, Timestamp& val2);
 
         /**
          * Comparison operator override.
@@ -110,7 +141,7 @@ namespace ignite
          * @param val2 Second value.
          * @return True if less or equal.
          */
-        friend bool IGNITE_IMPORT_EXPORT operator<=(Date& val1, Date& val2);
+        friend bool IGNITE_IMPORT_EXPORT operator<=(Timestamp& val1, Timestamp& val2);
 
         /**
          * Comparison operator override.
@@ -119,7 +150,7 @@ namespace ignite
          * @param val2 Second value.
          * @return True if gretter.
          */
-        friend bool IGNITE_IMPORT_EXPORT operator>(Date& val1, Date& val2);
+        friend bool IGNITE_IMPORT_EXPORT operator>(Timestamp& val1, Timestamp& val2);
 
         /**
          * Comparison operator override.
@@ -128,11 +159,14 @@ namespace ignite
          * @param val2 Second value.
          * @return True if gretter or equal.
          */
-        friend bool IGNITE_IMPORT_EXPORT operator>=(Date& val1, Date& val2);
+        friend bool IGNITE_IMPORT_EXPORT operator>=(Timestamp& val1, Timestamp& val2);
     private:
-        /** Number of milliseconds since 00:00 hours, Jan 1, 1970 UTC. */
-        int64_t milliseconds;  
+        /** Number of seconds since 00:00 hours, Jan 1, 1970 UTC. */
+        int64_t seconds;  
+
+        /** Fractional seconds component. */
+        int32_t nanoseconds;
     };
 }
 
-#endif //_IGNITE_DATE
+#endif //_IGNITE_TIMESTAMP

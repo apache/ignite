@@ -211,6 +211,7 @@
     <ClInclude Include="..\..\include\ignite\impl\interop\interop_memory.h" />
     <ClInclude Include="..\..\include\ignite\impl\interop\interop_output_stream.h" />
     <ClInclude Include="..\..\include\ignite\impl\interop\interop_stream_position_guard.h" />
+    <ClInclude Include="..\..\include\ignite\timestamp.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\src\binary\binary_containers.cpp" />
@@ -234,6 +235,7 @@
     <ClCompile Include="..\..\src\impl\interop\interop_input_stream.cpp" />
     <ClCompile Include="..\..\src\impl\interop\interop_memory.cpp" />
     <ClCompile Include="..\..\src\impl\interop\interop_output_stream.cpp" />
+    <ClCompile Include="..\..\src\timestamp.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
