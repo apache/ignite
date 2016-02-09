@@ -348,6 +348,19 @@ void CheckWritesRestricted(BinaryWriter& writer)
 
     try
     {
+        Timestamp val(1);
+
+        writer.WriteTimestamp("field", val);
+
+        BOOST_FAIL("Not restricted.");
+    }
+    catch (IgniteError& err)
+    {
+        BOOST_REQUIRE(err.GetCode() == IgniteError::IGNITE_ERR_BINARY);
+    }
+
+    try
+    {
         writer.WriteString("field", "test");
 
         BOOST_FAIL("Not restricted.");
@@ -431,6 +444,17 @@ void CheckReadsRestricted(BinaryReader& reader)
     try
     {
         reader.ReadDate("field");
+
+        BOOST_FAIL("Not restricted.");
+    }
+    catch (IgniteError& err)
+    {
+        BOOST_REQUIRE(err.GetCode() == IgniteError::IGNITE_ERR_BINARY);
+    }
+
+    try
+    {
+        reader.ReadTimestamp("field");
 
         BOOST_FAIL("Not restricted.");
     }
@@ -978,6 +1002,13 @@ BOOST_AUTO_TEST_CASE(TestPrimitiveDate)
     CheckPrimitive<Date>(val);
 }
 
+BOOST_AUTO_TEST_CASE(TestPrimitiveTimestamp)
+{
+    Timestamp val(time(NULL), 0);
+
+    CheckPrimitive<Timestamp>(val);
+}
+
 BOOST_AUTO_TEST_CASE(TestPrimitiveArrayInt8)
 {
     CheckPrimitiveArray<int8_t>(1, 2, 3);
@@ -1034,6 +1065,15 @@ BOOST_AUTO_TEST_CASE(TestPrimitiveArrayDate)
     Date val2(3);
 
     CheckPrimitiveArray<Date>(dflt, val1, val2);
+}
+
+BOOST_AUTO_TEST_CASE(TestPrimitiveArrayTimestamp)
+{
+    Timestamp dflt(1);
+    Timestamp val1(2);
+    Timestamp val2(3);
+
+    CheckPrimitiveArray<Timestamp>(dflt, val1, val2);
 }
 
 BOOST_AUTO_TEST_CASE(TestGuidNull)
@@ -1144,6 +1184,62 @@ BOOST_AUTO_TEST_CASE(TestDateNull)
 
     Date expVal;
     Date actualVal = reader.ReadDate("test");
+
+    BOOST_REQUIRE(actualVal == expVal);
+}
+
+BOOST_AUTO_TEST_CASE(TestTimestampNull)
+{
+    TemplatedBinaryIdResolver<BinaryDummy> idRslvr;
+
+    InteropUnpooledMemory mem(1024);
+
+    InteropOutputStream out(&mem);
+    BinaryWriterImpl writerImpl(&out, &idRslvr, NULL, NULL, 0);
+    BinaryWriter writer(&writerImpl);
+
+    out.Position(IGNITE_DFLT_HDR_LEN);
+
+    try
+    {
+        writer.WriteNull(NULL);
+
+        BOOST_FAIL("Not restricted.");
+    }
+    catch (IgniteError& err)
+    {
+        BOOST_REQUIRE(err.GetCode() == IgniteError::IGNITE_ERR_BINARY);
+    }
+
+    writer.WriteNull("test");
+
+    writerImpl.PostWrite();
+
+    out.Synchronize();
+
+    InteropInputStream in(&mem);
+
+    int32_t footerBegin = in.ReadInt32(IGNITE_OFFSET_SCHEMA_OR_RAW_OFF);
+    int32_t footerEnd = footerBegin + 5;
+
+    BinaryReaderImpl readerImpl(&in, &idRslvr, 0, true, idRslvr.GetTypeId(), 0, 100, 100, footerBegin, footerEnd, OFFSET_TYPE_ONE_BYTE);
+    BinaryReader reader(&readerImpl);
+
+    in.Position(IGNITE_DFLT_HDR_LEN);
+
+    try
+    {
+        reader.ReadTimestamp(NULL);
+
+        BOOST_FAIL("Not restricted.");
+    }
+    catch (IgniteError& err)
+    {
+        BOOST_REQUIRE(err.GetCode() == IgniteError::IGNITE_ERR_BINARY);
+    }
+
+    Timestamp expVal;
+    Timestamp actualVal = reader.ReadTimestamp("test");
 
     BOOST_REQUIRE(actualVal == expVal);
 }

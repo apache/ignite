@@ -223,6 +223,19 @@ void CheckRawWritesRestricted(BinaryRawWriter& writer)
 
     try
     {
+        Timestamp val(1);
+
+        writer.WriteTimestamp(val);
+
+        BOOST_FAIL("Not restricted.");
+    }
+    catch (IgniteError& err)
+    {
+        BOOST_REQUIRE(err.GetCode() == IgniteError::IGNITE_ERR_BINARY);
+    }
+
+    try
+    {
         writer.WriteString("test");
 
         BOOST_FAIL("Not restricted.");
@@ -306,6 +319,17 @@ void CheckRawReadsRestricted(BinaryRawReader& reader)
     try
     {
         reader.ReadDate();
+
+        BOOST_FAIL("Not restricted.");
+    }
+    catch (IgniteError& err)
+    {
+        BOOST_REQUIRE(err.GetCode() == IgniteError::IGNITE_ERR_BINARY);
+    }
+
+    try
+    {
+        reader.ReadTimestamp();
 
         BOOST_FAIL("Not restricted.");
     }
@@ -795,6 +819,13 @@ BOOST_AUTO_TEST_CASE(TestPrimitiveDate)
     CheckRawPrimitive<Date>(val);
 }
 
+BOOST_AUTO_TEST_CASE(TestPrimitiveTimestamp)
+{
+    Timestamp val(time(NULL), 0);
+
+    CheckRawPrimitive<Timestamp>(val);
+}
+
 BOOST_AUTO_TEST_CASE(TestPrimitiveArrayInt8)
 {
     CheckRawPrimitiveArray<int8_t>(1, 2, 3);
@@ -853,6 +884,15 @@ BOOST_AUTO_TEST_CASE(TestPrimitiveArrayDate)
     CheckRawPrimitiveArray<Date>(dflt, val1, val2);
 }
 
+BOOST_AUTO_TEST_CASE(TestPrimitiveArrayTimestamp)
+{
+    Timestamp dflt(1);
+    Timestamp val1(2);
+    Timestamp val2(3);
+
+    CheckRawPrimitiveArray<Timestamp>(dflt, val1, val2);
+}
+
 BOOST_AUTO_TEST_CASE(TestGuidNull)
 {
     InteropUnpooledMemory mem(1024);
@@ -893,6 +933,28 @@ BOOST_AUTO_TEST_CASE(TestDateNull)
 
     Date expVal;
     Date actualVal = rawReader.ReadDate();
+
+    BOOST_REQUIRE(actualVal == expVal);
+}
+
+BOOST_AUTO_TEST_CASE(TestTimestampNull)
+{
+    InteropUnpooledMemory mem(1024);
+
+    InteropOutputStream out(&mem);
+    BinaryWriterImpl writer(&out, NULL);
+    BinaryRawWriter rawWriter(&writer);
+
+    rawWriter.WriteNull();
+
+    out.Synchronize();
+
+    InteropInputStream in(&mem);
+    BinaryReaderImpl reader(&in);
+    BinaryRawReader rawReader(&reader);
+
+    Timestamp expVal;
+    Timestamp actualVal = rawReader.ReadTimestamp();
 
     BOOST_REQUIRE(actualVal == expVal);
 }
