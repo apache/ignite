@@ -474,7 +474,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
             var persons = GetPersonOrgCache().ToQueryable();
             var orgs = GetOrgCache().ToQueryable();
 
-            // Single key with ordering
+            // With ordering
             var res =
                 from p in persons
                 orderby p.Value.Name
@@ -487,7 +487,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
 
             Assert.AreEqual(new[] {new {Count = 50, OrgId = 1000}, new {Count = 50, OrgId = 1001}}, resArr);
 
-            // Single key with join
+            // With join
             var res2 = persons.Join(orgs.Where(o => o.Key > 10), p => p.Value.OrganizationId, o => o.Key,
                 (p, o) => new {p, o})
                 .GroupBy(x => x.o.Value.Name)

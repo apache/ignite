@@ -282,14 +282,12 @@ namespace Apache.Ignite.Linq.Impl
             if (groupBy == null)
                 throw new NotSupportedException("Unexpected subquery: " + subQuery);
 
-            // TODO: JOIN, WHERE, GROUP, ORDER
-            //VisitBodyClauses(subQuery.QueryModel.BodyClauses, subQuery.QueryModel);
-
+            // Visit inner joins before grouping
             var i = 0;
             foreach (var join in subQuery.QueryModel.BodyClauses.OfType<JoinClause>())
                 VisitJoinClause(join, queryModel, i++);
 
-
+            // Append grouping
             _builder.Append("group by (");
 
             BuildSqlExpression(groupBy.KeySelector);
