@@ -339,7 +339,7 @@ public class GridNearAtomicUpdateFuture extends GridFutureAdapter<Object> implem
      * @param nodeId Node ID.
      * @param res Update response.
      */
-    public void onResult(UUID nodeId, GridNearAtomicMultipleUpdateResponse res) {
+    public void onResult(UUID nodeId, GridNearAtomicUpdateResponse res) {
         state.onResult(nodeId, res, false);
     }
 
@@ -454,9 +454,9 @@ public class GridNearAtomicUpdateFuture extends GridFutureAdapter<Object> implem
     private void mapSingle(UUID nodeId, GridNearAtomicUpdateRequest req) {
         if (cctx.localNodeId().equals(nodeId)) {
             cache.updateAllAsyncInternal(nodeId, req,
-                new CI2<GridNearAtomicUpdateRequest, GridNearAtomicMultipleUpdateResponse>() {
+                new CI2<GridNearAtomicUpdateRequest, GridNearAtomicUpdateResponse>() {
                     @Override public void apply(GridNearAtomicUpdateRequest req,
-                        GridNearAtomicMultipleUpdateResponse res) {
+                        GridNearAtomicUpdateResponse res) {
                         onResult(res.nodeId(), res);
                     }
                 });

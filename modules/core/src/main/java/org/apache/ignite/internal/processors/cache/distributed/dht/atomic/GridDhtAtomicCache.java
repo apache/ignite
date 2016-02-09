@@ -269,6 +269,12 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
             }
         });
 
+        ctx.io().addHandler(ctx.cacheId(), GridNearAtomicSingleUpdateResponse.class, new CI2<UUID, GridNearAtomicSingleUpdateResponse>() {
+            @Override public void apply(UUID nodeId, GridNearAtomicSingleUpdateResponse res) {
+                processNearAtomicUpdateResponse(nodeId, res);
+            }
+        });
+
         ctx.io().addHandler(ctx.cacheId(), GridDhtAtomicUpdateRequest.class, new CI2<UUID, GridDhtAtomicUpdateRequest>() {
             @Override public void apply(UUID nodeId, GridDhtAtomicUpdateRequest req) {
                 processDhtAtomicUpdateRequest(nodeId, req);
@@ -868,7 +874,8 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
             TRANSFORM);
 
         return resFut.chain(new CX1<IgniteInternalFuture<Map<K, EntryProcessorResult<T>>>, Map<K, EntryProcessorResult<T>>>() {
-            @Override public Map<K, EntryProcessorResult<T>> applyx(IgniteInternalFuture<Map<K, EntryProcessorResult<T>>> fut) throws IgniteCheckedException {
+            @Override public Map<K, EntryProcessorResult<T>> applyx(
+                IgniteInternalFuture<Map<K, EntryProcessorResult<T>>> fut) throws IgniteCheckedException {
                 Map<Object, EntryProcessorResult> resMap = (Map)fut.get();
 
                 return ctx.unwrapInvokeResult(resMap, keepBinary);
@@ -1431,7 +1438,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                             UpdateBatchResult updRes = updateWithBatch(node,
                                 hasNear,
                                 req,
-                                (GridNearAtomicMultipleUpdateResponse) res,
+                                (GridNearAtomicMultipleUpdateResponse)res,
                                 locked,
                                 ver,
                                 dhtFut,
@@ -2741,7 +2748,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
      * @param res Near atomic update response.
      */
     @SuppressWarnings("unchecked")
-    private void processNearAtomicUpdateResponse(UUID nodeId, GridNearAtomicMultipleUpdateResponse res) {
+    private void processNearAtomicUpdateResponse(UUID nodeId, GridNearAtomicUpdateResponse res) {
         if (log.isDebugEnabled())
             log.debug("Processing near atomic update response [nodeId=" + nodeId + ", res=" + res + ']');
 
@@ -2953,7 +2960,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
      */
     private void sendNearUpdateReply(UUID nodeId, GridNearAtomicUpdateResponse res) {
         try {
-            ctx.io().send(nodeId, (GridCacheMessage) res, ctx.ioPolicy());
+            ctx.io().send(nodeId, (GridCacheMessage)res, ctx.ioPolicy());
         }
         catch (ClusterTopologyCheckedException ignored) {
             U.warn(log, "Failed to send near update reply to node because it left grid: " +

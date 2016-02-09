@@ -213,6 +213,8 @@ public class GridNearAtomicSingleUpdateRequest extends GridCacheMessage
         boolean clientReq,
         boolean addDepInfo
     ) {
+        System.out.println("???");
+
         assert futVer != null;
 
         this.key = key;

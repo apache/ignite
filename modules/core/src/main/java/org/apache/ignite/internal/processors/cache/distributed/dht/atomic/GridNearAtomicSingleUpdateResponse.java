@@ -164,7 +164,7 @@ public class GridNearAtomicSingleUpdateResponse extends GridCacheMessage impleme
         if (failed && key != null)
             return Collections.singletonList(key);
 
-        return Collections.emptyList();
+        return null;
     }
 
     /**
@@ -202,7 +202,7 @@ public class GridNearAtomicSingleUpdateResponse extends GridCacheMessage impleme
         if (remap && key != null)
             return Collections.singletonList(key);
 
-        return Collections.emptyList();
+        return null;
     }
 
     /**
@@ -294,7 +294,7 @@ public class GridNearAtomicSingleUpdateResponse extends GridCacheMessage impleme
         if (nearSkip && key != null)
             return Collections.singletonList(0);
 
-        return Collections.emptyList();
+        return null;
     }
 
     /**
@@ -304,7 +304,7 @@ public class GridNearAtomicSingleUpdateResponse extends GridCacheMessage impleme
         if (hasNearVal && key != null)
             return Collections.singletonList(0);
 
-        return Collections.emptyList();
+        return null;
     }
 
     /**
