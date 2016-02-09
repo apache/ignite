@@ -269,10 +269,9 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
             // Min/max/sum
             var ints = cache.Select(x => x.Key);
             Assert.AreEqual(0, ints.Min());
-            Assert.AreEqual(10, ints.Skip(9).Min());
             Assert.AreEqual(PersonCount - 1, ints.Max());
             Assert.AreEqual(ints.ToArray().Sum(), ints.Sum());
-            Assert.AreEqual(ints.ToArray().Skip(20).Sum(), ints.Skip(20).Sum());
+            //Assert.AreEqual(ints.ToArray().Skip(20).Sum(), ints.Skip(20).Sum());
 
             var dupInts = ints.Select(x => x/10);  // duplicate values
             CollectionAssert.AreEquivalent(dupInts.ToArray().Distinct().ToArray(), dupInts.Distinct().ToArray());
