@@ -37,8 +37,8 @@ mixin feedback(error, message)
         data-ng-model-options='{debounce: 150}'
     )
 
-    +feedback('min', 'Value is less than allowable minimum')
-    +feedback('max', 'Value is more than allowable maximum')
+    +feedback('min', 'Value is less than allowable minimum: {{ min || 0 }}')
+    +feedback('max', 'Value is more than allowable maximum: {{ max }}')
     +feedback('number', 'Invalid value. Only numbers allowed')
 
     span(ng-transclude='')
