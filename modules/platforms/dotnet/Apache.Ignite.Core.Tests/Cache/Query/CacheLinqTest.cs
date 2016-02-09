@@ -489,15 +489,16 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
                 persons.GroupBy(x => x.Value.OrganizationId).Select(x => x.Key).OrderBy(x => x).First());
 
             // Ordering and count
-            var res =
+            var res1 =
                 from p in persons
                 orderby p.Value.Name
                 group p by p.Value.OrganizationId
                 into gs
                 orderby gs.Key
+                where gs.Count() > 10
                 select new {Count = gs.Count(), OrgId = gs.Key};
 
-            var resArr = res.ToArray();
+            var resArr = res1.ToArray();
 
             Assert.AreEqual(new[] {new {Count = 50, OrgId = 1000}, new {Count = 50, OrgId = 1001}}, resArr);
 
