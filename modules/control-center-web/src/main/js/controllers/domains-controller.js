@@ -1380,8 +1380,8 @@ consoleModule.controller('domainsController', function ($filter, $http, $timeout
 
         // Save domain model with new name.
         $scope.cloneItem = function () {
-            if ($scope.tableReset(true)) {
-                if (validate($scope.backupItem))
+            function cloneItem() {
+                if ($scope.tableReset(true) && validate($scope.backupItem)) {
                     $clone.confirm($scope.backupItem.valueType, _domainNames()).then(function (newName) {
                         var item = angular.copy($scope.backupItem);
 
@@ -1391,7 +1391,10 @@ consoleModule.controller('domainsController', function ($filter, $http, $timeout
 
                         save(item);
                     });
+                }
             }
+
+            $common.confirmUnsavedChanges($scope.ui.isDirty(), cloneItem);
         };
 
         // Remove domain model from db.

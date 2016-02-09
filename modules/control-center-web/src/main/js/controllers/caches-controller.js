@@ -621,8 +621,8 @@ consoleModule.controller('cachesController', [
 
         // Save cache with new name.
         $scope.cloneItem = function () {
-            if ($scope.tableReset(true)) {
-                if (validate($scope.backupItem))
+            function cloneItem() {
+                if ($scope.tableReset(true) && validate($scope.backupItem)) {
                     $clone.confirm($scope.backupItem.name, _cacheNames()).then(function (newName) {
                         var item = angular.copy($scope.backupItem);
 
@@ -633,7 +633,10 @@ consoleModule.controller('cachesController', [
 
                         save(item);
                     });
+                }
             }
+
+            $common.confirmUnsavedChanges($scope.ui.isDirty(), cloneItem);
         };
 
         // Remove cache from db.
