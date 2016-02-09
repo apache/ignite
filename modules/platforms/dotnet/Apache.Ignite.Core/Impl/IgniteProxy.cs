@@ -340,6 +340,18 @@ namespace Apache.Ignite.Core.Impl
         }
 
         /** <inheritdoc /> */
+        public IAtomicSequence GetAtomicSequence(string name, long initialValue, bool create)
+        {
+            return _ignite.GetAtomicSequence(name, initialValue, create);
+        }
+
+        /** <inheritdoc /> */
+        public IAtomicReference<T> GetAtomicReference<T>(string name, T initialValue, bool create)
+        {
+            return _ignite.GetAtomicReference(name, initialValue, create);
+        }
+
+        /** <inheritdoc /> */
         public void WriteBinary(IBinaryWriter writer)
         {
             // No-op.
