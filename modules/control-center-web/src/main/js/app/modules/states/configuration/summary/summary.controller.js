@@ -119,6 +119,7 @@ export default [
                         }
                     ]
                 },
+                { type: 'file', name: '.dockerignore' },
                 { type: 'file', name: 'Dockerfile' },
                 { type: 'file', name: 'pom.xml' },
                 { type: 'file', name: 'README.txt' }
@@ -229,6 +230,7 @@ export default [
             const zip = new JSZip();
 
             zip.file('Dockerfile', ctrl.data.docker);
+            zip.file('.dockerignore', $generatorDocker.ignoreFile());
 
             const builder = $generatorProperties.generateProperties(cluster);
 

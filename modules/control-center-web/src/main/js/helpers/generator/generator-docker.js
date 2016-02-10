@@ -24,17 +24,6 @@ $generatorDocker.from = function(cluster, version) {
         'FROM apacheignite/ignite:' + version
 };
 
-// Generate secret properties if needed.
-$generatorDocker.secret = function(cluster) {
-    if ($generatorCommon.secretPropertiesNeeded(cluster))
-        return '# Append secret.properties file to container.\n' +
-            'ADD ./src/main/resources/secret.properties $IGNITE_HOME/config/secret.properties\n\n' +
-            '# Add secret.properties file to classpath.\n' +
-            'ENV USER_LIBS $IGNITE_HOME/config';
-
-    return '';
-};
-
 // Generate Docker file for cluster.
 $generatorDocker.clusterDocker = function (cluster, version) {
     return  $generatorDocker.from(cluster, version) + '\n\n' +
@@ -42,9 +31,22 @@ $generatorDocker.clusterDocker = function (cluster, version) {
         'ENV CONFIG_URI config/' + cluster.name + '-server.xml\n\n' +
         '# Copy ignite-http-rest from optional.\n' +
         'ENV OPTION_LIBS ignite-rest-http\n\n' +
-        '# Append config file to container.\n' +
-        'ADD ./config $IGNITE_HOME/config\n\n' +
-        '# Append jdbc drivers to container.\n' +
-        'ADD ./jdbc-drivers $IGNITE_HOME/libs/jdbc-drivers\n\n' +
-        $generatorDocker.secret(cluster) + '\n';
+        '# Update packages and install maven, cpio.\n' +
+        'RUN \\\n' +
+        '   apt-get update && \\\n' +
+        '   apt-get install -y maven cpio\n\n' +
+        '# Append project to container.\n' +
+        'ADD . ' + cluster.name + '\n\n' +
+        '# Build project in container container.\n' +
+        'RUN mvn -f ' + cluster.name + '/pom.xml clean package -DskipTests\n\n' +
+        '# Copy project jars to node classpath.\n' +
+        'RUN mkdir $IGNITE_HOME/libs/' + cluster.name + ' && \\\n' +
+        '(cd ' + cluster.name +'/target &&  find . -name "*.jar" -type f | cpio -updm $IGNITE_HOME/libs/' + cluster.name + ') && \\\n' +
+        'cp -r ' + cluster.name + '/config/* $IGNITE_HOME/config\n'
+};
+
+
+$generatorDocker.ignoreFile = function() {
+    return 'target\n' +
+            'Dockerfile';
 };

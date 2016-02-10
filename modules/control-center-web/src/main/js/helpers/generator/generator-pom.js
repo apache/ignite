@@ -84,6 +84,7 @@ $generatorPom.pom = function (cluster, igniteVersion, mvnRepositories, res) {
     });
 
     var dependencies = [];
+    var excludeGroupIds = ['org.apache.ignite'];
 
     function addDependency(groupId, artifactId, version, jar) {
         dependencies.push({
@@ -195,7 +196,7 @@ $generatorPom.pom = function (cluster, igniteVersion, mvnRepositories, res) {
     if (dialect.SQLServer)
         addDependency('microsoft', 'jdbc', '4.1', 'sqljdbc41.jar');
 
-    $generatorPom.dependencies(res, cluster, dependencies);
+    $generatorPom.dependencies(res, cluster, dependencies, excludeGroupIds);
 
     res.needEmptyLine = true;
 
@@ -206,6 +207,24 @@ $generatorPom.pom = function (cluster, igniteVersion, mvnRepositories, res) {
     res.endBlock('</resources>');
 
     res.startBlock('<plugins>');
+    res.startBlock('<plugin>');
+    $generatorPom.addProperty(res, 'artifactId', 'maven-dependency-plugin');
+    res.startBlock('<executions>');
+    res.startBlock('<execution>');
+    $generatorPom.addProperty(res, 'id', 'copy-libs');
+    $generatorPom.addProperty(res, 'phase', 'test-compile');
+    res.startBlock('<goals>');
+    $generatorPom.addProperty(res, 'goal', 'copy-dependencies');
+    res.endBlock('</goals>');
+    res.startBlock('<configuration>');
+    $generatorPom.addProperty(res, 'excludeGroupIds', excludeGroupIds.join(','));
+    $generatorPom.addProperty(res, 'outputDirectory', 'target/libs');
+    $generatorPom.addProperty(res, 'includeScope', 'runtime');
+    $generatorPom.addProperty(res, 'excludeTransitive', 'true');
+    res.endBlock('</configuration>');
+    res.endBlock('</execution>');
+    res.endBlock('</executions>');
+    res.endBlock('</plugin>');
     res.startBlock('<plugin>');
     $generatorPom.addProperty(res, 'artifactId', 'maven-compiler-plugin');
     $generatorPom.addProperty(res, 'version', '3.1');
