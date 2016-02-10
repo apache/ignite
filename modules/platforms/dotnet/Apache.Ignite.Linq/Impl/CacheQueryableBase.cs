@@ -20,6 +20,7 @@ namespace Apache.Ignite.Linq.Impl
     using System.Linq;
     using System.Linq.Expressions;
     using Apache.Ignite.Core;
+    using Apache.Ignite.Core.Cache.Configuration;
     using Remotion.Linq;
 
     /// <summary>
@@ -40,9 +41,9 @@ namespace Apache.Ignite.Linq.Impl
         }
 
         /** <inheritdoc /> */
-        public string CacheName
+        public CacheConfiguration CacheConfiguration
         {
-            get { return CacheQueryProvider.CacheName; }
+            get { return CacheQueryProvider.CacheConfiguration; }
         }
 
         /** <inheritdoc /> */

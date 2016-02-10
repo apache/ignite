@@ -19,6 +19,7 @@ namespace Apache.Ignite.Linq
 {
     using System;
     using Apache.Ignite.Core;
+    using Apache.Ignite.Core.Cache.Configuration;
 
     /// <summary>
     /// Common interface for cache queryables.
@@ -26,12 +27,12 @@ namespace Apache.Ignite.Linq
     public interface ICacheQueryable
     {
         /// <summary>
-        /// Gets the name of the cache that is associated with this query.
+        /// Gets the configuration of the cache that is associated with this query.
         /// </summary>
         /// <value>
-        /// The name of the cache.
+        /// The configuration of the cache.
         /// </value>
-        string CacheName { get; }
+        CacheConfiguration CacheConfiguration { get; }
 
         /// <summary>
         /// Gets the Ignite instance associated with this query.

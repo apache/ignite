@@ -757,7 +757,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
             // Check regular query
             var query = (ICacheQueryable) cache.AsCacheQueryable().Where(x => x.Key > 10);
 
-            Assert.AreEqual(cache.Name, query.CacheName);
+            Assert.AreEqual(cache.Name, query.CacheConfiguration.Name);
             Assert.AreEqual(cache.Ignite, query.Ignite);
             Assert.AreEqual("Fields Query [SQL=select T0._key, T0._val from \"\".Person as T0 " +
                             "where (T0._key > ?), Parameters=10]", query.ToTraceString());
@@ -765,7 +765,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
             // Check fields query
             var fieldsQuery = (ICacheQueryable) cache.AsCacheQueryable().Select(x => x.Value.Name);
 
-            Assert.AreEqual(cache.Name, fieldsQuery.CacheName);
+            Assert.AreEqual(cache.Name, fieldsQuery.CacheConfiguration.Name);
             Assert.AreEqual(cache.Ignite, fieldsQuery.Ignite);
             Assert.AreEqual("Fields Query [SQL=select T0.Name from \"\".Person as T0, Parameters=]",
                 fieldsQuery.ToTraceString());

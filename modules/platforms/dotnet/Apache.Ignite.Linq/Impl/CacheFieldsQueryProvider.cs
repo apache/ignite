@@ -17,9 +17,11 @@
 
 namespace Apache.Ignite.Linq.Impl
 {
+    using System.Diagnostics;
     using System.Linq;
     using System.Linq.Expressions;
     using Apache.Ignite.Core;
+    using Apache.Ignite.Core.Cache.Configuration;
     using Remotion.Linq;
     using Remotion.Linq.Parsing.Structure;
 
@@ -32,16 +34,19 @@ namespace Apache.Ignite.Linq.Impl
         private readonly IIgnite _ignite;
 
         /** */
-        private readonly string _cacheName;
+        private readonly CacheConfiguration _cacheConfiguration;
         
         /// <summary>
         /// Initializes a new instance of the <see cref="CacheFieldsQueryProvider"/> class.
         /// </summary>
         public CacheFieldsQueryProvider(IQueryParser queryParser, IQueryExecutor executor, IIgnite ignite, 
-            string cacheName) : base(queryParser, executor)
+            CacheConfiguration cacheConfiguration) : base(queryParser, executor)
         {
+            Debug.Assert(ignite != null);
+            Debug.Assert(cacheConfiguration != null);
+
             _ignite = ignite;
-            _cacheName = cacheName;
+            _cacheConfiguration = cacheConfiguration;
         }
 
         /// <summary>
@@ -55,9 +60,9 @@ namespace Apache.Ignite.Linq.Impl
         /// <summary>
         /// Gets the name of the cache.
         /// </summary>
-        public string CacheName
+        public CacheConfiguration CacheConfiguration
         {
-            get { return _cacheName; }
+            get { return _cacheConfiguration; }
         }
 
         /** <inheritdoc /> */

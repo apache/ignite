@@ -102,7 +102,7 @@ namespace Apache.Ignite.Linq.Impl
         {
             Debug.Assert(queryable != null);
 
-            return string.Format("\"{0}\".{1}", queryable.CacheName,
+            return string.Format("\"{0}\".{1}", queryable.CacheConfiguration.Name,
                 GetTableNameFromEntryType(queryable.ElementType));
         }
 
