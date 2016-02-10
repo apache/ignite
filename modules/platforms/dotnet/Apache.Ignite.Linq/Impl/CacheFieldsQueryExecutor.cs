@@ -34,7 +34,7 @@ namespace Apache.Ignite.Linq.Impl
     /// <summary>
     /// Fields query executor.
     /// </summary>
-    internal class CacheFieldsQueryExecutor : ICacheQueryExecutor
+    internal class CacheFieldsQueryExecutor : IQueryExecutor
     {
         /** */
         private readonly ICacheQueryProxy _cache;
@@ -100,7 +100,7 @@ namespace Apache.Ignite.Linq.Impl
         }
 
         /** <inheritdoc /> */
-        public QueryData GetQueryData(QueryModel queryModel)
+        public static QueryData GetQueryData(QueryModel queryModel)
         {
             return new CacheQueryModelVisitor().GenerateQuery(queryModel);
         }

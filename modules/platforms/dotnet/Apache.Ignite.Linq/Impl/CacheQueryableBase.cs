@@ -17,10 +17,12 @@
 
 namespace Apache.Ignite.Linq.Impl
 {
+    using System;
     using System.Linq;
     using System.Linq.Expressions;
     using Apache.Ignite.Core;
     using Apache.Ignite.Core.Cache.Configuration;
+    using Apache.Ignite.Core.Cache.Query;
     using Remotion.Linq;
 
     /// <summary>
@@ -64,6 +66,14 @@ namespace Apache.Ignite.Linq.Impl
             return CacheQueryProvider.GenerateQueryModel(Expression);
         }
 
+        /** <inheritdoc /> */
+        public Func<object[], IQueryCursor<TQ>> CompileQuery<TQ>()
+        {
+            var executor = (CacheFieldsQueryExecutor) CacheQueryProvider.Executor;
+
+            return executor.CompileQuery<TQ>(GetQueryModel());
+        }
+
         /// <summary>
         /// Gets the cache query provider.
         /// </summary>
@@ -80,7 +90,7 @@ namespace Apache.Ignite.Linq.Impl
         {
             var model = GetQueryModel();
 
-            return ((ICacheQueryExecutor)CacheQueryProvider.Executor).GetQueryData(model);
+            return CacheFieldsQueryExecutor.GetQueryData(model);
         }
     }
 }

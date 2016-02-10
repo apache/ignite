@@ -17,6 +17,8 @@
 
 namespace Apache.Ignite.Linq.Impl
 {
+    using System;
+    using Apache.Ignite.Core.Cache.Query;
     using Remotion.Linq;
 
     /// <summary>
@@ -28,5 +30,10 @@ namespace Apache.Ignite.Linq.Impl
         /// Gets the query model.
         /// </summary>
         QueryModel GetQueryModel();
+
+        /// <summary>
+        /// Compiles the query.
+        /// </summary>
+        Func<object[], IQueryCursor<T>> CompileQuery<T>();
     }
 }

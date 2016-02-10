@@ -15,20 +15,26 @@
  * limitations under the License.
  */
 
-namespace Apache.Ignite.Linq.Impl
+namespace Apache.Ignite.Core.Cache.Configuration
 {
-    using Remotion.Linq;
-
     /// <summary>
-    /// Extended query executor.
+    /// Query index type.
     /// </summary>
-    internal interface ICacheQueryExecutor : IQueryExecutor
+    public enum QueryIndexType
     {
         /// <summary>
-        /// Gets the query data.
+        /// Sorted index.
         /// </summary>
-        /// <param name="queryModel">The model.</param>
-        /// <returns>Query data.</returns>
-        QueryData GetQueryData(QueryModel queryModel);
+        Sorted,
+
+        /// <summary>
+        /// Fulltext index.
+        /// </summary>
+        FullText,
+
+        /// <summary>
+        /// Geo-spatial index.
+        /// </summary>
+        Geospatial
     }
 }

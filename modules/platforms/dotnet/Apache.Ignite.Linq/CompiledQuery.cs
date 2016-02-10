@@ -19,6 +19,7 @@ namespace Apache.Ignite.Linq
 {
     using System;
     using System.Collections.Generic;
+    using System.Diagnostics.CodeAnalysis;
     using System.Linq;
     using Apache.Ignite.Core.Cache.Query;
     using Apache.Ignite.Core.Impl.Common;
@@ -34,6 +35,8 @@ namespace Apache.Ignite.Linq
         /// </summary>
         /// <param name="query">The query to compile.</param>
         /// <returns>Delegate that represents the compiled cache query.</returns>
+        [SuppressMessage("Microsoft.Design", "CA1062:Validate arguments of public methods", MessageId = "0", 
+            Justification = "Invalid warning, validation is present.")]
         public static Func<TArg1, IQueryCursor<T>> Compile<T, TArg1>(Func<TArg1, IQueryable<T>> query)
         {
             IgniteArgumentCheck.NotNull(query, "query");
@@ -46,9 +49,9 @@ namespace Apache.Ignite.Linq
                     string.Format("{0} can only compile cache queries produced by AsCacheQueryable method. " +
                                   "Provided query is not valid: '{1}'", typeof (CompiledQuery).FullName, queryable));
 
-            var model = cacheQueryable.GetQueryModel();
+            var compiledQuery = cacheQueryable.CompileQuery<T>();
 
-            return null; // TODO
+            return x => compiledQuery(new object[] {x});
         }
     }
 }
