@@ -40,7 +40,8 @@ namespace Apache.Ignite.Linq.Impl
         private readonly ICacheQueryProxy _cache;
 
         /** */
-        private static readonly Dictionary<object, object> ResultSelectorCache = new Dictionary<object, object>();
+        private static readonly Dictionary<ConstructorInfo, object> CtorCache =
+            new Dictionary<ConstructorInfo, object>();
 
         /// <summary>
         /// Initializes a new instance of the <see cref="CacheFieldsQueryExecutor" /> class.
@@ -99,16 +100,12 @@ namespace Apache.Ignite.Linq.Impl
             var newExpr = selectorExpression as NewExpression;
 
             if (newExpr != null)
-            {
-                var ctor = DelegateConverter.CompileCtor<T>(newExpr.Constructor, GetCacheEntryCtor);
+                return GetCompiledCtor<T>(newExpr.Constructor);
 
-                return (reader, count) => ctor(reader);
-            }
-
-            var entryCtor = GetCacheEntryCtor<T>();
+            var entryCtor = GetCacheEntryCtorInfo(typeof(T));
 
             if (entryCtor != null)
-                return (reader, count) => entryCtor(reader);
+                return GetCompiledCtor<T>(entryCtor);
 
             if (typeof(T) == typeof(bool))
                 return ReadBool<T>;
@@ -136,19 +133,9 @@ namespace Apache.Ignite.Linq.Impl
         }
 
         /// <summary>
-        /// Gets the cache entry ctor.
+        /// Gets the cache entry constructor.
         /// </summary>
-        private static Func<IBinaryRawReader, T> GetCacheEntryCtor<T>()
-        {
-            var ctor = GetCacheEntryCtor(typeof (T));
-
-            return ctor == null ? null : DelegateConverter.CompileCtor<T>(ctor, null);
-        }
-
-        /// <summary>
-        /// Gets the cache entry ctor.
-        /// </summary>
-        private static ConstructorInfo GetCacheEntryCtor(Type entryType)
+        private static ConstructorInfo GetCacheEntryCtorInfo(Type entryType)
         {
             if (!entryType.IsGenericType || entryType.GetGenericTypeDefinition() != typeof(ICacheEntry<,>))
                 return null;
@@ -158,6 +145,25 @@ namespace Apache.Ignite.Linq.Impl
             var targetType = typeof (CacheEntry<,>).MakeGenericType(args);
 
             return targetType.GetConstructors().Single();
+        }
+
+        /// <summary>
+        /// Gets the compiled constructor.
+        /// </summary>
+        private static Func<IBinaryRawReader, int, T> GetCompiledCtor<T>(ConstructorInfo ctorInfo)
+        {
+            object result;
+
+            if (CtorCache.TryGetValue(ctorInfo, out result))
+                return (Func<IBinaryRawReader, int, T>) result;
+
+            var innerCtor = DelegateConverter.CompileCtor<T>(ctorInfo, GetCacheEntryCtorInfo);
+
+            Func<IBinaryRawReader, int, T> ctor = (r, c) => innerCtor(r);
+
+            CtorCache[ctorInfo] = ctor;
+
+            return ctor;
         }
     }
 }
