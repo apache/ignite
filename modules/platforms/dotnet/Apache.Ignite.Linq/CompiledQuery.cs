@@ -18,7 +18,10 @@
 namespace Apache.Ignite.Linq
 {
     using System;
-    using System.Linq.Expressions;
+    using System.Collections.Generic;
+    using System.Linq;
+    using Apache.Ignite.Core.Impl.Common;
+    using Apache.Ignite.Linq.Impl;
 
     /// <summary>
     /// Represents a compiled cache query.
@@ -28,12 +31,23 @@ namespace Apache.Ignite.Linq
         /// <summary>
         /// Creates a new delegate that represents the compiled cache query.
         /// </summary>
-        /// <typeparam name="TR">The type of the r.</typeparam>
         /// <param name="query">The query to compile.</param>
         /// <returns>Delegate that represents the compiled cache query.</returns>
-        public static Func<TR> Compile<TR>(Expression<Func<TR>> query)
+        public static Func<TArg1, IEnumerable<T>> Compile<T, TArg1>(Func<TArg1, IQueryable<T>> query)
         {
-            return null;
+            IgniteArgumentCheck.NotNull(query, "query");
+
+            var queryable = query(default(TArg1));
+            var cacheQueryable = queryable as ICacheQueryableInternal;
+
+            if (cacheQueryable == null)
+                throw new ArgumentException(
+                    string.Format("{0} can only compile cache queries produced by AsCacheQueryable method. " +
+                                  "Provided query is not valid: '{1}'", typeof (CompiledQuery).FullName, queryable));
+
+            var model = cacheQueryable.GetQueryModel();
+
+            return null; // TODO
         }
     }
 }
