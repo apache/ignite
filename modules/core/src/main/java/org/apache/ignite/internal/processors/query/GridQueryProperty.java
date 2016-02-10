@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.query;
 
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.processors.cache.CacheObject;
+import org.apache.ignite.internal.processors.cache.CacheObjectContext;
 
 /**
  * Description and access method for query entity field.
@@ -57,10 +58,11 @@ public abstract class GridQueryProperty {
     /**
      * @param key Key.
      * @param val Value.
+     * @param ctx Context.
      * @return Property offset or -1 if property not found.
      * @throws IgniteCheckedException If failed.
      */
-    public abstract int propertyOffset(CacheObject key, CacheObject val) throws IgniteCheckedException;
+    public abstract int propertyOffset(CacheObject key, CacheObject val, CacheObjectContext ctx) throws IgniteCheckedException;
 
     /**
      * @return {@code True} if property belongs to cache key.

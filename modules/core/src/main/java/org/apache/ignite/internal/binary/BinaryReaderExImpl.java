@@ -292,6 +292,14 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Bina
 
     /**
      * @param fieldName Field name.
+     * @return Field position or -1 if field not found.
+     */
+    public int fieldPosition(String fieldName) {
+        return findFieldByName(fieldName) ? in.position() : -1;
+    }
+
+    /**
+     * @param fieldName Field name.
      * @return Unmarshalled value.
      * @throws BinaryObjectException In case of error.
      */

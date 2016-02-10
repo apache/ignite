@@ -526,7 +526,7 @@ public abstract class GridIndexingSpiAbstractSelfTest extends GridCommonAbstract
                     throw new UnsupportedOperationException();
                 }
 
-                @Override public int propertyOffset(CacheObject key, CacheObject val) throws IgniteCheckedException {
+                @Override public int propertyOffset(CacheObject key, CacheObject val, CacheObjectContext ctx) throws IgniteCheckedException {
                     throw new UnsupportedOperationException();
                 }
 

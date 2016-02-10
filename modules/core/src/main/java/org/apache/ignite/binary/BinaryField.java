@@ -52,8 +52,9 @@ public interface BinaryField {
     public int fieldOffset(long addr, int len);
 
     /**
-     * @param obj Object.
+     * @param valBytes Marshalled Object.
+     * @param off Marshalled object offset.
      * @return Field offset.
      */
-    public int fieldOffset(BinaryObject obj);
+    public int fieldOffset(byte[] valBytes, int off);
 }

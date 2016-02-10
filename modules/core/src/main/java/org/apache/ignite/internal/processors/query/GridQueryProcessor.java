@@ -37,8 +37,11 @@ import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.binary.BinaryContext;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
+import org.apache.ignite.internal.binary.BinaryPrimitives;
+import org.apache.ignite.internal.binary.BinaryReaderExImpl;
 import org.apache.ignite.internal.binary.BinaryUtils;
 import org.apache.ignite.internal.binary.GridBinaryMarshaller;
+import org.apache.ignite.internal.binary.streams.BinaryHeapInputStream;
 import org.apache.ignite.internal.binary.streams.BinaryOffheapInputStream;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
 import org.apache.ignite.internal.processors.cache.CacheEntryImpl;
@@ -1891,7 +1894,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         }
 
         /** {@inheritDoc} */
-        @Override public int propertyOffset(CacheObject key, CacheObject val) throws IgniteCheckedException {
+        @Override public int propertyOffset(CacheObject key, CacheObject val, CacheObjectContext ctx) throws IgniteCheckedException {
             throw new UnsupportedOperationException();
         }
 
@@ -2017,6 +2020,9 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
         /** {@inheritDoc} */
         @Override public boolean keyProperty() {
+            if (parent != null)
+                return parent.keyProperty();
+
             int isKeyProp0 = isKeyProp;
 
             assert isKeyProp0 != 0;
@@ -2025,76 +2031,132 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         }
 
         /** {@inheritDoc} */
-        @Override public int propertyOffset(CacheObject key, CacheObject val) throws IgniteCheckedException {
-            if (parent != null)
-                return parent.propertyOffset(key, val);
+        @Override public int propertyOffset(CacheObject key, CacheObject val, CacheObjectContext ctx) throws IgniteCheckedException {
+            boolean keyProp;
 
-            if (binaryCtx == null)
-                throw new UnsupportedOperationException("BinaryObjects are not enabled.");
+            byte[] objBytes;
 
-            Object obj;
+            int off = 0;
 
-            int isKeyProp0 = isKeyProp;
+            if (parent != null) {
+                off = parent.propertyOffset(key, val, ctx);
 
-            if (isKeyProp0 == 0) {
-                // Key is allowed to be a non-binary object here.
-                // We check key before value consistently with ClassProperty.
-                if (key instanceof BinaryObject && ((BinaryObject)key).hasField(propName))
-                    isKeyProp = isKeyProp0 = 1;
-                else if (val instanceof BinaryObject && ((BinaryObject)val).hasField(propName))
-                    isKeyProp = isKeyProp0 = -1;
-                else {
-                    U.warn(log, "Neither key nor value have property " +
-                        "[propName=" + propName + ", key=" + key + ", val=" + val + "]");
+                if (off == -1)
+                    return off;
 
-                    return -1;
+                keyProp = parent.keyProperty();
+
+                if (keyProp)
+                    objBytes = key.valueBytes(ctx);
+                else
+                    objBytes = val.valueBytes(ctx);
+            }
+            else {
+                if (binaryCtx == null)
+                    throw new UnsupportedOperationException("BinaryObjects are not enabled.");
+
+                int isKeyProp0 = isKeyProp;
+
+                if (isKeyProp0 == 0) {
+                    if (key instanceof BinaryObject && ((BinaryObject)key).hasField(propName))
+                        isKeyProp = isKeyProp0 = 1;
+                    else if (val instanceof BinaryObject && ((BinaryObject)val).hasField(propName))
+                        isKeyProp = isKeyProp0 = -1;
+                    else {
+                        U.warn(log, "Neither key nor value have property " +
+                            "[propName=" + propName + ", key=" + key + ", val=" + val + "]");
+
+                        return -1;
+                    }
                 }
+
+                keyProp = isKeyProp0 == 1;
+
+                Object obj = keyProp ? key : val;
+
+                assert obj instanceof BinaryObject : obj;
+
+                CacheObject obj0 = (CacheObject)obj;
+
+                objBytes = obj0.valueBytes(ctx);
             }
 
-            obj = isKeyProp0 == 1 ? key : val;
+            byte type = BinaryPrimitives.readByte(objBytes, off);
 
-            assert obj instanceof BinaryObject : obj;
+            if (type != GridBinaryMarshaller.OBJ) {
+                if (type == GridBinaryMarshaller.NULL)
+                    return -1;
 
-            BinaryObject obj0 = (BinaryObject)obj;
+                throw new IgniteCheckedException("Non-binary object received as a result of property extraction " +
+                    "[parent=" + parent + ", propName=" + propName + ", type=" + type + ']');
+            }
 
-            BinaryField field = binaryField(obj0);
+            BinaryField field = binaryField(objBytes, off);
 
-            if (field != null)
-                return field.fieldOffset(obj0);
+            if (field != null) {
+                int off0 = field.fieldOffset(objBytes, off);
 
-            // TODO: try to get address from object.
+                return off0 < 0 ? off0 : off0 + off;
+            }
 
-            return -1;
+            BinaryReaderExImpl reader = new BinaryReaderExImpl(binaryCtx,
+                BinaryHeapInputStream.create(objBytes, off),
+                null);
+
+            return reader.fieldPosition(propName);
         }
 
         /** {@inheritDoc} */
         @Override public int propertyOffset(long keyAddr, int keyLen, long valAddr, int valLen) throws IgniteCheckedException {
-            if (parent != null)
-                return parent.propertyOffset(keyAddr, keyLen, valAddr, valLen);
+            boolean keyProp;
 
-            if (binaryCtx == null)
-                throw new UnsupportedOperationException("BinaryObjects are not enabled.");
+            int off = 0;
 
-            int isKeyProp0 = isKeyProp;
+            if (parent != null) {
+                off = parent.propertyOffset(keyAddr, keyLen, valAddr, valLen);
 
-            if (isKeyProp0 == 0) {
-                // Key is allowed to be a non-binary object here.
-                // We check key before value consistently with ClassProperty.
-                if (hasField(keyAddr, keyLen, propName))
-                    isKeyProp = isKeyProp0 = 1;
-                else if (hasField(valAddr, valLen, propName))
-                    isKeyProp = isKeyProp0 = -1;
+                if (off == -1)
+                    return off;
+
+                keyProp = parent.keyProperty();
+
+                if (keyProp) {
+                    keyAddr += off;
+                    keyLen -= off;
+                }
                 else {
-                    U.warn(log, "Neither key nor value have property [propName=" + propName + "]");
-
-                    return -1;
+                    valAddr += off;
+                    valLen -= off;
                 }
             }
+            else {
+                if (binaryCtx == null)
+                    throw new UnsupportedOperationException("BinaryObjects are not enabled.");
+
+                int isKeyProp0 = isKeyProp;
+
+                if (isKeyProp0 == 0) {
+                    // Key is allowed to be a non-binary object here.
+                    // We check key before value consistently with ClassProperty.
+                    if (hasField(keyAddr, keyLen, propName))
+                        isKeyProp = isKeyProp0 = 1;
+                    else if (hasField(valAddr, valLen, propName))
+                        isKeyProp = isKeyProp0 = -1;
+                    else {
+                        U.warn(log, "Neither key nor value have property [propName=" + propName + "]");
+
+                        return -1;
+                    }
+                }
+
+                keyProp = isKeyProp0 == 1;
+            }
+
 
             long addr;
             int len;
 
-            if (isKeyProp0 == 1) {
+            if (keyProp) {
                 addr = keyAddr;
                 len = keyLen;
             }
@@ -2103,14 +2165,31 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                 len = valLen;
             }
 
+            byte type = GridUnsafe.getByte(addr);
+
+            if (type != GridBinaryMarshaller.OBJ) {
+                if (type == GridBinaryMarshaller.NULL)
+                    return -1;
+
+                throw new IgniteCheckedException("Non-binary object received as a result of property extraction " +
+                    "[parent=" + parent + ", propName=" + propName + ", type=" + type + ']');
+            }
+
             BinaryField field = binaryField(addr);
 
-            if (field != null)
-                return field.fieldOffset(addr, len);
+            if (field != null) {
+                int off0 = field.fieldOffset(addr, len);
 
-            // TODO: try to get offset from object.
+                return off0 < 0 ? off0 : off0 + off;
+            }
 
-            return -1;
+            BinaryReaderExImpl reader = new BinaryReaderExImpl(binaryCtx,
+                new BinaryOffheapInputStream(addr, len),
+                null);
+
+            int pos = reader.fieldPosition(propName);
+
+            return pos < 0 ? pos : off + pos;
         }
 
         /**
@@ -2123,7 +2202,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         private boolean hasField(long addr, int len, String fieldName) throws IgniteCheckedException {
             byte type = GridUnsafe.getByte(addr);
 
-            if (type != GridBinaryMarshaller.BINARY_OBJ)
+            if (type != GridBinaryMarshaller.OBJ)
                 return false;
 
             BinaryOffheapInputStream in = new BinaryOffheapInputStream(addr, len);
@@ -2178,6 +2257,33 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         }
 
         /**
+         * @param val Marshalled value.
+         * @param off Value offset.
+         * @return Binary field.
+         */
+        private BinaryField binaryField(byte[] val, int off) {
+            BinaryField field0 = field;
+
+            if (field0 == null && !fieldTaken) {
+                int typeId = BinaryPrimitives.readInt(val, off + GridBinaryMarshaller.TYPE_ID_POS);
+
+                BinaryType type = binaryCtx.metadata(typeId);
+
+                if (type != null) {
+                    field0 = type.field(propName);
+
+                    assert field0 != null;
+
+                    field = field0;
+                }
+
+                fieldTaken = true;
+            }
+
+            return field0;
+        }
+
+        /**
          * Get binary field for the property.
          *
          * @param addr Marshalled object address.
@@ -2187,7 +2293,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             BinaryField field0 = field;
 
             if (field0 == null && !fieldTaken) {
-                int typeId = GridUnsafe.getInt(addr + GridBinaryMarshaller.TYPE_ID_POS);
+                int typeId = BinaryPrimitives.readInt(addr, GridBinaryMarshaller.TYPE_ID_POS);
 
                 BinaryType type = binaryCtx.metadata(typeId);
 
