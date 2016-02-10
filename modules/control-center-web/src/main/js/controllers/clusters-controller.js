@@ -169,7 +169,7 @@ consoleModule.controller('clustersController', function ($http, $timeout, $scope
 
         $scope.selectItem = function (item, backup) {
             function selectItem() {
-                $scope.selectedItem = angular.copy(item);
+                $scope.selectedItem = item;
 
                 try {
                     if (item && item._id)

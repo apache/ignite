@@ -164,6 +164,9 @@ angular
 
     $locationProvider.html5Mode(true);
 }])
+.run(['$rootScope', ($root) => {
+    $root._ = _;
+}])
 .run(['$rootScope', '$state', 'Auth', 'User', ($root, $state, Auth, User) => {
     $root.$state = $state;
 
