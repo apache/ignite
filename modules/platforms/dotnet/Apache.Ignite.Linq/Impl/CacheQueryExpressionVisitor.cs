@@ -282,8 +282,6 @@ namespace Apache.Ignite.Linq.Impl
         /// <summary>
         /// Gets the name of the field from a member expression.
         /// </summary>
-        /// <param name="expression">The expression.</param>
-        /// <returns></returns>
         private static string GetFieldName(MemberExpression expression, ICacheQueryable queryable)
         {
             var queryFieldAttr = expression.Member.GetCustomAttributes(true)
@@ -293,15 +291,36 @@ namespace Apache.Ignite.Linq.Impl
                 ? expression.Member.Name
                 : queryFieldAttr.Name;
 
-            // TODO: Alias
-            // 1) Get CacheConfiguration
-            // 2) See if there are any aliases, exit early if not
-            // 3) Get ICacheEntry type through the expression, find corresponding QueryEntity, get alias from there
+            // Look for a field alias
+            var cacheCfg = queryable.CacheConfiguration;
 
-            if (queryable == null)
-                return null;
+            if (cacheCfg.QueryEntities == null || cacheCfg.QueryEntities.All(x => x.Aliases == null))
+                return fieldName;  // There are no aliases defined - early exit
 
-            return fieldName;
+            // Find query entity by key-val types
+            var keyValTypes = queryable.ElementType.GetGenericArguments();
+
+            Debug.Assert(keyValTypes.Length == 2);
+
+            var queryEntity = cacheCfg.QueryEntities.FirstOrDefault(e => e.Aliases != null &&
+                                                                         e.KeyTypeName == keyValTypes[0].Name &&
+                                                                         e.ValueTypeName == keyValTypes[1].Name);
+
+            if (queryEntity == null)
+                return fieldName;
+
+            // There are some aliases for the current query type
+            // Calculate full field name and look for alias
+            var fullFieldName = fieldName;
+            var member = expression;
+
+            while ((member = member.Expression as MemberExpression) != null)
+                fullFieldName = GetFieldName(member, queryable) + "." + fullFieldName;
+
+            var alias = queryEntity.Aliases.Where(x => x.FullName == fullFieldName)
+                .Select(x => x.Alias).FirstOrDefault();
+
+            return alias ?? fieldName;
         }
 
         /// <summary>
