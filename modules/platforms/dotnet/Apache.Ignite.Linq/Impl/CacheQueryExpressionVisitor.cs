@@ -333,17 +333,18 @@ namespace Apache.Ignite.Linq.Impl
         {
             string fieldName;
 
-            if (!FieldNameMap.TryGetValue(member, out fieldName))
+            if (FieldNameMap.TryGetValue(member, out fieldName))
+                return fieldName;
+
+            return FieldNameMap.GetOrAdd(member, m =>
             {
-                var queryFieldAttr = member.GetCustomAttributes(true)
+                var queryFieldAttr = m.GetCustomAttributes(true)
                     .OfType<QuerySqlFieldAttribute>().FirstOrDefault();
 
-                fieldName = queryFieldAttr == null || string.IsNullOrEmpty(queryFieldAttr.Name)
-                    ? member.Name
+                return queryFieldAttr == null || string.IsNullOrEmpty(queryFieldAttr.Name)
+                    ? m.Name
                     : queryFieldAttr.Name;
-            }
-
-            return fieldName;
+            });
         }
 
         /// <summary>
