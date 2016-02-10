@@ -50,7 +50,7 @@ include ../includes/infos
                 hr
             .bs-affix-fix
             div(bs-collapse='' data-allow-multiple='true' ng-model='ui.activePanels')
-                form.form-horizontal(name='ui.inputForm' ng-show='backupItem && _.includes(displayedRows, selectedItem)' novalidate)
+                form.form-horizontal(name='ui.inputForm' ng-show='backupItem && (!backupItem._id || _.includes(displayedRows, selectedItem))' novalidate)
                     .panel-group(ng-click='triggerDigest = true')
                         ignite-configuration-clusters-general
                         .advanced-options
