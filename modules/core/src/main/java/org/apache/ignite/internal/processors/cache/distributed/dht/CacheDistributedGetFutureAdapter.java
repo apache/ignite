@@ -153,21 +153,6 @@ public abstract class CacheDistributedGetFutureAdapter<K, V> extends GridCompoun
     }
 
     /**
-     * @param map Result map.
-     * @param key Key.
-     * @param val Value.
-     * @param ver Version.
-     */
-    @SuppressWarnings("unchecked")
-    protected final void versionedResult(Map map, KeyCacheObject key, Object val, GridCacheVersion ver) {
-        assert needVer;
-        assert skipVals || val != null;
-        assert ver != null;
-
-        map.put(key, new T2<>(skipVals ? true : val, ver));
-    }
-
-    /**
      * Affinity node to send get request to.
      *
      * @param affNodes All affinity nodes.

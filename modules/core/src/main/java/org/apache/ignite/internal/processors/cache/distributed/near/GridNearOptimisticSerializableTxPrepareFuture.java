@@ -107,7 +107,7 @@ public class GridNearOptimisticSerializableTxPrepareFuture extends GridNearOptim
 
             if (txEntry != null) {
                 if (entry.context().isLocal()) {
-                    GridCacheVersion serReadVer = txEntry.serializableReadVersion();
+                    GridCacheVersion serReadVer = txEntry.entryReadVersion();
 
                     if (serReadVer != null) {
                         GridCacheContext ctx = entry.context();
@@ -443,7 +443,7 @@ public class GridNearOptimisticSerializableTxPrepareFuture extends GridNearOptim
             m.clientFirst(),
             tx.activeCachesDeploymentEnabled());
 
-        for (IgniteTxEntry txEntry : m.writes()) {
+        for (IgniteTxEntry txEntry : m.entries()) {
             if (txEntry.op() == TRANSFORM)
                 req.addDhtVersion(txEntry.txKey(), null);
         }
@@ -451,7 +451,7 @@ public class GridNearOptimisticSerializableTxPrepareFuture extends GridNearOptim
         // Must lock near entries separately.
         if (m.near()) {
             try {
-                tx.optimisticLockEntries(F.concat(false, m.writes(), m.reads()));
+                tx.optimisticLockEntries(m.entries());
 
                 tx.userPrepare();
             }

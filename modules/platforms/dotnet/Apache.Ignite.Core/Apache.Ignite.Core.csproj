@@ -3,7 +3,7 @@
   <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
-    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <Platform Condition=" '$(Platform)' == '' ">x64</Platform>
     <ProjectGuid>{4CD2F726-7E2B-46C4-A5BA-057BB82EECB6}</ProjectGuid>
     <OutputType>Library</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
@@ -17,28 +17,37 @@
     <OutputPath>bin\x64\Debug\</OutputPath>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <DefineConstants>DEBUG;CODE_ANALYSIS</DefineConstants>
+    <CodeAnalysisRuleSet>Apache.Ignite.Core.ruleset</CodeAnalysisRuleSet>
     <DocumentationFile>bin\x64\Debug\Apache.Ignite.Core.XML</DocumentationFile>
+    <RunCodeAnalysis>true</RunCodeAnalysis>
+    <CodeAnalysisRuleSet>Apache.Ignite.Core.ruleset</CodeAnalysisRuleSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|x64'">
     <PlatformTarget>x64</PlatformTarget>
     <OutputPath>bin\x64\Release\</OutputPath>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <CodeAnalysisRuleSet>Apache.Ignite.Core.ruleset</CodeAnalysisRuleSet>
     <Optimize>true</Optimize>
     <DocumentationFile>bin\x64\Release\Apache.Ignite.Core.XML</DocumentationFile>
+    <CodeAnalysisRuleSet>Apache.Ignite.Core.ruleset</CodeAnalysisRuleSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|x86'">
     <PlatformTarget>x86</PlatformTarget>
     <OutputPath>bin\x86\Debug\</OutputPath>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <DefineConstants>DEBUG;CODE_ANALYSIS</DefineConstants>
+    <CodeAnalysisRuleSet>Apache.Ignite.Core.ruleset</CodeAnalysisRuleSet>
     <DocumentationFile>bin\x86\Debug\Apache.Ignite.Core.XML</DocumentationFile>
+    <CodeAnalysisRuleSet>Apache.Ignite.Core.ruleset</CodeAnalysisRuleSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|x86'">
     <PlatformTarget>x86</PlatformTarget>
     <OutputPath>bin\x86\Release\</OutputPath>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <CodeAnalysisRuleSet>Apache.Ignite.Core.ruleset</CodeAnalysisRuleSet>
     <Optimize>true</Optimize>
     <DocumentationFile>bin\x86\Release\Apache.Ignite.Core.XML</DocumentationFile>
+    <CodeAnalysisRuleSet>Apache.Ignite.Core.ruleset</CodeAnalysisRuleSet>
   </PropertyGroup>
   <PropertyGroup>
     <SignAssembly>true</SignAssembly>
@@ -51,7 +60,9 @@
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="System" />
+    <Reference Include="System.configuration" />
     <Reference Include="System.Core" />
+    <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Binary\Package-Info.cs" />
@@ -60,6 +71,8 @@
     <Compile Include="Cache\CacheException.cs" />
     <Compile Include="Cache\CachePartialUpdateException.cs" />
     <Compile Include="Cache\CachePeekMode.cs" />
+    <Compile Include="Cache\Configuration\QueryAlias.cs" />
+    <Compile Include="Cache\Configuration\QueryTextFieldAttribute.cs" />
     <Compile Include="Cache\Event\CacheEntryEventType.cs" />
     <Compile Include="Cache\Event\ICacheEntryEvent.cs" />
     <Compile Include="Cache\Event\ICacheEntryEventFilter.cs" />
@@ -93,6 +106,7 @@
     <Compile Include="Cache\Store\CacheStoreAdapter.cs" />
     <Compile Include="Cache\Store\CacheStoreException.cs" />
     <Compile Include="Cache\Store\ICacheStore.cs" />
+    <Compile Include="Common\IFactory.cs" />
     <Compile Include="Cache\Store\ICacheStoreSession.cs" />
     <Compile Include="Cache\Store\Package-Info.cs" />
     <Compile Include="Cluster\ClusterGroupEmptyException.cs" />
@@ -123,6 +137,25 @@
     <Compile Include="Compute\IComputeJobResult.cs" />
     <Compile Include="Compute\IComputeReducer.cs" />
     <Compile Include="Compute\IComputeTask.cs" />
+    <Compile Include="Cache\Configuration\CacheAtomicityMode.cs" />
+    <Compile Include="Cache\Configuration\CacheAtomicWriteOrderMode.cs" />
+    <Compile Include="Cache\Configuration\CacheConfiguration.cs" />
+    <Compile Include="Cache\Configuration\CacheMemoryMode.cs" />
+    <Compile Include="Cache\Configuration\CacheMode.cs" />
+    <Compile Include="Cache\Configuration\CacheRebalanceMode.cs" />
+    <Compile Include="Cache\Configuration\CacheWriteSynchronizationMode.cs" />
+    <Compile Include="Discovery\Tcp\ITcpDiscoveryIpFinder.cs" />
+    <Compile Include="Discovery\Tcp\TcpDiscoverySpi.cs" />
+    <Compile Include="Cache\Configuration\QueryIndexField.cs" />
+    <Compile Include="Discovery\IDiscoverySpi.cs" />
+    <Compile Include="Discovery\Tcp\TcpDiscoveryIpFinderBase.cs" />
+    <Compile Include="Discovery\Tcp\Multicast\TcpDiscoveryMulticastIpFinder.cs" />
+    <Compile Include="Cache\Configuration\QueryEntity.cs" />
+    <Compile Include="Cache\Configuration\QueryField.cs" />
+    <Compile Include="Cache\Configuration\QueryIndex.cs" />
+    <Compile Include="Cache\Configuration\QueryIndexType.cs" />
+    <Compile Include="Cache\Configuration\QuerySqlFieldAttribute.cs" />
+    <Compile Include="Discovery\Tcp\Static\TcpDiscoveryStaticIpFinder.cs" />
     <Compile Include="Compute\Package-Info.cs" />
     <Compile Include="Datastream\IDataStreamer.cs" />
     <Compile Include="Datastream\IStreamReceiver.cs" />
@@ -130,6 +163,8 @@
     <Compile Include="Datastream\StreamTransformer.cs" />
     <Compile Include="Datastream\StreamVisitor.cs" />
     <Compile Include="DataStructures\IAtomicLong.cs" />
+    <Compile Include="DataStructures\IAtomicReference.cs" />
+    <Compile Include="DataStructures\IAtomicSequence.cs" />
     <Compile Include="DataStructures\Package-Info.cs" />
     <Compile Include="Events\CacheEvent.cs" />
     <Compile Include="Events\CacheQueryExecutedEvent.cs" />
@@ -150,9 +185,11 @@
     <Compile Include="Events\TaskEvent.cs" />
     <Compile Include="GlobalSuppressions.cs" />
     <Compile Include="IgniteConfiguration.cs" />
+    <Compile Include="IgniteConfigurationSection.cs" />
     <Compile Include="Ignition.cs" />
     <Compile Include="IIgnite.cs" />
     <Compile Include="Impl\Binary\BinaryEnum.cs" />
+    <Compile Include="Impl\Binary\JavaTypes.cs" />
     <Compile Include="Impl\Cache\CacheAffinityImpl.cs" />
     <Compile Include="Impl\Cache\CacheEntry.cs" />
     <Compile Include="Impl\Cache\CacheEntryFilterHolder.cs" />
@@ -188,11 +225,13 @@
     <Compile Include="Impl\Collections\MultiValueDictionary.cs" />
     <Compile Include="Impl\Collections\ReadOnlyCollection.cs" />
     <Compile Include="Impl\Collections\ReadOnlyDictionary.cs" />
+    <Compile Include="Impl\Common\BooleanLowerCaseConverter.cs" />
     <Compile Include="Impl\Common\CancelledTask.cs" />
     <Compile Include="Impl\Common\Classpath.cs" />
     <Compile Include="Impl\Common\CopyOnWriteConcurrentDictionary.cs" />
     <Compile Include="Impl\Common\DelegateConverter.cs" />
     <Compile Include="Impl\Common\DelegateTypeDescriptor.cs" />
+    <Compile Include="Impl\Events\EventTypeConverter.cs" />
     <Compile Include="Impl\Common\Fnv1Hash.cs" />
     <Compile Include="Impl\Common\Future.cs" />
     <Compile Include="Impl\Common\FutureConverter.cs" />
@@ -200,10 +239,12 @@
     <Compile Include="Impl\Common\IgniteArgumentCheck.cs" />
     <Compile Include="Impl\Common\IFutureConverter.cs" />
     <Compile Include="Impl\Common\IFutureInternal.cs" />
+    <Compile Include="Impl\Common\IgniteConfigurationXmlSerializer.cs" />
     <Compile Include="Impl\Common\IgniteHome.cs" />
     <Compile Include="Impl\Common\LoadedAssembliesResolver.cs" />
     <Compile Include="Impl\Common\ResizeableArray.cs" />
     <Compile Include="Impl\Common\TypeCaster.cs" />
+    <Compile Include="Impl\Common\TypeStringConverter.cs" />
     <Compile Include="Impl\Compute\Closure\ComputeAbstractClosureTask.cs" />
     <Compile Include="Impl\Compute\Closure\ComputeActionJob.cs" />
     <Compile Include="Impl\Compute\Closure\ComputeFuncJob.cs" />
@@ -227,10 +268,11 @@
     <Compile Include="Impl\Datastream\DataStreamerRemoveEntry.cs" />
     <Compile Include="Impl\Datastream\StreamReceiverHolder.cs" />
     <Compile Include="Impl\DataStructures\AtomicLong.cs" />
+    <Compile Include="Impl\DataStructures\AtomicReference.cs" />
+    <Compile Include="Impl\DataStructures\AtomicSequence.cs" />
     <Compile Include="Impl\Events\Events.cs" />
     <Compile Include="Impl\Events\RemoteListenEventFilter.cs" />
     <Compile Include="Impl\ExceptionUtils.cs" />
-    <Compile Include="Impl\IgniteConfigurationEx.cs" />
     <Compile Include="Impl\Ignite.cs" />
     <Compile Include="Impl\IgniteManager.cs" />
     <Compile Include="Impl\IgniteProxy.cs" />
@@ -397,8 +439,14 @@
     </EmbeddedResource>
   </ItemGroup>
   <ItemGroup>
+    <None Include="Apache.Ignite.Core.ruleset" />
     <None Include="Apache.Ignite.Core.snk" />
+    <None Include="IgniteConfigurationSection.xsd">
+      <SubType>Designer</SubType>
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
   </ItemGroup>
+  <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.

@@ -258,7 +258,7 @@ public class GridCompoundFuture<T, R> extends GridFutureAdapter<R> implements Ig
     /**
      * @return Futures size.
      */
-    private int futuresSize() {
+    protected int futuresSize() {
         synchronized (futs) {
             return futs.size();
         }
