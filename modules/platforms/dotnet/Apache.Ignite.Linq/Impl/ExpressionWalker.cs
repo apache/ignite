@@ -25,7 +25,7 @@ namespace Apache.Ignite.Linq.Impl
     using Remotion.Linq.Clauses.Expressions;
 
     /// <summary>
-    /// Table name mapper.
+    /// Walks expression trees to extract query and table name info.
     /// </summary>
     internal static class ExpressionWalker
     {
