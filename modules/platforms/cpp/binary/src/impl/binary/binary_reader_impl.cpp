@@ -350,7 +350,7 @@ namespace ignite
                 int32_t fieldPos = FindField(fieldId);
 
                 if (fieldPos <= 0)
-                    return Date();
+                    return Timestamp();
 
                 stream->Position(fieldPos);
 

@@ -59,17 +59,11 @@ namespace ignite
         /**
          * Constructor.
          *
-         * @param date Date.
-         */
-        Timestamp(Date date);
-
-        /**
-         * Constructor.
-         *
          * @param seconds Number of seconds since 00:00 hours, Jan 1, 1970 UTC.
-         * @param nanoseconds Fractional seconds component. Must be in range [0..999999999].
+         * @param fractionNs Fractional second component in nanoseconds.
+         *     Must be in range [0..999999999].
          */
-        Timestamp(int64_t seconds, int32_t nanoseconds);
+        Timestamp(int64_t seconds, int32_t fractionNs);
 
         /**
          * Copy operator.
@@ -96,9 +90,9 @@ namespace ignite
         /**
          * Returns number of nanoseconds - fractional seconds component.
          *
-         * @return Number of nanoseconds.
+         * @return Fractional second component expressed in nanoseconds.
          */
-        int32_t GetNanoseconds() const;
+        int32_t GetSecondFraction() const;
 
         /**
          * Returns corresponding date.
@@ -162,10 +156,10 @@ namespace ignite
         friend bool IGNITE_IMPORT_EXPORT operator>=(Timestamp& val1, Timestamp& val2);
     private:
         /** Number of seconds since 00:00 hours, Jan 1, 1970 UTC. */
-        int64_t seconds;  
+        int64_t seconds;
 
-        /** Fractional seconds component. */
-        int32_t nanoseconds;
+        /** Fractional second component in nanoseconds. */
+        int32_t fractionNs;
     };
 }
 
