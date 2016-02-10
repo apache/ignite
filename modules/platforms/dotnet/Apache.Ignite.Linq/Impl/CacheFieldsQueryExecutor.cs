@@ -157,13 +157,12 @@ namespace Apache.Ignite.Linq.Impl
             if (CtorCache.TryGetValue(ctorInfo, out result))
                 return (Func<IBinaryRawReader, int, T>) result;
 
-            var innerCtor = DelegateConverter.CompileCtor<T>(ctorInfo, GetCacheEntryCtorInfo);
+            return (Func<IBinaryRawReader, int, T>) CtorCache.GetOrAdd(ctorInfo, x =>
+            {
+                var innerCtor1 = DelegateConverter.CompileCtor<T>(x, GetCacheEntryCtorInfo);
 
-            Func<IBinaryRawReader, int, T> ctor = (r, c) => innerCtor(r);
-
-            CtorCache[ctorInfo] = ctor;
-
-            return ctor;
+                return (Func<IBinaryRawReader, int, T>) ((r, c) => innerCtor1(r));
+            });
         }
     }
 }
