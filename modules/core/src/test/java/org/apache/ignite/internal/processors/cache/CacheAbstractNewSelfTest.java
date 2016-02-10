@@ -178,12 +178,21 @@ public abstract class CacheAbstractNewSelfTest extends GridCommonAbstractTest {
                                 @Override public boolean applyx() throws IgniteCheckedException {
                                     jcache(fi).removeAll();
 
+                                    info(">>>>> Debug removeAll() for grid: " + fi);
+
                                     if (jcache(fi).size(CachePeekMode.ALL) > 0) {
-                                        for (Cache.Entry<String, ?> k : jcache(fi).localEntries())
+                                        for (Cache.Entry<String, ?> k : jcache(fi).localEntries()) {
                                             jcache(fi).remove(k.getKey());
+
+                                            info(">>>>> Debug remove for grid: " + fi);
+                                        }
                                     }
 
-                                    return jcache(fi).localSize(CachePeekMode.ALL) == 0;
+                                    int localSize = jcache(fi).localSize(CachePeekMode.ALL);
+
+                                    info(">>>>> Debug localSize for grid: " + fi + " is " + localSize);
+
+                                    return localSize == 0;
                                 }
                             },
                             getTestTimeout()));
