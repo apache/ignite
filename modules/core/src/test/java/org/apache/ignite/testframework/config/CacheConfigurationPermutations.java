@@ -26,11 +26,13 @@ import javax.cache.event.CacheEntryCreatedListener;
 import javax.cache.event.CacheEntryEventFilter;
 import javax.cache.event.CacheEntryListener;
 import javax.cache.event.CacheEntryListenerException;
+import org.apache.ignite.cache.CacheAtomicWriteOrderMode;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheInterceptorAdapter;
 import org.apache.ignite.cache.CacheMemoryMode;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.CacheRebalanceMode;
+import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cache.eviction.EvictionFilter;
 import org.apache.ignite.cache.eviction.fifo.FifoEvictionPolicy;
 import org.apache.ignite.cache.store.CacheStoreSession;
@@ -80,16 +82,20 @@ public class CacheConfigurationPermutations {
     public static final NearCacheConfiguration NEAR_CACHE_CFG = new NearCacheConfiguration();
 
     /** */
-    public static final ConfigurationParameter<Object> ONHEAP_TIERED_MEMORY_PARAM = parameter("setMemoryMode", CacheMemoryMode.ONHEAP_TIERED);
+    public static final ConfigurationParameter<Object> ONHEAP_TIERED_MEMORY_PARAM = 
+        parameter("setMemoryMode", CacheMemoryMode.ONHEAP_TIERED);
 
     /** */
-    public static final ConfigurationParameter<Object> OFFHEAP_TIERED_MEMORY_PARAM = parameter("setMemoryMode", CacheMemoryMode.OFFHEAP_TIERED);
+    public static final ConfigurationParameter<Object> OFFHEAP_TIERED_MEMORY_PARAM = 
+        parameter("setMemoryMode", CacheMemoryMode.OFFHEAP_TIERED);
 
     /** */
-    public static final ConfigurationParameter<Object> OFFHEAP_VALUES_MEMORY_PARAM = parameter("setMemoryMode", CacheMemoryMode.OFFHEAP_VALUES);
+    public static final ConfigurationParameter<Object> OFFHEAP_VALUES_MEMORY_PARAM =  
+        parameter("setMemoryMode", CacheMemoryMode.OFFHEAP_VALUES);
 
     /** */
-    public static final ConfigurationParameter<Object> OFFHEAP_ENABLED = parameter("setOffHeapMaxMemory", 10 * 1024 * 1024L);
+    public static final ConfigurationParameter<Object> OFFHEAP_ENABLED = 
+        parameter("setOffHeapMaxMemory", 10 * 1024 * 1024L);
 
     /** */
     @SuppressWarnings("unchecked")
@@ -121,8 +127,9 @@ public class CacheConfigurationPermutations {
         ),
 
         // Set default parameters (TODO make it in builder).
-//        objectParameters("setWriteSynchronizationMode", CacheWriteSynchronizationMode.FULL_SYNC), // One value.
-//        objectParameters("setAtomicWriteOrderMode", CacheAtomicWriteOrderMode.PRIMARY), // One value.
+        objectParameters("setWriteSynchronizationMode", CacheWriteSynchronizationMode.FULL_SYNC), // One value.
+        objectParameters("setAtomicWriteOrderMode", CacheAtomicWriteOrderMode.PRIMARY), // One value.
+        objectParameters("setStartSize", 1024), // One value.
 
 //        objectParameters("setBackups", 0, 1, 2),// TODO set depending to nodes count.
 

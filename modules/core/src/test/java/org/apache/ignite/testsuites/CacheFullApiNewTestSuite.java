@@ -24,22 +24,16 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.processors.cache.CacheFullApiNewSelfTest;
 import org.apache.ignite.marshaller.optimized.OptimizedMarshaller;
-import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
-import org.apache.ignite.spi.swapspace.file.FileSwapSpaceSpi;
+import org.apache.ignite.spi.swapspace.inmemory.GridTestSwapSpaceSpi;
 import org.apache.ignite.testframework.CacheStartMode;
 import org.apache.ignite.testframework.GridTestSuite;
 import org.apache.ignite.testframework.TestsConfiguration;
 import org.apache.ignite.testframework.config.CacheConfigurationPermutations;
+import org.apache.ignite.testframework.config.FullApiStateConfigurationFactory;
 import org.apache.ignite.testframework.config.StateConfigurationFactory;
 import org.apache.ignite.testframework.config.generator.ConfigurationParameter;
 import org.apache.ignite.testframework.config.generator.StateIterator;
 
-import static org.apache.ignite.cache.CacheAtomicWriteOrderMode.PRIMARY;
-import static org.apache.ignite.cache.CacheMemoryMode.OFFHEAP_TIERED;
-import static org.apache.ignite.cache.CacheMemoryMode.OFFHEAP_VALUES;
-import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 import static org.apache.ignite.testframework.config.params.Parameters.booleanParameters;
 import static org.apache.ignite.testframework.config.params.Parameters.objectParameters;
 
@@ -52,7 +46,7 @@ public class CacheFullApiNewTestSuite extends TestSuite {
     private static final ConfigurationParameter<IgniteConfiguration>[][] igniteParams = new ConfigurationParameter[][] {
         objectParameters("setMarshaller", new BinaryMarshaller(), new OptimizedMarshaller(true)),
         booleanParameters("setPeerClassLoadingEnabled"),
-        objectParameters("setSwapSpaceSpi", new FileSwapSpaceSpi()),
+        objectParameters("setSwapSpaceSpi", new GridTestSwapSpaceSpi()),
     };
 
     /** */
@@ -104,10 +98,8 @@ public class CacheFullApiNewTestSuite extends TestSuite {
         StateConfigurationFactory factory = new FullApiStateConfigurationFactory(igniteParams, igniteCfgState,
             cacheParams, cacheCfgState);
 
-        String vectorsInfo = "[igniteCfg=" + Arrays.toString(igniteCfgState)
-            + ", cacheCfgState=" + Arrays.toString(cacheCfgState) + "]";
-
-        String clsNameSuffix = vectorsInfo
+        String clsNameSuffix = "[igniteCfg=" + Arrays.toString(igniteCfgState)
+            + ", cacheCfgState=" + Arrays.toString(cacheCfgState) + "]"
             + "-[igniteCfg=" + factory.getIgniteConfigurationDescription()
             + ", cacheCfg=" + factory.getCacheConfigurationDescription() + "]";
 
@@ -115,101 +107,6 @@ public class CacheFullApiNewTestSuite extends TestSuite {
 
         testCfg.cacheStartMode(cacheStartMode);
 
-        suite.addTest(new GridTestSuite(CacheFullApiNewSelfTest.class, CacheFullApiNewSelfTest.class.getName()
-            + '-' + vectorsInfo, testCfg));
+        suite.addTest(new GridTestSuite(CacheFullApiNewSelfTest.class, testCfg));
     }
-
-    /**
-     * TODO remove it.
-     */
-    private static class FullApiStateConfigurationFactory extends StateConfigurationFactory {
-        /**
-         * @param igniteParams Ignite params.
-         * @param igniteCfgState Ignite config state.
-         * @param cacheParams Cache params.
-         * @param cacheCfgState Cache config state.
-         */
-        FullApiStateConfigurationFactory(
-            ConfigurationParameter<IgniteConfiguration>[][] igniteParams, int[] igniteCfgState,
-            ConfigurationParameter<CacheConfiguration>[][] cacheParams, int[] cacheCfgState) {
-            super(igniteParams, igniteCfgState, cacheParams, cacheCfgState);
-        }
-
-        FullApiStateConfigurationFactory(
-            ConfigurationParameter<CacheConfiguration>[][] cacheParams, int[] cacheCfgState) {
-            super(cacheParams, cacheCfgState);
-        }
-
-        /** {@inheritDoc} */
-        @Override public IgniteConfiguration getConfiguration(String gridName, IgniteConfiguration srcCfg) {
-            IgniteConfiguration cfg = super.getConfiguration(gridName, srcCfg);
-
-//            // Cache abstract.
-            TcpDiscoverySpi disco = new TcpDiscoverySpi();
-
-            disco.setMaxMissedHeartbeats(Integer.MAX_VALUE);
-
-            disco.setIpFinder(new TcpDiscoveryVmIpFinder(true));
-//
-//            if (isDebug())
-//                disco.setAckTimeout(Integer.MAX_VALUE);
-//
-            cfg.setDiscoverySpi(disco);
-
-            // Full API
-            ((TcpCommunicationSpi)cfg.getCommunicationSpi()).setSharedMemoryPort(-1);
-
-            ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setForceServerMode(true);
-
-//            if (memoryMode() == OFFHEAP_TIERED || memoryMode() == OFFHEAP_VALUES)
-//                cfg.setSwapSpaceSpi(new GridTestSwapSpaceSpi());
-
-            // Local cache.
-            cfg.getTransactionConfiguration().setTxSerializableEnabled(true);
-
-            return cfg;
-        }
-
-        /** {@inheritDoc} */
-        @SuppressWarnings("unchecked")
-        @Override public CacheConfiguration cacheConfiguration(String gridName) {
-            CacheConfiguration cc = super.cacheConfiguration(gridName);
-
-            // Default
-            // TODO make it in builder
-            cc.setStartSize(1024);
-            cc.setAtomicWriteOrderMode(PRIMARY);
-//            cc.setNearConfiguration(new NearCacheConfiguration());
-            cc.setWriteSynchronizationMode(FULL_SYNC);
-//            cc.setEvictionPolicy(null);
-
-            // Cache
-//            CacheStore<?, ?> store = CacheAbstractNewSelfTest.cacheStore();
-//
-//            if (store != null) {
-//                cc.setCacheStoreFactory(new CacheAbstractNewSelfTest.TestStoreFactory());
-//                cc.setReadThrough(true);
-//                cc.setWriteThrough(true);
-//                cc.setLoadPreviousValue(true);
-//            }
-
-//            cc.setSwapEnabled(true);
-
-//            Class<?>[] idxTypes = indexedTypes();
-//
-//            if (!F.isEmpty(idxTypes))
-//                cc.setIndexedTypes(idxTypes);
-
-//            if (cacheMode() == PARTITIONED)
-//                cc.setBackups(1);
-
-            // FullApi
-            if (cc.getMemoryMode() == OFFHEAP_TIERED || cc.getMemoryMode() == OFFHEAP_VALUES)
-                cc.setOffHeapMaxMemory(0);
-
-            return cc;
-        }
-    }
-
-
 }
