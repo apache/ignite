@@ -166,8 +166,18 @@ namespace ignite
                  */
                 void PutDecimal(const Decimal& value);
 
+                /**
+                 * Put date to buffer.
+                 *
+                 * @param value Value to put.
+                 */
                 void PutDate(const Date& value);
 
+                /**
+                 * Put timestamp to buffer.
+                 *
+                 * @param value Value to put.
+                 */
                 void PutTimestamp(const Timestamp& value);
 
                 /**
@@ -215,9 +225,23 @@ namespace ignite
                 /**
                  * Get value of type double.
                  *
-                 * @return Integer value of type double.
+                 * @return Value of type double.
                  */
                 double GetDouble() const;
+
+                /**
+                 * Get value of type Date.
+                 *
+                 * @return Value of type Date.
+                 */
+                Date GetDate() const;
+
+                /**
+                 * Get value of type Timestamp.
+                 *
+                 * @return Value of type Timestamp.
+                 */
+                Timestamp GetTimestamp() const;
 
                 /**
                  * Get raw data.
