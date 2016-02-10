@@ -124,7 +124,9 @@ namespace Apache.Ignite.Core.Discovery.Tcp.Multicast
                 writer.WriteInt(TimeToLive.Value);
         }
 
-        /** <inheritdoc /> */
+        /// <summary>
+        /// Gets the type code to be used in Java to determine ip finder type.
+        /// </summary>
         protected override byte TypeCode
         {
             get { return TypeCodeMulticastIpFinder; }
