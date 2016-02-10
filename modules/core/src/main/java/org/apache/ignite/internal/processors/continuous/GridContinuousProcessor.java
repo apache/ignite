@@ -55,6 +55,7 @@ import org.apache.ignite.internal.processors.GridProcessorAdapter;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
+import org.apache.ignite.internal.processors.cache.GridCacheProcessor;
 import org.apache.ignite.internal.processors.cache.query.continuous.CacheContinuousQueryHandler;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutObject;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
@@ -893,11 +894,18 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
         }
 
         // Load partition counters.
-        if (hnd.isQuery() && ctx.cache() != null && ctx.cache().internalCache(hnd.cacheName()) != null) {
-            Map<Integer, Long> cntrs = ctx.cache().internalCache(hnd.cacheName())
-                .context().topology().updateCounters();
+        if (hnd.isQuery()) {
+            GridCacheProcessor proc = ctx.cache();
 
-            req.addUpdateCounters(cntrs);
+            if (proc != null) {
+                GridCacheAdapter cache = ctx.cache().internalCache(hnd.cacheName());
+
+                if (cache != null && !cache.isLocal()) {
+                    Map<Integer, Long> cntrs = cache.context().topology().updateCounters();
+
+                    req.addUpdateCounters(cntrs);
+                }
+            }
         }
 
         if (err != null)
