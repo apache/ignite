@@ -66,7 +66,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         [TestFixtureSetUp]
         public void FixtureSetUp()
         {
-            _runDbConsole = false;  // set to true to open H2 console
+            _runDbConsole = true;  // set to true to open H2 console
 
             if (_runDbConsole)
                 Environment.SetEnvironmentVariable("IGNITE_H2_DEBUG_CONSOLE", "true");
@@ -787,8 +787,11 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
                 .GetOrCreateCache<int, T>(new CacheConfiguration(PersonOrgCacheName,
                     new QueryEntity(typeof (int), typeof (Person))
                     {
-                        // TODO: attributes
-                        Aliases = new[] {new QueryAlias("Address.AliasTest", "AddrAliasTest")}
+                        Aliases = new[]
+                        {
+                            new QueryAlias("AliasTest", "Person_AliasTest"),
+                            new QueryAlias("Address.AliasTest", "Addr_AliasTest")
+                        }
                     },
                     new QueryEntity(typeof (int), typeof (Organization))));
         }
