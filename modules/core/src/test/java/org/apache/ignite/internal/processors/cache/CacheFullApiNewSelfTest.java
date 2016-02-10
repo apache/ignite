@@ -399,6 +399,9 @@ public class CacheFullApiNewSelfTest extends CacheAbstractNewSelfTest {
         if (isMultiJvm())
             fail("https://issues.apache.org/jira/browse/IGNITE-1088");
 
+        if (!storeEnabled())
+            return;
+
         IgniteCache<String, Integer> jcache = jcache();
 
         jcache.putAll(F.asMap("1", 1, "2", 2, "3", 3));
@@ -2459,6 +2462,9 @@ public class CacheFullApiNewSelfTest extends CacheAbstractNewSelfTest {
     public void testRemoveLoad() throws Exception {
         if (isMultiJvm())
             fail("https://issues.apache.org/jira/browse/IGNITE-1088");
+
+        if (!storeEnabled())
+            return;
 
         int cnt = 10;
 
