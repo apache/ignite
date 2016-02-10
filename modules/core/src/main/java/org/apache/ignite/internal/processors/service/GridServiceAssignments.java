@@ -22,6 +22,7 @@ import java.util.Collections;
 import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheInternal;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -42,6 +43,9 @@ public class GridServiceAssignments implements Serializable, GridCacheInternal {
     /** Topology version. */
     private final long topVer;
 
+    /** */
+    private final AffinityTopologyVersion affTopVer;
+
     /** Service configuration. */
     private final ServiceConfiguration cfg;
 
@@ -52,12 +56,14 @@ public class GridServiceAssignments implements Serializable, GridCacheInternal {
     /**
      * @param cfg Configuration.
      * @param nodeId Node ID.
-     * @param topVer Topology version.
+     * @param affTopVer Topology version.
      */
-    public GridServiceAssignments(ServiceConfiguration cfg, UUID nodeId, long topVer) {
+    public GridServiceAssignments(ServiceConfiguration cfg, UUID nodeId, AffinityTopologyVersion affTopVer) {
         this.cfg = cfg;
         this.nodeId = nodeId;
-        this.topVer = topVer;
+        this.affTopVer = affTopVer;
+
+        topVer = affTopVer.topologyVersion();
     }
 
     /**
@@ -86,6 +92,13 @@ public class GridServiceAssignments implements Serializable, GridCacheInternal {
      */
     public long topologyVersion() {
         return topVer;
+    }
+
+    /**
+     * @return Affinity topology version.
+     */
+    public AffinityTopologyVersion affinityTopologyVersion() {
+        return affTopVer;
     }
 
     /**
