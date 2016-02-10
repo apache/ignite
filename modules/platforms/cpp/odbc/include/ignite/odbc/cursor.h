@@ -89,8 +89,7 @@ namespace ignite
             /**
              * Get current row.
              *
-             * @return Current row. Returns zero if cursor needs data update or
-             *     has no more data.
+             * @return Current row. Returns zero if cursor needs data update or has no more data.
              */
             Row* GetRow();
 

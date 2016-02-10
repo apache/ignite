@@ -162,8 +162,7 @@ namespace ignite
 
             int64_t DataQuery::AffectedRows() const
             {
-                // We are only support SELECT statements so we can not
-                // affect any row.
+                // We are only support SELECT statements so we can not affect any row.
                 return 0;
             }
 
