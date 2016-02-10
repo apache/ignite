@@ -40,8 +40,8 @@ namespace Apache.Ignite.Linq.Impl
         private readonly ICacheQueryProxy _cache;
 
         /** */
-        private static readonly Dictionary<ConstructorInfo, object> CtorCache =
-            new Dictionary<ConstructorInfo, object>();
+        private static readonly CopyOnWriteConcurrentDictionary<ConstructorInfo, object> CtorCache =
+            new CopyOnWriteConcurrentDictionary<ConstructorInfo, object>();
 
         /// <summary>
         /// Initializes a new instance of the <see cref="CacheFieldsQueryExecutor" /> class.

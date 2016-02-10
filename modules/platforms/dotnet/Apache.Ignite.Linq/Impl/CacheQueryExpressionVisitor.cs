@@ -25,7 +25,9 @@ namespace Apache.Ignite.Linq.Impl
     using System.Diagnostics.CodeAnalysis;
     using System.Linq;
     using System.Linq.Expressions;
+    using System.Reflection;
     using Apache.Ignite.Core.Cache.Configuration;
+    using Apache.Ignite.Core.Impl.Common;
     using Remotion.Linq.Clauses;
     using Remotion.Linq.Clauses.Expressions;
     using Remotion.Linq.Clauses.ResultOperators;
@@ -41,6 +43,10 @@ namespace Apache.Ignite.Linq.Impl
 
         /** */
         private readonly CacheQueryModelVisitor _modelVisitor;
+
+        /** */
+        private static readonly CopyOnWriteConcurrentDictionary<MemberInfo, string> FieldNameMap =
+            new CopyOnWriteConcurrentDictionary<MemberInfo, string>();
 
         /// <summary>
         /// Initializes a new instance of the <see cref="CacheQueryExpressionVisitor" /> class.
@@ -284,14 +290,7 @@ namespace Apache.Ignite.Linq.Impl
         /// </summary>
         private static string GetFieldName(MemberExpression expression, ICacheQueryable queryable)
         {
-            // TODO: This method takes 70% of query generation!
-
-            var queryFieldAttr = expression.Member.GetCustomAttributes(true)
-                .OfType<QuerySqlFieldAttribute>().FirstOrDefault();
-
-            var fieldName = queryFieldAttr == null || string.IsNullOrEmpty(queryFieldAttr.Name)
-                ? expression.Member.Name
-                : queryFieldAttr.Name;
+            var fieldName = GetMemberFieldName(expression.Member);
 
             // Look for a field alias
             var cacheCfg = queryable.CacheConfiguration;
@@ -325,6 +324,26 @@ namespace Apache.Ignite.Linq.Impl
                 .Select(x => x.Alias).FirstOrDefault();
 
             return alias ?? fieldName;
+        }
+
+        /// <summary>
+        /// Gets the name of the member field.
+        /// </summary>
+        private static string GetMemberFieldName(MemberInfo member)
+        {
+            string fieldName;
+
+            if (!FieldNameMap.TryGetValue(member, out fieldName))
+            {
+                var queryFieldAttr = member.GetCustomAttributes(true)
+                    .OfType<QuerySqlFieldAttribute>().FirstOrDefault();
+
+                fieldName = queryFieldAttr == null || string.IsNullOrEmpty(queryFieldAttr.Name)
+                    ? member.Name
+                    : queryFieldAttr.Name;
+            }
+
+            return fieldName;
         }
 
         /// <summary>
