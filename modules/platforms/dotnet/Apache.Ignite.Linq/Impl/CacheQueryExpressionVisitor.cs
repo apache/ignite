@@ -253,7 +253,6 @@ namespace Apache.Ignite.Linq.Impl
         protected override Expression VisitMember(MemberExpression expression)
         {
             // Field hierarchy is flattened (Person.Address.Street is just Street), append as is, do not call Visit.
-            // TODO: Aliases? How do they work? See email.
 
             // Special case: string.Length
             if (expression.Member == MethodVisitor.StringLength)
@@ -271,6 +270,21 @@ namespace Apache.Ignite.Linq.Impl
             if (VisitGroupByMember(expression.Expression))
                 return expression;
 
+            var fieldName = GetFieldName(expression);
+
+            ResultBuilder.AppendFormat("{0}.{1}",
+                Aliases.GetTableAlias(TableNameMapper.GetTableNameWithSchema(expression)), fieldName);
+
+            return expression;
+        }
+
+        /// <summary>
+        /// Gets the name of the field from a member expression.
+        /// </summary>
+        /// <param name="expression">The expression.</param>
+        /// <returns></returns>
+        private static string GetFieldName(MemberExpression expression)
+        {
             var queryFieldAttr = expression.Member.GetCustomAttributes(true)
                 .OfType<QuerySqlFieldAttribute>().FirstOrDefault();
 
@@ -278,10 +292,11 @@ namespace Apache.Ignite.Linq.Impl
                 ? expression.Member.Name
                 : queryFieldAttr.Name;
 
-            ResultBuilder.AppendFormat("{0}.{1}",
-                Aliases.GetTableAlias(TableNameMapper.GetTableNameWithSchema(expression)), fieldName);
+            // TODO: Alias
+            // 1) Get CacheConfiguration
+            // 2) 
 
-            return expression;
+            return fieldName;
         }
 
         /// <summary>
