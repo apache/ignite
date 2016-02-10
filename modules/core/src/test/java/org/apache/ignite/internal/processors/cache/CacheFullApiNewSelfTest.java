@@ -1970,17 +1970,23 @@ public class CacheFullApiNewSelfTest extends CacheAbstractNewSelfTest {
         assert !fut2.get();
         assert cache.get("key") != null && cache.get("key") == 1;
 
+        if (!storeEnabled())
+            return;
+
         // Check swap.
         cache.put("key2", 1);
 
         cache.localEvict(Collections.singleton("key2"));
+
+        if (!isLoadPreviousValue())
+            cache.get("key2");
 
         cacheAsync.putIfAbsent("key2", 3);
 
         assertFalse(cacheAsync.<Boolean>future().get());
 
         // Check db.
-        if (!isMultiJvm()) {
+        if (storeEnabled() && isLoadPreviousValue() && !isMultiJvm()) {
             putToStore("key3", 3);
 
             cacheAsync.putIfAbsent("key3", 4);
@@ -1990,6 +1996,9 @@ public class CacheFullApiNewSelfTest extends CacheAbstractNewSelfTest {
 
         cache.localEvict(Collections.singletonList("key2"));
 
+        if (!isLoadPreviousValue())
+            cache.get("key2");
+
         // Same checks inside tx.
         Transaction tx = inTx ? transactions().txStart() : null;
 
@@ -1998,7 +2007,7 @@ public class CacheFullApiNewSelfTest extends CacheAbstractNewSelfTest {
 
             assertFalse(cacheAsync.<Boolean>future().get());
 
-            if (!isMultiJvm()) {
+            if (storeEnabled() && isLoadPreviousValue() && !isMultiJvm()) {
                 cacheAsync.putIfAbsent("key3", 4);
 
                 assertFalse(cacheAsync.<Boolean>future().get());
@@ -2014,7 +2023,7 @@ public class CacheFullApiNewSelfTest extends CacheAbstractNewSelfTest {
 
         assertEquals((Integer)1, cache.get("key2"));
 
-        if (!isMultiJvm())
+        if (storeEnabled() && isLoadPreviousValue() && !isMultiJvm())
             assertEquals((Integer)3, cache.get("key3"));
     }
 
