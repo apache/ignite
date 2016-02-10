@@ -74,16 +74,29 @@ namespace Apache.Ignite.Linq.Impl
         {
             var queryData = GetQueryData(queryModel);
 
-            var query = new SqlFieldsQuery(queryData.QueryText, queryData.Parameters.ToArray());
-
             Debug.WriteLine("\nFields Query: {0} | {1}", queryData.QueryText,
                 string.Join(", ", queryData.Parameters.Select(x => x == null ? "null" : x.ToString())));
+
+            var query = new SqlFieldsQuery(queryData.QueryText, queryData.Parameters.ToArray());
 
             var selector = GetResultSelector<T>(queryModel.SelectClause.Selector);
 
             var queryCursor = _cache.QueryFields(query, selector);
 
             return queryCursor;
+        }
+
+        /// <summary>
+        /// Compiles the query.
+        /// </summary>
+        [SuppressMessage("Microsoft.Design", "CA1062:Validate arguments of public methods")]
+        public Func<object[], IQueryCursor<T>> CompileQuery<T>(QueryModel queryModel)
+        {
+            var queryText = GetQueryData(queryModel).QueryText;
+
+            var selector = GetResultSelector<T>(queryModel.SelectClause.Selector);
+
+            return args => _cache.QueryFields(new SqlFieldsQuery(queryText, args), selector);
         }
 
         /** <inheritdoc /> */
