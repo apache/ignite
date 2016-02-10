@@ -861,6 +861,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
                 writer.WriteInt("OrganizationId", OrganizationId);
                 writer.WriteObject("Address", Address);
                 writer.WriteTimestamp("Birthday", Birthday);
+                writer.WriteInt("AliasTest", AliasTest);
             }
 
             public void ReadBinary(IBinaryReader reader)
@@ -870,6 +871,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
                 OrganizationId = reader.ReadInt("OrganizationId");
                 Address = reader.ReadObject<Address>("Address");
                 Birthday = reader.ReadTimestamp("Birthday");
+                AliasTest = reader.ReadInt("AliasTest");
             }
         }
 
