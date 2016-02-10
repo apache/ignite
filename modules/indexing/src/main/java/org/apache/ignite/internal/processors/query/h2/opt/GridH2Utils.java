@@ -78,7 +78,26 @@ public class GridH2Utils {
         return ValueTimestamp.fromDateValueAndNanos(dateValue, nanos);
     }
 
-    public static long dateValueFromDate(long ms) {
+    /**
+     * @param ms Date milliseconds.
+     * @return Nanoseconds value.
+     */
+    public static long nanosFromMillis(long ms) {
+        Calendar calendar = getLocalCalendar();
+
+        calendar.clear();
+        calendar.setTimeInMillis(ms);
+
+        long nanos = nanosFromCalendar(calendar);
+
+        return nanos;
+    }
+
+    /**
+     * @param ms Date milliseconds.
+     * @return Date value.
+     */
+    public static long dateFromMillis(long ms) {
         Calendar calendar = getLocalCalendar();
 
         calendar.clear();
