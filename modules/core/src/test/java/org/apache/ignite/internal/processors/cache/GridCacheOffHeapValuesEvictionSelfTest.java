@@ -33,12 +33,18 @@ import org.apache.ignite.testframework.GridTestUtils;
  */
 public class GridCacheOffHeapValuesEvictionSelfTest extends GridCacheAbstractSelfTest {
 
+    /** */
     private static final int VAL_SIZE = 512 * 1024; // bytes
+    /** */
     private static final int MAX_VALS_AMOUNT = 100;
+    /** */
     private static final int MAX_MEMORY_SIZE = MAX_VALS_AMOUNT * VAL_SIZE;
+    /** */
     private static final int VALS_AMOUNT = MAX_VALS_AMOUNT * 2;
+    /** */
     private static final int THREAD_COUNT = 4;
 
+    /** {@inheritDoc} */
     @Override protected int gridCount() {
         return 1;
     }
@@ -46,7 +52,7 @@ public class GridCacheOffHeapValuesEvictionSelfTest extends GridCacheAbstractSel
     /**
      * @throws Exception If failed.
      */
-    public void testPutOnHeap() throws Exception {
+    public void testPutValuesOffHeap() throws Exception {
         CacheConfiguration<Integer, Object> ccfg = cacheConfiguration(grid(0).name());
         ccfg.setName("testPutOffHeapValues");
         ccfg.setStatisticsEnabled(true);
@@ -70,6 +76,10 @@ public class GridCacheOffHeapValuesEvictionSelfTest extends GridCacheAbstractSel
         assertTrue(MAX_VALS_AMOUNT >= cache.size(CachePeekMode.ONHEAP));
         assertTrue(MAX_VALS_AMOUNT - 5 <= cache.size(CachePeekMode.ONHEAP));
         assertEquals(cache.size(CachePeekMode.ALL) - cache.size(CachePeekMode.ONHEAP), cache.size(CachePeekMode.SWAP));
+
+        assertTrue((MAX_VALS_AMOUNT + 5) * VAL_SIZE > cache.metrics().getOffHeapAllocatedSize());
+        assertTrue((MAX_VALS_AMOUNT - 5) * VAL_SIZE < cache.metrics().getOffHeapAllocatedSize());
+        assertTrue(cache.metrics().getOffHeapAllocatedSize() >= cache.size(CachePeekMode.ONHEAP) * VAL_SIZE);
     }
 
     /**
@@ -109,6 +119,7 @@ public class GridCacheOffHeapValuesEvictionSelfTest extends GridCacheAbstractSel
 
         assertTrue((MAX_VALS_AMOUNT + 5) * VAL_SIZE > cache.metrics().getOffHeapAllocatedSize());
         assertTrue((MAX_VALS_AMOUNT - 5) * VAL_SIZE < cache.metrics().getOffHeapAllocatedSize());
+        assertTrue(cache.metrics().getOffHeapAllocatedSize() >= cache.size(CachePeekMode.OFFHEAP) * VAL_SIZE);
     }
 
     /**
@@ -146,12 +157,14 @@ public class GridCacheOffHeapValuesEvictionSelfTest extends GridCacheAbstractSel
 
         assertTrue((MAX_VALS_AMOUNT + 5) * VAL_SIZE > cache.metrics().getOffHeapAllocatedSize());
         assertTrue((MAX_VALS_AMOUNT - 5) * VAL_SIZE < cache.metrics().getOffHeapAllocatedSize());
+        assertTrue(cache.metrics().getOffHeapAllocatedSize() >= cache.size(CachePeekMode.OFFHEAP) * VAL_SIZE);
     }
 
+    /** Fill cache with values. */
     private static void fillCache(final IgniteCache<Integer, Object> cache, long timeout) throws Exception{
         final byte[] val = new byte[VAL_SIZE];
         final AtomicInteger keyStart = new AtomicInteger(0);
-        final CountDownLatch latch = new CountDownLatch(4);
+        final CountDownLatch latch = new CountDownLatch(THREAD_COUNT);
 
         GridTestUtils.runMultiThreaded(new Callable<Void>() {
             @Override public Void call() throws Exception {
