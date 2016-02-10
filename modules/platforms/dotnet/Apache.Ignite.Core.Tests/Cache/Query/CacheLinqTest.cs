@@ -387,7 +387,11 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         public void TestPerformance()
         {
             for (var i = 0; i < 1000; i++)
+            {
                 TestMultiCacheJoinSubquery();
+                TestGroupBy();
+                TestMultipleFrom();
+            }
         }
 
         [Test]
