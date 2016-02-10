@@ -530,16 +530,16 @@ mixin main-table(title, rows, focusId, click, rowTemplate, searchField)
                         lable.labelHeader.labelFormField #{title}:
                         .col-sm-3.pull-right(style='padding: 0')
                             input.form-control(type='text' st-search='#{searchField}' placeholder='Filter #{title}...')
-                tbody
-                    tr
-                        td
-                            .scrollable-y(ng-show='displayedRows.length > 0' style='max-height: 200px')
-                                table
-                                    tbody
-                                        tr(ng-repeat='row in displayedRows track by row._id' ignite-bs-affix-update)
-                                            td
-                                                a(ng-class='{active: row._id == selectedItem._id}' on-click-focus=focusId ng-click=click) #{rowTemplate}
-                            label.placeholder(ng-show='displayedRows.length == 0') No #{rows} found
+            tbody
+                tr
+                    td
+                        .scrollable-y(ng-show='displayedRows.length > 0' style='max-height: 200px')
+                            table
+                                tbody
+                                    tr(ng-repeat='row in displayedRows track by row._id' ignite-bs-affix-update)
+                                        td
+                                            a(ng-class='{active: row._id == selectedItem._id}' on-click-focus=focusId ng-click=click) #{rowTemplate}
+                        label.placeholder(ng-show='displayedRows.length == 0') No #{rows} found
 
 mixin groups(groups, dataSource)
     .panel.panel-default(ng-repeat='group in #{groups}' ng-click='triggerDigest=true' ng-hide='{{group.hide}}')
