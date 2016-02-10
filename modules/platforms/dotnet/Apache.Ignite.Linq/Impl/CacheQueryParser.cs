@@ -17,24 +17,24 @@
 
 namespace Apache.Ignite.Linq.Impl
 {
-    using System.Linq;
-    using Apache.Ignite.Core.Cache;
+    using System.Threading;
+    using Remotion.Linq.Parsing.Structure;
 
     /// <summary>
-    /// <see cref="IQueryable{T}"/> implementation for <see cref="ICache{TK,TV}"/>.
+    /// Cache query parser.
     /// </summary>
-    internal class CacheQueryable<TKey, TValue> : CacheQueryableBase<ICacheEntry<TKey, TValue>>
+    internal static class CacheQueryParser
     {
+        /** */
+        private static readonly ThreadLocal<QueryParser> ThreadLocalInstance =
+            new ThreadLocal<QueryParser>(QueryParser.CreateDefault);
+
         /// <summary>
-        /// Initializes a new instance of the <see cref="CacheQueryable{TKey, TValue}" /> class.
+        /// Gets the default instance for current thread.
         /// </summary>
-        /// <param name="cache">The cache.</param>
-        public CacheQueryable(ICache<TKey, TValue> cache)
-            : base(new CacheFieldsQueryProvider(CacheQueryParser.Instance,
-                new CacheFieldsQueryExecutor(new CacheQueryProxy<TKey, TValue>(cache)),
-                cache.Ignite, cache.GetConfiguration()))
+        public static QueryParser Instance
         {
-            // No-op.
+            get { return ThreadLocalInstance.Value; }
         }
     }
 }
