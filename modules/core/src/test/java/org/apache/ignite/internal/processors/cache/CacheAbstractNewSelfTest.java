@@ -57,6 +57,7 @@ import org.jsr166.ConcurrentHashMap8;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMemoryMode.OFFHEAP_TIERED;
+import static org.apache.ignite.cache.CacheMemoryMode.ONHEAP_TIERED;
 
 /**
  * Abstract class for cache tests.
@@ -303,10 +304,34 @@ public abstract class CacheAbstractNewSelfTest extends GridCommonAbstractTest {
     }
 
     /**
+     * @return {@code True} if swap should happend after localEvict() call.
+     */
+    protected boolean swapAfterLocalEvict() {
+        if (memoryMode() == OFFHEAP_TIERED)
+            return false;
+
+        return memoryMode() == ONHEAP_TIERED ? (!offheapEnabled() && swapEnabled()) : swapEnabled();
+    }
+
+    /**
      * @return {@code True} if store is enabled.
      */
     protected boolean storeEnabled() {
         return cacheConfiguration().getCacheStoreFactory() != null;
+    }
+
+    /**
+     * @return {@code True} if offheap memory is enabled.
+     */
+    protected boolean offheapEnabled() {
+        return cacheConfiguration().getOffHeapMaxMemory() >= 0;
+    }
+
+    /**
+     * @return {@code True} if swap is enabled.
+     */
+    protected boolean swapEnabled() {
+        return cacheConfiguration().isSwapEnabled();
     }
 
     /**

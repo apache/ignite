@@ -27,6 +27,7 @@ import org.apache.ignite.marshaller.optimized.OptimizedMarshaller;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
+import org.apache.ignite.spi.swapspace.file.FileSwapSpaceSpi;
 import org.apache.ignite.testframework.CacheStartMode;
 import org.apache.ignite.testframework.GridTestSuite;
 import org.apache.ignite.testframework.TestsConfiguration;
@@ -51,6 +52,7 @@ public class CacheFullApiNewTestSuite extends TestSuite {
     private static final ConfigurationParameter<IgniteConfiguration>[][] igniteParams = new ConfigurationParameter[][] {
         objectParameters("setMarshaller", new BinaryMarshaller(), new OptimizedMarshaller(true)),
         booleanParameters("setPeerClassLoadingEnabled"),
+        objectParameters("setSwapSpaceSpi", new FileSwapSpaceSpi()),
     };
 
     /** */
@@ -75,7 +77,7 @@ public class CacheFullApiNewTestSuite extends TestSuite {
     public static TestSuite suite(CacheStartMode cacheStartMode) throws Exception {
         TestSuite suite = new TestSuite("Cache New Full API Test Suite");
 
-        final int[] igniteCfgState = new int[] {0, 0}; // Default configuration.
+        final int[] igniteCfgState = new int[] {0, 0, 0}; // Default configuration.
         final int gridsCnt = 1;
 
         for (StateIterator cacheIter = new StateIterator(cacheParams); cacheIter.hasNext();) {
