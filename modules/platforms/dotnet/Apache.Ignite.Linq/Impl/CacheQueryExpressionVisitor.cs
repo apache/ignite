@@ -302,9 +302,10 @@ namespace Apache.Ignite.Linq.Impl
 
             Debug.Assert(keyValTypes.Length == 2);
 
-            var queryEntity = cacheCfg.QueryEntities.FirstOrDefault(e => e.Aliases != null &&
-                                                                         e.KeyTypeName == keyValTypes[0].Name &&
-                                                                         e.ValueTypeName == keyValTypes[1].Name);
+            var queryEntity = cacheCfg.QueryEntities.FirstOrDefault(e =>
+                e.Aliases != null &&
+                (e.KeyType == keyValTypes[0] || e.KeyTypeName == keyValTypes[0].Name) &&
+                (e.ValueType == keyValTypes[1] || e.ValueTypeName == keyValTypes[1].Name));
 
             if (queryEntity == null)
                 return fieldName;
@@ -314,7 +315,8 @@ namespace Apache.Ignite.Linq.Impl
             var fullFieldName = fieldName;
             var member = expression;
 
-            while ((member = member.Expression as MemberExpression) != null)
+            while ((member = member.Expression as MemberExpression) != null &&
+                   member.Member.DeclaringType != queryable.ElementType)
                 fullFieldName = GetFieldName(member, queryable) + "." + fullFieldName;
 
             var alias = queryEntity.Aliases.Where(x => x.FullName == fullFieldName)
