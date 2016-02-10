@@ -31,20 +31,15 @@ namespace Apache.Ignite.Linq.Impl
         /** */
         private readonly string _queryText;
         
-        /** */
-        private readonly bool _isFieldsQuery;
-
         /// <summary>
         /// Initializes a new instance of the <see cref="QueryData"/> class.
         /// </summary>
         /// <param name="queryText">The query text.</param>
         /// <param name="parameters">The parameters.</param>
-        /// <param name="isFieldsQuery">Fields query flag.</param>
-        public QueryData(string queryText, ICollection<object> parameters, bool isFieldsQuery = false)
+        public QueryData(string queryText, ICollection<object> parameters)
         {
             _queryText = queryText;
             _parameters = parameters;
-            _isFieldsQuery = isFieldsQuery;
         }
 
         /// <summary>
@@ -64,14 +59,6 @@ namespace Apache.Ignite.Linq.Impl
         }
 
         /// <summary>
-        /// Gets a value indicating whether this instance is fields query.
-        /// </summary>
-        public bool IsFieldsQuery
-        {
-            get { return _isFieldsQuery; }
-        }
-
-        /// <summary>
         /// Returns a <see cref="string" /> that represents this instance.
         /// </summary>
         /// <returns>
@@ -79,7 +66,7 @@ namespace Apache.Ignite.Linq.Impl
         /// </returns>
         public override string ToString()
         {
-            return string.Format("{0} Query [SQL={1}, Parameters={2}]", IsFieldsQuery ? "Fields" : "SQL", QueryText,
+            return string.Format("SQL Query [Text={1}, Parameters={2}]", QueryText,
                 string.Join(", ", Parameters.Select(x => x.ToString())));
         }
     }
