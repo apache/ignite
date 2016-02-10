@@ -17,8 +17,8 @@
 mixin lbl(txt)
     label.col-sm-2.required.labelFormField #{txt}
 
-.row.greedy(ng-controller='profileController')
-    .docs-content
+.row(ng-controller='profileController')
+    .docs-content.greedy
         .docs-header
             h1 User profile
             hr
