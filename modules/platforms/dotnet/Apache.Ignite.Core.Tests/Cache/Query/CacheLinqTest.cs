@@ -731,13 +731,6 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         }
 
         [Test]
-        public void TestSubCollection()
-        {
-            // TODO:
-            // http://www.linqpad.net/WhyLINQBeatsSQL.aspx
-        }
-
-        [Test]
         public void TestAliases()
         {
             var cache = GetPersonCache().AsCacheQueryable();
