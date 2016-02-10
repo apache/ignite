@@ -36,6 +36,7 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.FileSystemConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.igfs.IgfsGroupDataBlocksKeyMapper;
+import org.apache.ignite.igfs.IgfsIpcEndpointConfiguration;
 import org.apache.ignite.igfs.IgfsMode;
 import org.apache.ignite.igfs.IgfsPath;
 import org.apache.ignite.igfs.mapreduce.IgfsJob;
@@ -66,6 +67,13 @@ import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_IGFS;
 public class IgfsProcessor extends IgfsProcessorAdapter {
     /** Null IGFS name. */
     private static final String NULL_NAME = UUID.randomUUID().toString();
+
+    /** Min available TCP port. */
+    private static final int MIN_TCP_PORT = 1;
+
+    /** Max available TCP port. */
+    private static final int MAX_TCP_PORT = 0xFFFF; // 65535
+
 
     /** Converts context to IGFS. */
     private static final IgniteClosure<IgfsContext,IgniteFileSystem> CTX_TO_IGFS = new C1<IgfsContext, IgniteFileSystem>() {
@@ -307,6 +315,8 @@ public class IgfsProcessor extends IgfsProcessorAdapter {
                 throw new IgniteCheckedException("Invalid IGFS data cache configuration (key affinity mapper class should be " +
                     IgfsGroupDataBlocksKeyMapper.class.getSimpleName() + "): " + cfg);
 
+            validateIgfsIpcEndpointCfg(cfg.getIpcEndpointConfiguration());
+
             long maxSpaceSize = cfg.getMaxSpaceSize();
 
             if (maxSpaceSize > 0) {
@@ -345,6 +355,24 @@ public class IgfsProcessor extends IgfsProcessorAdapter {
             }
 
             cfgNames.add(name);
+        }
+    }
+
+    /**
+     * Checks whether endpoint TCP port is in valid range.
+     * <p>
+     * Zero port is not supported, because in that case random one
+     * will be picked on each node.
+     * @param igfsIpcCfg endpoint configuration to examine.
+     * @throws IgniteCheckedException
+     */
+    private void validateIgfsIpcEndpointCfg(final @Nullable IgfsIpcEndpointConfiguration igfsIpcCfg) throws IgniteCheckedException {
+        if (igfsIpcCfg != null) {
+            final int tcpPort = igfsIpcCfg.getPort();
+            if (!(tcpPort >= MIN_TCP_PORT && tcpPort <= MAX_TCP_PORT))
+                throw new IgniteCheckedException(String.format(
+                        "IGFS endpoint TCP port must be in range %s..%s, but set %s",
+                        MIN_TCP_PORT, MAX_TCP_PORT, tcpPort));
         }
     }
 
