@@ -140,8 +140,11 @@ BOOST_AUTO_TEST_CASE(TestRowMoveToNext)
     for (size_t i = 0; i < rowNum - 1; ++i)
     {
         BOOST_REQUIRE(row.GetSize() == 4);
+
         BOOST_REQUIRE(row.MoveToNext());
     }
+
+    BOOST_REQUIRE(row.GetSize() == 4);
 }
 
 BOOST_AUTO_TEST_CASE(TestRowRead)
@@ -162,6 +165,44 @@ BOOST_AUTO_TEST_CASE(TestRowRead)
 
         BOOST_REQUIRE(row.MoveToNext());
     }
+
+    CheckRowData(row, rowNum - 1);
+}
+
+BOOST_AUTO_TEST_CASE(TestSingleRow)
+{
+    ignite::impl::interop::InteropUnpooledMemory mem(4096);
+
+    const size_t rowNum = 1;
+
+    FillMemWithData(mem, 1);
+
+    Row row(mem);
+
+    BOOST_REQUIRE(row.GetSize() == 4);
+
+    CheckRowData(row, 0);
+}
+
+BOOST_AUTO_TEST_CASE(TestTwoRows)
+{
+    ignite::impl::interop::InteropUnpooledMemory mem(4096);
+
+    const size_t rowNum = 2;
+
+    FillMemWithData(mem, 2);
+
+    Row row(mem);
+
+    BOOST_REQUIRE(row.GetSize() == 4);
+
+    CheckRowData(row, 0);
+
+    BOOST_REQUIRE(row.MoveToNext());
+
+    BOOST_REQUIRE(row.GetSize() == 4);
+
+    CheckRowData(row, 1);
 }
 
 BOOST_AUTO_TEST_SUITE_END()
