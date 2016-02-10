@@ -25,6 +25,7 @@ using namespace ignite::impl::interop;
 using namespace ignite::impl::binary;
 using namespace ignite::binary;
 
+
 namespace ignite 
 {
     namespace impl 
