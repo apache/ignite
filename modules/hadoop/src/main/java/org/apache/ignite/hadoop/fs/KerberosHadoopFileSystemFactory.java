@@ -106,6 +106,9 @@ public class KerberosHadoopFileSystemFactory extends BasicHadoopFileSystemFactor
 
     /**
      * Gets the key tab full file name (e.g. "/etc/security/keytabs/hdfs.headless.keytab" or "/etc/krb5.keytab").
+     * <p>
+     * <b>NOTE!</b> Factory can be serialized and transferred to other machines where instance of
+     * {@link IgniteHadoopFileSystem} resides. Corresponding path must exist on these machines as well.
      *
      * @return The key tab file name.
      */
