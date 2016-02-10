@@ -328,7 +328,6 @@ public class OdbcParser implements GridNioParser {
 
             for (Object row0 : items0) {
                 if (row0 != null) {
-
                     Collection<?> row = (Collection<?>)row0;
 
                     writer.writeInt(row.size());
