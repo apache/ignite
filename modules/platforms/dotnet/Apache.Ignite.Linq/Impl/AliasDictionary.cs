@@ -18,6 +18,7 @@
 namespace Apache.Ignite.Linq.Impl
 {
     using System.Collections.Generic;
+    using System.Diagnostics;
     using System.Text;
     using Remotion.Linq.Clauses;
 
@@ -56,8 +57,20 @@ namespace Apache.Ignite.Linq.Impl
         /// <summary>
         /// Gets the table alias.
         /// </summary>
+        public string GetTableAlias(ICacheQueryable queryable)
+        {
+            Debug.Assert(queryable != null);
+
+            return GetTableAlias(ExpressionWalker.GetTableNameWithSchema(queryable));
+        }
+
+        /// <summary>
+        /// Gets the table alias.
+        /// </summary>
         public string GetTableAlias(string fullName)
         {
+            Debug.Assert(!string.IsNullOrEmpty(fullName));
+
             string alias;
 
             if (!_aliases.TryGetValue(fullName, out alias))
@@ -75,7 +88,11 @@ namespace Apache.Ignite.Linq.Impl
         /// </summary>
         public StringBuilder AppendAsClause(StringBuilder builder, IFromClause clause)
         {
-            var tableName = TableNameMapper.GetTableNameWithSchema(clause);
+            Debug.Assert(builder != null);
+            Debug.Assert(clause != null);
+
+            var queryable = ExpressionWalker.GetCacheQueryable(clause);
+            var tableName = ExpressionWalker.GetTableNameWithSchema(queryable);
 
             builder.AppendFormat("{0} as {1}", tableName, GetTableAlias(tableName));
 

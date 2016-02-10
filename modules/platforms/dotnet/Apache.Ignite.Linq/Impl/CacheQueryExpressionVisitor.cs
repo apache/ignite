@@ -241,7 +241,7 @@ namespace Apache.Ignite.Linq.Impl
             // In other cases we need both parts of cache entry
             var format = _useStar ? "{0}.*" : "{0}._key, {0}._val";
 
-            var tableName = Aliases.GetTableAlias(TableNameMapper.GetTableNameWithSchema(expression));
+            var tableName = Aliases.GetTableAlias(ExpressionWalker.GetCacheQueryable(expression));
 
             ResultBuilder.AppendFormat(format, tableName);
 
@@ -270,10 +270,11 @@ namespace Apache.Ignite.Linq.Impl
             if (VisitGroupByMember(expression.Expression))
                 return expression;
 
-            var fieldName = GetFieldName(expression);
+            var queryable = ExpressionWalker.GetCacheQueryable(expression);
 
-            ResultBuilder.AppendFormat("{0}.{1}",
-                Aliases.GetTableAlias(TableNameMapper.GetTableNameWithSchema(expression)), fieldName);
+            var fieldName = GetFieldName(expression, queryable);
+
+            ResultBuilder.AppendFormat("{0}.{1}", Aliases.GetTableAlias(queryable), fieldName);
 
             return expression;
         }
@@ -283,7 +284,7 @@ namespace Apache.Ignite.Linq.Impl
         /// </summary>
         /// <param name="expression">The expression.</param>
         /// <returns></returns>
-        private static string GetFieldName(MemberExpression expression)
+        private static string GetFieldName(MemberExpression expression, ICacheQueryable queryable)
         {
             var queryFieldAttr = expression.Member.GetCustomAttributes(true)
                 .OfType<QuerySqlFieldAttribute>().FirstOrDefault();
@@ -296,6 +297,9 @@ namespace Apache.Ignite.Linq.Impl
             // 1) Get CacheConfiguration
             // 2) See if there are any aliases, exit early if not
             // 3) Get ICacheEntry type through the expression, find corresponding QueryEntity, get alias from there
+
+            if (queryable == null)
+                return null;
 
             return fieldName;
         }

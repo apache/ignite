@@ -27,63 +27,63 @@ namespace Apache.Ignite.Linq.Impl
     /// <summary>
     /// Table name mapper.
     /// </summary>
-    internal static class TableNameMapper
+    internal static class ExpressionWalker
     {
-        public static string GetTableNameWithSchema(QuerySourceReferenceExpression expression)
+        public static ICacheQueryable GetCacheQueryable(QuerySourceReferenceExpression expression)
         {
             Debug.Assert(expression != null);
 
             var fromSource = expression.ReferencedQuerySource as IFromClause; 
 
             if (fromSource != null)
-                return GetTableNameWithSchema(fromSource);
+                return GetCacheQueryable(fromSource);
 
             var joinSource = expression.ReferencedQuerySource as JoinClause;
 
             if (joinSource != null)
-                return GetTableNameWithSchema(joinSource);
+                return GetCacheQueryable(joinSource);
 
             throw new NotSupportedException("Unexpected query source: " + expression.ReferencedQuerySource);
         }
 
-        public static string GetTableNameWithSchema(MemberExpression expression)
+        public static ICacheQueryable GetCacheQueryable(MemberExpression expression)
         {
             Debug.Assert(expression != null);
 
             var querySrc = expression.Expression as QuerySourceReferenceExpression;
 
             if (querySrc != null)
-                return GetTableNameWithSchema(querySrc);
+                return GetCacheQueryable(querySrc);
 
             var innerMember = expression.Expression as MemberExpression;
 
             if (innerMember != null)
-                return GetTableNameWithSchema(innerMember);
+                return GetCacheQueryable(innerMember);
 
             throw new NotSupportedException("Unexpected member expression, cannot find query source: " + expression);
         }
 
-        public static string GetTableNameWithSchema(IFromClause fromClause)
+        public static ICacheQueryable GetCacheQueryable(IFromClause fromClause)
         {
-            return GetTableNameWithSchema(fromClause.FromExpression);
+            return GetCacheQueryable(fromClause.FromExpression);
         }
 
-        public static string GetTableNameWithSchema(JoinClause joinClause)
+        public static ICacheQueryable GetCacheQueryable(JoinClause joinClause)
         {
-            return GetTableNameWithSchema(joinClause.InnerSequence);
+            return GetCacheQueryable(joinClause.InnerSequence);
         }
 
-        private static string GetTableNameWithSchema(Expression expression)
+        private static ICacheQueryable GetCacheQueryable(Expression expression)
         {
             var subQueryExp = expression as SubQueryExpression;
 
             if (subQueryExp != null)
-                return GetTableNameWithSchema(subQueryExp.QueryModel.MainFromClause);
+                return GetCacheQueryable(subQueryExp.QueryModel.MainFromClause);
 
             var srcRefExp = expression as QuerySourceReferenceExpression;
 
             if (srcRefExp != null)
-                return GetTableNameWithSchema(srcRefExp);
+                return GetCacheQueryable(srcRefExp);
 
             var constExpr = expression as ConstantExpression;
 
@@ -92,8 +92,18 @@ namespace Apache.Ignite.Linq.Impl
 
             var cacheQuery = (ICacheQueryable) constExpr.Value;
 
-            return string.Format("\"{0}\".{1}", cacheQuery.CacheName, 
-                GetTableNameFromEntryType(cacheQuery.ElementType));
+            return cacheQuery;
+
+            //return string.Format("\"{0}\".{1}", cacheQuery.CacheName, 
+            //    GetTableNameFromEntryType(cacheQuery.ElementType));
+        }
+
+        public static string GetTableNameWithSchema(ICacheQueryable queryable)
+        {
+            Debug.Assert(queryable != null);
+
+            return string.Format("\"{0}\".{1}", queryable.CacheName,
+                GetTableNameFromEntryType(queryable.ElementType));
         }
 
         private static string GetTableNameFromEntryValueType(Type entryValueType)

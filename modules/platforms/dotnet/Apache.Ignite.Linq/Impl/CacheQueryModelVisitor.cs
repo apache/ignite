@@ -409,8 +409,8 @@ namespace Apache.Ignite.Linq.Impl
 
                 VisitQueryModel(subQuery.QueryModel, true);
 
-                var tableName = TableNameMapper.GetTableNameWithSchema(subQuery.QueryModel.MainFromClause);
-                var alias = _aliases.GetTableAlias(tableName);
+                var queryable = ExpressionWalker.GetCacheQueryable(subQuery.QueryModel.MainFromClause);
+                var alias = _aliases.GetTableAlias(queryable);
                 _builder.AppendFormat(") as {0} on (", alias);
             }
             else
@@ -426,7 +426,8 @@ namespace Apache.Ignite.Linq.Impl
                                                     "(only results of cache.ToQueryable() are supported): " +
                                                     innerExpr.Value);
 
-                var tableName = TableNameMapper.GetTableNameWithSchema(joinClause);
+                var queryable = ExpressionWalker.GetCacheQueryable(joinClause);
+                var tableName = ExpressionWalker.GetTableNameWithSchema(queryable);
                 _builder.AppendFormat("inner join {0} as {1} on (", tableName, _aliases.GetTableAlias(tableName));
             }
 
