@@ -2047,17 +2047,24 @@ public class CacheFullApiNewSelfTest extends CacheAbstractNewSelfTest {
 
         assert cache.get("key") == 3;
 
+        // TODO delete the check and rewrite test.
+        if (!storeEnabled())
+            return;
+
         info("evict key");
 
         cache.localEvict(Collections.singleton("key"));
 
         info("key 3 -> 4");
 
+        if (!isLoadPreviousValue())
+            cache.get("key");
+
         assert cache.replace("key", 3, 4);
 
         assert cache.get("key") == 4;
 
-        if (!isMultiJvm()) {
+        if (storeEnabled() && isLoadPreviousValue() && !isMultiJvm()) {
             putToStore("key2", 5);
 
             info("key2 5 -> 6");
@@ -2073,10 +2080,13 @@ public class CacheFullApiNewSelfTest extends CacheAbstractNewSelfTest {
                 ", peekVal=" + grid(i).cache(null).localPeek("key2", ONHEAP) + ']');
         }
 
-        if (!isMultiJvm())
+        if (storeEnabled() && isLoadPreviousValue() && !isMultiJvm())
             assertEquals((Integer)6, cache.get("key2"));
 
         cache.localEvict(Collections.singleton("key"));
+
+        if (!isLoadPreviousValue())
+            cache.get("key");
 
         Transaction tx = txShouldBeUsed() ? transactions().txStart() : null;
 
@@ -2098,10 +2108,6 @@ public class CacheFullApiNewSelfTest extends CacheAbstractNewSelfTest {
      * @throws Exception If failed.
      */
     public void testReplace() throws Exception {
-        // TODO delete the check and rewrite test.
-        if (!storeEnabled())
-            return;
-
         IgniteCache<String, Integer> cache = jcache();
 
         cache.put("key", 1);
@@ -2113,6 +2119,10 @@ public class CacheFullApiNewSelfTest extends CacheAbstractNewSelfTest {
         assert cache.get("key") == 2;
 
         assert !cache.replace("wrong", 2);
+
+        // TODO delete the check and rewrite test.
+        if (!storeEnabled())
+            return;
 
         // TODO improve smartTestEvict
         cache.localEvict(Collections.singleton("key"));
@@ -2195,7 +2205,14 @@ public class CacheFullApiNewSelfTest extends CacheAbstractNewSelfTest {
 
         assert cache.get("key") == 3;
 
+        // TODO delete the check and rewrite test.
+        if (!storeEnabled())
+            return;
+
         cache.localEvict(Collections.singleton("key"));
+
+        if (!isLoadPreviousValue())
+            cache.get("key");
 
         cacheAsync.replace("key", 3, 4);
 
@@ -2203,7 +2220,7 @@ public class CacheFullApiNewSelfTest extends CacheAbstractNewSelfTest {
 
         assert cache.get("key") == 4;
 
-        if (!isMultiJvm()) {
+        if (storeEnabled() && isLoadPreviousValue() && !isMultiJvm()) {
             putToStore("key2", 5);
 
             cacheAsync.replace("key2", 5, 6);
@@ -2214,6 +2231,9 @@ public class CacheFullApiNewSelfTest extends CacheAbstractNewSelfTest {
         }
 
         cache.localEvict(Collections.singleton("key"));
+
+        if (!isLoadPreviousValue())
+            cache.get("key");
 
         Transaction tx = txShouldBeUsed() ? transactions().txStart() : null;
 
@@ -2257,7 +2277,14 @@ public class CacheFullApiNewSelfTest extends CacheAbstractNewSelfTest {
 
         assert !cacheAsync.<Boolean>future().get();
 
+        // TODO delete the check and rewrite test.
+        if (!storeEnabled())
+            return;
+
         cache.localEvict(Collections.singleton("key"));
+
+        if (!isLoadPreviousValue())
+            cache.get("key");
 
         cacheAsync.replace("key", 4);
 
@@ -2265,7 +2292,7 @@ public class CacheFullApiNewSelfTest extends CacheAbstractNewSelfTest {
 
         assert cache.get("key") == 4;
 
-        if (!isMultiJvm()) {
+        if (storeEnabled() && isLoadPreviousValue() && !isMultiJvm()) {
             putToStore("key2", 5);
 
             cacheAsync.replace("key2", 6);
@@ -2276,6 +2303,9 @@ public class CacheFullApiNewSelfTest extends CacheAbstractNewSelfTest {
         }
 
         cache.localEvict(Collections.singleton("key"));
+
+        if (!isLoadPreviousValue())
+            cache.get("key");
 
         Transaction tx = txShouldBeUsed() ? transactions().txStart() : null;
 
