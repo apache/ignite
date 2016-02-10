@@ -77,34 +77,48 @@ public class CacheConfigurationPermutations {
     );
 
     /** */
-    public static final NearCacheConfiguration NEAR_CACHE_CONFIGURATION = new NearCacheConfiguration();
+    public static final NearCacheConfiguration NEAR_CACHE_CFG = new NearCacheConfiguration();
+
+    /** */
+    public static final ConfigurationParameter<Object> ONHEAP_TIERED_MEMORY_PARAM = parameter("setMemoryMode", CacheMemoryMode.ONHEAP_TIERED);
+
+    /** */
+    public static final ConfigurationParameter<Object> OFFHEAP_TIERED_MEMORY_PARAM = parameter("setMemoryMode", CacheMemoryMode.OFFHEAP_TIERED);
+
+    /** */
+    public static final ConfigurationParameter<Object> OFFHEAP_VALUES_MEMORY_PARAM = parameter("setMemoryMode", CacheMemoryMode.OFFHEAP_VALUES);
+
+    /** */
+    public static final ConfigurationParameter<Object> OFFHEAP_ENABLED = parameter("setOffHeapMaxMemory", 10 * 1024 * 1024L);
 
     /** */
     @SuppressWarnings("unchecked")
     public static final ConfigurationParameter<CacheConfiguration>[][] DEFAULT_SET = new ConfigurationParameter[][] {
         enumParameters("setCacheMode", CacheMode.class),
         enumParameters("setAtomicityMode", CacheAtomicityMode.class),
-        enumParameters("setMemoryMode", CacheMemoryMode.class),
+        asArray(ONHEAP_TIERED_MEMORY_PARAM,
+            complexParameter(ONHEAP_TIERED_MEMORY_PARAM, OFFHEAP_ENABLED),
+            complexParameter(OFFHEAP_TIERED_MEMORY_PARAM, OFFHEAP_ENABLED),
+            complexParameter(OFFHEAP_VALUES_MEMORY_PARAM, OFFHEAP_ENABLED)
+        ),
         booleanParameters("setLoadPreviousValue"), // TODO add check in tests.
         booleanParameters("setReadFromBackup"), // TODO: add check in tests (disable for tests with localPeek)
         booleanParameters("setStoreKeepBinary"),
         objectParameters("setRebalanceMode", CacheRebalanceMode.SYNC, CacheRebalanceMode.ASYNC),
         booleanParameters("setSwapEnabled"),
         booleanParameters("setCopyOnRead"),
-        // TODO uncomment.
-//        objectParameters(true, "setNearConfiguration", NEAR_CACHE_CONFIGURATION)
+//        objectParameters(true, "setNearConfiguration", NEAR_CACHE_CFG), // TODO uncomment.
         asArray(/* // TODO add null variant. */
             complexParameter(
-            EVICTION_PARAM,
-            CACHE_STORE_PARAM,
-            REBALANCING_PARAM,
-                // TODO enable "custom" affinity function.
-//            parameter("setAffinity", new FairAffinityFunction()),
-            parameter("setOffHeapMaxMemory", 10 * 1024 * 1024L),
-            parameter("setInterceptor", new NoopInterceptor()),
-            parameter("setTopologyValidator", new NoopTopologyValidator()),
-            parameter("addCacheEntryListenerConfiguration", new EmptyCacheEntryListenerConfiguration())
-        )),
+                EVICTION_PARAM,
+                CACHE_STORE_PARAM,
+                REBALANCING_PARAM,
+//                parameter("setAffinity", new FairAffinityFunction()), // TODO enable "custom" affinity function.
+                parameter("setInterceptor", new NoopInterceptor()),
+                parameter("setTopologyValidator", new NoopTopologyValidator()),
+                parameter("addCacheEntryListenerConfiguration", new EmptyCacheEntryListenerConfiguration())
+            )
+        ),
 
         // Set default parameters (TODO make it in builder).
 //        objectParameters("setWriteSynchronizationMode", CacheWriteSynchronizationMode.FULL_SYNC), // One value.
@@ -119,7 +133,7 @@ public class CacheConfigurationPermutations {
 
     static {
         //noinspection unchecked
-        NEAR_CACHE_CONFIGURATION.setNearEvictionPolicy(new FifoEvictionPolicy());
+        NEAR_CACHE_CFG.setNearEvictionPolicy(new FifoEvictionPolicy());
     }
 
     /**
