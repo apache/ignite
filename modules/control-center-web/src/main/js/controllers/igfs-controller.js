@@ -359,20 +359,16 @@ consoleModule.controller('igfsController', [
 
             // Save IGFS with new name.
             $scope.cloneItem = function () {
-                function cloneItem() {
-                    if ($scope.tableReset(true) && validate($scope.backupItem)) {
-                        $clone.confirm($scope.backupItem.name).then(function (newName) {
-                            var item = angular.copy($scope.backupItem);
+                if ($scope.tableReset(true) && validate($scope.backupItem)) {
+                    $clone.confirm($scope.backupItem.name).then(function (newName) {
+                        var item = angular.copy($scope.backupItem);
 
-                            delete item._id;
-                            item.name = newName;
+                        delete item._id;
+                        item.name = newName;
 
-                            save(item);
-                        });
-                    }
+                        save(item);
+                    });
                 }
-
-                $common.confirmUnsavedChanges($scope.ui.isDirty(), cloneItem);
             };
 
             // Remove IGFS from db.
