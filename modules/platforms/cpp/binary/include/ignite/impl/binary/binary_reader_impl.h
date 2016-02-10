@@ -921,7 +921,7 @@ namespace ignite
                         default:
                         {
                             IGNITE_ERROR_2(ignite::IgniteError::IGNITE_ERR_BINARY, 
-                                           "Unexpected header during deserialization: ", hdr);
+                                           "Unexpected header during deserialization: ", static_cast<int>(hdr));
                         }
                     }
                 }
@@ -1379,9 +1379,14 @@ namespace ignite
             template<>
             double IGNITE_IMPORT_EXPORT BinaryReaderImpl::ReadTopObject<double>();
 
-            
             template<>
             Guid IGNITE_IMPORT_EXPORT BinaryReaderImpl::ReadTopObject<Guid>();
+
+            template<>
+            Date IGNITE_IMPORT_EXPORT BinaryReaderImpl::ReadTopObject<Date>();
+
+            template<>
+            Timestamp IGNITE_IMPORT_EXPORT BinaryReaderImpl::ReadTopObject<Timestamp>();
 
             template<>
             inline std::string IGNITE_IMPORT_EXPORT BinaryReaderImpl::ReadTopObject<std::string>()
