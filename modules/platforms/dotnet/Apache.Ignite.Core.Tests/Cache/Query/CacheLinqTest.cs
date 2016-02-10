@@ -747,6 +747,18 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         }
 
         [Test]
+        public void TestCompiledQuery()
+        {
+            var cache = GetPersonCache().AsCacheQueryable();
+
+            var qry = CompiledQuery.Compile(() => cache.Where(x => x.Key < 3));
+
+            var res = qry().ToArray();
+
+            Assert.AreEqual(3, res.Length);
+        }
+
+        [Test]
         public void TestIntrospection()
         {
             var cache = GetPersonCache();
