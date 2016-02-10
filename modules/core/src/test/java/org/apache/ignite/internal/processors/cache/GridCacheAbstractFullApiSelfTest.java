@@ -5243,7 +5243,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
         if (CacheStartMode.ONE_BY_ONE.name().equalsIgnoreCase(mode))
             return CacheStartMode.ONE_BY_ONE;
 
-        return CacheStartMode.NODES_THEN_CACHES;
+        return CacheStartMode.STATIC;
     }
 
     /**
