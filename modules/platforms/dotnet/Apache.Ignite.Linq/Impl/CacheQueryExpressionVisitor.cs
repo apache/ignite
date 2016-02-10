@@ -284,6 +284,8 @@ namespace Apache.Ignite.Linq.Impl
         /// </summary>
         private static string GetFieldName(MemberExpression expression, ICacheQueryable queryable)
         {
+            // TODO: This method takes 70% of query generation!
+
             var queryFieldAttr = expression.Member.GetCustomAttributes(true)
                 .OfType<QuerySqlFieldAttribute>().FirstOrDefault();
 

@@ -39,6 +39,9 @@ namespace Apache.Ignite.Linq.Impl
         /** */
         private readonly ICacheQueryProxy _cache;
 
+        /** */
+        private static readonly Dictionary<object, object> ResultSelectorCache = new Dictionary<object, object>();
+
         /// <summary>
         /// Initializes a new instance of the <see cref="CacheFieldsQueryExecutor" /> class.
         /// </summary>
@@ -75,7 +78,7 @@ namespace Apache.Ignite.Linq.Impl
             Debug.WriteLine("\nFields Query: {0} | {1}", queryData.QueryText,
                 string.Join(", ", queryData.Parameters.Select(x => x == null ? "null" : x.ToString())));
 
-            var selector = GetResultSelector<T>(queryModel);
+            var selector = GetResultSelector<T>(queryModel.SelectClause.Selector);
 
             var queryCursor = _cache.QueryFields(query, selector);
 
@@ -91,10 +94,8 @@ namespace Apache.Ignite.Linq.Impl
         /// <summary>
         /// Gets the result selector.
         /// </summary>
-        private static Func<IBinaryRawReader, int, T> GetResultSelector<T>(QueryModel model)
+        private static Func<IBinaryRawReader, int, T> GetResultSelector<T>(Expression selectorExpression)
         {
-            var selectorExpression = model.SelectClause.Selector;
-
             var newExpr = selectorExpression as NewExpression;
 
             if (newExpr != null)
