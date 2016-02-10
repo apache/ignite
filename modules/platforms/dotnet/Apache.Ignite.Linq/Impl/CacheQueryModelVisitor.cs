@@ -130,7 +130,7 @@ namespace Apache.Ignite.Linq.Impl
         }
 
         /// <summary>
-        /// Processes the result operators.
+        /// Processes the result operators that come right after SELECT: min/max/count/sum/distinct
         /// </summary>
         [SuppressMessage("Microsoft.Performance", "CA1800:DoNotCastUnnecessarily")]
         private int ProcessResultOperatorsBegin(QueryModel queryModel)
@@ -182,7 +182,7 @@ namespace Apache.Ignite.Linq.Impl
         }
 
         /// <summary>
-        /// Processes the result operators that go in the beginning of the query.
+        /// Processes the result operators that go in the end of the query: limit/offset/union/intersect/except
         /// </summary>
         private void ProcessResultOperatorsEnd(QueryModel queryModel)
         {
@@ -190,7 +190,6 @@ namespace Apache.Ignite.Linq.Impl
 
             foreach (var op in queryModel.ResultOperators.Reverse())
             {
-                // SELECT TOP 10 * FROM "person_cache".PERSON where _KEY>10 UNION (select * from "".PERSON where _key > 50 limit 20)
                 string keyword = null;
                 Expression source = null;
 
