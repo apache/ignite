@@ -134,7 +134,8 @@ public class OdbcParser implements GridNioParser {
         assert msg != null;
         assert msg instanceof OdbcResponse;
 
-        log.debug("Encoding query processing result");
+        if (log.isDebugEnabled())
+            log.debug("Encoding query processing result");
 
         BinaryRawWriterEx writer = marsh.writer(new BinaryHeapOutputStream(INIT_CAP));
 
@@ -178,10 +179,12 @@ public class OdbcParser implements GridNioParser {
                 String sql = reader.readString();
                 int argsNum = reader.readInt();
 
-                log.debug("Message EXECUTE_SQL_QUERY:");
-                log.debug("cache: " + cache);
-                log.debug("query: " + sql);
-                log.debug("argsNum: " + argsNum);
+                if (log.isDebugEnabled()) {
+                    log.debug("Message EXECUTE_SQL_QUERY:");
+                    log.debug("cache: " + cache);
+                    log.debug("query: " + sql);
+                    log.debug("argsNum: " + argsNum);
+                }
 
                 Object[] params = new Object[argsNum];
 
@@ -198,9 +201,11 @@ public class OdbcParser implements GridNioParser {
                 long queryId = reader.readLong();
                 int pageSize = reader.readInt();
 
-                log.debug("Message FETCH_SQL_QUERY:");
-                log.debug("queryId: " + queryId);
-                log.debug("pageSize: " + pageSize);
+                if (log.isDebugEnabled()) {
+                    log.debug("Message FETCH_SQL_QUERY:");
+                    log.debug("queryId: " + queryId);
+                    log.debug("pageSize: " + pageSize);
+                }
 
                 res = new OdbcQueryFetchRequest(queryId, pageSize);
 
@@ -211,8 +216,10 @@ public class OdbcParser implements GridNioParser {
 
                 long queryId = reader.readLong();
 
-                log.debug("Message CLOSE_SQL_QUERY:");
-                log.debug("queryId: " + queryId);
+                if (log.isDebugEnabled()) {
+                    log.debug("Message CLOSE_SQL_QUERY:");
+                    log.debug("queryId: " + queryId);
+                }
 
                 res = new OdbcQueryCloseRequest(queryId);
 
@@ -225,10 +232,12 @@ public class OdbcParser implements GridNioParser {
                 String table = reader.readString();
                 String column = reader.readString();
 
-                log.debug("Message GET_COLUMNS_META:");
-                log.debug("cache: " + cache);
-                log.debug("table: " + table);
-                log.debug("column: " + column);
+                if (log.isDebugEnabled()) {
+                    log.debug("Message GET_COLUMNS_META:");
+                    log.debug("cache: " + cache);
+                    log.debug("table: " + table);
+                    log.debug("column: " + column);
+                }
 
                 res = new OdbcQueryGetColumnsMetaRequest(cache, table, column);
 
@@ -242,11 +251,13 @@ public class OdbcParser implements GridNioParser {
                 String table = reader.readString();
                 String tableType = reader.readString();
 
-                log.debug("Message GET_COLUMNS_META:");
-                log.debug("catalog: " + catalog);
-                log.debug("schema: " + schema);
-                log.debug("table: " + table);
-                log.debug("tableType: " + tableType);
+                if (log.isDebugEnabled()) {
+                    log.debug("Message GET_COLUMNS_META:");
+                    log.debug("catalog: " + catalog);
+                    log.debug("schema: " + schema);
+                    log.debug("table: " + table);
+                    log.debug("tableType: " + tableType);
+                }
 
                 res = new OdbcQueryGetTablesMetaRequest(catalog, schema, table, tableType);
 
@@ -284,7 +295,8 @@ public class OdbcParser implements GridNioParser {
         if (res0 instanceof OdbcQueryExecuteResult) {
             OdbcQueryExecuteResult res = (OdbcQueryExecuteResult) res0;
 
-            log.debug("Resulting query ID: " + res.getQueryId());
+            if (log.isDebugEnabled())
+                log.debug("Resulting query ID: " + res.getQueryId());
 
             writer.writeLong(res.getQueryId());
 
@@ -301,7 +313,8 @@ public class OdbcParser implements GridNioParser {
         else if (res0 instanceof OdbcQueryFetchResult) {
             OdbcQueryFetchResult res = (OdbcQueryFetchResult) res0;
 
-            log.debug("Resulting query ID: " + res.queryId());
+            if (log.isDebugEnabled())
+                log.debug("Resulting query ID: " + res.queryId());
 
             writer.writeLong(res.queryId());
 
@@ -330,7 +343,8 @@ public class OdbcParser implements GridNioParser {
         else if (res0 instanceof OdbcQueryCloseResult) {
             OdbcQueryCloseResult res = (OdbcQueryCloseResult) res0;
 
-            log.debug("Resulting query ID: " + res.getQueryId());
+            if (log.isDebugEnabled())
+                log.debug("Resulting query ID: " + res.getQueryId());
 
             writer.writeLong(res.getQueryId());
 
