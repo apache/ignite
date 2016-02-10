@@ -279,6 +279,8 @@ public class GridNearOptimisticTxPrepareFuture extends GridNearOptimisticTxPrepa
      * @param topLocked {@code True} if thread already acquired lock preventing topology change.
      */
     private void prepareSingle(IgniteTxEntry write, boolean topLocked, boolean remap) {
+        write.clearEntryReadVersion();
+
         AffinityTopologyVersion topVer = tx.topologyVersion();
 
         assert topVer.topologyVersion() > 0;
@@ -340,6 +342,8 @@ public class GridNearOptimisticTxPrepareFuture extends GridNearOptimisticTxPrepa
         Queue<GridDistributedTxMapping> mappings = new ArrayDeque<>();
 
         for (IgniteTxEntry write : writes) {
+            write.clearEntryReadVersion();
+
             GridDistributedTxMapping updated = map(write, topVer, cur, topLocked, remap);
 
             if (cur != updated) {
@@ -433,7 +437,7 @@ public class GridNearOptimisticTxPrepareFuture extends GridNearOptimisticTxPrepa
                 m.clientFirst(),
                 tx.activeCachesDeploymentEnabled());
 
-            for (IgniteTxEntry txEntry : m.writes()) {
+            for (IgniteTxEntry txEntry : m.entries()) {
                 if (txEntry.op() == TRANSFORM)
                     req.addDhtVersion(txEntry.txKey(), null);
             }

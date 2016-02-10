@@ -22,10 +22,16 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cache.CachePeekMode;
+import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteKernal;
+import org.apache.ignite.internal.MarshallerContextImpl;
+import org.apache.ignite.internal.binary.BinaryContext;
+import org.apache.ignite.internal.binary.BinaryMarshaller;
+import org.apache.ignite.internal.binary.BinaryNoopMetadataHandler;
 import org.apache.ignite.internal.binary.BinaryRawReaderEx;
 import org.apache.ignite.internal.binary.BinaryRawWriterEx;
+import org.apache.ignite.internal.binary.GridBinaryMarshaller;
 import org.apache.ignite.internal.processors.platform.PlatformContext;
 import org.apache.ignite.internal.processors.platform.PlatformExtendedException;
 import org.apache.ignite.internal.processors.platform.PlatformNativeException;
@@ -38,9 +44,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteUuid;
-import org.apache.ignite.platform.dotnet.PlatformDotNetConfiguration;
-import org.apache.ignite.platform.dotnet.PlatformDotNetBinaryConfiguration;
-import org.apache.ignite.platform.dotnet.PlatformDotNetBinaryTypeConfiguration;
+import org.apache.ignite.logger.NullLogger;
 import org.jetbrains.annotations.Nullable;
 
 import javax.cache.CacheException;
@@ -764,41 +768,27 @@ public class PlatformUtils {
     }
 
     /**
-     * Write .Net configuration to the stream.
+     * Create binary marshaller.
      *
-     * @param writer Writer.
-     * @param cfg Configuration.
+     * @return Marshaller.
      */
-    public static void writeDotNetConfiguration(BinaryRawWriterEx writer, PlatformDotNetConfiguration cfg) {
-        // 1. Write assemblies.
-        writeNullableCollection(writer, cfg.getAssemblies());
+    @SuppressWarnings("deprecation")
+    public static GridBinaryMarshaller marshaller() {
+        try {
+            BinaryContext ctx =
+                new BinaryContext(BinaryNoopMetadataHandler.instance(), new IgniteConfiguration(), new NullLogger());
 
-        PlatformDotNetBinaryConfiguration binaryCfg = cfg.getBinaryConfiguration();
+            BinaryMarshaller marsh = new BinaryMarshaller();
 
-        if (binaryCfg != null) {
-            writer.writeBoolean(true);
+            marsh.setContext(new MarshallerContextImpl(null));
 
-            writeNullableCollection(writer, binaryCfg.getTypesConfiguration(),
-                new PlatformWriterClosure<PlatformDotNetBinaryTypeConfiguration>() {
-                @Override public void write(BinaryRawWriterEx writer, PlatformDotNetBinaryTypeConfiguration typ) {
-                    writer.writeString(typ.getTypeName());
-                    writer.writeString(typ.getNameMapper());
-                    writer.writeString(typ.getIdMapper());
-                    writer.writeString(typ.getSerializer());
-                    writer.writeString(typ.getAffinityKeyFieldName());
-                    writer.writeObject(typ.getKeepDeserialized());
-                    writer.writeBoolean(typ.isEnum());
-                }
-            });
+            ctx.configure(marsh, new IgniteConfiguration());
 
-            writeNullableCollection(writer, binaryCfg.getTypes());
-            writer.writeString(binaryCfg.getDefaultNameMapper());
-            writer.writeString(binaryCfg.getDefaultIdMapper());
-            writer.writeString(binaryCfg.getDefaultSerializer());
-            writer.writeBoolean(binaryCfg.isDefaultKeepDeserialized());
+            return new GridBinaryMarshaller(ctx);
         }
-        else
-            writer.writeBoolean(false);
+        catch (IgniteCheckedException e) {
+            throw U.convertException(e);
+        }
     }
 
     /**

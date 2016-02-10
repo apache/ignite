@@ -48,6 +48,9 @@ public class CacheOperationContext implements Serializable {
     /** Expiry policy. */
     private final ExpiryPolicy expiryPlc;
 
+    /** Data center Id. */
+    private final Byte dataCenterId;
+
     /**
      * Constructor with default values.
      */
@@ -61,6 +64,8 @@ public class CacheOperationContext implements Serializable {
         expiryPlc = null;
 
         noRetries = false;
+
+        dataCenterId = null;
     }
 
     /**
@@ -68,13 +73,15 @@ public class CacheOperationContext implements Serializable {
      * @param subjId Subject ID.
      * @param keepBinary Keep binary flag.
      * @param expiryPlc Expiry policy.
+     * @param dataCenterId Data center id.
      */
     public CacheOperationContext(
         boolean skipStore,
         @Nullable UUID subjId,
         boolean keepBinary,
         @Nullable ExpiryPolicy expiryPlc,
-        boolean noRetries) {
+        boolean noRetries,
+        @Nullable Byte dataCenterId) {
         this.skipStore = skipStore;
 
         this.subjId = subjId;
@@ -84,6 +91,8 @@ public class CacheOperationContext implements Serializable {
         this.expiryPlc = expiryPlc;
 
         this.noRetries = noRetries;
+
+        this.dataCenterId = dataCenterId;
     }
 
     /**
@@ -91,6 +100,13 @@ public class CacheOperationContext implements Serializable {
      */
     public boolean isKeepBinary() {
         return keepBinary;
+    }
+
+    /**
+     * @return {@code True} if data center id is set otherwise {@code false}.
+     */
+    public boolean hasDataCenterId() {
+        return dataCenterId != null;
     }
 
     /**
@@ -104,7 +120,8 @@ public class CacheOperationContext implements Serializable {
             subjId,
             true,
             expiryPlc,
-            noRetries);
+            noRetries,
+            dataCenterId);
     }
 
     /**
@@ -114,6 +131,15 @@ public class CacheOperationContext implements Serializable {
      */
     @Nullable public UUID subjectId() {
         return subjId;
+    }
+
+    /**
+     * Gets data center ID.
+     *
+     * @return Client ID.
+     */
+    @Nullable public Byte dataCenterId() {
+        return dataCenterId;
     }
 
     /**
@@ -128,7 +154,8 @@ public class CacheOperationContext implements Serializable {
             subjId,
             keepBinary,
             expiryPlc,
-            noRetries);
+            noRetries,
+            dataCenterId);
     }
 
     /**
@@ -150,7 +177,8 @@ public class CacheOperationContext implements Serializable {
             subjId,
             keepBinary,
             expiryPlc,
-            noRetries);
+            noRetries,
+            dataCenterId);
     }
 
     /**
@@ -172,7 +200,8 @@ public class CacheOperationContext implements Serializable {
             subjId,
             true,
             plc,
-            noRetries);
+            noRetries,
+            dataCenterId);
     }
 
     /**
@@ -185,8 +214,8 @@ public class CacheOperationContext implements Serializable {
             subjId,
             keepBinary,
             expiryPlc,
-            noRetries
-        );
+            noRetries,
+            dataCenterId);
     }
 
     /**

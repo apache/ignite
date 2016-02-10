@@ -25,6 +25,7 @@ namespace Apache.Ignite.Core.Impl.Cache
     using System.Threading.Tasks;
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Cache;
+    using Apache.Ignite.Core.Cache.Configuration;
     using Apache.Ignite.Core.Cache.Expiry;
     using Apache.Ignite.Core.Cache.Query;
     using Apache.Ignite.Core.Cache.Query.Continuous;
@@ -68,7 +69,7 @@ namespace Apache.Ignite.Core.Impl.Cache
 
         /** Async instance. */
         private readonly Lazy<CacheImpl<TK, TV>> _asyncInstance;
-
+        
         /// <summary>
         /// Constructor.
         /// </summary>
@@ -149,6 +150,12 @@ namespace Apache.Ignite.Core.Impl.Cache
         public string Name
         {
             get { return DoInOp<string>((int)CacheOp.GetName); }
+        }
+
+        /** <inheritDoc /> */
+        public CacheConfiguration GetConfiguration()
+        {
+            return DoInOp((int) CacheOp.GetConfig, stream => new CacheConfiguration(Marshaller.StartUnmarshal(stream)));
         }
 
         /** <inheritDoc /> */

@@ -379,7 +379,7 @@ namespace ignite
 
                 if (outPtr)
                 {
-                    env.Get()->Context()->TargetInStreamOutStream(javaRef, opType, WriteTo(outMem.Get(), inOp, err), 
+                    env.Get()->Context()->TargetInStreamOutStream(javaRef, opType, outPtr,
                         inMem.Get()->PointerLong(), &jniErr);
 
                     IgniteError::SetError(jniErr.code, jniErr.errCls, jniErr.errMsg, err);

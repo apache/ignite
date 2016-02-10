@@ -17,13 +17,19 @@
 
 package org.apache.ignite.internal.benchmarks.jmh.cache;
 
+import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteCache;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.CacheRebalanceMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.benchmarks.jmh.JmhAbstractBenchmark;
+import org.apache.ignite.internal.util.typedef.internal.A;
+import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.openjdk.jmh.annotations.Scope;
 import org.openjdk.jmh.annotations.Setup;
 import org.openjdk.jmh.annotations.State;
@@ -43,6 +49,27 @@ public class JmhCacheAbstractBenchmark extends JmhAbstractBenchmark {
     /** Property: atomicity mode. */
     protected static final String PROP_WRITE_SYNC_MODE = "ignite.jmh.cache.writeSynchronizationMode";
 
+    /** Property: nodes count. */
+    protected static final String PROP_DATA_NODES = "ignite.jmh.cache.dataNodes";
+
+    /** Property: client mode flag. */
+    protected static final String PROP_CLIENT_MODE = "ignite.jmh.cache.clientMode";
+
+    /** Default amount of nodes. */
+    protected static final int DFLT_DATA_NODES = 1;
+
+    /** Items count. */
+    protected static final int CNT = 100000;
+
+    /** IP finder shared across nodes. */
+    private static final TcpDiscoveryVmIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
+
+    /** Target node. */
+    protected Ignite node;
+
+    /** Target cache. */
+    protected IgniteCache cache;
+
     /**
      * Setup routine. Child classes must invoke this method first.
      *
@@ -55,6 +82,10 @@ public class JmhCacheAbstractBenchmark extends JmhAbstractBenchmark {
 
         System.out.println("IGNITE BENCHMARK INFO: ");
 
+        System.out.println("\tclient mode:                " + booleanProperty(PROP_CLIENT_MODE));
+
+        System.out.println("\tdata nodes:                 " + intProperty(PROP_DATA_NODES, DFLT_DATA_NODES));
+
         System.out.println("\tbackups:                    " + intProperty(PROP_BACKUPS));
 
         System.out.println("\tatomicity mode:             " +
@@ -65,6 +96,27 @@ public class JmhCacheAbstractBenchmark extends JmhAbstractBenchmark {
 
         System.out.println("--------------------");
         System.out.println();
+
+        int nodesCnt = intProperty(PROP_DATA_NODES, DFLT_DATA_NODES);
+
+        A.ensure(nodesCnt >= 1, "nodesCnt >= 1");
+
+        node = Ignition.start(configuration("node0"));
+
+        for (int i = 1; i < nodesCnt; i++)
+            Ignition.start(configuration("node" + i));
+
+        boolean isClient = booleanProperty(PROP_CLIENT_MODE);
+
+        if (isClient) {
+            IgniteConfiguration clientCfg = configuration("client");
+
+            clientCfg.setClientMode(true);
+
+            node = Ignition.start(clientCfg);
+        }
+
+        cache = node.cache(null);
     }
 
     /**
@@ -75,6 +127,28 @@ public class JmhCacheAbstractBenchmark extends JmhAbstractBenchmark {
     @TearDown
     public void tearDown() throws Exception {
         Ignition.stopAll(true);
+    }
+
+    /**
+     * Create Ignite configuration.
+     *
+     * @param gridName Grid name.
+     * @return Configuration.
+     */
+    protected IgniteConfiguration configuration(String gridName) {
+        IgniteConfiguration cfg = new IgniteConfiguration();
+
+        cfg.setGridName(gridName);
+
+        cfg.setLocalHost("127.0.0.1");
+
+        TcpDiscoverySpi discoSpi = new TcpDiscoverySpi();
+        discoSpi.setIpFinder(IP_FINDER);
+        cfg.setDiscoverySpi(discoSpi);
+
+        cfg.setCacheConfiguration(cacheConfiguration());
+
+        return cfg;
     }
 
     /**

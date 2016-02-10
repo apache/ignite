@@ -47,7 +47,7 @@ namespace Apache.Ignite.Core.Impl
         private static readonly string[] JvmDllLookupPaths = {@"jre\bin\server", @"jre\bin\default"};
 
         /** File: jvm.dll. */
-        private const string FileJvmDll = "jvm.dll";
+        internal const string FileJvmDll = "jvm.dll";
 
         /** File: Ignite.Common.dll. */
         internal const string FileIgniteJniDll = "ignite.common.dll";

@@ -42,11 +42,20 @@ public class JmhIdeBenchmarkRunner {
     /** Output time unit. */
     private TimeUnit outputTimeUnit = TimeUnit.SECONDS;
 
-    /** Classes to run. */
-    private Class[] clss;
+    /** Benchmarks to run. */
+    private Object[] benchmarks;
 
     /** JVM arguments. */
     private String[] jvmArgs;
+
+    /** Output. */
+    private String output;
+
+    /** Amount of threads. */
+    private int threads;
+
+    /** Profilers. */
+    private Class[] profilers;
 
     /**
      * Create new runner.
@@ -114,11 +123,21 @@ public class JmhIdeBenchmarkRunner {
     }
 
     /**
-     * @param clss Classes.
+     * @param benchmarks Benchmarks.
      * @return This instance.
      */
-    public JmhIdeBenchmarkRunner classes(Class... clss) {
-        this.clss = clss;
+    public JmhIdeBenchmarkRunner benchmarks(Object... benchmarks) {
+        this.benchmarks = benchmarks;
+
+        return this;
+    }
+
+    /**
+     * @param output Output file.
+     * @return This instance.
+     */
+    public JmhIdeBenchmarkRunner output(String output) {
+        this.output = output;
 
         return this;
     }
@@ -129,6 +148,26 @@ public class JmhIdeBenchmarkRunner {
      */
     public JmhIdeBenchmarkRunner jvmArguments(String... jvmArgs) {
         this.jvmArgs = jvmArgs;
+
+        return this;
+    }
+
+    /**
+     * @param threads Threads.
+     * @return This instance.
+     */
+    public JmhIdeBenchmarkRunner threads(int threads) {
+        this.threads = threads;
+
+        return this;
+    }
+
+    /**
+     * @param profilers Profilers.
+     * @return This instance.
+     */
+    public JmhIdeBenchmarkRunner profilers(Class... profilers) {
+        this.profilers = profilers;
 
         return this;
     }
@@ -145,19 +184,32 @@ public class JmhIdeBenchmarkRunner {
         builder.warmupIterations(warmupIterations);
         builder.measurementIterations(measurementIterations);
         builder.timeUnit(outputTimeUnit);
+        builder.threads(threads);
 
         if (benchmarkModes != null) {
             for (Mode benchmarkMode : benchmarkModes)
                 builder.getBenchModes().add(benchmarkMode);
         }
 
-        if (clss != null) {
-            for (Class cls : clss)
-                builder.include(cls.getSimpleName());
+        if (benchmarks != null) {
+            for (Object benchmark : benchmarks) {
+                if (benchmark instanceof Class)
+                    builder.include(((Class)benchmark).getSimpleName());
+                else
+                    builder.include(benchmark.toString());
+            }
         }
 
         if (jvmArgs != null)
             builder.jvmArgs(jvmArgs);
+
+        if (output != null)
+            builder.output(output);
+
+        if (profilers != null) {
+            for (Class profiler : profilers)
+                builder.addProfiler(profiler);
+        }
 
         return builder;
     }
