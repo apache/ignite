@@ -1184,9 +1184,7 @@ $generatorXml.domainStore = function(domain, res) {
 
     res.needEmptyLine = true;
 
-    if (!$dataStructures.isJavaBuiltInClass(domain.keyType))
-        $generatorXml.domainModelDatabaseFields(res, domain, 'keyFields');
-
+    $generatorXml.domainModelDatabaseFields(res, domain, 'keyFields');
     $generatorXml.domainModelDatabaseFields(res, domain, 'valueFields');
 
     res.needEmptyLine = true;

@@ -1378,10 +1378,14 @@ consoleModule.controller('domainsController', function ($filter, $http, $timeout
             });
         }
 
+        function _newNameIsValidJavaClass(newName) {
+            return $common.isValidJavaClass('New name for value type', newName, false, 'copy-new-name');
+        }
+
         // Save domain model with new name.
         $scope.cloneItem = function () {
             if ($scope.tableReset(true) && validate($scope.backupItem)) {
-                $clone.confirm($scope.backupItem.valueType, _domainNames()).then(function (newName) {
+                $clone.confirm($scope.backupItem.valueType, _domainNames(), _newNameIsValidJavaClass).then(function (newName) {
                     var item = angular.copy($scope.backupItem);
 
                     delete item._id;

@@ -1251,25 +1251,39 @@ consoleModule.service('$clone', function ($modal, $rootScope, $q) {
     var scope = $rootScope.$new();
 
     var deferred;
+    var _names = [];
+    var _validator;
 
     scope.ok = function (newName) {
-        deferred.resolve(newName);
+        if (!_validator || _validator(newName)) {
+            deferred.resolve(_nextAvailableName(newName));
 
-        cloneModal.hide();
+            cloneModal.hide();
+        }
     };
 
     var cloneModal = $modal({templateUrl: '/templates/clone.html', scope: scope, placement: 'center', show: false});
 
-    cloneModal.confirm = function (oldName, names) {
+    function _nextAvailableName(name) {
         var num = 1;
 
-        scope.newName = oldName + '(' + num.toString() + ')';
+        var tmpName = name;
 
-        while(_.includes(names, scope.newName)) {
+        while(_.includes(_names, tmpName)) {
+            tmpName = name + '_' + num.toString();
+
             num++;
-
-            scope.newName = oldName + '(' + num.toString() + ')';
         }
+
+        return tmpName;
+    }
+
+    cloneModal.confirm = function (oldName, names, validator) {
+        _names = names;
+
+        scope.newName = _nextAvailableName(oldName);
+
+        _validator = validator;
 
         deferred = $q.defer();
 
