@@ -22,6 +22,7 @@ import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
+import java.lang.reflect.Proxy;
 import java.math.BigDecimal;
 import java.sql.Timestamp;
 import java.util.ArrayList;
@@ -46,15 +47,11 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.marshaller.MarshallerExclusions;
 import org.apache.ignite.marshaller.optimized.OptimizedMarshaller;
 import org.jetbrains.annotations.Nullable;
-import sun.misc.Unsafe;
 
 /**
  * Binary class descriptor.
  */
 public class BinaryClassDescriptor {
-    /** */
-    public static final Unsafe UNSAFE = GridUnsafe.unsafe();
-
     /** */
     @GridToStringExclude
     private final BinaryContext ctx;
@@ -112,6 +109,9 @@ public class BinaryClassDescriptor {
 
     /** */
     private final boolean excluded;
+
+    /** */
+    private final Class<?>[] intfs;
 
     /**
      * @param ctx Context.
@@ -233,6 +233,16 @@ public class BinaryClassDescriptor {
                 fields = null;
                 stableFieldsMeta = null;
                 stableSchema = null;
+                intfs = null;
+
+                break;
+
+            case PROXY:
+                ctor = null;
+                fields = null;
+                stableFieldsMeta = null;
+                stableSchema = null;
+                intfs = cls.getInterfaces();
 
                 break;
 
@@ -241,6 +251,7 @@ public class BinaryClassDescriptor {
                 fields = null;
                 stableFieldsMeta = null;
                 stableSchema = null;
+                intfs = null;
 
                 break;
 
@@ -294,6 +305,8 @@ public class BinaryClassDescriptor {
                 fields = fields0.toArray(new BinaryFieldAccessor[fields0.size()]);
 
                 stableSchema = schemaBuilder.build();
+
+                intfs = null;
 
                 break;
 
@@ -615,6 +628,11 @@ public class BinaryClassDescriptor {
 
                 break;
 
+            case PROXY:
+                writer.doWriteProxy((Proxy)obj, intfs);
+
+                break;
+
             case BINARY_OBJ:
                 writer.doWriteBinaryObject((BinaryObjectImpl)obj);
 
@@ -776,7 +794,7 @@ public class BinaryClassDescriptor {
      */
     private Object newInstance() throws BinaryObjectException {
         try {
-            return ctor != null ? ctor.newInstance() : UNSAFE.allocateInstance(cls);
+            return ctor != null ? ctor.newInstance() : GridUnsafe.allocateInstance(cls);
         }
         catch (InstantiationException | InvocationTargetException | IllegalAccessException e) {
             throw new BinaryObjectException("Failed to instantiate instance: " + cls, e);

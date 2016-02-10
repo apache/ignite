@@ -311,6 +311,8 @@ namespace ignite
                 jmethodID m_PlatformProcessor_extensions;
                 jmethodID m_PlatformProcessor_atomicLong;
                 jmethodID m_PlatformProcessor_getIgniteConfiguration;
+                jmethodID m_PlatformProcessor_atomicSequence;
+                jmethodID m_PlatformProcessor_atomicReference;
 
                 jclass c_PlatformTarget;
                 jmethodID m_PlatformTarget_inStreamOutLong;
@@ -352,6 +354,21 @@ namespace ignite
                 jmethodID m_PlatformAtomicLong_compareAndSetAndGet;
                 jmethodID m_PlatformAtomicLong_isClosed;
                 jmethodID m_PlatformAtomicLong_close;
+
+                jclass c_PlatformAtomicSequence;
+                jmethodID m_PlatformAtomicSequence_get;
+                jmethodID m_PlatformAtomicSequence_incrementAndGet;
+                jmethodID m_PlatformAtomicSequence_getAndIncrement;
+                jmethodID m_PlatformAtomicSequence_addAndGet;
+                jmethodID m_PlatformAtomicSequence_getAndAdd;
+                jmethodID m_PlatformAtomicSequence_getBatchSize;
+                jmethodID m_PlatformAtomicSequence_setBatchSize;
+                jmethodID m_PlatformAtomicSequence_isClosed;
+                jmethodID m_PlatformAtomicSequence_close;
+
+                jclass c_PlatformAtomicReference;
+                jmethodID m_PlatformAtomicReference_isClosed;
+                jmethodID m_PlatformAtomicReference_close;
 
                 jclass c_PlatformListenable;
                 jmethodID m_PlatformListenable_cancel;
@@ -507,6 +524,8 @@ namespace ignite
                 jobject ProcessorServices(jobject obj, jobject prj);
                 jobject ProcessorExtensions(jobject obj);
                 jobject ProcessorAtomicLong(jobject obj, char* name, long long initVal, bool create);
+                jobject ProcessorAtomicSequence(jobject obj, char* name, long long initVal, bool create);
+                jobject ProcessorAtomicReference(jobject obj, char* name, long long memPtr, bool create);
 				void ProcessorGetIgniteConfiguration(jobject obj, long memPtr);
                 
                 long long TargetInStreamOutLong(jobject obj, int type, long long memPtr, JniErrorInfo* errInfo = NULL);
@@ -607,6 +626,19 @@ namespace ignite
                 long long AtomicLongCompareAndSetAndGet(jobject obj, long long expVal, long long newVal);
                 bool AtomicLongIsClosed(jobject obj);
                 void AtomicLongClose(jobject obj);
+
+                long long AtomicSequenceGet(jobject obj);
+                long long AtomicSequenceIncrementAndGet(jobject obj);
+                long long AtomicSequenceGetAndIncrement(jobject obj);
+                long long AtomicSequenceAddAndGet(jobject obj, long long l);
+                long long AtomicSequenceGetAndAdd(jobject obj, long long l);
+                int AtomicSequenceGetBatchSize(jobject obj);
+                void AtomicSequenceSetBatchSize(jobject obj, int size);
+                bool AtomicSequenceIsClosed(jobject obj);
+                void AtomicSequenceClose(jobject obj);
+
+                bool AtomicReferenceIsClosed(jobject obj);
+                void AtomicReferenceClose(jobject obj);
 
                 bool ListenableCancel(jobject obj);
                 bool ListenableIsCancelled(jobject obj);

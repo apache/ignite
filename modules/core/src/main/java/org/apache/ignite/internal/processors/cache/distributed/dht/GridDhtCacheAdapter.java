@@ -698,11 +698,56 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
         @Nullable UUID subjId,
         int taskNameHash,
         @Nullable IgniteCacheExpiryPolicy expiry,
-        boolean skipVals) {
+        boolean skipVals
+    ) {
         GridDhtGetFuture<K, V> fut = new GridDhtGetFuture<>(ctx,
             msgId,
             reader,
             keys,
+            readThrough,
+            /*tx*/null,
+            topVer,
+            subjId,
+            taskNameHash,
+            expiry,
+            skipVals);
+
+        fut.init();
+
+        return fut;
+    }
+
+    /**
+     * @param nodeId Node ID.
+     * @param msgId Message ID.
+     * @param key Key.
+     * @param addRdr Add reader flag.
+     * @param readThrough Read through flag.
+     * @param topVer Topology version flag.
+     * @param subjId Subject ID.
+     * @param taskNameHash Task name hash.
+     * @param expiry Expiry.
+     * @param skipVals Skip vals flag.
+     * @return Future for the operation.
+     */
+    private IgniteInternalFuture<GridCacheEntryInfo> getDhtSingleAsync(
+        UUID nodeId,
+        long msgId,
+        KeyCacheObject key,
+        boolean addRdr,
+        boolean readThrough,
+        AffinityTopologyVersion topVer,
+        @Nullable UUID subjId,
+        int taskNameHash,
+        @Nullable IgniteCacheExpiryPolicy expiry,
+        boolean skipVals
+    ) {
+        GridDhtGetSingleFuture<K, V> fut = new GridDhtGetSingleFuture<>(
+            ctx,
+            msgId,
+            nodeId,
+            key,
+            addRdr,
             readThrough,
             /*tx*/null,
             topVer,
@@ -723,16 +768,14 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
     protected void processNearSingleGetRequest(final UUID nodeId, final GridNearSingleGetRequest req) {
         assert ctx.affinityNode();
 
-        long ttl = req.accessTtl();
+        final CacheExpiryPolicy expiryPlc = CacheExpiryPolicy.forAccess(req.accessTtl());
 
-        final CacheExpiryPolicy expiryPlc = CacheExpiryPolicy.forAccess(ttl);
-
-        Map<KeyCacheObject, Boolean> map = Collections.singletonMap(req.key(), req.addReader());
-
-        IgniteInternalFuture<Collection<GridCacheEntryInfo>> fut =
-            getDhtAsync(nodeId,
+        IgniteInternalFuture<GridCacheEntryInfo> fut =
+            getDhtSingleAsync(
+                nodeId,
                 req.messageId(),
-                map,
+                req.key(),
+                req.addReader(),
                 req.readThrough(),
                 req.topologyVersion(),
                 req.subjectId(),
@@ -740,19 +783,16 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
                 expiryPlc,
                 req.skipValues());
 
-        fut.listen(new CI1<IgniteInternalFuture<Collection<GridCacheEntryInfo>>>() {
-            @Override public void apply(IgniteInternalFuture<Collection<GridCacheEntryInfo>> f) {
+        fut.listen(new CI1<IgniteInternalFuture<GridCacheEntryInfo>>() {
+            @Override public void apply(IgniteInternalFuture<GridCacheEntryInfo> f) {
                 GridNearSingleGetResponse res;
 
-                GridDhtFuture<Collection<GridCacheEntryInfo>> fut =
-                    (GridDhtFuture<Collection<GridCacheEntryInfo>>)f;
+                GridDhtFuture<GridCacheEntryInfo> fut = (GridDhtFuture<GridCacheEntryInfo>)f;
 
                 try {
-                    Collection<GridCacheEntryInfo> entries = fut.get();
+                    GridCacheEntryInfo info = fut.get();
 
                     if (F.isEmpty(fut.invalidPartitions())) {
-                        GridCacheEntryInfo info = F.first(entries);
-
                         Message res0 = null;
 
                         if (info != null) {
