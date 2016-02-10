@@ -388,7 +388,7 @@ public class ClusterMetricsSnapshot implements ClusterMetrics {
 
             nonHeapInit += m.getNonHeapMemoryInitialized();
 
-            upTime += m.getUpTime();
+            upTime = max(upTime, m.getUpTime());
 
             lastDataVer = max(lastDataVer, m.getLastDataVersion());
 

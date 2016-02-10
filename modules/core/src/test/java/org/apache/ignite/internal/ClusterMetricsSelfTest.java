@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.metrics;
+package org.apache.ignite.internal;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -47,7 +47,7 @@ public class ClusterMetricsSelfTest extends GridCommonAbstractTest {
     private static final int NODES_CNT = 4;
 
     /** */
-    private static final int ITER_CNT = 10;
+    private static final int ITER_CNT = 30;
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
