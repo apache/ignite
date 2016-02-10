@@ -31,14 +31,14 @@ mixin ignite-domains-information
 mixin ignite-caches-information
     ignite-information
         ul
-            li Configure memory settings
+            li Configure #[a(href='https://apacheignite.readme.io/docs/data-grid' target='_blank') memory] settings
             li Configure persistence
 
 mixin ignite-igfs-information
     ignite-information(data-title='Configure IGFS only if you are going to use In-memory File System')
         ul
-            li Ignite File System (IGFS) is an in-memory file system allowing work with files and directories over existing cache infrastructure
-            li IGFS can either work as purely in-memory file system, or delegate to another file system (e.g. various Hadoop file system implementations) acting as a caching layer (see #[a(href='https://apacheignite.readme.io/docs/secondary-file-system' target='_blank') secondary file system]  for more detail)
+            li Ignite File System (#[a(href='https://apacheignite-fs.readme.io/docs/in-memory-file-system' target='_blank') IGFS]) is an in-memory file system allowing work with files and directories over existing cache infrastructure
+            li IGFS can either work as purely in-memory file system, or delegate to another file system (e.g. various Hadoop file system implementations) acting as a caching layer (see #[a(href='https://apacheignite-fs.readme.io/docs/secondary-file-system' target='_blank') secondary file system]  for more detail)
             li In addition IGFS provides API to execute map-reduce tasks over file system data
 
 mixin ignite-summary-information
