@@ -889,6 +889,10 @@ consoleModule.controller('domainsController', function ($filter, $http, $timeout
                     newDomain.valueFields = valFields;
                     newDomain.demo = $scope.importDomain.demo;
 
+                    // If value fields not found - copy key fields.
+                    if ($common.isEmptyArray(valFields))
+                        newDomain.valueFields = keyFields.slice();
+
                     // Use Java built-in type for key.
                     if ($scope.ui.builtinKeys && newDomain.keyFields.length === 1)
                         newDomain.keyType = newDomain.keyFields[0].jdbcType.javaType;
