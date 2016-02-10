@@ -55,7 +55,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         private const int RoleCount = 3;
 
         /** */
-        private const int PersonCount = 100;
+        private const int PersonCount = 900;
 
         /** */
         private bool _runDbConsole;
@@ -286,7 +286,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
             var keys = cache.Select(x => x.Key).OrderBy(x => x);
             Assert.AreEqual(new[] {0, 1}, keys.Take(2).ToArray());
             Assert.AreEqual(new[] {1, 2}, keys.Skip(1).Take(2).ToArray());
-            Assert.AreEqual(new[] {98, 99}, keys.Skip(98).ToArray());
+            Assert.AreEqual(new[] {PersonCount - 2, PersonCount - 1}, keys.Skip(PersonCount - 2).ToArray());
         }
 
         [Test]
@@ -381,6 +381,13 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
                     (pr, org) => new {org, pr.person, pr.role}).ToArray();
 
             Assert.AreEqual(RoleCount, res.Length);
+        }
+
+        //[Test]
+        public void TestPerformance()
+        {
+            for (var i = 0; i < 1000; i++)
+                TestMultiCacheJoinSubquery();
         }
 
         [Test]
@@ -488,7 +495,11 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
 
             var resArr = res1.ToArray();
 
-            Assert.AreEqual(new[] {new {Count = 50, OrgId = 1000}, new {Count = 50, OrgId = 1001}}, resArr);
+            Assert.AreEqual(new[]
+            {
+                new {Count = PersonCount/2, OrgId = 1000},
+                new {Count = PersonCount/2, OrgId = 1001}
+            }, resArr);
 
             // Join and sum
             var res2 = persons.Join(orgs.Where(o => o.Key > 10), p => p.Value.OrganizationId, o => o.Key,
@@ -498,7 +509,11 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
 
             var resArr2 = res2.ToArray();
 
-            Assert.AreEqual(new[] {new {Org = "Org_0", AgeSum = 2450}, new {Org = "Org_1", AgeSum = 2500}}, resArr2);
+            Assert.AreEqual(new[]
+            {
+                new {Org = "Org_0", AgeSum = persons.Where(x => x.Value.OrganizationId == 1000).Sum(x => x.Value.Age)},
+                new {Org = "Org_1", AgeSum = persons.Where(x => x.Value.OrganizationId == 1001).Sum(x => x.Value.Age)}
+            }, resArr2);
         }
 
         [Test]
