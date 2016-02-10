@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.platform;
 
 import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteAtomicSequence;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.IgniteException;
@@ -39,6 +40,8 @@ import org.apache.ignite.internal.processors.platform.cluster.PlatformClusterGro
 import org.apache.ignite.internal.processors.platform.compute.PlatformCompute;
 import org.apache.ignite.internal.processors.platform.datastreamer.PlatformDataStreamer;
 import org.apache.ignite.internal.processors.platform.datastructures.PlatformAtomicLong;
+import org.apache.ignite.internal.processors.platform.datastructures.PlatformAtomicReference;
+import org.apache.ignite.internal.processors.platform.datastructures.PlatformAtomicSequence;
 import org.apache.ignite.internal.processors.platform.dotnet.PlatformDotNetCacheStore;
 import org.apache.ignite.internal.processors.platform.events.PlatformEvents;
 import org.apache.ignite.internal.processors.platform.memory.PlatformMemory;
@@ -358,6 +361,21 @@ public class PlatformProcessorImpl extends GridProcessorAdapter implements Platf
             return null;
 
         return new PlatformAtomicLong(platformCtx, atomicLong);
+    }
+
+    /** {@inheritDoc} */
+    @Override public PlatformTarget atomicSequence(String name, long initVal, boolean create) throws IgniteException {
+        IgniteAtomicSequence atomicSeq = ignite().atomicSequence(name, initVal, create);
+
+        if (atomicSeq == null)
+            return null;
+
+        return new PlatformAtomicSequence(platformCtx, atomicSeq);
+    }
+
+    /** {@inheritDoc} */
+    @Override public PlatformTarget atomicReference(String name, long memPtr, boolean create) throws IgniteException {
+        return PlatformAtomicReference.createInstance(platformCtx, name, memPtr, create);
     }
 
     /** {@inheritDoc} */
