@@ -87,12 +87,12 @@ public class BasicHadoopFileSystemFactory implements HadoopFileSystemFactory, Ex
             ClassLoader clsLdr = getClass().getClassLoader();
 
             if (ctxClsLdr == clsLdr)
-                return FileSystem.get(fullUri, cfg, usrName);
+                return create1(usrName);
             else {
                 Thread.currentThread().setContextClassLoader(clsLdr);
 
                 try {
-                    return FileSystem.get(fullUri, cfg, usrName);
+                    return create1(usrName);
                 }
                 finally {
                     Thread.currentThread().setContextClassLoader(ctxClsLdr);
@@ -104,6 +104,18 @@ public class BasicHadoopFileSystemFactory implements HadoopFileSystemFactory, Ex
 
             throw new IOException("Failed to create file system due to interrupt.", e);
         }
+    }
+
+    /**
+     * Internal file system creation routine, invoked in correct class loader context.
+     *
+     * @param usrName User name.
+     * @return File system.
+     * @throws IOException If failed.
+     * @throws InterruptedException if the current thread is interrupted.
+     */
+    protected FileSystem create1(String usrName) throws IOException, InterruptedException {
+        return FileSystem.get(fullUri, cfg, usrName);
     }
 
     /**

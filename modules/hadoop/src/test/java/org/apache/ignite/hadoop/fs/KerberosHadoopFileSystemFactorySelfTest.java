@@ -6,20 +6,20 @@ import java.io.ObjectInput;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutput;
 import java.io.ObjectOutputStream;
-import junit.framework.TestCase;
+import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Assert;
 
 /**
- * Tests SecureHadoopFileSystemFactory.
+ * Tests KerberosHadoopFileSystemFactory.
  */
-public class SecureHadoopFileSystemFactorySelfTest extends TestCase {
+public class KerberosHadoopFileSystemFactorySelfTest extends GridCommonAbstractTest {
     /**
      * Checks parameters validation.
      *
      * @throws Exception
      */
     public void testParameters() throws Exception {
-        SecureHadoopFileSystemFactory fac = new SecureHadoopFileSystemFactory();
+        KerberosHadoopFileSystemFactory fac = new KerberosHadoopFileSystemFactory();
 
         fac.setKeyTab(null);
         fac.setKeyTabPrincipal("princ");
@@ -44,6 +44,19 @@ public class SecureHadoopFileSystemFactorySelfTest extends TestCase {
         catch (IllegalArgumentException iae) {
             // okay
         }
+
+        fac.setKeyTab("/tmp/mykeytab");
+        fac.setKeyTabPrincipal("foo");
+        fac.setReloginInterval(-1L);
+
+        try {
+            fac.start();
+
+            fail("IllegalArgumentException expected because relogin interval is negative.");
+        }
+        catch (IllegalArgumentException iae) {
+            // okay
+        }
     }
 
     /**
@@ -52,11 +65,11 @@ public class SecureHadoopFileSystemFactorySelfTest extends TestCase {
      * @throws Exception If failed.
      */
     public void testSerialization() throws Exception {
-        SecureHadoopFileSystemFactory fac = new SecureHadoopFileSystemFactory();
+        KerberosHadoopFileSystemFactory fac = new KerberosHadoopFileSystemFactory();
 
         checkSerialization(fac);
 
-        fac = new SecureHadoopFileSystemFactory();
+        fac = new KerberosHadoopFileSystemFactory();
 
         fac.setUri("igfs://igfs@localhost:10500/");
         fac.setConfigPaths("/a/core-sute.xml", "/b/mapred-site.xml");
@@ -73,7 +86,7 @@ public class SecureHadoopFileSystemFactorySelfTest extends TestCase {
      * @param fac The facory to check.
      * @throws Exception If failed.
      */
-    private void checkSerialization(SecureHadoopFileSystemFactory fac) throws Exception {
+    private void checkSerialization(KerberosHadoopFileSystemFactory fac) throws Exception {
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
 
         ObjectOutput oo = new ObjectOutputStream(baos);
@@ -82,10 +95,11 @@ public class SecureHadoopFileSystemFactorySelfTest extends TestCase {
 
         ObjectInput in = new ObjectInputStream(new ByteArrayInputStream(baos.toByteArray()));
 
-        SecureHadoopFileSystemFactory fac2 = (SecureHadoopFileSystemFactory)in.readObject();
+        KerberosHadoopFileSystemFactory fac2 = (KerberosHadoopFileSystemFactory)in.readObject();
 
         assertEquals(fac.getUri(), fac2.getUri());
         Assert.assertArrayEquals(fac.getConfigPaths(), fac2.getConfigPaths());
+        assertEquals(fac.getKeyTab(), fac2.getKeyTab());
         assertEquals(fac.getKeyTabPrincipal(), fac2.getKeyTabPrincipal());
         assertEquals(fac.getReloginInterval(), fac2.getReloginInterval());
     }
