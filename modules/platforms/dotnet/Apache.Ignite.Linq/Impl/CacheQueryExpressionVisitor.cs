@@ -294,7 +294,8 @@ namespace Apache.Ignite.Linq.Impl
 
             // TODO: Alias
             // 1) Get CacheConfiguration
-            // 2) 
+            // 2) See if there are any aliases, exit early if not
+            // 3) Get ICacheEntry type through the expression, find corresponding QueryEntity, get alias from there
 
             return fieldName;
         }
