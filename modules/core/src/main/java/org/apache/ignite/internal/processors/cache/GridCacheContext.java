@@ -40,7 +40,6 @@ import javax.cache.processor.EntryProcessorResult;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cache.CacheInterceptor;
-import org.apache.ignite.cache.CacheMemoryMode;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.affinity.AffinityKeyMapper;
 import org.apache.ignite.cluster.ClusterNode;
@@ -1720,9 +1719,7 @@ public class GridCacheContext<K, V> implements Externalizable {
      * @return {@code True} if should use entry with offheap value pointer.
      */
     public boolean useOffheapEntry() {
-        CacheMemoryMode mode = cacheCfg.getMemoryMode();
-
-        if (mode == null) {
+        if (cacheCfg == null) {
             // We dump threads to stdout, because we can loose logs in case
             // the build is cancelled on TeamCity.
             U.dumpThreads(null);
@@ -1731,7 +1728,7 @@ public class GridCacheContext<K, V> implements Externalizable {
                 U.dumpThreads(log);
         }
 
-        return mode == OFFHEAP_TIERED || mode == OFFHEAP_VALUES;
+        return cacheCfg.getMemoryMode() == OFFHEAP_TIERED || cacheCfg.getMemoryMode() == OFFHEAP_VALUES;
     }
 
     /**
