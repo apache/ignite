@@ -73,8 +73,7 @@ public class CacheConfigurationPermutations {
     public static final ConfigurationParameter<Object> SIMPLE_CACHE_STORE_PARAM = complexParameter(
         parameter("setCacheStoreFactory", new CacheAbstractNewSelfTest.TestStoreFactory()),
         parameter("setReadThrough", true),
-        parameter("setWriteThrough", true),
-        parameter("setCacheStoreSessionListenerFactories", new Factory[] {new NoopCacheStoreSessionListenerFactory()})
+        parameter("setWriteThrough", true)
     );
 
     /** */
