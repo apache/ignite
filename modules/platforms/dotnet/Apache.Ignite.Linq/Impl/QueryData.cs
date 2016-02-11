@@ -67,7 +67,7 @@ namespace Apache.Ignite.Linq.Impl
         public override string ToString()
         {
             return string.Format("SQL Query [Text={0}, Parameters={1}]", QueryText,
-                string.Join(", ", Parameters.Select(x => x.ToString())));
+                string.Join(", ", Parameters.Select(x => x == null ? "null" : x.ToString())));
         }
     }
 }

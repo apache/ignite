@@ -38,9 +38,9 @@ namespace Apache.Ignite.Linq.Impl
         {
             GetStringMethod("ToLower", new Type[0], GetFunc("lower")),
             GetStringMethod("ToUpper", new Type[0], GetFunc("upper")),
-            GetStringMethod("Contains", del: (e, v) => VisitSqlLike(e, v, "%{0}%")),
-            GetStringMethod("StartsWith", new[] {typeof (string)}, (e, v) => VisitSqlLike(e, v, "{0}%")),
-            GetStringMethod("EndsWith", new[] {typeof (string)}, (e, v) => VisitSqlLike(e, v, "{0}%")),
+            GetStringMethod("Contains", del: (e, v) => VisitSqlLike(e, v, "'%' || ? || '%'")),
+            GetStringMethod("StartsWith", new[] {typeof (string)}, (e, v) => VisitSqlLike(e, v, "? || '%'")),
+            GetStringMethod("EndsWith", new[] {typeof (string)}, (e, v) => VisitSqlLike(e, v, "'%' || ?")),
             GetStringMethod("IndexOf", new[] {typeof (string)}, GetFunc("instr", -1)),
             GetStringMethod("IndexOf", new[] {typeof (string), typeof (int)}, GetFunc("instr", -1)),
             GetStringMethod("Substring", new[] {typeof (int)}, GetFunc("substring", 0, 1)),
@@ -172,9 +172,9 @@ namespace Apache.Ignite.Linq.Impl
 
             visitor.Visit(expression.Object);
 
-            visitor.ResultBuilder.Append(" like ?) ");
+            visitor.ResultBuilder.AppendFormat(" like {0}) ", likeFormat);
 
-            visitor.Parameters.Add(string.Format(likeFormat, GetConstantValue(expression)));
+            visitor.Parameters.Add(GetConstantValue(expression));
         }
 
         /// <summary>
