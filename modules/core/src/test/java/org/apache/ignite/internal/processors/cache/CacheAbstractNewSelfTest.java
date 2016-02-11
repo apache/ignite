@@ -195,7 +195,7 @@ public abstract class CacheAbstractNewSelfTest extends GridCommonAbstractTest {
                                     info(">>>>> Debug removeAll() for grid: " + fi);
 
                                     if (jcache(fi).size(CachePeekMode.ALL) > 0) {
-                                        for (Cache.Entry<String, ?> k : jcache(fi).localEntries()) {
+                                        for (Cache.Entry<?, ?> k : jcache(fi).localEntries()) {
                                             jcache(fi).remove(k.getKey());
 
                                             info(">>>>> Debug remove for grid: " + fi);
@@ -250,7 +250,7 @@ public abstract class CacheAbstractNewSelfTest extends GridCommonAbstractTest {
                 }
             }
 
-            for (Cache.Entry<String, Integer> entry : jcache(i).localEntries(CachePeekMode.SWAP))
+            for (Cache.Entry entry : jcache(i).localEntries(CachePeekMode.SWAP))
                 jcache(i).remove(entry.getKey());
         }
 
@@ -438,7 +438,7 @@ public abstract class CacheAbstractNewSelfTest extends GridCommonAbstractTest {
      * @return Default cache instance.
      */
     @SuppressWarnings({"unchecked"})
-    @Override protected IgniteCache<String, Integer> jcache() {
+    @Override protected <K, V> IgniteCache<K, V> jcache() {
         return jcache(0);
     }
 
@@ -464,7 +464,7 @@ public abstract class CacheAbstractNewSelfTest extends GridCommonAbstractTest {
      * @return Default cache.
      */
     @SuppressWarnings({"unchecked"})
-    @Override protected IgniteCache<String, Integer> jcache(int idx) {
+    @Override protected <K, V> IgniteCache<K, V> jcache(int idx) {
         return ignite(idx).cache(cacheName());
     }
 

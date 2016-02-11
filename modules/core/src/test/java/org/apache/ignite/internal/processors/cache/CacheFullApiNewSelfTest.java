@@ -665,37 +665,71 @@ public class CacheFullApiNewSelfTest extends CacheAbstractNewSelfTest {
     /**
      * @throws Exception In case of error.
      */
-    public void testPut() throws Exception {
-        IgniteCache<String, Integer> cache = jcache();
+    public void testPutPrimitive() throws Exception {
+        checkPut(DataMode.PRIMITIVE);
+    }
 
-        assert cache.getAndPut("key1", 1) == null;
-        assert cache.getAndPut("key2", 2) == null;
+    /**
+     * @throws Exception In case of error.
+     */
+    public void testPutSerializable() throws Exception {
+        checkPut(DataMode.SERIALIZABLE);
+    }
+
+    /**
+     * @throws Exception In case of error.
+     */
+    public void testPutExternalizable() throws Exception {
+        checkPut(DataMode.EXTERNALIZABLE);
+    }
+
+    /**
+     * @throws Exception In case of error.
+     */
+    public void testPutObject() throws Exception {
+        checkPut(DataMode.PLANE_OBJECT);
+    }
+
+    /**
+     * @param mode Mode.
+     * @throws Exception If failed.
+     */
+    private void checkPut(DataMode mode) throws Exception {
+        IgniteCache cache = jcache();
+
+        final Object key1 = key(1, mode);
+        final Object val1 = value(1, mode);
+        final Object key2 = key(2, mode);
+        final Object val2 = value(2, mode);
+
+        assert cache.getAndPut(key1, val1) == null;
+        assert cache.getAndPut(key2, val2) == null;
 
         // Check inside transaction.
-        assert cache.get("key1") == 1;
-        assert cache.get("key2") == 2;
+        assertEquals(val1, cache.get(key1));
+        assertEquals(val2, cache.get(key2));
 
         // Put again to check returned values.
-        assert cache.getAndPut("key1", 1) == 1;
-        assert cache.getAndPut("key2", 2) == 2;
+        assertEquals(val1, cache.getAndPut(key1, val1));
+        assertEquals(val2, cache.getAndPut(key2, val2));
 
-        checkContainsKey(true, "key1");
-        checkContainsKey(true, "key2");
+        checkContainsKey(true, key1);
+        checkContainsKey(true, key2);
 
-        assert cache.get("key1") != null;
-        assert cache.get("key2") != null;
-        assert cache.get("wrong") == null;
+        assert cache.get(key1) != null;
+        assert cache.get(key2) != null;
+        assert cache.get(key(100500, mode)) == null;
 
         // Check outside transaction.
-        checkContainsKey(true, "key1");
-        checkContainsKey(true, "key2");
+        checkContainsKey(true, key1);
+        checkContainsKey(true, key2);
 
-        assert cache.get("key1") == 1;
-        assert cache.get("key2") == 2;
-        assert cache.get("wrong") == null;
+        assertEquals(val1, cache.get(key1));
+        assertEquals(val2, cache.get(key2));
+        assert cache.get(key(100500, mode)) == null;
 
-        assertEquals((Integer)1, cache.getAndPut("key1", 10));
-        assertEquals((Integer)2, cache.getAndPut("key2", 11));
+        assertEquals(val1, cache.getAndPut(key1, value(10, mode)));
+        assertEquals(val2, cache.getAndPut(key2, value(11, mode)));
     }
 
     /**
@@ -1283,7 +1317,7 @@ public class CacheFullApiNewSelfTest extends CacheAbstractNewSelfTest {
      * @throws Exception In case of error.
      */
     public void testPutAsync0() throws Exception {
-        IgniteCache<String, Integer> cacheAsync = jcache().withAsync();
+        IgniteCache cacheAsync = jcache().withAsync();
 
         cacheAsync.getAndPut("key1", 0);
 
@@ -1433,7 +1467,7 @@ public class CacheFullApiNewSelfTest extends CacheAbstractNewSelfTest {
     public void testPutAsync() throws Exception {
         Transaction tx = txShouldBeUsed() ? transactions().txStart() : null;
 
-        IgniteCache<String, Integer> cacheAsync = jcache().withAsync();
+        IgniteCache cacheAsync = jcache().withAsync();
 
         try {
             jcache().put("key2", 1);
@@ -2067,7 +2101,7 @@ public class CacheFullApiNewSelfTest extends CacheAbstractNewSelfTest {
      * @throws Exception In case of error.
      */
     public void testPutIfAbsentAsyncConcurrent() throws Exception {
-        IgniteCache<String, Integer> cacheAsync = jcache().withAsync();
+        IgniteCache cacheAsync = jcache().withAsync();
 
         cacheAsync.putIfAbsent("key1", 1);
 
@@ -2647,7 +2681,7 @@ public class CacheFullApiNewSelfTest extends CacheAbstractNewSelfTest {
         atomicClockModeDelay(cache);
 
         if (async) {
-            IgniteCache<String, Integer> asyncCache0 = jcache(gridCount() > 1 ? 1 : 0).withAsync();
+            IgniteCache asyncCache0 = jcache(gridCount() > 1 ? 1 : 0).withAsync();
 
             asyncCache0.removeAll();
 
@@ -3051,7 +3085,7 @@ public class CacheFullApiNewSelfTest extends CacheAbstractNewSelfTest {
         }
 
         if (async) {
-            IgniteCache<String, Integer> asyncCache = jcache().withAsync();
+            IgniteCache asyncCache = jcache().withAsync();
 
             asyncCache.clear();
 
@@ -3461,7 +3495,7 @@ public class CacheFullApiNewSelfTest extends CacheAbstractNewSelfTest {
 
         for (int i = 0; i < gridCount(); i++) {
             if (grid(i).affinity(cacheName()).isPrimaryOrBackup(grid(i).localNode(), key)) {
-                GridCacheAdapter<String, Integer> cache = internalCache(jcache(i));
+                GridCacheAdapter<Object, Object> cache = internalCache(jcache(i));
 
                 if (cache.context().isNear())
                     cache = cache.context().near().dht();
@@ -3494,7 +3528,7 @@ public class CacheFullApiNewSelfTest extends CacheAbstractNewSelfTest {
 
         for (int i = 0; i < gridCount(); i++) {
             if (grid(i).affinity(cacheName()).isPrimaryOrBackup(grid(i).localNode(), key)) {
-                GridCacheAdapter<String, Integer> cache = internalCache(jcache(i));
+                GridCacheAdapter<Object, Object> cache = internalCache(jcache(i));
 
                 if (cache.context().isNear())
                     cache = cache.context().near().dht();
@@ -3527,7 +3561,7 @@ public class CacheFullApiNewSelfTest extends CacheAbstractNewSelfTest {
 
         for (int i = 0; i < gridCount(); i++) {
             if (grid(i).affinity(cacheName()).isPrimaryOrBackup(grid(i).localNode(), key)) {
-                GridCacheAdapter<String, Integer> cache = internalCache(jcache(i));
+                GridCacheAdapter<Object, Object> cache = internalCache(jcache(i));
 
                 if (cache.context().isNear())
                     cache = cache.context().near().dht();
@@ -3564,7 +3598,7 @@ public class CacheFullApiNewSelfTest extends CacheAbstractNewSelfTest {
 
         for (int i = 0; i < gridCount(); i++) {
             if (grid(i).affinity(cacheName()).isPrimaryOrBackup(grid(i).localNode(), key)) {
-                GridCacheAdapter<String, Integer> cache = internalCache(jcache(i));
+                GridCacheAdapter cache = internalCache(jcache(i));
 
                 if (cache.context().isNear())
                     cache = cache.context().near().dht();
@@ -3979,22 +4013,22 @@ public class CacheFullApiNewSelfTest extends CacheAbstractNewSelfTest {
         if (txShouldBeUsed()) {
             final int cnt = 10;
 
-            CU.inTx(ignite(0), jcache(), concurrency, isolation, new CIX1<IgniteCache<String, Integer>>() {
-                @Override public void applyx(IgniteCache<String, Integer> cache) {
+            CU.inTx(ignite(0), jcache(), concurrency, isolation, new CIX1<IgniteCache<Object, Object>>() {
+                @Override public void applyx(IgniteCache cache) {
                     for (int i = 0; i < cnt; i++)
                         cache.put("key" + i, i);
                 }
             });
 
-            CU.inTx(ignite(0), jcache(), concurrency, isolation, new CIX1<IgniteCache<String, Integer>>() {
-                @Override public void applyx(IgniteCache<String, Integer> cache) {
+            CU.inTx(ignite(0), jcache(), concurrency, isolation, new CIX1<IgniteCache<Object, Object>>() {
+                @Override public void applyx(IgniteCache<Object, Object> cache) {
                     for (int i = 0; i < cnt; i++)
                         assertEquals(new Integer(i), cache.get("key" + i));
                 }
             });
 
-            CU.inTx(ignite(0), jcache(), concurrency, isolation, new CIX1<IgniteCache<String, Integer>>() {
-                @Override public void applyx(IgniteCache<String, Integer> cache) {
+            CU.inTx(ignite(0), jcache(), concurrency, isolation, new CIX1<IgniteCache<Object, Object>>() {
+                @Override public void applyx(IgniteCache<Object, Object> cache) {
                     for (int i = 0; i < cnt; i++) {
                         boolean removed = cache.remove("key" + i);
 
@@ -4008,8 +4042,8 @@ public class CacheFullApiNewSelfTest extends CacheAbstractNewSelfTest {
                 }
             });
 
-            CU.inTx(ignite(0), jcache(), concurrency, isolation, new CIX1<IgniteCache<String, Integer>>() {
-                @Override public void applyx(IgniteCache<String, Integer> cache) {
+            CU.inTx(ignite(0), jcache(), concurrency, isolation, new CIX1<IgniteCache<Object, Object>>() {
+                @Override public void applyx(IgniteCache<Object, Object> cache) {
                     for (int i = 0; i < cnt; i++)
                         assertNull(cache.get("key" + i));
                 }
@@ -4087,10 +4121,10 @@ public class CacheFullApiNewSelfTest extends CacheAbstractNewSelfTest {
         cache.put("key1", 1);
         cache.put("key2", 2);
 
-        Map<String, Integer> map = new HashMap<>();
+        Map map = new HashMap<>();
 
         for (int i = 0; i < gridCount(); i++) {
-            for (Cache.Entry<String, Integer> entry : jcache(i))
+            for (Cache.Entry entry : jcache(i))
                 map.put(entry.getKey(), entry.getValue());
         }
 
@@ -4134,7 +4168,7 @@ public class CacheFullApiNewSelfTest extends CacheAbstractNewSelfTest {
      * @param key Key.
      * @throws Exception If failed.
      */
-    private void checkContainsKey(boolean exp, String key) throws Exception {
+    private void checkContainsKey(boolean exp, Object key) throws Exception {
         if (nearEnabled())
             assertEquals(exp, jcache().containsKey(key));
         else {
@@ -4183,7 +4217,7 @@ public class CacheFullApiNewSelfTest extends CacheAbstractNewSelfTest {
      * @param cnt Keys count.
      * @return Collection of keys for which given cache is primary.
      */
-    protected List<String> primaryKeysForCache(IgniteCache<String, Integer> cache, int cnt, int startFrom) {
+    protected List<String> primaryKeysForCache(IgniteCache cache, int cnt, int startFrom) {
         return executeOnLocalOrRemoteJvm(cache, new CheckPrimaryKeysTask(startFrom, cnt));
     }
 
@@ -4193,7 +4227,7 @@ public class CacheFullApiNewSelfTest extends CacheAbstractNewSelfTest {
      * @return Collection of keys for which given cache is primary.
      * @throws IgniteCheckedException If failed.
      */
-    protected List<String> primaryKeysForCache(IgniteCache<String, Integer> cache, int cnt)
+    protected List<String> primaryKeysForCache(IgniteCache cache, int cnt)
         throws IgniteCheckedException {
         return primaryKeysForCache(cache, cnt, 1);
     }
@@ -4275,7 +4309,7 @@ public class CacheFullApiNewSelfTest extends CacheAbstractNewSelfTest {
      * If hasNext() is called repeatedly, it should return the same result.
      */
     private void checkIteratorHasNext() {
-        Iterator<Cache.Entry<String, Integer>> iter = jcache(0).iterator();
+        Iterator<Cache.Entry<Object, Object>> iter = jcache(0).iterator();
 
         assertEquals(iter.hasNext(), iter.hasNext());
 
@@ -4303,7 +4337,7 @@ public class CacheFullApiNewSelfTest extends CacheAbstractNewSelfTest {
         checkIteratorCache(entries);
 
         // Check that we cannot call Iterator.remove() without next().
-        final Iterator<Cache.Entry<String, Integer>> iter = jcache(0).iterator();
+        final Iterator<Cache.Entry<Object, Object>> iter = jcache(0).iterator();
 
         assertTrue(iter.hasNext());
 
@@ -4354,7 +4388,7 @@ public class CacheFullApiNewSelfTest extends CacheAbstractNewSelfTest {
      * @param cache Cache.
      * @param entries Expected entries in the cache.
      */
-    private void checkIteratorCache(IgniteCache<String, Integer> cache, Map<String, Integer> entries) {
+    private void checkIteratorCache(IgniteCache cache, Map<String, Integer> entries) {
         Iterator<Cache.Entry<String, Integer>> iter = cache.iterator();
 
         int cnt = 0;
@@ -4582,7 +4616,7 @@ public class CacheFullApiNewSelfTest extends CacheAbstractNewSelfTest {
         }
 
         if (async) {
-            IgniteCache<String, Integer> asyncCache = jcache().withAsync();
+            IgniteCache asyncCache = jcache().withAsync();
 
             if (keysToRmv.size() == 1)
                 asyncCache.clear(F.first(keysToRmv));
@@ -5254,7 +5288,7 @@ public class CacheFullApiNewSelfTest extends CacheAbstractNewSelfTest {
      * @throws Exception If failed.
      */
     public void testTransformException() throws Exception {
-        final IgniteCache<String, Integer> cache = jcache().withAsync();
+        final IgniteCache cache = jcache().withAsync();
 
         cache.invoke("key2", ERR_PROCESSOR);
 
