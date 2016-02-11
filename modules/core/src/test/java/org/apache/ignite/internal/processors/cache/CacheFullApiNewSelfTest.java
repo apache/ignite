@@ -19,6 +19,10 @@ package org.apache.ignite.internal.processors.cache;
 
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
+import java.io.Externalizable;
+import java.io.IOException;
+import java.io.ObjectInput;
+import java.io.ObjectOutput;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -109,7 +113,7 @@ import static org.apache.ignite.transactions.TransactionState.COMMITTED;
 /**
  * Full API cache test.
  */
-@SuppressWarnings("TransientFieldInNonSerializableClass")
+@SuppressWarnings({"TransientFieldInNonSerializableClass", "unchecked"})
 public class CacheFullApiNewSelfTest extends CacheAbstractNewSelfTest {
     /** Test timeout */
     private static final long TEST_TIMEOUT = 60 * 1000;
@@ -449,14 +453,43 @@ public class CacheFullApiNewSelfTest extends CacheAbstractNewSelfTest {
      * @throws Exception In case of error.
      */
     public void testGet() throws Exception {
-        IgniteCache<String, Integer> cache = jcache();
+        checkGet(DataMode.PRIMITIVE);
+    }
 
-        cache.put("key1", 1);
-        cache.put("key2", 2);
+    /**
+     * @throws Exception In case of error.
+     */
+    public void testGetSerializable() throws Exception {
+        checkGet(DataMode.SERIALIZABLE);
+    }
 
-        assert cache.get("key1") == 1;
-        assert cache.get("key2") == 2;
-        assert cache.get("wrongKey") == null;
+    /**
+     * @throws Exception In case of error.
+     */
+    public void testGetExternalizable() throws Exception {
+        checkGet(DataMode.EXTERNALIZABLE);
+    }
+
+    /**
+     * @throws Exception In case of error.
+     */
+    public void testGetObject() throws Exception {
+        checkGet(DataMode.PLANE_OBJECT);
+    }
+
+    /**
+     * @param mode Mode.
+     */
+    private void checkGet(DataMode mode) {
+        IgniteCache cache = jcache();
+
+        cache.put(key(1, mode), value(1, mode));
+        cache.put(key(2, mode), value(2, mode));
+
+        assertEquals(value(1, mode), cache.get(key(1, mode)));
+        assertEquals(value(2, mode), cache.get(key(2, mode)));
+        // Wrong key.
+        assertNull(cache.get(key(3, mode)));
     }
 
     /**
@@ -2386,17 +2419,17 @@ public class CacheFullApiNewSelfTest extends CacheAbstractNewSelfTest {
      * @throws Exception If failed.
      */
     public void testGetAndRemoveObject() throws Exception {
-        IgniteCache<String, TestValue> cache = ignite(0).cache(null);
+        IgniteCache<String, SerializableObject> cache = ignite(0).cache(null);
 
-        TestValue val1 = new TestValue(1);
-        TestValue val2 = new TestValue(2);
+        SerializableObject val1 = new SerializableObject(1);
+        SerializableObject val2 = new SerializableObject(2);
 
         cache.put("key1", val1);
         cache.put("key2", val2);
 
-        assert !cache.remove("key1", new TestValue(0));
+        assert !cache.remove("key1", new SerializableObject(0));
 
-        TestValue oldVal = cache.get("key1");
+        SerializableObject oldVal = cache.get("key1");
 
         assert oldVal != null && F.eq(val1, oldVal);
 
@@ -2404,7 +2437,7 @@ public class CacheFullApiNewSelfTest extends CacheAbstractNewSelfTest {
 
         assert cache.get("key1") == null;
 
-        TestValue oldVal2 = cache.getAndRemove("key2");
+        SerializableObject oldVal2 = cache.getAndRemove("key2");
 
         assert F.eq(val2, oldVal2);
 
@@ -2415,15 +2448,15 @@ public class CacheFullApiNewSelfTest extends CacheAbstractNewSelfTest {
     /**
      * @throws Exception If failed.
      */
-    public void testGetAndPutObject() throws Exception {
-        IgniteCache<String, TestValue> cache = ignite(0).cache(null);
+    public void testGetAndPutSerializableObject() throws Exception {
+        IgniteCache<String, SerializableObject> cache = ignite(0).cache(null);
 
-        TestValue val1 = new TestValue(1);
-        TestValue val2 = new TestValue(2);
+        SerializableObject val1 = new SerializableObject(1);
+        SerializableObject val2 = new SerializableObject(2);
 
         cache.put("key1", val1);
 
-        TestValue oldVal = cache.get("key1");
+        SerializableObject oldVal = cache.get("key1");
 
         assertEquals(val1, oldVal);
 
@@ -2431,7 +2464,7 @@ public class CacheFullApiNewSelfTest extends CacheAbstractNewSelfTest {
 
         assertEquals(val1, oldVal);
 
-        TestValue updVal = cache.get("key1");
+        SerializableObject updVal = cache.get("key1");
 
         assertEquals(val2, updVal);
     }
@@ -5278,6 +5311,46 @@ public class CacheFullApiNewSelfTest extends CacheAbstractNewSelfTest {
     }
 
     /**
+     * @param keyId Key Id..
+     * @param mode Mode.
+     * @return Key.
+     */
+    private Object key(int keyId, DataMode mode) {
+        switch (mode) {
+            case PRIMITIVE:
+                return "key" + keyId;
+            case SERIALIZABLE:
+                return new SerializableObject(keyId);
+            case EXTERNALIZABLE:
+                return new ExternalizableObject(keyId);
+            case PLANE_OBJECT:
+                return new TestObject(keyId);
+            default:
+                throw new IllegalArgumentException("mode: " + mode);
+        }
+    }
+
+    /**
+     * @param idx Index.
+     * @param mode Mode.
+     * @return Value.
+     */
+    private Object value(int idx, DataMode mode) {
+        switch (mode) {
+            case PRIMITIVE:
+                return idx;
+            case SERIALIZABLE:
+                return new SerializableObject(idx);
+            case EXTERNALIZABLE:
+                return new ExternalizableObject(idx);
+            case PLANE_OBJECT:
+                return new TestObject(idx);
+            default:
+                throw new IllegalArgumentException("mode: " + mode);
+        }
+    }
+
+    /**
      * Sets given value, returns old value.
      */
     public static final class SetValueProcessor implements EntryProcessor<String, Integer, Integer> {
@@ -5594,15 +5667,25 @@ public class CacheFullApiNewSelfTest extends CacheAbstractNewSelfTest {
     /**
      *
      */
-    private static class TestValue implements Serializable {
+    private static class TestObject {
         /** */
-        private int val;
+        protected int val;
+
+        /** */
+        protected String strVal;
+
+        /** */
+        protected TestEnum enumVal;
 
         /**
          * @param val Value.
          */
-        TestValue(int val) {
+        TestObject(int val) {
             this.val = val;
+            strVal = "val" + val;
+
+            TestEnum[] values = TestEnum.values();
+            enumVal = values[Math.abs(val) % values.length];
         }
 
         /**
@@ -5617,20 +5700,99 @@ public class CacheFullApiNewSelfTest extends CacheAbstractNewSelfTest {
             if (this == o)
                 return true;
 
-            if (!(o instanceof TestValue))
+            if (!(o instanceof TestObject))
                 return false;
 
-            TestValue value = (TestValue)o;
+            TestObject val = (TestObject)o;
 
-            if (val != value.val)
-                return false;
+            return this.val == val.val && enumVal == val.enumVal && strVal.equals(val.strVal);
 
-            return true;
         }
 
         /** {@inheritDoc} */
         @Override public int hashCode() {
-            return val;
+            int res = val;
+
+            res = 31 * res + strVal.hashCode();
+            res = 31 * res + enumVal.hashCode();
+
+            return res;
         }
+    }
+
+    /**
+     *
+     */
+    private static class SerializableObject extends TestObject implements Serializable {
+        /**
+         * @param val Value.
+         */
+        SerializableObject(int val) {
+            super(val);
+        }
+    }
+
+    /**
+     *
+     */
+    private static class ExternalizableObject extends TestObject implements Externalizable {
+        /**
+         * Default constructor.
+         */
+        ExternalizableObject() {
+            super(-1);
+        }
+
+        /**
+         * @param val Value.
+         */
+        ExternalizableObject(int val) {
+            super(val);
+        }
+
+        /** {@inheritDoc} */
+        @Override public void writeExternal(ObjectOutput out) throws IOException {
+            out.writeInt(val);
+            out.writeObject(strVal);
+            out.writeObject(enumVal);
+        }
+
+        /** {@inheritDoc} */
+        @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
+            val = in.readInt();
+            strVal = (String)in.readObject();
+            enumVal = (TestEnum)in.readObject();
+        }
+    }
+
+    /**
+     * Data mode.
+     */
+    private enum DataMode {
+        /** Primitive objects like Strings and integers */
+        PRIMITIVE,
+
+        /** Serializable objects. */
+        SERIALIZABLE,
+
+        /** Externalizable objects. */
+        EXTERNALIZABLE,
+
+        /** Objects without Serializable and Externalizable. */
+        PLANE_OBJECT
+    }
+
+    /**
+     *
+     */
+    private enum TestEnum {
+        /** */
+        TEST_VALUE_1,
+
+        /** */
+        TEST_VALUE_2,
+
+        /** */
+        TEST_VALUE_3
     }
 }
