@@ -72,9 +72,6 @@ public abstract class CacheAbstractNewSelfTest extends GridCommonAbstractTest {
     /** VM ip finder for TCP discovery. */
     protected static TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
 
-    /** Cache name. */
-    private String cacheName;
-
     /**
      * @return Grids count to start.
      */
@@ -258,8 +255,6 @@ public abstract class CacheAbstractNewSelfTest extends GridCommonAbstractTest {
         assertEquals("Cache is not empty", 0, jcache().localSize(CachePeekMode.ALL));
 
         resetStore();
-
-        cacheName = null;
     }
 
     /**
