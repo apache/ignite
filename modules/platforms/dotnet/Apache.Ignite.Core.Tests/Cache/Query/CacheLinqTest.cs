@@ -220,7 +220,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
             CheckFunc(x => x.ToLower(), strings);
             CheckFunc(x => x.ToUpper(), strings);
             CheckFunc(x => x.StartsWith("Person_9"), strings);
-            CheckFunc(x => x.EndsWith("_99"), strings);
+            CheckFunc(x => x.EndsWith("_99  "), strings);
             CheckFunc(x => x.Contains("son_3"), strings);
             CheckFunc(x => x.Length, strings);
 
