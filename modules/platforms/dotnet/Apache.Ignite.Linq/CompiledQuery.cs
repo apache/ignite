@@ -76,6 +76,7 @@ namespace Apache.Ignite.Linq
 
             var compiledQuery = GetCompiledQuery(query(default(TArg1), default(TArg2)));
 
+            // TODO: Parameter order may be wrong
             return (x, y) => compiledQuery(new object[] {x, y});
         }
 
