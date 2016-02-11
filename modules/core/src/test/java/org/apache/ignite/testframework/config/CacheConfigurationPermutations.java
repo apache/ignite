@@ -70,6 +70,14 @@ public class CacheConfigurationPermutations {
     );
 
     /** */
+    public static final ConfigurationParameter<Object> SIMPLE_CACHE_STORE_PARAM = complexParameter(
+        parameter("setCacheStoreFactory", new CacheAbstractNewSelfTest.TestStoreFactory()),
+        parameter("setReadThrough", true),
+        parameter("setWriteThrough", true),
+        parameter("setCacheStoreSessionListenerFactories", new Factory[] {new NoopCacheStoreSessionListenerFactory()})
+    );
+
+    /** */
     public static final ConfigurationParameter<Object> REBALANCING_PARAM = complexParameter(
         parameter("setRebalanceBatchSize", 2028 * 1024),
         parameter("setRebalanceBatchesPrefetchCount", 5L),
@@ -82,20 +90,44 @@ public class CacheConfigurationPermutations {
     public static final NearCacheConfiguration NEAR_CACHE_CFG = new NearCacheConfiguration();
 
     /** */
-    public static final ConfigurationParameter<Object> ONHEAP_TIERED_MEMORY_PARAM = 
+    public static final ConfigurationParameter<Object> ONHEAP_TIERED_MEMORY_PARAM =
         parameter("setMemoryMode", CacheMemoryMode.ONHEAP_TIERED);
 
     /** */
-    public static final ConfigurationParameter<Object> OFFHEAP_TIERED_MEMORY_PARAM = 
+    public static final ConfigurationParameter<Object> OFFHEAP_TIERED_MEMORY_PARAM =
         parameter("setMemoryMode", CacheMemoryMode.OFFHEAP_TIERED);
 
     /** */
-    public static final ConfigurationParameter<Object> OFFHEAP_VALUES_MEMORY_PARAM =  
+    public static final ConfigurationParameter<Object> OFFHEAP_VALUES_MEMORY_PARAM =
         parameter("setMemoryMode", CacheMemoryMode.OFFHEAP_VALUES);
 
     /** */
-    public static final ConfigurationParameter<Object> OFFHEAP_ENABLED = 
+    public static final ConfigurationParameter<Object> OFFHEAP_ENABLED =
         parameter("setOffHeapMaxMemory", 10 * 1024 * 1024L);
+
+    /** */
+    public static final ConfigurationParameter<Object> OFFHEAP_SMALL_SIZE_ENABLED =
+        parameter("setOffHeapMaxMemory", 10 * 1024L);
+
+    /** */
+    @SuppressWarnings("unchecked")
+    public static final ConfigurationParameter<CacheConfiguration>[][] BASIC_SET = new ConfigurationParameter[][] {
+        enumParameters("setCacheMode", CacheMode.class),
+        enumParameters("setAtomicityMode", CacheAtomicityMode.class),
+        enumParameters("setMemoryMode", CacheMemoryMode.class),
+//        booleanParameters("setStoreKeepBinary"),
+//        booleanParameters("setCopyOnRead"),
+
+        // Set default parameters (TODO make it in builder).
+        objectParameters("setLoadPreviousValue", true),
+        objectParameters("setSwapEnabled", true),
+//        objectParameters(true, "setNearConfiguration", NEAR_CACHE_CFG), // TODO uncomment.
+        asArray(SIMPLE_CACHE_STORE_PARAM),
+        asArray(OFFHEAP_SMALL_SIZE_ENABLED),
+        objectParameters("setWriteSynchronizationMode", CacheWriteSynchronizationMode.FULL_SYNC),
+        objectParameters("setAtomicWriteOrderMode", CacheAtomicWriteOrderMode.PRIMARY),
+        objectParameters("setStartSize", 1024), // One value.
+    };
 
     /** */
     @SuppressWarnings("unchecked")
@@ -148,6 +180,13 @@ public class CacheConfigurationPermutations {
      */
     private CacheConfigurationPermutations() {
         // No-op.
+    }
+
+    /**
+     * @return Default matrix of availiable permutations.
+     */
+    public static ConfigurationParameter<CacheConfiguration>[][] basicSet() {
+        return BASIC_SET;
     }
 
     /**
