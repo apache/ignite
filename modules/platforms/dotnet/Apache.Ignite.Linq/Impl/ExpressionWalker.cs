@@ -90,12 +90,7 @@ namespace Apache.Ignite.Linq.Impl
             if (constExpr == null)
                 throw new NotSupportedException("Unexpected query source: " + expression);
 
-            var cacheQuery = (ICacheQueryable) constExpr.Value;
-
-            return cacheQuery;
-
-            //return string.Format("\"{0}\".{1}", cacheQuery.CacheName, 
-            //    GetTableNameFromEntryType(cacheQuery.ElementType));
+            return (ICacheQueryable) constExpr.Value;
         }
 
         public static string GetTableNameWithSchema(ICacheQueryable queryable)
