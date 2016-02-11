@@ -447,7 +447,8 @@ public abstract class CacheAbstractNewSelfTest extends GridCommonAbstractTest {
      */
     protected String cacheName() {
         if (cacheName == null)
-            cacheName = testsCfg.suffix().substring(0, 50).replace('=', '-').replace(',', ' ');
+            cacheName = "testcache-" + testsCfg.suffix().hashCode()
+                + testsCfg.suffix().substring(0, 100).replace('=', '-').replace(',', ' ');
 
         return cacheName;
     }
