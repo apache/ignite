@@ -219,7 +219,7 @@ $generatorPom.pom = function (cluster, igniteVersion, mvnRepositories, res) {
     res.startBlock('<configuration>');
     $generatorPom.addProperty(res, 'excludeGroupIds', excludeGroupIds.join(','));
     $generatorPom.addProperty(res, 'outputDirectory', 'target/libs');
-    $generatorPom.addProperty(res, 'includeScope', 'runtime');
+    $generatorPom.addProperty(res, 'includeScope', 'compile');
     $generatorPom.addProperty(res, 'excludeTransitive', 'true');
     res.endBlock('</configuration>');
     res.endBlock('</execution>');
