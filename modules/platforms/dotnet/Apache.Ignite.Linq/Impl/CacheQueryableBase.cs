@@ -92,5 +92,16 @@ namespace Apache.Ignite.Linq.Impl
 
             return CacheFieldsQueryExecutor.GetQueryData(model);
         }
+
+        /// <summary>
+        /// Returns a <see cref="string" /> that represents this instance.
+        /// </summary>
+        /// <returns>
+        /// A <see cref="string" /> that represents this instance.
+        /// </returns>
+        public override string ToString()
+        {
+            return ToTraceString();
+        }
     }
 }

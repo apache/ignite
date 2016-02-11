@@ -18,6 +18,7 @@
 namespace Apache.Ignite.Linq
 {
     using System;
+    using System.Diagnostics;
     using System.Diagnostics.CodeAnalysis;
     using System.Linq;
     using Apache.Ignite.Core.Cache.Query;
@@ -89,6 +90,8 @@ namespace Apache.Ignite.Linq
                 throw new ArgumentException(
                     string.Format("{0} can only compile cache queries produced by AsCacheQueryable method. " +
                                   "Provided query is not valid: '{1}'", typeof (CompiledQuery).FullName, queryable));
+
+            Debug.WriteLine(((ICacheQueryable)queryable).ToTraceString());
 
             return cacheQueryable.CompileQuery<T>();
         }
