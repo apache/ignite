@@ -511,7 +511,7 @@ public class BinaryObjectBuilderImpl implements BinaryObjectBuilder {
         if (assignedVals == null)
             assignedVals = new LinkedHashMap<>();
 
-        assignedVals.put(name, new BinaryValueWithType(BinaryUtils.typeByClass(type), val));
+        assignedVals.put(name, new BinaryValueWithType(BinaryUtils.userDefinedTypeByClass(type), val));
 
         return this;
     }

@@ -44,7 +44,7 @@ class BinaryValueWithType implements BinaryLazyValue {
         if (val instanceof BinaryBuilderSerializationAware)
             ((BinaryBuilderSerializationAware)val).writeTo(writer, ctx);
         else
-            ctx.writeValue(writer, val);
+            ctx.writeValue(writer, val, type);
     }
 
     /**

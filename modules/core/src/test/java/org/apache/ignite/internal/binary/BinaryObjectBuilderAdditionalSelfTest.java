@@ -43,18 +43,9 @@ import org.junit.Assert;
 
 import java.lang.reflect.Field;
 import java.math.BigDecimal;
+import java.math.BigInteger;
 import java.sql.Timestamp;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.Date;
-import java.util.HashSet;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Set;
-import java.util.UUID;
+import java.util.*;
 
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
 
@@ -1261,4 +1252,79 @@ public class BinaryObjectBuilderAdditionalSelfTest extends GridCommonAbstractTes
         return new BinaryObjectBuilderImpl(processor.binaryContext(), processor.typeId(aCls.getName()), 
             processor.binaryContext().userTypeName(aCls.getName()));
     }
+
+    /**
+     * Check that correct type is stored in binary object.
+     */
+    public void testCollectionsSerialization() {
+        final BinaryObjectBuilder root = newWrapper(BigInteger.class);
+
+        final List<Integer> arrList = new ArrayList<>();
+
+        arrList.add(Integer.MAX_VALUE);
+
+        final List<Integer> linkedList = new LinkedList<>();
+
+        linkedList.add(Integer.MAX_VALUE);
+
+        final Set<Integer> hashSet = new HashSet<>();
+
+        hashSet.add(Integer.MAX_VALUE);
+
+        final Set<Integer> linkedHashSet = new LinkedHashSet<>();
+
+        linkedHashSet.add(Integer.MAX_VALUE);
+
+        final Map<String, String> hashMap = new HashMap<>();
+
+        hashMap.put("key", "val");
+
+        final Map<String, String> linkedHashMap = new LinkedHashMap<>();
+
+        linkedHashMap.put("key", "val");
+
+        // collections
+        root.setField("arrayList", arrList);
+        root.setField("linkedList", linkedList);
+        root.setField("hashSet", hashSet);
+        root.setField("linkedHashSet", linkedHashSet);
+
+        root.setField("singletonList", Collections.singletonList(Integer.MAX_VALUE), Collection.class);
+        root.setField("singletonSet",  Collections.singleton(Integer.MAX_VALUE), Collection.class);
+
+        // maps
+        root.setField("hashMap", hashMap);
+        root.setField("linkedHashMap", linkedHashMap);
+
+        root.setField("singletonMap", Collections.singletonMap("key", "val"), Map.class);
+
+        // objects
+        root.setField("asList", Collections.singletonList(Integer.MAX_VALUE));
+        root.setField("asSet", Collections.singleton(Integer.MAX_VALUE));
+        root.setField("asMap", Collections.singletonMap("key", "val"));
+
+        BinaryObject binaryObj = root.build();
+
+        final String COL = "Collection";
+        final String MAP = "Map";
+        final String OBJ = "Object";
+
+        assert COL.equals(binaryObj.type().fieldTypeName("arrayList"));
+        assert COL.equals(binaryObj.type().fieldTypeName("linkedList"));
+        assert COL.equals(binaryObj.type().fieldTypeName("hashSet"));
+        assert COL.equals(binaryObj.type().fieldTypeName("linkedHashSet"));
+        assert COL.equals(binaryObj.type().fieldTypeName("linkedHashSet"));
+        assert COL.equals(binaryObj.type().fieldTypeName("linkedHashSet"));
+
+        assert COL.equals(binaryObj.type().fieldTypeName("singletonList"));
+        assert COL.equals(binaryObj.type().fieldTypeName("singletonSet"));
+
+        assert MAP.equals(binaryObj.type().fieldTypeName("singletonMap"));
+
+        assert OBJ.equals(binaryObj.type().fieldTypeName("asList"));
+        assert OBJ.equals(binaryObj.type().fieldTypeName("asSet"));
+        assert OBJ.equals(binaryObj.type().fieldTypeName("asMap"));
+
+    }
+
 }

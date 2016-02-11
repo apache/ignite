@@ -46,10 +46,39 @@ class BinaryBuilderSerializer {
     }
 
     /**
+     *  <pre>
+     *      writeValue(writer, val, BinaryUtils.getUnspecifiedType());
+     *  </pre>
+     *
      * @param writer Writer.
      * @param val Value.
+     * @see #writeValue(BinaryWriterExImpl, Object, byte)
      */
-    public void writeValue(BinaryWriterExImpl writer, Object val) {
+    public void writeValue(final BinaryWriterExImpl writer, final Object val) {
+        writeValue(writer, val, BinaryUtils.getUnspecifiedType());
+    }
+
+    /**
+     * Disassembly val object when possible and send to writer.
+     * <p>
+     *     Method accepts user defined type code to force interpret val
+     *     as a Collection or a Map. Without it (if used not appropriate code)
+     *     custom Collection or Map will be serialized like plain object.
+     *     If specified code that hints to serialize val as a Collection, but it's
+     *     not instance of Collection interface, it will be treated as regular
+     *     object, the same true for Map.
+     * </p>
+     *
+     * @param writer Writer.
+     * @param val Value.
+     * @param type code of the value type.
+     * @see GridBinaryMarshaller GridBinaryMarshaller for type codes
+     * @see #writeValue(BinaryWriterExImpl, Object)
+     * @see BinaryUtils#isSpecialCollection(Class)
+     * @see BinaryUtils#isSpecialMap(Class)
+     */
+    public void writeValue(final BinaryWriterExImpl writer, Object val, final byte type) {
+
         if (val == null) {
             writer.writeByte(GridBinaryMarshaller.NULL);
 
@@ -113,7 +142,8 @@ class BinaryBuilderSerializer {
             return;
         }
 
-        if (val instanceof Collection) {
+        if (BinaryUtils.isSpecialCollection(val.getClass())
+                || (BinaryUtils.isCollectionType(type) && val instanceof Collection)) {
             Collection<?> c = (Collection<?>)val;
 
             writer.writeByte(GridBinaryMarshaller.COL);
@@ -129,7 +159,8 @@ class BinaryBuilderSerializer {
             return;
         }
 
-        if (val instanceof Map) {
+        if (BinaryUtils.isSpecialMap(val.getClass())
+                || (BinaryUtils.isMapType(type) && val instanceof Map)) {
             Map<?, ?> map = (Map<?, ?>)val;
 
             writer.writeByte(GridBinaryMarshaller.MAP);
