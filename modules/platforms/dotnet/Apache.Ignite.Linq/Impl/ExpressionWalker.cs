@@ -85,6 +85,15 @@ namespace Apache.Ignite.Linq.Impl
             if (srcRefExp != null)
                 return GetCacheQueryable(srcRefExp);
 
+            var fieldExpr = expression as MemberExpression;
+
+            if (fieldExpr != null)
+            {
+                // TODO: Slow!
+                return Expression.Lambda<Func<ICacheQueryable>>(
+                    Expression.Convert(fieldExpr, typeof (ICacheQueryable))).Compile()();
+            }
+
             var constExpr = expression as ConstantExpression;
 
             if (constExpr == null)
