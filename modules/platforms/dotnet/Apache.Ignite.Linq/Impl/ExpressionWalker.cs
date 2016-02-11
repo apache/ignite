@@ -60,7 +60,12 @@ namespace Apache.Ignite.Linq.Impl
             if (innerMember != null)
                 return GetCacheQueryable(innerMember);
 
-            throw new NotSupportedException("Unexpected member expression, cannot find query source: " + expression);
+            // Attempt to evaluate
+            // TODO: Slow
+            return Expression.Lambda<Func<ICacheQueryable>>(
+                Expression.Convert(expression, typeof(ICacheQueryable))).Compile()();
+
+            //throw new NotSupportedException("Unexpected member expression, cannot find query source: " + expression);
         }
 
         public static ICacheQueryable GetCacheQueryable(IFromClause fromClause)
@@ -88,11 +93,7 @@ namespace Apache.Ignite.Linq.Impl
             var fieldExpr = expression as MemberExpression;
 
             if (fieldExpr != null)
-            {
-                // TODO: Slow!
-                return Expression.Lambda<Func<ICacheQueryable>>(
-                    Expression.Convert(fieldExpr, typeof (ICacheQueryable))).Compile()();
-            }
+                return GetCacheQueryable(fieldExpr);
 
             var constExpr = expression as ConstantExpression;
 
