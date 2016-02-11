@@ -18,6 +18,8 @@
 namespace Apache.Ignite.Linq.Impl
 {
     using System.Threading;
+    using Remotion.Linq.Parsing.ExpressionVisitors.Transformation;
+    using Remotion.Linq.Parsing.ExpressionVisitors.TreeEvaluation;
     using Remotion.Linq.Parsing.Structure;
 
     /// <summary>
@@ -27,7 +29,7 @@ namespace Apache.Ignite.Linq.Impl
     {
         /** */
         private static readonly ThreadLocal<QueryParser> ThreadLocalInstance =
-            new ThreadLocal<QueryParser>(QueryParser.CreateDefault);
+            new ThreadLocal<QueryParser>(CreateParser);
 
         /// <summary>
         /// Gets the default instance for current thread.
@@ -35,6 +37,21 @@ namespace Apache.Ignite.Linq.Impl
         public static QueryParser Instance
         {
             get { return ThreadLocalInstance.Value; }
+        }
+
+        private static QueryParser CreateParser()
+        {
+            var transformerRegistry = ExpressionTransformerRegistry.CreateDefault();
+            var evaluatableExpressionFilter = new NullEvaluatableExpressionFilter();
+            var expressionTreeParser = new ExpressionTreeParser(
+                ExpressionTreeParser.CreateDefaultNodeTypeProvider(),
+                ExpressionTreeParser.CreateDefaultProcessor(transformerRegistry, evaluatableExpressionFilter));
+            return new QueryParser(expressionTreeParser);
+        }
+
+        private sealed class NullEvaluatableExpressionFilter : EvaluatableExpressionFilterBase
+        {
+            // No-op.
         }
     }
 }
