@@ -258,6 +258,8 @@ public abstract class CacheAbstractNewSelfTest extends GridCommonAbstractTest {
         assertEquals("Cache is not empty", 0, jcache().localSize(CachePeekMode.ALL));
 
         resetStore();
+
+        cacheName = null;
     }
 
     /**
@@ -446,11 +448,7 @@ public abstract class CacheAbstractNewSelfTest extends GridCommonAbstractTest {
      * @return Cache name.
      */
     protected String cacheName() {
-        if (cacheName == null)
-            cacheName = "testcache-" + testsCfg.suffix().hashCode()
-                + testsCfg.suffix().substring(0, 100).replace('=', '-').replace(',', ' ');
-
-        return cacheName;
+        return "testcache-" + testsCfg.suffix().hashCode();
     }
 
     /**
