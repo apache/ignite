@@ -17,22 +17,22 @@ System.config({
     "Blob": "github:eligrey/Blob.js@master",
     "FileSaver": "github:eligrey/FileSaver.js@master",
     "ace": "github:ajaxorg/ace-builds@1.2.3",
-    "angular": "github:angular/bower-angular@1.4.9",
+    "angular": "github:angular/bower-angular@1.5.0",
     "angular-ag-grid": "github:ceolter/ag-grid@2.3.5",
-    "angular-animate": "github:angular/bower-angular-animate@1.4.9",
-    "angular-drag-and-drop-lists": "github:marceljuenemann/angular-drag-and-drop-lists@1.3.0",
+    "angular-animate": "github:angular/bower-angular-animate@1.5.0",
+    "angular-drag-and-drop-lists": "github:marceljuenemann/angular-drag-and-drop-lists@1.4.0",
     "angular-grid": "github:ceolter/ag-grid@2.3.5",
     "angular-loading": "github:darthwade/angular-loading@0.1.4",
     "angular-motion": "github:mgcrea/angular-motion@0.4.3",
     "angular-nvd3": "github:krispo/angular-nvd3@1.0.5",
-    "angular-retina": "github:jrief/angular-retina@0.3.8",
-    "angular-sanitize": "github:angular/bower-angular-sanitize@1.4.9",
+    "angular-retina": "github:jrief/angular-retina@0.3.9",
+    "angular-sanitize": "github:angular/bower-angular-sanitize@1.5.0",
     "angular-smart-table": "github:lorenzofox3/Smart-Table@2.1.7",
-    "angular-strap": "github:akuznetsov-gridgain/angular-strap@fix-1852-2.3.6",
+    "angular-strap": "github:mgcrea/angular-strap@2.3.7",
     "angular-tree-control": "github:wix/angular-tree-control@0.2.23",
     "angular-ui-ace": "github:angular-ui/ui-ace@0.2.3",
-    "angular-ui-grid": "github:angular-ui/bower-ui-grid@3.1.0",
-    "angular-ui-router": "github:angular-ui/ui-router@0.2.17",
+    "angular-ui-grid": "github:angular-ui/bower-ui-grid@3.1.1",
+    "angular-ui-router": "github:angular-ui/ui-router@0.2.18",
     "angular-ui-router-title": "github:nonplus/angular-ui-router-title@0.0.4",
     "babel": "npm:babel-core@5.8.35",
     "babel-runtime": "npm:babel-runtime@5.8.35",
@@ -53,28 +53,22 @@ System.config({
     "pdfmake": "github:bpampuch/pdfmake@0.1.20",
     "query-command-supported": "github:zenorocha/document.queryCommandSupported@1.0.0",
     "spinjs": "github:fgnass/spin.js@2.3.2",
-    "github:akuznetsov-gridgain/angular-strap@fix-1852-2.3.6": {
-      "angular": "github:angular/bower-angular@1.4.9",
-      "angular-animate": "github:angular/bower-angular-animate@1.4.9",
-      "angular-motion": "github:mgcrea/angular-motion@0.4.3",
-      "angular-sanitize": "github:angular/bower-angular-sanitize@1.4.9"
-    },
-    "github:angular-ui/bower-ui-grid@3.1.0": {
+    "github:angular-ui/bower-ui-grid@3.1.1": {
       "pdfmake": "github:bpampuch/pdfmake@0.1.20"
     },
     "github:angular-ui/ui-ace@0.2.3": {
       "ace": "github:ajaxorg/ace-builds@1.2.3"
     },
-    "github:angular-ui/ui-router@0.2.17": {
-      "angular": "github:angular/bower-angular@1.4.9"
+    "github:angular-ui/ui-router@0.2.18": {
+      "angular": "github:angular/bower-angular@1.5.0"
     },
-    "github:angular/bower-angular-animate@1.4.9": {
-      "angular": "github:angular/bower-angular@1.4.9"
+    "github:angular/bower-angular-animate@1.5.0": {
+      "angular": "github:angular/bower-angular@1.5.0"
     },
-    "github:angular/bower-angular-sanitize@1.4.9": {
-      "angular": "github:angular/bower-angular@1.4.9"
+    "github:angular/bower-angular-sanitize@1.5.0": {
+      "angular": "github:angular/bower-angular@1.5.0"
     },
-    "github:angular/bower-angular@1.4.9": {
+    "github:angular/bower-angular@1.5.0": {
       "jquery": "github:components/jquery@2.2.0"
     },
     "github:darthwade/angular-loading@0.1.4": {
@@ -131,22 +125,25 @@ System.config({
       "vm-browserify": "npm:vm-browserify@0.0.4"
     },
     "github:krispo/angular-nvd3@1.0.5": {
-      "angular": "github:angular/bower-angular@1.4.9",
+      "angular": "github:angular/bower-angular@1.5.0",
       "d3": "npm:d3@3.5.14",
       "nvd3": "npm:nvd3@1.8.1"
     },
-    "github:marceljuenemann/angular-drag-and-drop-lists@1.3.0": {
-      "angular": "github:angular/bower-angular@1.4.9"
-    },
     "github:mgcrea/angular-motion@0.4.3": {
-      "angular": "github:angular/bower-angular@1.4.9",
+      "angular": "github:angular/bower-angular@1.5.0",
       "css": "github:systemjs/plugin-css@0.1.20"
+    },
+    "github:mgcrea/angular-strap@2.3.7": {
+      "angular": "github:angular/bower-angular@1.5.0",
+      "angular-animate": "github:angular/bower-angular-animate@1.5.0",
+      "angular-motion": "github:mgcrea/angular-motion@0.4.3",
+      "angular-sanitize": "github:angular/bower-angular-sanitize@1.5.0"
     },
     "github:twbs/bootstrap@3.3.6": {
       "jquery": "github:components/jquery@2.2.0"
     },
     "github:wix/angular-tree-control@0.2.23": {
-      "angular": "github:angular/bower-angular@1.4.9"
+      "angular": "github:angular/bower-angular@1.5.0"
     },
     "npm:acorn-globals@1.0.9": {
       "acorn": "npm:acorn@2.7.0"

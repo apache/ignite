@@ -19,10 +19,10 @@
 
 module.exports = {
     implements: 'admin-routes',
-    inject: ['require(lodash)', 'require(express)', 'require(nodemailer)', 'mongo']
+    inject: ['require(lodash)', 'require(express)', 'require(nodemailer)', 'settings', 'mongo']
 };
 
-module.exports.factory = function (_, express, nodemailer, mongo) {
+module.exports.factory = function (_, express, nodemailer, settings, mongo) {
     return new Promise((resolve) => {
         const router = express.Router();
 
