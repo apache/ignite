@@ -43,23 +43,17 @@ namespace Apache.Ignite.Linq.Impl
         private static QueryParser CreateParser()
         {
             var transformerRegistry = ExpressionTransformerRegistry.CreateDefault();
-            var evaluatableExpressionFilter = new NullEvaluatableExpressionFilter();
-            var expressionTreeParser = new ExpressionTreeParser(
-                ExpressionTreeParser.CreateDefaultNodeTypeProvider(),
-                CreateProcessor(transformerRegistry, evaluatableExpressionFilter));
-            return new QueryParser(expressionTreeParser);
-        }
 
-        private static CompoundExpressionTreeProcessor CreateProcessor(
-            IExpressionTranformationProvider tranformationProvider,
-            IEvaluatableExpressionFilter evaluatableExpressionFilter)
-        {
-            return new CompoundExpressionTreeProcessor(
+            var processor = new CompoundExpressionTreeProcessor(
                 new IExpressionTreeProcessor[]
                 {
-                    new PartialEvaluatingExpressionTreeProcessor(evaluatableExpressionFilter),
-                    new TransformingExpressionTreeProcessor(tranformationProvider)
+                    new PartialEvaluatingExpressionTreeProcessor(new NullEvaluatableExpressionFilter()),
+                    new TransformingExpressionTreeProcessor(transformerRegistry)
                 });
+
+            var parser = new ExpressionTreeParser(ExpressionTreeParser.CreateDefaultNodeTypeProvider(), processor);
+
+            return new QueryParser(parser);
         }
 
 
