@@ -37,6 +37,7 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.Lock;
+import javax.annotation.Resource;
 import javax.cache.Cache;
 import javax.cache.CacheException;
 import javax.cache.expiry.Duration;
@@ -79,6 +80,8 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgnitePredicate;
+import org.apache.ignite.resources.CacheNameResource;
+import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.resources.LoggerResource;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
@@ -151,6 +154,10 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
 
     /** Increment processor for invoke operations. */
     public static final EntryProcessor<String, Integer, String> RMV_PROCESSOR = new RemoveEntryProcessor();
+
+    /** Increment processor for invoke operations. */
+    public static final EntryProcessor<String, Integer, Integer> INJECT_PROCESSOR =
+                                                new ResourceInjectionEntryProcessor();
 
     /** Increment processor for invoke operations with IgniteEntryProcessor. */
     public static final CacheEntryProcessor<String, Integer, String> RMV_IGNITE_PROCESSOR =
@@ -5388,6 +5395,24 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
     }
 
     /**
+     * @throws Exception If failed.
+     */
+    public void testTransformResourceInjection() throws Exception {
+        final IgniteCache<String, Integer> cache = jcache();
+
+        Integer flags = cache.invoke("key1", INJECT_PROCESSOR);
+
+        assertTrue("Processor result is null", flags != null);
+
+        log.info("Injection flag: " + Integer.toBinaryString(flags));
+
+        Collection<ResourceType> notInjected = ResourceInfoSet.valueOf(flags).notInjected();
+
+        if (!notInjected.isEmpty())
+            assertTrue("Can't inject resource(s) " + Arrays.toString(notInjected.toArray()), false);
+    }
+
+    /**
      * Sets given value, returns old value.
      */
     public static final class SetValueProcessor implements EntryProcessor<String, Integer, Integer> {
@@ -5454,6 +5479,102 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
             e.setValue(old == null ? 1 : old + 1);
 
             return String.valueOf(old);
+        }
+    }
+
+    /** */
+    enum ResourceType {
+        /** */
+        IGNITE_INSTANCE,
+
+        /** */
+        CACHE_NAME
+    }
+
+    /**
+     *
+     */
+    static class ResourceInfoSet {
+        /** */
+        int val;
+
+        /** */
+        public ResourceInfoSet() {
+            this(0);
+        }
+
+        /** */
+        public ResourceInfoSet(int val) {
+            this.val = val;
+        }
+
+        /**
+         * @param val Value.
+         */
+        public static ResourceInfoSet valueOf(int val) {
+            return new ResourceInfoSet(val);
+        }
+
+        /** */
+        public int getValue() {
+            return val;
+        }
+
+        /**
+         * @param type Type.
+         * @param injected Injected.
+         */
+        public ResourceInfoSet set(ResourceType type, boolean injected) {
+            int mask = 1 << type.ordinal();
+
+            if (injected)
+                val |= mask;
+            else
+                val &= ~mask;
+
+            return this;
+        }
+
+        /**
+         * @see {@link #set(ResourceType, boolean)}
+         */
+        public ResourceInfoSet set(ResourceType type, Object toCheck) {
+            return set(type, toCheck != null);
+        }
+
+        /**
+         * @return collection of not injected resources
+         */
+        public Collection<ResourceType> notInjected() {
+            ResourceType[] types = ResourceType.values();
+            ArrayList<ResourceType> res = new ArrayList<>(types.length);
+            int mask = 1;
+
+            for (ResourceType type : types) {
+                if ((this.val & mask) == 0)
+                    res.add(type);
+                mask <<= 1;
+            }
+
+            return res;
+        }
+    }
+
+    /**
+     *
+     */
+    private static class ResourceInjectionEntryProcessor implements EntryProcessor<String, Integer, Integer>,
+                Serializable {
+        @IgniteInstanceResource
+        transient Ignite ignite;
+
+        @CacheNameResource
+        transient String cacheName;
+
+        /** {@inheritDoc} */
+        @Override public Integer process(MutableEntry<String, Integer> e, Object... args) {
+            return new ResourceInfoSet().set(ResourceType.IGNITE_INSTANCE, ignite).
+                                            set(ResourceType.CACHE_NAME, cacheName).getValue();
         }
     }
 
