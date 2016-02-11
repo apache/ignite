@@ -72,6 +72,9 @@ public abstract class CacheAbstractNewSelfTest extends GridCommonAbstractTest {
     /** VM ip finder for TCP discovery. */
     protected static TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
 
+    /** Cache name. */
+    private String cacheName;
+
     /**
      * @return Grids count to start.
      */
@@ -102,7 +105,11 @@ public abstract class CacheAbstractNewSelfTest extends GridCommonAbstractTest {
 
                 IgniteConfiguration cfg1 = optimize(getConfiguration(gridName));
 
-                cfg1.setCacheConfiguration(testsCfg.configurationFactory().cacheConfiguration(gridName));
+                CacheConfiguration cc = testsCfg.configurationFactory().cacheConfiguration(gridName);
+
+                cc.setName(cacheName());
+
+                cfg1.setCacheConfiguration(cc);
 
                 startGrid(gridName, cfg1, null);
             }
@@ -115,7 +122,11 @@ public abstract class CacheAbstractNewSelfTest extends GridCommonAbstractTest {
 
                 IgniteEx grid = grid(i);
 
-                grid.getOrCreateCache(testsCfg.configurationFactory().cacheConfiguration(grid.name()));
+                CacheConfiguration cc = testsCfg.configurationFactory().cacheConfiguration(grid.name());
+
+                cc.setName(cacheName());
+
+                grid.getOrCreateCache(cc);
             }
         }
         else
@@ -432,6 +443,16 @@ public abstract class CacheAbstractNewSelfTest extends GridCommonAbstractTest {
     }
 
     /**
+     * @return Cache name.
+     */
+    protected String cacheName() {
+        if (cacheName == null)
+            cacheName = testsCfg.suffix().substring(0, 50).replace('=', '-').replace(',', ' ');
+
+        return cacheName;
+    }
+
+    /**
      * @return Transactions instance.
      */
     protected IgniteTransactions transactions() {
@@ -444,7 +465,7 @@ public abstract class CacheAbstractNewSelfTest extends GridCommonAbstractTest {
      */
     @SuppressWarnings({"unchecked"})
     @Override protected IgniteCache<String, Integer> jcache(int idx) {
-        return ignite(idx).cache(null);
+        return ignite(idx).cache(cacheName());
     }
 
     /**
@@ -456,7 +477,7 @@ public abstract class CacheAbstractNewSelfTest extends GridCommonAbstractTest {
             throw new UnsupportedOperationException("Operation can't be done automatically via proxy. " +
                 "Send task with this logic on remote jvm instead.");
 
-        return ((IgniteKernal)grid(idx)).<String, Integer>internalCache().context();
+        return ((IgniteKernal)grid(idx)).<String, Integer>internalCache(cacheName()).context();
     }
 
     /**

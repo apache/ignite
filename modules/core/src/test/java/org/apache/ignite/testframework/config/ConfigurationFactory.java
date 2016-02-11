@@ -24,7 +24,16 @@ import org.apache.ignite.configuration.IgniteConfiguration;
  *
  */
 public interface ConfigurationFactory {
+    /**
+     * @param gridName Grid name.
+     * @param srcCfg Source config.
+     * @return IgniteConfiguration.
+     */
     public IgniteConfiguration getConfiguration(String gridName, IgniteConfiguration srcCfg);
 
+    /**
+     * @param gridName Name.
+     * @return CacheConfiguration.
+     */
     public CacheConfiguration cacheConfiguration(String gridName);
 }
