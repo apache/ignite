@@ -283,6 +283,11 @@ public class ClusterLocalNodeMetricsMXBeanImpl implements ClusterLocalNodeMetric
     }
 
     /** {@inheritDoc} */
+    @Override public long getTotalUpTime() {
+        return node.metrics().getTotalUpTime();
+    }
+
+    /** {@inheritDoc} */
     @Override public long getLastDataVersion() {
         return node.metrics().getLastDataVersion();
     }

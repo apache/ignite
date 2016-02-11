@@ -20,13 +20,17 @@ package org.apache.ignite.internal.processors.cache;
 import java.util.Collection;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
+import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheMetrics;
+import org.apache.ignite.cache.CachePeekMode;
+import org.apache.ignite.cluster.ClusterGroup;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.events.Event;
 import org.apache.ignite.events.EventType;
+import org.apache.ignite.internal.cluster.ClusterGroupAdapter;
 import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoveryNode;
@@ -205,6 +209,15 @@ public class CacheMetricsForClusterGroupSelfTest extends GridCommonAbstractTest 
 
     /**
      * @param cache Cache.
+     * @param cnt Count.
+     */
+    private void removeCacheData(IgniteCache<Integer, Integer> cache, int cnt) {
+        for (int i = 0; i < cnt; i++)
+            cache.remove(i);
+    }
+
+    /**
+     * @param cache Cache.
      */
     private void assertMetrics(IgniteCache<Integer, Integer> cache) {
         CacheMetrics[] ms = new CacheMetrics[GRID_CNT];
@@ -238,6 +251,59 @@ public class CacheMetricsForClusterGroupSelfTest extends GridCommonAbstractTest 
                 }
             }));
         }
+    }
+
+    /**
+     * Test cluster group metrics in case of statistics enabled.
+     */
+    public void testMetricsOnClient() throws Exception {
+        createCaches(true);
+
+        daemon = false;
+        IgniteConfiguration icfg = getConfiguration("clientNode");
+        icfg.setClientMode(true);
+
+        try (Ignite ignite = startGrid("clientNode", icfg)) {
+            IgniteCache<Integer, Integer> cache = ignite.getOrCreateCache(cache1.getName());
+
+            populateCacheData(cache, ENTRY_CNT_CACHE1);
+            readCacheData(cache, ENTRY_CNT_CACHE1);
+            removeCacheData(cache, ENTRY_CNT_CACHE1 / 2);
+
+            awaitMetricsUpdate();
+
+            cache.size(CachePeekMode.ALL);
+            cacheFromCtx(cache).size();
+            cacheFromCtx(cache).size(CachePeekMode.values());
+
+            CacheMetrics cacheMetrics = cache.metrics(ignite.cluster().forCacheNodes(cache.getName()));
+            assertMetricsAreNotEmpty(cacheMetrics, ENTRY_CNT_CACHE1 - (ENTRY_CNT_CACHE1 / 2));
+
+            cacheMetrics = cache.metrics(ignite.cluster().forServers());
+            assertMetricsAreNotEmpty(cacheMetrics, ENTRY_CNT_CACHE1 - (ENTRY_CNT_CACHE1 / 2));
+
+            cacheMetrics = cache.metrics(ignite.cluster());
+            assertMetricsAreNotEmpty(cacheMetrics, 0); // no size on client node
+
+            cacheMetrics = cache.metrics(ignite.cluster().forClients());
+            assertMetricsAreNotEmpty(cacheMetrics, 0); // no size on client node
+
+            cacheMetrics = cache.metrics();
+            assertMetricsAreNotEmpty(cacheMetrics, ENTRY_CNT_CACHE1 - (ENTRY_CNT_CACHE1 / 2));
+        }
+
+        destroyCaches();
+    }
+
+    private void assertMetricsAreNotEmpty(CacheMetrics metrics, int keyCount) {
+        assertNotNull(metrics);
+
+        assert keyCount == 0 ? metrics.isEmpty() : !metrics.isEmpty();
+
+        assert metrics.getAveragePutTime() > 1 : metrics.getAveragePutTime();
+        assert metrics.getAverageGetTime() > 1 : metrics.getAverageGetTime();
+        assert metrics.getAverageRemoveTime() > 1 : metrics.getAverageRemoveTime();
+        assertEquals(keyCount, metrics.getKeySize());
     }
 
     /**

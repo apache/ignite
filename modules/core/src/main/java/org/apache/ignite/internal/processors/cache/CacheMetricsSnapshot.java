@@ -329,15 +329,12 @@ public class CacheMetricsSnapshot implements CacheMetrics, Externalizable {
      */
     public CacheMetricsSnapshot(CacheMetrics loc, Collection<CacheMetrics> metrics) {
         cacheName = loc.name();
-        isEmpty = loc.isEmpty();
         isWriteBehindEnabled = loc.isWriteBehindEnabled();
         writeBehindFlushSize = loc.getWriteBehindFlushSize();
         writeBehindFlushThreadCnt = loc.getWriteBehindFlushThreadCount();
         writeBehindFlushFreq = loc.getWriteBehindFlushFrequency();
         writeBehindStoreBatchSize = loc.getWriteBehindStoreBatchSize();
         writeBehindBufSize = loc.getWriteBehindBufferSize();
-        size = loc.getSize();
-        keySize = loc.getKeySize();
 
         keyType = loc.getKeyType();
         valType = loc.getValueType();
@@ -350,6 +347,9 @@ public class CacheMetricsSnapshot implements CacheMetrics, Externalizable {
         offHeapMaxSize = loc.getOffHeapMaxSize();
 
         for (CacheMetrics e : metrics) {
+            size += e.getSize();
+            keySize += e.getSize(); // Should be {@link CacheMetrics#getKeySize()} but could be optimized.
+
             reads += e.getCacheGets();
             puts += e.getCachePuts();
             hits += e.getCacheHits();
@@ -453,14 +453,17 @@ public class CacheMetricsSnapshot implements CacheMetrics, Externalizable {
                 writeBehindErrorRetryCnt = -1;
         }
 
-        int size = metrics.size();
+        // Traffic optimization: count empty flag locally.
+        isEmpty = size == 0;
 
-        if (size > 1) {
-            putAvgTimeNanos /= size;
-            getAvgTimeNanos /= size;
-            rmvAvgTimeNanos /= size;
-            commitAvgTimeNanos /= size;
-            rollbackAvgTimeNanos /= size;
+        int clusterGroupSize = metrics.size();
+
+        if (clusterGroupSize > 1) {
+            putAvgTimeNanos /= clusterGroupSize;
+            getAvgTimeNanos /= clusterGroupSize;
+            rmvAvgTimeNanos /= clusterGroupSize;
+            commitAvgTimeNanos /= clusterGroupSize;
+            rollbackAvgTimeNanos /= clusterGroupSize;
         }
     }
 
@@ -889,6 +892,8 @@ public class CacheMetricsSnapshot implements CacheMetrics, Externalizable {
         out.writeLong(swapEntriesCnt);
         out.writeLong(swapSize);
 
+        out.writeInt(size);
+
         out.writeInt(dhtEvictQueueCurrSize);
         out.writeInt(txThreadMapSize);
         out.writeInt(txXidMapSize);
@@ -946,6 +951,8 @@ public class CacheMetricsSnapshot implements CacheMetrics, Externalizable {
         swapMisses = in.readLong();
         swapEntriesCnt = in.readLong();
         swapSize = in.readLong();
+
+        size = in.readInt();
 
         dhtEvictQueueCurrSize = in.readInt();
         txThreadMapSize = in.readInt();

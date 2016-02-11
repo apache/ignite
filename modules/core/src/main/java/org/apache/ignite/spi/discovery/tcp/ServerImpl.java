@@ -4376,6 +4376,7 @@ class ServerImpl extends TcpDiscoveryImpl {
             }
 
             if (sendMessageToRemotes(msg)) {
+                // TODO
                 if ((locNodeId.equals(msg.creatorNodeId()) && msg.senderNodeId() == null ||
                     !hasMetrics(msg, locNodeId)) && spiStateCopy() == CONNECTED) {
                     // Message is on its first ring or just created on coordinator.

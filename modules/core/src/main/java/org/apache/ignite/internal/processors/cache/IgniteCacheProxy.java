@@ -216,16 +216,7 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
 
     /** {@inheritDoc} */
     @Override public CacheMetrics metrics() {
-        GridCacheGateway<K, V> gate = this.gate;
-
-        CacheOperationContext prev = onEnter(gate, opCtx);
-
-        try {
-            return ctx.cache().metrics();
-        }
-        finally {
-            onLeave(gate, prev);
-        }
+        return metrics(ctx.grid().cluster().forServers());
     }
 
     /** {@inheritDoc} */

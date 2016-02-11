@@ -79,6 +79,7 @@ public class ClusterMetricsSnapshot implements ClusterMetrics {
         8/*non-heap memory max*/ +
         8/*non-heap memory total*/ +
         8/*uptime*/ +
+        8/*total up time of the cluster*/ +
         8/*start time*/ +
         8/*node start time*/ +
         4/*thread count*/ +
@@ -214,6 +215,9 @@ public class ClusterMetricsSnapshot implements ClusterMetrics {
     private long upTime = -1;
 
     /** */
+    private long totalUpTime = -1;
+
+    /** */
     private long startTime = -1;
 
     /** */
@@ -310,6 +314,7 @@ public class ClusterMetricsSnapshot implements ClusterMetrics {
         nonHeapMax = 0;
         nonHeapTotal = 0;
         upTime = 0;
+        totalUpTime = 0;
         startTime = 0;
         nodeStartTime = 0;
         threadCnt = 0;
@@ -389,6 +394,7 @@ public class ClusterMetricsSnapshot implements ClusterMetrics {
             nonHeapInit += m.getNonHeapMemoryInitialized();
 
             upTime = max(upTime, m.getUpTime());
+            totalUpTime += m.getUpTime();
 
             lastDataVer = max(lastDataVer, m.getLastDataVersion());
 
@@ -764,7 +770,7 @@ public class ClusterMetricsSnapshot implements ClusterMetrics {
 
     /** {@inheritDoc} */
     @Override public long getTotalBusyTime() {
-        return getUpTime() - getTotalIdleTime();
+        return totalUpTime - getTotalIdleTime();
     }
 
     /** {@inheritDoc} */
@@ -802,7 +808,7 @@ public class ClusterMetricsSnapshot implements ClusterMetrics {
 
     /** {@inheritDoc} */
     @Override public float getIdleTimePercentage() {
-        return getTotalIdleTime() / (float)getUpTime();
+        return getTotalIdleTime() / (float)totalUpTime;
     }
 
     /** {@inheritDoc} */
@@ -873,6 +879,11 @@ public class ClusterMetricsSnapshot implements ClusterMetrics {
     /** {@inheritDoc} */
     @Override public long getUpTime() {
         return upTime;
+    }
+
+    /** {@inheritDoc} */
+    @Override public long getTotalUpTime() {
+        return totalUpTime;
     }
 
     /** {@inheritDoc} */
@@ -1055,6 +1066,15 @@ public class ClusterMetricsSnapshot implements ClusterMetrics {
      */
     public void setUpTime(long upTime) {
         this.upTime = upTime;
+    }
+
+    /**
+     * Sets VM up time.
+     *
+     * @param totalUpTime VM up time.
+     */
+    public void setTotalUpTime(long totalUpTime) {
+        this.totalUpTime = totalUpTime;
     }
 
     /**
@@ -1314,6 +1334,7 @@ public class ClusterMetricsSnapshot implements ClusterMetrics {
         buf.putLong(metrics.getStartTime());
         buf.putLong(metrics.getNodeStartTime());
         buf.putLong(metrics.getUpTime());
+        buf.putLong(metrics.getTotalUpTime());
         buf.putInt(metrics.getCurrentThreadCount());
         buf.putInt(metrics.getMaximumThreadCount());
         buf.putLong(metrics.getTotalStartedThreadCount());
@@ -1387,6 +1408,7 @@ public class ClusterMetricsSnapshot implements ClusterMetrics {
         metrics.setStartTime(buf.getLong());
         metrics.setNodeStartTime(buf.getLong());
         metrics.setUpTime(buf.getLong());
+        metrics.setTotalUpTime(buf.getLong());
         metrics.setCurrentThreadCount(buf.getInt());
         metrics.setMaximumThreadCount(buf.getInt());
         metrics.setTotalStartedThreadCount(buf.getLong());

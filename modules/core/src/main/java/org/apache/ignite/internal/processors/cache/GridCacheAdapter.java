@@ -2015,6 +2015,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
 
         Boolean stored = syncOp(new SyncOp<Boolean>(true) {
             @Override public Boolean op(IgniteTxLocalAdapter tx) throws IgniteCheckedException {
+
                 return tx.putAsync(ctx, key, val, false, filter).get().success();
             }
 
@@ -5765,7 +5766,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
 
         /**
          * @param metrics Metrics.
-         * @param start   Start time.
+         * @param start Operation start time.
          */
         public UpdateTimeStatClosure(CacheMetricsImpl metrics, long start) {
             this.metrics = metrics;
@@ -5787,7 +5788,8 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
         }
 
         /**
-         * Updates statistics.
+         * Updates statistics. Should not be called for operations processing more than one entry on a transparent
+         * client cache.
          */
         protected abstract void updateTimeStat();
     }
