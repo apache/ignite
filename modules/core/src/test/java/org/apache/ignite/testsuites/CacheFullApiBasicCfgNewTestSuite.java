@@ -72,7 +72,7 @@ public class CacheFullApiBasicCfgNewTestSuite extends TestSuite {
         TestSuite suite = new TestSuite("Cache New Full API Test Suite");
 
         addTestSuites(suite, 1);
-        addTestSuites(suite, 4);
+//        addTestSuites(suite, 4);
 
         return suite;
     }
