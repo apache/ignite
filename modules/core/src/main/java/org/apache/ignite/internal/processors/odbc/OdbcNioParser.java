@@ -47,21 +47,21 @@ public class OdbcNioParser implements GridNioParser {
     private int leftToReceive = 0;
 
     /** Already received bytes of current message. */
-    private ByteBuffer currentMessage = null;
+    private ByteBuffer curMsg = null;
 
     /** Marshaller. */
     private final GridBinaryMarshaller marsh;
 
     /** Logger. */
-    protected final IgniteLogger log;
+    private final IgniteLogger log;
 
     /**
+     * Constructor.
+     *
      * @param ctx Kernel context.
      */
     public OdbcNioParser(GridKernalContext ctx) {
-        CacheObjectBinaryProcessorImpl cacheObjProc = (CacheObjectBinaryProcessorImpl)ctx.cacheObjects();
-
-        marsh = cacheObjProc.marshaller();
+        marsh = ((CacheObjectBinaryProcessorImpl)ctx.cacheObjects()).marshaller();
 
         log = ctx.log(getClass());
     }
@@ -79,7 +79,8 @@ public class OdbcNioParser implements GridNioParser {
             // Still receiving message
             int toConsume = Math.min(leftToReceive, buf.remaining());
 
-            currentMessage.put(buf.array(), buf.arrayOffset(), toConsume);
+            curMsg.put(buf.array(), buf.arrayOffset(), toConsume);
+
             leftToReceive -= toConsume;
 
             buf.position(buf.position() + toConsume);
@@ -87,11 +88,11 @@ public class OdbcNioParser implements GridNioParser {
             if (leftToReceive != 0)
                 return null;
 
-            BinaryInputStream stream = new BinaryHeapInputStream(currentMessage.array());
+            BinaryInputStream stream = new BinaryHeapInputStream(curMsg.array());
 
             BinaryReaderExImpl reader = new BinaryReaderExImpl(null, stream, null);
 
-            currentMessage = null;
+            curMsg = null;
 
             return reader;
         }
@@ -102,7 +103,7 @@ public class OdbcNioParser implements GridNioParser {
         BinaryReaderExImpl reader = new BinaryReaderExImpl(null, stream, null);
 
         // Getting message length. It's in the first four bytes of the message.
-        int messageLen = reader.readInt();
+        int msgLen = reader.readInt();
 
         // Just skipping int here to sync position.
         buf.getInt();
@@ -110,23 +111,24 @@ public class OdbcNioParser implements GridNioParser {
         int remaining = buf.remaining();
 
         // Checking if we have not entire message in buffer.
-        if (messageLen > remaining) {
-            leftToReceive = messageLen - remaining;
+        if (msgLen > remaining) {
+            leftToReceive = msgLen - remaining;
 
-            currentMessage = ByteBuffer.allocate(messageLen);
-            currentMessage.put(buf);
+            curMsg = ByteBuffer.allocate(msgLen);
+
+            curMsg.put(buf);
 
             return null;
         }
 
-        buf.position(buf.position() + messageLen);
+        buf.position(buf.position() + msgLen);
 
         return reader;
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public OdbcRequest decode(GridNioSession ses, ByteBuffer buf) throws IOException,
-            IgniteCheckedException {
+    @Nullable @Override public OdbcRequest decode(GridNioSession ses, ByteBuffer buf)
+        throws IOException, IgniteCheckedException {
         BinaryRawReaderEx messageReader = tryConstructMessage(buf);
 
         return messageReader == null ? null : readRequest(ses, messageReader);
