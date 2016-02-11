@@ -763,8 +763,8 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
 
             // Reverse param order
             var qry2R =
-                CompiledQuery.Compile((int i, string s) => cache.Where(x => x.Value.Name.StartsWith(s) && x.Key < i));
-            Assert.AreEqual(5, qry2R(5, " Pe").ToArray().Length);
+                CompiledQuery.Compile((string s, int i) => cache.Where(x => x.Key < i && x.Value.Name.StartsWith(s)));
+            Assert.AreEqual(5, qry2R(" Pe", 5).ToArray().Length);
         }
 
         [Test]
