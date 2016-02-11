@@ -54,25 +54,35 @@ public class CacheFullApiBasicCfgNewTestSuite extends TestSuite {
     private static final ConfigurationParameter<CacheConfiguration>[][] cacheParams =
         CacheConfigurationPermutations.basicSet();
 
+    /** */
+    private static CacheStartMode cacheStartMode = CacheStartMode.NODES_THEN_CACHES;
+
+    /**
+     * @param cacheStartMode Cache start mode.
+     */
+    public static void setCacheStartMode(CacheStartMode cacheStartMode) {
+        CacheFullApiBasicCfgNewTestSuite.cacheStartMode = cacheStartMode;
+    }
 
     /**
      * @return Cache API test suite.
      * @throws Exception If failed.
      */
     public static TestSuite suite() throws Exception {
-        return suite(CacheStartMode.NODES_THEN_CACHES);
+        TestSuite suite = new TestSuite("Cache New Full API Test Suite");
+
+        addTestSuites(suite, 1);
+        addTestSuites(suite, 4);
+
+        return suite;
     }
 
     /**
-     * @param cacheStartMode Cache start mode.
-     * @return Cache API test suite.
-     * @throws Exception If failed.
+     *
+     * @param suite Suite.
+     * @param gridsCnt Grids count.
      */
-    public static TestSuite suite(CacheStartMode cacheStartMode) throws Exception {
-        TestSuite suite = new TestSuite("Cache New Full API Test Suite");
-
-        final int gridsCnt = 1;
-
+    private static void addTestSuites(TestSuite suite, int gridsCnt) {
         for (StateIterator igniteCfgIter = new StateIterator(igniteParams); igniteCfgIter.hasNext();) {
             final int[] igniteCfgState = igniteCfgIter.next();
 
@@ -80,11 +90,9 @@ public class CacheFullApiBasicCfgNewTestSuite extends TestSuite {
                 int[] cacheCfgState = cacheCfgIter.next();
 
                 // Stop all grids before starting new ignite configuration.
-                addTestSuite(suite, igniteCfgState, cacheCfgState, gridsCnt, !cacheCfgIter.hasNext(), cacheStartMode);
+                addTestSuite(suite, igniteCfgState, cacheCfgState, gridsCnt, !cacheCfgIter.hasNext());
             }
         }
-
-        return suite;
     }
 
     /**
@@ -93,10 +101,9 @@ public class CacheFullApiBasicCfgNewTestSuite extends TestSuite {
      * @param cacheCfgState Cache config state.
      * @param gridsCnt Grids count.
      * @param stop Stop.
-     * @param cacheStartMode Cache start mode.
      */
     private static void addTestSuite(TestSuite suite, int[] igniteCfgState, int[] cacheCfgState, int gridsCnt,
-        boolean stop, CacheStartMode cacheStartMode) {
+        boolean stop) {
         StateConfigurationFactory factory = new FullApiStateConfigurationFactory(igniteParams, igniteCfgState,
             cacheParams, cacheCfgState);
 

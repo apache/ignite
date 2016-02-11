@@ -136,7 +136,10 @@ public abstract class CacheAbstractNewSelfTest extends GridCommonAbstractTest {
         for (int i = 0; i < gridCount(); i++) {
             info("Destroing cache on grid: " + i);
 
-            jcache(i).destroy();
+            IgniteCache<String, Integer> cache = jcache(i);
+
+            if (cache != null)
+                cache.destroy();
         }
 
         map.clear();
@@ -191,6 +194,15 @@ public abstract class CacheAbstractNewSelfTest extends GridCommonAbstractTest {
                                     int localSize = jcache(fi).localSize(CachePeekMode.ALL);
 
                                     info(">>>>> Debug localSize for grid: " + fi + " is " + localSize);
+
+                                    if (localSize != 0) {
+                                        info(">>>>> Debug ONHEAP  localSize for grid: " + fi + " is " + jcache(fi).localSize(CachePeekMode.ONHEAP));
+                                        info(">>>>> Debug OFFHEAP localSize for grid: " + fi + " is " + jcache(fi).localSize(CachePeekMode.OFFHEAP));
+                                        info(">>>>> Debug PRIMARY localSize for grid: " + fi + " is " + jcache(fi).localSize(CachePeekMode.PRIMARY));
+                                        info(">>>>> Debug BACKUP  localSize for grid: " + fi + " is " + jcache(fi).localSize(CachePeekMode.BACKUP));
+                                        info(">>>>> Debug NEAR    localSize for grid: " + fi + " is " + jcache(fi).localSize(CachePeekMode.NEAR));
+                                        info(">>>>> Debug SWAP    localSize for grid: " + fi + " is " + jcache(fi).localSize(CachePeekMode.SWAP));
+                                    }
 
                                     return localSize == 0;
                                 }

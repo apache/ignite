@@ -112,7 +112,7 @@ public class CacheConfigurationPermutations {
     /** */
     @SuppressWarnings("unchecked")
     public static final ConfigurationParameter<CacheConfiguration>[][] BASIC_SET = new ConfigurationParameter[][] {
-        enumParameters("setCacheMode", CacheMode.class),
+        objectParameters("setCacheMode", CacheMode.REPLICATED, CacheMode.PARTITIONED),
         enumParameters("setAtomicityMode", CacheAtomicityMode.class),
         enumParameters("setMemoryMode", CacheMemoryMode.class),
 //        booleanParameters("setStoreKeepBinary"),
@@ -123,7 +123,7 @@ public class CacheConfigurationPermutations {
         objectParameters("setSwapEnabled", true),
 //        objectParameters(true, "setNearConfiguration", NEAR_CACHE_CFG), // TODO uncomment.
         asArray(SIMPLE_CACHE_STORE_PARAM),
-        asArray(OFFHEAP_SMALL_SIZE_ENABLED),
+//        asArray(OFFHEAP_SMALL_SIZE_ENABLED),
         objectParameters("setWriteSynchronizationMode", CacheWriteSynchronizationMode.FULL_SYNC),
         objectParameters("setAtomicWriteOrderMode", CacheAtomicWriteOrderMode.PRIMARY),
         objectParameters("setStartSize", 1024), // One value.

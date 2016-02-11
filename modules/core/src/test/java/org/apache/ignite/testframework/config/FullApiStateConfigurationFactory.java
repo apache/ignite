@@ -62,6 +62,9 @@ public class FullApiStateConfigurationFactory extends StateConfigurationFactory 
 
         cfg.setDiscoverySpi(disco);
 
+        // TODO rewrite.
+        cfg.setDiscoverySpi(srcCfg.getDiscoverySpi());
+
         // Full API
         ((TcpCommunicationSpi)cfg.getCommunicationSpi()).setSharedMemoryPort(-1);
 
