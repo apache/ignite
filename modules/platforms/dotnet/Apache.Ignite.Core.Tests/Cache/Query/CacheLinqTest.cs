@@ -751,12 +751,20 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         {
             var cache = GetPersonCache().AsCacheQueryable();
 
+            // 1 arg
             var qry1 = CompiledQuery.Compile((int k) => cache.Where(x => x.Key < k));
             Assert.AreEqual(3, qry1(3).ToArray().Length);
 
+            // 2 arg
             var qry2 =
-                CompiledQuery.Compile((int i, string s) => cache.Where(x => x.Value.Name.StartsWith(s) && x.Key < i));
+                CompiledQuery.Compile((int i, string s) => cache.Where(x => x.Key < i && x.Value.Name.StartsWith(s)));
             Assert.AreEqual(5, qry2(5, " Pe").ToArray().Length);
+
+
+            // Reverse param order
+            var qry2r =
+                CompiledQuery.Compile((int i, string s) => cache.Where(x => x.Value.Name.StartsWith(s) && x.Key < i));
+            Assert.AreEqual(5, qry2r(5, " Pe").ToArray().Length);
         }
 
         [Test]
