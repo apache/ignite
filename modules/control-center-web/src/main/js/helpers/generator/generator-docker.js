@@ -31,10 +31,10 @@ $generatorDocker.clusterDocker = function (cluster, version) {
         'ENV CONFIG_URI config/' + cluster.name + '-server.xml\n\n' +
         '# Copy ignite-http-rest from optional.\n' +
         'ENV OPTION_LIBS ignite-rest-http\n\n' +
-        '# Update packages and install maven, cpio.\n' +
+        '# Update packages and install maven.\n' +
         'RUN \\\n' +
         '   apt-get update && \\\n' +
-        '   apt-get install -y maven cpio\n\n' +
+        '   apt-get install -y maven\n\n' +
         '# Append project to container.\n' +
         'ADD . ' + cluster.name + '\n\n' +
         '# Build project in container container.\n' +
