@@ -20,7 +20,10 @@ package org.apache.ignite.internal.processors.odbc;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.GridKernalContext;
-import org.apache.ignite.internal.binary.*;
+import org.apache.ignite.internal.binary.BinaryRawReaderEx;
+import org.apache.ignite.internal.binary.BinaryRawWriterEx;
+import org.apache.ignite.internal.binary.BinaryReaderExImpl;
+import org.apache.ignite.internal.binary.GridBinaryMarshaller;
 import org.apache.ignite.internal.binary.streams.BinaryHeapInputStream;
 import org.apache.ignite.internal.binary.streams.BinaryHeapOutputStream;
 import org.apache.ignite.internal.binary.streams.BinaryInputStream;
@@ -36,7 +39,7 @@ import java.util.Collection;
 /**
  * ODBC protocol parser.
  */
-public class OdbcParser implements GridNioParser {
+public class OdbcNioParser implements GridNioParser {
     /** Initial output stream capacity. */
     private static final int INIT_CAP = 1024;
 
@@ -55,7 +58,7 @@ public class OdbcParser implements GridNioParser {
     /**
      * @param ctx Kernel context.
      */
-    public OdbcParser(GridKernalContext ctx) {
+    public OdbcNioParser(GridKernalContext ctx) {
         CacheObjectBinaryProcessorImpl cacheObjProc = (CacheObjectBinaryProcessorImpl)ctx.cacheObjects();
 
         marsh = cacheObjProc.marshaller();

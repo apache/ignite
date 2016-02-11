@@ -33,16 +33,24 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.jetbrains.annotations.Nullable;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
 
-import static org.apache.ignite.internal.processors.odbc.OdbcRequest.*;
+import static org.apache.ignite.internal.processors.odbc.OdbcRequest.CLOSE_SQL_QUERY;
+import static org.apache.ignite.internal.processors.odbc.OdbcRequest.EXECUTE_SQL_QUERY;
+import static org.apache.ignite.internal.processors.odbc.OdbcRequest.FETCH_SQL_QUERY;
+import static org.apache.ignite.internal.processors.odbc.OdbcRequest.GET_COLUMNS_META;
+import static org.apache.ignite.internal.processors.odbc.OdbcRequest.GET_TABLES_META;
 
 /**
  * SQL query handler.
  */
-public class OdbcCommandHandler extends GridNioServerListenerAdapter<OdbcRequest> {
+public class OdbcNioListener extends GridNioServerListenerAdapter<OdbcRequest> {
     /** Query ID sequence. */
     private static final AtomicLong qryIdGen = new AtomicLong();
 
@@ -63,7 +71,7 @@ public class OdbcCommandHandler extends GridNioServerListenerAdapter<OdbcRequest
      *
      * @param ctx Context.
      */
-    public OdbcCommandHandler(final GridKernalContext ctx, final GridSpinBusyLock busyLock) {
+    public OdbcNioListener(final GridKernalContext ctx, final GridSpinBusyLock busyLock) {
         this.ctx = ctx;
         this.busyLock = busyLock;
 

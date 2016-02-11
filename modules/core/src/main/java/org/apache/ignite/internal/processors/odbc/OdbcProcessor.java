@@ -18,18 +18,17 @@
 package org.apache.ignite.internal.processors.odbc;
 
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.OdbcConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
-import org.apache.ignite.internal.util.nio.*;
+import org.apache.ignite.internal.util.nio.GridNioCodecFilter;
+import org.apache.ignite.internal.util.nio.GridNioServer;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.spi.IgnitePortProtocol;
 
-import java.io.IOException;
 import java.net.InetAddress;
 import java.nio.ByteOrder;
 
@@ -37,11 +36,11 @@ import java.nio.ByteOrder;
  * ODBC processor.
  */
 public class OdbcProcessor extends GridProcessorAdapter {
-    /** OBCD TCP Server. */
-    private GridNioServer<OdbcRequest> srv;
-
     /** Busy lock. */
     private final GridSpinBusyLock busyLock = new GridSpinBusyLock();
+
+    /** OBCD TCP Server. */
+    private GridNioServer<OdbcRequest> srv;
 
     /**
      * @param ctx Kernal context.
@@ -52,151 +51,66 @@ public class OdbcProcessor extends GridProcessorAdapter {
 
     /** {@inheritDoc} */
     @Override public void start() throws IgniteCheckedException {
-        if (isOdbcEnabled()) {
-            Marshaller marsh = ctx.config().getMarshaller();
+        OdbcConfiguration odbcCfg = ctx.config().getOdbcConfiguration();
 
-            if (marsh != null && !(marsh instanceof BinaryMarshaller))
-                throw new IgniteCheckedException("ODBC may only be used with BinaryMarshaller.");
-
-            OdbcConfiguration cfg = ctx.config().getOdbcConfiguration();
-
-            assert cfg != null;
-
-            GridNioServerListener<OdbcRequest> listener = new OdbcCommandHandler(ctx, busyLock);
-
-            GridNioParser parser = new OdbcParser(ctx);
-
+        if (odbcCfg != null) {
             try {
-                InetAddress host = resolveOdbcTcpHost(ctx.config());
+                Marshaller marsh = ctx.config().getMarshaller();
 
-                int port = cfg.getPort();
+                if (marsh != null && !(marsh instanceof BinaryMarshaller))
+                    throw new IgniteCheckedException("ODBC can only be used with BinaryMarshaller (please set it " +
+                        "through IgniteConfiguration.setMarshaller())");
 
-                if (startTcpServer(host, port, listener, parser, cfg)) {
-                    if (log.isDebugEnabled())
-                        log.debug("ODBC Server has started on TCP port " + port);
+                String hostStr = odbcCfg.getHost();
 
-                    return;
-                }
+                if (hostStr == null)
+                    hostStr = ctx.config().getLocalHost();
 
-                U.warn(log, "Failed to start ODBC server (possibly all ports in range are in use) " +
-                        "[port=" + port + ", host=" + host + ']');
+                InetAddress host = U.resolveLocalHost(hostStr);
+
+                int port = odbcCfg.getPort();
+
+                srv = GridNioServer.<OdbcRequest>builder()
+                    .address(host)
+                    .port(port)
+                    .listener(new OdbcNioListener(ctx, busyLock))
+                    .logger(log)
+                    .selectorCount(odbcCfg.getSelectorCount())
+                    .gridName(ctx.gridName())
+                    .tcpNoDelay(odbcCfg.isNoDelay())
+                    .directBuffer(odbcCfg.isDirectBuffer())
+                    .byteOrder(ByteOrder.nativeOrder())
+                    .socketSendBufferSize(odbcCfg.getSendBufferSize())
+                    .socketReceiveBufferSize(odbcCfg.getReceiveBufferSize())
+                    .sendQueueLimit(odbcCfg.getSendQueueLimit())
+                    .filters(new GridNioCodecFilter(new OdbcNioParser(ctx), log, false))
+                    .directMode(false)
+                    .idleTimeout(odbcCfg.getIdleTimeout())
+                    .build();
+
+                srv.start();
+
+                ctx.ports().registerPort(port, IgnitePortProtocol.TCP, getClass());
+
+                log.info("ODBC processor has started on TCP port " + port);
             }
-            catch (IOException e) {
-                U.warn(log, "Failed to start ODBC server: " + e.getMessage(),
-                        "Failed to start ODBC server. Check odbcTcpHost configuration property.");
+            catch (Exception e) {
+                throw new IgniteCheckedException("Failed to start ODBC processor.", e);
             }
-        }
-    }
-
-    /** {@inheritDoc} */
-    @Override public void stop(boolean cancel) throws IgniteCheckedException {
-        if (isOdbcEnabled()) {
-            if (srv != null) {
-                ctx.ports().deregisterPorts(getClass());
-
-                srv.stop();
-            }
-        }
-    }
-
-    /** {@inheritDoc} */
-    @Override public void onKernalStart() throws IgniteCheckedException {
-        if (isOdbcEnabled()) {
-            if (log.isDebugEnabled())
-                log.debug("ODBC processor started.");
         }
     }
 
     /** {@inheritDoc} */
     @Override public void onKernalStop(boolean cancel) {
-        if (isOdbcEnabled()) {
+        if (srv != null) {
             busyLock.block();
+
+            srv.stop();
+
+            ctx.ports().deregisterPorts(getClass());
 
             if (log.isDebugEnabled())
                 log.debug("ODBC processor stopped.");
-        }
-    }
-
-    /**
-     * Check if the ODBC is enabled.
-     *
-     * @return Whether or not ODBC is enabled.
-     */
-    public boolean isOdbcEnabled() {
-        return ctx.config().getOdbcConfiguration() != null;
-    }
-
-    /**
-     * Resolves host for server using grid configuration.
-     *
-     * @param cfg Grid configuration.
-     * @return Host address.
-     * @throws IOException If failed to resolve host.
-     */
-    private static InetAddress resolveOdbcTcpHost(IgniteConfiguration cfg) throws IOException {
-        String host = null;
-
-        OdbcConfiguration odbcCfg = cfg.getOdbcConfiguration();
-
-        if (odbcCfg != null)
-            host = odbcCfg.getHost();
-
-        if (host == null)
-            host = cfg.getLocalHost();
-
-        return U.resolveLocalHost(host);
-    }
-
-    /**
-     * Tries to start server with given parameters.
-     *
-     * @param hostAddr Host on which server should be bound.
-     * @param port Port on which server should be bound.
-     * @param listener Server message listener.
-     * @param parser Server message parser.
-     * @param cfg Configuration for other parameters.
-     * @return {@code True} if server successfully started, {@code false} if port is used and
-     *      server was unable to start.
-     */
-    private boolean startTcpServer(InetAddress hostAddr, int port, GridNioServerListener<OdbcRequest> listener,
-                                   GridNioParser parser, OdbcConfiguration cfg) {
-        try {
-            GridNioFilter codec = new GridNioCodecFilter(parser, log, false);
-
-            GridNioFilter[] filters;
-
-            filters = new GridNioFilter[] { codec };
-
-            srv = GridNioServer.<OdbcRequest>builder()
-                    .address(hostAddr)
-                    .port(port)
-                    .listener(listener)
-                    .logger(log)
-                    .selectorCount(cfg.getSelectorCount())
-                    .gridName(ctx.gridName())
-                    .tcpNoDelay(cfg.isNoDelay())
-                    .directBuffer(cfg.isDirectBuffer())
-                    .byteOrder(ByteOrder.nativeOrder())
-                    .socketSendBufferSize(cfg.getSendBufferSize())
-                    .socketReceiveBufferSize(cfg.getReceiveBufferSize())
-                    .sendQueueLimit(cfg.getSendQueueLimit())
-                    .filters(filters)
-                    .directMode(false)
-                    .build();
-
-            srv.idleTimeout(cfg.getIdleTimeout());
-
-            srv.start();
-
-            ctx.ports().registerPort(port, IgnitePortProtocol.TCP, getClass());
-
-            return true;
-        }
-        catch (IgniteCheckedException e) {
-            if (log.isDebugEnabled())
-                log.debug("Failed to start ODBC server on port " + port + ": " + e.getMessage());
-
-            return false;
         }
     }
 }
