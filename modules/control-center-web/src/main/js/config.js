@@ -28,7 +28,7 @@ System.config({
     "angular-retina": "github:jrief/angular-retina@0.3.9",
     "angular-sanitize": "github:angular/bower-angular-sanitize@1.5.0",
     "angular-smart-table": "github:lorenzofox3/Smart-Table@2.1.7",
-    "angular-strap": "github:mgcrea/angular-strap@2.3.7",
+    "angular-strap": "github:akuznetsov-gridgain/angular-strap@fix-1852-2.3.6",
     "angular-tree-control": "github:wix/angular-tree-control@0.2.23",
     "angular-ui-ace": "github:angular-ui/ui-ace@0.2.3",
     "angular-ui-grid": "github:angular-ui/bower-ui-grid@3.1.1",
@@ -53,6 +53,12 @@ System.config({
     "pdfmake": "github:bpampuch/pdfmake@0.1.20",
     "query-command-supported": "github:zenorocha/document.queryCommandSupported@1.0.0",
     "spinjs": "github:fgnass/spin.js@2.3.2",
+    "github:akuznetsov-gridgain/angular-strap@fix-1852-2.3.6": {
+      "angular": "github:angular/bower-angular@1.5.0",
+      "angular-animate": "github:angular/bower-angular-animate@1.5.0",
+      "angular-motion": "github:mgcrea/angular-motion@0.4.3",
+      "angular-sanitize": "github:angular/bower-angular-sanitize@1.5.0"
+    },
     "github:angular-ui/bower-ui-grid@3.1.1": {
       "pdfmake": "github:bpampuch/pdfmake@0.1.20"
     },
@@ -132,12 +138,6 @@ System.config({
     "github:mgcrea/angular-motion@0.4.3": {
       "angular": "github:angular/bower-angular@1.5.0",
       "css": "github:systemjs/plugin-css@0.1.20"
-    },
-    "github:mgcrea/angular-strap@2.3.7": {
-      "angular": "github:angular/bower-angular@1.5.0",
-      "angular-animate": "github:angular/bower-angular-animate@1.5.0",
-      "angular-motion": "github:mgcrea/angular-motion@0.4.3",
-      "angular-sanitize": "github:angular/bower-angular-sanitize@1.5.0"
     },
     "github:twbs/bootstrap@3.3.6": {
       "jquery": "github:components/jquery@2.2.0"
