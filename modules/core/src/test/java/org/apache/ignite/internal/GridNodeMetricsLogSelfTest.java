@@ -18,15 +18,16 @@
 package org.apache.ignite.internal;
 
 
-import java.io.File;
-import java.nio.charset.StandardCharsets;
+import java.io.StringWriter;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.common.GridCommonTest;
-import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.log4j.Layout;
+import org.apache.log4j.Logger;
+import org.apache.log4j.SimpleLayout;
+import org.apache.log4j.WriterAppender;
 
 /**
  * Check logging local node metrics
@@ -40,27 +41,34 @@ public class GridNodeMetricsLogSelfTest extends GridCommonAbstractTest {
         super(false);
     }
 
+    /** {@inheritDoc} */
+    @SuppressWarnings({"unchecked"})
+    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
+        IgniteConfiguration c = super.getConfiguration(gridName);
+        c.setMetricsLogFrequency(1000);
+        return c;
+    }
+
     /**
      * @throws Exception If failed.
      */
     public void testNodeMetricsLog() throws Exception {
-        IgniteConfiguration cfg = new IgniteConfiguration();
-        cfg.setMetricsLogFrequency(1000);
+        // Log to string, to check log content
+        Layout layout = new SimpleLayout();
+        StringWriter strWr = new StringWriter();
+        WriterAppender app = new WriterAppender(layout, strWr);
+        Logger.getRootLogger().addAppender(app);
 
-        startGrid(1);
-        Ignite g1 = startGrid("1", cfg);
+        Ignite g1 = startGrid(1);
         IgniteCache<Integer, String> cache1 = g1.createCache("TestCache1");
         cache1.put(1, "one");
 
-        Ignite g2 = startGrid("2", cfg);
+        Ignite g2 = startGrid(2);
         IgniteCache<Integer, String> cache2 = g2.createCache("TestCache2");
         cache2.put(2, "two");
 
         Thread.sleep(10000);
         String fName  = g1.log().fileName();
-
-        System.out.println(cache1.get(1));
-        System.out.println(cache2.get(2));
 
         //Check that nodes are alie
         assert cache1.get(1).equals("one");
@@ -68,8 +76,8 @@ public class GridNodeMetricsLogSelfTest extends GridCommonAbstractTest {
 
         stopAllGrids();
 
-        File f = new File(fName);
-        String fullLog = new String(GridTestUtils.readFile(f), StandardCharsets.UTF_8);
+        String fullLog = strWr.toString();
+        Logger.getRootLogger().removeAppender(app);
 
         assert fullLog.contains("Metrics for local node");
         assert fullLog.contains("uptime=");
