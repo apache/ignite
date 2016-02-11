@@ -21,6 +21,7 @@ namespace Apache.Ignite.Linq.Impl
     using Remotion.Linq.Parsing.ExpressionVisitors.Transformation;
     using Remotion.Linq.Parsing.ExpressionVisitors.TreeEvaluation;
     using Remotion.Linq.Parsing.Structure;
+    using Remotion.Linq.Parsing.Structure.ExpressionTreeProcessors;
 
     /// <summary>
     /// Cache query parser.
@@ -45,9 +46,22 @@ namespace Apache.Ignite.Linq.Impl
             var evaluatableExpressionFilter = new NullEvaluatableExpressionFilter();
             var expressionTreeParser = new ExpressionTreeParser(
                 ExpressionTreeParser.CreateDefaultNodeTypeProvider(),
-                ExpressionTreeParser.CreateDefaultProcessor(transformerRegistry, evaluatableExpressionFilter));
+                CreateProcessor(transformerRegistry, evaluatableExpressionFilter));
             return new QueryParser(expressionTreeParser);
         }
+
+        private static CompoundExpressionTreeProcessor CreateProcessor(
+            IExpressionTranformationProvider tranformationProvider,
+            IEvaluatableExpressionFilter evaluatableExpressionFilter)
+        {
+            return new CompoundExpressionTreeProcessor(
+                new IExpressionTreeProcessor[]
+                {
+                    new PartialEvaluatingExpressionTreeProcessor(evaluatableExpressionFilter),
+                    new TransformingExpressionTreeProcessor(tranformationProvider)
+                });
+        }
+
 
         private sealed class NullEvaluatableExpressionFilter : EvaluatableExpressionFilterBase
         {
