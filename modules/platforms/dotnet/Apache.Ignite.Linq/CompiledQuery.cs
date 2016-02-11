@@ -92,7 +92,7 @@ namespace Apache.Ignite.Linq
                     string.Format("{0} can only compile cache queries produced by AsCacheQueryable method. " +
                                   "Provided query is not valid: '{1}'", typeof (CompiledQuery).FullName, queryable));
 
-            Debug.WriteLine(((ICacheQueryable)queryable).ToTraceString());
+            Debug.WriteLine(queryable);
 
             return cacheQueryable.CompileQuery<T>();
         }
