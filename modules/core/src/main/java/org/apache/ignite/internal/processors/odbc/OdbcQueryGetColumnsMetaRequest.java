@@ -17,6 +17,8 @@
 
 package org.apache.ignite.internal.processors.odbc;
 
+import org.jetbrains.annotations.Nullable;
+
 /**
  * ODBC query get columns meta request.
  */
@@ -46,7 +48,7 @@ public class OdbcQueryGetColumnsMetaRequest extends OdbcRequest {
     /**
      * @return Cache name.
      */
-    public String cacheName() {
+    @Nullable public String cacheName() {
         return cacheName;
     }
 

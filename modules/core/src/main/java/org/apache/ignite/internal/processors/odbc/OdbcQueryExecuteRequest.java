@@ -17,6 +17,8 @@
 
 package org.apache.ignite.internal.processors.odbc;
 
+import org.jetbrains.annotations.Nullable;
+
 /**
  * ODBC query execute request.
  */
@@ -60,7 +62,7 @@ public class OdbcQueryExecuteRequest extends OdbcRequest {
     /**
      * @return Cache name.
      */
-    public String cacheName() {
+    @Nullable public String cacheName() {
         return cacheName;
     }
 }

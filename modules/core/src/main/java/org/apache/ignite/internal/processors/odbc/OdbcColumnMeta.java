@@ -43,26 +43,13 @@ public class OdbcColumnMeta {
     private final Class<?> dataType;
 
     /**
-     * Add quotation marks at the beginning and end of the string.
-     *
-     * @param str Input string.
-     * @return String surrounded with quotation marks.
-     */
-    private String AddQuotationMarksIfNeeded(String str) {
-        if (!str.startsWith("\"") && !str.isEmpty())
-            return "\"" + str + "\"";
-
-        return str;
-    }
-
-    /**
      * @param schemaName Cache name.
      * @param tableName Table name.
      * @param columnName Column name.
      * @param dataType Data type.
      */
     public OdbcColumnMeta(String schemaName, String tableName, String columnName, Class<?> dataType) {
-        this.schemaName = AddQuotationMarksIfNeeded(schemaName);
+        this.schemaName = OdbcUtils.addQuotationMarksIfNeeded(schemaName);
         this.tableName = tableName;
         this.columnName = columnName;
         this.dataType = dataType;
@@ -72,7 +59,7 @@ public class OdbcColumnMeta {
      * @param info Field metadata.
      */
     public OdbcColumnMeta(GridQueryFieldMetadata info) {
-        this.schemaName = AddQuotationMarksIfNeeded(info.schemaName());
+        this.schemaName = OdbcUtils.addQuotationMarksIfNeeded(info.schemaName());
         this.tableName = info.typeName();
         this.columnName = info.fieldName();
 
