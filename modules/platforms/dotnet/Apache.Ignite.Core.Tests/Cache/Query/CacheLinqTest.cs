@@ -751,11 +751,12 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         {
             var cache = GetPersonCache().AsCacheQueryable();
 
-            var qry = CompiledQuery.Compile((int k) => cache.Where(x => x.Key < k));
+            var qry1 = CompiledQuery.Compile((int k) => cache.Where(x => x.Key < k));
+            Assert.AreEqual(3, qry1(3).ToArray().Length);
 
-            var res = qry(3).ToArray();
-
-            Assert.AreEqual(3, res.Length);
+            var qry2 =
+                CompiledQuery.Compile((int i, string s) => cache.Where(x => x.Value.Name.StartsWith(s) && x.Key < i));
+            Assert.AreEqual(5, qry2(5, " Pe").ToArray().Length);
         }
 
         [Test]
