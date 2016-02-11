@@ -446,7 +446,7 @@ public class IgfsProcessorValidationSelfTest extends IgfsCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testInvalidEndpointTcpPort() throws Exception {
-        final String failMsg = "IGFS endpoint TCP port must be in range";
+        final String failMsg = "IGFS endpoint TCP port is out of range";
         g1Cfg.setCacheConfiguration(concat(dataCaches(1024), metaCaches(), CacheConfiguration.class));
 
         final String igfsCfgName = "igfs-cfg";
