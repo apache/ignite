@@ -1722,6 +1722,8 @@ public class GridCacheContext<K, V> implements Externalizable {
         if (cacheCfg == null) {
             // We dump threads to stdout, because we can loose logs in case
             // the build is cancelled on TeamCity.
+            log.info(">>>>>>> Cache cfg is null for cache: " + cacheName);
+
             U.dumpThreads(null);
 
             if (log != null)
