@@ -63,13 +63,14 @@ public class OdbcTableMeta {
 
     /** {@inheritDoc} */
     @Override public boolean equals(Object o) {
-        if (!(o instanceof OdbcTableMeta))
-            return false;
+        if (o instanceof OdbcTableMeta) {
+            OdbcTableMeta other = (OdbcTableMeta) o;
 
-        OdbcTableMeta another = (OdbcTableMeta)o;
+            return this == other || catalog.equals(other.catalog) && schema.equals(other.schema) &&
+                table.equals(other.table) && tableType.equals(other.tableType);
+        }
 
-        return catalog.equals(another.catalog) && schema.equals(another.schema) && table.equals(another.table) &&
-               tableType.equals(another.tableType);
+        return false;
     }
 
     /**

@@ -64,6 +64,7 @@ public class OdbcColumnMeta {
         this.columnName = info.fieldName();
 
         Class<?> type;
+
         try {
             type = Class.forName(info.fieldTypeName());
         }
@@ -75,17 +76,26 @@ public class OdbcColumnMeta {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean equals(Object o)
-    {
-        if (!(o instanceof OdbcColumnMeta))
-            return false;
+    @Override public int hashCode() {
+        int hash = schemaName.hashCode();
 
-        OdbcColumnMeta another = (OdbcColumnMeta)o;
+        hash = 31 * hash + tableName.hashCode();
+        hash = 31 * hash + columnName.hashCode();
+        hash = 31 * hash + dataType.hashCode();
 
-        return schemaName.equals(another.schemaName) &&
-               tableName.equals(another.tableName)   &&
-               columnName.equals(another.columnName) &&
-               dataType.equals(another.dataType);
+        return hash;
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean equals(Object o) {
+        if (o instanceof OdbcColumnMeta) {
+            OdbcColumnMeta other = (OdbcColumnMeta) o;
+
+            return this == other || schemaName.equals(other.schemaName) && tableName.equals(other.tableName) &&
+                columnName.equals(other.columnName) && dataType.equals(other.dataType);
+        }
+
+        return false;
     }
 
     /**
