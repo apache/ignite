@@ -35,10 +35,8 @@ module.exports = {
     ]
 };
 
-module.exports.factory = function (publicRoutes, adminRoutes, profileRoutes,
-                                   clusterRoutes, domainRoutes, cacheRoutes, igfsRoutes,
-                                   notebookRoutes, agentRoutes,
-                                   pluginRoutes) {
+module.exports.factory = function(publicRoutes, adminRoutes, profileRoutes, clusterRoutes, domainRoutes, cacheRoutes,
+                                  igfsRoutes, notebookRoutes, agentRoutes, pluginRoutes) {
     return {
         register: (app) => {
             app.all('*', (req, res, next) => {
@@ -55,13 +53,9 @@ module.exports.factory = function (publicRoutes, adminRoutes, profileRoutes,
                 next();
             });
 
-            const _mustAuthenticated = (req, res, next) => {
-                req.isAuthenticated() ? next() : res.redirect('/');
-            };
+            const _mustAuthenticated = (req, res, next) => req.isAuthenticated() ? next() : res.redirect('/');
 
-            const _adminOnly = (req, res, next) => {
-                req.isAuthenticated() && req.user.admin ? next() : res.sendStatus(403);
-            };
+            const _adminOnly = (req, res, next) => req.isAuthenticated() && req.user.admin ? next() : res.sendStatus(403);
 
             // Registering the standard routes
             app.use('/', publicRoutes);
@@ -79,13 +73,14 @@ module.exports.factory = function (publicRoutes, adminRoutes, profileRoutes,
             app.use('/agent', _mustAuthenticated, agentRoutes);
 
             // Registering the routes of all plugin modules
-            for (var name in pluginRoutes)
+            for (const name in pluginRoutes) {
                 if (pluginRoutes.hasOwnProperty(name))
                     pluginRoutes[name].register(app, _mustAuthenticated, _adminOnly);
+            }
 
             // Catch 404 and forward to error handler.
-            app.use(function (req, res, next) {
-                var err = new Error('Not Found: ' + req.originalUrl);
+            app.use((req, res, next) => {
+                const err = new Error('Not Found: ' + req.originalUrl);
 
                 err.status = 404;
 
@@ -93,7 +88,7 @@ module.exports.factory = function (publicRoutes, adminRoutes, profileRoutes,
             });
 
             // Production error handler: no stacktraces leaked to user.
-            app.use(function (err, req, res) {
+            app.use((err, req, res) => {
                 res.status(err.status || 500);
 
                 res.render('error', {

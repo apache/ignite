@@ -16,14 +16,26 @@
  */
 
 var gulp = require('gulp');
+var sequence = require('gulp-sequence');
+
 var eslint = require('gulp-eslint');
 
 var paths = [
     './app/**/*.js'
 ];
 
-gulp.task('eslint', function() {
-	return gulp.src(paths)
-		.pipe(eslint())
+gulp.task('eslint:node', function() {
+	return gulp.src('./serve/**/*.js')
+		.pipe(eslint({envs: ['node']}))
 		.pipe(eslint.format());
+});
+
+gulp.task('eslint:browser', function() {
+	return gulp.src(paths)
+		.pipe(eslint({envs: ['browser']}))
+		.pipe(eslint.format());
+});
+
+gulp.task('eslint', function(cb) {
+	return sequence('eslint:browser', 'eslint:node')(cb);
 });
