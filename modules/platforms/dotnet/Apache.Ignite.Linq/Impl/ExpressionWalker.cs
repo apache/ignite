@@ -136,17 +136,12 @@ namespace Apache.Ignite.Linq.Impl
             var fld = memberExpr.Member as FieldInfo;
 
             if (fld != null)
-            {
-                // TODO: Cache
                 return DelegateConverter.CompileFieldGetter(fld);
-            }
 
             var prop = memberExpr.Member as PropertyInfo;
 
             if (prop != null)
-            {
                 return DelegateConverter.CompilePropertyGetter(prop);
-            }
 
             return null;
         }
