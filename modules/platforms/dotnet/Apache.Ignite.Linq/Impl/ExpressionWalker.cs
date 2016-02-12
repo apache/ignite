@@ -32,6 +32,9 @@ namespace Apache.Ignite.Linq.Impl
     /// </summary>
     internal static class ExpressionWalker
     {
+        private static readonly CopyOnWriteConcurrentDictionary<MemberInfo, Func<object, object>> MemberReaders =
+            new CopyOnWriteConcurrentDictionary<MemberInfo, Func<object, object>>();
+
         public static ICacheQueryable GetCacheQueryable(QuerySourceReferenceExpression expression)
         {
             Debug.Assert(expression != null);
@@ -110,23 +113,14 @@ namespace Apache.Ignite.Linq.Impl
                 {
                     var target = targetExpr.Value;
 
-                    // Field or property
-                    var fld = memberExpr.Member as FieldInfo;
+                    Func<object, object> reader;
+                    if (MemberReaders.TryGetValue(memberExpr.Member, out reader))
+                        return (T) reader(target);
 
-                    if (fld != null)
-                    {
-                        // TODO: Cache
-                        var getter = DelegateConverter.CompileFieldGetter(fld);
-                        return (T) getter(target);
-                    }
+                    reader = CompileMemberReader(memberExpr);
 
-                    var prop = memberExpr.Member as PropertyInfo;
-
-                    if (prop != null)
-                    {
-                        var getter = DelegateConverter.CompilePropertyGetter(prop);
-                        return (T)getter(target);
-                    }
+                    if (reader != null)
+                        return (T) MemberReaders.GetOrAdd(memberExpr.Member, x => reader)(target);
                 }
 
                 // TODO: Static fields and properties
@@ -134,6 +128,27 @@ namespace Apache.Ignite.Linq.Impl
 
             return Expression.Lambda<Func<T>>(
                 Expression.Convert(expr, typeof (T))).Compile()();
+        }
+
+        private static Func<object, object> CompileMemberReader(MemberExpression memberExpr)
+        {
+            // Field or property
+            var fld = memberExpr.Member as FieldInfo;
+
+            if (fld != null)
+            {
+                // TODO: Cache
+                return DelegateConverter.CompileFieldGetter(fld);
+            }
+
+            var prop = memberExpr.Member as PropertyInfo;
+
+            if (prop != null)
+            {
+                return DelegateConverter.CompilePropertyGetter(prop);
+            }
+
+            return null;
         }
 
         public static string GetTableNameWithSchema(ICacheQueryable queryable)
