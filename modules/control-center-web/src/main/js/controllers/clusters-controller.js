@@ -46,6 +46,12 @@ consoleModule.controller('clustersController', function ($http, $timeout, $scope
         $scope.widthIsSufficient = $common.widthIsSufficient;
         $scope.saveBtnTipText = $common.saveBtnTipText;
 
+        $scope.contentVisible = function () {
+            var item = $scope.backupItem;
+
+            return item && (!item._id || _.find($scope.displayedRows, {_id: item._id}));
+        };
+
         $scope.trustManagersConfigured = function() {
             return $scope.backupItem.sslEnabled && $common.isDefined($scope.backupItem.sslContextFactory) &&
                 !$common.isEmptyArray($scope.backupItem.sslContextFactory.trustManagers);

@@ -34,7 +34,7 @@ include ../includes/infos
                 -var cloneTip = '"Clone current ' + objectName + '"'
                 -var undoTip = '"Undo all changes for current ' + objectName + '"'
 
-                div(ng-show='backupItem' style='display: inline-block;')
+                div(ng-show='contentVisible()' style='display: inline-block;')
                     .panel-tip-container(ng-hide='!backupItem || backupItem._id')
                         a.btn.btn-primary(ng-disabled='!ui.inputForm.$dirty' ng-click='ui.inputForm.$dirty && saveItem()' bs-tooltip='' data-title='{{saveBtnTipText(ui.inputForm.$dirty, "#{objectName}")}}' data-placement='bottom' data-trigger='hover') Save
                     .panel-tip-container(ng-show='backupItem._id')
@@ -50,7 +50,7 @@ include ../includes/infos
                 hr
             .bs-affix-fix
             div(bs-collapse='' data-allow-multiple='true' ng-model='ui.activePanels')
-                form.form-horizontal(name='ui.inputForm' ng-show='backupItem && (!backupItem._id || _.find(displayedRows, {_id: backupItem._id}))' novalidate)
+                form.form-horizontal(name='ui.inputForm' ng-show='contentVisible()' novalidate)
                     .panel-group(ng-click='triggerDigest = true')
                         ignite-configuration-clusters-general
                         .advanced-options
