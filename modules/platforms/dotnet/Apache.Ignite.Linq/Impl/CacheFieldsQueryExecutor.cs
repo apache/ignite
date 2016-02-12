@@ -72,6 +72,8 @@ namespace Apache.Ignite.Linq.Impl
         [SuppressMessage("Microsoft.Design", "CA1062:Validate arguments of public methods")]
         public IEnumerable<T> ExecuteCollection<T>(QueryModel queryModel)
         {
+            Debug.Assert(queryModel != null);
+
             var queryData = GetQueryData(queryModel);
 
             Debug.WriteLine("\nFields Query: {0} | {1}", queryData.QueryText,
@@ -89,9 +91,10 @@ namespace Apache.Ignite.Linq.Impl
         /// <summary>
         /// Compiles the query.
         /// </summary>
-        [SuppressMessage("Microsoft.Design", "CA1062:Validate arguments of public methods")]
         public Func<object[], IQueryCursor<T>> CompileQuery<T>(QueryModel queryModel, Delegate queryCaller)
         {
+            Debug.Assert(queryModel != null);
+
             var queryData = GetQueryData(queryModel);
 
             var queryText = queryData.QueryText;
@@ -130,6 +133,8 @@ namespace Apache.Ignite.Linq.Impl
         /** <inheritdoc /> */
         public static QueryData GetQueryData(QueryModel queryModel)
         {
+            Debug.Assert(queryModel != null);
+
             return new CacheQueryModelVisitor().GenerateQuery(queryModel);
         }
 
