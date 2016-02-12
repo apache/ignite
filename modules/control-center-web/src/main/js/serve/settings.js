@@ -22,13 +22,13 @@ module.exports = {
     inject: ['require(nconf)', 'require(fs)']
 };
 
-module.exports.factory = function (nconf, fs) {
+module.exports.factory = function(nconf, fs) {
     nconf.file({'file': './serve/config/default.json'});
 
     /**
      * Normalize a port into a number, string, or false.
      */
-    const _normalizePort = function (val) {
+    const _normalizePort = function(val) {
         var port = parseInt(val, 10);
 
         // named pipe

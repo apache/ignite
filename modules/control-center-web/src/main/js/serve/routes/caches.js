@@ -22,7 +22,7 @@ module.exports = {
     inject: ['require(lodash)', 'require(express)', 'mongo']
 };
 
-module.exports.factory = function (_, express, mongo) {
+module.exports.factory = function(_, express, mongo) {
     return new Promise((resolve) => {
         const router = express.Router();
         
@@ -32,48 +32,48 @@ module.exports.factory = function (_, express, mongo) {
          * @param req Request.
          * @param res Response.
          */
-        router.post('/list', function (req, res) {
+        router.post('/list', function(req, res) {
             var user_id = req.currentUserId();
 
             // Get owned space and all accessed space.
-            mongo.Space.find({$or: [{owner: user_id}, {usedBy: {$elemMatch: {account: user_id}}}]}, function (err, spaces) {
+            mongo.Space.find({$or: [{owner: user_id}, {usedBy: {$elemMatch: {account: user_id}}}]}, function(err, spaces) {
                 if (mongo.processed(err, res)) {
-                    var space_ids = spaces.map(function (value) {
+                    var space_ids = spaces.map(function(value) {
                         return value._id;
                     });
 
                     // Get all clusters for spaces.
-                    mongo.Cluster.find({space: {$in: space_ids}}, '_id name caches').sort('name').exec(function (err, clusters) {
+                    mongo.Cluster.find({space: {$in: space_ids}}, '_id name caches').sort('name').exec(function(err, clusters) {
                         if (mongo.processed(err, res)) {
                             // Get all domain models for spaces.
-                            mongo.DomainModel.find({space: {$in: space_ids}}).sort('name').exec(function (err, domains) {
+                            mongo.DomainModel.find({space: {$in: space_ids}}).sort('name').exec(function(err, domains) {
                                 if (mongo.processed(err, res)) {
                                     // Get all caches for spaces.
-                                    mongo.Cache.find({space: {$in: space_ids}}).sort('name').exec(function (err, caches) {
+                                    mongo.Cache.find({space: {$in: space_ids}}).sort('name').exec(function(err, caches) {
                                         if (mongo.processed(err, res)) {
-                                            _.forEach(clusters, function (cluster) {
-                                                cluster.caches = _.filter(cluster.caches, function (cacheId) {
+                                            _.forEach(clusters, function(cluster) {
+                                                cluster.caches = _.filter(cluster.caches, function(cacheId) {
                                                     return _.find(caches, {_id: cacheId});
                                                 });
                                             });
 
-                                            _.forEach(domains, function (domain) {
-                                                domain.caches = _.filter(domain.caches, function (cacheId) {
+                                            _.forEach(domains, function(domain) {
+                                                domain.caches = _.filter(domain.caches, function(cacheId) {
                                                     return _.find(caches, {_id: cacheId});
                                                 });
                                             });
 
-                                            _.forEach(caches, function (cache) {
+                                            _.forEach(caches, function(cache) {
                                                 // Remove deleted clusters.
-                                                cache.clusters = _.filter(cache.clusters, function (clusterId) {
-                                                    return _.findIndex(clusters, function (cluster) {
+                                                cache.clusters = _.filter(cache.clusters, function(clusterId) {
+                                                    return _.findIndex(clusters, function(cluster) {
                                                             return cluster._id.equals(clusterId);
                                                         }) >= 0;
                                                 });
 
                                                 // Remove deleted domain models.
-                                                cache.domains = _.filter(cache.domains, function (metaId) {
-                                                    return _.findIndex(domains, function (domain) {
+                                                cache.domains = _.filter(cache.domains, function(metaId) {
+                                                    return _.findIndex(domains, function(domain) {
                                                             return domain._id.equals(metaId);
                                                         }) >= 0;
                                                 });
@@ -81,7 +81,7 @@ module.exports.factory = function (_, express, mongo) {
 
                                             res.json({
                                                 spaces: spaces,
-                                                clusters: clusters.map(function (cluster) {
+                                                clusters: clusters.map(function(cluster) {
                                                     return {
                                                         value: cluster._id,
                                                         label: cluster.name,
@@ -104,22 +104,22 @@ module.exports.factory = function (_, express, mongo) {
         /**
          * Save cache.
          */
-        router.post('/save', function (req, res) {
+        router.post('/save', function(req, res) {
             var params = req.body;
             var cacheId = params._id;
             var clusters = params.clusters;
             var domains = params.domains;
 
             if (params._id) {
-                mongo.Cache.update({_id: cacheId}, params, {upsert: true}, function (err) {
+                mongo.Cache.update({_id: cacheId}, params, {upsert: true}, function(err) {
                     if (mongo.processed(err, res))
-                        mongo.Cluster.update({_id: {$in: clusters}}, {$addToSet: {caches: cacheId}}, {multi: true}, function (err) {
+                        mongo.Cluster.update({_id: {$in: clusters}}, {$addToSet: {caches: cacheId}}, {multi: true}, function(err) {
                             if (mongo.processed(err, res))
-                                mongo.Cluster.update({_id: {$nin: clusters}}, {$pull: {caches: cacheId}}, {multi: true}, function (err) {
+                                mongo.Cluster.update({_id: {$nin: clusters}}, {$pull: {caches: cacheId}}, {multi: true}, function(err) {
                                     if (mongo.processed(err, res))
-                                        mongo.DomainModel.update({_id: {$in: domains}}, {$addToSet: {caches: cacheId}}, {multi: true}, function (err) {
+                                        mongo.DomainModel.update({_id: {$in: domains}}, {$addToSet: {caches: cacheId}}, {multi: true}, function(err) {
                                             if (mongo.processed(err, res))
-                                                mongo.DomainModel.update({_id: {$nin: domains}}, {$pull: {caches: cacheId}}, {multi: true}, function (err) {
+                                                mongo.DomainModel.update({_id: {$nin: domains}}, {$pull: {caches: cacheId}}, {multi: true}, function(err) {
                                                     if (mongo.processed(err, res))
                                                         res.send(params._id);
                                                 });
@@ -129,18 +129,18 @@ module.exports.factory = function (_, express, mongo) {
                 })
             }
             else
-                mongo.Cache.findOne({space: params.space, name: params.name}, function (err, cache) {
+                mongo.Cache.findOne({space: params.space, name: params.name}, function(err, cache) {
                     if (mongo.processed(err, res)) {
                         if (cache)
                             return res.status(500).send('Cache with name: "' + cache.name + '" already exist.');
 
-                        (new mongo.Cache(params)).save(function (err, cache) {
+                        (new mongo.Cache(params)).save(function(err, cache) {
                             if (mongo.processed(err, res)) {
                                 cacheId = cache._id;
 
-                                mongo.Cluster.update({_id: {$in: clusters}}, {$addToSet: {caches: cacheId}}, {multi: true}, function (err) {
+                                mongo.Cluster.update({_id: {$in: clusters}}, {$addToSet: {caches: cacheId}}, {multi: true}, function(err) {
                                     if (mongo.processed(err, res))
-                                        mongo.DomainModel.update({_id: {$in: domains}}, {$addToSet: {caches: cacheId}}, {multi: true}, function (err) {
+                                        mongo.DomainModel.update({_id: {$in: domains}}, {$addToSet: {caches: cacheId}}, {multi: true}, function(err) {
                                             if (mongo.processed(err, res))
                                                 res.send(cacheId);
                                         });
@@ -154,8 +154,8 @@ module.exports.factory = function (_, express, mongo) {
         /**
          * Remove cache by ._id.
          */
-        router.post('/remove', function (req, res) {
-            mongo.Cache.remove(req.body, function (err) {
+        router.post('/remove', function(req, res) {
+            mongo.Cache.remove(req.body, function(err) {
                 if (mongo.processed(err, res))
                     res.sendStatus(200);
             })
@@ -164,23 +164,23 @@ module.exports.factory = function (_, express, mongo) {
         /**
          * Remove all caches.
          */
-        router.post('/remove/all', function (req, res) {
+        router.post('/remove/all', function(req, res) {
             var user_id = req.currentUserId();
 
             // Get owned space and all accessed space.
-            mongo.Space.find({$or: [{owner: user_id}, {usedBy: {$elemMatch: {account: user_id}}}]}, function (err, spaces) {
+            mongo.Space.find({$or: [{owner: user_id}, {usedBy: {$elemMatch: {account: user_id}}}]}, function(err, spaces) {
                 if (mongo.processed(err, res)) {
-                    var space_ids = spaces.map(function (value) {
+                    var space_ids = spaces.map(function(value) {
                         return value._id;
                     });
 
-                    mongo.Cache.remove({space: {$in: space_ids}}, function (err) {
+                    mongo.Cache.remove({space: {$in: space_ids}}, function(err) {
                         if (err)
                             return res.status(500).send(err.message);
 
-                        mongo.Cluster.update({space: {$in: space_ids}}, {caches: []}, {multi: true}, function (err) {
+                        mongo.Cluster.update({space: {$in: space_ids}}, {caches: []}, {multi: true}, function(err) {
                             if (mongo.processed(err, res))
-                                mongo.DomainModel.update({space: {$in: space_ids}}, {caches: []}, {multi: true}, function (err) {
+                                mongo.DomainModel.update({space: {$in: space_ids}}, {caches: []}, {multi: true}, function(err) {
                                     if (mongo.processed(err, res))
                                         res.sendStatus(200);
                                 });

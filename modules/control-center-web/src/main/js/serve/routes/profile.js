@@ -22,12 +22,12 @@ module.exports = {
     inject: ['require(lodash)', 'require(express)', 'mongo']
 };
 
-module.exports.factory = function (_, express, mongo) {
+module.exports.factory = function(_, express, mongo) {
     return new Promise((resolve) => {
         const router = express.Router();
 
         function _updateUser(res, params) {
-            mongo.Account.update({_id: params._id}, params, {upsert: true}, function (err, user) {
+            mongo.Account.update({_id: params._id}, params, {upsert: true}, function(err, user) {
                 // TODO IGNITE-843 Send error to admin.
                 if (err)
                     return res.status(500).send('Failed to update profile!');
@@ -40,13 +40,13 @@ module.exports.factory = function (_, express, mongo) {
         }
 
         function _checkEmail(res, user, params) {
-            if (params.email && user.email != params.email) {
-                mongo.Account.findOne({email: params.email}, function (err, userForEmail) {
+            if (params.email && user.email !== params.email) {
+                mongo.Account.findOne({email: params.email}, function(err, userForEmail) {
                     // TODO send error to admin
                     if (err)
                         return res.status(500).send('Failed to check e-mail!');
 
-                    if (userForEmail && userForEmail._id != user._id)
+                    if (userForEmail && userForEmail._id !== user._id)
                         return res.status(500).send('User with this e-mail already registered!');
 
                     _updateUser(res, params);
@@ -59,10 +59,10 @@ module.exports.factory = function (_, express, mongo) {
         /**
          * Save user profile.
          */
-        router.post('/save', function (req, res) {
+        router.post('/save', function(req, res) {
             var params = req.body;
 
-            mongo.Account.findById(params._id, function (err, user) {
+            mongo.Account.findById(params._id, function(err, user) {
                 // TODO IGNITE-843 Send error to admin
                 if (err)
                     return res.status(500).send('Failed to find user!');
@@ -71,13 +71,13 @@ module.exports.factory = function (_, express, mongo) {
                     if (_.isEmpty(params.password))
                         return res.status(500).send('Wrong value for new password!');
 
-                    user.setPassword(params.password, function (err, user) {
+                    user.setPassword(params.password, function(err, user) {
                         if (err)
                             return res.status(500).send(err.message);
 
-                        user.save(function (err) {
+                        user.save(function(err) {
                             if (err)
-                                return res.status(500).send("Failed to change password!");
+                                return res.status(500).send('Failed to change password!');
 
                             _checkEmail(res, user, params);
                         });

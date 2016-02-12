@@ -22,7 +22,7 @@ module.exports = {
     inject: ['require(express)', 'mongo']
 };
 
-module.exports.factory = function (express, mongo) {
+module.exports.factory = function(express, mongo) {
     return new Promise((resolve) => {
         const router = express.Router();
 
@@ -32,20 +32,20 @@ module.exports.factory = function (express, mongo) {
          * @param req Request.
          * @param res Response.
          */
-        router.post('/list', function (req, res) {
+        router.post('/list', function(req, res) {
             var user_id = req.currentUserId();
 
             // Get owned space and all accessed space.
-            mongo.Space.find({$or: [{owner: user_id}, {usedBy: {$elemMatch: {account: user_id}}}]}, function (err, spaces) {
+            mongo.Space.find({$or: [{owner: user_id}, {usedBy: {$elemMatch: {account: user_id}}}]}, function(err, spaces) {
                 if (err)
                     return res.status(500).send(err.message);
 
-                var space_ids = spaces.map(function (value) {
+                var space_ids = spaces.map(function(value) {
                     return value._id;
                 });
 
                 // Get all metadata for spaces.
-                mongo.Notebook.find({space: {$in: space_ids}}).select('_id name').sort('name').exec(function (err, notebooks) {
+                mongo.Notebook.find({space: {$in: space_ids}}).select('_id name').sort('name').exec(function(err, notebooks) {
                     if (err)
                         return res.status(500).send(err.message);
 
@@ -60,20 +60,20 @@ module.exports.factory = function (express, mongo) {
          * @param req Request.
          * @param res Response.
          */
-        router.post('/get', function (req, res) {
+        router.post('/get', function(req, res) {
             var user_id = req.currentUserId();
 
             // Get owned space and all accessed space.
-            mongo.Space.find({$or: [{owner: user_id}, {usedBy: {$elemMatch: {account: user_id}}}]}, function (err, spaces) {
+            mongo.Space.find({$or: [{owner: user_id}, {usedBy: {$elemMatch: {account: user_id}}}]}, function(err, spaces) {
                 if (err)
                     return res.status(500).send(err.message);
 
-                var space_ids = spaces.map(function (value) {
+                var space_ids = spaces.map(function(value) {
                     return value._id;
                 });
 
                 // Get all metadata for spaces.
-                mongo.Notebook.findOne({space: {$in: space_ids}, _id: req.body.noteId}).exec(function (err, notebook) {
+                mongo.Notebook.findOne({space: {$in: space_ids}, _id: req.body.noteId}).exec(function(err, notebook) {
                     if (err)
                         return res.status(500).send(err.message);
 
@@ -88,26 +88,26 @@ module.exports.factory = function (express, mongo) {
          * @param req Request.
          * @param res Response.
          */
-        router.post('/save', function (req, res) {
+        router.post('/save', function(req, res) {
             var note = req.body;
             var noteId = note._id;
 
             if (noteId)
-                mongo.Notebook.update({_id: noteId}, note, {upsert: true}, function (err) {
+                mongo.Notebook.update({_id: noteId}, note, {upsert: true}, function(err) {
                     if (err)
                         return res.status(500).send(err.message);
 
                     res.send(noteId);
                 });
             else
-                mongo.Notebook.findOne({space: note.space, name: note.name}, function (err, note) {
+                mongo.Notebook.findOne({space: note.space, name: note.name}, function(err, note) {
                     if (err)
                         return res.status(500).send(err.message);
 
                     if (note)
                         return res.status(500).send('Notebook with name: "' + note.name + '" already exist.');
 
-                    (new mongo.Notebook(req.body)).save(function (err, note) {
+                    (new mongo.Notebook(req.body)).save(function(err, note) {
                         if (err)
                             return res.status(500).send(err.message);
 
@@ -122,8 +122,8 @@ module.exports.factory = function (express, mongo) {
          * @param req Request.
          * @param res Response.
          */
-        router.post('/remove', function (req, res) {
-            mongo.Notebook.remove(req.body, function (err) {
+        router.post('/remove', function(req, res) {
+            mongo.Notebook.remove(req.body, function(err) {
                 if (err)
                     return res.status(500).send(err.message);
 
@@ -137,15 +137,15 @@ module.exports.factory = function (express, mongo) {
          * @param req Request.
          * @param res Response.
          */
-        router.post('/new', function (req, res) {
+        router.post('/new', function(req, res) {
             var user_id = req.currentUserId();
 
             // Get owned space and all accessed space.
-            mongo.Space.findOne({owner: user_id}, function (err, space) {
+            mongo.Space.findOne({owner: user_id}, function(err, space) {
                 if (err)
                     return res.status(500).send(err.message);
 
-                (new mongo.Notebook({space: space.id, name: req.body.name})).save(function (err, note) {
+                (new mongo.Notebook({space: space.id, name: req.body.name})).save(function(err, note) {
                     if (err)
                         return res.status(500).send(err.message);
 

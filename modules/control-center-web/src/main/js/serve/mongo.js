@@ -31,8 +31,9 @@ module.exports.factory = function(deepPopulatePlugin, passportMongo, settings, p
     // Connect to mongoDB database.
     mongoose.connect(settings.mongoUrl, {server: {poolSize: 4}});
 
-    const Schema = mongoose.Schema, ObjectId = mongoose.Schema.Types.ObjectId,
-        result = { connection: mongoose.connection };
+    const Schema = mongoose.Schema;
+    const ObjectId = mongoose.Schema.Types.ObjectId;
+    const result = { connection: mongoose.connection };
 
     // Define Account schema.
     const AccountSchema = new Schema({

@@ -22,15 +22,15 @@ module.exports = {
     inject: ['require(lodash)', 'require(express)', 'require(nodemailer)', 'settings', 'mongo']
 };
 
-module.exports.factory = function (_, express, nodemailer, settings, mongo) {
+module.exports.factory = function(_, express, nodemailer, settings, mongo) {
     return new Promise((resolve) => {
         const router = express.Router();
 
         /**
          * Get list of user accounts.
          */
-        router.post('/list', function (req, res) {
-            mongo.Account.find({}).sort('username').exec(function (err, users) {
+        router.post('/list', function(req, res) {
+            mongo.Account.find({}).sort('username').exec(function(err, users) {
                 if (err)
                     return res.status(500).send(err.message);
 
@@ -39,15 +39,15 @@ module.exports.factory = function (_, express, nodemailer, settings, mongo) {
         });
 
         // Remove user.
-        router.post('/remove', function (req, res) {
+        router.post('/remove', function(req, res) {
             var userId = req.body.userId;
 
-            mongo.Account.findByIdAndRemove(userId, function (err, user) {
+            mongo.Account.findByIdAndRemove(userId, function(err, user) {
                 if (err)
                     return res.status(500).send(err.message);
 
-                mongo.Space.find({owner: userId}, function (err, spaces) {
-                    _.forEach(spaces, function (space) {
+                mongo.Space.find({owner: userId}, function(err, spaces) {
+                    _.forEach(spaces, function(space) {
                         mongo.Cluster.remove({space: space._id}).exec();
                         mongo.Cache.remove({space: space._id}).exec();
                         mongo.DomainModel.remove({space: space._id}).exec();
@@ -64,7 +64,7 @@ module.exports.factory = function (_, express, nodemailer, settings, mongo) {
                     }
                 };
 
-                if (transporter.service != '' || transporter.auth.user != '' || transporter.auth.pass != '') {
+                if (transporter.service !== '' || transporter.auth.user !== '' || transporter.auth.pass !== '') {
                     var mailer = nodemailer.createTransport(transporter);
 
                     var mailOptions = {
@@ -76,7 +76,7 @@ module.exports.factory = function (_, express, nodemailer, settings, mongo) {
                         'Apache Ignite Web Console http://' + req.headers.host + '\n'
                     };
 
-                    mailer.sendMail(mailOptions, function (err) {
+                    mailer.sendMail(mailOptions, function(err) {
                         if (err)
                             return res.status(503).send('Account was removed, but failed to send e-mail notification to user!<br />' + err);
 
@@ -89,11 +89,11 @@ module.exports.factory = function (_, express, nodemailer, settings, mongo) {
         });
 
         // Save user.
-        router.post('/save', function (req, res) {
+        router.post('/save', function(req, res) {
             var userId = req.body.userId;
             var adminFlag = req.body.adminFlag;
 
-            mongo.Account.findByIdAndUpdate(userId, {admin: adminFlag}, function (err) {
+            mongo.Account.findByIdAndUpdate(userId, {admin: adminFlag}, function(err) {
                 if (err)
                     return res.status(500).send(err.message);
 
@@ -102,8 +102,8 @@ module.exports.factory = function (_, express, nodemailer, settings, mongo) {
         });
 
         // Become user.
-        router.get('/become', function (req, res) {
-            mongo.Account.findById(req.query.viewedUserId).exec(function (err, viewedUser) {
+        router.get('/become', function(req, res) {
+            mongo.Account.findById(req.query.viewedUserId).exec(function(err, viewedUser) {
                 if (err)
                     return res.sendStatus(404);
 
@@ -114,7 +114,7 @@ module.exports.factory = function (_, express, nodemailer, settings, mongo) {
         });
 
         // Become user.
-        router.get('/revert/identity', function (req, res) {
+        router.get('/revert/identity', function(req, res) {
             req.session.viewedUser = null;
 
             return res.sendStatus(200);

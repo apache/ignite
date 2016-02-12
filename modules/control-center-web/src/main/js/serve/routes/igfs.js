@@ -22,7 +22,7 @@ module.exports = {
     inject: ['require(lodash)', 'require(express)', 'mongo']
 };
 
-module.exports.factory = function (_, express, mongo) {
+module.exports.factory = function(_, express, mongo) {
     return new Promise((resolve) => {
         const router = express.Router();
 
@@ -32,26 +32,26 @@ module.exports.factory = function (_, express, mongo) {
          * @param req Request.
          * @param res Response.
          */
-        router.post('/list', function (req, res) {
+        router.post('/list', function(req, res) {
             var user_id = req.currentUserId();
 
             // Get owned space and all accessed space.
-            mongo.Space.find({$or: [{owner: user_id}, {usedBy: {$elemMatch: {account: user_id}}}]}, function (err, spaces) {
+            mongo.Space.find({$or: [{owner: user_id}, {usedBy: {$elemMatch: {account: user_id}}}]}, function(err, spaces) {
                 if (mongo.processed(err, res)) {
-                    var space_ids = spaces.map(function (value) {
+                    var space_ids = spaces.map(function(value) {
                         return value._id;
                     });
 
                     // Get all clusters for spaces.
-                    mongo.Cluster.find({space: {$in: space_ids}}, '_id name').sort('name').exec(function (err, clusters) {
+                    mongo.Cluster.find({space: {$in: space_ids}}, '_id name').sort('name').exec(function(err, clusters) {
                         if (mongo.processed(err, res)) {
                             // Get all IGFSs for spaces.
-                            mongo.Igfs.find({space: {$in: space_ids}}).sort('name').exec(function (err, igfss) {
+                            mongo.Igfs.find({space: {$in: space_ids}}).sort('name').exec(function(err, igfss) {
                                 if (mongo.processed(err, res)) {
-                                    _.forEach(igfss, function (igfs) {
+                                    _.forEach(igfss, function(igfs) {
                                         // Remove deleted clusters.
-                                        igfs.clusters = _.filter(igfs.clusters, function (clusterId) {
-                                            return _.findIndex(clusters, function (cluster) {
+                                        igfs.clusters = _.filter(igfs.clusters, function(clusterId) {
+                                            return _.findIndex(clusters, function(cluster) {
                                                     return cluster._id.equals(clusterId);
                                                 }) >= 0;
                                         });
@@ -59,7 +59,7 @@ module.exports.factory = function (_, express, mongo) {
 
                                     res.json({
                                         spaces: spaces,
-                                        clusters: clusters.map(function (cluster) {
+                                        clusters: clusters.map(function(cluster) {
                                             return {value: cluster._id, label: cluster.name};
                                         }),
                                         igfss: igfss
@@ -75,17 +75,17 @@ module.exports.factory = function (_, express, mongo) {
         /**
          * Save IGFS.
          */
-        router.post('/save', function (req, res) {
+        router.post('/save', function(req, res) {
             var params = req.body;
             var igfsId = params._id;
             var clusters = params.clusters;
 
             if (params._id) {
-                mongo.Igfs.update({_id: igfsId}, params, {upsert: true}, function (err) {
+                mongo.Igfs.update({_id: igfsId}, params, {upsert: true}, function(err) {
                     if (mongo.processed(err, res))
-                        mongo.Cluster.update({_id: {$in: clusters}}, {$addToSet: {igfss: igfsId}}, {multi: true}, function (err) {
+                        mongo.Cluster.update({_id: {$in: clusters}}, {$addToSet: {igfss: igfsId}}, {multi: true}, function(err) {
                             if (mongo.processed(err, res))
-                                mongo.Cluster.update({_id: {$nin: clusters}}, {$pull: {igfss: igfsId}}, {multi: true}, function (err) {
+                                mongo.Cluster.update({_id: {$nin: clusters}}, {$pull: {igfss: igfsId}}, {multi: true}, function(err) {
                                     if (mongo.processed(err, res))
                                         res.send(params._id);
                                 });
@@ -93,16 +93,16 @@ module.exports.factory = function (_, express, mongo) {
                 })
             }
             else
-                mongo.Igfs.findOne({space: params.space, name: params.name}, function (err, igfs) {
+                mongo.Igfs.findOne({space: params.space, name: params.name}, function(err, igfs) {
                     if (mongo.processed(err, res)) {
                         if (igfs)
                             return res.status(500).send('IGFS with name: "' + igfs.name + '" already exist.');
 
-                        (new mongo.Igfs(params)).save(function (err, igfs) {
+                        (new mongo.Igfs(params)).save(function(err, igfs) {
                             if (mongo.processed(err, res)) {
                                 igfsId = igfs._id;
 
-                                mongo.Cluster.update({_id: {$in: clusters}}, {$addToSet: {igfss: igfsId}}, {multi: true}, function (err) {
+                                mongo.Cluster.update({_id: {$in: clusters}}, {$addToSet: {igfss: igfsId}}, {multi: true}, function(err) {
                                     if (mongo.processed(err, res))
                                         res.send(igfsId);
                                 });
@@ -115,8 +115,8 @@ module.exports.factory = function (_, express, mongo) {
         /**
          * Remove IGFS by ._id.
          */
-        router.post('/remove', function (req, res) {
-            mongo.Igfs.remove(req.body, function (err) {
+        router.post('/remove', function(req, res) {
+            mongo.Igfs.remove(req.body, function(err) {
                 if (mongo.processed(err, res))
                     res.sendStatus(200);
             })
@@ -125,21 +125,21 @@ module.exports.factory = function (_, express, mongo) {
         /**
          * Remove all IGFSs.
          */
-        router.post('/remove/all', function (req, res) {
+        router.post('/remove/all', function(req, res) {
             var user_id = req.currentUserId();
 
             // Get owned space and all accessed space.
-            mongo.Space.find({$or: [{owner: user_id}, {usedBy: {$elemMatch: {account: user_id}}}]}, function (err, spaces) {
+            mongo.Space.find({$or: [{owner: user_id}, {usedBy: {$elemMatch: {account: user_id}}}]}, function(err, spaces) {
                 if (mongo.processed(err, res)) {
-                    var space_ids = spaces.map(function (value) {
+                    var space_ids = spaces.map(function(value) {
                         return value._id;
                     });
 
-                    mongo.Igfs.remove({space: {$in: space_ids}}, function (err) {
+                    mongo.Igfs.remove({space: {$in: space_ids}}, function(err) {
                         if (err)
                             return res.status(500).send(err.message);
 
-                        mongo.Cluster.update({space: {$in: space_ids}}, {igfss: []}, {multi: true}, function (err) {
+                        mongo.Cluster.update({space: {$in: space_ids}}, {igfss: []}, {multi: true}, function(err) {
                             if (mongo.processed(err, res))
                                 res.sendStatus(200);
                         });
