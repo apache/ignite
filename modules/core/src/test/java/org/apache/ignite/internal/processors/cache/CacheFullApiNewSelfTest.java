@@ -4262,7 +4262,7 @@ public class CacheFullApiNewSelfTest extends CacheAbstractNewSelfTest {
     /**
      * @throws Exception If failed.
      */
-    public void testIgniteCacheIterator() throws Exception {
+    public void _testIgniteCacheIterator() throws Exception {
         IgniteCache<String, Integer> cache = jcache(0);
 
         Iterator<Cache.Entry<String, Integer>> it = cache.iterator();
