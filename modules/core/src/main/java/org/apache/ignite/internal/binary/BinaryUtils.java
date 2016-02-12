@@ -547,7 +547,8 @@ public class BinaryUtils {
      * @return {@code true} if content of serialized array value cannot contain references to other object.
      */
     public static boolean isPlainArrayType(int type) {
-        return (type >= GridBinaryMarshaller.BYTE_ARR && type <= GridBinaryMarshaller.DATE_ARR) || type == GridBinaryMarshaller.TIMESTAMP_ARR;
+        return (type >= GridBinaryMarshaller.BYTE_ARR && type <= GridBinaryMarshaller.DATE_ARR)
+                || type == GridBinaryMarshaller.TIMESTAMP_ARR;
     }
 
     /**
@@ -564,7 +565,9 @@ public class BinaryUtils {
             return GridBinaryMarshaller.ENUM;
 
         if (cls.isArray())
-            return cls.getComponentType().isEnum() || cls.getComponentType() == Enum.class ? GridBinaryMarshaller.ENUM_ARR : GridBinaryMarshaller.OBJ_ARR;
+            return cls.getComponentType().isEnum() || cls.getComponentType() == Enum.class
+                    ? GridBinaryMarshaller.ENUM_ARR
+                    : GridBinaryMarshaller.OBJ_ARR;
 
         if (isSpecialCollection(cls))
             return GridBinaryMarshaller.COL;
@@ -573,6 +576,49 @@ public class BinaryUtils {
             return GridBinaryMarshaller.MAP;
 
         return GridBinaryMarshaller.OBJ;
+    }
+
+    /**
+     * @param type type code.
+     * @return true if code specifies Collection type.
+     */
+    public static boolean isCollectionType(final byte type) {
+        return type == GridBinaryMarshaller.COL;
+    }
+
+    /**
+     * @param type type code.
+     * @return true if code specifies Map type.
+     */
+    public static boolean isMapType(final byte type) {
+        return type == GridBinaryMarshaller.MAP;
+    }
+
+    /**
+     * @return code that means missed type code.
+     * @see GridBinaryMarshaller#UNSPECIFIED_TYPE
+     */
+    public static byte getUnspecifiedType() {
+        return GridBinaryMarshaller.UNSPECIFIED_TYPE;
+    }
+
+    /**
+     * Method checks equality of the cls to Collection and Map
+     * interfaces, if true appropriate code will be returned,
+     * otherwise check will be delegated to {@link #typeByClass(Class)}.
+     *
+     * @param cls type.
+     * @return corresponding code.
+     * @see #typeByClass(Class)
+     */
+    public static byte explicitTypeByClass(final Class<?> cls) {
+        if (Collection.class.equals(cls))
+            return GridBinaryMarshaller.COL;
+
+        if (Map.class.equals(cls))
+            return GridBinaryMarshaller.MAP;
+
+        return typeByClass(cls);
     }
 
     /**
@@ -1055,7 +1101,7 @@ public class BinaryUtils {
      * @param cls Class.
      * @return {@code True} if this is a special collection class.
      */
-    private static boolean isSpecialCollection(Class cls) {
+    public static boolean isSpecialCollection(Class cls) {
         return ArrayList.class.equals(cls) || LinkedList.class.equals(cls) ||
             HashSet.class.equals(cls) || LinkedHashSet.class.equals(cls);
     }
@@ -1066,7 +1112,7 @@ public class BinaryUtils {
      * @param cls Class.
      * @return {@code True} if this is a special map class.
      */
-    private static boolean isSpecialMap(Class cls) {
+    public static boolean isSpecialMap(Class cls) {
         return HashMap.class.equals(cls) || LinkedHashMap.class.equals(cls);
     }
 

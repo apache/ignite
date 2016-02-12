@@ -45,6 +45,9 @@ public class GridBinaryMarshaller {
     /** */
     static final byte OPTM_MARSH = -2;
 
+    /** Constant corresponds to missed type code. */
+    public static final byte UNSPECIFIED_TYPE = Byte.MIN_VALUE;
+
     /** */
     public static final byte BYTE = 1;
 

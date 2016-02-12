@@ -46,10 +46,36 @@ class BinaryBuilderSerializer {
     }
 
     /**
+     *  <pre>
+     *      writeValue(writer, val, BinaryUtils.getUnspecifiedType());
+     *  </pre>
+     *
      * @param writer Writer.
      * @param val Value.
+     * @see #writeValue(BinaryWriterExImpl, Object, byte)
      */
-    public void writeValue(BinaryWriterExImpl writer, Object val) {
+    public void writeValue(final BinaryWriterExImpl writer, final Object val) {
+        writeValue(writer, val, BinaryUtils.getUnspecifiedType());
+    }
+
+    /**
+     * Disassembly val object when possible and send to writer.
+     * <p>
+     *     Method accepts user defined type code to force interpret val
+     *     as a Collection or a Map. Without it custom Collection or Map
+     *     will be serialized like plain object.
+     * </p>
+     *
+     * @param writer Writer.
+     * @param val Value.
+     * @param type code of the value type.
+     * @see GridBinaryMarshaller GridBinaryMarshaller for type codes
+     * @see #writeValue(BinaryWriterExImpl, Object)
+     * @see BinaryUtils#isSpecialCollection(Class)
+     * @see BinaryUtils#isSpecialMap(Class)
+     */
+    public void writeValue(final BinaryWriterExImpl writer, Object val, final byte type) {
+
         if (val == null) {
             writer.writeByte(GridBinaryMarshaller.NULL);
 
@@ -113,7 +139,7 @@ class BinaryBuilderSerializer {
             return;
         }
 
-        if (val instanceof Collection) {
+        if (BinaryUtils.isCollectionType(type) || BinaryUtils.isSpecialCollection(val.getClass())) {
             Collection<?> c = (Collection<?>)val;
 
             writer.writeByte(GridBinaryMarshaller.COL);
@@ -129,7 +155,7 @@ class BinaryBuilderSerializer {
             return;
         }
 
-        if (val instanceof Map) {
+        if (BinaryUtils.isMapType(type) || BinaryUtils.isSpecialMap(val.getClass())) {
             Map<?, ?> map = (Map<?, ?>)val;
 
             writer.writeByte(GridBinaryMarshaller.MAP);
