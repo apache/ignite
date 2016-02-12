@@ -773,7 +773,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
             var keys = cache.Select(x => x.Key);
             var qry4 = CompiledQuery.Compile((int a, int b, int c, int d) =>
                 keys.Where(k => k > a && k > b && k > c && k < d));
-            Assert.AreEqual(7, qry4(0, 1, 2, 10));
+            Assert.AreEqual(new[] {3, 4}, qry4(0, 1, 2, 5).ToArray());
         }
 
         [Test]
