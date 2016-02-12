@@ -21,7 +21,6 @@ namespace Apache.Ignite.Linq
     using System.Diagnostics;
     using System.Diagnostics.CodeAnalysis;
     using System.Linq;
-    using System.Linq.Expressions;
     using Apache.Ignite.Core.Cache.Query;
     using Apache.Ignite.Core.Impl.Common;
     using Apache.Ignite.Linq.Impl;
@@ -42,9 +41,7 @@ namespace Apache.Ignite.Linq
         {
             IgniteArgumentCheck.NotNull(query, "query");
 
-            var compiledQuery = GetCompiledQuery(query, null);
-
-            return x => compiledQuery(new object[] {x});
+            return GetCompiledQuery(query, null);
         }
 
         /// <summary>
@@ -77,7 +74,6 @@ namespace Apache.Ignite.Linq
 
             var compiledQuery = GetCompiledQuery(query(default(TArg1), default(TArg2)), query);
 
-            // TODO: Parameter order may be wrong
             return (x, y) => compiledQuery(new object[] {x, y});
         }
 
