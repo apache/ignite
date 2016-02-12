@@ -60,7 +60,7 @@ module.exports.factory = function(publicRoutes, adminRoutes, profileRoutes, clus
             // Registering the standard routes
             app.use('/', publicRoutes);
             app.use('/admin', _mustAuthenticated, _adminOnly, adminRoutes);
-            app.use('/profile', _mustAuthenticated, adminRoutes);
+            app.use('/profile', _mustAuthenticated, profileRoutes);
 
             app.all('/configuration/*', _mustAuthenticated);
 
