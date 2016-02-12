@@ -285,9 +285,19 @@ namespace Apache.Ignite.Linq.Impl
                 ResultBuilder.AppendFormat("{0}.{1}", Aliases.GetTableAlias(queryable), fieldName);
             }
             else
-                AppendParameter(ExpressionWalker.EvaluateExpression<object>(expression));
+                AppendParameter(RegisterEvaluatedParameter(expression));
 
             return expression;
+        }
+
+        /// <summary>
+        /// Registers query parameter that is evaluated from a lambda expression argument.
+        /// </summary>
+        public object RegisterEvaluatedParameter(Expression expression)
+        {
+            _modelVisitor.ParameterExpressions.Add(expression);
+
+            return ExpressionWalker.EvaluateExpression<object>(expression);
         }
 
         /// <summary>

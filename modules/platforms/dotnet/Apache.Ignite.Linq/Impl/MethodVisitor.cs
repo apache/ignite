@@ -185,17 +185,11 @@ namespace Apache.Ignite.Linq.Impl
 
             visitor.ResultBuilder.AppendFormat(" like {0}) ", likeFormat);
 
-            visitor.Parameters.Add(GetConstantValue(expression));
-        }
-
-        /// <summary>
-        /// Gets the single constant value.
-        /// </summary>
-        private static object GetConstantValue(MethodCallExpression expression)
-        {
             var arg = expression.Arguments[0] as ConstantExpression;
 
-            return arg != null ? arg.Value : ExpressionWalker.EvaluateExpression<object>(expression.Arguments[0]);
+            var paramValue = arg != null ? arg.Value : visitor.RegisterEvaluatedParameter(expression.Arguments[0]);
+
+            visitor.Parameters.Add(paramValue);
         }
 
         private static KeyValuePair<MethodInfo, VisitMethodDelegate> GetMethod(Type type, string name,
