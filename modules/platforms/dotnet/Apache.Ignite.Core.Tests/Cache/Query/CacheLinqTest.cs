@@ -235,12 +235,9 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
             CheckFunc(x => x.Trim('3'), strings);
             CheckFunc(x => x.TrimStart('P'), strings);
             CheckFunc(x => x.TrimStart('3'), strings);
-            CheckFunc(x => x.TrimStart('P', 'e'), strings);
-            CheckFunc(x => x.TrimStart('P', 'e', '7'), strings);
+            Assert.Throws<NotSupportedException>(() => CheckFunc(x => x.TrimStart('P', 'e'), strings));
             CheckFunc(x => x.TrimEnd('P'), strings);
             CheckFunc(x => x.TrimEnd('3'), strings);
-            CheckFunc(x => x.TrimEnd('P', 'e'), strings);
-            CheckFunc(x => x.TrimEnd('P', 'e', '7'), strings);
 
             CheckFunc(x => Regex.Replace(x, @"son.\d", "kele!"), strings);
             CheckFunc(x => x.Replace("son", ""), strings);

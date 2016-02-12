@@ -142,11 +142,13 @@ namespace Apache.Ignite.Linq.Impl
 
                 if (arg.NodeType == ExpressionType.NewArrayInit)
                 {
-                    // Only trim methods use params[] => combine to a single string
-                    var combined = string.Join("",
-                        ((NewArrayExpression) arg).Expressions.OfType<ConstantExpression>().Select(x => x.Value));
+                    // Only trim methods use params[], only one param is supported
+                    var args = ((NewArrayExpression) arg).Expressions;
 
-                    visitor.Visit(Expression.Constant(combined));
+                    if (args.Count != 1)
+                        throw new NotSupportedException("Method call only supports a single parameter: "+ expression);
+
+                    visitor.Visit(args[0]);
                 }
                 else
                     visitor.Visit(arg);
