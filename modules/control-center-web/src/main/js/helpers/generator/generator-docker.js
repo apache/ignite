@@ -41,8 +41,8 @@ $generatorDocker.clusterDocker = function (cluster, version) {
         'RUN mvn -f ' + cluster.name + '/pom.xml clean package -DskipTests\n\n' +
         '# Copy project jars to node classpath.\n' +
         'RUN mkdir $IGNITE_HOME/libs/' + cluster.name + ' && \\\n' +
-        'find ' + cluster.name + '/target -name "*.jar" -type f -exec cp {} $IGNITE_HOME/libs/' + cluster.name + ' \\; && \\\n' +
-        'cp -r ' + cluster.name + '/config/* $IGNITE_HOME/config\n'
+        '   find ' + cluster.name + '/target -name "*.jar" -type f -exec cp {} $IGNITE_HOME/libs/' + cluster.name + ' \\; && \\\n' +
+        '   cp -r ' + cluster.name + '/config/* $IGNITE_HOME/config\n'
 };
 
 
