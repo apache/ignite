@@ -18,7 +18,9 @@
 namespace Apache.Ignite.Linq.Impl
 {
     using System.Collections.Generic;
+    using System.Diagnostics;
     using System.Linq;
+    using System.Linq.Expressions;
 
     /// <summary>
     /// Query data DTO.
@@ -30,16 +32,25 @@ namespace Apache.Ignite.Linq.Impl
         
         /** */
         private readonly string _queryText;
-        
+
+        /** */
+        private readonly ICollection<Expression> _parameterExpressions;
+
         /// <summary>
         /// Initializes a new instance of the <see cref="QueryData"/> class.
         /// </summary>
         /// <param name="queryText">The query text.</param>
         /// <param name="parameters">The parameters.</param>
-        public QueryData(string queryText, ICollection<object> parameters)
+        /// <param name="parameterExpressions"></param>
+        public QueryData(string queryText, ICollection<object> parameters, ICollection<Expression> parameterExpressions)
         {
+            Debug.Assert(queryText != null);
+            Debug.Assert(parameters != null);
+            Debug.Assert(parameterExpressions != null);
+
             _queryText = queryText;
             _parameters = parameters;
+            _parameterExpressions = parameterExpressions;
         }
 
         /// <summary>
@@ -56,6 +67,14 @@ namespace Apache.Ignite.Linq.Impl
         public string QueryText
         {
             get { return _queryText; }
+        }
+
+        /// <summary>
+        /// Gets the parameter expressions.
+        /// </summary>
+        public ICollection<Expression> ParameterExpressions
+        {
+            get { return _parameterExpressions; }
         }
 
         /// <summary>

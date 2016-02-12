@@ -62,7 +62,7 @@ namespace Apache.Ignite.Linq.Impl
 
             var queryText = _builder.ToString();
 
-            return new QueryData(queryText, _parameters);
+            return new QueryData(queryText, _parameters, _parameterExpressions);
         }
 
         /// <summary>
