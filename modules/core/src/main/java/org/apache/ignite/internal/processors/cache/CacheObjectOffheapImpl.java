@@ -30,6 +30,9 @@ import java.nio.ByteBuffer;
  */
 public class CacheObjectOffheapImpl implements CacheObject {
     /** */
+    private static final long serialVersionUID = 0L;
+
+    /** */
     private long ptr;
 
     /** */

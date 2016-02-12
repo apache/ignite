@@ -93,7 +93,7 @@ public class IgniteCacheObjectPutSelfTest extends GridCommonAbstractTest {
         for (int i = 0; i < 10; i++) {
             CacheObject co1 = co.toCacheObject(coCtx, buf);
 
-            assertEquals(i, co1.value(coCtx, false));
+            assertEquals((Integer)i, co1.value(coCtx, false));
 
             CacheObject co2 = co.toCacheObject(coCtx, buf);
 
