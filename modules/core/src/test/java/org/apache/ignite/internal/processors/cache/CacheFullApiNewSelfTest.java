@@ -2638,7 +2638,7 @@ public class CacheFullApiNewSelfTest extends CacheAbstractNewSelfTest {
     /**
      * @throws Exception In case of error.
      */
-    public void testGlobalRemoveAllAsync() throws Exception {
+    public void _testGlobalRemoveAllAsync() throws Exception {
         globalRemoveAll(true);
     }
 
