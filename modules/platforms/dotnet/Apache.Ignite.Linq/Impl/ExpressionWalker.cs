@@ -19,6 +19,7 @@ namespace Apache.Ignite.Linq.Impl
 {
     using System;
     using System.Diagnostics;
+    using System.Linq;
     using System.Linq.Expressions;
     using Apache.Ignite.Core.Cache;
     using Remotion.Linq.Clauses;
@@ -46,28 +47,6 @@ namespace Apache.Ignite.Linq.Impl
             throw new NotSupportedException("Unexpected query source: " + expression.ReferencedQuerySource);
         }
 
-        public static ICacheQueryable GetCacheQueryable(MemberExpression expression)
-        {
-            Debug.Assert(expression != null);
-
-            var querySrc = expression.Expression as QuerySourceReferenceExpression;
-
-            if (querySrc != null)
-                return GetCacheQueryable(querySrc);
-
-            var innerMember = expression.Expression as MemberExpression;
-
-            if (innerMember != null)
-                return GetCacheQueryable(innerMember);
-
-            // Attempt to evaluate
-            // TODO: Slow
-            return Expression.Lambda<Func<ICacheQueryable>>(
-                Expression.Convert(expression, typeof(ICacheQueryable))).Compile()();
-
-            //throw new NotSupportedException("Unexpected member expression, cannot find query source: " + expression);
-        }
-
         public static ICacheQueryable GetCacheQueryable(IFromClause fromClause)
         {
             return GetCacheQueryable(fromClause.FromExpression);
@@ -78,7 +57,7 @@ namespace Apache.Ignite.Linq.Impl
             return GetCacheQueryable(joinClause.InnerSequence);
         }
 
-        private static ICacheQueryable GetCacheQueryable(Expression expression)
+        public static ICacheQueryable GetCacheQueryable(Expression expression)
         {
             var subQueryExp = expression as SubQueryExpression;
 
@@ -90,17 +69,22 @@ namespace Apache.Ignite.Linq.Impl
             if (srcRefExp != null)
                 return GetCacheQueryable(srcRefExp);
 
-            var fieldExpr = expression as MemberExpression;
+            var memberExpr = expression as MemberExpression;
 
-            if (fieldExpr != null)
-                return GetCacheQueryable(fieldExpr);
+            if (memberExpr != null && memberExpr.Type.IsGenericType && 
+                memberExpr.Type.GetGenericTypeDefinition() == typeof (IQueryable<>))
+            {
+                // TODO: Slow
+                return Expression.Lambda<Func<ICacheQueryable>>(
+                    Expression.Convert(memberExpr, typeof (ICacheQueryable))).Compile()();
+            }
 
             var constExpr = expression as ConstantExpression;
 
-            if (constExpr == null)
-                throw new NotSupportedException("Unexpected query source: " + expression);
+            if (constExpr != null)
+                return (ICacheQueryable) constExpr.Value;
 
-            return (ICacheQueryable) constExpr.Value;
+            throw new NotSupportedException("Unexpected query source: " + expression);
         }
 
         public static string GetTableNameWithSchema(ICacheQueryable queryable)
