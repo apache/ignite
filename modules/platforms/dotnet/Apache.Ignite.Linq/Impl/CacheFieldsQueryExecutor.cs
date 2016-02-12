@@ -108,18 +108,18 @@ namespace Apache.Ignite.Linq.Impl
             // Delegate parameters order and query parameters order may differ
 
             // These are in order of usage in query
-            var queryOrderParams =
-                queryData.ParameterExpressions.OfType<MemberExpression>().Select(x => x.Member.Name).ToArray();
+            var queryOrderParams = queryData.ParameterExpressions.OfType<MemberExpression>()
+                .Select(x => x.Member.Name).ToList();
 
             // These are in order they come from user
-            var userOrderParams = queryCaller.Method.GetParameters();
+            var userOrderParams = queryCaller.Method.GetParameters().Select(x => x.Name).ToList();
 
-            if ((queryOrderParams.Length != queryData.Parameters.Count) ||
-                (queryOrderParams.Length != userOrderParams.Length))
+            if ((queryOrderParams.Count != queryData.Parameters.Count) ||
+                (queryOrderParams.Count != userOrderParams.Count))
                 throw new InvalidOperationException("Error compiling query: all compiled query arguments " +
                                                     "should come from enclosing lambda expression");
 
-            var indices = userOrderParams.Select(x => Array.IndexOf(queryOrderParams, x.Name)).ToArray();
+            var indices = queryOrderParams.Select(x => userOrderParams.IndexOf(x)).ToArray();
 
             // Check if user param order is already correct
             if (indices.SequenceEqual(Enumerable.Range(0, indices.Length)))
