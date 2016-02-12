@@ -166,12 +166,12 @@ export default [
         function addClass(fullClsName) {
             const path = fullClsName.split('.');
 
-            const shortClsName = path.pop() + '.java';
-
             const folder = getOrCreateFolder(javaFolder, path);
 
-            if (!_.find(folder.children, {type: 'file', name: shortClsName}))
-                folder.children.push({type: 'file', name: shortClsName});
+            const leaf = {type: 'file', name: path.pop() + '.java'};
+
+            if (!_.find(folder.children, leaf))
+                folder.children.push(leaf);
         }
 
         $scope.selectItem = (cluster) => {
