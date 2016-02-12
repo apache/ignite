@@ -362,7 +362,8 @@ public class GridPartitionedSingleGetFuture extends GridFutureAdapter<Object> im
             GridCacheEntryEx entry;
 
             try {
-                entry = colocated.context().isSwapOrOffheapEnabled() ? colocated.entryEx(key) :
+                entry = colocated.context().isSwapOrOffheapEnabled() || colocated.context().isDatabaseEnabled() ?
+                    colocated.entryEx(key) :
                     colocated.peekEx(key);
 
                 // If our DHT cache do has value, then we peek it.
