@@ -2121,7 +2121,7 @@ consoleModule.service('$agentDownload', [
                 _modal.skipSingleError = false;
             else if (!_modal.$isShown) {
                 // Don't show missing node dialog on SQL demo enabling.
-                if (_modal.check.params && _modal.check.params.demo && timedOut)
+                if (_modal.check.params && _modal.check.params.demo && timedOut || !_modal.updatePromise)
                     return;
 
                 $loading.finish('loading');
@@ -2158,6 +2158,8 @@ consoleModule.service('$agentDownload', [
          */
         function _stopInterval() {
             $interval.cancel(_modal.updatePromise);
+
+            _modal.updatePromise = null;
         }
 
         /**
