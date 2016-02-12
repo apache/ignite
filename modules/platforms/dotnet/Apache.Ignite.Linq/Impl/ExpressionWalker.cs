@@ -110,11 +110,11 @@ namespace Apache.Ignite.Linq.Impl
                     var target = targetExpr.Value;
 
                     // Field or property
-                    //memberExpr.Member.getva
                     var fld = memberExpr.Member as FieldInfo;
 
                     if (fld != null)
                     {
+                        // TODO: compile
                         return (T) fld.GetValue(target);
                     }
 
@@ -125,12 +125,9 @@ namespace Apache.Ignite.Linq.Impl
                         return (T) prop.GetValue(target, null);
                     }
                 }
-            }
 
-            // TODO: Slow. Try to optimize when possible
-            // expr is MemberExpression
-            // expr.Expression is ConstantExpression
-            // cache compiled delegates
+                // TODO: Static fields and properties
+            }
 
             return Expression.Lambda<Func<T>>(
                 Expression.Convert(expr, typeof (T))).Compile()();
