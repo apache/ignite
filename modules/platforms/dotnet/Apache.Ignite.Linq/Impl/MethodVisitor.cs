@@ -133,24 +133,25 @@ namespace Apache.Ignite.Linq.Impl
             if (isInstanceMethod)
                 visitor.Visit(expression.Object);
 
-            // Flatten arrays
-            var args = expression.Arguments.SelectMany(
-                x => x.NodeType == ExpressionType.NewArrayInit
-                    ? (IEnumerable<Expression>) ((NewArrayExpression) x).Expressions
-                    : new[] {x});
-
-            var i = 0;
-
-            foreach (var arg in args)
+            for (int i= 0; i < expression.Arguments.Count; i++)
             {
+                var arg = expression.Arguments[i];
+
                 if (isInstanceMethod || (i > 0))
                     visitor.ResultBuilder.Append(", ");
 
-                visitor.Visit(arg);
+                if (arg.NodeType == ExpressionType.NewArrayInit)
+                {
+                    // Only trim methods use params[] => combine to a single string
+                    var combined = string.Join("",
+                        ((NewArrayExpression) arg).Expressions.OfType<ConstantExpression>().Select(x => x.Value));
+
+                    visitor.Visit(Expression.Constant(combined));
+                }
+                else
+                    visitor.Visit(arg);
 
                 AppendAdjustment(visitor, adjust, i + 1);
-
-                i++;
             }
 
             visitor.ResultBuilder.Append(")");
