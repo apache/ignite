@@ -67,7 +67,7 @@ namespace Apache.Ignite.Linq.Impl
         }
 
         /** <inheritdoc /> */
-        public Func<object[], IQueryCursor<TQ>> CompileQuery<TQ>(Expression queryCaller)
+        public Func<object[], IQueryCursor<TQ>> CompileQuery<TQ>(Delegate queryCaller)
         {
             var executor = (CacheFieldsQueryExecutor) CacheQueryProvider.Executor;
 

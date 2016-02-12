@@ -36,6 +36,6 @@ namespace Apache.Ignite.Linq.Impl
         /// Compiles the query.
         /// </summary>
         /// <param name="queryCaller">Caller expression to examine argument order.</param>
-        Func<object[], IQueryCursor<T>> CompileQuery<T>(Expression queryCaller);
+        Func<object[], IQueryCursor<T>> CompileQuery<T>(Delegate queryCaller);
     }
 }

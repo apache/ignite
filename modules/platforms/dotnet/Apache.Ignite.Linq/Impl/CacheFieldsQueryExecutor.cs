@@ -90,7 +90,7 @@ namespace Apache.Ignite.Linq.Impl
         /// Compiles the query.
         /// </summary>
         [SuppressMessage("Microsoft.Design", "CA1062:Validate arguments of public methods")]
-        public Func<object[], IQueryCursor<T>> CompileQuery<T>(QueryModel queryModel, Expression queryCaller)
+        public Func<object[], IQueryCursor<T>> CompileQuery<T>(QueryModel queryModel, Delegate queryCaller)
         {
             var queryData = GetQueryData(queryModel);
 
@@ -103,7 +103,9 @@ namespace Apache.Ignite.Linq.Impl
 
             var paramExpr = queryData.ParameterExpressions;
 
-            if (paramExpr.Count != queryData.Parameters.Count)
+            var parameters = queryCaller.Method.GetParameters();
+
+            if ((paramExpr.Count != queryData.Parameters.Count) || (paramExpr.Count != parameters.Length))
                 throw new InvalidOperationException("Error compiling query: all compiled query arguments " +
                                                     "should come from enclosing lambda expression");
 
