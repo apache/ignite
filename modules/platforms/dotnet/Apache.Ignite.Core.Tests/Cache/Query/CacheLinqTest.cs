@@ -746,6 +746,10 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         {
             var cache = GetPersonCache().AsCacheQueryable();
 
+            // 0 arg
+            var qry0 = CompiledQuery.Compile(() => cache.Select(x => x.Value.Name));
+            Assert.AreEqual(PersonCount, qry0().ToArray().Length);
+
             // 1 arg
             var qry1 = CompiledQuery.Compile((int k) => cache.Where(x => x.Key < k));
             Assert.AreEqual(3, qry1(3).ToArray().Length);
