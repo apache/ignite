@@ -231,7 +231,7 @@ module.exports.factory = function(express, passport, nodemailer, settings, mongo
         router.post('/validate/token', function(req, res) {
             var token = req.body.token;
 
-            var data = {token: token};
+            var data = {token};
 
             mongo.Account.findOne({resetPasswordToken: token}, function(err, user) {
                 if (!user)
