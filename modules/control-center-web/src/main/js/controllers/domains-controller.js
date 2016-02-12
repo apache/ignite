@@ -1053,12 +1053,13 @@ consoleModule.controller('domainsController', function ($filter, $http, $timeout
 
             switch ($scope.importDomain.action) {
                 case 'schemas':
-                    res = $common.isEmptyArray($scope.importDomain.schemas) || $('#importSchemasData').find(':checked').length > 0;
+                    res = $common.isEmptyArray($scope.importDomain.schemas) ||
+                        _.find($scope.importDomain.displayedSchemas, {use: true});
 
                     break;
 
                 case 'tables':
-                    res = $('#importTableData').find(':checked').length > 0;
+                    res = _.find($scope.importDomain.displayedTables, {use: true});
 
                     break;
             }

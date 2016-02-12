@@ -23,6 +23,7 @@ include ../includes/infos
     +ignite-igfs-information
     div(dw-loading='loadingIgfsScreen' dw-loading-options='{text: "Loading IGFS screen...", className: "page-loading-overlay"}')
         div(ng-show='ui.ready')
+            hr
             +main-table('IGFS', 'igfss', 'igfsName', 'selectItem(row)', '{{$index + 1}}) {{row.name}}', 'name')
             .padding-top-dflt(bs-affix)
                 .panel-tip-container(data-placement='bottom' bs-tooltip='' data-title='Create new IGFS')
