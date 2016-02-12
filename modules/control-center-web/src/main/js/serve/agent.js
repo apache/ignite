@@ -24,7 +24,52 @@ module.exports = {
     inject: ['require(fs)', 'require(ws)', 'require(apache-ignite)', 'mongo']
 };
 
-module.exports.factory = function (fs, ws, apacheIgnite, mongo) {
+module.exports.factory = function(fs, ws, apacheIgnite, mongo) {
+    /**
+     * Creates an instance of server for Ignite.
+     */
+    class AgentServer {
+        /**
+         * @this {AgentServer}
+         * @param {Agent} agent Connected agent
+         * @param {Boolean} demo Use demo node for request
+         */
+        constructor(agent, demo) {
+            this._agent = agent;
+            this._demo = !!demo;
+        }
+
+        /**
+         * Run http request
+         *
+         * @this {AgentServer}
+         * @param {cmd} cmd Command
+         * @param {callback} callback on finish
+         */
+        runCommand(cmd, callback) {
+            const params = {cmd: cmd.name()};
+
+            for (const param of cmd._params)
+                params[param.key] = param.value;
+
+            let body;
+
+            let headers;
+
+            let method = 'GET';
+
+            if (cmd._isPost()) {
+                body = cmd.postData();
+
+                method = 'POST';
+
+                headers = {JSONObject: 'application/json'};
+            }
+
+            this._agent.executeRest('ignite', params, this._demo, method, headers, body, callback);
+        }
+    }
+
     class Agent {
         /**
          * @param {AgentManager} manager
@@ -64,7 +109,7 @@ module.exports.factory = function (fs, ws, apacheIgnite, mongo) {
                     resolve(res);
                 })
             );
-        };
+        }
 
         /**
          * @param {String} uri
@@ -140,7 +185,7 @@ module.exports.factory = function (fs, ws, apacheIgnite, mongo) {
             };
 
             this._invokeRmtMethod('executeRest', [uri, params, demo, method, headers, body], _cb);
-        };
+        }
 
         /**
          * @param {?String} error
@@ -178,7 +223,7 @@ module.exports.factory = function (fs, ws, apacheIgnite, mongo) {
          */
         availableDrivers() {
             return this._runCommand('availableDrivers', []);
-        };
+        }
 
         /**
          * Run http request
@@ -207,7 +252,7 @@ module.exports.factory = function (fs, ws, apacheIgnite, mongo) {
             }
 
             this._wsSrv.send(JSON.stringify(msg));
-        };
+        }
 
         _rmtAuthMessage(msg) {
             const self = this;
@@ -240,7 +285,7 @@ module.exports.factory = function (fs, ws, apacheIgnite, mongo) {
                     }
                 });
             });
-        };
+        }
 
         _rmtCallRes(msg) {
             const callback = this._cbMap[msg.reqId];
@@ -251,59 +296,14 @@ module.exports.factory = function (fs, ws, apacheIgnite, mongo) {
             delete this._cbMap[msg.reqId];
 
             callback(msg.error, msg.response);
-        };
+        }
 
         /**
          * @returns {Ignite}
          */
         ignite(demo) {
             return demo ? this._demo : this._cluster;
-        };
-    }
-
-    /**
-     * Creates an instance of server for Ignite.
-     */
-    class AgentServer {
-        /**
-         * @this {AgentServer}
-         * @param {Agent} agent Connected agent
-         * @param {Boolean} demo Use demo node for request
-         */
-        constructor(agent, demo) {
-            this._agent = agent;
-            this._demo = !!demo;
         }
-
-        /**
-         * Run http request
-         *
-         * @this {AgentServer}
-         * @param {cmd} cmd Command
-         * @param {callback} callback on finish
-         */
-        runCommand(cmd, callback) {
-            const params = {cmd: cmd.name()};
-
-            for (const param of cmd._params)
-                params[param.key] = param.value;
-
-            let body;
-
-            let headers;
-
-            let method = 'GET';
-
-            if (cmd._isPost()) {
-                body = cmd.postData();
-
-                method = 'POST';
-
-                headers = {JSONObject: 'application/json'};
-            }
-
-            this._agent.executeRest('ignite', params, this._demo, method, headers, body, callback);
-        };
     }
 
     class AgentManager {
@@ -328,7 +328,7 @@ module.exports.factory = function (fs, ws, apacheIgnite, mongo) {
             const self = this;
 
             this._wsSrv.on('connection', (_wsSrv) => new Agent(_wsSrv, self));
-        };
+        }
 
         /**
          * @param userId
@@ -346,7 +346,7 @@ module.exports.factory = function (fs, ws, apacheIgnite, mongo) {
                 if (agents.length === 0)
                     delete this._agents[userId];
             }
-        };
+        }
 
         /**
          * @param {ObjectId} userId
@@ -362,7 +362,7 @@ module.exports.factory = function (fs, ws, apacheIgnite, mongo) {
             }
 
             agents.push(agent);
-        };
+        }
 
         /**
          * @param {ObjectId} userId
@@ -375,7 +375,7 @@ module.exports.factory = function (fs, ws, apacheIgnite, mongo) {
                 return null;
 
             return agents[0];
-        };
+        }
     }
 
     return new AgentManager();

@@ -15,6 +15,8 @@
  * limitations under the License.
  */
 
+'use strict';
+
 // Fire me up!
 
 module.exports = {
@@ -23,13 +25,13 @@ module.exports = {
 };
 
 module.exports.factory = function(nconf, fs) {
-    nconf.file({'file': './serve/config/default.json'});
+    nconf.file({file: './serve/config/default.json'});
 
     /**
      * Normalize a port into a number, string, or false.
      */
     const _normalizePort = function(val) {
-        var port = parseInt(val, 10);
+        const port = parseInt(val, 10);
 
         // named pipe
         if (isNaN(port))
@@ -52,7 +54,7 @@ module.exports.factory = function(nconf, fs) {
                 passphrase: nconf.get('agent-server:keyPassphrase')
             }
         },
-        server : {
+        server: {
             port: _normalizePort(nconf.get('server:port') || 80),
             SSLOptions: nconf.get('server:ssl') && {
                 enable301Redirects: true,
