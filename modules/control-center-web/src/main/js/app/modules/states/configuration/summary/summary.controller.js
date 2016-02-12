@@ -148,7 +148,7 @@ export default [
             let children = null;
 
             if (!_.isEmpty(node.children)) {
-                children = _.find(node.children, {name: leaf});
+                children = _.find(node.children, {type: 'folder', name: leaf});
 
                 if (children)
                     return getOrCreateFolder(children, path);
@@ -170,7 +170,8 @@ export default [
 
             const folder = getOrCreateFolder(javaFolder, path);
 
-            folder.children.push({type: 'file', name: shortClsName});
+            if (!_.find(folder.children, {type: 'file', name: shortClsName}))
+                folder.children.push({type: 'file', name: shortClsName});
         }
 
         $scope.selectItem = (cluster) => {
