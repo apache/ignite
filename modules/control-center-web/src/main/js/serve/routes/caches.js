@@ -25,7 +25,7 @@ module.exports = {
 module.exports.factory = function(_, express, mongo) {
     return new Promise((resolve) => {
         const router = express.Router();
-        
+
         /**
          * Get spaces and caches accessed for user account.
          *
@@ -126,7 +126,7 @@ module.exports.factory = function(_, express, mongo) {
                                         });
                                 });
                         });
-                })
+                });
             }
             else
                 mongo.Cache.findOne({space: params.space, name: params.name}, function(err, cache) {
@@ -158,7 +158,7 @@ module.exports.factory = function(_, express, mongo) {
             mongo.Cache.remove(req.body, function(err) {
                 if (mongo.processed(err, res))
                     res.sendStatus(200);
-            })
+            });
         });
 
         /**
@@ -185,7 +185,7 @@ module.exports.factory = function(_, express, mongo) {
                                         res.sendStatus(200);
                                 });
                         });
-                    })
+                    });
                 }
             });
         });

@@ -25,7 +25,7 @@ module.exports = {
 module.exports.factory = function(_, express, mongo) {
     return new Promise((resolve) => {
         const router = express.Router();
-        
+
         /**
          * Get spaces and clusters accessed for user account.
          *
@@ -144,7 +144,7 @@ module.exports.factory = function(_, express, mongo) {
                     return res.status(500).send(err.message);
 
                 res.sendStatus(200);
-            })
+            });
         });
 
         /**
@@ -171,7 +171,7 @@ module.exports.factory = function(_, express, mongo) {
                                         res.sendStatus(200);
                                 });
                         });
-                    })
+                    });
                 }
             });
         });

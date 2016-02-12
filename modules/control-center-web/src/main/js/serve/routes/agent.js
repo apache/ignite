@@ -34,7 +34,7 @@ module.exports = {
  * @param {AgentManager} agentMgr
  * @returns {Promise}
  */
-module.exports.factory = function (_, express, apacheIgnite, fs, JSZip, settings, agentMgr) {
+module.exports.factory = function(_, express, apacheIgnite, fs, JSZip, settings, agentMgr) {
     return new Promise((resolve) => {
         const router = express.Router();
 
@@ -56,26 +56,26 @@ module.exports.factory = function (_, express, apacheIgnite, fs, JSZip, settings
         };
 
         const _handleException = (res) => {
-            return function (error) {
+            return function(error) {
                 if (_.isObject(error))
                     return res.status(error.code).send(error.message);
 
                 return res.status(500).send(error);
-            }
+            };
         };
 
         /* Get grid topology. */
-        router.get('/download/zip', function (req, res) {
+        router.get('/download/zip', function(req, res) {
             var agentFld = settings.agent.file;
             var agentZip = agentFld + '.zip';
             var agentPathZip = 'public/agent/' + agentFld + '.zip';
 
-            fs.stat(agentPathZip, function (err, stats) {
+            fs.stat(agentPathZip, function(err, stats) {
                 if (err)
                     return res.download(agentPathZip, agentZip);
 
                 // Read a zip file.
-                fs.readFile(agentPathZip, function (err, data) {
+                fs.readFile(agentPathZip, function(err, data) {
                     if (err)
                         return res.download(agentPathZip, agentZip);
 
@@ -107,7 +107,7 @@ module.exports.factory = function (_, express, apacheIgnite, fs, JSZip, settings
         });
 
         /* Get grid topology. */
-        router.post('/topology', function (req, res) {
+        router.post('/topology', function(req, res) {
             _client(req.currentUserId())
                 .then((client) => client.ignite(req.body.demo).cluster(req.body.attr, req.body.mtr))
                 .then((clusters) => res.json(clusters))
@@ -115,7 +115,7 @@ module.exports.factory = function (_, express, apacheIgnite, fs, JSZip, settings
         });
 
         /* Execute query. */
-        router.post('/query', function (req, res) {
+        router.post('/query', function(req, res) {
             _client(req.currentUserId())
                 .then((client) => {
                     // Create sql query.
@@ -124,7 +124,7 @@ module.exports.factory = function (_, express, apacheIgnite, fs, JSZip, settings
                     // Set page size for query.
                     qry.setPageSize(req.body.pageSize);
 
-                    return client.ignite(req.body.demo).cache(req.body.cacheName).query(qry).nextPage()
+                    return client.ignite(req.body.demo).cache(req.body.cacheName).query(qry).nextPage();
                 })
                 .then((cursor) => res.json({
                     meta: cursor.fieldsMetadata(),
@@ -135,7 +135,7 @@ module.exports.factory = function (_, express, apacheIgnite, fs, JSZip, settings
         });
 
         /* Execute query getAll. */
-        router.post('/query/getAll', function (req, res) {
+        router.post('/query/getAll', function(req, res) {
             _client(req.currentUserId())
                 .then((client) => {
                     // Create sql query.
@@ -147,8 +147,8 @@ module.exports.factory = function (_, express, apacheIgnite, fs, JSZip, settings
                     // Get query cursor.
                     const cursor = client.ignite(req.body.demo).cache(req.body.cacheName).query(qry);
 
-                    return new Promise(function (resolve) {
-                        cursor.getAll().then(rows => resolve({meta: cursor.fieldsMetadata(), rows}))
+                    return new Promise(function(resolve) {
+                        cursor.getAll().then(rows => resolve({meta: cursor.fieldsMetadata(), rows}));
                     });
                 })
                 .then(response => res.json(response))
@@ -156,7 +156,7 @@ module.exports.factory = function (_, express, apacheIgnite, fs, JSZip, settings
         });
 
         /* Execute query. */
-        router.post('/scan', function (req, res) {
+        router.post('/scan', function(req, res) {
             _client(req.currentUserId())
                 .then((client) => {
                     // Create sql query.
@@ -166,7 +166,7 @@ module.exports.factory = function (_, express, apacheIgnite, fs, JSZip, settings
                     qry.setPageSize(req.body.pageSize);
 
                     // Get query cursor.
-                    return client.ignite(req.body.demo).cache(req.body.cacheName).query(qry).nextPage()
+                    return client.ignite(req.body.demo).cache(req.body.cacheName).query(qry).nextPage();
                 })
                 .then((cursor) => res.json({
                     meta: cursor.fieldsMetadata(),
@@ -177,7 +177,7 @@ module.exports.factory = function (_, express, apacheIgnite, fs, JSZip, settings
         });
 
         /* Get next query page. */
-        router.post('/query/fetch', function (req, res) {
+        router.post('/query/fetch', function(req, res) {
             _client(req.currentUserId())
                 .then((client) => {
                     var cache = client.ignite(req.body.demo).cache(req.body.cacheName);
@@ -193,26 +193,26 @@ module.exports.factory = function (_, express, apacheIgnite, fs, JSZip, settings
         });
 
         /* Close query cursor by id. */
-        router.post('/query/close', function (req, res) {
+        router.post('/query/close', function(req, res) {
             _client(req.currentUserId())
                 .then((client) => {
                     var cache = client.ignite(req.body.demo).cache(req.body.cacheName);
 
-                    return cache.__createPromise(cache._createCommand('qrycls').addParam('qryId', req.body.queryId))
+                    return cache.__createPromise(cache._createCommand('qrycls').addParam('qryId', req.body.queryId));
                 })
                 .then(() => res.sendStatus(200))
                 .catch(_handleException(res));
         });
 
         /* Get metadata for cache. */
-        router.post('/cache/metadata', function (req, res) {
+        router.post('/cache/metadata', function(req, res) {
             _client(req.currentUserId())
                 .then((client) => client.ignite(req.body.demo).cache(req.body.cacheName).metadata())
                 .then((caches) => {
                     var types = [];
 
                     for (var meta of caches) {
-                        var cacheTypes = meta.types.map(function (typeName) {
+                        var cacheTypes = meta.types.map(function(typeName) {
                             var fields = meta.fields[typeName];
 
                             var columns = [];
@@ -224,7 +224,7 @@ module.exports.factory = function (_, express, apacheIgnite, fs, JSZip, settings
                                     type: 'field',
                                     name: fieldName,
                                     clazz: fieldClass,
-                                    system: fieldName == "_KEY" || fieldName == "_VAL",
+                                    system: fieldName === "_KEY" || fieldName === "_VAL",
                                     cacheName: meta.cacheName,
                                     typeName: typeName
                                 });
@@ -246,7 +246,7 @@ module.exports.factory = function (_, express, apacheIgnite, fs, JSZip, settings
                                     });
                                 }
 
-                                if (fields.length > 0)
+                                if (fields.length > 0) {
                                     indexes.push({
                                         type: 'index',
                                         name: index.name,
@@ -254,11 +254,12 @@ module.exports.factory = function (_, express, apacheIgnite, fs, JSZip, settings
                                         cacheName: meta.cacheName,
                                         typeName: typeName
                                     });
+                                }
                             }
 
                             columns = _.sortBy(columns, 'name');
 
-                            if (!_.isEmpty(indexes))
+                            if (!_.isEmpty(indexes)) {
                                 columns = columns.concat({
                                     type: 'indexes',
                                     name: 'Indexes',
@@ -266,11 +267,12 @@ module.exports.factory = function (_, express, apacheIgnite, fs, JSZip, settings
                                     typeName: typeName,
                                     children: indexes
                                 });
+                            }
 
                             return {
                                 type: 'type',
-                                cacheName: meta.cacheName || "",
-                                typeName: typeName,
+                                cacheName: meta.cacheName || '',
+                                typeName,
                                 children: columns
                             };
                         });
@@ -285,14 +287,14 @@ module.exports.factory = function (_, express, apacheIgnite, fs, JSZip, settings
         });
 
         /* Ping client. */
-        router.post('/ping', function (req, res) {
+        router.post('/ping', function(req, res) {
             _client(req.currentUserId())
                 .then(() => res.sendStatus(200))
                 .catch(_handleException(res));
         });
 
         /* Get JDBC drivers list. */
-        router.post('/drivers', function (req, res) {
+        router.post('/drivers', function(req, res) {
             _client(req.currentUserId())
                 .then((client) => client.availableDrivers())
                 .then((arr) => res.json(arr))
@@ -300,7 +302,7 @@ module.exports.factory = function (_, express, apacheIgnite, fs, JSZip, settings
         });
 
         /** Get database schemas. */
-        router.post('/schemas', function (req, res) {
+        router.post('/schemas', function(req, res) {
             _client(req.currentUserId())
                 .then((client) => {
                     var args = req.body;
@@ -314,14 +316,14 @@ module.exports.factory = function (_, express, apacheIgnite, fs, JSZip, settings
         });
 
         /** Get database tables. */
-        router.post('/tables', function (req, res) {
+        router.post('/tables', function(req, res) {
             _client(req.currentUserId())
                 .then((client) => {
                     var args = req.body;
 
                     args.jdbcInfo = {user: args.user, password: args.password};
 
-                    return client.metadataTables(args.jdbcDriverJar, args.jdbcDriverClass, args.jdbcUrl, args.jdbcInfo, args.schemas, args.tablesOnly)
+                    return client.metadataTables(args.jdbcDriverJar, args.jdbcDriverClass, args.jdbcUrl, args.jdbcInfo, args.schemas, args.tablesOnly);
                 })
                 .then((arr) => res.json(arr))
                 .catch(_handleException(res));

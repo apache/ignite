@@ -220,7 +220,7 @@ module.exports.factory = function(_, express, async, mongo) {
             mongo.DomainModel.remove(req.body, function(err) {
                 if (mongo.processed(err, res))
                     res.sendStatus(200);
-            })
+            });
         });
 
         /**
@@ -244,7 +244,7 @@ module.exports.factory = function(_, express, async, mongo) {
                             if (mongo.processed(err, res))
                                 res.sendStatus(200);
                         });
-                    })
+                    });
                 }
             });
         });
