@@ -57,7 +57,7 @@ namespace Apache.Ignite.Linq.Impl
             return GetCacheQueryable(joinClause.InnerSequence);
         }
 
-        public static ICacheQueryable GetCacheQueryable(Expression expression)
+        public static ICacheQueryable GetCacheQueryable(Expression expression, bool throwWhenNotFound = true)
         {
             var subQueryExp = expression as SubQueryExpression;
 
@@ -71,12 +71,13 @@ namespace Apache.Ignite.Linq.Impl
 
             var memberExpr = expression as MemberExpression;
 
-            if (memberExpr != null && memberExpr.Type.IsGenericType && 
-                memberExpr.Type.GetGenericTypeDefinition() == typeof (IQueryable<>))
+            if (memberExpr != null)
             {
-                // TODO: Slow
-                return Expression.Lambda<Func<ICacheQueryable>>(
-                    Expression.Convert(memberExpr, typeof (ICacheQueryable))).Compile()();
+                if (memberExpr.Type.IsGenericType &&
+                    memberExpr.Type.GetGenericTypeDefinition() == typeof (IQueryable<>))
+                    return EvaluateExpression<ICacheQueryable>(memberExpr);
+
+                return GetCacheQueryable(memberExpr.Expression, throwWhenNotFound);
             }
 
             var constExpr = expression as ConstantExpression;
@@ -84,7 +85,17 @@ namespace Apache.Ignite.Linq.Impl
             if (constExpr != null)
                 return (ICacheQueryable) constExpr.Value;
 
-            throw new NotSupportedException("Unexpected query source: " + expression);
+            if (throwWhenNotFound)
+                throw new NotSupportedException("Unexpected query source: " + expression);
+
+            return null;
+        }
+
+        public static T EvaluateExpression<T>(Expression memberExpr)
+        {
+            // TODO: Slow, check for duplicates (cache if possible)
+            return Expression.Lambda<Func<T>>(
+                Expression.Convert(memberExpr, typeof (T))).Compile()();
         }
 
         public static string GetTableNameWithSchema(ICacheQueryable queryable)

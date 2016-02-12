@@ -276,11 +276,16 @@ namespace Apache.Ignite.Linq.Impl
             if (VisitGroupByMember(expression.Expression))
                 return expression;
 
-            var queryable = ExpressionWalker.GetCacheQueryable(expression);
+            var queryable = ExpressionWalker.GetCacheQueryable(expression, false);
 
-            var fieldName = GetFieldName(expression, queryable);
+            if (queryable != null)
+            {
+                var fieldName = GetFieldName(expression, queryable);
 
-            ResultBuilder.AppendFormat("{0}.{1}", Aliases.GetTableAlias(queryable), fieldName);
+                ResultBuilder.AppendFormat("{0}.{1}", Aliases.GetTableAlias(queryable), fieldName);
+            }
+            else
+                AppendParameter(ExpressionWalker.EvaluateExpression<object>(expression));
 
             return expression;
         }
@@ -377,11 +382,19 @@ namespace Apache.Ignite.Linq.Impl
         [SuppressMessage("Microsoft.Design", "CA1062:Validate arguments of public methods")]
         protected override Expression VisitConstant(ConstantExpression expression)
         {
-            ResultBuilder.Append("?");
-
-            _modelVisitor.Parameters.Add(expression.Value);
+            AppendParameter(expression.Value);
 
             return expression;
+        }
+
+        /// <summary>
+        /// Appends the parameter.
+        /// </summary>
+        private void AppendParameter(object value)
+        {
+            ResultBuilder.Append("?");
+
+            _modelVisitor.Parameters.Add(value);
         }
 
         /** <inheritdoc /> */
