@@ -43,6 +43,9 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.Lock;
 import javax.cache.Cache;
 import javax.cache.CacheException;
+import javax.cache.event.CacheEntryEvent;
+import javax.cache.event.CacheEntryListenerException;
+import javax.cache.event.CacheEntryUpdatedListener;
 import javax.cache.expiry.Duration;
 import javax.cache.expiry.ExpiryPolicy;
 import javax.cache.expiry.TouchedExpiryPolicy;
@@ -58,9 +61,13 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteTransactions;
 import org.apache.ignite.Ignition;
+import org.apache.ignite.cache.CacheEntryEventSerializableFilter;
 import org.apache.ignite.cache.CacheEntryProcessor;
 import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.cache.affinity.Affinity;
+import org.apache.ignite.cache.query.ContinuousQuery;
+import org.apache.ignite.cache.query.QueryCursor;
+import org.apache.ignite.cache.query.ScanQuery;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -76,6 +83,7 @@ import org.apache.ignite.internal.util.typedef.PA;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgnitePredicate;
@@ -223,7 +231,7 @@ public class CacheFullApiNewSelfTest extends CacheAbstractNewSelfTest {
     /**
      * @throws Exception In case of error.
      */
-    public void testSize() throws Exception {
+    public void _testSize() throws Exception {
         assert jcache().localSize() == 0;
 
         int size = 10;
@@ -291,7 +299,7 @@ public class CacheFullApiNewSelfTest extends CacheAbstractNewSelfTest {
     /**
      * @throws Exception In case of error.
      */
-    public void testContainsKey() throws Exception {
+    public void _testContainsKey() throws Exception {
         jcache().put("testContainsKey", 1);
 
         checkContainsKey(true, "testContainsKey");
@@ -301,7 +309,7 @@ public class CacheFullApiNewSelfTest extends CacheAbstractNewSelfTest {
     /**
      * @throws Exception If failed.
      */
-    public void testContainsKeyTx() throws Exception {
+    public void _testContainsKeyTx() throws Exception {
         if (!txEnabled())
             return;
 
@@ -335,7 +343,7 @@ public class CacheFullApiNewSelfTest extends CacheAbstractNewSelfTest {
     /**
      * @throws Exception If failed.
      */
-    public void testContainsKeysTx() throws Exception {
+    public void _testContainsKeysTx() throws Exception {
         if (!txEnabled())
             return;
 
@@ -376,7 +384,7 @@ public class CacheFullApiNewSelfTest extends CacheAbstractNewSelfTest {
     /**
      * @throws Exception If failed.
      */
-    public void testRemoveInExplicitLocks() throws Exception {
+    public void _testRemoveInExplicitLocks() throws Exception {
         if (lockingEnabled()) {
             IgniteCache<String, Integer> cache = jcache();
 
@@ -401,7 +409,7 @@ public class CacheFullApiNewSelfTest extends CacheAbstractNewSelfTest {
     /**
      * @throws Exception If failed.
      */
-    public void testRemoveAllSkipStore() throws Exception {
+    public void _testRemoveAllSkipStore() throws Exception {
         if (isMultiJvm())
             fail("https://issues.apache.org/jira/browse/IGNITE-1088");
 
@@ -422,7 +430,7 @@ public class CacheFullApiNewSelfTest extends CacheAbstractNewSelfTest {
     /**
      * @throws IgniteCheckedException If failed.
      */
-    public void testAtomicOps() throws IgniteCheckedException {
+    public void _testAtomicOps() throws IgniteCheckedException {
         IgniteCache<String, Integer> c = jcache();
 
         final int cnt = 10;
@@ -454,21 +462,21 @@ public class CacheFullApiNewSelfTest extends CacheAbstractNewSelfTest {
     /**
      * @throws Exception In case of error.
      */
-    public void testGetSerializable() throws Exception {
+    public void _testGetSerializable() throws Exception {
         checkGet(DataMode.SERIALIZABLE);
     }
 
     /**
      * @throws Exception In case of error.
      */
-    public void testGetExternalizable() throws Exception {
+    public void _testGetExternalizable() throws Exception {
         checkGet(DataMode.EXTERNALIZABLE);
     }
 
     /**
      * @throws Exception In case of error.
      */
-    public void testGetObject() throws Exception {
+    public void _testGetObject() throws Exception {
         checkGet(DataMode.PLANE_OBJECT);
     }
 
@@ -490,7 +498,7 @@ public class CacheFullApiNewSelfTest extends CacheAbstractNewSelfTest {
     /**
      * @throws Exception In case of error.
      */
-    public void testGetAsync() throws Exception {
+    public void _testGetAsync() throws Exception {
         IgniteCache<String, Integer> cache = jcache();
 
         cache.put("key1", 1);
@@ -518,7 +526,7 @@ public class CacheFullApiNewSelfTest extends CacheAbstractNewSelfTest {
     /**
      * @throws Exception In case of error.
      */
-    public void testGetAll() throws Exception {
+    public void _testGetAll() throws Exception {
         Transaction tx = txShouldBeUsed() ? transactions().txStart() : null;
 
         final IgniteCache<String, Integer> cache = jcache();
@@ -598,7 +606,7 @@ public class CacheFullApiNewSelfTest extends CacheAbstractNewSelfTest {
     /**
      * @throws Exception In case of error.
      */
-    public void testGetAllWithNulls() throws Exception {
+    public void _testGetAllWithNulls() throws Exception {
         final IgniteCache<String, Integer> cache = jcache();
 
         final Set<String> c = new HashSet<>();
@@ -618,7 +626,7 @@ public class CacheFullApiNewSelfTest extends CacheAbstractNewSelfTest {
     /**
      * @throws Exception If failed.
      */
-    public void testGetTxNonExistingKey() throws Exception {
+    public void _testGetTxNonExistingKey() throws Exception {
         if (txShouldBeUsed()) {
             try (Transaction ignored = transactions().txStart()) {
                 assert jcache().get("key999123") == null;
@@ -629,7 +637,7 @@ public class CacheFullApiNewSelfTest extends CacheAbstractNewSelfTest {
     /**
      * @throws Exception In case of error.
      */
-    public void testGetAllAsync() throws Exception {
+    public void _testGetAllAsync() throws Exception {
         final IgniteCache<String, Integer> cache = jcache();
 
         final IgniteCache<String, Integer> cacheAsync = cache.withAsync();
@@ -660,21 +668,21 @@ public class CacheFullApiNewSelfTest extends CacheAbstractNewSelfTest {
     /**
      * @throws Exception In case of error.
      */
-    public void testPutSerializable() throws Exception {
+    public void _testPutSerializable() throws Exception {
         checkPut(DataMode.SERIALIZABLE);
     }
 
     /**
      * @throws Exception In case of error.
      */
-    public void testPutExternalizable() throws Exception {
+    public void _testPutExternalizable() throws Exception {
         checkPut(DataMode.EXTERNALIZABLE);
     }
 
     /**
      * @throws Exception In case of error.
      */
-    public void testPutObject() throws Exception {
+    public void _testPutObject() throws Exception {
         checkPut(DataMode.PLANE_OBJECT);
     }
 
@@ -723,7 +731,7 @@ public class CacheFullApiNewSelfTest extends CacheAbstractNewSelfTest {
     /**
      * @throws Exception In case of error.
      */
-    public void testPutTx() throws Exception {
+    public void _testPutTx() throws Exception {
         if (txShouldBeUsed()) {
             IgniteCache<String, Integer> cache = jcache();
 
@@ -762,168 +770,168 @@ public class CacheFullApiNewSelfTest extends CacheAbstractNewSelfTest {
     /**
      * @throws Exception If failed.
      */
-    public void testInvokeOptimisticReadCommitted1() throws Exception {
+    public void _testInvokeOptimisticReadCommitted1() throws Exception {
         checkInvoke(OPTIMISTIC, READ_COMMITTED, DataMode.PLANE_OBJECT);
     }
 
     /**
      * @throws Exception If failed.
      */
-    public void testInvokeOptimisticReadCommitted2() throws Exception {
+    public void _testInvokeOptimisticReadCommitted2() throws Exception {
         checkInvoke(OPTIMISTIC, READ_COMMITTED, DataMode.SERIALIZABLE);
     }
 
     /**
      * @throws Exception If failed.
      */
-    public void testInvokeOptimisticReadCommitted3() throws Exception {
+    public void _testInvokeOptimisticReadCommitted3() throws Exception {
         checkInvoke(OPTIMISTIC, READ_COMMITTED, DataMode.EXTERNALIZABLE);
     }
 
     /**
      * @throws Exception If failed.
      */
-    public void testInvokeOptimisticRepeatableRead1() throws Exception {
+    public void _testInvokeOptimisticRepeatableRead1() throws Exception {
         checkInvoke(OPTIMISTIC, REPEATABLE_READ, DataMode.PLANE_OBJECT);
     }
 
     /**
      * @throws Exception If failed.
      */
-    public void testInvokeOptimisticRepeatableRead2() throws Exception {
+    public void _testInvokeOptimisticRepeatableRead2() throws Exception {
         checkInvoke(OPTIMISTIC, REPEATABLE_READ, DataMode.SERIALIZABLE);
     }
 
     /**
      * @throws Exception If failed.
      */
-    public void testInvokeOptimisticRepeatableRead3() throws Exception {
+    public void _testInvokeOptimisticRepeatableRead3() throws Exception {
         checkInvoke(OPTIMISTIC, REPEATABLE_READ, DataMode.PLANE_OBJECT);
     }
 
     /**
      * @throws Exception If failed.
      */
-    public void testInvokePessimisticReadCommitted1() throws Exception {
+    public void _testInvokePessimisticReadCommitted1() throws Exception {
         checkInvoke(PESSIMISTIC, READ_COMMITTED, DataMode.PLANE_OBJECT);
     }
 
     /**
      * @throws Exception If failed.
      */
-    public void testInvokePessimisticReadCommitted2() throws Exception {
+    public void _testInvokePessimisticReadCommitted2() throws Exception {
         checkInvoke(PESSIMISTIC, READ_COMMITTED, DataMode.SERIALIZABLE);
     }
 
     /**
      * @throws Exception If failed.
      */
-    public void testInvokePessimisticReadCommitted3() throws Exception {
+    public void _testInvokePessimisticReadCommitted3() throws Exception {
         checkInvoke(PESSIMISTIC, READ_COMMITTED, DataMode.EXTERNALIZABLE);
     }
 
     /**
      * @throws Exception If failed.
      */
-    public void testInvokePessimisticRepeatableRead1() throws Exception {
+    public void _testInvokePessimisticRepeatableRead1() throws Exception {
         checkInvoke(PESSIMISTIC, REPEATABLE_READ, DataMode.PLANE_OBJECT);
     }
 
     /**
      * @throws Exception If failed.
      */
-    public void testInvokePessimisticRepeatableRead2() throws Exception {
+    public void _testInvokePessimisticRepeatableRead2() throws Exception {
         checkInvoke(PESSIMISTIC, REPEATABLE_READ, DataMode.SERIALIZABLE);
     }
 
     /**
      * @throws Exception If failed.
      */
-    public void testInvokePessimisticRepeatableRead3() throws Exception {
+    public void _testInvokePessimisticRepeatableRead3() throws Exception {
         checkInvoke(PESSIMISTIC, REPEATABLE_READ, DataMode.EXTERNALIZABLE);
     }
 
     /**
      * @throws Exception If failed.
      */
-    public void testIgniteInvokeOptimisticReadCommitted1() throws Exception {
+    public void _testIgniteInvokeOptimisticReadCommitted1() throws Exception {
         checkIgniteInvoke(OPTIMISTIC, READ_COMMITTED, DataMode.PLANE_OBJECT);
     }
 
     /**
      * @throws Exception If failed.
      */
-    public void testIgniteInvokeOptimisticReadCommitted2() throws Exception {
+    public void _testIgniteInvokeOptimisticReadCommitted2() throws Exception {
         checkIgniteInvoke(OPTIMISTIC, READ_COMMITTED, DataMode.SERIALIZABLE);
     }
 
     /**
      * @throws Exception If failed.
      */
-    public void testIgniteInvokeOptimisticReadCommitted3() throws Exception {
+    public void _testIgniteInvokeOptimisticReadCommitted3() throws Exception {
         checkIgniteInvoke(OPTIMISTIC, READ_COMMITTED, DataMode.EXTERNALIZABLE);
     }
 
     /**
      * @throws Exception If failed.
      */
-    public void testIgniteInvokeOptimisticRepeatableRead1() throws Exception {
+    public void _testIgniteInvokeOptimisticRepeatableRead1() throws Exception {
         checkIgniteInvoke(OPTIMISTIC, REPEATABLE_READ, DataMode.PLANE_OBJECT);
     }
 
     /**
      * @throws Exception If failed.
      */
-    public void testIgniteInvokeOptimisticRepeatableRead2() throws Exception {
+    public void _testIgniteInvokeOptimisticRepeatableRead2() throws Exception {
         checkIgniteInvoke(OPTIMISTIC, REPEATABLE_READ, DataMode.SERIALIZABLE);
     }
 
     /**
      * @throws Exception If failed.
      */
-    public void testIgniteInvokeOptimisticRepeatableRead3() throws Exception {
+    public void _testIgniteInvokeOptimisticRepeatableRead3() throws Exception {
         checkIgniteInvoke(OPTIMISTIC, REPEATABLE_READ, DataMode.EXTERNALIZABLE);
     }
 
     /**
      * @throws Exception If failed.
      */
-    public void testIgniteInvokePessimisticReadCommitted1() throws Exception {
+    public void _testIgniteInvokePessimisticReadCommitted1() throws Exception {
         checkIgniteInvoke(PESSIMISTIC, READ_COMMITTED, DataMode.PLANE_OBJECT);
     }
 
     /**
      * @throws Exception If failed.
      */
-    public void testIgniteInvokePessimisticReadCommitted2() throws Exception {
+    public void _testIgniteInvokePessimisticReadCommitted2() throws Exception {
         checkIgniteInvoke(PESSIMISTIC, READ_COMMITTED, DataMode.SERIALIZABLE);
     }
 
     /**
      * @throws Exception If failed.
      */
-    public void testIgniteInvokePessimisticReadCommitted3() throws Exception {
+    public void _testIgniteInvokePessimisticReadCommitted3() throws Exception {
         checkIgniteInvoke(PESSIMISTIC, READ_COMMITTED, DataMode.EXTERNALIZABLE);
     }
 
     /**
      * @throws Exception If failed.
      */
-    public void testIgniteInvokePessimisticRepeatableRead1() throws Exception {
+    public void _testIgniteInvokePessimisticRepeatableRead1() throws Exception {
         checkIgniteInvoke(PESSIMISTIC, REPEATABLE_READ, DataMode.PLANE_OBJECT);
     }
 
     /**
      * @throws Exception If failed.
      */
-    public void testIgniteInvokePessimisticRepeatableRead2() throws Exception {
+    public void _testIgniteInvokePessimisticRepeatableRead2() throws Exception {
         checkIgniteInvoke(PESSIMISTIC, REPEATABLE_READ, DataMode.SERIALIZABLE);
     }
 
     /**
      * @throws Exception If failed.
      */
-    public void testIgniteInvokePessimisticRepeatableRead3() throws Exception {
+    public void _testIgniteInvokePessimisticRepeatableRead3() throws Exception {
         checkIgniteInvoke(PESSIMISTIC, REPEATABLE_READ, DataMode.EXTERNALIZABLE);
     }
 
@@ -1018,84 +1026,84 @@ public class CacheFullApiNewSelfTest extends CacheAbstractNewSelfTest {
     /**
      * @throws Exception If failed.
      */
-    public void testInvokeAllOptimisticReadCommitted1() throws Exception {
+    public void _testInvokeAllOptimisticReadCommitted1() throws Exception {
         checkInvokeAll(OPTIMISTIC, READ_COMMITTED, DataMode.PLANE_OBJECT);
     }
 
     /**
      * @throws Exception If failed.
      */
-    public void testInvokeAllOptimisticReadCommitted2() throws Exception {
+    public void _testInvokeAllOptimisticReadCommitted2() throws Exception {
         checkInvokeAll(OPTIMISTIC, READ_COMMITTED, DataMode.SERIALIZABLE);
     }
 
     /**
      * @throws Exception If failed.
      */
-    public void testInvokeAllOptimisticReadCommitted3() throws Exception {
+    public void _testInvokeAllOptimisticReadCommitted3() throws Exception {
         checkInvokeAll(OPTIMISTIC, READ_COMMITTED, DataMode.EXTERNALIZABLE);
     }
 
     /**
      * @throws Exception If failed.
      */
-    public void testInvokeAllOptimisticRepeatableRead1() throws Exception {
+    public void _testInvokeAllOptimisticRepeatableRead1() throws Exception {
         checkInvokeAll(OPTIMISTIC, REPEATABLE_READ, DataMode.PLANE_OBJECT);
     }
 
     /**
      * @throws Exception If failed.
      */
-    public void testInvokeAllOptimisticRepeatableRead2() throws Exception {
+    public void _testInvokeAllOptimisticRepeatableRead2() throws Exception {
         checkInvokeAll(OPTIMISTIC, REPEATABLE_READ, DataMode.SERIALIZABLE);
     }
 
     /**
      * @throws Exception If failed.
      */
-    public void testInvokeAllOptimisticRepeatableRead3() throws Exception {
+    public void _testInvokeAllOptimisticRepeatableRead3() throws Exception {
         checkInvokeAll(OPTIMISTIC, REPEATABLE_READ, DataMode.EXTERNALIZABLE);
     }
 
     /**
      * @throws Exception If failed.
      */
-    public void testInvokeAllPessimisticReadCommitted1() throws Exception {
+    public void _testInvokeAllPessimisticReadCommitted1() throws Exception {
         checkInvokeAll(PESSIMISTIC, READ_COMMITTED, DataMode.PLANE_OBJECT);
     }
 
     /**
      * @throws Exception If failed.
      */
-    public void testInvokeAllPessimisticReadCommitted2() throws Exception {
+    public void _testInvokeAllPessimisticReadCommitted2() throws Exception {
         checkInvokeAll(PESSIMISTIC, READ_COMMITTED, DataMode.SERIALIZABLE);
     }
 
     /**
      * @throws Exception If failed.
      */
-    public void testInvokeAllPessimisticReadCommitted3() throws Exception {
+    public void _testInvokeAllPessimisticReadCommitted3() throws Exception {
         checkInvokeAll(PESSIMISTIC, READ_COMMITTED, DataMode.EXTERNALIZABLE);
     }
 
     /**
      * @throws Exception If failed.
      */
-    public void testInvokeAllPessimisticRepeatableRead1() throws Exception {
+    public void _testInvokeAllPessimisticRepeatableRead1() throws Exception {
         checkInvokeAll(PESSIMISTIC, REPEATABLE_READ, DataMode.PLANE_OBJECT);
     }
 
     /**
      * @throws Exception If failed.
      */
-    public void testInvokeAllPessimisticRepeatableRead2() throws Exception {
+    public void _testInvokeAllPessimisticRepeatableRead2() throws Exception {
         checkInvokeAll(PESSIMISTIC, REPEATABLE_READ, DataMode.SERIALIZABLE);
     }
 
     /**
      * @throws Exception If failed.
      */
-    public void testInvokeAllPessimisticRepeatableRead3() throws Exception {
+    public void _testInvokeAllPessimisticRepeatableRead3() throws Exception {
         checkInvokeAll(PESSIMISTIC, REPEATABLE_READ, DataMode.EXTERNALIZABLE);
     }
 
@@ -1196,21 +1204,21 @@ public class CacheFullApiNewSelfTest extends CacheAbstractNewSelfTest {
     /**
      * @throws Exception If failed.
      */
-    public void testInvokeAllWithNulls1() throws Exception {
+    public void _testInvokeAllWithNulls1() throws Exception {
         checkInvokeAllWithNulls(DataMode.PLANE_OBJECT);
     }
 
     /**
      * @throws Exception If failed.
      */
-    public void testInvokeAllWithNulls2() throws Exception {
+    public void _testInvokeAllWithNulls2() throws Exception {
         checkInvokeAllWithNulls(DataMode.SERIALIZABLE);
     }
 
     /**
      * @throws Exception If failed.
      */
-    public void testInvokeAllWithNulls3() throws Exception {
+    public void _testInvokeAllWithNulls3() throws Exception {
         checkInvokeAllWithNulls(DataMode.EXTERNALIZABLE);
     }
 
@@ -1265,84 +1273,84 @@ public class CacheFullApiNewSelfTest extends CacheAbstractNewSelfTest {
     /**
      * @throws Exception If failed.
      */
-    public void testInvokeSequentialOptimisticNoStart1() throws Exception {
+    public void _testInvokeSequentialOptimisticNoStart1() throws Exception {
         checkInvokeSequential0(false, OPTIMISTIC, DataMode.PLANE_OBJECT);
     }
 
     /**
      * @throws Exception If failed.
      */
-    public void testInvokeSequentialOptimisticNoStart2() throws Exception {
+    public void _testInvokeSequentialOptimisticNoStart2() throws Exception {
         checkInvokeSequential0(false, OPTIMISTIC, DataMode.SERIALIZABLE);
     }
 
     /**
      * @throws Exception If failed.
      */
-    public void testInvokeSequentialOptimisticNoStart3() throws Exception {
+    public void _testInvokeSequentialOptimisticNoStart3() throws Exception {
         checkInvokeSequential0(false, OPTIMISTIC, DataMode.EXTERNALIZABLE);
     }
 
     /**
      * @throws Exception If failed.
      */
-    public void testInvokeSequentialPessimisticNoStart1() throws Exception {
+    public void _testInvokeSequentialPessimisticNoStart1() throws Exception {
         checkInvokeSequential0(false, PESSIMISTIC, DataMode.PLANE_OBJECT);
     }
 
     /**
      * @throws Exception If failed.
      */
-    public void testInvokeSequentialPessimisticNoStart2() throws Exception {
+    public void _testInvokeSequentialPessimisticNoStart2() throws Exception {
         checkInvokeSequential0(false, PESSIMISTIC, DataMode.SERIALIZABLE);
     }
 
     /**
      * @throws Exception If failed.
      */
-    public void testInvokeSequentialPessimisticNoStart3() throws Exception {
+    public void _testInvokeSequentialPessimisticNoStart3() throws Exception {
         checkInvokeSequential0(false, PESSIMISTIC, DataMode.EXTERNALIZABLE);
     }
 
     /**
      * @throws Exception If failed.
      */
-    public void testInvokeSequentialOptimisticWithStart1() throws Exception {
+    public void _testInvokeSequentialOptimisticWithStart1() throws Exception {
         checkInvokeSequential0(true, OPTIMISTIC, DataMode.PLANE_OBJECT);
     }
 
     /**
      * @throws Exception If failed.
      */
-    public void testInvokeSequentialOptimisticWithStart2() throws Exception {
+    public void _testInvokeSequentialOptimisticWithStart2() throws Exception {
         checkInvokeSequential0(true, OPTIMISTIC, DataMode.SERIALIZABLE);
     }
 
     /**
      * @throws Exception If failed.
      */
-    public void testInvokeSequentialOptimisticWithStart3() throws Exception {
+    public void _testInvokeSequentialOptimisticWithStart3() throws Exception {
         checkInvokeSequential0(true, OPTIMISTIC, DataMode.EXTERNALIZABLE);
     }
 
     /**
      * @throws Exception If failed.
      */
-    public void testInvokeSequentialPessimisticWithStart1() throws Exception {
+    public void _testInvokeSequentialPessimisticWithStart1() throws Exception {
         checkInvokeSequential0(true, PESSIMISTIC, DataMode.PLANE_OBJECT);
     }
 
     /**
      * @throws Exception If failed.
      */
-    public void testInvokeSequentialPessimisticWithStart2() throws Exception {
+    public void _testInvokeSequentialPessimisticWithStart2() throws Exception {
         checkInvokeSequential0(true, PESSIMISTIC, DataMode.SERIALIZABLE);
     }
 
     /**
      * @throws Exception If failed.
      */
-    public void testInvokeSequentialPessimisticWithStart3() throws Exception {
+    public void _testInvokeSequentialPessimisticWithStart3() throws Exception {
         checkInvokeSequential0(true, PESSIMISTIC, DataMode.EXTERNALIZABLE);
     }
 
@@ -1404,42 +1412,42 @@ public class CacheFullApiNewSelfTest extends CacheAbstractNewSelfTest {
     /**
      * @throws Exception If failed.
      */
-    public void testInvokeAfterRemoveOptimistic1() throws Exception {
+    public void _testInvokeAfterRemoveOptimistic1() throws Exception {
         checkInvokeAfterRemove(OPTIMISTIC, DataMode.PLANE_OBJECT);
     }
 
     /**
      * @throws Exception If failed.
      */
-    public void testInvokeAfterRemoveOptimistic2() throws Exception {
+    public void _testInvokeAfterRemoveOptimistic2() throws Exception {
         checkInvokeAfterRemove(OPTIMISTIC, DataMode.SERIALIZABLE);
     }
 
     /**
      * @throws Exception If failed.
      */
-    public void testInvokeAfterRemoveOptimistic3() throws Exception {
+    public void _testInvokeAfterRemoveOptimistic3() throws Exception {
         checkInvokeAfterRemove(OPTIMISTIC, DataMode.EXTERNALIZABLE);
     }
 
     /**
      * @throws Exception If failed.
      */
-    public void testInvokeAfterRemovePessimistic1() throws Exception {
+    public void _testInvokeAfterRemovePessimistic1() throws Exception {
         checkInvokeAfterRemove(PESSIMISTIC, DataMode.PLANE_OBJECT);
     }
 
     /**
      * @throws Exception If failed.
      */
-    public void testInvokeAfterRemovePessimistic2() throws Exception {
+    public void _testInvokeAfterRemovePessimistic2() throws Exception {
         checkInvokeAfterRemove(PESSIMISTIC, DataMode.SERIALIZABLE);
     }
 
     /**
      * @throws Exception If failed.
      */
-    public void testInvokeAfterRemovePessimistic3() throws Exception {
+    public void _testInvokeAfterRemovePessimistic3() throws Exception {
         checkInvokeAfterRemove(PESSIMISTIC, DataMode.EXTERNALIZABLE);
     }
 
@@ -1478,105 +1486,105 @@ public class CacheFullApiNewSelfTest extends CacheAbstractNewSelfTest {
     /**
      * @throws Exception If failed.
      */
-    public void testInvokeReturnValueGetOptimisticReadCommitted1() throws Exception {
+    public void _testInvokeReturnValueGetOptimisticReadCommitted1() throws Exception {
         checkInvokeReturnValue(false, OPTIMISTIC, READ_COMMITTED, DataMode.PLANE_OBJECT);
     }
 
     /**
      * @throws Exception If failed.
      */
-    public void testInvokeReturnValueGetOptimisticReadCommitted2() throws Exception {
+    public void _testInvokeReturnValueGetOptimisticReadCommitted2() throws Exception {
         checkInvokeReturnValue(false, OPTIMISTIC, READ_COMMITTED, DataMode.SERIALIZABLE);
     }
 
     /**
      * @throws Exception If failed.
      */
-    public void testInvokeReturnValueGetOptimisticReadCommitted3() throws Exception {
+    public void _testInvokeReturnValueGetOptimisticReadCommitted3() throws Exception {
         checkInvokeReturnValue(false, OPTIMISTIC, READ_COMMITTED, DataMode.EXTERNALIZABLE);
     }
 
     /**
      * @throws Exception If failed.
      */
-    public void testInvokeReturnValueGetOptimisticRepeatableRead1() throws Exception {
+    public void _testInvokeReturnValueGetOptimisticRepeatableRead1() throws Exception {
         checkInvokeReturnValue(false, OPTIMISTIC, REPEATABLE_READ, DataMode.PLANE_OBJECT);
     }
 
     /**
      * @throws Exception If failed.
      */
-    public void testInvokeReturnValueGetOptimisticRepeatableRead2() throws Exception {
+    public void _testInvokeReturnValueGetOptimisticRepeatableRead2() throws Exception {
         checkInvokeReturnValue(false, OPTIMISTIC, REPEATABLE_READ, DataMode.SERIALIZABLE);
     }
 
     /**
      * @throws Exception If failed.
      */
-    public void testInvokeReturnValueGetOptimisticRepeatableRead3() throws Exception {
+    public void _testInvokeReturnValueGetOptimisticRepeatableRead3() throws Exception {
         checkInvokeReturnValue(false, OPTIMISTIC, REPEATABLE_READ, DataMode.EXTERNALIZABLE);
     }
 
     /**
      * @throws Exception If failed.
      */
-    public void testInvokeReturnValueGetPessimisticReadCommitted1() throws Exception {
+    public void _testInvokeReturnValueGetPessimisticReadCommitted1() throws Exception {
         checkInvokeReturnValue(false, PESSIMISTIC, READ_COMMITTED, DataMode.PLANE_OBJECT);
     }
 
     /**
      * @throws Exception If failed.
      */
-    public void testInvokeReturnValueGetPessimisticReadCommitted2() throws Exception {
+    public void _testInvokeReturnValueGetPessimisticReadCommitted2() throws Exception {
         checkInvokeReturnValue(false, PESSIMISTIC, READ_COMMITTED, DataMode.SERIALIZABLE);
     }
 
     /**
      * @throws Exception If failed.
      */
-    public void testInvokeReturnValueGetPessimisticReadCommitted3() throws Exception {
+    public void _testInvokeReturnValueGetPessimisticReadCommitted3() throws Exception {
         checkInvokeReturnValue(false, PESSIMISTIC, READ_COMMITTED, DataMode.EXTERNALIZABLE);
     }
 
     /**
      * @throws Exception If failed.
      */
-    public void testInvokeReturnValueGetPessimisticRepeatableRead1() throws Exception {
+    public void _testInvokeReturnValueGetPessimisticRepeatableRead1() throws Exception {
         checkInvokeReturnValue(false, PESSIMISTIC, REPEATABLE_READ, DataMode.PLANE_OBJECT);
     }
 
     /**
      * @throws Exception If failed.
      */
-    public void testInvokeReturnValueGetPessimisticRepeatableRead2() throws Exception {
+    public void _testInvokeReturnValueGetPessimisticRepeatableRead2() throws Exception {
         checkInvokeReturnValue(false, PESSIMISTIC, REPEATABLE_READ, DataMode.SERIALIZABLE);
     }
 
     /**
      * @throws Exception If failed.
      */
-    public void testInvokeReturnValueGetPessimisticRepeatableRead3() throws Exception {
+    public void _testInvokeReturnValueGetPessimisticRepeatableRead3() throws Exception {
         checkInvokeReturnValue(false, PESSIMISTIC, REPEATABLE_READ, DataMode.EXTERNALIZABLE);
     }
 
     /**
      * @throws Exception If failed.
      */
-    public void testInvokeReturnValuePutInTx1() throws Exception {
+    public void _testInvokeReturnValuePutInTx1() throws Exception {
         checkInvokeReturnValue(true, OPTIMISTIC, READ_COMMITTED, DataMode.PLANE_OBJECT);
     }
 
     /**
      * @throws Exception If failed.
      */
-    public void testInvokeReturnValuePutInTx2() throws Exception {
+    public void _testInvokeReturnValuePutInTx2() throws Exception {
         checkInvokeReturnValue(true, OPTIMISTIC, READ_COMMITTED, DataMode.SERIALIZABLE);
     }
 
     /**
      * @throws Exception If failed.
      */
-    public void testInvokeReturnValuePutInTx3() throws Exception {
+    public void _testInvokeReturnValuePutInTx3() throws Exception {
         checkInvokeReturnValue(true, OPTIMISTIC, READ_COMMITTED, DataMode.EXTERNALIZABLE);
     }
 
@@ -1627,7 +1635,7 @@ public class CacheFullApiNewSelfTest extends CacheAbstractNewSelfTest {
     /**
      * @throws Exception In case of error.
      */
-    public void testGetAndPutAsync() throws Exception {
+    public void _testGetAndPutAsync() throws Exception {
         IgniteCache<String, Integer> cache = jcache();
 
         IgniteCache<String, Integer> cacheAsync = cache.withAsync();
@@ -1653,7 +1661,7 @@ public class CacheFullApiNewSelfTest extends CacheAbstractNewSelfTest {
     /**
      * @throws Exception In case of error.
      */
-    public void testPutAsync0() throws Exception {
+    public void _testPutAsync0() throws Exception {
         IgniteCache cacheAsync = jcache().withAsync();
 
         cacheAsync.getAndPut("key1", 0);
@@ -1671,21 +1679,21 @@ public class CacheFullApiNewSelfTest extends CacheAbstractNewSelfTest {
     /**
      * @throws Exception If failed.
      */
-    public void testInvokeAsync1() throws Exception {
+    public void _testInvokeAsync1() throws Exception {
         checkInvokeAsync(DataMode.PLANE_OBJECT);
     }
 
     /**
      * @throws Exception If failed.
      */
-    public void testInvokeAsync2() throws Exception {
+    public void _testInvokeAsync2() throws Exception {
         checkInvokeAsync(DataMode.SERIALIZABLE);
     }
 
     /**
      * @throws Exception If failed.
      */
-    public void testInvokeAsync3() throws Exception {
+    public void _testInvokeAsync3() throws Exception {
         checkInvokeAsync(DataMode.EXTERNALIZABLE);
     }
 
@@ -1735,21 +1743,21 @@ public class CacheFullApiNewSelfTest extends CacheAbstractNewSelfTest {
     /**
      * @throws Exception If failed.
      */
-    public void testInvoke1() throws Exception {
+    public void _testInvoke1() throws Exception {
         checkInvoke(DataMode.PLANE_OBJECT);
     }
 
     /**
      * @throws Exception If failed.
      */
-    public void testInvoke2() throws Exception {
+    public void _testInvoke2() throws Exception {
         checkInvoke(DataMode.SERIALIZABLE);
     }
 
     /**
      * @throws Exception If failed.
      */
-    public void testInvoke3() throws Exception {
+    public void _testInvoke3() throws Exception {
         checkInvoke(DataMode.EXTERNALIZABLE);
     }
 
@@ -1806,7 +1814,7 @@ public class CacheFullApiNewSelfTest extends CacheAbstractNewSelfTest {
     /**
      * @throws Exception In case of error.
      */
-    public void testPutx() throws Exception {
+    public void _testPutx() throws Exception {
         if (txShouldBeUsed())
             checkPut(true);
     }
@@ -1814,7 +1822,7 @@ public class CacheFullApiNewSelfTest extends CacheAbstractNewSelfTest {
     /**
      * @throws Exception In case of error.
      */
-    public void testPutxNoTx() throws Exception {
+    public void _testPutxNoTx() throws Exception {
         checkPut(false);
     }
 
@@ -1858,7 +1866,7 @@ public class CacheFullApiNewSelfTest extends CacheAbstractNewSelfTest {
     /**
      * @throws Exception If failed.
      */
-    public void testPutAsync() throws Exception {
+    public void _testPutAsync() throws Exception {
         Transaction tx = txShouldBeUsed() ? transactions().txStart() : null;
 
         IgniteCache cacheAsync = jcache().withAsync();
@@ -1903,7 +1911,7 @@ public class CacheFullApiNewSelfTest extends CacheAbstractNewSelfTest {
     /**
      * @throws Exception In case of error.
      */
-    public void testPutAll() throws Exception {
+    public void _testPutAll() throws Exception {
         Map<String, Integer> map = F.asMap("key1", 1, "key2", 2);
 
         IgniteCache<String, Integer> cache = jcache();
@@ -1929,7 +1937,7 @@ public class CacheFullApiNewSelfTest extends CacheAbstractNewSelfTest {
     /**
      * @throws Exception In case of error.
      */
-    public void testNullInTx() throws Exception {
+    public void _testNullInTx() throws Exception {
         if (!txShouldBeUsed())
             return;
 
@@ -2020,7 +2028,7 @@ public class CacheFullApiNewSelfTest extends CacheAbstractNewSelfTest {
     /**
      * @throws Exception In case of error.
      */
-    public void testPutAllWithNulls() throws Exception {
+    public void _testPutAllWithNulls() throws Exception {
         final IgniteCache<String, Integer> cache = jcache();
 
         {
@@ -2148,7 +2156,7 @@ public class CacheFullApiNewSelfTest extends CacheAbstractNewSelfTest {
     /**
      * @throws Exception In case of error.
      */
-    public void testPutAllAsync() throws Exception {
+    public void _testPutAllAsync() throws Exception {
         Map<String, Integer> map = F.asMap("key1", 1, "key2", 2);
 
         IgniteCache<String, Integer> cache = jcache();
@@ -2178,7 +2186,7 @@ public class CacheFullApiNewSelfTest extends CacheAbstractNewSelfTest {
     /**
      * @throws Exception In case of error.
      */
-    public void testGetAndPutIfAbsent() throws Exception {
+    public void _testGetAndPutIfAbsent() throws Exception {
         Transaction tx = txShouldBeUsed() ? transactions().txStart() : null;
 
         IgniteCache<String, Integer> cache = jcache();
@@ -2264,7 +2272,7 @@ public class CacheFullApiNewSelfTest extends CacheAbstractNewSelfTest {
     /**
      * @throws Exception If failed.
      */
-    public void testGetAndPutIfAbsentAsync() throws Exception {
+    public void _testGetAndPutIfAbsentAsync() throws Exception {
         Transaction tx = txShouldBeUsed() ? transactions().txStart() : null;
 
         IgniteCache<String, Integer> cache = jcache();
@@ -2345,7 +2353,7 @@ public class CacheFullApiNewSelfTest extends CacheAbstractNewSelfTest {
     /**
      * @throws Exception If failed.
      */
-    public void testPutIfAbsent() throws Exception {
+    public void _testPutIfAbsent() throws Exception {
         IgniteCache<String, Integer> cache = jcache();
 
         assertNull(cache.get("key"));
@@ -2399,7 +2407,7 @@ public class CacheFullApiNewSelfTest extends CacheAbstractNewSelfTest {
     /**
      * @throws Exception In case of error.
      */
-    public void testPutxIfAbsentAsync() throws Exception {
+    public void _testPutxIfAbsentAsync() throws Exception {
         if (txShouldBeUsed())
             checkPutxIfAbsentAsync(true);
     }
@@ -2407,7 +2415,7 @@ public class CacheFullApiNewSelfTest extends CacheAbstractNewSelfTest {
     /**
      * @throws Exception In case of error.
      */
-    public void testPutxIfAbsentAsyncNoTx() throws Exception {
+    public void _testPutxIfAbsentAsyncNoTx() throws Exception {
         checkPutxIfAbsentAsync(false);
     }
 
@@ -2494,7 +2502,7 @@ public class CacheFullApiNewSelfTest extends CacheAbstractNewSelfTest {
     /**
      * @throws Exception In case of error.
      */
-    public void testPutIfAbsentAsyncConcurrent() throws Exception {
+    public void _testPutIfAbsentAsyncConcurrent() throws Exception {
         IgniteCache cacheAsync = jcache().withAsync();
 
         cacheAsync.putIfAbsent("key1", 1);
@@ -2512,7 +2520,7 @@ public class CacheFullApiNewSelfTest extends CacheAbstractNewSelfTest {
     /**
      * @throws Exception If failed.
      */
-    public void testGetAndReplace() throws Exception {
+    public void _testGetAndReplace() throws Exception {
         IgniteCache<String, Integer> cache = jcache();
 
         cache.put("key", 1);
@@ -2607,7 +2615,7 @@ public class CacheFullApiNewSelfTest extends CacheAbstractNewSelfTest {
     /**
      * @throws Exception If failed.
      */
-    public void testReplace() throws Exception {
+    public void _testReplace() throws Exception {
         IgniteCache<String, Integer> cache = jcache();
 
         cache.put("key", 1);
@@ -2666,7 +2674,7 @@ public class CacheFullApiNewSelfTest extends CacheAbstractNewSelfTest {
     /**
      * @throws Exception If failed.
      */
-    public void testGetAndReplaceAsync() throws Exception {
+    public void _testGetAndReplaceAsync() throws Exception {
         IgniteCache<String, Integer> cache = jcache();
 
         IgniteCache<String, Integer> cacheAsync = cache.withAsync();
@@ -2756,7 +2764,7 @@ public class CacheFullApiNewSelfTest extends CacheAbstractNewSelfTest {
     /**
      * @throws Exception If failed.
      */
-    public void testReplacexAsync() throws Exception {
+    public void _testReplacexAsync() throws Exception {
         IgniteCache<String, Integer> cache = jcache();
 
         IgniteCache<String, Integer> cacheAsync = cache.withAsync();
@@ -2828,7 +2836,7 @@ public class CacheFullApiNewSelfTest extends CacheAbstractNewSelfTest {
     /**
      * @throws Exception In case of error.
      */
-    public void testGetAndRemove() throws Exception {
+    public void _testGetAndRemove() throws Exception {
         IgniteCache<String, Integer> cache = jcache();
 
         cache.put("key1", 1);
@@ -2846,7 +2854,7 @@ public class CacheFullApiNewSelfTest extends CacheAbstractNewSelfTest {
     /**
      * @throws Exception If failed.
      */
-    public void testGetAndRemoveObject() throws Exception {
+    public void _testGetAndRemoveObject() throws Exception {
         IgniteCache<String, SerializableObject> cache = ignite(0).cache(cacheName());
 
         SerializableObject val1 = new SerializableObject(1);
@@ -2876,7 +2884,7 @@ public class CacheFullApiNewSelfTest extends CacheAbstractNewSelfTest {
     /**
      * @throws Exception If failed.
      */
-    public void testGetAndPutSerializableObject() throws Exception {
+    public void _testGetAndPutSerializableObject() throws Exception {
         IgniteCache<String, SerializableObject> cache = ignite(0).cache(cacheName());
 
         SerializableObject val1 = new SerializableObject(1);
@@ -2900,7 +2908,7 @@ public class CacheFullApiNewSelfTest extends CacheAbstractNewSelfTest {
     /**
      * @throws Exception If failed.
      */
-    public void testDeletedEntriesFlag() throws Exception {
+    public void _testDeletedEntriesFlag() throws Exception {
         if (cacheMode() != LOCAL && cacheMode() != REPLICATED && memoryMode() != OFFHEAP_TIERED) {
             final int cnt = 3;
 
@@ -2920,7 +2928,7 @@ public class CacheFullApiNewSelfTest extends CacheAbstractNewSelfTest {
     /**
      * @throws Exception If failed.
      */
-    public void testRemoveLoad() throws Exception {
+    public void _testRemoveLoad() throws Exception {
         if (isMultiJvm())
             fail("https://issues.apache.org/jira/browse/IGNITE-1088");
 
@@ -2957,7 +2965,7 @@ public class CacheFullApiNewSelfTest extends CacheAbstractNewSelfTest {
     /**
      * @throws Exception In case of error.
      */
-    public void testRemoveAsync() throws Exception {
+    public void _testRemoveAsync() throws Exception {
         IgniteCache<String, Integer> cache = jcache();
 
         IgniteCache<String, Integer> cacheAsync = cache.withAsync();
@@ -2991,7 +2999,7 @@ public class CacheFullApiNewSelfTest extends CacheAbstractNewSelfTest {
     /**
      * @throws Exception In case of error.
      */
-    public void testRemove() throws Exception {
+    public void _testRemove() throws Exception {
         IgniteCache<String, Integer> cache = jcache();
 
         cache.put("key1", 1);
@@ -3004,7 +3012,7 @@ public class CacheFullApiNewSelfTest extends CacheAbstractNewSelfTest {
     /**
      * @throws Exception In case of error.
      */
-    public void testRemovexAsync() throws Exception {
+    public void _testRemovexAsync() throws Exception {
         IgniteCache<String, Integer> cache = jcache();
 
         IgniteCache<String, Integer> cacheAsync = cache.withAsync();
@@ -3025,14 +3033,14 @@ public class CacheFullApiNewSelfTest extends CacheAbstractNewSelfTest {
     /**
      * @throws Exception In case of error.
      */
-    public void testGlobalRemoveAll() throws Exception {
+    public void _testGlobalRemoveAll() throws Exception {
         globalRemoveAll(false);
     }
 
     /**
      * @throws Exception In case of error.
      */
-    public void testGlobalRemoveAllAsync() throws Exception {
+    public void _testGlobalRemoveAllAsync() throws Exception {
         globalRemoveAll(true);
     }
 
@@ -3117,7 +3125,7 @@ public class CacheFullApiNewSelfTest extends CacheAbstractNewSelfTest {
     /**
      * @throws Exception In case of error.
      */
-    public void testRemoveAllWithNulls() throws Exception {
+    public void _testRemoveAllWithNulls() throws Exception {
         final IgniteCache<String, Integer> cache = jcache();
 
         final Set<String> c = new LinkedHashSet<>();
@@ -3171,14 +3179,14 @@ public class CacheFullApiNewSelfTest extends CacheAbstractNewSelfTest {
     /**
      * @throws Exception In case of error.
      */
-    public void testRemoveAllDuplicates() throws Exception {
+    public void _testRemoveAllDuplicates() throws Exception {
         jcache().removeAll(ImmutableSet.of("key1", "key1", "key1"));
     }
 
     /**
      * @throws Exception In case of error.
      */
-    public void testRemoveAllDuplicatesTx() throws Exception {
+    public void _testRemoveAllDuplicatesTx() throws Exception {
         if (txShouldBeUsed()) {
             try (Transaction tx = transactions().txStart()) {
                 jcache().removeAll(ImmutableSet.of("key1", "key1", "key1"));
@@ -3191,14 +3199,14 @@ public class CacheFullApiNewSelfTest extends CacheAbstractNewSelfTest {
     /**
      * @throws Exception In case of error.
      */
-    public void testRemoveAllEmpty() throws Exception {
+    public void _testRemoveAllEmpty() throws Exception {
         jcache().removeAll();
     }
 
     /**
      * @throws Exception In case of error.
      */
-    public void testRemoveAllAsync() throws Exception {
+    public void _testRemoveAllAsync() throws Exception {
         IgniteCache<String, Integer> cache = jcache();
 
         IgniteCache<String, Integer> cacheAsync = cache.withAsync();
@@ -3223,7 +3231,7 @@ public class CacheFullApiNewSelfTest extends CacheAbstractNewSelfTest {
     /**
      * @throws Exception In case of error.
      */
-    public void testLoadAll() throws Exception {
+    public void _testLoadAll() throws Exception {
         if (!storeEnabled())
             return;
 
@@ -3263,7 +3271,7 @@ public class CacheFullApiNewSelfTest extends CacheAbstractNewSelfTest {
     /**
      * @throws Exception If failed.
      */
-    public void testRemoveAfterClear() throws Exception {
+    public void _testRemoveAfterClear() throws Exception {
         IgniteEx ignite = grid(0);
 
         boolean affNode = ignite.context().cache().internalCache(cacheName()).context().affinityNode();
@@ -3309,7 +3317,7 @@ public class CacheFullApiNewSelfTest extends CacheAbstractNewSelfTest {
     /**
      * @throws Exception In case of error.
      */
-    public void testClear() throws Exception {
+    public void _testClear() throws Exception {
         IgniteCache<String, Integer> cache = jcache();
 
         Set<String> keys = new HashSet<>(primaryKeysForCache(cache, 3));
@@ -3455,14 +3463,14 @@ public class CacheFullApiNewSelfTest extends CacheAbstractNewSelfTest {
     /**
      * @throws Exception If failed.
      */
-    public void testGlobalClearAll() throws Exception {
+    public void _testGlobalClearAll() throws Exception {
         globalClearAll(false);
     }
 
     /**
      * @throws Exception If failed.
      */
-    public void testGlobalClearAllAsync() throws Exception {
+    public void _testGlobalClearAllAsync() throws Exception {
         globalClearAll(true);
     }
 
@@ -3496,7 +3504,7 @@ public class CacheFullApiNewSelfTest extends CacheAbstractNewSelfTest {
      * @throws Exception In case of error.
      */
     @SuppressWarnings("BusyWait")
-    public void testLockUnlock() throws Exception {
+    public void _testLockUnlock() throws Exception {
         if (lockingEnabled()) {
             final CountDownLatch lockCnt = new CountDownLatch(1);
             final CountDownLatch unlockCnt = new CountDownLatch(1);
@@ -3555,7 +3563,7 @@ public class CacheFullApiNewSelfTest extends CacheAbstractNewSelfTest {
      * @throws Exception In case of error.
      */
     @SuppressWarnings("BusyWait")
-    public void testLockUnlockAll() throws Exception {
+    public void _testLockUnlockAll() throws Exception {
         if (lockingEnabled()) {
             IgniteCache<String, Integer> cache = jcache();
 
@@ -3610,7 +3618,7 @@ public class CacheFullApiNewSelfTest extends CacheAbstractNewSelfTest {
     /**
      * @throws Exception In case of error.
      */
-    public void testPeek() throws Exception {
+    public void _testPeek() throws Exception {
         Ignite ignite = primaryIgnite("key");
         IgniteCache<String, Integer> cache = ignite.cache(cacheName());
 
@@ -3626,14 +3634,14 @@ public class CacheFullApiNewSelfTest extends CacheAbstractNewSelfTest {
     /**
      * @throws Exception If failed.
      */
-    public void testPeekTxRemoveOptimistic() throws Exception {
+    public void _testPeekTxRemoveOptimistic() throws Exception {
         checkPeekTxRemove(OPTIMISTIC);
     }
 
     /**
      * @throws Exception If failed.
      */
-    public void testPeekTxRemovePessimistic() throws Exception {
+    public void _testPeekTxRemovePessimistic() throws Exception {
         checkPeekTxRemove(PESSIMISTIC);
     }
 
@@ -3662,7 +3670,7 @@ public class CacheFullApiNewSelfTest extends CacheAbstractNewSelfTest {
     /**
      * @throws Exception If failed.
      */
-    public void testPeekRemove() throws Exception {
+    public void _testPeekRemove() throws Exception {
         IgniteCache<String, Integer> cache = primaryCache("key");
 
         cache.put("key", 1);
@@ -3674,7 +3682,7 @@ public class CacheFullApiNewSelfTest extends CacheAbstractNewSelfTest {
     /**
      * @throws Exception In case of error.
      */
-    public void testEvictExpired() throws Exception {
+    public void _testEvictExpired() throws Exception {
         final IgniteCache<String, Integer> cache = jcache();
 
         final String key = primaryKeysForCache(cache, 1).get(0);
@@ -3728,7 +3736,7 @@ public class CacheFullApiNewSelfTest extends CacheAbstractNewSelfTest {
      *
      * @throws Exception If failed.
      */
-    public void testPeekExpired() throws Exception {
+    public void _testPeekExpired() throws Exception {
         final IgniteCache<String, Integer> c = jcache();
 
         final String key = primaryKeysForCache(c, 1).get(0);
@@ -3763,7 +3771,7 @@ public class CacheFullApiNewSelfTest extends CacheAbstractNewSelfTest {
      *
      * @throws Exception If failed.
      */
-    public void testPeekExpiredTx() throws Exception {
+    public void _testPeekExpiredTx() throws Exception {
         if (txShouldBeUsed()) {
             final IgniteCache<String, Integer> c = jcache();
 
@@ -3793,7 +3801,7 @@ public class CacheFullApiNewSelfTest extends CacheAbstractNewSelfTest {
     /**
      * @throws Exception If failed.
      */
-    public void testTtlTx() throws Exception {
+    public void _testTtlTx() throws Exception {
         if (txShouldBeUsed())
             checkTtl(true, false);
     }
@@ -3801,14 +3809,14 @@ public class CacheFullApiNewSelfTest extends CacheAbstractNewSelfTest {
     /**
      * @throws Exception If failed.
      */
-    public void testTtlNoTx() throws Exception {
+    public void _testTtlNoTx() throws Exception {
         checkTtl(false, false);
     }
 
     /**
      * @throws Exception If failed.
      */
-    public void testTtlNoTxOldEntry() throws Exception {
+    public void _testTtlNoTxOldEntry() throws Exception {
         checkTtl(false, true);
     }
 
@@ -4080,7 +4088,7 @@ public class CacheFullApiNewSelfTest extends CacheAbstractNewSelfTest {
     /**
      * @throws Exception In case of error.
      */
-    public void testLocalEvict() throws Exception {
+    public void _testLocalEvict() throws Exception {
         IgniteCache<String, Integer> cache = jcache();
 
         List<String> keys = primaryKeysForCache(cache, 3);
@@ -4124,7 +4132,7 @@ public class CacheFullApiNewSelfTest extends CacheAbstractNewSelfTest {
     /**
      * @throws Exception If failed.
      */
-    public void testUnswap() throws Exception {
+    public void _testUnswap() throws Exception {
         // TODO implement testUnswap for case when offheap is enabled.
         if (swapEnabled() && !offheapEnabled()) {
             IgniteCache<String, Integer> cache = jcache();
@@ -4299,7 +4307,7 @@ public class CacheFullApiNewSelfTest extends CacheAbstractNewSelfTest {
     /**
      * JUnit.
      */
-    public void testCacheProxy() {
+    public void _testCacheProxy() {
         IgniteCache<String, Integer> cache = jcache();
 
         assert cache instanceof IgniteCacheProxy;
@@ -4310,7 +4318,7 @@ public class CacheFullApiNewSelfTest extends CacheAbstractNewSelfTest {
      *
      * @throws Exception If failed.
      */
-    public void testCompactExpired() throws Exception {
+    public void _testCompactExpired() throws Exception {
         final IgniteCache<String, Integer> cache = jcache();
 
         final String key = F.first(primaryKeysForCache(cache, 1));
@@ -4343,7 +4351,7 @@ public class CacheFullApiNewSelfTest extends CacheAbstractNewSelfTest {
      *
      * @throws Exception If failed.
      */
-    public void testOptimisticTxMissingKey() throws Exception {
+    public void _testOptimisticTxMissingKey() throws Exception {
         if (txShouldBeUsed()) {
             try (Transaction tx = transactions().txStart(OPTIMISTIC, READ_COMMITTED)) {
                 // Remove missing key.
@@ -4359,7 +4367,7 @@ public class CacheFullApiNewSelfTest extends CacheAbstractNewSelfTest {
      *
      * @throws Exception If failed.
      */
-    public void testOptimisticTxMissingKeyNoCommit() throws Exception {
+    public void _testOptimisticTxMissingKeyNoCommit() throws Exception {
         if (txShouldBeUsed()) {
             try (Transaction tx = transactions().txStart(OPTIMISTIC, READ_COMMITTED)) {
                 // Remove missing key.
@@ -4373,28 +4381,28 @@ public class CacheFullApiNewSelfTest extends CacheAbstractNewSelfTest {
     /**
      * @throws Exception If failed.
      */
-    public void testOptimisticTxReadCommittedInTx() throws Exception {
+    public void _testOptimisticTxReadCommittedInTx() throws Exception {
         checkRemovexInTx(OPTIMISTIC, READ_COMMITTED);
     }
 
     /**
      * @throws Exception If failed.
      */
-    public void testOptimisticTxRepeatableReadInTx() throws Exception {
+    public void _testOptimisticTxRepeatableReadInTx() throws Exception {
         checkRemovexInTx(OPTIMISTIC, REPEATABLE_READ);
     }
 
     /**
      * @throws Exception If failed.
      */
-    public void testPessimisticTxReadCommittedInTx() throws Exception {
+    public void _testPessimisticTxReadCommittedInTx() throws Exception {
         checkRemovexInTx(PESSIMISTIC, READ_COMMITTED);
     }
 
     /**
      * @throws Exception If failed.
      */
-    public void testPessimisticTxRepeatableReadInTx() throws Exception {
+    public void _testPessimisticTxRepeatableReadInTx() throws Exception {
         checkRemovexInTx(PESSIMISTIC, REPEATABLE_READ);
     }
 
@@ -4450,7 +4458,7 @@ public class CacheFullApiNewSelfTest extends CacheAbstractNewSelfTest {
      *
      * @throws Exception If failed.
      */
-    public void testPessimisticTxMissingKey() throws Exception {
+    public void _testPessimisticTxMissingKey() throws Exception {
         if (txShouldBeUsed()) {
             try (Transaction tx = transactions().txStart(PESSIMISTIC, READ_COMMITTED)) {
                 // Remove missing key.
@@ -4466,7 +4474,7 @@ public class CacheFullApiNewSelfTest extends CacheAbstractNewSelfTest {
      *
      * @throws Exception If failed.
      */
-    public void testPessimisticTxMissingKeyNoCommit() throws Exception {
+    public void _testPessimisticTxMissingKeyNoCommit() throws Exception {
         if (txShouldBeUsed()) {
             try (Transaction tx = transactions().txStart(PESSIMISTIC, READ_COMMITTED)) {
                 // Remove missing key.
@@ -4480,7 +4488,7 @@ public class CacheFullApiNewSelfTest extends CacheAbstractNewSelfTest {
     /**
      * @throws Exception If failed.
      */
-    public void testPessimisticTxRepeatableRead() throws Exception {
+    public void _testPessimisticTxRepeatableRead() throws Exception {
         if (txShouldBeUsed()) {
             try (Transaction ignored = transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
                 jcache().put("key", 1);
@@ -4493,7 +4501,7 @@ public class CacheFullApiNewSelfTest extends CacheAbstractNewSelfTest {
     /**
      * @throws Exception If failed.
      */
-    public void testPessimisticTxRepeatableReadOnUpdate() throws Exception {
+    public void _testPessimisticTxRepeatableReadOnUpdate() throws Exception {
         if (txShouldBeUsed()) {
             try (Transaction ignored = transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
                 jcache().put("key", 1);
@@ -4506,7 +4514,7 @@ public class CacheFullApiNewSelfTest extends CacheAbstractNewSelfTest {
     /**
      * @throws Exception In case of error.
      */
-    public void testToMap() throws Exception {
+    public void _testToMap() throws Exception {
         IgniteCache<String, Integer> cache = jcache();
 
         if (offheapTiered(cache))
@@ -4647,7 +4655,7 @@ public class CacheFullApiNewSelfTest extends CacheAbstractNewSelfTest {
     /**
      * @throws Exception If failed.
      */
-    public void testIterator() throws Exception {
+    public void _testIterator() throws Exception {
         IgniteCache<Integer, Integer> cache = grid(0).cache(cacheName());
 
         final int KEYS = 1000;
@@ -4674,7 +4682,7 @@ public class CacheFullApiNewSelfTest extends CacheAbstractNewSelfTest {
     /**
      * @throws Exception If failed.
      */
-    public void testIgniteCacheIterator() throws Exception {
+    public void _testIgniteCacheIterator() throws Exception {
         IgniteCache<String, Integer> cache = jcache(0);
 
         Iterator<Cache.Entry<String, Integer>> it = cache.iterator();
@@ -4864,7 +4872,7 @@ public class CacheFullApiNewSelfTest extends CacheAbstractNewSelfTest {
     /**
      * @throws Exception If failed.
      */
-    public void testLocalClearKey() throws Exception {
+    public void _testLocalClearKey() throws Exception {
         addKeys();
 
         String keyToRmv = "key" + 25;
@@ -4915,7 +4923,7 @@ public class CacheFullApiNewSelfTest extends CacheAbstractNewSelfTest {
     /**
      * @throws Exception If failed.
      */
-    public void testLocalClearKeys() throws Exception {
+    public void _testLocalClearKeys() throws Exception {
         Map<String, List<String>> keys = addKeys();
 
         Ignite g = grid(0);
@@ -4986,28 +4994,28 @@ public class CacheFullApiNewSelfTest extends CacheAbstractNewSelfTest {
     /**
      * @throws Exception If failed.
      */
-    public void testGlobalClearKey() throws Exception {
+    public void _testGlobalClearKey() throws Exception {
         testGlobalClearKey(false, Arrays.asList("key25"));
     }
 
     /**
      * @throws Exception If failed.
      */
-    public void testGlobalClearKeyAsync() throws Exception {
+    public void _testGlobalClearKeyAsync() throws Exception {
         testGlobalClearKey(true, Arrays.asList("key25"));
     }
 
     /**
      * @throws Exception If failed.
      */
-    public void testGlobalClearKeys() throws Exception {
+    public void _testGlobalClearKeys() throws Exception {
         testGlobalClearKey(false, Arrays.asList("key25", "key100", "key150"));
     }
 
     /**
      * @throws Exception If failed.
      */
-    public void testGlobalClearKeysAsync() throws Exception {
+    public void _testGlobalClearKeysAsync() throws Exception {
         testGlobalClearKey(true, Arrays.asList("key25", "key100", "key150"));
     }
 
@@ -5064,7 +5072,7 @@ public class CacheFullApiNewSelfTest extends CacheAbstractNewSelfTest {
     /**
      * @throws Exception If failed.
      */
-    public void testWithSkipStore() throws Exception {
+    public void _testWithSkipStore() throws Exception {
         if(isMultiJvm())
             fail("https://issues.apache.org/jira/browse/IGNITE-1088");
 
@@ -5279,7 +5287,7 @@ public class CacheFullApiNewSelfTest extends CacheAbstractNewSelfTest {
     /**
      * @throws Exception If failed.
      */
-    public void testWithSkipStoreRemoveAll() throws Exception {
+    public void _testWithSkipStoreRemoveAll() throws Exception {
         if (isMultiJvm())
             fail("https://issues.apache.org/jira/browse/IGNITE-1088");
 
@@ -5326,7 +5334,7 @@ public class CacheFullApiNewSelfTest extends CacheAbstractNewSelfTest {
     /**
      * @throws Exception If failed.
      */
-    public void testWithSkipStoreTx() throws Exception {
+    public void _testWithSkipStoreTx() throws Exception {
         if (txShouldBeUsed() && storeEnabled()) {
             IgniteCache<String, Integer> cache = grid(0).cache(cacheName());
 
@@ -5616,14 +5624,14 @@ public class CacheFullApiNewSelfTest extends CacheAbstractNewSelfTest {
     /**
      * @throws Exception If failed.
      */
-    public void testGetOutTx() throws Exception {
+    public void _testGetOutTx() throws Exception {
         checkGetOutTx(false);
     }
 
     /**
      * @throws Exception If failed.
      */
-    public void testGetOutTxAsync() throws Exception {
+    public void _testGetOutTxAsync() throws Exception {
         checkGetOutTx(true);
     }
 
@@ -5699,7 +5707,7 @@ public class CacheFullApiNewSelfTest extends CacheAbstractNewSelfTest {
     /**
      * @throws Exception If failed.
      */
-    public void testInvokeException() throws Exception {
+    public void _testInvokeException() throws Exception {
         final IgniteCache cache = jcache().withAsync();
 
         cache.invoke("key2", ERR_PROCESSOR);
@@ -5722,7 +5730,7 @@ public class CacheFullApiNewSelfTest extends CacheAbstractNewSelfTest {
     /**
      * @throws Exception If failed.
      */
-    public void testLockInsideTransaction() throws Exception {
+    public void _testLockInsideTransaction() throws Exception {
         if (txEnabled()) {
             GridTestUtils.assertThrows(
                 log,
@@ -5753,6 +5761,65 @@ public class CacheFullApiNewSelfTest extends CacheAbstractNewSelfTest {
                 CacheException.class,
                 "Explicit lock can't be acquired within a transaction."
             );
+        }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @SuppressWarnings("serial")
+    public void testContinuousQuery() throws Exception {
+        DataMode mode = DataMode.PLANE_OBJECT;
+
+        final AtomicInteger updCnt = new AtomicInteger();
+
+        ContinuousQuery<TestObject, TestObject> qry = new ContinuousQuery<>();
+
+        qry.setInitialQuery(new ScanQuery<>(new IgniteBiPredicate<TestObject, TestObject>() {
+            @Override public boolean apply(TestObject key, TestObject val) {
+                return key.value() >= 3;
+            }
+        }));
+
+        qry.setLocalListener(new CacheEntryUpdatedListener<TestObject, TestObject>() {
+            @Override public void onUpdated(
+                Iterable<CacheEntryEvent<? extends TestObject, ? extends TestObject>> evts) throws CacheEntryListenerException {
+                updCnt.incrementAndGet();
+            }
+        });
+
+        qry.setRemoteFilter(new CacheEntryEventSerializableFilter<TestObject, TestObject>() {
+            @Override public boolean evaluate(
+                CacheEntryEvent<? extends TestObject, ? extends TestObject> evt) throws CacheEntryListenerException {
+                return evt.getKey().value() < 6 && evt.getKey().value() < 15;
+            }
+        });
+
+        IgniteCache<TestObject, TestObject> cache = jcache();
+
+        for (int i = 0; i < 10; i++)
+            cache.put(key(i, mode), value(i, mode));
+
+        try (QueryCursor<Cache.Entry<TestObject, TestObject>> cur = cache.query(qry)) {
+            int cnt = 0;
+
+            for (Cache.Entry<TestObject, TestObject> e : cur) {
+                cnt++;
+
+                assertTrue(e.getKey().value() >= 3);
+                assertTrue(e.getKey().value() < 6);
+            }
+
+            assertEquals(3, cnt);
+
+            for (int i = 10; i < 20; i++)
+                cache.put(key(i, mode), value(i, mode));
+
+            GridTestUtils.waitForCondition(new GridAbsPredicateX() {
+                @Override public boolean applyx() throws IgniteCheckedException {
+                    return updCnt.get() == 5;
+                }
+            }, 10_000);
         }
     }
 
