@@ -3425,8 +3425,12 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         try {
             if (val.getCacheStoreFactory() != null) {
                 try {
-                    marshaller.unmarshal(marshaller.marshal(val.getCacheStoreFactory()),
-                        val.getCacheStoreFactory().getClass().getClassLoader());
+                    ClassLoader ldr = ctx.config().getClassLoader();
+
+                    if (ldr == null)
+                        ldr = val.getCacheStoreFactory().getClass().getClassLoader();
+
+                    marshaller.unmarshal(marshaller.marshal(val.getCacheStoreFactory()), ldr);
                 }
                 catch (IgniteCheckedException e) {
                     throw new IgniteCheckedException("Failed to validate cache configuration. " +
