@@ -118,11 +118,13 @@ namespace Apache.Ignite.Linq.Impl
 
             var indices = userOrderParams.Select(x => Array.IndexOf(queryOrderParams, x.Name)).ToArray();
 
-            // TODO: check if order is correct
-            return
-                args =>
-                    _cache.QueryFields(
-                        new SqlFieldsQuery(queryText, args.Select((x, i) => args[indices[i]]).ToArray()), selector);
+            // Check if user param order is already correct
+            if (indices.SequenceEqual(Enumerable.Range(0, indices.Length)))
+                return args => _cache.QueryFields(new SqlFieldsQuery(queryText, args), selector);
+
+            // Return delegate with reorder
+            return args => _cache.QueryFields(new SqlFieldsQuery(queryText,
+                args.Select((x, i) => args[indices[i]]).ToArray()), selector);
         }
 
         /** <inheritdoc /> */
