@@ -57,11 +57,13 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteTransactions;
+import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.CacheEntryProcessor;
 import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.cache.affinity.Affinity;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.events.Event;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteKernal;
@@ -130,29 +132,29 @@ public class CacheFullApiNewSelfTest extends CacheAbstractNewSelfTest {
         };
 
     /** Increment processor for invoke operations. */
-    public static final EntryProcessor<String, Integer, String> INCR_PROCESSOR = new IncrementEntryProcessor();
+    public static final EntryProcessor<TestObject, TestObject, TestObject> INCR_PROCESSOR = new IncrementEntryProcessor();
 
     /** Increment processor for invoke operations with IgniteEntryProcessor. */
-    public static final CacheEntryProcessor<String, Integer, String> INCR_IGNITE_PROCESSOR =
-        new CacheEntryProcessor<String, Integer, String>() {
+    public static final CacheEntryProcessor<TestObject, TestObject, TestObject> INCR_IGNITE_PROCESSOR =
+        new CacheEntryProcessor<TestObject, TestObject, TestObject>() {
             /** */
             private static final long serialVersionUID = 0L;
 
-            @Override public String process(MutableEntry<String, Integer> e, Object... args) {
+            @Override public TestObject process(MutableEntry<TestObject, TestObject> e, Object... args) {
                 return INCR_PROCESSOR.process(e, args);
             }
         };
 
     /** Increment processor for invoke operations. */
-    public static final EntryProcessor<String, Integer, String> RMV_PROCESSOR = new RemoveEntryProcessor();
+    public static final EntryProcessor<TestObject, TestObject, TestObject> RMV_PROCESSOR = new RemoveEntryProcessor();
 
     /** Increment processor for invoke operations with IgniteEntryProcessor. */
-    public static final CacheEntryProcessor<String, Integer, String> RMV_IGNITE_PROCESSOR =
-        new CacheEntryProcessor<String, Integer, String>() {
+    public static final CacheEntryProcessor<TestObject, TestObject, TestObject> RMV_IGNITE_PROCESSOR =
+        new CacheEntryProcessor<TestObject, TestObject, TestObject>() {
             /** */
             private static final long serialVersionUID = 0L;
 
-            @Override public String process(MutableEntry<String, Integer> e, Object... args) {
+            @Override public TestObject process(MutableEntry<TestObject, TestObject> e, Object... args) {
                 return RMV_PROCESSOR.process(e, args);
             }
         };
@@ -452,13 +454,6 @@ public class CacheFullApiNewSelfTest extends CacheAbstractNewSelfTest {
     /**
      * @throws Exception In case of error.
      */
-    public void testGet() throws Exception {
-        checkGet(DataMode.PRIMITIVE);
-    }
-
-    /**
-     * @throws Exception In case of error.
-     */
     public void testGetSerializable() throws Exception {
         checkGet(DataMode.SERIALIZABLE);
     }
@@ -665,13 +660,6 @@ public class CacheFullApiNewSelfTest extends CacheAbstractNewSelfTest {
     /**
      * @throws Exception In case of error.
      */
-    public void testPutPrimitive() throws Exception {
-        checkPut(DataMode.PRIMITIVE);
-    }
-
-    /**
-     * @throws Exception In case of error.
-     */
     public void testPutSerializable() throws Exception {
         checkPut(DataMode.SERIALIZABLE);
     }
@@ -774,57 +762,169 @@ public class CacheFullApiNewSelfTest extends CacheAbstractNewSelfTest {
     /**
      * @throws Exception If failed.
      */
-    public void testTransformOptimisticReadCommitted() throws Exception {
-        checkTransform(OPTIMISTIC, READ_COMMITTED);
+    public void testInvokeOptimisticReadCommitted1() throws Exception {
+        checkInvoke(OPTIMISTIC, READ_COMMITTED, DataMode.PLANE_OBJECT);
     }
 
     /**
      * @throws Exception If failed.
      */
-    public void testTransformOptimisticRepeatableRead() throws Exception {
-        checkTransform(OPTIMISTIC, REPEATABLE_READ);
+    public void testInvokeOptimisticReadCommitted2() throws Exception {
+        checkInvoke(OPTIMISTIC, READ_COMMITTED, DataMode.SERIALIZABLE);
     }
 
     /**
      * @throws Exception If failed.
      */
-    public void testTransformPessimisticReadCommitted() throws Exception {
-        checkTransform(PESSIMISTIC, READ_COMMITTED);
+    public void testInvokeOptimisticReadCommitted3() throws Exception {
+        checkInvoke(OPTIMISTIC, READ_COMMITTED, DataMode.EXTERNALIZABLE);
     }
 
     /**
      * @throws Exception If failed.
      */
-    public void testTransformPessimisticRepeatableRead() throws Exception {
-        checkTransform(PESSIMISTIC, REPEATABLE_READ);
+    public void testInvokeOptimisticRepeatableRead1() throws Exception {
+        checkInvoke(OPTIMISTIC, REPEATABLE_READ, DataMode.PLANE_OBJECT);
     }
 
     /**
      * @throws Exception If failed.
      */
-    public void testIgniteTransformOptimisticReadCommitted() throws Exception {
-        checkIgniteTransform(OPTIMISTIC, READ_COMMITTED);
+    public void testInvokeOptimisticRepeatableRead2() throws Exception {
+        checkInvoke(OPTIMISTIC, REPEATABLE_READ, DataMode.SERIALIZABLE);
     }
 
     /**
      * @throws Exception If failed.
      */
-    public void testIgniteTransformOptimisticRepeatableRead() throws Exception {
-        checkIgniteTransform(OPTIMISTIC, REPEATABLE_READ);
+    public void testInvokeOptimisticRepeatableRead3() throws Exception {
+        checkInvoke(OPTIMISTIC, REPEATABLE_READ, DataMode.PLANE_OBJECT);
     }
 
     /**
      * @throws Exception If failed.
      */
-    public void testIgniteTransformPessimisticReadCommitted() throws Exception {
-        checkIgniteTransform(PESSIMISTIC, READ_COMMITTED);
+    public void testInvokePessimisticReadCommitted1() throws Exception {
+        checkInvoke(PESSIMISTIC, READ_COMMITTED, DataMode.PLANE_OBJECT);
     }
 
     /**
      * @throws Exception If failed.
      */
-    public void testIgniteTransformPessimisticRepeatableRead() throws Exception {
-        checkIgniteTransform(PESSIMISTIC, REPEATABLE_READ);
+    public void testInvokePessimisticReadCommitted2() throws Exception {
+        checkInvoke(PESSIMISTIC, READ_COMMITTED, DataMode.SERIALIZABLE);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testInvokePessimisticReadCommitted3() throws Exception {
+        checkInvoke(PESSIMISTIC, READ_COMMITTED, DataMode.EXTERNALIZABLE);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testInvokePessimisticRepeatableRead1() throws Exception {
+        checkInvoke(PESSIMISTIC, REPEATABLE_READ, DataMode.PLANE_OBJECT);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testInvokePessimisticRepeatableRead2() throws Exception {
+        checkInvoke(PESSIMISTIC, REPEATABLE_READ, DataMode.SERIALIZABLE);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testInvokePessimisticRepeatableRead3() throws Exception {
+        checkInvoke(PESSIMISTIC, REPEATABLE_READ, DataMode.EXTERNALIZABLE);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testIgniteInvokeOptimisticReadCommitted1() throws Exception {
+        checkIgniteInvoke(OPTIMISTIC, READ_COMMITTED, DataMode.PLANE_OBJECT);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testIgniteInvokeOptimisticReadCommitted2() throws Exception {
+        checkIgniteInvoke(OPTIMISTIC, READ_COMMITTED, DataMode.SERIALIZABLE);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testIgniteInvokeOptimisticReadCommitted3() throws Exception {
+        checkIgniteInvoke(OPTIMISTIC, READ_COMMITTED, DataMode.EXTERNALIZABLE);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testIgniteInvokeOptimisticRepeatableRead1() throws Exception {
+        checkIgniteInvoke(OPTIMISTIC, REPEATABLE_READ, DataMode.PLANE_OBJECT);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testIgniteInvokeOptimisticRepeatableRead2() throws Exception {
+        checkIgniteInvoke(OPTIMISTIC, REPEATABLE_READ, DataMode.SERIALIZABLE);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testIgniteInvokeOptimisticRepeatableRead3() throws Exception {
+        checkIgniteInvoke(OPTIMISTIC, REPEATABLE_READ, DataMode.EXTERNALIZABLE);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testIgniteInvokePessimisticReadCommitted1() throws Exception {
+        checkIgniteInvoke(PESSIMISTIC, READ_COMMITTED, DataMode.PLANE_OBJECT);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testIgniteInvokePessimisticReadCommitted2() throws Exception {
+        checkIgniteInvoke(PESSIMISTIC, READ_COMMITTED, DataMode.SERIALIZABLE);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testIgniteInvokePessimisticReadCommitted3() throws Exception {
+        checkIgniteInvoke(PESSIMISTIC, READ_COMMITTED, DataMode.EXTERNALIZABLE);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testIgniteInvokePessimisticRepeatableRead1() throws Exception {
+        checkIgniteInvoke(PESSIMISTIC, REPEATABLE_READ, DataMode.PLANE_OBJECT);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testIgniteInvokePessimisticRepeatableRead2() throws Exception {
+        checkIgniteInvoke(PESSIMISTIC, REPEATABLE_READ, DataMode.SERIALIZABLE);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testIgniteInvokePessimisticRepeatableRead3() throws Exception {
+        checkIgniteInvoke(PESSIMISTIC, REPEATABLE_READ, DataMode.EXTERNALIZABLE);
     }
 
     /**
@@ -832,230 +932,299 @@ public class CacheFullApiNewSelfTest extends CacheAbstractNewSelfTest {
      * @param isolation Isolation.
      * @throws Exception If failed.
      */
-    private void checkIgniteTransform(TransactionConcurrency concurrency, TransactionIsolation isolation)
+    private void checkIgniteInvoke(TransactionConcurrency concurrency, TransactionIsolation isolation, DataMode mode)
         throws Exception {
-        IgniteCache<String, Integer> cache = jcache();
-
-        cache.put("key2", 1);
-        cache.put("key3", 3);
-
-        Transaction tx = txShouldBeUsed() ? ignite(0).transactions().txStart(concurrency, isolation) : null;
-
-        try {
-            assertEquals("null", cache.invoke("key1", INCR_IGNITE_PROCESSOR));
-            assertEquals("1", cache.invoke("key2", INCR_IGNITE_PROCESSOR));
-            assertEquals("3", cache.invoke("key3", RMV_IGNITE_PROCESSOR));
-
-            if (tx != null)
-                tx.commit();
-        }
-        catch (Exception e) {
-            e.printStackTrace();
-
-            throw e;
-        }
-        finally {
-            if (tx != null)
-                tx.close();
-        }
-
-        assertEquals((Integer)1, cache.get("key1"));
-        assertEquals((Integer)2, cache.get("key2"));
-        assertNull(cache.get("key3"));
-
-        for (int i = 0; i < gridCount(); i++)
-            assertNull("Failed for cache: " + i, jcache(i).localPeek("key3", ONHEAP));
-
-        cache.remove("key1");
-        cache.put("key2", 1);
-        cache.put("key3", 3);
-
-        assertEquals("null", cache.invoke("key1", INCR_IGNITE_PROCESSOR));
-        assertEquals("1", cache.invoke("key2", INCR_IGNITE_PROCESSOR));
-        assertEquals("3", cache.invoke("key3", RMV_IGNITE_PROCESSOR));
-
-        assertEquals((Integer)1, cache.get("key1"));
-        assertEquals((Integer)2, cache.get("key2"));
-        assertNull(cache.get("key3"));
-
-        for (int i = 0; i < gridCount(); i++)
-            assertNull(jcache(i).localPeek("key3", ONHEAP));
-    }
-
-    /**
-     * @param concurrency Concurrency.
-     * @param isolation Isolation.
-     * @throws Exception If failed.
-     */
-    private void checkTransform(TransactionConcurrency concurrency, TransactionIsolation isolation) throws Exception {
-        IgniteCache<String, Integer> cache = jcache();
-
-        cache.put("key2", 1);
-        cache.put("key3", 3);
-
-        Transaction tx = txShouldBeUsed() ? ignite(0).transactions().txStart(concurrency, isolation) : null;
-
-        try {
-            assertEquals("null", cache.invoke("key1", INCR_PROCESSOR));
-            assertEquals("1", cache.invoke("key2", INCR_PROCESSOR));
-            assertEquals("3", cache.invoke("key3", RMV_PROCESSOR));
-
-            if (tx != null)
-                tx.commit();
-        }
-        catch (Exception e) {
-            e.printStackTrace();
-
-            throw e;
-        }
-        finally {
-            if (tx != null)
-                tx.close();
-        }
-
-        assertEquals((Integer)1, cache.get("key1"));
-        assertEquals((Integer)2, cache.get("key2"));
-        assertNull(cache.get("key3"));
-
-        for (int i = 0; i < gridCount(); i++)
-            assertNull("Failed for cache: " + i, jcache(i).localPeek("key3", ONHEAP));
-
-        cache.remove("key1");
-        cache.put("key2", 1);
-        cache.put("key3", 3);
-
-        assertEquals("null", cache.invoke("key1", INCR_PROCESSOR));
-        assertEquals("1", cache.invoke("key2", INCR_PROCESSOR));
-        assertEquals("3", cache.invoke("key3", RMV_PROCESSOR));
-
-        assertEquals((Integer)1, cache.get("key1"));
-        assertEquals((Integer)2, cache.get("key2"));
-        assertNull(cache.get("key3"));
-
-        for (int i = 0; i < gridCount(); i++)
-            assertNull(jcache(i).localPeek("key3", ONHEAP));
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testTransformAllOptimisticReadCommitted() throws Exception {
-        checkTransformAll(OPTIMISTIC, READ_COMMITTED);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testTransformAllOptimisticRepeatableRead() throws Exception {
-        checkTransformAll(OPTIMISTIC, REPEATABLE_READ);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testTransformAllPessimisticReadCommitted() throws Exception {
-        checkTransformAll(PESSIMISTIC, READ_COMMITTED);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testTransformAllPessimisticRepeatableRead() throws Exception {
-        checkTransformAll(PESSIMISTIC, REPEATABLE_READ);
+        checkInvoke(concurrency, isolation, mode, INCR_IGNITE_PROCESSOR, RMV_IGNITE_PROCESSOR);
     }
 
     /**
      * @param concurrency Transaction concurrency.
      * @param isolation Transaction isolation.
+     * @param mode Data mode.
+     * @param incrProcessor Increment processor.
+     * @param rmvProseccor Remove processor.
+     */
+    private void checkInvoke(TransactionConcurrency concurrency, TransactionIsolation isolation,
+        DataMode mode,
+        EntryProcessor<TestObject, TestObject, TestObject> incrProcessor,
+        EntryProcessor<TestObject, TestObject, TestObject> rmvProseccor) {
+        IgniteCache cache = jcache();
+
+        final Object key1 = key(1, mode);
+        final Object key2 = key(2, mode);
+        final Object key3 = key(3, mode);
+
+        final Object val1 = value(1, mode);
+        final Object val2 = value(2, mode);
+        final Object val3 = value(3, mode);
+
+        cache.put(key2, val1);
+        cache.put(key3, val3);
+
+        Transaction tx = txShouldBeUsed() ? ignite(0).transactions().txStart(concurrency, isolation) : null;
+
+        try {
+            assertNull(cache.invoke(key1, incrProcessor, mode));
+            assertEquals(val1, cache.invoke(key2, incrProcessor, mode));
+            assertEquals(val3, cache.invoke(key3, rmvProseccor));
+
+            if (tx != null)
+                tx.commit();
+        }
+        catch (Exception e) {
+            e.printStackTrace();
+
+            throw e;
+        }
+        finally {
+            if (tx != null)
+                tx.close();
+        }
+
+        assertEquals(val1, cache.get(key1));
+        assertEquals(val2, cache.get(key2));
+        assertNull(cache.get(key3));
+
+        for (int i = 0; i < gridCount(); i++)
+            assertNull("Failed for cache: " + i, jcache(i).localPeek(key3, ONHEAP));
+
+        cache.remove(key1);
+        cache.put(key2, val1);
+        cache.put(key3, val3);
+
+        assertNull(cache.invoke(key1, incrProcessor, mode));
+        assertEquals(val1, cache.invoke(key2, incrProcessor, mode));
+        assertEquals(val3, cache.invoke(key3, rmvProseccor));
+
+        assertEquals(val1, cache.get(key1));
+        assertEquals(val2, cache.get(key2));
+        assertNull(cache.get(key3));
+
+        for (int i = 0; i < gridCount(); i++)
+            assertNull(jcache(i).localPeek(key3, ONHEAP));
+    }
+
+    /**
+     * @param concurrency Concurrency.
+     * @param isolation Isolation.
+     * @param mode
      * @throws Exception If failed.
      */
-    private void checkTransformAll(TransactionConcurrency concurrency, TransactionIsolation isolation)
-        throws Exception {
-        final IgniteCache<String, Integer> cache = jcache();
-
-        cache.put("key2", 1);
-        cache.put("key3", 3);
-
-        if (txShouldBeUsed()) {
-            Map<String, EntryProcessorResult<String>> res;
-
-            try (Transaction tx = ignite(0).transactions().txStart(concurrency, isolation)) {
-                res = cache.invokeAll(F.asSet("key1", "key2", "key3"), INCR_PROCESSOR);
-
-                tx.commit();
-            }
-
-            assertEquals((Integer)1, cache.get("key1"));
-            assertEquals((Integer)2, cache.get("key2"));
-            assertEquals((Integer)4, cache.get("key3"));
-
-            assertEquals("null", res.get("key1").get());
-            assertEquals("1", res.get("key2").get());
-            assertEquals("3", res.get("key3").get());
-
-            assertEquals(3, res.size());
-
-            cache.remove("key1");
-            cache.put("key2", 1);
-            cache.put("key3", 3);
-        }
-
-        Map<String, EntryProcessorResult<String>> res = cache.invokeAll(F.asSet("key1", "key2", "key3"), RMV_PROCESSOR);
-
-        for (int i = 0; i < gridCount(); i++) {
-            assertNull(jcache(i).localPeek("key1", ONHEAP));
-            assertNull(jcache(i).localPeek("key2", ONHEAP));
-            assertNull(jcache(i).localPeek("key3", ONHEAP));
-        }
-
-        assertEquals("null", res.get("key1").get());
-        assertEquals("1", res.get("key2").get());
-        assertEquals("3", res.get("key3").get());
-
-        assertEquals(3, res.size());
-
-        cache.remove("key1");
-        cache.put("key2", 1);
-        cache.put("key3", 3);
-
-        res = cache.invokeAll(F.asSet("key1", "key2", "key3"), INCR_PROCESSOR);
-
-        assertEquals((Integer)1, cache.get("key1"));
-        assertEquals((Integer)2, cache.get("key2"));
-        assertEquals((Integer)4, cache.get("key3"));
-
-        assertEquals("null", res.get("key1").get());
-        assertEquals("1", res.get("key2").get());
-        assertEquals("3", res.get("key3").get());
-
-        assertEquals(3, res.size());
-
-        cache.remove("key1");
-        cache.put("key2", 1);
-        cache.put("key3", 3);
-
-        res = cache.invokeAll(F.asMap("key1", INCR_PROCESSOR, "key2", INCR_PROCESSOR, "key3", INCR_PROCESSOR));
-
-        assertEquals((Integer)1, cache.get("key1"));
-        assertEquals((Integer)2, cache.get("key2"));
-        assertEquals((Integer)4, cache.get("key3"));
-
-        assertEquals("null", res.get("key1").get());
-        assertEquals("1", res.get("key2").get());
-        assertEquals("3", res.get("key3").get());
-
-        assertEquals(3, res.size());
+    private void checkInvoke(TransactionConcurrency concurrency, TransactionIsolation isolation,
+        DataMode mode) throws Exception {
+        checkInvoke(concurrency, isolation, mode, INCR_PROCESSOR, RMV_PROCESSOR);
     }
 
     /**
      * @throws Exception If failed.
      */
-    public void testTransformAllWithNulls() throws Exception {
-        final IgniteCache<String, Integer> cache = jcache();
+    public void testInvokeAllOptimisticReadCommitted1() throws Exception {
+        checkInvokeAll(OPTIMISTIC, READ_COMMITTED, DataMode.PLANE_OBJECT);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testInvokeAllOptimisticReadCommitted2() throws Exception {
+        checkInvokeAll(OPTIMISTIC, READ_COMMITTED, DataMode.SERIALIZABLE);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testInvokeAllOptimisticReadCommitted3() throws Exception {
+        checkInvokeAll(OPTIMISTIC, READ_COMMITTED, DataMode.EXTERNALIZABLE);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testInvokeAllOptimisticRepeatableRead1() throws Exception {
+        checkInvokeAll(OPTIMISTIC, REPEATABLE_READ, DataMode.PLANE_OBJECT);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testInvokeAllOptimisticRepeatableRead2() throws Exception {
+        checkInvokeAll(OPTIMISTIC, REPEATABLE_READ, DataMode.SERIALIZABLE);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testInvokeAllOptimisticRepeatableRead3() throws Exception {
+        checkInvokeAll(OPTIMISTIC, REPEATABLE_READ, DataMode.EXTERNALIZABLE);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testInvokeAllPessimisticReadCommitted1() throws Exception {
+        checkInvokeAll(PESSIMISTIC, READ_COMMITTED, DataMode.PLANE_OBJECT);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testInvokeAllPessimisticReadCommitted2() throws Exception {
+        checkInvokeAll(PESSIMISTIC, READ_COMMITTED, DataMode.SERIALIZABLE);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testInvokeAllPessimisticReadCommitted3() throws Exception {
+        checkInvokeAll(PESSIMISTIC, READ_COMMITTED, DataMode.EXTERNALIZABLE);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testInvokeAllPessimisticRepeatableRead1() throws Exception {
+        checkInvokeAll(PESSIMISTIC, REPEATABLE_READ, DataMode.PLANE_OBJECT);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testInvokeAllPessimisticRepeatableRead2() throws Exception {
+        checkInvokeAll(PESSIMISTIC, REPEATABLE_READ, DataMode.SERIALIZABLE);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testInvokeAllPessimisticRepeatableRead3() throws Exception {
+        checkInvokeAll(PESSIMISTIC, REPEATABLE_READ, DataMode.EXTERNALIZABLE);
+    }
+
+    /**
+     * @param concurrency Transaction concurrency.
+     * @param isolation Transaction isolation.
+     * @param mode Data mode.
+     * @throws Exception If failed.
+     */
+    private void checkInvokeAll(TransactionConcurrency concurrency, TransactionIsolation isolation,
+        DataMode mode)
+        throws Exception {
+        final TestObject key1 = key(1, mode);
+        final TestObject key2 = key(2, mode);
+        final TestObject key3 = key(3, mode);
+
+        final TestObject val1 = value(1, mode);
+        final TestObject val2 = value(2, mode);
+        final TestObject val3 = value(3, mode);
+        final TestObject val4 = value(4, mode);
+
+        final IgniteCache<TestObject, TestObject> cache = jcache();
+
+        cache.put(key2, val1);
+        cache.put(key3, val3);
+
+        if (txShouldBeUsed()) {
+            Map<TestObject, EntryProcessorResult<TestObject>> res;
+
+            try (Transaction tx = ignite(0).transactions().txStart(concurrency, isolation)) {
+                res = cache.invokeAll(F.asSet(key1, key2, key3), INCR_PROCESSOR, mode);
+
+                tx.commit();
+            }
+
+            assertEquals(val1, cache.get(key1));
+            assertEquals(val2, cache.get(key2));
+            assertEquals(val4, cache.get(key3));
+
+            assertNull(res.get(key1));
+            assertEquals(val1, res.get(key2).get());
+            assertEquals(val3, res.get(key3).get());
+
+            assertEquals(2, res.size());
+
+            cache.remove(key1);
+            cache.put(key2, val1);
+            cache.put(key3, val3);
+        }
+
+        Map<TestObject, EntryProcessorResult<TestObject>> res = cache.invokeAll(F.asSet(key1, key2, key3), RMV_PROCESSOR);
+
+        for (int i = 0; i < gridCount(); i++) {
+            assertNull(jcache(i).localPeek(key1, ONHEAP));
+            assertNull(jcache(i).localPeek(key2, ONHEAP));
+            assertNull(jcache(i).localPeek(key3, ONHEAP));
+        }
+
+        assertNull(res.get(key1));
+        assertEquals(val1, res.get(key2).get());
+        assertEquals(val3, res.get(key3).get());
+
+        assertEquals(2, res.size());
+
+        cache.remove(key1);
+        cache.put(key2, val1);
+        cache.put(key3, val3);
+
+        res = cache.invokeAll(F.asSet(key1, key2, key3), INCR_PROCESSOR, mode);
+
+        assertEquals(val1, cache.get(key1));
+        assertEquals(val2, cache.get(key2));
+        assertEquals(val4, cache.get(key3));
+
+        assertNull(res.get(key1));
+        assertEquals(val1, res.get(key2).get());
+        assertEquals(val3, res.get(key3).get());
+
+        assertEquals(2, res.size());
+
+        cache.remove(key1);
+        cache.put(key2, val1);
+        cache.put(key3, val3);
+
+        res = cache.invokeAll(F.asMap(key1, INCR_PROCESSOR, key2, INCR_PROCESSOR, key3, INCR_PROCESSOR), mode);
+
+        assertEquals(val1, cache.get(key1));
+        assertEquals(val2, cache.get(key2));
+        assertEquals(val4, cache.get(key3));
+
+        assertNull(res.get(key1));
+        assertEquals(val1, res.get(key2).get());
+        assertEquals(val3, res.get(key3).get());
+
+        assertEquals(2, res.size());
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testInvokeAllWithNulls1() throws Exception {
+        checkInvokeAllWithNulls(DataMode.PLANE_OBJECT);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testInvokeAllWithNulls2() throws Exception {
+        checkInvokeAllWithNulls(DataMode.SERIALIZABLE);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testInvokeAllWithNulls3() throws Exception {
+        checkInvokeAllWithNulls(DataMode.EXTERNALIZABLE);
+    }
+
+    /**
+     * @param mode Mode.
+     */
+    private void checkInvokeAllWithNulls(final DataMode mode) {
+        final TestObject key1 = key(1, mode);
+
+        final IgniteCache<TestObject, TestObject> cache = jcache();
 
         GridTestUtils.assertThrows(log, new Callable<Void>() {
             @Override public Void call() throws Exception {
-                cache.invokeAll((Set<String>)null, INCR_PROCESSOR);
+                cache.invokeAll((Set<TestObject>)null, INCR_PROCESSOR, mode);
 
                 return null;
             }
@@ -1063,21 +1232,21 @@ public class CacheFullApiNewSelfTest extends CacheAbstractNewSelfTest {
 
         GridTestUtils.assertThrows(log, new Callable<Void>() {
             @Override public Void call() throws Exception {
-                cache.invokeAll(F.asSet("key1"), null);
+                cache.invokeAll(F.asSet(key1), null);
 
                 return null;
             }
         }, NullPointerException.class, null);
 
         {
-            final Set<String> keys = new LinkedHashSet<>(2);
+            final Set<TestObject> keys = new LinkedHashSet<>(2);
 
-            keys.add("key1");
+            keys.add(key1);
             keys.add(null);
 
             GridTestUtils.assertThrows(log, new Callable<Void>() {
                 @Override public Void call() throws Exception {
-                    cache.invokeAll(keys, INCR_PROCESSOR);
+                    cache.invokeAll(keys, INCR_PROCESSOR, mode);
 
                     return null;
                 }
@@ -1085,7 +1254,7 @@ public class CacheFullApiNewSelfTest extends CacheAbstractNewSelfTest {
 
             GridTestUtils.assertThrows(log, new Callable<Void>() {
                 @Override public Void call() throws Exception {
-                    cache.invokeAll(F.asSet("key1"), null);
+                    cache.invokeAll(F.asSet(key1), null);
 
                     return null;
                 }
@@ -1096,61 +1265,123 @@ public class CacheFullApiNewSelfTest extends CacheAbstractNewSelfTest {
     /**
      * @throws Exception If failed.
      */
-    public void testTransformSequentialOptimisticNoStart() throws Exception {
-        checkTransformSequential0(false, OPTIMISTIC);
+    public void testInvokeSequentialOptimisticNoStart1() throws Exception {
+        checkInvokeSequential0(false, OPTIMISTIC, DataMode.PLANE_OBJECT);
     }
 
     /**
      * @throws Exception If failed.
      */
-    public void testTransformSequentialPessimisticNoStart() throws Exception {
-        checkTransformSequential0(false, PESSIMISTIC);
+    public void testInvokeSequentialOptimisticNoStart2() throws Exception {
+        checkInvokeSequential0(false, OPTIMISTIC, DataMode.SERIALIZABLE);
     }
 
     /**
      * @throws Exception If failed.
      */
-    public void testTransformSequentialOptimisticWithStart() throws Exception {
-        checkTransformSequential0(true, OPTIMISTIC);
+    public void testInvokeSequentialOptimisticNoStart3() throws Exception {
+        checkInvokeSequential0(false, OPTIMISTIC, DataMode.EXTERNALIZABLE);
     }
 
     /**
      * @throws Exception If failed.
      */
-    public void testTransformSequentialPessimisticWithStart() throws Exception {
-        checkTransformSequential0(true, PESSIMISTIC);
+    public void testInvokeSequentialPessimisticNoStart1() throws Exception {
+        checkInvokeSequential0(false, PESSIMISTIC, DataMode.PLANE_OBJECT);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testInvokeSequentialPessimisticNoStart2() throws Exception {
+        checkInvokeSequential0(false, PESSIMISTIC, DataMode.SERIALIZABLE);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testInvokeSequentialPessimisticNoStart3() throws Exception {
+        checkInvokeSequential0(false, PESSIMISTIC, DataMode.EXTERNALIZABLE);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testInvokeSequentialOptimisticWithStart1() throws Exception {
+        checkInvokeSequential0(true, OPTIMISTIC, DataMode.PLANE_OBJECT);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testInvokeSequentialOptimisticWithStart2() throws Exception {
+        checkInvokeSequential0(true, OPTIMISTIC, DataMode.SERIALIZABLE);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testInvokeSequentialOptimisticWithStart3() throws Exception {
+        checkInvokeSequential0(true, OPTIMISTIC, DataMode.EXTERNALIZABLE);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testInvokeSequentialPessimisticWithStart1() throws Exception {
+        checkInvokeSequential0(true, PESSIMISTIC, DataMode.PLANE_OBJECT);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testInvokeSequentialPessimisticWithStart2() throws Exception {
+        checkInvokeSequential0(true, PESSIMISTIC, DataMode.SERIALIZABLE);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testInvokeSequentialPessimisticWithStart3() throws Exception {
+        checkInvokeSequential0(true, PESSIMISTIC, DataMode.EXTERNALIZABLE);
     }
 
     /**
      * @param startVal Whether to put value.
      * @param concurrency Concurrency.
+     * @param mode Data mode.
      * @throws Exception If failed.
      */
-    private void checkTransformSequential0(boolean startVal, TransactionConcurrency concurrency)
+    private void checkInvokeSequential0(boolean startVal, TransactionConcurrency concurrency,
+        DataMode mode)
         throws Exception {
-        IgniteCache<String, Integer> cache = jcache();
+        final TestObject val1 = value(1, mode);
+        final TestObject val2 = value(2, mode);
+        final TestObject val3 = value(3, mode);
 
-        final String key = primaryKeysForCache(cache, 1).get(0);
+        IgniteCache<TestObject, TestObject> cache = jcache();
+
+        final TestObject key = primaryTestObjectKeysForCache(cache, 1, mode).get(0);
 
         Transaction tx = txShouldBeUsed() ? ignite(0).transactions().txStart(concurrency, READ_COMMITTED) : null;
 
         try {
             if (startVal)
-                cache.put(key, 2);
+                cache.put(key, val2);
             else
                 assertEquals(null, cache.get(key));
 
-            Integer expRes = startVal ? 2 : null;
+            TestObject expRes = startVal ? val2 : null;
 
-            assertEquals(String.valueOf(expRes), cache.invoke(key, INCR_PROCESSOR));
+            assertEquals(expRes, cache.invoke(key, INCR_PROCESSOR, mode));
 
-            expRes = startVal ? 3 : 1;
+            expRes = startVal ? val3 : val1;
 
-            assertEquals(String.valueOf(expRes), cache.invoke(key, INCR_PROCESSOR));
+            assertEquals(expRes, cache.invoke(key, INCR_PROCESSOR, mode));
 
-            expRes++;
+            expRes = value(expRes.value() + 1, mode);
 
-            assertEquals(String.valueOf(expRes), cache.invoke(key, INCR_PROCESSOR));
+            assertEquals(expRes, cache.invoke(key, INCR_PROCESSOR, mode));
 
             if (tx != null)
                 tx.commit();
@@ -1160,7 +1391,7 @@ public class CacheFullApiNewSelfTest extends CacheAbstractNewSelfTest {
                 tx.close();
         }
 
-        Integer exp = (startVal ? 2 : 0) + 3;
+        TestObject exp = value((startVal ? 2 : 0) + 3, mode);
 
         assertEquals(exp, cache.get(key));
 
@@ -1173,34 +1404,65 @@ public class CacheFullApiNewSelfTest extends CacheAbstractNewSelfTest {
     /**
      * @throws Exception If failed.
      */
-    public void testTransformAfterRemoveOptimistic() throws Exception {
-        checkTransformAfterRemove(OPTIMISTIC);
+    public void testInvokeAfterRemoveOptimistic1() throws Exception {
+        checkInvokeAfterRemove(OPTIMISTIC, DataMode.PLANE_OBJECT);
     }
 
     /**
      * @throws Exception If failed.
      */
-    public void testTransformAfterRemovePessimistic() throws Exception {
-        checkTransformAfterRemove(PESSIMISTIC);
+    public void testInvokeAfterRemoveOptimistic2() throws Exception {
+        checkInvokeAfterRemove(OPTIMISTIC, DataMode.SERIALIZABLE);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testInvokeAfterRemoveOptimistic3() throws Exception {
+        checkInvokeAfterRemove(OPTIMISTIC, DataMode.EXTERNALIZABLE);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testInvokeAfterRemovePessimistic1() throws Exception {
+        checkInvokeAfterRemove(PESSIMISTIC, DataMode.PLANE_OBJECT);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testInvokeAfterRemovePessimistic2() throws Exception {
+        checkInvokeAfterRemove(PESSIMISTIC, DataMode.SERIALIZABLE);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testInvokeAfterRemovePessimistic3() throws Exception {
+        checkInvokeAfterRemove(PESSIMISTIC, DataMode.EXTERNALIZABLE);
     }
 
     /**
      * @param concurrency Concurrency.
+     * @param mode Mode.
      * @throws Exception If failed.
      */
-    private void checkTransformAfterRemove(TransactionConcurrency concurrency) throws Exception {
-        IgniteCache<String, Integer> cache = jcache();
+    private void checkInvokeAfterRemove(TransactionConcurrency concurrency, DataMode mode) throws Exception {
+        IgniteCache<TestObject, TestObject> cache = jcache();
 
-        cache.put("key", 4);
+        TestObject key = key(1, mode);
+
+        cache.put(key, value(4, mode));
 
         Transaction tx = txShouldBeUsed() ? ignite(0).transactions().txStart(concurrency, READ_COMMITTED) : null;
 
         try {
-            cache.remove("key");
+            cache.remove(key);
 
-            cache.invoke("key", INCR_PROCESSOR);
-            cache.invoke("key", INCR_PROCESSOR);
-            cache.invoke("key", INCR_PROCESSOR);
+            cache.invoke(key, INCR_PROCESSOR, mode);
+            cache.invoke(key, INCR_PROCESSOR, mode);
+            cache.invoke(key, INCR_PROCESSOR, mode);
 
             if (tx != null)
                 tx.commit();
@@ -1210,42 +1472,112 @@ public class CacheFullApiNewSelfTest extends CacheAbstractNewSelfTest {
                 tx.close();
         }
 
-        assertEquals((Integer)3, cache.get("key"));
+        assertEquals(value(3, mode), cache.get(key));
     }
 
     /**
      * @throws Exception If failed.
      */
-    public void testTransformReturnValueGetOptimisticReadCommitted() throws Exception {
-        checkTransformReturnValue(false, OPTIMISTIC, READ_COMMITTED);
+    public void testInvokeReturnValueGetOptimisticReadCommitted1() throws Exception {
+        checkInvokeReturnValue(false, OPTIMISTIC, READ_COMMITTED, DataMode.PLANE_OBJECT);
     }
 
     /**
      * @throws Exception If failed.
      */
-    public void testTransformReturnValueGetOptimisticRepeatableRead() throws Exception {
-        checkTransformReturnValue(false, OPTIMISTIC, REPEATABLE_READ);
+    public void testInvokeReturnValueGetOptimisticReadCommitted2() throws Exception {
+        checkInvokeReturnValue(false, OPTIMISTIC, READ_COMMITTED, DataMode.SERIALIZABLE);
     }
 
     /**
      * @throws Exception If failed.
      */
-    public void testTransformReturnValueGetPessimisticReadCommitted() throws Exception {
-        checkTransformReturnValue(false, PESSIMISTIC, READ_COMMITTED);
+    public void testInvokeReturnValueGetOptimisticReadCommitted3() throws Exception {
+        checkInvokeReturnValue(false, OPTIMISTIC, READ_COMMITTED, DataMode.EXTERNALIZABLE);
     }
 
     /**
      * @throws Exception If failed.
      */
-    public void testTransformReturnValueGetPessimisticRepeatableRead() throws Exception {
-        checkTransformReturnValue(false, PESSIMISTIC, REPEATABLE_READ);
+    public void testInvokeReturnValueGetOptimisticRepeatableRead1() throws Exception {
+        checkInvokeReturnValue(false, OPTIMISTIC, REPEATABLE_READ, DataMode.PLANE_OBJECT);
     }
 
     /**
      * @throws Exception If failed.
      */
-    public void testTransformReturnValuePutInTx() throws Exception {
-        checkTransformReturnValue(true, OPTIMISTIC, READ_COMMITTED);
+    public void testInvokeReturnValueGetOptimisticRepeatableRead2() throws Exception {
+        checkInvokeReturnValue(false, OPTIMISTIC, REPEATABLE_READ, DataMode.SERIALIZABLE);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testInvokeReturnValueGetOptimisticRepeatableRead3() throws Exception {
+        checkInvokeReturnValue(false, OPTIMISTIC, REPEATABLE_READ, DataMode.EXTERNALIZABLE);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testInvokeReturnValueGetPessimisticReadCommitted1() throws Exception {
+        checkInvokeReturnValue(false, PESSIMISTIC, READ_COMMITTED, DataMode.PLANE_OBJECT);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testInvokeReturnValueGetPessimisticReadCommitted2() throws Exception {
+        checkInvokeReturnValue(false, PESSIMISTIC, READ_COMMITTED, DataMode.SERIALIZABLE);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testInvokeReturnValueGetPessimisticReadCommitted3() throws Exception {
+        checkInvokeReturnValue(false, PESSIMISTIC, READ_COMMITTED, DataMode.EXTERNALIZABLE);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testInvokeReturnValueGetPessimisticRepeatableRead1() throws Exception {
+        checkInvokeReturnValue(false, PESSIMISTIC, REPEATABLE_READ, DataMode.PLANE_OBJECT);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testInvokeReturnValueGetPessimisticRepeatableRead2() throws Exception {
+        checkInvokeReturnValue(false, PESSIMISTIC, REPEATABLE_READ, DataMode.SERIALIZABLE);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testInvokeReturnValueGetPessimisticRepeatableRead3() throws Exception {
+        checkInvokeReturnValue(false, PESSIMISTIC, REPEATABLE_READ, DataMode.EXTERNALIZABLE);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testInvokeReturnValuePutInTx1() throws Exception {
+        checkInvokeReturnValue(true, OPTIMISTIC, READ_COMMITTED, DataMode.PLANE_OBJECT);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testInvokeReturnValuePutInTx2() throws Exception {
+        checkInvokeReturnValue(true, OPTIMISTIC, READ_COMMITTED, DataMode.SERIALIZABLE);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testInvokeReturnValuePutInTx3() throws Exception {
+        checkInvokeReturnValue(true, OPTIMISTIC, READ_COMMITTED, DataMode.EXTERNALIZABLE);
     }
 
     /**
@@ -1254,29 +1586,34 @@ public class CacheFullApiNewSelfTest extends CacheAbstractNewSelfTest {
      * @param isolation Isolation.
      * @throws Exception If failed.
      */
-    private void checkTransformReturnValue(boolean put,
+    private void checkInvokeReturnValue(boolean put,
         TransactionConcurrency concurrency,
-        TransactionIsolation isolation)
+        TransactionIsolation isolation,
+        DataMode mode)
         throws Exception
     {
-        IgniteCache<String, Integer> cache = jcache();
+        IgniteCache<TestObject, TestObject> cache = jcache();
+
+        TestObject key = key(1, mode);
+        TestObject val1 = value(1, mode);
+        TestObject val2 = value(2, mode);
 
         if (!put)
-            cache.put("key", 1);
+            cache.put(key, val1);
 
         Transaction tx = txShouldBeUsed() ? ignite(0).transactions().txStart(concurrency, isolation) : null;
 
         try {
             if (put)
-                cache.put("key", 1);
+                cache.put(key, val1);
 
-            cache.invoke("key", INCR_PROCESSOR);
+            cache.invoke(key, INCR_PROCESSOR, mode);
 
-            assertEquals((Integer)2, cache.get("key"));
+            assertEquals(val2, cache.get(key));
 
             if (tx != null) {
                 // Second get inside tx. Make sure read value is not transformed twice.
-                assertEquals((Integer)2, cache.get("key"));
+                assertEquals(val2, cache.get(key));
 
                 tx.commit();
             }
@@ -1334,23 +1671,52 @@ public class CacheFullApiNewSelfTest extends CacheAbstractNewSelfTest {
     /**
      * @throws Exception If failed.
      */
-    public void testInvokeAsync() throws Exception {
-        IgniteCache<String, Integer> cache = jcache();
+    public void testInvokeAsync1() throws Exception {
+        checkInvokeAsync(DataMode.PLANE_OBJECT);
+    }
 
-        cache.put("key2", 1);
-        cache.put("key3", 3);
+    /**
+     * @throws Exception If failed.
+     */
+    public void testInvokeAsync2() throws Exception {
+        checkInvokeAsync(DataMode.SERIALIZABLE);
+    }
 
-        IgniteCache<String, Integer> cacheAsync = cache.withAsync();
+    /**
+     * @throws Exception If failed.
+     */
+    public void testInvokeAsync3() throws Exception {
+        checkInvokeAsync(DataMode.EXTERNALIZABLE);
+    }
 
-        assertNull(cacheAsync.invoke("key1", INCR_PROCESSOR));
+    /**
+     * @param mode Mode.
+     */
+    private void checkInvokeAsync(DataMode mode) {
+        final TestObject key1 = key(1, mode);
+        final TestObject key2 = key(2, mode);
+        final TestObject key3 = key(3, mode);
+
+        final TestObject val1 = value(1, mode);
+        final TestObject val2 = value(2, mode);
+        final TestObject val3 = value(3, mode);
+
+        IgniteCache<TestObject, TestObject> cache = jcache();
+
+        cache.put(key2, val1);
+        cache.put(key3, val3);
+
+        IgniteCache<TestObject, TestObject> cacheAsync = cache.withAsync();
+
+        assertNull(cacheAsync.invoke(key1, INCR_PROCESSOR, mode));
 
         IgniteFuture<?> fut0 = cacheAsync.future();
 
-        assertNull(cacheAsync.invoke("key2", INCR_PROCESSOR));
+        assertNull(cacheAsync.invoke(key2, INCR_PROCESSOR, mode));
 
         IgniteFuture<?> fut1 = cacheAsync.future();
 
-        assertNull(cacheAsync.invoke("key3", RMV_PROCESSOR));
+        assertNull(cacheAsync.invoke(key3, RMV_PROCESSOR));
 
         IgniteFuture<?> fut2 = cacheAsync.future();
 
@@ -1358,51 +1724,79 @@ public class CacheFullApiNewSelfTest extends CacheAbstractNewSelfTest {
         fut1.get();
         fut2.get();
 
-        assertEquals((Integer)1, cache.get("key1"));
-        assertEquals((Integer)2, cache.get("key2"));
-        assertNull(cache.get("key3"));
+        assertEquals(val1, cache.get(key1));
+        assertEquals(val2, cache.get(key2));
+        assertNull(cache.get(key3));
 
         for (int i = 0; i < gridCount(); i++)
-            assertNull(jcache(i).localPeek("key3", ONHEAP));
+            assertNull(jcache(i).localPeek(key3, ONHEAP));
     }
 
     /**
      * @throws Exception If failed.
      */
-    public void testInvoke() throws Exception {
-        final IgniteCache<String, Integer> cache = jcache();
+    public void testInvoke1() throws Exception {
+        checkInvoke(DataMode.PLANE_OBJECT);
+    }
 
-        assertEquals("null", cache.invoke("k0", INCR_PROCESSOR));
+    /**
+     * @throws Exception If failed.
+     */
+    public void testInvoke2() throws Exception {
+        checkInvoke(DataMode.SERIALIZABLE);
+    }
 
-        assertEquals((Integer)1, cache.get("k0"));
+    /**
+     * @throws Exception If failed.
+     */
+    public void testInvoke3() throws Exception {
+        checkInvoke(DataMode.EXTERNALIZABLE);
+    }
 
-        assertEquals("1", cache.invoke("k0", INCR_PROCESSOR));
+    /**
+     * @param mode Mode.
+     */
+    private void checkInvoke(DataMode mode) {
+        final TestObject k0 = key(0, mode);
+        final TestObject k1 = key(1, mode);
 
-        assertEquals((Integer)2, cache.get("k0"));
+        final TestObject val1 = value(1, mode);
+        final TestObject val2 = value(2, mode);
+        final TestObject val3 = value(3, mode);
 
-        cache.put("k1", 1);
+        final IgniteCache<TestObject, TestObject> cache = jcache();
 
-        assertEquals("1", cache.invoke("k1", INCR_PROCESSOR));
+        assertNull(cache.invoke(k0, INCR_PROCESSOR, mode));
 
-        assertEquals((Integer)2, cache.get("k1"));
+        assertEquals(k1, cache.get(k0));
 
-        assertEquals("2", cache.invoke("k1", INCR_PROCESSOR));
+        assertEquals(val1, cache.invoke(k0, INCR_PROCESSOR, mode));
 
-        assertEquals((Integer)3, cache.get("k1"));
+        assertEquals(val2, cache.get(k0));
 
-        EntryProcessor<String, Integer, Integer> c = new RemoveAndReturnNullEntryProcessor();
+        cache.put(k1, val1);
 
-        assertNull(cache.invoke("k1", c));
-        assertNull(cache.get("k1"));
+        assertEquals(val1, cache.invoke(k1, INCR_PROCESSOR, mode));
+
+        assertEquals(val2, cache.get(k1));
+
+        assertEquals(val2, cache.invoke(k1, INCR_PROCESSOR, mode));
+
+        assertEquals(val3, cache.get(k1));
+
+        RemoveAndReturnNullEntryProcessor c = new RemoveAndReturnNullEntryProcessor();
+
+        assertNull(cache.invoke(k1, c));
+        assertNull(cache.get(k1));
 
         for (int i = 0; i < gridCount(); i++)
-            assertNull(jcache(i).localPeek("k1", ONHEAP));
+            assertNull(jcache(i).localPeek(k1, ONHEAP));
 
-        final EntryProcessor<String, Integer, Integer> errProcessor = new FailedEntryProcessor();
+        final EntryProcessor<TestObject, TestObject, TestObject> errProcessor = new FailedEntryProcessor();
 
         GridTestUtils.assertThrows(log, new Callable<Void>() {
             @Override public Void call() throws Exception {
-                cache.invoke("k1", errProcessor);
+                cache.invoke(k1, errProcessor);
 
                 return null;
             }
@@ -2638,7 +3032,7 @@ public class CacheFullApiNewSelfTest extends CacheAbstractNewSelfTest {
     /**
      * @throws Exception In case of error.
      */
-    public void _testGlobalRemoveAllAsync() throws Exception {
+    public void testGlobalRemoveAllAsync() throws Exception {
         globalRemoveAll(true);
     }
 
@@ -4225,6 +4619,24 @@ public class CacheFullApiNewSelfTest extends CacheAbstractNewSelfTest {
      * @param cache Cache.
      * @param cnt Keys count.
      * @return Collection of keys for which given cache is primary.
+     */
+    protected List<TestObject> primaryTestObjectKeysForCache(IgniteCache cache, int cnt, DataMode mode) {
+        return primaryTestObjectKeysForCache(cache, cnt, 1, mode);
+    }
+
+    /**
+     * @param cache Cache.
+     * @param cnt Keys count.
+     * @return Collection of keys for which given cache is primary.
+     */
+    protected List<TestObject> primaryTestObjectKeysForCache(IgniteCache cache, int cnt, int startFrom, DataMode mode) {
+        return executeOnLocalOrRemoteJvm(cache, new CheckPrimaryTestObjectKeysTask(startFrom, cnt, mode));
+    }
+
+    /**
+     * @param cache Cache.
+     * @param cnt Keys count.
+     * @return Collection of keys for which given cache is primary.
      * @throws IgniteCheckedException If failed.
      */
     protected List<String> primaryKeysForCache(IgniteCache cache, int cnt)
@@ -4262,7 +4674,7 @@ public class CacheFullApiNewSelfTest extends CacheAbstractNewSelfTest {
     /**
      * @throws Exception If failed.
      */
-    public void _testIgniteCacheIterator() throws Exception {
+    public void testIgniteCacheIterator() throws Exception {
         IgniteCache<String, Integer> cache = jcache(0);
 
         Iterator<Cache.Entry<String, Integer>> it = cache.iterator();
@@ -5287,7 +5699,7 @@ public class CacheFullApiNewSelfTest extends CacheAbstractNewSelfTest {
     /**
      * @throws Exception If failed.
      */
-    public void testTransformException() throws Exception {
+    public void testInvokeException() throws Exception {
         final IgniteCache cache = jcache().withAsync();
 
         cache.invoke("key2", ERR_PROCESSOR);
@@ -5349,10 +5761,8 @@ public class CacheFullApiNewSelfTest extends CacheAbstractNewSelfTest {
      * @param mode Mode.
      * @return Key.
      */
-    private Object key(int keyId, DataMode mode) {
+    public static TestObject key(int keyId, DataMode mode) {
         switch (mode) {
-            case PRIMITIVE:
-                return "key" + keyId;
             case SERIALIZABLE:
                 return new SerializableObject(keyId);
             case EXTERNALIZABLE:
@@ -5369,10 +5779,8 @@ public class CacheFullApiNewSelfTest extends CacheAbstractNewSelfTest {
      * @param mode Mode.
      * @return Value.
      */
-    private Object value(int idx, DataMode mode) {
+    public static TestObject value(int idx, DataMode mode) {
         switch (mode) {
-            case PRIMITIVE:
-                return idx;
             case SERIALIZABLE:
                 return new SerializableObject(idx);
             case EXTERNALIZABLE:
@@ -5425,32 +5833,36 @@ public class CacheFullApiNewSelfTest extends CacheAbstractNewSelfTest {
     /**
      *
      */
-    private static class RemoveEntryProcessor implements EntryProcessor<String, Integer, String>, Serializable {
+    private static class RemoveEntryProcessor implements EntryProcessor<TestObject, TestObject, TestObject>, Serializable {
         /** {@inheritDoc} */
-        @Override public String process(MutableEntry<String, Integer> e, Object... args) {
+        @Override public TestObject process(MutableEntry<TestObject, TestObject> e, Object... args) {
             assertNotNull(e.getKey());
 
-            Integer old = e.getValue();
+            TestObject old = e.getValue();
 
             e.remove();
 
-            return String.valueOf(old);
+            return old;
         }
     }
 
     /**
      *
      */
-    private static class IncrementEntryProcessor implements EntryProcessor<String, Integer, String>, Serializable {
+    private static class IncrementEntryProcessor implements EntryProcessor<TestObject, TestObject, TestObject>, Serializable {
         /** {@inheritDoc} */
-        @Override public String process(MutableEntry<String, Integer> e, Object... args) {
+        @Override public TestObject process(MutableEntry<TestObject, TestObject> e, Object... args) {
+            assert !F.isEmpty(args);
+
+            DataMode mode = (DataMode)args[0];
+
             assertNotNull(e.getKey());
 
-            Integer old = e.getValue();
+            TestObject old = e.getValue();
 
-            e.setValue(old == null ? 1 : old + 1);
+            e.setValue(old == null ? value(1, mode) : value(old.value() + 1, mode));
 
-            return String.valueOf(old);
+            return old;
         }
     }
 
@@ -5574,6 +5986,50 @@ public class CacheFullApiNewSelfTest extends CacheAbstractNewSelfTest {
     /**
      *
      */
+    private static class CheckPrimaryTestObjectKeysTask implements TestCacheCallable<TestObject, TestObject, List<TestObject>> {
+        /** Start from. */
+        private final int startFrom;
+
+        /** Count. */
+        private final int cnt;
+
+        /** */
+        private final DataMode mode;
+
+        /**
+         * @param startFrom Start from.
+         * @param cnt Count.
+         */
+        public CheckPrimaryTestObjectKeysTask(int startFrom, int cnt, DataMode mode) {
+            this.startFrom = startFrom;
+            this.cnt = cnt;
+            this.mode = mode;
+        }
+
+        /** {@inheritDoc} */
+        @Override public List<TestObject> call(Ignite ignite, IgniteCache<TestObject, TestObject> cache) throws Exception {
+            List<TestObject> found = new ArrayList<>();
+
+            Affinity<TestObject> affinity = ignite.affinity(cache.getName());
+
+            for (int i = startFrom; i < startFrom + 100_000; i++) {
+                TestObject key = key(i, mode);
+
+                if (affinity.isPrimary(ignite.cluster().localNode(), key)) {
+                    found.add(key);
+
+                    if (found.size() == cnt)
+                        return found;
+                }
+            }
+
+            throw new IgniteException("Unable to find " + cnt + " keys as primary for cache.");
+        }
+    }
+
+    /**
+     *
+     */
     private static class CheckIteratorTask extends TestIgniteIdxCallable<Void> {
         /** */
         private String cacheName;
@@ -5605,10 +6061,10 @@ public class CacheFullApiNewSelfTest extends CacheAbstractNewSelfTest {
      *
      */
     private static class RemoveAndReturnNullEntryProcessor implements
-        EntryProcessor<String, Integer, Integer>, Serializable {
+        EntryProcessor<TestObject, TestObject, TestObject>, Serializable {
 
         /** {@inheritDoc} */
-        @Override public Integer process(MutableEntry<String, Integer> e, Object... args) {
+        @Override public TestObject process(MutableEntry<TestObject, TestObject> e, Object... args) {
             e.remove();
 
             return null;
@@ -5721,9 +6177,9 @@ public class CacheFullApiNewSelfTest extends CacheAbstractNewSelfTest {
     /**
      *
      */
-    private static class FailedEntryProcessor implements EntryProcessor<String, Integer, Integer>, Serializable {
+    private static class FailedEntryProcessor implements EntryProcessor<TestObject, TestObject, TestObject>, Serializable {
         /** {@inheritDoc} */
-        @Override public Integer process(MutableEntry<String, Integer> e, Object... args) {
+        @Override public TestObject process(MutableEntry<TestObject, TestObject> e, Object... args) {
             throw new EntryProcessorException("Test entry processor exception.");
         }
     }
@@ -5731,7 +6187,7 @@ public class CacheFullApiNewSelfTest extends CacheAbstractNewSelfTest {
     /**
      *
      */
-    private static class TestObject {
+    public static class TestObject {
         /** */
         protected int val;
 
@@ -5781,6 +6237,15 @@ public class CacheFullApiNewSelfTest extends CacheAbstractNewSelfTest {
             res = 31 * res + enumVal.hashCode();
 
             return res;
+        }
+
+        /** {@inheritDoc} */
+        @Override public String toString() {
+            return getClass().getSimpleName() + "[" +
+                "val=" + val +
+                ", strVal='" + strVal + '\'' +
+                ", enumVal=" + enumVal +
+                ']';
         }
     }
 
@@ -5832,10 +6297,7 @@ public class CacheFullApiNewSelfTest extends CacheAbstractNewSelfTest {
     /**
      * Data mode.
      */
-    private enum DataMode {
-        /** Primitive objects like Strings and integers */
-        PRIMITIVE,
-
+    public enum DataMode {
         /** Serializable objects. */
         SERIALIZABLE,
 
@@ -5858,5 +6320,21 @@ public class CacheFullApiNewSelfTest extends CacheAbstractNewSelfTest {
 
         /** */
         TEST_VALUE_3
+    }
+
+    public static void main(String[] args) {
+        try(Ignite ignite = Ignition.start(new IgniteConfiguration().setCacheConfiguration(new CacheConfiguration()))) {
+            IgniteCache cache = ignite.cache(null);
+
+            DataMode mode = DataMode.EXTERNALIZABLE;
+
+            Map map = cache.invokeAll(F.asMap(key(1, mode), INCR_PROCESSOR), mode);
+
+            ignite.log().info(">>>>> map: " + map);
+
+            map = cache.invokeAll(F.asMap(key(1, mode), INCR_PROCESSOR), mode);
+
+            ignite.log().info(">>>>> map: " + map);
+        }
     }
 }
