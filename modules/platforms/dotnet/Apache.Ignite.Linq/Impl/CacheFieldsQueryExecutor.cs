@@ -101,16 +101,28 @@ namespace Apache.Ignite.Linq.Impl
             if (queryCaller == null)
                 return args => _cache.QueryFields(new SqlFieldsQuery(queryText, args), selector);
 
-            var paramExpr = queryData.ParameterExpressions;
+            // Compiled query is a delegate with query parameters
+            // Delegate parameters order and query parameters order may differ
 
-            var parameters = queryCaller.Method.GetParameters();
+            // These are in order of usage in query
+            var queryOrderParams =
+                queryData.ParameterExpressions.OfType<MemberExpression>().Select(x => x.Member.Name).ToArray();
 
-            if ((paramExpr.Count != queryData.Parameters.Count) || (paramExpr.Count != parameters.Length))
+            // These are in order they come from user
+            var userOrderParams = queryCaller.Method.GetParameters();
+
+            if ((queryOrderParams.Length != queryData.Parameters.Count) ||
+                (queryOrderParams.Length != userOrderParams.Length))
                 throw new InvalidOperationException("Error compiling query: all compiled query arguments " +
                                                     "should come from enclosing lambda expression");
 
-            // TODO: Fix args order
-            return args => _cache.QueryFields(new SqlFieldsQuery(queryText, args[1], args[0]), selector);
+            var indices = userOrderParams.Select(x => Array.IndexOf(queryOrderParams, x.Name)).ToArray();
+
+            // TODO: check if order is correct
+            return
+                args =>
+                    _cache.QueryFields(
+                        new SqlFieldsQuery(queryText, args.Select((x, i) => args[indices[i]]).ToArray()), selector);
         }
 
         /** <inheritdoc /> */
