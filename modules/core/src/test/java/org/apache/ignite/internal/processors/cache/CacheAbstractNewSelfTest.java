@@ -443,7 +443,11 @@ public abstract class CacheAbstractNewSelfTest extends GridCommonAbstractTest {
      * @return Cache name.
      */
     protected String cacheName() {
-        return "testcache-" + testsCfg.suffix().hashCode();
+        String name = "testcache-" + testsCfg.suffix().hashCode();
+
+        info(">>>>>> Getting cacheName: " + name);
+
+        return name;
     }
 
     /**
