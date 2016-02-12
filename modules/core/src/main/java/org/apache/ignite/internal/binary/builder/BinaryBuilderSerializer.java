@@ -62,11 +62,8 @@ class BinaryBuilderSerializer {
      * Disassembly val object when possible and send to writer.
      * <p>
      *     Method accepts user defined type code to force interpret val
-     *     as a Collection or a Map. Without it (if used not appropriate code)
-     *     custom Collection or Map will be serialized like plain object.
-     *     If specified code that hints to serialize val as a Collection, but it's
-     *     not instance of Collection interface, it will be treated as regular
-     *     object, the same true for Map.
+     *     as a Collection or a Map. Without it custom Collection or Map
+     *     will be serialized like plain object.
      * </p>
      *
      * @param writer Writer.
@@ -142,8 +139,7 @@ class BinaryBuilderSerializer {
             return;
         }
 
-        if (BinaryUtils.isSpecialCollection(val.getClass())
-                || (BinaryUtils.isCollectionType(type) && val instanceof Collection)) {
+        if (BinaryUtils.isCollectionType(type) || BinaryUtils.isSpecialCollection(val.getClass())) {
             Collection<?> c = (Collection<?>)val;
 
             writer.writeByte(GridBinaryMarshaller.COL);
@@ -159,8 +155,7 @@ class BinaryBuilderSerializer {
             return;
         }
 
-        if (BinaryUtils.isSpecialMap(val.getClass())
-                || (BinaryUtils.isMapType(type) && val instanceof Map)) {
+        if (BinaryUtils.isMapType(type) || BinaryUtils.isSpecialMap(val.getClass())) {
             Map<?, ?> map = (Map<?, ?>)val;
 
             writer.writeByte(GridBinaryMarshaller.MAP);

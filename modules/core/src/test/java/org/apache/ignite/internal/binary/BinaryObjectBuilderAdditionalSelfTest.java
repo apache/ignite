@@ -1302,6 +1302,9 @@ public class BinaryObjectBuilderAdditionalSelfTest extends GridCommonAbstractTes
         root.setField("asList", Collections.singletonList(Integer.MAX_VALUE));
         root.setField("asSet", Collections.singleton(Integer.MAX_VALUE));
         root.setField("asMap", Collections.singletonMap("key", "val"));
+        root.setField("asListHint", Collections.singletonList(Integer.MAX_VALUE), List.class);
+        root.setField("asSetHint", Collections.singleton(Integer.MAX_VALUE), Set.class);
+        root.setField("asMapHint", (AbstractMap) Collections.singletonMap("key", "val"), AbstractMap.class);
 
         BinaryObject binaryObj = root.build();
 
@@ -1324,6 +1327,9 @@ public class BinaryObjectBuilderAdditionalSelfTest extends GridCommonAbstractTes
         assert OBJ.equals(binaryObj.type().fieldTypeName("asList"));
         assert OBJ.equals(binaryObj.type().fieldTypeName("asSet"));
         assert OBJ.equals(binaryObj.type().fieldTypeName("asMap"));
+        assert OBJ.equals(binaryObj.type().fieldTypeName("asListHint"));
+        assert OBJ.equals(binaryObj.type().fieldTypeName("asSetHint"));
+        assert OBJ.equals(binaryObj.type().fieldTypeName("asMapHint"));
 
     }
 

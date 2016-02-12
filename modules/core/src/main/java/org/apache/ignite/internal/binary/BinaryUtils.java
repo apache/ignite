@@ -583,11 +583,7 @@ public class BinaryUtils {
      * @return true if code specifies Collection type.
      */
     public static boolean isCollectionType(final byte type) {
-        return type == GridBinaryMarshaller.COL
-                || type == GridBinaryMarshaller.ARR_LIST
-                || type == GridBinaryMarshaller.LINKED_LIST
-                || type == GridBinaryMarshaller.HASH_SET
-                || type == GridBinaryMarshaller.LINKED_HASH_SET;
+        return type == GridBinaryMarshaller.COL;
     }
 
     /**
@@ -595,9 +591,7 @@ public class BinaryUtils {
      * @return true if code specifies Map type.
      */
     public static boolean isMapType(final byte type) {
-        return type == GridBinaryMarshaller.MAP
-                || type == GridBinaryMarshaller.HASH_MAP
-                || type == GridBinaryMarshaller.LINKED_HASH_MAP;
+        return type == GridBinaryMarshaller.MAP;
     }
 
     /**
@@ -609,38 +603,19 @@ public class BinaryUtils {
     }
 
     /**
-     * Method returns type code for Collection and Map if class
-     * is an instance of that interfaces. In distinction of
-     * {@link #typeByClass(Class)} which checks if class is
-     * concrete implementation, this method checks inheritance.
+     * Method checks equality of the cls to Collection and Map
+     * interfaces, if true appropriate code will be returned,
+     * otherwise check will be delegated to {@link #typeByClass(Class)}.
      *
      * @param cls type.
      * @return corresponding code.
      * @see #typeByClass(Class)
      */
-    public static byte userDefinedTypeByClass(final Class<?> cls) {
-        if (ArrayList.class.isAssignableFrom(cls))
-            return GridBinaryMarshaller.ARR_LIST;
-
-        if (LinkedList.class.isAssignableFrom(cls))
-            return GridBinaryMarshaller.LINKED_LIST;
-
-        if (HashSet.class.isAssignableFrom(cls))
-            return GridBinaryMarshaller.HASH_SET;
-
-        if (LinkedHashSet.class.isAssignableFrom(cls))
-            return GridBinaryMarshaller.LINKED_HASH_SET;
-
-        if (HashMap.class.isAssignableFrom(cls))
-            return GridBinaryMarshaller.HASH_MAP;
-
-        if (LinkedHashMap.class.isAssignableFrom(cls))
-            return GridBinaryMarshaller.LINKED_HASH_MAP;
-
-        if (Collection.class.isAssignableFrom(cls))
+    public static byte explicitTypeByClass(final Class<?> cls) {
+        if (Collection.class.equals(cls))
             return GridBinaryMarshaller.COL;
 
-        if (Map.class.isAssignableFrom(cls))
+        if (Map.class.equals(cls))
             return GridBinaryMarshaller.MAP;
 
         return typeByClass(cls);
