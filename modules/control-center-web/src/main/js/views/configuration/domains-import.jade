@@ -146,7 +146,6 @@ mixin td-ellipses-lbl(w, lbl)
                                                         div(style='display: flex' ng-if='table.edit')
                                                             button.select-toggle.form-control(style='width: 35%; margin-right: 5px' bs-select ng-model='table.action' data-container='.modal-domain-import' bs-options='item.value as item.shortLabel for item in importActions')
                                                             button.select-toggle.form-control(style='width: 65%; margin-right: 0' bs-select ng-model='table.cacheOrTemplate' data-container='.modal-domain-import' bs-options='item.value as item.label for item in table.cachesOrTemplates')
-                                                            //- button.select-toggle.form-control(ng-if='table.action==2' style='width: 65%; margin-right: 0' bs-select ng-model='table.cache' data-container='.modal-domain-import' bs-options='item.value as item.label for item in importCurrentCaches')
                                                 td
                 .settings-row
                     label Defaults to be applied for filtered tables

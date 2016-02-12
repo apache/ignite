@@ -57,12 +57,7 @@ module.exports.factory = function(_, express, mongo) {
 
                                     res.json({
                                         spaces,
-                                        clusters: clusters.map((cluster) => {
-                                            return {
-                                                value: cluster._id,
-                                                label: cluster.name
-                                            };
-                                        }),
+                                        clusters: clusters.map((cluster) => ({value: cluster._id, label: cluster.name})),
                                         igfss
                                     });
                                 }

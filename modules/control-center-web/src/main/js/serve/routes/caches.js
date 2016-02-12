@@ -176,9 +176,7 @@ module.exports.factory = function(_, express, mongo) {
             // Get owned space and all accessed space.
             mongo.Space.find({$or: [{owner: user_id}, {usedBy: {$elemMatch: {account: user_id}}}]}, (errSpace, spaces) => {
                 if (mongo.processed(errSpace, res)) {
-                    const space_ids = spaces.map((value) => {
-                        return value._id;
-                    });
+                    const space_ids = spaces.map((value) => value._id);
 
                     mongo.Cache.remove({space: {$in: space_ids}}, (errCache) => {
                         if (errCache)
