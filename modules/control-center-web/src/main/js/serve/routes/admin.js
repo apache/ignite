@@ -48,7 +48,7 @@ module.exports.factory = function(_, express, nodemailer, settings, mongo) {
                 if (errAccount)
                     return res.status(500).send(errAccount.message);
 
-                mongo.Space.find({owner: userId}, function(err, spaces) {
+                mongo.Space.find({owner: userId}, function(errSpace, spaces) {
                     _.forEach(spaces, (space) => {
                         mongo.Cluster.remove({space: space._id}).exec();
                         mongo.Cache.remove({space: space._id}).exec();
