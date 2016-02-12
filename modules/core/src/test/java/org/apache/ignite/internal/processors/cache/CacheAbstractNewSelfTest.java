@@ -146,6 +146,8 @@ public abstract class CacheAbstractNewSelfTest extends GridCommonAbstractTest {
 
             IgniteCache<String, Integer> cache = jcache(i);
 
+            assert i != 0 || cache != null;
+
             if (cache != null)
                 cache.destroy();
         }
