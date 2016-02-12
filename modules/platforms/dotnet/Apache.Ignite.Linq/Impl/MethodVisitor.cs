@@ -184,10 +184,7 @@ namespace Apache.Ignite.Linq.Impl
         {
             var arg = expression.Arguments[0] as ConstantExpression;
 
-            if (arg == null)
-                throw new NotSupportedException("Only constant expression is supported inside Contains call: " + expression);
-
-            return arg.Value;
+            return arg != null ? arg.Value : ExpressionWalker.EvaluateExpression<object>(expression.Arguments[0]);
         }
 
         private static KeyValuePair<MethodInfo, VisitMethodDelegate> GetMethod(Type type, string name,
