@@ -369,10 +369,17 @@ consoleModule.controller('clustersController', function ($http, $timeout, $scope
             var swapKind = item.swapSpaceSpi && item.swapSpaceSpi.kind;
 
             if (swapKind && item.swapSpaceSpi[swapKind]) {
-                var sparsity = item.swapSpaceSpi[swapKind].maximumSparsity;
+                var swap = item.swapSpaceSpi[swapKind];
+
+                var sparsity = swap.maximumSparsity;
 
                 if ($common.isDefined(sparsity) && (sparsity < 0 || sparsity >= 1))
                     return showPopoverMessage($scope.ui, 'swap', 'maximumSparsity', 'Maximum sparsity should be more or equal 0 and less than 1');
+
+                var readStripesNumber = swap.readStripesNumber;
+
+                if (readStripesNumber && !(readStripesNumber == -1 || (readStripesNumber & (readStripesNumber - 1)) == 0))
+                    return showPopoverMessage($scope.ui, 'swap', 'readStripesNumber', 'Read stripe size must be positive and power of two');
             }
 
             if (item.sslEnabled) {
