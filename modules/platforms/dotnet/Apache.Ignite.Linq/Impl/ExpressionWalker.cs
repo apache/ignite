@@ -83,7 +83,12 @@ namespace Apache.Ignite.Linq.Impl
             var constExpr = expression as ConstantExpression;
 
             if (constExpr != null)
-                return (ICacheQueryable) constExpr.Value;
+            {
+                var queryable = constExpr.Value as ICacheQueryable;
+
+                if (queryable != null)
+                    return queryable;
+            }
 
             if (throwWhenNotFound)
                 throw new NotSupportedException("Unexpected query source: " + expression);
