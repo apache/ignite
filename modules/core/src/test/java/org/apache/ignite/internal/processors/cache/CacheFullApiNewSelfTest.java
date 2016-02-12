@@ -60,7 +60,6 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteTransactions;
-import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.CacheEntryEventSerializableFilter;
 import org.apache.ignite.cache.CacheEntryProcessor;
 import org.apache.ignite.cache.CachePeekMode;
@@ -70,7 +69,6 @@ import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.ScanQuery;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.events.Event;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteKernal;
@@ -5784,16 +5782,19 @@ public class CacheFullApiNewSelfTest extends CacheAbstractNewSelfTest {
         qry.setLocalListener(new CacheEntryUpdatedListener<TestObject, TestObject>() {
             @Override public void onUpdated(
                 Iterable<CacheEntryEvent<? extends TestObject, ? extends TestObject>> evts) throws CacheEntryListenerException {
+                for (CacheEntryEvent<? extends TestObject, ? extends TestObject> evt : evts) {
+                    int v = evt.getKey().value();
+
+                    // Check filter.
+                    assertTrue("v=" + v, v < 6);
+                    assertTrue("v=" + v, v >= 10 && v < 15);
+                }
+
                 updCnt.incrementAndGet();
             }
         });
 
-        qry.setRemoteFilter(new CacheEntryEventSerializableFilter<TestObject, TestObject>() {
-            @Override public boolean evaluate(
-                CacheEntryEvent<? extends TestObject, ? extends TestObject> evt) throws CacheEntryListenerException {
-                return evt.getKey().value() < 6 && evt.getKey().value() < 15;
-            }
-        });
+        qry.setRemoteFilter(new TestCacheEntryEventSerializableFilter());
 
         IgniteCache<TestObject, TestObject> cache = jcache();
 
@@ -5806,11 +5807,12 @@ public class CacheFullApiNewSelfTest extends CacheAbstractNewSelfTest {
             for (Cache.Entry<TestObject, TestObject> e : cur) {
                 cnt++;
 
-                assertTrue(e.getKey().value() >= 3);
-                assertTrue(e.getKey().value() < 6);
+                int val = e.getKey().value();
+
+                assertTrue("v=" + val, val >= 3);
             }
 
-            assertEquals(3, cnt);
+            assertEquals(7, cnt);
 
             for (int i = 10; i < 20; i++)
                 cache.put(key(i, mode), value(i, mode));
@@ -6389,19 +6391,15 @@ public class CacheFullApiNewSelfTest extends CacheAbstractNewSelfTest {
         TEST_VALUE_3
     }
 
-    public static void main(String[] args) {
-        try(Ignite ignite = Ignition.start(new IgniteConfiguration().setCacheConfiguration(new CacheConfiguration()))) {
-            IgniteCache cache = ignite.cache(null);
-
-            DataMode mode = DataMode.EXTERNALIZABLE;
-
-            Map map = cache.invokeAll(F.asMap(key(1, mode), INCR_PROCESSOR), mode);
-
-            ignite.log().info(">>>>> map: " + map);
-
-            map = cache.invokeAll(F.asMap(key(1, mode), INCR_PROCESSOR), mode);
-
-            ignite.log().info(">>>>> map: " + map);
+    /**
+     *
+     */
+    private static class TestCacheEntryEventSerializableFilter implements CacheEntryEventSerializableFilter<TestObject, TestObject> {
+        /** {@inheritDoc} */
+        @Override public boolean evaluate(
+            CacheEntryEvent<? extends TestObject, ? extends TestObject> evt) throws CacheEntryListenerException {
+            return evt.getKey().value() < 6 || (evt.getKey().value() >= 10 && evt.getKey().value() < 15);
         }
     }
+
 }
