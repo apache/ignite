@@ -56,7 +56,7 @@ import 'angular-ui-grid/ui-grid.css!';
 import 'angular-loading/angular-loading.css!';
 import 'angular-motion/dist/angular-motion.css!';
 
-//import './decorator/select';
+// import './decorator/select';
 
 import './modules/form/form.module';
 import './modules/JavaTypes/JavaTypes.provider';

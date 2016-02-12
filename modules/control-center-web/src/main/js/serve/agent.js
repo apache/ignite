@@ -22,7 +22,7 @@ module.exports = {
     inject: ['require(fs)', 'require(ws)', 'require(apache-ignite)', 'mongo']
 };
 
-module.exports.factory = function (fs, ws, apacheIgnite, mongo) {
+module.exports.factory = function(fs, ws, apacheIgnite, mongo) {
     /**
      * @constructor
      */
@@ -33,7 +33,7 @@ module.exports.factory = function (fs, ws, apacheIgnite, mongo) {
     /**
      *
      */
-    AgentManager.prototype.listen = function (srv) {
+    AgentManager.prototype.listen = function(srv) {
         if (this._server)
             throw 'Agent server already started!';
 
@@ -41,27 +41,25 @@ module.exports.factory = function (fs, ws, apacheIgnite, mongo) {
 
         this._wss = new ws.Server({server: this._server});
 
-        var self = this;
+        const self = this;
 
-        this._wss.on('connection', function (ws) {
-            new Client(ws, self);
-        });
+        this._wss.on('connection', (_ws) => new Client(_ws, self));
     };
 
     /**
      * @param userId
      * @param {Client} client
      */
-    AgentManager.prototype._removeClient = function (userId, client) {
-        var connections = this._clients[userId];
+    AgentManager.prototype._removeClient = function(userId, client) {
+        const connections = this._clients[userId];
 
         if (connections) {
-            var idx;
+            let idx;
 
             while ((idx = connections.indexOf(client)) !== -1)
                 connections.splice(idx, 1);
 
-            if (connections.length == 0)
+            if (connections.length === 0)
                 delete this._clients[userId];
         }
     };
@@ -70,8 +68,8 @@ module.exports.factory = function (fs, ws, apacheIgnite, mongo) {
      * @param userId
      * @param {Client} client
      */
-    AgentManager.prototype._addClient = function (userId, client) {
-        var existingConnections = this._clients[userId];
+    AgentManager.prototype._addClient = function(userId, client) {
+        let existingConnections = this._clients[userId];
 
         if (!existingConnections) {
             existingConnections = [];
@@ -86,10 +84,10 @@ module.exports.factory = function (fs, ws, apacheIgnite, mongo) {
      * @param userId
      * @returns {Client}
      */
-    AgentManager.prototype.findClient = function (userId) {
+    AgentManager.prototype.findClient = function(userId) {
         const clientsList = this._clients[userId];
 
-        if (!clientsList || clientsList.length == 0)
+        if (!clientsList || clientsList.length === 0)
             return null;
 
         return clientsList[0];
@@ -112,30 +110,30 @@ module.exports.factory = function (fs, ws, apacheIgnite, mongo) {
      * Run http request
      *
      * @this {AgentServer}
-     * @param {Command} cmd Command
+     * @param {cmd} cmd Command
      * @param {callback} callback on finish
      */
-    AgentServer.prototype.runCommand = function (cmd, callback) {
-        var params = {cmd: cmd.name()};
+    AgentServer.prototype.runCommand = function(cmd, callback) {
+        const params = { cmd: cmd.name() };
 
         for (var param of cmd._params)
             params[param.key] = param.value;
 
-        var body = undefined;
+        let body;
 
-        var headers = undefined;
+        let headers;
 
-        var method = 'GET';
+        let method = 'GET';
 
         if (cmd._isPost()) {
             body = cmd.postData();
 
             method = 'POST';
 
-            headers = {'JSONObject': 'application/json'};
+            headers = {JSONObject: 'application/json'};
         }
 
-        this._client.executeRest("ignite", params, this._demo, method, headers, body, callback);
+        this._client.executeRest('ignite', params, this._demo, method, headers, body, callback);
     };
 
     /**
@@ -144,19 +142,18 @@ module.exports.factory = function (fs, ws, apacheIgnite, mongo) {
      * @param {WebSocket} ws
      */
     function Client(ws, manager) {
-        var self = this;
+        const self = this;
 
         this._manager = manager;
         this._ws = ws;
 
-        ws.on('close', function () {
-            if (self._user) {
+        ws.on('close', function() {
+            if (self._user)
                 self._manager._removeClient(self._user._id, self);
-            }
         });
 
-        ws.on('message', function (msgStr) {
-            var msg = JSON.parse(msgStr);
+        ws.on('message', function(msgStr) {
+            const msg = JSON.parse(msgStr);
 
             self['_rmt' + msg.type](msg);
         });
@@ -166,12 +163,12 @@ module.exports.factory = function (fs, ws, apacheIgnite, mongo) {
         this._cbMap = {};
     }
 
-    Client.prototype._runCommand = function (method, args) {
-        var self = this;
+    Client.prototype._runCommand = function(method, args) {
+        const self = this;
 
-        return new Promise(function (resolve, reject) {
-            self._invokeRmtMethod(method, args, function (error, res) {
-                if (error != null)
+        return new Promise(function(resolve, reject) {
+            self._invokeRmtMethod(method, args, function(error, res) {
+                if (error !== null)
                     return reject(error);
 
                 resolve(res);
@@ -188,17 +185,17 @@ module.exports.factory = function (fs, ws, apacheIgnite, mongo) {
      * @param {String} [body]
      * @param {callback} [callback] Callback. Take 3 arguments: {Number} successStatus, {String} error,  {String} response.
      */
-    Client.prototype.executeRest = function (uri, params, demo, method, headers, body, callback) {
-        if (typeof(params) != 'object')
+    Client.prototype.executeRest = function(uri, params, demo, method, headers, body, callback) {
+        if (typeof (params) !== 'object')
             throw '"params" argument must be an object';
 
-        if (typeof(callback) != 'function')
+        if (typeof (callback) !== 'function')
             throw 'callback must be a function';
 
-        if (body && typeof(body) != 'string')
+        if (body && typeof (body) !== 'string')
             throw 'body must be a string';
 
-        if (headers && typeof(headers) != 'object')
+        if (headers && typeof (headers) !== 'object')
             throw 'headers must be an object';
 
         if (!method)
@@ -206,10 +203,10 @@ module.exports.factory = function (fs, ws, apacheIgnite, mongo) {
         else
             method = method.toUpperCase();
 
-        if (method != 'GET' && method != 'POST')
+        if (method !== 'GET' && method !== 'POST')
             throw 'Unknown HTTP method: ' + method;
 
-        const cb = function (error, restResult) {
+        const cb = function(error, restResult) {
             if (error)
                 return callback(error);
 
@@ -222,16 +219,16 @@ module.exports.factory = function (fs, ws, apacheIgnite, mongo) {
 
             if (restCode !== 200) {
                 if (restCode === 401)
-                    return callback.call({code: restCode, message: "Failed to authenticate on node."});
+                    return callback.call({code: restCode, message: 'Failed to authenticate on node.'});
 
                 return callback.call({
                     code: restCode,
-                    message: restError || "Failed connect to node and execute REST command."
+                    message: restError || 'Failed connect to node and execute REST command.'
                 });
             }
 
             try {
-                var nodeResponse = JSON.parse(restResult.response);
+                const nodeResponse = JSON.parse(restResult.response);
 
                 if (nodeResponse.successStatus === 0)
                     return callback(null, nodeResponse.response);
@@ -258,7 +255,7 @@ module.exports.factory = function (fs, ws, apacheIgnite, mongo) {
     /**
      * @param {string} error
      */
-    Client.prototype.authResult = function (error) {
+    Client.prototype.authResult = function(error) {
         return this._runCommand('authResult', [].slice.call(arguments));
     };
 
@@ -269,7 +266,7 @@ module.exports.factory = function (fs, ws, apacheIgnite, mongo) {
      * @param {Object} info
      * @returns {Promise} Promise on list of tables (see org.apache.ignite.schema.parser.DbTable java class)
      */
-    Client.prototype.metadataSchemas = function (driverPath, driverClass, url, info) {
+    Client.prototype.metadataSchemas = function(driverPath, driverClass, url, info) {
         return this._runCommand('schemas', [].slice.call(arguments));
     };
 
@@ -282,14 +279,14 @@ module.exports.factory = function (fs, ws, apacheIgnite, mongo) {
      * @param {Boolean} tablesOnly
      * @returns {Promise} Promise on list of tables (see org.apache.ignite.schema.parser.DbTable java class)
      */
-    Client.prototype.metadataTables = function (driverPath, driverClass, url, info, schemas, tablesOnly) {
+    Client.prototype.metadataTables = function(driverPath, driverClass, url, info, schemas, tablesOnly) {
         return this._runCommand('metadata', [].slice.call(arguments));
     };
 
     /**
      * @returns {Promise} Promise on list of jars from driver folder.
      */
-    Client.prototype.availableDrivers = function () {
+    Client.prototype.availableDrivers = function() {
         return this._runCommand('availableDrivers', [].slice.call(arguments));
     };
 
@@ -301,35 +298,32 @@ module.exports.factory = function (fs, ws, apacheIgnite, mongo) {
      * @param {Array} args Command params.
      * @param {Function} callback on finish
      */
-    Client.prototype._invokeRmtMethod = function (method, args, callback) {
-        if (this._ws.readyState != 1) {
+    Client.prototype._invokeRmtMethod = function(method, args, callback) {
+        if (this._ws.readyState !== 1) {
             if (callback)
                 callback('org.apache.ignite.agent.AgentException: Connection is closed');
 
             return;
         }
 
-        var msg = {
-            method: method,
-            args: args
-        };
+        const msg = { method, args };
 
         if (callback) {
-            var reqId = this._reqCounter++;
+            const reqId = this._reqCounter++;
 
             this._cbMap[reqId] = callback;
 
             msg.reqId = reqId;
         }
 
-        this._ws.send(JSON.stringify(msg))
+        this._ws.send(JSON.stringify(msg));
     };
 
-    Client.prototype._rmtAuthMessage = function (msg) {
-        var self = this;
+    Client.prototype._rmtAuthMessage = function(msg) {
+        const self = this;
 
-        fs.stat('public/agent/ignite-web-agent-1.5.0.final.zip', function (err, stats) {
-            var relDate = 0;
+        fs.stat('public/agent/ignite-web-agent-1.5.0.final.zip', function(err, stats) {
+            let relDate = 0;
 
             if (!err)
                 relDate = stats.birthtime.getTime();
@@ -337,11 +331,9 @@ module.exports.factory = function (fs, ws, apacheIgnite, mongo) {
             if ((msg.relDate || 0) < relDate)
                 self.authResult('You are using an older version of the agent. Please reload agent archive');
 
-            mongo.Account.findOne({token: msg.token}, function (err, account) {
-                if (err) {
-                    self.authResult('Failed to authorize user');
-                    // TODO IGNITE-1379 send error to web master.
-                }
+            mongo.Account.findOne({token: msg.token}, function(err, account) {
+                if (err)
+                    self.authResult('Failed to authorize user'); // TODO IGNITE-1379 send error to web master.
                 else if (!account)
                     self.authResult('Invalid token, user not found');
                 else {
@@ -359,10 +351,11 @@ module.exports.factory = function (fs, ws, apacheIgnite, mongo) {
         });
     };
 
-    Client.prototype._rmtCallRes = function (msg) {
-        var callback = this._cbMap[msg.reqId];
+    Client.prototype._rmtCallRes = function(msg) {
+        const callback = this._cbMap[msg.reqId];
 
-        if (!callback) return;
+        if (!callback)
+            return;
 
         delete this._cbMap[msg.reqId];
 
@@ -372,7 +365,7 @@ module.exports.factory = function (fs, ws, apacheIgnite, mongo) {
     /**
      * @returns {Ignite}
      */
-    Client.prototype.ignite = function (demo) {
+    Client.prototype.ignite = function(demo) {
         return demo ? this._demo : this._cluster;
     };
 
