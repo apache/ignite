@@ -1406,6 +1406,10 @@ a {
     content: '\25BC';
 }
 
+th[st-sort] {
+    cursor: pointer;
+}
+
 .panel {
     margin-bottom: 0;
 }
