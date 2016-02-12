@@ -408,11 +408,17 @@ class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
                                         "(it does not belong to affinity): " + locPart);
                             }
                         }
+                        else
+                            locPart.own();
                     }
                     else if (belongs) {
                         try {
                             // Pre-create partitions.
-                            localPartition(p, topVer, true, false);
+                            GridDhtLocalPartition part = localPartition(p, topVer, true, false);
+
+                            assert part != null;
+
+                            part.own();
                         }
                         catch (GridDhtInvalidPartitionException e) {
                             if (log.isDebugEnabled())
