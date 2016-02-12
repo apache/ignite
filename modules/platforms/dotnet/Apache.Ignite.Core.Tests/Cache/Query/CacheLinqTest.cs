@@ -134,12 +134,16 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         {
             var cache = GetPersonCache().AsCacheQueryable();
 
-            Assert.AreEqual(10, cache.Where(x => x.Value.Age < 10).ToArray().Length);
-            Assert.AreEqual(10, cache.Where(x => x.Value.Address.Zip < 10).ToArray().Length);
-            Assert.AreEqual(19, cache.Where(x => x.Value.Age > 10 && x.Value.Age < 30).ToArray().Length);
-            Assert.AreEqual(20, cache.Where(x => x.Value.Age > 10).Count(x => x.Value.Age < 30 || x.Value.Age == 50));
-            Assert.AreEqual(15, cache.Where(x => x.Key < 15).ToArray().Length);
-            Assert.AreEqual(15, cache.Where(x => -x.Key > -15).ToArray().Length);
+            // Test const and var parameters
+            const int age = 10;
+            var key = 15;
+
+            Assert.AreEqual(age, cache.Where(x => x.Value.Age < age).ToArray().Length);
+            Assert.AreEqual(age, cache.Where(x => x.Value.Address.Zip < age).ToArray().Length);
+            Assert.AreEqual(19, cache.Where(x => x.Value.Age > age && x.Value.Age < 30).ToArray().Length);
+            Assert.AreEqual(20, cache.Where(x => x.Value.Age > age).Count(x => x.Value.Age < 30 || x.Value.Age == 50));
+            Assert.AreEqual(key, cache.Where(x => x.Key < key).ToArray().Length);
+            Assert.AreEqual(key, cache.Where(x => -x.Key > -key).ToArray().Length);
 
             Assert.AreEqual(1, GetRoleCache().AsCacheQueryable().Where(x => x.Key.Foo < 2).ToArray().Length);
             Assert.AreEqual(2, GetRoleCache().AsCacheQueryable().Where(x => x.Key.Bar > 2 && x.Value.Name != "11")
