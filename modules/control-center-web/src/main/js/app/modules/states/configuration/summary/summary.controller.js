@@ -165,10 +165,8 @@ export default [
 
         function addClass(fullClsName) {
             const path = fullClsName.split('.');
-
-            const folder = getOrCreateFolder(javaFolder, path);
-
             const leaf = {type: 'file', name: path.pop() + '.java'};
+            const folder = getOrCreateFolder(javaFolder, path);
 
             if (!_.find(folder.children, leaf))
                 folder.children.push(leaf);
