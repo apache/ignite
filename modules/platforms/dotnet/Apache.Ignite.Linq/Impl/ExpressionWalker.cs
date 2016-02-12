@@ -98,7 +98,6 @@ namespace Apache.Ignite.Linq.Impl
 
         public static T EvaluateExpression<T>(Expression expr)
         {
-            // TODO: Slow, check for duplicates (cache if possible)
             return Expression.Lambda<Func<T>>(
                 Expression.Convert(expr, typeof (T))).Compile()();
         }
