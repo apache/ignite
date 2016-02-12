@@ -94,7 +94,7 @@ public abstract class GridH2IndexBase extends BaseIndex {
      * @param row Search row.
      * @return Search result.
      */
-    public abstract GridH2Row findOne(GridSearchRowPointer row);
+    public abstract GridH2Row findOne(GridH2Row row);
 
     /**
      * Takes or sets existing snapshot to be used in current thread.

@@ -267,7 +267,7 @@ public class GridH2SpatialIndex extends GridH2IndexBase implements SpatialIndex 
     }
 
     /** {@inheritDoc} */
-    @Override public GridH2Row findOne(GridSearchRowPointer row) {
+    @Override public GridH2Row findOne(GridH2Row row) {
         throw new UnsupportedOperationException();
     }
 
