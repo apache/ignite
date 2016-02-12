@@ -769,6 +769,11 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
                 cache.Where(x => x.Value.Address.Zip > d && x.Key < i && x.Value.Name.Contains(s)));
             Assert.AreEqual(5, qry3(5, "son", -10).ToArray().Length);
 
+            // 4 arg
+            var keys = cache.Select(x => x.Key);
+            var qry4 = CompiledQuery.Compile((int a, int b, int c, int d) =>
+                keys.Where(k => k > a && k > b && k > c && k < d));
+            Assert.AreEqual(7, qry4(0, 1, 2, 10));
         }
 
         [Test]
