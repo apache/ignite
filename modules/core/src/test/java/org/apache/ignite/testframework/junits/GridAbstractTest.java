@@ -208,6 +208,10 @@ public abstract class GridAbstractTest extends TestCase {
      * @param testsCfg Tests configuration.
      */
     public void setTestsConfiguration(TestsConfiguration testsCfg) {
+        if (this.testsCfg != null)
+            U.dumpStack(log, "Test config must be set only once [oldTestCfg=" + this.testsCfg 
+                + ", newTestCfg=" + testsCfg + "]");            
+        
         this.testsCfg = testsCfg;
     }
 
