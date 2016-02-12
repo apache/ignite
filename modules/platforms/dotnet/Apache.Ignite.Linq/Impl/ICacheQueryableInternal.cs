@@ -18,6 +18,7 @@
 namespace Apache.Ignite.Linq.Impl
 {
     using System;
+    using System.Linq.Expressions;
     using Apache.Ignite.Core.Cache.Query;
     using Remotion.Linq;
 
@@ -34,6 +35,7 @@ namespace Apache.Ignite.Linq.Impl
         /// <summary>
         /// Compiles the query.
         /// </summary>
-        Func<object[], IQueryCursor<T>> CompileQuery<T>();
+        /// <param name="queryCaller">Caller expression to examine argument order.</param>
+        Func<object[], IQueryCursor<T>> CompileQuery<T>(Expression queryCaller);
     }
 }

@@ -21,6 +21,7 @@ namespace Apache.Ignite.Linq
     using System.Diagnostics;
     using System.Diagnostics.CodeAnalysis;
     using System.Linq;
+    using System.Linq.Expressions;
     using Apache.Ignite.Core.Cache.Query;
     using Apache.Ignite.Core.Impl.Common;
     using Apache.Ignite.Linq.Impl;
@@ -41,7 +42,7 @@ namespace Apache.Ignite.Linq
         {
             IgniteArgumentCheck.NotNull(query, "query");
 
-            var compiledQuery = GetCompiledQuery(query);
+            var compiledQuery = GetCompiledQuery(query, null);
 
             return x => compiledQuery(new object[] {x});
         }
@@ -57,7 +58,7 @@ namespace Apache.Ignite.Linq
         {
             IgniteArgumentCheck.NotNull(query, "query");
 
-            var compiledQuery = GetCompiledQuery(query(default(TArg1)));
+            var compiledQuery = GetCompiledQuery(query(default(TArg1)), null);
 
             return x => compiledQuery(new object[] {x});
         }
@@ -69,12 +70,12 @@ namespace Apache.Ignite.Linq
         /// <returns>Delegate that represents the compiled cache query.</returns>
         [SuppressMessage("Microsoft.Design", "CA1062:Validate arguments of public methods", MessageId = "0", 
             Justification = "Invalid warning, validation is present.")]
-        public static Func<TArg1, TArg2, IQueryCursor<T>> Compile<T, TArg1, TArg2>(Func<TArg1, TArg2, 
-            IQueryable<T>> query)
+        public static Func<TArg1, TArg2, IQueryCursor<T>> Compile<T, TArg1, TArg2>(Expression<Func<TArg1, TArg2, 
+            IQueryable<T>>> query)
         {
             IgniteArgumentCheck.NotNull(query, "query");
 
-            var compiledQuery = GetCompiledQuery(query(default(TArg1), default(TArg2)));
+            var compiledQuery = GetCompiledQuery(query.Compile()(default(TArg1), default(TArg2)), query);
 
             // TODO: Parameter order may be wrong
             return (x, y) => compiledQuery(new object[] {x, y});
@@ -83,7 +84,8 @@ namespace Apache.Ignite.Linq
         /// <summary>
         /// Gets the compiled query.
         /// </summary>
-        private static Func<object[], IQueryCursor<T>> GetCompiledQuery<T>(IQueryable<T> queryable)
+        private static Func<object[], IQueryCursor<T>> GetCompiledQuery<T>(IQueryable<T> queryable, 
+            Expression queryCaller)
         {
             var cacheQueryable = queryable as ICacheQueryableInternal;
 
@@ -94,7 +96,7 @@ namespace Apache.Ignite.Linq
 
             Debug.WriteLine(queryable);
 
-            return cacheQueryable.CompileQuery<T>();
+            return cacheQueryable.CompileQuery<T>(queryCaller);
         }
     }
 }
