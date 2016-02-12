@@ -17,6 +17,11 @@
 
 package org.apache.ignite.internal.binary;
 
+import java.io.Externalizable;
+import java.io.IOException;
+import java.io.ObjectInput;
+import java.io.ObjectOutput;
+import java.nio.ByteBuffer;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.binary.BinaryObjectBuilder;
@@ -30,12 +35,6 @@ import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 import org.jetbrains.annotations.Nullable;
-
-import java.io.Externalizable;
-import java.io.IOException;
-import java.io.ObjectInput;
-import java.io.ObjectOutput;
-import java.nio.ByteBuffer;
 
 /**
  * Binary enum object.
@@ -111,7 +110,7 @@ public class BinaryEnumObjectImpl implements BinaryObjectEx, Externalizable, Cac
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
     @Override public <T> T deserialize() throws BinaryObjectException {
-        Class cls = BinaryUtils.resolveClass(ctx, typeId, clsName, null, true);
+        Class cls = BinaryUtils.resolveClass(ctx, typeId, clsName, ctx.configuration().getClassLoader(), true);
 
         return BinaryEnumCache.get(cls, ord);
     }

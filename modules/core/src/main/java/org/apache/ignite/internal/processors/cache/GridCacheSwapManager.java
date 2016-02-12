@@ -32,6 +32,7 @@ import java.util.concurrent.ConcurrentMap;
 import javax.cache.Cache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.cache.CacheMemoryMode;
 import org.apache.ignite.internal.managers.swapspace.GridSwapSpaceManager;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtInvalidPartitionException;
@@ -85,7 +86,7 @@ public class GridCacheSwapManager extends GridCacheManagerAdapter {
     /** Flag to indicate if swap is enabled. */
     private boolean swapEnabled;
 
-    /** Flag to indicate if offheap is enabled. */
+    /** Flag to indicate if offheap is enabled. {@link CacheMemoryMode#OFFHEAP_VALUES} treated as offheap disabled. */
     private boolean offheapEnabled;
 
     /** Swap listeners. */

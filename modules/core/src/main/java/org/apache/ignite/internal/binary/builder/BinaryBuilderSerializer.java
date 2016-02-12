@@ -17,17 +17,15 @@
 
 package org.apache.ignite.internal.binary.builder;
 
-import org.apache.ignite.binary.BinaryObject;
-import org.apache.ignite.internal.binary.BinaryMetadata;
-import org.apache.ignite.internal.binary.BinaryObjectExImpl;
-import org.apache.ignite.internal.binary.BinaryWriterExImpl;
-import org.apache.ignite.internal.binary.GridBinaryMarshaller;
-import org.apache.ignite.internal.binary.BinaryContext;
-import org.apache.ignite.internal.binary.BinaryUtils;
-
 import java.util.Collection;
 import java.util.IdentityHashMap;
 import java.util.Map;
+import org.apache.ignite.binary.BinaryObject;
+import org.apache.ignite.internal.binary.BinaryMetadata;
+import org.apache.ignite.internal.binary.BinaryObjectExImpl;
+import org.apache.ignite.internal.binary.BinaryUtils;
+import org.apache.ignite.internal.binary.BinaryWriterExImpl;
+import org.apache.ignite.internal.binary.GridBinaryMarshaller;
 
 /**
  *
@@ -52,6 +50,18 @@ class BinaryBuilderSerializer {
      * @param val Value.
      */
     public void writeValue(BinaryWriterExImpl writer, Object val) {
+        writeValue(writer, val, false, false);
+    }
+
+    /**     *
+     * @param writer Writer.
+     * @param val Value.
+     * @param forceCol Whether to force collection type.
+     * @param forceMap Whether to force map type.
+     */
+    public void writeValue(BinaryWriterExImpl writer, Object val, boolean forceCol, boolean forceMap) {
+        assert !(forceCol && forceMap);
+
         if (val == null) {
             writer.writeByte(GridBinaryMarshaller.NULL);
 
@@ -100,8 +110,10 @@ class BinaryBuilderSerializer {
         }
 
         if (val.getClass().isEnum()) {
-            String typeName = BinaryContext.typeName(val.getClass().getName());
-            int typeId = writer.context().typeId(typeName);
+            String clsName = val.getClass().getName();
+
+            int typeId = writer.context().typeId(clsName);
+            String typeName = writer.context().userTypeName(clsName);
 
             BinaryMetadata meta = new BinaryMetadata(typeId, typeName, null, null, null, true);
             writer.context().updateMetadata(typeId, meta);
@@ -113,7 +125,7 @@ class BinaryBuilderSerializer {
             return;
         }
 
-        if (val instanceof Collection) {
+        if (forceCol || BinaryUtils.isSpecialCollection(val.getClass())) {
             Collection<?> c = (Collection<?>)val;
 
             writer.writeByte(GridBinaryMarshaller.COL);
@@ -129,7 +141,7 @@ class BinaryBuilderSerializer {
             return;
         }
 
-        if (val instanceof Map) {
+        if (forceMap || BinaryUtils.isSpecialMap(val.getClass())) {
             Map<?, ?> map = (Map<?, ?>)val;
 
             writer.writeByte(GridBinaryMarshaller.MAP);

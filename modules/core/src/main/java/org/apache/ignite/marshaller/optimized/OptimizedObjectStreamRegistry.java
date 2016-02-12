@@ -95,7 +95,7 @@ class OptimizedObjectStreamRegistry {
         holder.releaseOut();
 
         if (pool != null) {
-            holders.remove();
+            holders.set(null);
 
             boolean b = pool.offer(holder);
 
@@ -117,7 +117,7 @@ class OptimizedObjectStreamRegistry {
         holder.releaseIn();
 
         if (pool != null) {
-            holders.remove();
+            holders.set(null);
 
             boolean b = pool.offer(holder);
 

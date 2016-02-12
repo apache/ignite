@@ -500,4 +500,16 @@ BOOST_AUTO_TEST_CASE(TestPutGetTimestamp)
     BOOST_REQUIRE(now == cache.Get(42));
 }
 
+BOOST_AUTO_TEST_CASE(TestGetBigString)
+{
+    // Get existing cache
+    cache::Cache<int, std::string> cache = grid0.GetOrCreateCache<int, std::string>("partitioned");
+
+    std::string longStr(impl::IgniteEnvironment::DEFAULT_ALLOCATION_SIZE * 10, 'a');
+
+    cache.Put(5, longStr);
+
+    BOOST_REQUIRE(longStr == cache.Get(5));
+}
+
 BOOST_AUTO_TEST_SUITE_END()

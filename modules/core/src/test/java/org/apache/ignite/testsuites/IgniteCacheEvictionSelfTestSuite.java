@@ -36,8 +36,6 @@ import org.apache.ignite.internal.processors.cache.eviction.fifo.FifoEvictionPol
 import org.apache.ignite.internal.processors.cache.eviction.lru.LruEvictionPolicySelfTest;
 import org.apache.ignite.internal.processors.cache.eviction.lru.LruNearEvictionPolicySelfTest;
 import org.apache.ignite.internal.processors.cache.eviction.lru.LruNearOnlyNearEvictionPolicySelfTest;
-import org.apache.ignite.internal.processors.cache.eviction.random.RandomEvictionPolicyCacheSizeSelfTest;
-import org.apache.ignite.internal.processors.cache.eviction.random.RandomEvictionPolicySelfTest;
 import org.apache.ignite.internal.processors.cache.eviction.sorted.SortedEvictionPolicySelfTest;
 
 /**
@@ -56,8 +54,6 @@ public class IgniteCacheEvictionSelfTestSuite extends TestSuite {
         suite.addTest(new TestSuite(LruEvictionPolicySelfTest.class));
         suite.addTest(new TestSuite(LruNearEvictionPolicySelfTest.class));
         suite.addTest(new TestSuite(LruNearOnlyNearEvictionPolicySelfTest.class));
-        suite.addTest(new TestSuite(RandomEvictionPolicySelfTest.class));
-        suite.addTest(new TestSuite(RandomEvictionPolicyCacheSizeSelfTest.class));
         suite.addTest(new TestSuite(GridCacheNearEvictionSelfTest.class));
         suite.addTest(new TestSuite(GridCacheAtomicNearEvictionSelfTest.class));
         suite.addTest(new TestSuite(GridCacheEvictionFilterSelfTest.class));

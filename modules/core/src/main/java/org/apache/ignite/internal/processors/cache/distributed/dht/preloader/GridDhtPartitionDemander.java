@@ -903,7 +903,9 @@ public class GridDhtPartitionDemander {
 
                 remaining.remove(nodeId);
 
-                checkIsDone();
+                onDone(false); // Finishing rebalance future a non completed.
+
+                checkIsDone(); // But will finish syncFuture only when other nodes are preloaded or rebalancing cancelled.
             }
 
         }

@@ -25,6 +25,7 @@ import org.apache.ignite.internal.ClusterGroupSelfTest;
 import org.apache.ignite.internal.GridFailFastNodeFailureDetectionSelfTest;
 import org.apache.ignite.internal.GridLifecycleAwareSelfTest;
 import org.apache.ignite.internal.GridLifecycleBeanSelfTest;
+import org.apache.ignite.internal.GridNodeMetricsLogSelfTest;
 import org.apache.ignite.internal.GridProjectionForCachesSelfTest;
 import org.apache.ignite.internal.GridReduceSelfTest;
 import org.apache.ignite.internal.GridReleaseTypeSelfTest;
@@ -44,6 +45,7 @@ import org.apache.ignite.internal.processors.service.ClosureServiceClientsNodesT
 import org.apache.ignite.internal.product.GridProductVersionSelfTest;
 import org.apache.ignite.internal.util.nio.IgniteExceptionInNioWorkerSelfTest;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.marshaller.DynamicProxySerializationMultiJvmSelfTest;
 import org.apache.ignite.messaging.GridMessagingNoPeerClassLoadingSelfTest;
 import org.apache.ignite.messaging.GridMessagingSelfTest;
 import org.apache.ignite.messaging.IgniteMessagingWithClientTest;
@@ -111,10 +113,13 @@ public class IgniteBasicTestSuite extends TestSuite {
         suite.addTestSuite(GridFailFastNodeFailureDetectionSelfTest.class);
         suite.addTestSuite(OffHeapTieredTransactionSelfTest.class);
         suite.addTestSuite(IgniteSlowClientDetectionSelfTest.class);
-        suite.addTestSuite(IgniteDaemonNodeMarshallerCacheTest.class);
+        GridTestUtils.addTestIfNeeded(suite, IgniteDaemonNodeMarshallerCacheTest.class, ignoredTests);
         suite.addTestSuite(IgniteMarshallerCacheConcurrentReadWriteTest.class);
+        suite.addTestSuite(GridNodeMetricsLogSelfTest.class);
 
         suite.addTestSuite(IgniteExceptionInNioWorkerSelfTest.class);
+
+        GridTestUtils.addTestIfNeeded(suite, DynamicProxySerializationMultiJvmSelfTest.class, ignoredTests);
 
         return suite;
     }

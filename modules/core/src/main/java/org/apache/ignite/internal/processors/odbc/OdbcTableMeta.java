@@ -38,19 +38,6 @@ public class OdbcTableMeta {
     private final String tableType;
 
     /**
-     * Add quotation marks at the beginning and end of the string.
-     *
-     * @param str Input string.
-     * @return String surrounded with quotation marks.
-     */
-    private String AddQuotationMarksIfNeeded(String str) {
-        if (!str.startsWith("\"") && !str.isEmpty())
-            return "\"" + str + "\"";
-
-        return str;
-    }
-
-    /**
      * @param catalog Catalog name.
      * @param schema Schema name.
      * @param table Table name.
@@ -58,23 +45,32 @@ public class OdbcTableMeta {
      */
     public OdbcTableMeta(String catalog, String schema, String table, String tableType) {
         this.catalog = catalog;
-        this.schema = AddQuotationMarksIfNeeded(schema);
+        this.schema = OdbcUtils.addQuotationMarksIfNeeded(schema);
         this.table = table;
         this.tableType = tableType;
     }
 
     /** {@inheritDoc} */
-    @Override public boolean equals(Object o)
-    {
-        if (!(o instanceof OdbcTableMeta))
-            return false;
+    @Override public int hashCode() {
+        int hash = catalog.hashCode();
 
-        OdbcTableMeta another = (OdbcTableMeta)o;
+        hash = 31 * hash + schema.hashCode();
+        hash = 31 * hash + table.hashCode();
+        hash = 31 * hash + tableType.hashCode();
 
-        return catalog.equals(another.catalog) &&
-               schema.equals(another.schema) &&
-               table.equals(another.table) &&
-               tableType.equals(another.tableType);
+        return hash;
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean equals(Object o) {
+        if (o instanceof OdbcTableMeta) {
+            OdbcTableMeta other = (OdbcTableMeta) o;
+
+            return this == other || catalog.equals(other.catalog) && schema.equals(other.schema) &&
+                table.equals(other.table) && tableType.equals(other.tableType);
+        }
+
+        return false;
     }
 
     /**
