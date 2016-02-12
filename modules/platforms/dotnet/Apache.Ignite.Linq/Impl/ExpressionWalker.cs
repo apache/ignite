@@ -117,17 +117,15 @@ namespace Apache.Ignite.Linq.Impl
                     if (MemberReaders.TryGetValue(memberExpr.Member, out reader))
                         return (T) reader(target);
 
-                    reader = CompileMemberReader(memberExpr);
-
-                    if (reader != null)
-                        return (T) MemberReaders.GetOrAdd(memberExpr.Member, x => reader)(target);
+                    return (T) MemberReaders.GetOrAdd(memberExpr.Member, x => CompileMemberReader(memberExpr))(target);
                 }
 
                 // TODO: Static fields and properties
             }
 
-            return Expression.Lambda<Func<T>>(
-                Expression.Convert(expr, typeof (T))).Compile()();
+
+            throw new NotSupportedException("Expression not supported: " + expr);
+            //return Expression.Lambda<Func<T>>(Expression.Convert(expr, typeof (T))).Compile()();
         }
 
         private static Func<object, object> CompileMemberReader(MemberExpression memberExpr)
@@ -143,7 +141,7 @@ namespace Apache.Ignite.Linq.Impl
             if (prop != null)
                 return DelegateConverter.CompilePropertyGetter(prop);
 
-            return null;
+            throw new NotSupportedException("Expression not supported: " + memberExpr);
         }
 
         public static string GetTableNameWithSchema(ICacheQueryable queryable)

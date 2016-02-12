@@ -625,8 +625,9 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
             var persons = GetPersonCache().AsCacheQueryable();
 
             // Invalid dateTime
+            var now = DateTime.Now;
             // ReSharper disable once ReturnValueOfPureMethodIsNotUsed
-            Assert.Throws<InvalidOperationException>(() => roles.Where(x => x.Value.Date > DateTime.Now).ToArray());
+            Assert.Throws<InvalidOperationException>(() => roles.Where(x => x.Value.Date > now).ToArray());
 
             // Test retrieval
             var dates = roles.OrderBy(x => x.Value.Date).Select(x => x.Value.Date);
