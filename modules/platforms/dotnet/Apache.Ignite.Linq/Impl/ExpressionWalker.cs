@@ -21,6 +21,7 @@ namespace Apache.Ignite.Linq.Impl
     using System.Diagnostics;
     using System.Linq;
     using System.Linq.Expressions;
+    using System.Reflection;
     using Apache.Ignite.Core.Cache;
     using Remotion.Linq.Clauses;
     using Remotion.Linq.Clauses.Expressions;
@@ -98,7 +99,39 @@ namespace Apache.Ignite.Linq.Impl
 
         public static T EvaluateExpression<T>(Expression expr)
         {
+            var memberExpr = expr as MemberExpression;
+
+            if (memberExpr != null)
+            {
+                var targetExpr = memberExpr.Expression as ConstantExpression;
+
+                if (targetExpr != null)
+                {
+                    var target = targetExpr.Value;
+
+                    // Field or property
+                    //memberExpr.Member.getva
+                    var fld = memberExpr.Member as FieldInfo;
+
+                    if (fld != null)
+                    {
+                        return (T) fld.GetValue(target);
+                    }
+
+                    var prop = memberExpr.Member as PropertyInfo;
+
+                    if (prop != null)
+                    {
+                        return (T) prop.GetValue(target, null);
+                    }
+                }
+            }
+
             // TODO: Slow. Try to optimize when possible
+            // expr is MemberExpression
+            // expr.Expression is ConstantExpression
+            // cache compiled delegates
+
             return Expression.Lambda<Func<T>>(
                 Expression.Convert(expr, typeof (T))).Compile()();
         }
