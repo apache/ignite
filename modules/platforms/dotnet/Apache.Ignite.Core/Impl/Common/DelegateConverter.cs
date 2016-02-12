@@ -321,6 +321,48 @@ namespace Apache.Ignite.Core.Impl.Common
         }
 
         /// <summary>
+        /// Compiles the property setter.
+        /// </summary>
+        /// <param name="prop">The property.</param>
+        /// <returns>Compiled property setter.</returns>
+        [SuppressMessage("Microsoft.Design", "CA1062:Validate arguments of public methods")]
+        public static Func<object, object> CompilePropertyGetter(PropertyInfo prop)
+        {
+            Debug.Assert(prop != null);
+            Debug.Assert(prop.DeclaringType != null);   // non-static
+
+            var targetParam = Expression.Parameter(typeof(object));
+            var targetParamConverted = Expression.Convert(targetParam, prop.DeclaringType);
+
+            var fld = Expression.Property(targetParamConverted, prop);
+
+            var fldConverted = Expression.Convert(fld, typeof (object));
+
+            return Expression.Lambda<Func<object, object>>(fldConverted, targetParam).Compile();
+        }
+
+        /// <summary>
+        /// Compiles the property setter.
+        /// </summary>
+        /// <param name="field">The field.</param>
+        /// <returns>Compiled property setter.</returns>
+        [SuppressMessage("Microsoft.Design", "CA1062:Validate arguments of public methods")]
+        public static Func<object, object> CompileFieldGetter(FieldInfo field)
+        {
+            Debug.Assert(field != null);
+            Debug.Assert(field.DeclaringType != null);   // non-static
+
+            var targetParam = Expression.Parameter(typeof(object));
+            var targetParamConverted = Expression.Convert(targetParam, field.DeclaringType);
+
+            var fld = Expression.Field(targetParamConverted, field);
+
+            var fldConverted = Expression.Convert(fld, typeof (object));
+
+            return Expression.Lambda<Func<object, object>>(fldConverted, targetParam).Compile();
+        }
+
+        /// <summary>
         /// Gets a method to write a field (including private and readonly).
         /// NOTE: Expression Trees can't write readonly fields.
         /// </summary>

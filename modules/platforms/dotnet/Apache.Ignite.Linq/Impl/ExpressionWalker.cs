@@ -23,6 +23,7 @@ namespace Apache.Ignite.Linq.Impl
     using System.Linq.Expressions;
     using System.Reflection;
     using Apache.Ignite.Core.Cache;
+    using Apache.Ignite.Core.Impl.Common;
     using Remotion.Linq.Clauses;
     using Remotion.Linq.Clauses.Expressions;
 
@@ -114,15 +115,17 @@ namespace Apache.Ignite.Linq.Impl
 
                     if (fld != null)
                     {
-                        // TODO: compile
-                        return (T) fld.GetValue(target);
+                        // TODO: Cache
+                        var getter = DelegateConverter.CompileFieldGetter(fld);
+                        return (T) getter(target);
                     }
 
                     var prop = memberExpr.Member as PropertyInfo;
 
                     if (prop != null)
                     {
-                        return (T) prop.GetValue(target, null);
+                        var getter = DelegateConverter.CompilePropertyGetter(prop);
+                        return (T)getter(target);
                     }
                 }
 
