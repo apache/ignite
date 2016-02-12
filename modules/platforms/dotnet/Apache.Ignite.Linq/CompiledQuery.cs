@@ -150,6 +150,42 @@ namespace Apache.Ignite.Linq
         }
 
         /// <summary>
+        /// Creates a new delegate that represents the compiled cache query.
+        /// </summary>
+        /// <param name="query">The query to compile.</param>
+        /// <returns>Delegate that represents the compiled cache query.</returns>
+        [SuppressMessage("Microsoft.Design", "CA1062:Validate arguments of public methods", MessageId = "0", 
+            Justification = "Invalid warning, validation is present.")]
+        public static Func<T1, T2, T3, T4, T5, T6, T7, IQueryCursor<T>> Compile<T, T1, T2, T3, T4, T5, T6, T7>(
+            Func<T1, T2, T3, T4, T5, T6, T7, IQueryable<T>> query)
+        {
+            IgniteArgumentCheck.NotNull(query, "query");
+
+            var compiledQuery = GetCompiledQuery(query(default(T1), default(T2), default(T3), default(T4), 
+                default(T5), default(T6), default(T7)), query);
+
+            return (x, y, z, a, b, c, d) => compiledQuery(new object[] {x, y, z, a, b, c, d});
+        }
+
+        /// <summary>
+        /// Creates a new delegate that represents the compiled cache query.
+        /// </summary>
+        /// <param name="query">The query to compile.</param>
+        /// <returns>Delegate that represents the compiled cache query.</returns>
+        [SuppressMessage("Microsoft.Design", "CA1062:Validate arguments of public methods", MessageId = "0", 
+            Justification = "Invalid warning, validation is present.")]
+        public static Func<T1, T2, T3, T4, T5, T6, T7, T8, IQueryCursor<T>> Compile<T, T1, T2, T3, T4, T5, T6, T7, T8>(
+            Func<T1, T2, T3, T4, T5, T6, T7, T8, IQueryable<T>> query)
+        {
+            IgniteArgumentCheck.NotNull(query, "query");
+
+            var compiledQuery = GetCompiledQuery(query(default(T1), default(T2), default(T3), default(T4), 
+                default(T5), default(T6), default(T7), default(T8)), query);
+
+            return (x, y, z, a, b, c, d, e) => compiledQuery(new object[] {x, y, z, a, b, c, d, e});
+        }
+
+        /// <summary>
         /// Gets the compiled query.
         /// </summary>
         private static Func<object[], IQueryCursor<T>> GetCompiledQuery<T>(IQueryable<T> queryable, 
