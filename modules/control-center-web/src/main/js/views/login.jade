@@ -54,11 +54,11 @@ header#header.header
                         .settings-row(ng-show='action == "register"')
                             +lbl('Company:')
                             .col-xs-9.col-md-8
-                                input#company.form-control(enter-focus-next='country' type='text' ng-model='user_info.company' placeholder='You company name')
+                                input#company.form-control(enter-focus-next='country' type='text' ng-model='user_info.company' placeholder='Your company name')
                         .settings-row(ng-show='action == "register"')
                             +lbl('Country:')
                             .col-xs-9.col-md-8
-                                button#country.select-toggle.form-control(bs-select bs-options='item for item in countries' enter-focus-next='user_password' type='text' ng-model='user_info.country' placeholder='Choose you country')
+                                button#country.select-toggle.form-control(bs-select bs-options='item for item in countries' enter-focus-next='user_password' type='text' ng-model='user_info.country' placeholder='Choose your country')
                         .settings-row(ng-show='action != "password/forgot"')
                             +lblRequired('Password:')
                             .col-xs-9.col-md-8
