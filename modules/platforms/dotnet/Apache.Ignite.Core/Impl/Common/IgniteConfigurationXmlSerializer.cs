@@ -23,7 +23,6 @@ namespace Apache.Ignite.Core.Impl.Common
     using System.ComponentModel;
     using System.Configuration;
     using System.Diagnostics;
-    using System.Diagnostics.CodeAnalysis;
     using System.Linq;
     using System.Reflection;
     using System.Xml;
@@ -99,14 +98,13 @@ namespace Apache.Ignite.Core.Impl.Common
         /// <summary>
         /// Writes the property of a basic type (primitives, strings, types).
         /// </summary>
-        [SuppressMessage("ReSharper", "AssignNullToNotNullAttribute")]
         private static void WriteBasicProperty(object obj, XmlWriter writer, Type valueType, PropertyInfo property)
         {
             var converter = GetConverter(property, valueType);
 
             var stringValue = converter.ConvertToInvariantString(obj);
 
-            writer.WriteString(stringValue);
+            writer.WriteString(stringValue ?? "");
         }
 
         /// <summary>
@@ -125,7 +123,6 @@ namespace Apache.Ignite.Core.Impl.Common
         /// <summary>
         /// Writes the complex property (nested object).
         /// </summary>
-        [SuppressMessage("ReSharper", "AssignNullToNotNullAttribute")]
         private static void WriteComplexProperty(object obj, XmlWriter writer, Type valueType)
         {
             var props = GetNonDefaultProperties(obj).ToList();
@@ -139,7 +136,7 @@ namespace Apache.Ignite.Core.Impl.Common
             {
                 var converter = GetConverter(prop, prop.PropertyType);
                 var stringValue = converter.ConvertToInvariantString(prop.GetValue(obj, null));
-                writer.WriteAttributeString(PropertyNameToXmlName(prop.Name), stringValue);
+                writer.WriteAttributeString(PropertyNameToXmlName(prop.Name), stringValue ?? "");
             }
 
             // Write elements
