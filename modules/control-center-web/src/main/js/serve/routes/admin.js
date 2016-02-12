@@ -40,14 +40,14 @@ module.exports.factory = function(_, express, nodemailer, settings, mongo) {
 
         // Remove user.
         router.post('/remove', function(req, res) {
-            var userId = req.body.userId;
+            const userId = req.body.userId;
 
             mongo.Account.findByIdAndRemove(userId, function(err, user) {
                 if (err)
                     return res.status(500).send(err.message);
 
                 mongo.Space.find({owner: userId}, function(err, spaces) {
-                    _.forEach(spaces, function(space) {
+                    _.forEach(spaces, (space) => {
                         mongo.Cluster.remove({space: space._id}).exec();
                         mongo.Cache.remove({space: space._id}).exec();
                         mongo.DomainModel.remove({space: space._id}).exec();
@@ -56,7 +56,7 @@ module.exports.factory = function(_, express, nodemailer, settings, mongo) {
                     });
                 });
 
-                var transporter = {
+                const transporter = {
                     service: settings.smtp.service,
                     auth: {
                         user: settings.smtp.email,
@@ -110,7 +110,7 @@ module.exports.factory = function(_, express, nodemailer, settings, mongo) {
                 req.session.viewedUser = viewedUser;
 
                 return res.sendStatus(200);
-            })
+            });
         });
 
         // Become user.

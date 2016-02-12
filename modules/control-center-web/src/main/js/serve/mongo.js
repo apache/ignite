@@ -56,7 +56,7 @@ module.exports.factory = function(deepPopulatePlugin, passportMongo, settings, p
 
     // Configure transformation to JSON.
     AccountSchema.set('toJSON', {
-        transform: function(doc, ret) {
+        transform: (doc, ret) => {
             return {
                 _id: ret._id,
                 email: ret.email,
@@ -524,16 +524,16 @@ module.exports.factory = function(deepPopulatePlugin, passportMongo, settings, p
     // Define Notebook model.
     result.Notebook = mongoose.model('Notebook', NotebookSchema);
 
-    result.upsert = function(model, data, cb) {
+    result.upsert = function(Model, data, cb) {
         if (data._id) {
             const id = data._id;
 
             delete data._id;
 
-            model.findOneAndUpdate({_id: id}, data, cb);
+            Model.findOneAndUpdate({_id: id}, data, cb);
         }
         else
-            new model(data).save(cb);
+            new Model(data).save(cb);
     };
 
     result.processed = function(err, res) {
@@ -547,7 +547,7 @@ module.exports.factory = function(deepPopulatePlugin, passportMongo, settings, p
     };
 
     // Registering the routes of all plugin modules
-    for (var name in pluginMongo) {
+    for (const name in pluginMongo) {
         if (pluginMongo.hasOwnProperty(name))
             pluginMongo[name].register(mongoose, deepPopulate, result);
     }
