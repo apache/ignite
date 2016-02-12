@@ -16,14 +16,15 @@
  */
 
 // Fire me up!
+'use strict';
 
 module.exports = {
     implements: 'mongo',
     inject: ['require(mongoose-deep-populate)', 'require(passport-local-mongoose)', 'settings', 'ignite_modules/mongo:*']
 };
 
-module.exports.factory = function (deepPopulatePlugin, passportMongo, settings, pluginMongo) {
-    var mongoose = require('mongoose');
+module.exports.factory = function(deepPopulatePlugin, passportMongo, settings, pluginMongo) {
+    const mongoose = require('mongoose');
 
     const deepPopulate = deepPopulatePlugin(mongoose);
 
@@ -34,7 +35,7 @@ module.exports.factory = function (deepPopulatePlugin, passportMongo, settings, 
         result = { connection: mongoose.connection };
 
     // Define Account schema.
-    var AccountSchema = new Schema({
+    const AccountSchema = new Schema({
         username: String,
         email: String,
         company: String,
@@ -53,7 +54,7 @@ module.exports.factory = function (deepPopulatePlugin, passportMongo, settings, 
 
     // Configure transformation to JSON.
     AccountSchema.set('toJSON', {
-        transform: function (doc, ret) {
+        transform: function(doc, ret) {
             return {
                 _id: ret._id,
                 email: ret.email,
@@ -81,7 +82,7 @@ module.exports.factory = function (deepPopulatePlugin, passportMongo, settings, 
     }));
 
     // Define Domain model schema.
-    var DomainModelSchema = new Schema({
+    const DomainModelSchema = new Schema({
         space: {type: ObjectId, ref: 'Space'},
         caches: [{type: ObjectId, ref: 'Cache'}],
         queryMetadata: {type: String, enum: ['Annotations', 'Configuration']},
@@ -116,7 +117,7 @@ module.exports.factory = function (deepPopulatePlugin, passportMongo, settings, 
     result.DomainModel = mongoose.model('DomainModel', DomainModelSchema);
 
     // Define Cache schema.
-    var CacheSchema = new Schema({
+    const CacheSchema = new Schema({
         space: {type: ObjectId, ref: 'Space'},
         name: String,
         clusters: [{type: ObjectId, ref: 'Cluster'}],
@@ -249,7 +250,7 @@ module.exports.factory = function (deepPopulatePlugin, passportMongo, settings, 
     // Define Cache model.
     result.Cache = mongoose.model('Cache', CacheSchema);
 
-    var IgfsSchema = new Schema({
+    const IgfsSchema = new Schema({
         space: {type: ObjectId, ref: 'Space'},
         name: String,
         clusters: [{type: ObjectId, ref: 'Cluster'}],
@@ -295,7 +296,7 @@ module.exports.factory = function (deepPopulatePlugin, passportMongo, settings, 
     result.Igfs = mongoose.model('Igfs', IgfsSchema);
 
     // Define Cluster schema.
-    var ClusterSchema = new Schema({
+    const ClusterSchema = new Schema({
         space: {type: ObjectId, ref: 'Space'},
         name: String,
         localHost: String,
@@ -497,7 +498,7 @@ module.exports.factory = function (deepPopulatePlugin, passportMongo, settings, 
     result.ClusterDefaultPopulate = '';
 
     // Define Notebook schema.
-    var NotebookSchema = new Schema({
+    const NotebookSchema = new Schema({
         space: {type: ObjectId, ref: 'Space'},
         name: String,
         expandedParagraphs: [Number],
@@ -521,9 +522,9 @@ module.exports.factory = function (deepPopulatePlugin, passportMongo, settings, 
     // Define Notebook model.
     result.Notebook = mongoose.model('Notebook', NotebookSchema);
 
-    result.upsert = function (model, data, cb) {
+    result.upsert = function(model, data, cb) {
         if (data._id) {
-            var id = data._id;
+            const id = data._id;
 
             delete data._id;
 
@@ -544,9 +545,10 @@ module.exports.factory = function (deepPopulatePlugin, passportMongo, settings, 
     };
 
     // Registering the routes of all plugin modules
-    for (var name in pluginMongo)
+    for (var name in pluginMongo) {
         if (pluginMongo.hasOwnProperty(name))
             pluginMongo[name].register(mongoose, deepPopulate, result);
+    }
 
     return result;
 };

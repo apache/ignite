@@ -16,6 +16,7 @@
  */
 
 // Fire me up!
+'use strict';
 
 module.exports = {
     implements: 'agent',

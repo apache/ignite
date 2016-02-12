@@ -16,6 +16,7 @@
  */
 
 // Fire me up!
+'use strict';
 
 module.exports = {
     implements: 'configure',
@@ -23,11 +24,10 @@ module.exports = {
         'require(express-session)', 'require(connect-mongo)', 'require(passport)', 'settings', 'mongo']
 };
 
-module.exports.factory = function (logger, cookieParser, bodyParser, forceSSL, session, connectMongo, passport,
-                                   settings, mongo) {
+module.exports.factory = function(logger, cookieParser, bodyParser, forceSSL, session, connectMongo, passport, settings, mongo) {
     return (app) => {
         app.use(logger('dev', {
-            skip: function (req, res) {
+            skip: function(req, res) {
                 return res.statusCode < 400;
             }
         }));
@@ -37,7 +37,7 @@ module.exports.factory = function (logger, cookieParser, bodyParser, forceSSL, s
         app.use(bodyParser.json({limit: '50mb'}));
         app.use(bodyParser.urlencoded({limit: '50mb', extended: true}));
 
-        var mongoStore = connectMongo(session);
+        const mongoStore = connectMongo(session);
 
         app.use(session({
             secret: settings.sessionSecret,
@@ -46,8 +46,8 @@ module.exports.factory = function (logger, cookieParser, bodyParser, forceSSL, s
             cookie: {
                 expires: new Date(Date.now() + settings.cookieTTL),
                 maxAge: settings.cookieTTL
-            }
-            , store: new mongoStore({mongooseConnection: mongo.connection})
+            },
+            store: new mongoStore({mongooseConnection: mongo.connection})
         }));
 
         app.use(passport.initialize());
