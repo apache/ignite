@@ -746,14 +746,13 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         {
             var cache = GetPersonCache().AsCacheQueryable();
 
-            // n arg
-            var qryn = CompiledQuery.Compile((object[] args) =>
-                cache.Where(x => x.Key < (int) args[0] && x.Value.Name.StartsWith((string) args[1])));
-            Assert.AreEqual(5, qryn(new object[] {5, " Pe"}).ToArray().Length);
-
             // 1 arg
             var qry1 = CompiledQuery.Compile((int k) => cache.Where(x => x.Key < k));
             Assert.AreEqual(3, qry1(3).ToArray().Length);
+
+            // class arg
+            var qryClass = CompiledQuery.Compile((Address a) => cache.Where(x => x.Key < a.Zip));
+            Assert.AreEqual(11, qryClass(new Address {Zip = 11}).ToArray().Length);
 
             // 2 arg
             var qry2 =

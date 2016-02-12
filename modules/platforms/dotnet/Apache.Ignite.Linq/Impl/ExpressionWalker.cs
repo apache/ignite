@@ -96,11 +96,11 @@ namespace Apache.Ignite.Linq.Impl
             return null;
         }
 
-        public static T EvaluateExpression<T>(Expression memberExpr)
+        public static T EvaluateExpression<T>(Expression expr)
         {
             // TODO: Slow, check for duplicates (cache if possible)
             return Expression.Lambda<Func<T>>(
-                Expression.Convert(memberExpr, typeof (T))).Compile()();
+                Expression.Convert(expr, typeof (T))).Compile()();
         }
 
         public static string GetTableNameWithSchema(ICacheQueryable queryable)
