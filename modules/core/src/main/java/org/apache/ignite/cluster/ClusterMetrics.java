@@ -581,13 +581,6 @@ public interface ClusterMetrics {
     public long getUpTime();
 
     /**
-     * Returns the total uptime of all JVMs in the cluster in milliseconds.
-     *
-     * @return Total uptime of all JVMs in the cluster in milliseconds.
-     */
-    public long getTotalUpTime();
-
-    /**
      * Returns the start time of the JVM in milliseconds.
      * This method returns the approximate time when the Java virtual
      * machine started.

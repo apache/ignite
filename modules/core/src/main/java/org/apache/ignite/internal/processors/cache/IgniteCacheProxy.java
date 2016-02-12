@@ -239,7 +239,7 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
                 }
             }
 
-            return new CacheMetricsSnapshot(ctx.cache().metrics(), metrics);
+            return new CacheMetricsExtendableSnapshot(ctx.cache().metrics(), metrics);
         }
         finally {
             onLeave(gate, prev);

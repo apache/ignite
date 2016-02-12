@@ -50,19 +50,19 @@ public class GridCacheAtomicPartitionedTckMetricsSelfTestImpl extends GridCacheA
             }
         });
 
-        assertEquals(1L, cache.metrics().getCachePuts());
+        assertEquals(1L, cache.metrics(grid(0).cluster().forLocal()).getCachePuts());
 
         assertEquals(20, result);
-        assertEquals(1L, cache.metrics().getCacheHits());
-        assertEquals(100.0f, cache.metrics().getCacheHitPercentage());
-        assertEquals(0L, cache.metrics().getCacheMisses());
-        assertEquals(0f, cache.metrics().getCacheMissPercentage());
-        assertEquals(1L, cache.metrics().getCachePuts());
-        assertEquals(1L, cache.metrics().getCacheRemovals());
-        assertEquals(0L, cache.metrics().getCacheEvictions());
-        assert cache.metrics().getAveragePutTime() >= 0;
-        assert cache.metrics().getAverageGetTime() >= 0;
-        assert cache.metrics().getAverageRemoveTime() >= 0;
+        assertEquals(1L, cache.metrics(grid(0).cluster().forLocal()).getCacheHits());
+        assertEquals(100.0f, cache.metrics(grid(0).cluster().forLocal()).getCacheHitPercentage());
+        assertEquals(0L, cache.metrics(grid(0).cluster().forLocal()).getCacheMisses());
+        assertEquals(0f, cache.metrics(grid(0).cluster().forLocal()).getCacheMissPercentage());
+        assertEquals(1L, cache.metrics(grid(0).cluster().forLocal()).getCachePuts());
+        assertEquals(1L, cache.metrics(grid(0).cluster().forLocal()).getCacheRemovals());
+        assertEquals(0L, cache.metrics(grid(0).cluster().forLocal()).getCacheEvictions());
+        assert cache.metrics(grid(0).cluster().forLocal()).getAveragePutTime() >= 0;
+        assert cache.metrics(grid(0).cluster().forLocal()).getAverageGetTime() >= 0;
+        assert cache.metrics(grid(0).cluster().forLocal()).getAverageRemoveTime() >= 0;
     }
 
     /**
@@ -73,36 +73,36 @@ public class GridCacheAtomicPartitionedTckMetricsSelfTestImpl extends GridCacheA
 
         cache.put(1, 10);
 
-        assertEquals(0, cache.metrics().getCacheRemovals());
-        assertEquals(1, cache.metrics().getCachePuts());
+        assertEquals(0, cache.metrics(grid(0).cluster().forLocal()).getCacheRemovals());
+        assertEquals(1, cache.metrics(grid(0).cluster().forLocal()).getCachePuts());
 
         cache.remove(1);
 
-        assertEquals(0, cache.metrics().getCacheHits());
-        assertEquals(1, cache.metrics().getCacheRemovals());
-        assertEquals(1, cache.metrics().getCachePuts());
+        assertEquals(0, cache.metrics(grid(0).cluster().forLocal()).getCacheHits());
+        assertEquals(1, cache.metrics(grid(0).cluster().forLocal()).getCacheRemovals());
+        assertEquals(1, cache.metrics(grid(0).cluster().forLocal()).getCachePuts());
 
         cache.remove(1);
 
-        assertEquals(0, cache.metrics().getCacheHits());
-        assertEquals(0, cache.metrics().getCacheMisses());
-        assertEquals(1, cache.metrics().getCacheRemovals());
-        assertEquals(1, cache.metrics().getCachePuts());
+        assertEquals(0, cache.metrics(grid(0).cluster().forLocal()).getCacheHits());
+        assertEquals(0, cache.metrics(grid(0).cluster().forLocal()).getCacheMisses());
+        assertEquals(1, cache.metrics(grid(0).cluster().forLocal()).getCacheRemovals());
+        assertEquals(1, cache.metrics(grid(0).cluster().forLocal()).getCachePuts());
 
         cache.put(1, 10);
         assertTrue(cache.remove(1, 10));
 
-        assertEquals(1, cache.metrics().getCacheHits());
-        assertEquals(0, cache.metrics().getCacheMisses());
-        assertEquals(2, cache.metrics().getCacheRemovals());
-        assertEquals(2, cache.metrics().getCachePuts());
+        assertEquals(1, cache.metrics(grid(0).cluster().forLocal()).getCacheHits());
+        assertEquals(0, cache.metrics(grid(0).cluster().forLocal()).getCacheMisses());
+        assertEquals(2, cache.metrics(grid(0).cluster().forLocal()).getCacheRemovals());
+        assertEquals(2, cache.metrics(grid(0).cluster().forLocal()).getCachePuts());
 
         assertFalse(cache.remove(1, 10));
 
-        assertEquals(1, cache.metrics().getCacheHits());
-        assertEquals(1, cache.metrics().getCacheMisses());
-        assertEquals(2, cache.metrics().getCacheRemovals());
-        assertEquals(2, cache.metrics().getCachePuts());
+        assertEquals(1, cache.metrics(grid(0).cluster().forLocal()).getCacheHits());
+        assertEquals(1, cache.metrics(grid(0).cluster().forLocal()).getCacheMisses());
+        assertEquals(2, cache.metrics(grid(0).cluster().forLocal()).getCacheRemovals());
+        assertEquals(2, cache.metrics(grid(0).cluster().forLocal()).getCachePuts());
     }
 
     /**
@@ -120,18 +120,18 @@ public class GridCacheAtomicPartitionedTckMetricsSelfTestImpl extends GridCacheA
         ++missCount;
         assertFalse(result);
 
-        assertEquals(missCount, cache.metrics().getCacheMisses());
-        assertEquals(hitCount, cache.metrics().getCacheHits());
-        assertEquals(putCount, cache.metrics().getCachePuts());
+        assertEquals(missCount, cache.metrics(grid(0).cluster().forLocal()).getCacheMisses());
+        assertEquals(hitCount, cache.metrics(grid(0).cluster().forLocal()).getCacheHits());
+        assertEquals(putCount, cache.metrics(grid(0).cluster().forLocal()).getCachePuts());
 
         assertNull(cache.localPeek(1));
 
         cache.put(1, 10);
         ++putCount;
 
-        assertEquals(missCount, cache.metrics().getCacheMisses());
-        assertEquals(hitCount, cache.metrics().getCacheHits());
-        assertEquals(putCount, cache.metrics().getCachePuts());
+        assertEquals(missCount, cache.metrics(grid(0).cluster().forLocal()).getCacheMisses());
+        assertEquals(hitCount, cache.metrics(grid(0).cluster().forLocal()).getCacheHits());
+        assertEquals(putCount, cache.metrics(grid(0).cluster().forLocal()).getCachePuts());
 
         assertNotNull(cache.localPeek(1));
 
@@ -141,18 +141,18 @@ public class GridCacheAtomicPartitionedTckMetricsSelfTestImpl extends GridCacheA
         ++hitCount;
         ++putCount;
 
-        assertEquals(missCount, cache.metrics().getCacheMisses());
-        assertEquals(hitCount, cache.metrics().getCacheHits());
-        assertEquals(putCount, cache.metrics().getCachePuts());
+        assertEquals(missCount, cache.metrics(grid(0).cluster().forLocal()).getCacheMisses());
+        assertEquals(hitCount, cache.metrics(grid(0).cluster().forLocal()).getCacheHits());
+        assertEquals(putCount, cache.metrics(grid(0).cluster().forLocal()).getCachePuts());
 
         result = cache.replace(1, 40, 50);
 
         assertFalse(result);
         ++hitCount;
 
-        assertEquals(hitCount, cache.metrics().getCacheHits());
-        assertEquals(putCount, cache.metrics().getCachePuts());
-        assertEquals(missCount, cache.metrics().getCacheMisses());
+        assertEquals(hitCount, cache.metrics(grid(0).cluster().forLocal()).getCacheHits());
+        assertEquals(putCount, cache.metrics(grid(0).cluster().forLocal()).getCachePuts());
+        assertEquals(missCount, cache.metrics(grid(0).cluster().forLocal()).getCacheMisses());
     }
 
     /**
@@ -170,17 +170,17 @@ public class GridCacheAtomicPartitionedTckMetricsSelfTestImpl extends GridCacheA
         ++putCount;
         assertTrue(result);
 
-        assertEquals(missCount, cache.metrics().getCacheMisses());
-        assertEquals(hitCount, cache.metrics().getCacheHits());
-        assertEquals(putCount, cache.metrics().getCachePuts());
+        assertEquals(missCount, cache.metrics(grid(0).cluster().forLocal()).getCacheMisses());
+        assertEquals(hitCount, cache.metrics(grid(0).cluster().forLocal()).getCacheHits());
+        assertEquals(putCount, cache.metrics(grid(0).cluster().forLocal()).getCachePuts());
 
         result = cache.putIfAbsent(1, 1);
 
         cache.containsKey(123);
 
         assertFalse(result);
-        assertEquals(hitCount, cache.metrics().getCacheHits());
-        assertEquals(putCount, cache.metrics().getCachePuts());
-        assertEquals(missCount, cache.metrics().getCacheMisses());
+        assertEquals(hitCount, cache.metrics(grid(0).cluster().forLocal()).getCacheHits());
+        assertEquals(putCount, cache.metrics(grid(0).cluster().forLocal()).getCachePuts());
+        assertEquals(missCount, cache.metrics(grid(0).cluster().forLocal()).getCacheMisses());
     }
 }

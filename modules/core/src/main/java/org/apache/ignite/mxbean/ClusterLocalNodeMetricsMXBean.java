@@ -200,10 +200,6 @@ public interface ClusterLocalNodeMetricsMXBean extends ClusterMetrics {
     public long getUpTime();
 
     /** {@inheritDoc} */
-    @MXBeanDescription("Total uptime of all JVMs int the cluster in milliseconds.")
-    public long getTotalUpTime();
-
-    /** {@inheritDoc} */
     @MXBeanDescription("Start time of the JVM in milliseconds.")
     public long getStartTime();
 

@@ -226,7 +226,7 @@ public class CacheMetricsForClusterGroupSelfTest extends GridCommonAbstractTest 
             CacheMetrics metrics = cache.metrics(grid(i).cluster().forCacheNodes(cache.getName()));
 
             for (int j = 0; j < GRID_CNT; j++)
-                ms[j] = grid(j).cache(cache.getName()).metrics();
+                ms[j] = grid(j).cache(cache.getName()).metrics(grid(j).cluster().forLocal());
 
             // Static metrics
             for (int j = 0; j < GRID_CNT; j++)
@@ -279,17 +279,19 @@ public class CacheMetricsForClusterGroupSelfTest extends GridCommonAbstractTest 
             CacheMetrics cacheMetrics = cache.metrics(ignite.cluster().forCacheNodes(cache.getName()));
             assertMetricsAreNotEmpty(cacheMetrics, ENTRY_CNT_CACHE1 - (ENTRY_CNT_CACHE1 / 2));
 
-            cacheMetrics = cache.metrics(ignite.cluster().forServers());
-            assertMetricsAreNotEmpty(cacheMetrics, ENTRY_CNT_CACHE1 - (ENTRY_CNT_CACHE1 / 2));
-
             cacheMetrics = cache.metrics(ignite.cluster());
-            assertMetricsAreNotEmpty(cacheMetrics, 0); // no size on client node
+            assertMetricsAreNotEmpty(cacheMetrics, ENTRY_CNT_CACHE1 - (ENTRY_CNT_CACHE1 / 2));
 
             cacheMetrics = cache.metrics(ignite.cluster().forClients());
             assertMetricsAreNotEmpty(cacheMetrics, 0); // no size on client node
 
             cacheMetrics = cache.metrics();
-            assertMetricsAreNotEmpty(cacheMetrics, ENTRY_CNT_CACHE1 - (ENTRY_CNT_CACHE1 / 2));
+            // assertMetricsAreNotEmpty(cacheMetrics, ENTRY_CNT_CACHE1 - (ENTRY_CNT_CACHE1 / 2));
+            assertEquals(ENTRY_CNT_CACHE1 - (ENTRY_CNT_CACHE1 / 2), cacheMetrics.getKeySize());
+
+            cacheMetrics = cache.metrics(ignite.cluster().forServers());
+            assertEquals(ENTRY_CNT_CACHE1 - (ENTRY_CNT_CACHE1 / 2), cacheMetrics.getKeySize());
+            // assertMetricsAreNotEmpty(cacheMetrics, ENTRY_CNT_CACHE1 - (ENTRY_CNT_CACHE1 / 2));
         }
 
         destroyCaches();
