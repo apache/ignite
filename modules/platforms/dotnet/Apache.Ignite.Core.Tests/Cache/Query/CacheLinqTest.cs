@@ -80,7 +80,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
             });
 
             var cache = GetPersonCache();
-            var personCache = GetSecondPersonCacheCache();
+            var personCache = GetSecondPersonCache();
 
             for (var i = 0; i < PersonCount; i++)
             {
@@ -215,12 +215,12 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         [Test]
         public void TestStrings()
         {
-            var strings = GetPersonCache().AsCacheQueryable().Select(x => x.Value.Name);
+            var strings = GetSecondPersonCache().AsCacheQueryable().Select(x => x.Value.Name);
 
             CheckFunc(x => x.ToLower(), strings);
             CheckFunc(x => x.ToUpper(), strings);
             CheckFunc(x => x.StartsWith("Person_9"), strings);
-            CheckFunc(x => x.EndsWith("7  "), strings);
+            CheckFunc(x => x.EndsWith("7"), strings);
             CheckFunc(x => x.Contains("son_3"), strings);
             CheckFunc(x => x.Length, strings);
 
@@ -525,7 +525,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         {
             // Direct union
             var persons = GetPersonCache().AsCacheQueryable();
-            var persons2 = GetSecondPersonCacheCache().AsCacheQueryable();
+            var persons2 = GetSecondPersonCache().AsCacheQueryable();
 
             var res = persons.Union(persons2).ToArray();
 
@@ -543,7 +543,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         {
             // Direct intersect
             var persons = GetPersonCache().AsCacheQueryable();
-            var persons2 = GetSecondPersonCacheCache().AsCacheQueryable();
+            var persons2 = GetSecondPersonCache().AsCacheQueryable();
 
             var res = persons.Intersect(persons2).ToArray();
 
@@ -561,7 +561,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         {
             // Direct except
             var persons = GetPersonCache().AsCacheQueryable();
-            var persons2 = GetSecondPersonCacheCache().AsCacheQueryable();
+            var persons2 = GetSecondPersonCache().AsCacheQueryable();
 
             var res = persons.Except(persons2).ToArray();
 
@@ -821,7 +821,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
                     new QueryEntity(typeof(RoleKey), typeof(Role))));
         }
 
-        private static ICache<int, Person> GetSecondPersonCacheCache()
+        private static ICache<int, Person> GetSecondPersonCache()
         {
             return Ignition.GetIgnite()
                 .GetOrCreateCache<int, Person>(new CacheConfiguration(PersonSecondCacheName,
