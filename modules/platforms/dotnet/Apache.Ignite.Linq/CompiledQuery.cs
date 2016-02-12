@@ -37,6 +37,22 @@ namespace Apache.Ignite.Linq
         /// <returns>Delegate that represents the compiled cache query.</returns>
         [SuppressMessage("Microsoft.Design", "CA1062:Validate arguments of public methods", MessageId = "0", 
             Justification = "Invalid warning, validation is present.")]
+        public static Func<IQueryCursor<T>> Compile<T>(Func<IQueryable<T>> query)
+        {
+            IgniteArgumentCheck.NotNull(query, "query");
+
+            var compiledQuery = GetCompiledQuery(query(), null);
+
+            return () => compiledQuery(new object[0]);
+        }
+
+        /// <summary>
+        /// Creates a new delegate that represents the compiled cache query.
+        /// </summary>
+        /// <param name="query">The query to compile.</param>
+        /// <returns>Delegate that represents the compiled cache query.</returns>
+        [SuppressMessage("Microsoft.Design", "CA1062:Validate arguments of public methods", MessageId = "0", 
+            Justification = "Invalid warning, validation is present.")]
         public static Func<TArg1, IQueryCursor<T>> Compile<T, TArg1>(Func<TArg1, IQueryable<T>> query)
         {
             IgniteArgumentCheck.NotNull(query, "query");

@@ -750,15 +750,10 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
             var qry1 = CompiledQuery.Compile((int k) => cache.Where(x => x.Key < k));
             Assert.AreEqual(3, qry1(3).ToArray().Length);
 
-            // class arg
-            var qryClass = CompiledQuery.Compile((Address a) => cache.Where(x => x.Key < a.Zip));
-            Assert.AreEqual(11, qryClass(new Address {Zip = 11}).ToArray().Length);
-
             // 2 arg
             var qry2 =
                 CompiledQuery.Compile((int i, string s) => cache.Where(x => x.Key < i && x.Value.Name.StartsWith(s)));
             Assert.AreEqual(5, qry2(5, " Pe").ToArray().Length);
-
 
             // Reverse param order
             var qry2R =
