@@ -91,7 +91,7 @@ module.exports.factory = function (_, express, apacheIgnite, fs, JSZip, settings
                     prop.push('#node-uri=http://localhost:8080');
                     prop.push('#driver-folder=./jdbc-drivers');
                     prop.push('');
-                    prop.push("#Note: Don't change this auto generated line");
+                    prop.push('#Note: Do not change this auto generated line');
                     prop.push('rel-date=' + stats.birthtime.getTime());
 
                     zip.file(agentFld + '/default.properties', prop.join('\n'));
