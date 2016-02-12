@@ -2015,7 +2015,6 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
 
         Boolean stored = syncOp(new SyncOp<Boolean>(true) {
             @Override public Boolean op(IgniteTxLocalAdapter tx) throws IgniteCheckedException {
-
                 return tx.putAsync(ctx, key, val, false, filter).get().success();
             }
 

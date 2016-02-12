@@ -135,7 +135,7 @@ public class CacheMetricsImpl implements CacheMetrics {
         if (cctx.store().store() instanceof GridCacheWriteBehindStore)
             store = (GridCacheWriteBehindStore)cctx.store().store();
 
-        clientMode = cctx.gridConfig().isClientMode() && !cctx.isLocal() && !cctx.isNear(); // TODO check near case
+        clientMode = cctx.gridConfig().isClientMode() && !cctx.isLocal() && !cctx.isNear();
 
         delegate = null;
     }

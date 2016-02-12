@@ -254,7 +254,7 @@ public class CacheMetricsForClusterGroupSelfTest extends GridCommonAbstractTest 
     }
 
     /**
-     * Test cluster group metrics in case of statistics enabled.
+     * Test cluster group metrics with client node.
      */
     public void testMetricsOnClient() throws Exception {
         createCaches(true);
@@ -286,17 +286,25 @@ public class CacheMetricsForClusterGroupSelfTest extends GridCommonAbstractTest 
             assertMetricsAreNotEmpty(cacheMetrics, 0); // no size on client node
 
             cacheMetrics = cache.metrics();
-            // assertMetricsAreNotEmpty(cacheMetrics, ENTRY_CNT_CACHE1 - (ENTRY_CNT_CACHE1 / 2));
+            // Should be fixed https://issues.apache.org/jira/browse/IGNITE-2636
+            // TODO assertMetricsAreNotEmpty(cacheMetrics, ENTRY_CNT_CACHE1 - (ENTRY_CNT_CACHE1 / 2));
             assertEquals(ENTRY_CNT_CACHE1 - (ENTRY_CNT_CACHE1 / 2), cacheMetrics.getKeySize());
 
             cacheMetrics = cache.metrics(ignite.cluster().forServers());
             assertEquals(ENTRY_CNT_CACHE1 - (ENTRY_CNT_CACHE1 / 2), cacheMetrics.getKeySize());
-            // assertMetricsAreNotEmpty(cacheMetrics, ENTRY_CNT_CACHE1 - (ENTRY_CNT_CACHE1 / 2));
+            // Should be fixed https://issues.apache.org/jira/browse/IGNITE-2636
+            // TODO assertMetricsAreNotEmpty(cacheMetrics, ENTRY_CNT_CACHE1 - (ENTRY_CNT_CACHE1 / 2));
         }
 
         destroyCaches();
     }
 
+    /**
+     * Checks, that metrics are not faked.
+     *
+     * @param metrics Metrics to check.
+     * @param keyCount Size in the metrics.
+     */
     private void assertMetricsAreNotEmpty(CacheMetrics metrics, int keyCount) {
         assertNotNull(metrics);
 
