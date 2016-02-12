@@ -15,8 +15,9 @@
  * limitations under the License.
  */
 
-// Fire me up!
 'use strict';
+
+// Fire me up!
 
 module.exports = {
     implements: 'configure',
@@ -24,12 +25,10 @@ module.exports = {
         'require(express-session)', 'require(connect-mongo)', 'require(passport)', 'settings', 'mongo']
 };
 
-module.exports.factory = function(logger, cookieParser, bodyParser, forceSSL, session, connectMongo, passport, settings, mongo) {
+module.exports.factory = function(logger, cookieParser, bodyParser, forceSSL, session, connectMongo, Passport, settings, mongo) {
     return (app) => {
         app.use(logger('dev', {
-            skip: function(req, res) {
-                return res.statusCode < 400;
-            }
+            skip: (req, res) => res.statusCode < 400
         }));
 
         app.use(cookieParser(settings.sessionSecret));
@@ -37,7 +36,7 @@ module.exports.factory = function(logger, cookieParser, bodyParser, forceSSL, se
         app.use(bodyParser.json({limit: '50mb'}));
         app.use(bodyParser.urlencoded({limit: '50mb', extended: true}));
 
-        const mongoStore = connectMongo(session);
+        const MongoStore = connectMongo(session);
 
         app.use(session({
             secret: settings.sessionSecret,
@@ -47,16 +46,16 @@ module.exports.factory = function(logger, cookieParser, bodyParser, forceSSL, se
                 expires: new Date(Date.now() + settings.cookieTTL),
                 maxAge: settings.cookieTTL
             },
-            store: new mongoStore({mongooseConnection: mongo.connection})
+            store: new MongoStore({mongooseConnection: mongo.connection})
         }));
 
-        app.use(passport.initialize());
-        app.use(passport.session());
+        app.use(Passport.initialize());
+        app.use(Passport.session());
 
-        passport.serializeUser(mongo.Account.serializeUser());
-        passport.deserializeUser(mongo.Account.deserializeUser());
+        Passport.serializeUser(mongo.Account.serializeUser());
+        Passport.deserializeUser(mongo.Account.deserializeUser());
 
-        passport.use(mongo.Account.createStrategy());
+        Passport.use(mongo.Account.createStrategy());
 
         if (settings.SSLOptions) {
             app.set('forceSSLOptions', settings.SSLOptions);

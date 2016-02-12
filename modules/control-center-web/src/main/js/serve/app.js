@@ -22,8 +22,8 @@ module.exports = {
     inject: ['require(express)', 'configure', 'routes']
 };
 
-module.exports.factory = function(express, configure, routes) {
-    const app = new express();
+module.exports.factory = function(Express, configure, routes) {
+    const app = new Express();
 
     configure(app);
 

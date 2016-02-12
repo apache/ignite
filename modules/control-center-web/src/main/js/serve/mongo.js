@@ -15,8 +15,9 @@
  * limitations under the License.
  */
 
-// Fire me up!
 'use strict';
+
+// Fire me up!
 
 module.exports = {
     implements: 'mongo',
