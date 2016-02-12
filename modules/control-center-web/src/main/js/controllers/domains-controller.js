@@ -616,7 +616,7 @@ consoleModule.controller('domainsController', function ($filter, $http, $timeout
 
             preset.schemas = [];
 
-            _.forEach($scope.importDomain.schemas, function (schema) {
+            _.forEach($scope.importDomain.displayedSchemas, function (schema) {
                 if (schema.use)
                     preset.schemas.push(schema.name);
             });
@@ -807,7 +807,7 @@ consoleModule.controller('domainsController', function ($filter, $http, $timeout
                 };
             }
 
-            _.forEach($scope.importDomain.tables, function (table) {
+            _.forEach($scope.importDomain.displayedTables, function (table) {
                 if (table.use) {
                     var qryFields = [];
                     var indexes = [];
