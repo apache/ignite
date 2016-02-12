@@ -386,6 +386,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
                 TestMultiCacheJoinSubquery();
                 TestGroupBy();
                 TestMultipleFrom();
+                TestDateTime();
             }
         }
 
