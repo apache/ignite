@@ -103,9 +103,7 @@ public class CacheFullApiNewTestSuite extends TestSuite {
             + "-[igniteCfg=" + factory.getIgniteConfigurationDescription()
             + ", cacheCfg=" + factory.getCacheConfigurationDescription() + "]";
 
-        TestsConfiguration testCfg = new TestsConfiguration(factory, clsNameSuffix, stop, gridsCnt);
-
-        testCfg.cacheStartMode(cacheStartMode);
+        TestsConfiguration testCfg = new TestsConfiguration(factory, clsNameSuffix, stop, cacheStartMode, gridsCnt);
 
         suite.addTest(new GridTestSuite(CacheFullApiNewSelfTest.class, testCfg));
     }

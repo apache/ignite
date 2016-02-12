@@ -37,7 +37,7 @@ public class TestsConfiguration {
     private final int gridCnt;
 
     /** */
-    private CacheStartMode cacheStartMode = CacheStartMode.NODES_THEN_CACHES;
+    private final CacheStartMode cacheStartMode;
 
     /**
      * @param factory Factory.
@@ -45,13 +45,15 @@ public class TestsConfiguration {
      * @param stopNodes Stope nodes.
      * @param gridCnt Grdi count.
      */
-    public TestsConfiguration(ConfigurationFactory factory, String suffix, boolean stopNodes, int gridCnt) {
+    public TestsConfiguration(ConfigurationFactory factory, String suffix, boolean stopNodes,
+        CacheStartMode cacheStartMode, int gridCnt) {
         A.ensure(gridCnt >= 1, "Grids count cannot be less then 1.");
 
         this.factory = factory;
         this.suffix = suffix;
         this.stopNodes = stopNodes;
         this.gridCnt = gridCnt;
+        this.cacheStartMode = cacheStartMode;
     }
 
     /**
@@ -60,7 +62,7 @@ public class TestsConfiguration {
      * @param gridCnt Grdi count.
      */
     public TestsConfiguration(ConfigurationFactory factory, String suffix, int gridCnt) {
-        this(factory, suffix, false, gridCnt);
+        this(factory, suffix, false, CacheStartMode.NODES_THEN_CACHES, gridCnt);
     }
 
     /**
@@ -68,7 +70,7 @@ public class TestsConfiguration {
      * @param suffix Class suffix.
      */
     public TestsConfiguration(ConfigurationFactory factory, String suffix) {
-        this(factory, suffix, false, 1);
+        this(factory, suffix, false, CacheStartMode.NODES_THEN_CACHES, 1);
     }
 
     /**
@@ -104,12 +106,5 @@ public class TestsConfiguration {
      */
     public CacheStartMode cacheStartMode() {
         return cacheStartMode;
-    }
-
-    /**
-     * @param cacheStartMode Cache start mode.
-     */
-    public void cacheStartMode(CacheStartMode cacheStartMode) {
-        this.cacheStartMode = cacheStartMode;
     }
 }
