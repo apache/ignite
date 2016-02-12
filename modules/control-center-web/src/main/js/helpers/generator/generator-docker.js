@@ -37,12 +37,12 @@ $generatorDocker.clusterDocker = function (cluster, version) {
         '   apt-get install -y maven\n\n' +
         '# Append project to container.\n' +
         'ADD . ' + cluster.name + '\n\n' +
-        '# Build project in container container.\n' +
+        '# Build project in container.\n' +
         'RUN mvn -f ' + cluster.name + '/pom.xml clean package -DskipTests\n\n' +
         '# Copy project jars to node classpath.\n' +
         'RUN mkdir $IGNITE_HOME/libs/' + cluster.name + ' && \\\n' +
-        'find ' + cluster.name + '/target -name "*.jar" -type f -exec cp {} $IGNITE_HOME/libs/' + cluster.name + ' \\; && \\\n' +
-        'cp -r ' + cluster.name + '/config/* $IGNITE_HOME/config\n'
+        '   find ' + cluster.name + '/target -name "*.jar" -type f -exec cp {} $IGNITE_HOME/libs/' + cluster.name + ' \\; && \\\n' +
+        '   cp -r ' + cluster.name + '/config/* $IGNITE_HOME/config\n'
 };
 
 
