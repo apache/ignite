@@ -15,6 +15,8 @@
  * limitations under the License.
  */
 
+'use strict';
+
 // Fire me up!
 
 module.exports = {
@@ -33,21 +35,21 @@ module.exports.factory = function(_, express, mongo) {
          * @param res Response.
          */
         router.post('/list', function(req, res) {
-            var user_id = req.currentUserId();
+            const user_id = req.currentUserId();
 
             // Get owned space and all accessed space.
-            mongo.Space.find({$or: [{owner: user_id}, {usedBy: {$elemMatch: {account: user_id}}}]}, function(err, spaces) {
-                if (mongo.processed(err, res)) {
-                    var space_ids = spaces.map(function(value) {
+            mongo.Space.find({$or: [{owner: user_id}, {usedBy: {$elemMatch: {account: user_id}}}]}, function(errSpace, spaces) {
+                if (mongo.processed(errSpace, res)) {
+                    const space_ids = spaces.map(function(value) {
                         return value._id;
                     });
 
                     // Get all clusters for spaces.
-                    mongo.Cluster.find({space: {$in: space_ids}}, '_id name caches').sort('name').exec(function(err, clusters) {
-                        if (mongo.processed(err, res)) {
+                    mongo.Cluster.find({space: {$in: space_ids}}, '_id name caches').sort('name').exec(function(errCluster, clusters) {
+                        if (mongo.processed(errCluster, res)) {
                             // Get all domain models for spaces.
-                            mongo.DomainModel.find({space: {$in: space_ids}}).sort('name').exec(function(err, domains) {
-                                if (mongo.processed(err, res)) {
+                            mongo.DomainModel.find({space: {$in: space_ids}}).sort('name').exec(function(errDomainModel, domains) {
+                                if (mongo.processed(errDomainModel, res)) {
                                     // Get all caches for spaces.
                                     mongo.Cache.find({space: {$in: space_ids}}).sort('name').exec(function(err, caches) {
                                         if (mongo.processed(err, res)) {
@@ -67,15 +69,15 @@ module.exports.factory = function(_, express, mongo) {
                                                 // Remove deleted clusters.
                                                 cache.clusters = _.filter(cache.clusters, function(clusterId) {
                                                     return _.findIndex(clusters, function(cluster) {
-                                                            return cluster._id.equals(clusterId);
-                                                        }) >= 0;
+                                                        return cluster._id.equals(clusterId);
+                                                    }) >= 0;
                                                 });
 
                                                 // Remove deleted domain models.
                                                 cache.domains = _.filter(cache.domains, function(metaId) {
                                                     return _.findIndex(domains, function(domain) {
-                                                            return domain._id.equals(metaId);
-                                                        }) >= 0;
+                                                        return domain._id.equals(metaId);
+                                                    }) >= 0;
                                                 });
                                             });
 
@@ -88,8 +90,8 @@ module.exports.factory = function(_, express, mongo) {
                                                         caches: cluster.caches
                                                     };
                                                 }),
-                                                domains: domains,
-                                                caches: caches
+                                                domains,
+                                                caches
                                             });
                                         }
                                     });
@@ -105,27 +107,30 @@ module.exports.factory = function(_, express, mongo) {
          * Save cache.
          */
         router.post('/save', function(req, res) {
-            var params = req.body;
-            var cacheId = params._id;
-            var clusters = params.clusters;
-            var domains = params.domains;
+            const params = req.body;
+            const clusters = params.clusters;
+            const domains = params.domains;
+            let cacheId = params._id;
 
             if (params._id) {
                 mongo.Cache.update({_id: cacheId}, params, {upsert: true}, function(err) {
-                    if (mongo.processed(err, res))
-                        mongo.Cluster.update({_id: {$in: clusters}}, {$addToSet: {caches: cacheId}}, {multi: true}, function(err) {
-                            if (mongo.processed(err, res))
-                                mongo.Cluster.update({_id: {$nin: clusters}}, {$pull: {caches: cacheId}}, {multi: true}, function(err) {
-                                    if (mongo.processed(err, res))
-                                        mongo.DomainModel.update({_id: {$in: domains}}, {$addToSet: {caches: cacheId}}, {multi: true}, function(err) {
+                    if (mongo.processed(err, res)) {
+                        mongo.Cluster.update({_id: {$in: clusters}}, {$addToSet: {caches: cacheId}}, {multi: true}, function (err) {
+                            if (mongo.processed(err, res)) {
+                                mongo.Cluster.update({_id: {$nin: clusters}}, {$pull: {caches: cacheId}}, {multi: true}, function (err) {
+                                    if (mongo.processed(err, res)) {
+                                        mongo.DomainModel.update({_id: {$in: domains}}, {$addToSet: {caches: cacheId}}, {multi: true}, function (err) {
                                             if (mongo.processed(err, res))
-                                                mongo.DomainModel.update({_id: {$nin: domains}}, {$pull: {caches: cacheId}}, {multi: true}, function(err) {
+                                                mongo.DomainModel.update({_id: {$nin: domains}}, {$pull: {caches: cacheId}}, {multi: true}, function (err) {
                                                     if (mongo.processed(err, res))
                                                         res.send(params._id);
                                                 });
                                         });
+                                    }
                                 });
+                            }
                         });
+                    }
                 });
             }
             else
@@ -165,12 +170,12 @@ module.exports.factory = function(_, express, mongo) {
          * Remove all caches.
          */
         router.post('/remove/all', function(req, res) {
-            var user_id = req.currentUserId();
+            const user_id = req.currentUserId();
 
             // Get owned space and all accessed space.
             mongo.Space.find({$or: [{owner: user_id}, {usedBy: {$elemMatch: {account: user_id}}}]}, function(err, spaces) {
                 if (mongo.processed(err, res)) {
-                    var space_ids = spaces.map(function(value) {
+                    const space_ids = spaces.map(function(value) {
                         return value._id;
                     });
 

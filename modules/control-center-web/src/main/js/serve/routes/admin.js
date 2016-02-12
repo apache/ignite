@@ -15,6 +15,8 @@
  * limitations under the License.
  */
 
+'use strict';
+
 // Fire me up!
 
 module.exports = {
@@ -42,9 +44,9 @@ module.exports.factory = function(_, express, nodemailer, settings, mongo) {
         router.post('/remove', function(req, res) {
             const userId = req.body.userId;
 
-            mongo.Account.findByIdAndRemove(userId, function(err, user) {
-                if (err)
-                    return res.status(500).send(err.message);
+            mongo.Account.findByIdAndRemove(userId, function(errAccount, user) {
+                if (errAccount)
+                    return res.status(500).send(errAccount.message);
 
                 mongo.Space.find({owner: userId}, function(err, spaces) {
                     _.forEach(spaces, (space) => {
@@ -65,9 +67,9 @@ module.exports.factory = function(_, express, nodemailer, settings, mongo) {
                 };
 
                 if (transporter.service !== '' || transporter.auth.user !== '' || transporter.auth.pass !== '') {
-                    var mailer = nodemailer.createTransport(transporter);
+                    const mailer = nodemailer.createTransport(transporter);
 
-                    var mailOptions = {
+                    const mailOptions = {
                         from: settings.smtp.address(settings.smtp.username, settings.smtp.email),
                         to: settings.smtp.address(user.username, user.email),
                         subject: 'Your account was deleted',
@@ -76,9 +78,9 @@ module.exports.factory = function(_, express, nodemailer, settings, mongo) {
                         'Apache Ignite Web Console http://' + req.headers.host + '\n'
                     };
 
-                    mailer.sendMail(mailOptions, function(err) {
-                        if (err)
-                            return res.status(503).send('Account was removed, but failed to send e-mail notification to user!<br />' + err);
+                    mailer.sendMail(mailOptions, function(errMailer) {
+                        if (errMailer)
+                            return res.status(503).send('Account was removed, but failed to send e-mail notification to user!<br />' + errMailer);
 
                         res.sendStatus(200);
                     });
@@ -90,8 +92,8 @@ module.exports.factory = function(_, express, nodemailer, settings, mongo) {
 
         // Save user.
         router.post('/save', function(req, res) {
-            var userId = req.body.userId;
-            var adminFlag = req.body.adminFlag;
+            const userId = req.body.userId;
+            const adminFlag = req.body.adminFlag;
 
             mongo.Account.findByIdAndUpdate(userId, {admin: adminFlag}, function(err) {
                 if (err)
