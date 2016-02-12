@@ -35,7 +35,7 @@ module.exports = {
  * @returns {Promise}
  */
 module.exports.factory = function(_, express, apacheIgnite, fs, JSZip, settings, agentMgr) {
-    return new Promise((resolve) => {
+    return new Promise((resolveFactory) => {
         const router = express.Router();
 
         const SqlFieldsQuery = apacheIgnite.SqlFieldsQuery;
@@ -212,13 +212,13 @@ module.exports.factory = function(_, express, apacheIgnite, fs, JSZip, settings,
                 .then((caches) => {
                     let types = [];
 
-                    for (const meta of caches) {
-                        const cacheTypes = meta.types.map(function(typeName) {
-                            let fields = meta.fields[typeName];
+                    const _typeMapper = (meta, typeName) => {
+                        let fields = meta.fields[typeName];
 
-                            let columns = [];
+                        let columns = [];
 
-                            for (const fieldName in fields) {
+                        for (const fieldName in fields) {
+                            if (fields.hasOwnProperty(fieldName)) {
                                 const fieldClass = _compact(fields[fieldName]);
 
                                 columns.push({
@@ -230,53 +230,57 @@ module.exports.factory = function(_, express, apacheIgnite, fs, JSZip, settings,
                                     typeName
                                 });
                             }
+                        }
 
-                            const indexes = [];
+                        const indexes = [];
 
-                            for (const index of meta.indexes[typeName]) {
-                                fields = [];
+                        for (const index of meta.indexes[typeName]) {
+                            fields = [];
 
-                                for (const field of index.fields) {
-                                    fields.push({
-                                        type: 'index-field',
-                                        name: field,
-                                        order: index.descendings.indexOf(field) < 0,
-                                        unique: index.unique,
-                                        cacheName: meta.cacheName,
-                                        typeName
-                                    });
-                                }
-
-                                if (fields.length > 0) {
-                                    indexes.push({
-                                        type: 'index',
-                                        name: index.name,
-                                        children: fields,
-                                        cacheName: meta.cacheName,
-                                        typeName
-                                    });
-                                }
-                            }
-
-                            columns = _.sortBy(columns, 'name');
-
-                            if (!_.isEmpty(indexes)) {
-                                columns = columns.concat({
-                                    type: 'indexes',
-                                    name: 'Indexes',
+                            for (const field of index.fields) {
+                                fields.push({
+                                    type: 'index-field',
+                                    name: field,
+                                    order: index.descendings.indexOf(field) < 0,
+                                    unique: index.unique,
                                     cacheName: meta.cacheName,
-                                    typeName,
-                                    children: indexes
+                                    typeName
                                 });
                             }
 
-                            return {
-                                type: 'type',
-                                cacheName: meta.cacheName || '',
+                            if (fields.length > 0) {
+                                indexes.push({
+                                    type: 'index',
+                                    name: index.name,
+                                    children: fields,
+                                    cacheName: meta.cacheName,
+                                    typeName
+                                });
+                            }
+                        }
+
+                        columns = _.sortBy(columns, 'name');
+
+                        if (!_.isEmpty(indexes)) {
+                            columns = columns.concat({
+                                type: 'indexes',
+                                name: 'Indexes',
+                                cacheName: meta.cacheName,
                                 typeName,
-                                children: columns
-                            };
-                        });
+                                children: indexes
+                            });
+                        }
+
+                        return {
+                            type: 'type',
+                            cacheName: meta.cacheName || '',
+                            typeName,
+                            children: columns
+                        };
+                    };
+
+                    for (const meta of caches) {
+                        const cacheTypes = meta.types.map(_typeMapper.bind(null, meta));
 
                         if (!_.isEmpty(cacheTypes))
                             types = types.concat(cacheTypes);
@@ -330,7 +334,7 @@ module.exports.factory = function(_, express, apacheIgnite, fs, JSZip, settings,
                 .catch(_handleException(res));
         });
 
-        resolve(router);
+        resolveFactory(router);
     });
 };
 
