@@ -39,16 +39,12 @@ namespace Apache.Ignite.Linq.Impl
             get { return ThreadLocalInstance.Value; }
         }
 
+        /// <summary>
+        /// Creates the parser.
+        /// </summary>
         private static QueryParser CreateParser()
         {
             var transformerRegistry = ExpressionTransformerRegistry.CreateDefault();
-
-            //var processor = new CompoundExpressionTreeProcessor(
-            //    new IExpressionTreeProcessor[]
-            //    {
-            //        //new PartialEvaluatingExpressionTreeProcessor(new NullEvaluatableExpressionFilter()),
-            //        new TransformingExpressionTreeProcessor(transformerRegistry)
-            //    });
 
             var processor = new TransformingExpressionTreeProcessor(transformerRegistry);
 
@@ -56,11 +52,5 @@ namespace Apache.Ignite.Linq.Impl
 
             return new QueryParser(parser);
         }
-
-
-        //private sealed class NullEvaluatableExpressionFilter : EvaluatableExpressionFilterBase
-        //{
-        //    // No-op.
-        //}
     }
 }
