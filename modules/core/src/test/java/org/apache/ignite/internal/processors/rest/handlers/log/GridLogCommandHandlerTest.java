@@ -119,6 +119,25 @@ public class GridLogCommandHandlerTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    public void testHandleAsyncForNonExistingLines() throws Exception {
+        GridLogCommandHandler cmdHandler = new GridLogCommandHandler(newContext());
+        GridRestLogRequest req = new GridRestLogRequest();
+
+        req.to(50);
+        req.from(20);
+
+        req.path("test.log");
+        IgniteInternalFuture<GridRestResponse> resp = cmdHandler.handleAsync(req);
+
+        assertEquals("Request parameter 'from' and 'to' are for lines that do not exist in log file.", resp.result().getError());
+        assertEquals(GridRestResponse.STATUS_FAILED, resp.result().getSuccessStatus());
+        assertNull(resp.result().getResponse());
+    }
+
+
+    /**
+     * @throws Exception If failed.
+     */
     public void testHandleAsyncFromAndToNotSet() throws Exception {
         GridLogCommandHandler cmdHandler = new GridLogCommandHandler(newContext());
         GridRestLogRequest req = new GridRestLogRequest();
