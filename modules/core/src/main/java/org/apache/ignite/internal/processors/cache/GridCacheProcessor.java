@@ -438,6 +438,12 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         switch (cc.getMemoryMode()) {
             case OFFHEAP_VALUES: {
+                if (cacheType.userCache() && cc.getEvictionPolicy() == null && cc.getOffHeapMaxMemory() >= 0)
+                    U.quietAndWarn(log, "Off heap maximum memory configuration property will be ignored for the " +
+                        "cache working in OFFHEAP_VALUES mode (memory usage will be unlimited): " +
+                        U.maskName(cc.getName()) + ". Consider configuring eviction policy or switching to " +
+                        "OFFHEAP_TIERED mode or.");
+
                 if (cc.getOffHeapMaxMemory() < 0)
                     cc.setOffHeapMaxMemory(0); // Set to unlimited.
 
@@ -2868,9 +2874,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                 try {
                     KeyCacheObject key = cctx.toCacheKeyObject(keyBytes);
 
-                    GridCacheSwapEntry swapEntry = GridCacheSwapEntryImpl.unmarshal(valBytes, true);
-
-                    CacheObject val = swapEntry.value();
+                    CacheObject val = cctx.swap().unmarshalSwapEntryValue(valBytes);
 
                     assert val != null;
 
@@ -3425,8 +3429,12 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         try {
             if (val.getCacheStoreFactory() != null) {
                 try {
-                    marshaller.unmarshal(marshaller.marshal(val.getCacheStoreFactory()),
-                        val.getCacheStoreFactory().getClass().getClassLoader());
+                    ClassLoader ldr = ctx.config().getClassLoader();
+
+                    if (ldr == null)
+                        ldr = val.getCacheStoreFactory().getClass().getClassLoader();
+
+                    marshaller.unmarshal(marshaller.marshal(val.getCacheStoreFactory()), ldr);
                 }
                 catch (IgniteCheckedException e) {
                     throw new IgniteCheckedException("Failed to validate cache configuration. " +

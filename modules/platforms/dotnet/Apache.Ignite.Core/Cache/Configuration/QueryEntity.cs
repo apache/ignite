@@ -358,8 +358,8 @@ namespace Apache.Ignite.Core.Cache.Configuration
             if (type.IsPrimitive)
                 yield break;
 
-            var bindingFlags = BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance |
-                               BindingFlags.DeclaredOnly;
+            const BindingFlags bindingFlags = BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance |
+                                              BindingFlags.DeclaredOnly;
 
             while (type != typeof (object) && type != null)
             {
