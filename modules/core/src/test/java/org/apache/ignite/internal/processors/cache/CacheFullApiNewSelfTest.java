@@ -230,7 +230,7 @@ public class CacheFullApiNewSelfTest extends CacheAbstractNewSelfTest {
     /**
      * @throws Exception In case of error.
      */
-    public void _testSize() throws Exception {
+    public void testSize() throws Exception {
         assert jcache().localSize() == 0;
 
         int size = 10;
@@ -298,7 +298,7 @@ public class CacheFullApiNewSelfTest extends CacheAbstractNewSelfTest {
     /**
      * @throws Exception In case of error.
      */
-    public void _testContainsKey() throws Exception {
+    public void testContainsKey() throws Exception {
         jcache().put("testContainsKey", 1);
 
         checkContainsKey(true, "testContainsKey");
@@ -308,7 +308,7 @@ public class CacheFullApiNewSelfTest extends CacheAbstractNewSelfTest {
     /**
      * @throws Exception If failed.
      */
-    public void _testContainsKeyTx() throws Exception {
+    public void testContainsKeyTx() throws Exception {
         if (!txEnabled())
             return;
 
@@ -342,7 +342,7 @@ public class CacheFullApiNewSelfTest extends CacheAbstractNewSelfTest {
     /**
      * @throws Exception If failed.
      */
-    public void _testContainsKeysTx() throws Exception {
+    public void testContainsKeysTx() throws Exception {
         if (!txEnabled())
             return;
 
