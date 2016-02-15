@@ -4389,7 +4389,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                         CacheMetricsExtendableSnapshot.EXTENDABLE_METRICS_VERSION_MINOR_SINCE,
                         CacheMetricsExtendableSnapshot.EXTENDABLE_METRICS_VERSION_MAINTENANCE_SINCE)) {
                         for (Map.Entry<Integer, CacheMetrics> entry : cacheMetricsMap.entrySet())
-                            cacheMetricsMap.replace(entry.getKey(), new CacheMetricsSnapshot(entry.getValue()));
+                            cacheMetricsMap.put(entry.getKey(), new CacheMetricsSnapshot(entry.getValue()));
                     }
 
                     msg.setCacheMetrics(locNodeId, cacheMetricsMap);

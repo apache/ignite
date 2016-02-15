@@ -213,6 +213,9 @@ public class ClusterMetricsSnapshot implements ClusterMetrics {
     /** */
     private long upTime = -1;
 
+    /** Sum of upTimes from all nodes. This node is transient by traffic optimization reason. */
+    private transient long totalUpTime;
+
     /** */
     private long startTime = -1;
 
@@ -310,6 +313,7 @@ public class ClusterMetricsSnapshot implements ClusterMetrics {
         nonHeapMax = 0;
         nonHeapTotal = 0;
         upTime = 0;
+        totalUpTime = 0;
         startTime = 0;
         nodeStartTime = 0;
         threadCnt = 0;
@@ -389,6 +393,7 @@ public class ClusterMetricsSnapshot implements ClusterMetrics {
             nonHeapInit += m.getNonHeapMemoryInitialized();
 
             upTime = max(upTime, m.getUpTime());
+            totalUpTime += m.getUpTime();
 
             lastDataVer = max(lastDataVer, m.getLastDataVersion());
 
@@ -764,7 +769,7 @@ public class ClusterMetricsSnapshot implements ClusterMetrics {
 
     /** {@inheritDoc} */
     @Override public long getTotalBusyTime() {
-        return getUpTime() - getTotalIdleTime();
+        return totalUpTime == 0 ? getUpTime() - getTotalIdleTime() : totalUpTime - getTotalIdleTime();
     }
 
     /** {@inheritDoc} */
@@ -802,7 +807,7 @@ public class ClusterMetricsSnapshot implements ClusterMetrics {
 
     /** {@inheritDoc} */
     @Override public float getIdleTimePercentage() {
-        return getTotalIdleTime() / (float)getUpTime();
+        return totalUpTime == 0 ? getTotalIdleTime() / (float)getUpTime() : getTotalIdleTime() / (float)totalUpTime;
     }
 
     /** {@inheritDoc} */
