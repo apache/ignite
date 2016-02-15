@@ -19,6 +19,7 @@ namespace Apache.Ignite.Linq
 {
     using System.Linq;
     using Apache.Ignite.Core.Cache;
+    using Apache.Ignite.Core.Cache.Configuration;
     using Apache.Ignite.Linq.Impl;
 
     /// <summary>
@@ -41,6 +42,34 @@ namespace Apache.Ignite.Linq
         /// <returns><see cref="IQueryable{T}"/> instance over this cache.</returns>
         public static IQueryable<ICacheEntry<TKey, TValue>> AsCacheQueryable<TKey, TValue>(
             this ICache<TKey, TValue> cache)
+        {
+            return new CacheQueryable<TKey, TValue>(cache);
+        }
+
+        /// <summary>
+        /// Gets an <see cref="IQueryable{T}" /> instance over this cache.
+        /// <para />
+        /// Resulting query will be translated to cache SQL query and executed over the cache instance
+        /// via either <see cref="ICache{TK,TV}.Query" /> or <see cref="ICache{TK,TV}.QueryFields" />,
+        /// depending on requested result.
+        /// <para />
+        /// Result of this method (and subsequent query) can be cast to <see cref="ICacheQueryable" /> for introspection.
+        /// </summary>
+        /// <typeparam name="TKey">The type of the key.</typeparam>
+        /// <typeparam name="TValue">The type of the value.</typeparam>
+        /// <param name="cache">The cache.</param>
+        /// <param name="tableName">
+        /// Name of the table.
+        /// <para />
+        /// Table name is equal to short class name of a cache value.
+        /// When a cache has only one type of values, or only one <see cref="QueryEntity"/> defined, 
+        /// table name will be inferred and can be omitted.
+        /// </param>
+        /// <returns>
+        ///   <see cref="IQueryable{T}" /> instance over this cache.
+        /// </returns>
+        public static IQueryable<ICacheEntry<TKey, TValue>> AsCacheQueryable<TKey, TValue>(
+            this ICache<TKey, TValue> cache, string tableName)
         {
             return new CacheQueryable<TKey, TValue>(cache);
         }
