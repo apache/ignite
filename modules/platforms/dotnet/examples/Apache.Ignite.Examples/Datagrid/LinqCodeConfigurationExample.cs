@@ -96,7 +96,7 @@ namespace Apache.Ignite.Examples.Datagrid
             Console.WriteLine(">>> Employee names and their addresses:");
 
             foreach (var row in qry)
-                Console.WriteLine(">>>     [Name=" + row.Name + ", salary=" + row.Street + ']');
+                Console.WriteLine(">>>     [Name=" + row.Name + ", address=" + row.Street + ']');
         }
 
         /// <summary>
