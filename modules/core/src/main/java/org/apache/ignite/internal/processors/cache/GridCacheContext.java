@@ -1964,7 +1964,7 @@ public class GridCacheContext<K, V> implements Externalizable {
 
         mgrs.clear();
 
-        U.dumpStack(log, ">>>>>>> GridCacheContext.cleanup: " + cacheName);
+//        U.dumpStack(log, ">>>>>>> GridCacheContext.cleanup: " + cacheName);
     }
 
     /**
