@@ -822,7 +822,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
 
             final boolean backups = qry.includeBackups() || cctx.isReplicated();
 
-            Iterator<KeyCacheObject> keyIter;
+            Iterator<K> keyIter;
 
             GridDhtLocalPartition locPart = null;
 
@@ -844,15 +844,15 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
 
                 final GridDhtLocalPartition locPart0 = locPart;
 
-                keyIter = new Iterator<KeyCacheObject>() {
+                keyIter = new Iterator<K>() {
                     private Iterator<KeyCacheObject> iter0 = locPart0.keySet().iterator();
 
                     @Override public boolean hasNext() {
                         return iter0.hasNext();
                     }
 
-                    @Override public KeyCacheObject next() {
-                        return iter0.next();
+                    @Override public K next() {
+                        return (K)cctx.unwrapBinaryIfNeeded(iter0.next(), qry.keepBinary());
                     }
 
                     @Override public void remove() {
@@ -864,7 +864,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
             final GridDhtLocalPartition locPart0 = locPart;
 
             final GridCloseableIteratorAdapter<IgniteBiTuple<K, V>> heapIt =
-                new PeekValueExpiryAwareIterator<K, V>(keyIter, plc, topVer, keyValFilter, qry.keepBinary()) {
+                new PeekValueExpiryAwareIterator<K, V>(keyIter, plc, topVer, keyValFilter, qry.keepBinary(), true) {
                     @Override protected void onClose() {
                         super.onClose();
 
@@ -1057,23 +1057,25 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
         };
     }
 
-    private GridIteratorAdapter<IgniteBiTuple<K, V>> scanExpiryIterator(
+    private GridIterator<IgniteBiTuple<K,V>> scanExpiryIterator(
         final Iterator<Map.Entry<byte[], byte[]>> it,
         AffinityTopologyVersion topVer,
         @Nullable final IgniteBiPredicate<K, V> filter,
         ExpiryPolicy expPlc,
         final boolean keepBinary
     ) {
-        Iterator <KeyCacheObject> keyIter = new Iterator<KeyCacheObject>() {
+        Iterator <K> keyIter = new Iterator<K>() {
             /** {@inheritDoc} */
             @Override public boolean hasNext() {
                 return it.hasNext();
             }
 
             /** {@inheritDoc} */
-            @Override public KeyCacheObject next() {
+            @Override public K next() {
                 try {
-                    return cctx.toCacheKeyObject(it.next().getKey());
+                    KeyCacheObject key = cctx.toCacheKeyObject(it.next().getKey());
+
+                    return (K)cctx.unwrapBinaryIfNeeded(key, keepBinary);
                 }
                 catch (IgniteCheckedException e) {
                     throw new IgniteException(e);
@@ -1086,7 +1088,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
             }
         };
 
-        return new PeekValueExpiryAwareIterator<>(keyIter, expPlc, topVer, filter, keepBinary);
+        return new PeekValueExpiryAwareIterator<>(keyIter, expPlc, topVer, filter, keepBinary, false);
     }
 
     /**
@@ -3096,6 +3098,9 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
         /** */
         private final IgniteBiPredicate<K, V> keyValFilter;
 
+        /** Heap only flag. */
+        private boolean heapOnly;
+
         /** */
         private final boolean keepBinary;
 
@@ -3106,19 +3111,28 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
         private IgniteCacheExpiryPolicy expiryPlc;
 
         /** */
-        private Iterator<KeyCacheObject> keyIt;
+        private Iterator<K> keyIt;
 
-        public PeekValueExpiryAwareIterator(
-            Iterator<KeyCacheObject> keyIt,
+        /**
+         * @param keyIt Key iterator.
+         * @param plc Expiry policy.
+         * @param topVer Topology version.
+         * @param keyValFilter Key-value filter.
+         * @param keepBinary Keep binary flag from the query.
+         */
+        private PeekValueExpiryAwareIterator(
+            Iterator<K> keyIt,
             ExpiryPolicy plc,
             AffinityTopologyVersion topVer,
             IgniteBiPredicate<K, V> keyValFilter,
-            boolean keepBinary
+            boolean keepBinary,
+            boolean heapOnly
         ) {
             this.keyIt = keyIt;
             this.plc = plc;
             this.topVer = topVer;
             this.keyValFilter = keyValFilter;
+            this.heapOnly = heapOnly;
 
             dht = cctx.isLocal() ? null : (cctx.isNear() ? cctx.near().dht() : cctx.dht());
             cache = dht != null ? dht : cctx.cache();
@@ -3129,10 +3143,12 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
             advance();
         }
 
+        /** {@inheritDoc} */
         @Override public boolean onHasNext() {
             return next != null;
         }
 
+        /** {@inheritDoc} */
         @Override public IgniteBiTuple<K, V> onNext() {
             if (next == null)
                 throw new NoSuchElementException();
@@ -3144,26 +3160,26 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
             return next0;
         }
 
+        /** {@inheritDoc} */
+        @Override protected void onClose() {
+            sendTtlUpdate();
+        }
+
+        /**
+         * Moves the iterator to the next cache entry.
+         */
         private void advance() {
             IgniteBiTuple<K, V> next0 = null;
 
             while (keyIt.hasNext()) {
                 next0 = null;
 
-                KeyCacheObject key = keyIt.next();
+                K key = keyIt.next();
 
                 V val;
 
                 try {
-                    GridCacheEntryEx entry = cache.peekEx(key);
-
-                    CacheObject cacheVal =
-                        entry != null ? entry.peek(true, false, false, topVer, expiryPlc) : null;
-
-                    val = (V)cctx.cacheObjectContext().unwrapBinaryIfNeeded(cacheVal, true);
-                }
-                catch (GridCacheEntryRemovedException e) {
-                    val = null;
+                    val = value(key);
                 }
                 catch (IgniteCheckedException e) {
                     if (log.isDebugEnabled())
@@ -3198,10 +3214,9 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                 sendTtlUpdate();
         }
 
-        @Override protected void onClose() {
-            sendTtlUpdate();
-        }
-
+        /**
+         * Sends TTL update.
+         */
         private void sendTtlUpdate() {
             if (dht != null && expiryPlc != null) {
                 dht.sendTtlUpdateRequest(expiryPlc);
@@ -3210,6 +3225,32 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
             }
         }
 
+        private V value(K key) throws IgniteCheckedException {
+            while (true) {
+                try {
+                    GridCacheEntryEx entry = heapOnly ? cache.peekEx(key) : cache.entryEx(key);
+
+                    if (expiryPlc != null && !heapOnly)
+                        entry.unswap();
+
+                    CacheObject cacheVal =
+                        entry != null ? entry.peek(true, !heapOnly, !heapOnly, topVer, expiryPlc) : null;
+
+                    return (V)cctx.cacheObjectContext().unwrapBinaryIfNeeded(cacheVal, true);
+                }
+                catch (GridCacheEntryRemovedException ignore) {
+                    if (heapOnly)
+                        return null;
+                }
+            }
+        }
+
+        /**
+         * Check key-value predicate.
+         *
+         * @param e Entry to check.
+         * @return Filter evaluation result.
+         */
         private boolean checkPredicate(Map.Entry<K, V> e) {
             if (keyValFilter != null) {
                 Map.Entry<K, V> e0 = (Map.Entry<K, V>)cctx.unwrapBinaryIfNeeded(e, keepBinary);

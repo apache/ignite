@@ -1139,8 +1139,11 @@ public abstract class IgniteCacheExpiryPolicyAbstractTest extends IgniteCacheAbs
 
                         found = true;
 
-                        if (wait)
+                        if (wait) {
+                            info("WILL CHECK THE KEY ON NODE [key=" + key + ", node=" + i + ']');
+
                             waitTtl(cache, key, ttl);
+                        }
 
                         boolean primary = cache.affinity().isPrimary(grid.localNode(), key);
                         boolean backup = cache.affinity().isBackup(grid.localNode(), key);
@@ -1157,6 +1160,7 @@ public abstract class IgniteCacheExpiryPolicyAbstractTest extends IgniteCacheAbs
                     break;
                 }
                 catch (GridCacheEntryRemovedException ignore) {
+                    info("RETRY");
                     // Retry.
                 }
                 catch (GridDhtInvalidPartitionException ignore) {
@@ -1177,7 +1181,7 @@ public abstract class IgniteCacheExpiryPolicyAbstractTest extends IgniteCacheAbs
      */
     private void waitTtl(final GridCacheAdapter<Object, Object> cache, final Object key, final long ttl)
         throws IgniteInterruptedCheckedException {
-        GridTestUtils.waitForCondition(new PAX() {
+        boolean success = GridTestUtils.waitForCondition(new PAX() {
             @Override public boolean applyx() throws IgniteCheckedException {
                 GridCacheEntryEx entry = null;
 
@@ -1201,6 +1205,8 @@ public abstract class IgniteCacheExpiryPolicyAbstractTest extends IgniteCacheAbs
                 }
             }
         }, 3000);
+
+        info("Wait: " + success);
     }
 
     /**

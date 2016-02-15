@@ -3045,27 +3045,20 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
         throws GridCacheEntryRemovedException, IgniteCheckedException {
         assert heap || offheap || swap;
 
-        try {
-            if (heap) {
-                GridTuple<CacheObject> val = peekGlobal(false, topVer, null, expiryPlc);
+        if (heap) {
+            GridTuple<CacheObject> val = peekGlobal(topVer, null, expiryPlc);
 
-                if (val != null)
-                    return val.get();
-            }
-
-            if (offheap || swap) {
-                GridCacheSwapEntry e = cctx.swap().read(this, false, offheap, swap, true);
-
-                return e != null ? e.value() : null;
-            }
-
-            return null;
+            if (val != null)
+                return val.get();
         }
-        catch (GridCacheFilterFailedException ignored) {
-            assert false;
 
-            return null;
+        if (offheap || swap) {
+            GridCacheSwapEntry e = cctx.swap().read(this, false, offheap, swap, true);
+
+            return e != null ? e.value() : null;
         }
+
+        return null;
     }
 
     /** {@inheritDoc} */
@@ -3083,21 +3076,19 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
     }
 
     /**
-     * @param failFast Fail fast flag.
      * @param topVer Topology version.
      * @param filter Filter.
      * @param expiryPlc Optional expiry policy.
      * @return Peeked value.
-     * @throws GridCacheFilterFailedException If filter failed.
      * @throws GridCacheEntryRemovedException If entry got removed.
      * @throws IgniteCheckedException If unexpected cache failure occurred.
      */
     @SuppressWarnings({"RedundantTypeArguments"})
-    @Nullable private GridTuple<CacheObject> peekGlobal(boolean failFast,
+    @Nullable private GridTuple<CacheObject> peekGlobal(
         AffinityTopologyVersion topVer,
         CacheEntryPredicate[] filter,
         @Nullable IgniteCacheExpiryPolicy expiryPlc)
-        throws GridCacheEntryRemovedException, GridCacheFilterFailedException, IgniteCheckedException {
+        throws GridCacheEntryRemovedException, IgniteCheckedException {
         if (!valid(topVer))
             return null;
 
@@ -3124,8 +3115,11 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                         updateTtl(expiryPlc);
                 }
 
+                if (val == null)
+                    return null;
+
                 if (!cctx.isAll(this, filter))
-                    return F.t(CU.<CacheObject>failed(failFast));
+                    return null;
 
                 if (F.isEmptyOrNulls(filter) || ver.equals(version()))
                     return F.t(val);
