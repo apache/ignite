@@ -20,14 +20,17 @@ import _ from 'lodash';
 import ace from 'ace';
 import angular from 'angular';
 import pdfMake from 'pdfmake';
+import io from 'socket.io-client';
 
 window._ = _;
+window.io = io;
 window.jQuery = jQuery;
 window.ace = ace;
 window.require = ace.require; // TODO Should be removed after full refactoring to directives.
 window.angular = angular;
 window.pdfMake = pdfMake;
 
+import 'angular-socket-io';
 import 'angular-ui-router';
 import 'angular-ui-router-title';
 import 'angular-animate';
@@ -97,6 +100,7 @@ import cleanup from './services/cleanup/cleanup.service';
 import GeneratorXml from './services/Generator/Xml.service';
 import GeneratorJava from './services/Generator/Java.service';
 import IgniteCountries from './services/Countries/Countries.service';
+import AgentManager from './services/Agent/Manager.service';
 
 // Providers
 
@@ -145,6 +149,7 @@ angular
 .service(...GeneratorXml)
 .service(...GeneratorJava)
 .service(...IgniteCountries)
+.service(...AgentManager)
 // Providers.
 // Filters.
 .filter(...hasPojo)
@@ -181,4 +186,8 @@ angular
     $root.$on('$stateChangeStart', () => {
         _.each(angular.element('.modal'), (m) => angular.element(m).scope().$hide());
     });
+}])
+.run(['$rootScope', 'AgentManager', ($root, agentMgr) => {
+    agentMgr.findClient();
 }]);
+

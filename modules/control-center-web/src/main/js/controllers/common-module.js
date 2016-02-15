@@ -17,7 +17,7 @@
 
 var consoleModule = angular.module('ignite-web-console',
     [
-        'ngAnimate', 'ngSanitize', 'mgcrea.ngStrap', 'smart-table', 'ui.ace', 'treeControl', 'darthwade.dwLoading', 'ui.grid', 'ui.grid.autoResize', 'ui.grid.exporter', 'nvd3', 'dndLists'
+        'ngAnimate', 'ngSanitize', 'mgcrea.ngStrap', 'smart-table', 'ui.ace', 'treeControl', 'darthwade.dwLoading', 'ui.grid', 'ui.grid.autoResize', 'ui.grid.exporter', 'nvd3', 'dndLists', 'btford.socket-io',
         /* ignite:modules */
         , 'ignite-console'
         /* endignite */
@@ -2061,8 +2061,11 @@ consoleModule.controller('auth', ['$scope', '$focus', 'Auth', 'IgniteCountries',
 
 // Download agent controller.
 consoleModule.service('$agentDownload', [
-    '$http', '$interval', '$rootScope', '$state', '$modal', '$loading', '$common',
-        function ($http, $interval, $rootScope, $state, $modal, $loading, $common) {
+    '$http', '$interval', '$rootScope', '$state', '$modal', '$loading', '$common', 'socketFactory',
+        function ($http, $interval, $rootScope, $state, $modal, $loading, $common, socketFactory) {
+
+        var socket = socketFactory({});
+
         var scope = $rootScope.$new();
 
         // Pre-fetch modal dialogs.
@@ -2173,23 +2176,29 @@ consoleModule.service('$agentDownload', [
                 _timedOut = true;
             }, _timeout);
 
-            $http.post(_modal.check.url, _modal.check.params, {timeout: _timeout})
-                .success(function (data) {
-                    if (_modal.awaitFirstSuccess)
-                        _stopInterval();
+            socket.on('agent:avail', function(data) {
+                _modal.check.cb(data, _modalAlertHide, _handleException);
+            });
 
-                    $loading.finish('loading');
+            // socket.on()
 
-                    _modal.check.cb(data, _modalAlertHide, _handleException);
+            // $http.post(_modal.check.url, _modal.check.params, {timeout: _timeout})
+            //     .success(function (data) {
+            //         if (_modal.awaitFirstSuccess)
+            //             _stopInterval();
 
-                    if (!_modal.skipSingleError && _modal.check.onConnect)
-                        _modal.check.onConnect();
+            //         $loading.finish('loading');
 
-                    _modal.skipSingleError = true;
-                })
-                .error(function (errMsg, status) {
-                    _handleException(errMsg, status, _timedOut);
-                });
+            //         _modal.check.cb(data, _modalAlertHide, _handleException);
+
+            //         if (!_modal.skipSingleError && _modal.check.onConnect)
+            //             _modal.check.onConnect();
+
+            //         _modal.skipSingleError = true;
+            //     })
+            //     .error(function (errMsg, status) {
+            //         _handleException(errMsg, status, _timedOut);
+            //     });
         }
 
         return {

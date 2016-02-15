@@ -22,10 +22,10 @@
 module.exports = {
     implements: 'configure',
     inject: ['require(morgan)', 'require(cookie-parser)', 'require(body-parser)', 'require(express-force-ssl)',
-        'require(express-session)', 'require(connect-mongo)', 'require(passport)', 'settings', 'mongo']
+        'require(express-session)', 'require(passport)', 'settings', 'mongo', 'store']
 };
 
-module.exports.factory = function(logger, cookieParser, bodyParser, forceSSL, session, connectMongo, Passport, settings, mongo) {
+module.exports.factory = function(logger, cookieParser, bodyParser, forceSSL, session, Passport, settings, mongo, store) {
     return (app) => {
         app.use(logger('dev', {
             skip: (req, res) => res.statusCode < 400
@@ -36,8 +36,6 @@ module.exports.factory = function(logger, cookieParser, bodyParser, forceSSL, se
         app.use(bodyParser.json({limit: '50mb'}));
         app.use(bodyParser.urlencoded({limit: '50mb', extended: true}));
 
-        const MongoStore = connectMongo(session);
-
         app.use(session({
             secret: settings.sessionSecret,
             resave: false,
@@ -46,7 +44,7 @@ module.exports.factory = function(logger, cookieParser, bodyParser, forceSSL, se
                 expires: new Date(Date.now() + settings.cookieTTL),
                 maxAge: settings.cookieTTL
             },
-            store: new MongoStore({mongooseConnection: mongo.connection})
+            store: store
         }));
 
         app.use(Passport.initialize());

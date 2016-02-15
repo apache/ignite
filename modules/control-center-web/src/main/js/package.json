@@ -56,8 +56,10 @@
     "passport": "^0.3.2",
     "passport-local": "^1.0.0",
     "passport-local-mongoose": "3.1.0",
+    "passport.socketio": "^3.6.1",
     "require-dir": "^0.3.0",
     "serve-favicon": "~2.3.0",
+    "socket.io": "^1.4.5",
     "ws": "~0.8.0"
   },
   "devDependencies": {
@@ -79,6 +81,7 @@
       "angular-retina": "github:jrief/angular-retina@^0.3.8",
       "angular-sanitize": "github:angular/bower-angular-sanitize@^1.5.0",
       "angular-smart-table": "github:lorenzofox3/Smart-Table@^2.1.4",
+      "angular-socket-io": "npm:angular-socket-io@^0.7.0",
       "angular-strap": "github:akuznetsov-gridgain/angular-strap@fix-1852-2.3.6",
       "angular-tree-control": "github:wix/angular-tree-control@^0.2.23",
       "angular-ui-ace": "github:angular-ui/ui-ace@^0.2.3",
@@ -96,7 +99,8 @@
       "jszip": "github:Stuk/jszip@^2.5.0",
       "lodash": "npm:lodash@^3.10.1",
       "pdfmake": "github:bpampuch/pdfmake@^0.1.20",
-      "query-command-supported": "github:zenorocha/document.queryCommandSupported@^1.0.0"
+      "query-command-supported": "github:zenorocha/document.queryCommandSupported@^1.0.0",
+      "socket.io-client": "github:socketio/socket.io-client@1.4.5"
     },
     "devDependencies": {
       "babel": "npm:babel-core@^5.8.24",
@@ -115,6 +119,21 @@
             "deps": [
               "jquery"
             ]
+          }
+        }
+      },
+      "npm:angular-socket-io@0.7.0": {
+        "dependencies": {
+          "angular": "^1",
+          "socket.io-client": "github:socketio/socket.io-client@1.4.5"
+        }
+      },
+      "github:socketio/socket.io-client@1.4.5": {
+        "format": "global",
+        "main": "socket.io",
+        "shim": {
+          "socket.io": {
+            "exports": "io"
           }
         }
       },

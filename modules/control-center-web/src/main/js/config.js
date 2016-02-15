@@ -28,6 +28,7 @@ System.config({
     "angular-retina": "github:jrief/angular-retina@0.3.9",
     "angular-sanitize": "github:angular/bower-angular-sanitize@1.5.0",
     "angular-smart-table": "github:lorenzofox3/Smart-Table@2.1.7",
+    "angular-socket-io": "npm:angular-socket-io@0.7.0",
     "angular-strap": "github:akuznetsov-gridgain/angular-strap@fix-1852-2.3.6",
     "angular-tree-control": "github:wix/angular-tree-control@0.2.23",
     "angular-ui-ace": "github:angular-ui/ui-ace@0.2.3",
@@ -52,6 +53,7 @@ System.config({
     "nvd3": "npm:nvd3@1.8.1",
     "pdfmake": "github:bpampuch/pdfmake@0.1.20",
     "query-command-supported": "github:zenorocha/document.queryCommandSupported@1.0.0",
+    "socket.io-client": "github:socketio/socket.io-client@1.4.5",
     "spinjs": "github:fgnass/spin.js@2.3.2",
     "github:akuznetsov-gridgain/angular-strap@fix-1852-2.3.6": {
       "angular": "github:angular/bower-angular@1.5.0",

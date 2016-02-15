@@ -64,19 +64,15 @@ const fireUp = require('fire-up').newInjector({
     ]
 });
 
-Promise.all([fireUp('settings'), fireUp('app'), fireUp('agent')])
+Promise.all([fireUp('settings'), fireUp('app'), fireUp('agent'), fireUp('http'), fireUp('io')])
     .then((values) => {
-        const settings = values[0], app = values[1], agent = values[2];
-
-        // Create HTTP server.
-        const server = http.createServer(app);
+        const settings = values[0];
+        const app = values[1];
+        const agent = values[2];
+        const store = values[3];
 
         app.set('port', settings.server.port);
-
-        server.listen(settings.server.port);
-        server.on('error', _onError.bind(null, settings.server.port));
-        server.on('listening', _onListening.bind(null, server.address()));
-
+        
         // Create HTTPS server if needed.
         if (settings.serverSSLOptions) {
             const httpsServer = https.createServer(settings.server.SSLOptions, app);
