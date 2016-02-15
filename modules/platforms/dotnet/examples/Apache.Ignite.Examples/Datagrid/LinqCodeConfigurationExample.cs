@@ -173,16 +173,39 @@ namespace Apache.Ignite.Examples.Datagrid
             };
         }
 
+        /// <summary>
+        /// Person.
+        /// </summary>
         private class Person
         {
+            /// <summary>
+            /// Gets or sets the name.
+            /// </summary>
             [QuerySqlField]
             public string Name { get; set; }
 
+            /// <summary>
+            /// Gets or sets the street.
+            /// </summary>
             [QuerySqlField]
             public string Street { get; set; }
 
+            /// <summary>
+            /// Gets or sets the zip.
+            /// </summary>
             [QuerySqlField]
             public int Zip { get; set; }
+
+            /// <summary>
+            /// Returns a string that represents the current object.
+            /// </summary>
+            /// <returns>
+            /// A string that represents the current object.
+            /// </returns>
+            override public string ToString()
+            {
+                return string.Format("{0} [name={1}, street={2}, zip={3}]", typeof(Person).Name, Name, Street, Zip);
+            }
         }
     }
 }
