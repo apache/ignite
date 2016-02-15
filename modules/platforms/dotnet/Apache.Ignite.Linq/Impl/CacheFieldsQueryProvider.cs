@@ -115,9 +115,11 @@ namespace Apache.Ignite.Linq.Impl
         /// </summary>
         private string[] GetValidTableNames()
         {
-            var validTableNames = _cacheConfiguration.QueryEntities.Select(e => e.ValueTypeName).ToArray();
+            var validTableNames = _cacheConfiguration.QueryEntities == null
+                ? null
+                : _cacheConfiguration.QueryEntities.Select(e => e.ValueTypeName).ToArray();
 
-            if (!validTableNames.Any())
+            if (validTableNames == null || !validTableNames.Any())
                 throw new CacheException(string.Format("Queries are not configured for cache '{0}'",
                     _cacheConfiguration.Name ?? "null"));
 
