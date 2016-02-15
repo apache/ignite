@@ -15,6 +15,8 @@
  * limitations under the License.
  */
 
+'use strict';
+
 const http = require('http'),
     https = require('https'),
     path = require('path');

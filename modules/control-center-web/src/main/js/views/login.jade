@@ -34,28 +34,28 @@ header#header.header
             .col-xs-12.col-md-6
                 form(name='loginForm' novalidate)
                     .modal-body.row(style='padding-bottom: 10px; margin: 0')
-                        .settings-row(ng-if='action == "register"')
+                        .settings-row(ng-if='action == "signup"')
                             h3.login-header Sign Up
-                        .settings-row(ng-if='action == "login"')
+                        .settings-row(ng-if='action == "signin"')
                             h3.login-header Sign In
                         .settings-row(ng-if='action == "password/forgot"')
                             h3.login-header Forgot password?
                         .settings-row
                             p.col-xs-12.col-md-11(ng-show='action == "password/forgot"')
                                 | That's ok! Simply enter your email below and a reset password link will be sent to you via email. You can then follow that link and select a new password.
-                        .settings-row(ng-show='action == "register"')
+                        .settings-row(ng-show='action == "signup"')
                             +lblRequired('Full Name:')
                             .col-xs-9.col-md-8
-                                input#user_name.form-control(enter-focus-next='user_email' type='text' ng-model='user_info.username' placeholder='John Smith' ng-required='action=="register"')
+                                input#user_name.form-control(enter-focus-next='user_email' type='text' ng-model='user_info.username' placeholder='John Smith' ng-required='action=="signup"')
                         .settings-row
                             +lblRequired('Email:')
                             .col-xs-9.col-md-8
                                 input#user_email.form-control(enter-focus-next='company' type='email' ng-model='user_info.email' placeholder='you@domain.com' required)
-                        .settings-row(ng-show='action == "register"')
+                        .settings-row(ng-show='action == "signup"')
                             +lbl('Company:')
                             .col-xs-9.col-md-8
                                 input#company.form-control(enter-focus-next='country' type='text' ng-model='user_info.company' placeholder='Your company name')
-                        .settings-row(ng-show='action == "register"')
+                        .settings-row(ng-show='action == "signup"')
                             +lbl('Country:')
                             .col-xs-9.col-md-8
                                 button#country.select-toggle.form-control(bs-select bs-options='item for item in countries' enter-focus-next='user_password' type='text' ng-model='user_info.country' placeholder='Choose your country')
@@ -63,28 +63,28 @@ header#header.header
                             +lblRequired('Password:')
                             .col-xs-9.col-md-8
                                 input#user_password.form-control(enter-focus-next='user_confirm' type='password' ng-model='user_info.password' placeholder='Password' ng-required='action != "password/forgot"' on-enter='action == "login" && loginForm.$valid && auth(action, user_info)')
-                        .settings-row(ng-if='action == "register"')
+                        .settings-row(ng-if='action == "signup"')
                             +lblRequired('Confirm:')
                             .col-xs-9.col-md-8
-                                input#user_confirm.form-control(type='password' ng-model='user_info.confirm' match='user_info.password' placeholder='Confirm password' ng-required='action == "register"' on-enter='loginForm.$valid && auth(action, user_info)')
+                                input#user_confirm.form-control(type='password' ng-model='user_info.confirm' match='user_info.password' placeholder='Confirm password' ng-required='action == "signup"' on-enter='loginForm.$valid && auth(action, user_info)')
                         .settings-row(ignite-terms)
-                            .col-md-offset-3(ng-if='action == "register" && terms.termsState')
+                            .col-md-offset-3(ng-if='action == "signup" && terms.termsState')
                                 label
                                     input(type='checkbox' ng-model='user_info.agree', ng-required='true')
                                     | I agree to the #[a(ui-sref='{{::terms.termsState}}' target='_blank') terms and conditions]
                     .col-xs-12.col-md-11
-                        .login-footer(ng-show='action == "register"')
+                        .login-footer(ng-show='action == "signup"')
                             a.labelField(ng-click='action = "password/forgot"' on-click-focus='user_email') Forgot password?
-                            a.labelLogin(ng-click='action = "login"' on-click-focus='user_email') Sign In
+                            a.labelLogin(ng-click='action = "signin"' on-click-focus='user_email') Sign In
                             button#signup.btn.btn-primary(ng-click='auth(action, user_info)' ng-disabled='loginForm.$invalid') Sign Up
                     .col-xs-12.col-md-11
                         .login-footer(ng-show='action == "password/forgot"')
-                            a.labelField(ng-click='action = "login"' on-click-focus='user_email') Sign In
+                            a.labelField(ng-click='action = "signin"' on-click-focus='user_email') Sign In
                             button#forgot.btn.btn-primary(ng-click='auth(action, user_info)' ng-disabled='loginForm.$invalid') Send it to me
                     .col-xs-12.col-md-11
-                        .login-footer(ng-show='action == "login"')
+                        .login-footer(ng-show='action == "signin"')
                             a.labelField(ng-click='action = "password/forgot"' on-click-focus='user_email') Forgot password?
-                            a.labelLogin(ng-click='action = "register"' on-click-focus='user_name') Sign Up
+                            a.labelLogin(ng-click='action = "signup"' on-click-focus='user_name') Sign Up
                             button#login.btn.btn-primary(ng-click='auth(action, user_info)' ng-disabled='loginForm.$invalid') Sign In
 
                 .col-xs-12.col-md-11.home-panel

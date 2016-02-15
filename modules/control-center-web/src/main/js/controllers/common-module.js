@@ -2020,7 +2020,7 @@ consoleModule.controller('resetPassword', [
     '$scope', '$modal', '$http', '$common', '$focus', 'Auth', '$state',
     function ($scope, $modal, $http, $common, $focus, Auth, $state) {
         if ($state.params.token)
-            $http.post('/api/v1/validate/token', {token: $state.params.token})
+            $http.post('/api/v1/password/validate/token', {token: $state.params.token})
                 .success(function (res) {
                     $scope.email = res.email;
                     $scope.token = res.token;
