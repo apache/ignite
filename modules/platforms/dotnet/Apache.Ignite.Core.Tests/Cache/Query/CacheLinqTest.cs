@@ -913,7 +913,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         [Test]
         public void TestTableNameInference()
         {
-            var cache = GetCacheOf<IPerson>();
+            var cache = GetCacheOf<IPerson>().AsCacheQueryable();
 
             var names = cache.Select(x => x.Value.Name).ToArray();
 
