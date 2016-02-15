@@ -33,7 +33,7 @@ namespace Apache.Ignite.Linq.Impl
         public CacheQueryable(ICache<TKey, TValue> cache, string tableName)
             : base(new CacheFieldsQueryProvider(CacheQueryParser.Instance,
                 new CacheFieldsQueryExecutor(new CacheQueryProxy<TKey, TValue>(cache)),
-                cache.Ignite, cache.GetConfiguration(), tableName))
+                cache.Ignite, cache.GetConfiguration(), tableName, typeof(TValue)))
         {
             // No-op.
         }

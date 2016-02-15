@@ -45,24 +45,23 @@ namespace Apache.Ignite.Linq.Impl
         /// Initializes a new instance of the <see cref="CacheFieldsQueryProvider"/> class.
         /// </summary>
         public CacheFieldsQueryProvider(IQueryParser queryParser, IQueryExecutor executor, IIgnite ignite, 
-            CacheConfiguration cacheConfiguration, string tableName) : base(queryParser, executor)
+            CacheConfiguration cacheConfiguration, string tableName, Type cacheValueType) : base(queryParser, executor)
         {
             Debug.Assert(ignite != null);
             Debug.Assert(cacheConfiguration != null);
+            Debug.Assert(cacheValueType != null);
 
             _ignite = ignite;
             _cacheConfiguration = cacheConfiguration;
 
-            if (tableName == null)
-            {
-                _tableName = InferTableName();
-            }
-            else
+            if (tableName != null)
             {
                 _tableName = tableName;
 
                 ValidateTableName();
             }
+            else
+                _tableName = InferTableName(cacheValueType);
         }
 
         /// <summary>
@@ -128,12 +127,18 @@ namespace Apache.Ignite.Linq.Impl
         /// <summary>
         /// Infers the name of the table from cache configuration.
         /// </summary>
-        private string InferTableName()
+        /// <param name="cacheValueType"></param>
+        private string InferTableName(Type cacheValueType)
         {
             var validTableNames = GetValidTableNames();
 
             if (validTableNames.Length == 1)
                 return validTableNames[0];
+
+            var valueTypeName = cacheValueType.Name;
+
+            if (validTableNames.Contains(valueTypeName, StringComparer.OrdinalIgnoreCase))
+                return valueTypeName;
 
             throw new CacheException(string.Format("Table name cannot be inferred for cache '{0}', " +
                                                    "please use AsCacheQueryable overload with tableName parameter. " +
