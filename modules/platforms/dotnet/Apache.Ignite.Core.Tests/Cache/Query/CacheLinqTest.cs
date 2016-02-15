@@ -555,8 +555,8 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
 
             Assert.AreEqual(new[]
             {
-                new {Count = PersonCount/2, OrgId = 1000, AvgAge = PersonCount/2 - 2},
-                new {Count = PersonCount/2, OrgId = 1001, AvgAge = PersonCount/2 - 1}
+                new {Count = PersonCount/2, OrgId = 1000, AvgAge = (double) PersonCount/2 - 1},
+                new {Count = PersonCount/2, OrgId = 1001, AvgAge = (double) PersonCount/2}
             }, resArr);
 
             // Join and sum
