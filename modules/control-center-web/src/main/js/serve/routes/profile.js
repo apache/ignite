@@ -23,71 +23,66 @@ module.exports = {
 };
 
 module.exports.factory = function(_, express, mongo) {
-    return new Promise((resolve) => {
+    return new Promise((resolveFactory) => {
         const router = express.Router();
-
-        function _updateUser(res, params) {
-            mongo.Account.update({_id: params._id}, params, {upsert: true}, function(err, user) {
-                // TODO IGNITE-843 Send error to admin.
-                if (err)
-                    return res.status(500).send('Failed to update profile!');
-
-                if (params.email)
-                    user.email = params.email;
-
-                res.sendStatus(200);
-            });
-        }
-
-        function _checkEmail(res, user, params) {
-            if (params.email && user.email !== params.email) {
-                mongo.Account.findOne({email: params.email}, function(err, userForEmail) {
-                    // TODO send error to admin
-                    if (err)
-                        return res.status(500).send('Failed to check e-mail!');
-
-                    if (userForEmail && userForEmail._id !== user._id)
-                        return res.status(500).send('User with this e-mail already registered!');
-
-                    _updateUser(res, params);
-                });
-            }
-            else
-                _updateUser(res, params);
-        }
 
         /**
          * Save user profile.
          */
         router.post('/save', function(req, res) {
-            var params = req.body;
+            const params = req.body;
 
-            mongo.Account.findById(params._id, function(err, user) {
-                // TODO IGNITE-843 Send error to admin
-                if (err)
-                    return res.status(500).send('Failed to find user!');
+            if (params.password && _.isEmpty(params.password))
+                return res.status(500).send('Wrong value for new password!');
 
-                if (params.password) {
-                    if (_.isEmpty(params.password))
-                        return res.status(500).send('Wrong value for new password!');
+            mongo.Account.findById(params._id).exec()
+                .then((user) => {
+                    if (!params.password)
+                        return Promise.resolve(user);
 
-                    user.setPassword(params.password, function(err, user) {
-                        if (err)
-                            return res.status(500).send(err.message);
-
-                        user.save(function(err) {
+                    return new Promise((resolve, reject) => {
+                        user.setPassword(params.password, (err, _user) => {
                             if (err)
-                                return res.status(500).send('Failed to change password!');
+                                return reject(err.message);
 
-                            _checkEmail(res, user, params);
+                            delete params.password;
+
+                            resolve(_user);
                         });
                     });
-                }
-                else
-                    _checkEmail(res, user, params);
-            });
+                })
+                .then((user) => {
+                    if (!params.email || user.email === params.email)
+                        return Promise.resolve(user);
+
+                    return new Promise((resolve, reject) => {
+                        mongo.Account.findOne({email: params.email}, function (err, _user) {
+                            // TODO send error to admin
+                            if (err)
+                                return reject('Failed to check e-mail!');
+
+                            if (_user && _user._id !== user._id)
+                                return reject('User with this e-mail already registered!');
+
+                            resolve(user);
+                        });
+                    });
+                })
+                .then((user) => {
+                    for (var param in params) {
+                        if (params.hasOwnProperty(param))
+                            user[param] = params[param];
+                    }
+
+                    return user.save();
+                })
+                .then(() => res.sendStatus(200))
+                .catch((err) => {
+                    // TODO IGNITE-843 Send error to admin
+                    res.status(500).send(err);
+                });
         });
 
-        resolve(router);
+        resolveFactory(router);
     });
 };
