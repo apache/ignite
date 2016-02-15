@@ -23,6 +23,7 @@ const isNumber = angular.isNumber;
 const isObject = angular.isObject;
 const isString = angular.isString;
 const isUndefined = angular.isUndefined;
+const isBoolean = (val) => typeof val === 'boolean';
 
 export default ['$cleanup', () => {
     const cleanup = (original, dist) => {
@@ -42,7 +43,7 @@ export default ['$cleanup', () => {
                     }
                 }
             }
-        } else if ((isString(original) && original.length) || isNumber(original))
+        } else if ((isString(original) && original.length) || isNumber(original) || isBoolean(original))
             dist = original;
         else if (isArray(original) && original.length) {
             dist = [];
