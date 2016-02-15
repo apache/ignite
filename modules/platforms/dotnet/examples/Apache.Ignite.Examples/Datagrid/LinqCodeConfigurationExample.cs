@@ -22,10 +22,10 @@ using System.Collections.Generic;
 using Apache.Ignite.Core;
 using Apache.Ignite.Linq;
 using Apache.Ignite.Core.Cache;
-using Apache.Ignite.ExamplesDll.Binary;
 
 namespace Apache.Ignite.Examples.Datagrid
 {
+    using Apache.Ignite.Core.Cache.Configuration;
 
     /// <summary>
     /// This example populates cache with sample data and runs several SQL and
@@ -56,28 +56,18 @@ namespace Apache.Ignite.Examples.Datagrid
             using (var ignite = Ignition.Start(cfg))
             {
                 Console.WriteLine();
-                Console.WriteLine(">>> Cache LINQ example started.");
+                Console.WriteLine(">>> Cache LINQ code configuration example started.");
 
-                var cache = ignite.GetCache<object, object>(null);
-
-                // Clean up caches on all nodes before run.
-                cache.Clear();
+                var cache = ignite.CreateCache<int, Person>(new CacheConfiguration("persons", typeof (Person)));
 
                 // Populate cache with sample data entries.
                 PopulateCache(cache);
 
-                // Create cache that will work with specific types.
-                var employeeCache = ignite.GetCache<EmployeeKey, Employee>(null);
-                var organizationCache = ignite.GetCache<int, Organization>(null);
-
                 // Run SQL query example.
-                SqlQueryExample(employeeCache);
-
-                // Run SQL query with join example.
-                SqlJoinQueryExample(employeeCache, organizationCache);
+                SqlQueryExample(cache);
 
                 // Run SQL fields query example.
-                SqlFieldsQueryExample(employeeCache);
+                SqlFieldsQueryExample(cache);
 
                 Console.WriteLine();
             }
@@ -91,11 +81,11 @@ namespace Apache.Ignite.Examples.Datagrid
         /// Queries employees that have provided ZIP code in address.
         /// </summary>
         /// <param name="cache">Cache.</param>
-        private static void SqlQueryExample(ICache<EmployeeKey, Employee> cache)
+        private static void SqlQueryExample(ICache<int, Person> cache)
         {
             const int zip = 94109;
 
-            var qry = cache.AsCacheQueryable().Where(emp => emp.Value.Address.Zip == zip);
+            var qry = cache.AsCacheQueryable().Where(emp => emp.Value.Zip == zip);
 
             Console.WriteLine();
             Console.WriteLine(">>> Employees with zipcode " + zip + ":");
@@ -104,116 +94,88 @@ namespace Apache.Ignite.Examples.Datagrid
                 Console.WriteLine(">>>    " + entry.Value);
         }
 
-        /// <summary>
-        /// Queries employees that work for organization with provided name.
-        /// </summary>
-        /// <param name="employeeCache">Employee cache.</param>
-        /// <param name="organizationCache">Organization cache.</param>
-        private static void SqlJoinQueryExample(ICache<EmployeeKey, Employee> employeeCache, 
-            ICache<int, Organization> organizationCache)
-        {
-            const string orgName = "Apache";
-
-            var employees = employeeCache.AsCacheQueryable();
-            var organizations = organizationCache.AsCacheQueryable();
-
-            var qry = 
-                from employee in employees
-                from organization in organizations
-                where employee.Key.OrganizationId == organization.Key && organization.Value.Name == orgName
-                select employee;
-
-
-            Console.WriteLine();
-            Console.WriteLine(">>> Employees working for " + orgName + ":");
-
-            foreach (var entry in qry)
-                Console.WriteLine(">>>     " + entry.Value);
-        }
 
         /// <summary>
         /// Queries names and salaries for all employees.
         /// </summary>
         /// <param name="cache">Cache.</param>
-        private static void SqlFieldsQueryExample(ICache<EmployeeKey, Employee> cache)
+        private static void SqlFieldsQueryExample(ICache<int, Person> cache)
         {
-            var qry = cache.AsCacheQueryable().Select(entry => new {entry.Value.Name, entry.Value.Salary});
+            var qry = cache.AsCacheQueryable().Select(entry => new {entry.Value.Name, entry.Value.Street});
 
             Console.WriteLine();
-            Console.WriteLine(">>> Employee names and their salaries:");
+            Console.WriteLine(">>> Employee names and their addresses:");
 
             foreach (var row in qry)
-                Console.WriteLine(">>>     [Name=" + row.Name + ", salary=" + row.Salary + ']');
+                Console.WriteLine(">>>     [Name=" + row.Name + ", salary=" + row.Street + ']');
         }
 
         /// <summary>
         /// Populate cache with data for this example.
         /// </summary>
         /// <param name="cache">Cache.</param>
-        private static void PopulateCache(ICache<object, object> cache)
+        private static void PopulateCache(ICache<int, Person> cache)
         {
-            cache.Put(1, new Organization(
-                "Apache",
-                new Address("1065 East Hillsdale Blvd, Foster City, CA", 94404),
-                OrganizationType.Private,
-                DateTime.Now
-            ));
+            cache.Put(1, new Person
+            {
+                Name = "James Wilson",
+                Street = "1096 Eddy Street, San Francisco, CA",
+                Zip = 94109
+            });
 
-            cache.Put(2, new Organization(
-                "Microsoft",
-                new Address("1096 Eddy Street, San Francisco, CA", 94109),
-                OrganizationType.Private,
-                DateTime.Now
-            ));
+            cache.Put(2, new Person
+            {
+                Name = "Daniel Adams",
+                Street = "184 Fidler Drive, San Antonio, TX",
+                Zip = 78130
+            });
 
-            cache.Put(new EmployeeKey(1, 1), new Employee(
-                "James Wilson",
-                12500,
-                new Address("1096 Eddy Street, San Francisco, CA", 94109),
-                new List<string> { "Human Resources", "Customer Service" }
-            ));
+            cache.Put(3, new Person
+            {
+                Name = "Cristian Moss",
+                Street = "667 Jerry Dove Drive, Florence, SC",
+                Zip = 29501
+            });
 
-            cache.Put(new EmployeeKey(2, 1), new Employee(
-                "Daniel Adams",
-                11000,
-                new Address("184 Fidler Drive, San Antonio, TX", 78130),
-                new List<string> { "Development", "QA" }
-            ));
+            cache.Put(4, new Person
+            {
+                Name = "Allison Mathis",
+                Street = "2702 Freedom Lane, San Francisco, CA",
+                Zip = 94109
+            });
 
-            cache.Put(new EmployeeKey(3, 1), new Employee(
-                "Cristian Moss",
-                12500,
-                new Address("667 Jerry Dove Drive, Florence, SC", 29501),
-                new List<string> { "Logistics" }
-            ));
+            cache.Put(5, new Person
+            {
+                Name = "Breana Robbin",
+                Street = "3960 Sundown Lane, Austin, TX",
+                Zip = 78130
+            });
 
-            cache.Put(new EmployeeKey(4, 2), new Employee(
-                "Allison Mathis",
-                25300,
-                new Address("2702 Freedom Lane, San Francisco, CA", 94109),
-                new List<string> { "Development" }
-            ));
+            cache.Put(6, new Person
+            {
+                Name = "Philip Horsley",
+                Street = "2803 Elsie Drive, Sioux Falls, SD",
+                Zip = 57104
+            });
 
-            cache.Put(new EmployeeKey(5, 2), new Employee(
-                "Breana Robbin",
-                6500,
-                new Address("3960 Sundown Lane, Austin, TX", 78130),
-                new List<string> { "Sales" }
-            ));
+            cache.Put(7, new Person
+            {
+                Name = "Brian Peters",
+                Street = "1407 Pearlman Avenue, Boston, MA",
+                Zip = 12110
+            });
+        }
 
-            cache.Put(new EmployeeKey(6, 2), new Employee(
-                "Philip Horsley",
-                19800,
-                new Address("2803 Elsie Drive, Sioux Falls, SD", 57104),
-                new List<string> { "Sales" }
-            ));
+        private class Person
+        {
+            [QuerySqlField]
+            public string Name { get; set; }
 
-            cache.Put(new EmployeeKey(7, 2), new Employee(
-                "Brian Peters",
-                10600,
-                new Address("1407 Pearlman Avenue, Boston, MA", 12110),
-                new List<string> { "Development", "QA" }
-            ));
+            [QuerySqlField]
+            public string Street { get; set; }
+
+            [QuerySqlField]
+            public int Zip { get; set; }
         }
     }
 }
