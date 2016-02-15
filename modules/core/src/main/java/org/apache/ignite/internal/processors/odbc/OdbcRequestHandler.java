@@ -35,11 +35,14 @@ import java.util.concurrent.atomic.AtomicLong;
 import static org.apache.ignite.internal.processors.odbc.OdbcRequest.*;
 
 /**
- * ODBC request handler.
+ * SQL query handler.
  */
 public class OdbcRequestHandler {
     /** Query ID sequence. */
-    private static final AtomicLong qryIdGen = new AtomicLong();
+    private static final AtomicLong QRY_ID_GEN = new AtomicLong();
+
+    /** Request ID generator. */
+    private static final AtomicLong REQ_ID_GEN = new AtomicLong();
 
     /** Kernel context. */
     private final GridKernalContext ctx;
@@ -87,8 +90,7 @@ public class OdbcRequestHandler {
                 return getTablesMeta((OdbcQueryGetTablesMetaRequest) req);
         }
 
-        return new OdbcResponse(OdbcResponse.STATUS_FAILED,
-                "Failed to find registered handler for command: " + req.command());
+        return new OdbcResponse(OdbcResponse.STATUS_FAILED, "Unsupported ODBC request: " + req);
     }
 
     /**
@@ -98,7 +100,7 @@ public class OdbcRequestHandler {
      * @return Response.
      */
     private OdbcResponse executeQuery(OdbcQueryExecuteRequest req) {
-        long qryId = qryIdGen.getAndIncrement();
+        long qryId = QRY_ID_GEN.getAndIncrement();
 
         try {
             SqlFieldsQuery qry = new SqlFieldsQuery(req.sqlQuery());
@@ -109,18 +111,15 @@ public class OdbcRequestHandler {
 
             if (cache == null)
                 return new OdbcResponse(OdbcResponse.STATUS_FAILED,
-                        "Failed to find cache with name: " + req.cacheName());
+                    "Cache doesn't exist (did you configure it?): " + req.cacheName());
 
             QueryCursor qryCur = cache.query(qry);
 
-            Iterator cur = qryCur.iterator();
+            Iterator iter = qryCur.iterator();
 
-            qryCurs.put(qryId, new IgniteBiTuple<>(qryCur, cur));
+            qryCurs.put(qryId, new IgniteBiTuple<>(qryCur, iter));
 
             List<?> fieldsMeta = ((QueryCursorImpl) qryCur).fieldsMeta();
-
-            if (log.isDebugEnabled())
-                log.debug("Field meta: [meta: " + fieldsMeta + ']');
 
             OdbcQueryExecuteResult res = new OdbcQueryExecuteResult(qryId, convertMetadata(fieldsMeta));
 
@@ -172,8 +171,7 @@ public class OdbcRequestHandler {
             Iterator cur = qryCurs.get(req.queryId()).get2();
 
             if (cur == null)
-                return new OdbcResponse(OdbcResponse.STATUS_FAILED,
-                        "Failed to find query with ID: " + req.queryId());
+                return new OdbcResponse(OdbcResponse.STATUS_FAILED, "Failed to find query with ID: " + req.queryId());
 
             List<Object> items = new ArrayList<>();
 
@@ -208,12 +206,12 @@ public class OdbcRequestHandler {
                 // Parsing two-part table name.
                 String[] parts = req.tableName().split("\\.");
 
-                cacheName = removeQuotationMarksIfNeeded(parts[0]);
+                cacheName = OdbcUtils.removeQuotationMarksIfNeeded(parts[0]);
 
                 tableName = parts[1];
             }
             else {
-                cacheName = removeQuotationMarksIfNeeded(req.cacheName());
+                cacheName = OdbcUtils.removeQuotationMarksIfNeeded(req.cacheName());
 
                 tableName = req.tableName();
             }
@@ -228,13 +226,14 @@ public class OdbcRequestHandler {
                     if (!matches(field.getKey(), req.columnName()))
                         continue;
 
-                    OdbcColumnMeta columnMeta = new OdbcColumnMeta(req.cacheName(),
-                            table.name(), field.getKey(), field.getValue());
+                    OdbcColumnMeta columnMeta = new OdbcColumnMeta(req.cacheName(), table.name(),
+                        field.getKey(), field.getValue());
 
                     if (!meta.contains(columnMeta))
                         meta.add(columnMeta);
                 }
             }
+
             OdbcQueryGetColumnsMetaResult res = new OdbcQueryGetColumnsMetaResult(meta);
 
             return new OdbcResponse(res);
@@ -254,7 +253,7 @@ public class OdbcRequestHandler {
         try {
             List<OdbcTableMeta> meta = new ArrayList<>();
 
-            String realSchema = removeQuotationMarksIfNeeded(req.schema());
+            String realSchema = OdbcUtils.removeQuotationMarksIfNeeded(req.schema());
 
             for (String cacheName : ctx.cache().cacheNames())
             {
@@ -270,8 +269,7 @@ public class OdbcRequestHandler {
                     if (!matches("TABLE", req.tableType()))
                         continue;
 
-                    OdbcTableMeta tableMeta = new OdbcTableMeta(req.catalog(), cacheName,
-                            table.name(), "TABLE");
+                    OdbcTableMeta tableMeta = new OdbcTableMeta(req.catalog(), cacheName, table.name(), "TABLE");
 
                     if (!meta.contains(tableMeta))
                         meta.add(tableMeta);
@@ -317,19 +315,6 @@ public class OdbcRequestHandler {
      */
     private static boolean matches(String str, String ptrn) {
         return str != null && (F.isEmpty(ptrn) ||
-                str.toUpperCase().matches(ptrn.toUpperCase().replace("%", ".*").replace("_", ".")));
-    }
-
-    /**
-     * Remove quotation marks at the beginning and end of the string if present.
-     *
-     * @param str Input string.
-     * @return String without leading and trailing quotation marks.
-     */
-    private static String removeQuotationMarksIfNeeded(String str) {
-        if (str.startsWith("\"") && str.endsWith("\""))
-            return str.substring(1, str.length() - 1);
-
-        return str;
+            str.toUpperCase().matches(ptrn.toUpperCase().replace("%", ".*").replace("_", ".")));
     }
 }

@@ -35,22 +35,20 @@ import org.jetbrains.annotations.Nullable;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.concurrent.atomic.AtomicLong;
 
 /**
- * SQL query handler.
+ * ODBC message listener.
  */
 public class OdbcNioListener extends GridNioServerListenerAdapter<byte[]> {
     /** Initial output stream capacity. */
     private static final int INIT_CAP = 1024;
 
-    /** Kernel context. */
-    private final GridKernalContext ctx;
+    /** Request ID generator. */
+    private static final AtomicLong REQ_ID_GEN = new AtomicLong();
 
     /** Busy lock. */
     private final GridSpinBusyLock busyLock;
-
-    /** Logger. */
-    private final IgniteLogger log;
 
     /** Request handler. */
     private final OdbcRequestHandler handler;
@@ -58,18 +56,22 @@ public class OdbcNioListener extends GridNioServerListenerAdapter<byte[]> {
     /** Marshaller. */
     private final GridBinaryMarshaller marsh;
 
+    /** Logger. */
+    private final IgniteLogger log;
+
     /**
-     * Constructor.
-     *
      * @param ctx Context.
+     * @param busyLock Shutdown busy lock.
+     * @param handler Request handler.
      */
     public OdbcNioListener(final GridKernalContext ctx, final GridSpinBusyLock busyLock,
                            final OdbcRequestHandler handler) {
-        this.ctx = ctx;
         this.busyLock = busyLock;
         this.handler = handler;
 
-        this.marsh = ((CacheObjectBinaryProcessorImpl)ctx.cacheObjects()).marshaller();
+        CacheObjectBinaryProcessorImpl cacheObjProc = (CacheObjectBinaryProcessorImpl)ctx.cacheObjects();
+
+        marsh = cacheObjProc.marshaller();
 
         this.log = ctx.log(getClass());
     }
@@ -77,19 +79,16 @@ public class OdbcNioListener extends GridNioServerListenerAdapter<byte[]> {
     /** {@inheritDoc} */
     @Override public void onConnected(GridNioSession ses) {
         if (log.isDebugEnabled())
-            log.debug("Driver connected");
+            log.debug("ODBC client connected: " + ses.remoteAddress());
     }
 
     /** {@inheritDoc} */
     @Override public void onDisconnected(GridNioSession ses, @Nullable Exception e) {
-        if (log.isDebugEnabled())
-            log.debug("Driver disconnected");
-
-        if (e != null) {
-            if (e instanceof RuntimeException)
-                U.error(log, "Failed to process request from remote client: " + ses, e);
+        if (log.isDebugEnabled()) {
+            if (e == null)
+                log.debug("ODBC client disconnected: " + ses.remoteAddress());
             else
-                U.warn(log, "Closed client session due to exception [ses=" + ses + ", msg=" + e.getMessage() + ']');
+                log.debug("ODBC client disconnected due to an error [addr=" + ses.remoteAddress() + ", err=" + e + ']');
         }
     }
 
@@ -98,18 +97,28 @@ public class OdbcNioListener extends GridNioServerListenerAdapter<byte[]> {
         assert msg != null;
 
         try {
+            long reqId = REQ_ID_GEN.incrementAndGet();
+            long startTime = 0;
+
             OdbcRequest req = decode(msg);
+
+            if (log.isDebugEnabled()) {
+                startTime = System.nanoTime();
+
+                log.debug("ODBC request received [id=" + reqId + ", addr=" + ses.remoteAddress() + ", req=" + req + ']');
+            }
 
             OdbcResponse rsp = handle(req);
 
-            if (log.isDebugEnabled())
-                log.debug("Handling result: [res=" + rsp.status() + ']');
+            if (log.isDebugEnabled()) {
+                long dur = (System.nanoTime() - startTime) / 1000;
 
+                log.debug("ODBC request processed [id=" + reqId + ", dur(mcs)=" + dur  + ", rsp=" + rsp.status() + ']');
+            }
             byte[] outMsg = encode(rsp);
 
             ses.send(outMsg);
-        }
-        catch (Exception e) {
+        } catch (Exception e) {
             trySendErrorMessage(ses, e.getMessage());
         }
     }
@@ -353,17 +362,9 @@ public class OdbcNioListener extends GridNioServerListenerAdapter<byte[]> {
     private OdbcResponse handle(OdbcRequest req) {
         assert req != null;
 
-        if (log.isDebugEnabled())
-            log.debug("Received request from client: [req=" + req + ']');
-
-        if (!busyLock.enterBusy()) {
-            String errMsg = "Failed to handle request [req=" + req +
-                    ", err=Received request while stopping grid]";
-
-            U.error(log, errMsg);
-
-            return new OdbcResponse(OdbcResponse.STATUS_FAILED, errMsg);
-        }
+        if (!busyLock.enterBusy())
+            return new OdbcResponse(OdbcResponse.STATUS_FAILED,
+                "Failed to handle ODBC request because node is stopping: " + req);
 
         try {
             return handler.handle(req);

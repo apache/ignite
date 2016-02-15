@@ -26,13 +26,18 @@ import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import java.util.UUID;
+import javax.cache.configuration.CacheEntryListenerConfiguration;
 import javax.cache.configuration.Factory;
+import javax.cache.configuration.MutableCacheEntryListenerConfiguration;
+import javax.cache.event.CacheEntryListener;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.cache.CacheEntryEventSerializableFilter;
 import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.cache.CacheRebalanceMode;
 import org.apache.ignite.cache.affinity.AffinityFunction;
 import org.apache.ignite.cache.affinity.AffinityFunctionContext;
+import org.apache.ignite.cache.affinity.AffinityKeyMapper;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -43,6 +48,8 @@ import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgnitePredicate;
+import org.apache.ignite.plugin.CachePluginConfiguration;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
@@ -71,7 +78,7 @@ public class GridCacheReplicatedPreloadSelfTest extends GridCommonAbstractTest {
     private int poolSize = 2;
 
     /** */
-    private volatile boolean needStore = false;
+    private volatile boolean extClassloadingAtCfg = false;
 
     /** */
     private volatile boolean isClient = false;
@@ -136,21 +143,47 @@ public class GridCacheReplicatedPreloadSelfTest extends GridCommonAbstractTest {
         cacheCfg.setRebalanceBatchSize(batchSize);
         cacheCfg.setRebalanceThreadPoolSize(poolSize);
 
-        if (needStore) {
-            Object sf = null;
-
-            try {
-                sf = getExternalClassLoader().
-                    loadClass("org.apache.ignite.tests.p2p.CacheDeploymentTestStoreFactory").newInstance();
-            }
-            catch (Exception e) {
-                throw new RuntimeException(e);
-            }
-
-            cacheCfg.setCacheStoreFactory((Factory)sf);
+        if (extClassloadingAtCfg) {
+            loadExternalClassesToCfg(cacheCfg);
         }
 
         return cacheCfg;
+    }
+
+    /**
+     *
+     * @param cacheCfg Configuration.
+     */
+    private void loadExternalClassesToCfg(CacheConfiguration cacheCfg) {
+        try {
+            Object sf = getExternalClassLoader().
+                loadClass("org.apache.ignite.tests.p2p.CacheDeploymentTestStoreFactory").newInstance();
+
+            cacheCfg.setCacheStoreFactory((Factory)sf);
+
+            Object sslf = getExternalClassLoader().
+                loadClass("org.apache.ignite.tests.p2p.CacheDeploymentStoreSessionListenerFactory").newInstance();
+
+            cacheCfg.setCacheStoreSessionListenerFactories((Factory)sslf);
+
+            Object cpc = getExternalClassLoader().
+                loadClass("org.apache.ignite.tests.p2p.CacheDeploymentCachePluginConfiguration").newInstance();
+
+            cacheCfg.setPluginConfigurations((CachePluginConfiguration)cpc);
+
+            Object akm = getExternalClassLoader().
+                loadClass("org.apache.ignite.tests.p2p.CacheDeploymentAffinityKeyMapper").newInstance();
+
+            cacheCfg.setAffinityMapper((AffinityKeyMapper)akm);
+
+            Object pred = getExternalClassLoader().
+                loadClass("org.apache.ignite.tests.p2p.CacheDeploymentAlwaysTruePredicate2").newInstance();
+
+            cacheCfg.setNodeFilter((IgnitePredicate)pred);
+        }
+        catch (Exception e) {
+            throw new RuntimeException(e);
+        }
     }
 
     /**
@@ -299,9 +332,9 @@ public class GridCacheReplicatedPreloadSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If test failed.
      */
-    public void testStore() throws Exception {
+    public void testExternalClassesAtConfiguration() throws Exception {
         try {
-            needStore = true;
+            extClassloadingAtCfg = true;
             useExtClassLoader = true;
 
             Ignite g1 = startGrid(1);
@@ -316,13 +349,47 @@ public class GridCacheReplicatedPreloadSelfTest extends GridCommonAbstractTest {
             IgniteCache<Integer, Object> cache2 = g2.cache(null);
             IgniteCache<Integer, Object> cache3 = g3.cache(null);
 
+            final Class<CacheEntryListener> cls1 = (Class<CacheEntryListener>) getExternalClassLoader().
+                loadClass("org.apache.ignite.tests.p2p.CacheDeploymentCacheEntryListener");
+            final Class<CacheEntryEventSerializableFilter> cls2 = (Class<CacheEntryEventSerializableFilter>) getExternalClassLoader().
+                loadClass("org.apache.ignite.tests.p2p.CacheDeploymentCacheEntryEventSerializableFilter");
+
+            CacheEntryListenerConfiguration<Integer, Object> lsnrCfg = new MutableCacheEntryListenerConfiguration<>(
+                new Factory<CacheEntryListener<Integer, Object>>() {
+                    @Override public CacheEntryListener<Integer, Object> create() {
+                        try {
+                            return cls1.newInstance();
+                        }
+                        catch (Exception e) {
+                            throw new RuntimeException(e);
+                        }
+                    }
+                },
+                new Factory<CacheEntryEventSerializableFilter<Integer, Object>>() {
+                    /** {@inheritDoc} */
+                    @Override public CacheEntryEventSerializableFilter<Integer, Object> create() {
+                        try {
+
+                            return cls2.newInstance();
+                        }
+                        catch (Exception e) {
+                            throw new RuntimeException(e);
+                        }
+                    }
+                },
+                true,
+                true
+            );
+
+            cache1.registerCacheEntryListener(lsnrCfg);
+
             cache1.put(1, 1);
 
             assertEquals(1, cache2.get(1));
             assertEquals(1, cache3.get(1));
         }
         finally {
-            needStore = false;
+            extClassloadingAtCfg = false;
             isClient = false;
             useExtClassLoader = false;
         }
@@ -331,9 +398,9 @@ public class GridCacheReplicatedPreloadSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If test failed.
      */
-    public void testStoreDynamicStart() throws Exception {
+    public void testExternalClassesAtConfigurationDynamicStart() throws Exception {
         try {
-            needStore = false;
+            extClassloadingAtCfg = false;
             useExtClassLoader = true;
 
             Ignite g1 = startGrid(1);
@@ -343,12 +410,10 @@ public class GridCacheReplicatedPreloadSelfTest extends GridCommonAbstractTest {
 
             Ignite g3 = startGrid(3);
 
-            Object sf = getExternalClassLoader().loadClass(
-                "org.apache.ignite.tests.p2p.CacheDeploymentTestStoreFactory").newInstance();
-
             CacheConfiguration cfg = defaultCacheConfiguration();
 
-            cfg.setCacheStoreFactory((Factory)sf);
+            loadExternalClassesToCfg(cfg);
+
             cfg.setName("customStore");
 
             IgniteCache<Integer, Object> cache1 = g1.createCache(cfg);
@@ -362,7 +427,7 @@ public class GridCacheReplicatedPreloadSelfTest extends GridCommonAbstractTest {
             assertEquals(1, cache3.get(1));
         }
         finally {
-            needStore = false;
+            extClassloadingAtCfg = false;
             isClient = false;
             useExtClassLoader = false;
         }
@@ -371,9 +436,9 @@ public class GridCacheReplicatedPreloadSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If test failed.
      */
-    public void testStoreDynamicStart2() throws Exception {
+    public void testExternalClassesAtConfigurationDynamicStart2() throws Exception {
         try {
-            needStore = false;
+            extClassloadingAtCfg = false;
             useExtClassLoader = true;
 
             Ignite g1 = startGrid(1);
@@ -383,12 +448,10 @@ public class GridCacheReplicatedPreloadSelfTest extends GridCommonAbstractTest {
 
             Ignite g3 = startGrid(3);
 
-            Object sf = getExternalClassLoader().loadClass(
-                "org.apache.ignite.tests.p2p.CacheDeploymentTestStoreFactory").newInstance();
-
             CacheConfiguration cfg = defaultCacheConfiguration();
 
-            cfg.setCacheStoreFactory((Factory)sf);
+            loadExternalClassesToCfg(cfg);
+
             cfg.setName("customStore");
 
             IgniteCache<Integer, Object> cache1 = g1.getOrCreateCache(cfg);
@@ -402,7 +465,7 @@ public class GridCacheReplicatedPreloadSelfTest extends GridCommonAbstractTest {
             assertEquals(1, cache3.get(1));
         }
         finally {
-            needStore = false;
+            extClassloadingAtCfg = false;
             isClient = false;
             useExtClassLoader = false;
         }

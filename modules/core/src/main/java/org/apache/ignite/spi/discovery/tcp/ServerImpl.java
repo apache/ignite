@@ -4597,6 +4597,8 @@ class ServerImpl extends TcpDiscoveryImpl {
                         else
                             processCustomMessage(msg);
                     }
+
+                    msg.message(null, msg.messageBytes());
                 }
                 else {
                     addMessage(new TcpDiscoveryDiscardMessage(getLocalNodeId(), msg.id(), true));
@@ -4654,6 +4656,9 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                     notifyDiscoveryListener(msg);
                 }
+
+                if (msg.verified())
+                    msg.message(null, msg.messageBytes());
 
                 if (sendMessageToRemotes(msg))
                     sendMessageAcrossRing(msg);

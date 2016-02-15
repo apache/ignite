@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.odbc;
 
+import org.apache.ignite.internal.util.typedef.internal.S;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -64,5 +65,10 @@ public class OdbcQueryGetColumnsMetaRequest extends OdbcRequest {
      */
     public String columnName() {
         return columnName;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(OdbcQueryGetColumnsMetaRequest.class, this);
     }
 }
