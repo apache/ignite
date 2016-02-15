@@ -50,7 +50,7 @@ public class ClientGetAffinityTask extends TaskSingleJobSplitAdapter<String, Int
         if ("null".equals(cacheName))
             cacheName = null;
 
-        ClusterNode node = ignite.cluster().mapKeyToNode(cacheName, affKey);
+        ClusterNode node = ignite.affinity(cacheName).mapKeyToNode(affKey);
 
         return node.id().toString();
     }

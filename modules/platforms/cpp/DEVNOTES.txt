@@ -1,0 +1,59 @@
+Apache Ignite C++ Build Instructions
+====================================
+
+Building on Linux With Autotools
+----------------------------------
+
+Common Requirements:
+
+ * GCC, g++, autotools, automake, and libtool must be installed
+ * Java Development Kit (JDK) must be installed: https://java.com/en/download/index.jsp
+ * JAVA_HOME environment variable must be set pointing to Java installation directory.
+
+Building the library:
+
+ * Build Apache Ignite C++ helper "common" library:
+     * Navigate to the directory $IGNITE_HOME/platforms/cpp/common
+     * Execute the following commands one by one:
+         * libtoolize
+         * aclocal
+         * autoheader
+         * automake --add-missing
+         * autoreconf
+         * ./configure
+         * make
+         * make install
+ * Build Apache Ignite C++ library:
+     * Navigate to the directory $IGNITE_HOME/platforms/cpp/core
+     * Execute the following commands one by one:
+         * libtoolize
+         * aclocal
+         * autoheader
+         * automake --add-missing
+         * autoreconf
+         * ./configure
+         * make
+         * make install
+
+NOTE: "make install" command may require superuser privileges. In this case it must be
+executed as "sudo make install".
+
+Building on Windows with Visual Studio (tm)
+----------------------------------
+
+Common Requirements:
+
+ * Microsoft Visual Studio (tm) 2010 or later
+ * Windows SDK 7.1
+ * Java Development Kit (JDK) must be installed: https://java.com/en/download/index.jsp
+ * JAVA_HOME environment variable must be set pointing to Java installation directory.
+
+Building binaries:
+
+ * Open and build %IGNITE_HOME%\platforms\cpp\project\vs\ignite.sln (or ignite_86.sln if you are running
+   32-bit platform).
+
+Building in later versions of Visual Studio:
+ * Open project\vs\ignite.sln or project\vs\ignite_86.sln in Visual Studio
+ * You will be prompted to "Update VC++ Compiler and Libraries", click "Update"
+ * Build the solution.

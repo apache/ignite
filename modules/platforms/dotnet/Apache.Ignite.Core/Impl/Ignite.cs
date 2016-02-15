@@ -25,6 +25,7 @@ namespace Apache.Ignite.Core.Impl
     using System.Linq;
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Cache;
+    using Apache.Ignite.Core.Cache.Configuration;
     using Apache.Ignite.Core.Cluster;
     using Apache.Ignite.Core.Compute;
     using Apache.Ignite.Core.Datastream;
@@ -339,9 +340,49 @@ namespace Apache.Ignite.Core.Impl
         }
 
         /** <inheritdoc /> */
+        public ICache<TK, TV> GetOrCreateCache<TK, TV>(CacheConfiguration configuration)
+        {
+            IgniteArgumentCheck.NotNull(configuration, "configuration");
+
+            using (var stream = IgniteManager.Memory.Allocate().GetStream())
+            {
+                var writer = Marshaller.StartMarshal(stream);
+
+                configuration.Write(writer);
+
+                stream.SynchronizeOutput();
+
+                return Cache<TK, TV>(UU.ProcessorGetOrCreateCache(_proc, stream.MemoryPointer));
+            }
+        }
+
+        /** <inheritdoc /> */
         public ICache<TK, TV> CreateCache<TK, TV>(string name)
         {
             return Cache<TK, TV>(UU.ProcessorCreateCache(_proc, name));
+        }
+
+        /** <inheritdoc /> */
+        public ICache<TK, TV> CreateCache<TK, TV>(CacheConfiguration configuration)
+        {
+            IgniteArgumentCheck.NotNull(configuration, "configuration");
+
+            using (var stream = IgniteManager.Memory.Allocate().GetStream())
+            {
+                var writer = Marshaller.StartMarshal(stream);
+
+                configuration.Write(writer);
+
+                stream.SynchronizeOutput();
+
+                return Cache<TK, TV>(UU.ProcessorCreateCache(_proc, stream.MemoryPointer));
+            }
+        }
+
+        /** <inheritdoc /> */
+        public void DestroyCache(string name)
+        {
+            UU.ProcessorDestroyCache(_proc, name);
         }
 
         /// <summary>
@@ -442,6 +483,69 @@ namespace Apache.Ignite.Core.Impl
                 return null;
 
             return new AtomicLong(nativeLong, Marshaller, name);
+        }
+
+        /** <inheritdoc /> */
+        public IAtomicSequence GetAtomicSequence(string name, long initialValue, bool create)
+        {
+            IgniteArgumentCheck.NotNullOrEmpty(name, "name");
+
+            var nativeSeq = UU.ProcessorAtomicSequence(_proc, name, initialValue, create);
+
+            if (nativeSeq == null)
+                return null;
+
+            return new AtomicSequence(nativeSeq, Marshaller, name);
+        }
+
+        /** <inheritdoc /> */
+        public IAtomicReference<T> GetAtomicReference<T>(string name, T initialValue, bool create)
+        {
+            IgniteArgumentCheck.NotNullOrEmpty(name, "name");
+
+            var refTarget = GetAtomicReferenceUnmanaged(name, initialValue, create);
+
+            return refTarget == null ? null : new AtomicReference<T>(refTarget, Marshaller, name);
+        }
+
+        /// <summary>
+        /// Gets the unmanaged atomic reference.
+        /// </summary>
+        /// <param name="name">The name.</param>
+        /// <param name="initialValue">The initial value.</param>
+        /// <param name="create">Create flag.</param>
+        /// <returns>Unmanaged atomic reference, or null.</returns>
+        private IUnmanagedTarget GetAtomicReferenceUnmanaged<T>(string name, T initialValue, bool create)
+        {
+            IgniteArgumentCheck.NotNullOrEmpty(name, "name");
+
+            // Do not allocate memory when default is not used.
+            if (!create)
+                return UU.ProcessorAtomicReference(_proc, name, 0, false);
+            
+            using (var stream = IgniteManager.Memory.Allocate().GetStream())
+            {
+                var writer = Marshaller.StartMarshal(stream);
+
+                writer.Write(initialValue);
+
+                var memPtr = stream.SynchronizeOutput();
+
+                return UU.ProcessorAtomicReference(_proc, name, memPtr, true);
+            }
+        }
+
+        /** <inheritdoc /> */
+        public IgniteConfiguration GetConfiguration()
+        {
+            using (var stream = IgniteManager.Memory.Allocate(1024).GetStream())
+            {
+                UU.ProcessorGetIgniteConfiguration(_proc, stream.MemoryPointer);
+
+                stream.SynchronizeInput();
+
+                return new IgniteConfiguration(_marsh.StartUnmarshal(stream));
+            }
         }
 
         /// <summary>

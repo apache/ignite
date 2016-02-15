@@ -122,11 +122,14 @@ public class GridCacheQueryResponse extends GridCacheMessage implements GridCach
 
         GridCacheContext cctx = ctx.cacheContext(cacheId);
 
-        if (err != null)
+        if (err != null && errBytes == null)
             errBytes = ctx.marshaller().marshal(err);
 
-        metaDataBytes = marshalCollection(metadata, cctx);
-        dataBytes = marshalCollection(data, cctx);
+        if (metaDataBytes == null)
+            metaDataBytes = marshalCollection(metadata, cctx);
+
+        if (dataBytes == null)
+            dataBytes = marshalCollection(data, cctx);
 
         if (addDepInfo && !F.isEmpty(data)) {
             for (Object o : data) {
@@ -144,11 +147,14 @@ public class GridCacheQueryResponse extends GridCacheMessage implements GridCach
     @Override public void finishUnmarshal(GridCacheSharedContext ctx, ClassLoader ldr) throws IgniteCheckedException {
         super.finishUnmarshal(ctx, ldr);
 
-        if (errBytes != null)
+        if (errBytes != null && err == null)
             err = ctx.marshaller().unmarshal(errBytes, ldr);
 
-        metadata = unmarshalCollection(metaDataBytes, ctx, ldr);
-        data = unmarshalCollection(dataBytes, ctx, ldr);
+        if (metadata == null)
+            metadata = unmarshalCollection(metaDataBytes, ctx, ldr);
+
+        if (data == null)
+            data = unmarshalCollection(dataBytes, ctx, ldr);
     }
 
     /** {@inheritDoc} */

@@ -103,9 +103,6 @@ import static org.jsr166.ConcurrentLinkedDeque8.Node;
  * Cache eviction manager.
  */
 public class GridCacheEvictionManager extends GridCacheManagerAdapter {
-    /** Unsafe instance. */
-    private static final sun.misc.Unsafe unsafe = GridUnsafe.unsafe();
-
     /** Attribute name used to queue node in entry metadata. */
     private static final int META_KEY = GridMetadataAwareAdapter.EntryKey.CACHE_EVICTION_MANAGER_KEY.key();
 
@@ -985,7 +982,7 @@ public class GridCacheEvictionManager extends GridCacheManagerAdapter {
                     continue;
 
                 // Lock entry.
-                unsafe.monitorEnter(entry);
+                GridUnsafe.monitorEnter(entry);
 
                 locked.add(entry);
 
@@ -1028,7 +1025,7 @@ public class GridCacheEvictionManager extends GridCacheManagerAdapter {
             for (ListIterator<GridCacheEntryEx> it = locked.listIterator(locked.size()); it.hasPrevious();) {
                 GridCacheEntryEx e = it.previous();
 
-                unsafe.monitorExit(e);
+                GridUnsafe.monitorExit(e);
             }
 
             // Remove entries and fire events outside the locks.

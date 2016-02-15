@@ -124,8 +124,10 @@ namespace Apache.Ignite.Core.Events
         /// </summary>
         public object Row { get { return _row; } }
 
-        /** <inheritDoc /> */
-	    public override string ToShortString()
+        /// <summary>
+        /// Gets shortened version of ToString result.
+        /// </summary>
+        public override string ToShortString()
 	    {
 	        return string.Format(CultureInfo.InvariantCulture,
 	            "{0}: QueryType={1}, CacheName={2}, ClassName={3}, Clause={4}, SubjectId={5}, " +

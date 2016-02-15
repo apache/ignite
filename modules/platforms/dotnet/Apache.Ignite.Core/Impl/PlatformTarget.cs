@@ -234,7 +234,7 @@ namespace Apache.Ignite.Core.Impl
         /// <param name="writeItem">Write action to perform on item when it is not null.</param>
         /// <returns>The same writer for chaining.</returns>
         protected static BinaryWriter WriteNullable<T>(BinaryWriter writer, T item,
-            Func<BinaryWriter, T, BinaryWriter> writeItem)
+            Func<BinaryWriter, T, BinaryWriter> writeItem) where T : class
         {
             if (item == null)
             {
@@ -285,6 +285,26 @@ namespace Apache.Ignite.Core.Impl
                 FinishMarshal(writer);
 
                 return UU.TargetInStreamOutLong(_target, type, stream.SynchronizeOutput());
+            }
+        }
+
+        /// <summary>
+        /// Perform out operation.
+        /// </summary>
+        /// <param name="type">Operation type.</param>
+        /// <param name="action">Action to be performed on the stream.</param>
+        /// <returns></returns>
+        protected IUnmanagedTarget DoOutOpObject(int type, Action<BinaryWriter> action)
+        {
+            using (var stream = IgniteManager.Memory.Allocate().GetStream())
+            {
+                var writer = _marsh.StartMarshal(stream);
+
+                action(writer);
+
+                FinishMarshal(writer);
+
+                return UU.TargetInStreamOutObject(_target, type, stream.SynchronizeOutput());
             }
         }
 
@@ -623,6 +643,37 @@ namespace Apache.Ignite.Core.Impl
         protected virtual T Unmarshal<T>(IBinaryStream stream)
         {
             return _marsh.Unmarshal<T>(stream);
+        }
+
+        /// <summary>
+        /// Creates a future and starts listening.
+        /// </summary>
+        /// <typeparam name="T">Future result type</typeparam>
+        /// <param name="listenAction">The listen action.</param>
+        /// <param name="keepBinary">Keep binary flag, only applicable to object futures. False by default.</param>
+        /// <param name="convertFunc">The function to read future result from stream.</param>
+        /// <returns>Created future.</returns>
+        protected Future<T> GetFuture<T>(Func<long, int, IUnmanagedTarget> listenAction, bool keepBinary = false,
+            Func<BinaryReader, T> convertFunc = null)
+        {
+            var futType = FutureType.Object;
+
+            var type = typeof(T);
+
+            if (type.IsPrimitive)
+                IgniteFutureTypeMap.TryGetValue(type, out futType);
+
+            var fut = convertFunc == null && futType != FutureType.Object
+                ? new Future<T>()
+                : new Future<T>(new FutureConverter<T>(_marsh, keepBinary, convertFunc));
+
+            var futHnd = _marsh.Ignite.HandleRegistry.Allocate(fut);
+
+            var futTarget = listenAction(futHnd, (int) futType);
+
+            fut.SetTarget(futTarget);
+
+            return fut;
         }
 
         /// <summary>

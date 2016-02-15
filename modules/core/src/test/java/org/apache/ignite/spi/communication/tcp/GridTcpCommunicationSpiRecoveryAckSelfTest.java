@@ -85,7 +85,6 @@ public class GridTcpCommunicationSpiRecoveryAckSelfTest<T extends CommunicationS
     }
 
     /** */
-    @SuppressWarnings({"deprecation"})
     private class TestListener implements CommunicationListener<Message> {
         /** */
         private ConcurrentHashSet<Long> msgIds = new ConcurrentHashSet<>();
