@@ -429,18 +429,6 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
             Assert.AreEqual(RoleCount, res.Length);
         }
 
-        //[Test]
-        public void TestPerformance()
-        {
-            for (var i = 0; i < 1000; i++)
-            {
-                TestMultiCacheJoinSubquery();
-                TestGroupBy();
-                TestMultipleFrom();
-                TestDateTime();
-            }
-        }
-
         /// <summary>
         /// Tests the multi cache join subquery.
         /// </summary>
