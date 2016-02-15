@@ -35,37 +35,39 @@ module.exports.factory = function(_, express, mongo) {
          * @param res Response.
          */
         router.post('/list', (req, res) => {
-            const user_id = req.currentUserId();
+            const result = {};
 
             // Get owned space and all accessed space.
-            mongo.Space.find({$or: [{owner: user_id}, {usedBy: {$elemMatch: {account: user_id}}}]}, (errSpace, spaces) => {
-                if (mongo.processed(errSpace, res)) {
-                    const space_ids = spaces.map((value) => value._id);
+            mongo.Space.find({$or: [{owner: req.currentUserId()}, {usedBy: {$elemMatch: {account: req.currentUserId()}}}]}).exec()
+                .then((spaces) => {
+                    result.spaces = spaces;
+                    result.spacesIds = spaces.map((value) => value._id);
 
-                    // Get all clusters for spaces.
-                    mongo.Cluster.find({space: {$in: space_ids}}, '_id name').sort('name').exec((errCluster, clusters) => {
-                        if (mongo.processed(errCluster, res)) {
-                            // Get all IGFSs for spaces.
-                            mongo.Igfs.find({space: {$in: space_ids}}).sort('name').exec((errIgfs, igfss) => {
-                                if (mongo.processed(errIgfs, res)) {
-                                    _.forEach(igfss, (igfs) => {
-                                        // Remove deleted clusters.
-                                        igfs.clusters = _.filter(igfs.clusters, (clusterId) => {
-                                            return _.findIndex(clusters, (cluster) => cluster._id.equals(clusterId)) >= 0;
-                                        });
-                                    });
+                    return mongo.Cluster.find({space: {$in: result.spacesIds}}, '_id name').sort('name').exec();
+                })
+                .then(clusters => {
+                    result.clusters = clusters;
 
-                                    res.json({
-                                        spaces,
-                                        clusters: clusters.map((cluster) => ({value: cluster._id, label: cluster.name})),
-                                        igfss
-                                    });
-                                }
-                            });
-                        }
+                    return  mongo.Igfs.find({space: {$in: result.spacesIds}}).sort('name').exec();
+                })
+                .then(igfss => {
+                    _.forEach(igfss, (igfs) => {
+                        // Remove deleted clusters.
+                        igfs.clusters = _.filter(igfs.clusters, (clusterId) => {
+                            return _.findIndex(result.clusters, (cluster) => cluster._id.equals(clusterId)) >= 0;
+                        });
                     });
-                }
-            });
+
+                    res.json({
+                        spaces: result.spaces,
+                        clusters: result.clusters.map((cluster) => ({value: cluster._id, label: cluster.name})),
+                        igfss
+                    });
+                })
+                .catch((err) => {
+                    // TODO IGNITE-843 Send error to admin
+                    res.status(500).send(err.message);
+                });
         });
 
         /**
