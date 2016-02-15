@@ -769,168 +769,168 @@ public class CacheFullApiNewSelfTest extends CacheAbstractNewSelfTest {
     /**
      * @throws Exception If failed.
      */
-    public void _testInvokeOptimisticReadCommitted1() throws Exception {
+    public void testInvokeOptimisticReadCommitted1() throws Exception {
         checkInvoke(OPTIMISTIC, READ_COMMITTED, DataMode.PLANE_OBJECT);
     }
 
     /**
      * @throws Exception If failed.
      */
-    public void _testInvokeOptimisticReadCommitted2() throws Exception {
+    public void testInvokeOptimisticReadCommitted2() throws Exception {
         checkInvoke(OPTIMISTIC, READ_COMMITTED, DataMode.SERIALIZABLE);
     }
 
     /**
      * @throws Exception If failed.
      */
-    public void _testInvokeOptimisticReadCommitted3() throws Exception {
+    public void testInvokeOptimisticReadCommitted3() throws Exception {
         checkInvoke(OPTIMISTIC, READ_COMMITTED, DataMode.EXTERNALIZABLE);
     }
 
     /**
      * @throws Exception If failed.
      */
-    public void _testInvokeOptimisticRepeatableRead1() throws Exception {
+    public void testInvokeOptimisticRepeatableRead1() throws Exception {
         checkInvoke(OPTIMISTIC, REPEATABLE_READ, DataMode.PLANE_OBJECT);
     }
 
     /**
      * @throws Exception If failed.
      */
-    public void _testInvokeOptimisticRepeatableRead2() throws Exception {
+    public void testInvokeOptimisticRepeatableRead2() throws Exception {
         checkInvoke(OPTIMISTIC, REPEATABLE_READ, DataMode.SERIALIZABLE);
     }
 
     /**
      * @throws Exception If failed.
      */
-    public void _testInvokeOptimisticRepeatableRead3() throws Exception {
+    public void testInvokeOptimisticRepeatableRead3() throws Exception {
         checkInvoke(OPTIMISTIC, REPEATABLE_READ, DataMode.PLANE_OBJECT);
     }
 
     /**
      * @throws Exception If failed.
      */
-    public void _testInvokePessimisticReadCommitted1() throws Exception {
+    public void testInvokePessimisticReadCommitted1() throws Exception {
         checkInvoke(PESSIMISTIC, READ_COMMITTED, DataMode.PLANE_OBJECT);
     }
 
     /**
      * @throws Exception If failed.
      */
-    public void _testInvokePessimisticReadCommitted2() throws Exception {
+    public void testInvokePessimisticReadCommitted2() throws Exception {
         checkInvoke(PESSIMISTIC, READ_COMMITTED, DataMode.SERIALIZABLE);
     }
 
     /**
      * @throws Exception If failed.
      */
-    public void _testInvokePessimisticReadCommitted3() throws Exception {
+    public void testInvokePessimisticReadCommitted3() throws Exception {
         checkInvoke(PESSIMISTIC, READ_COMMITTED, DataMode.EXTERNALIZABLE);
     }
 
     /**
      * @throws Exception If failed.
      */
-    public void _testInvokePessimisticRepeatableRead1() throws Exception {
+    public void testInvokePessimisticRepeatableRead1() throws Exception {
         checkInvoke(PESSIMISTIC, REPEATABLE_READ, DataMode.PLANE_OBJECT);
     }
 
     /**
      * @throws Exception If failed.
      */
-    public void _testInvokePessimisticRepeatableRead2() throws Exception {
+    public void testInvokePessimisticRepeatableRead2() throws Exception {
         checkInvoke(PESSIMISTIC, REPEATABLE_READ, DataMode.SERIALIZABLE);
     }
 
     /**
      * @throws Exception If failed.
      */
-    public void _testInvokePessimisticRepeatableRead3() throws Exception {
+    public void testInvokePessimisticRepeatableRead3() throws Exception {
         checkInvoke(PESSIMISTIC, REPEATABLE_READ, DataMode.EXTERNALIZABLE);
     }
 
     /**
      * @throws Exception If failed.
      */
-    public void _testIgniteInvokeOptimisticReadCommitted1() throws Exception {
+    public void testIgniteInvokeOptimisticReadCommitted1() throws Exception {
         checkIgniteInvoke(OPTIMISTIC, READ_COMMITTED, DataMode.PLANE_OBJECT);
     }
 
     /**
      * @throws Exception If failed.
      */
-    public void _testIgniteInvokeOptimisticReadCommitted2() throws Exception {
+    public void testIgniteInvokeOptimisticReadCommitted2() throws Exception {
         checkIgniteInvoke(OPTIMISTIC, READ_COMMITTED, DataMode.SERIALIZABLE);
     }
 
     /**
      * @throws Exception If failed.
      */
-    public void _testIgniteInvokeOptimisticReadCommitted3() throws Exception {
+    public void testIgniteInvokeOptimisticReadCommitted3() throws Exception {
         checkIgniteInvoke(OPTIMISTIC, READ_COMMITTED, DataMode.EXTERNALIZABLE);
     }
 
     /**
      * @throws Exception If failed.
      */
-    public void _testIgniteInvokeOptimisticRepeatableRead1() throws Exception {
+    public void testIgniteInvokeOptimisticRepeatableRead1() throws Exception {
         checkIgniteInvoke(OPTIMISTIC, REPEATABLE_READ, DataMode.PLANE_OBJECT);
     }
 
     /**
      * @throws Exception If failed.
      */
-    public void _testIgniteInvokeOptimisticRepeatableRead2() throws Exception {
+    public void testIgniteInvokeOptimisticRepeatableRead2() throws Exception {
         checkIgniteInvoke(OPTIMISTIC, REPEATABLE_READ, DataMode.SERIALIZABLE);
     }
 
     /**
      * @throws Exception If failed.
      */
-    public void _testIgniteInvokeOptimisticRepeatableRead3() throws Exception {
+    public void testIgniteInvokeOptimisticRepeatableRead3() throws Exception {
         checkIgniteInvoke(OPTIMISTIC, REPEATABLE_READ, DataMode.EXTERNALIZABLE);
     }
 
     /**
      * @throws Exception If failed.
      */
-    public void _testIgniteInvokePessimisticReadCommitted1() throws Exception {
+    public void testIgniteInvokePessimisticReadCommitted1() throws Exception {
         checkIgniteInvoke(PESSIMISTIC, READ_COMMITTED, DataMode.PLANE_OBJECT);
     }
 
     /**
      * @throws Exception If failed.
      */
-    public void _testIgniteInvokePessimisticReadCommitted2() throws Exception {
+    public void testIgniteInvokePessimisticReadCommitted2() throws Exception {
         checkIgniteInvoke(PESSIMISTIC, READ_COMMITTED, DataMode.SERIALIZABLE);
     }
 
     /**
      * @throws Exception If failed.
      */
-    public void _testIgniteInvokePessimisticReadCommitted3() throws Exception {
+    public void testIgniteInvokePessimisticReadCommitted3() throws Exception {
         checkIgniteInvoke(PESSIMISTIC, READ_COMMITTED, DataMode.EXTERNALIZABLE);
     }
 
     /**
      * @throws Exception If failed.
      */
-    public void _testIgniteInvokePessimisticRepeatableRead1() throws Exception {
+    public void testIgniteInvokePessimisticRepeatableRead1() throws Exception {
         checkIgniteInvoke(PESSIMISTIC, REPEATABLE_READ, DataMode.PLANE_OBJECT);
     }
 
     /**
      * @throws Exception If failed.
      */
-    public void _testIgniteInvokePessimisticRepeatableRead2() throws Exception {
+    public void testIgniteInvokePessimisticRepeatableRead2() throws Exception {
         checkIgniteInvoke(PESSIMISTIC, REPEATABLE_READ, DataMode.SERIALIZABLE);
     }
 
     /**
      * @throws Exception If failed.
      */
-    public void _testIgniteInvokePessimisticRepeatableRead3() throws Exception {
+    public void testIgniteInvokePessimisticRepeatableRead3() throws Exception {
         checkIgniteInvoke(PESSIMISTIC, REPEATABLE_READ, DataMode.EXTERNALIZABLE);
     }
 
@@ -1025,84 +1025,84 @@ public class CacheFullApiNewSelfTest extends CacheAbstractNewSelfTest {
     /**
      * @throws Exception If failed.
      */
-    public void _testInvokeAllOptimisticReadCommitted1() throws Exception {
+    public void testInvokeAllOptimisticReadCommitted1() throws Exception {
         checkInvokeAll(OPTIMISTIC, READ_COMMITTED, DataMode.PLANE_OBJECT);
     }
 
     /**
      * @throws Exception If failed.
      */
-    public void _testInvokeAllOptimisticReadCommitted2() throws Exception {
+    public void testInvokeAllOptimisticReadCommitted2() throws Exception {
         checkInvokeAll(OPTIMISTIC, READ_COMMITTED, DataMode.SERIALIZABLE);
     }
 
     /**
      * @throws Exception If failed.
      */
-    public void _testInvokeAllOptimisticReadCommitted3() throws Exception {
+    public void testInvokeAllOptimisticReadCommitted3() throws Exception {
         checkInvokeAll(OPTIMISTIC, READ_COMMITTED, DataMode.EXTERNALIZABLE);
     }
 
     /**
      * @throws Exception If failed.
      */
-    public void _testInvokeAllOptimisticRepeatableRead1() throws Exception {
+    public void testInvokeAllOptimisticRepeatableRead1() throws Exception {
         checkInvokeAll(OPTIMISTIC, REPEATABLE_READ, DataMode.PLANE_OBJECT);
     }
 
     /**
      * @throws Exception If failed.
      */
-    public void _testInvokeAllOptimisticRepeatableRead2() throws Exception {
+    public void testInvokeAllOptimisticRepeatableRead2() throws Exception {
         checkInvokeAll(OPTIMISTIC, REPEATABLE_READ, DataMode.SERIALIZABLE);
     }
 
     /**
      * @throws Exception If failed.
      */
-    public void _testInvokeAllOptimisticRepeatableRead3() throws Exception {
+    public void testInvokeAllOptimisticRepeatableRead3() throws Exception {
         checkInvokeAll(OPTIMISTIC, REPEATABLE_READ, DataMode.EXTERNALIZABLE);
     }
 
     /**
      * @throws Exception If failed.
      */
-    public void _testInvokeAllPessimisticReadCommitted1() throws Exception {
+    public void testInvokeAllPessimisticReadCommitted1() throws Exception {
         checkInvokeAll(PESSIMISTIC, READ_COMMITTED, DataMode.PLANE_OBJECT);
     }
 
     /**
      * @throws Exception If failed.
      */
-    public void _testInvokeAllPessimisticReadCommitted2() throws Exception {
+    public void testInvokeAllPessimisticReadCommitted2() throws Exception {
         checkInvokeAll(PESSIMISTIC, READ_COMMITTED, DataMode.SERIALIZABLE);
     }
 
     /**
      * @throws Exception If failed.
      */
-    public void _testInvokeAllPessimisticReadCommitted3() throws Exception {
+    public void testInvokeAllPessimisticReadCommitted3() throws Exception {
         checkInvokeAll(PESSIMISTIC, READ_COMMITTED, DataMode.EXTERNALIZABLE);
     }
 
     /**
      * @throws Exception If failed.
      */
-    public void _testInvokeAllPessimisticRepeatableRead1() throws Exception {
+    public void testInvokeAllPessimisticRepeatableRead1() throws Exception {
         checkInvokeAll(PESSIMISTIC, REPEATABLE_READ, DataMode.PLANE_OBJECT);
     }
 
     /**
      * @throws Exception If failed.
      */
-    public void _testInvokeAllPessimisticRepeatableRead2() throws Exception {
+    public void testInvokeAllPessimisticRepeatableRead2() throws Exception {
         checkInvokeAll(PESSIMISTIC, REPEATABLE_READ, DataMode.SERIALIZABLE);
     }
 
     /**
      * @throws Exception If failed.
      */
-    public void _testInvokeAllPessimisticRepeatableRead3() throws Exception {
+    public void testInvokeAllPessimisticRepeatableRead3() throws Exception {
         checkInvokeAll(PESSIMISTIC, REPEATABLE_READ, DataMode.EXTERNALIZABLE);
     }
 
@@ -1203,21 +1203,21 @@ public class CacheFullApiNewSelfTest extends CacheAbstractNewSelfTest {
     /**
      * @throws Exception If failed.
      */
-    public void _testInvokeAllWithNulls1() throws Exception {
+    public void testInvokeAllWithNulls1() throws Exception {
         checkInvokeAllWithNulls(DataMode.PLANE_OBJECT);
     }
 
     /**
      * @throws Exception If failed.
      */
-    public void _testInvokeAllWithNulls2() throws Exception {
+    public void testInvokeAllWithNulls2() throws Exception {
         checkInvokeAllWithNulls(DataMode.SERIALIZABLE);
     }
 
     /**
      * @throws Exception If failed.
      */
-    public void _testInvokeAllWithNulls3() throws Exception {
+    public void testInvokeAllWithNulls3() throws Exception {
         checkInvokeAllWithNulls(DataMode.EXTERNALIZABLE);
     }
 
@@ -1272,84 +1272,84 @@ public class CacheFullApiNewSelfTest extends CacheAbstractNewSelfTest {
     /**
      * @throws Exception If failed.
      */
-    public void _testInvokeSequentialOptimisticNoStart1() throws Exception {
+    public void testInvokeSequentialOptimisticNoStart1() throws Exception {
         checkInvokeSequential0(false, OPTIMISTIC, DataMode.PLANE_OBJECT);
     }
 
     /**
      * @throws Exception If failed.
      */
-    public void _testInvokeSequentialOptimisticNoStart2() throws Exception {
+    public void testInvokeSequentialOptimisticNoStart2() throws Exception {
         checkInvokeSequential0(false, OPTIMISTIC, DataMode.SERIALIZABLE);
     }
 
     /**
      * @throws Exception If failed.
      */
-    public void _testInvokeSequentialOptimisticNoStart3() throws Exception {
+    public void testInvokeSequentialOptimisticNoStart3() throws Exception {
         checkInvokeSequential0(false, OPTIMISTIC, DataMode.EXTERNALIZABLE);
     }
 
     /**
      * @throws Exception If failed.
      */
-    public void _testInvokeSequentialPessimisticNoStart1() throws Exception {
+    public void testInvokeSequentialPessimisticNoStart1() throws Exception {
         checkInvokeSequential0(false, PESSIMISTIC, DataMode.PLANE_OBJECT);
     }
 
     /**
      * @throws Exception If failed.
      */
-    public void _testInvokeSequentialPessimisticNoStart2() throws Exception {
+    public void testInvokeSequentialPessimisticNoStart2() throws Exception {
         checkInvokeSequential0(false, PESSIMISTIC, DataMode.SERIALIZABLE);
     }
 
     /**
      * @throws Exception If failed.
      */
-    public void _testInvokeSequentialPessimisticNoStart3() throws Exception {
+    public void testInvokeSequentialPessimisticNoStart3() throws Exception {
         checkInvokeSequential0(false, PESSIMISTIC, DataMode.EXTERNALIZABLE);
     }
 
     /**
      * @throws Exception If failed.
      */
-    public void _testInvokeSequentialOptimisticWithStart1() throws Exception {
+    public void testInvokeSequentialOptimisticWithStart1() throws Exception {
         checkInvokeSequential0(true, OPTIMISTIC, DataMode.PLANE_OBJECT);
     }
 
     /**
      * @throws Exception If failed.
      */
-    public void _testInvokeSequentialOptimisticWithStart2() throws Exception {
+    public void testInvokeSequentialOptimisticWithStart2() throws Exception {
         checkInvokeSequential0(true, OPTIMISTIC, DataMode.SERIALIZABLE);
     }
 
     /**
      * @throws Exception If failed.
      */
-    public void _testInvokeSequentialOptimisticWithStart3() throws Exception {
+    public void testInvokeSequentialOptimisticWithStart3() throws Exception {
         checkInvokeSequential0(true, OPTIMISTIC, DataMode.EXTERNALIZABLE);
     }
 
     /**
      * @throws Exception If failed.
      */
-    public void _testInvokeSequentialPessimisticWithStart1() throws Exception {
+    public void testInvokeSequentialPessimisticWithStart1() throws Exception {
         checkInvokeSequential0(true, PESSIMISTIC, DataMode.PLANE_OBJECT);
     }
 
     /**
      * @throws Exception If failed.
      */
-    public void _testInvokeSequentialPessimisticWithStart2() throws Exception {
+    public void testInvokeSequentialPessimisticWithStart2() throws Exception {
         checkInvokeSequential0(true, PESSIMISTIC, DataMode.SERIALIZABLE);
     }
 
     /**
      * @throws Exception If failed.
      */
-    public void _testInvokeSequentialPessimisticWithStart3() throws Exception {
+    public void testInvokeSequentialPessimisticWithStart3() throws Exception {
         checkInvokeSequential0(true, PESSIMISTIC, DataMode.EXTERNALIZABLE);
     }
 
@@ -1411,42 +1411,42 @@ public class CacheFullApiNewSelfTest extends CacheAbstractNewSelfTest {
     /**
      * @throws Exception If failed.
      */
-    public void _testInvokeAfterRemoveOptimistic1() throws Exception {
+    public void testInvokeAfterRemoveOptimistic1() throws Exception {
         checkInvokeAfterRemove(OPTIMISTIC, DataMode.PLANE_OBJECT);
     }
 
     /**
      * @throws Exception If failed.
      */
-    public void _testInvokeAfterRemoveOptimistic2() throws Exception {
+    public void testInvokeAfterRemoveOptimistic2() throws Exception {
         checkInvokeAfterRemove(OPTIMISTIC, DataMode.SERIALIZABLE);
     }
 
     /**
      * @throws Exception If failed.
      */
-    public void _testInvokeAfterRemoveOptimistic3() throws Exception {
+    public void testInvokeAfterRemoveOptimistic3() throws Exception {
         checkInvokeAfterRemove(OPTIMISTIC, DataMode.EXTERNALIZABLE);
     }
 
     /**
      * @throws Exception If failed.
      */
-    public void _testInvokeAfterRemovePessimistic1() throws Exception {
+    public void testInvokeAfterRemovePessimistic1() throws Exception {
         checkInvokeAfterRemove(PESSIMISTIC, DataMode.PLANE_OBJECT);
     }
 
     /**
      * @throws Exception If failed.
      */
-    public void _testInvokeAfterRemovePessimistic2() throws Exception {
+    public void testInvokeAfterRemovePessimistic2() throws Exception {
         checkInvokeAfterRemove(PESSIMISTIC, DataMode.SERIALIZABLE);
     }
 
     /**
      * @throws Exception If failed.
      */
-    public void _testInvokeAfterRemovePessimistic3() throws Exception {
+    public void testInvokeAfterRemovePessimistic3() throws Exception {
         checkInvokeAfterRemove(PESSIMISTIC, DataMode.EXTERNALIZABLE);
     }
 
@@ -1485,21 +1485,21 @@ public class CacheFullApiNewSelfTest extends CacheAbstractNewSelfTest {
     /**
      * @throws Exception If failed.
      */
-    public void _testInvokeReturnValueGetOptimisticReadCommitted1() throws Exception {
+    public void testInvokeReturnValueGetOptimisticReadCommitted1() throws Exception {
         checkInvokeReturnValue(false, OPTIMISTIC, READ_COMMITTED, DataMode.PLANE_OBJECT);
     }
 
     /**
      * @throws Exception If failed.
      */
-    public void _testInvokeReturnValueGetOptimisticReadCommitted2() throws Exception {
+    public void testInvokeReturnValueGetOptimisticReadCommitted2() throws Exception {
         checkInvokeReturnValue(false, OPTIMISTIC, READ_COMMITTED, DataMode.SERIALIZABLE);
     }
 
     /**
      * @throws Exception If failed.
      */
-    public void _testInvokeReturnValueGetOptimisticReadCommitted3() throws Exception {
+    public void testInvokeReturnValueGetOptimisticReadCommitted3() throws Exception {
         checkInvokeReturnValue(false, OPTIMISTIC, READ_COMMITTED, DataMode.EXTERNALIZABLE);
     }
 
