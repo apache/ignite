@@ -925,9 +925,9 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
             // With single=type cache, interface inference works
             var roleCache = Ignition.GetIgnite().GetCache<object, IRole>(RoleCacheName);
 
-            var roleNames = roleCache.Select(x => x.Value.Name).ToArray();
+            var roleNames = roleCache.Select(x => x.Value.Name).OrderBy(x => x).ToArray();
 
-            Assert.AreEqual(new[] {"Role_1", "Role_2", null}, roleNames);
+            CollectionAssert.AreEquivalent(new[] {"Role_1", "Role_2", null}, roleNames);
         }
 
         /// <summary>
