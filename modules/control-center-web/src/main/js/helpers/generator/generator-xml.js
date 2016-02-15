@@ -860,7 +860,7 @@ $generatorXml.cacheStore = function(cache, domains, res) {
             }
             else if (factoryKind === 'CacheJdbcBlobStoreFactory') {
                 res.startBlock('<property name="cacheStoreFactory">');
-                res.startBlock('<bean class="org.apache.ignite.cache.store.jdbc.CacheJdbcPojoStoreFactory">');
+                res.startBlock('<bean class="org.apache.ignite.cache.store.jdbc.CacheJdbcBlobStoreFactory">');
 
                 if (storeFactory.connectVia === 'DataSource')
                     $generatorXml.property(res, storeFactory, 'dataSourceBean');
