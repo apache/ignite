@@ -532,7 +532,7 @@ public class GridReduceQueryExecutor {
                     fakeTable(r.conn, tblIdx++).setInnerTable(tbl);
                 }
                 else
-                    idx = GridMergeIndexUnsorted.createDummy();
+                    idx = GridMergeIndexUnsorted.createDummy(ctx);
 
                 for (ClusterNode node : nodes)
                     idx.addSource(node.id());
