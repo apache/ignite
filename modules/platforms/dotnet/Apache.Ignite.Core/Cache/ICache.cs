@@ -22,6 +22,7 @@ namespace Apache.Ignite.Core.Cache
     using System.Collections.Generic;
     using System.Diagnostics.CodeAnalysis;
     using System.Threading.Tasks;
+    using Apache.Ignite.Core.Cache.Configuration;
     using Apache.Ignite.Core.Cache.Expiry;
     using Apache.Ignite.Core.Cache.Query;
     using Apache.Ignite.Core.Cache.Query.Continuous;
@@ -64,6 +65,11 @@ namespace Apache.Ignite.Core.Cache
         /// Ignite hosting this cache.
         /// </summary>
         IIgnite Ignite { get; }
+
+        /// <summary>
+        /// Gets the cache configuration.
+        /// </summary>
+        CacheConfiguration GetConfiguration();
 
         /// <summary>
         /// Checks whether this cache contains no key-value mappings.

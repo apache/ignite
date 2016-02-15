@@ -17,28 +17,15 @@
 
 package org.apache.ignite.internal.binary;
 
-import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.binary.BinaryCollectionFactory;
-import org.apache.ignite.binary.BinaryInvalidTypeException;
-import org.apache.ignite.binary.BinaryMapFactory;
-import org.apache.ignite.binary.BinaryObject;
-import org.apache.ignite.binary.BinaryObjectException;
-import org.apache.ignite.binary.Binarylizable;
-import org.apache.ignite.internal.binary.builder.BinaryLazyValue;
-import org.apache.ignite.internal.binary.streams.BinaryInputStream;
-import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.lang.IgniteBiTuple;
-import org.jetbrains.annotations.Nullable;
-import org.jsr166.ConcurrentHashMap8;
-
 import java.io.ByteArrayInputStream;
 import java.io.Externalizable;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.lang.reflect.Array;
+import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
+import java.lang.reflect.Proxy;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.sql.Timestamp;
@@ -58,6 +45,20 @@ import java.util.TreeSet;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentSkipListSet;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.binary.BinaryCollectionFactory;
+import org.apache.ignite.binary.BinaryInvalidTypeException;
+import org.apache.ignite.binary.BinaryMapFactory;
+import org.apache.ignite.binary.BinaryObject;
+import org.apache.ignite.binary.BinaryObjectException;
+import org.apache.ignite.binary.Binarylizable;
+import org.apache.ignite.internal.binary.builder.BinaryLazyValue;
+import org.apache.ignite.internal.binary.streams.BinaryInputStream;
+import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteBiTuple;
+import org.jetbrains.annotations.Nullable;
+import org.jsr166.ConcurrentHashMap8;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 
@@ -590,6 +591,43 @@ public class BinaryUtils {
     }
 
     /**
+     * @param map Map to check.
+     * @return {@code True} if this map type is supported.
+     */
+    public static boolean knownMap(Object map) {
+        Class<?> cls = map == null ? null : map.getClass();
+
+        return cls == HashMap.class ||
+            cls == LinkedHashMap.class ||
+            cls == TreeMap.class ||
+            cls == ConcurrentHashMap8.class ||
+            cls == ConcurrentHashMap.class;
+    }
+
+    /**
+     * Attempts to create a new map of the same known type. Will return null if map type is not supported.
+     *
+     * @param map Map.
+     * @return New map of the same type or null.
+     */
+    public static <K, V> Map<K, V> newKnownMap(Object map) {
+        Class<?> cls = map == null ? null : map.getClass();
+
+        if (cls == HashMap.class)
+            return U.newHashMap(((Map)map).size());
+        else if (cls == LinkedHashMap.class)
+            return U.newLinkedHashMap(((Map)map).size());
+        else if (cls == TreeMap.class)
+            return new TreeMap<>(((TreeMap<Object, Object>)map).comparator());
+        else if (cls == ConcurrentHashMap8.class)
+            return new ConcurrentHashMap8<>(U.capacity(((Map)map).size()));
+        else if (cls == ConcurrentHashMap.class)
+            return new ConcurrentHashMap<>(U.capacity(((Map)map).size()));
+
+        return null;
+    }
+
+    /**
      * Attempts to create a new map of the same type as {@code map} has. Otherwise returns new {@code HashMap} instance.
      *
      * @param map Original map.
@@ -606,6 +644,47 @@ public class BinaryUtils {
             return new ConcurrentHashMap<>(U.capacity(map.size()));
 
         return U.newHashMap(map.size());
+    }
+
+    /**
+     * @param col Collection to check.
+     * @return True if this is a collection of a known type.
+     */
+    public static boolean knownCollection(Object col) {
+        Class<?> cls = col == null ? null : col.getClass();
+
+        return cls == HashSet.class ||
+            cls == LinkedHashSet.class ||
+            cls == TreeSet.class ||
+            cls == ConcurrentSkipListSet.class ||
+            cls == ArrayList.class ||
+            cls == LinkedList.class;
+    }
+
+    /**
+     * Attempts to create a new collection of the same known type. Will return null if collection type is
+     * unknown.
+     *
+     * @param col Collection.
+     * @return New empty collection.
+     */
+    public static <V> Collection<V> newKnownCollection(Object col) {
+        Class<?> cls = col == null ? null : col.getClass();
+
+        if (cls == HashSet.class)
+            return U.newHashSet(((Collection)col).size());
+        else if (cls == LinkedHashSet.class)
+            return U.newLinkedHashSet(((Collection)col).size());
+        else if (cls == TreeSet.class)
+            return new TreeSet<>(((TreeSet<Object>)col).comparator());
+        else if (cls == ConcurrentSkipListSet.class)
+            return new ConcurrentSkipListSet<>(((ConcurrentSkipListSet<Object>)col).comparator());
+        else if (cls == ArrayList.class)
+            return new ArrayList<>(((Collection)col).size());
+        else if (cls == LinkedList.class)
+            return new LinkedList<>();
+
+        return null;
     }
 
     /**
@@ -964,6 +1043,8 @@ public class BinaryUtils {
             return BinaryWriteMode.ENUM;
         else if (cls == Class.class)
             return BinaryWriteMode.CLASS;
+        else if (Proxy.class.isAssignableFrom(cls))
+            return BinaryWriteMode.PROXY;
         else
             return BinaryWriteMode.OBJECT;
     }
@@ -974,7 +1055,7 @@ public class BinaryUtils {
      * @param cls Class.
      * @return {@code True} if this is a special collection class.
      */
-    private static boolean isSpecialCollection(Class cls) {
+    public static boolean isSpecialCollection(Class cls) {
         return ArrayList.class.equals(cls) || LinkedList.class.equals(cls) ||
             HashSet.class.equals(cls) || LinkedHashSet.class.equals(cls);
     }
@@ -985,7 +1066,7 @@ public class BinaryUtils {
      * @param cls Class.
      * @return {@code True} if this is a special map class.
      */
-    private static boolean isSpecialMap(Class cls) {
+    public static boolean isSpecialMap(Class cls) {
         return HashMap.class.equals(cls) || LinkedHashMap.class.equals(cls);
     }
 
@@ -1284,6 +1365,21 @@ public class BinaryUtils {
         int typeId = in.readInt();
 
         return doReadClass(in, ctx, ldr, typeId);
+    }
+
+    /**
+     * @return Value.
+     */
+    public static Object doReadProxy(BinaryInputStream in, BinaryContext ctx, ClassLoader ldr,
+        BinaryReaderHandlesHolder handles) {
+        Class<?>[] intfs = new Class<?>[in.readInt()];
+
+        for (int i = 0; i < intfs.length; i++)
+            intfs[i] = doReadClass(in, ctx, ldr);
+
+        InvocationHandler ih = (InvocationHandler)doReadObject(in, ctx, ldr, handles);
+
+        return Proxy.newProxyInstance(ldr != null ? ldr : U.gridClassLoader(), intfs, ih);
     }
 
     /**

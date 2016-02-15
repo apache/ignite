@@ -169,7 +169,7 @@ public final class GridDhtColocatedLockFuture extends GridCompoundIdentityFuture
         CacheEntryPredicate[] filter,
         boolean skipStore,
         boolean keepBinary) {
-        super(cctx.kernalContext(), CU.boolReducer());
+        super(CU.boolReducer());
 
         assert keys != null;
 
@@ -1315,10 +1315,6 @@ public final class GridDhtColocatedLockFuture extends GridCompoundIdentityFuture
         /** Keys. */
         @GridToStringInclude
         private Collection<KeyCacheObject> keys;
-
-        /** Mappings to proceed. */
-        @GridToStringExclude
-        private Deque<GridNearLockMapping> mappings;
 
         /** */
         private boolean rcvRes;

@@ -25,7 +25,7 @@ namespace Apache.Ignite.Core.Impl.Resource
     /// <summary>
     /// Resource processor.
     /// </summary>
-    internal class ResourceProcessor
+    internal static class ResourceProcessor
     {
         /** Mutex. */
         private static readonly object Mux = new object();

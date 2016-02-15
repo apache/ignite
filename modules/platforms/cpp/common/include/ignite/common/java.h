@@ -297,6 +297,9 @@ namespace ignite
                 jmethodID m_PlatformProcessor_cache;
                 jmethodID m_PlatformProcessor_createCache;
                 jmethodID m_PlatformProcessor_getOrCreateCache;
+                jmethodID m_PlatformProcessor_createCacheFromConfig;
+                jmethodID m_PlatformProcessor_getOrCreateCacheFromConfig;
+                jmethodID m_PlatformProcessor_destroyCache;
                 jmethodID m_PlatformProcessor_affinity;
                 jmethodID m_PlatformProcessor_dataStreamer;
                 jmethodID m_PlatformProcessor_transactions;
@@ -307,6 +310,9 @@ namespace ignite
                 jmethodID m_PlatformProcessor_services;
                 jmethodID m_PlatformProcessor_extensions;
                 jmethodID m_PlatformProcessor_atomicLong;
+                jmethodID m_PlatformProcessor_getIgniteConfiguration;
+                jmethodID m_PlatformProcessor_atomicSequence;
+                jmethodID m_PlatformProcessor_atomicReference;
 
                 jclass c_PlatformTarget;
                 jmethodID m_PlatformTarget_inStreamOutLong;
@@ -318,6 +324,8 @@ namespace ignite
                 jmethodID m_PlatformTarget_inObjectStreamOutStream;
                 jmethodID m_PlatformTarget_listenFuture;
                 jmethodID m_PlatformTarget_listenFutureForOperation;
+                jmethodID m_PlatformTarget_listenFutureAndGet;
+                jmethodID m_PlatformTarget_listenFutureForOperationAndGet;
 
                 jclass c_PlatformTransactions;
                 jmethodID m_PlatformTransactions_txStart;
@@ -346,6 +354,25 @@ namespace ignite
                 jmethodID m_PlatformAtomicLong_compareAndSetAndGet;
                 jmethodID m_PlatformAtomicLong_isClosed;
                 jmethodID m_PlatformAtomicLong_close;
+
+                jclass c_PlatformAtomicSequence;
+                jmethodID m_PlatformAtomicSequence_get;
+                jmethodID m_PlatformAtomicSequence_incrementAndGet;
+                jmethodID m_PlatformAtomicSequence_getAndIncrement;
+                jmethodID m_PlatformAtomicSequence_addAndGet;
+                jmethodID m_PlatformAtomicSequence_getAndAdd;
+                jmethodID m_PlatformAtomicSequence_getBatchSize;
+                jmethodID m_PlatformAtomicSequence_setBatchSize;
+                jmethodID m_PlatformAtomicSequence_isClosed;
+                jmethodID m_PlatformAtomicSequence_close;
+
+                jclass c_PlatformAtomicReference;
+                jmethodID m_PlatformAtomicReference_isClosed;
+                jmethodID m_PlatformAtomicReference_close;
+
+                jclass c_PlatformListenable;
+                jmethodID m_PlatformListenable_cancel;
+                jmethodID m_PlatformListenable_isCancelled;
 
                 /**
                  * Constructor.
@@ -482,6 +509,12 @@ namespace ignite
                 jobject ProcessorCreateCache(jobject obj, const char* name, JniErrorInfo* errInfo);
                 jobject ProcessorGetOrCreateCache(jobject obj, const char* name);
                 jobject ProcessorGetOrCreateCache(jobject obj, const char* name, JniErrorInfo* errInfo);
+                jobject ProcessorCreateCacheFromConfig(jobject obj, long memPtr);
+                jobject ProcessorCreateCacheFromConfig(jobject obj, long memPtr, JniErrorInfo* errInfo);
+                jobject ProcessorGetOrCreateCacheFromConfig(jobject obj, long memPtr);
+                jobject ProcessorGetOrCreateCacheFromConfig(jobject obj, long memPtr, JniErrorInfo* errInfo);
+                void ProcessorDestroyCache(jobject obj, const char* name);
+                void ProcessorDestroyCache(jobject obj, const char* name, JniErrorInfo* errInfo);
                 jobject ProcessorAffinity(jobject obj, const char* name);
                 jobject ProcessorDataStreamer(jobject obj, const char* name, bool keepPortable);
                 jobject ProcessorTransactions(jobject obj);
@@ -491,6 +524,9 @@ namespace ignite
                 jobject ProcessorServices(jobject obj, jobject prj);
                 jobject ProcessorExtensions(jobject obj);
                 jobject ProcessorAtomicLong(jobject obj, char* name, long long initVal, bool create);
+                jobject ProcessorAtomicSequence(jobject obj, char* name, long long initVal, bool create);
+                jobject ProcessorAtomicReference(jobject obj, char* name, long long memPtr, bool create);
+				void ProcessorGetIgniteConfiguration(jobject obj, long memPtr);
                 
                 long long TargetInStreamOutLong(jobject obj, int type, long long memPtr, JniErrorInfo* errInfo = NULL);
                 void TargetInStreamOutStream(jobject obj, int opType, long long inMemPtr, long long outMemPtr, JniErrorInfo* errInfo = NULL);
@@ -501,6 +537,8 @@ namespace ignite
                 jobject TargetOutObject(jobject obj, int opType, JniErrorInfo* errInfo = NULL);
                 void TargetListenFuture(jobject obj, long long futId, int typ);
                 void TargetListenFutureForOperation(jobject obj, long long futId, int typ, int opId);
+                void* TargetListenFutureAndGet(jobject obj, long long futId, int typ);
+                void* TargetListenFutureForOperationAndGet(jobject obj, long long futId, int typ, int opId);
                 
                 int AffinityPartitions(jobject obj);
 
@@ -526,7 +564,7 @@ namespace ignite
 
                 void ComputeWithNoFailover(jobject obj);
                 void ComputeWithTimeout(jobject obj, long long timeout);
-                void ComputeExecuteNative(jobject obj, long long taskPtr, long long topVer);
+                void* ComputeExecuteNative(jobject obj, long long taskPtr, long long topVer);
 
                 void ContinuousQueryClose(jobject obj);
                 jobject ContinuousQueryGetInitialQueryCursor(jobject obj);
@@ -589,6 +627,22 @@ namespace ignite
                 bool AtomicLongIsClosed(jobject obj);
                 void AtomicLongClose(jobject obj);
 
+                long long AtomicSequenceGet(jobject obj);
+                long long AtomicSequenceIncrementAndGet(jobject obj);
+                long long AtomicSequenceGetAndIncrement(jobject obj);
+                long long AtomicSequenceAddAndGet(jobject obj, long long l);
+                long long AtomicSequenceGetAndAdd(jobject obj, long long l);
+                int AtomicSequenceGetBatchSize(jobject obj);
+                void AtomicSequenceSetBatchSize(jobject obj, int size);
+                bool AtomicSequenceIsClosed(jobject obj);
+                void AtomicSequenceClose(jobject obj);
+
+                bool AtomicReferenceIsClosed(jobject obj);
+                void AtomicReferenceClose(jobject obj);
+
+                bool ListenableCancel(jobject obj);
+                bool ListenableIsCancelled(jobject obj);
+
                 jobject Acquire(jobject obj);
 
                 void DestroyJvm();
@@ -604,6 +658,7 @@ namespace ignite
                 void ExceptionCheck(JNIEnv* env, JniErrorInfo* errInfo);
                 jobject LocalToGlobal(JNIEnv* env, jobject obj);
                 jobject ProcessorCache0(jobject proc, const char* name, jmethodID mthd, JniErrorInfo* errInfo);
+                jobject ProcessorCacheFromConfig0(jobject proc, long memPtr, jmethodID mthd, JniErrorInfo* errInfo);
             };
 
             JNIEXPORT jlong JNICALL JniCacheStoreCreate(JNIEnv *env, jclass cls, jlong envPtr, jlong memPtr);

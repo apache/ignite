@@ -148,6 +148,9 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
     /** */
     private Map<Integer, Long> initUpdCntrs;
 
+    /** */
+    private AffinityTopologyVersion initTopVer;
+
     /**
      * Required by {@link Externalizable}.
      */
@@ -170,6 +173,7 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
      * @param skipPrimaryCheck Whether to skip primary check for REPLICATED cache.
      * @param taskHash Task name hash code.
      * @param locCache {@code True} if local cache.
+     * @param keepBinary Keep binary flag.
      */
     public CacheContinuousQueryHandler(
         String cacheName,
@@ -238,7 +242,8 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
     }
 
     /** {@inheritDoc} */
-    @Override public void updateCounters(Map<Integer, Long> cntrs) {
+    @Override public void updateCounters(AffinityTopologyVersion topVer, Map<Integer, Long> cntrs) {
+        this.initTopVer = topVer;
         this.initUpdCntrs = cntrs;
     }
 
@@ -382,9 +387,12 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
                     }
                     else {
                         if (!internal) {
-                            entry.markBackup();
+                            // Skip init query and expire entries.
+                            if (entry.updateCounter() != -1L) {
+                                entry.markBackup();
 
-                            backupQueue.add(entry);
+                                backupQueue.add(entry);
+                            }
                         }
                     }
                 }
@@ -483,7 +491,7 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
 
                     e = buf.skipEntry(e);
 
-                    if (e != null)
+                    if (e != null && !ctx.localNodeId().equals(nodeId))
                         ctx.continuous().addNotification(nodeId, routineId, e, topic, sync, true);
                 }
                 catch (ClusterTopologyCheckedException ex) {
@@ -642,15 +650,14 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
                 return F.asList(e);
         }
 
-        // Initial query entry or evicted entry.
-        // This events should be fired immediately.
-        if (e.updateCounter() == -1)
+        // Initial query entry or evicted entry. These events should be fired immediately.
+        if (e.updateCounter() == -1L)
             return F.asList(e);
 
         PartitionRecovery rec = rcvs.get(e.partition());
 
         if (rec == null) {
-            rec = new PartitionRecovery(ctx.log(getClass()), cacheContext(ctx).topology().topologyVersion(),
+            rec = new PartitionRecovery(ctx.log(getClass()), initTopVer,
                 initUpdCntrs == null ? null : initUpdCntrs.get(e.partition()));
 
             PartitionRecovery oldRec = rcvs.putIfAbsent(e.partition(), rec);
@@ -724,6 +731,8 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
          * @param initCntr Update counters.
          */
         public PartitionRecovery(IgniteLogger log, AffinityTopologyVersion topVer, @Nullable Long initCntr) {
+            assert topVer.topologyVersion() > 0 : topVer;
+
             this.log = log;
 
             if (initCntr != null) {
@@ -755,7 +764,7 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
                 }
 
                 if (curTop.compareTo(entry.topologyVersion()) < 0) {
-                    if (entry.updateCounter() == 1 && !entry.isBackup()) {
+                    if (entry.updateCounter() == 1L && !entry.isBackup()) {
                         entries = new ArrayList<>(pendingEvts.size());
 
                         for (CacheContinuousQueryEntry evt : pendingEvts.values()) {
@@ -873,8 +882,7 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
          * @return Continuous query entry.
          */
         private CacheContinuousQueryEntry skipEntry(CacheContinuousQueryEntry e) {
-            if (lastFiredCntr.get() > e.updateCounter() || e.updateCounter() == 1) {
-
+            if (lastFiredCntr.get() > e.updateCounter() || e.updateCounter() == 1L) {
                 e.markFiltered();
 
                 return e;
