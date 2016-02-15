@@ -29,7 +29,7 @@ form.panel.panel-default(name='igfs' novalidate)
                 .settings-row
                     ignite-form-field
                         ignite-form-field-label
-                            | IGFS: #[a(ui-sref='base.configuration.igfs') (add)]
+                            | IGFS: #[a(ui-sref='base.configuration.igfs({id: #{model}._id})') (add)]
                         ignite-form-field-tooltip
                             | Select IGFS to start in cluster or add a new IGFS
                         ignite-form-field-dropdown(
