@@ -606,8 +606,27 @@ public abstract class IgniteCacheAbstractQuerySelfTest extends GridCommonAbstrac
 
         assertNoArgEnumQry("type is null", null, cache, 1);
 
+        assertAnyResTypeEnumQry("type is not null", cache, 50);
+
         assertEmptyEnumQry("type = ?", null, cache);
 
+    }
+
+    /**
+     * Fails if result size not equals to resSize.
+     *
+     * @param qryStr to execute.
+     * @param cache cache.
+     * @param resSize size of the result.
+     */
+    private void assertAnyResTypeEnumQry(final String qryStr,
+                                         final IgniteCache<Long, EnumObject> cache,
+                                         final int resSize) {
+        final SqlQuery<Long, EnumObject> qry = new SqlQuery<>(EnumObject.class, qryStr);
+
+        final List<Cache.Entry<Long, EnumObject>> res = cache.query(qry).getAll();
+
+        assert resSize == res.size();
     }
 
     /**
@@ -620,9 +639,9 @@ public abstract class IgniteCacheAbstractQuerySelfTest extends GridCommonAbstrac
      * @param resSize size of the result.
      */
     private void assertNoArgEnumQry(final String qryStr,
-                               final EnumType resType,
-                               final IgniteCache<Long, EnumObject> cache,
-                               final int resSize) {
+                                    final EnumType resType,
+                                    final IgniteCache<Long, EnumObject> cache,
+                                    final int resSize) {
         final SqlQuery<Long, EnumObject> qry = new SqlQuery<>(EnumObject.class, qryStr);
 
         final List<Cache.Entry<Long, EnumObject>> res = cache.query(qry).getAll();
