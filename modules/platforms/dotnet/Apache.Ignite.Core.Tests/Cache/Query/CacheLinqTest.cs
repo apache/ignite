@@ -63,6 +63,9 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         /** */
         private static readonly DateTime StartDateTime = new DateTime(2000, 1, 1, 0, 0, 0, DateTimeKind.Utc);
 
+        /// <summary>
+        /// Fixture set up.
+        /// </summary>
         [TestFixtureSetUp]
         public void FixtureSetUp()
         {
@@ -113,6 +116,9 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
             roleCache[new RoleKey(3, 103)] = new Role {Name = null, Date = StartDateTime.AddYears(2)};
         }
 
+        /// <summary>
+        /// Fixture tear down.
+        /// </summary>
         [TestFixtureTearDown]
         public void FixtureTearDown()
         {
@@ -121,6 +127,9 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
             Ignition.StopAll(true);
         }
 
+        /// <summary>
+        /// Tests the empty query.
+        /// </summary>
         [Test]
         public void TestEmptyQuery()
         {
@@ -129,6 +138,9 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
             Assert.AreEqual(RoleCount, GetRoleCache().AsCacheQueryable().ToArray().Length);
         }
 
+        /// <summary>
+        /// Tests where clause.
+        /// </summary>
         [Test]
         public void TestWhere()
         {
@@ -150,6 +162,9 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
                 .ToArray().Length);
         }
 
+        /// <summary>
+        /// Tests the single field query.
+        /// </summary>
         [Test]
         public void TestSingleFieldQuery()
         {
@@ -173,6 +188,9 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
                     .Single());
         }
 
+        /// <summary>
+        /// Tests the field projection.
+        /// </summary>
         [Test]
         public void TestFieldProjection()
         {
@@ -182,6 +200,9 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
             Assert.AreEqual(5, cache.Where(x => x.Key == 5).Select(x => new { Foo = x }).Single().Foo.Key);
         }
 
+        /// <summary>
+        /// Tests the multi field query.
+        /// </summary>
         [Test]
         public void TestMultiFieldQuery()
         {
@@ -202,6 +223,9 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
             }
         }
 
+        /// <summary>
+        /// Tests the scalar query.
+        /// </summary>
         [Test]
         public void TestScalarQuery()
         {
@@ -216,6 +240,9 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
             Assert.AreEqual(PersonCount, cache.Count(x => x.Key < PersonCount));
         }
 
+        /// <summary>
+        /// Tests strings.
+        /// </summary>
         [Test]
         public void TestStrings()
         {
@@ -254,6 +281,9 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
             CheckFunc(x => x + 10, strings);
         }
 
+        /// <summary>
+        /// Tests aggregates.
+        /// </summary>
         [Test]
         public void TestAggregates()
         {
@@ -271,7 +301,6 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
             Assert.AreEqual(0, ints.Min());
             Assert.AreEqual(PersonCount - 1, ints.Max());
             Assert.AreEqual(ints.ToArray().Sum(), ints.Sum());
-            //Assert.AreEqual(ints.ToArray().Skip(20).Sum(), ints.Skip(20).Sum());
 
             var dupInts = ints.Select(x => x/10);  // duplicate values
             CollectionAssert.AreEquivalent(dupInts.ToArray().Distinct().ToArray(), dupInts.Distinct().ToArray());
@@ -288,6 +317,9 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
             Assert.AreEqual(new[] {PersonCount - 2, PersonCount - 1}, keys.Skip(PersonCount - 2).ToArray());
         }
 
+        /// <summary>
+        /// Tests aggregates with all clause.
+        /// </summary>
         [Test]
         [Ignore("IGNITE-2563")]
         public void TestAggregatesAll()
@@ -299,6 +331,9 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
             Assert.IsFalse(ints.All(x => x < PersonCount / 2));
         }
 
+        /// <summary>
+        /// Tests conditions.
+        /// </summary>
         [Test]
         public void TestConditions()
         {
@@ -312,6 +347,9 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
             CheckFunc(x => x.Value.Name ?? "def_name", roles);
         }
 
+        /// <summary>
+        /// Tests the same cache join.
+        /// </summary>
         [Test]
         public void TestSameCacheJoin()
         {
@@ -337,6 +375,9 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
             Assert.AreEqual(PersonCount / 2, res2.Count);
         }
 
+        /// <summary>
+        /// Tests the multi key join.
+        /// </summary>
         [Test]
         public void TestMultiKeyJoin()
         {
@@ -354,6 +395,9 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
             Assert.AreEqual(" Person_1  ", multiKey.Single().PersonName);
         }
 
+        /// <summary>
+        /// Tests the cross cache join.
+        /// </summary>
         [Test]
         public void TestCrossCacheJoin()
         {
@@ -367,6 +411,9 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
             Assert.AreEqual(101, res[0].Key.Bar);
         }
 
+        /// <summary>
+        /// Tests the multi cache join.
+        /// </summary>
         [Test]
         public void TestMultiCacheJoin()
         {
@@ -394,6 +441,9 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
             }
         }
 
+        /// <summary>
+        /// Tests the multi cache join subquery.
+        /// </summary>
         [Test]
         public void TestMultiCacheJoinSubquery()
         {
@@ -409,6 +459,9 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
             Assert.AreEqual(2, res.Length);
         }
 
+        /// <summary>
+        /// Tests the outer join.
+        /// </summary>
         [Test]
         public void TestOuterJoin()
         {
@@ -428,6 +481,9 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
             Assert.AreEqual(PersonCount, res.Length);
         }
 
+        /// <summary>
+        /// Tests the subquery join.
+        /// </summary>
         [Test]
         public void TestSubqueryJoin()
         {
@@ -444,6 +500,9 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
             Assert.AreEqual(PersonCount, res.Count);
         }
 
+        /// <summary>
+        /// Tests the invalid join.
+        /// </summary>
         [Test]
         public void TestInvalidJoin()
         {
@@ -453,6 +512,9 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
                 GetPersonCache().AsCacheQueryable().Join(GetOrgCache(), p => p.Key, o => o.Key, (p, o) => p).ToList());
         }
 
+        /// <summary>
+        /// Tests the multiple from.
+        /// </summary>
         [Test]
         public void TestMultipleFrom()
         {
@@ -473,6 +535,9 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
             Assert.AreEqual(RoleCount, res.Length);
         }
 
+        /// <summary>
+        /// Tests the group by.
+        /// </summary>
         [Test]
         public void TestGroupBy()
         {
@@ -520,6 +585,9 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
             }, resArr2);
         }
 
+        /// <summary>
+        /// Tests the union.
+        /// </summary>
         [Test]
         public void TestUnion()
         {
@@ -538,6 +606,9 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
             Assert.AreEqual(RoleCount + PersonCount, ids.Length);
         }
 
+        /// <summary>
+        /// Tests intersect.
+        /// </summary>
         [Test]
         public void TestIntersect()
         {
@@ -556,6 +627,9 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
             Assert.AreEqual(RoleCount, ids.Length);
         }
 
+        /// <summary>
+        /// Tests except.
+        /// </summary>
         [Test]
         public void TestExcept()
         {
@@ -574,6 +648,9 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
             Assert.AreEqual(PersonCount - RoleCount, ids.Length);
         }
 
+        /// <summary>
+        /// Tests ordering.
+        /// </summary>
         [Test]
         public void TestOrdering()
         {
@@ -606,6 +683,9 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
             Assert.AreEqual(expectedIds, actualIds);
         }
 
+        /// <summary>
+        /// Tests nulls.
+        /// </summary>
         [Test]
         public void TestNulls()
         {
@@ -618,6 +698,9 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
             Assert.AreEqual(RoleCount - 1, nonNullNameRoles.Count());
         }
 
+        /// <summary>
+        /// Tests date time.
+        /// </summary>
         [Test]
         public void TestDateTime()
         {
@@ -650,6 +733,9 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
             Assert.AreEqual("01 01 2000 03:00:00", dates.Select(x => x.ToString("DD MM YYYY HH:mm:ss")).First());
         }
 
+        /// <summary>
+        /// Tests numerics.
+        /// </summary>
         [Test]
         public void TestNumerics()
         {
@@ -735,6 +821,9 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
             CheckFunc(x => x-7, doubles);
         }
 
+        /// <summary>
+        /// Tests aliases.
+        /// </summary>
         [Test]
         public void TestAliases()
         {
@@ -747,6 +836,9 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
             Assert.AreEqual(new {X = -1, Y = 1}, res);
         }
 
+        /// <summary>
+        /// Tests the compiled query.
+        /// </summary>
         [Test]
         public void TestCompiledQuery()
         {
@@ -802,6 +894,9 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
             Assert.AreEqual(new[] {3, 4}, qry8(0, 1, 2, 5, 6, 7, 8, 9).ToArray());
         }
 
+        /// <summary>
+        /// Tests the introspection.
+        /// </summary>
         [Test]
         public void TestIntrospection()
         {
@@ -824,16 +919,27 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
                 fieldsQuery.ToTraceString());
         }
 
+        /// <summary>
+        /// Gets the person cache.
+        /// </summary>
+        /// <returns></returns>
         private static ICache<int, Person> GetPersonCache()
         {
             return GetCacheOf<Person>();
         }
 
+        /// <summary>
+        /// Gets the org cache.
+        /// </summary>
+        /// <returns></returns>
         private static ICache<int, Organization> GetOrgCache()
         {
             return GetCacheOf<Organization>();
         }
 
+        /// <summary>
+        /// Gets the cache.
+        /// </summary>
         private static ICache<int, T> GetCacheOf<T>()
         {
             return Ignition.GetIgnite()
@@ -849,6 +955,9 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
                     new QueryEntity(typeof (int), typeof (Organization))));
         }
 
+        /// <summary>
+        /// Gets the role cache.
+        /// </summary>
         private static ICache<RoleKey, Role> GetRoleCache()
         {
             return Ignition.GetIgnite()
@@ -856,6 +965,9 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
                     new QueryEntity(typeof(RoleKey), typeof(Role))));
         }
 
+        /// <summary>
+        /// Gets the second person cache.
+        /// </summary>
         private static ICache<int, Person> GetSecondPersonCache()
         {
             return Ignition.GetIgnite()
