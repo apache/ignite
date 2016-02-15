@@ -136,7 +136,16 @@ module.exports.factory = function(express, passport, nodemailer, settings, mongo
                 .then((account) => {
                     res.sendStatus(200);
 
-                    //_sendMail(account, '', '');
+                    account.resetPasswordToken = _randomString();
+
+                    account.save()
+                        .then(() =>
+                            _sendMail(account, `Thanks for signing up for ${settings.smtp.username}.`,
+                                `Hello ${account.username}!\n\n` +
+                                `You are receiving this e-mail because you (or someone else) signing up on the ${settings.smtp.username}.\n\n` +
+                                'If you did not request this, please ignore this email.\n' +
+                                'You may reset password by clicking on the following link, or paste this into your browser:\n\n' +
+                                'http://' + req.headers.host + '/password/reset?token=' + account.resetPasswordToken));
                 })
                 .catch((err) => {
                     res.status(401).send(err.message);
