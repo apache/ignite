@@ -447,7 +447,7 @@ public abstract class CacheAbstractNewSelfTest extends GridCommonAbstractTest {
     protected String cacheName() {
         String name = "testcache-" + testsCfg.suffix().hashCode();
 
-        info(">>>>>> Getting cacheName: " + name);
+//        info(">>>>>> Getting cacheName: " + name);
 
         return name;
     }
