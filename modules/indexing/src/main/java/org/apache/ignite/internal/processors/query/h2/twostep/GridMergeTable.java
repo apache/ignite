@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.query.h2.twostep;
 
 import java.util.ArrayList;
-import java.util.UUID;
 import org.apache.ignite.internal.GridKernalContext;
 import org.h2.command.ddl.CreateTableData;
 import org.h2.engine.Session;
@@ -47,20 +46,7 @@ public class GridMergeTable extends TableBase {
         super(data);
 
         this.ctx = ctx;
-        idx = new GridMergeIndexUnsorted(this, "merge_scan");
-    }
-
-    /**
-     * Fails merge table if any source node is left.
-     */
-    public void checkSourceNodesAlive() {
-        for (UUID nodeId : idx.sources()) {
-            if (!ctx.discovery().alive(nodeId)) {
-                idx.fail(nodeId);
-
-                return;
-            }
-        }
+        idx = new GridMergeIndexUnsorted(ctx, this, "merge_scan");
     }
 
     /** {@inheritDoc} */
