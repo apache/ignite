@@ -71,6 +71,7 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.events.Event;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryManager;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
@@ -5765,10 +5766,30 @@ public class CacheFullApiNewSelfTest extends CacheAbstractNewSelfTest {
     /**
      * @throws Exception If failed.
      */
-    @SuppressWarnings("serial")
-    public void testContinuousQuery() throws Exception {
-        DataMode mode = DataMode.PLANE_OBJECT;
+    public void testContinuousQuery1() throws Exception {
+        checkContinuousQuery(DataMode.PLANE_OBJECT);
+    }
 
+    /**
+     * @throws Exception If failed.
+     */
+    public void testContinuousQuery2() throws Exception {
+        checkContinuousQuery(DataMode.SERIALIZABLE);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testContinuousQuery3() throws Exception {
+        checkContinuousQuery(DataMode.EXTERNALIZABLE);
+    }
+
+    /**
+     * @param mode Data mode.
+     * @throws IgniteInterruptedCheckedException
+     */
+    @SuppressWarnings("serial")
+    private void checkContinuousQuery(DataMode mode) throws IgniteInterruptedCheckedException {
         final AtomicInteger updCnt = new AtomicInteger();
 
         ContinuousQuery<TestObject, TestObject> qry = new ContinuousQuery<>();
@@ -5786,11 +5807,10 @@ public class CacheFullApiNewSelfTest extends CacheAbstractNewSelfTest {
                     int v = evt.getKey().value();
 
                     // Check filter.
-                    assertTrue("v=" + v, v < 6);
                     assertTrue("v=" + v, v >= 10 && v < 15);
-                }
 
-                updCnt.incrementAndGet();
+                    updCnt.incrementAndGet();
+                }
             }
         });
 
@@ -5821,7 +5841,7 @@ public class CacheFullApiNewSelfTest extends CacheAbstractNewSelfTest {
                 @Override public boolean applyx() throws IgniteCheckedException {
                     return updCnt.get() == 5;
                 }
-            }, 10_000);
+            }, 30_000);
         }
     }
 
@@ -6398,7 +6418,7 @@ public class CacheFullApiNewSelfTest extends CacheAbstractNewSelfTest {
         /** {@inheritDoc} */
         @Override public boolean evaluate(
             CacheEntryEvent<? extends TestObject, ? extends TestObject> evt) throws CacheEntryListenerException {
-            return evt.getKey().value() < 6 || (evt.getKey().value() >= 10 && evt.getKey().value() < 15);
+            return evt.getKey().value() < 15;
         }
     }
 
