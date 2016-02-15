@@ -107,10 +107,16 @@ module.exports.factory = function(_, express, mongo) {
          * Remove IGFS by ._id.
          */
         router.post('/remove', (req, res) => {
-            mongo.Igfs.remove(req.body, (err) => {
-                if (mongo.processed(err, res))
-                    res.sendStatus(200);
-            });
+            const igfsId = req.body;
+
+            mongo.Space.find({$or: [{owner: userId}, {usedBy: {$elemMatch: {account: userId}}}]})
+                .then((spaces) => mongo.Cluster.update({space: {$in: spacesIds}}, {$pull: {igfss: igfsId}}, {multi: true}))
+                .then(mongo.Igfs.remove(req.body))
+                .then(() => res.sendStatus(200))
+                .catch((err) => {
+                    // TODO IGNITE-843 Send error to admin
+                    res.status(500).send(err.message);
+                });
         });
 
         /**

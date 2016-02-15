@@ -142,14 +142,14 @@ module.exports.factory = function(_, express, mongo) {
 
             let spacesIds = [];
 
-            mongo.Cluster.remove(clusterId)
-                .then(() => mongo.Space.find({$or: [{owner: userId}, {usedBy: {$elemMatch: {account: userId}}}]}))
+            mongo.Space.find({$or: [{owner: userId}, {usedBy: {$elemMatch: {account: userId}}}]})
                 .then((spaces) => {
                     spacesIds = spaces.map((value) => value._id);
 
-                    return mongo.Cache.update(mongo.Cache.update({space: {$in: spacesIds}}, {$pull: {clusters: clusterId}}, {multi: true}));
+                    return mongo.Cache.update({space: {$in: spacesIds}}, {$pull: {clusters: clusterId}}, {multi: true});
                 })
-                .then(() => mongo.Cache.update(mongo.Igfs.update({space: {$in: spacesIds}}, {$pull: {clusters: clusterId}}, {multi: true})))
+                .then(() => mongo.Igfs.update({space: {$in: spacesIds}}, {$pull: {clusters: clusterId}}, {multi: true}))
+                .then(() => mongo.Cluster.remove(clusterId))
                 .then(() => res.sendStatus(200))
                 .catch((err) => {
                     // TODO IGNITE-843 Send error to admin
