@@ -56,6 +56,8 @@ public enum CacheMemoryMode {
      * Entry keys will be stored on heap memory, and values will be stored in offheap memory. Note
      * that in this mode entries can be evicted only to swap. The evictions will happen according
      * to configured {@link EvictionPolicy}.
+     * <p/>
+     * Size returned by {@link CachePeekMode#OFFHEAP} is always zero, for this mode.
      */
     OFFHEAP_VALUES,
 }
