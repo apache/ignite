@@ -193,7 +193,6 @@ public abstract class IgniteCacheAbstractQuerySelfTest extends GridCommonAbstrac
             }
 
             c.setCacheConfiguration(ccs);
-            c.setMarshaller(new BinaryMarshaller());
         }
         else
             c.setClientMode(true);
@@ -593,11 +592,101 @@ public abstract class IgniteCacheAbstractQuerySelfTest extends GridCommonAbstrac
         for (long i = 0; i < 50; i++)
             cache.put(i, new EnumObject(i, i % 2 == 0 ? EnumType.TYPE_A : EnumType.TYPE_B));
 
-        final SqlQuery<Long, EnumObject> qry = new SqlQuery<>(EnumObject.class, "type = ?");
 
-        qry.setArgs(EnumType.TYPE_A);
+        assertEnumQry("type = ?", EnumType.TYPE_A, EnumType.TYPE_A, cache, 25);
+        assertEnumQry("type > ?", EnumType.TYPE_A, EnumType.TYPE_B, cache, 25);
+        assertEnumQry("type < ?", EnumType.TYPE_B, EnumType.TYPE_A, cache, 25);
+        assertEnumQry("type != ?", EnumType.TYPE_B, EnumType.TYPE_A, cache, 25);
 
-        assert 25 == cache.query(qry).getAll().size();
+        assertEmptyEnumQry("type = ?", null, cache);
+        assertEmptyEnumQry("type > ?", EnumType.TYPE_B, cache);
+        assertEmptyEnumQry("type < ?", EnumType.TYPE_A, cache);
+
+        cache.put(50L, new EnumObject(50, null));
+
+        assertNoArgEnumQry("type is null", null, cache, 1);
+
+        assertEmptyEnumQry("type = ?", null, cache);
+
+    }
+
+    /**
+     * Fails if result size not equals to resSize or
+     * at least one entry has different of resType type.
+     *
+     * @param qryStr to execute.
+     * @param resType to compare with.
+     * @param cache cache.
+     * @param resSize size of the result.
+     */
+    private void assertNoArgEnumQry(final String qryStr,
+                               final EnumType resType,
+                               final IgniteCache<Long, EnumObject> cache,
+                               final int resSize) {
+        final SqlQuery<Long, EnumObject> qry = new SqlQuery<>(EnumObject.class, qryStr);
+
+        final List<Cache.Entry<Long, EnumObject>> res = cache.query(qry).getAll();
+
+        assert resSize == res.size();
+
+        assertEnumType(res, resType);
+    }
+
+    /**
+     * Fails if result size not equals to resSize or
+     * at least one entry has different of resType type.
+     *
+     * @param qryStr to execute.
+     * @param arg to be passed to query.
+     * @param resType to compare with.
+     * @param cache cache.
+     * @param resSize size of the result.
+     */
+    private void assertEnumQry(final String qryStr,
+                               final EnumType arg,
+                               final EnumType resType,
+                               final IgniteCache<Long, EnumObject> cache,
+                               final int resSize) {
+        final SqlQuery<Long, EnumObject> qry = new SqlQuery<>(EnumObject.class, qryStr);
+
+        qry.setArgs(arg);
+
+        final List<Cache.Entry<Long, EnumObject>> res = cache.query(qry).getAll();
+
+        assert resSize == res.size();
+
+        assertEnumType(res, resType);
+    }
+
+    /**
+     * Fails if result has entries.
+     *
+     * @param qryStr to execute.
+     * @param arg argument that will be passed to query.
+     * @param cache cache on which query will be executed.
+     */
+    private void assertEmptyEnumQry(final String qryStr,
+                                    final EnumType arg,
+                                    final IgniteCache<Long, EnumObject> cache) {
+        final SqlQuery<Long, EnumObject> qry = new SqlQuery<>(EnumObject.class, qryStr);
+
+        qry.setArgs(arg);
+
+        final List<Cache.Entry<Long, EnumObject>> res = cache.query(qry).getAll();
+
+        assert res.isEmpty();
+    }
+
+    /**
+     * Fails if at least one object in result has type field that doesn't
+     * equal to passed enumType.
+     *
+     * @param enumObjects query execution result.
+     * @param enumType compare to.
+     */
+    private void assertEnumType(final List<Cache.Entry<Long, EnumObject>> enumObjects, final EnumType enumType) {
+        for (final Cache.Entry<Long, EnumObject> entry : enumObjects)
+            assert entry.getValue().type == enumType;
     }
 
     /**
