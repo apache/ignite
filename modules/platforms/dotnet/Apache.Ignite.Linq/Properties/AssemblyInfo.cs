@@ -20,7 +20,7 @@ using System.Reflection;
 using System.Runtime.InteropServices;
 
 [assembly: AssemblyTitle("Apache.Ignite.Linq")]
-[assembly: AssemblyDescription("Apache Ignite.NET Linq Provider")]
+[assembly: AssemblyDescription("Apache Ignite.NET LINQ Provider")]
 [assembly: AssemblyConfiguration("")]
 [assembly: AssemblyCompany("Apache Software Foundation")]
 [assembly: AssemblyProduct("Apache Ignite.NET")]
