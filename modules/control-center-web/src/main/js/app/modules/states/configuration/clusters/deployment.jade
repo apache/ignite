@@ -144,10 +144,10 @@ form.panel.panel-default(name='#{form}' novalidate)
                                             data-title='Click icon or press [Enter] to save item' 
                                         )
 
-                                        +feedback(field, 'required', 'Package name could not be empty!')
-                                        +feedback(field, 'javaPackageName', 'Package name is invalid!')
-                                        +feedback(field, 'javaKeywords', 'Package name could not contains reserved java keyword: ""!')
-                                        +feedback(field, 'igniteUnique', 'Such package already exists!')
+                                        +feedback(field, 'required', 'Package name could not be empty')
+                                        +feedback(field, 'javaPackageName', 'Package name is invalid')
+                                        +feedback(field, 'javaKeywords', 'Package name could not contains reserved java keyword')
+                                        +feedback(field, 'igniteUnique', 'Such package already exists')
 
                         - var field = 'new'
                         - var valid = form + '.' + field + '.$valid'
@@ -175,10 +175,10 @@ form.panel.panel-default(name='#{form}' novalidate)
                                         data-title='Click icon or press [Enter] to save item' 
                                     )
 
-                                    +feedback(field, 'required', 'Package name could not be empty!')
-                                    +feedback(field, 'javaPackageName', 'Package name is invalid!')
-                                    +feedback(field, 'javaKeywords', 'Package name could not contains reserved java keyword: ""!')
-                                    +feedback(field, 'igniteUnique', 'Such package already exists!')
+                                    +feedback(field, 'required', 'Package name could not be empty')
+                                    +feedback(field, 'javaPackageName', 'Package name is invalid')
+                                    +feedback(field, 'javaKeywords', 'Package name could not contains reserved java keyword')
+                                    +feedback(field, 'igniteUnique', 'Such package already exists')
             
                         .group-content-empty(ng-if='!(#{exclude}.length) && !group.add.length')
                             | Not defined
