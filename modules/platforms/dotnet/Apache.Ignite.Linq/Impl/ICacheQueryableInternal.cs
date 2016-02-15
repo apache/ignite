@@ -18,7 +18,6 @@
 namespace Apache.Ignite.Linq.Impl
 {
     using System;
-    using System.Linq.Expressions;
     using Apache.Ignite.Core.Cache.Query;
     using Remotion.Linq;
 

@@ -23,7 +23,7 @@ namespace Apache.Ignite.Linq.Impl
     using System.Linq.Expressions;
 
     /// <summary>
-    /// Query data DTO.
+    /// Query data holder.
     /// </summary>
     internal class QueryData
     {

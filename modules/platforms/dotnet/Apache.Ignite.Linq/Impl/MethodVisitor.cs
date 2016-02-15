@@ -29,10 +29,15 @@ namespace Apache.Ignite.Linq.Impl
     /// </summary>
     internal static class MethodVisitor
     {
+        /// <summary> The string length method. </summary>
         public static readonly MemberInfo StringLength = typeof (string).GetProperty("Length");
 
+        /// <summary> Method visit delegate. </summary>
         private delegate void VisitMethodDelegate(MethodCallExpression expression, CacheQueryExpressionVisitor visitor);
 
+        /// <summary>
+        /// Delegates dictionary.
+        /// </summary>
         private static readonly Dictionary<MethodInfo, VisitMethodDelegate> Delegates = new List
             <KeyValuePair<MethodInfo, VisitMethodDelegate>>
         {
@@ -161,6 +166,9 @@ namespace Apache.Ignite.Linq.Impl
             AppendAdjustment(visitor, adjust, 0);
         }
 
+        /// <summary>
+        /// Appends the adjustment.
+        /// </summary>
         private static void AppendAdjustment(CacheQueryExpressionVisitor visitor, int[] adjust, int idx)
         {
             if (idx < adjust.Length)
@@ -192,6 +200,9 @@ namespace Apache.Ignite.Linq.Impl
             visitor.Parameters.Add(paramValue);
         }
 
+        /// <summary>
+        /// Gets the method.
+        /// </summary>
         private static KeyValuePair<MethodInfo, VisitMethodDelegate> GetMethod(Type type, string name,
             Type[] argTypes = null, VisitMethodDelegate del = null)
         {
@@ -200,24 +211,36 @@ namespace Apache.Ignite.Linq.Impl
             return new KeyValuePair<MethodInfo, VisitMethodDelegate>(method, del ?? GetFunc(name));
         }
 
+        /// <summary>
+        /// Gets the string method.
+        /// </summary>
         private static KeyValuePair<MethodInfo, VisitMethodDelegate> GetStringMethod(string name,
             Type[] argTypes = null, VisitMethodDelegate del = null)
         {
             return GetMethod(typeof(string), name, argTypes, del);
         }
 
+        /// <summary>
+        /// Gets the string method.
+        /// </summary>
         private static KeyValuePair<MethodInfo, VisitMethodDelegate> GetStringMethod(string name, string sqlName,
             params Type[] argTypes)
         {
             return GetMethod(typeof(string), name, argTypes, GetFunc(sqlName));
         }
 
+        /// <summary>
+        /// Gets the math method.
+        /// </summary>
         private static KeyValuePair<MethodInfo, VisitMethodDelegate> GetMathMethod(string name, string sqlName,
             params Type[] argTypes)
         {
             return GetMethod(typeof(Math), name, argTypes, GetFunc(sqlName));
         }
 
+        /// <summary>
+        /// Gets the math method.
+        /// </summary>
         private static KeyValuePair<MethodInfo, VisitMethodDelegate> GetMathMethod(string name, params Type[] argTypes)
         {
             return GetMathMethod(name, name, argTypes);
