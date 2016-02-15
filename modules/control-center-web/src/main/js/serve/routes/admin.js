@@ -26,7 +26,7 @@ module.exports = {
 
 module.exports.factory = function(_, express, nodemailer, settings, mongo) {
     return new Promise((resolve) => {
-        const router = express.Router();
+        const router = new express.Router();
 
         /**
          * Get list of user accounts.

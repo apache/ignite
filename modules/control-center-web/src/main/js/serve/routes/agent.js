@@ -36,7 +36,7 @@ module.exports = {
  */
 module.exports.factory = function(_, express, apacheIgnite, fs, JSZip, settings, agentMgr) {
     return new Promise((resolveFactory) => {
-        const router = express.Router();
+        const router = new express.Router();
 
         const SqlFieldsQuery = apacheIgnite.SqlFieldsQuery;
         const ScanQuery = apacheIgnite.ScanQuery;

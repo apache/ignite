@@ -26,7 +26,7 @@ module.exports = {
 
 module.exports.factory = function(express, mongo) {
     return new Promise((resolve) => {
-        const router = express.Router();
+        const router = new express.Router();
 
         /**
          * Get notebooks names accessed for user account.

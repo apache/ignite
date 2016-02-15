@@ -26,7 +26,7 @@ module.exports = {
 
 module.exports.factory = function(_, express, async, mongo) {
     return new Promise((resolve) => {
-        const router = express.Router();
+        const router = new express.Router();
 
         /**
          * Get spaces and domain models accessed for user account.

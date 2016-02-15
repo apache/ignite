@@ -26,7 +26,7 @@ module.exports = {
 
 module.exports.factory = function(_, express, mongo) {
     return new Promise((resolve) => {
-        const router = express.Router();
+        const router = new express.Router();
 
         /**
          * Get spaces and clusters accessed for user account.
