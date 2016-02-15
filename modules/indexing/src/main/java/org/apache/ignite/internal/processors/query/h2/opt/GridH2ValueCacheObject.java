@@ -22,6 +22,7 @@ import java.sql.SQLException;
 import java.sql.Types;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.binary.BinaryObject;
+import org.apache.ignite.internal.binary.BinaryEnumObjectImpl;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.CacheObjectContext;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
@@ -133,12 +134,7 @@ public class GridH2ValueCacheObject extends Value {
     @SuppressWarnings("unchecked")
     @Override protected int compareSecure(Value v, CompareMode mode) {
         Object o1 = getObject();
-
-        o1 = o1 instanceof BinaryObject ? ((BinaryObject)o1).deserialize() : o1;
-
-        final Object o2 = v.getObject() instanceof BinaryObject
-                ? ((BinaryObject)v.getObject()).deserialize()
-                : v.getObject();
+        Object o2 = v.getObject();
 
         boolean o1Comparable = o1 instanceof Comparable;
         boolean o2Comparable = o2 instanceof Comparable;
@@ -148,6 +144,15 @@ public class GridH2ValueCacheObject extends Value {
             Comparable<Object> c1 = (Comparable<Object>)o1;
 
             return c1.compareTo(o2);
+        }
+
+        if (o1 instanceof BinaryObject) {
+            final BinaryObject bo1 = (BinaryObject)o1;
+
+            if (bo1.type().isEnum()
+                    && o2 instanceof Enum
+                    && ((BinaryEnumObjectImpl)bo1).isTypeEquals((Class<? extends Enum>) o2.getClass()))
+                return Integer.compare(bo1.enumOrdinal(), ((Enum)o2).ordinal());
         }
 
         // Group by types.

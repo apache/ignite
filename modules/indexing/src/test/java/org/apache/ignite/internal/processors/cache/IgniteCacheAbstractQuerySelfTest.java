@@ -193,6 +193,7 @@ public abstract class IgniteCacheAbstractQuerySelfTest extends GridCommonAbstrac
             }
 
             c.setCacheConfiguration(ccs);
+            c.setMarshaller(new BinaryMarshaller());
         }
         else
             c.setClientMode(true);
