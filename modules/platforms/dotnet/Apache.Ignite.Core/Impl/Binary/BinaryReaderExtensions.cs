@@ -17,6 +17,7 @@
 
 namespace Apache.Ignite.Core.Impl.Binary
 {
+    using System;
     using System.Collections.Generic;
     using Apache.Ignite.Core.Binary;
 
@@ -47,6 +48,24 @@ namespace Apache.Ignite.Core.Impl.Binary
         public static Dictionary<TKey, TValue> ReadDictionaryAsGeneric<TKey, TValue>(this IBinaryRawReader reader)
         {
             return (Dictionary<TKey, TValue>) reader.ReadDictionary(size => new Dictionary<TKey, TValue>(size));
+        }
+
+        /// <summary>
+        /// Reads long as timespan with range checks.
+        /// </summary>
+        /// <param name="reader">The reader.</param>
+        /// <returns>TimeSpan.</returns>
+        public static TimeSpan ReadLongAsTimespan(this IBinaryRawReader reader)
+        {
+            long ms = reader.ReadLong();
+
+            if (ms >= TimeSpan.MaxValue.TotalMilliseconds)
+                return TimeSpan.MaxValue;
+
+            if (ms <= TimeSpan.MinValue.TotalMilliseconds)
+                return TimeSpan.MinValue;
+
+            return TimeSpan.FromMilliseconds(ms);
         }
     }
 }

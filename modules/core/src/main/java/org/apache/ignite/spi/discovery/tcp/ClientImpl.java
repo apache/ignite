@@ -1665,7 +1665,8 @@ class ClientImpl extends TcpDiscoveryImpl {
 
                     if (dataMap != null) {
                         for (Map.Entry<UUID, Map<Integer, byte[]>> entry : dataMap.entrySet())
-                            spi.onExchange(getLocalNodeId(), entry.getKey(), entry.getValue(), null);
+                            spi.onExchange(getLocalNodeId(), entry.getKey(), entry.getValue(),
+                                U.resolveClassLoader(spi.ignite().configuration().getClassLoader()));
                     }
 
                     locNode.setAttributes(msg.clientNodeAttributes());
@@ -1961,7 +1962,8 @@ class ClientImpl extends TcpDiscoveryImpl {
 
                     if (node != null && node.visible()) {
                         try {
-                            DiscoverySpiCustomMessage msgObj = msg.message(spi.marsh);
+                            DiscoverySpiCustomMessage msgObj = msg.message(spi.marsh,
+                                spi.ignite().configuration().getClassLoader());
 
                             notifyDiscovery(EVT_DISCOVERY_CUSTOM_EVT, topVer, node, allVisibleNodes(), msgObj);
                         }

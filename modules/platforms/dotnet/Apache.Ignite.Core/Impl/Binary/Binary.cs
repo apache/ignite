@@ -104,9 +104,6 @@ namespace Apache.Ignite.Core.Impl.Binary
             if (obj0 == null)
                 throw new ArgumentException("Unsupported object type: " + obj.GetType());
 
-            if (obj0 is BinaryEnum)
-                throw new InvalidOperationException("Builder cannot be created for enum.");
-
             IBinaryTypeDescriptor desc = _marsh.GetDescriptor(true, obj0.TypeId);
             
             return Builder0(null, obj0, desc);

@@ -31,10 +31,12 @@ import javax.cache.CacheException;
 import javax.cache.configuration.Configuration;
 import javax.cache.event.CacheEntryRemovedListener;
 import javax.cache.expiry.ExpiryPolicy;
+import javax.cache.integration.CacheLoader;
 import javax.cache.integration.CacheWriter;
 import javax.cache.processor.EntryProcessor;
 import javax.cache.processor.EntryProcessorException;
 import javax.cache.processor.EntryProcessorResult;
+import org.apache.ignite.cache.CacheEntry;
 import org.apache.ignite.cache.CacheEntryProcessor;
 import org.apache.ignite.cache.CacheMetrics;
 import org.apache.ignite.cache.CacheMode;
@@ -390,16 +392,57 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
      * <code>null</code> value for a key.
      */
     @IgniteAsyncSupported
-    <T> Map<K, EntryProcessorResult<T>> invokeAll(Map<? extends K, ? extends EntryProcessor<K, V, T>> map,
+    public <T> Map<K, EntryProcessorResult<T>> invokeAll(Map<? extends K, ? extends EntryProcessor<K, V, T>> map,
         Object... args);
 
     /** {@inheritDoc} */
     @IgniteAsyncSupported
     @Override public V get(K key);
 
+    /**
+     * Gets an entry from the cache.
+     * <p>
+     * If the cache is configured to use read-through, and get would return null
+     * because the entry is missing from the cache, the Cache's {@link CacheLoader}
+     * is called in an attempt to load the entry.
+     *
+     * @param key the key whose associated value is to be returned
+     * @return the element, or null, if it does not exist.
+     * @throws IllegalStateException if the cache is {@link #isClosed()}
+     * @throws NullPointerException  if the key is null
+     * @throws CacheException        if there is a problem fetching the value
+     * @throws ClassCastException    if the implementation is configured to perform
+     * runtime-type-checking, and the key or value types are incompatible with those that have been
+     * configured for the {@link Cache}
+     */
+    @IgniteAsyncSupported
+    public CacheEntry<K, V> getEntry(K key);
+
     /** {@inheritDoc} */
     @IgniteAsyncSupported
     @Override public Map<K, V> getAll(Set<? extends K> keys);
+
+    /**
+     * Gets a collection of entries from the {@link Cache}.
+     * <p>
+     * If the cache is configured read-through, and a get for a key would
+     * return null because an entry is missing from the cache, the Cache's
+     * {@link CacheLoader} is called in an attempt to load the entry. If an
+     * entry cannot be loaded for a given key, the key will not be present in
+     * the returned Collection.
+     *
+     * @param keys The keys whose associated values are to be returned.
+     * @return A collection of entries that were found for the given keys. Entries not found
+     *         in the cache are not in the returned collection.
+     * @throws NullPointerException  if keys is null or if keys contains a null
+     * @throws IllegalStateException if the cache is {@link #isClosed()}
+     * @throws CacheException        if there is a problem fetching the values
+     * @throws ClassCastException    if the implementation is configured to perform
+     * runtime-type-checking, and the key or value types are incompatible with those that have been
+     * configured for the {@link Cache}
+     */
+    @IgniteAsyncSupported
+    public Collection<CacheEntry<K, V>> getEntries(Set<? extends K> keys);
 
     /**
      * Gets values from cache. Will bypass started transaction, if any, i.e. will not enlist entries
