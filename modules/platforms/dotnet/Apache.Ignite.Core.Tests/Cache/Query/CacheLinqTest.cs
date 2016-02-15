@@ -913,6 +913,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         [Test]
         public void TestTableNameInference()
         {
+            // Try with multi-type cache: explicit type is required
             var cache = GetCacheOf<IPerson>();
 
             Assert.Throws<CacheException>(() => cache.AsCacheQueryable());
@@ -920,6 +921,13 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
             var names = cache.AsCacheQueryable("Person").Select(x => x.Value.Name).ToArray();
 
             Assert.AreEqual(PersonCount, names.Length);
+
+            // With single=type cache, interface inference works
+            var roleCache = Ignition.GetIgnite().GetCache<object, IRole>(RoleCacheName);
+
+            var roleNames = roleCache.Select(x => x.Value.Name).ToArray();
+
+            Assert.AreEqual(new[] {"Role_1", "Role_2", null}, roleNames);
         }
 
         /// <summary>
@@ -1062,7 +1070,13 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
             [QuerySqlField] public string Name { get; set; }
         }
 
-        public class Role
+        public interface IRole
+        {
+            string Name { get; }
+            DateTime Date { get; }
+        }
+
+        public class Role : IRole
         {
             [QuerySqlField] public string Name { get; set; }
             [QuerySqlField] public DateTime Date { get; set; }
