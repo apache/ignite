@@ -364,24 +364,6 @@ public class IgfsProcessor extends IgfsProcessorAdapter {
     }
 
     /**
-     * Checks whether endpoint TCP port is in valid range.
-     * <p>
-     * Zero port is not supported, because in that case random one
-     * will be picked on each node.
-     * @param igfsIpcCfg endpoint configuration to examine.
-     * @throws IgniteCheckedException
-     */
-    private void validateIgfsIpcEndpointCfg(final @Nullable IgfsIpcEndpointConfiguration igfsIpcCfg) throws IgniteCheckedException {
-        if (igfsIpcCfg != null) {
-            final int tcpPort = igfsIpcCfg.getPort();
-            if (!(tcpPort >= MIN_TCP_PORT && tcpPort <= MAX_TCP_PORT))
-                throw new IgniteCheckedException(String.format(
-                        "IGFS endpoint TCP port must be in range %s..%s, but set %s",
-                        MIN_TCP_PORT, MAX_TCP_PORT, tcpPort));
-        }
-    }
-
-    /**
      * @param cacheName Cache name.
      * @return Configuration.
      */
