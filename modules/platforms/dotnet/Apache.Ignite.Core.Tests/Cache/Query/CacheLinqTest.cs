@@ -38,7 +38,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
     using NUnit.Framework;
 
     /// <summary>
-    /// Tests LINQ queries.
+    /// Tests LINQ.
     /// </summary>
     public class CacheLinqTest
     {
