@@ -69,12 +69,13 @@ namespace Apache.Ignite.Examples.Datagrid
 
                 // Create cache that will work with specific types.
                 var employeeCache = ignite.GetCache<EmployeeKey, Employee>(null);
+                var organizationCache = ignite.GetCache<int, Organization>(null);
 
                 // Run SQL query example.
                 SqlQueryExample(employeeCache);
 
                 // Run SQL query with join example.
-                SqlJoinQueryExample(employeeCache);
+                SqlJoinQueryExample(employeeCache, organizationCache);
 
                 // Run SQL fields query example.
                 SqlFieldsQueryExample(employeeCache);
@@ -110,14 +111,22 @@ namespace Apache.Ignite.Examples.Datagrid
         /// <summary>
         /// Queries employees that work for organization with provided name.
         /// </summary>
-        /// <param name="cache">Cache.</param>
-        private static void SqlJoinQueryExample(ICache<EmployeeKey, Employee> cache)
+        /// <param name="employeeCache">Employee cache.</param>
+        /// <param name="organizationCache">Organization cache.</param>
+        private static void SqlJoinQueryExample(ICache<EmployeeKey, Employee> employeeCache, 
+            ICache<int, Organization> organizationCache)
         {
             const string orgName = "Apache";
 
-            var qry = cache.Query(new SqlQuery("Employee",
-                "from Employee, Organization " +
-                "where Employee.organizationId = Organization._key and Organization.name = ?", orgName));
+            var employees = employeeCache.AsQueryable();
+            var organizations = organizationCache.AsQueryable();
+
+            var qry = 
+                from employee in employees
+                from organization in organizations
+                where employee.Key.OrganizationId == organization.Key && organization.Value.Name == orgName
+                select employee;
+
 
             Console.WriteLine();
             Console.WriteLine(">>> Employees working for " + orgName + ":");
