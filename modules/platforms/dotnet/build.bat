@@ -58,6 +58,8 @@ IF NOT EXIST %TARGET_DIR%\NUL mkdir %TARGET_DIR%
 
 copy /Y Apache.Ignite\bin\%PLATFORM%\Release\*.* %TARGET_DIR%
 
+copy /Y Apache.Ignite.Linq\bin\%PLATFORM%\Release\*.* %TARGET_DIR%
+
 copy /Y readme.txt %TARGET_DIR%
 
 goto DONE

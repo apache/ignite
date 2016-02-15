@@ -24,7 +24,9 @@ using Apache.Ignite.Core.Cache.Query;
 
 namespace Apache.Ignite.Examples.Datagrid
 {
+    using System.Linq;
     using Apache.Ignite.ExamplesDll.Binary;
+    using Apache.Ignite.Linq;
 
     /// <summary>
     /// This example populates cache with sample data and runs several SQL and
@@ -55,7 +57,7 @@ namespace Apache.Ignite.Examples.Datagrid
             using (var ignite = Ignition.Start(cfg))
             {
                 Console.WriteLine();
-                Console.WriteLine(">>> Cache query example started.");
+                Console.WriteLine(">>> Cache LINQ example started.");
 
                 var cache = ignite.GetCache<object, object>(null);
 
@@ -96,7 +98,7 @@ namespace Apache.Ignite.Examples.Datagrid
         {
             const int zip = 94109;
 
-            var qry = cache.Query(new SqlQuery(typeof(Employee), "zip = ?", zip));
+            var qry = cache.AsCacheQueryable().Where(emp => emp.Value.Address.Zip == zip);
 
             Console.WriteLine();
             Console.WriteLine(">>> Employees with zipcode " + zip + ":");
