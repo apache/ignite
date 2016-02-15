@@ -176,7 +176,8 @@ public abstract class IgniteCacheAbstractQuerySelfTest extends GridCommonAbstrac
                     Integer.class, ArrayObject.class,
                     Key.class, GridCacheQueryTestValue.class,
                     UUID.class, Person.class,
-                    IgniteCacheReplicatedQuerySelfTest.CacheKey.class, IgniteCacheReplicatedQuerySelfTest.CacheValue.class
+                    IgniteCacheReplicatedQuerySelfTest.CacheKey.class, IgniteCacheReplicatedQuerySelfTest.CacheValue.class,
+                    Long.class, EnumObject.class
                 );
 
                 if (cacheMode() != CacheMode.LOCAL)
@@ -578,6 +579,24 @@ public abstract class IgniteCacheAbstractQuerySelfTest extends GridCommonAbstrac
             assert iter.next() != null;
 
         assert !iter.hasNext();
+    }
+
+    /**
+     * JUnit.
+     *
+     * @throws Exception In case of error.
+     */
+    public void testEnumObjectQuery() throws Exception {
+        final IgniteCache<Long, EnumObject> cache = ignite().cache(null);
+
+        for (long i = 0; i < 50; i++)
+            cache.put(i, new EnumObject(i, i % 2 == 0 ? EnumType.TYPE_A : EnumType.TYPE_B));
+
+        final SqlQuery<Long, EnumObject> qry = new SqlQuery<>(EnumObject.class, "type = ?");
+
+        qry.setArgs(EnumType.TYPE_A);
+
+        assert 25 == cache.query(qry).getAll().size();
     }
 
     /**
@@ -1794,5 +1813,51 @@ public abstract class IgniteCacheAbstractQuerySelfTest extends GridCommonAbstrac
         @Override public CacheStore create() {
             return store;
         }
+    }
+
+    /**
+     * Test enum class.
+     */
+    private static class EnumObject {
+        /**
+         * Test id.
+         */
+        @QuerySqlField(index = true)
+        private long id;
+
+        /**
+         * Test enum.
+         */
+        @QuerySqlField
+        private EnumType type;
+
+        /**
+         * @param id id.
+         * @param type enum.
+         */
+        public EnumObject(long id, EnumType type) {
+            this.id = id;
+            this.type = type;
+        }
+
+        /**
+         * @return string representation of object.
+         */
+        @Override public String toString() {
+            return "EnumObject{" +
+                    "id=" + id +
+                    ", type=" + type +
+                    '}';
+        }
+    }
+
+    /**
+     * Test enum.
+     */
+    private enum EnumType {
+        /** */
+        TYPE_A,
+        /** */
+        TYPE_B
     }
 }

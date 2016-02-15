@@ -21,6 +21,7 @@ import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.sql.Types;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.CacheObjectContext;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
@@ -132,7 +133,12 @@ public class GridH2ValueCacheObject extends Value {
     @SuppressWarnings("unchecked")
     @Override protected int compareSecure(Value v, CompareMode mode) {
         Object o1 = getObject();
-        Object o2 = v.getObject();
+
+        o1 = o1 instanceof BinaryObject ? ((BinaryObject)o1).deserialize() : o1;
+
+        final Object o2 = v.getObject() instanceof BinaryObject
+                ? ((BinaryObject)v.getObject()).deserialize()
+                : v.getObject();
 
         boolean o1Comparable = o1 instanceof Comparable;
         boolean o2Comparable = o2 instanceof Comparable;
