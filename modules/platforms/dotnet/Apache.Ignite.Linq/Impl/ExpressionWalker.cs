@@ -109,9 +109,10 @@ namespace Apache.Ignite.Linq.Impl
             {
                 var targetExpr = memberExpr.Expression as ConstantExpression;
 
-                if (targetExpr != null)
+                if (memberExpr.Expression == null || targetExpr != null)
                 {
-                    var target = targetExpr.Value;
+                    // Instance or static member
+                    var target = targetExpr == null ? null : targetExpr.Value;
 
                     Func<object, object> reader;
                     if (MemberReaders.TryGetValue(memberExpr.Member, out reader))
@@ -119,13 +120,10 @@ namespace Apache.Ignite.Linq.Impl
 
                     return (T) MemberReaders.GetOrAdd(memberExpr.Member, x => CompileMemberReader(memberExpr))(target);
                 }
-
-                // TODO: Static fields and properties
             }
 
 
             throw new NotSupportedException("Expression not supported: " + expr);
-            //return Expression.Lambda<Func<T>>(Expression.Convert(expr, typeof (T))).Compile()();
         }
 
         private static Func<object, object> CompileMemberReader(MemberExpression memberExpr)

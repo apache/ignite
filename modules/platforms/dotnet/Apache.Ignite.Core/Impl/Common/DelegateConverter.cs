@@ -283,7 +283,7 @@ namespace Apache.Ignite.Core.Impl.Common
         public static Action<object, object> CompileFieldSetter(FieldInfo field)
         {
             Debug.Assert(field != null);
-            Debug.Assert(field.DeclaringType != null);   // non-static
+            Debug.Assert(field.DeclaringType != null);
 
             var targetParam = Expression.Parameter(typeof(object));
             var targetParamConverted = Expression.Convert(targetParam, field.DeclaringType);
@@ -305,7 +305,7 @@ namespace Apache.Ignite.Core.Impl.Common
         public static Action<object, object> CompilePropertySetter(PropertyInfo prop)
         {
             Debug.Assert(prop != null);
-            Debug.Assert(prop.DeclaringType != null);   // non-static
+            Debug.Assert(prop.DeclaringType != null);
 
             var targetParam = Expression.Parameter(typeof(object));
             var targetParamConverted = Expression.Convert(targetParam, prop.DeclaringType);
@@ -329,10 +329,13 @@ namespace Apache.Ignite.Core.Impl.Common
         public static Func<object, object> CompilePropertyGetter(PropertyInfo prop)
         {
             Debug.Assert(prop != null);
-            Debug.Assert(prop.DeclaringType != null);   // non-static
+            Debug.Assert(prop.DeclaringType != null);
 
             var targetParam = Expression.Parameter(typeof(object));
-            var targetParamConverted = Expression.Convert(targetParam, prop.DeclaringType);
+            var targetParamConverted = prop.GetGetMethod().IsStatic
+                ? null
+                // ReSharper disable once AssignNullToNotNullAttribute (incorrect warning)
+                : Expression.Convert(targetParam, prop.DeclaringType);
 
             var fld = Expression.Property(targetParamConverted, prop);
 
@@ -350,10 +353,12 @@ namespace Apache.Ignite.Core.Impl.Common
         public static Func<object, object> CompileFieldGetter(FieldInfo field)
         {
             Debug.Assert(field != null);
-            Debug.Assert(field.DeclaringType != null);   // non-static
+            Debug.Assert(field.DeclaringType != null);
 
             var targetParam = Expression.Parameter(typeof(object));
-            var targetParamConverted = Expression.Convert(targetParam, field.DeclaringType);
+            var targetParamConverted = field.IsStatic
+                ? null
+                : Expression.Convert(targetParam, field.DeclaringType);
 
             var fld = Expression.Field(targetParamConverted, field);
 
@@ -375,7 +380,7 @@ namespace Apache.Ignite.Core.Impl.Common
 
             var declaringType = field.DeclaringType;
 
-            Debug.Assert(declaringType != null);  // static fields are not supported
+            Debug.Assert(declaringType != null);
 
             var method = new DynamicMethod(string.Empty, null, new[] { typeof(object), field.FieldType }, 
                 declaringType, true);
