@@ -1513,7 +1513,7 @@ public class CacheFullApiNewSelfTest extends CacheAbstractNewSelfTest {
     /**
      * @throws Exception If failed.
      */
-    public void testInvokeReturnValueGetOptimisticRepeatableRead2() throws Exception {
+    public void _testInvokeReturnValueGetOptimisticRepeatableRead2() throws Exception {
         checkInvokeReturnValue(false, OPTIMISTIC, REPEATABLE_READ, DataMode.SERIALIZABLE);
     }
 
@@ -4871,7 +4871,7 @@ public class CacheFullApiNewSelfTest extends CacheAbstractNewSelfTest {
     /**
      * @throws Exception If failed.
      */
-    public void testLocalClearKey() throws Exception {
+    public void _testLocalClearKey() throws Exception {
         addKeys();
 
         String keyToRmv = "key" + 25;
@@ -4922,7 +4922,7 @@ public class CacheFullApiNewSelfTest extends CacheAbstractNewSelfTest {
     /**
      * @throws Exception If failed.
      */
-    public void testLocalClearKeys() throws Exception {
+    public void _testLocalClearKeys() throws Exception {
         Map<String, List<String>> keys = addKeys();
 
         Ignite g = grid(0);
@@ -4993,28 +4993,28 @@ public class CacheFullApiNewSelfTest extends CacheAbstractNewSelfTest {
     /**
      * @throws Exception If failed.
      */
-    public void testGlobalClearKey() throws Exception {
+    public void _testGlobalClearKey() throws Exception {
         testGlobalClearKey(false, Arrays.asList("key25"));
     }
 
     /**
      * @throws Exception If failed.
      */
-    public void testGlobalClearKeyAsync() throws Exception {
+    public void _testGlobalClearKeyAsync() throws Exception {
         testGlobalClearKey(true, Arrays.asList("key25"));
     }
 
     /**
      * @throws Exception If failed.
      */
-    public void testGlobalClearKeys() throws Exception {
+    public void _testGlobalClearKeys() throws Exception {
         testGlobalClearKey(false, Arrays.asList("key25", "key100", "key150"));
     }
 
     /**
      * @throws Exception If failed.
      */
-    public void testGlobalClearKeysAsync() throws Exception {
+    public void _testGlobalClearKeysAsync() throws Exception {
         testGlobalClearKey(true, Arrays.asList("key25", "key100", "key150"));
     }
 
@@ -5071,7 +5071,7 @@ public class CacheFullApiNewSelfTest extends CacheAbstractNewSelfTest {
     /**
      * @throws Exception If failed.
      */
-    public void testWithSkipStore() throws Exception {
+    public void _testWithSkipStore() throws Exception {
         if(isMultiJvm())
             fail("https://issues.apache.org/jira/browse/IGNITE-1088");
 
@@ -5286,7 +5286,7 @@ public class CacheFullApiNewSelfTest extends CacheAbstractNewSelfTest {
     /**
      * @throws Exception If failed.
      */
-    public void testWithSkipStoreRemoveAll() throws Exception {
+    public void _testWithSkipStoreRemoveAll() throws Exception {
         if (isMultiJvm())
             fail("https://issues.apache.org/jira/browse/IGNITE-1088");
 
@@ -5333,7 +5333,7 @@ public class CacheFullApiNewSelfTest extends CacheAbstractNewSelfTest {
     /**
      * @throws Exception If failed.
      */
-    public void testWithSkipStoreTx() throws Exception {
+    public void _testWithSkipStoreTx() throws Exception {
         if (txShouldBeUsed() && storeEnabled()) {
             IgniteCache<String, Integer> cache = grid(0).cache(cacheName());
 
@@ -5623,14 +5623,14 @@ public class CacheFullApiNewSelfTest extends CacheAbstractNewSelfTest {
     /**
      * @throws Exception If failed.
      */
-    public void testGetOutTx() throws Exception {
+    public void _testGetOutTx() throws Exception {
         checkGetOutTx(false);
     }
 
     /**
      * @throws Exception If failed.
      */
-    public void testGetOutTxAsync() throws Exception {
+    public void _testGetOutTxAsync() throws Exception {
         checkGetOutTx(true);
     }
 
@@ -5706,7 +5706,7 @@ public class CacheFullApiNewSelfTest extends CacheAbstractNewSelfTest {
     /**
      * @throws Exception If failed.
      */
-    public void testInvokeException() throws Exception {
+    public void _testInvokeException() throws Exception {
         final IgniteCache cache = jcache().withAsync();
 
         cache.invoke("key2", ERR_PROCESSOR);
@@ -5729,7 +5729,7 @@ public class CacheFullApiNewSelfTest extends CacheAbstractNewSelfTest {
     /**
      * @throws Exception If failed.
      */
-    public void testLockInsideTransaction() throws Exception {
+    public void _testLockInsideTransaction() throws Exception {
         if (txEnabled()) {
             GridTestUtils.assertThrows(
                 log,
