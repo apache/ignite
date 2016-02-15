@@ -162,7 +162,7 @@ public class GridLogCommandHandler extends GridRestCommandHandlerAdapter {
                 start++;
             }
 
-            if (start < from || start > (to + 1)){
+            if (content.length() == 0){
                 throw new IgniteCheckedException("Request parameter 'from' and 'to' are for lines that do not exist in log file.");
             }
         }
