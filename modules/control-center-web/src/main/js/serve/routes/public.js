@@ -190,7 +190,7 @@ module.exports.factory = function(express, passport, nodemailer, settings, mongo
                                 return reject();
                             }
 
-                            _user.resetPasswordToken = undefined;
+                            _user.resetPasswordToken = undefined; // eslint-disable-line no-undefined
 
                             resolve(_user.save());
                         });
