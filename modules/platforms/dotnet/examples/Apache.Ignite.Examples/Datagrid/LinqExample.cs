@@ -114,8 +114,8 @@ namespace Apache.Ignite.Examples.Datagrid
         {
             const string orgName = "Apache";
 
-            var employees = employeeCache.AsQueryable();
-            var organizations = organizationCache.AsQueryable();
+            var employees = employeeCache.AsCacheQueryable();
+            var organizations = organizationCache.AsCacheQueryable();
 
             var qry = 
                 from employee in employees
@@ -137,7 +137,7 @@ namespace Apache.Ignite.Examples.Datagrid
         /// <param name="cache">Cache.</param>
         private static void SqlFieldsQueryExample(ICache<EmployeeKey, Employee> cache)
         {
-            var qry = cache.AsQueryable().Select(entry => new {entry.Value.Name, entry.Value.Salary});
+            var qry = cache.AsCacheQueryable().Select(entry => new {entry.Value.Name, entry.Value.Salary});
 
             Console.WriteLine();
             Console.WriteLine(">>> Employee names and their salaries:");
