@@ -56,7 +56,7 @@ module.exports.factory = function(_, express, mongo) {
                         return Promise.resolve(user);
 
                     return new Promise((resolve, reject) => {
-                        mongo.Account.findOne({email: params.email}, function (err, _user) {
+                        mongo.Account.findOne({email: params.email}, (err, _user) => {
                             // TODO send error to admin
                             if (err)
                                 return reject('Failed to check e-mail!');
@@ -69,7 +69,7 @@ module.exports.factory = function(_, express, mongo) {
                     });
                 })
                 .then((user) => {
-                    for (var param in params) {
+                    for (const param in params) {
                         if (params.hasOwnProperty(param))
                             user[param] = params[param];
                     }
