@@ -48,6 +48,8 @@ extern "C" {
     void* IGNITE_CALL IgniteProcessorServices(gcj::JniContext* ctx, void* obj, void* prj);
     void* IGNITE_CALL IgniteProcessorExtensions(gcj::JniContext* ctx, void* obj);
     void* IGNITE_CALL IgniteProcessorAtomicLong(gcj::JniContext* ctx, void* obj, char* name, long long initVal, bool create);
+    void* IGNITE_CALL IgniteProcessorAtomicSequence(gcj::JniContext* ctx, void* obj, char* name, long long initVal, bool create);
+    void* IGNITE_CALL IgniteProcessorAtomicReference(gcj::JniContext* ctx, void* obj, char* name, long long memPtr, bool create);
     void IGNITE_CALL IgniteProcessorGetIgniteConfiguration(gcj::JniContext* ctx, void* obj, long memPtr);
     
     long long IGNITE_CALL IgniteTargetInStreamOutLong(gcj::JniContext* ctx, void* obj, int opType, long long memPtr);
@@ -159,6 +161,19 @@ extern "C" {
     long long IGNITE_CALL IgniteAtomicLongCompareAndSetAndGet(gcj::JniContext* ctx, void* obj, long long expVal, long long newVal);
     bool IGNITE_CALL IgniteAtomicLongIsClosed(gcj::JniContext* ctx, void* obj);
     void IGNITE_CALL IgniteAtomicLongClose(gcj::JniContext* ctx, void* obj);
+
+    long long IGNITE_CALL IgniteAtomicSequenceGet(gcj::JniContext* ctx, void* obj);
+    long long IGNITE_CALL IgniteAtomicSequenceIncrementAndGet(gcj::JniContext* ctx, void* obj);
+    long long IGNITE_CALL IgniteAtomicSequenceGetAndIncrement(gcj::JniContext* ctx, void* obj);
+    long long IGNITE_CALL IgniteAtomicSequenceAddAndGet(gcj::JniContext* ctx, void* obj, long long l);
+    long long IGNITE_CALL IgniteAtomicSequenceGetAndAdd(gcj::JniContext* ctx, void* obj, long long l);
+    int IGNITE_CALL IgniteAtomicSequenceGetBatchSize(gcj::JniContext* ctx, void* obj);
+    void IGNITE_CALL IgniteAtomicSequenceSetBatchSize(gcj::JniContext* ctx, void* obj, int size);
+    bool IGNITE_CALL IgniteAtomicSequenceIsClosed(gcj::JniContext* ctx, void* obj);
+    void IGNITE_CALL IgniteAtomicSequenceClose(gcj::JniContext* ctx, void* obj);
+
+    bool IGNITE_CALL IgniteAtomicReferenceIsClosed(gcj::JniContext* ctx, void* obj);
+    void IGNITE_CALL IgniteAtomicReferenceClose(gcj::JniContext* ctx, void* obj);
 
     bool IGNITE_CALL IgniteListenableCancel(gcj::JniContext* ctx, void* obj);
     bool IGNITE_CALL IgniteListenableIsCancelled(gcj::JniContext* ctx, void* obj);

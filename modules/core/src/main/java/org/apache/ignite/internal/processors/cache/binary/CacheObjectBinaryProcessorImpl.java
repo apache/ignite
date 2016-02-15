@@ -112,7 +112,7 @@ import static org.apache.ignite.IgniteSystemProperties.getBoolean;
 public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorImpl implements
     CacheObjectBinaryProcessor {
     /** */
-    public static final IgniteProductVersion BINARY_CFG_CHECK_SINCE = IgniteProductVersion.fromString("1.5.6");
+    public static final IgniteProductVersion BINARY_CFG_CHECK_SINCE = IgniteProductVersion.fromString("1.5.7");
 
     /** */
     private final CountDownLatch startLatch = new CountDownLatch(1);
@@ -822,10 +822,10 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
 
         Object val = unmarshal(valPtr, !tmp);
 
-        if (val instanceof BinaryObjectOffheapImpl)
-            return (BinaryObjectOffheapImpl)val;
+        if (val instanceof CacheObject)
+            return (CacheObject)val;
 
-        return new CacheObjectImpl(val, null);
+        return toCacheObject(ctx.cacheObjectContext(), val, false);
     }
 
     /** {@inheritDoc} */
