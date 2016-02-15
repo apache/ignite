@@ -17,10 +17,12 @@
 
 namespace Apache.Ignite.Linq.Impl
 {
+    using System;
     using System.Diagnostics;
     using System.Linq;
     using System.Linq.Expressions;
     using Apache.Ignite.Core;
+    using Apache.Ignite.Core.Cache;
     using Apache.Ignite.Core.Cache.Configuration;
     using Remotion.Linq;
     using Remotion.Linq.Parsing.Structure;
@@ -51,8 +53,16 @@ namespace Apache.Ignite.Linq.Impl
             _ignite = ignite;
             _cacheConfiguration = cacheConfiguration;
 
-            // TODO: Check against config
-            _tableName = tableName;
+            if (tableName == null)
+            {
+                _tableName = InferTableName();
+            }
+            else
+            {
+                _tableName = tableName;
+
+                ValidateTableName();
+            }
         }
 
         /// <summary>
@@ -83,6 +93,43 @@ namespace Apache.Ignite.Linq.Impl
         public override IQueryable<T> CreateQuery<T>(Expression expression)
         {
             return new CacheFieldsQueryable<T>(this, expression);
+        }
+
+        /// <summary>
+        /// Validates the name of the table.
+        /// </summary>
+        private void ValidateTableName()
+        {
+            var validTableNames = GetValidTableNames();
+
+            if (!validTableNames.Contains(_tableName, StringComparer.OrdinalIgnoreCase))
+            {
+                throw new CacheException(string.Format("Invalid table name specified for CacheQueryable: '{0}'; " +
+                                                       "configured table names are: {1}", _tableName,
+                    validTableNames.Aggregate((x, y) => x + "'" + y + "'")));
+            }
+        }
+
+        /// <summary>
+        /// Gets the valid table names for current cache.
+        /// </summary>
+        private string[] GetValidTableNames()
+        {
+            var validTableNames = _cacheConfiguration.QueryEntities.Select(e => e.ValueTypeName).ToArray();
+
+            if (!validTableNames.Any())
+                throw new CacheException(string.Format("Queries are not configured for cache '{0}'",
+                    _cacheConfiguration.Name ?? "null"));
+
+            return validTableNames;
+        }
+
+        /// <summary>
+        /// Infers the name of the table from cache configuration.
+        /// </summary>
+        private string InferTableName()
+        {
+            throw new NotImplementedException();
         }
     }
 }
