@@ -84,9 +84,9 @@ module.exports.factory = function(_, express, mongo) {
             }
             else {
                 mongo.Igfs.findOne({space: params.space, name: params.name}).exec()
-                    .then((_igfs) => {
-                        if (_igfs)
-                            throw new Error('IGFS with name: "' + _igfs + '" already exist.');
+                    .then((igfs) => {
+                        if (igfs)
+                            throw new Error('IGFS with name: "' + igfs + '" already exist.');
 
                         return (new mongo.Igfs(params)).save();
                     })

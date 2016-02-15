@@ -71,7 +71,7 @@ module.exports.factory = function(express, passport, nodemailer, settings, mongo
                     if (err)
                         return reject(sendErrMsg || err.message);
 
-                    resolve();
+                    resolve(user);
                 });
             });
         };
@@ -101,37 +101,45 @@ module.exports.factory = function(express, passport, nodemailer, settings, mongo
 
                     req.body.token = _randomString();
 
-                    const account = new mongo.Account(req.body);
-
-                    return Promise.resolve(account);
+                    return Promise.resolve(new mongo.Account(req.body));
                 })
                 .then((account) => {
                     return new Promise((resolve, reject) => {
                         mongo.Account.register(account, req.body.password, (err, _account) => {
                             if (err)
-                                return reject(err.message);
+                                reject(err);
 
-                            if (!account)
-                                return reject('Failed to create account.');
+                            if (!_account)
+                                reject(new Error('Failed to create account.'));
 
                             resolve(_account);
                         });
                     });
                 })
                 .then((account) => {
+                    return new Promise((resolve, reject) =>
+                        new mongo.Space({name: 'Personal space', owner: account._id}).save()
+                            .then(() => resolve(account))
+                            .catch(reject)
+                    );
+                })
+                .then((account) => {
                     return new Promise((resolve, reject) => {
                         req.logIn(account, {}, (err) => {
                             if (err)
-                                return reject(err.message);
+                                reject(err);
 
                             resolve(account);
                         });
                     });
                 })
-                .then((account) => new mongo.Space({name: 'Personal space', owner: account._id}).save())
-                .then(() => res.sendStatus(200))
-                .catch((errMsg) => {
-                    res.status(401).send(errMsg);
+                .then((account) => {
+                    res.sendStatus(200);
+
+                    //_sendMail(account, '', '');
+                })
+                .catch((err) => {
+                    res.status(401).send(err.message);
                 });
         });
 
@@ -177,14 +185,14 @@ module.exports.factory = function(express, passport, nodemailer, settings, mongo
 
                     return user.save();
                 })
-                .then((user) => {
-                    return _sendMail(user, 'Password Reset',
+                .then((user) =>
+                    _sendMail(user, 'Password Reset',
                         'You are receiving this because you (or someone else) have requested the reset of the password for your account.\n\n' +
                         'Please click on the following link, or paste this into your browser to complete the process:\n\n' +
                         'http://' + req.headers.host + '/password/reset?token=' + user.resetPasswordToken + '\n\n' +
                         'If you did not request this, please ignore this email and your password will remain unchanged.',
-                        'Failed to send e-mail with reset link!');
-                })
+                        'Failed to send e-mail with reset link!')
+                )
                 .then(() => res.status(200).send('An e-mail has been sent with further instructions.'))
                 .catch((errMsg) => {
                     // TODO IGNITE-843 Send email to admin
@@ -219,6 +227,7 @@ module.exports.factory = function(express, passport, nodemailer, settings, mongo
                         'Now you can login: http://' + req.headers.host,
                         'Password was changed, but failed to send confirmation e-mail!');
                 })
+                .then((user) => res.status(200).send(user.email))
                 .catch((errMsg) => {
                     res.status(500).send(errMsg);
                 });
