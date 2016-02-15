@@ -48,9 +48,9 @@ module.exports.factory = function(_, express, mongo) {
                 .then(clusters => {
                     result.clusters = clusters;
 
-                    return  mongo.Igfs.find({space: {$in: result.spacesIds}}).sort('name').exec();
+                    return mongo.Igfs.find({space: {$in: result.spacesIds}}).sort('name').exec();
                 })
-                .then(igfss => {
+                .then((igfss) => {
                     _.forEach(igfss, (igfs) => {
                         // Remove deleted clusters.
                         igfs.clusters = _.filter(igfs.clusters, (clusterId) => {
