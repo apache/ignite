@@ -908,6 +908,19 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         }
 
         /// <summary>
+        /// Tests the table name inference.
+        /// </summary>
+        [Test]
+        public void TestTableNameInference()
+        {
+            var cache = GetCacheOf<IPerson>();
+
+            var names = cache.Select(x => x.Value.Name).ToArray();
+
+            Assert.AreEqual(PersonCount, names.Length);
+        }
+
+        /// <summary>
         /// Gets the person cache.
         /// </summary>
         /// <returns></returns>
@@ -987,7 +1000,13 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
             CollectionAssert.AreEqual(expected, actual, new NumericComparer());
         }
 
-        public class Person : IBinarizable
+        public interface IPerson
+        {
+            int Age { get; set; }
+            string Name { get; set; }
+        }
+
+        public class Person : IBinarizable, IPerson
         {
             public Person(int age, string name)
             {
