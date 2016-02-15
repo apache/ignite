@@ -923,7 +923,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
             Assert.AreEqual(PersonCount, names.Length);
 
             // With single=type cache, interface inference works
-            var roleCache = Ignition.GetIgnite().GetCache<object, IRole>(RoleCacheName);
+            var roleCache = Ignition.GetIgnite().GetCache<object, IRole>(RoleCacheName).AsCacheQueryable();
 
             var roleNames = roleCache.Select(x => x.Value.Name).OrderBy(x => x).ToArray();
 
