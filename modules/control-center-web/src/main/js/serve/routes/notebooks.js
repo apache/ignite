@@ -32,20 +32,20 @@ module.exports.factory = function(express, mongo) {
          * @param req Request.
          * @param res Response.
          */
-        router.post('/list', function(req, res) {
+        router.post('/list', (req, res) => {
             const user_id = req.currentUserId();
 
             // Get owned space and all accessed space.
-            mongo.Space.find({$or: [{owner: user_id}, {usedBy: {$elemMatch: {account: user_id}}}]}, (err, spaces) => {
-                if (err)
-                    return res.status(500).send(err.message);
+            mongo.Space.find({$or: [{owner: user_id}, {usedBy: {$elemMatch: {account: user_id}}}]}, (errSpace, spaces) => {
+                if (errSpace)
+                    return res.status(500).send(errSpace.message);
 
                 const space_ids = spaces.map((value) => value._id);
 
                 // Get all metadata for spaces.
-                mongo.Notebook.find({space: {$in: space_ids}}).select('_id name').sort('name').exec((err, notebooks) => {
-                    if (err)
-                        return res.status(500).send(err.message);
+                mongo.Notebook.find({space: {$in: space_ids}}).select('_id name').sort('name').exec((errNotebook, notebooks) => {
+                    if (errNotebook)
+                        return res.status(500).send(errNotebook.message);
 
                     res.json(notebooks);
                 });
@@ -58,22 +58,20 @@ module.exports.factory = function(express, mongo) {
          * @param req Request.
          * @param res Response.
          */
-        router.post('/get', function(req, res) {
-            var user_id = req.currentUserId();
+        router.post('/get', (req, res) => {
+            const user_id = req.currentUserId();
 
             // Get owned space and all accessed space.
-            mongo.Space.find({$or: [{owner: user_id}, {usedBy: {$elemMatch: {account: user_id}}}]}, function(err, spaces) {
-                if (err)
-                    return res.status(500).send(err.message);
+            mongo.Space.find({$or: [{owner: user_id}, {usedBy: {$elemMatch: {account: user_id}}}]}, (errSpace, spaces) => {
+                if (errSpace)
+                    return res.status(500).send(errSpace.message);
 
-                var space_ids = spaces.map(function(value) {
-                    return value._id;
-                });
+                const space_ids = spaces.map((value) => value._id);
 
                 // Get all metadata for spaces.
-                mongo.Notebook.findOne({space: {$in: space_ids}, _id: req.body.noteId}).exec(function(err, notebook) {
-                    if (err)
-                        return res.status(500).send(err.message);
+                mongo.Notebook.findOne({space: {$in: space_ids}, _id: req.body.noteId}).exec((errNotebook, notebook) => {
+                    if (errNotebook)
+                        return res.status(500).send(errNotebook.message);
 
                     res.json(notebook);
                 });
@@ -86,32 +84,34 @@ module.exports.factory = function(express, mongo) {
          * @param req Request.
          * @param res Response.
          */
-        router.post('/save', function(req, res) {
-            var note = req.body;
-            var noteId = note._id;
+        router.post('/save', (req, res) => {
+            const note = req.body;
+            const noteId = note._id;
 
-            if (noteId)
-                mongo.Notebook.update({_id: noteId}, note, {upsert: true}, function(err) {
+            if (noteId) {
+                mongo.Notebook.update({_id: noteId}, note, {upsert: true}, (err) => {
                     if (err)
                         return res.status(500).send(err.message);
 
                     res.send(noteId);
                 });
-            else
-                mongo.Notebook.findOne({space: note.space, name: note.name}, function(err, note) {
-                    if (err)
-                        return res.status(500).send(err.message);
+            }
+            else {
+                mongo.Notebook.findOne({space: note.space, name: note.name}, (errNotebookFind, notebookFoud) => {
+                    if (errNotebookFind)
+                        return res.status(500).send(errNotebookFind.message);
 
-                    if (note)
-                        return res.status(500).send('Notebook with name: "' + note.name + '" already exist.');
+                    if (notebookFoud)
+                        return res.status(500).send('Notebook with name: "' + notebookFoud.name + '" already exist.');
 
-                    (new mongo.Notebook(req.body)).save(function(err, note) {
-                        if (err)
-                            return res.status(500).send(err.message);
+                    (new mongo.Notebook(req.body)).save((errNotebook, noteNew) => {
+                        if (errNotebook)
+                            return res.status(500).send(errNotebook.message);
 
-                        res.send(note._id);
+                        res.send(noteNew._id);
                     });
                 });
+            }
         });
 
         /**
@@ -120,8 +120,8 @@ module.exports.factory = function(express, mongo) {
          * @param req Request.
          * @param res Response.
          */
-        router.post('/remove', function(req, res) {
-            mongo.Notebook.remove(req.body, function(err) {
+        router.post('/remove', (req, res) => {
+            mongo.Notebook.remove(req.body, (err) => {
                 if (err)
                     return res.status(500).send(err.message);
 
@@ -135,17 +135,17 @@ module.exports.factory = function(express, mongo) {
          * @param req Request.
          * @param res Response.
          */
-        router.post('/new', function(req, res) {
-            var user_id = req.currentUserId();
+        router.post('/new', (req, res) => {
+            const user_id = req.currentUserId();
 
             // Get owned space and all accessed space.
-            mongo.Space.findOne({owner: user_id}, function(err, space) {
-                if (err)
-                    return res.status(500).send(err.message);
+            mongo.Space.findOne({owner: user_id}, (errSpace, space) => {
+                if (errSpace)
+                    return res.status(500).send(errSpace.message);
 
-                (new mongo.Notebook({space: space.id, name: req.body.name})).save(function(err, note) {
-                    if (err)
-                        return res.status(500).send(err.message);
+                (new mongo.Notebook({space: space.id, name: req.body.name})).save((errNotebook, note) => {
+                    if (errNotebook)
+                        return res.status(500).send(errNotebook.message);
 
                     return res.send(note._id);
                 });
