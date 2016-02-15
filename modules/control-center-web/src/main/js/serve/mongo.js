@@ -27,6 +27,9 @@ module.exports = {
 module.exports.factory = function(deepPopulatePlugin, passportMongo, settings, pluginMongo) {
     const mongoose = require('mongoose');
 
+    // Use native promises
+    mongoose.Promise = global.Promise;
+
     const deepPopulate = deepPopulatePlugin(mongoose);
 
     // Connect to mongoDB database.

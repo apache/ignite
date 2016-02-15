@@ -33,19 +33,17 @@ module.exports.factory = function(express, mongo) {
          * @param res Response.
          */
         router.post('/list', function(req, res) {
-            var user_id = req.currentUserId();
+            const user_id = req.currentUserId();
 
             // Get owned space and all accessed space.
-            mongo.Space.find({$or: [{owner: user_id}, {usedBy: {$elemMatch: {account: user_id}}}]}, function(err, spaces) {
+            mongo.Space.find({$or: [{owner: user_id}, {usedBy: {$elemMatch: {account: user_id}}}]}, (err, spaces) => {
                 if (err)
                     return res.status(500).send(err.message);
 
-                var space_ids = spaces.map(function(value) {
-                    return value._id;
-                });
+                const space_ids = spaces.map((value) => value._id);
 
                 // Get all metadata for spaces.
-                mongo.Notebook.find({space: {$in: space_ids}}).select('_id name').sort('name').exec(function(err, notebooks) {
+                mongo.Notebook.find({space: {$in: space_ids}}).select('_id name').sort('name').exec((err, notebooks) => {
                     if (err)
                         return res.status(500).send(err.message);
 

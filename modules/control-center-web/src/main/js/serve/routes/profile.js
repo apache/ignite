@@ -24,7 +24,7 @@ module.exports = {
 
 module.exports.factory = function(_, express, mongo) {
     return new Promise((resolveFactory) => {
-        const router = express.Router();
+        const router = new express.Router();
 
         /**
          * Save user profile.
