@@ -17,43 +17,32 @@
 
 using System;
 using System.Linq;
-using System.Collections.Generic;
-
 using Apache.Ignite.Core;
 using Apache.Ignite.Linq;
 using Apache.Ignite.Core.Cache;
+using Apache.Ignite.Core.Binary;
+using Apache.Ignite.Core.Cache.Configuration;
+using Apache.Ignite.Core.Discovery.Tcp;
+using Apache.Ignite.Core.Discovery.Tcp.Static;
 
 namespace Apache.Ignite.Examples.Datagrid
 {
-    using Apache.Ignite.Core.Cache.Configuration;
-
     /// <summary>
-    /// This example populates cache with sample data and runs several SQL and
-    /// full text queries over this data.
+    /// This example configures uses attribute-based cache configuration, populates cache with sample data 
+    /// and runs several LINQ queries over this data.
     /// <para />
     /// 1) Build the project Apache.Ignite.ExamplesDll (select it -> right-click -> Build).
     ///    Apache.Ignite.ExamplesDll.dll must appear in %IGNITE_HOME%/platforms/dotnet/examples/Apache.Ignite.ExamplesDll/bin/${Platform]/${Configuration} folder.
     /// 2) Set this class as startup object (Apache.Ignite.Examples project -> right-click -> Properties ->
     ///     Application -> Startup object);
     /// 3) Start example (F5 or Ctrl+F5).
-    /// <para />
-    /// This example can be run with standalone Apache Ignite.NET node:
-    /// 1) Run %IGNITE_HOME%/platforms/dotnet/bin/Apache.Ignite.exe:
-    /// Apache.Ignite.exe -IgniteHome="%IGNITE_HOME%" -springConfigUrl=platforms\dotnet\examples\config\example-cache-query.xml -assembly=[path_to_Apache.Ignite.ExamplesDll.dll]
-    /// 2) Start example.
     /// </summary>
     public class LinqCodeConfigurationExample
     {
         [STAThread]
         public static void Main()
         {
-            var cfg = new IgniteConfiguration
-            {
-                SpringConfigUrl = @"platforms\dotnet\examples\config\example-cache-query.xml",
-                JvmOptions = new List<string> { "-Xms512m", "-Xmx1024m" }
-            };
-
-            using (var ignite = Ignition.Start(cfg))
+            using (var ignite = Ignition.Start(GetConfiguration()))
             {
                 Console.WriteLine();
                 Console.WriteLine(">>> Cache LINQ code configuration example started.");
@@ -164,6 +153,24 @@ namespace Apache.Ignite.Examples.Datagrid
                 Street = "1407 Pearlman Avenue, Boston, MA",
                 Zip = 12110
             });
+        }
+
+        /// <summary>
+        /// Gets the Ignite configuration.
+        /// </summary>
+        private static IgniteConfiguration GetConfiguration()
+        {
+            return new IgniteConfiguration
+            {
+                BinaryConfiguration = new BinaryConfiguration(typeof (Person)),
+                DiscoverySpi = new TcpDiscoverySpi
+                {
+                    IpFinder = new TcpDiscoveryStaticIpFinder
+                    {
+                        Endpoints = new[] {"127.0.0.1:47500..47501"}
+                    }
+                }
+            };
         }
 
         private class Person

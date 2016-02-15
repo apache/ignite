@@ -28,8 +28,7 @@ namespace Apache.Ignite.Examples.Datagrid
 {
 
     /// <summary>
-    /// This example populates cache with sample data and runs several SQL and
-    /// full text queries over this data.
+    /// This example populates cache with sample data and runs several LINQ queries over this data.
     /// <para />
     /// 1) Build the project Apache.Ignite.ExamplesDll (select it -> right-click -> Build).
     ///    Apache.Ignite.ExamplesDll.dll must appear in %IGNITE_HOME%/platforms/dotnet/examples/Apache.Ignite.ExamplesDll/bin/${Platform]/${Configuration} folder.
