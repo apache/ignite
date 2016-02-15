@@ -1724,10 +1724,7 @@ public class GridCacheContext<K, V> implements Externalizable {
             // the build is cancelled on TeamCity.
             log.info(">>>>>>> Cache cfg is null for cache: " + cacheName);
 
-            U.dumpThreads(null);
-
-            if (log != null)
-                U.dumpThreads(log);
+            U.dumpThreads(log);
         }
 
         return cacheCfg.getMemoryMode() == OFFHEAP_TIERED || cacheCfg.getMemoryMode() == OFFHEAP_VALUES;
