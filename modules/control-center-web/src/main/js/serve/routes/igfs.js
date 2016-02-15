@@ -109,8 +109,7 @@ module.exports.factory = function(_, express, mongo) {
         router.post('/remove', (req, res) => {
             const igfsId = req.body;
 
-            mongo.Space.find({$or: [{owner: userId}, {usedBy: {$elemMatch: {account: userId}}}]})
-                .then((spaces) => mongo.Cluster.update({space: {$in: spacesIds}}, {$pull: {igfss: igfsId}}, {multi: true}))
+            mongo.Cluster.update({igfss: {$in: [igfsId]}}, {$pull: {igfss: igfsId}}, {multi: true}).exec()
                 .then(mongo.Igfs.remove(igfsId))
                 .then(() => res.sendStatus(200))
                 .catch((err) => {

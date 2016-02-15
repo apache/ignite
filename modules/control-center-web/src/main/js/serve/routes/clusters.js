@@ -137,18 +137,10 @@ module.exports.factory = function(_, express, mongo) {
          * Remove cluster by ._id.
          */
         router.post('/remove', (req, res) => {
-            const userId = req.currentUserId();
             const clusterId = req.body;
 
-            let spacesIds = [];
-
-            mongo.Space.find({$or: [{owner: userId}, {usedBy: {$elemMatch: {account: userId}}}]})
-                .then((spaces) => {
-                    spacesIds = spaces.map((value) => value._id);
-
-                    return mongo.Cache.update({space: {$in: spacesIds}}, {$pull: {clusters: clusterId}}, {multi: true});
-                })
-                .then(() => mongo.Igfs.update({space: {$in: spacesIds}}, {$pull: {clusters: clusterId}}, {multi: true}))
+            mongo.Cache.update({clusters: {$in: [clusterId]}}, {$pull: {clusters: clusterId}}, {multi: true}).exec()
+                .then(() => mongo.Igfs.update({clusters: {$in: [clusterId]}}, {$pull: {clusters: clusterId}}, {multi: true}).exec())
                 .then(() => mongo.Cluster.remove(clusterId))
                 .then(() => res.sendStatus(200))
                 .catch((err) => {
