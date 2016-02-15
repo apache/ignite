@@ -111,7 +111,7 @@ module.exports.factory = function(_, express, mongo) {
 
             mongo.Space.find({$or: [{owner: userId}, {usedBy: {$elemMatch: {account: userId}}}]})
                 .then((spaces) => mongo.Cluster.update({space: {$in: spacesIds}}, {$pull: {igfss: igfsId}}, {multi: true}))
-                .then(mongo.Igfs.remove(req.body))
+                .then(mongo.Igfs.remove(igfsId))
                 .then(() => res.sendStatus(200))
                 .catch((err) => {
                     // TODO IGNITE-843 Send error to admin
