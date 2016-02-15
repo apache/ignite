@@ -31,7 +31,7 @@ module.exports.factory = function(_, express, mongo) {
         /**
          * Save user profile.
          */
-        router.post('/save', function(req, res) {
+        router.post('/save', (req, res) => {
             const params = req.body;
 
             if (params.password && _.isEmpty(params.password))
@@ -79,10 +79,7 @@ module.exports.factory = function(_, express, mongo) {
                     return user.save();
                 })
                 .then(() => res.sendStatus(200))
-                .catch((err) => {
-                    // TODO IGNITE-843 Send error to admin
-                    res.status(500).send(err.message);
-                });
+                .catch((err) => mongo.handleError(res, err));
         });
 
         resolveFactory(router);

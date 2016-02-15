@@ -57,7 +57,7 @@ module.exports.factory = function(_, express, apacheIgnite, fs, JSZip, settings,
         };
 
         const _handleException = (res) => {
-            return function(error) {
+            return (error) => {
                 if (_.isObject(error))
                     return res.status(error.code).send(error.message);
 
@@ -66,17 +66,17 @@ module.exports.factory = function(_, express, apacheIgnite, fs, JSZip, settings,
         };
 
         /* Get grid topology. */
-        router.get('/download/zip', function(req, res) {
+        router.get('/download/zip', (req, res) => {
             const agentFld = settings.agent.file;
             const agentZip = agentFld + '.zip';
             const agentPathZip = 'public/agent/' + agentFld + '.zip';
 
-            fs.stat(agentPathZip, function(err, stats) {
+            fs.stat(agentPathZip, (err, stats) => {
                 if (err)
                     return res.download(agentPathZip, agentZip);
 
                 // Read a zip file.
-                fs.readFile(agentPathZip, function(errFs, data) {
+                fs.readFile(agentPathZip, (errFs, data) => {
                     if (errFs)
                         return res.download(agentPathZip, agentZip);
 
@@ -108,7 +108,7 @@ module.exports.factory = function(_, express, apacheIgnite, fs, JSZip, settings,
         });
 
         /* Get grid topology. */
-        router.post('/topology', function(req, res) {
+        router.post('/topology', (req, res) => {
             _client(req.currentUserId())
                 .then((client) => client.ignite(req.body.demo).cluster(req.body.attr, req.body.mtr))
                 .then((clusters) => res.json(clusters))
@@ -116,7 +116,7 @@ module.exports.factory = function(_, express, apacheIgnite, fs, JSZip, settings,
         });
 
         /* Execute query. */
-        router.post('/query', function(req, res) {
+        router.post('/query', (req, res) => {
             _client(req.currentUserId())
                 .then((client) => {
                     // Create sql query.
@@ -136,7 +136,7 @@ module.exports.factory = function(_, express, apacheIgnite, fs, JSZip, settings,
         });
 
         /* Execute query getAll. */
-        router.post('/query/getAll', function(req, res) {
+        router.post('/query/getAll', (req, res) => {
             _client(req.currentUserId())
                 .then((client) => {
                     // Create sql query.
@@ -148,7 +148,7 @@ module.exports.factory = function(_, express, apacheIgnite, fs, JSZip, settings,
                     // Get query cursor.
                     const cursor = client.ignite(req.body.demo).cache(req.body.cacheName).query(qry);
 
-                    return new Promise(function(resolve) {
+                    return new Promise((resolve) => {
                         cursor.getAll().then((rows) => resolve({meta: cursor.fieldsMetadata(), rows}));
                     });
                 })
@@ -157,7 +157,7 @@ module.exports.factory = function(_, express, apacheIgnite, fs, JSZip, settings,
         });
 
         /* Execute query. */
-        router.post('/scan', function(req, res) {
+        router.post('/scan', (req, res) => {
             _client(req.currentUserId())
                 .then((client) => {
                     // Create sql query.
@@ -178,7 +178,7 @@ module.exports.factory = function(_, express, apacheIgnite, fs, JSZip, settings,
         });
 
         /* Get next query page. */
-        router.post('/query/fetch', function(req, res) {
+        router.post('/query/fetch', (req, res) => {
             _client(req.currentUserId())
                 .then((client) => {
                     const cache = client.ignite(req.body.demo).cache(req.body.cacheName);
@@ -194,7 +194,7 @@ module.exports.factory = function(_, express, apacheIgnite, fs, JSZip, settings,
         });
 
         /* Close query cursor by id. */
-        router.post('/query/close', function(req, res) {
+        router.post('/query/close', (req, res) => {
             _client(req.currentUserId())
                 .then((client) => {
                     const cache = client.ignite(req.body.demo).cache(req.body.cacheName);
@@ -206,7 +206,7 @@ module.exports.factory = function(_, express, apacheIgnite, fs, JSZip, settings,
         });
 
         /* Get metadata for cache. */
-        router.post('/cache/metadata', function(req, res) {
+        router.post('/cache/metadata', (req, res) => {
             _client(req.currentUserId())
                 .then((client) => client.ignite(req.body.demo).cache(req.body.cacheName).metadata())
                 .then((caches) => {
@@ -292,14 +292,14 @@ module.exports.factory = function(_, express, apacheIgnite, fs, JSZip, settings,
         });
 
         /* Ping client. */
-        router.post('/ping', function(req, res) {
+        router.post('/ping', (req, res) => {
             _client(req.currentUserId())
                 .then(() => res.sendStatus(200))
                 .catch(_handleException(res));
         });
 
         /* Get JDBC drivers list. */
-        router.post('/drivers', function(req, res) {
+        router.post('/drivers', (req, res) => {
             _client(req.currentUserId())
                 .then((client) => client.availableDrivers())
                 .then((arr) => res.json(arr))
@@ -307,7 +307,7 @@ module.exports.factory = function(_, express, apacheIgnite, fs, JSZip, settings,
         });
 
         /** Get database schemas. */
-        router.post('/schemas', function(req, res) {
+        router.post('/schemas', (req, res) => {
             _client(req.currentUserId())
                 .then((client) => {
                     const args = req.body;
@@ -321,7 +321,7 @@ module.exports.factory = function(_, express, apacheIgnite, fs, JSZip, settings,
         });
 
         /** Get database tables. */
-        router.post('/tables', function(req, res) {
+        router.post('/tables', (req, res) => {
             _client(req.currentUserId())
                 .then((client) => {
                     const args = req.body;

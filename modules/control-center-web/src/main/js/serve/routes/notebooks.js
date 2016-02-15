@@ -25,7 +25,7 @@ module.exports = {
 };
 
 module.exports.factory = function(express, mongo) {
-    return new Promise((resolve) => {
+    return new Promise((factoryResolve) => {
         const router = new express.Router();
 
         /**
@@ -35,23 +35,11 @@ module.exports.factory = function(express, mongo) {
          * @param res Response.
          */
         router.post('/list', (req, res) => {
-            const user_id = req.currentUserId();
+            mongo.spaces(req.currentUserId())
+                .then((spaces) => mongo.Notebook.find({space: {$in: spaces.map((value) => value._id)}}).select('_id name').sort('name').exec())
+                .then((notebooks) => res.json(notebooks))
+                .catch((err) => mongo.handleError(res, err));
 
-            // Get owned space and all accessed space.
-            mongo.Space.find({$or: [{owner: user_id}, {usedBy: {$elemMatch: {account: user_id}}}]}, (errSpace, spaces) => {
-                if (errSpace)
-                    return res.status(500).send(errSpace.message);
-
-                const space_ids = spaces.map((value) => value._id);
-
-                // Get all metadata for spaces.
-                mongo.Notebook.find({space: {$in: space_ids}}).select('_id name').sort('name').exec((errNotebook, notebooks) => {
-                    if (errNotebook)
-                        return res.status(500).send(errNotebook.message);
-
-                    res.json(notebooks);
-                });
-            });
         });
 
         /**
@@ -61,23 +49,10 @@ module.exports.factory = function(express, mongo) {
          * @param res Response.
          */
         router.post('/get', (req, res) => {
-            const user_id = req.currentUserId();
-
-            // Get owned space and all accessed space.
-            mongo.Space.find({$or: [{owner: user_id}, {usedBy: {$elemMatch: {account: user_id}}}]}, (errSpace, spaces) => {
-                if (errSpace)
-                    return res.status(500).send(errSpace.message);
-
-                const space_ids = spaces.map((value) => value._id);
-
-                // Get all metadata for spaces.
-                mongo.Notebook.findOne({space: {$in: space_ids}, _id: req.body.noteId}).exec((errNotebook, notebook) => {
-                    if (errNotebook)
-                        return res.status(500).send(errNotebook.message);
-
-                    res.json(notebook);
-                });
-            });
+            mongo.spaces(req.currentUserId())
+                .then((spaces) => mongo.Notebook.findOne({space: {$in: spaces.map((value) => value._id)}, _id: req.body.noteId}).exec())
+                .then((notebook) => res.json(notebook))
+                .catch((err) => mongo.handleError(res, err));
         });
 
         /**
@@ -91,28 +66,20 @@ module.exports.factory = function(express, mongo) {
             const noteId = note._id;
 
             if (noteId) {
-                mongo.Notebook.update({_id: noteId}, note, {upsert: true}, (err) => {
-                    if (err)
-                        return res.status(500).send(err.message);
-
-                    res.send(noteId);
-                });
+                mongo.Notebook.update({_id: noteId}, note, {upsert: true}).exec()
+                    .then(() => res.send(noteId))
+                    .catch((err) => mongo.handleError(res, err));
             }
             else {
-                mongo.Notebook.findOne({space: note.space, name: note.name}, (errNotebookFind, notebookFoud) => {
-                    if (errNotebookFind)
-                        return res.status(500).send(errNotebookFind.message);
+                mongo.Notebook.findOne({space: note.space, name: note.name}).exec()
+                    .then((notebook) => {
+                        if (notebook)
+                            throw new Error('Notebook with name: "' + notebook.name + '" already exist.');
 
-                    if (notebookFoud)
-                        return res.status(500).send('Notebook with name: "' + notebookFoud.name + '" already exist.');
-
-                    (new mongo.Notebook(req.body)).save((errNotebook, noteNew) => {
-                        if (errNotebook)
-                            return res.status(500).send(errNotebook.message);
-
-                        res.send(noteNew._id);
-                    });
-                });
+                        return (new mongo.Notebook(req.body)).save();
+                    })
+                    .then((notebook) => res.send(notebook._id))
+                    .catch((err) => mongo.handleError(res, err));
             }
         });
 
@@ -123,12 +90,9 @@ module.exports.factory = function(express, mongo) {
          * @param res Response.
          */
         router.post('/remove', (req, res) => {
-            mongo.Notebook.remove(req.body, (err) => {
-                if (err)
-                    return res.status(500).send(err.message);
-
-                res.sendStatus(200);
-            });
+            mongo.Notebook.remove(req.body)
+                .then(() => res.sendStatus(200))
+                .catch((err) => mongo.handleError(res, err));
         });
 
         /**
@@ -138,22 +102,12 @@ module.exports.factory = function(express, mongo) {
          * @param res Response.
          */
         router.post('/new', (req, res) => {
-            const user_id = req.currentUserId();
-
-            // Get owned space and all accessed space.
-            mongo.Space.findOne({owner: user_id}, (errSpace, space) => {
-                if (errSpace)
-                    return res.status(500).send(errSpace.message);
-
-                (new mongo.Notebook({space: space.id, name: req.body.name})).save((errNotebook, note) => {
-                    if (errNotebook)
-                        return res.status(500).send(errNotebook.message);
-
-                    return res.send(note._id);
-                });
-            });
+            mongo.spaces(req.currentUserId())
+                .then((spaces) => (new mongo.Notebook({space: spaces[0].id, name: req.body.name})).save())
+                .then((notebook) => res.send(notebook._id))
+                .catch((err) => mongo.handleError(res, err));
         });
 
-        resolve(router);
+        factoryResolve(router);
     });
 };

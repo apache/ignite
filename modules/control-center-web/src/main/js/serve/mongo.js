@@ -39,6 +39,8 @@ module.exports.factory = function(deepPopulatePlugin, passportMongo, settings, p
     const ObjectId = mongoose.Schema.Types.ObjectId;
     const result = { connection: mongoose.connection };
 
+    result.ObjectId = ObjectId;
+
     // Define Account schema.
     const AccountSchema = new Schema({
         username: String,
@@ -527,26 +529,19 @@ module.exports.factory = function(deepPopulatePlugin, passportMongo, settings, p
     // Define Notebook model.
     result.Notebook = mongoose.model('Notebook', NotebookSchema);
 
-    result.upsert = function(Model, data, cb) {
-        if (data._id) {
-            const id = data._id;
-
-            delete data._id;
-
-            Model.findOneAndUpdate({_id: id}, data, cb);
-        }
-        else
-            new Model(data).save(cb);
+    result.handleError = function(res, err) {
+        // TODO IGNITE-843 Send error to admin
+        res.status(err.code || 500).send(err.message);
     };
 
-    result.processed = function(err, res) {
-        if (err) {
-            res.status(500).send(err);
-
-            return false;
-        }
-
-        return true;
+    /**
+     * Query for user spaces.
+     *
+     * @param userId User ID.
+     * @returns {Promise}
+     */
+    result.spaces = function(userId) {
+        return result.Space.find({owner: userId}).exec();
     };
 
     // Registering the routes of all plugin modules

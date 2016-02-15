@@ -25,7 +25,7 @@ module.exports = {
 };
 
 module.exports.factory = function(express, passport, nodemailer, settings, mongo) {
-    return new Promise(function(factoryResolve) {
+    return new Promise((factoryResolve) => {
         const router = new express.Router();
 
         const _randomString = () => {
@@ -77,7 +77,7 @@ module.exports.factory = function(express, passport, nodemailer, settings, mongo
         };
 
         // GET user.
-        router.post('/user', function(req, res) {
+        router.post('/user', (req, res) => {
             const becomeUsed = req.session.viewedUser && req.user.admin;
 
             let user = req.user;
@@ -94,7 +94,7 @@ module.exports.factory = function(express, passport, nodemailer, settings, mongo
         /**
          * Register new account.
          */
-        router.post('/signup', function(req, res) {
+        router.post('/signup', (req, res) => {
             mongo.Account.count().exec()
                 .then((cnt) => {
                     req.body.admin = cnt === 0;
@@ -155,15 +155,15 @@ module.exports.factory = function(express, passport, nodemailer, settings, mongo
         /**
          * Login in exist account.
          */
-        router.post('/signin', function(req, res, next) {
-            passport.authenticate('local', function(errAuth, user) {
+        router.post('/signin', (req, res, next) => {
+            passport.authenticate('local', (errAuth, user) => {
                 if (errAuth)
                     return res.status(401).send(errAuth.message);
 
                 if (!user)
                     return res.status(401).send('Invalid email or password');
 
-                req.logIn(user, {}, function(errLogIn) {
+                req.logIn(user, {}, (errLogIn) => {
                     if (errLogIn)
                         return res.status(401).send(errLogIn.message);
 
@@ -175,7 +175,7 @@ module.exports.factory = function(express, passport, nodemailer, settings, mongo
         /**
          * Logout.
          */
-        router.post('/logout', function(req, res) {
+        router.post('/logout', (req, res) => {
             req.logout();
 
             res.sendStatus(200);
@@ -184,7 +184,7 @@ module.exports.factory = function(express, passport, nodemailer, settings, mongo
         /**
          * Send e-mail to user with reset token.
          */
-        router.post('/password/forgot', function(req, res) {
+        router.post('/password/forgot', (req, res) => {
             mongo.Account.findOne({email: req.body.email}).exec()
                 .then((user) => {
                     if (!user)
@@ -212,7 +212,7 @@ module.exports.factory = function(express, passport, nodemailer, settings, mongo
         /**
          * Change password with given token.
          */
-        router.post('/password/reset', function(req, res) {
+        router.post('/password/reset', (req, res) => {
             mongo.Account.findOne({resetPasswordToken: req.body.token}).exec()
                 .then((user) => {
                     return new Promise((resolve, reject) => {
@@ -243,7 +243,7 @@ module.exports.factory = function(express, passport, nodemailer, settings, mongo
         });
 
         /* GET reset password page. */
-        router.post('/password/validate/token', function(req, res) {
+        router.post('/password/validate/token', (req, res) => {
             const token = req.body.token;
 
             mongo.Account.findOne({resetPasswordToken: token}).exec()
