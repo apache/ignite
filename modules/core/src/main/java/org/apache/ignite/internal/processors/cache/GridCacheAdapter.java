@@ -1250,7 +1250,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
 
             try {
                 if (e != null)
-                    e.clear(obsoleteVer, readers, null);
+                    e.clear(obsoleteVer, readers);
             }
             catch (IgniteCheckedException ex) {
                 U.error(log, "Failed to clearLocally entry (will continue to clearLocally other entries): " + e,
@@ -4609,7 +4609,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
             GridCacheEntryEx entry = ctx.isSwapOrOffheapEnabled() ? entryEx(cacheKey) : peekEx(cacheKey);
 
             if (entry != null)
-                return entry.clear(obsoleteVer, readers, null);
+                return entry.clear(obsoleteVer, readers);
         }
         catch (GridDhtInvalidPartitionException ignored) {
             // No-op.
