@@ -1131,9 +1131,7 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
 
         if (remote != null)
             unregisterHandler(routineId, remote.hnd, false);
-        else {
-            assert loc != null;
-
+        else if (loc != null) {
             // Removes routine at node started it when stopRoutine called from another node.
             unregisterHandler(routineId, loc.hnd, false);
         }
