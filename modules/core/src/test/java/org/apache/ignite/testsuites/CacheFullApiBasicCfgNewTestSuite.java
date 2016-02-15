@@ -83,8 +83,8 @@ public class CacheFullApiBasicCfgNewTestSuite extends TestSuite {
      * @param gridsCnt Grids count.
      */
     private static void addTestSuites(TestSuite suite, int gridsCnt) {
-//        for (StateIterator igniteCfgIter = new StateIterator(igniteParams); igniteCfgIter.hasNext();) {
-            final int[] igniteCfgState = new int[] {0, 0, 0};
+        for (StateIterator igniteCfgIter = new StateIterator(igniteParams); igniteCfgIter.hasNext();) {
+            final int[] igniteCfgState = igniteCfgIter.next();
 
             for (StateIterator cacheCfgIter = new StateIterator(cacheParams); cacheCfgIter.hasNext();) {
                 int[] cacheCfgState = cacheCfgIter.next();
@@ -92,7 +92,7 @@ public class CacheFullApiBasicCfgNewTestSuite extends TestSuite {
                 // Stop all grids before starting new ignite configuration.
                 addTestSuite(suite, igniteCfgState, cacheCfgState, gridsCnt, !cacheCfgIter.hasNext());
             }
-//        }
+        }
     }
 
     /**
