@@ -105,8 +105,9 @@ namespace Apache.Ignite.Linq.Impl
             if (!validTableNames.Contains(_tableName, StringComparer.OrdinalIgnoreCase))
             {
                 throw new CacheException(string.Format("Invalid table name specified for CacheQueryable: '{0}'; " +
-                                                       "configured table names are: {1}", _tableName,
-                    validTableNames.Aggregate((x, y) => x + "'" + y + "'")));
+                                                       "configured table names are: {1}",
+                                                        _tableName,
+                                                        validTableNames.Aggregate((x, y) => x + "'" + y + "'")));
             }
         }
 
@@ -129,7 +130,15 @@ namespace Apache.Ignite.Linq.Impl
         /// </summary>
         private string InferTableName()
         {
-            throw new NotImplementedException();
+            var validTableNames = GetValidTableNames();
+
+            if (validTableNames.Length == 1)
+                return validTableNames[0];
+
+            throw new CacheException(string.Format("Table name cannot be inferred for cache '{0}', " +
+                                                   "please use AsCacheQueryable overload with tableName parameter. " +
+                                                   "Valid table names: {1}", _cacheConfiguration.Name ?? "null",
+                                                    validTableNames.Aggregate((x, y) => x + "'" + y + "'")));
         }
     }
 }
