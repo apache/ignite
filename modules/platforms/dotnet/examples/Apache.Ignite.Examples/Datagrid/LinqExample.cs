@@ -16,17 +16,16 @@
  */
 
 using System;
-using System.Collections;
+using System.Linq;
 using System.Collections.Generic;
+
 using Apache.Ignite.Core;
+using Apache.Ignite.Linq;
 using Apache.Ignite.Core.Cache;
-using Apache.Ignite.Core.Cache.Query;
+using Apache.Ignite.ExamplesDll.Binary;
 
 namespace Apache.Ignite.Examples.Datagrid
 {
-    using System.Linq;
-    using Apache.Ignite.ExamplesDll.Binary;
-    using Apache.Ignite.Linq;
 
     /// <summary>
     /// This example populates cache with sample data and runs several SQL and
@@ -79,9 +78,6 @@ namespace Apache.Ignite.Examples.Datagrid
 
                 // Run SQL fields query example.
                 SqlFieldsQueryExample(employeeCache);
-
-                // Run full text query example.
-                FullTextQueryExample(employeeCache);
 
                 Console.WriteLine();
             }
@@ -141,28 +137,13 @@ namespace Apache.Ignite.Examples.Datagrid
         /// <param name="cache">Cache.</param>
         private static void SqlFieldsQueryExample(ICache<EmployeeKey, Employee> cache)
         {
-            var qry = cache.QueryFields(new SqlFieldsQuery("select name, salary from Employee"));
+            var qry = cache.AsQueryable().Select(entry => new {entry.Value.Name, entry.Value.Salary});
 
             Console.WriteLine();
             Console.WriteLine(">>> Employee names and their salaries:");
 
-            foreach (IList row in qry)
-                Console.WriteLine(">>>     [Name=" + row[0] + ", salary=" + row[1] + ']');
-        }
-
-        /// <summary>
-        /// Queries employees that live in Texas using full-text query API.
-        /// </summary>
-        /// <param name="cache">Cache.</param>
-        private static void FullTextQueryExample(ICache<EmployeeKey, Employee> cache)
-        {
-            var qry = cache.Query(new TextQuery("Employee", "TX"));
-
-            Console.WriteLine();
-            Console.WriteLine(">>> Employees living in Texas:");
-
-            foreach (var entry in qry)
-                Console.WriteLine(">>> " + entry.Value);
+            foreach (var row in qry)
+                Console.WriteLine(">>>     [Name=" + row.Name + ", salary=" + row.Salary + ']');
         }
 
         /// <summary>
