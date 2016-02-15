@@ -427,9 +427,9 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
     }
 
     /** {@inheritDoc} */
-    @Override public boolean offheapSwapEvict(byte[] entry, GridCacheVersion evictVer, GridCacheVersion obsoleteVer)
+    @Override public boolean onOffheapEvict(byte[] entry, GridCacheVersion evictVer, GridCacheVersion obsoleteVer)
         throws IgniteCheckedException, GridCacheEntryRemovedException {
-        assert cctx.swap().swapEnabled() && cctx.swap().offHeapEnabled() : this;
+        assert cctx.swap().offHeapEnabled() && (cctx.swap().swapEnabled() || cctx.queries().enabled()) : this;
 
         boolean obsolete;
 
@@ -444,12 +444,18 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
             if (mvcc != null && !mvcc.isEmpty(obsoleteVer))
                 return false;
 
-            if (cctx.swap().offheapSwapEvict(key, entry, partition(), evictVer)) {
+            if (cctx.swap().onOffheapEvict(key, entry, partition(), evictVer)) {
                 assert !hasValueUnlocked() : this;
 
                 obsolete = markObsolete0(obsoleteVer, false, null);
 
                 assert obsolete : this;
+
+                if (!cctx.swap().swapEnabled()) {
+                    CacheObject val = cctx.swap().unmarshalSwapEntryValue(entry);
+
+                    clearIndex(val);
+                }
             }
             else
                 obsolete = false;
@@ -2619,85 +2625,51 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
     }
 
     /** {@inheritDoc} */
-    @Override public boolean clear(GridCacheVersion ver, boolean readers,
-        @Nullable CacheEntryPredicate[] filter) throws IgniteCheckedException {
-        boolean ret;
-        boolean rmv;
-        boolean marked;
+    @Override public boolean clear(GridCacheVersion ver, boolean readers) throws IgniteCheckedException {
+        synchronized (this) {
+            if (obsolete())
+                return false;
 
-        while (true) {
-            ret = false;
-            rmv = false;
-            marked = false;
+            CacheObject val = saveValueForIndexUnlocked();
 
-            // For optimistic check.
-            GridCacheVersion startVer = null;
-
-            if (!F.isEmptyOrNulls(filter)) {
-                synchronized (this) {
-                    startVer = this.ver;
-                }
-
-                if (!cctx.isAll(this, filter))
-                    return false;
-            }
-
-            synchronized (this) {
-                if (startVer != null && !startVer.equals(this.ver))
-                    // Version has changed since filter checking.
-                    continue;
-
-                CacheObject val = saveValueForIndexUnlocked();
-
-                try {
-                    if ((!hasReaders() || readers)) {
-                        // markObsolete will clear the value.
-                        if (!(marked = markObsolete0(ver, true, null))) {
-                            if (log.isDebugEnabled())
-                                log.debug("Entry could not be marked obsolete (it is still used): " + this);
-
-                            break;
-                        }
-
-                        clearReaders();
-                    }
-                    else {
+            try {
+                if ((!hasReaders() || readers)) {
+                    // markObsolete will clear the value.
+                    if (!(markObsolete0(ver, true, null))) {
                         if (log.isDebugEnabled())
-                            log.debug("Entry could not be marked obsolete (it still has readers): " + this);
+                            log.debug("Entry could not be marked obsolete (it is still used): " + this);
 
-                        break;
+                        return false;
                     }
+
+                    clearReaders();
                 }
-                catch (GridCacheEntryRemovedException ignore) {
+                else {
                     if (log.isDebugEnabled())
-                        log.debug("Got removed entry when clearing (will simply return): " + this);
+                        log.debug("Entry could not be marked obsolete (it still has readers): " + this);
 
-                    ret = true;
-
-                    break;
+                    return false;
                 }
-
-                if (log.isDebugEnabled())
-                    log.debug("Entry has been marked obsolete: " + this);
-
-                clearIndex(val);
-
-                releaseSwap();
-
-                ret = true;
-                rmv = true;
-
-                break;
             }
+            catch (GridCacheEntryRemovedException ignore) {
+                assert false;
+
+                return false;
+            }
+
+            if (log.isDebugEnabled())
+                log.debug("Entry has been marked obsolete: " + this);
+
+            clearIndex(val);
+
+            releaseSwap();
         }
 
-        if (marked)
-            onMarkedObsolete();
+        onMarkedObsolete();
 
-        if (rmv)
-            cctx.cache().removeEntry(this); // Clear cache.
+        cctx.cache().removeEntry(this); // Clear cache.
 
-        return ret;
+        return true;
     }
 
     /** {@inheritDoc} */

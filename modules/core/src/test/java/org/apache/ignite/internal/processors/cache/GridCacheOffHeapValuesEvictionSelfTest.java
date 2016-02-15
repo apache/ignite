@@ -25,6 +25,7 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheMemoryMode;
 import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.cache.eviction.fifo.FifoEvictionPolicy;
+import org.apache.ignite.cache.eviction.lru.LruEvictionPolicy;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.testframework.GridTestUtils;
 
@@ -33,20 +34,51 @@ import org.apache.ignite.testframework.GridTestUtils;
  */
 public class GridCacheOffHeapValuesEvictionSelfTest extends GridCacheAbstractSelfTest {
 
+    /** */
     private static final int VAL_SIZE = 512 * 1024; // bytes
+    /** */
     private static final int MAX_VALS_AMOUNT = 100;
+    /** */
     private static final int MAX_MEMORY_SIZE = MAX_VALS_AMOUNT * VAL_SIZE;
+    /** */
     private static final int VALS_AMOUNT = MAX_VALS_AMOUNT * 2;
+    /** */
     private static final int THREAD_COUNT = 4;
 
+    /** {@inheritDoc} */
     @Override protected int gridCount() {
         return 1;
     }
 
     /**
+     * Test single evict with OFFHEAP_VALUES mode.
+     *
      * @throws Exception If failed.
      */
-    public void testPutOnHeap() throws Exception {
+    public void testSingleEvictOffHeap() throws Exception {
+        CacheConfiguration<Integer, Object> ccfg = cacheConfiguration(grid(0).name());
+        ccfg.setName("testSingleEvictOffHeap");
+        ccfg.setMemoryMode(CacheMemoryMode.OFFHEAP_VALUES);
+        ccfg.setSwapEnabled(false);
+
+        LruEvictionPolicy plc = new LruEvictionPolicy();
+        plc.setMaxMemorySize(200);
+
+        ccfg.setEvictionPolicy(plc);
+
+        final IgniteCache<Integer, Object> cache = grid(0).getOrCreateCache(ccfg);
+
+        cache.put(1, new byte[150]);
+        cache.put(2, new byte[150]);
+        cache.put(3, new byte[150]);
+
+        assert cache.size() == 1;
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testPutValuesOffHeap() throws Exception {
         CacheConfiguration<Integer, Object> ccfg = cacheConfiguration(grid(0).name());
         ccfg.setName("testPutOffHeapValues");
         ccfg.setStatisticsEnabled(true);
@@ -70,6 +102,10 @@ public class GridCacheOffHeapValuesEvictionSelfTest extends GridCacheAbstractSel
         assertTrue(MAX_VALS_AMOUNT >= cache.size(CachePeekMode.ONHEAP));
         assertTrue(MAX_VALS_AMOUNT - 5 <= cache.size(CachePeekMode.ONHEAP));
         assertEquals(cache.size(CachePeekMode.ALL) - cache.size(CachePeekMode.ONHEAP), cache.size(CachePeekMode.SWAP));
+
+        assertTrue((MAX_VALS_AMOUNT + 5) * VAL_SIZE > cache.metrics().getOffHeapAllocatedSize());
+        assertTrue((MAX_VALS_AMOUNT - 5) * VAL_SIZE < cache.metrics().getOffHeapAllocatedSize());
+        assertTrue(cache.metrics().getOffHeapAllocatedSize() >= cache.size(CachePeekMode.ONHEAP) * VAL_SIZE);
     }
 
     /**
@@ -109,6 +145,7 @@ public class GridCacheOffHeapValuesEvictionSelfTest extends GridCacheAbstractSel
 
         assertTrue((MAX_VALS_AMOUNT + 5) * VAL_SIZE > cache.metrics().getOffHeapAllocatedSize());
         assertTrue((MAX_VALS_AMOUNT - 5) * VAL_SIZE < cache.metrics().getOffHeapAllocatedSize());
+        assertTrue(cache.metrics().getOffHeapAllocatedSize() >= cache.size(CachePeekMode.OFFHEAP) * VAL_SIZE);
     }
 
     /**
@@ -146,12 +183,14 @@ public class GridCacheOffHeapValuesEvictionSelfTest extends GridCacheAbstractSel
 
         assertTrue((MAX_VALS_AMOUNT + 5) * VAL_SIZE > cache.metrics().getOffHeapAllocatedSize());
         assertTrue((MAX_VALS_AMOUNT - 5) * VAL_SIZE < cache.metrics().getOffHeapAllocatedSize());
+        assertTrue(cache.metrics().getOffHeapAllocatedSize() >= cache.size(CachePeekMode.OFFHEAP) * VAL_SIZE);
     }
 
+    /** Fill cache with values. */
     private static void fillCache(final IgniteCache<Integer, Object> cache, long timeout) throws Exception{
         final byte[] val = new byte[VAL_SIZE];
         final AtomicInteger keyStart = new AtomicInteger(0);
-        final CountDownLatch latch = new CountDownLatch(4);
+        final CountDownLatch latch = new CountDownLatch(THREAD_COUNT);
 
         GridTestUtils.runMultiThreaded(new Callable<Void>() {
             @Override public Void call() throws Exception {
