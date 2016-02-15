@@ -32,7 +32,7 @@ header#header.header
     .main-content(ng-controller='auth')
         .row.greedy.home
             .col-xs-12.col-md-6
-                form(name='loginForm' novalidate)
+                form(name='form' novalidate)
                     .modal-body.row(style='padding-bottom: 10px; margin: 0')
                         .settings-row(ng-if='action == "signup"')
                             h3.login-header Sign Up
@@ -62,11 +62,11 @@ header#header.header
                         .settings-row(ng-show='action != "password/forgot"')
                             +lblRequired('Password:')
                             .col-xs-9.col-md-8
-                                input#user_password.form-control(enter-focus-next='user_confirm' type='password' ng-model='user_info.password' placeholder='Password' ng-required='action != "password/forgot"' on-enter='action == "login" && loginForm.$valid && auth(action, user_info)')
+                                input#user_password.form-control(enter-focus-next='user_confirm' type='password' ng-model='user_info.password' placeholder='Password' ng-required='action != "password/forgot"' on-enter='action == "login" && form.$valid && auth(action, user_info)')
                         .settings-row(ng-if='action == "signup"')
                             +lblRequired('Confirm:')
                             .col-xs-9.col-md-8
-                                input#user_confirm.form-control(type='password' ng-model='user_info.confirm' match='user_info.password' placeholder='Confirm password' ng-required='action == "signup"' on-enter='loginForm.$valid && auth(action, user_info)')
+                                input#user_confirm.form-control(type='password' ng-model='user_info.confirm' match='user_info.password' placeholder='Confirm password' ng-required='action == "signup"' on-enter='form.$valid && auth(action, user_info)')
                         .settings-row(ignite-terms)
                             .col-md-offset-3(ng-if='action == "signup" && terms.termsState')
                                 label
@@ -76,16 +76,16 @@ header#header.header
                         .login-footer(ng-show='action == "signup"')
                             a.labelField(ng-click='action = "password/forgot"' on-click-focus='user_email') Forgot password?
                             a.labelLogin(ng-click='action = "signin"' on-click-focus='user_email') Sign In
-                            button#signup.btn.btn-primary(ng-click='auth(action, user_info)' ng-disabled='loginForm.$invalid') Sign Up
+                            button#signup.btn.btn-primary(ng-click='auth(action, user_info)' ng-disabled='form.$invalid') Sign Up
                     .col-xs-12.col-md-11
                         .login-footer(ng-show='action == "password/forgot"')
                             a.labelField(ng-click='action = "signin"' on-click-focus='user_email') Sign In
-                            button#forgot.btn.btn-primary(ng-click='auth(action, user_info)' ng-disabled='loginForm.$invalid') Send it to me
+                            button#forgot.btn.btn-primary(ng-click='auth(action, user_info)' ng-disabled='form.$invalid') Send it to me
                     .col-xs-12.col-md-11
                         .login-footer(ng-show='action == "signin"')
                             a.labelField(ng-click='action = "password/forgot"' on-click-focus='user_email') Forgot password?
                             a.labelLogin(ng-click='action = "signup"' on-click-focus='user_name') Sign Up
-                            button#login.btn.btn-primary(ng-click='auth(action, user_info)' ng-disabled='loginForm.$invalid') Sign In
+                            button#login.btn.btn-primary(ng-click='auth(action, user_info)' ng-disabled='form.$invalid') Sign In
 
                 .col-xs-12.col-md-11.home-panel
                     p Web Console is an interactive management tool which allows to:

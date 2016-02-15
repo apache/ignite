@@ -79,9 +79,9 @@ module.exports.factory = function(_, express, mongo) {
                     return user.save();
                 })
                 .then(() => res.sendStatus(200))
-                .catch((err) => {
+                .catch((errMsg) => {
                     // TODO IGNITE-843 Send error to admin
-                    res.status(500).send(err);
+                    res.status(500).send(errMsg);
                 });
         });
 

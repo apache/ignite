@@ -2053,7 +2053,7 @@ consoleModule.controller('resetPassword', [
 consoleModule.controller('auth', ['$scope', '$focus', 'Auth', 'IgniteCountries', function ($scope, $focus, Auth, countries) {
     $scope.auth = Auth.auth;
 
-    $scope.action = 'login';
+    $scope.action = 'signin';
     $scope.countries = countries;
 
     $focus('user_email');
