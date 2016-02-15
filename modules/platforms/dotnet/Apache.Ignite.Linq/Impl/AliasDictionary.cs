@@ -57,7 +57,7 @@ namespace Apache.Ignite.Linq.Impl
         /// <summary>
         /// Gets the table alias.
         /// </summary>
-        public string GetTableAlias(ICacheQueryable queryable)
+        public string GetTableAlias(ICacheQueryableInternal queryable)
         {
             Debug.Assert(queryable != null);
 

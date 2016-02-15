@@ -67,6 +67,12 @@ namespace Apache.Ignite.Linq.Impl
         }
 
         /** <inheritdoc /> */
+        public string TableName
+        {
+            get { return CacheQueryProvider.TableName; }
+        }
+
+        /** <inheritdoc /> */
         public Func<object[], IQueryCursor<TQ>> CompileQuery<TQ>(Delegate queryCaller)
         {
             var executor = (CacheFieldsQueryExecutor) CacheQueryProvider.Executor;

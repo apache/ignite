@@ -39,7 +39,7 @@ namespace Apache.Ignite.Linq.Impl
         /// <summary>
         /// Gets the cache queryable.
         /// </summary>
-        public static ICacheQueryable GetCacheQueryable(QuerySourceReferenceExpression expression)
+        public static ICacheQueryableInternal GetCacheQueryable(QuerySourceReferenceExpression expression)
         {
             Debug.Assert(expression != null);
 
@@ -59,7 +59,7 @@ namespace Apache.Ignite.Linq.Impl
         /// <summary>
         /// Gets the cache queryable.
         /// </summary>
-        public static ICacheQueryable GetCacheQueryable(IFromClause fromClause)
+        public static ICacheQueryableInternal GetCacheQueryable(IFromClause fromClause)
         {
             return GetCacheQueryable(fromClause.FromExpression);
         }
@@ -67,7 +67,7 @@ namespace Apache.Ignite.Linq.Impl
         /// <summary>
         /// Gets the cache queryable.
         /// </summary>
-        public static ICacheQueryable GetCacheQueryable(JoinClause joinClause)
+        public static ICacheQueryableInternal GetCacheQueryable(JoinClause joinClause)
         {
             return GetCacheQueryable(joinClause.InnerSequence);
         }
@@ -75,7 +75,7 @@ namespace Apache.Ignite.Linq.Impl
         /// <summary>
         /// Gets the cache queryable.
         /// </summary>
-        public static ICacheQueryable GetCacheQueryable(Expression expression, bool throwWhenNotFound = true)
+        public static ICacheQueryableInternal GetCacheQueryable(Expression expression, bool throwWhenNotFound = true)
         {
             var subQueryExp = expression as SubQueryExpression;
 
@@ -93,7 +93,7 @@ namespace Apache.Ignite.Linq.Impl
             {
                 if (memberExpr.Type.IsGenericType &&
                     memberExpr.Type.GetGenericTypeDefinition() == typeof (IQueryable<>))
-                    return EvaluateExpression<ICacheQueryable>(memberExpr);
+                    return EvaluateExpression<ICacheQueryableInternal>(memberExpr);
 
                 return GetCacheQueryable(memberExpr.Expression, throwWhenNotFound);
             }
@@ -102,7 +102,7 @@ namespace Apache.Ignite.Linq.Impl
 
             if (constExpr != null)
             {
-                var queryable = constExpr.Value as ICacheQueryable;
+                var queryable = constExpr.Value as ICacheQueryableInternal;
 
                 if (queryable != null)
                     return queryable;
@@ -164,35 +164,11 @@ namespace Apache.Ignite.Linq.Impl
         /// <summary>
         /// Gets the table name with schema.
         /// </summary>
-        public static string GetTableNameWithSchema(ICacheQueryable queryable)
+        public static string GetTableNameWithSchema(ICacheQueryableInternal queryable)
         {
             Debug.Assert(queryable != null);
 
-            return string.Format("\"{0}\".{1}", queryable.CacheConfiguration.Name,
-                GetTableNameFromEntryType(queryable.ElementType));
-        }
-
-        /// <summary>
-        /// Gets the type of the table name from entry value.
-        /// </summary>
-        private static string GetTableNameFromEntryValueType(Type entryValueType)
-        {
-            Debug.Assert(entryValueType != null);
-
-            return entryValueType.Name;
-        }
-
-        /// <summary>
-        /// Gets the type of the table name from entry.
-        /// </summary>
-        private static string GetTableNameFromEntryType(Type cacheEntryType)
-        {
-            Debug.Assert(cacheEntryType != null);
-
-            if (!(cacheEntryType.IsGenericType && cacheEntryType.GetGenericTypeDefinition() == typeof(ICacheEntry<,>)))
-                throw new NotSupportedException("Unexpected cache query entry type: " + cacheEntryType);
-
-            return GetTableNameFromEntryValueType(cacheEntryType.GetGenericArguments()[1]);
+            return string.Format("\"{0}\".{1}", queryable.CacheConfiguration.Name, queryable.TableName);
         }
     }
 }

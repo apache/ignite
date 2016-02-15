@@ -24,8 +24,13 @@ namespace Apache.Ignite.Linq.Impl
     /// <summary>
     /// Internal queryable interface.
     /// </summary>
-    internal interface ICacheQueryableInternal
+    internal interface ICacheQueryableInternal : ICacheQueryable
     {
+        /// <summary>
+        /// Gets the name of the table.
+        /// </summary>
+        string TableName { get; }
+
         /// <summary>
         /// Gets the query model.
         /// </summary>
