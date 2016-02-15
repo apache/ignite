@@ -40,6 +40,7 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.events.Event;
 import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.GridMessageListenHandler;
 import org.apache.ignite.internal.IgniteClientDisconnectedCheckedException;
 import org.apache.ignite.internal.IgniteDeploymentCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
@@ -428,11 +429,17 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
                         ctx.resource().injectGeneric(item.prjPred);
 
                     // Register handler only if local node passes projection predicate.
-                    if (item.prjPred == null || item.prjPred.apply(ctx.discovery().localNode())) {
+                    if ((item.prjPred == null || item.prjPred.apply(ctx.discovery().localNode())) &&
+                        !locInfos.containsKey(item.routineId)) {
                         if (registerHandler(data.nodeId, item.routineId, item.hnd, item.bufSize, item.interval,
                             item.autoUnsubscribe, false))
                             item.hnd.onListenerRegistered(item.routineId, ctx);
                     }
+
+                    if (!item.autoUnsubscribe)
+                        // Register routine locally.
+                        locInfos.putIfAbsent(item.routineId, new LocalRoutineInfo(
+                            item.prjPred, item.hnd, item.bufSize, item.interval, item.autoUnsubscribe));
                 }
                 catch (IgniteCheckedException e) {
                     U.error(log, "Failed to register continuous handler.", e);
@@ -854,6 +861,10 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
             U.error(log, "Failed to register handler [nodeId=" + node.id() + ", routineId=" + routineId + ']', e);
         }
 
+        GridContinuousHandler hnd0 = hnd instanceof GridMessageListenHandler ?
+            new GridMessageListenHandler((GridMessageListenHandler)hnd) :
+            hnd;
+
         if (node.isClient()) {
             Map<UUID, LocalRoutineInfo> clientRoutineMap = clientInfos.get(node.id());
 
@@ -866,7 +877,7 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
             }
 
             clientRoutineMap.put(routineId, new LocalRoutineInfo(data.projectionPredicate(),
-                hnd,
+                hnd0,
                 data.bufferSize(),
                 data.interval(),
                 data.autoUnsubscribe()));
@@ -881,10 +892,16 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
                 if (prjPred != null)
                     ctx.resource().injectGeneric(prjPred);
 
-                if (prjPred == null || prjPred.apply(ctx.discovery().node(ctx.localNodeId()))) {
-                    registered = registerHandler(node.id(), routineId, hnd, data.bufferSize(), data.interval(),
+                if ((prjPred == null || prjPred.apply(ctx.discovery().node(ctx.localNodeId()))) &&
+                    !locInfos.containsKey(routineId)) {
+                    registered = registerHandler(node.id(), routineId, hnd0, data.bufferSize(), data.interval(),
                         data.autoUnsubscribe(), false);
                 }
+
+                if (!data.autoUnsubscribe())
+                    // Register routine locally.
+                    locInfos.putIfAbsent(routineId, new LocalRoutineInfo(
+                        prjPred, hnd0, data.bufferSize(), data.interval(), data.autoUnsubscribe()));
             }
             catch (IgniteCheckedException e) {
                 err = e;
@@ -894,11 +911,11 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
         }
 
         // Load partition counters.
-        if (hnd.isQuery()) {
+        if (hnd0.isQuery()) {
             GridCacheProcessor proc = ctx.cache();
 
             if (proc != null) {
-                GridCacheAdapter cache = ctx.cache().internalCache(hnd.cacheName());
+                GridCacheAdapter cache = ctx.cache().internalCache(hnd0.cacheName());
 
                 if (cache != null && !cache.isLocal()) {
                     Map<Integer, Long> cntrs = cache.context().topology().updateCounters();
@@ -912,7 +929,7 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
             req.addError(ctx.localNodeId(), err);
 
         if (registered)
-            hnd.onListenerRegistered(routineId, ctx);
+            hnd0.onListenerRegistered(routineId, ctx);
     }
 
     /**
@@ -1095,22 +1112,29 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
      */
     @SuppressWarnings("TooBroadScope")
     private void unregisterRemote(UUID routineId) {
-        RemoteRoutineInfo info;
+        RemoteRoutineInfo remote;
+        LocalRoutineInfo loc;
 
         stopLock.lock();
 
         try {
-            info = rmtInfos.remove(routineId);
+            remote = rmtInfos.remove(routineId);
 
-            if (info == null)
+            loc = locInfos.remove(routineId);
+
+            if (remote == null)
                 stopped.add(routineId);
         }
         finally {
             stopLock.unlock();
         }
 
-        if (info != null)
-            unregisterHandler(routineId, info.hnd, false);
+        if (remote != null)
+            unregisterHandler(routineId, remote.hnd, false);
+        else if (loc != null) {
+            // Removes routine at node started it when stopRoutine called from another node.
+            unregisterHandler(routineId, loc.hnd, false);
+        }
     }
 
     /**

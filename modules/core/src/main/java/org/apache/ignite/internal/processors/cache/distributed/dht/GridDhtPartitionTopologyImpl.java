@@ -427,6 +427,8 @@ class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
             if (node2part != null && node2part.valid())
                 checkEvictions(updateSeq);
 
+            updateRebalanceVersion();
+
             consistencyCheck();
 
             if (log.isDebugEnabled())
@@ -1365,11 +1367,14 @@ class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
      */
     private void updateRebalanceVersion() {
         if (!rebalancedTopVer.equals(topVer)) {
+            if (node2part == null || !node2part.valid())
+                return;
+
             for (int i = 0; i < cctx.affinity().partitions(); i++) {
                 List<ClusterNode> affNodes = cctx.affinity().nodes(i, topVer);
 
                 // Topology doesn't contain server nodes (just clients).
-                if (affNodes.isEmpty() || (node2part != null && !node2part.valid()))
+                if (affNodes.isEmpty())
                     continue;
 
                 List<ClusterNode> owners = owners(i);
