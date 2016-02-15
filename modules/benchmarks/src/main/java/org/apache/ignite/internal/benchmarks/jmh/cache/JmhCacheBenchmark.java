@@ -31,10 +31,7 @@ import java.util.concurrent.ThreadLocalRandom;
  * Put benchmark.
  */
 @SuppressWarnings("unchecked")
-public class JmhCachePutBenchmark extends JmhCacheAbstractBenchmark {
-    /** Items count. */
-    private static final int CNT = 100000;
-
+public class JmhCacheBenchmark extends JmhCacheAbstractBenchmark {
     /**
      * Set up routine.
      *
@@ -60,10 +57,22 @@ public class JmhCachePutBenchmark extends JmhCacheAbstractBenchmark {
      * @throws Exception If failed.
      */
     @Benchmark
-    public void testPut() throws Exception {
+    public void put() throws Exception {
         int key = ThreadLocalRandom.current().nextInt(CNT);
 
         cache.put(key, new IntValue(key));
+    }
+
+    /**
+     * Test PUT operation.
+     *
+     * @throws Exception If failed.
+     */
+    @Benchmark
+    public Object get() throws Exception {
+        int key = ThreadLocalRandom.current().nextInt(CNT);
+
+        return cache.get(key);
     }
 
     /**
@@ -73,40 +82,52 @@ public class JmhCachePutBenchmark extends JmhCacheAbstractBenchmark {
      * @throws Exception If failed.
      */
     public static void main(String[] args) throws Exception {
-        run(CacheAtomicityMode.ATOMIC);
+        run("put", CacheAtomicityMode.ATOMIC);
+        run("get", CacheAtomicityMode.ATOMIC);
+        run("put", CacheAtomicityMode.TRANSACTIONAL);
+        run("get", CacheAtomicityMode.TRANSACTIONAL);
     }
 
     /**
      * Run benchmarks for atomic cache.
      *
+     * @param benchmark Benchmark name.
      * @param atomicityMode Atomicity mode.
      * @throws Exception If failed.
      */
-    private static void run(CacheAtomicityMode atomicityMode) throws Exception {
-        run(4, true, atomicityMode, CacheWriteSynchronizationMode.PRIMARY_SYNC);
-        run(4, true, atomicityMode, CacheWriteSynchronizationMode.FULL_SYNC);
-        run(4, false, atomicityMode, CacheWriteSynchronizationMode.PRIMARY_SYNC);
-        run(4, false, atomicityMode, CacheWriteSynchronizationMode.FULL_SYNC);
+    private static void run(String benchmark, CacheAtomicityMode atomicityMode) throws Exception {
+        run(benchmark, 4, true, atomicityMode, CacheWriteSynchronizationMode.PRIMARY_SYNC);
+        run(benchmark, 4, true, atomicityMode, CacheWriteSynchronizationMode.FULL_SYNC);
+        run(benchmark, 4, false, atomicityMode, CacheWriteSynchronizationMode.PRIMARY_SYNC);
+        run(benchmark, 4, false, atomicityMode, CacheWriteSynchronizationMode.FULL_SYNC);
     }
 
     /**
      * Run benchmark.
      *
+     * @param benchmark Benchmark to run.
+     * @param threads Amount of threads.
      * @param client Client mode flag.
+     * @param atomicityMode Atomicity mode.
      * @param writeSyncMode Write synchronization mode.
      * @throws Exception If failed.
      */
-    private static void run(int threads, boolean client, CacheAtomicityMode atomicityMode,
+    private static void run(String benchmark, int threads, boolean client, CacheAtomicityMode atomicityMode,
         CacheWriteSynchronizationMode writeSyncMode) throws Exception {
-        String output = "ignite-cache-put-" + threads + "-threads-" + (client ? "client" : "data") +
-            "-" + atomicityMode + "-" + writeSyncMode;
+        String simpleClsName = JmhCacheBenchmark.class.getSimpleName();
+
+        String output = simpleClsName + "-" + benchmark +
+            "-" + threads + "-threads" +
+            "-" + (client ? "client" : "data") +
+            "-" + atomicityMode +
+            "-" + writeSyncMode;
 
         JmhIdeBenchmarkRunner.create()
             .forks(1)
             .threads(threads)
             .warmupIterations(10)
             .measurementIterations(60)
-            .classes(JmhCachePutBenchmark.class)
+            .benchmarks(simpleClsName + "." + benchmark)
             .output(output + ".jmh.log")
             .profilers(GCProfiler.class)
             .jvmArguments(

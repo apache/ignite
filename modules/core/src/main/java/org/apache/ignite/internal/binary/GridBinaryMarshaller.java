@@ -144,6 +144,9 @@ public class GridBinaryMarshaller {
     /** Timestamp array. */
     public static final byte TIMESTAMP_ARR = 34;
 
+    /** Proxy. */
+    public static final byte PROXY = 35;
+
     /** */
     public static final byte NULL = (byte)101;
 

@@ -17,28 +17,15 @@
 
 package org.apache.ignite.internal.binary;
 
-import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.binary.BinaryCollectionFactory;
-import org.apache.ignite.binary.BinaryInvalidTypeException;
-import org.apache.ignite.binary.BinaryMapFactory;
-import org.apache.ignite.binary.BinaryObject;
-import org.apache.ignite.binary.BinaryObjectException;
-import org.apache.ignite.binary.Binarylizable;
-import org.apache.ignite.internal.binary.builder.BinaryLazyValue;
-import org.apache.ignite.internal.binary.streams.BinaryInputStream;
-import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.lang.IgniteBiTuple;
-import org.jetbrains.annotations.Nullable;
-import org.jsr166.ConcurrentHashMap8;
-
 import java.io.ByteArrayInputStream;
 import java.io.Externalizable;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.lang.reflect.Array;
+import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
+import java.lang.reflect.Proxy;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.sql.Timestamp;
@@ -58,6 +45,20 @@ import java.util.TreeSet;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentSkipListSet;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.binary.BinaryCollectionFactory;
+import org.apache.ignite.binary.BinaryInvalidTypeException;
+import org.apache.ignite.binary.BinaryMapFactory;
+import org.apache.ignite.binary.BinaryObject;
+import org.apache.ignite.binary.BinaryObjectException;
+import org.apache.ignite.binary.Binarylizable;
+import org.apache.ignite.internal.binary.builder.BinaryLazyValue;
+import org.apache.ignite.internal.binary.streams.BinaryInputStream;
+import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteBiTuple;
+import org.jetbrains.annotations.Nullable;
+import org.jsr166.ConcurrentHashMap8;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 
@@ -1042,6 +1043,8 @@ public class BinaryUtils {
             return BinaryWriteMode.ENUM;
         else if (cls == Class.class)
             return BinaryWriteMode.CLASS;
+        else if (Proxy.class.isAssignableFrom(cls))
+            return BinaryWriteMode.PROXY;
         else
             return BinaryWriteMode.OBJECT;
     }
@@ -1052,7 +1055,7 @@ public class BinaryUtils {
      * @param cls Class.
      * @return {@code True} if this is a special collection class.
      */
-    private static boolean isSpecialCollection(Class cls) {
+    public static boolean isSpecialCollection(Class cls) {
         return ArrayList.class.equals(cls) || LinkedList.class.equals(cls) ||
             HashSet.class.equals(cls) || LinkedHashSet.class.equals(cls);
     }
@@ -1063,7 +1066,7 @@ public class BinaryUtils {
      * @param cls Class.
      * @return {@code True} if this is a special map class.
      */
-    private static boolean isSpecialMap(Class cls) {
+    public static boolean isSpecialMap(Class cls) {
         return HashMap.class.equals(cls) || LinkedHashMap.class.equals(cls);
     }
 
@@ -1362,6 +1365,21 @@ public class BinaryUtils {
         int typeId = in.readInt();
 
         return doReadClass(in, ctx, ldr, typeId);
+    }
+
+    /**
+     * @return Value.
+     */
+    public static Object doReadProxy(BinaryInputStream in, BinaryContext ctx, ClassLoader ldr,
+        BinaryReaderHandlesHolder handles) {
+        Class<?>[] intfs = new Class<?>[in.readInt()];
+
+        for (int i = 0; i < intfs.length; i++)
+            intfs[i] = doReadClass(in, ctx, ldr);
+
+        InvocationHandler ih = (InvocationHandler)doReadObject(in, ctx, ldr, handles);
+
+        return Proxy.newProxyInstance(ldr != null ? ldr : U.gridClassLoader(), intfs, ih);
     }
 
     /**

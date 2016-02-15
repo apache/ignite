@@ -45,7 +45,7 @@ import org.jetbrains.annotations.Nullable;
  * cfg.setIndexingSpi(spi);
  *
  * // Starts grid.
- * G.start(cfg);
+ * Ignition.start(cfg);
  * </pre>
  * Here is an example of how to configure SPI from Spring XML configuration file.
  * <pre name="code" class="xml">
