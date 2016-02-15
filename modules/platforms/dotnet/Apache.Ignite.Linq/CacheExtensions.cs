@@ -20,6 +20,7 @@ namespace Apache.Ignite.Linq
     using System.Linq;
     using Apache.Ignite.Core.Cache;
     using Apache.Ignite.Core.Cache.Configuration;
+    using Apache.Ignite.Core.Impl.Common;
     using Apache.Ignite.Linq.Impl;
 
     /// <summary>
@@ -43,7 +44,7 @@ namespace Apache.Ignite.Linq
         public static IQueryable<ICacheEntry<TKey, TValue>> AsCacheQueryable<TKey, TValue>(
             this ICache<TKey, TValue> cache)
         {
-            return new CacheQueryable<TKey, TValue>(cache);
+            return new CacheQueryable<TKey, TValue>(cache, null);
         }
 
         /// <summary>
@@ -71,7 +72,9 @@ namespace Apache.Ignite.Linq
         public static IQueryable<ICacheEntry<TKey, TValue>> AsCacheQueryable<TKey, TValue>(
             this ICache<TKey, TValue> cache, string tableName)
         {
-            return new CacheQueryable<TKey, TValue>(cache);
+            IgniteArgumentCheck.NotNullOrEmpty(tableName, "tableName");
+
+            return new CacheQueryable<TKey, TValue>(cache, tableName);
         }
     }
 }
