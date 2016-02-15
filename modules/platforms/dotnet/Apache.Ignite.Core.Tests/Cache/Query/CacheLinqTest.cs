@@ -922,12 +922,17 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
 
             Assert.AreEqual(PersonCount, names.Length);
 
-            // With single=type cache, interface inference works
+            // With single-type cache, interface inference works
             var roleCache = Ignition.GetIgnite().GetCache<object, IRole>(RoleCacheName).AsCacheQueryable();
 
             var roleNames = roleCache.Select(x => x.Value.Name).OrderBy(x => x).ToArray();
 
             CollectionAssert.AreEquivalent(new[] {"Role_1", "Role_2", null}, roleNames);
+
+            // Check non-queryable cache
+            var nonQueryableCache = Ignition.GetIgnite().GetOrCreateCache<Role, Person>("nonQueryable");
+
+            Assert.Throws<CacheException>(() => nonQueryableCache.AsCacheQueryable());
         }
 
         /// <summary>
