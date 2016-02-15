@@ -529,7 +529,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                         val = cctx.kernalContext().cacheObjects().prepareForCache(val, cctx);
 
                         // Set unswapped value.
-                        update(val, e.expireTime(), e.ttl(), e.version());
+                        update(val, e.expireTime(), e.ttl(), e.version(), false);
 
                         // Must update valPtr again since update() will reset it.
                         if (cctx.offheapTiered() && e.offheapPointer() > 0)
@@ -945,7 +945,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                     boolean hadValPtr = hasOffHeapPointer();
 
                     // Don't change version for read-through.
-                    update(ret, expTime, ttl, nextVer);
+                    update(ret, expTime, ttl, nextVer, true);
 
                     if (hadValPtr && cctx.offheapTiered())
                         cctx.swap().removeOffheap(key);
@@ -1040,7 +1040,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                             deletedUnlocked(true);
                     }
 
-                    update(ret, expTime, ttl, nextVer);
+                    update(ret, expTime, ttl, nextVer, true);
 
                     touch = true;
 
@@ -1194,7 +1194,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
             if (updateCntr != null && updateCntr != 0)
                 updateCntr0 = updateCntr;
 
-            update(val, expireTime, ttl, newVer);
+            update(val, expireTime, ttl, newVer, true);
 
             drReplicate(drType, val, newVer);
 
@@ -1356,7 +1356,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
             boolean hadValPtr = hasOffHeapPointer();
 
-            update(null, 0, 0, newVer);
+            update(null, 0, 0, newVer, true);
 
             if (cctx.offheapTiered() && hadValPtr) {
                 boolean rmv = cctx.swap().removeOffheap(key);
@@ -1572,7 +1572,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                 else
                     clearIndex(null);
 
-                update(old, expireTime, ttl, ver);
+                update(old, expireTime, ttl, ver, true);
             }
 
             // Apply metrics.
@@ -1719,7 +1719,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
                 assert ttl != CU.TTL_ZERO;
 
-                update(updated, expireTime, ttl, ver);
+                update(updated, expireTime, ttl, ver, true);
 
                 if (evt) {
                     CacheObject evtOld = null;
@@ -1756,7 +1756,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                 // in load methods without actually holding entry lock.
                 clearIndex(old);
 
-                update(null, CU.TTL_ETERNAL, CU.EXPIRE_TIME_ETERNAL, ver);
+                update(null, CU.TTL_ETERNAL, CU.EXPIRE_TIME_ETERNAL, ver, true);
 
                 if (cctx.offheapTiered() && hasValPtr) {
                     boolean rmv = cctx.swap().removeOffheap(key);
@@ -2131,7 +2131,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                 else
                     clearIndex(null);
 
-                update(oldVal, initExpireTime, initTtl, ver);
+                update(oldVal, initExpireTime, initTtl, ver, true);
 
                 if (deletedUnlocked() && oldVal != null && !isInternal())
                     deletedUnlocked(false);
@@ -2345,7 +2345,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                 // in load methods without actually holding entry lock.
                 updateIndex(updated, newExpireTime, newVer, oldVal);
 
-                update(updated, newExpireTime, newTtl, newVer);
+                update(updated, newExpireTime, newTtl, newVer, true);
 
                 updateCntr0 = nextPartCounter(topVer);
 
@@ -2430,7 +2430,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                 boolean hasValPtr = hasOffHeapPointer();
 
                 // Clear value on backup. Entry will be removed from cache when it got evicted from queue.
-                update(null, CU.TTL_ETERNAL, CU.EXPIRE_TIME_ETERNAL, newVer);
+                update(null, CU.TTL_ETERNAL, CU.EXPIRE_TIME_ETERNAL, newVer, true);
 
                 assert newSysTtl == CU.TTL_NOT_CHANGED;
                 assert newSysExpireTime == CU.EXPIRE_TIME_CALCULATE;
@@ -2707,7 +2707,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
                     if (cctx.deferredDelete() && !isStartVersion() && !detached() && !isInternal()) {
                         if (!deletedUnlocked()) {
-                            update(null, 0L, 0L, ver);
+                            update(null, 0L, 0L, ver, true);
 
                             deletedUnlocked(true);
 
@@ -2895,24 +2895,24 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
      * @param ttl Time to live.
      * @param ver Update version.
      */
-    protected final void update(@Nullable CacheObject val, long expireTime, long ttl, GridCacheVersion ver) {
+    protected final void update(@Nullable CacheObject val, long expireTime, long ttl, GridCacheVersion ver, boolean addTracked) {
         assert ver != null;
         assert Thread.holdsLock(this);
         assert ttl != CU.TTL_ZERO && ttl != CU.TTL_NOT_CHANGED && ttl >= 0 : ttl;
 
         long oldExpireTime = expireTimeExtras();
 
-        if (oldExpireTime != 0 && expireTime != oldExpireTime && cctx.config().isEagerTtl())
+        if (addTracked && oldExpireTime != 0 && (expireTime != oldExpireTime || isStartVersion()) && cctx.config().isEagerTtl())
             cctx.ttl().removeTrackedEntry(this);
 
         value(val);
 
         ttlAndExpireTimeExtras(ttl, expireTime);
 
-        if (expireTime != 0 && (expireTime != oldExpireTime || isStartVersion()) && cctx.config().isEagerTtl())
-            cctx.ttl().addTrackedEntry(this);
-
         this.ver = ver;
+
+        if (addTracked && expireTime != 0 && (expireTime != oldExpireTime || isStartVersion()) && cctx.config().isEagerTtl())
+            cctx.ttl().addTrackedEntry(this);
     }
 
     /**
@@ -2950,7 +2950,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
     /**
      * @param ttl Time to live.
      */
-    private void updateTtl(long ttl) {
+    protected void updateTtl(long ttl) {
         assert ttl >= 0 || ttl == CU.TTL_ZERO : ttl;
         assert Thread.holdsLock(this);
 
@@ -3224,7 +3224,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
     @Override public synchronized CacheObject rawPut(CacheObject val, long ttl) {
         CacheObject old = this.val;
 
-        update(val, CU.toExpireTime(ttl), ttl, nextVersion());
+        update(val, CU.toExpireTime(ttl), ttl, nextVersion(), true);
 
         return old;
     }
@@ -3252,7 +3252,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                     updateIndex(val, expTime, ver, null);
 
                 // Version does not change for load ops.
-                update(val, expTime, ttl, ver);
+                update(val, expTime, ttl, ver, true);
 
                 boolean skipQryNtf = false;
 
@@ -3338,7 +3338,8 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
             update(val,
                 unswapped.expireTime(),
                 unswapped.ttl(),
-                unswapped.version()
+                unswapped.version(),
+                true
             );
 
             return true;
@@ -3397,7 +3398,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                 }
 
                 // Version does not change for load ops.
-                update(val, expTime, ttl, newVer);
+                update(val, expTime, ttl, newVer, true);
 
                 return newVer;
             }
@@ -3612,7 +3613,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                     if (!obsolete()) {
                         if (cctx.deferredDelete() && !detached() && !isInternal()) {
                             if (!deletedUnlocked()) {
-                                update(null, 0L, 0L, ver0 = ver);
+                                update(null, 0L, 0L, ver0 = ver, true);
 
                                 deletedUnlocked(true);
 

@@ -18,11 +18,13 @@
 package org.apache.ignite.internal.processors.cache;
 
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.GridConcurrentSkipListSet;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.CU;
+import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.util.worker.GridWorker;
 import org.apache.ignite.thread.IgniteThread;
@@ -74,6 +76,9 @@ public class GridCacheTtlManager extends GridCacheManagerAdapter {
      * @param entry Entry to add.
      */
     public void addTrackedEntry(GridCacheMapEntry entry) {
+        assert Thread.holdsLock(entry);
+        assert cleanupWorker != null;
+
         pendingEntries.add(new EntryWrapper(entry));
     }
 
@@ -82,8 +87,16 @@ public class GridCacheTtlManager extends GridCacheManagerAdapter {
      */
     public void removeTrackedEntry(GridCacheMapEntry entry) {
         assert Thread.holdsLock(entry);
+        assert cleanupWorker != null;
 
         pendingEntries.remove(new EntryWrapper(entry));
+    }
+
+    /**
+     * @return The size of pending entries.
+     */
+    public int pendingSize() {
+        return pendingEntries.sizex();
     }
 
     /** {@inheritDoc} */
@@ -150,6 +163,46 @@ public class GridCacheTtlManager extends GridCacheManagerAdapter {
     }
 
     /**
+     * @param cctx Cache context.
+     * @param key1 Left key to compare.
+     * @param key2 Right key to compare.
+     * @return Comparison result.
+     */
+    private static int compareKeys(GridCacheContext cctx, CacheObject key1, CacheObject key2) {
+        int key1Hash = key1.hashCode();
+        int key2Hash = key2.hashCode();
+
+        int res = Integer.compare(key1Hash, key2Hash);
+
+        if (res == 0) {
+            key1 = (CacheObject)cctx.unwrapTemporary(key1);
+            key2 = (CacheObject)cctx.unwrapTemporary(key2);
+
+            try {
+                byte[] key1ValBytes = key1.valueBytes(cctx.cacheObjectContext());
+                byte[] key2ValBytes = key2.valueBytes(cctx.cacheObjectContext());
+
+                // Must not do fair array comparison.
+                res = Integer.compare(key1ValBytes.length, key2ValBytes.length);
+
+                if (res == 0) {
+                    for (int i = 0; i < key1ValBytes.length; i++) {
+                        res = Byte.compare(key1ValBytes[i], key2ValBytes[i]);
+
+                        if (res != 0)
+                            break;
+                    }
+                }
+            }
+            catch (IgniteCheckedException e) {
+                throw new IgniteException(e);
+            }
+        }
+
+        return res;
+    }
+
+    /**
      * Entry wrapper.
      */
     private static class EntryWrapper implements Comparable<EntryWrapper> {
@@ -174,8 +227,12 @@ public class GridCacheTtlManager extends GridCacheManagerAdapter {
         @Override public int compareTo(EntryWrapper o) {
             int res = Long.compare(expireTime, o.expireTime);
 
-            if (res == 0)
-                res = Long.compare(entry.startVersion(), o.entry.startVersion());
+            if (res == 0) {
+                // Must compare entries of the same cache.
+                assert entry.context() == o.entry.context();
+
+                res = compareKeys(entry.context(), entry.key(), o.entry.key());
+            }
 
             return res;
         }
@@ -190,7 +247,7 @@ public class GridCacheTtlManager extends GridCacheManagerAdapter {
 
             EntryWrapper that = (EntryWrapper)o;
 
-            return expireTime == that.expireTime && entry.startVersion() == that.entry.startVersion();
+            return expireTime == that.expireTime && compareKeys(entry.context(), entry.key(), that.entry.key()) == 0;
 
         }
 
@@ -198,9 +255,14 @@ public class GridCacheTtlManager extends GridCacheManagerAdapter {
         @Override public int hashCode() {
             int res = (int)(expireTime ^ (expireTime >>> 32));
 
-            res = 31 * res + (int)(entry.startVersion() ^ (entry.startVersion() >>> 32));
+            res = 31 * res + entry.key().hashCode();
 
             return res;
+        }
+
+        /** {@inheritDoc} */
+        @Override public String toString() {
+            return S.toString(EntryWrapper.class, this);
         }
     }
 
@@ -230,10 +292,9 @@ public class GridCacheTtlManager extends GridCacheManagerAdapter {
         @Override public boolean add(EntryWrapper e) {
             boolean res = super.add(e);
 
-            assert res;
+            assert res : "Failed to add entry wrapper:"  + e;
 
             size.increment();
-
             return res;
         }
 

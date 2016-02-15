@@ -54,4 +54,9 @@ public class IgniteCacheAtomicExpiryPolicyTest extends IgniteCacheExpiryPolicyAb
     @Override protected NearCacheConfiguration nearConfiguration() {
         return null;
     }
+
+    /** {@inheritDoc} */
+    @Override public void testAccess() throws Exception {
+        super.testAccess();
+    }
 }
