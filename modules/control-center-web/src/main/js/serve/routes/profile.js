@@ -45,7 +45,7 @@ module.exports.factory = function(_, express, mongo) {
                     return new Promise((resolve, reject) => {
                         user.setPassword(params.password, (err, _user) => {
                             if (err)
-                                return reject(err.message);
+                                return reject(err);
 
                             delete params.password;
 
@@ -57,14 +57,14 @@ module.exports.factory = function(_, express, mongo) {
                     if (!params.email || user.email === params.email)
                         return Promise.resolve(user);
 
-                    return new Promise((resolve, reject) => {
+                    return new Promise((resolve) => {
                         mongo.Account.findOne({email: params.email}, (err, _user) => {
                             // TODO send error to admin
                             if (err)
-                                return reject('Failed to check e-mail!');
+                                throw new Error('Failed to check e-mail!');
 
                             if (_user && _user._id !== user._id)
-                                return reject('User with this e-mail already registered!');
+                                throw new Error('User with this e-mail already registered!');
 
                             resolve(user);
                         });
@@ -79,9 +79,9 @@ module.exports.factory = function(_, express, mongo) {
                     return user.save();
                 })
                 .then(() => res.sendStatus(200))
-                .catch((errMsg) => {
+                .catch((err) => {
                     // TODO IGNITE-843 Send error to admin
-                    res.status(500).send(errMsg);
+                    res.status(500).send(err.message);
                 });
         });
 

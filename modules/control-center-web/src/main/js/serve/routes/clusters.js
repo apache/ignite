@@ -141,6 +141,8 @@ module.exports.factory = function(_, express, mongo) {
                 if (err)
                     return res.status(500).send(err.message);
 
+                // TODO add IGFS and caches cleanup
+
                 res.sendStatus(200);
             });
         });

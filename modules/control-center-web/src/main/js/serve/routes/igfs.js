@@ -45,19 +45,12 @@ module.exports.factory = function(_, express, mongo) {
 
                     return mongo.Cluster.find({space: {$in: result.spacesIds}}, '_id name').sort('name').exec();
                 })
-                .then(clusters => {
+                .then((clusters) => {
                     result.clusters = clusters;
 
                     return mongo.Igfs.find({space: {$in: result.spacesIds}}).sort('name').exec();
                 })
                 .then((igfss) => {
-                    _.forEach(igfss, (igfs) => {
-                        // Remove deleted clusters.
-                        igfs.clusters = _.filter(igfs.clusters, (clusterId) => {
-                            return _.findIndex(result.clusters, (cluster) => cluster._id.equals(clusterId)) >= 0;
-                        });
-                    });
-
                     res.json({
                         spaces: result.spaces,
                         clusters: result.clusters.map((cluster) => ({value: cluster._id, label: cluster.name})),
@@ -76,40 +69,37 @@ module.exports.factory = function(_, express, mongo) {
         router.post('/save', (req, res) => {
             const params = req.body;
             const clusters = params.clusters;
+
             let igfsId = params._id;
 
             if (params._id) {
-                mongo.Igfs.update({_id: igfsId}, params, {upsert: true}, (errIgfs) => {
-                    if (mongo.processed(errIgfs, res)) {
-                        mongo.Cluster.update({_id: {$in: clusters}}, {$addToSet: {igfss: igfsId}}, {multi: true}, (errClusterAdd) => {
-                            if (mongo.processed(errClusterAdd, res)) {
-                                mongo.Cluster.update({_id: {$nin: clusters}}, {$pull: {igfss: igfsId}}, {multi: true}, (errClusterPull) => {
-                                    if (mongo.processed(errClusterPull, res))
-                                        res.send(params._id);
-                                });
-                            }
-                        });
-                    }
-                });
+                mongo.Igfs.update({_id: igfsId}, params, {upsert: true}).exec()
+                    .then(() => mongo.Cluster.update({_id: {$in: clusters}}, {$addToSet: {igfss: igfsId}}, {multi: true}).exec())
+                    .then(() => mongo.Cluster.update({_id: {$nin: clusters}}, {$pull: {igfss: igfsId}}, {multi: true}).exec())
+                    .then(() => res.send(igfsId))
+                    .catch((err) => {
+                        // TODO IGNITE-843 Send error to admin
+                        res.status(500).send(err.message);
+                    });
             }
             else {
-                mongo.Igfs.findOne({space: params.space, name: params.name}, (errIgfsFind, igfsFound) => {
-                    if (mongo.processed(errIgfsFind, res)) {
-                        if (igfsFound)
-                            return res.status(500).send('IGFS with name: "' + igfsFound.name + '" already exist.');
+                mongo.Igfs.findOne({space: params.space, name: params.name}).exec()
+                    .then((_igfs) => {
+                        if (_igfs)
+                            throw new Error('IGFS with name: "' + _igfs + '" already exist.');
 
-                        (new mongo.Igfs(params)).save((errIgfsSave, igfs) => {
-                            if (mongo.processed(errIgfsSave, res)) {
-                                igfsId = igfs._id;
+                        return (new mongo.Igfs(params)).save();
+                    })
+                    .then((igfs) => {
+                        igfsId = igfs._id;
 
-                                mongo.Cluster.update({_id: {$in: clusters}}, {$addToSet: {igfss: igfsId}}, {multi: true}, (errCluster) => {
-                                    if (mongo.processed(errCluster, res))
-                                        res.send(igfsId);
-                                });
-                            }
-                        });
-                    }
-                });
+                        return mongo.Cluster.update({_id: {$in: clusters}}, {$addToSet: {igfss: igfsId}}, {multi: true});
+                    })
+                    .then(() => res.send(igfsId))
+                    .catch((err) => {
+                        // TODO IGNITE-843 Send error to admin
+                        res.status(500).send(err.message);
+                    });
             }
         });
 
@@ -127,23 +117,22 @@ module.exports.factory = function(_, express, mongo) {
          * Remove all IGFSs.
          */
         router.post('/remove/all', (req, res) => {
-            const user_id = req.currentUserId();
+            const userId = req.currentUserId();
+            let spacesIds = [];
 
             // Get owned space and all accessed space.
-            mongo.Space.find({$or: [{owner: user_id}, {usedBy: {$elemMatch: {account: user_id}}}]}, (errSpace, spaces) => {
-                if (mongo.processed(errSpace, res)) {
-                    const space_ids = spaces.map((value) => value._id);
+            mongo.Space.find({$or: [{owner: userId}, {usedBy: {$elemMatch: {account: userId}}}]})
+                .then((spaces) => {
+                    spacesIds = spaces.map((value) => value._id);
 
-                    mongo.Igfs.remove({space: {$in: space_ids}}, (errIgfs) => {
-                        if (mongo.processed(errIgfs, res)) {
-                            mongo.Cluster.update({space: {$in: space_ids}}, {igfss: []}, {multi: true}, (errCluster) => {
-                                if (mongo.processed(errCluster, res))
-                                    res.sendStatus(200);
-                            });
-                        }
-                    });
-                }
-            });
+                    return mongo.Igfs.remove({space: {$in: spacesIds}});
+                })
+                .then(() => mongo.Cluster.update({space: {$in: spacesIds}}, {igfss: []}, {multi: true}))
+                .then(() => res.sendStatus(200))
+                .catch((err) => {
+                    // TODO IGNITE-843 Send error to admin
+                    res.status(500).send(err.message);
+                });
         });
 
         resolve(router);
