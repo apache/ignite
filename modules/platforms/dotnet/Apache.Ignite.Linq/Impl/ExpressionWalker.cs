@@ -32,9 +32,13 @@ namespace Apache.Ignite.Linq.Impl
     /// </summary>
     internal static class ExpressionWalker
     {
+        /** Compiled member readers. */
         private static readonly CopyOnWriteConcurrentDictionary<MemberInfo, Func<object, object>> MemberReaders =
             new CopyOnWriteConcurrentDictionary<MemberInfo, Func<object, object>>();
 
+        /// <summary>
+        /// Gets the cache queryable.
+        /// </summary>
         public static ICacheQueryable GetCacheQueryable(QuerySourceReferenceExpression expression)
         {
             Debug.Assert(expression != null);
@@ -52,16 +56,25 @@ namespace Apache.Ignite.Linq.Impl
             throw new NotSupportedException("Unexpected query source: " + expression.ReferencedQuerySource);
         }
 
+        /// <summary>
+        /// Gets the cache queryable.
+        /// </summary>
         public static ICacheQueryable GetCacheQueryable(IFromClause fromClause)
         {
             return GetCacheQueryable(fromClause.FromExpression);
         }
 
+        /// <summary>
+        /// Gets the cache queryable.
+        /// </summary>
         public static ICacheQueryable GetCacheQueryable(JoinClause joinClause)
         {
             return GetCacheQueryable(joinClause.InnerSequence);
         }
 
+        /// <summary>
+        /// Gets the cache queryable.
+        /// </summary>
         public static ICacheQueryable GetCacheQueryable(Expression expression, bool throwWhenNotFound = true)
         {
             var subQueryExp = expression as SubQueryExpression;
@@ -101,6 +114,9 @@ namespace Apache.Ignite.Linq.Impl
             return null;
         }
 
+        /// <summary>
+        /// Evaluates the expression.
+        /// </summary>
         public static T EvaluateExpression<T>(Expression expr)
         {
             var memberExpr = expr as MemberExpression;
@@ -126,6 +142,9 @@ namespace Apache.Ignite.Linq.Impl
             throw new NotSupportedException("Expression not supported: " + expr);
         }
 
+        /// <summary>
+        /// Compiles the member reader.
+        /// </summary>
         private static Func<object, object> CompileMemberReader(MemberExpression memberExpr)
         {
             // Field or property
@@ -142,6 +161,9 @@ namespace Apache.Ignite.Linq.Impl
             throw new NotSupportedException("Expression not supported: " + memberExpr);
         }
 
+        /// <summary>
+        /// Gets the table name with schema.
+        /// </summary>
         public static string GetTableNameWithSchema(ICacheQueryable queryable)
         {
             Debug.Assert(queryable != null);
@@ -150,6 +172,9 @@ namespace Apache.Ignite.Linq.Impl
                 GetTableNameFromEntryType(queryable.ElementType));
         }
 
+        /// <summary>
+        /// Gets the type of the table name from entry value.
+        /// </summary>
         private static string GetTableNameFromEntryValueType(Type entryValueType)
         {
             Debug.Assert(entryValueType != null);
@@ -157,6 +182,9 @@ namespace Apache.Ignite.Linq.Impl
             return entryValueType.Name;
         }
 
+        /// <summary>
+        /// Gets the type of the table name from entry.
+        /// </summary>
         private static string GetTableNameFromEntryType(Type cacheEntryType)
         {
             Debug.Assert(cacheEntryType != null);
