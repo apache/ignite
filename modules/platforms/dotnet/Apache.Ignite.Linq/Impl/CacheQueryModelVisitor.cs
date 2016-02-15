@@ -170,6 +170,11 @@ namespace Apache.Ignite.Linq.Impl
                     _builder.Append("max (");
                     parenCount++;
                 }
+                else if (op is AverageResultOperator)
+                {
+                    _builder.Append("avg (");
+                    parenCount++;
+                }
                 else if (op is DistinctResultOperator)
                     _builder.Append("distinct ");
                 else if (op is FirstResultOperator || op is SingleResultOperator)

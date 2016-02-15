@@ -296,11 +296,12 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
             // ReSharper disable once ReturnValueOfPureMethodIsNotUsed
             Assert.Throws<NotSupportedException>(() => cache.Select(x => new {x.Key, x.Value}).Count());
 
-            // Min/max/sum
+            // Min/max/sum/avg
             var ints = cache.Select(x => x.Key);
             Assert.AreEqual(0, ints.Min());
             Assert.AreEqual(PersonCount - 1, ints.Max());
             Assert.AreEqual(ints.ToArray().Sum(), ints.Sum());
+            Assert.AreEqual(ints.ToArray().Average(), ints.Average());
 
             var dupInts = ints.Select(x => x/10);  // duplicate values
             CollectionAssert.AreEquivalent(dupInts.ToArray().Distinct().ToArray(), dupInts.Distinct().ToArray());
@@ -548,14 +549,14 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
                 into gs
                 orderby gs.Key
                 where gs.Count() > 10
-                select new {Count = gs.Count(), OrgId = gs.Key};
+                select new {Count = gs.Count(), OrgId = gs.Key, AvgAge = gs.Average(x => x.Value.Age)};
 
             var resArr = res1.ToArray();
 
             Assert.AreEqual(new[]
             {
-                new {Count = PersonCount/2, OrgId = 1000},
-                new {Count = PersonCount/2, OrgId = 1001}
+                new {Count = PersonCount/2, OrgId = 1000, AvgAge = PersonCount/2 - 2},
+                new {Count = PersonCount/2, OrgId = 1001, AvgAge = PersonCount/2 - 1}
             }, resArr);
 
             // Join and sum
