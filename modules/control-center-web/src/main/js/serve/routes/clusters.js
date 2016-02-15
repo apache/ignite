@@ -137,14 +137,24 @@ module.exports.factory = function(_, express, mongo) {
          * Remove cluster by ._id.
          */
         router.post('/remove', (req, res) => {
-            mongo.Cluster.remove(req.body, (err) => {
-                if (err)
-                    return res.status(500).send(err.message);
+            const userId = req.currentUserId();
+            const clusterId = req.body;
 
-                // TODO add IGFS and caches cleanup
+            let spacesIds = [];
 
-                res.sendStatus(200);
-            });
+            mongo.Cluster.remove(clusterId)
+                .then(() => mongo.Space.find({$or: [{owner: userId}, {usedBy: {$elemMatch: {account: userId}}}]}))
+                .then((spaces) => {
+                    spacesIds = spaces.map((value) => value._id);
+
+                    return mongo.Cache.update(mongo.Cache.update({space: {$in: spacesIds}}, {$pull: {clusters: clusterId}}, {multi: true}));
+                })
+                .then(() => mongo.Cache.update(mongo.Igfs.update({space: {$in: spacesIds}}, {$pull: {clusters: clusterId}}, {multi: true})))
+                .then(() => res.sendStatus(200))
+                .catch((err) => {
+                    // TODO IGNITE-843 Send error to admin
+                    res.status(500).send(err.message);
+                });
         });
 
         /**
