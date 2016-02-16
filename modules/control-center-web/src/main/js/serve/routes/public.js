@@ -195,8 +195,7 @@ module.exports.factory = function(express, passport, nodemailer, settings, mail,
                 .then((user) => {
                     return mail.send(user, 'Your password has been changed',
                         `Hello ${user.username}!<br><br>` +
-                        'This is a confirmation that the password for your account ' + user.email + ' has just been changed.<br><br>' +
-                        'Now you can login: http://' + req.headers.host,
+                        `This is a confirmation that the password for your account on <a href="http://${req.headers.host}">${settings.smtp.username}</a> has just been changed.<br><br>`,
                         'Password was changed, but failed to send confirmation e-mail!');
                 })
                 .then((user) => res.status(200).send(user.email))
