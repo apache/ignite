@@ -193,16 +193,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     /** */
     private static final String ESC_STR = ESC_CH + "" + ESC_CH;
 
-    /** Pattern matches "SELECT * " string (var num of spaces). */
-    private static final Pattern SIMPLE_SEL_PTRN = Pattern.compile("SELECT\\s+\\*\\s+");
-
-    /** Pattern matches "SELECT alias.* FROM" string (var num of spaces). */
-    private static final Pattern ALIAS_SEL_PTRN = Pattern.compile("^SELECT\\s+([A-Z0-9_]+\\.)\\*\\s*FROM");
-
-    /** Pattern matches "SELECT alias" (var num of spaces). */
-    private static final Pattern PICK_ALIAS_PTRN = Pattern.compile("[A-Z0-9_\\.]+\\s+[A-Z0-9_]+");
-
-
     /**
      * Command in H2 prepared statement.
      */
@@ -1117,22 +1107,21 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         String upper = qry.toUpperCase();
 
         if (upper.startsWith("SELECT")) {
-            final Matcher simpleMatcher = SIMPLE_SEL_PTRN.matcher(upper);
+            qry = qry.substring(6).trim();
 
-            if (simpleMatcher.find())
-                qry = qry.substring(simpleMatcher.start(), simpleMatcher.end());
-            else {
-                final Matcher aliasMatcher = ALIAS_SEL_PTRN.matcher(upper);
-
-                if (!aliasMatcher.find())
-                    throw new IgniteCheckedException("Only queries starting with 'SELECT *' or 'SELECT alias.*' are supported or " +
-                            "use SqlFieldsQuery instead: " + qry0);
-
-                t = findSelectTableAlias(qry);
-
-                qry = qry.substring(aliasMatcher.end() - 4); // 4 is "FROM".length()
-
+            if (qry.startsWith("*")) {
+                qry = qry.substring(1).trim();
                 upper = qry.toUpperCase();
+            } else {
+                final String alias = getAlias(qry);
+                if (alias != null) {
+                    t = alias;
+                    final int star = qry.indexOf('*');
+                    qry = qry.substring(star + 1).trim();
+                    upper = qry.toUpperCase();
+                } else
+                    throw new IgniteCheckedException("Only queries starting with 'SELECT *' are supported or " +
+                            "use SqlFieldsQuery instead: " + qry0);
             }
         }
 
@@ -1147,30 +1136,22 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     }
 
     /**
-     * Get alias from "SELECT ..." block of query.
-     * For example: "SELECT ab.* FROM AB ab" -> "ab".
-     *
-     * @param qry to parse.
-     * @return alias name from query.
+     * @param qry to get alias from.
+     * @return alias from SELECT block
      */
-    private String findSelectTableAlias(final String qry) {
-        final Matcher matcher = ALIAS_SEL_PTRN.matcher(qry.toUpperCase());
+    @Nullable private String getAlias(final String qry) {
+        assert qry != null;
 
-        assert matcher.find();
+        final String[] args = qry.split(" ");
 
-        String alias = qry.substring(matcher.start(), matcher.end()).trim();
+        assert args.length > 0;
 
-        final Matcher aliasMatcher = PICK_ALIAS_PTRN.matcher(alias.toUpperCase());
+        if (args[0].endsWith(".*")) {
+            final int dot = args[0].indexOf('.');
+            return args[0].substring(0, dot);
+        }
 
-        assert aliasMatcher.find();
-
-        alias = alias.substring(aliasMatcher.start(), aliasMatcher.end());
-
-        final String[] args = alias.split("(\\s+((as)|(AS)|(aS)|(As))\\s+)|(\\s+)");
-
-        assert args.length == 2;
-
-        return args[1];
+        return null;
     }
 
     /**
