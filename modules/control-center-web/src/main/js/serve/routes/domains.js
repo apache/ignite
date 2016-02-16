@@ -73,45 +73,38 @@ module.exports.factory = (_, express, mongo) => {
             return Promise.all(promises);
         }
 
-        function _saveDomainModel(domain, savedDomains) {
-            return new Promise((resolve, reject) => {
-                const caches = domain.caches;
-                const cacheStoreChanges = domain.cacheStoreChanges;
-                const domainId = domain._id;
+        const _saveDomainModel = (domain, savedDomains) => {
+            const caches = domain.caches;
+            const cacheStoreChanges = domain.cacheStoreChanges;
+            const domainId = domain._id;
 
-                if (domainId) {
-                    mongo.DomainModel.update({_id: domain._id}, domain, {upsert: true}).exec()
-                        .then(() => mongo.Cache.update({_id: {$in: caches}}, {$addToSet: {domains: domainId}}, {multi: true}).exec())
-                        .then(() => mongo.Cache.update({_id: {$nin: caches}}, {$pull: {domains: domainId}}, {multi: true}).exec())
-                        .then(() => {
-                            savedDomains.push(domain);
+            if (domainId) {
+                return mongo.DomainModel.update({_id: domain._id}, domain, {upsert: true}).exec()
+                    .then(() => mongo.Cache.update({_id: {$in: caches}}, {$addToSet: {domains: domainId}}, {multi: true}).exec())
+                    .then(() => mongo.Cache.update({_id: {$nin: caches}}, {$pull: {domains: domainId}}, {multi: true}).exec())
+                    .then(() => {
+                        savedDomains.push(domain);
 
-                            _updateCacheStore(cacheStoreChanges);
-                        })
-                        .then(resolve)
-                        .catch(reject);
-                }
-                else {
-                    mongo.DomainModel.findOne({space: domain.space, valueType: domain.valueType}).exec()
-                        .then((found) => {
-                            if (found)
-                                throw new Error('Domain model with value type: "' + found.valueType + '" already exist.');
+                        return _updateCacheStore(cacheStoreChanges);
+                    });
+            }
 
-                            return (new mongo.DomainModel(domain)).save();
-                        })
-                        .then((savedDomain) => {
-                            savedDomains.push(savedDomain);
+            return mongo.DomainModel.findOne({space: domain.space, valueType: domain.valueType}).exec()
+                .then((found) => {
+                    if (found)
+                        throw new Error('Domain model with value type: "' + found.valueType + '" already exist.');
 
-                            return mongo.Cache.update({_id: {$in: caches}}, {$addToSet: {domains: savedDomain._id}}, {multi: true}).exec();
-                        })
-                        .then(() => _updateCacheStore(cacheStoreChanges))
-                        .then(resolve)
-                        .catch(reject);
-                }
-            });
-        }
+                    return (new mongo.DomainModel(domain)).save();
+                })
+                .then((savedDomain) => {
+                    savedDomains.push(savedDomain);
 
-        function _save(domains, res) {
+                    return mongo.Cache.update({_id: {$in: caches}}, {$addToSet: {domains: savedDomain._id}}, {multi: true}).exec();
+                })
+                .then(() => _updateCacheStore(cacheStoreChanges));
+        };
+
+        const _save = (domains, res) => {
             if (domains && domains.length > 0) {
                 const savedDomains = [];
                 const generatedCaches = [];
@@ -119,32 +112,25 @@ module.exports.factory = (_, express, mongo) => {
 
                 _.forEach(domains, (domain) => {
                     if (domain.newCache) {
-                        mongo.Cache.findOne({space: domain.space, name: domain.newCache.name}).exec()
-                            .then((cache) => {
-                                if (cache) {
-                                    // Cache already exists, just save domain model.
-                                    domain.caches = [cache._id];
+                        promises.push(
+                            mongo.Cache.findOne({space: domain.space, name: domain.newCache.name}).exec()
+                                .then((cache) => {
+                                    if (cache)
+                                        return Promise.resolve(cache);
 
-                                    promises.push(_saveDomainModel(domain, savedDomains));
-                                }
-                                else {
                                     // If cache not found, then create it and associate with domain model.
                                     const newCache = domain.newCache;
                                     newCache.space = domain.space;
 
-                                    (new mongo.Cache(newCache)).save()
-                                        .then((generatedCache) => {
-                                            const cacheId = generatedCache._id;
+                                    return (new mongo.Cache(newCache)).save()
+                                        .then((_cache) => mongo.Cluster.update({_id: {$in: _cache.clusters}}, {$addToSet: {caches: _cache._id}}, {multi: true}).exec());
+                                })
+                                .then((cache) => {
+                                    domain.caches = [cache._id];
 
-                                            generatedCaches.push(generatedCache);
-
-                                            domain.caches = [cacheId];
-
-                                            return mongo.Cluster.update({_id: {$in: generatedCache.clusters}}, {$addToSet: {caches: cacheId}}, {multi: true}).exec();
-                                        })
-                                        .then(() => promises.push(_saveDomainModel(domain, savedDomains)));
-                                }
-                            });
+                                    return _saveDomainModel(domain, savedDomains);
+                                })
+                        );
                     }
                     else
                         promises.push(_saveDomainModel(domain, savedDomains));
@@ -156,7 +142,7 @@ module.exports.factory = (_, express, mongo) => {
             }
             else
                 res.status(500).send('Nothing to save!');
-        }
+        };
 
         /**
          * Save domain model.
