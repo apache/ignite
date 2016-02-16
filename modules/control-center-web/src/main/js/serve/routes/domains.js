@@ -125,7 +125,7 @@ module.exports.factory = (_, express, mongo) => {
                                     // Cache already exists, just save domain model.
                                     domain.caches = [cache._id];
 
-                                    promises.push(_saveDomainModel(domain, savedDomains))
+                                    promises.push(_saveDomainModel(domain, savedDomains));
                                 }
                                 else {
                                     // If cache not found, then create it and associate with domain model.
@@ -142,7 +142,7 @@ module.exports.factory = (_, express, mongo) => {
 
                                             return mongo.Cluster.update({_id: {$in: generatedCache.clusters}}, {$addToSet: {caches: cacheId}}, {multi: true}).exec();
                                         })
-                                        .then(() => promises.push(_saveDomainModel(domain, savedDomains)))
+                                        .then(() => promises.push(_saveDomainModel(domain, savedDomains)));
                                 }
                             });
                     }
