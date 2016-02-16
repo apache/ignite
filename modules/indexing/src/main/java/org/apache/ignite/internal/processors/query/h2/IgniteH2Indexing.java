@@ -907,7 +907,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
     /**
      * Executes regular query.
-     * Note that SQL query can not refer to table alias, so use full table name instead.
      *
      * @param spaceName Space name.
      * @param qry Query.
@@ -1118,7 +1117,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                     qry = qry.substring(star + 1).trim();
                     upper = qry.toUpperCase();
                 } else
-                    throw new IgniteCheckedException("Only queries starting with 'SELECT *' are supported or " +
+                    throw new IgniteCheckedException("Only queries starting with 'SELECT *' and 'SELECT alias.*' are supported or " +
                             "use SqlFieldsQuery instead: " + qry0);
             }
         }
