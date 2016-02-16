@@ -24,7 +24,7 @@ module.exports = {
     inject: ['require(lodash)', 'require(express)', 'mongo']
 };
 
-module.exports.factory = function (_, express, mongo) {
+module.exports.factory = (_, express, mongo) => {
     return new Promise((factoryResolve) => {
         const router = new express.Router();
 
@@ -214,9 +214,7 @@ module.exports.factory = function (_, express, mongo) {
             // TODO IGNITE-843 also remove from links: Cache -> DomainModel ; DomainModel -> Cache; Cluster -> Cache.
 
             mongo.spaces(req.currentUserId())
-                .then((spaces) => {
-                    spaceIds = mongo.spacesIds(spaces)
-                })
+                .then((spaces) => spaceIds = mongo.spacesIds(spaces))
                 .then(() => mongo.DomainModel.find({$and: [{space: {$in: spaceIds}}, {demo: true}]}).lean().exec())
                 .then((domains) => domainIds = _.map(domains, (domain) => domain._id))
                 .then(() => mongo.Cache.update({domains: {$in: domainIds}}, {$pull: {domains: {$in: domainIds}}}, {multi: true}).exec())
