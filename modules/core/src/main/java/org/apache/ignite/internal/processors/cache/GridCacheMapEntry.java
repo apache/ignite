@@ -96,6 +96,9 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
     private static final byte IS_OFFHEAP_PTR_MASK = 0x04;
 
     /** */
+    private static final byte IS_SWAPPING_REQUIRED = 0x08;
+
+    /** */
     public static final GridCacheAtomicVersionComparator ATOMIC_VER_COMPARATOR = new GridCacheAtomicVersionComparator();
 
     /**
@@ -550,7 +553,9 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
      * @throws IgniteCheckedException If failed.
      */
     private void swap() throws IgniteCheckedException {
-        if (cctx.isSwapOrOffheapEnabled() && !deletedUnlocked() && hasValueUnlocked() && !detached()) {
+        boolean swapNeeded = (flags & IS_SWAPPING_REQUIRED) != 0;
+
+        if (cctx.isSwapOrOffheapEnabled() && !deletedUnlocked() && (hasValueUnlocked() || swapNeeded) && !detached()) {
             assert Thread.holdsLock(this);
 
             long expireTime = expireTimeExtras();
@@ -566,7 +571,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                 return;
             }
 
-            if (cctx.offheapTiered() && hasOffHeapPointer()) {
+            if (cctx.offheapTiered() && hasOffHeapPointer() && !swapNeeded) {
                 if (log.isDebugEnabled())
                     log.debug("Value did not change, skip write swap entry: " + this);
 
@@ -599,6 +604,8 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                 expireTime,
                 keyClsLdrId,
                 valClsLdrId);
+
+            flags &= ~IS_SWAPPING_REQUIRED;
 
             if (log.isDebugEnabled())
                 log.debug("Wrote swap entry: " + this);
@@ -2931,11 +2938,9 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
      * Update TTL is it is changed.
      *
      * @param expiryPlc Expiry policy.
-     * @throws IgniteCheckedException If failed.
      * @throws GridCacheEntryRemovedException If failed.
      */
-    private void updateTtl(IgniteCacheExpiryPolicy expiryPlc)
-        throws IgniteCheckedException, GridCacheEntryRemovedException {
+    private void updateTtl(IgniteCacheExpiryPolicy expiryPlc) throws GridCacheEntryRemovedException {
         long ttl = expiryPlc.forAccess();
 
         if (ttl != CU.TTL_NOT_CHANGED) {
@@ -2969,6 +2974,9 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
             cctx.ttl().removeTrackedEntry(this);
 
         ttlAndExpireTimeExtras(ttl, expireTime);
+
+        if (cctx.isSwapOrOffheapEnabled())
+            flags |= IS_SWAPPING_REQUIRED;
 
         if (expireTime != 0 && expireTime != oldExpireTime && cctx.config().isEagerTtl())
             cctx.ttl().addTrackedEntry(this);
@@ -3721,8 +3729,10 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
     }
 
     /** {@inheritDoc} */
-    @Override public void updateTtl(@Nullable GridCacheVersion ver, long ttl) {
+    @Override public void updateTtl(@Nullable GridCacheVersion ver, long ttl) throws GridCacheEntryRemovedException {
         synchronized (this) {
+            checkObsolete();
+
             updateTtl(ttl);
 
             /*

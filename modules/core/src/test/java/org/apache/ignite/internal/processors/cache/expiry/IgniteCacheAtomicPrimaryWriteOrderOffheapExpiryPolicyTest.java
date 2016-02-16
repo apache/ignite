@@ -22,7 +22,8 @@ import org.apache.ignite.cache.CacheMemoryMode;
 /**
  *
  */
-public class IgniteCacheAtomicOffheapExpiryPolicyTest extends IgniteCacheAtomicExpiryPolicyTest {
+public class IgniteCacheAtomicPrimaryWriteOrderOffheapExpiryPolicyTest extends
+    IgniteCacheAtomicPrimaryWriteOrderExpiryPolicyTest {
     /** {@inheritDoc} */
     @Override protected CacheMemoryMode memoryMode() {
         return CacheMemoryMode.OFFHEAP_TIERED;

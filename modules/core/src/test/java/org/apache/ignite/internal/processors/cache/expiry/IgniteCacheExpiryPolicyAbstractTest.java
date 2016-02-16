@@ -38,7 +38,6 @@ import javax.cache.processor.EntryProcessor;
 import javax.cache.processor.MutableEntry;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.CacheMemoryMode;
 import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.cluster.ClusterNode;
@@ -53,10 +52,8 @@ import org.apache.ignite.internal.processors.cache.IgniteCacheAbstractTest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtInvalidPartitionException;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.internal.util.typedef.PA;
 import org.apache.ignite.internal.util.typedef.PAX;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
@@ -357,43 +354,43 @@ public abstract class IgniteCacheExpiryPolicyAbstractTest extends IgniteCacheAbs
 
         startGrids();
 
-//        for (final Integer key : keys()) {
-//            log.info("Test access [key=" + key + ']');
-//
-//            access(key);
-//        }
-//
-//        accessGetAll();
-//
-//        for (final Integer key : keys()) {
-//            log.info("Test filterAccessRemove access [key=" + key + ']');
-//
-//            filterAccessRemove(key);
-//        }
-//
-//        for (final Integer key : keys()) {
-//            log.info("Test filterAccessReplace access [key=" + key + ']');
-//
-//            filterAccessReplace(key);
-//        }
-//
-//        if (atomicityMode() == TRANSACTIONAL) {
-//            TransactionConcurrency[] txModes = {PESSIMISTIC};
-//
-//            for (TransactionConcurrency txMode : txModes) {
-//                for (final Integer key : keys()) {
-//                    log.info("Test txGet [key=" + key + ", txMode=" + txMode + ']');
-//
-//                    txGet(key, txMode);
-//                }
-//            }
-//
-//            for (TransactionConcurrency txMode : txModes) {
-//                log.info("Test txGetAll [txMode=" + txMode + ']');
-//
-//                txGetAll(txMode);
-//            }
-//        }
+        for (final Integer key : keys()) {
+            log.info("Test access [key=" + key + ']');
+
+            access(key);
+        }
+
+        accessGetAll();
+
+        for (final Integer key : keys()) {
+            log.info("Test filterAccessRemove access [key=" + key + ']');
+
+            filterAccessRemove(key);
+        }
+
+        for (final Integer key : keys()) {
+            log.info("Test filterAccessReplace access [key=" + key + ']');
+
+            filterAccessReplace(key);
+        }
+
+        if (atomicityMode() == TRANSACTIONAL) {
+            TransactionConcurrency[] txModes = {PESSIMISTIC};
+
+            for (TransactionConcurrency txMode : txModes) {
+                for (final Integer key : keys()) {
+                    log.info("Test txGet [key=" + key + ", txMode=" + txMode + ']');
+
+                    txGet(key, txMode);
+                }
+            }
+
+            for (TransactionConcurrency txMode : txModes) {
+                log.info("Test txGetAll [txMode=" + txMode + ']');
+
+                txGetAll(txMode);
+            }
+        }
 
         IgniteCache<Integer, Integer> cache = jcache(0);
 
@@ -1139,17 +1136,14 @@ public abstract class IgniteCacheExpiryPolicyAbstractTest extends IgniteCacheAbs
 
                         found = true;
 
-                        if (wait) {
-                            info("WILL CHECK THE KEY ON NODE [key=" + key + ", node=" + i + ']');
-
+                        if (wait)
                             waitTtl(cache, key, ttl);
-                        }
 
                         boolean primary = cache.affinity().isPrimary(grid.localNode(), key);
                         boolean backup = cache.affinity().isBackup(grid.localNode(), key);
 
-                        assertEquals("Unexpected ttl [grid=" + i + ", key=" + key + ", e=" + e +
-                                ", primary=" + primary + ", backup=" + backup + ']', ttl, e.ttl());
+                        assertEquals("Unexpected ttl [grid=" + i + ", nodeId=" + grid.getLocalNodeId() +
+                            ", key=" + key + ", e=" + e + ", primary=" + primary + ", backup=" + backup + ']', ttl, e.ttl());
 
                         if (ttl > 0)
                             assertTrue(e.expireTime() > 0);
@@ -1181,7 +1175,7 @@ public abstract class IgniteCacheExpiryPolicyAbstractTest extends IgniteCacheAbs
      */
     private void waitTtl(final GridCacheAdapter<Object, Object> cache, final Object key, final long ttl)
         throws IgniteInterruptedCheckedException {
-        boolean success = GridTestUtils.waitForCondition(new PAX() {
+        GridTestUtils.waitForCondition(new PAX() {
             @Override public boolean applyx() throws IgniteCheckedException {
                 GridCacheEntryEx entry = null;
 
@@ -1205,8 +1199,6 @@ public abstract class IgniteCacheExpiryPolicyAbstractTest extends IgniteCacheAbs
                 }
             }
         }, 3000);
-
-        info("Wait: " + success);
     }
 
     /**
@@ -1252,8 +1244,6 @@ public abstract class IgniteCacheExpiryPolicyAbstractTest extends IgniteCacheAbs
 
         /** {@inheritDoc} */
         @Override public Duration getExpiryForAccess() {
-            U.dumpStack();
-
             return access != null ? new Duration(TimeUnit.MILLISECONDS, access) : null;
         }
 

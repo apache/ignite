@@ -54,13 +54,6 @@ public class GridDhtAtomicOffHeapCacheEntry extends GridDhtAtomicCacheEntry {
     }
 
     /** {@inheritDoc} */
-    @Override protected void updateTtl(long ttl) {
-        super.updateTtl(ttl);
-
-        valPtr = 0;
-    }
-
-    /** {@inheritDoc} */
     @Override protected long offHeapPointer() {
         return valPtr;
     }
