@@ -1095,7 +1095,7 @@ consoleModule.service('$common', [
                         cacheStoreFactory: {
                             kind: 'CacheJdbcPojoStoreFactory',
                             CacheJdbcPojoStoreFactory: {
-                                dataSourceBean: cache.name + 'DS',
+                                dataSourceBean: 'ds' + cache.name,
                                 dialect: 'Generic'
                             }
                         },
