@@ -97,9 +97,9 @@ consoleModule.controller('domainsController', function ($filter, $http, $timeout
                                     _.forEach($scope.clusters, function (cluster) {
                                         $scope.ui.generatedCachesClusters.push(cluster.value);
                                     });
-                                });
 
-                            restoreSelection();
+                                    restoreSelection();
+                                });
                         })
                         .error(function (errMsg) {
                             $common.showError(errMsg);
