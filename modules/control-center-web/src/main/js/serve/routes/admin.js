@@ -40,9 +40,14 @@ module.exports.factory = function(_, express, nodemailer, settings, mongo) {
         // Remove user.
         router.post('/remove', (req, res) => {
             const userId = req.body.userId;
+            let user = {};
 
             mongo.Account.findByIdAndRemove(userId).exec()
-                .then(() => mongo.spaces(userId))
+                .then((removedUser) => {
+                    user = removedUser;
+
+                    return mongo.spaces(userId);
+                })
                 .then((spaces) => {
                     const promises = [];
 
