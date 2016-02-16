@@ -68,6 +68,7 @@ module.exports.factory = function(nconf, fs) {
         smtp: {
             service: nconf.get('smtp:service'),
             username: nconf.get('smtp:username'),
+            sign: nconf.get('smtp:sign'),
             email: nconf.get('smtp:email'),
             password: nconf.get('smtp:password'),
             address: (username, email) => username ? '"' + username + '" <' + email + '>' : email
