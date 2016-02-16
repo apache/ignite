@@ -105,7 +105,7 @@ module.exports.factory = function(express, passport, nodemailer, settings, mail,
                     account.save()
                         .then(() => mail.send(account, `Thanks for signing up for ${settings.smtp.username}.`,
                             `Hello ${account.username}!<br><br>` +
-                            `You are receiving this e-mail because you have signed up to use <a href="http://${req.headers.host}">${settings.smtp.username}</a>.<br><br>` +
+                            `You are receiving this email because you have signed up to use <a href="http://${req.headers.host}">${settings.smtp.username}</a>.<br><br>` +
                             'If you have not done the sign up and do not know what this email is about, please ignore it.<br>' +
                             'You may reset the password by clicking on the following link, or paste this into your browser:<br><br>' +
                             `http://${req.headers.host}/password/reset?token=${account.resetPasswordToken}`));
@@ -163,9 +163,9 @@ module.exports.factory = function(express, passport, nodemailer, settings, mail,
                         'Please click on the following link, or paste this into your browser to complete the process:<br><br>' +
                         'http://' + req.headers.host + '/password/reset?token=' + user.resetPasswordToken + '<br><br>' +
                         'If you did not request this, please ignore this email and your password will remain unchanged.',
-                        'Failed to send e-mail with reset link!')
+                        'Failed to send email with reset link!')
                 )
-                .then(() => res.status(200).send('An e-mail has been sent with further instructions.'))
+                .then(() => res.status(200).send('An email has been sent with further instructions.'))
                 .catch((errMsg) => {
                     // TODO IGNITE-843 Send email to admin
                     return res.status(401).send(errMsg);
@@ -180,7 +180,7 @@ module.exports.factory = function(express, passport, nodemailer, settings, mail,
                 .then((user) => {
                     return new Promise((resolve, reject) => {
                         if (!user)
-                            return reject('Failed to find account with this token! Please check link from e-mail.');
+                            return reject('Failed to find account with this token! Please check link from email.');
 
                         user.setPassword(req.body.password, (err, _user) => {
                             if (err)
@@ -196,7 +196,7 @@ module.exports.factory = function(express, passport, nodemailer, settings, mail,
                     return mail.send(user, 'Your password has been changed',
                         `Hello ${user.username}!<br><br>` +
                         `This is a confirmation that the password for your account on <a href="http://${req.headers.host}">${settings.smtp.username}</a> has just been changed.<br><br>`,
-                        'Password was changed, but failed to send confirmation e-mail!');
+                        'Password was changed, but failed to send confirmation email!');
                 })
                 .then((user) => res.status(200).send(user.email))
                 .catch((errMsg) => {

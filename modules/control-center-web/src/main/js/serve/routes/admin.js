@@ -54,7 +54,7 @@ module.exports.factory = function(_, express, nodemailer, settings, mail, mongo)
                                 mongo.Cache.remove({space: {$in: spacesIds}}).exec(),
                                 mongo.DomainModel.remove({space: {$in: spacesIds}}).exec(),
                                 mongo.Notebook.remove({space: {$in: spacesIds}}).exec(),
-                                mongo.Space.remove({owner: {$in: spacesIds}}).exec()
+                                mongo.Space.remove({owner: userId}).exec()
                             ]);
                         })
                         .catch((err) => {
@@ -65,8 +65,8 @@ module.exports.factory = function(_, express, nodemailer, settings, mail, mongo)
                 })
                 .then((user) => mail.send(user, 'Your account was deleted',
                     `Hello ${user.username}!<br><br>` +
-                    `You are receiving this e-mail because "${req.user.username}" removed your account on <a href="http://${req.headers.host}">${settings.smtp.username}</a>.`,
-                    'Account was removed, but failed to send e-mail notification to user!')
+                    `You are receiving this email because your account for ${settings.smtp.username} was removed.`,
+                    'Account was removed, but failed to send email notification to user!')
                 )
                 .catch((err) => mongo.handleError(res, err));
         });

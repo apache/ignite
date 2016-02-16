@@ -61,10 +61,10 @@ module.exports.factory = function(_, express, mongo) {
                         mongo.Account.findOne({email: params.email}, (err, _user) => {
                             // TODO send error to admin
                             if (err)
-                                reject(new Error('Failed to check e-mail!'));
+                                reject(new Error('Failed to check email!'));
 
                             if (_user && _user._id !== user._id)
-                                reject(new Error('User with this e-mail already registered!'));
+                                reject(new Error('User with this email already registered!'));
 
                             resolve(user);
                         });
