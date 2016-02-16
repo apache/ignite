@@ -22,7 +22,6 @@ namespace Apache.Ignite.Linq.Impl
     using System.Linq;
     using System.Linq.Expressions;
     using System.Reflection;
-    using Apache.Ignite.Core.Cache;
     using Apache.Ignite.Core.Impl.Common;
     using Remotion.Linq.Clauses;
     using Remotion.Linq.Clauses.Expressions;
@@ -137,7 +136,6 @@ namespace Apache.Ignite.Linq.Impl
                     return (T) MemberReaders.GetOrAdd(memberExpr.Member, x => CompileMemberReader(memberExpr))(target);
                 }
             }
-
 
             throw new NotSupportedException("Expression not supported: " + expr);
         }
