@@ -864,7 +864,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
             final GridDhtLocalPartition locPart0 = locPart;
 
             final GridCloseableIteratorAdapter<IgniteBiTuple<K, V>> heapIt =
-                new PeekValueExpiryAwareIterator<K, V>(keyIter, plc, topVer, keyValFilter, qry.keepBinary(), true) {
+                new PeekValueExpiryAwareIterator(keyIter, plc, topVer, keyValFilter, qry.keepBinary(), true) {
                     @Override protected void onClose() {
                         super.onClose();
 
@@ -1088,7 +1088,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
             }
         };
 
-        return new PeekValueExpiryAwareIterator<>(keyIter, expPlc, topVer, filter, keepBinary, false);
+        return new PeekValueExpiryAwareIterator(keyIter, expPlc, topVer, filter, keepBinary, false);
     }
 
     /**
@@ -3082,7 +3082,13 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
             keepBinary);
     }
 
-    private class PeekValueExpiryAwareIterator<K, V> extends GridCloseableIteratorAdapter<IgniteBiTuple<K, V>> {
+    /**
+     *
+     */
+    private class PeekValueExpiryAwareIterator extends GridCloseableIteratorAdapter<IgniteBiTuple<K, V>> {
+        /** */
+        private static final long serialVersionUID = 0L;
+
         /** */
         private final ExpiryPolicy plc;
 
