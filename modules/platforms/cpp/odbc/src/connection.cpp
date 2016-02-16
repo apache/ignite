@@ -172,8 +172,7 @@ namespace ignite
 
             OdbcProtocolHeader hdr;
 
-            // Lenght should has Big Endian byte order.
-            hdr.len = htonl(static_cast<unsigned long>(len));
+            hdr.len = len;
 
             int sent = socket.Send(reinterpret_cast<int8_t*>(&hdr), sizeof(hdr));
 
@@ -209,9 +208,6 @@ namespace ignite
             OdbcProtocolHeader hdr;
 
             int received = socket.Receive(reinterpret_cast<int8_t*>(&hdr), sizeof(hdr));
-
-            // Lenght has Big Endian byte order.
-            hdr.len = ntohl(hdr.len);
 
             LOG_MSG("Received: %d\n", received);
 

@@ -84,7 +84,7 @@ public class OdbcProcessor extends GridProcessorAdapter {
                     .socketSendBufferSize(odbcCfg.getSendBufferSize())
                     .socketReceiveBufferSize(odbcCfg.getReceiveBufferSize())
                     .sendQueueLimit(odbcCfg.getSendQueueLimit())
-                    .filters(new GridNioCodecFilter(new GridBufferedParser(false, ByteOrder.BIG_ENDIAN), log, false))
+                    .filters(new GridNioCodecFilter(new OdbcBufferedParser(false, ByteOrder.LITTLE_ENDIAN), log, false))
                     .directMode(false)
                     .idleTimeout(odbcCfg.getIdleTimeout())
                     .build();
