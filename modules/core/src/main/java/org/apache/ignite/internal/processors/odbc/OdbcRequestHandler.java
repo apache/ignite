@@ -24,6 +24,7 @@ import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.cache.QueryCursorImpl;
 import org.apache.ignite.internal.processors.query.GridQueryFieldMetadata;
 import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
+import org.apache.ignite.internal.util.GridSpinBusyLock;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.lang.IgniteBiTuple;
 
@@ -43,6 +44,9 @@ public class OdbcRequestHandler {
     /** Kernel context. */
     private final GridKernalContext ctx;
 
+    /** Busy lock. */
+    private final GridSpinBusyLock busyLock;
+
     /** Current queries cursors. */
     private final ConcurrentHashMap<Long, IgniteBiTuple<QueryCursor, Iterator>> qryCurs = new ConcurrentHashMap<>();
 
@@ -50,9 +54,11 @@ public class OdbcRequestHandler {
      * Constructor.
      *
      * @param ctx Context.
+     * @param busyLock Shutdown latch.
      */
-    public OdbcRequestHandler(final GridKernalContext ctx) {
+    public OdbcRequestHandler(final GridKernalContext ctx, final GridSpinBusyLock busyLock) {
         this.ctx = ctx;
+        this.busyLock = busyLock;
     }
 
     /**
@@ -64,24 +70,33 @@ public class OdbcRequestHandler {
     public OdbcResponse handle(OdbcRequest req) {
         assert req != null;
 
-        switch (req.command()) {
-            case EXECUTE_SQL_QUERY:
-                return executeQuery((OdbcQueryExecuteRequest)req);
+        if (!busyLock.enterBusy())
+            return new OdbcResponse(OdbcResponse.STATUS_FAILED,
+                    "Failed to handle ODBC request because node is stopping: " + req);
 
-            case FETCH_SQL_QUERY:
-                return fetchQuery((OdbcQueryFetchRequest)req);
+        try {
+            switch (req.command()) {
+                case EXECUTE_SQL_QUERY:
+                    return executeQuery((OdbcQueryExecuteRequest)req);
 
-            case CLOSE_SQL_QUERY:
-                return closeQuery((OdbcQueryCloseRequest)req);
+                case FETCH_SQL_QUERY:
+                    return fetchQuery((OdbcQueryFetchRequest)req);
 
-            case GET_COLUMNS_META:
-                return getColumnsMeta((OdbcQueryGetColumnsMetaRequest) req);
+                case CLOSE_SQL_QUERY:
+                    return closeQuery((OdbcQueryCloseRequest)req);
 
-            case GET_TABLES_META:
-                return getTablesMeta((OdbcQueryGetTablesMetaRequest) req);
+                case GET_COLUMNS_META:
+                    return getColumnsMeta((OdbcQueryGetColumnsMetaRequest) req);
+
+                case GET_TABLES_META:
+                    return getTablesMeta((OdbcQueryGetTablesMetaRequest) req);
+            }
+
+            return new OdbcResponse(OdbcResponse.STATUS_FAILED, "Unsupported ODBC request: " + req);
         }
-
-        return new OdbcResponse(OdbcResponse.STATUS_FAILED, "Unsupported ODBC request: " + req);
+        finally {
+            busyLock.leaveBusy();
+        }
     }
 
     /**

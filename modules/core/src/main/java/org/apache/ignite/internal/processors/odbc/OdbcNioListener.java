@@ -113,14 +113,14 @@ public class OdbcNioListener extends GridNioServerListenerAdapter<byte[]> {
             OdbcRequestHandler handler = ses.meta(HANDLER_META_KEY);
 
             if (handler == null) {
-                handler = new OdbcRequestHandler(ctx);
+                handler = new OdbcRequestHandler(ctx, busyLock);
 
                 OdbcRequestHandler old = ses.addMeta(HANDLER_META_KEY, handler);
 
                 assert old == null;
             }
 
-            OdbcResponse rsp = handle(handler, req);
+            OdbcResponse rsp = handler.handle(req);
 
             if (log.isDebugEnabled()) {
                 long dur = (System.nanoTime() - startTime) / 1000;
@@ -132,28 +132,6 @@ public class OdbcNioListener extends GridNioServerListenerAdapter<byte[]> {
             ses.send(outMsg);
         } catch (Exception e) {
             trySendErrorMessage(ses, e.getMessage());
-        }
-    }
-
-    /**
-     * Handle request.
-     *
-     * @param handler Request handler.
-     * @param req Request.
-     * @return Response.
-     */
-    private OdbcResponse handle(OdbcRequestHandler handler, OdbcRequest req) {
-        assert req != null;
-
-        if (!busyLock.enterBusy())
-            return new OdbcResponse(OdbcResponse.STATUS_FAILED,
-                    "Failed to handle ODBC request because node is stopping: " + req);
-
-        try {
-            return handler.handle(req);
-        }
-        finally {
-            busyLock.leaveBusy();
         }
     }
 
