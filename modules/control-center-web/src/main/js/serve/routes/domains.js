@@ -78,30 +78,31 @@ module.exports.factory = (_, express, mongo) => {
             const cacheStoreChanges = domain.cacheStoreChanges;
             const domainId = domain._id;
 
-            if (domainId) {
-                return mongo.DomainModel.update({_id: domain._id}, domain, {upsert: true}).exec()
-                    .then(() => mongo.Cache.update({_id: {$in: caches}}, {$addToSet: {domains: domainId}}, {multi: true}).exec())
-                    .then(() => mongo.Cache.update({_id: {$nin: caches}}, {$pull: {domains: domainId}}, {multi: true}).exec())
-                    .then(() => {
-                        savedDomains.push(domain);
-
-                        return _updateCacheStore(cacheStoreChanges);
-                    });
-            }
-
             return mongo.DomainModel.findOne({space: domain.space, valueType: domain.valueType}).exec()
-                .then((found) => {
-                    if (found)
-                        throw new Error('Domain model with value type: "' + found.valueType + '" already exist.');
+                .then((_domain) => {
+                    if (_domain && domainId !== _domain._id.toString())
+                        throw new Error('Domain model with value type: "' + _domain.valueType + '" already exist.');
 
-                    return (new mongo.DomainModel(domain)).save();
-                })
-                .then((savedDomain) => {
-                    savedDomains.push(savedDomain);
+                    if (domainId) {
+                        return mongo.DomainModel.update({_id: domain._id}, domain, {upsert: true}).exec()
+                            .then(() => mongo.Cache.update({_id: {$in: caches}}, {$addToSet: {domains: domainId}}, {multi: true}).exec())
+                            .then(() => mongo.Cache.update({_id: {$nin: caches}}, {$pull: {domains: domainId}}, {multi: true}).exec())
+                            .then(() => {
+                                savedDomains.push(domain);
 
-                    return mongo.Cache.update({_id: {$in: caches}}, {$addToSet: {domains: savedDomain._id}}, {multi: true}).exec();
-                })
-                .then(() => _updateCacheStore(cacheStoreChanges));
+                                return _updateCacheStore(cacheStoreChanges);
+                            });
+                    }
+                    else {
+                        return (new mongo.DomainModel(domain)).save()
+                            .then((savedDomain) => {
+                                savedDomains.push(savedDomain);
+
+                                return mongo.Cache.update({_id: {$in: caches}}, {$addToSet: {domains: savedDomain._id}}, {multi: true}).exec();
+                            })
+                            .then(() => _updateCacheStore(cacheStoreChanges));
+                    }
+                });
         };
 
         const _save = (domains, res) => {
@@ -123,7 +124,12 @@ module.exports.factory = (_, express, mongo) => {
                                     newCache.space = domain.space;
 
                                     return (new mongo.Cache(newCache)).save()
-                                        .then((_cache) => mongo.Cluster.update({_id: {$in: _cache.clusters}}, {$addToSet: {caches: _cache._id}}, {multi: true}).exec());
+                                        .then((_cache) => {
+                                            generatedCaches.push(_cache);
+
+                                            return mongo.Cluster.update({_id: {$in: _cache.clusters}}, {$addToSet: {caches: _cache._id}}, {multi: true}).exec()
+                                                .then(() => Promise.resolve(_cache));
+                                        });
                                 })
                                 .then((cache) => {
                                     domain.caches = [cache._id];

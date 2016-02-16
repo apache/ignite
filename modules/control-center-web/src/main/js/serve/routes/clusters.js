@@ -83,34 +83,34 @@ module.exports.factory = function(_, express, mongo) {
             const igfss = params.igfss;
             let clusterId = params._id;
 
-            if (params._id) {
-                mongo.Cluster.update({_id: params._id}, params, {upsert: true}).exec()
-                    .then(() => mongo.Cache.update({_id: {$in: caches}}, {$addToSet: {clusters: clusterId}}, {multi: true}).exec())
-                    .then(() => mongo.Cache.update({_id: {$nin: caches}}, {$pull: {clusters: clusterId}}, {multi: true}).exec())
-                    .then(() => mongo.Igfs.update({_id: {$in: igfss}}, {$addToSet: {clusters: clusterId}}, {multi: true}).exec())
-                    .then(() => mongo.Igfs.update({_id: {$nin: igfss}}, {$pull: {clusters: clusterId}}, {multi: true}).exec())
-                    .then(() => res.send(clusterId))
-                    .catch((err) => mongo.handleError(res, err));
-            }
-            else {
-                mongo.Cluster.findOne({space: params.space, name: params.name}).exec()
-                    .then((cluster) => {
-                        if (cluster)
-                            return res.status(500).send('Cluster with name: "' + cluster.name + '" already exist.');
+            mongo.Cluster.findOne({space: params.space, name: params.name}).exec()
+                .then((_cluster) => {
+                    if (_cluster && clusterId !== _cluster._id.toString())
+                        return res.status(500).send('Cluster with name: "' + _cluster.name + '" already exist.');
 
-                        return (new mongo.Cluster(params)).save();
-                    })
-                    .then((cluster) => {
-                        clusterId = cluster._id;
+                    if (clusterId) {
+                        return mongo.Cluster.update({_id: clusterId}, params, {upsert: true}).exec()
+                            .then(() => mongo.Cache.update({_id: {$in: caches}}, {$addToSet: {clusters: clusterId}}, {multi: true}).exec())
+                            .then(() => mongo.Cache.update({_id: {$nin: caches}}, {$pull: {clusters: clusterId}}, {multi: true}).exec())
+                            .then(() => mongo.Igfs.update({_id: {$in: igfss}}, {$addToSet: {clusters: clusterId}}, {multi: true}).exec())
+                            .then(() => mongo.Igfs.update({_id: {$nin: igfss}}, {$pull: {clusters: clusterId}}, {multi: true}).exec())
+                            .then(() => res.send(clusterId))
+                            .catch((err) => mongo.handleError(res, err));
+                    }
+                    else {
+                        return (new mongo.Cluster(params)).save()
+                            .then((cluster) => {
+                                clusterId = cluster._id;
 
-                        return mongo.Cache.update({_id: {$in: caches}}, {$addToSet: {clusters: clusterId}}, {multi: true}).exec();
-                    })
-                    .then(() => mongo.Cache.update({_id: {$nin: caches}}, {$pull: {clusters: clusterId}}, {multi: true}).exec())
-                    .then(() => mongo.Igfs.update({_id: {$in: igfss}}, {$addToSet: {clusters: clusterId}}, {multi: true}).exec())
-                    .then(() => mongo.Igfs.update({_id: {$nin: igfss}}, {$pull: {clusters: clusterId}}, {multi: true}).exec())
-                    .then(() => res.send(clusterId))
-                    .catch((err) => mongo.handleError(res, err));
-            }
+                                return mongo.Cache.update({_id: {$in: caches}}, {$addToSet: {clusters: clusterId}}, {multi: true}).exec();
+                            })
+                            .then(() => mongo.Cache.update({_id: {$nin: caches}}, {$pull: {clusters: clusterId}}, {multi: true}).exec())
+                            .then(() => mongo.Igfs.update({_id: {$in: igfss}}, {$addToSet: {clusters: clusterId}}, {multi: true}).exec())
+                            .then(() => mongo.Igfs.update({_id: {$nin: igfss}}, {$pull: {clusters: clusterId}}, {multi: true}).exec())
+                            .then(() => res.send(clusterId))
+                            .catch((err) => mongo.handleError(res, err));
+                    }
+                });
         });
 
         /**

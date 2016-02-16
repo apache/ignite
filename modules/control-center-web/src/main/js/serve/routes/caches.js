@@ -73,32 +73,32 @@ module.exports.factory = function(_, express, mongo) {
             const domains = params.domains;
             let cacheId = params._id;
 
-            if (params._id) {
-                mongo.Cache.update({_id: cacheId}, params, {upsert: true}).exec()
-                    .then(() => mongo.Cluster.update({_id: {$in: clusters}}, {$addToSet: {caches: cacheId}}, {multi: true}).exec())
-                    .then(() => mongo.Cluster.update({_id: {$nin: clusters}}, {$pull: {caches: cacheId}}, {multi: true}).exec())
-                    .then(() => mongo.DomainModel.update({_id: {$in: domains}}, {$addToSet: {caches: cacheId}}, {multi: true}).exec())
-                    .then(() => mongo.DomainModel.update({_id: {$nin: domains}}, {$pull: {caches: cacheId}}, {multi: true}).exec())
-                    .then(() => res.send(cacheId))
-                    .catch((err) => mongo.handleError(res, err));
-            }
-            else {
-                mongo.Cache.findOne({space: params.space, name: params.name}).exec()
-                    .then((cache) => {
-                        if (cache)
-                            throw new Error('Cache with name: "' + cache.name + '" already exist.');
+            mongo.Cache.findOne({space: params.space, name: params.name}).exec()
+                .then((_cache) => {
+                    if (_cache && cacheId !== _cache._id.toString())
+                        return res.status(500).send('Cache with name: "' + _cache.name + '" already exist.');
 
-                        return (new mongo.Cache(params)).save();
-                    })
-                    .then((cache) => {
-                        cacheId = cache._id;
+                    if (cacheId) {
+                        return mongo.Cache.update({_id: cacheId}, params, {upsert: true}).exec()
+                            .then(() => mongo.Cluster.update({_id: {$in: clusters}}, {$addToSet: {caches: cacheId}}, {multi: true}).exec())
+                            .then(() => mongo.Cluster.update({_id: {$nin: clusters}}, {$pull: {caches: cacheId}}, {multi: true}).exec())
+                            .then(() => mongo.DomainModel.update({_id: {$in: domains}}, {$addToSet: {caches: cacheId}}, {multi: true}).exec())
+                            .then(() => mongo.DomainModel.update({_id: {$nin: domains}}, {$pull: {caches: cacheId}}, {multi: true}).exec())
+                            .then(() => res.send(cacheId))
+                            .catch((err) => mongo.handleError(res, err));
+                    }
+                    else {
+                        return (new mongo.Cache(params)).save()
+                            .then((cache) => {
+                                cacheId = cache._id;
 
-                        return mongo.Cluster.update({_id: {$in: clusters}}, {$addToSet: {caches: cacheId}}, {multi: true}).exec();
-                    })
-                    .then(() => mongo.DomainModel.update({_id: {$in: domains}}, {$addToSet: {caches: cacheId}}, {multi: true}).exec())
-                    .then(() => res.send(cacheId))
-                    .catch((err) => mongo.handleError(res, err));
-            }
+                                return mongo.Cluster.update({_id: {$in: clusters}}, {$addToSet: {caches: cacheId}}, {multi: true}).exec();
+                            })
+                            .then(() => mongo.DomainModel.update({_id: {$in: domains}}, {$addToSet: {caches: cacheId}}, {multi: true}).exec())
+                            .then(() => res.send(cacheId))
+                            .catch((err) => mongo.handleError(res, err));
+                    }
+                });
         });
 
         /**

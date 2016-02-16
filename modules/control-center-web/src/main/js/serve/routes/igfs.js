@@ -67,29 +67,29 @@ module.exports.factory = function(_, express, mongo) {
             const clusters = params.clusters;
             let igfsId = params._id;
 
-            if (params._id) {
-                mongo.Igfs.update({_id: igfsId}, params, {upsert: true}).exec()
-                    .then(() => mongo.Cluster.update({_id: {$in: clusters}}, {$addToSet: {igfss: igfsId}}, {multi: true}).exec())
-                    .then(() => mongo.Cluster.update({_id: {$nin: clusters}}, {$pull: {igfss: igfsId}}, {multi: true}).exec())
-                    .then(() => res.send(igfsId))
-                    .catch((err) => mongo.handleError(res, err));
-            }
-            else {
-                mongo.Igfs.findOne({space: params.space, name: params.name}).exec()
-                    .then((igfs) => {
-                        if (igfs)
-                            throw new Error('IGFS with name: "' + params.name + '" already exist.');
+            mongo.Igfs.findOne({space: params.space, name: params.name}).exec()
+                .then((_igfs) => {
+                    if (_igfs && igfsId !== _igfs._id.toString())
+                        return res.status(500).send('IGFS with name: "' + params.name + '" already exist.');
 
-                        return (new mongo.Igfs(params)).save();
-                    })
-                    .then((igfs) => {
-                        igfsId = igfs._id;
+                    if (params._id) {
+                        return mongo.Igfs.update({_id: igfsId}, params, {upsert: true}).exec()
+                            .then(() => mongo.Cluster.update({_id: {$in: clusters}}, {$addToSet: {igfss: igfsId}}, {multi: true}).exec())
+                            .then(() => mongo.Cluster.update({_id: {$nin: clusters}}, {$pull: {igfss: igfsId}}, {multi: true}).exec())
+                            .then(() => res.send(igfsId))
+                            .catch((err) => mongo.handleError(res, err));
+                    }
+                    else {
+                        return (new mongo.Igfs(params)).save()
+                            .then((igfs) => {
+                                igfsId = igfs._id;
 
-                        return mongo.Cluster.update({_id: {$in: clusters}}, {$addToSet: {igfss: igfsId}}, {multi: true}).exec();
-                    })
-                    .then(() => res.send(igfsId))
-                    .catch((err) => mongo.handleError(res, err));
-            }
+                                return mongo.Cluster.update({_id: {$in: clusters}}, {$addToSet: {igfss: igfsId}}, {multi: true}).exec();
+                            })
+                            .then(() => res.send(igfsId))
+                            .catch((err) => mongo.handleError(res, err));
+                    }
+                })
         });
 
         /**
