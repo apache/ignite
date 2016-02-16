@@ -466,7 +466,8 @@ namespace Apache.Ignite.Linq.Impl
         /** <inheritdoc /> */
         protected override Exception CreateUnhandledItemException<T>(T unhandledItem, string visitMethod)
         {
-            return new NotSupportedException(string.Format("The expression '{0}' (type: {1}) is not supported by this LINQ provider.", unhandledItem, typeof (T)));
+            return new NotSupportedException(string.Format("The expression '{0}' (type: {1}) is not supported.",
+                unhandledItem, typeof (T)));
         }
 
         /// <summary>
