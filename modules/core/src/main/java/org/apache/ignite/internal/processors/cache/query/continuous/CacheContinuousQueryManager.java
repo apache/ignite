@@ -161,7 +161,25 @@ public class CacheContinuousQueryManager extends GridCacheManagerAdapter {
      * @param updCntr Updated counter.
      * @param topVer Topology version.
      */
-    public void skipUpdateEvent(KeyCacheObject key, int partId, long updCntr, AffinityTopologyVersion topVer) {
+    public void skipUpdateEvent(KeyCacheObject key,
+        int partId,
+        long updCntr,
+        AffinityTopologyVersion topVer) {
+        skipUpdateEvent(key, partId, updCntr, true, topVer);
+    }
+
+    /**
+     * @param key Entry key.
+     * @param partId Partition id.
+     * @param updCntr Updated counter.
+     * @param topVer Topology version.
+     * @param primary Primary.
+     */
+    public void skipUpdateEvent(KeyCacheObject key,
+        int partId,
+        long updCntr,
+        boolean primary,
+        AffinityTopologyVersion topVer) {
         if (lsnrCnt.get() > 0) {
             for (CacheContinuousQueryListener lsnr : lsnrs.values()) {
                 CacheContinuousQueryEntry e0 = new CacheContinuousQueryEntry(
@@ -178,7 +196,7 @@ public class CacheContinuousQueryManager extends GridCacheManagerAdapter {
                 CacheContinuousQueryEvent evt = new CacheContinuousQueryEvent<>(
                     cctx.kernalContext().cache().jcache(cctx.name()), cctx, e0);
 
-                lsnr.skipUpdateEvent(evt, topVer);
+                lsnr.skipUpdateEvent(evt, topVer, primary);
             }
         }
     }
@@ -224,8 +242,11 @@ public class CacheContinuousQueryManager extends GridCacheManagerAdapter {
         boolean hasNewVal = newVal != null;
         boolean hasOldVal = oldVal != null;
 
-        if (!hasNewVal && !hasOldVal)
+        if (!hasNewVal && !hasOldVal) {
+            skipUpdateEvent(key, partId, updateCntr, primary, topVer);
+
             return;
+        }
 
         EventType evtType = !hasNewVal ? REMOVED : !hasOldVal ? CREATED : UPDATED;
 
