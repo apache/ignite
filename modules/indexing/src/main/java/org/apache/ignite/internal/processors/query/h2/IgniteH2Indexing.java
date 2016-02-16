@@ -1107,20 +1107,21 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         if (upper.startsWith("SELECT")) {
             qry = qry.substring(6).trim();
 
-            if (qry.startsWith("*"))
+            final int star = qry.indexOf('*');
+
+            if (star == 0)
                 qry = qry.substring(1).trim();
 
-            else {
-                final int star = qry.indexOf(".*");
+            else if (star > 0) {
+                if ('.' == qry.charAt(star - 1)) {
+                    t = qry.substring(0, star - 1);
 
-                if (star <= 0)
-                    throw new IgniteCheckedException("Only queries starting with 'SELECT *' and 'SELECT alias.*' are supported or " +
-                            "use SqlFieldsQuery instead: " + qry0);
-
-                t = qry.substring(0, star);
-
-                qry = qry.substring(qry.indexOf('*') + 1).trim();
-            }
+                    qry = qry.substring(star + 2).trim();
+                } else
+                    throw new IgniteCheckedException("Invalid query (missing alias before asterisk): " + qry0);
+            } else
+                throw new IgniteCheckedException("Only queries starting with 'SELECT *' and 'SELECT alias.*' are supported or " +
+                        "use SqlFieldsQuery instead: " + qry0);
 
             upper = qry.toUpperCase();
         }
