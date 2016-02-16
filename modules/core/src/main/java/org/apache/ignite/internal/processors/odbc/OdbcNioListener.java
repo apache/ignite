@@ -29,6 +29,7 @@ import org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProce
 import org.apache.ignite.internal.util.GridSpinBusyLock;
 import org.apache.ignite.internal.util.nio.GridNioServerListenerAdapter;
 import org.apache.ignite.internal.util.nio.GridNioSession;
+import org.apache.ignite.internal.util.nio.GridNioSessionMetaKey;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.IOException;
@@ -43,14 +44,17 @@ public class OdbcNioListener extends GridNioServerListenerAdapter<byte[]> {
     /** Initial output stream capacity. */
     private static final int INIT_CAP = 1024;
 
+    /** Handler metadata key. */
+    private static final int HANDLER_META_KEY = GridNioSessionMetaKey.nextUniqueKey();
+
     /** Request ID generator. */
     private static final AtomicLong REQ_ID_GEN = new AtomicLong();
 
     /** Busy lock. */
     private final GridSpinBusyLock busyLock;
 
-    /** Request handler. */
-    private final OdbcRequestHandler handler;
+    /** Kernal context. */
+    private final GridKernalContext ctx;
 
     /** Marshaller. */
     private final GridBinaryMarshaller marsh;
@@ -61,16 +65,15 @@ public class OdbcNioListener extends GridNioServerListenerAdapter<byte[]> {
     /**
      * @param ctx Context.
      * @param busyLock Shutdown busy lock.
-     * @param handler Request handler.
      */
-    public OdbcNioListener(final GridKernalContext ctx, final GridSpinBusyLock busyLock,
-                           final OdbcRequestHandler handler) {
+    public OdbcNioListener(final GridKernalContext ctx, final GridSpinBusyLock busyLock) {
         this.busyLock = busyLock;
-        this.handler = handler;
 
         CacheObjectBinaryProcessorImpl cacheObjProc = (CacheObjectBinaryProcessorImpl)ctx.cacheObjects();
 
-        marsh = cacheObjProc.marshaller();
+        this.ctx = ctx;
+
+        this.marsh = cacheObjProc.marshaller();
 
         this.log = ctx.log(getClass());
     }
@@ -107,7 +110,17 @@ public class OdbcNioListener extends GridNioServerListenerAdapter<byte[]> {
                 log.debug("ODBC request received [id=" + reqId + ", addr=" + ses.remoteAddress() + ", req=" + req + ']');
             }
 
-            OdbcResponse rsp = handle(req);
+            OdbcRequestHandler handler = ses.meta(HANDLER_META_KEY);
+
+            if (handler == null) {
+                handler = new OdbcRequestHandler(ctx);
+
+                OdbcRequestHandler old = ses.addMeta(HANDLER_META_KEY, handler);
+
+                assert old == null;
+            }
+
+            OdbcResponse rsp = handle(handler, req);
 
             if (log.isDebugEnabled()) {
                 long dur = (System.nanoTime() - startTime) / 1000;
@@ -119,6 +132,28 @@ public class OdbcNioListener extends GridNioServerListenerAdapter<byte[]> {
             ses.send(outMsg);
         } catch (Exception e) {
             trySendErrorMessage(ses, e.getMessage());
+        }
+    }
+
+    /**
+     * Handle request.
+     *
+     * @param handler Request handler.
+     * @param req Request.
+     * @return Response.
+     */
+    private OdbcResponse handle(OdbcRequestHandler handler, OdbcRequest req) {
+        assert req != null;
+
+        if (!busyLock.enterBusy())
+            return new OdbcResponse(OdbcResponse.STATUS_FAILED,
+                    "Failed to handle ODBC request because node is stopping: " + req);
+
+        try {
+            return handler.handle(req);
+        }
+        finally {
+            busyLock.leaveBusy();
         }
     }
 
@@ -350,26 +385,5 @@ public class OdbcNioListener extends GridNioServerListenerAdapter<byte[]> {
             throw new IOException("Failed to serialize response packet (unknown response type)");
 
         return Arrays.copyOf(writer.out().array(), writer.out().position());
-    }
-
-    /**
-     * Handle request.
-     *
-     * @param req Request.
-     * @return Response.
-     */
-    private OdbcResponse handle(OdbcRequest req) {
-        assert req != null;
-
-        if (!busyLock.enterBusy())
-            return new OdbcResponse(OdbcResponse.STATUS_FAILED,
-                "Failed to handle ODBC request because node is stopping: " + req);
-
-        try {
-            return handler.handle(req);
-        }
-        finally {
-            busyLock.leaveBusy();
-        }
     }
 }
