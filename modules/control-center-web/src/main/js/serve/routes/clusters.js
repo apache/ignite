@@ -43,9 +43,20 @@ module.exports.factory = function(_, express, mongo) {
                     result.spaces = spaces;
                     spacesIds = mongo.spacesIds(spaces);
 
+                    return mongo.DomainModel.find({space: {$in: spacesIds}}).sort('valueType').exec();
+                })
+                .then((domains) => {
+                    result.domains = domains;
+
                     return mongo.Cache.find({space: {$in: spacesIds}}).sort('name').exec();
                 })
                 .then((caches) => {
+                    _.forEach(caches, (cache) => {
+                        cache.domains = _.map(cache.domains, (domainId) => {
+                            return _.find(result.domains, {_id: domainId});
+                        });
+                    });
+
                     result.caches = caches;
 
                     return mongo.Igfs.find({space: {$in: spacesIds}}).sort('name').exec();
