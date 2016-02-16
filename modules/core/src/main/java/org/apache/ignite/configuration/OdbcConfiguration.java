@@ -38,6 +38,9 @@ public class OdbcConfiguration {
     /** Default socket send and receive buffer size. */
     public static final int DFLT_SOCK_BUF_SIZE = 32 * 1024;
 
+    /** Default max number of concurrent cursors per connection. */
+    public static final int DFLT_MAX_CONCURRENT_CURSORS_PER_CONNECTION = 32;
+
     /** TCP port. */
     private int port = DFLT_TCP_PORT;
 
@@ -65,6 +68,9 @@ public class OdbcConfiguration {
     /** Idle timeout. */
     private long idleTimeout = DFLT_IDLE_TIMEOUT;
 
+    /** Max number of concurrent cursors per connection. */
+    private int maxConcurrentCursorsPerConnection = DFLT_MAX_CONCURRENT_CURSORS_PER_CONNECTION;
+
     /**
      * Creates ODBC server configuration with all default values.
      */
@@ -90,6 +96,7 @@ public class OdbcConfiguration {
         selectorCnt = cfg.getSelectorCount();
         sndBufSize = cfg.getSendBufferSize();
         sndQueueLimit = cfg.getSendQueueLimit();
+        maxConcurrentCursorsPerConnection = cfg.getMaxConcurrentCursorsPerConnection();
     }
 
     /**
@@ -288,5 +295,29 @@ public class OdbcConfiguration {
      */
     public void setIdleTimeout(long idleTimeout) {
         this.idleTimeout = idleTimeout;
+    }
+
+    /**
+     * Gets max number of concurrent cursors per connection.
+     * <p>
+     * This setting is used to prevent client from creation of too many concurrently opened
+     * cursors per connection.
+     * <p/>
+     * If not specified, default value is {@link #DFLT_MAX_CONCURRENT_CURSORS_PER_CONNECTION}.
+     *
+     * @return Max number of concurrent cursors per connection.
+     */
+    public int getMaxConcurrentCursorsPerConnection() {
+        return maxConcurrentCursorsPerConnection;
+    }
+
+    /**
+     * Sets max number of concurrent cursors per connection.
+     *
+     * @param maxConcurrentCursorsPerConnection Number of concurrent cursors per connection.
+     * @see #getMaxConcurrentCursorsPerConnection()
+     */
+    public void setMaxConcurrentCursorsPerConnection(int maxConcurrentCursorsPerConnection) {
+        this.maxConcurrentCursorsPerConnection = maxConcurrentCursorsPerConnection;
     }
 }

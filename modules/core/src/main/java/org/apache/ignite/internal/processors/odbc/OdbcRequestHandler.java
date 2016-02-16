@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.odbc;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
+import org.apache.ignite.configuration.OdbcConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.cache.QueryCursorImpl;
 import org.apache.ignite.internal.processors.query.GridQueryFieldMetadata;
@@ -106,6 +107,14 @@ public class OdbcRequestHandler {
      * @return Response.
      */
     private OdbcResponse executeQuery(OdbcQueryExecuteRequest req) {
+        OdbcConfiguration cfg = ctx.config().getOdbcConfiguration();
+
+        assert cfg != null;
+
+        if (qryCurs.size() >= cfg.getMaxConcurrentCursorsPerConnection())
+            return new OdbcResponse(OdbcResponse.STATUS_FAILED, "Max concurrent cursors per connection exceeded: " +
+                    "[num=" + qryCurs.size() + ']');
+
         long qryId = QRY_ID_GEN.getAndIncrement();
 
         try {
