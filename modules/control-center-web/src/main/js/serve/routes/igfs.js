@@ -79,17 +79,16 @@ module.exports.factory = function(_, express, mongo) {
                             .then(() => res.send(igfsId))
                             .catch((err) => mongo.handleError(res, err));
                     }
-                    else {
-                        return (new mongo.Igfs(params)).save()
-                            .then((igfs) => {
-                                igfsId = igfs._id;
 
-                                return mongo.Cluster.update({_id: {$in: clusters}}, {$addToSet: {igfss: igfsId}}, {multi: true}).exec();
-                            })
-                            .then(() => res.send(igfsId))
-                            .catch((err) => mongo.handleError(res, err));
-                    }
-                })
+                    return (new mongo.Igfs(params)).save()
+                        .then((igfs) => {
+                            igfsId = igfs._id;
+
+                            return mongo.Cluster.update({_id: {$in: clusters}}, {$addToSet: {igfss: igfsId}}, {multi: true}).exec();
+                        })
+                        .then(() => res.send(igfsId))
+                        .catch((err) => mongo.handleError(res, err));
+                });
         });
 
         /**

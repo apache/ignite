@@ -87,17 +87,16 @@ module.exports.factory = function(_, express, mongo) {
                             .then(() => res.send(cacheId))
                             .catch((err) => mongo.handleError(res, err));
                     }
-                    else {
-                        return (new mongo.Cache(params)).save()
-                            .then((cache) => {
-                                cacheId = cache._id;
 
-                                return mongo.Cluster.update({_id: {$in: clusters}}, {$addToSet: {caches: cacheId}}, {multi: true}).exec();
-                            })
-                            .then(() => mongo.DomainModel.update({_id: {$in: domains}}, {$addToSet: {caches: cacheId}}, {multi: true}).exec())
-                            .then(() => res.send(cacheId))
-                            .catch((err) => mongo.handleError(res, err));
-                    }
+                    return (new mongo.Cache(params)).save()
+                        .then((cache) => {
+                            cacheId = cache._id;
+
+                            return mongo.Cluster.update({_id: {$in: clusters}}, {$addToSet: {caches: cacheId}}, {multi: true}).exec();
+                        })
+                        .then(() => mongo.DomainModel.update({_id: {$in: domains}}, {$addToSet: {caches: cacheId}}, {multi: true}).exec())
+                        .then(() => res.send(cacheId))
+                        .catch((err) => mongo.handleError(res, err));
                 });
         });
 

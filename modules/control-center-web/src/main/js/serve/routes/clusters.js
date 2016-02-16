@@ -97,19 +97,18 @@ module.exports.factory = function(_, express, mongo) {
                             .then(() => res.send(clusterId))
                             .catch((err) => mongo.handleError(res, err));
                     }
-                    else {
-                        return (new mongo.Cluster(params)).save()
-                            .then((cluster) => {
-                                clusterId = cluster._id;
 
-                                return mongo.Cache.update({_id: {$in: caches}}, {$addToSet: {clusters: clusterId}}, {multi: true}).exec();
-                            })
-                            .then(() => mongo.Cache.update({_id: {$nin: caches}}, {$pull: {clusters: clusterId}}, {multi: true}).exec())
-                            .then(() => mongo.Igfs.update({_id: {$in: igfss}}, {$addToSet: {clusters: clusterId}}, {multi: true}).exec())
-                            .then(() => mongo.Igfs.update({_id: {$nin: igfss}}, {$pull: {clusters: clusterId}}, {multi: true}).exec())
-                            .then(() => res.send(clusterId))
-                            .catch((err) => mongo.handleError(res, err));
-                    }
+                    return (new mongo.Cluster(params)).save()
+                        .then((cluster) => {
+                            clusterId = cluster._id;
+
+                            return mongo.Cache.update({_id: {$in: caches}}, {$addToSet: {clusters: clusterId}}, {multi: true}).exec();
+                        })
+                        .then(() => mongo.Cache.update({_id: {$nin: caches}}, {$pull: {clusters: clusterId}}, {multi: true}).exec())
+                        .then(() => mongo.Igfs.update({_id: {$in: igfss}}, {$addToSet: {clusters: clusterId}}, {multi: true}).exec())
+                        .then(() => mongo.Igfs.update({_id: {$nin: igfss}}, {$pull: {clusters: clusterId}}, {multi: true}).exec())
+                        .then(() => res.send(clusterId))
+                        .catch((err) => mongo.handleError(res, err));
                 });
         });
 

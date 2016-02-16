@@ -90,7 +90,7 @@ module.exports.factory = function(deepPopulatePlugin, passportMongo, settings, p
 
     // Define Domain model schema.
     const DomainModelSchema = new Schema({
-        space: {type: ObjectId, ref: 'Space'},
+        space: {type: ObjectId, ref: 'Space', index: true},
         caches: [{type: ObjectId, ref: 'Cache'}],
         queryMetadata: {type: String, enum: ['Annotations', 'Configuration']},
         kind: {type: String, enum: ['query', 'store', 'both']},
@@ -125,7 +125,7 @@ module.exports.factory = function(deepPopulatePlugin, passportMongo, settings, p
 
     // Define Cache schema.
     const CacheSchema = new Schema({
-        space: {type: ObjectId, ref: 'Space'},
+        space: {type: ObjectId, ref: 'Space', index: true},
         name: String,
         clusters: [{type: ObjectId, ref: 'Cluster'}],
         domains: [{type: ObjectId, ref: 'DomainModel'}],
@@ -258,7 +258,7 @@ module.exports.factory = function(deepPopulatePlugin, passportMongo, settings, p
     result.Cache = mongoose.model('Cache', CacheSchema);
 
     const IgfsSchema = new Schema({
-        space: {type: ObjectId, ref: 'Space'},
+        space: {type: ObjectId, ref: 'Space', index: true},
         name: String,
         clusters: [{type: ObjectId, ref: 'Cluster'}],
         affinnityGroupSize: Number,
@@ -304,7 +304,7 @@ module.exports.factory = function(deepPopulatePlugin, passportMongo, settings, p
 
     // Define Cluster schema.
     const ClusterSchema = new Schema({
-        space: {type: ObjectId, ref: 'Space'},
+        space: {type: ObjectId, ref: 'Space', index: true},
         name: String,
         localHost: String,
         discovery: {
@@ -506,7 +506,7 @@ module.exports.factory = function(deepPopulatePlugin, passportMongo, settings, p
 
     // Define Notebook schema.
     const NotebookSchema = new Schema({
-        space: {type: ObjectId, ref: 'Space'},
+        space: {type: ObjectId, ref: 'Space', index: true},
         name: String,
         expandedParagraphs: [Number],
         paragraphs: [{

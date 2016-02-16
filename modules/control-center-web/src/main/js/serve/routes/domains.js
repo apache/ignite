@@ -93,15 +93,14 @@ module.exports.factory = (_, express, mongo) => {
                                 return _updateCacheStore(cacheStoreChanges);
                             });
                     }
-                    else {
-                        return (new mongo.DomainModel(domain)).save()
-                            .then((savedDomain) => {
-                                savedDomains.push(savedDomain);
 
-                                return mongo.Cache.update({_id: {$in: caches}}, {$addToSet: {domains: savedDomain._id}}, {multi: true}).exec();
-                            })
-                            .then(() => _updateCacheStore(cacheStoreChanges));
-                    }
+                    return (new mongo.DomainModel(domain)).save()
+                        .then((savedDomain) => {
+                            savedDomains.push(savedDomain);
+
+                            return mongo.Cache.update({_id: {$in: caches}}, {$addToSet: {domains: savedDomain._id}}, {multi: true}).exec();
+                        })
+                        .then(() => _updateCacheStore(cacheStoreChanges));
                 });
         };
 
