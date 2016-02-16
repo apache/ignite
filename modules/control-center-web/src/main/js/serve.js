@@ -80,7 +80,7 @@ Promise.all([fireUp('settings'), fireUp('app'), fireUp('agent')])
         server.on('listening', _onListening.bind(null, server.address()));
 
         // Create HTTPS server if needed.
-        if (settings.serverSSLOptions) {
+        if (settings.server.SSLOptions) {
             const httpsServer = https.createServer(settings.server.SSLOptions, app);
 
             const httpsPort = settings.server.SSLOptions.port;

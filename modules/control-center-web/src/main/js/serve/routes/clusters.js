@@ -122,7 +122,7 @@ module.exports.factory = function(_, express, mongo) {
 
             mongo.Cache.update({clusters: {$in: [clusterId]}}, {$pull: {clusters: clusterId}}, {multi: true}).exec()
                 .then(() => mongo.Igfs.update({clusters: {$in: [clusterId]}}, {$pull: {clusters: clusterId}}, {multi: true}).exec())
-                .then(() => mongo.Cluster.remove(params))
+                .then(() => mongo.Cluster.remove(params).exec())
                 .then(() => res.sendStatus(200))
                 .catch((err) => mongo.handleError(res, err));
         });
@@ -141,7 +141,7 @@ module.exports.factory = function(_, express, mongo) {
                     return mongo.Cache.update({space: {$in: spacesIds}}, {clusters: []}, {multi: true}).exec();
                 })
                 .then(() => mongo.Igfs.update({space: {$in: spacesIds}}, {clusters: []}, {multi: true}).exec())
-                .then(() => mongo.Cluster.remove({space: {$in: spacesIds}}))
+                .then(() => mongo.Cluster.remove({space: {$in: spacesIds}}).exec())
                 .then(() => res.sendStatus(200))
                 .catch((err) => mongo.handleError(res, err));
         });

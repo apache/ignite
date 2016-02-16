@@ -100,7 +100,7 @@ module.exports.factory = function(_, express, mongo) {
             const igfsId = params._id;
 
             mongo.Cluster.update({igfss: {$in: [igfsId]}}, {$pull: {igfss: igfsId}}, {multi: true}).exec()
-                .then(mongo.Igfs.remove(params))
+                .then(mongo.Igfs.remove(params).exec())
                 .then(() => res.sendStatus(200))
                 .catch((err) => mongo.handleError(res, err));
         });
@@ -118,7 +118,7 @@ module.exports.factory = function(_, express, mongo) {
 
                     return mongo.Cluster.update({space: {$in: spacesIds}}, {igfss: []}, {multi: true}).exec();
                 })
-                .then(() => mongo.Igfs.remove({space: {$in: spacesIds}}))
+                .then(() => mongo.Igfs.remove({space: {$in: spacesIds}}).exec())
                 .then(() => res.sendStatus(200))
                 .catch((err) => mongo.handleError(res, err));
         });

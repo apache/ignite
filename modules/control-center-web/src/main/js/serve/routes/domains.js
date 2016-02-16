@@ -24,7 +24,7 @@ module.exports = {
     inject: ['require(lodash)', 'require(express)', 'mongo']
 };
 
-module.exports.factory = function(_, express, mongo) {
+module.exports.factory = function (_, express, mongo) {
     return new Promise((factoryResolve) => {
         const router = new express.Router();
 
@@ -181,7 +181,7 @@ module.exports.factory = function(_, express, mongo) {
 
             mongo.DomainModel.findOne(params).exec()
                 .then((domain) => mongo.Cache.update({_id: {$in: domain.caches}}, {$pull: {domain: domainId}}, {multi: true}).exec())
-                .then(() => mongo.DomainModel.remove(params))
+                .then(() => mongo.DomainModel.remove(params).exec())
                 .then(() => res.sendStatus(200))
                 .catch((err) => mongo.handleError(res, err));
         });
@@ -207,17 +207,25 @@ module.exports.factory = function(_, express, mongo) {
          * Remove all generated demo domain models and caches.
          */
         router.post('/remove/demo', (req, res) => {
-            let spacesIds = [];
+            let spaceIds = [];
+            let domainIds = [];
+            let cacheIds = [];
 
             // TODO IGNITE-843 also remove from links: Cache -> DomainModel ; DomainModel -> Cache; Cluster -> Cache.
 
             mongo.spaces(req.currentUserId())
                 .then((spaces) => {
-                    spacesIds = mongo.spacesIds(spaces);
-
-                    return mongo.DomainModel.remove({$and: [{space: {$in: spacesIds}}, {demo: true}]});
+                    spaceIds = mongo.spacesIds(spaces)
                 })
-                .then(() => mongo.Cache.remove({$and: [{space: {$in: spacesIds}}, {demo: true}]}))
+                .then(() => mongo.DomainModel.find({$and: [{space: {$in: spaceIds}}, {demo: true}]}).lean().exec())
+                .then((domains) => domainIds = _.map(domains, (domain) => domain._id))
+                .then(() => mongo.Cache.update({domains: {$in: domainIds}}, {$pull: {domains: {$in: domainIds}}}, {multi: true}).exec())
+                .then(() => mongo.DomainModel.remove({_id: {$in: domainIds}}).exec())
+                .then(() => mongo.Cache.find({$and: [{space: {$in: spaceIds}}, {demo: true}]}).lean().exec())
+                .then((caches) => cacheIds = _.map(caches, (cache) => cache._id))
+                .then(() => mongo.Cluster.update({caches: {$in: cacheIds}}, {$pull: {caches: {$in: cacheIds}}}, {multi: true}).exec())
+                .then(() => mongo.DomainModel.update({$and: [{caches: {$in: cacheIds}}, {demo: false}]}, {$pull: {$in: {caches: cacheIds}}}, {multi: true}).exec())
+                .then(() => mongo.Cache.remove({$and: [{space: {$in: spaceIds}}, {demo: true}]}).exec())
                 .then(() => res.sendStatus(200))
                 .catch((err) => mongo.handleError(res, err));
         });

@@ -90,7 +90,7 @@ module.exports.factory = function(express, mongo) {
          * @param res Response.
          */
         router.post('/remove', (req, res) => {
-            mongo.Notebook.remove(req.body)
+            mongo.Notebook.remove(req.body).exec()
                 .then(() => res.sendStatus(200))
                 .catch((err) => mongo.handleError(res, err));
         });

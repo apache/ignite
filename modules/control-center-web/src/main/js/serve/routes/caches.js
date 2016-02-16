@@ -110,7 +110,7 @@ module.exports.factory = function(_, express, mongo) {
 
             mongo.Cluster.update({caches: {$in: [cacheId]}}, {$pull: {caches: cacheId}}, {multi: true}).exec()
                 .then(() => mongo.DomainModel.update({caches: {$in: [cacheId]}}, {$pull: {caches: cacheId}}, {multi: true}).exec())
-                .then(() => mongo.Cache.remove(params))
+                .then(() => mongo.Cache.remove(params).exec())
                 .then(() => res.sendStatus(200))
                 .catch((err) => mongo.handleError(res, err));
         });
@@ -128,7 +128,7 @@ module.exports.factory = function(_, express, mongo) {
                     return mongo.Cluster.update({space: {$in: spacesIds}}, {caches: []}, {multi: true}).exec();
                 })
                 .then(() => mongo.DomainModel.update({space: {$in: spacesIds}}, {caches: []}, {multi: true}).exec())
-                .then(() => mongo.Cache.remove({space: {$in: spacesIds}}))
+                .then(() => mongo.Cache.remove({space: {$in: spacesIds}}).exec())
                 .catch((err) => mongo.handleError(res, err));
         });
 
