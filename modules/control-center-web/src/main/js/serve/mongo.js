@@ -544,6 +544,16 @@ module.exports.factory = function(deepPopulatePlugin, passportMongo, settings, p
         return result.Space.find({owner: userId}).exec();
     };
 
+    /**
+     * Extract IDs from user spaces.
+     *
+     * @param spaces Array of user spaces.
+     * @returns {Array} of spaces ID.
+     */
+    result.spacesIds = function(spaces) {
+        return spaces.map((value) => value._id);
+    };
+
     // Registering the routes of all plugin modules
     for (const name in pluginMongo) {
         if (pluginMongo.hasOwnProperty(name))

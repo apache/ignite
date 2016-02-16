@@ -42,7 +42,7 @@ module.exports.factory = function(_, express, mongo) {
             mongo.spaces(req.currentUserId())
                 .then((spaces) => {
                     result.spaces = spaces;
-                    spacesIds = spaces.map((value) => value._id);
+                    spacesIds = mongo.spacesIds(spaces);
 
                     return mongo.Cluster.find({space: {$in: result.spacesIds}}).sort('name').exec();
                 })
@@ -123,7 +123,7 @@ module.exports.factory = function(_, express, mongo) {
 
             mongo.spaces(req.currentUserId())
                 .then((spaces) => {
-                    spacesIds = spaces.map((value) => value._id);
+                    spacesIds = mongo.spacesIds(spaces);
 
                     return mongo.Cluster.update({space: {$in: spacesIds}}, {caches: []}, {multi: true});
                 })

@@ -42,7 +42,7 @@ module.exports.factory = function(_, express, mongo) {
             mongo.spaces(req.currentUserId())
                 .then((spaces) => {
                     result.spaces = spaces;
-                    spacesIds = spaces.map((value) => value._id);
+                    spacesIds = mongo.spacesIds(spaces);
 
                     return mongo.Cluster.find({space: {$in: spacesIds}}, '_id name').sort('name').exec();
                 })
@@ -114,7 +114,7 @@ module.exports.factory = function(_, express, mongo) {
             // Get owned space and all accessed space.
             mongo.spaces(req.currentUserId())
                 .then((spaces) => {
-                    spacesIds = spaces.map((value) => value._id);
+                    spacesIds = mongo.spacesIds(spaces);
 
                     return mongo.Igfs.remove({space: {$in: spacesIds}});
                 })

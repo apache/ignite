@@ -41,7 +41,7 @@ module.exports.factory = function(_, express, async, mongo) {
             mongo.spaces(req.currentUserId())
                 .then((spaces) => {
                     result.spaces = spaces;
-                    spacesIds = spaces.map((value) => value._id);
+                    spacesIds = mongo.spacesIds(spaces);
 
                     return mongo.Cluster.find({space: {$in: spacesIds}}, '_id name').sort('name').exec();
                 })
@@ -198,7 +198,7 @@ module.exports.factory = function(_, express, async, mongo) {
 
             mongo.spaces(req.currentUserId())
                 .then((spaces) => {
-                    spacesIds = spaces.map((value) => value._id);
+                    spacesIds = mongo.spacesIds(spaces);
 
                     return mongo.Cache.update({space: {$in: spacesIds}}, {domains: []}, {multi: true}).exec();
                 })
@@ -217,7 +217,7 @@ module.exports.factory = function(_, express, async, mongo) {
 
             mongo.spaces(req.currentUserId())
                 .then((spaces) => {
-                    spacesIds = spaces.map((value) => value._id);
+                    spacesIds = mongo.spacesIds(spaces);
 
                     return mongo.DomainModel.remove({$and: [{space: {$in: spacesIds}}, {demo: true}]});
                 })
