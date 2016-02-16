@@ -56,6 +56,7 @@ import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.continuous.GridContinuousHandler;
 import org.apache.ignite.internal.util.typedef.CI2;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.plugin.security.SecurityPermission;
@@ -116,17 +117,19 @@ public class CacheContinuousQueryManager extends GridCacheManagerAdapter {
         // Append cache name to the topic.
         topicPrefix = "CONTINUOUS_QUERY" + (cctx.name() == null ? "" : "_" + cctx.name());
 
-        cctx.io().addHandler(cctx.cacheId(), CacheContinuousQueryBatchAck.class,
-            new CI2<UUID, CacheContinuousQueryBatchAck>() {
-                @Override public void apply(UUID uuid, CacheContinuousQueryBatchAck msg) {
-                    CacheContinuousQueryListener lsnr = lsnrs.get(msg.routineId());
+        if (cctx.affinityNode()) {
+            cctx.io().addHandler(cctx.cacheId(), CacheContinuousQueryBatchAck.class,
+                new CI2<UUID, CacheContinuousQueryBatchAck>() {
+                    @Override public void apply(UUID uuid, CacheContinuousQueryBatchAck msg) {
+                        CacheContinuousQueryListener lsnr = lsnrs.get(msg.routineId());
 
-                    if (lsnr != null)
-                        lsnr.cleanupBackupQueue(msg.updateCntrs());
-                }
-            });
+                        if (lsnr != null)
+                            lsnr.cleanupBackupQueue(msg.updateCntrs());
+                    }
+                });
 
-        cctx.time().schedule(new BackupCleaner(lsnrs, cctx.kernalContext()), BACKUP_ACK_FREQ, BACKUP_ACK_FREQ);
+            cctx.time().schedule(new BackupCleaner(lsnrs, cctx.kernalContext()), BACKUP_ACK_FREQ, BACKUP_ACK_FREQ);
+        }
     }
 
     /** {@inheritDoc} */
