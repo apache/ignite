@@ -541,7 +541,7 @@ module.exports.factory = function(deepPopulatePlugin, passportMongo, settings, p
      * @returns {Promise}
      */
     result.spaces = function(userId) {
-        return result.Space.find({owner: userId}).exec();
+        return result.Space.find({owner: userId}).lean().exec();
     };
 
     /**

@@ -44,17 +44,17 @@ module.exports.factory = function(_, express, mongo) {
                     result.spaces = spaces;
                     spacesIds = mongo.spacesIds(spaces);
 
-                    return mongo.Cluster.find({space: {$in: spacesIds}}).sort('name').exec();
+                    return mongo.Cluster.find({space: {$in: spacesIds}}).sort('name').lean().exec();
                 })
                 .then((clusters) => {
                     result.clusters = clusters;
 
-                    return mongo.DomainModel.find({space: {$in: spacesIds}}).sort('name').exec();
+                    return mongo.DomainModel.find({space: {$in: spacesIds}}).sort('name').lean().exec();
                 })
                 .then((domains) => {
                     result.domains = domains;
 
-                    return mongo.Cache.find({space: {$in: spacesIds}}).sort('name').exec();
+                    return mongo.Cache.find({space: {$in: spacesIds}}).sort('name').lean().exec();
                 })
                 .then((caches) => {
                     result.caches = caches;

@@ -32,7 +32,7 @@ module.exports.factory = function(_, express, nodemailer, settings, mongo) {
          * Get list of user accounts.
          */
         router.post('/list', (req, res) => {
-            mongo.Account.find({}).sort('username').exec()
+            mongo.Account.find({}).sort('username').lean().exec()
                 .then((users) => res.json(users))
                 .catch((err) => mongo.handleError(res, err));
         });

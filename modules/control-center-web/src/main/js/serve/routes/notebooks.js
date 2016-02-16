@@ -36,7 +36,7 @@ module.exports.factory = function(express, mongo) {
          */
         router.post('/list', (req, res) => {
             mongo.spaces(req.currentUserId())
-                .then((spaces) => mongo.Notebook.find({space: {$in: spaces.map((value) => value._id)}}).select('_id name').sort('name').exec())
+                .then((spaces) => mongo.Notebook.find({space: {$in: spaces.map((value) => value._id)}}).select('_id name').sort('name').lean().exec())
                 .then((notebooks) => res.json(notebooks))
                 .catch((err) => mongo.handleError(res, err));
 
