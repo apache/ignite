@@ -23,6 +23,7 @@
 // ReSharper disable StringIndexOfIsCultureSpecific.2
 // ReSharper disable StringCompareToIsCultureSpecific
 // ReSharper disable StringCompareIsCultureSpecific.1
+// ReSharper disable UnusedMemberInSuper.Global
 namespace Apache.Ignite.Core.Tests.Cache.Query
 {
     using System;
@@ -82,6 +83,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
                     typeof (Organization), typeof (Address), typeof (Role), typeof (RoleKey), typeof(Numerics))
             });
 
+            // Populate caches
             var cache = GetPersonCache();
             var personCache = GetSecondPersonCache();
 
