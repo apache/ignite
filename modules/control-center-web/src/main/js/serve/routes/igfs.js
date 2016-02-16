@@ -85,7 +85,7 @@ module.exports.factory = function(_, express, mongo) {
                     .then((igfs) => {
                         igfsId = igfs._id;
 
-                        return mongo.Cluster.update({_id: {$in: clusters}}, {$addToSet: {igfss: igfsId}}, {multi: true});
+                        return mongo.Cluster.update({_id: {$in: clusters}}, {$addToSet: {igfss: igfsId}}, {multi: true}).exec();
                     })
                     .then(() => res.send(igfsId))
                     .catch((err) => mongo.handleError(res, err));
@@ -116,9 +116,9 @@ module.exports.factory = function(_, express, mongo) {
                 .then((spaces) => {
                     spacesIds = mongo.spacesIds(spaces);
 
-                    return mongo.Igfs.remove({space: {$in: spacesIds}});
+                    return mongo.Cluster.update({space: {$in: spacesIds}}, {igfss: []}, {multi: true}).exec();
                 })
-                .then(() => mongo.Cluster.update({space: {$in: spacesIds}}, {igfss: []}, {multi: true}))
+                .then(() => mongo.Igfs.remove({space: {$in: spacesIds}}))
                 .then(() => res.sendStatus(200))
                 .catch((err) => mongo.handleError(res, err));
         });

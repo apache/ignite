@@ -125,9 +125,9 @@ module.exports.factory = function(_, express, mongo) {
                 .then((spaces) => {
                     spacesIds = mongo.spacesIds(spaces);
 
-                    return mongo.Cluster.update({space: {$in: spacesIds}}, {caches: []}, {multi: true});
+                    return mongo.Cluster.update({space: {$in: spacesIds}}, {caches: []}, {multi: true}).exec();
                 })
-                .then(() => mongo.DomainModel.update({space: {$in: spacesIds}}, {caches: []}, {multi: true}))
+                .then(() => mongo.DomainModel.update({space: {$in: spacesIds}}, {caches: []}, {multi: true}).exec())
                 .then(() => mongo.Cache.remove({space: {$in: spacesIds}}))
                 .catch((err) => mongo.handleError(res, err));
         });
