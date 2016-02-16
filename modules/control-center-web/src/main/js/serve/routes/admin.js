@@ -61,7 +61,7 @@ module.exports.factory = function(_, express, nodemailer, settings, mail, mongo)
                             console.error(`Failed to cleanup spaces [user=${user.username}, err=${err}`);
                         });
 
-                    return Promise.resolve(user)
+                    return Promise.resolve(user);
                 })
                 .then((user) => mail.send(user, 'Your account was deleted',
                     `Hello ${user.username}!<br><br>` +
