@@ -115,17 +115,19 @@ public class CacheContinuousQueryManager extends GridCacheManagerAdapter {
         // Append cache name to the topic.
         topicPrefix = "CONTINUOUS_QUERY" + (cctx.name() == null ? "" : "_" + cctx.name());
 
-        cctx.io().addHandler(cctx.cacheId(), CacheContinuousQueryBatchAck.class,
-            new CI2<UUID, CacheContinuousQueryBatchAck>() {
-                @Override public void apply(UUID uuid, CacheContinuousQueryBatchAck msg) {
-                    CacheContinuousQueryListener lsnr = lsnrs.get(msg.routineId());
+        if (cctx.affinityNode()) {
+            cctx.io().addHandler(cctx.cacheId(), CacheContinuousQueryBatchAck.class,
+                new CI2<UUID, CacheContinuousQueryBatchAck>() {
+                    @Override public void apply(UUID uuid, CacheContinuousQueryBatchAck msg) {
+                        CacheContinuousQueryListener lsnr = lsnrs.get(msg.routineId());
 
-                    if (lsnr != null)
-                        lsnr.cleanupBackupQueue(msg.updateCntrs());
-                }
-            });
+                        if (lsnr != null)
+                            lsnr.cleanupBackupQueue(msg.updateCntrs());
+                    }
+                });
 
-        cctx.time().schedule(new BackupCleaner(lsnrs, cctx.kernalContext()), BACKUP_ACK_FREQ, BACKUP_ACK_FREQ);
+            cctx.time().schedule(new BackupCleaner(lsnrs, cctx.kernalContext()), BACKUP_ACK_FREQ, BACKUP_ACK_FREQ);
+        }
     }
 
     /** {@inheritDoc} */
