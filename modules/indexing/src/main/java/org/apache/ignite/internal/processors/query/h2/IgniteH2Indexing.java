@@ -1101,25 +1101,28 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         String from = " ";
 
         qry = qry.trim();
+
         String upper = qry.toUpperCase();
 
         if (upper.startsWith("SELECT")) {
             qry = qry.substring(6).trim();
 
-            if (qry.startsWith("*")) {
+            if (qry.startsWith("*"))
                 qry = qry.substring(1).trim();
-                upper = qry.toUpperCase();
-            } else {
-                final String alias = getAlias(qry);
-                if (alias != null) {
-                    t = alias;
-                    final int star = qry.indexOf('*');
-                    qry = qry.substring(star + 1).trim();
-                    upper = qry.toUpperCase();
-                } else
+
+            else {
+                final int star = qry.indexOf(".*");
+
+                if (star <= 0)
                     throw new IgniteCheckedException("Only queries starting with 'SELECT *' and 'SELECT alias.*' are supported or " +
                             "use SqlFieldsQuery instead: " + qry0);
+
+                t = qry.substring(0, star);
+
+                qry = qry.substring(qry.indexOf('*') + 1).trim();
             }
+
+            upper = qry.toUpperCase();
         }
 
         if (!upper.startsWith("FROM"))
@@ -1130,25 +1133,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         qry = "SELECT " + t + "." + KEY_FIELD_NAME + ", " + t + "." + VAL_FIELD_NAME + from + qry;
 
         return qry;
-    }
-
-    /**
-     * @param qry to get alias from.
-     * @return alias from SELECT block
-     */
-    @Nullable private String getAlias(final String qry) {
-        assert qry != null;
-
-        final String[] args = qry.split(" ");
-
-        assert args.length > 0;
-
-        if (args[0].endsWith(".*")) {
-            final int dot = args[0].indexOf('.');
-            return args[0].substring(0, dot);
-        }
-
-        return null;
     }
 
     /**
