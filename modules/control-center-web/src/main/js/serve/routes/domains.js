@@ -176,7 +176,12 @@ module.exports.factory = function(_, express, mongo) {
          * Remove domain model by ._id.
          */
         router.post('/remove', (req, res) => {
-            mongo.DomainModel.remove(req.body)
+            const params = req.body;
+            const domainId = params._id;
+
+            mongo.DomainModel.findOne(params).exec()
+                .then((domain) => mongo.Cache.update({_id: {$in: domain.caches}}, {$pull: {domain: domainId}}, {multi: true}).exec())
+                .then(() => mongo.DomainModel.remove(params))
                 .then(() => res.sendStatus(200))
                 .catch((err) => mongo.handleError(res, err));
         });

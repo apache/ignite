@@ -138,10 +138,10 @@ module.exports.factory = function(_, express, mongo) {
                 .then((spaces) => {
                     spacesIds = mongo.spacesIds(spaces);
 
-                    return mongo.Cluster.remove({space: {$in: spacesIds}});
+                    return mongo.Cache.update({space: {$in: spacesIds}}, {clusters: []}, {multi: true}).exec();
                 })
-                .then(() => mongo.Cache.update({space: {$in: spacesIds}}, {clusters: []}, {multi: true}).exec())
                 .then(() => mongo.Igfs.update({space: {$in: spacesIds}}, {clusters: []}, {multi: true}).exec())
+                .then(() => mongo.Cluster.remove({space: {$in: spacesIds}}))
                 .then(() => res.sendStatus(200))
                 .catch((err) => mongo.handleError(res, err));
         });

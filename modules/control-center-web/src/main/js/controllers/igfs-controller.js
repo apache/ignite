@@ -167,7 +167,12 @@ consoleModule.controller('igfsController', [
                 .success(function (data) {
                     $scope.spaces = data.spaces;
                     $scope.igfss = data.igfss;
-                    $scope.clusters = data.clusters;
+                    $scope.clusters = _.map(data.clusters, function (cluster) {
+                        return {
+                            value: cluster._id,
+                            label: cluster.name
+                        };
+                    });
 
                     // Load page descriptor.
                     $http.get('/models/igfs.json')
