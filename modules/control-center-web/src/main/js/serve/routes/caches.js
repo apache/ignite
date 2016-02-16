@@ -44,7 +44,7 @@ module.exports.factory = function(_, express, mongo) {
                     result.spaces = spaces;
                     spacesIds = mongo.spacesIds(spaces);
 
-                    return mongo.Cluster.find({space: {$in: result.spacesIds}}).sort('name').exec();
+                    return mongo.Cluster.find({space: {$in: spacesIds}}).sort('name').exec();
                 })
                 .then((clusters) => {
                     result.clusters = clusters;
