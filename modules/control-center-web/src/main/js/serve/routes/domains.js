@@ -222,7 +222,7 @@ module.exports.factory = (_, express, mongo) => {
                 .then(() => mongo.Cache.find({$and: [{space: {$in: spaceIds}}, {demo: true}]}).lean().exec())
                 .then((caches) => cacheIds = _.map(caches, (cache) => cache._id))
                 .then(() => mongo.Cluster.update({caches: {$in: cacheIds}}, {$pull: {caches: {$in: cacheIds}}}, {multi: true}).exec())
-                .then(() => mongo.DomainModel.update({$and: [{caches: {$in: cacheIds}}, {demo: false}]}, {$pull: {$in: {caches: cacheIds}}}, {multi: true}).exec())
+                .then(() => mongo.DomainModel.update({caches: {$in: cacheIds}}, {$pull: {caches: {$in: cacheIds}}}, {multi: true}).exec())
                 .then(() => mongo.Cache.remove({$and: [{space: {$in: spaceIds}}, {demo: true}]}).exec())
                 .then(() => res.sendStatus(200))
                 .catch((err) => mongo.handleError(res, err));
