@@ -525,14 +525,42 @@ public class CacheFullApiNewSelfTest extends CacheAbstractNewSelfTest {
     /**
      * @throws Exception In case of error.
      */
-    public void testGetAll() throws Exception {
+    public void testGetAll1() throws Exception {
+        checkGetAll(DataMode.PLANE_OBJECT);
+    }
+
+    /**
+     * @throws Exception In case of error.
+     */
+    public void testGetAll2() throws Exception {
+        checkGetAll(DataMode.SERIALIZABLE);
+    }
+
+    /**
+     * @throws Exception In case of error.
+     */
+    public void testGetAll3() throws Exception {
+        checkGetAll(DataMode.EXTERNALIZABLE);
+    }
+
+    /**
+     * @param mode Data mode.
+     */
+    private void checkGetAll(DataMode mode) {
+        final TestObject key1 = key(1, mode);
+        final TestObject key2 = key(2, mode);
+        final TestObject key9999 = key(9999, mode);
+
+        final TestObject val1 = value(1, mode);
+        final TestObject val2 = value(2, mode);
+
         Transaction tx = txShouldBeUsed() ? transactions().txStart() : null;
 
-        final IgniteCache<String, Integer> cache = jcache();
+        final IgniteCache<TestObject, TestObject> cache = jcache();
 
         try {
-            cache.put("key1", 1);
-            cache.put("key2", 2);
+            cache.put(key1, val1);
+            cache.put(key2, val2);
 
             if (tx != null)
                 tx.commit();
@@ -550,52 +578,52 @@ public class CacheFullApiNewSelfTest extends CacheAbstractNewSelfTest {
             }
         }, NullPointerException.class, null);
 
-        assert cache.getAll(Collections.<String>emptySet()).isEmpty();
+        assert cache.getAll(Collections.<TestObject>emptySet()).isEmpty();
 
-        Map<String, Integer> map1 = cache.getAll(ImmutableSet.of("key1", "key2", "key9999"));
+        Map<TestObject, TestObject> map1 = cache.getAll(ImmutableSet.of(key1, key2, key9999));
 
         info("Retrieved map1: " + map1);
 
         assert 2 == map1.size() : "Invalid map: " + map1;
 
-        assertEquals(1, (int)map1.get("key1"));
-        assertEquals(2, (int)map1.get("key2"));
-        assertNull(map1.get("key9999"));
+        assertEquals(val1, map1.get(key1));
+        assertEquals(val2, map1.get(key2));
+        assertNull(map1.get(key9999));
 
-        Map<String, Integer> map2 = cache.getAll(ImmutableSet.of("key1", "key2", "key9999"));
+        Map<TestObject, TestObject> map2 = cache.getAll(ImmutableSet.of(key1, key2, key9999));
 
         info("Retrieved map2: " + map2);
 
         assert 2 == map2.size() : "Invalid map: " + map2;
 
-        assertEquals(1, (int)map2.get("key1"));
-        assertEquals(2, (int)map2.get("key2"));
-        assertNull(map2.get("key9999"));
+        assertEquals(val1, map2.get(key1));
+        assertEquals(val2, map2.get(key2));
+        assertNull(map2.get(key9999));
 
         // Now do the same checks but within transaction.
         if (txShouldBeUsed()) {
             try (Transaction tx0 = transactions().txStart()) {
-                assert cache.getAll(Collections.<String>emptySet()).isEmpty();
+                assert cache.getAll(Collections.<TestObject>emptySet()).isEmpty();
 
-                map1 = cache.getAll(ImmutableSet.of("key1", "key2", "key9999"));
+                map1 = cache.getAll(ImmutableSet.of(key1, key2, key9999));
 
                 info("Retrieved map1: " + map1);
 
                 assert 2 == map1.size() : "Invalid map: " + map1;
 
-                assertEquals(1, (int)map1.get("key1"));
-                assertEquals(2, (int)map1.get("key2"));
-                assertNull(map1.get("key9999"));
+                assertEquals(val1, map2.get(key1));
+                assertEquals(val2, map2.get(key2));
+                assertNull(map2.get(key9999));
 
-                map2 = cache.getAll(ImmutableSet.of("key1", "key2", "key9999"));
+                map2 = cache.getAll(ImmutableSet.of(key1, key2, key9999));
 
                 info("Retrieved map2: " + map2);
 
                 assert 2 == map2.size() : "Invalid map: " + map2;
 
-                assertEquals(1, (int)map2.get("key1"));
-                assertEquals(2, (int)map2.get("key2"));
-                assertNull(map2.get("key9999"));
+                assertEquals(val1, map2.get(key1));
+                assertEquals(val2, map2.get(key2));
+                assertNull(map2.get(key9999));
 
                 tx0.commit();
             }
