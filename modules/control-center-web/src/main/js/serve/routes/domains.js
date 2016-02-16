@@ -180,7 +180,7 @@ module.exports.factory = (_, express, mongo) => {
             const domainId = params._id;
 
             mongo.DomainModel.findOne(params).exec()
-                .then((domain) => mongo.Cache.update({_id: {$in: domain.caches}}, {$pull: {domain: domainId}}, {multi: true}).exec())
+                .then((domain) => mongo.Cache.update({_id: {$in: domain.caches}}, {$pull: {domains: domainId}}, {multi: true}).exec())
                 .then(() => mongo.DomainModel.remove(params).exec())
                 .then(() => res.sendStatus(200))
                 .catch((err) => mongo.handleError(res, err));
