@@ -37,6 +37,7 @@ module.exports.factory = function(_, express, mongo) {
         router.post('/list', (req, res) => {
             const result = {};
             let spacesIds = [];
+            let domains = {};
 
             mongo.spaces(req.currentUserId())
                 .then((spaces) => {
@@ -45,16 +46,18 @@ module.exports.factory = function(_, express, mongo) {
 
                     return mongo.DomainModel.find({space: {$in: spacesIds}}).sort('valueType').lean().exec();
                 })
-                .then((domains) => {
-                    result.domains = domains;
+                .then((_domains) => {
+                    domains = _domains.reduce((map, obj) => {
+                        map[obj._id] = obj;
+
+                        return map;
+                    }, {});
 
                     return mongo.Cache.find({space: {$in: spacesIds}}).sort('name').lean().exec();
                 })
                 .then((caches) => {
                     _.forEach(caches, (cache) => {
-                        cache.domains = _.map(cache.domains, (domainId) => {
-                            return _.find(result.domains, {_id: domainId});
-                        });
+                        cache.domains = _.map(cache.domains, (domainId) => domains[domainId]);
                     });
 
                     result.caches = caches;
