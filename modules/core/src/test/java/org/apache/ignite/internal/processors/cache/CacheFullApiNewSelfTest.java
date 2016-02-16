@@ -1143,6 +1143,9 @@ public class CacheFullApiNewSelfTest extends CacheAbstractNewSelfTest {
     private void checkInvokeAll(TransactionConcurrency concurrency, TransactionIsolation isolation,
         DataMode mode)
         throws Exception {
+        if (mode != DataMode.EXTERNALIZABLE && gridCount() > 1)
+            fail("https://issues.apache.org/jira/browse/IGNITE-2664");
+
         final TestObject key1 = key(1, mode);
         final TestObject key2 = key(2, mode);
         final TestObject key3 = key(3, mode);
