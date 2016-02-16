@@ -21,10 +21,10 @@
 
 module.exports = {
     implements: 'public-routes',
-    inject: ['require(express)', 'require(passport)', 'require(nodemailer)', 'settings', 'mongo']
+    inject: ['require(express)', 'require(passport)', 'require(nodemailer)', 'settings', 'mail', 'mongo']
 };
 
-module.exports.factory = function(express, passport, nodemailer, settings, mongo) {
+module.exports.factory = function(express, passport, nodemailer, settings, mail, mongo) {
     return new Promise((factoryResolve) => {
         const router = new express.Router();
 
@@ -38,42 +38,6 @@ module.exports.factory = function(express, passport, nodemailer, settings, mongo
                 res += possible.charAt(Math.floor(Math.random() * possibleLen));
 
             return res;
-        };
-
-        /**
-         * Send mail to user.
-         * @private
-         * @return {Promise}
-         */
-        const _sendMail = (user, subject, text, sendErrMsg) => {
-            const transporter = {
-                service: settings.smtp.service,
-                auth: {
-                    user: settings.smtp.email,
-                    pass: settings.smtp.password
-                }
-            };
-
-            if (transporter.service === '' || transporter.auth.user === '' || transporter.auth.pass === '')
-                return Promise.reject('Can\'t send e-mail because not configured SMTP server. Please ask webmaster to setup SMTP server!');
-
-            const mailer = nodemailer.createTransport(transporter);
-
-            const mail = {
-                from: settings.smtp.address(settings.smtp.username, settings.smtp.email),
-                to: settings.smtp.address(user.username, user.email),
-                subject,
-                text: text + (settings.smtp.username ? `\n\n--------------\n${settings.smtp.username}\n` : '')
-            };
-
-            return new Promise((resolve, reject) => {
-                mailer.sendMail(mail, (err) => {
-                    if (err)
-                        return reject(sendErrMsg || err.message);
-
-                    resolve(user);
-                });
-            });
         };
 
         // GET user.
@@ -139,13 +103,12 @@ module.exports.factory = function(express, passport, nodemailer, settings, mongo
                     account.resetPasswordToken = _randomString();
 
                     account.save()
-                        .then(() =>
-                            _sendMail(account, `Thanks for signing up for ${settings.smtp.username}.`,
-                                `Hello ${account.username}!\n\n` +
-                                `You are receiving this e-mail because you (or someone else) signing up on the ${settings.smtp.username}.\n\n` +
-                                'If you did not request this, please ignore this email.\n' +
-                                'You may reset password by clicking on the following link, or paste this into your browser:\n\n' +
-                                'http://' + req.headers.host + '/password/reset?token=' + account.resetPasswordToken));
+                        .then(() => mail.send(account, `Thanks for signing up for ${settings.smtp.username}.`,
+                            `Hello ${account.username}!<br><br>` +
+                            `You are receiving this e-mail because you have signed up to use <a href="http://${req.headers.host}">${settings.smtp.username}</a>.<br><br>` +
+                            'If you have not done the sign up and do not know what this email is about, please ignore it.<br>' +
+                            'You may reset the password by clicking on the following link, or paste this into your browser:<br><br>' +
+                            `http://${req.headers.host}/password/reset?token=${account.resetPasswordToken}`));
                 })
                 .catch((err) => {
                     res.status(401).send(err.message);
@@ -194,11 +157,11 @@ module.exports.factory = function(express, passport, nodemailer, settings, mongo
 
                     return user.save();
                 })
-                .then((user) =>
-                    _sendMail(user, 'Password Reset',
-                        'You are receiving this because you (or someone else) have requested the reset of the password for your account.\n\n' +
-                        'Please click on the following link, or paste this into your browser to complete the process:\n\n' +
-                        'http://' + req.headers.host + '/password/reset?token=' + user.resetPasswordToken + '\n\n' +
+                .then((user) => mail.send(user, 'Password Reset',
+                        `Hello ${user.username}!<br><br>` +
+                        'You are receiving this because you (or someone else) have requested the reset of the password for your account.<br><br>' +
+                        'Please click on the following link, or paste this into your browser to complete the process:<br><br>' +
+                        'http://' + req.headers.host + '/password/reset?token=' + user.resetPasswordToken + '<br><br>' +
                         'If you did not request this, please ignore this email and your password will remain unchanged.',
                         'Failed to send e-mail with reset link!')
                 )
@@ -230,9 +193,9 @@ module.exports.factory = function(express, passport, nodemailer, settings, mongo
                     });
                 })
                 .then((user) => {
-                    return _sendMail(user, 'Your password has been changed',
-                        'Hello,\n\n' +
-                        'This is a confirmation that the password for your account ' + user.email + ' has just been changed.\n\n' +
+                    return mail.send(user, 'Your password has been changed',
+                        `Hello ${user.username}!<br><br>` +
+                        'This is a confirmation that the password for your account ' + user.email + ' has just been changed.<br><br>' +
                         'Now you can login: http://' + req.headers.host,
                         'Password was changed, but failed to send confirmation e-mail!');
                 })

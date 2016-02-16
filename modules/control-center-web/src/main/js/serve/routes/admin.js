@@ -21,10 +21,10 @@
 
 module.exports = {
     implements: 'admin-routes',
-    inject: ['require(lodash)', 'require(express)', 'require(nodemailer)', 'settings', 'mongo']
+    inject: ['require(lodash)', 'require(express)', 'require(nodemailer)', 'settings', 'mail', 'mongo']
 };
 
-module.exports.factory = function(_, express, nodemailer, settings, mongo) {
+module.exports.factory = function(_, express, nodemailer, settings, mail, mongo) {
     return new Promise((factoryResolve) => {
         const router = new express.Router();
 
@@ -40,65 +40,34 @@ module.exports.factory = function(_, express, nodemailer, settings, mongo) {
         // Remove user.
         router.post('/remove', (req, res) => {
             const userId = req.body.userId;
-            let user = {};
 
             mongo.Account.findByIdAndRemove(userId).exec()
-                .then((removedUser) => {
-                    user = removedUser;
+                .then((user) => {
+                    res.sendStatus(200);
 
-                    return mongo.spaces(userId);
+                    mongo.spaces(userId)
+                        .then((spaces) => {
+                            const spacesIds = mongo.spacesIds(spaces);
+
+                            return Promise.all([
+                                mongo.Cluster.remove({space: {$in: spacesIds}}).exec(),
+                                mongo.Cache.remove({space: {$in: spacesIds}}).exec(),
+                                mongo.DomainModel.remove({space: {$in: spacesIds}}).exec(),
+                                mongo.Notebook.remove({space: {$in: spacesIds}}).exec(),
+                                mongo.Space.remove({owner: {$in: spacesIds}}).exec()
+                            ]);
+                        })
+                        .catch((err) => {
+                            console.error(`Failed to cleanup spaces [user=${user.username}, err=${err}`);
+                        });
+
+                    return Promise.resolve(user)
                 })
-                .then((spaces) => {
-                    const promises = [];
-
-                    _.forEach(spaces, (space) => {
-                        promises.push(mongo.Cluster.remove({space: space._id}).exec());
-                        promises.push(mongo.Cache.remove({space: space._id}).exec());
-                        promises.push(mongo.DomainModel.remove({space: space._id}).exec());
-                        promises.push(mongo.Notebook.remove({space: space._id}).exec());
-                        promises.push(mongo.Space.remove({owner: space._id}).exec());
-                    });
-
-                    return Promise.all(promises);
-                })
-                .then(() => {
-                    return new Promise((resolveMail, rejectMail) => {
-                        const transporter = {
-                            service: settings.smtp.service,
-                            auth: {
-                                user: settings.smtp.email,
-                                pass: settings.smtp.password
-                            }
-                        };
-
-                        if (transporter.service !== '' || transporter.auth.user !== '' || transporter.auth.pass !== '') {
-                            const mailer = nodemailer.createTransport(transporter);
-
-                            const mailOptions = {
-                                from: settings.smtp.address(settings.smtp.username, settings.smtp.email),
-                                to: settings.smtp.address(user.username, user.email),
-                                subject: 'Your account was deleted',
-                                text: 'You are receiving this e-mail because admin remove your account.\n\n' +
-                                '--------------\n' +
-                                settings.smtp.username + ' http://' + req.headers.host + '\n'
-                            };
-
-                            mailer.sendMail(mailOptions, (errMailer) => {
-                                if (errMailer) {
-                                    rejectMail({
-                                        code: 503,
-                                        message: 'Account was removed, but failed to send e-mail notification to user!<br />' + errMailer
-                                    });
-                                }
-                                else
-                                    resolveMail();
-                            });
-                        }
-                        else
-                            rejectMail({code: 503, message: 'Account was removed, but failed to send e-mail notification to user, because mailer is not configured!'});
-                    });
-                })
-                .then(() => res.sendStatus(200))
+                .then((user) => mail.send(user, 'Your account was deleted',
+                    `Hello ${user.username}!<br><br>` +
+                    `You are receiving this e-mail because "${req.user.username}" remove your account.`,
+                    'Account was removed, but failed to send e-mail notification to user!')
+                )
                 .catch((err) => mongo.handleError(res, err));
         });
 
