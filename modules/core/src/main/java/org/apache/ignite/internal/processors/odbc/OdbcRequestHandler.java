@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.odbc;
 
 import org.apache.ignite.IgniteCache;
-import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.internal.GridKernalContext;
@@ -41,14 +40,8 @@ public class OdbcRequestHandler {
     /** Query ID sequence. */
     private static final AtomicLong QRY_ID_GEN = new AtomicLong();
 
-    /** Request ID generator. */
-    private static final AtomicLong REQ_ID_GEN = new AtomicLong();
-
     /** Kernel context. */
     private final GridKernalContext ctx;
-
-    /** Logger. */
-    private final IgniteLogger log;
 
     /** Current queries cursors. */
     private final ConcurrentHashMap<Long, IgniteBiTuple<QueryCursor, Iterator>> qryCurs = new ConcurrentHashMap<>();
@@ -60,8 +53,6 @@ public class OdbcRequestHandler {
      */
     public OdbcRequestHandler(final GridKernalContext ctx) {
         this.ctx = ctx;
-
-        this.log = ctx.log(getClass());
     }
 
     /**
