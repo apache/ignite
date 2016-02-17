@@ -23,6 +23,7 @@ namespace Apache.Ignite.Core.Impl
     using System.Diagnostics;
     using System.Diagnostics.CodeAnalysis;
     using System.Linq;
+    using System.Threading.Tasks;
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Cache;
     using Apache.Ignite.Core.Cache.Configuration;
@@ -86,9 +87,12 @@ namespace Apache.Ignite.Core.Impl
         private readonly UnmanagedCallbacks _cbs;
 
         /** Node info cache. */
-
         private readonly ConcurrentDictionary<Guid, ClusterNodeImpl> _nodes =
             new ConcurrentDictionary<Guid, ClusterNodeImpl>();
+
+        /** Client reconnect task completion source. */
+        private volatile TaskCompletionSource<bool> _clientReconnectTaskCompletionSource = 
+            new TaskCompletionSource<bool>();
 
         /// <summary>
         /// Constructor.
@@ -128,6 +132,9 @@ namespace Apache.Ignite.Core.Impl
             // Grid is not completely started here, can't initialize interop transactions right away.
             _transactions = new Lazy<TransactionsImpl>(
                     () => new TransactionsImpl(UU.ProcessorTransactions(proc), marsh, GetLocalNode().Id));
+
+            // Set reconnected task to completed state for convenience.
+            _clientReconnectTaskCompletionSource.SetResult(false);
         }
 
         /// <summary>
@@ -429,6 +436,12 @@ namespace Apache.Ignite.Core.Impl
         }
 
         /** <inheritdoc /> */
+        public Task<bool> ClientReconnectTask
+        {
+            get { return _clientReconnectTaskCompletionSource.Task; }
+        }
+
+        /** <inheritdoc /> */
         public IDataStreamer<TK, TV> GetDataStreamer<TK, TV>(string cacheName)
         {
             return new DataStreamerImpl<TK, TV>(UU.ProcessorDataStreamer(_proc, cacheName, false),
@@ -629,6 +642,23 @@ namespace Apache.Ignite.Core.Impl
         internal IUnmanagedTarget InteropProcessor
         {
             get { return _proc; }
+        }
+
+        /// <summary>
+        /// Called when local client node has been disconnected from the cluster.
+        /// </summary>
+        public void OnClientDisconnected()
+        {
+            _clientReconnectTaskCompletionSource = new TaskCompletionSource<bool>();
+        }
+
+        /// <summary>
+        /// Called when local client node has been reconnected to the cluster.
+        /// </summary>
+        /// <param name="clusterRestarted">Cluster restarted flag.</param>
+        public void OnClientReconnected(bool clusterRestarted)
+        {
+            _clientReconnectTaskCompletionSource.TrySetResult(clusterRestarted);
         }
     }
 }
