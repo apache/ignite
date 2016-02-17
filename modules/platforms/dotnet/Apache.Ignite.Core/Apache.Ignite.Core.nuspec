@@ -60,7 +60,7 @@ Creating NuGet package:
         <file src="NuGet\PostBuild.ps1" target="tools" />
         
         <!-- Other files should go to Content folder to be automatically included in project. -->
-        <file src="..\..\..\..\config\default-config.xml" target="Content\Config" />
+        <!--<file src="..\..\..\..\config\default-config.xml" target="Content\Config" />-->
         
         <!-- 
             Library files (jars) should not be included in project, so that NuGet package restore works properly.
