@@ -26,13 +26,12 @@ import org.apache.ignite.internal.processors.cache.CacheFullApiNewSelfTest;
 import org.apache.ignite.marshaller.optimized.OptimizedMarshaller;
 import org.apache.ignite.spi.swapspace.inmemory.GridTestSwapSpaceSpi;
 import org.apache.ignite.testframework.CacheStartMode;
-import org.apache.ignite.testframework.GridTestSuite;
+import org.apache.ignite.testframework.GridMultiNodeTestSuite;
 import org.apache.ignite.testframework.TestsConfiguration;
 import org.apache.ignite.testframework.config.CacheConfigurationPermutations;
 import org.apache.ignite.testframework.config.FullApiStateConfigurationFactory;
 import org.apache.ignite.testframework.config.StateConfigurationFactory;
 import org.apache.ignite.testframework.config.generator.ConfigurationParameter;
-import org.apache.ignite.testframework.config.generator.StateIterator;
 
 import static org.apache.ignite.testframework.config.params.Parameters.booleanParameters;
 import static org.apache.ignite.testframework.config.params.Parameters.objectParameters;
@@ -71,28 +70,32 @@ public class CacheFullApiBasicCfgNewTestSuite extends TestSuite {
     public static TestSuite suite() throws Exception {
         TestSuite suite = new TestSuite("Cache New Full API Test Suite");
 
-        addTestSuites(suite, 1);
-        addTestSuites(suite, 4);
+//        addTestSuites(suite, 1, false);
+        addTestSuites(suite, 4, false);
+//        addTestSuites(suite, 5, true);
 
         return suite;
     }
 
     /**
-     *
-     * @param suite Suite.
+     *  @param suite Suite.
      * @param gridsCnt Grids count.
+     * @param withClient With client.
      */
-    private static void addTestSuites(TestSuite suite, int gridsCnt) {
-        for (StateIterator igniteCfgIter = new StateIterator(igniteParams); igniteCfgIter.hasNext();) {
-            final int[] igniteCfgState = igniteCfgIter.next();
+    private static void addTestSuites(TestSuite suite, int gridsCnt, boolean withClient) {
+//        for (StateIterator igniteCfgIter = new StateIterator(igniteParams); igniteCfgIter.hasNext();) {
+//            final int[] igniteCfgState = igniteCfgIter.next();
+            final int[] igniteCfgState = new int[] {0, 0, 0};
 
-            for (StateIterator cacheCfgIter = new StateIterator(cacheParams); cacheCfgIter.hasNext();) {
-                int[] cacheCfgState = cacheCfgIter.next();
+//            for (StateIterator cacheCfgIter = new StateIterator(cacheParams); cacheCfgIter.hasNext();) {
+//                int[] cacheCfgState = cacheCfgIter.next();
+                int[] cacheCfgState = new int[] {0, 0, 0, 0, 0, 0, 0, 0, 0};
 
                 // Stop all grids before starting new ignite configuration.
-                addTestSuite(suite, igniteCfgState, cacheCfgState, gridsCnt, !cacheCfgIter.hasNext());
-            }
-        }
+//                addTestSuite(suite, igniteCfgState, cacheCfgState, gridsCnt, !cacheCfgIter.hasNext(), withClient);
+                addTestSuite(suite, igniteCfgState, cacheCfgState, gridsCnt, true, withClient);
+//            }
+//        }
     }
 
     /**
@@ -103,8 +106,8 @@ public class CacheFullApiBasicCfgNewTestSuite extends TestSuite {
      * @param stop Stop.
      */
     private static void addTestSuite(TestSuite suite, int[] igniteCfgState, int[] cacheCfgState, int gridsCnt,
-        boolean stop) {
-        StateConfigurationFactory factory = new FullApiStateConfigurationFactory(igniteParams, igniteCfgState,
+        boolean stop, boolean withClient) {
+        StateConfigurationFactory factory = new FullApiStateConfigurationFactory(withClient, igniteParams, igniteCfgState,
             cacheParams, cacheCfgState);
 
         String clsNameSuffix = "[igniteCfg=" + Arrays.toString(igniteCfgState)
@@ -114,32 +117,32 @@ public class CacheFullApiBasicCfgNewTestSuite extends TestSuite {
 
         TestsConfiguration testCfg = new TestsConfiguration(factory, clsNameSuffix, stop, cacheStartMode, gridsCnt);
 
-        suite.addTest(new GridTestSuite(CacheFullApiNewSelfTest.class, testCfg));
+        suite.addTest(GridMultiNodeTestSuite.createTestSuite(CacheFullApiNewSelfTest.class, testCfg, 3));
     }
 
     /**
      *
      */
-    private static class BackupsFullApiStateConfigurationFactory extends FullApiStateConfigurationFactory {
-        /**
-         * @param igniteParams Param.
-         * @param igniteCfgState State.
-         * @param cacheParams Param.
-         * @param cacheCfgState State.
-         */
-        BackupsFullApiStateConfigurationFactory(
-            ConfigurationParameter<IgniteConfiguration>[][] igniteParams, int[] igniteCfgState,
-            ConfigurationParameter<CacheConfiguration>[][] cacheParams, int[] cacheCfgState) {
-            super(igniteParams, igniteCfgState, cacheParams, cacheCfgState);
-        }
-
-        /** {@inheritDoc} */
-        @Override public CacheConfiguration cacheConfiguration(String gridName) {
-            CacheConfiguration cc = super.cacheConfiguration(gridName);
-
-            cc.setBackups(2);
-
-            return cc;
-        }
-    }
+//    private static class BackupsFullApiStateConfigurationFactory extends FullApiStateConfigurationFactory {
+//        /**
+//         * @param igniteParams Param.
+//         * @param igniteCfgState State.
+//         * @param cacheParams Param.
+//         * @param cacheCfgState State.
+//         */
+//        BackupsFullApiStateConfigurationFactory(
+//            ConfigurationParameter<IgniteConfiguration>[][] igniteParams, int[] igniteCfgState,
+//            ConfigurationParameter<CacheConfiguration>[][] cacheParams, int[] cacheCfgState) {
+//            super(igniteParams, igniteCfgState, cacheParams, cacheCfgState);
+//        }
+//
+//        /** {@inheritDoc} */
+//        @Override public CacheConfiguration cacheConfiguration(String gridName) {
+//            CacheConfiguration cc = super.cacheConfiguration(gridName);
+//
+//            cc.setBackups(2);
+//
+//            return cc;
+//        }
+//    }
 }

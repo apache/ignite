@@ -72,6 +72,9 @@ public abstract class CacheAbstractNewSelfTest extends GridCommonAbstractTest {
     /** VM ip finder for TCP discovery. */
     protected static TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
 
+    /** */
+    protected int testedNodeIdx;
+
     /**
      * @return Grids count to start.
      */
@@ -583,6 +586,13 @@ public abstract class CacheAbstractNewSelfTest extends GridCommonAbstractTest {
                 return "gte200";
             }
         };
+
+    /**
+     * @param testedNodeIdx Tested node index.
+     */
+    public void setTestedNodeIdx(int testedNodeIdx) {
+        this.testedNodeIdx = testedNodeIdx;
+    }
 
     /**
      * {@link org.apache.ignite.lang.IgniteInClosure} for calculating sum.

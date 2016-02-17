@@ -21,7 +21,7 @@ import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.testframework.config.ConfigurationFactory;
 
 /**
- *
+ * Immutable tests configuration.
  */
 public class TestsConfiguration {
     /** */
@@ -54,23 +54,6 @@ public class TestsConfiguration {
         this.stopNodes = stopNodes;
         this.gridCnt = gridCnt;
         this.cacheStartMode = cacheStartMode;
-    }
-
-    /**
-     * @param factory Factory.
-     * @param suffix Class suffix.
-     * @param gridCnt Grdi count.
-     */
-    public TestsConfiguration(ConfigurationFactory factory, String suffix, int gridCnt) {
-        this(factory, suffix, false, CacheStartMode.NODES_THEN_CACHES, gridCnt);
-    }
-
-    /**
-     * @param factory Factory.
-     * @param suffix Class suffix.
-     */
-    public TestsConfiguration(ConfigurationFactory factory, String suffix) {
-        this(factory, suffix, false, CacheStartMode.NODES_THEN_CACHES, 1);
     }
 
     /**

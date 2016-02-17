@@ -159,6 +159,9 @@ public abstract class GridAbstractTest extends TestCase {
     /** */
     protected TestsConfiguration testsCfg;
 
+    /** Custome number of tests. It will affect a work of, {@link GridAbstractTest#isLastTest()}. */
+    private int numOfTests = -1;
+
     /**
      *
      */
@@ -209,9 +212,9 @@ public abstract class GridAbstractTest extends TestCase {
      */
     public void setTestsConfiguration(TestsConfiguration testsCfg) {
         if (this.testsCfg != null)
-            U.dumpStack(log, "Test config must be set only once [oldTestCfg=" + this.testsCfg 
-                + ", newTestCfg=" + testsCfg + "]");            
-        
+            U.dumpStack(log, "Test config must be set only once [oldTestCfg=" + this.testsCfg
+                + ", newTestCfg=" + testsCfg + "]");
+
         this.testsCfg = testsCfg;
     }
 
@@ -1897,6 +1900,16 @@ public abstract class GridAbstractTest extends TestCase {
     }
 
     /**
+     * Sets custom number of tests. It will affect a work of {@link GridAbstractTest#isLastTest()}
+     * and as a result, {@link GridAbstractTest#afterTestsStopped()} will be called in custom time.
+     *
+     * @param numOfTests Custom number of tests.
+     */
+    public void setNumOfTests(Integer numOfTests) {
+        this.numOfTests = numOfTests;
+    }
+
+    /**
      *
      */
     private static interface WriteReplaceOwner {
@@ -2097,13 +2110,17 @@ public abstract class GridAbstractTest extends TestCase {
          */
         public int getNumberOfTests() {
             if (numOfTests == -1) {
-                int cnt = 0;
+                if (GridAbstractTest.this.numOfTests > 0)
+                    numOfTests = GridAbstractTest.this.numOfTests;
+                else {
+                    int cnt = 0;
 
-                for (Method m : GridAbstractTest.this.getClass().getMethods())
-                    if (m.getName().startsWith("test") && Modifier.isPublic(m.getModifiers()))
-                        cnt++;
+                    for (Method m : GridAbstractTest.this.getClass().getMethods())
+                        if (m.getName().startsWith("test") && Modifier.isPublic(m.getModifiers()))
+                            cnt++;
 
-                numOfTests = cnt;
+                    numOfTests = cnt;
+                }
             }
 
             countTestCases();

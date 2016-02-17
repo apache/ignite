@@ -28,7 +28,7 @@ import org.apache.ignite.testframework.junits.GridAbstractTest;
  */
 public class GridTestSuite extends TestSuite {
     /** */
-    private final TestsConfiguration cfg;
+    protected final TestsConfiguration cfg;
 
     /**
      * @param cls Test class.
