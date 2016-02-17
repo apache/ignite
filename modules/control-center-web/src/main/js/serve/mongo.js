@@ -547,11 +547,12 @@ module.exports.factory = function(deepPopulatePlugin, passportMongo, settings, p
     /**
      * Extract IDs from user spaces.
      *
-     * @param spaces Array of user spaces.
-     * @returns {Array} of spaces ID.
+     * @param userId User ID.
+     * @returns {Promise}
      */
-    result.spacesIds = function(spaces) {
-        return spaces.map((value) => value._id);
+    result.spaceIds = function(userId) {
+        return result.Space.find({owner: userId}).lean().exec()
+            .then((spaces) => spaces.map((space) => space._id));
     };
 
     // Registering the routes of all plugin modules

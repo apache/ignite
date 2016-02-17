@@ -148,11 +148,9 @@ module.exports.factory = function(_, express, apacheIgnite, fs, JSZip, settings,
                     // Get query cursor.
                     const cursor = client.ignite(req.body.demo).cache(req.body.cacheName).query(qry);
 
-                    return new Promise((resolve) => {
-                        cursor.getAll().then((rows) => resolve({meta: cursor.fieldsMetadata(), rows}));
-                    });
+                    return cursor.getAll()
+                        .then((rows) => res.json({meta: cursor.fieldsMetadata(), rows}));
                 })
-                .then((response) => res.json(response))
                 .catch(_handleException(res));
         });
 

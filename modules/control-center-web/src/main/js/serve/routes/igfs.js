@@ -36,20 +36,20 @@ module.exports.factory = function(_, express, mongo) {
          */
         router.post('/list', (req, res) => {
             const result = {};
-            let spacesIds = [];
+            let spaceIds = [];
 
             // Get owned space and all accessed space.
             mongo.spaces(req.currentUserId())
                 .then((spaces) => {
                     result.spaces = spaces;
-                    spacesIds = mongo.spacesIds(spaces);
+                    spaceIds = spaces.map((space) => space._id);
 
-                    return mongo.Cluster.find({space: {$in: spacesIds}}, '_id name').sort('name').lean().exec();
+                    return mongo.Cluster.find({space: {$in: spaceIds}}, '_id name').sort('name').lean().exec();
                 })
                 .then((clusters) => {
                     result.clusters = clusters;
 
-                    return mongo.Igfs.find({space: {$in: spacesIds}}).sort('name').lean().exec();
+                    return mongo.Igfs.find({space: {$in: spaceIds}}).sort('name').lean().exec();
                 })
                 .then((igfss) => {
                     result.igfss = igfss;
@@ -99,7 +99,7 @@ module.exports.factory = function(_, express, mongo) {
             const igfsId = params._id;
 
             mongo.Cluster.update({igfss: {$in: [igfsId]}}, {$pull: {igfss: igfsId}}, {multi: true}).exec()
-                .then(mongo.Igfs.remove(params).exec())
+                .then(() => mongo.Igfs.remove(params).exec())
                 .then(() => res.sendStatus(200))
                 .catch((err) => mongo.handleError(res, err));
         });
@@ -108,16 +108,12 @@ module.exports.factory = function(_, express, mongo) {
          * Remove all IGFSs.
          */
         router.post('/remove/all', (req, res) => {
-            let spacesIds = [];
-
             // Get owned space and all accessed space.
-            mongo.spaces(req.currentUserId())
-                .then((spaces) => {
-                    spacesIds = mongo.spacesIds(spaces);
-
-                    return mongo.Cluster.update({space: {$in: spacesIds}}, {igfss: []}, {multi: true}).exec();
-                })
-                .then(() => mongo.Igfs.remove({space: {$in: spacesIds}}).exec())
+            mongo.spaceIds(req.currentUserId())
+                .then((spaceIds) =>
+                    mongo.Cluster.update({space: {$in: spaceIds}}, {igfss: []}, {multi: true}).exec()
+                        .then(() => mongo.Igfs.remove({space: {$in: spaceIds}}).exec())
+                )
                 .then(() => res.sendStatus(200))
                 .catch((err) => mongo.handleError(res, err));
         });

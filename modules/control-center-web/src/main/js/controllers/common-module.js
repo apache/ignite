@@ -2100,6 +2100,7 @@ consoleModule.service('$agentDownload', [
 
             lnk.setAttribute('href', '/api/v1/agent/download/zip');
             lnk.setAttribute('target', '_self');
+            lnk.setAttribute('download', null);
             lnk.style.display = 'none';
 
             document.body.appendChild(lnk);

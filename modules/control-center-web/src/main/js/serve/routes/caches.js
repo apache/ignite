@@ -36,25 +36,24 @@ module.exports.factory = function(_, express, mongo) {
          */
         router.post('/list', (req, res) => {
             const result = {};
-            let spacesIds = [];
+            let spaceIds = [];
 
             // Get owned space and all accessed space.
-            mongo.spaces(req.currentUserId())
-                .then((spaces) => {
-                    result.spaces = spaces;
-                    spacesIds = mongo.spacesIds(spaces);
+            mongo.spaceIds(req.currentUserId())
+                .then((_spaceIds) => {
+                    spaceIds = _spaceIds;
 
-                    return mongo.Cluster.find({space: {$in: spacesIds}}).sort('name').lean().exec();
+                    mongo.Cluster.find({space: {$in: _spaceIds}}).sort('name').lean().exec()
                 })
                 .then((clusters) => {
                     result.clusters = clusters;
 
-                    return mongo.DomainModel.find({space: {$in: spacesIds}}).sort('name').lean().exec();
+                    return mongo.DomainModel.find({space: {$in: spaceIds}}).sort('name').lean().exec();
                 })
                 .then((domains) => {
                     result.domains = domains;
 
-                    return mongo.Cache.find({space: {$in: spacesIds}}).sort('name').lean().exec();
+                    return mongo.Cache.find({space: {$in: spaceIds}}).sort('name').lean().exec();
                 })
                 .then((caches) => {
                     result.caches = caches;
@@ -118,16 +117,13 @@ module.exports.factory = function(_, express, mongo) {
          * Remove all caches.
          */
         router.post('/remove/all', (req, res) => {
-            let spacesIds = [];
-
-            mongo.spaces(req.currentUserId())
-                .then((spaces) => {
-                    spacesIds = mongo.spacesIds(spaces);
-
-                    return mongo.Cluster.update({space: {$in: spacesIds}}, {caches: []}, {multi: true}).exec();
-                })
-                .then(() => mongo.DomainModel.update({space: {$in: spacesIds}}, {caches: []}, {multi: true}).exec())
-                .then(() => mongo.Cache.remove({space: {$in: spacesIds}}).exec())
+            mongo.spaceIds(req.currentUserId())
+                .then((spaceIds) =>
+                    mongo.Cluster.update({space: {$in: spaceIds}}, {caches: []}, {multi: true}).exec()
+                        .then(() => mongo.DomainModel.update({space: {$in: spaceIds}}, {caches: []}, {multi: true}).exec())
+                        .then(() => mongo.Cache.remove({space: {$in: spaceIds}}).exec())
+                )
+                .then(() => res.sendStatus(200))
                 .catch((err) => mongo.handleError(res, err));
         });
 

@@ -24,7 +24,7 @@ module.exports = {
     inject: ['require(lodash)', 'require(express)', 'require(nodemailer)', 'settings', 'mail', 'mongo']
 };
 
-module.exports.factory = function(_, express, nodemailer, settings, mail, mongo) {
+module.exports.factory = function (_, express, nodemailer, settings, mail, mongo) {
     return new Promise((factoryResolve) => {
         const router = new express.Router();
 
@@ -45,28 +45,22 @@ module.exports.factory = function(_, express, nodemailer, settings, mail, mongo)
                 .then((user) => {
                     res.sendStatus(200);
 
-                    mongo.spaces(userId)
-                        .then((spaces) => {
-                            const spacesIds = mongo.spacesIds(spaces);
-
-                            return Promise.all([
-                                mongo.Cluster.remove({space: {$in: spacesIds}}).exec(),
-                                mongo.Cache.remove({space: {$in: spacesIds}}).exec(),
-                                mongo.DomainModel.remove({space: {$in: spacesIds}}).exec(),
-                                mongo.Notebook.remove({space: {$in: spacesIds}}).exec(),
-                                mongo.Space.remove({owner: userId}).exec()
-                            ]);
-                        })
-                        .catch((err) => {
-                            console.error(`Failed to cleanup spaces [user=${user.username}, err=${err}`);
-                        });
-
-                    return Promise.resolve(user);
+                    return mongo.spaceIds(userId)
+                        .then((spaceIds) => Promise.all([
+                            mongo.Cluster.remove({space: {$in: spaceIds}}).exec(),
+                            mongo.Cache.remove({space: {$in: spaceIds}}).exec(),
+                            mongo.DomainModel.remove({space: {$in: spaceIds}}).exec(),
+                            mongo.Notebook.remove({space: {$in: spaceIds}}).exec(),
+                            mongo.Space.remove({owner: userId}).exec()
+                        ]))
+                        .then(() => user)
+                        .catch((err) => console.error(`Failed to cleanup spaces [user=${user.username}, err=${err}`));
                 })
-                .then((user) => mail.send(user, 'Your account was deleted',
-                    `Hello ${user.username}!<br><br>` +
-                    `You are receiving this email because your account for ${settings.smtp.username} was removed.`,
-                    'Account was removed, but failed to send email notification to user!')
+                .then((user) =>
+                    mail.send(user, 'Your account was deleted',
+                        `Hello ${user.username}!<br><br>` +
+                        `You are receiving this email because your account for <a href="http://${req.headers.host}">${settings.smtp.username}</a> was removed.`,
+                        'Account was removed, but failed to send email notification to user!')
                 )
                 .catch((err) => mongo.handleError(res, err));
         });

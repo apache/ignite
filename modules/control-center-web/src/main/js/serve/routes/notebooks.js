@@ -50,7 +50,7 @@ module.exports.factory = function(express, mongo) {
          */
         router.post('/get', (req, res) => {
             mongo.spaces(req.currentUserId())
-                .then((spaces) => mongo.Notebook.findOne({space: {$in: spaces.map((value) => value._id)}, _id: req.body.noteId}).exec())
+                .then((spaces) => mongo.Notebook.findOne({space: {$in: spaces.map((value) => value._id)}, _id: req.body.noteId}).lean().exec())
                 .then((notebook) => res.json(notebook))
                 .catch((err) => mongo.handleError(res, err));
         });
@@ -102,8 +102,8 @@ module.exports.factory = function(express, mongo) {
          * @param res Response.
          */
         router.post('/new', (req, res) => {
-            mongo.spaces(req.currentUserId())
-                .then((spaces) => (new mongo.Notebook({space: spaces[0].id, name: req.body.name})).save())
+            mongo.spaceIds(req.currentUserId())
+                .then((spaceIds) => (new mongo.Notebook({space: spaceIds[0], name: req.body.name})).save())
                 .then((notebook) => res.send(notebook._id))
                 .catch((err) => mongo.handleError(res, err));
         });

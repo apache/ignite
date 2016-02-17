@@ -41,7 +41,7 @@ module.exports.factory = (_, express, mongo) => {
             mongo.spaces(req.currentUserId())
                 .then((spaces) => {
                     result.spaces = spaces;
-                    spacesIds = mongo.spacesIds(spaces);
+                    spacesIds = spaces.map((space) => space._id);
 
                     return mongo.Cluster.find({space: {$in: spacesIds}}, '_id name').sort('name').lean().exec();
                 })
@@ -181,15 +181,9 @@ module.exports.factory = (_, express, mongo) => {
          * Remove all domain models.
          */
         router.post('/remove/all', (req, res) => {
-            let spacesIds = [];
-
-            mongo.spaces(req.currentUserId())
-                .then((spaces) => {
-                    spacesIds = mongo.spacesIds(spaces);
-
-                    return mongo.Cache.update({space: {$in: spacesIds}}, {domains: []}, {multi: true}).exec();
-                })
-                .then(() => mongo.DomainModel.remove({space: {$in: spacesIds}}).exec())
+            mongo.spaceIds(req.currentUserId())
+                .then((spaceIds) => mongo.Cache.update({space: {$in: spaceIds}}, {domains: []}, {multi: true}).exec()
+                        .then(() => mongo.DomainModel.remove({space: {$in: spaceIds}}).exec()))
                 .then(() => res.sendStatus(200))
                 .catch((err) => mongo.handleError(res, err));
         });
@@ -202,11 +196,12 @@ module.exports.factory = (_, express, mongo) => {
             let domainIds = [];
             let cacheIds = [];
 
-            // TODO IGNITE-843 also remove from links: Cache -> DomainModel ; DomainModel -> Cache; Cluster -> Cache.
+            mongo.spaceIds(req.currentUserId())
+                .then((_spaceIds) => {
+                    spaceIds = _spaceIds;
 
-            mongo.spaces(req.currentUserId())
-                .then((spaces) => spaceIds = mongo.spacesIds(spaces))
-                .then(() => mongo.DomainModel.find({$and: [{space: {$in: spaceIds}}, {demo: true}]}).lean().exec())
+                    mongo.DomainModel.find({$and: [{space: {$in: spaceIds}}, {demo: true}]}).lean().exec()
+                })
                 .then((domains) => domainIds = _.map(domains, (domain) => domain._id))
                 .then(() => mongo.Cache.update({domains: {$in: domainIds}}, {$pull: {domains: {$in: domainIds}}}, {multi: true}).exec())
                 .then(() => mongo.DomainModel.remove({_id: {$in: domainIds}}).exec())

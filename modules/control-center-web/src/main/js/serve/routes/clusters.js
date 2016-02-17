@@ -42,7 +42,7 @@ module.exports.factory = function(_, express, mongo) {
             mongo.spaces(req.currentUserId())
                 .then((spaces) => {
                     result.spaces = spaces;
-                    spacesIds = mongo.spacesIds(spaces);
+                    spacesIds = spaces.map((space) => space._id);
 
                     return mongo.DomainModel.find({space: {$in: spacesIds}}).sort('valueType').lean().exec();
                 })
@@ -133,17 +133,12 @@ module.exports.factory = function(_, express, mongo) {
          * Remove all clusters.
          */
         router.post('/remove/all', (req, res) => {
-            let spacesIds = [];
-
             // Get owned space and all accessed space.
-            mongo.spaces(req.currentUserId())
-                .then((spaces) => {
-                    spacesIds = mongo.spacesIds(spaces);
-
-                    return mongo.Cache.update({space: {$in: spacesIds}}, {clusters: []}, {multi: true}).exec();
-                })
-                .then(() => mongo.Igfs.update({space: {$in: spacesIds}}, {clusters: []}, {multi: true}).exec())
-                .then(() => mongo.Cluster.remove({space: {$in: spacesIds}}).exec())
+            mongo.spaceIds(req.currentUserId())
+                .then((spaceIds) => mongo.Cache.update({space: {$in: spaceIds}}, {clusters: []}, {multi: true}).exec()
+                    .then(() => mongo.Igfs.update({space: {$in: spaceIds}}, {clusters: []}, {multi: true}).exec())
+                    .then(() => mongo.Cluster.remove({space: {$in: spaceIds}}).exec())
+                )
                 .then(() => res.sendStatus(200))
                 .catch((err) => mongo.handleError(res, err));
         });
