@@ -38,17 +38,7 @@ import java.sql.Time;
 import java.sql.Timestamp;
 import java.sql.Types;
 import java.text.MessageFormat;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import javax.cache.Cache;
@@ -917,7 +907,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
     /**
      * Executes regular query.
-     * Note that SQL query can not refer to table alias, so use full table name instead.
      *
      * @param spaceName Space name.
      * @param qry Query.
@@ -1112,16 +1101,28 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         String from = " ";
 
         qry = qry.trim();
+
         String upper = qry.toUpperCase();
 
         if (upper.startsWith("SELECT")) {
             qry = qry.substring(6).trim();
 
-            if (!qry.startsWith("*"))
-                throw new IgniteCheckedException("Only queries starting with 'SELECT *' are supported or " +
-                    "use SqlFieldsQuery instead: " + qry0);
+            final int star = qry.indexOf('*');
 
-            qry = qry.substring(1).trim();
+            if (star == 0)
+                qry = qry.substring(1).trim();
+
+            else if (star > 0) {
+                if ('.' == qry.charAt(star - 1)) {
+                    t = qry.substring(0, star - 1);
+
+                    qry = qry.substring(star + 2).trim();
+                } else
+                    throw new IgniteCheckedException("Invalid query (missing alias before asterisk): " + qry0);
+            } else
+                throw new IgniteCheckedException("Only queries starting with 'SELECT *' and 'SELECT alias.*' are supported or " +
+                        "use SqlFieldsQuery instead: " + qry0);
+
             upper = qry.toUpperCase();
         }
 
