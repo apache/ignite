@@ -652,4 +652,28 @@ BOOST_AUTO_TEST_CASE(TestGetDateFromString)
     BOOST_CHECK_EQUAL(0, tmDate->tm_sec);
 }
 
+BOOST_AUTO_TEST_CASE(TestGetTimestatmpFromString)
+{
+    char buf[] = "2018-11-01 17:45:59";
+    SqlLen reslen = sizeof(buf);
+
+    size_t offset = 0;
+    size_t* offsetPtr = &offset;
+
+    ApplicationDataBuffer appBuf(IGNITE_ODBC_C_TYPE_CHAR, &buf[0], sizeof(buf), &reslen, &offsetPtr);
+
+    Timestamp date = appBuf.GetTimestamp();
+
+    time_t cTime = utility::TimestampToCTime(date);
+
+    tm *tmDate = localtime(&cTime);
+
+    BOOST_CHECK_EQUAL(2018, tmDate->tm_year + 1900);
+    BOOST_CHECK_EQUAL(11, tmDate->tm_mon + 1);
+    BOOST_CHECK_EQUAL(1, tmDate->tm_mday);
+    BOOST_CHECK_EQUAL(17, tmDate->tm_hour);
+    BOOST_CHECK_EQUAL(45, tmDate->tm_min);
+    BOOST_CHECK_EQUAL(59, tmDate->tm_sec);
+}
+
 BOOST_AUTO_TEST_SUITE_END()
