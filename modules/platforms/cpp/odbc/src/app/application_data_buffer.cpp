@@ -734,7 +734,7 @@ namespace ignite
                         buffer->hour = tmTime->tm_hour;
                         buffer->minute = tmTime->tm_min;
                         buffer->second = tmTime->tm_sec;
-                        buffer->fraction = value.GetNanoseconds();
+                        buffer->fraction = value.GetSecondFraction();
 
                         break;
                     }

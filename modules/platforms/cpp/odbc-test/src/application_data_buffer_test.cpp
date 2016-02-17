@@ -777,7 +777,7 @@ BOOST_AUTO_TEST_CASE(TestGetTimestampFromTimestamp)
     BOOST_CHECK_EQUAL(6, tmDate->tm_hour);
     BOOST_CHECK_EQUAL(34, tmDate->tm_min);
     BOOST_CHECK_EQUAL(51, tmDate->tm_sec);
-    BOOST_CHECK_EQUAL(573948623, ts.GetNanoseconds());
+    BOOST_CHECK_EQUAL(573948623, ts.GetSecondFraction());
 }
 
 BOOST_AUTO_TEST_CASE(TestGetDateFromTimestamp)
