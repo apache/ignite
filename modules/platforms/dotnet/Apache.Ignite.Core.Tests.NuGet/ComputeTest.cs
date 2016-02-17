@@ -18,6 +18,7 @@
 // ReSharper disable UnusedAutoPropertyAccessor.Local
 namespace Apache.Ignite.Core.Tests.NuGet
 {
+    using System;
     using Apache.Ignite.Core.Compute;
     using NUnit.Framework;
 
@@ -67,6 +68,7 @@ namespace Apache.Ignite.Core.Tests.NuGet
         /// <summary>
         /// Test action.
         /// </summary>
+        [Serializable]
         private class ComputeAction : IComputeAction
         {
             /// <summary> The run count. </summary>
