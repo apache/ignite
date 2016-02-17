@@ -20,6 +20,7 @@ package org.apache.ignite.yarn;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.ByteBuffer;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -32,8 +33,12 @@ import org.apache.commons.io.IOUtils;
 import org.apache.hadoop.fs.FSDataOutputStream;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
+import org.apache.hadoop.io.DataOutputBuffer;
+import org.apache.hadoop.security.Credentials;
+import org.apache.hadoop.security.UserGroupInformation;
 import org.apache.hadoop.service.Service;
 import org.apache.hadoop.yarn.api.records.Container;
+import org.apache.hadoop.yarn.api.records.ContainerExitStatus;
 import org.apache.hadoop.yarn.api.records.ContainerId;
 import org.apache.hadoop.yarn.api.records.ContainerLaunchContext;
 import org.apache.hadoop.yarn.api.records.ContainerStatus;
@@ -64,7 +69,7 @@ public class ApplicationMaster implements AMRMClientAsync.CallbackHandler {
     public static final String DELIM = ",";
 
     /** */
-    private long schedulerTimeout = TimeUnit.SECONDS.toMillis(1);
+    private long schedulerTimeout = TimeUnit.SECONDS.toMillis(5);
 
     /** Yarn configuration. */
     private YarnConfiguration conf;
@@ -87,6 +92,9 @@ public class ApplicationMaster implements AMRMClientAsync.CallbackHandler {
     /** Hadoop file system. */
     private FileSystem fs;
 
+    /** Buffered tokens to be injected into newly allocated containers. */
+    private ByteBuffer allTokens;
+
     /** Running containers. */
     private Map<ContainerId, IgniteContainer> containers = new ConcurrentHashMap<>();
 
@@ -106,6 +114,11 @@ public class ApplicationMaster implements AMRMClientAsync.CallbackHandler {
             if (checkContainer(c)) {
                 try {
                     ContainerLaunchContext ctx = Records.newRecord(ContainerLaunchContext.class);
+
+                    if (UserGroupInformation.isSecurityEnabled()) {
+                        // Set the tokens to the newly allocated container:
+                        ctx.setTokens(allTokens.duplicate());
+                    }
 
                     Map<String, String> env = new HashMap<>(System.getenv());
 
@@ -168,8 +181,11 @@ public class ApplicationMaster implements AMRMClientAsync.CallbackHandler {
      */
     private boolean checkContainer(Container cont) {
         // Check limit on running nodes.
-        if (props.instances() <= containers.size())
+        if (props.instances() <= containers.size()) {
+            log.log(Level.FINE, "Enough containers: " + containers.size());
+
             return false;
+        }
 
         // Check host name
         if (props.hostnameConstraint() != null
@@ -179,7 +195,7 @@ public class ApplicationMaster implements AMRMClientAsync.CallbackHandler {
         // Check that slave satisfies min requirements.
         if (cont.getResource().getVirtualCores() < props.cpusPerNode()
             || cont.getResource().getMemory() < props.totalMemoryPerNode()) {
-            log.log(Level.FINE, "Container resources not sufficient requirements. Host: {0}, cpu: {1}, mem: {2}",
+            log.log(Level.INFO, "Container resources not sufficient requirements. Host: {0}, cpu: {1}, mem: {2}",
                 new Object[]{cont.getNodeId().getHost(), cont.getResource().getVirtualCores(),
                    cont.getResource().getMemory()});
 
@@ -192,10 +208,10 @@ public class ApplicationMaster implements AMRMClientAsync.CallbackHandler {
     /**
      * @return Address running nodes.
      */
-    private String getAddress(String address) {
+    private String getAddress(String addr) {
         if (containers.isEmpty()) {
-            if (address != null && !address.isEmpty())
-                return address + DEFAULT_PORT;
+            if (addr != null && !addr.isEmpty())
+                return addr + DEFAULT_PORT;
 
             return "";
         }
@@ -213,8 +229,38 @@ public class ApplicationMaster implements AMRMClientAsync.CallbackHandler {
         for (ContainerStatus status : statuses) {
             containers.remove(status.getContainerId());
 
-            log.log(Level.INFO, "Container completed. Container id: {0}. State: {1}.",
-                new Object[]{status.getContainerId(), status.getState()});
+            int existStatus = status.getExitStatus();
+
+            Level level = existStatus == ContainerExitStatus.SUCCESS
+                || existStatus == ContainerExitStatus.PREEMPTED ? Level.INFO : Level.SEVERE;
+
+            log.log(level, "Container completed. Container id: {0}. State: {1}. " +
+                    "Exist Status: {2}, Diagnostics: {3}",
+                new Object[]{status.getContainerId(), status.getState(),
+                    containerExitStatusToString(status.getExitStatus()), status.getDiagnostics()});
+        }
+    }
+
+    /**
+     * Transforms int exit code to String, see {@link ContainerExitStatus}.
+     *
+     * @param status The int status.
+     * @return String representation of the status.
+     */
+    private static String containerExitStatusToString(int status) {
+        switch (status) {
+            case ContainerExitStatus.ABORTED : return "ABORTED";
+            case ContainerExitStatus.DISKS_FAILED : return "DISKS_FAILED";
+            case ContainerExitStatus.INVALID : return "INVALID";
+            case ContainerExitStatus.KILLED_AFTER_APP_COMPLETION : return "KILLED_AFTER_APP_COMPLETION";
+            case ContainerExitStatus.KILLED_BY_APPMASTER : return "KILLED_BY_APPMASTER";
+            case ContainerExitStatus.KILLED_BY_RESOURCEMANAGER : return "KILLED_BY_RESOURCEMANAGER";
+            case ContainerExitStatus.KILLED_EXCEEDED_PMEM : return "KILLED_EXCEEDED_PMEM";
+            case ContainerExitStatus.KILLED_EXCEEDED_VMEM : return "KILLED_EXCEEDED_VMEM";
+            case ContainerExitStatus.PREEMPTED : return "PREEMPTED";
+            case ContainerExitStatus.SUCCESS : return "SUCCESS";
+
+            default: return "ContainerExitStatus " + status;
         }
     }
 
@@ -245,6 +291,8 @@ public class ApplicationMaster implements AMRMClientAsync.CallbackHandler {
 
     /** {@inheritDoc} */
     public void onError(Throwable t) {
+        log.log(Level.SEVERE, "Unexpected error in ApplicationMaster.", t);
+
         nmClient.stop();
     }
 
@@ -279,31 +327,38 @@ public class ApplicationMaster implements AMRMClientAsync.CallbackHandler {
         log.log(Level.INFO, "Application master registered.");
 
         // Priority for worker containers - priorities are intra-application
-        Priority priority = Records.newRecord(Priority.class);
-        priority.setPriority(0);
+        Priority prio = Records.newRecord(Priority.class);
+        prio.setPriority(0);
 
         try {
             // Check ignite cluster.
             while (!nmClient.isInState(Service.STATE.STOPPED)) {
                 int runningCnt = containers.size();
 
-                if (runningCnt < props.instances() && checkAvailableResource()) {
-                    // Resource requirements for worker containers.
-                    Resource capability = Records.newRecord(Resource.class);
+                log.log(Level.INFO, "Running: {0}, required instances: {1}.",
+                    new Object[]{ runningCnt, props.instances() });
 
-                    capability.setMemory((int)props.totalMemoryPerNode());
-                    capability.setVirtualCores((int)props.cpusPerNode());
+                if (runningCnt < props.instances()) {
+                    if (checkAvailableResource()) {
+                        // Resource requirements for worker containers.
+                        Resource capability = Records.newRecord(Resource.class);
 
-                    for (int i = 0; i < props.instances() - runningCnt; ++i) {
-                        // Make container requests to ResourceManager
-                        AMRMClient.ContainerRequest containerAsk =
-                            new AMRMClient.ContainerRequest(capability, null, null, priority);
+                        capability.setMemory((int) props.totalMemoryPerNode());
+                        capability.setVirtualCores((int) props.cpusPerNode());
 
-                        rmClient.addContainerRequest(containerAsk);
+                        for (int i = 0; i < props.instances() - runningCnt; ++i) {
+                            // Make container requests to ResourceManager
+                            AMRMClient.ContainerRequest containerAsk =
+                                new AMRMClient.ContainerRequest(capability, null, null, prio);
 
-                        log.log(Level.INFO, "Making request. Memory: {0}, cpu {1}.",
-                            new Object[]{props.totalMemoryPerNode(), props.cpusPerNode()});
+                            rmClient.addContainerRequest(containerAsk);
+
+                            log.log(Level.INFO, "Making request. Memory: {0}, cpu {1}.",
+                                new Object[]{props.totalMemoryPerNode(), props.cpusPerNode()});
+                        }
                     }
+                    else
+                        log.log(Level.WARNING, "Not enough resources in cluster.");
                 }
 
                 TimeUnit.MILLISECONDS.sleep(schedulerTimeout);
@@ -334,14 +389,35 @@ public class ApplicationMaster implements AMRMClientAsync.CallbackHandler {
     }
 
     /**
+     * If security enabled, caches the available tokens in a ByteBuffer to have them handy
+     * to inject into allocated containers.
+     *
+     * @throws IOException On error.
+     */
+    private void initTokens() throws IOException {
+        if (UserGroupInformation.isSecurityEnabled()) {
+            Credentials cred = UserGroupInformation.getCurrentUser().getCredentials();
+
+            DataOutputBuffer dob = new DataOutputBuffer();
+
+            cred.writeTokenStorageToStream(dob);
+
+            allTokens = ByteBuffer.wrap(dob.getData(), 0, dob.getLength());
+        }
+    }
+
+    /**
      * @throws IOException
      */
     public void init() throws IOException {
+        initTokens();
+
         fs = FileSystem.get(conf);
 
         nmClient = NMClient.createNMClient();
 
         nmClient.init(conf);
+
         nmClient.start();
 
         // Create async application master.
@@ -399,9 +475,11 @@ public class ApplicationMaster implements AMRMClientAsync.CallbackHandler {
 
     /**
      * Sets file system.
+     * Visible solely for tests.
+     *
      * @param fs File system.
      */
-    public void setFs(FileSystem fs) {
+    void setFs(FileSystem fs) {
         this.fs = fs;
     }
 
