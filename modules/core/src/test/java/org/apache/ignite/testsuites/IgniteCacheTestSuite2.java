@@ -250,7 +250,6 @@ public class IgniteCacheTestSuite2 extends TestSuite {
         suite.addTest(new TestSuite(IgniteDynamicCacheAndNodeStop.class));
         suite.addTest(new TestSuite(CacheLockReleaseNodeLeaveTest.class));
         suite.addTest(new TestSuite(NearCacheSyncUpdateTest.class));
-        suite.addTest(new TestSuite(CacheConfigurationLeakTest.class));
         suite.addTest(new TestSuite(CacheEnumOperationsSingleNodeTest.class));
         suite.addTest(new TestSuite(CacheEnumOperationsTest.class));
 
