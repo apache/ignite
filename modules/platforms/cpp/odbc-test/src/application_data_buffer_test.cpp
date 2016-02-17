@@ -404,6 +404,20 @@ BOOST_AUTO_TEST_CASE(TestPutDateToString)
     BOOST_CHECK_EQUAL(std::string(strBuf, reslen), std::string("1999-02-22"));
 }
 
+BOOST_AUTO_TEST_CASE(TestPutTimestampToString)
+{
+    char strBuf[64] = { 0 };
+    SqlLen reslen = 0;
+
+    ApplicationDataBuffer appBuf(IGNITE_ODBC_C_TYPE_CHAR, &strBuf, sizeof(strBuf), &reslen, 0);
+
+    Timestamp date = MakeTimestamp(2018, 11, 1, 17, 45, 59);
+
+    appBuf.PutTimestamp(date);
+
+    BOOST_CHECK_EQUAL(std::string(strBuf, reslen), std::string("2018-11-01 17:45:59"));
+}
+
 BOOST_AUTO_TEST_CASE(TestGetStringFromLong)
 {
     long numBuf = 42;
@@ -727,7 +741,7 @@ BOOST_AUTO_TEST_CASE(TestGetDateFromString)
     BOOST_CHECK_EQUAL(0, tmDate->tm_sec);
 }
 
-BOOST_AUTO_TEST_CASE(TestGetTimestatmpFromString)
+BOOST_AUTO_TEST_CASE(TestGetTimestampFromString)
 {
     char buf[] = "2018-11-01 17:45:59";
     SqlLen reslen = sizeof(buf);
