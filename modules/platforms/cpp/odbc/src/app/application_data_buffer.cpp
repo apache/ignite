@@ -1055,9 +1055,10 @@ namespace ignite
                             reinterpret_cast<const unsigned char*>(GetData()),
                             static_cast<int32_t>(GetSize()));
 
-                        sscanf(str.c_str(), "%d-%d-%d %d:%d:%d", tmTime.tm_year, tmTime.tm_mon,
-                            tmTime.tm_mday, tmTime.tm_hour, tmTime.tm_min, tmTime.tm_sec);
+                        sscanf(str.c_str(), "%d-%d-%d %d:%d:%d", &tmTime.tm_year, &tmTime.tm_mon,
+                            &tmTime.tm_mday, &tmTime.tm_hour, &tmTime.tm_min, &tmTime.tm_sec);
 
+                        tmTime.tm_year = tmTime.tm_year - 1900;
                         tmTime.tm_mon = tmTime.tm_mon - 1;
 
                         break;
@@ -1115,9 +1116,10 @@ namespace ignite
                             reinterpret_cast<const unsigned char*>(GetData()),
                             static_cast<int32_t>(GetSize()));
 
-                        sscanf(str.c_str(), "%d-%d-%d %d:%d:%d", tmTime.tm_year, tmTime.tm_mon,
-                            tmTime.tm_mday, tmTime.tm_hour, tmTime.tm_min, tmTime.tm_sec);
+                        sscanf(str.c_str(), "%d-%d-%d %d:%d:%d", &tmTime.tm_year, &tmTime.tm_mon,
+                            &tmTime.tm_mday, &tmTime.tm_hour, &tmTime.tm_min, &tmTime.tm_sec);
 
+                        tmTime.tm_year = tmTime.tm_year - 1900;
                         tmTime.tm_mon = tmTime.tm_mon - 1;
 
                         break;
