@@ -200,7 +200,7 @@ module.exports.factory = (_, express, mongo) => {
                 .then((_spaceIds) => {
                     spaceIds = _spaceIds;
 
-                    mongo.DomainModel.find({$and: [{space: {$in: spaceIds}}, {demo: true}]}).lean().exec()
+                    return mongo.DomainModel.find({$and: [{space: {$in: spaceIds}}, {demo: true}]}).lean().exec();
                 })
                 .then((domains) => domainIds = _.map(domains, (domain) => domain._id))
                 .then(() => mongo.Cache.update({domains: {$in: domainIds}}, {$pull: {domains: {$in: domainIds}}}, {multi: true}).exec())

@@ -24,7 +24,7 @@ module.exports = {
     inject: ['require(lodash)', 'require(express)', 'require(nodemailer)', 'settings', 'mail', 'mongo']
 };
 
-module.exports.factory = function (_, express, nodemailer, settings, mail, mongo) {
+module.exports.factory = function(_, express, nodemailer, settings, mail, mongo) {
     return new Promise((factoryResolve) => {
         const router = new express.Router();
 
