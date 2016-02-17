@@ -574,6 +574,11 @@ public abstract class GridIndexingSpiAbstractSelfTest extends GridCommonAbstract
         }
 
         /** {@inheritDoc} */
+        @Override public void onAckReceived() {
+            // No-op.
+        }
+
+        /** {@inheritDoc} */
         @Nullable @Override public <T> T value(CacheObjectContext ctx, boolean cpy) {
             return (T)val;
         }
