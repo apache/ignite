@@ -1,6 +1,6 @@
 {
     "server": {
-        "port": 8090,
+        "port": 3000,
         "ssl": false,
         "key": "serve/keys/test.key",
         "cert": "serve/keys/test.crt",
@@ -10,7 +10,7 @@
         "url": "mongodb://localhost/console"
     },
     "agent-server": {
-        "port": 8091,
+        "port": 3001,
         "ssl": false,
         "key": "serve/keys/test.key",
         "cert": "serve/keys/test.crt",
