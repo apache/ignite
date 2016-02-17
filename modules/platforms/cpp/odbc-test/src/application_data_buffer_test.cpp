@@ -19,6 +19,8 @@
 #   define BOOST_TEST_DYN_LINK
 #endif
 
+#include <ignite/odbc/system/odbc_constants.h>
+
 #include <boost/test/unit_test.hpp>
 
 #include <ignite/guid.h>
@@ -644,6 +646,8 @@ BOOST_AUTO_TEST_CASE(TestGetDateFromString)
 
     tm *tmDate = localtime(&cTime);
 
+    BOOST_REQUIRE(tmDate != 0);
+
     BOOST_CHECK_EQUAL(1999, tmDate->tm_year + 1900);
     BOOST_CHECK_EQUAL(2, tmDate->tm_mon + 1);
     BOOST_CHECK_EQUAL(22, tmDate->tm_mday);
@@ -668,12 +672,45 @@ BOOST_AUTO_TEST_CASE(TestGetTimestatmpFromString)
 
     tm *tmDate = localtime(&cTime);
 
+    BOOST_REQUIRE(tmDate != 0);
+
     BOOST_CHECK_EQUAL(2018, tmDate->tm_year + 1900);
     BOOST_CHECK_EQUAL(11, tmDate->tm_mon + 1);
     BOOST_CHECK_EQUAL(1, tmDate->tm_mday);
     BOOST_CHECK_EQUAL(17, tmDate->tm_hour);
     BOOST_CHECK_EQUAL(45, tmDate->tm_min);
     BOOST_CHECK_EQUAL(59, tmDate->tm_sec);
+}
+
+BOOST_AUTO_TEST_CASE(TestGetDateFromDate)
+{
+    SQL_DATE_STRUCT buf = { 0 };
+
+    buf.year = 1984;
+    buf.month = 5;
+    buf.day   = 27;
+
+    SqlLen reslen = sizeof(buf);
+
+    size_t offset = 0;
+    size_t* offsetPtr = &offset;
+
+    ApplicationDataBuffer appBuf(IGNITE_ODBC_C_TYPE_TDATE, &buf, sizeof(buf), &reslen, &offsetPtr);
+
+    Date date = appBuf.GetDate();
+
+    time_t cTime = utility::DateToCTime(date);
+
+    tm *tmDate = localtime(&cTime);
+
+    BOOST_REQUIRE(tmDate != 0);
+
+    BOOST_CHECK_EQUAL(1984, tmDate->tm_year + 1900);
+    BOOST_CHECK_EQUAL(5, tmDate->tm_mon + 1);
+    BOOST_CHECK_EQUAL(27, tmDate->tm_mday);
+    BOOST_CHECK_EQUAL(0, tmDate->tm_hour);
+    BOOST_CHECK_EQUAL(0, tmDate->tm_min);
+    BOOST_CHECK_EQUAL(0, tmDate->tm_sec);
 }
 
 BOOST_AUTO_TEST_SUITE_END()
