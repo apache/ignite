@@ -51,7 +51,7 @@ WARNING: this only works with x64 build targets.
         </summary>
         <releaseNotes></releaseNotes>
         <copyright>Copyright 2015</copyright>
-        <tags>Apache Ignite In-Memory Distributed Computing SQL NoSQL Grid Map Reduce Cache</tags>
+        <tags>Apache Ignite In-Memory Distributed Computing SQL NoSQL Grid Map Reduce Cache linqpad-samples</tags>
     </metadata>
     <files>
         <!-- Dll will be included automatically in the lib folder. -->
@@ -69,9 +69,12 @@ WARNING: this only works with x64 build targets.
             Library files (jars) should not be included in project, so that NuGet package restore works properly.
             We keep jars in NuGet dir and copy them over in PostBuild event.
         -->
-        <file src="..\..\..\..\target\release-package\libs\*.jar" target="Jars" />
-        <file src="..\..\..\..\target\release-package\libs\ignite-spring\*.jar" target="Jars" />
-        <file src="..\..\..\..\target\release-package\libs\ignite-indexing\*.jar" target="Jars" />
+        <file src="..\..\..\..\target\release-package\libs\*.jar" target="Libs" />
+        <file src="..\..\..\..\target\release-package\libs\ignite-spring\*.jar" target="Libs" />
+        <file src="..\..\..\..\target\release-package\libs\ignite-indexing\*.jar" target="Libs" />
         <file src="..\..\..\..\target\release-package\libs\licenses\*.*" target="Licenses" />
+    
+        <!-- LINQPad samples -->
+        <file src="NuGet\LINQPad\*.*" target="linqpad-samples" />
     </files>
 </package>

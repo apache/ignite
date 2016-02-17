@@ -13,7 +13,7 @@
 $solutionDir = [System.IO.Path]::GetDirectoryName($dte.Solution.FullName) + "\"
 $path = $installPath.Replace($solutionDir, "`$(SolutionDir)")
 
-$Jars = Join-Path $path "Jars\*.*"
+$Jars = Join-Path $path "Libs\*.*"
 
 $IgnitePostBuildCmd = "
 if not exist `"`$(TargetDir)Libs`" md `"`$(TargetDir)Libs`"

@@ -78,7 +78,7 @@ namespace Apache.Ignite.Core.Impl.Common
                 }
             }
 
-            return null;
+            throw new IgniteException("Failed to resolve Ignite home.");
         }
 
         /// <summary>
@@ -93,7 +93,8 @@ namespace Apache.Ignite.Core.Impl.Common
                     dir.EnumerateDirectories().Count(x => x.Name == "modules" || x.Name == "platforms") == 1)
                    || // NuGet home
                    (dir.EnumerateDirectories().Any(x => x.Name == "Libs") &&
-                    dir.EnumerateFiles().Any(x => x.Name == "Apache.Ignite.Core.dll"));
+                    (dir.EnumerateFiles("Apache.Ignite.Core.dll").Any() ||
+                     dir.EnumerateFiles("Apache.Ignite.*.nupkg").Any()));
         }
     }
 }
