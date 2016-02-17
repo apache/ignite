@@ -418,6 +418,25 @@ BOOST_AUTO_TEST_CASE(TestPutTimestampToString)
     BOOST_CHECK_EQUAL(std::string(strBuf, reslen), std::string("2018-11-01 17:45:59"));
 }
 
+BOOST_AUTO_TEST_CASE(TestPutDateToDate)
+{
+    SQL_DATE_STRUCT buf = { 0 };
+    SqlLen reslen = sizeof(buf);
+
+    size_t offset = 0;
+    size_t* offsetPtr = &offset;
+
+    ApplicationDataBuffer appBuf(IGNITE_ODBC_C_TYPE_TDATE, &buf, sizeof(buf), &reslen, &offsetPtr);
+
+    Date date = MakeDate(1984, 5, 27);
+
+    appBuf.PutDate(date);
+
+    BOOST_CHECK_EQUAL(1984, buf.year);
+    BOOST_CHECK_EQUAL(5, buf.month);
+    BOOST_CHECK_EQUAL(27, buf.day);
+}
+
 BOOST_AUTO_TEST_CASE(TestGetStringFromLong)
 {
     long numBuf = 42;
