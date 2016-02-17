@@ -39,6 +39,6 @@ mixin feedback(error, message)
 
     +feedback('min', 'Value is less than allowable minimum: {{ min || 0 }}')
     +feedback('max', 'Value is more than allowable maximum: {{ max }}')
-    +feedback('number', 'Invalid value. Only numbers allowed')
+    +feedback('number', 'Only numbers allowed')
 
     span(ng-transclude='')

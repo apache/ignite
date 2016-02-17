@@ -130,9 +130,7 @@ mixin chart-settings(mdl)
                                             button.btn.btn-default.fa.fa-clock-o.tipLabel(title='Click to show refresh rate dialog' ng-class='{"btn-info": paragraph.rate && paragraph.rate.installed}' bs-popover data-template-url='/sql/paragraph-rate.html' data-placement='left' data-auto-close='1' data-trigger='click') {{rateAsString(paragraph)}}
                                             label.tipLabel Page size:
                                             button.select-toggle.fieldButton.btn.btn-default(ng-model='paragraph.pageSize' bs-options='item for item in pageSizes' bs-select bs-tooltip data-title='Max number of rows to show in query result as one page')
-                                .col-sm-12(ng-show='paragraph.errMsg')
-                                    hr(style='margin-top: 0; margin-bottom: 10px')
-                                    .sql-error-result(ng-show='paragraph.errMsg') Error: {{paragraph.errMsg}}
+                                .col-sm-12.sql-error-result(ng-show='paragraph.errMsg') Error: {{paragraph.errMsg}}
                                 .col-sm-12(ng-show='!paragraph.errMsg && paragraph.result != "none"')
                                     hr(style='margin-top: 0; margin-bottom: 10px')
                                     .sql-empty-result(ng-show='!paragraph.nonEmpty()') Result set is empty

@@ -21,12 +21,12 @@
 
 module.exports = {
     implements: 'public-routes',
-    inject: ['require(express)', 'require(passport)', 'require(nodemailer)', 'settings', 'mongo']
+    inject: ['require(express)', 'require(passport)', 'require(nodemailer)', 'settings', 'mail', 'mongo']
 };
 
-module.exports.factory = function(express, passport, nodemailer, settings, mongo) {
-    return new Promise(function(resolve) {
-        const router = express.Router();
+module.exports.factory = function(express, passport, nodemailer, settings, mail, mongo) {
+    return new Promise((factoryResolve) => {
+        const router = new express.Router();
 
         const _randomString = () => {
             const possible = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
@@ -41,10 +41,10 @@ module.exports.factory = function(express, passport, nodemailer, settings, mongo
         };
 
         // GET user.
-        router.post('/user', function(req, res) {
-            var becomeUsed = req.session.viewedUser && req.user.admin;
+        router.post('/user', (req, res) => {
+            const becomeUsed = req.session.viewedUser && req.user.admin;
 
-            var user = req.user;
+            let user = req.user;
 
             if (becomeUsed) {
                 user = req.session.viewedUser;
@@ -58,50 +58,77 @@ module.exports.factory = function(express, passport, nodemailer, settings, mongo
         /**
          * Register new account.
          */
-        router.post('/register', function(req, res) {
-            mongo.Account.count(function(err, cnt) {
-                if (err)
-                    return res.status(401).send(err.message);
+        router.post('/signup', (req, res) => {
+            mongo.Account.count().exec()
+                .then((cnt) => {
+                    req.body.admin = cnt === 0;
 
-                req.body.admin = cnt === 0;
+                    req.body.token = _randomString();
 
-                var account = new mongo.Account(req.body);
+                    return Promise.resolve(new mongo.Account(req.body));
+                })
+                .then((account) => {
+                    return new Promise((resolve, reject) => {
+                        mongo.Account.register(account, req.body.password, (err, _account) => {
+                            if (err)
+                                reject(err);
 
-                account.token = _randomString();
+                            if (!_account)
+                                reject(new Error('Failed to create account.'));
 
-                mongo.Account.register(account, req.body.password, function(err, account) {
-                    if (err)
-                        return res.status(401).send(err.message);
-
-                    if (!account)
-                        return res.status(500).send('Failed to create account.');
-
-                    new mongo.Space({name: 'Personal space', owner: account._id}).save();
-
-                    req.logIn(account, {}, function(err) {
-                        if (err)
-                            return res.status(401).send(err.message);
-
-                        return res.sendStatus(200);
+                            resolve(_account);
+                        });
                     });
+                })
+                .then((account) => {
+                    return new Promise((resolve, reject) =>
+                        new mongo.Space({name: 'Personal space', owner: account._id}).save()
+                            .then(() => resolve(account))
+                            .catch(reject)
+                    );
+                })
+                .then((account) => {
+                    return new Promise((resolve, reject) => {
+                        req.logIn(account, {}, (err) => {
+                            if (err)
+                                reject(err);
+
+                            resolve(account);
+                        });
+                    });
+                })
+                .then((account) => {
+                    res.sendStatus(200);
+
+                    account.resetPasswordToken = _randomString();
+
+                    account.save()
+                        .then(() => mail.send(account, `Thanks for signing up for ${settings.smtp.username}.`,
+                            `Hello ${account.username}!<br><br>` +
+                            `You are receiving this email because you have signed up to use <a href="http://${req.headers.host}">${settings.smtp.username}</a>.<br><br>` +
+                            'If you have not done the sign up and do not know what this email is about, please ignore it.<br>' +
+                            'You may reset the password by clicking on the following link, or paste this into your browser:<br><br>' +
+                            `http://${req.headers.host}/password/reset?token=${account.resetPasswordToken}`));
+                })
+                .catch((err) => {
+                    res.status(401).send(err.message);
                 });
-            });
         });
 
         /**
          * Login in exist account.
          */
-        router.post('/login', function(req, res, next) {
-            passport.authenticate('local', function(err, user) {
-                if (err)
-                    return res.status(401).send(err.message);
+        router.post('/signin', (req, res, next) => {
+            passport.authenticate('local', (errAuth, user) => {
+                if (errAuth)
+                    return res.status(401).send(errAuth.message);
 
                 if (!user)
                     return res.status(401).send('Invalid email or password');
 
-                req.logIn(user, {}, function(err) {
-                    if (err)
-                        return res.status(401).send(err.message);
+                req.logIn(user, {}, (errLogIn) => {
+                    if (errLogIn)
+                        return res.status(401).send(errLogIn.message);
 
                     return res.sendStatus(200);
                 });
@@ -111,7 +138,7 @@ module.exports.factory = function(express, passport, nodemailer, settings, mongo
         /**
          * Logout.
          */
-        router.post('/logout', function(req, res) {
+        router.post('/logout', (req, res) => {
             req.logout();
 
             res.sendStatus(200);
@@ -120,131 +147,79 @@ module.exports.factory = function(express, passport, nodemailer, settings, mongo
         /**
          * Send e-mail to user with reset token.
          */
-        router.post('/password/forgot', function(req, res) {
-            var transporter = {
-                service: settings.smtp.service,
-                auth: {
-                    user: settings.smtp.email,
-                    pass: settings.smtp.password
-                }
-            };
+        router.post('/password/forgot', (req, res) => {
+            mongo.Account.findOne({email: req.body.email}).exec()
+                .then((user) => {
+                    if (!user)
+                        return Promise.reject('Account with that email address does not exists!');
 
-            if (transporter.service === '' || transporter.auth.user === '' || transporter.auth.pass === '')
-                return res.status(401).send('Can\'t send e-mail with instructions to reset password. Please ask webmaster to setup SMTP server!');
+                    user.resetPasswordToken = _randomString();
 
-            var token = _randomString();
-
-            mongo.Account.findOne({email: req.body.email}, function(err, user) {
-                if (!user)
-                    return res.status(401).send('No account with that email address exists!');
-
-                // TODO IGNITE-843 Send email to admin
-                if (err)
-                    return res.status(401).send('Failed to reset password!');
-
-                user.resetPasswordToken = token;
-
-                user.save(function(err) {
+                    return user.save();
+                })
+                .then((user) => mail.send(user, 'Password Reset',
+                        `Hello ${user.username}!<br><br>` +
+                        'You are receiving this because you (or someone else) have requested the reset of the password for your account.<br><br>' +
+                        'Please click on the following link, or paste this into your browser to complete the process:<br><br>' +
+                        'http://' + req.headers.host + '/password/reset?token=' + user.resetPasswordToken + '<br><br>' +
+                        'If you did not request this, please ignore this email and your password will remain unchanged.',
+                        'Failed to send email with reset link!')
+                )
+                .then(() => res.status(200).send('An email has been sent with further instructions.'))
+                .catch((errMsg) => {
                     // TODO IGNITE-843 Send email to admin
-                    if (err)
-                        return res.status(401).send('Failed to reset password!');
-
-                    var mailer = nodemailer.createTransport(transporter);
-
-                    var mailOptions = {
-                        from: settings.smtp.address(settings.smtp.username, settings.smtp.email),
-                        to: settings.smtp.address(user.username, user.email),
-                        subject: 'Password Reset',
-                        text: 'You are receiving this because you (or someone else) have requested the reset of the password for your account.\n\n' +
-                        'Please click on the following link, or paste this into your browser to complete the process:\n\n' +
-                        'http://' + req.headers.host + '/password/reset?token=' + token + '\n\n' +
-                        'If you did not request this, please ignore this email and your password will remain unchanged.\n\n' +
-                        '--------------\n' +
-                        settings.smtp.username + '\n'
-                    };
-
-                    mailer.sendMail(mailOptions, function(err) {
-                        if (err)
-                            return res.status(401).send('Failed to send e-mail with reset link! ' + err);
-
-                        return res.status(200).send('An e-mail has been sent with further instructions.');
-                    });
+                    return res.status(401).send(errMsg);
                 });
-            });
         });
 
         /**
          * Change password with given token.
          */
-        router.post('/password/reset', function(req, res) {
-            mongo.Account.findOne({resetPasswordToken: req.body.token}, function(err, user) {
-                if (!user)
-                    return res.status(500).send('Invalid token for password reset!');
+        router.post('/password/reset', (req, res) => {
+            mongo.Account.findOne({resetPasswordToken: req.body.token}).exec()
+                .then((user) => {
+                    return new Promise((resolve, reject) => {
+                        if (!user)
+                            return reject('Failed to find account with this token! Please check link from email.');
 
-                // TODO IGNITE-843 Send email to admin
-                if (err)
-                    return res.status(500).send('Failed to reset password!');
-
-                user.setPassword(req.body.password, function(err, updatedUser) {
-                    if (err)
-                        return res.status(500).send(err.message);
-
-                    updatedUser.resetPasswordToken = undefined;
-
-                    updatedUser.save(function(err) {
-                        if (err)
-                            return res.status(500).send(err.message);
-
-                        var transporter = {
-                            service: settings.smtp.service,
-                            auth: {
-                                user: settings.smtp.email,
-                                pass: settings.smtp.password
-                            }
-                        };
-
-                        var mailer = nodemailer.createTransport(transporter);
-
-                        var mailOptions = {
-                            from: settings.smtp.address(settings.smtp.username, settings.smtp.email),
-                            to: settings.smtp.address(user.username, user.email),
-                            subject: 'Your password has been changed',
-                            text: 'Hello,\n\n' +
-                            'This is a confirmation that the password for your account ' + user.email + ' has just been changed.\n\n' +
-                            'Now you can login: http://' + req.headers.host + '\n\n' +
-                            '--------------\n' +
-                            'Apache Ignite Web Console\n'
-                        };
-
-                        mailer.sendMail(mailOptions, function(err) {
+                        user.setPassword(req.body.password, (err, _user) => {
                             if (err)
-                                return res.status(503).send('Password was changed, but failed to send confirmation e-mail!<br />' + err);
+                                return reject('Failed to reset password: ' + err.message);
 
-                            return res.status(200).send(user.email);
+                            _user.resetPasswordToken = undefined; // eslint-disable-line no-undefined
+
+                            resolve(_user.save());
                         });
                     });
+                })
+                .then((user) => {
+                    return mail.send(user, 'Your password has been changed',
+                        `Hello ${user.username}!<br><br>` +
+                        `This is a confirmation that the password for your account on <a href="http://${req.headers.host}">${settings.smtp.username}</a> has just been changed.<br><br>`,
+                        'Password was changed, but failed to send confirmation email!');
+                })
+                .then((user) => res.status(200).send(user.email))
+                .catch((errMsg) => {
+                    res.status(500).send(errMsg);
                 });
-            });
         });
 
         /* GET reset password page. */
-        router.post('/validate/token', function(req, res) {
-            var token = req.body.token;
+        router.post('/password/validate/token', (req, res) => {
+            const token = req.body.token;
 
-            var data = {token};
+            mongo.Account.findOne({resetPasswordToken: token}).exec()
+                .then((user) => {
+                    return new Promise((resolve, reject) => {
+                        if (!user)
+                            return reject('Invalid token for password reset!');
 
-            mongo.Account.findOne({resetPasswordToken: token}, function(err, user) {
-                if (!user)
-                    data.error = 'Invalid token for password reset!';
-                else if (err)
-                    data.error = err;
-                else
-                    data.email = user.email;
-
-                res.json(data);
-            });
+                        resolve(res.json({token, email: user.email}));
+                    });
+                })
+                .catch((error) => res.json({error}));
         });
 
-        resolve(router);
+        factoryResolve(router);
     });
 };

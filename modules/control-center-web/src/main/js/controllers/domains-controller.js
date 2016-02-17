@@ -83,7 +83,12 @@ consoleModule.controller('domainsController', function ($filter, $http, $timeout
                             $http.post('/api/v1/configuration/domains/list')
                                 .success(function (data) {
                                     $scope.spaces = data.spaces;
-                                    $scope.clusters = data.clusters;
+                                    $scope.clusters = _.map(data.clusters, function (cluster) {
+                                        return {
+                                            value: cluster._id,
+                                            label: cluster.name
+                                        };
+                                    });
                                     $scope.caches = _mapCaches(data.caches);
                                     $scope.domains = data.domains;
 
@@ -92,9 +97,9 @@ consoleModule.controller('domainsController', function ($filter, $http, $timeout
                                     _.forEach($scope.clusters, function (cluster) {
                                         $scope.ui.generatedCachesClusters.push(cluster.value);
                                     });
-                                });
 
-                            restoreSelection();
+                                    restoreSelection();
+                                });
                         })
                         .error(function (errMsg) {
                             $common.showError(errMsg);
@@ -1137,7 +1142,12 @@ consoleModule.controller('domainsController', function ($filter, $http, $timeout
         $http.post('/api/v1/configuration/domains/list')
             .success(function (data) {
                 $scope.spaces = data.spaces;
-                $scope.clusters = data.clusters;
+                $scope.clusters = _.map(data.clusters, function (cluster) {
+                    return {
+                        value: cluster._id,
+                        label: cluster.name
+                    };
+                });
                 $scope.caches = _mapCaches(data.caches);
                 $scope.domains = data.domains;
 

@@ -1095,7 +1095,7 @@ consoleModule.service('$common', [
                         cacheStoreFactory: {
                             kind: 'CacheJdbcPojoStoreFactory',
                             CacheJdbcPojoStoreFactory: {
-                                dataSourceBean: cache.name + 'DS',
+                                dataSourceBean: 'ds' + cache.name,
                                 dialect: 'Generic'
                             }
                         },
@@ -2020,7 +2020,7 @@ consoleModule.controller('resetPassword', [
     '$scope', '$modal', '$http', '$common', '$focus', 'Auth', '$state',
     function ($scope, $modal, $http, $common, $focus, Auth, $state) {
         if ($state.params.token)
-            $http.post('/api/v1/validate/token', {token: $state.params.token})
+            $http.post('/api/v1/password/validate/token', {token: $state.params.token})
                 .success(function (res) {
                     $scope.email = res.email;
                     $scope.token = res.token;
@@ -2053,7 +2053,7 @@ consoleModule.controller('resetPassword', [
 consoleModule.controller('auth', ['$scope', '$focus', 'Auth', 'IgniteCountries', function ($scope, $focus, Auth, countries) {
     $scope.auth = Auth.auth;
 
-    $scope.action = 'login';
+    $scope.action = 'signin';
     $scope.countries = countries;
 
     $focus('user_email');
@@ -2103,6 +2103,7 @@ consoleModule.service('$agentDownload', [
 
             lnk.setAttribute('href', '/api/v1/agent/download/zip');
             lnk.setAttribute('target', '_self');
+            lnk.setAttribute('download', null);
             lnk.style.display = 'none';
 
             document.body.appendChild(lnk);

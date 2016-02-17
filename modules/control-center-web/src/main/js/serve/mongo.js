@@ -27,6 +27,9 @@ module.exports = {
 module.exports.factory = function(deepPopulatePlugin, passportMongo, settings, pluginMongo) {
     const mongoose = require('mongoose');
 
+    // Use native promises
+    mongoose.Promise = global.Promise;
+
     const deepPopulate = deepPopulatePlugin(mongoose);
 
     // Connect to mongoDB database.
@@ -35,6 +38,8 @@ module.exports.factory = function(deepPopulatePlugin, passportMongo, settings, p
     const Schema = mongoose.Schema;
     const ObjectId = mongoose.Schema.Types.ObjectId;
     const result = { connection: mongoose.connection };
+
+    result.ObjectId = ObjectId;
 
     // Define Account schema.
     const AccountSchema = new Schema({
@@ -85,7 +90,7 @@ module.exports.factory = function(deepPopulatePlugin, passportMongo, settings, p
 
     // Define Domain model schema.
     const DomainModelSchema = new Schema({
-        space: {type: ObjectId, ref: 'Space'},
+        space: {type: ObjectId, ref: 'Space', index: true},
         caches: [{type: ObjectId, ref: 'Cache'}],
         queryMetadata: {type: String, enum: ['Annotations', 'Configuration']},
         kind: {type: String, enum: ['query', 'store', 'both']},
@@ -120,7 +125,7 @@ module.exports.factory = function(deepPopulatePlugin, passportMongo, settings, p
 
     // Define Cache schema.
     const CacheSchema = new Schema({
-        space: {type: ObjectId, ref: 'Space'},
+        space: {type: ObjectId, ref: 'Space', index: true},
         name: String,
         clusters: [{type: ObjectId, ref: 'Cluster'}],
         domains: [{type: ObjectId, ref: 'DomainModel'}],
@@ -253,7 +258,7 @@ module.exports.factory = function(deepPopulatePlugin, passportMongo, settings, p
     result.Cache = mongoose.model('Cache', CacheSchema);
 
     const IgfsSchema = new Schema({
-        space: {type: ObjectId, ref: 'Space'},
+        space: {type: ObjectId, ref: 'Space', index: true},
         name: String,
         clusters: [{type: ObjectId, ref: 'Cluster'}],
         affinnityGroupSize: Number,
@@ -299,7 +304,7 @@ module.exports.factory = function(deepPopulatePlugin, passportMongo, settings, p
 
     // Define Cluster schema.
     const ClusterSchema = new Schema({
-        space: {type: ObjectId, ref: 'Space'},
+        space: {type: ObjectId, ref: 'Space', index: true},
         name: String,
         localHost: String,
         discovery: {
@@ -501,7 +506,7 @@ module.exports.factory = function(deepPopulatePlugin, passportMongo, settings, p
 
     // Define Notebook schema.
     const NotebookSchema = new Schema({
-        space: {type: ObjectId, ref: 'Space'},
+        space: {type: ObjectId, ref: 'Space', index: true},
         name: String,
         expandedParagraphs: [Number],
         paragraphs: [{
@@ -524,26 +529,30 @@ module.exports.factory = function(deepPopulatePlugin, passportMongo, settings, p
     // Define Notebook model.
     result.Notebook = mongoose.model('Notebook', NotebookSchema);
 
-    result.upsert = function(Model, data, cb) {
-        if (data._id) {
-            const id = data._id;
-
-            delete data._id;
-
-            Model.findOneAndUpdate({_id: id}, data, cb);
-        }
-        else
-            new Model(data).save(cb);
+    result.handleError = function(res, err) {
+        // TODO IGNITE-843 Send error to admin
+        res.status(err.code || 500).send(err.message);
     };
 
-    result.processed = function(err, res) {
-        if (err) {
-            res.status(500).send(err);
+    /**
+     * Query for user spaces.
+     *
+     * @param userId User ID.
+     * @returns {Promise}
+     */
+    result.spaces = function(userId) {
+        return result.Space.find({owner: userId}).lean().exec();
+    };
 
-            return false;
-        }
-
-        return true;
+    /**
+     * Extract IDs from user spaces.
+     *
+     * @param userId User ID.
+     * @returns {Promise}
+     */
+    result.spaceIds = function(userId) {
+        return result.Space.find({owner: userId}).lean().exec()
+            .then((spaces) => spaces.map((space) => space._id));
     };
 
     // Registering the routes of all plugin modules

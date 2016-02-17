@@ -36,7 +36,7 @@ export default ['User', ['$q', '$injector', '$rootScope', '$state', '$http', fun
 
                     Auth.authorized = false;
 
-                    $state.go('login');
+                    $state.go('signin');
                 }
 
                 try {

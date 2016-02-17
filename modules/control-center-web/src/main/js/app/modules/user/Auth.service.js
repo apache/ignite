@@ -65,7 +65,7 @@ export default ['Auth', ['$http', '$rootScope', '$state', '$common', 'IgniteGett
 
                         _authorized(false);
 
-                        $state.go('login');
+                        $state.go('signin');
                     })
                     .catch((errMsg) => $common.showError(errMsg));
             }

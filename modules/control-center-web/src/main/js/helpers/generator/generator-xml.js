@@ -690,7 +690,7 @@ $generatorXml.clusterTransactions = function (cluster, res) {
     if (!res)
         res = $generatorCommon.builder();
 
-    $generatorXml.beanProperty(res, cluster.transactionConfiguration, 'transactionConfiguration', $generatorCommon.TRANSACTION_CONFIGURATION, true);
+    $generatorXml.beanProperty(res, cluster.transactionConfiguration, 'transactionConfiguration', $generatorCommon.TRANSACTION_CONFIGURATION, false);
 
     res.needEmptyLine = true;
 
@@ -860,7 +860,7 @@ $generatorXml.cacheStore = function(cache, domains, res) {
             }
             else if (factoryKind === 'CacheJdbcBlobStoreFactory') {
                 res.startBlock('<property name="cacheStoreFactory">');
-                res.startBlock('<bean class="org.apache.ignite.cache.store.jdbc.CacheJdbcPojoStoreFactory">');
+                res.startBlock('<bean class="org.apache.ignite.cache.store.jdbc.CacheJdbcBlobStoreFactory">');
 
                 if (storeFactory.connectVia === 'DataSource')
                     $generatorXml.property(res, storeFactory, 'dataSourceBean');

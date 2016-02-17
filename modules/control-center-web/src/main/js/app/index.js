@@ -167,7 +167,7 @@ angular
             templateUrl: '/base.html'
         });
 
-    $urlRouterProvider.when('/', '/login');
+    $urlRouterProvider.when('/', '/signin');
 
     $locationProvider.html5Mode(true);
 }])

@@ -26,9 +26,9 @@ angular
 .config(['$stateProvider', function($stateProvider) {
     // set up the states
     $stateProvider
-    .state('login', {
-        url: '/login',
-        templateUrl: '/login.html',
+    .state('signin', {
+        url: '/signin',
+        templateUrl: '/signin.html',
         resolve: {
             $title: () => {
                 return 'Sign In';
@@ -41,12 +41,12 @@ angular
         if (toState.name === IgniteTerms.termsState)
             return;
 
-        if (!Auth.authorized && (toState.name !== 'login' && !_.startsWith(toState.name, 'password.'))) {
+        if (!Auth.authorized && (toState.name !== 'signin' && !_.startsWith(toState.name, 'password.'))) {
             event.preventDefault();
 
-            $state.go('login');
+            $state.go('signin');
         }
-        else if (Auth.authorized && toState.name === 'login') {
+        else if (Auth.authorized && toState.name === 'signin') {
             event.preventDefault();
 
             $state.go('base.configuration.clusters');

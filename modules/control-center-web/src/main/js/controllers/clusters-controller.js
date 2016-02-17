@@ -192,7 +192,7 @@ consoleModule.controller('clustersController', function ($http, $timeout, $scope
                 else
                     $scope.backupItem = undefined;
 
-                $scope.backupItem = angular.extend({}, blank, $scope.backupItem);
+                $scope.backupItem = angular.merge({}, blank, $scope.backupItem);
 
                 __original_value = JSON.stringify($cleanup($scope.backupItem));
 
@@ -218,7 +218,7 @@ consoleModule.controller('clustersController', function ($http, $timeout, $scope
                 }
             };
 
-            newItem = angular.extend({},  blank, newItem);
+            newItem = angular.merge({}, blank, newItem);
 
             newItem.caches = id && _.find($scope.caches, {value: id}) ? [id] : [];
             newItem.igfss = id && _.find($scope.igfss, {value: id}) ? [id] : [];
@@ -424,7 +424,7 @@ consoleModule.controller('clustersController', function ($http, $timeout, $scope
                     });
 
                     if (idx >= 0)
-                        angular.extend($scope.clusters[idx], item);
+                        angular.merge($scope.clusters[idx], item);
                     else {
                         item._id = _id;
                         $scope.clusters.push(item);

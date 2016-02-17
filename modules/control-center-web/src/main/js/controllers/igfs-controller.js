@@ -167,7 +167,12 @@ consoleModule.controller('igfsController', [
                 .success(function (data) {
                     $scope.spaces = data.spaces;
                     $scope.igfss = data.igfss;
-                    $scope.clusters = data.clusters;
+                    $scope.clusters = _.map(data.clusters, function (cluster) {
+                        return {
+                            value: cluster._id,
+                            label: cluster.name
+                        };
+                    });
 
                     // Load page descriptor.
                     $http.get('/models/igfs.json')
@@ -357,10 +362,16 @@ consoleModule.controller('igfsController', [
                 }
             };
 
+            function _igfsNames() {
+                return _.map($scope.igfss, function (igfs) {
+                    return igfs.name;
+                });
+            }
+
             // Save IGFS with new name.
             $scope.cloneItem = function () {
                 if ($scope.tableReset(true) && validate($scope.backupItem)) {
-                    $clone.confirm($scope.backupItem.name).then(function (newName) {
+                    $clone.confirm($scope.backupItem.name, _igfsNames()).then(function (newName) {
                         var item = angular.copy($scope.backupItem);
 
                         delete item._id;

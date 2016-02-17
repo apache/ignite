@@ -25,8 +25,8 @@ module.exports = {
 };
 
 module.exports.factory = function(_, express, mongo) {
-    return new Promise((resolve) => {
-        const router = express.Router();
+    return new Promise((factoryResolve) => {
+        const router = new express.Router();
 
         /**
          * Get spaces and IGFSs accessed for user account.
@@ -35,37 +35,28 @@ module.exports.factory = function(_, express, mongo) {
          * @param res Response.
          */
         router.post('/list', (req, res) => {
-            const user_id = req.currentUserId();
+            const result = {};
+            let spaceIds = [];
 
             // Get owned space and all accessed space.
-            mongo.Space.find({$or: [{owner: user_id}, {usedBy: {$elemMatch: {account: user_id}}}]}, (errSpace, spaces) => {
-                if (mongo.processed(errSpace, res)) {
-                    const space_ids = spaces.map((value) => value._id);
+            mongo.spaces(req.currentUserId())
+                .then((spaces) => {
+                    result.spaces = spaces;
+                    spaceIds = spaces.map((space) => space._id);
 
-                    // Get all clusters for spaces.
-                    mongo.Cluster.find({space: {$in: space_ids}}, '_id name').sort('name').exec((errCluster, clusters) => {
-                        if (mongo.processed(errCluster, res)) {
-                            // Get all IGFSs for spaces.
-                            mongo.Igfs.find({space: {$in: space_ids}}).sort('name').exec((errIgfs, igfss) => {
-                                if (mongo.processed(errIgfs, res)) {
-                                    _.forEach(igfss, (igfs) => {
-                                        // Remove deleted clusters.
-                                        igfs.clusters = _.filter(igfs.clusters, (clusterId) => {
-                                            return _.findIndex(clusters, (cluster) => cluster._id.equals(clusterId)) >= 0;
-                                        });
-                                    });
+                    return mongo.Cluster.find({space: {$in: spaceIds}}, '_id name').sort('name').lean().exec();
+                })
+                .then((clusters) => {
+                    result.clusters = clusters;
 
-                                    res.json({
-                                        spaces,
-                                        clusters: clusters.map((cluster) => ({value: cluster._id, label: cluster.name})),
-                                        igfss
-                                    });
-                                }
-                            });
-                        }
-                    });
-                }
-            });
+                    return mongo.Igfs.find({space: {$in: spaceIds}}).sort('name').lean().exec();
+                })
+                .then((igfss) => {
+                    result.igfss = igfss;
+
+                    res.json(result);
+                })
+                .catch((err) => mongo.handleError(res, err));
         });
 
         /**
@@ -76,75 +67,58 @@ module.exports.factory = function(_, express, mongo) {
             const clusters = params.clusters;
             let igfsId = params._id;
 
-            if (params._id) {
-                mongo.Igfs.update({_id: igfsId}, params, {upsert: true}, (errIgfs) => {
-                    if (mongo.processed(errIgfs, res)) {
-                        mongo.Cluster.update({_id: {$in: clusters}}, {$addToSet: {igfss: igfsId}}, {multi: true}, (errClusterAdd) => {
-                            if (mongo.processed(errClusterAdd, res)) {
-                                mongo.Cluster.update({_id: {$nin: clusters}}, {$pull: {igfss: igfsId}}, {multi: true}, (errClusterPull) => {
-                                    if (mongo.processed(errClusterPull, res))
-                                        res.send(params._id);
-                                });
-                            }
-                        });
-                    }
-                });
-            }
-            else {
-                mongo.Igfs.findOne({space: params.space, name: params.name}, (errIgfsFind, igfsFound) => {
-                    if (mongo.processed(errIgfsFind, res)) {
-                        if (igfsFound)
-                            return res.status(500).send('IGFS with name: "' + igfsFound.name + '" already exist.');
+            mongo.Igfs.findOne({space: params.space, name: params.name}).exec()
+                .then((_igfs) => {
+                    if (_igfs && igfsId !== _igfs._id.toString())
+                        return res.status(500).send('IGFS with name: "' + params.name + '" already exist.');
 
-                        (new mongo.Igfs(params)).save((errIgfsSave, igfs) => {
-                            if (mongo.processed(errIgfsSave, res)) {
-                                igfsId = igfs._id;
-
-                                mongo.Cluster.update({_id: {$in: clusters}}, {$addToSet: {igfss: igfsId}}, {multi: true}, (errCluster) => {
-                                    if (mongo.processed(errCluster, res))
-                                        res.send(igfsId);
-                                });
-                            }
-                        });
+                    if (params._id) {
+                        return mongo.Igfs.update({_id: igfsId}, params, {upsert: true}).exec()
+                            .then(() => mongo.Cluster.update({_id: {$in: clusters}}, {$addToSet: {igfss: igfsId}}, {multi: true}).exec())
+                            .then(() => mongo.Cluster.update({_id: {$nin: clusters}}, {$pull: {igfss: igfsId}}, {multi: true}).exec())
+                            .then(() => res.send(igfsId))
+                            .catch((err) => mongo.handleError(res, err));
                     }
+
+                    return (new mongo.Igfs(params)).save()
+                        .then((igfs) => {
+                            igfsId = igfs._id;
+
+                            return mongo.Cluster.update({_id: {$in: clusters}}, {$addToSet: {igfss: igfsId}}, {multi: true}).exec();
+                        })
+                        .then(() => res.send(igfsId))
+                        .catch((err) => mongo.handleError(res, err));
                 });
-            }
         });
 
         /**
          * Remove IGFS by ._id.
          */
         router.post('/remove', (req, res) => {
-            mongo.Igfs.remove(req.body, (err) => {
-                if (mongo.processed(err, res))
-                    res.sendStatus(200);
-            });
+            const params = req.body;
+            const igfsId = params._id;
+
+            mongo.Cluster.update({igfss: {$in: [igfsId]}}, {$pull: {igfss: igfsId}}, {multi: true}).exec()
+                .then(() => mongo.Igfs.remove(params).exec())
+                .then(() => res.sendStatus(200))
+                .catch((err) => mongo.handleError(res, err));
         });
 
         /**
          * Remove all IGFSs.
          */
         router.post('/remove/all', (req, res) => {
-            const user_id = req.currentUserId();
-
             // Get owned space and all accessed space.
-            mongo.Space.find({$or: [{owner: user_id}, {usedBy: {$elemMatch: {account: user_id}}}]}, (errSpace, spaces) => {
-                if (mongo.processed(errSpace, res)) {
-                    const space_ids = spaces.map((value) => value._id);
-
-                    mongo.Igfs.remove({space: {$in: space_ids}}, (errIgfs) => {
-                        if (mongo.processed(errIgfs, res)) {
-                            mongo.Cluster.update({space: {$in: space_ids}}, {igfss: []}, {multi: true}, (errCluster) => {
-                                if (mongo.processed(errCluster, res))
-                                    res.sendStatus(200);
-                            });
-                        }
-                    });
-                }
-            });
+            mongo.spaceIds(req.currentUserId())
+                .then((spaceIds) =>
+                    mongo.Cluster.update({space: {$in: spaceIds}}, {igfss: []}, {multi: true}).exec()
+                        .then(() => mongo.Igfs.remove({space: {$in: spaceIds}}).exec())
+                )
+                .then(() => res.sendStatus(200))
+                .catch((err) => mongo.handleError(res, err));
         });
 
-        resolve(router);
+        factoryResolve(router);
     });
 };
 

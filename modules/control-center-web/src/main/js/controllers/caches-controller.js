@@ -296,7 +296,13 @@ consoleModule.controller('cachesController', [
                 });
 
                 $scope.caches = data.caches;
-                $scope.clusters = data.clusters;
+                $scope.clusters = _.map(data.clusters, function (cluster) {
+                    return {
+                        value: cluster._id,
+                        label: cluster.name,
+                        caches: cluster.caches
+                    };
+                });
                 $scope.domains = _.sortBy(_.map(validFilter(data.domains, true, false), function (domain) {
                     return {
                         value: domain._id,
