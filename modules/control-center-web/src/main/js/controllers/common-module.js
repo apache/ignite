@@ -730,6 +730,12 @@ consoleModule.service('$common', [
             return DS_CHECK_SUCCESS;
         }
 
+        function toJavaName(prefix, name) {
+            var javaName = name ? name.replace(/[^A-Za-z_0-9]+/g, '_') : 'dflt';
+
+            return prefix + javaName.charAt(0).toLocaleUpperCase() + javaName.slice(1);
+        }
+
         return {
             getModel: getModel,
             joinTip: function (arr) {
@@ -1095,7 +1101,7 @@ consoleModule.service('$common', [
                         cacheStoreFactory: {
                             kind: 'CacheJdbcPojoStoreFactory',
                             CacheJdbcPojoStoreFactory: {
-                                dataSourceBean: 'ds' + cache.name,
+                                dataSourceBean: toJavaName('ds', cache.name),
                                 dialect: 'Generic'
                             }
                         },
