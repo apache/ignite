@@ -38,7 +38,7 @@ void Main()
     using (var ignite = Ignition.Start(cfg))
     {
         // Create new cache
-        var cache = ignite.CreateCache<int, Organization="">("orgs");
+        var cache = ignite.CreateCache<int, Organization>("orgs");
 
         // Put data entry to cache
         cache.Put(1, new Organization {Name = "Apache", Type="Non-Profit"});
@@ -47,7 +47,7 @@ void Main()
         cache.Get(1).Dump("Retrieved organization instance from cache");
 
         // Create projection that will get values as binary objects
-        var binaryCache = cache.WithKeepBinary<int, IBinaryObject="">();
+        var binaryCache = cache.WithKeepBinary<int, IBinaryObject>();
 
         // Get recently created organization as a binary object
         var binaryOrg = binaryCache.Get(1);
