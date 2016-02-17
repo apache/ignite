@@ -5,11 +5,11 @@
       <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
       <Extensions>cpp;c;cc;cxx;def;odl;idl;hpj;bat;asm;asmx;h;hh;hpp;hxx;hm;inl;inc;xsd</Extensions>
     </Filter>
-    <Filter Include="Externals">
-      <UniqueIdentifier>{cc75fc86-c08d-428a-8ae3-f9979e4588ab}</UniqueIdentifier>
-    </Filter>
     <Filter Include="Code\teamcity">
       <UniqueIdentifier>{5438a56d-1009-412a-86e3-ceb1112af275}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="External">
+      <UniqueIdentifier>{cc75fc86-c08d-428a-8ae3-f9979e4588ab}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -44,31 +44,31 @@
       <Filter>Code</Filter>
     </ClCompile>
     <ClCompile Include="..\..\..\odbc\src\app\application_data_buffer.cpp">
-      <Filter>Externals</Filter>
+      <Filter>External</Filter>
     </ClCompile>
     <ClCompile Include="..\..\..\odbc\src\column.cpp">
-      <Filter>Externals</Filter>
+      <Filter>External</Filter>
     </ClCompile>
     <ClCompile Include="..\..\..\odbc\src\config\configuration.cpp">
-      <Filter>Externals</Filter>
+      <Filter>External</Filter>
     </ClCompile>
     <ClCompile Include="..\..\..\odbc\src\config\connection_info.cpp">
-      <Filter>Externals</Filter>
+      <Filter>External</Filter>
     </ClCompile>
     <ClCompile Include="..\..\..\odbc\src\cursor.cpp">
-      <Filter>Externals</Filter>
+      <Filter>External</Filter>
     </ClCompile>
     <ClCompile Include="..\..\..\odbc\src\decimal.cpp">
-      <Filter>Externals</Filter>
+      <Filter>External</Filter>
     </ClCompile>
     <ClCompile Include="..\..\..\odbc\src\result_page.cpp">
-      <Filter>Externals</Filter>
+      <Filter>External</Filter>
     </ClCompile>
     <ClCompile Include="..\..\..\odbc\src\row.cpp">
-      <Filter>Externals</Filter>
+      <Filter>External</Filter>
     </ClCompile>
     <ClCompile Include="..\..\..\odbc\src\utility.cpp">
-      <Filter>Externals</Filter>
+      <Filter>External</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

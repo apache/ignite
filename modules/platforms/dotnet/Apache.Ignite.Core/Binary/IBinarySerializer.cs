@@ -23,17 +23,17 @@ namespace Apache.Ignite.Core.Binary
     public interface IBinarySerializer
     {
         /// <summary>
-        /// Write portalbe object.
+        /// Write binary object.
         /// </summary>
         /// <param name="obj">Object.</param>
-        /// <param name="writer">Poratble writer.</param>
+        /// <param name="writer">Binary writer.</param>
         void WriteBinary(object obj, IBinaryWriter writer);
 
         /// <summary>
         /// Read binary object.
         /// </summary>
         /// <param name="obj">Instantiated empty object.</param>
-        /// <param name="reader">Poratble reader.</param>
+        /// <param name="reader">Binary reader.</param>
         void ReadBinary(object obj, IBinaryReader reader);
     }
 }

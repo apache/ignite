@@ -256,12 +256,7 @@ namespace ignite
             if (currentQuery.get())
                 currentQuery->Close();
 
-            std::string cache(schema);
-
-            if (cache.empty())
-                cache = connection.GetCache();
-
-            currentQuery.reset(new query::TableMetadataQuery(*this, connection, catalog, cache, table, tableType));
+            currentQuery.reset(new query::TableMetadataQuery(*this, connection, catalog, schema, table, tableType));
 
             return currentQuery->Execute();
         }

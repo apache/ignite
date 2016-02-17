@@ -224,7 +224,7 @@ namespace ignite
             void BinaryUtils::WriteTimestamp(interop::InteropOutputStream* stream, const Timestamp val)
             {
                 stream->WriteInt64(val.GetSeconds() * 1000);
-                stream->WriteInt32(val.GetNanoseconds());
+                stream->WriteInt32(val.GetSecondFraction());
             }
 
             void BinaryUtils::WriteString(interop::InteropOutputStream* stream, const char* val, const int32_t len)

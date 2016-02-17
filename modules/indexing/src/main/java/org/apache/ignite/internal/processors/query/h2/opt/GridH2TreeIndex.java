@@ -187,7 +187,7 @@ public class GridH2TreeIndex extends GridH2IndexBase implements Comparator<GridS
 
         ConcurrentNavigableMap<GridSearchRowPointer, GridH2Row> s = snapshot.get();
 
-        snapshot.remove();
+        snapshot.set(null);
 
         if (s instanceof Closeable)
             U.closeQuiet((Closeable)s);

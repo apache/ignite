@@ -21,35 +21,28 @@ namespace ignite
 {
     Timestamp::Timestamp() :
         seconds(0),
-        nanoseconds(0)
+        fractionNs(0)
     {
         // No-op.
     }
 
     Timestamp::Timestamp(const Timestamp& another) : 
         seconds(another.seconds),
-        nanoseconds(another.nanoseconds)
+        fractionNs(another.fractionNs)
     {
         // No-op.
     }
 
     Timestamp::Timestamp(int64_t ms) :
         seconds(ms / 1000),
-        nanoseconds((ms % 1000) * 1000000)
+        fractionNs((ms % 1000) * 1000000)
     {
         // No-op.
     }
 
-    Timestamp::Timestamp(Date date) :
-        seconds(date.GetSeconds()),
-        nanoseconds((date.GetMilliseconds() % 1000) * 1000000)
-    {
-        // No-op.
-    }
-
-    Timestamp::Timestamp(int64_t seconds, int32_t nanoseconds) :
+    Timestamp::Timestamp(int64_t seconds, int32_t fractionNs) :
         seconds(seconds),
-        nanoseconds(nanoseconds)
+        fractionNs(fractionNs)
     {
         // No-op.
     }
@@ -57,14 +50,14 @@ namespace ignite
     Timestamp& Timestamp::operator=(const Timestamp& another)
     {
         seconds = another.seconds;
-        nanoseconds = another.nanoseconds;
+        fractionNs = another.fractionNs;
 
         return *this;
     }
 
     int64_t Timestamp::GetMilliseconds() const
     {
-        return seconds * 1000 + nanoseconds / 1000000;
+        return seconds * 1000 + fractionNs / 1000000;
     }
 
     int64_t Timestamp::GetSeconds() const
@@ -72,9 +65,9 @@ namespace ignite
         return seconds;
     }
 
-    int32_t Timestamp::GetNanoseconds() const
+    int32_t Timestamp::GetSecondFraction() const
     {
-        return nanoseconds;
+        return fractionNs;
     }
 
     Date Timestamp::GetDate() const
@@ -85,40 +78,40 @@ namespace ignite
     bool operator==(Timestamp& val1, Timestamp& val2)
     {
         return val1.seconds == val2.seconds &&
-            val1.nanoseconds == val2.nanoseconds;
+            val1.fractionNs == val2.fractionNs;
     }
 
     bool operator!=(Timestamp& val1, Timestamp& val2)
     {
         return val1.seconds != val2.seconds ||
-            val1.nanoseconds != val2.nanoseconds;
+            val1.fractionNs != val2.fractionNs;
     }
 
     bool operator<(Timestamp& val1, Timestamp& val2)
     {
         return val1.seconds < val2.seconds ||
             (val1.seconds == val2.seconds &&
-                val1.nanoseconds < val2.nanoseconds);
+                val1.fractionNs < val2.fractionNs);
     }
 
     bool operator<=(Timestamp& val1, Timestamp& val2)
     {
         return val1.seconds < val2.seconds ||
             (val1.seconds == val2.seconds &&
-                val1.nanoseconds <= val2.nanoseconds);
+                val1.fractionNs <= val2.fractionNs);
     }
 
     bool operator>(Timestamp& val1, Timestamp& val2)
     {
         return val1.seconds > val2.seconds ||
             (val1.seconds == val2.seconds &&
-                val1.nanoseconds > val2.nanoseconds);
+                val1.fractionNs > val2.fractionNs);
     }
 
     bool operator>=(Timestamp& val1, Timestamp& val2)
     {
         return val1.seconds > val2.seconds ||
             (val1.seconds == val2.seconds &&
-                val1.nanoseconds >= val2.nanoseconds);
+                val1.fractionNs >= val2.fractionNs);
     }
 }

@@ -350,7 +350,7 @@ namespace ignite
                 int32_t fieldPos = FindField(fieldId);
 
                 if (fieldPos <= 0)
-                    return Date();
+                    return Timestamp();
 
                 stream->Position(fieldPos);
 
@@ -734,6 +734,38 @@ namespace ignite
                     int32_t pos = stream->Position() - 1;
 
                     IGNITE_ERROR_FORMATTED_3(IgniteError::IGNITE_ERR_BINARY, "Invalid header", "position", pos, "expected", IGNITE_TYPE_UUID, "actual", typeId)
+                }
+            }
+
+            template <>
+            Date BinaryReaderImpl::ReadTopObject<Date>()
+            {
+                int8_t typeId = stream->ReadInt8();
+
+                if (typeId == IGNITE_TYPE_DATE)
+                    return BinaryUtils::ReadDate(stream);
+                else if (typeId == IGNITE_HDR_NULL)
+                    return Date();
+                else {
+                    int32_t pos = stream->Position() - 1;
+
+                    IGNITE_ERROR_FORMATTED_3(IgniteError::IGNITE_ERR_BINARY, "Invalid header", "position", pos, "expected", (int)IGNITE_TYPE_DATE, "actual", (int)typeId)
+                }
+            }
+
+            template <>
+            Timestamp BinaryReaderImpl::ReadTopObject<Timestamp>()
+            {
+                int8_t typeId = stream->ReadInt8();
+
+                if (typeId == IGNITE_TYPE_TIMESTAMP)
+                    return BinaryUtils::ReadTimestamp(stream);
+                else if (typeId == IGNITE_HDR_NULL)
+                    return Timestamp();
+                else {
+                    int32_t pos = stream->Position() - 1;
+
+                    IGNITE_ERROR_FORMATTED_3(IgniteError::IGNITE_ERR_BINARY, "Invalid header", "position", pos, "expected", (int)IGNITE_TYPE_TIMESTAMP, "actual", (int)typeId)
                 }
             }
 

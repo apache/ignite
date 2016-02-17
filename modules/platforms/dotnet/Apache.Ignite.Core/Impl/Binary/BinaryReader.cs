@@ -538,6 +538,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         {
             T res;
 
+            // ReSharper disable once CompareNonConstrainedGenericWithNull
             if (!TryDeserialize(out res) && default(T) != null)
                 throw new BinaryObjectException(string.Format("Invalid data on deserialization. " +
                     "Expected: '{0}' But was: null", typeof (T)));
@@ -937,7 +938,7 @@ namespace Apache.Ignite.Core.Impl.Binary
                 if (!_curSchemaMap.TryGetValue(fieldId, out pos))
                     return false;
 
-                Stream.Seek(pos, SeekOrigin.Begin);
+                Stream.Seek(pos + _curPos, SeekOrigin.Begin);
             }
 
             return true;
