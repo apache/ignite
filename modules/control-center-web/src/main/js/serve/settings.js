@@ -72,7 +72,7 @@ module.exports.factory = function(nconf, fs) {
             password: nconf.get('smtp:password'),
             address: (username, email) => username ? '"' + username + '" <' + email + '>' : email
         },
-        mongoUrl: nconf.get('mongoDB:url'),
+        mongoUrl: nconf.get('mongoDB:url') || 'mongodb://localhost/console',
         cookieTTL: 3600000 * 24 * 30,
         sessionSecret: 'keyboard cat',
         tokenLength: 20
