@@ -39,11 +39,12 @@ module.exports.factory = function(_, express, mongo) {
             let spaceIds = [];
 
             // Get owned space and all accessed space.
-            mongo.spaceIds(req.currentUserId())
-                .then((_spaceIds) => {
-                    spaceIds = _spaceIds;
+            mongo.spaces(req.currentUserId())
+                .then((spaces) => {
+                    result.spaces = spaces;
+                    spaceIds = spaces.map((space) => space._id);
 
-                    mongo.Cluster.find({space: {$in: _spaceIds}}).sort('name').lean().exec()
+                    mongo.Cluster.find({space: {$in: spaceIds}}).sort('name').lean().exec()
                 })
                 .then((clusters) => {
                     result.clusters = clusters;

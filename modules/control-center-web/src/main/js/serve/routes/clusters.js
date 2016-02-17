@@ -36,15 +36,15 @@ module.exports.factory = function(_, express, mongo) {
          */
         router.post('/list', (req, res) => {
             const result = {};
-            let spacesIds = [];
+            let spaceIds = [];
             let domains = {};
 
             mongo.spaces(req.currentUserId())
                 .then((spaces) => {
                     result.spaces = spaces;
-                    spacesIds = spaces.map((space) => space._id);
+                    spaceIds = spaces.map((space) => space._id);
 
-                    return mongo.DomainModel.find({space: {$in: spacesIds}}).sort('valueType').lean().exec();
+                    return mongo.DomainModel.find({space: {$in: spaceIds}}).sort('valueType').lean().exec();
                 })
                 .then((_domains) => {
                     domains = _domains.reduce((map, obj) => {
@@ -53,7 +53,7 @@ module.exports.factory = function(_, express, mongo) {
                         return map;
                     }, {});
 
-                    return mongo.Cache.find({space: {$in: spacesIds}}).sort('name').lean().exec();
+                    return mongo.Cache.find({space: {$in: spaceIds}}).sort('name').lean().exec();
                 })
                 .then((caches) => {
                     _.forEach(caches, (cache) => {
@@ -62,12 +62,12 @@ module.exports.factory = function(_, express, mongo) {
 
                     result.caches = caches;
 
-                    return mongo.Igfs.find({space: {$in: spacesIds}}).sort('name').lean().exec();
+                    return mongo.Igfs.find({space: {$in: spaceIds}}).sort('name').lean().exec();
                 })
                 .then((igfss) => {
                     result.igfss = igfss;
 
-                    return mongo.Cluster.find({space: {$in: spacesIds}}).sort('name').deepPopulate(mongo.ClusterDefaultPopulate).lean().exec();
+                    return mongo.Cluster.find({space: {$in: spaceIds}}).sort('name').deepPopulate(mongo.ClusterDefaultPopulate).lean().exec();
                 })
                 .then((clusters) => {
                     result.clusters = clusters;
