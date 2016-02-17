@@ -23,7 +23,6 @@ import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
-import org.apache.ignite.internal.util.nio.GridBufferedParser;
 import org.apache.ignite.internal.util.nio.GridNioCodecFilter;
 import org.apache.ignite.internal.util.nio.GridNioServer;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -84,7 +83,7 @@ public class OdbcProcessor extends GridProcessorAdapter {
                     .socketSendBufferSize(odbcCfg.getSendBufferSize())
                     .socketReceiveBufferSize(odbcCfg.getReceiveBufferSize())
                     .sendQueueLimit(odbcCfg.getSendQueueLimit())
-                    .filters(new GridNioCodecFilter(new OdbcBufferedParser(false, ByteOrder.LITTLE_ENDIAN), log, false))
+                    .filters(new GridNioCodecFilter(new OdbcBufferedParser(), log, false))
                     .directMode(false)
                     .idleTimeout(odbcCfg.getIdleTimeout())
                     .build();

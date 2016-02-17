@@ -19,8 +19,8 @@ package org.apache.ignite.internal.processors.odbc;
 
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.GridKernalContext;
-import org.apache.ignite.internal.binary.BinaryRawWriterEx;
 import org.apache.ignite.internal.binary.BinaryReaderExImpl;
+import org.apache.ignite.internal.binary.BinaryWriterExImpl;
 import org.apache.ignite.internal.binary.GridBinaryMarshaller;
 import org.apache.ignite.internal.binary.streams.BinaryHeapInputStream;
 import org.apache.ignite.internal.binary.streams.BinaryHeapOutputStream;
@@ -63,8 +63,7 @@ public class OdbcNioListener extends GridNioServerListenerAdapter<byte[]> {
      * @param busyLock Shutdown busy lock.
      * @param handler Request handler.
      */
-    public OdbcNioListener(final GridKernalContext ctx, final GridSpinBusyLock busyLock,
-                           final OdbcRequestHandler handler) {
+    public OdbcNioListener(GridKernalContext ctx, GridSpinBusyLock busyLock, OdbcRequestHandler handler) {
         this.busyLock = busyLock;
         this.handler = handler;
 
@@ -107,17 +106,20 @@ public class OdbcNioListener extends GridNioServerListenerAdapter<byte[]> {
                 log.debug("ODBC request received [id=" + reqId + ", addr=" + ses.remoteAddress() + ", req=" + req + ']');
             }
 
-            OdbcResponse rsp = handle(req);
+            OdbcResponse resp = handle(req);
 
             if (log.isDebugEnabled()) {
                 long dur = (System.nanoTime() - startTime) / 1000;
 
-                log.debug("ODBC request processed [id=" + reqId + ", dur(mcs)=" + dur  + ", rsp=" + rsp.status() + ']');
+                log.debug("ODBC request processed [id=" + reqId + ", dur(mcs)=" + dur  +
+                    ", resp=" + resp.status() + ']');
             }
-            byte[] outMsg = encode(rsp);
+
+            byte[] outMsg = encode(resp);
 
             ses.send(outMsg);
-        } catch (Exception e) {
+        }
+        catch (Exception e) {
             trySendErrorMessage(ses, e.getMessage());
         }
     }
@@ -134,6 +136,8 @@ public class OdbcNioListener extends GridNioServerListenerAdapter<byte[]> {
             ses.send(encode(new OdbcResponse(OdbcResponse.STATUS_FAILED, err)));
         }
         catch (Exception e) {
+            // TODO: ???
+
             log.error("Can not send error response message: [err=" + e.getMessage() + ']');
         }
     }
@@ -254,7 +258,7 @@ public class OdbcNioListener extends GridNioServerListenerAdapter<byte[]> {
         assert msg != null;
 
         // Creating new binary writer
-        BinaryRawWriterEx writer = marsh.writer(new BinaryHeapOutputStream(INIT_CAP));
+        BinaryWriterExImpl writer = marsh.writer(new BinaryHeapOutputStream(INIT_CAP));
 
         // Writing status
         writer.writeByte((byte) msg.status());
@@ -262,7 +266,7 @@ public class OdbcNioListener extends GridNioServerListenerAdapter<byte[]> {
         if (msg.status() != OdbcResponse.STATUS_SUCCESS) {
             writer.writeString(msg.error());
 
-            return Arrays.copyOf(writer.out().array(), writer.out().position());
+            return writer.array();
         }
 
         Object res0 = msg.response();
@@ -319,7 +323,6 @@ public class OdbcNioListener extends GridNioServerListenerAdapter<byte[]> {
                 log.debug("Resulting query ID: " + res.getQueryId());
 
             writer.writeLong(res.getQueryId());
-
         }
         else if (res0 instanceof OdbcQueryGetColumnsMetaResult) {
             OdbcQueryGetColumnsMetaResult res = (OdbcQueryGetColumnsMetaResult) res0;
@@ -332,7 +335,6 @@ public class OdbcNioListener extends GridNioServerListenerAdapter<byte[]> {
 
             for (OdbcColumnMeta columnMeta : columnsMeta)
                 columnMeta.writeBinary(writer, marsh.context());
-
         }
         else if (res0 instanceof OdbcQueryGetTablesMetaResult) {
             OdbcQueryGetTablesMetaResult res = (OdbcQueryGetTablesMetaResult) res0;
@@ -347,9 +349,9 @@ public class OdbcNioListener extends GridNioServerListenerAdapter<byte[]> {
                 tableMeta.writeBinary(writer);
         }
         else
-            throw new IOException("Failed to serialize response packet (unknown response type)");
+            assert false : "Should nor reach here.";
 
-        return Arrays.copyOf(writer.out().array(), writer.out().position());
+        return writer.array();
     }
 
     /**

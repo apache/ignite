@@ -21,7 +21,6 @@ import org.apache.ignite.IgniteCheckedException;
 import org.jetbrains.annotations.Nullable;
 
 import java.nio.ByteBuffer;
-import java.nio.ByteOrder;
 
 /**
  * NIO server buffer.
@@ -35,16 +34,6 @@ public class OdbcNioServerBuffer {
 
     /** Current message size. */
     private int msgSize;
-
-    /** Message size byte order. */
-    private final ByteOrder order;
-
-    /**
-     * @param order Byte order.
-     */
-    public OdbcNioServerBuffer(ByteOrder order) {
-        this.order = order;
-    }
 
     /**
      * Reset buffer state.
@@ -80,12 +69,8 @@ public class OdbcNioServerBuffer {
      */
     @Nullable public byte[] read(ByteBuffer buf) throws IgniteCheckedException {
         if (cnt < 0) {
-            for (; cnt < 0 && buf.hasRemaining(); cnt++) {
-                if (order == ByteOrder.BIG_ENDIAN)
-                    msgSize = (msgSize << 8) | buf.get() & 0xFF;
-                else
-                    msgSize |= (buf.get() & 0xFF) << (8*(4 + cnt));
-            }
+            for (; cnt < 0 && buf.hasRemaining(); cnt++)
+                msgSize |= (buf.get() & 0xFF) << (8*(4 + cnt));
 
             if (cnt < 0)
                 return null;

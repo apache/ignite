@@ -41,21 +41,6 @@ public class OdbcBufferedParser implements GridNioParser {
     /** Buffer metadata key. */
     private static final int BUF_META_KEY = GridNioSessionMetaKey.nextUniqueKey();
 
-    /** Direct buffer alocation flag. */
-    private final boolean directBuf;
-
-    /** Message size byte order. */
-    private final ByteOrder order;
-
-    /**
-     * @param directBuf Direct buffer.
-     * @param order Message size byte order.
-     */
-    public OdbcBufferedParser(boolean directBuf, ByteOrder order) {
-        this.directBuf = directBuf;
-        this.order = order;
-    }
-
     /** {@inheritDoc} */
     @Override public byte[] decode(GridNioSession ses, ByteBuffer buf) throws IOException, IgniteCheckedException {
         OdbcNioServerBuffer nioBuf = ses.meta(BUF_META_KEY);
@@ -63,7 +48,7 @@ public class OdbcBufferedParser implements GridNioParser {
         // Decode for a given session is called per one thread, so there should not be any concurrency issues.
         // However, we make some additional checks.
         if (nioBuf == null) {
-            nioBuf = new OdbcNioServerBuffer(order);
+            nioBuf = new OdbcNioServerBuffer();
 
             OdbcNioServerBuffer old = ses.addMeta(BUF_META_KEY, nioBuf);
 
@@ -77,9 +62,9 @@ public class OdbcBufferedParser implements GridNioParser {
     @Override public ByteBuffer encode(GridNioSession ses, Object msg) throws IOException, IgniteCheckedException {
         byte[] msg0 = (byte[])msg;
 
-        ByteBuffer res = directBuf ? ByteBuffer.allocateDirect(msg0.length + 4) : ByteBuffer.allocate(msg0.length + 4);
+        ByteBuffer res = ByteBuffer.allocate(msg0.length + 4);
 
-        res.order(order);
+        res.order(ByteOrder.LITTLE_ENDIAN);
 
         res.putInt(msg0.length);
         res.put(msg0);
