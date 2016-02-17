@@ -603,21 +603,41 @@ namespace ignite
                     {
                         char* buffer = reinterpret_cast<char*>(GetData());
 
-                        strftime(buffer, GetSize(), "%F", tmTime);
+                        if (buffer)
+                        {
+                            strftime(buffer, GetSize(), "%Y-%m-%d", tmTime);
+
+                            if (GetResLen())
+                                *GetResLen() = strlen(buffer);
+                        }
+                        else if (GetResLen())
+                            *GetResLen() = sizeof("HHHH-MM-DD");
 
                         break;
                     }
 
                     case IGNITE_ODBC_C_TYPE_WCHAR:
                     {
-                        std::string tmp(GetSize(), 0);
-
-                        strftime(&tmp[0], GetSize(), "%F", tmTime);
-
                         SQLWCHAR* buffer = reinterpret_cast<SQLWCHAR*>(GetData());
 
-                        for (size_t i = 0; i < strlen(tmp.c_str()) + 1; ++i)
-                            buffer[i] = tmp[i];
+                        if (buffer)
+                        {
+                            std::string tmp(GetSize(), 0);
+
+                            strftime(&tmp[0], GetSize(), "%Y-%m-%d", tmTime);
+
+                            SqlLen toCopy = std::min(static_cast<SqlLen>(strlen(tmp.c_str()) + 1), GetSize());
+
+                            for (SqlLen i = 0; i < toCopy; ++i)
+                                buffer[i] = tmp[i];
+
+                            buffer[toCopy] = 0;
+
+                            if (GetResLen())
+                                *GetResLen() = toCopy;
+                        }
+                        else if (GetResLen())
+                            *GetResLen() = sizeof("HHHH-MM-DD");
 
                         break;
                     }
@@ -694,21 +714,41 @@ namespace ignite
                     {
                         char* buffer = reinterpret_cast<char*>(GetData());
 
-                        strftime(buffer, GetSize(), "%F %T", tmTime);
+                        if (buffer)
+                        {
+                            strftime(buffer, GetSize(), "%Y-%m-%d %H:%M:%S", tmTime);
+
+                            if (GetResLen())
+                                *GetResLen() = strlen(buffer);
+                        }
+                        else if (GetResLen())
+                            *GetResLen() = sizeof("HHHH-MM-DD HH:MM:SS");
 
                         break;
                     }
 
                     case IGNITE_ODBC_C_TYPE_WCHAR:
                     {
-                        std::string tmp(GetSize(), 0);
-
-                        strftime(&tmp[0], GetSize(), "%F %T", tmTime);
-
                         SQLWCHAR* buffer = reinterpret_cast<SQLWCHAR*>(GetData());
 
-                        for (size_t i = 0; i < strlen(tmp.c_str()) + 1; ++i)
-                            buffer[i] = tmp[i];
+                        if (buffer)
+                        {
+                            std::string tmp(GetSize(), 0);
+
+                            strftime(&tmp[0], GetSize(), "%Y-%m-%d %H:%M:%S", tmTime);
+
+                            SqlLen toCopy = std::min(static_cast<SqlLen>(strlen(tmp.c_str()) + 1), GetSize());
+
+                            for (SqlLen i = 0; i < toCopy; ++i)
+                                buffer[i] = tmp[i];
+
+                            buffer[toCopy] = 0;
+
+                            if (GetResLen())
+                                *GetResLen() = toCopy;
+                        }
+                        else if (GetResLen())
+                            *GetResLen() = sizeof("HHHH-MM-DD HH:MM:SS");
 
                         break;
                     }
