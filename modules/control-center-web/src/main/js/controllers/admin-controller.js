@@ -25,6 +25,11 @@ consoleModule.controller('adminController',
         $http.post('/api/v1/admin/list')
             .success(function (data) {
                 $scope.users = data;
+
+                _.forEach($scope.users, function(user) {
+                    user.label = user.username + ' ' + user.email + ' ' +
+                        (user.company || '') + ' ' + (user.country || '') + ' ' + user.lastLogin;
+                })
             })
             .error(function (errMsg) {
                 $common.showError($common.errorMessage(errMsg));
