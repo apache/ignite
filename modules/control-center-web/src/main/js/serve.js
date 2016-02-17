@@ -66,11 +66,12 @@ const fireUp = require('fire-up').newInjector({
     ]
 });
 
-Promise.all([fireUp('settings'), fireUp('app'), fireUp('agent'), fireUp('http'), fireUp('io')])
+Promise.all([fireUp('settings'), fireUp('app'), fireUp('agent'), fireUp('io')])
     .then((values) => {
         const settings = values[0];
         const app = values[1];
         const agent = values[2];
+        const io = values[3];
 
         // Start rest server.
         const server = settings.server.SSLOptions
@@ -81,6 +82,7 @@ Promise.all([fireUp('settings'), fireUp('app'), fireUp('agent'), fireUp('http'),
         server.on('listening', _onListening.bind(null, server.address()));
 
         app.listen(server);
+        io.listen(server);
 
         // Start agent server.
         const agentServer = settings.agent.SSLOptions

@@ -25,7 +25,7 @@ module.exports = {
 };
 
 module.exports.factory = function(nconf, fs) {
-    nconf.file({file: './serve/config/default.json'});
+    nconf.file({file: './serve/config/settings.json'});
 
     /**
      * Normalize a port into a number, string, or false.
@@ -47,7 +47,7 @@ module.exports.factory = function(nconf, fs) {
     return {
         agent: {
             file: 'ignite-web-agent-1.5.0.final',
-            port: _normalizePort(nconf.get('agent-server:port')),
+            port: _normalizePort(nconf.get('agent-server:port') || 8091),
             SSLOptions: nconf.get('agent-server:ssl') && {
                 key: fs.readFileSync(nconf.get('agent-server:key')),
                 cert: fs.readFileSync(nconf.get('agent-server:cert')),
@@ -55,7 +55,7 @@ module.exports.factory = function(nconf, fs) {
             }
         },
         server: {
-            port: _normalizePort(nconf.get('server:port') || nconf.get('server:ssl') ? 443 : 80),
+            port: _normalizePort(nconf.get('server:port') || (nconf.get('server:ssl') ? 8443 : 8090)),
             SSLOptions: nconf.get('server:ssl') && {
                 enable301Redirects: true,
                 trustXFPHeader: true,

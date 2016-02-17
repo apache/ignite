@@ -21,44 +21,65 @@
 
 module.exports = {
     implements: 'configure',
-    inject: ['require(morgan)', 'require(cookie-parser)', 'require(body-parser)', 'require(express-force-ssl)',
-        'require(express-session)', 'require(passport)', 'settings', 'mongo', 'store']
+    inject: ['require(morgan)', 'require(cookie-parser)', 'require(body-parser)',
+        'require(express-session)', 'require(connect-mongo)', 'require(passport)', 'require(passport.socketio)', 'settings', 'mongo']
 };
 
-module.exports.factory = function(logger, cookieParser, bodyParser, forceSSL, session, Passport, settings, mongo, store) {
-    return (app) => {
-        app.use(logger('dev', {
-            skip: (req, res) => res.statusCode < 400
-        }));
+module.exports.factory = function(logger, cookieParser, bodyParser, session, connectMongo, passport, passportSocketIo, settings, mongo) {
+    const _sessionStore = new (connectMongo(session))({mongooseConnection: mongo.connection});
 
-        app.use(cookieParser(settings.sessionSecret));
+    const _cookieParser = cookieParser(settings.sessionSecret);
 
-        app.use(bodyParser.json({limit: '50mb'}));
-        app.use(bodyParser.urlencoded({limit: '50mb', extended: true}));
+    return {
+        express: (app) => {
+            app.use(logger('dev', {
+                skip: (req, res) => res.statusCode < 400
+            }));
 
-        app.use(session({
-            secret: settings.sessionSecret,
-            resave: false,
-            saveUninitialized: true,
-            cookie: {
-                expires: new Date(Date.now() + settings.cookieTTL),
-                maxAge: settings.cookieTTL
-            },
-            store: store
-        }));
+            app.use(_cookieParser);
 
-        app.use(Passport.initialize());
-        app.use(Passport.session());
+            app.use(bodyParser.json({limit: '50mb'}));
+            app.use(bodyParser.urlencoded({limit: '50mb', extended: true}));
 
-        Passport.serializeUser(mongo.Account.serializeUser());
-        Passport.deserializeUser(mongo.Account.deserializeUser());
+            app.use(session({
+                secret: settings.sessionSecret,
+                resave: false,
+                saveUninitialized: true,
+                cookie: {
+                    expires: new Date(Date.now() + settings.cookieTTL),
+                    maxAge: settings.cookieTTL
+                },
+                store: _sessionStore
+            }));
 
-        Passport.use(mongo.Account.createStrategy());
+            app.use(passport.initialize());
+            app.use(passport.session());
 
-        if (settings.SSLOptions) {
-            app.set('forceSSLOptions', settings.SSLOptions);
+            passport.serializeUser(mongo.Account.serializeUser());
+            passport.deserializeUser(mongo.Account.deserializeUser());
 
-            app.use(forceSSL);
+            passport.use(mongo.Account.createStrategy());
+        },
+        socketio: (io) => {
+            const _onAuthorizeSuccess = (data, accept) => {
+                accept(null, true);
+            };
+
+            const _onAuthorizeFail = (data, message, error, accept) => {
+                if (error)
+                    throw new Error(message);
+
+                accept(null, false);
+            };
+
+            io.use(passportSocketIo.authorize({
+                cookieParser: _cookieParser,
+                key: 'connect.sid', // the name of the cookie where express/connect stores its session_id
+                secret: settings.sessionSecret, // the session_secret to parse the cookie
+                store: _sessionStore, // we NEED to use a sessionstore. no memorystore please
+                success: _onAuthorizeSuccess, // *optional* callback on success - read more below
+                fail: _onAuthorizeFail // *optional* callback on fail/error - read more below
+            }));
         }
     };
 };

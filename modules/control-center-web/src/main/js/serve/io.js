@@ -21,44 +21,28 @@
 
 module.exports = {
     implements: 'io',
-    inject: ['require(socket.io)', 'require(passport.socketio)', 'require(cookie-parser)', 'http', 'settings', 'store']
+    inject: ['require(socket.io)', 'configure']
 };
 
-module.exports.factory = (socketio, passportSocketIo, cookieParser, server, settings, store) => {
-    const io = socketio.listen(server);
+module.exports.factory = (socketio, configure) => {
+    return {
+        listen: (server) => {
+            const io = socketio(server);
 
-    const _onAuthorizeSuccess = (data, accept) => {
-        accept(null, true);
+            configure.socketio(io);
+
+            io.sockets.on('connection', (socket) => {
+                // var req = socket.client.request;
+
+                console.log('connection');
+
+                socket.on('agent:ping', (req) => {
+                    console.log('agent:ping', req);
+                });
+
+                socket.emit('agent:connected', {data: 'success'});
+                socket.emit('agent:disconnected', {data: 'error'});
+            });
+        }
     };
-
-    const _onAuthorizeFail = (data, message, error, accept) => {
-        if (error)
-            throw new Error(message);
-
-        accept(null, false);
-    };
-
-    io.use(passportSocketIo.authorize({
-        cookieParser: cookieParser,
-        key: 'connect.sid', // the name of the cookie where express/connect stores its session_id
-        secret: settings.sessionSecret, // the session_secret to parse the cookie
-        store: store, // we NEED to use a sessionstore. no memorystore please
-        success: _onAuthorizeSuccess, // *optional* callback on success - read more below
-        fail: _onAuthorizeFail // *optional* callback on fail/error - read more below
-    }));
-
-    io.sockets.on('connection', function (socket) {
-        // var req = socket.client.request;
-
-        console.log('connection');
-
-        socket.on('agent:ping', function () {
-            console.log('agent:ping');
-        });
-
-        socket.emit('agent:connected', {data: 'success'});
-        socket.emit('agent:disconnected', {data: 'error'});
-    });
-
-    return io;
 };

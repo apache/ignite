@@ -21,15 +21,22 @@
 
 module.exports = {
     implements: 'app',
-    inject: ['require(express)', 'configure', 'routes']
+    inject: ['require(express)', 'configure', 'routes', 'io']
 };
 
 module.exports.factory = function(Express, configure, routes) {
-    const app = new Express();
+    return {
+        /**
+         * @param {Server} srv
+         */
+        listen: (srv) => {
+            const app = new Express();
 
-    configure(app);
+            configure.express(app);
 
-    routes.register(app);
+            routes.register(app);
 
-    return app;
+            srv.addListener('request', app);
+        }
+    };
 };
