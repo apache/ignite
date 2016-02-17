@@ -2093,6 +2093,13 @@ public class GridNioServer<T> {
         }
 
         /** {@inheritDoc} */
+        @Override public void onAckReceived() {
+            assert commMsg != null;
+
+            commMsg.onAckReceived();
+        }
+
+        /** {@inheritDoc} */
         @Override public boolean skipRecovery() {
             return skipRecovery;
         }
