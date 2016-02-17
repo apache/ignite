@@ -479,6 +479,30 @@ BOOST_AUTO_TEST_CASE(TestPutTimestampToTimestamp)
     BOOST_CHECK_EQUAL(573948623, buf.fraction);
 }
 
+BOOST_AUTO_TEST_CASE(TestPutDateToTimestamp)
+{
+    SQL_TIMESTAMP_STRUCT buf = { 0 };
+
+    SqlLen reslen = sizeof(buf);
+
+    size_t offset = 0;
+    size_t* offsetPtr = &offset;
+
+    ApplicationDataBuffer appBuf(IGNITE_ODBC_C_TYPE_TTIMESTAMP, &buf, sizeof(buf), &reslen, &offsetPtr);
+
+    Date date = MakeDate(1984, 5, 27);
+
+    appBuf.PutDate(date);
+
+    BOOST_CHECK_EQUAL(1984, buf.year);
+    BOOST_CHECK_EQUAL(5, buf.month);
+    BOOST_CHECK_EQUAL(27, buf.day);
+    BOOST_CHECK_EQUAL(0, buf.hour);
+    BOOST_CHECK_EQUAL(0, buf.minute);
+    BOOST_CHECK_EQUAL(0, buf.second);
+    BOOST_CHECK_EQUAL(0, buf.fraction);
+}
+
 BOOST_AUTO_TEST_CASE(TestGetStringFromLong)
 {
     long numBuf = 42;
