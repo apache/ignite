@@ -2940,8 +2940,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         IgniteCacheProxy<K, V> jcache = (IgniteCacheProxy<K, V>)jCacheProxies.get(maskNull(name));
 
-        assert jcache == null || jcache.getName().equals(maskNull(name)): ">>>>>> cache Name: " + maskNull(name);
-
         return jcache == null ? null : jcache.internalProxy();
     }
 
