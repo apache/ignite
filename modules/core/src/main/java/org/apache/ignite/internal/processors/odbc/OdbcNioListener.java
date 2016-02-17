@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.odbc;
 
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.binary.BinaryReaderExImpl;
@@ -135,9 +136,7 @@ public class OdbcNioListener extends GridNioServerListenerAdapter<byte[]> {
             ses.send(encode(new OdbcResponse(OdbcResponse.STATUS_FAILED, err)));
         }
         catch (Exception e) {
-            // TODO: ???
-
-            log.error("Can not send error response message: [err=" + e.getMessage() + ']');
+            throw new IgniteException("Can not send error response message", e);
         }
     }
 
@@ -147,7 +146,7 @@ public class OdbcNioListener extends GridNioServerListenerAdapter<byte[]> {
      * @param msg Message.
      * @return Assembled ODBC request.
      */
-    private OdbcRequest decode(byte[] msg) throws IOException {
+    private OdbcRequest decode(byte[] msg) {
         assert msg != null;
 
         BinaryInputStream stream = new BinaryHeapInputStream(msg);
@@ -240,7 +239,7 @@ public class OdbcNioListener extends GridNioServerListenerAdapter<byte[]> {
             }
 
             default:
-                throw new IOException("Failed to parse incoming packet (unknown command type) " +
+                throw new IgniteException("Failed to parse incoming packet (unknown command type) " +
                         "[cmd=[" + Byte.toString(cmd) + ']');
         }
 
@@ -253,7 +252,7 @@ public class OdbcNioListener extends GridNioServerListenerAdapter<byte[]> {
      * @param msg Message.
      * @return Byte array.
      */
-    private byte[] encode(OdbcResponse msg) throws IOException {
+    private byte[] encode(OdbcResponse msg) {
         assert msg != null;
 
         // Creating new binary writer

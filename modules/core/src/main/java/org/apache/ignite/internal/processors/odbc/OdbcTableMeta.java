@@ -79,7 +79,7 @@ public class OdbcTableMeta {
      * @param writer Binary writer.
      * @throws IOException
      */
-    public void writeBinary(BinaryRawWriterEx writer) throws IOException {
+    public void writeBinary(BinaryRawWriterEx writer) {
         writer.writeString(catalog);
         writer.writeString(schema);
         writer.writeString(table);
