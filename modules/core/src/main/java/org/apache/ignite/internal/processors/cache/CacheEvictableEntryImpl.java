@@ -221,7 +221,7 @@ public class CacheEvictableEntryImpl<K, V> implements EvictableEntry<K, V> {
         if (obj instanceof CacheEvictableEntryImpl) {
             CacheEvictableEntryImpl<K, V> other = (CacheEvictableEntryImpl<K, V>)obj;
 
-            return cached.key().equals(other.getKey());
+            return cached.key().equals(other.cached.key());
         }
 
         return false;
