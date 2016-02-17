@@ -1166,7 +1166,7 @@ namespace ignite
                 return LocalToGlobal(env, cache);
             }
 
-            jobject JniContext::ProcessorCacheFromConfig0(jobject obj, long memPtr, jmethodID mthd, JniErrorInfo* errInfo)
+            jobject JniContext::ProcessorCacheFromConfig0(jobject obj, long long memPtr, jmethodID mthd, JniErrorInfo* errInfo)
             {
                 JNIEnv* env = Attach();
 
@@ -1221,20 +1221,20 @@ namespace ignite
                 ExceptionCheck(env, errInfo);
             }
 
-            jobject JniContext::ProcessorCreateCacheFromConfig(jobject obj, long memPtr) {
+            jobject JniContext::ProcessorCreateCacheFromConfig(jobject obj, long long memPtr) {
                 return ProcessorCreateCacheFromConfig(obj, memPtr, NULL);
             }
 
-            jobject JniContext::ProcessorCreateCacheFromConfig(jobject obj, long memPtr, JniErrorInfo* errInfo)
+            jobject JniContext::ProcessorCreateCacheFromConfig(jobject obj, long long memPtr, JniErrorInfo* errInfo)
             {
                 return ProcessorCacheFromConfig0(obj, memPtr, jvm->GetMembers().m_PlatformProcessor_createCacheFromConfig, errInfo);
             }
 
-            jobject JniContext::ProcessorGetOrCreateCacheFromConfig(jobject obj, long memPtr) {
+            jobject JniContext::ProcessorGetOrCreateCacheFromConfig(jobject obj, long long memPtr) {
                 return ProcessorGetOrCreateCacheFromConfig(obj, memPtr, NULL);
             }
 
-            jobject JniContext::ProcessorGetOrCreateCacheFromConfig(jobject obj, long memPtr, JniErrorInfo* errInfo)
+            jobject JniContext::ProcessorGetOrCreateCacheFromConfig(jobject obj, long long memPtr, JniErrorInfo* errInfo)
             {
                 return ProcessorCacheFromConfig0(obj, memPtr, jvm->GetMembers().m_PlatformProcessor_getOrCreateCacheFromConfig, errInfo);
             }
@@ -1379,7 +1379,7 @@ namespace ignite
                 return LocalToGlobal(env, res);
             }
 
-            void JniContext::ProcessorGetIgniteConfiguration(jobject obj, long memPtr)
+            void JniContext::ProcessorGetIgniteConfiguration(jobject obj, long long memPtr)
             {
                 JNIEnv* env = Attach();
 
