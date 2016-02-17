@@ -44,7 +44,7 @@ module.exports.factory = function(_, express, mongo) {
                     result.spaces = spaces;
                     spaceIds = spaces.map((space) => space._id);
 
-                    return mongo.DomainModel.find({space: {$in: spaceIds}}).sort('valueType').lean().exec();
+                    return mongo.DomainModel.find({space: {$in: spaceIds}}).lean().exec();
                 })
                 .then((_domains) => {
                     domains = _domains.reduce((map, obj) => {
