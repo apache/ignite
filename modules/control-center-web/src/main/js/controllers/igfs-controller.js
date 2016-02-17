@@ -362,10 +362,16 @@ consoleModule.controller('igfsController', [
                 }
             };
 
+            function _igfsNames() {
+                return _.map($scope.igfss, function (igfs) {
+                    return igfs.name;
+                });
+            }
+
             // Save IGFS with new name.
             $scope.cloneItem = function () {
                 if ($scope.tableReset(true) && validate($scope.backupItem)) {
-                    $clone.confirm($scope.backupItem.name).then(function (newName) {
+                    $clone.confirm($scope.backupItem.name, _igfsNames()).then(function (newName) {
                         var item = angular.copy($scope.backupItem);
 
                         delete item._id;
