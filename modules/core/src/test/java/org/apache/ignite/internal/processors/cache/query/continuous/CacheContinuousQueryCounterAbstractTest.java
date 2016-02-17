@@ -411,9 +411,9 @@ public abstract class CacheContinuousQueryCounterAbstractTest extends GridCommon
                     @Override public void onUpdated(
                         Iterable<CacheEntryEvent<? extends Integer, ? extends Integer>> evts) {
                         for (CacheEntryEvent<? extends Integer, ? extends Integer> e : evts) {
-                            cntr.incrementAndGet();
-
                             synchronized (vals) {
+                                cntr.incrementAndGet();
+
                                 vals.add(new T2<>(e.getValue(),
                                     e.unwrap(CacheQueryEntryEvent.class).getPartitionUpdateCounter()));
                             }
@@ -431,10 +431,9 @@ public abstract class CacheContinuousQueryCounterAbstractTest extends GridCommon
                         }
                     }, 2000L);
 
-                    for (T2<Integer, Long> val : vals) {
-                        assertEquals(vals.size(), keyCnt);
-
-                        assertEquals((long)val.get1() + 1, (long)val.get2());
+                    synchronized (vals) {
+                        for (T2<Integer, Long> val : vals)
+                            assertEquals((long)val.get1() + 1, (long)val.get2());
                     }
                 }
             }
