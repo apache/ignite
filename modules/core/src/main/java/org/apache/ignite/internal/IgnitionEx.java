@@ -163,8 +163,6 @@ public class IgnitionEx {
     private static final Collection<IgnitionListener> lsnrs = new GridConcurrentHashSet<>(4);
 
     /** */
-//    private static final ThreadLocal<GridKernalContext> GRID_KERNAL_CTX_THREAD_LOC = new ThreadLocal<>();
-
     private static final ThreadLocal<IgniteConfiguration> IGNITE_CFG_THREAD_LOC = new ThreadLocal<>();
 
     /** */
