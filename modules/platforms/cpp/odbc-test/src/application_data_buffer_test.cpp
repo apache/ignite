@@ -35,6 +35,63 @@ using namespace ignite::odbc;
 using namespace ignite::odbc::app;
 using namespace ignite::odbc::type_traits;
 
+/**
+ * Make Date in human understandable way.
+ *
+ * @param year Year.
+ * @param month Month.
+ * @param day Day.
+ * @param hour Hour.
+ * @param min Min.
+ * @param sec Sec.
+ * @return Date.
+ */
+Date MakeDate(int year = 1900, int month = 1, int day = 1, int hour = 0,
+    int min = 0, int sec = 0)
+{
+    tm date;
+
+    date.tm_year = year - 1900;
+    date.tm_mon = month - 1;
+    date.tm_mday = day;
+    date.tm_hour = hour;
+    date.tm_min = min;
+    date.tm_sec = sec;
+
+    time_t ct = mktime(&date) - timezone;
+
+    return Date(ct * 1000);
+}
+
+/**
+ * Make Date in human understandable way.
+ *
+ * @param year Year.
+ * @param month Month.
+ * @param day Day.
+ * @param hour Hour.
+ * @param min Minute.
+ * @param sec Second.
+ * @param ns Nanosecond.
+ * @return Timestamp.
+ */
+Timestamp MakeTimestamp(int year = 1900, int month = 1, int day = 1,
+    int hour = 0, int min = 0, int sec = 0, long ns = 0)
+{
+    tm date;
+
+    date.tm_year = year - 1900;
+    date.tm_mon = month - 1;
+    date.tm_mday = day;
+    date.tm_hour = hour;
+    date.tm_min = min;
+    date.tm_sec = sec;
+
+    time_t ct = mktime(&date) - timezone;
+
+    return Timestamp(ct, ns);
+}
+
 BOOST_AUTO_TEST_SUITE(ApplicationDataBufferTestSuite)
 
 BOOST_AUTO_TEST_CASE(TestPutIntToString)
@@ -331,6 +388,20 @@ BOOST_AUTO_TEST_CASE(TestPutDecimalToString)
 
     appBuf.PutDecimal(decimal);
     BOOST_REQUIRE(std::string(strBuf, reslen) == "-53.5");
+}
+
+BOOST_AUTO_TEST_CASE(TestPutDateToString)
+{
+    char strBuf[64] = { 0 };
+    SqlLen reslen = 0;
+
+    ApplicationDataBuffer appBuf(IGNITE_ODBC_C_TYPE_CHAR, &strBuf, sizeof(strBuf), &reslen, 0);
+
+    Date date = MakeDate(1999, 2, 22);
+
+    appBuf.PutDate(date);
+
+    BOOST_CHECK_EQUAL(std::string(strBuf, reslen), std::string("1999-02-22"));
 }
 
 BOOST_AUTO_TEST_CASE(TestGetStringFromLong)
