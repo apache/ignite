@@ -1028,7 +1028,7 @@ namespace ignite
                     {
                         const SQL_DATE_STRUCT* buffer = reinterpret_cast<const SQL_DATE_STRUCT*>(GetData());
 
-                        tmTime.tm_year = buffer->year;
+                        tmTime.tm_year = buffer->year - 1900;
                         tmTime.tm_mon = buffer->month - 1;
                         tmTime.tm_mday = buffer->day;
 
@@ -1039,7 +1039,7 @@ namespace ignite
                     {
                         const SQL_TIMESTAMP_STRUCT* buffer = reinterpret_cast<const SQL_TIMESTAMP_STRUCT*>(GetData());
 
-                        tmTime.tm_year = buffer->year;
+                        tmTime.tm_year = buffer->year - 1900;
                         tmTime.tm_mon = buffer->month - 1;
                         tmTime.tm_mday = buffer->day;
                         tmTime.tm_hour = buffer->hour;
