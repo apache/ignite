@@ -24,6 +24,7 @@
 #include <ignite/guid.h>
 #include <ignite/odbc/decimal.h>
 #include <ignite/odbc/app/application_data_buffer.h>
+#include <ignite/odbc/utility.h>
 
 #define FLOAT_PRECISION 0.0000001f
 
@@ -625,6 +626,30 @@ BOOST_AUTO_TEST_CASE(TestSetStringWithOffset)
     BOOST_REQUIRE(res == "Hello with offset!");
     BOOST_REQUIRE(res.size() == strlen("Hello with offset!"));
     BOOST_REQUIRE(buf[1].reslen == strlen("Hello with offset!"));
+}
+
+BOOST_AUTO_TEST_CASE(TestGetDateFromString)
+{
+    char buf[] = "1999-02-22";
+    SqlLen reslen = sizeof(buf);
+
+    size_t offset = 0;
+    size_t* offsetPtr = &offset;
+
+    ApplicationDataBuffer appBuf(IGNITE_ODBC_C_TYPE_CHAR, &buf[0], sizeof(buf), &reslen, &offsetPtr);
+
+    Date date = appBuf.GetDate();
+
+    time_t cTime = utility::DateToCTime(date);
+
+    tm *tmDate = localtime(&cTime);
+
+    BOOST_CHECK_EQUAL(1999, tmDate->tm_year + 1900);
+    BOOST_CHECK_EQUAL(2, tmDate->tm_mon + 1);
+    BOOST_CHECK_EQUAL(22, tmDate->tm_mday);
+    BOOST_CHECK_EQUAL(0, tmDate->tm_hour);
+    BOOST_CHECK_EQUAL(0, tmDate->tm_min);
+    BOOST_CHECK_EQUAL(0, tmDate->tm_sec);
 }
 
 BOOST_AUTO_TEST_SUITE_END()
