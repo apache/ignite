@@ -441,6 +441,7 @@
   <ItemGroup>
     <None Include="Apache.Ignite.Core.ruleset" />
     <None Include="Apache.Ignite.Core.nuspec" />
+    <None Include="NuGet\LINQPad\QueryExample.linq" />
     <None Include="NuGet\LINQPad\PutGetExample.linq" />
     <None Include="NuGet\Uninstall.ps1" />
     <None Include="NuGet\PostBuild.ps1" />

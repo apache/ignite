@@ -2,7 +2,10 @@
     <NuGetReference>Apache.Ignite.NET</NuGetReference>
     <Namespace>Apache.Ignite.Core</Namespace>
     <Namespace>Apache.Ignite.Core.Binary</Namespace>
+    <Namespace>Apache.Ignite.Core.Cache.Configuration</Namespace>
+    <Namespace>Apache.Ignite.Core.Cache.Query</Namespace>
 </Query>
+
 /*
 * Licensed to the Apache Software Foundation (ASF) under one or more
 * contributor license agreements.  See the NOTICE file distributed with
@@ -32,34 +35,53 @@
 void Main()
 {
     // Configure cacheable types
-    var cfg = new IgniteConfiguration {BinaryConfiguration = new BinaryConfiguration(typeof(Organization))};
+    var cfg = new IgniteConfiguration { BinaryConfiguration = new BinaryConfiguration(typeof(Organization), typeof(Person))	};
 
     // Start instance
     using (var ignite = Ignition.Start(cfg))
     {
-        // Create new cache
-        var cache = ignite.CreateCache<int, Organization>("orgs");
+        // Create and populate organization cache
+        var orgs = ignite.GetOrCreateCache<int, Organization>(new CacheConfiguration("orgs", typeof(Organization)));
+        orgs[1] = new Organization { Name = "Apache", Type = "Private", Size = 5300 };
+        orgs[2] = new Organization { Name = "Microsoft", Type = "Private", Size = 110000 };
+        orgs[3] = new Organization { Name = "Red Cross", Type = "Non-Profit", Size = 35000 };
 
-        // Put data entry to cache
-        cache.Put(1, new Organization {Name = "Apache", Type="Private"});
+        // Create and populate person cache
+        var persons = ignite.CreateCache<int, Person>(new CacheConfiguration("persons", typeof(Person)));
+        persons[1] = new Person { OrgId = 1, Name = "James Wilson" };
+        persons[2] = new Person { OrgId = 1, Name = "Daniel Adams" };
+        persons[3] = new Person { OrgId = 2, Name = "Christian Moss" };
+        persons[4] = new Person { OrgId = 3, Name = "Allison Mathis" };
 
-        // Retrieve data entry in fully deserialized form
-        cache.Get(1).Dump("Retrieved organization instance from cache");
+        // SQL query
+        orgs.Query(new SqlQuery(typeof(Organization), "size < ?", 100000)).GetAll().Dump("Organizations with size less than 100K");
+		
+		// SQL query with join
+		
+		// Fields query
+		
+		// Full text query
 
-        // Create projection that will get values as binary objects
-        var binaryCache = cache.WithKeepBinary<int, IBinaryObject>();
-
-        // Get recently created organization as a binary object
-        var binaryOrg = binaryCache.Get(1);
-
-        // Get organization's name from binary object (note that object doesn't need to be fully deserialized)
-        binaryOrg.GetField<string>("name").Dump("Retrieved organization name from binary object");
 	}
 }
 
 public class Organization
 {
+	[QuerySqlField]
 	public string Name { get; set; }
 	
+	[QueryTextField]
 	public string Type { get; set; }
+
+	[QuerySqlField]
+	public int Size { get; set;}
+}
+
+public class Person
+{
+	[QuerySqlField]
+	public string Name { get; set; }
+
+	[QuerySqlField]
+	public int OrgId { get; set; }
 }
