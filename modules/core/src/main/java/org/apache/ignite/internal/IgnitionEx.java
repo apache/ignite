@@ -163,6 +163,9 @@ public class IgnitionEx {
     private static final Collection<IgnitionListener> lsnrs = new GridConcurrentHashSet<>(4);
 
     /** */
+    private static final ThreadLocal<GridKernalContext> GRID_KERNAL_CTX_THREAD_LOC = new ThreadLocal<>();
+
+    /** */
     private static ThreadLocal<Boolean> daemon = new ThreadLocal<Boolean>() {
         @Override protected Boolean initialValue() {
             return false;
@@ -1247,6 +1250,8 @@ public class IgnitionEx {
     public static IgniteKernal localIgnite() throws IllegalArgumentException {
         if (Thread.currentThread() instanceof IgniteThread)
             return gridx(((IgniteThread)Thread.currentThread()).getGridName());
+        else if (GRID_KERNAL_CTX_THREAD_LOC.get() != null)
+            return gridx(GRID_KERNAL_CTX_THREAD_LOC.get().gridName());
         else
             throw new IllegalArgumentException("This method should be accessed under " + IgniteThread.class.getName());
     }
@@ -1311,6 +1316,26 @@ public class IgnitionEx {
 
         for (IgnitionListener lsnr : lsnrs)
             lsnr.onStateChange(gridName, state);
+    }
+
+    /**
+     * Set thread local GridKernalContext.
+     *
+     * @param kernalCctx to set.
+     * @see #localIgnite()
+     */
+    public static GridKernalContext setKernalCtxThreadLocal(final GridKernalContext kernalCctx) {
+        final GridKernalContext kernalCtx = GRID_KERNAL_CTX_THREAD_LOC.get();
+        GRID_KERNAL_CTX_THREAD_LOC.set(kernalCctx);
+        return kernalCtx;
+    }
+
+    /**
+     * @return thread local GridKernalContext
+     * @see #localIgnite()
+     */
+    public static GridKernalContext getKernalContextThreadLocal() {
+        return GRID_KERNAL_CTX_THREAD_LOC.get();
     }
 
     /**
