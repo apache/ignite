@@ -619,6 +619,15 @@ button.form-control {
         line-height: 55px;
     }
 
+    .sql-error-result {
+        padding: 10px 0;
+
+        text-align: center;
+        color: $brand-primary;
+
+        border-top: 1px solid $ignite-border-color;
+    }
+
     .sql-empty-result {
         margin-top: 10px;
         margin-bottom: 10px;
