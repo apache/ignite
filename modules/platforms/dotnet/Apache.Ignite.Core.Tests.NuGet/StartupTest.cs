@@ -53,7 +53,7 @@ namespace Apache.Ignite.Core.Tests.NuGet
         [Test]
         public void TestSpringConfig()
         {
-            using (var ignite = Ignition.Start("ignite-config.xml"))
+            using (var ignite = Ignition.Start("config\\ignite-config.xml"))
             {
                 var cache = ignite.GetCache<int, int>("testcache");
 
