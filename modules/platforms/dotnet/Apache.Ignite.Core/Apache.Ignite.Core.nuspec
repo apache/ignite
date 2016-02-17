@@ -40,8 +40,11 @@ Creating NuGet package:
         <iconUrl>https://ignite.apache.org/images/logo_ignite_32_32.png</iconUrl>
         <requireLicenseAcceptance>false</requireLicenseAcceptance>
         <description>
-            Apache Ignite.NET In-Memory Data Fabric is a high-performance, integrated and distributed in-memory platform for computing and transacting on large-scale data sets in real-time, orders of magnitude faster than possible with traditional disk-based or flash technologies.
-            WARNING: this only works with x64 build targets.
+Apache Ignite.NET In-Memory Data Fabric is a high-performance, integrated and distributed in-memory platform for computing and transacting on large-scale data sets in real-time, orders of magnitude faster than possible with traditional disk-based or flash technologies.
+            
+More info: https://apacheignite-net.readme.io/
+            
+WARNING: this only works with x64 build targets.
         </description>
         <summary>
             High-performance in-memory platform for computing and transacting on large-scale data sets in real-time.
@@ -69,5 +72,6 @@ Creating NuGet package:
         <file src="..\..\..\..\target\release-package\libs\*.jar" target="Jars" />
         <file src="..\..\..\..\target\release-package\libs\ignite-spring\*.jar" target="Jars" />
         <file src="..\..\..\..\target\release-package\libs\ignite-indexing\*.jar" target="Jars" />
+        <file src="..\..\..\..\target\release-package\libs\licenses\*.*" target="Licenses" />
     </files>
 </package>
