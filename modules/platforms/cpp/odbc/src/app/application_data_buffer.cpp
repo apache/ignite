@@ -757,7 +757,7 @@ namespace ignite
                     {
                         SQL_DATE_STRUCT* buffer = reinterpret_cast<SQL_DATE_STRUCT*>(GetData());
 
-                        buffer->year = tmTime->tm_year;
+                        buffer->year = tmTime->tm_year + 1900;
                         buffer->month = tmTime->tm_mon + 1;
                         buffer->day = tmTime->tm_mday;
 
@@ -768,7 +768,7 @@ namespace ignite
                     {
                         SQL_TIMESTAMP_STRUCT* buffer = reinterpret_cast<SQL_TIMESTAMP_STRUCT*>(GetData());
 
-                        buffer->year = tmTime->tm_year;
+                        buffer->year = tmTime->tm_year + 1900;
                         buffer->month = tmTime->tm_mon + 1;
                         buffer->day = tmTime->tm_mday;
                         buffer->hour = tmTime->tm_hour;
