@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache;
 
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.GridConcurrentSkipListSet;
@@ -33,7 +34,7 @@ import org.jsr166.LongAdder8;
 
 /**
  * Eagerly removes expired entries from cache when
- * {@link org.apache.ignite.configuration.CacheConfiguration#isEagerTtl()} flag is set.
+ * {@link CacheConfiguration#isEagerTtl()} flag is set.
  */
 @SuppressWarnings("NakedNotify")
 public class GridCacheTtlManager extends GridCacheManagerAdapter {
@@ -163,24 +164,25 @@ public class GridCacheTtlManager extends GridCacheManagerAdapter {
     }
 
     /**
-     * @param cctx Cache context.
+     * @param cctx1 First cache context.
      * @param key1 Left key to compare.
+     * @param cctx2 Second cache context.
      * @param key2 Right key to compare.
      * @return Comparison result.
      */
-    private static int compareKeys(GridCacheContext cctx, CacheObject key1, CacheObject key2) {
+    private static int compareKeys(GridCacheContext cctx1, CacheObject key1, GridCacheContext cctx2, CacheObject key2) {
         int key1Hash = key1.hashCode();
         int key2Hash = key2.hashCode();
 
         int res = Integer.compare(key1Hash, key2Hash);
 
         if (res == 0) {
-            key1 = (CacheObject)cctx.unwrapTemporary(key1);
-            key2 = (CacheObject)cctx.unwrapTemporary(key2);
+            key1 = (CacheObject)cctx1.unwrapTemporary(key1);
+            key2 = (CacheObject)cctx2.unwrapTemporary(key2);
 
             try {
-                byte[] key1ValBytes = key1.valueBytes(cctx.cacheObjectContext());
-                byte[] key2ValBytes = key2.valueBytes(cctx.cacheObjectContext());
+                byte[] key1ValBytes = key1.valueBytes(cctx1.cacheObjectContext());
+                byte[] key2ValBytes = key2.valueBytes(cctx2.cacheObjectContext());
 
                 // Must not do fair array comparison.
                 res = Integer.compare(key1ValBytes.length, key2ValBytes.length);
@@ -193,6 +195,9 @@ public class GridCacheTtlManager extends GridCacheManagerAdapter {
                             break;
                     }
                 }
+
+                if (res == 0)
+                    res = Boolean.compare(cctx1.isNear(), cctx2.isNear());
             }
             catch (IgniteCheckedException e) {
                 throw new IgniteException(e);
@@ -227,12 +232,8 @@ public class GridCacheTtlManager extends GridCacheManagerAdapter {
         @Override public int compareTo(EntryWrapper o) {
             int res = Long.compare(expireTime, o.expireTime);
 
-            if (res == 0) {
-                // Must compare entries of the same cache.
-                assert entry.context() == o.entry.context();
-
-                res = compareKeys(entry.context(), entry.key(), o.entry.key());
-            }
+            if (res == 0)
+                res = compareKeys(entry.context(), entry.key(), o.entry.context(), o.entry.key());
 
             return res;
         }
@@ -247,8 +248,8 @@ public class GridCacheTtlManager extends GridCacheManagerAdapter {
 
             EntryWrapper that = (EntryWrapper)o;
 
-            return expireTime == that.expireTime && compareKeys(entry.context(), entry.key(), that.entry.key()) == 0;
-
+            return expireTime == that.expireTime &&
+                compareKeys(entry.context(), entry.key(), that.entry.context(), that.entry.key()) == 0;
         }
 
         /** {@inheritDoc} */
@@ -295,6 +296,7 @@ public class GridCacheTtlManager extends GridCacheManagerAdapter {
             assert res : "Failed to add entry wrapper:"  + e;
 
             size.increment();
+
             return res;
         }
 

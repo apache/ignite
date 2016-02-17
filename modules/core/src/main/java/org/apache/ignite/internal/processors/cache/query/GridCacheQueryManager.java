@@ -852,7 +852,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                     }
 
                     @Override public K next() {
-                        return (K)cctx.unwrapBinaryIfNeeded(iter0.next(), qry.keepBinary());
+                        return (K)iter0.next();
                     }
 
                     @Override public void remove() {
@@ -3201,9 +3201,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                 }
 
                 if (val != null) {
-                    next0 = F.t(
-                        (K)cctx.unwrapBinaryIfNeeded(key, keepBinary),
-                        (V)cctx.unwrapBinaryIfNeeded(val, keepBinary));
+                    next0 = F.t(key, val);
 
                     if (checkPredicate(next0))
                         break;
