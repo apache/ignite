@@ -1,9 +1,9 @@
 <Query Kind="Program">
-    <NuGetReference>Apache.Ignite.NET</NuGetReference>
-    <Namespace>Apache.Ignite.Core</Namespace>
-    <Namespace>Apache.Ignite.Core.Binary</Namespace>
-    <Namespace>Apache.Ignite.Core.Cache.Configuration</Namespace>
-    <Namespace>Apache.Ignite.Core.Cache.Query</Namespace>
+  <NuGetReference>Apache.Ignite.NET</NuGetReference>
+  <Namespace>Apache.Ignite.Core</Namespace>
+  <Namespace>Apache.Ignite.Core.Binary</Namespace>
+  <Namespace>Apache.Ignite.Core.Cache.Configuration</Namespace>
+  <Namespace>Apache.Ignite.Core.Cache.Query</Namespace>
 </Query>
 
 /*
@@ -34,14 +34,15 @@
 
 void Main()
 {
-    // Configure cacheable types
+	// Configure cacheable types
     var cfg = new IgniteConfiguration { BinaryConfiguration = new BinaryConfiguration(typeof(Organization), typeof(Person))	};
 
     // Start instance
     using (var ignite = Ignition.Start(cfg))
     {
         // Create and populate organization cache
-        var orgs = ignite.GetOrCreateCache<int, Organization>(new CacheConfiguration("orgs", typeof(Organization)));
+        var orgs = ignite.GetOrCreateCache<int, Organization>(new CacheConfiguration("orgs", 
+			new QueryEntity(typeof(int), typeof(Organization))));
         orgs[1] = new Organization { Name = "Apache", Type = "Private", Size = 5300 };
         orgs[2] = new Organization { Name = "Microsoft", Type = "Private", Size = 110000 };
         orgs[3] = new Organization { Name = "Red Cross", Type = "Non-Profit", Size = 35000 };
@@ -52,16 +53,21 @@ void Main()
         persons[2] = new Person { OrgId = 1, Name = "Daniel Adams" };
         persons[3] = new Person { OrgId = 2, Name = "Christian Moss" };
         persons[4] = new Person { OrgId = 3, Name = "Allison Mathis" };
+		persons[5] = new Person { OrgId = 3, Name = "Christopher Adams" };
 
         // SQL query
-        orgs.Query(new SqlQuery(typeof(Organization), "size < ?", 100000)).GetAll().Dump("Organizations with size less than 100K");
+        orgs.Query(new SqlQuery(typeof(Organization), "size < ?", 100000)).Dump("Organizations with size less than 100K");
 		
 		// SQL query with join
-		
-		// Fields query
-		
-		// Full text query
+		const string orgName = "Apache";
+		persons.Query(new SqlQuery(typeof(Person), "from Person, \"orgs\".Organization where Person.OrgId = \"orgs\".Organization._key and \"orgs\".Organization.Name = ?", orgName))
+			.Dump("Persons working for " + orgName);
 
+		// Fields query
+		orgs.QueryFields(new SqlFieldsQuery("select name, size from Organization")).Dump();
+
+		// Full text query
+		persons.Query(new TextQuery(typeof(Person), "Chris*")).Dump("Persons starting with 'Chris'");
 	}
 }
 
@@ -70,7 +76,6 @@ public class Organization
 	[QuerySqlField]
 	public string Name { get; set; }
 	
-	[QueryTextField]
 	public string Type { get; set; }
 
 	[QuerySqlField]
@@ -79,7 +84,7 @@ public class Organization
 
 public class Person
 {
-	[QuerySqlField]
+	[QueryTextField]
 	public string Name { get; set; }
 
 	[QuerySqlField]
