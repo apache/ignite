@@ -17,14 +17,17 @@
 
 package org.apache.ignite.examples.datagrid;
 
+import java.io.Serializable;
 import java.util.concurrent.ConcurrentMap;
 import javax.cache.processor.EntryProcessor;
 import javax.cache.processor.MutableEntry;
-import org.apache.ignite.Ignite;
-import org.apache.ignite.IgniteCache;
-import org.apache.ignite.IgniteException;
-import org.apache.ignite.Ignition;
+
+import org.apache.ignite.*;
+import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.examples.ExampleNodeStartup;
+import org.apache.ignite.lang.IgniteClosure;
+import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.multicast.TcpDiscoveryMulticastIpFinder;
 
 /**
  * This example demonstrates some of the cache rich API capabilities.
@@ -45,20 +48,74 @@ public class CacheApiExample {
      * @param args Command line arguments, none required.
      * @throws IgniteException If example execution failed.
      */
-    public static void main(String[] args) throws IgniteException {
-        try (Ignite ignite = Ignition.start("examples/config/example-ignite.xml")) {
+    public static void main(String[] args) throws IgniteException, IgniteCheckedException {
+
+        final IgniteConfiguration conf1 = new IgniteConfiguration();
+        conf1.setPeerClassLoadingEnabled(true);
+        final TcpDiscoverySpi discoverySpi = new TcpDiscoverySpi();
+        final TcpDiscoveryMulticastIpFinder finder = new TcpDiscoveryMulticastIpFinder();
+        discoverySpi.setIpFinder(finder);
+        conf1.setDiscoverySpi(discoverySpi);
+        conf1.setGridName("grid1");
+
+//        final IgniteConfiguration conf2 = new IgniteConfiguration(conf1);
+        final IgniteConfiguration conf2 = new IgniteConfiguration();
+        conf2.setPeerClassLoadingEnabled(true);
+        final TcpDiscoverySpi discoverySpi2 = new TcpDiscoverySpi();
+        final TcpDiscoveryMulticastIpFinder finder2 = new TcpDiscoveryMulticastIpFinder();
+        discoverySpi2.setIpFinder(finder2);
+        conf2.setDiscoverySpi(discoverySpi2);
+        conf2.setGridName("grid2");
+
+
+        try (Ignite ignite1 = Ignition.start(conf1);
+             Ignite ignite2 = Ignition.start(conf2)) {
             System.out.println();
             System.out.println(">>> Cache API example started.");
 
             // Auto-close cache at the end of the example.
-            try (IgniteCache<Integer, String> cache = ignite.getOrCreateCache(CACHE_NAME)) {
+            try (IgniteCache<Integer, MyPojo> cache1 = ignite1.getOrCreateCache(CACHE_NAME);
+                 IgniteCache<Integer, MyPojo> cache2 = ignite2.getOrCreateCache(CACHE_NAME)) {
                 // Demonstrate atomic map operations.
-                atomicMapOperations(cache);
+//                atomicMapOperations(cache);
+
+                cache1.put(1, new MyPojo("one"));
+                cache1.put(2, new MyPojo("two"));
+                cache1.put(3, new MyPojo("three"));
+
+                cache1.get(1);
+                cache1.get(2);
+                cache1.get(3);
+
+                cache2.get(1);
+                cache2.get(2);
+                cache2.get(3);
+
             }
             finally {
                 // Distributed cache could be removed from cluster only by #destroyCache() call.
-                ignite.destroyCache(CACHE_NAME);
+                ignite1.destroyCache(CACHE_NAME);
+                ignite2.destroyCache(CACHE_NAME);
             }
+
+
+        }
+    }
+
+    private static class MyPojo implements Serializable {
+
+        private final String val;
+
+        private MyPojo(final String val) {
+            this.val = val;
+        }
+
+        private Object readResolve() {
+            System.out.println("readResolve called for " + val + " " + Thread.currentThread().getName());
+            final Ignite locIgnite = Ignition.localIgnite();
+
+//            return "resolved" + locIgnite.name() + "val";
+            return this;
         }
     }
 
