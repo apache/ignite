@@ -91,7 +91,7 @@ xcopy /s /y  $(ProjectDir)pkg\Libs $(TargetDir)Libs</PostBuildEvent>
   </PropertyGroup>
   <PropertyGroup>
     <PreBuildEvent>cd $(ProjectDir)
-if not exist packages install-package.cmd</PreBuildEvent>
+if not exist pkg install-package.cmd</PreBuildEvent>
   </PropertyGroup>
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.
