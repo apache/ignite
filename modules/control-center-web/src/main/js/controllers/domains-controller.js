@@ -857,7 +857,7 @@ consoleModule.controller('domainsController', function ($filter, $http, $timeout
                                 name: idx.name, indexType: 'SORTED', fields: _.map(fields, function (fieldName) {
                                     return {
                                         name: toJavaName(fieldName),
-                                        direction: !idx.fields[fieldName]
+                                        direction: idx.fields[fieldName]
                                     };
                                 })
                             });
