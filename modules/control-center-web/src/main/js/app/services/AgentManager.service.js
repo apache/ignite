@@ -18,16 +18,16 @@
 export default ['AgentManager', ['socketFactory', (socketFactory) => {
     const socket = socketFactory();
 
-    socket.on('agent:success', (data) => { 
-        console.log('agent:success', data);
+    socket.on('agent:connected', (data) => {
+        console.log('agent:connected', data);
     });
 
-    socket.on('agent:error', (err) => {
-    	console.log('agent:error', err);
+    socket.on('agent:disconnected', (err) => {
+        console.log('agent:disconnected', err);
     });
 
     return {
-        findClient() {
+        listenAgents() {
             socket.emit('agent:ping');
         }
     };

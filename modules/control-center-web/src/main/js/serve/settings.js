@@ -55,11 +55,10 @@ module.exports.factory = function(nconf, fs) {
             }
         },
         server: {
-            port: _normalizePort(nconf.get('server:port') || 80),
+            port: _normalizePort(nconf.get('server:port') || nconf.get('server:ssl') ? 443 : 80),
             SSLOptions: nconf.get('server:ssl') && {
                 enable301Redirects: true,
                 trustXFPHeader: true,
-                port: _normalizePort(nconf.get('server:https-port') || 443),
                 key: fs.readFileSync(nconf.get('server:key')),
                 cert: fs.readFileSync(nconf.get('server:cert')),
                 passphrase: nconf.get('server:keyPassphrase')

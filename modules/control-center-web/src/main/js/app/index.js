@@ -100,7 +100,7 @@ import cleanup from './services/cleanup/cleanup.service';
 import GeneratorXml from './services/Generator/Xml.service';
 import GeneratorJava from './services/Generator/Java.service';
 import IgniteCountries from './services/Countries/Countries.service';
-import AgentManager from './services/Agent/Manager.service';
+import AgentManager from './services/AgentManager.service';
 
 // Providers
 
@@ -188,6 +188,6 @@ angular
     });
 }])
 .run(['$rootScope', 'AgentManager', ($root, agentMgr) => {
-    agentMgr.findClient();
+    agentMgr.listenAgents();
 }]);
 

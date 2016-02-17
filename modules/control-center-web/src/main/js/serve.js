@@ -69,20 +69,16 @@ Promise.all([fireUp('settings'), fireUp('app'), fireUp('agent'), fireUp('http'),
         const settings = values[0];
         const app = values[1];
         const agent = values[2];
-        const store = values[3];
 
-        app.set('port', settings.server.port);
-        
-        // Create HTTPS server if needed.
-        if (settings.serverSSLOptions) {
-            const httpsServer = https.createServer(settings.server.SSLOptions, app);
+        // Start rest server.
+        const server = settings.server.SSLOptions
+            ? https.createServer(settings.server.SSLOptions) : http.createServer();
 
-            const httpsPort = settings.server.SSLOptions.port;
+        server.listen(settings.server.port);
+        server.on('error', _onError.bind(null, settings.server.port));
+        server.on('listening', _onListening.bind(null, server.address()));
 
-            httpsServer.listen(httpsPort);
-            httpsServer.on('error', _onError.bind(null, httpsPort));
-            httpsServer.on('listening', _onListening.bind(null, httpsServer.address()));
-        }
+        app.listen(server);
 
         // Start agent server.
         const agentServer = settings.agent.SSLOptions

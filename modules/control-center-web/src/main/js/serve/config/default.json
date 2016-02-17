@@ -1,7 +1,6 @@
 {
     "server": {
         "port": 3000,
-        "https-port": 8443,
         "ssl": false,
         "key": "serve/keys/test.key",
         "cert": "serve/keys/test.crt",
