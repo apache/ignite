@@ -3182,7 +3182,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
 
                 K key = keyIt.next();
 
-                V val;
+                CacheObject val;
 
                 try {
                     val = value(key);
@@ -3201,7 +3201,9 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                 }
 
                 if (val != null) {
-                    next0 = F.t(key, val);
+                    next0 = F.t(
+                        (K)cctx.unwrapBinaryIfNeeded(key, true),
+                        (V)cctx.unwrapBinaryIfNeeded(val, true));
 
                     if (checkPredicate(next0))
                         break;
@@ -3229,7 +3231,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
             }
         }
 
-        private V value(K key) throws IgniteCheckedException {
+        private CacheObject value(K key) throws IgniteCheckedException {
             while (true) {
                 try {
                     GridCacheEntryEx entry = heapOnly ? cache.peekEx(key) : cache.entryEx(key);
@@ -3237,10 +3239,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                     if (expiryPlc != null && !heapOnly)
                         entry.unswap();
 
-                    CacheObject cacheVal =
-                        entry != null ? entry.peek(true, !heapOnly, !heapOnly, topVer, expiryPlc) : null;
-
-                    return (V)cctx.cacheObjectContext().unwrapBinaryIfNeeded(cacheVal, true);
+                    return entry != null ? entry.peek(true, !heapOnly, !heapOnly, topVer, expiryPlc) : null;
                 }
                 catch (GridCacheEntryRemovedException ignore) {
                     if (heapOnly)
