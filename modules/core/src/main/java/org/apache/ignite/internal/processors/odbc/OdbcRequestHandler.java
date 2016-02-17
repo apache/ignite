@@ -174,8 +174,6 @@ public class OdbcRequestHandler {
             return new OdbcResponse(res);
         }
         catch (Exception e) {
-            qryCurs.remove(req.queryId());
-
             return new OdbcResponse(OdbcResponse.STATUS_FAILED, e.getMessage());
         }
     }
