@@ -23,6 +23,7 @@ import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
+import org.apache.ignite.internal.util.nio.GridBufferedParser;
 import org.apache.ignite.internal.util.nio.GridNioCodecFilter;
 import org.apache.ignite.internal.util.nio.GridNioServer;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -40,7 +41,7 @@ public class OdbcProcessor extends GridProcessorAdapter {
     private final GridSpinBusyLock busyLock = new GridSpinBusyLock();
 
     /** OBCD TCP Server. */
-    private GridNioServer<OdbcRequest> srv;
+    private GridNioServer<byte[]> srv;
 
     /**
      * @param ctx Kernal context.
@@ -70,10 +71,10 @@ public class OdbcProcessor extends GridProcessorAdapter {
 
                 int port = odbcCfg.getPort();
 
-                srv = GridNioServer.<OdbcRequest>builder()
+                srv = GridNioServer.<byte[]>builder()
                     .address(host)
                     .port(port)
-                    .listener(new OdbcNioListener(ctx, busyLock))
+                    .listener(new OdbcNioListener(ctx, busyLock, new OdbcRequestHandler(ctx)))
                     .logger(log)
                     .selectorCount(odbcCfg.getSelectorCount())
                     .gridName(ctx.gridName())
@@ -83,7 +84,7 @@ public class OdbcProcessor extends GridProcessorAdapter {
                     .socketSendBufferSize(odbcCfg.getSendBufferSize())
                     .socketReceiveBufferSize(odbcCfg.getReceiveBufferSize())
                     .sendQueueLimit(odbcCfg.getSendQueueLimit())
-                    .filters(new GridNioCodecFilter(new OdbcNioParser(ctx), log, false))
+                    .filters(new GridNioCodecFilter(new OdbcBufferedParser(false, ByteOrder.LITTLE_ENDIAN), log, false))
                     .directMode(false)
                     .idleTimeout(odbcCfg.getIdleTimeout())
                     .build();

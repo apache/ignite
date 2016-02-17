@@ -170,11 +170,24 @@ namespace ignite
             if (!connected)
                 return false;
 
-            size_t sent = 0;
+            OdbcProtocolHeader hdr;
+
+            hdr.len = len;
+
+            int sent = socket.Send(reinterpret_cast<int8_t*>(&hdr), sizeof(hdr));
+
+            LOG_MSG("Sent: %d\n", sent);
+
+            if (sent != sizeof(hdr))
+                return false;
+
+            sent = 0;
 
             while (sent != len) 
             {
-                size_t res = socket.Send(data + sent, len - sent);
+                int res = socket.Send(data + sent, len - sent);
+
+                LOG_MSG("Sent: %d\n", res);
 
                 if (res <= 0)
                     return false;
@@ -195,6 +208,7 @@ namespace ignite
             OdbcProtocolHeader hdr;
 
             int received = socket.Receive(reinterpret_cast<int8_t*>(&hdr), sizeof(hdr));
+
             LOG_MSG("Received: %d\n", received);
 
             if (received != sizeof(hdr))
