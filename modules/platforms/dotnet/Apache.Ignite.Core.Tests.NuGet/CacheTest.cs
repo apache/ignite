@@ -25,19 +25,36 @@ namespace Apache.Ignite.Core.Tests.NuGet
     public class CacheTest
     {
         /// <summary>
+        /// Fixture set up.
+        /// </summary>
+        [TestFixtureSetUp]
+        public void FixtureSetUp()
+        {
+            Ignition.Start(new IgniteConfiguration {DiscoverySpi = TestUtil.GetLocalDiscoverySpi()});
+        }
+
+        /// <summary>
+        /// Fixture tear down.
+        /// </summary>
+        [TestFixtureTearDown]
+        public void FixtureTearDown()
+        {
+            Ignition.StopAll(true);
+        }
+
+        /// <summary>
         /// Tests cache put/get.
         /// </summary>
         [Test]
         public void TestPutGet()
         {
-            using (var ignite = Ignition.Start())
-            {
-                var cache = ignite.CreateCache<int, int>("cache");
+            var ignite = Ignition.GetIgnite();
 
-                cache[1] = 5;
+            var cache = ignite.CreateCache<int, int>("cache");
 
-                Assert.AreEqual(5, cache[1]);
-            }
+            cache[1] = 5;
+
+            Assert.AreEqual(5, cache[1]);
         }
     }
 }
