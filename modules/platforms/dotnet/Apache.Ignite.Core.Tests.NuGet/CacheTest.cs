@@ -17,6 +17,10 @@
 
 namespace Apache.Ignite.Core.Tests.NuGet
 {
+    using System.Linq;
+    using Apache.Ignite.Core.Binary;
+    using Apache.Ignite.Core.Cache.Configuration;
+    using Apache.Ignite.Core.Cache.Query;
     using NUnit.Framework;
 
     /// <summary>
@@ -30,7 +34,13 @@ namespace Apache.Ignite.Core.Tests.NuGet
         [TestFixtureSetUp]
         public void FixtureSetUp()
         {
-            Ignition.Start(new IgniteConfiguration {DiscoverySpi = TestUtil.GetLocalDiscoverySpi()});
+            var cfg = new IgniteConfiguration
+            {
+                DiscoverySpi = TestUtil.GetLocalDiscoverySpi(),
+                BinaryConfiguration = new BinaryConfiguration(typeof(Person))
+            };
+
+            Ignition.Start(cfg);
         }
 
         /// <summary>
@@ -55,6 +65,42 @@ namespace Apache.Ignite.Core.Tests.NuGet
             cache[1] = 5;
 
             Assert.AreEqual(5, cache[1]);
+        }
+
+        /// <summary>
+        /// Tests the SQL.
+        /// </summary>
+        [Test]
+        public void TestSql()
+        {
+            var ignite = Ignition.GetIgnite();
+
+            var cache = ignite.GetOrCreateCache<int, Person>(new CacheConfiguration("sqlCache", typeof (Person)));
+
+            cache.PutAll(Enumerable.Range(1, 100).ToDictionary(x => x, x => new Person {Name = "Name" + x, Age = x}));
+
+            var sqlRes = cache.Query(new SqlQuery(typeof (Person), "age < ?", 30)).GetAll();
+
+            Assert.AreEqual(29, sqlRes.Count);
+            Assert.IsTrue(sqlRes.All(x => x.Value.Age < 30));
+        }
+
+        /// <summary>
+        /// Query class.
+        /// </summary>
+        private class Person
+        {
+            /// <summary>
+            /// Gets or sets the name.
+            /// </summary>
+            [QuerySqlField]
+            public string Name { get; set; }
+
+            /// <summary>
+            /// Gets or sets the age.
+            /// </summary>
+            [QuerySqlField]
+            public int Age { get; set; }
         }
     }
 }
