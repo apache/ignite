@@ -58,8 +58,12 @@ public class CacheEntryPredicateContainsValue extends CacheEntryPredicateAdapter
     @Override public boolean apply(GridCacheEntryEx e) {
         CacheObject val = peekVisibleValue(e);
 
-        return F.eq(this.val.value(e.context().cacheObjectContext(), false),
-            CU.value(val, e.context(), false));
+        GridCacheContext cctx = e.context();
+
+        Object thisVal = CU.value(this.val, cctx, false);
+        Object cacheVal = CU.value(val, cctx, false);
+
+        return F.eq(thisVal, cacheVal);
     }
 
     /** {@inheritDoc} */
