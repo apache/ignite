@@ -715,7 +715,7 @@ BOOST_AUTO_TEST_CASE(TestGetDateFromString)
 
     time_t cTime = utility::DateToCTime(date);
 
-    tm *tmDate = localtime(&cTime);
+    tm *tmDate = gmtime(&cTime);
 
     BOOST_REQUIRE(tmDate != 0);
 
@@ -741,7 +741,7 @@ BOOST_AUTO_TEST_CASE(TestGetTimestatmpFromString)
 
     time_t cTime = utility::TimestampToCTime(date);
 
-    tm *tmDate = localtime(&cTime);
+    tm *tmDate = gmtime(&cTime);
 
     BOOST_REQUIRE(tmDate != 0);
 
@@ -772,7 +772,7 @@ BOOST_AUTO_TEST_CASE(TestGetDateFromDate)
 
     time_t cTime = utility::DateToCTime(date);
 
-    tm *tmDate = localtime(&cTime);
+    tm *tmDate = gmtime(&cTime);
 
     BOOST_REQUIRE(tmDate != 0);
 
@@ -803,7 +803,7 @@ BOOST_AUTO_TEST_CASE(TestGetTimestampFromDate)
 
     time_t cTime = utility::TimestampToCTime(ts);
 
-    tm *tmDate = localtime(&cTime);
+    tm *tmDate = gmtime(&cTime);
 
     BOOST_REQUIRE(tmDate != 0);
 
@@ -838,7 +838,7 @@ BOOST_AUTO_TEST_CASE(TestGetTimestampFromTimestamp)
 
     time_t cTime = utility::TimestampToCTime(ts);
 
-    tm *tmDate = localtime(&cTime);
+    tm *tmDate = gmtime(&cTime);
 
     BOOST_REQUIRE(tmDate != 0);
 
@@ -874,7 +874,7 @@ BOOST_AUTO_TEST_CASE(TestGetDateFromTimestamp)
 
     time_t cTime = utility::DateToCTime(date);
 
-    tm *tmDate = localtime(&cTime);
+    tm *tmDate = gmtime(&cTime);
 
     BOOST_REQUIRE(tmDate != 0);
 

@@ -1108,7 +1108,7 @@ namespace ignite
                         break;
                 }
 
-                time_t cTime = mktime(&tmTime);
+                time_t cTime = mktime(&tmTime) - timezone;
 
                 return Date(cTime * 1000);
             }
@@ -1169,7 +1169,7 @@ namespace ignite
                         break;
                 }
 
-                time_t cTime = mktime(&tmTime);
+                time_t cTime = mktime(&tmTime) - timezone;
 
                 return Timestamp(cTime, nanos);
             }
