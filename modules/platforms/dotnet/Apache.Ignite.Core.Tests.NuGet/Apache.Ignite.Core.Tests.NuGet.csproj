@@ -5,7 +5,7 @@
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">x64</Platform>
     <ProjectGuid>{134707F6-155D-47F6-9EB2-C67ABBF3C009}</ProjectGuid>
-    <OutputType>Library</OutputType>
+    <OutputType>Exe</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
     <RootNamespace>Apache.Ignite.Core.Tests.NuGet</RootNamespace>
     <AssemblyName>Apache.Ignite.Core.Tests.NuGet</AssemblyName>
@@ -30,10 +30,16 @@
     <ErrorReport>prompt</ErrorReport>
     <CodeAnalysisRuleSet>MinimumRecommendedRules.ruleset</CodeAnalysisRuleSet>
   </PropertyGroup>
+  <PropertyGroup>
+    <StartupObject>Apache.Ignite.Core.Tests.NuGet.TestRunner</StartupObject>
+  </PropertyGroup>
   <ItemGroup>
     <Reference Include="Apache.Ignite.Core">
       <SpecificVersion>False</SpecificVersion>
       <HintPath>pkg\lib\net40\Apache.Ignite.Core.dll</HintPath>
+    </Reference>
+    <Reference Include="nunit-console-runner">
+      <HintPath>..\libs\nunit-console-runner.dll</HintPath>
     </Reference>
     <Reference Include="nunit.framework, Version=2.6.4.14350, Culture=neutral, PublicKeyToken=96d09a1eb7f44a77, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
@@ -47,6 +53,7 @@
     <Compile Include="StartupTest.cs" />
     <Compile Include="CacheTest.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="TestRunner.cs" />
     <Compile Include="TestUtil.cs" />
   </ItemGroup>
   <ItemGroup>
