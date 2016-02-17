@@ -584,10 +584,7 @@ public class BinaryUtils {
     public static boolean isBinaryType(Class<?> cls) {
         assert cls != null;
 
-        return BinaryObject.class.isAssignableFrom(cls) ||
-            BINARY_CLS.contains(cls) ||
-            cls.isEnum() ||
-            (cls.isArray() && cls.getComponentType().isEnum());
+        return BinaryObject.class.isAssignableFrom(cls) || BINARY_CLS.contains(cls);
     }
 
     /**
