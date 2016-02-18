@@ -32,6 +32,7 @@ import org.apache.ignite.testframework.config.CacheConfigurationPermutations;
 import org.apache.ignite.testframework.config.FullApiStateConfigurationFactory;
 import org.apache.ignite.testframework.config.StateConfigurationFactory;
 import org.apache.ignite.testframework.config.generator.ConfigurationParameter;
+import org.apache.ignite.testframework.config.generator.StateIterator;
 
 import static org.apache.ignite.testframework.config.params.Parameters.booleanParameters;
 import static org.apache.ignite.testframework.config.params.Parameters.objectParameters;
@@ -81,19 +82,16 @@ public class CacheFullApiBasicCfgNewTestSuite extends TestSuite {
      * @param withClient With client.
      */
     private static void addTestSuites(TestSuite suite, int gridsCnt, boolean withClient) {
-//        for (StateIterator igniteCfgIter = new StateIterator(igniteParams); igniteCfgIter.hasNext();) {
-//            final int[] igniteCfgState = igniteCfgIter.next();
-            final int[] igniteCfgState = new int[] {0, 0, 0};
+        for (StateIterator igniteCfgIter = new StateIterator(igniteParams); igniteCfgIter.hasNext();) {
+            final int[] igniteCfgState = igniteCfgIter.next();
 
-//            for (StateIterator cacheCfgIter = new StateIterator(cacheParams); cacheCfgIter.hasNext();) {
-//                int[] cacheCfgState = cacheCfgIter.next();
-                int[] cacheCfgState = new int[] {0, 0, 0, 0, 0, 0, 0, 0, 0};
+            for (StateIterator cacheCfgIter = new StateIterator(cacheParams); cacheCfgIter.hasNext();) {
+                int[] cacheCfgState = cacheCfgIter.next();
 
                 // Stop all grids before starting new ignite configuration.
-//                addTestSuite(suite, igniteCfgState, cacheCfgState, gridsCnt, !cacheCfgIter.hasNext(), withClient);
-                addTestSuite(suite, igniteCfgState, cacheCfgState, gridsCnt, true, withClient);
-//            }
-//        }
+                addTestSuite(suite, igniteCfgState, cacheCfgState, gridsCnt, !cacheCfgIter.hasNext(), withClient);
+            }
+        }
     }
 
     /**
