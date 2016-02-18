@@ -570,7 +570,7 @@ consoleModule.controller('cachesController', [
 
             if (item.writeBehindFlushSize === 0 && item.writeBehindFlushFrequency === 0)
                 return showPopoverMessage($scope.ui, 'store', 'writeBehindFlushSize',
-                    'Both \'Flush frequency\' and \'Flush size\' are not allowed as 0');
+                    'Both "Flush frequency" and "Flush size" are not allowed as 0');
 
             if (item.cacheMode !== 'LOCAL' && item.rebalanceMode !== 'NONE' && item.rebalanceBatchSize === 0)
                 return showPopoverMessage($scope.ui, 'rebalance', 'rebalanceBatchSize',

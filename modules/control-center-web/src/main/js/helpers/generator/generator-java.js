@@ -2067,21 +2067,14 @@ $generatorJava.javaClassCode = function (domain, key, pkg, useConstructor, inclu
     res.line('/** {@inheritDoc} */');
     res.startBlock('@Override public String toString() {');
 
-    if (allFields.length > 0) {
-        var field = allFields[0];
+    _.forEach(allFields, function (field, idx) {
+        if (idx === 0)
+            res.startBlock('return \"' + type + ' [' + field.javaFieldName + '=\" + ' + field.javaFieldName + ' +', type);
+        else
+            res.line('\", ' + field.javaFieldName + '=\" + ' + field.javaFieldName + ' +');
+    });
 
-        res.startBlock('return \"' + type + ' [' + field.javaFieldName + '=\" + ' + field.javaFieldName + ' +', type);
-
-        for (fldIx = 1; fldIx < allFields.length; fldIx ++) {
-            field = allFields[fldIx];
-
-            var javaName = field.javaFieldName;
-
-            res.line('\", ' + javaName + '=\" + ' + field.javaFieldName + ' +');
-        }
-    }
-
-    res.line('\']\';');
+    res.line('"]";');
     res.endBlock();
     res.endBlock('}');
 
