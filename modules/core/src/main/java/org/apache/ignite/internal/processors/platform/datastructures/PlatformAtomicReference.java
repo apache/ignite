@@ -24,6 +24,7 @@ import org.apache.ignite.internal.processors.datastructures.GridCacheAtomicRefer
 import org.apache.ignite.internal.processors.platform.PlatformAbstractTarget;
 import org.apache.ignite.internal.processors.platform.PlatformContext;
 import org.apache.ignite.internal.processors.platform.memory.PlatformMemory;
+import org.apache.ignite.internal.util.typedef.F;
 
 /**
  * Platform atomic reference wrapper.
@@ -132,7 +133,12 @@ public class PlatformAtomicReference extends PlatformAbstractTarget {
 
             Object res = atomicRef.compareAndSetAndGet(val, cmp);
 
-            writer.writeObject(res);
+            if (F.eq(cmp, res))
+                writer.writeBoolean(true);
+            else {
+                writer.writeBoolean(false);
+                writer.writeObject(res);
+            }
         }
         else
             super.processInStreamOutStream(type, reader, writer);
