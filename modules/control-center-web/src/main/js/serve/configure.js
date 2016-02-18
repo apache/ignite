@@ -28,15 +28,13 @@ module.exports = {
 module.exports.factory = function(logger, cookieParser, bodyParser, session, connectMongo, passport, passportSocketIo, settings, mongo) {
     const _sessionStore = new (connectMongo(session))({mongooseConnection: mongo.connection});
 
-    const _cookieParser = cookieParser(settings.sessionSecret);
-
     return {
         express: (app) => {
             app.use(logger('dev', {
                 skip: (req, res) => res.statusCode < 400
             }));
 
-            app.use(_cookieParser);
+            app.use(cookieParser(settings.sessionSecret));
 
             app.use(bodyParser.json({limit: '50mb'}));
             app.use(bodyParser.urlencoded({limit: '50mb', extended: true}));
@@ -73,7 +71,7 @@ module.exports.factory = function(logger, cookieParser, bodyParser, session, con
             };
 
             io.use(passportSocketIo.authorize({
-                cookieParser: _cookieParser,
+                cookieParser,
                 key: 'connect.sid', // the name of the cookie where express/connect stores its session_id
                 secret: settings.sessionSecret, // the session_secret to parse the cookie
                 store: _sessionStore, // we NEED to use a sessionstore. no memorystore please
