@@ -3260,7 +3260,7 @@ public class CacheFullApiNewSelfTest extends CacheAbstractNewSelfTest {
 
         IgniteCache<String, Integer> cache = jcache();
 
-        Set<String> keys = new HashSet<>(primaryKeysForCache(cache, 2));
+        Set<String> keys = new HashSet<>(primaryKeysForCache(2));
 
         for (String key : keys)
             assertNull(cache.localPeek(key, ONHEAP));
@@ -3343,7 +3343,7 @@ public class CacheFullApiNewSelfTest extends CacheAbstractNewSelfTest {
     public void testClear() throws Exception {
         IgniteCache<String, Integer> cache = jcache();
 
-        Set<String> keys = new HashSet<>(primaryKeysForCache(cache, 3));
+        Set<String> keys = new HashSet<>(primaryKeysForCache(3));
 
         for (String key : keys)
             assertNull(cache.get(key));
@@ -3505,7 +3505,7 @@ public class CacheFullApiNewSelfTest extends CacheAbstractNewSelfTest {
         // Save entries only on their primary nodes. If we didn't do so, clearLocally() will not remove all entries
         // because some of them were blocked due to having readers.
         for (int i = 0; i < gridCount(); i++) {
-            for (String key : primaryKeysForCache(jcache(i), 3, 100_000))
+            for (String key : primaryKeysForCache(i, 3, 100_000))
                 jcache(i).put(key, 1);
         }
 
@@ -3551,7 +3551,7 @@ public class CacheFullApiNewSelfTest extends CacheAbstractNewSelfTest {
 
             IgniteCache<String, Integer> cache = jcache();
 
-            String key = primaryKeysForCache(cache, 1).get(0);
+            String key = primaryKeysForCache(1).get(0);
 
             cache.put(key, 1);
 
@@ -3708,7 +3708,7 @@ public class CacheFullApiNewSelfTest extends CacheAbstractNewSelfTest {
     public void testEvictExpired() throws Exception {
         final IgniteCache<String, Integer> cache = jcache();
 
-        final String key = primaryKeysForCache(cache, 1).get(0);
+        final String key = primaryKeysForCache(1).get(0);
 
         cache.put(key, 1);
 
@@ -3762,7 +3762,7 @@ public class CacheFullApiNewSelfTest extends CacheAbstractNewSelfTest {
     public void testPeekExpired() throws Exception {
         final IgniteCache<String, Integer> c = jcache();
 
-        final String key = primaryKeysForCache(c, 1).get(0);
+        final String key = primaryKeysForCache(1).get(0);
 
         info("Using key: " + key);
 
@@ -3861,7 +3861,7 @@ public class CacheFullApiNewSelfTest extends CacheAbstractNewSelfTest {
 
         final IgniteCache<String, Integer> c = jcache();
 
-        final String key = primaryKeysForCache(jcache(), 1).get(0);
+        final String key = primaryKeysForCache(1).get(0);
 
         GridCacheAdapter<String, Integer> internalCache = internalCache(serverNodeCache());
 
@@ -4114,7 +4114,7 @@ public class CacheFullApiNewSelfTest extends CacheAbstractNewSelfTest {
     public void testLocalEvict() throws Exception {
         IgniteCache<String, Integer> cache = jcache();
 
-        List<String> keys = primaryKeysForCache(cache, 3);
+        List<String> keys = primaryKeysForCache(3);
 
         String key1 = keys.get(0);
         String key2 = keys.get(1);
@@ -4160,7 +4160,7 @@ public class CacheFullApiNewSelfTest extends CacheAbstractNewSelfTest {
         if (swapEnabled() && !offheapEnabled()) {
             IgniteCache<String, Integer> cache = jcache();
 
-            List<String> keys = primaryKeysForCache(jcache(), 3);
+            List<String> keys = primaryKeysForCache(3);
 
             String k1 = keys.get(0);
             String k2 = keys.get(1);
@@ -4344,7 +4344,7 @@ public class CacheFullApiNewSelfTest extends CacheAbstractNewSelfTest {
     public void testCompactExpired() throws Exception {
         final IgniteCache<String, Integer> cache = jcache();
 
-        final String key = F.first(primaryKeysForCache(cache, 1));
+        final String key = F.first(primaryKeysForCache(1));
 
         cache.put(key, 1);
 
@@ -4638,15 +4638,15 @@ public class CacheFullApiNewSelfTest extends CacheAbstractNewSelfTest {
     }
 
     /**
-     * @param cache Cache.
+     * @param gridIdx Grid index.
      * @param cnt Keys count.
      * @return Collection of keys for which given cache is primary.
      */
-    protected List<String> primaryKeysForCache(IgniteCache cache, int cnt, int startFrom) {
-        if ((testedNodeIdx == CLIENT_NODE_IDX || testedNodeIdx == CLIENT_NEAR_ONLY_IDX) && cache == jcache())
+    protected List<String> primaryKeysForCache(int gridIdx, int cnt, int startFrom) {
+        if (gridIdx == CLIENT_NODE_IDX || gridIdx == CLIENT_NEAR_ONLY_IDX)
             return primaryKeysForCache0(serverNodeCache(), cnt, 1);
 
-        return primaryKeysForCache0(cache, cnt, 1);
+        return primaryKeysForCache0(jcache(gridIdx), cnt, 1);
     }
 
     /**
@@ -4677,14 +4677,13 @@ public class CacheFullApiNewSelfTest extends CacheAbstractNewSelfTest {
     }
 
     /**
-     * @param cache Cache.
      * @param cnt Keys count.
      * @return Collection of keys for which given cache is primary.
      * @throws IgniteCheckedException If failed.
      */
-    protected List<String> primaryKeysForCache(IgniteCache cache, int cnt)
+    protected List<String> primaryKeysForCache(int cnt)
         throws IgniteCheckedException {
-        return primaryKeysForCache(cache, cnt, 1);
+        return primaryKeysForCache(testedNodeIdx, cnt, 1);
     }
 
     /**
@@ -5118,7 +5117,7 @@ public class CacheFullApiNewSelfTest extends CacheAbstractNewSelfTest {
 
         IgniteCache<String, Integer> cacheSkipStore = cache.withSkipStore();
 
-        List<String> keys = primaryKeysForCache(cache, 10);
+        List<String> keys = primaryKeysForCache(0, 10, 1);
 
         for (int i = 0; i < keys.size(); ++i)
             putToStore(keys.get(i), i);
@@ -5687,7 +5686,7 @@ public class CacheFullApiNewSelfTest extends CacheAbstractNewSelfTest {
         try {
             IgniteCache<String, Integer> cache = grid(0).cache(cacheName());
 
-            List<String> keys = primaryKeysForCache(cache, 2);
+            List<String> keys = primaryKeysForCache(0, 2, 1);
 
             assertEquals(2, keys.size());
 
