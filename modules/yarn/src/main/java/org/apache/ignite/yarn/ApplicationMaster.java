@@ -33,7 +33,6 @@ import org.apache.commons.io.IOUtils;
 import org.apache.hadoop.fs.FSDataOutputStream;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
-import org.apache.hadoop.io.DataOutputBuffer;
 import org.apache.hadoop.security.Credentials;
 import org.apache.hadoop.security.UserGroupInformation;
 import org.apache.hadoop.service.Service;
@@ -53,6 +52,7 @@ import org.apache.hadoop.yarn.client.api.async.AMRMClientAsync;
 import org.apache.hadoop.yarn.conf.YarnConfiguration;
 import org.apache.hadoop.yarn.util.Records;
 import org.apache.ignite.yarn.utils.IgniteYarnUtils;
+import static org.apache.ignite.yarn.utils.IgniteYarnUtils.createTokenBuffer;
 
 /**
  * Application master request containers from Yarn and decides how many resources will be occupied.
@@ -71,10 +71,10 @@ public class ApplicationMaster implements AMRMClientAsync.CallbackHandler {
     private long schedulerTimeout = TimeUnit.SECONDS.toMillis(1);
 
     /** Yarn configuration. */
-    private YarnConfiguration conf;
+    private final YarnConfiguration conf;
 
     /** Cluster properties. */
-    private ClusterProperties props;
+    private final ClusterProperties props;
 
     /** Network manager. */
     private NMClient nmClient;
@@ -83,10 +83,10 @@ public class ApplicationMaster implements AMRMClientAsync.CallbackHandler {
     private AMRMClientAsync<AMRMClient.ContainerRequest> rmClient;
 
     /** Ignite path. */
-    private Path ignitePath;
+    private final Path ignitePath;
 
     /** Config path. */
-    private Path cfgPath;
+    private volatile Path cfgPath;
 
     /** Hadoop file system. */
     private FileSystem fs;
@@ -95,7 +95,7 @@ public class ApplicationMaster implements AMRMClientAsync.CallbackHandler {
     private ByteBuffer allTokens;
 
     /** Running containers. */
-    private Map<ContainerId, IgniteContainer> containers = new ConcurrentHashMap<>();
+    private final Map<ContainerId, IgniteContainer> containers = new ConcurrentHashMap<>();
 
     /**
      * @param ignitePath Hdfs path to ignite.
@@ -355,11 +355,7 @@ public class ApplicationMaster implements AMRMClientAsync.CallbackHandler {
         if (UserGroupInformation.isSecurityEnabled()) {
             Credentials cred = UserGroupInformation.getCurrentUser().getCredentials();
 
-            DataOutputBuffer dob = new DataOutputBuffer();
-
-            cred.writeTokenStorageToStream(dob);
-
-            allTokens = ByteBuffer.wrap(dob.getData(), 0, dob.getLength());
+            allTokens = createTokenBuffer(cred);
         }
     }
 

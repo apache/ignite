@@ -19,7 +19,6 @@ package org.apache.ignite.yarn;
 
 import java.io.File;
 import java.io.IOException;
-import java.nio.ByteBuffer;
 import java.util.Collections;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
@@ -27,7 +26,6 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
-import org.apache.hadoop.io.DataOutputBuffer;
 import org.apache.hadoop.security.Credentials;
 import org.apache.hadoop.security.UserGroupInformation;
 import org.apache.hadoop.security.token.Token;
@@ -47,6 +45,7 @@ import org.apache.hadoop.yarn.util.Records;
 import org.apache.ignite.yarn.utils.IgniteYarnUtils;
 
 import static org.apache.hadoop.yarn.api.ApplicationConstants.Environment;
+import static org.apache.ignite.yarn.utils.IgniteYarnUtils.createTokenBuffer;
 
 /**
  * Ignite yarn client.
@@ -141,13 +140,7 @@ public class IgniteYarnClient {
                     log.info("Got dt for " + fs.getUri() + "; " + token);
             }
 
-            DataOutputBuffer dob = new DataOutputBuffer();
-
-            creds.writeTokenStorageToStream(dob);
-
-            ByteBuffer fsTokBuf = ByteBuffer.wrap(dob.getData(), 0, dob.getLength());
-
-            amContainer.setTokens(fsTokBuf);
+            amContainer.setTokens(createTokenBuffer(creds));
         }
 
         // Set up resource type requirements for ApplicationMaster
