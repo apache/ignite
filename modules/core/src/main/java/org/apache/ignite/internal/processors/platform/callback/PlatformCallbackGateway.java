@@ -911,6 +911,36 @@ public class PlatformCallbackGateway {
     }
 
     /**
+     * Notifies platform about client disconnect.
+     */
+    public void onClientDisconnected() {
+        enter();
+
+        try {
+            PlatformCallbackUtils.onClientDisconnected(envPtr);
+        }
+        finally {
+            leave();
+        }
+    }
+
+    /**
+     * Notifies platform about client reconnect.
+     *
+     * @param clusterRestarted Cluster restarted flag.
+     */
+    public void onClientReconnected(boolean clusterRestarted) {
+        enter();
+
+        try {
+            PlatformCallbackUtils.onClientReconnected(envPtr, clusterRestarted);
+        }
+        finally {
+            leave();
+        }
+    }
+
+    /**
      * Kernal stop callback.
      */
     public void onStop() {

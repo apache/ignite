@@ -218,6 +218,7 @@ public class BinaryContext {
         registerPredefinedType(BinaryObjectOffheapImpl.class, 0);
         registerPredefinedType(BinaryMetadataKey.class, 0);
         registerPredefinedType(BinaryMetadata.class, 0);
+        registerPredefinedType(BinaryEnumObjectImpl.class, 0);
 
         // IDs range [200..1000] is used by Ignite internal APIs.
     }
