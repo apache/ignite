@@ -2073,15 +2073,13 @@ $generatorJava.javaClassCode = function (domain, key, pkg, useConstructor, inclu
     res.line('/** {@inheritDoc} */');
     res.startBlock('@Override public String toString() {');
 
+    res.startBlock('return \"' + type + ' [" + ');
+
     _.forEach(allFields, function (field, idx) {
-        if (idx === 0)
-            res.startBlock('return \"' + type + ' [' + field.javaFieldName + '=\" + ' + field.javaFieldName + ' +', type);
-        else
-            res.line('\", ' + field.javaFieldName + '=\" + ' + field.javaFieldName + ' +');
+        res.line('\"' + field.javaFieldName + '=\" + ' + field.javaFieldName + (idx < allFields.length - 1 ? ' + ", " + ' : ' +'));
     });
 
-    res.line('"]";');
-    res.endBlock();
+    res.endBlock('"]";');
     res.endBlock('}');
 
     res.endBlock('}');
