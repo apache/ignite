@@ -1577,9 +1577,10 @@ public final class IgfsImpl implements IgfsEx {
                     IgfsFile status = secondaryFs.info(path);
 
                     if (status != null)
-                        info = status.isDirectory() ? new IgfsFileInfo(true, status.properties()) :
+                        info = status.isDirectory() ?
+                            new IgfsFileInfo(true, status.properties()) :
                             new IgfsFileInfo(status.blockSize(), status.length(), null, null, false,
-                            status.properties());
+                                status.properties());
                 }
 
                 break;

@@ -158,7 +158,8 @@ public final class IgfsFileInfo implements Externalizable {
      */
     public IgfsFileInfo(int blockSize, long len, @Nullable IgniteUuid affKey, @Nullable IgniteUuid lockId,
         boolean evictExclude, @Nullable Map<String, String> props) {
-        this(false, null, blockSize, len, affKey, null, props, lockId, true, System.currentTimeMillis(), evictExclude);
+        this(false, null, blockSize, len, affKey, null, props, lockId, true,
+            /* IGNITE-2352: problem there. */System.currentTimeMillis(), evictExclude);
     }
 
     /**
