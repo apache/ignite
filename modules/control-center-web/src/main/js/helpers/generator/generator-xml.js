@@ -419,6 +419,7 @@ $generatorXml.clusterBinary = function (cluster, res) {
 
         $generatorXml.emptyBeanProperty(res, binary, 'idMapper');
         $generatorXml.emptyBeanProperty(res, binary, 'serializer');
+        $generatorXml.emptyBeanProperty(res, binary, 'nameMapper');
 
         if ($commonUtils.isDefinedAndNotEmpty(binary.typeConfigurations)) {
             res.startBlock('<property name="typeConfigurations">');
@@ -429,6 +430,7 @@ $generatorXml.clusterBinary = function (cluster, res) {
 
                 $generatorXml.property(res, type, 'typeName');
                 $generatorXml.emptyBeanProperty(res, type, 'idMapper');
+                $generatorXml.emptyBeanProperty(res, type, 'nameMapper');
                 $generatorXml.emptyBeanProperty(res, type, 'serializer');
                 $generatorXml.property(res, type, 'enum', undefined, false);
 

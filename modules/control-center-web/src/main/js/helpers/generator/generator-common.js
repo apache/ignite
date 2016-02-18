@@ -499,8 +499,9 @@ $generatorCommon.secretPropertiesNeeded = function (cluster) {
 
 // Check that binary is configured.
 $generatorCommon.binaryIsDefined = function (binary) {
-    return binary && ($commonUtils.isDefinedAndNotEmpty(binary.idMapper) || $commonUtils.isDefinedAndNotEmpty(binary.serializer) ||
-        $commonUtils.isDefinedAndNotEmpty(binary.typeConfigurations) || ($commonUtils.isDefined(binary.compactFooter) && !binary.compactFooter));
+    return binary && ($commonUtils.isDefinedAndNotEmpty(binary.idMapper) || $commonUtils.isDefinedAndNotEmpty(binary.nameMapper) ||
+        $commonUtils.isDefinedAndNotEmpty(binary.serializer) || $commonUtils.isDefinedAndNotEmpty(binary.typeConfigurations) ||
+        ($commonUtils.isDefined(binary.compactFooter) && !binary.compactFooter));
 };
 
 // Extract domain model metadata location.

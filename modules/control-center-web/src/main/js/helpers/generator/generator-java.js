@@ -594,6 +594,9 @@ $generatorJava.clusterBinary = function (cluster, res) {
         if ($commonUtils.isDefinedAndNotEmpty(binary.idMapper))
             res.line(varName + '.setIdMapper(new ' + res.importClass(binary.idMapper) + '());');
 
+        if ($commonUtils.isDefinedAndNotEmpty(binary.nameMapper))
+            res.line(varName + '.setNameMapper(new ' + res.importClass(binary.nameMapper) + '());');
+
         if ($commonUtils.isDefinedAndNotEmpty(binary.serializer))
             res.line(varName + '.setSerializer(new ' + res.importClass(binary.serializer) + '());');
 
@@ -662,6 +665,9 @@ $generatorJava.binaryTypeConfiguration = function (type, res) {
 
     if ($commonUtils.isDefinedAndNotEmpty(type.idMapper))
         res.line(typeVar + '.setIdMapper(new ' + res.importClass(type.idMapper) + '());');
+
+    if ($commonUtils.isDefinedAndNotEmpty(type.nameMapper))
+        res.line(typeVar + '.setNameMapper(new ' + res.importClass(type.nameMapper) + '());');
 
     if ($commonUtils.isDefinedAndNotEmpty(type.serializer))
         res.line(typeVar + '.setSerializer(new ' + res.importClass(type.serializer) + '());');

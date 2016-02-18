@@ -375,8 +375,15 @@ module.exports.factory = function(deepPopulatePlugin, passportMongo, settings, p
         },
         binaryConfiguration: {
             idMapper: String,
+            nameMapper: String,
             serializer: String,
-            typeConfigurations: [{typeName: String, idMapper: String, serializer: String, enum: Boolean}],
+            typeConfigurations: [{
+                typeName: String,
+                idMapper: String,
+                nameMapper: String,
+                serializer: String,
+                enum: Boolean
+            }],
             compactFooter: Boolean
         },
         caches: [{type: ObjectId, ref: 'Cache'}],
