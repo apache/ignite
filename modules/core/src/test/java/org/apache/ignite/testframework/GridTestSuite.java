@@ -22,9 +22,10 @@ import java.lang.reflect.Modifier;
 import junit.framework.Test;
 import junit.framework.TestResult;
 import junit.framework.TestSuite;
-import org.apache.ignite.internal.processors.cache.CacheAbstractNewSelfTest;
+import org.apache.ignite.internal.processors.cache.IgniteCacheConfigPermutationsAbstractTest;
 import org.apache.ignite.testframework.TestsConfiguration.MultiNodeTestsConfiguration;
 import org.apache.ignite.testframework.junits.GridAbstractTest;
+import org.apache.ignite.testframework.junits.IgniteConfigPermutationsAbstractTest;
 
 /**
  * Grid test suite.
@@ -37,30 +38,29 @@ public class GridTestSuite extends TestSuite {
      * @param cls Test class.
      * @param cfg Configuration.
      */
-    public GridTestSuite(Class<? extends GridAbstractTest> cls, TestsConfiguration cfg) {
+    public GridTestSuite(Class<? extends IgniteConfigPermutationsAbstractTest> cls, TestsConfiguration cfg) {
         super(cls);
 
         this.cfg = cfg;
     }
-
 
     /**
      * @param cls Test class.
      * @param cfg Configuration.
      * @param testedNodeCnt Count of tested nodes.
      */
-    public static TestSuite createMultiNodeTestSuite(Class<? extends CacheAbstractNewSelfTest> cls,
+    public static TestSuite createMultiNodeTestSuite(Class<? extends IgniteCacheConfigPermutationsAbstractTest> cls,
         TestsConfiguration cfg,
         int testedNodeCnt) {
 
-        if (cls.isInstance(CacheAbstractNewSelfTest.class))
+        if (cls.isInstance(IgniteCacheConfigPermutationsAbstractTest.class))
             throw new IllegalArgumentException("An instance of CacheAbstractNewSelfTest expected, but was: " + cls);
 
         TestSuite suite = new TestSuite();
 
         if (cfg.gridCount() < testedNodeCnt)
-            throw new IllegalArgumentException("Failed to initialize test suite [nodeCnt=" + testedNodeCnt + ", cfgGridCnt="
-                + cfg.gridCount() + "]");
+            throw new IllegalArgumentException("Failed to initialize test suite [nodeCnt=" + testedNodeCnt
+                + ", cfgGridCnt=" + cfg.gridCount() + "]");
 
         int numOfTests = 0;
 
@@ -85,7 +85,7 @@ public class GridTestSuite extends TestSuite {
     /** {@inheritDoc} */
     @Override public void runTest(Test test, TestResult res) {
         if (test instanceof GridAbstractTest)
-            ((GridAbstractTest)test).setTestsConfiguration(cfg);
+            ((IgniteConfigPermutationsAbstractTest)test).setTestsConfiguration(cfg);
 
         super.runTest(test, res);
     }

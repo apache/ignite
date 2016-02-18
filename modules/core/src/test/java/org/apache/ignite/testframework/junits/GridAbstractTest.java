@@ -85,7 +85,6 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.multicast.TcpDiscoveryMulticastIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
-import org.apache.ignite.testframework.TestsConfiguration;
 import org.apache.ignite.testframework.config.GridTestProperties;
 import org.apache.ignite.testframework.junits.logger.GridTestLog4jLogger;
 import org.apache.ignite.testframework.junits.multijvm.IgniteCacheProcessProxy;
@@ -156,9 +155,6 @@ public abstract class GridAbstractTest extends TestCase {
     /** Starting grid name. */
     protected static final ThreadLocal<String> startingGrid = new ThreadLocal<>();
 
-    /** */
-    protected TestsConfiguration testsCfg;
-
     /**
      *
      */
@@ -202,17 +198,6 @@ public abstract class GridAbstractTest extends TestCase {
         log = new GridTestLog4jLogger();
 
         this.startGrid = startGrid;
-    }
-
-    /**
-     * @param testsCfg Tests configuration.
-     */
-    public void setTestsConfiguration(TestsConfiguration testsCfg) {
-        if (this.testsCfg != null)
-            U.dumpStack(log, "Test config must be set only once [oldTestCfg=" + this.testsCfg
-                + ", newTestCfg=" + testsCfg + "]");
-
-        this.testsCfg = testsCfg;
     }
 
     /**
@@ -491,18 +476,6 @@ public abstract class GridAbstractTest extends TestCase {
      * @throws Exception If failed. {@link #afterTestsStopped()} will be called in this case.
      */
     protected void beforeTestsStarted() throws Exception {
-        if (testsCfg != null) {
-            if (Ignition.allGrids().size() != testsCfg.gridCount()) {
-                info("All nodes will be stopped, new " + testsCfg.gridCount() + " nodes will be started.");
-
-                Ignition.stopAll(true);
-
-                startGrids(testsCfg.gridCount());
-
-                for (int i = 0; i < testsCfg.gridCount(); i++)
-                    info("Grid " + i + ": " + grid(i).localNode().id());
-            }
-        }
     }
 
     /**
@@ -512,8 +485,6 @@ public abstract class GridAbstractTest extends TestCase {
      * @throws Exception If failed.
      */
     protected void afterTestsStopped() throws Exception {
-        if (testsCfg != null && testsCfg.isStopNodes())
-            stopAllGrids();
     }
 
     /** {@inheritDoc} */
@@ -547,12 +518,7 @@ public abstract class GridAbstractTest extends TestCase {
         }
 
         if (isFirstTest()) {
-            String newTestCfgSuffix = "";
-
-            if (testsCfg != null)
-                newTestCfgSuffix += '-' + testsCfg.suffix() + '-' + testsCfg.gridCount() + "-node(s)";
-
-            info(">>> Starting test class: " + GridTestUtils.fullSimpleName(getClass()) + newTestCfgSuffix + " <<<");
+            info(">>> Starting test class: " + testClassDescription() + " <<<");
 
             if (startGrid) {
                 IgniteConfiguration cfg = optimize(getConfiguration());
@@ -585,13 +551,7 @@ public abstract class GridAbstractTest extends TestCase {
             }
         }
 
-        String newTestCfgSuffix = "";
-
-        if (testsCfg != null)
-            newTestCfgSuffix += '-' + testsCfg.suffix() + '-' + testsCfg.gridCount() + "-node(s)";
-
-        info(">>> Starting test: " + GridTestUtils.fullSimpleName(getClass()) + "#" + getName()
-            + newTestCfgSuffix + " <<<");
+        info(">>> Starting test: " + testDescription() + " <<<");
 
         try {
             beforeTest();
@@ -608,6 +568,20 @@ public abstract class GridAbstractTest extends TestCase {
         }
 
         ts = System.currentTimeMillis();
+    }
+
+    /**
+     * @return Test description.
+     */
+    protected String testDescription() {
+        return GridTestUtils.fullSimpleName(getClass()) + "#" + getName();
+    }
+
+    /**
+     * @return Test class description.
+     */
+    protected String testClassDescription() {
+        return GridTestUtils.fullSimpleName(getClass());
     }
 
     /**
@@ -1248,9 +1222,6 @@ public abstract class GridAbstractTest extends TestCase {
         if (isMultiJvm())
             ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(LOCAL_IP_FINDER);
 
-        if (testsCfg != null)
-            return testsCfg.configurationFactory().getConfiguration(gridName, cfg);
-
         return cfg;
     }
 
@@ -1443,13 +1414,7 @@ public abstract class GridAbstractTest extends TestCase {
     @Override protected void tearDown() throws Exception {
         long dur = System.currentTimeMillis() - ts;
 
-        String newTestCfgSuffix = "";
-
-        if (testsCfg != null)
-            newTestCfgSuffix += '-' + testsCfg.suffix() + '-' + testsCfg.gridCount() + "-node(s)";
-
-        info(">>> Stopping test: " + GridTestUtils.fullSimpleName(getClass()) + '#' + getName() + newTestCfgSuffix
-            + " in " + dur + " ms <<<");
+        info(">>> Stopping test: " + testDescription() + " in " + dur + " ms <<<");
 
         TestCounters cntrs = getTestCounters();
 
@@ -1464,8 +1429,7 @@ public abstract class GridAbstractTest extends TestCase {
             serializedObj.clear();
 
             if (isLastTest()) {
-                info(">>> Stopping test class: " + GridTestUtils.fullSimpleName(getClass()) + '#'
-                    + newTestCfgSuffix + " <<<");
+                info(">>> Stopping test class: " + testClassDescription() + " <<<");
 
                 TestCounters counters = getTestCounters();
 
@@ -1731,9 +1695,7 @@ public abstract class GridAbstractTest extends TestCase {
     @Override protected void runTest() throws Throwable {
         final AtomicReference<Throwable> ex = new AtomicReference<>();
 
-        String threadName = getTestGridName() + (testsCfg != null ? testsCfg.suffix().hashCode() : "");
-
-        Thread runner = new IgniteThread(threadName, "test-runner", new Runnable() {
+        Thread runner = new IgniteThread(getTestGridName(), "test-runner", new Runnable() {
             @Override public void run() {
                 try {
                     runTestInternal();
@@ -2097,17 +2059,13 @@ public abstract class GridAbstractTest extends TestCase {
          */
         public int getNumberOfTests() {
             if (numOfTests == -1) {
-                if (testsCfg != null && testsCfg.multiNodeConfig() != null && testsCfg.multiNodeConfig().numOfTests() > 0)
-                    numOfTests = testsCfg.multiNodeConfig().numOfTests();
-                else {
-                    int cnt = 0;
+                int cnt = 0;
 
-                    for (Method m : GridAbstractTest.this.getClass().getMethods())
-                        if (m.getName().startsWith("test") && Modifier.isPublic(m.getModifiers()))
-                            cnt++;
+                for (Method m : GridAbstractTest.this.getClass().getMethods())
+                    if (m.getName().startsWith("test") && Modifier.isPublic(m.getModifiers()))
+                        cnt++;
 
-                    numOfTests = cnt;
-                }
+                numOfTests = cnt;
             }
 
             countTestCases();

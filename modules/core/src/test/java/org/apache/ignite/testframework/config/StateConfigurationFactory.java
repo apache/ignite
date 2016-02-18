@@ -17,11 +17,13 @@
 
 package org.apache.ignite.testframework.config;
 
+import java.util.Arrays;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.apache.ignite.testframework.config.generator.ConfigurationParameter;
+import org.jetbrains.annotations.Nullable;
 
 /**
  *
@@ -54,8 +56,8 @@ public class StateConfigurationFactory implements ConfigurationFactory {
      */
     public StateConfigurationFactory(boolean withClients, ConfigurationParameter<IgniteConfiguration>[][] igniteParams,
         int[] igniteCfgState,
-        ConfigurationParameter<CacheConfiguration>[][] cacheParams,
-        int[] cacheCfgState) {
+        @Nullable ConfigurationParameter<CacheConfiguration>[][] cacheParams,
+        @Nullable int[] cacheCfgState) {
         this.withClient = withClients;
         this.igniteParams = igniteParams;
         this.igniteCfgState = igniteCfgState;
@@ -143,6 +145,10 @@ public class StateConfigurationFactory implements ConfigurationFactory {
 
     /** {@inheritDoc} */
     @Override public CacheConfiguration cacheConfiguration(String gridName) {
+        if (cacheParams == null || cacheCfgState == null)
+            throw new IllegalStateException("Failed to configure cache [cacheParams="+ Arrays.deepToString(cacheParams)
+                + ", cacheCfgState=" + Arrays.toString(cacheCfgState) + "]");
+
         CacheConfiguration cfg = new CacheConfiguration();
 
         for (int i = 0; i < cacheCfgState.length; i++) {

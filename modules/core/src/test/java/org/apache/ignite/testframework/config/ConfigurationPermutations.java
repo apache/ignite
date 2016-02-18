@@ -43,7 +43,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.configuration.TopologyValidator;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
-import org.apache.ignite.internal.processors.cache.CacheAbstractNewSelfTest;
+import org.apache.ignite.internal.processors.cache.IgniteCacheConfigPermutationsAbstractTest;
 import org.apache.ignite.marshaller.optimized.OptimizedMarshaller;
 import org.apache.ignite.spi.swapspace.inmemory.GridTestSwapSpaceSpi;
 import org.apache.ignite.testframework.config.generator.ConfigurationParameter;
@@ -67,7 +67,7 @@ public class ConfigurationPermutations {
 
     /** */
     public static final ConfigurationParameter<Object> CACHE_STORE_PARAM = complexParameter(
-        parameter("setCacheStoreFactory", new CacheAbstractNewSelfTest.TestStoreFactory()),
+        parameter("setCacheStoreFactory", new IgniteCacheConfigPermutationsAbstractTest.TestStoreFactory()),
         parameter("setReadThrough", true),
         parameter("setWriteThrough", true),
         parameter("setCacheStoreSessionListenerFactories", new Factory[] {new NoopCacheStoreSessionListenerFactory()})
@@ -75,7 +75,7 @@ public class ConfigurationPermutations {
 
     /** */
     public static final ConfigurationParameter<Object> SIMPLE_CACHE_STORE_PARAM = complexParameter(
-        parameter("setCacheStoreFactory", new CacheAbstractNewSelfTest.TestStoreFactory()),
+        parameter("setCacheStoreFactory", new IgniteCacheConfigPermutationsAbstractTest.TestStoreFactory()),
         parameter("setReadThrough", true),
         parameter("setWriteThrough", true)
     );
@@ -115,7 +115,7 @@ public class ConfigurationPermutations {
     /** */
     @SuppressWarnings("unchecked")
     private static final ConfigurationParameter<IgniteConfiguration>[][] BASIC_IGNITE_SET = new ConfigurationParameter[][] {
-        objectParameters("setMarshaller", new BinaryMarshaller(), new OptimizedMarshaller(true)),
+        objectParameters("setMarshaller", new BinaryMarshaller(), optimizedMarshaller()),
         booleanParameters("setPeerClassLoadingEnabled"),
         objectParameters("setSwapSpaceSpi", new GridTestSwapSpaceSpi()),
     };
@@ -212,6 +212,17 @@ public class ConfigurationPermutations {
      */
     public static ConfigurationParameter<IgniteConfiguration>[][] igniteBasicSet() {
         return BASIC_IGNITE_SET;
+    }
+
+    /**
+     * @return Marshaller.
+     */
+    private static OptimizedMarshaller optimizedMarshaller() {
+        OptimizedMarshaller marsh = new OptimizedMarshaller(true);
+
+        marsh.setRequireSerializable(false);
+
+        return marsh;
     }
 
     /**

@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cache;
 
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.atomic.AtomicInteger;
 import javax.cache.Cache;
 import javax.cache.configuration.Factory;
@@ -50,7 +51,7 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.CacheStartMode;
 import org.apache.ignite.testframework.GridTestUtils;
-import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.apache.ignite.testframework.junits.IgniteConfigPermutationsAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.jetbrains.annotations.Nullable;
 import org.jsr166.ConcurrentHashMap8;
@@ -62,7 +63,7 @@ import static org.apache.ignite.cache.CacheMemoryMode.ONHEAP_TIERED;
 /**
  * Abstract class for cache tests.
  */
-public abstract class CacheAbstractNewSelfTest extends GridCommonAbstractTest {
+public abstract class IgniteCacheConfigPermutationsAbstractTest extends IgniteConfigPermutationsAbstractTest {
     /** */
     protected static final int SERVER_NODE_IDX = 0;
 
@@ -83,14 +84,6 @@ public abstract class CacheAbstractNewSelfTest extends GridCommonAbstractTest {
 
     /** */
     protected int testedNodeIdx;
-
-    /**
-     * @return Grids count to start.
-     */
-    /** {@inheritDoc} */
-    protected final int gridCount() {
-        return testsCfg.gridCount();
-    }
 
     /** {@inheritDoc} */
     @Override protected long getTestTimeout() {
@@ -132,7 +125,8 @@ public abstract class CacheAbstractNewSelfTest extends GridCommonAbstractTest {
                 startGrid(gridName, cfg, null);
             }
 
-            grid(CLIENT_NEAR_ONLY_IDX).createNearCache(cacheName(), new NearCacheConfiguration());
+            if (testsCfg.multiNodeConfig() != null && testsCfg.gridCount() > CLIENT_NEAR_ONLY_IDX)
+                grid(CLIENT_NEAR_ONLY_IDX).createNearCache(cacheName(), new NearCacheConfiguration());
         }
         else if (cacheStartMode == null || cacheStartMode == CacheStartMode.NODES_THEN_CACHES) {
             super.beforeTestsStarted();
@@ -150,7 +144,8 @@ public abstract class CacheAbstractNewSelfTest extends GridCommonAbstractTest {
                     grid.getOrCreateCache(cc);
                 }
 
-                grid(CLIENT_NEAR_ONLY_IDX).createNearCache(cacheName(), new NearCacheConfiguration());
+                if (testsCfg.multiNodeConfig() != null && testsCfg.gridCount() > CLIENT_NEAR_ONLY_IDX)
+                    grid(CLIENT_NEAR_ONLY_IDX).createNearCache(cacheName(), new NearCacheConfiguration());
             }
         }
         else
@@ -164,8 +159,26 @@ public abstract class CacheAbstractNewSelfTest extends GridCommonAbstractTest {
         for (int i = 0; i < gridCount(); i++)
             info("Grid " + i + ": " + grid(i).localNode().id());
 
-        assert grid(CLIENT_NEAR_ONLY_IDX).configuration().isClientMode();
-        assert grid(CLIENT_NODE_IDX).configuration().isClientMode();
+        if (testsCfg.multiNodeConfig() != null && testsCfg.gridCount() > CLIENT_NEAR_ONLY_IDX)
+            assert grid(CLIENT_NEAR_ONLY_IDX).configuration().isClientMode();
+
+        if (testsCfg.multiNodeConfig() != null && testsCfg.gridCount() > CLIENT_NODE_IDX)
+            assert grid(CLIENT_NODE_IDX).configuration().isClientMode();
+
+        IgniteEx grid = grid(testedNodeIdx);
+
+        boolean nearEnabled = false;
+
+        for (CacheConfiguration cc : grid.configuration().getCacheConfiguration()) {
+            if (Objects.equals(cc.getName(), cacheName())) {
+                nearEnabled = cc.getNearConfiguration() != null;
+
+                break;
+            }
+        }
+
+        info(">>> Starting set of tests [testedNodeIdx=" + testedNodeIdx + ", isClient="
+            + grid.configuration().isClientMode() + ", nearEnabled=" + nearEnabled + "]");
     }
 
     /** {@inheritDoc} */
@@ -182,6 +195,8 @@ public abstract class CacheAbstractNewSelfTest extends GridCommonAbstractTest {
         }
 
         map.clear();
+
+        super.afterTestsStopped();
     }
 
     /** {@inheritDoc} */
@@ -308,24 +323,6 @@ public abstract class CacheAbstractNewSelfTest extends GridCommonAbstractTest {
         map.put(key, val);
     }
 
-    /** {@inheritDoc} */
-    @Override protected final IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
-
-//        TcpDiscoverySpi disco = new TcpDiscoverySpi();
-//
-//        disco.setMaxMissedHeartbeats(Integer.MAX_VALUE);
-//
-//        disco.setIpFinder(ipFinder);
-//
-//        if (isDebug())
-//            disco.setAckTimeout(Integer.MAX_VALUE);
-//
-//        cfg.setDiscoverySpi(disco);
-
-        return cfg;
-    }
-
     /**
      * Indexed types.
      */
@@ -445,7 +442,7 @@ public abstract class CacheAbstractNewSelfTest extends GridCommonAbstractTest {
      * @return Cache configuration.
      */
     protected CacheConfiguration cacheConfiguration() {
-        return testsCfg.configurationFactory().cacheConfiguration(null);
+        return testsCfg.configurationFactory().cacheConfiguration(getTestGridName(testedNodeIdx));
     }
 
     /**

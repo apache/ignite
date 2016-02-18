@@ -34,8 +34,6 @@ public class CacheFullApiBasicCfgNewTestSuite extends TestSuite {
             .withBasicCacheParams()
             .gridsCount(5)
             .withClients()
-            .specifyIgniteParam(0, 0, 0)
-            .specifyCacheParam(0, 0, 0, 0, 0, 0, 0, 0, 0)
             .build();
     }
 }

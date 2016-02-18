@@ -21,14 +21,15 @@ import java.util.Arrays;
 import junit.framework.TestSuite;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.internal.processors.cache.CacheAbstractNewSelfTest;
+import org.apache.ignite.internal.processors.cache.IgniteCacheConfigPermutationsAbstractTest;
 import org.apache.ignite.testframework.CacheStartMode;
 import org.apache.ignite.testframework.GridTestSuite;
 import org.apache.ignite.testframework.TestsConfiguration;
 import org.apache.ignite.testframework.config.ConfigurationPermutations;
 import org.apache.ignite.testframework.config.FullApiStateConfigurationFactory;
 import org.apache.ignite.testframework.config.StateConfigurationFactory;
-import org.apache.ignite.testframework.junits.GridAbstractTest;
+import org.apache.ignite.testframework.junits.IgniteConfigPermutationsAbstractTest;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Configuration permutations test suite builder.
@@ -59,7 +60,7 @@ public class ConfigPermutationsTestSuiteBuilder {
     private int testedNodeCnt = 1;
 
     /** */
-    private Class<? extends GridAbstractTest> cls;
+    private Class<? extends IgniteConfigPermutationsAbstractTest> cls;
 
     /** */
     private int[] specificIgniteParam;
@@ -71,7 +72,7 @@ public class ConfigPermutationsTestSuiteBuilder {
      * @param name Name.
      * @param cls Test class.
      */
-    public ConfigPermutationsTestSuiteBuilder(String name, Class<? extends GridAbstractTest> cls) {
+    public ConfigPermutationsTestSuiteBuilder(String name, Class<? extends IgniteConfigPermutationsAbstractTest> cls) {
         suite = new TestSuite(name);
         this.cls = cls;
     }
@@ -93,36 +94,40 @@ public class ConfigPermutationsTestSuiteBuilder {
         for (; igniteCfgIter.hasNext(); ) {
             final int[] igniteCfgState = igniteCfgIter.next();
 
-            StateIterator cacheCfgIter;
+            if (cacheParams == null)
+                suite.addTest(build(igniteCfgState, null, true));
+            else {
+                StateIterator cacheCfgIter;
 
-            if (specificCacheParam == null)
-                cacheCfgIter = new StateIterator(cacheParams);
-            else
-                cacheCfgIter = new OneElementStateIterator(specificCacheParam, cacheParams);
+                if (specificCacheParam == null)
+                    cacheCfgIter = new StateIterator(cacheParams);
+                else
+                    cacheCfgIter = new OneElementStateIterator(specificCacheParam, cacheParams);
 
-            for (; cacheCfgIter.hasNext(); ) {
-                int[] cacheCfgState = cacheCfgIter.next();
+                for (; cacheCfgIter.hasNext(); ) {
+                    int[] cacheCfgState = cacheCfgIter.next();
 
-                // Stop all grids before starting new ignite configuration.
-                boolean stopNodes = !cacheCfgIter.hasNext();
+                    // Stop all grids before starting new ignite configuration.
+                    boolean stopNodes = !cacheCfgIter.hasNext();
 
-                TestSuite addedSuite = build(igniteCfgState, cacheCfgState, stopNodes);
+                    TestSuite addedSuite = build(igniteCfgState, cacheCfgState, stopNodes);
 
-                suite.addTest(addedSuite);
+                    suite.addTest(addedSuite);
+                }
             }
         }
 
         return suite;
     }
 
-    private TestSuite build(int[] igniteCfgState, int[] cacheCfgState, boolean stop) {
+    private TestSuite build(int[] igniteCfgState, @Nullable int[] cacheCfgState, boolean stop) {
         // TODO FullApiStateConfigurationFactory
         StateConfigurationFactory factory = new FullApiStateConfigurationFactory(withClients, igniteParams,
             igniteCfgState, cacheParams, cacheCfgState);
 
         String clsNameSuffix = "[igniteCfg=" + Arrays.toString(igniteCfgState)
-            + ", cacheCfgState=" + Arrays.toString(cacheCfgState) + "]"
-            + "-[igniteCfg=" + factory.getIgniteConfigurationDescription()
+            + ", cacheCfgState=" + Arrays.toString(cacheCfgState)
+            + ", igniteCfg=" + factory.getIgniteConfigurationDescription()
             + ", cacheCfg=" + factory.getCacheConfigurationDescription() + "]";
 
         TestsConfiguration testCfg = new TestsConfiguration(factory, clsNameSuffix, stop, cacheStartMode,
@@ -132,7 +137,7 @@ public class ConfigPermutationsTestSuiteBuilder {
 
         if (withClients)
             addedSuite = GridTestSuite.createMultiNodeTestSuite(
-                (Class<? extends CacheAbstractNewSelfTest>)cls, testCfg, testedNodeCnt);
+                (Class<? extends IgniteCacheConfigPermutationsAbstractTest>)cls, testCfg, testedNodeCnt);
         else
             addedSuite = new GridTestSuite(cls, testCfg);
 
@@ -143,7 +148,7 @@ public class ConfigPermutationsTestSuiteBuilder {
      * @return {@code this} for chaining.
      */
     public ConfigPermutationsTestSuiteBuilder withClients() {
-        assert CacheAbstractNewSelfTest.class.isAssignableFrom(cls) : "'WithClients' mode supported only for instances " +
+        assert IgniteCacheConfigPermutationsAbstractTest.class.isAssignableFrom(cls) : "'WithClients' mode supported only for instances " +
             "of CacheAbstractNewSelfTest: " + cls;
 
         withClients = true;
@@ -166,7 +171,8 @@ public class ConfigPermutationsTestSuiteBuilder {
     /**
      * @param igniteParams New ignite params.
      */
-    public ConfigPermutationsTestSuiteBuilder igniteParams(ConfigurationParameter<IgniteConfiguration>[][] igniteParams) {
+    public ConfigPermutationsTestSuiteBuilder igniteParams(
+        ConfigurationParameter<IgniteConfiguration>[][] igniteParams) {
         this.igniteParams = igniteParams;
 
         return this;
@@ -221,8 +227,7 @@ public class ConfigPermutationsTestSuiteBuilder {
         private boolean hasNext = true;
 
         /**
-         *
-         * @param elem Element
+         * @param elem Element.
          */
         OneElementStateIterator(int[] elem, Object[][] params) {
             super(params);

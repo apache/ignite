@@ -123,7 +123,7 @@ import static org.apache.ignite.transactions.TransactionState.COMMITTED;
  * Full API cache test.
  */
 @SuppressWarnings({"TransientFieldInNonSerializableClass", "unchecked"})
-public class CacheFullApiNewSelfTest extends CacheAbstractNewSelfTest {
+public class CacheFullApiNewSelfTest extends IgniteCacheConfigPermutationsAbstractTest {
     /** Test timeout */
     private static final long TEST_TIMEOUT = 60 * 1000;
 
