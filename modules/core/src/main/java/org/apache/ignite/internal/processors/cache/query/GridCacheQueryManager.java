@@ -1057,6 +1057,14 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
         };
     }
 
+    /**
+     * @param it Raw iterator.
+     * @param topVer Topology version.
+     * @param filter Filter.
+     * @param expPlc Expiry policy.
+     * @param keepBinary Keep binary flag.
+     * @return Final key-value iterator.
+     */
     private GridIterator<IgniteBiTuple<K,V>> scanExpiryIterator(
         final Iterator<Map.Entry<byte[], byte[]>> it,
         AffinityTopologyVersion topVer,
@@ -3231,6 +3239,11 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
             }
         }
 
+        /**
+         * @param key Key.
+         * @return Value.
+         * @throws IgniteCheckedException If failed to peek value.
+         */
         private CacheObject value(K key) throws IgniteCheckedException {
             while (true) {
                 try {
