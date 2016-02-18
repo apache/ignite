@@ -71,6 +71,11 @@ public class GridClockDeltaVersion implements Message, Comparable<GridClockDelta
     }
 
     /** {@inheritDoc} */
+    @Override public void onAckReceived() {
+        // No-op.
+    }
+
+    /** {@inheritDoc} */
     @Override public int compareTo(GridClockDeltaVersion o) {
         int res = Long.compare(topVer, o.topVer);
 

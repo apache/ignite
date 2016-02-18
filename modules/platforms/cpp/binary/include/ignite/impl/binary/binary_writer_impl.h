@@ -34,6 +34,8 @@
 #include "ignite/binary/binary_consts.h"
 #include "ignite/binary/binary_type.h"
 #include "ignite/guid.h"
+#include "ignite/date.h"
+#include "ignite/timestamp.h"
 #include "binary_type_manager.h"
 
 namespace ignite
@@ -355,6 +357,70 @@ namespace ignite
                  * @param len Array length.
                  */
                 void WriteGuidArray(const char* fieldName, const Guid* val, const int32_t len);
+
+                /**
+                 * Write Date. Maps to "Date" type in Java.
+                 *
+                 * @param val Value.
+                 */
+                void WriteDate(const Date& val);
+
+                /**
+                 * Write array of Dates. Maps to "Date[]" type in Java.
+                 *
+                 * @param val Array.
+                 * @param len Array length.
+                 */
+                void WriteDateArray(const Date* val, const int32_t len);
+
+                /**
+                 * Write Date. Maps to "Date" type in Java.
+                 *
+                 * @param fieldName Field name.
+                 * @param val Value.
+                 */
+                void WriteDate(const char* fieldName, const Date& val);
+
+                /**
+                 * Write array of Dates. Maps to "Date[]" type in Java.
+                 *
+                 * @param fieldName Field name.
+                 * @param val Array.
+                 * @param len Array length.
+                 */
+                void WriteDateArray(const char* fieldName, const Date* val, const int32_t len);
+
+                /**
+                 * Write Timestamp. Maps to "Timestamp" type in Java.
+                 *
+                 * @param val Value.
+                 */
+                void WriteTimestamp(const Timestamp& val);
+
+                /**
+                 * Write array of Timestamps. Maps to "Timestamp[]" type in Java.
+                 *
+                 * @param val Array.
+                 * @param len Array length.
+                 */
+                void WriteTimestampArray(const Timestamp* val, const int32_t len);
+
+                /**
+                 * Write Timestamp. Maps to "Timestamp" type in Java.
+                 *
+                 * @param fieldName Field name.
+                 * @param val Value.
+                 */
+                void WriteTimestamp(const char* fieldName, const Timestamp& val);
+
+                /**
+                 * Write array of Timestamps. Maps to "Timestamp[]" type in Java.
+                 *
+                 * @param fieldName Field name.
+                 * @param val Array.
+                 * @param len Array length.
+                 */
+                void WriteTimestampArray(const char* fieldName, const Timestamp* val, const int32_t len);
 
                 /**
                  * Write string.
@@ -894,6 +960,12 @@ namespace ignite
 
             template<>
             void IGNITE_IMPORT_EXPORT BinaryWriterImpl::WriteTopObject(const Guid& obj);
+
+            template<>
+            void IGNITE_IMPORT_EXPORT BinaryWriterImpl::WriteTopObject(const Date& obj);
+
+            template<>
+            void IGNITE_IMPORT_EXPORT BinaryWriterImpl::WriteTopObject(const Timestamp& obj);
 
             template<>
             inline void IGNITE_IMPORT_EXPORT BinaryWriterImpl::WriteTopObject(const std::string& obj)

@@ -81,9 +81,6 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\..\include\teamcity_messages.h">
-      <Filter>Code\TeamCity</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\include\test_type.h">
       <Filter>Code\CacheTypes</Filter>
     </ClInclude>

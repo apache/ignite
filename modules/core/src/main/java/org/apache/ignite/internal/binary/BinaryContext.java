@@ -17,35 +17,6 @@
 
 package org.apache.ignite.internal.binary;
 
-import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.binary.BinaryIdMapper;
-import org.apache.ignite.binary.BinaryInvalidTypeException;
-import org.apache.ignite.binary.BinaryObjectException;
-import org.apache.ignite.binary.BinaryReflectiveSerializer;
-import org.apache.ignite.binary.BinarySerializer;
-import org.apache.ignite.binary.BinaryType;
-import org.apache.ignite.binary.BinaryTypeConfiguration;
-import org.apache.ignite.cache.CacheKeyConfiguration;
-import org.apache.ignite.cache.affinity.AffinityKey;
-import org.apache.ignite.cache.affinity.AffinityKeyMapped;
-import org.apache.ignite.configuration.BinaryConfiguration;
-import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.internal.IgnitionEx;
-import org.apache.ignite.internal.processors.cache.binary.BinaryMetadataKey;
-import org.apache.ignite.internal.processors.datastructures.CollocatedQueueItemKey;
-import org.apache.ignite.internal.processors.datastructures.CollocatedSetItemKey;
-import org.apache.ignite.internal.util.IgniteUtils;
-import org.apache.ignite.internal.util.lang.GridMapEntry;
-import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.internal.util.typedef.T2;
-import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.lang.IgniteBiTuple;
-import org.apache.ignite.marshaller.MarshallerContext;
-import org.apache.ignite.marshaller.optimized.OptimizedMarshaller;
-import org.jetbrains.annotations.Nullable;
-import org.jsr166.ConcurrentHashMap8;
-
 import java.io.Externalizable;
 import java.io.File;
 import java.io.IOException;
@@ -71,6 +42,37 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentMap;
 import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteException;
+import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.binary.BinaryBasicIdMapper;
+import org.apache.ignite.binary.BinaryBasicNameMapper;
+import org.apache.ignite.binary.BinaryIdMapper;
+import org.apache.ignite.binary.BinaryInvalidTypeException;
+import org.apache.ignite.binary.BinaryNameMapper;
+import org.apache.ignite.binary.BinaryObjectException;
+import org.apache.ignite.binary.BinaryReflectiveSerializer;
+import org.apache.ignite.binary.BinarySerializer;
+import org.apache.ignite.binary.BinaryType;
+import org.apache.ignite.binary.BinaryTypeConfiguration;
+import org.apache.ignite.cache.CacheKeyConfiguration;
+import org.apache.ignite.cache.affinity.AffinityKey;
+import org.apache.ignite.cache.affinity.AffinityKeyMapped;
+import org.apache.ignite.configuration.BinaryConfiguration;
+import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.processors.cache.binary.BinaryMetadataKey;
+import org.apache.ignite.internal.processors.datastructures.CollocatedQueueItemKey;
+import org.apache.ignite.internal.processors.datastructures.CollocatedSetItemKey;
+import org.apache.ignite.internal.util.IgniteUtils;
+import org.apache.ignite.internal.util.lang.GridMapEntry;
+import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.T2;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteBiTuple;
+import org.apache.ignite.marshaller.MarshallerContext;
+import org.apache.ignite.marshaller.optimized.OptimizedMarshaller;
+import org.jetbrains.annotations.Nullable;
+import org.jsr166.ConcurrentHashMap8;
 
 /**
  * Binary context.
@@ -78,6 +80,14 @@ import java.util.jar.JarFile;
 public class BinaryContext {
     /** */
     private static final ClassLoader dfltLdr = U.gridClassLoader();
+
+    /** */
+    private static final BinaryInternalMapper DFLT_MAPPER =
+        new BinaryInternalMapper(new BinaryBasicNameMapper(false), new BinaryBasicIdMapper(true), false);
+
+    /** */
+    static final BinaryInternalMapper SIMPLE_NAME_LOWER_CASE_MAPPER =
+        new BinaryInternalMapper(new BinaryBasicNameMapper(true), new BinaryBasicIdMapper(true), false);
 
     /** */
     private final ConcurrentMap<Class<?>, BinaryClassDescriptor> descByCls = new ConcurrentHashMap8<>();
@@ -97,14 +107,14 @@ public class BinaryContext {
     /** */
     private final Map<Class<? extends Map>, Byte> mapTypes = new HashMap<>();
 
-    /** */
-    private final ConcurrentMap<Integer, BinaryIdMapper> mappers = new ConcurrentHashMap8<>(0);
+    /** Maps typeId to mappers. */
+    private final ConcurrentMap<Integer, BinaryInternalMapper> typeId2Mapper = new ConcurrentHashMap8<>(0);
 
     /** Affinity key field names. */
     private final ConcurrentMap<Integer, String> affKeyFieldNames = new ConcurrentHashMap8<>(0);
 
-    /** */
-    private final Map<String, BinaryIdMapper> typeMappers = new ConcurrentHashMap8<>(0);
+    /** Maps className to mapper */
+    private final ConcurrentMap<String, BinaryInternalMapper> cls2Mappers = new ConcurrentHashMap8<>(0);
 
     /** */
     private BinaryMetadataHandler metaHnd;
@@ -271,6 +281,7 @@ public class BinaryContext {
         optmMarsh.setContext(marshCtx);
 
         configure(
+            binaryCfg.getNameMapper(),
             binaryCfg.getIdMapper(),
             binaryCfg.getSerializer(),
             binaryCfg.getTypeConfigurations()
@@ -286,6 +297,7 @@ public class BinaryContext {
      * @throws BinaryObjectException In case of error.
      */
     private void configure(
+        BinaryNameMapper globalNameMapper,
         BinaryIdMapper globalIdMapper,
         BinarySerializer globalSerializer,
         Collection<BinaryTypeConfiguration> typeCfgs
@@ -306,13 +318,20 @@ public class BinaryContext {
                 if (clsName == null)
                     throw new BinaryObjectException("Class name is required for binary type configuration.");
 
+                // Resolve mapper.
                 BinaryIdMapper idMapper = globalIdMapper;
 
                 if (typeCfg.getIdMapper() != null)
                     idMapper = typeCfg.getIdMapper();
 
-                idMapper = BinaryInternalIdMapper.create(idMapper);
+                BinaryNameMapper nameMapper = globalNameMapper;
 
+                if (typeCfg.getNameMapper() != null)
+                    nameMapper = typeCfg.getNameMapper();
+
+                BinaryInternalMapper mapper = resolveMapper(nameMapper, idMapper);
+
+                // Resolve serializer.
                 BinarySerializer serializer = globalSerializer;
 
                 if (typeCfg.getSerializer() != null)
@@ -322,31 +341,77 @@ public class BinaryContext {
                     String pkgName = clsName.substring(0, clsName.length() - 2);
 
                     for (String clsName0 : classesInPackage(pkgName))
-                        descs.add(clsName0, idMapper, serializer, affFields.get(clsName0),
+                        descs.add(clsName0, mapper, serializer, affFields.get(clsName0),
                             typeCfg.isEnum(), true);
                 }
                 else
-                    descs.add(clsName, idMapper, serializer, affFields.get(clsName),
+                    descs.add(clsName, mapper, serializer, affFields.get(clsName),
                         typeCfg.isEnum(), false);
             }
         }
 
         for (TypeDescriptor desc : descs.descriptors())
-            registerUserType(desc.clsName, desc.idMapper, desc.serializer, desc.affKeyFieldName, desc.isEnum);
+            registerUserType(desc.clsName, desc.mapper, desc.serializer, desc.affKeyFieldName, desc.isEnum);
 
-        BinaryInternalIdMapper dfltMapper = BinaryInternalIdMapper.create(globalIdMapper);
+        BinaryInternalMapper globalMapper = resolveMapper(globalNameMapper, globalIdMapper);
 
         // Put affinity field names for unconfigured types.
         for (Map.Entry<String, String> entry : affFields.entrySet()) {
             String typeName = entry.getKey();
 
-            int typeId = dfltMapper.typeId(typeName);
+            int typeId = globalMapper.typeId(typeName);
 
             affKeyFieldNames.putIfAbsent(typeId, entry.getValue());
         }
 
         addSystemClassAffinityKey(CollocatedSetItemKey.class);
         addSystemClassAffinityKey(CollocatedQueueItemKey.class);
+    }
+
+    /**
+     * @param nameMapper Name mapper.
+     * @param idMapper ID mapper.
+     * @return Mapper.
+     */
+    private static BinaryInternalMapper resolveMapper(BinaryNameMapper nameMapper, BinaryIdMapper idMapper) {
+        if ((nameMapper == null || (DFLT_MAPPER.nameMapper().equals(nameMapper)))
+            && (idMapper == null || DFLT_MAPPER.idMapper().equals(idMapper)))
+            return DFLT_MAPPER;
+
+        if (nameMapper != null && nameMapper instanceof BinaryBasicNameMapper
+            && ((BinaryBasicNameMapper)nameMapper).isSimpleName()
+            && idMapper != null && idMapper instanceof BinaryBasicIdMapper
+            && ((BinaryBasicIdMapper)idMapper).isLowerCase())
+            return SIMPLE_NAME_LOWER_CASE_MAPPER;
+
+        if (nameMapper == null)
+            nameMapper = DFLT_MAPPER.nameMapper();
+
+        if (idMapper == null)
+            idMapper = DFLT_MAPPER.idMapper();
+
+        return new BinaryInternalMapper(nameMapper, idMapper, true);
+    }
+
+    /**
+     * @return Intenal mpper used as default.
+     */
+    public static BinaryInternalMapper defaultMapper() {
+        return DFLT_MAPPER;
+    }
+
+    /**
+     * @return ID mapper used as default.
+     */
+    public static BinaryIdMapper defaultIdMapper() {
+        return DFLT_MAPPER.idMapper();
+    }
+
+    /**
+     * @return Name mapper used as default.
+     */
+    public static BinaryNameMapper defaultNameMapper() {
+        return DFLT_MAPPER.nameMapper();
     }
 
     /**
@@ -502,7 +567,8 @@ public class BinaryContext {
         if (desc == null) {
             desc = registerClassDescriptor(cls, deserialize);
 
-            assert desc.typeId() == typeId;
+            assert desc.typeId() == typeId : "Duplicate typeId [typeId=" + typeId + ", cls=" + cls
+                + ", desc=" + desc + "]";
         }
 
         return desc;
@@ -526,7 +592,7 @@ public class BinaryContext {
                 clsName.hashCode(),
                 clsName,
                 null,
-                BinaryInternalIdMapper.defaultInstance(),
+                SIMPLE_NAME_LOWER_CASE_MAPPER,
                 null,
                 false,
                 true /* registered */
@@ -552,11 +618,13 @@ public class BinaryContext {
     private BinaryClassDescriptor registerUserClassDescriptor(Class<?> cls, boolean deserialize) {
         boolean registered;
 
-        String typeName = typeName(cls.getName());
+        final String clsName = cls.getName();
 
-        BinaryIdMapper idMapper = userTypeIdMapper(typeName);
+        BinaryInternalMapper mapper = userTypeMapper(clsName);
 
-        int typeId = idMapper.typeId(typeName);
+        final String typeName = mapper.typeName(clsName);
+
+        final int typeId = mapper.typeId(clsName);
 
         try {
             registered = marshCtx.registerClass(typeId, cls);
@@ -575,7 +643,7 @@ public class BinaryContext {
             typeId,
             typeName,
             affFieldName,
-            idMapper,
+            mapper,
             serializer,
             true,
             registered
@@ -595,7 +663,7 @@ public class BinaryContext {
 
         descByCls.put(cls, desc);
 
-        mappers.putIfAbsent(typeId, idMapper);
+        typeId2Mapper.putIfAbsent(typeId, mapper);
 
         return desc;
     }
@@ -656,9 +724,7 @@ public class BinaryContext {
      * @return Type ID.
      */
     public int typeId(String typeName) {
-        String typeName0 = typeName(typeName);
-
-        Integer id = predefinedTypeNames.get(typeName0);
+        Integer id = predefinedTypeNames.get(SIMPLE_NAME_LOWER_CASE_MAPPER.typeName(typeName));
 
         if (id != null)
             return id;
@@ -666,7 +732,9 @@ public class BinaryContext {
         if (marshCtx.isSystemType(typeName))
             return typeName.hashCode();
 
-        return userTypeIdMapper(typeName0).typeId(typeName0);
+        BinaryInternalMapper mapper = userTypeMapper(typeName);
+
+        return mapper.typeId(typeName);
     }
 
     /**
@@ -675,27 +743,107 @@ public class BinaryContext {
      * @return Field ID.
      */
     public int fieldId(int typeId, String fieldName) {
-        return userTypeIdMapper(typeId).fieldId(typeId, fieldName);
+        BinaryInternalMapper mapper = userTypeMapper(typeId);
+
+        return mapper.fieldId(typeId, fieldName);
     }
 
     /**
      * @param typeId Type ID.
      * @return Instance of ID mapper.
      */
-    public BinaryIdMapper userTypeIdMapper(int typeId) {
-        BinaryIdMapper idMapper = mappers.get(typeId);
+    public BinaryInternalMapper userTypeMapper(int typeId) {
+        BinaryInternalMapper mapper = typeId2Mapper.get(typeId);
 
-        return idMapper != null ? idMapper : BinaryInternalIdMapper.defaultInstance();
+        return mapper != null ? mapper : SIMPLE_NAME_LOWER_CASE_MAPPER;
     }
 
     /**
-     * @param typeName Type name.
+     * @param clsName Type name.
      * @return Instance of ID mapper.
      */
-    private BinaryIdMapper userTypeIdMapper(String typeName) {
-        BinaryIdMapper idMapper = typeMappers.get(typeName);
+    private BinaryInternalMapper userTypeMapper(String clsName) {
+        BinaryInternalMapper mapper = cls2Mappers.get(clsName);
 
-        return idMapper != null ? idMapper : BinaryInternalIdMapper.defaultInstance();
+        if (mapper != null)
+            return mapper;
+
+        mapper = resolveMapper(clsName, igniteCfg.getBinaryConfiguration());
+
+        BinaryInternalMapper prevMap = cls2Mappers.putIfAbsent(clsName, mapper);
+
+        if (prevMap != null && !mapper.equals(prevMap))
+            throw new IgniteException("Different mappers [clsName=" + clsName + ", newMapper=" + mapper
+            + ", prevMap=" + prevMap + "]");
+
+        prevMap = typeId2Mapper.putIfAbsent(mapper.typeId(clsName), mapper);
+
+        if (prevMap != null && !mapper.equals(prevMap))
+            throw new IgniteException("Different mappers [clsName=" + clsName + ", newMapper=" + mapper
+                + ", prevMap=" + prevMap + "]");
+
+        return mapper;
+    }
+
+    /**
+     * @param clsName Type name.
+     * @param cfg Binary configuration.
+     * @return Mapper according to configuration.
+     */
+    private static BinaryInternalMapper resolveMapper(String clsName, BinaryConfiguration cfg) {
+        assert clsName != null;
+
+        if (cfg == null)
+            return DFLT_MAPPER;
+
+        BinaryIdMapper globalIdMapper = cfg.getIdMapper();
+        BinaryNameMapper globalNameMapper = cfg.getNameMapper();
+
+        Collection<BinaryTypeConfiguration> typeCfgs = cfg.getTypeConfigurations();
+
+        if (typeCfgs != null) {
+            for (BinaryTypeConfiguration typeCfg : typeCfgs) {
+                String typeCfgName = typeCfg.getTypeName();
+
+                // Pattern.
+                if (typeCfgName != null && typeCfgName.endsWith(".*")) {
+                    String pkgName = typeCfgName.substring(0, typeCfgName.length() - 2);
+
+                    int dotIndex = clsName.lastIndexOf('.');
+
+                    if (dotIndex > 0) {
+                        String typePkgName = clsName.substring(0, dotIndex);
+
+                        if (pkgName.equals(typePkgName)) {
+                            // Resolve mapper.
+                            BinaryIdMapper idMapper = globalIdMapper;
+
+                            if (typeCfg.getIdMapper() != null)
+                                idMapper = typeCfg.getIdMapper();
+
+                            BinaryNameMapper nameMapper = globalNameMapper;
+
+                            if (typeCfg.getNameMapper() != null)
+                                nameMapper = typeCfg.getNameMapper();
+
+                            return resolveMapper(nameMapper, idMapper);
+                        }
+                    }
+                }
+            }
+        }
+
+        return resolveMapper(globalNameMapper, globalIdMapper);
+    }
+
+    /**
+     * @param clsName Class name.
+     * @return Type name.
+     */
+    public String userTypeName(String clsName) {
+        BinaryInternalMapper mapper = userTypeMapper(clsName);
+
+        return mapper.typeName(clsName);
     }
 
     /**
@@ -728,25 +876,25 @@ public class BinaryContext {
      * @return GridBinaryClassDescriptor.
      */
     public BinaryClassDescriptor registerPredefinedType(Class<?> cls, int id, String affFieldName) {
-        String typeName = typeName(cls.getName());
+        String simpleClsName = SIMPLE_NAME_LOWER_CASE_MAPPER.typeName(cls.getName());
 
         if (id == 0)
-            id = BinaryInternalIdMapper.defaultInstance().typeId(typeName);
+            id = SIMPLE_NAME_LOWER_CASE_MAPPER.typeId(simpleClsName);
 
         BinaryClassDescriptor desc = new BinaryClassDescriptor(
             this,
             cls,
             false,
             id,
-            typeName,
+            simpleClsName,
             affFieldName,
-            BinaryInternalIdMapper.defaultInstance(),
+            SIMPLE_NAME_LOWER_CASE_MAPPER,
             new BinaryReflectiveSerializer(),
             false,
             true /* registered */
         );
 
-        predefinedTypeNames.put(typeName, id);
+        predefinedTypeNames.put(simpleClsName, id);
         predefinedTypes.put(id, desc);
 
         descByCls.put(cls, desc);
@@ -759,7 +907,7 @@ public class BinaryContext {
 
     /**
      * @param clsName Class name.
-     * @param idMapper ID mapper.
+     * @param mapper ID mapper.
      * @param serializer Serializer.
      * @param affKeyFieldName Affinity key field name.
      * @param isEnum If enum.
@@ -767,12 +915,12 @@ public class BinaryContext {
      */
     @SuppressWarnings("ErrorNotRethrown")
     public void registerUserType(String clsName,
-        BinaryIdMapper idMapper,
+        BinaryInternalMapper mapper,
         @Nullable BinarySerializer serializer,
         @Nullable String affKeyFieldName,
         boolean isEnum)
         throws BinaryObjectException {
-        assert idMapper != null;
+        assert mapper != null;
 
         Class<?> cls = null;
 
@@ -783,15 +931,15 @@ public class BinaryContext {
             // No-op.
         }
 
-        String typeName = typeName(clsName);
+        String typeName = mapper.typeName(clsName);
 
-        int id = idMapper.typeId(typeName);
+        int id = mapper.typeId(clsName);
 
         //Workaround for IGNITE-1358
         if (predefinedTypes.get(id) != null)
             throw new BinaryObjectException("Duplicate type ID [clsName=" + clsName + ", id=" + id + ']');
 
-        if (mappers.put(id, idMapper) != null)
+        if (typeId2Mapper.put(id, mapper) != null)
             throw new BinaryObjectException("Duplicate type ID [clsName=" + clsName + ", id=" + id + ']');
 
         if (affKeyFieldName != null) {
@@ -799,7 +947,7 @@ public class BinaryContext {
                 throw new BinaryObjectException("Duplicate type ID [clsName=" + clsName + ", id=" + id + ']');
         }
 
-        typeMappers.put(typeName, idMapper);
+        cls2Mappers.put(clsName, mapper);
 
         Map<String, Integer> fieldsMeta = null;
         Collection<BinarySchema> schemas = null;
@@ -820,7 +968,7 @@ public class BinaryContext {
                 id,
                 typeName,
                 affKeyFieldName,
-                idMapper,
+                mapper,
                 serializer,
                 true,
                 true /* registered */
@@ -858,7 +1006,9 @@ public class BinaryContext {
     public BinaryFieldImpl createField(int typeId, String fieldName) {
         BinarySchemaRegistry schemaReg = schemaRegistry(typeId);
 
-        int fieldId = userTypeIdMapper(typeId).fieldId(typeId, fieldName);
+        BinaryInternalMapper mapper = userTypeMapper(typeId);
+
+        int fieldId = mapper.fieldId(typeId, fieldName);
 
         return new BinaryFieldImpl(typeId, schemaReg, fieldName, fieldId);
     }
@@ -954,43 +1104,6 @@ public class BinaryContext {
     }
 
     /**
-     * @param clsName Class name.
-     * @return Type name.
-     */
-    @SuppressWarnings("ResultOfMethodCallIgnored")
-    public static String typeName(String clsName) {
-        assert clsName != null;
-
-        int idx = clsName.lastIndexOf('$');
-
-        if (idx == clsName.length() - 1)
-            // This is a regular (not inner) class name that ends with '$'. Common use case for Scala classes.
-            idx = -1;
-        else if (idx >= 0) {
-            String typeName = clsName.substring(idx + 1);
-
-            try {
-                Integer.parseInt(typeName);
-
-                // This is an anonymous class. Don't cut off enclosing class name for it.
-                idx = -1;
-            }
-            catch (NumberFormatException ignore) {
-                // This is a lambda class.
-                if (clsName.indexOf("$$Lambda$") > 0)
-                    idx = -1;
-                else
-                    return typeName;
-            }
-        }
-
-        if (idx < 0)
-            idx = clsName.lastIndexOf('.');
-
-        return idx >= 0 ? clsName.substring(idx + 1) : clsName;
-    }
-
-    /**
      * Undeployment callback invoked when class loader is being undeployed.
      *
      * Some marshallers may want to clean their internal state that uses the undeployed class loader somehow.
@@ -1017,7 +1130,7 @@ public class BinaryContext {
          * Add type descriptor.
          *
          * @param clsName Class name.
-         * @param idMapper ID mapper.
+         * @param mapper Mapper.
          * @param serializer Serializer.
          * @param affKeyFieldName Affinity key field name.
          * @param isEnum Enum flag.
@@ -1025,14 +1138,14 @@ public class BinaryContext {
          * @throws BinaryObjectException If failed.
          */
         private void add(String clsName,
-            BinaryIdMapper idMapper,
+            BinaryInternalMapper mapper,
             BinarySerializer serializer,
             String affKeyFieldName,
             boolean isEnum,
             boolean canOverride)
             throws BinaryObjectException {
             TypeDescriptor desc = new TypeDescriptor(clsName,
-                idMapper,
+                mapper,
                 serializer,
                 affKeyFieldName,
                 isEnum,
@@ -1063,8 +1176,8 @@ public class BinaryContext {
         /** Class name. */
         private final String clsName;
 
-        /** ID mapper. */
-        private BinaryIdMapper idMapper;
+        /** Mapper. */
+        private BinaryInternalMapper mapper;
 
         /** Serializer. */
         private BinarySerializer serializer;
@@ -1082,16 +1195,16 @@ public class BinaryContext {
          * Constructor.
          *
          * @param clsName Class name.
-         * @param idMapper ID mapper.
+         * @param mapper ID mapper.
          * @param serializer Serializer.
          * @param affKeyFieldName Affinity key field name.
          * @param isEnum Enum type.
          * @param canOverride Whether this descriptor can be override.
          */
-        private TypeDescriptor(String clsName, BinaryIdMapper idMapper, BinarySerializer serializer,
-            String affKeyFieldName, boolean isEnum, boolean canOverride) {
+        private TypeDescriptor(String clsName, BinaryInternalMapper mapper,
+            BinarySerializer serializer, String affKeyFieldName, boolean isEnum, boolean canOverride) {
             this.clsName = clsName;
-            this.idMapper = idMapper;
+            this.mapper = mapper;
             this.serializer = serializer;
             this.affKeyFieldName = affKeyFieldName;
             this.isEnum = isEnum;
@@ -1108,7 +1221,7 @@ public class BinaryContext {
             assert clsName.equals(other.clsName);
 
             if (canOverride) {
-                idMapper = other.idMapper;
+                mapper = other.mapper;
                 serializer = other.serializer;
                 affKeyFieldName = other.affKeyFieldName;
                 isEnum = other.isEnum;

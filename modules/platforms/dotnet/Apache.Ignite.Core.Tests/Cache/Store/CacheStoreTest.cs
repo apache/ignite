@@ -23,7 +23,6 @@ namespace Apache.Ignite.Core.Tests.Cache.Store
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Cache;
     using Apache.Ignite.Core.Cache.Store;
-    using Apache.Ignite.Core.Impl;
     using NUnit.Framework;
 
     /// <summary>
@@ -137,24 +136,18 @@ namespace Apache.Ignite.Core.Tests.Cache.Store
         [TestFixtureSetUp]
         public void BeforeTests()
         {
-            //TestUtils.JVM_DEBUG = true;
-
             TestUtils.KillProcesses();
 
             TestUtils.JvmDebug = true;
 
-            IgniteConfigurationEx cfg = new IgniteConfigurationEx();
-
-            cfg.GridName = GridName;
-            cfg.JvmClasspath = TestUtils.CreateTestClasspath();
-            cfg.JvmOptions = TestUtils.TestJavaOptions();
-            cfg.SpringConfigUrl = "config\\native-client-test-cache-store.xml";
-
-            BinaryConfiguration portCfg = new BinaryConfiguration();
-
-            portCfg.Types = new List<string> { typeof(Key).FullName, typeof(Value).FullName };
-
-            cfg.BinaryConfiguration = portCfg;
+            var cfg = new IgniteConfiguration
+            {
+                GridName = GridName,
+                JvmClasspath = TestUtils.CreateTestClasspath(),
+                JvmOptions = TestUtils.TestJavaOptions(),
+                SpringConfigUrl = "config\\native-client-test-cache-store.xml",
+                BinaryConfiguration = new BinaryConfiguration(typeof (Key), typeof (Value))
+            };
 
             Ignition.Start(cfg);
         }

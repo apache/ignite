@@ -38,11 +38,15 @@ namespace ignite
             {
                 ++currentPagePos;
 
-                Row *row = currentRow.get();
+                if (currentPagePos == currentPage->GetSize())
+                    currentRow.reset();
+                else
+                {
+                    Row *row = currentRow.get();
 
-                if (row)
-                    row->MoveToNext();
-
+                    if (row)
+                        row->MoveToNext();
+                }
                 return true;
             }
             return false;
@@ -54,7 +58,7 @@ namespace ignite
                 currentPagePos == currentPage->GetSize());
         }
 
-        bool Cursor::HasNext() const
+        bool Cursor::HasData() const
         {
             return !currentPage.get() || !currentPage->IsLast() ||
                 currentPagePos < currentPage->GetSize();
@@ -64,7 +68,7 @@ namespace ignite
         {
             currentPage = newPage;
 
-            currentPagePos = 1;
+            currentPagePos = 0;
 
             currentRow.reset(new Row(currentPage->GetData()));
         }

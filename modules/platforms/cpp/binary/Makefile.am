@@ -43,7 +43,9 @@ COMMON_SRC = src/binary/binary_containers.cpp \
              src/impl/interop/interop_memory.cpp \
              src/impl/interop/interop_output_stream.cpp \
              src/impl/interop/interop_input_stream.cpp \
-             src/guid.cpp
+             src/guid.cpp \
+             src/date.cpp \
+             src/timestamp.cpp
 
 lib_LTLIBRARIES = libignite-binary.la
 libignite_binary_la_SOURCES = $(COMMON_SRC)

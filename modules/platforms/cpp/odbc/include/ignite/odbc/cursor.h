@@ -50,24 +50,28 @@ namespace ignite
 
             /**
              * Move cursor to the next result row.
+             *
              * @return False if data update required or no more data.
              */
             bool Increment();
 
             /**
              * Check if the cursor needs data update.
+             *
              * @return True if the cursor needs data update.
              */
             bool NeedDataUpdate() const;
 
             /**
-             * Check if the cursor has next row row.
-             * @return True if the cursor has next row row.
+             * Check if the cursor has data.
+             *
+             * @return True if the cursor has data.
              */
-            bool HasNext() const;
+            bool HasData() const;
 
             /**
              * Get query ID.
+             *
              * @return Query ID.
              */
             int64_t GetQueryId() const
@@ -77,13 +81,15 @@ namespace ignite
 
             /**
              * Update current cursor page data.
+             *
              * @param newPage New result page.
              */
             void UpdateData(std::auto_ptr<ResultPage>& newPage);
 
             /**
              * Get current row.
-             * @return Current row.
+             *
+             * @return Current row. Returns zero if cursor needs data update or has no more data.
              */
             Row* GetRow();
 

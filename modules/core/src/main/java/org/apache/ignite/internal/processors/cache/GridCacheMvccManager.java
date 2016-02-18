@@ -17,6 +17,18 @@
 
 package org.apache.ignite.internal.processors.cache;
 
+import java.util.ArrayDeque;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Deque;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.Map;
+import java.util.Set;
+import java.util.UUID;
+import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.ConcurrentMap;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.events.DiscoveryEvent;
@@ -52,18 +64,6 @@ import org.jetbrains.annotations.Nullable;
 import org.jsr166.ConcurrentHashMap8;
 import org.jsr166.ConcurrentLinkedDeque8;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.LinkedList;
-import java.util.Map;
-import java.util.Set;
-import java.util.UUID;
-import java.util.concurrent.ConcurrentLinkedQueue;
-import java.util.concurrent.ConcurrentMap;
-
 import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
 import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
 import static org.apache.ignite.internal.util.GridConcurrentFactory.newMap;
@@ -77,12 +77,7 @@ public class GridCacheMvccManager extends GridCacheSharedManagerAdapter {
     private static final int MAX_REMOVED_LOCKS = 10240;
 
     /** Pending locks per thread. */
-    private final ThreadLocal<LinkedList<GridCacheMvccCandidate>> pending =
-        new ThreadLocal<LinkedList<GridCacheMvccCandidate>>() {
-            @Override protected LinkedList<GridCacheMvccCandidate> initialValue() {
-                return new LinkedList<>();
-            }
-        };
+    private final ThreadLocal<Deque<GridCacheMvccCandidate>> pending = new ThreadLocal<>();
 
     /** Pending near local locks and topology version per thread. */
     private ConcurrentMap<Long, GridCacheExplicitLockSpan> pendingExplicit;
@@ -683,7 +678,7 @@ public class GridCacheMvccManager extends GridCacheSharedManagerAdapter {
      * @return Remote candidates.
      */
     public Collection<GridCacheMvccCandidate> remoteCandidates() {
-        Collection<GridCacheMvccCandidate> rmtCands = new LinkedList<>();
+        Collection<GridCacheMvccCandidate> rmtCands = new ArrayList<>();
 
         for (GridDistributedCacheEntry entry : locked())
             rmtCands.addAll(entry.remoteMvccSnapshot());
@@ -697,7 +692,7 @@ public class GridCacheMvccManager extends GridCacheSharedManagerAdapter {
      * @return Local candidates.
      */
     public Collection<GridCacheMvccCandidate> localCandidates() {
-        Collection<GridCacheMvccCandidate> locCands = new LinkedList<>();
+        Collection<GridCacheMvccCandidate> locCands = new ArrayList<>();
 
         for (GridDistributedCacheEntry entry : locked()) {
             try {
@@ -726,7 +721,10 @@ public class GridCacheMvccManager extends GridCacheSharedManagerAdapter {
         if (cacheCtx.isNear() || cand.singleImplicit())
             return true;
 
-        LinkedList<GridCacheMvccCandidate> queue = pending.get();
+        Deque<GridCacheMvccCandidate> queue = pending.get();
+
+        if (queue == null)
+            pending.set(queue = new ArrayDeque<>());
 
         GridCacheMvccCandidate prev = null;
 
@@ -751,7 +749,7 @@ public class GridCacheMvccManager extends GridCacheSharedManagerAdapter {
      * Reset MVCC context.
      */
     public void contextReset() {
-        pending.set(new LinkedList<GridCacheMvccCandidate>());
+        pending.set(null);
     }
 
     /**

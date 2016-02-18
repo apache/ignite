@@ -17,6 +17,12 @@
 
 package org.apache.ignite.internal.processors.odbc;
 
+import org.apache.ignite.internal.util.tostring.GridToStringExclude;
+import org.apache.ignite.internal.util.typedef.internal.S;
+import org.jetbrains.annotations.Nullable;
+
+import java.util.Arrays;
+
 /**
  * ODBC query execute request.
  */
@@ -28,6 +34,7 @@ public class OdbcQueryExecuteRequest extends OdbcRequest {
     private final String sqlQry;
 
     /** Sql query arguments. */
+    @GridToStringExclude
     private final Object[] args;
 
     /**
@@ -38,7 +45,7 @@ public class OdbcQueryExecuteRequest extends OdbcRequest {
     public OdbcQueryExecuteRequest(String cacheName, String sqlQry, Object[] args) {
         super(EXECUTE_SQL_QUERY);
 
-        this.cacheName = cacheName;
+        this.cacheName = cacheName.isEmpty() ? null : cacheName;
         this.sqlQry = sqlQry;
         this.args = args;
     }
@@ -60,7 +67,12 @@ public class OdbcQueryExecuteRequest extends OdbcRequest {
     /**
      * @return Cache name.
      */
-    public String cacheName() {
+    @Nullable public String cacheName() {
         return cacheName;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(OdbcQueryExecuteRequest.class, this, "args", Arrays.toString(args));
     }
 }
