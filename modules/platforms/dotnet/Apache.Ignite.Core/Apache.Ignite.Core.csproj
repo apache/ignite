@@ -109,6 +109,7 @@
     <Compile Include="Common\IFactory.cs" />
     <Compile Include="Cache\Store\ICacheStoreSession.cs" />
     <Compile Include="Cache\Store\Package-Info.cs" />
+    <Compile Include="Common\ClientDisconnectedException.cs" />
     <Compile Include="Cluster\ClusterGroupEmptyException.cs" />
     <Compile Include="Cluster\ClusterTopologyException.cs" />
     <Compile Include="Cluster\ICluster.cs" />

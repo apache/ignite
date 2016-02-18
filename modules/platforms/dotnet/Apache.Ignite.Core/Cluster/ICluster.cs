@@ -20,6 +20,7 @@ namespace Apache.Ignite.Core.Cluster
     using System;
     using System.Collections.Generic;
     using System.Diagnostics.CodeAnalysis;
+    using System.Threading.Tasks;
     using Apache.Ignite.Core.Common;
 
     /// <summary>
@@ -75,5 +76,18 @@ namespace Apache.Ignite.Core.Cluster
         /// Resets local I/O, job, and task execution metrics.
         /// </summary>
         void ResetMetrics();
+
+        /// <summary>
+        /// Gets the reconnect task, which will transition to Completed state 
+        /// when local client node reconnects to the cluster. 
+        /// <para />
+        /// Result of the task indicates whether cluster has been restarted.
+        /// <para />
+        /// If local node is not in client mode or is not disconnected, returns completed task.
+        /// </summary>
+        /// <value>
+        /// The reconnect task.
+        /// </value>
+        Task<bool> ClientReconnectTask { get; } 
     }
 }
