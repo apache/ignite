@@ -32,8 +32,8 @@ form.panel.panel-default(name='binary' novalidate)
                         ignite-form-field-label
                             | ID mapper:
                         ignite-form-field-tooltip
-                            | Type and field ID mapper for binary objects#[br]
-                            | Ignite never writes full strings for field or type names. Instead, for performance reasons, Ignite writes integer hash codes for type and field names. It has been tested that hash code conflicts for the type names or the field names within the same type are virtually non-existent and, to gain performance, it is safe to work with hash codes. For the cases when hash codes for different types or fields actually do collide #[b BinaryIdMapper] allows to override the automatically generated hash code IDs for the type and field names
+                            | Maps given from BinaryNameMapper type and filed name to ID that will be used by Ignite in internals#[br]
+                            | Ignite never writes full strings for field or type names. Instead, for performance reasons, Ignite writes integer hash codes for type/class and field names. It has been tested that hash code conflicts for the type/class names or the field names within the same type are virtually non-existent and, to gain performance, it is safe to work with hash codes. For the cases when hash codes for different types or fields actually do collide #[b BinaryIdMapper] allows to override the automatically generated hash code IDs for the type and field names
                         ignite-form-field-java-class(
                             data-id='idMapper'
                             data-name='idMapper'
@@ -44,7 +44,7 @@ form.panel.panel-default(name='binary' novalidate)
                         ignite-form-field-label
                             | Name mapper:
                         ignite-form-field-tooltip
-                            | Name mapper
+                            | Maps type/class and field names to different names#[br]
                         ignite-form-field-java-class(
                             data-id='nameMapper'
                             data-name='nameMapper'
@@ -94,8 +94,8 @@ form.panel.panel-default(name='binary' novalidate)
                                     ignite-form-field-label
                                         | ID mapper:
                                     ignite-form-field-tooltip
-                                        | Type and field ID mapper for binary objects#[br]
-                                        | Ignite never writes full strings for field or type names. Instead, for performance reasons, Ignite writes integer hash codes for type and field names. It has been tested that hash code conflicts for the type names or the field names within the same type are virtually non-existent and, to gain performance, it is safe to work with hash codes. For the cases when hash codes for different types or fields actually do collide #[b BinaryIdMapper] allows to override the automatically generated hash code IDs for the type and field names
+                                        | Maps given from BinaryNameMapper type and filed name to ID that will be used by Ignite in internals#[br]
+                                        | Ignite never writes full strings for field or type/class names. Instead, for performance reasons, Ignite writes integer hash codes for type/class and field names. It has been tested that hash code conflicts for the type/class names or the field names within the same type are virtually non-existent and, to gain performance, it is safe to work with hash codes. For the cases when hash codes for different types or fields actually do collide #[b BinaryIdMapper] allows to override the automatically generated hash code IDs for the type and field names
                                     ignite-form-field-java-class(
                                         data-id='idMapper'
                                         data-name='idMapper'
@@ -106,7 +106,7 @@ form.panel.panel-default(name='binary' novalidate)
                                     ignite-form-field-label
                                         | Name mapper:
                                     ignite-form-field-tooltip
-                                        | Name mapper
+                                        | Maps type/class and field names to different names#[br]
                                     ignite-form-field-java-class(
                                         data-id='nameMapper'
                                         data-name='nameMapper'
