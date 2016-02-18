@@ -1123,7 +1123,7 @@ consoleModule.controller('sqlController', function ($http, $timeout, $interval, 
 
                     var v = {
                         x: xCol < 0 ? index : row[xCol],
-                        y: _chartNumber(row, valCol, index)
+                        y: _chartNumber(row, valCol.value, index)
                     };
 
                     index++;
@@ -1131,7 +1131,7 @@ consoleModule.controller('sqlController', function ($http, $timeout, $interval, 
                     return v;
                 });
 
-                datum.push({series: valCol.label, key: valCol.label, values: values});
+                datum.push({series: paragraph.chartKeyCols[0].label, key: valCol.label, values: values});
             });
         }
 
