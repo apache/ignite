@@ -64,8 +64,8 @@ module.exports.factory = function(logger, cookieParser, bodyParser, session, con
             };
 
             const _onAuthorizeFail = (data, message, error, accept) => {
-                if (error)
-                    throw new Error(message);
+                // if (error) 
+                //     throw new Error(message);
 
                 accept(null, false);
             };

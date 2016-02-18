@@ -174,20 +174,17 @@ angular
 .run(['$rootScope', ($root) => {
     $root._ = _;
 }])
-.run(['$rootScope', '$state', 'Auth', 'User', ($root, $state, Auth, User) => {
+.run(['$rootScope', '$state', 'Auth', 'User', 'AgentManager', ($root, $state, Auth, User, agentMgr) => {
     $root.$state = $state;
 
     if (Auth.authorized) {
         User.read()
-            .then((user) => $root.$broadcast('user', user));
+            .then((user) => $root.$broadcast('user', user))
+            .then(() => agentMgr.listenAgents());
     }
 }])
 .run(['$rootScope', ($root) => {
     $root.$on('$stateChangeStart', () => {
         _.each(angular.element('.modal'), (m) => angular.element(m).scope().$hide());
     });
-}])
-.run(['$rootScope', 'AgentManager', ($root, agentMgr) => {
-    agentMgr.listenAgents();
 }]);
-

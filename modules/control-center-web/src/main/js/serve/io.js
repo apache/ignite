@@ -32,12 +32,10 @@ module.exports.factory = (socketio, configure) => {
             configure.socketio(io);
 
             io.sockets.on('connection', (socket) => {
-                // var req = socket.client.request;
+                var user = socket.client.request.user;
 
-                console.log('connection');
-
-                socket.on('agent:ping', (req) => {
-                    console.log('agent:ping', req);
+                socket.on('agent:ping', () => {
+                    console.log('agent:ping', user);
                 });
 
                 socket.emit('agent:connected', {data: 'success'});
