@@ -95,7 +95,7 @@ public class IgniteYarnClient {
 
         amContainer.setCommands(
             Collections.singletonList(
-                    Environment.JAVA_HOME.$() + "/bin/java -Xmx512m " + ApplicationMaster.class.getName()
+                Environment.JAVA_HOME.$() + "/bin/java -Xmx512m " + ApplicationMaster.class.getName()
                 + IgniteYarnUtils.SPACE + ignite.toUri()
                 + IgniteYarnUtils.YARN_LOG_OUT
             )
