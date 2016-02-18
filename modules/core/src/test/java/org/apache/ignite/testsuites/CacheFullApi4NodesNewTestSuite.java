@@ -28,7 +28,7 @@ import org.apache.ignite.spi.swapspace.inmemory.GridTestSwapSpaceSpi;
 import org.apache.ignite.testframework.CacheStartMode;
 import org.apache.ignite.testframework.GridTestSuite;
 import org.apache.ignite.testframework.TestsConfiguration;
-import org.apache.ignite.testframework.config.CacheConfigurationPermutations;
+import org.apache.ignite.testframework.config.ConfigurationPermutations;
 import org.apache.ignite.testframework.config.FullApiStateConfigurationFactory;
 import org.apache.ignite.testframework.config.StateConfigurationFactory;
 import org.apache.ignite.testframework.config.generator.ConfigurationParameter;
@@ -52,7 +52,7 @@ public class CacheFullApi4NodesNewTestSuite extends TestSuite {
     /** */
     @SuppressWarnings("unchecked")
     private static final ConfigurationParameter<CacheConfiguration>[][] cacheParams =
-        CacheConfigurationPermutations.defaultSet();
+        ConfigurationPermutations.cacheDefaultSet();
 
 
     /**

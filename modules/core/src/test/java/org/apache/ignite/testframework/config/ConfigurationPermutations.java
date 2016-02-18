@@ -39,9 +39,13 @@ import org.apache.ignite.cache.store.CacheStoreSession;
 import org.apache.ignite.cache.store.CacheStoreSessionListener;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.configuration.TopologyValidator;
+import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.processors.cache.CacheAbstractNewSelfTest;
+import org.apache.ignite.marshaller.optimized.OptimizedMarshaller;
+import org.apache.ignite.spi.swapspace.inmemory.GridTestSwapSpaceSpi;
 import org.apache.ignite.testframework.config.generator.ConfigurationParameter;
 
 import static org.apache.ignite.internal.util.lang.GridFunc.asArray;
@@ -54,7 +58,7 @@ import static org.apache.ignite.testframework.config.params.Parameters.parameter
 /**
  * Cache configuration permutations.
  */
-public class CacheConfigurationPermutations {
+public class ConfigurationPermutations {
     /** */
     public static final ConfigurationParameter<Object> EVICTION_PARAM = complexParameter(
         parameter("setEvictionPolicy", new FifoEvictionPolicy<>()),
@@ -107,6 +111,14 @@ public class CacheConfigurationPermutations {
     /** */
     public static final ConfigurationParameter<Object> OFFHEAP_SMALL_SIZE_ENABLED =
         parameter("setOffHeapMaxMemory", 10 * 1024L);
+
+    /** */
+    @SuppressWarnings("unchecked")
+    private static final ConfigurationParameter<IgniteConfiguration>[][] BASIC_IGNITE_SET = new ConfigurationParameter[][] {
+        objectParameters("setMarshaller", new BinaryMarshaller(), new OptimizedMarshaller(true)),
+        booleanParameters("setPeerClassLoadingEnabled"),
+        objectParameters("setSwapSpaceSpi", new GridTestSwapSpaceSpi()),
+    };
 
     /** */
     @SuppressWarnings("unchecked")
@@ -177,22 +189,29 @@ public class CacheConfigurationPermutations {
     /**
      * Private constructor.
      */
-    private CacheConfigurationPermutations() {
+    private ConfigurationPermutations() {
         // No-op.
     }
 
     /**
      * @return Default matrix of availiable permutations.
      */
-    public static ConfigurationParameter<CacheConfiguration>[][] basicSet() {
+    public static ConfigurationParameter<CacheConfiguration>[][] cacheBasicSet() {
         return BASIC_SET;
     }
 
     /**
      * @return Default matrix of availiable permutations.
      */
-    public static ConfigurationParameter<CacheConfiguration>[][] defaultSet() {
+    public static ConfigurationParameter<CacheConfiguration>[][] cacheDefaultSet() {
         return DEFAULT_SET;
+    }
+
+    /**
+     * @return Default matrix of availiable permutations.
+     */
+    public static ConfigurationParameter<IgniteConfiguration>[][] igniteBasicSet() {
+        return BASIC_IGNITE_SET;
     }
 
     /**
