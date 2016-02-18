@@ -86,7 +86,7 @@ public class ApplicationMaster implements AMRMClientAsync.CallbackHandler {
     private final Path ignitePath;
 
     /** Config path. */
-    private volatile Path cfgPath;
+    private Path cfgPath;
 
     /** Hadoop file system. */
     private FileSystem fs;
