@@ -103,7 +103,7 @@ public class CacheFullApiBasicCfgNewTestSuite extends TestSuite {
      */
     private static void addTestSuite(TestSuite suite, int[] igniteCfgState, int[] cacheCfgState, int gridsCnt,
         boolean stop, boolean withClient) {
-        int testedNodeCnt = 2;
+        int testedNodeCnt = 3;
 
         StateConfigurationFactory factory = new FullApiStateConfigurationFactory(withClient, igniteParams, igniteCfgState,
             cacheParams, cacheCfgState);
@@ -117,4 +117,6 @@ public class CacheFullApiBasicCfgNewTestSuite extends TestSuite {
 
         suite.addTest(GridTestSuite.createMultiNodeTestSuite(CacheFullApiNewSelfTest.class, testCfg, testedNodeCnt));
     }
+
+
 }
