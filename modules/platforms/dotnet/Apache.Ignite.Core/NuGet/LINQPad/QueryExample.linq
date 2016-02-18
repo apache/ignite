@@ -30,10 +30,11 @@
 /// cache projection.
 /// </summary>
 
-// NOTE: x64 LINQPad is required to run this sample (see AnyCPU build: http://www.linqpad.net/Download.aspx)
-
 void Main()
 {
+	if (!Environment.Is64BitProcess)
+		throw new Exception("x64 LINQPad is required to run this sample (see AnyCPU build: http://www.linqpad.net/Download.aspx)");	
+
 	// Force new LINQPad query process to reinit JVM
 	Util.NewProcess = true;
 	
