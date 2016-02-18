@@ -67,7 +67,7 @@ void Main()
 			.Dump("Persons working for " + orgName);
 
 		// Fields query
-		orgs.QueryFields(new SqlFieldsQuery("select name, size from Organization")).Dump();
+		orgs.QueryFields(new SqlFieldsQuery("select name, size from Organization")).Dump("Fields query");
 
 		// Full text query
 		persons.Query(new TextQuery(typeof(Person), "Chris*")).Dump("Persons starting with 'Chris'");
