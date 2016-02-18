@@ -1500,7 +1500,7 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
          * @param objs Collection of objects to detect deploy class and class loader.
          */
         private DataStreamerPda(Object... objs) {
-            this.objs = Arrays.asList(objs);
+            this.objs = F.asList(objs);
         }
 
         /** {@inheritDoc} */

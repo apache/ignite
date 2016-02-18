@@ -70,7 +70,7 @@ public class IgniteTxRemoteSingleStateImpl extends IgniteTxRemoteStateAdapter {
 
     /** {@inheritDoc} */
     @Override public Collection<IgniteTxEntry> writeEntries() {
-        return entry != null ? Arrays.asList(entry) : Collections.<IgniteTxEntry>emptyList();
+        return entry != null ? F.asList(entry) : Collections.<IgniteTxEntry>emptyList();
     }
 
     /** {@inheritDoc} */
@@ -96,7 +96,7 @@ public class IgniteTxRemoteSingleStateImpl extends IgniteTxRemoteStateAdapter {
 
     /** {@inheritDoc} */
     @Override public Collection<IgniteTxEntry> allEntries() {
-        return entry != null ? Arrays.asList(entry) : Collections.<IgniteTxEntry>emptyList();
+        return entry != null ? F.asList(entry) : Collections.<IgniteTxEntry>emptyList();
     }
 
     /** {@inheritDoc} */

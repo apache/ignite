@@ -16,6 +16,8 @@
  */
 package org.apache.ignite.cache;
 
+import org.apache.ignite.internal.util.typedef.F;
+
 import java.io.Serializable;
 import java.util.Arrays;
 import java.util.Collection;
@@ -89,7 +91,7 @@ public class QueryIndex implements Serializable {
      * @param type Index type.
      */
     public QueryIndex(String field, QueryIndexType type) {
-        this(Arrays.asList(field), type);
+        this(F.asList(field), type);
     }
 
     /**

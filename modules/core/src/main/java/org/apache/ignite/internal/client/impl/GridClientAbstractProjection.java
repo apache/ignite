@@ -37,6 +37,7 @@ import org.apache.ignite.internal.client.impl.connection.GridClientConnection;
 import org.apache.ignite.internal.client.impl.connection.GridClientConnectionResetException;
 import org.apache.ignite.internal.client.impl.connection.GridConnectionIdleClosedException;
 import org.apache.ignite.internal.client.util.GridClientUtils;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
 
@@ -353,7 +354,7 @@ abstract class GridClientAbstractProjection<T extends GridClientAbstractProjecti
 
         if (prjNodes.isEmpty())
             throw new GridServerUnreachableException("Failed to get balanced node (no nodes in topology were " +
-                "accepted by the filters): " + Arrays.asList(filter, excludeFilter));
+                "accepted by the filters): " + F.asList(filter, excludeFilter));
 
         if (prjNodes.size() == 1) {
             GridClientNode ret = GridClientUtils.first(prjNodes);

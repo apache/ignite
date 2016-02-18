@@ -17,6 +17,8 @@
 
 package org.apache.ignite.internal.util.lang;
 
+import java.io.Serializable;
+import java.util.AbstractList;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -4047,12 +4049,12 @@ public class GridFunc {
     /**
      * Creates read-only list with given values.
      *
-     * @param t Element (if {@code null}, then empty list is returned).
+     * @param t Element.
      * @param <T> Element's type.
      * @return Created list.
      */
     public static <T> List<T> asList(@Nullable T t) {
-        return t == null ? Collections.<T>emptyList() : Collections.singletonList(t);
+        return Collections.singletonList(t);
     }
 
     /**

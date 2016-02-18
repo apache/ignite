@@ -3765,7 +3765,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
 
         if (!F.isEmpty(oldNodes.nodes())) {
             ComputeTaskInternalFuture oldNodesFut = ctx.kernalContext().closure().callAsync(BROADCAST,
-                Arrays.asList(new LoadCacheClosure<>(ctx.name(), p, args, plc)),
+                F.asList(new LoadCacheClosure<>(ctx.name(), p, args, plc)),
                 oldNodes.nodes());
 
             fut.add(oldNodesFut);
@@ -3773,7 +3773,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
 
         if (!F.isEmpty(newNodes.nodes())) {
             ComputeTaskInternalFuture newNodesFut = ctx.kernalContext().closure().callAsync(BROADCAST,
-                Arrays.asList(new LoadCacheJob<>(ctx.name(), ctx.affinity().affinityTopologyVersion(), p, args, plc)),
+                F.asList(new LoadCacheJob<>(ctx.name(), ctx.affinity().affinityTopologyVersion(), p, args, plc)),
                 newNodes.nodes());
 
             fut.add(newNodesFut);
