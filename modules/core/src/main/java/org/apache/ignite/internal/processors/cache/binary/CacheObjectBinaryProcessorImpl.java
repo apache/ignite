@@ -277,7 +277,8 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
                 new MetaDataEntryListener(),
                 new MetaDataEntryFilter(),
                 false,
-                true);
+                true,
+                false);
 
             while (true) {
                 ClusterNode oldestSrvNode =
