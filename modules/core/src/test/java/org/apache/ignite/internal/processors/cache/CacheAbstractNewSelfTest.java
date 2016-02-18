@@ -63,6 +63,15 @@ import static org.apache.ignite.cache.CacheMemoryMode.ONHEAP_TIERED;
  * Abstract class for cache tests.
  */
 public abstract class CacheAbstractNewSelfTest extends GridCommonAbstractTest {
+    /** */
+    protected static final int SERVER_NODE_IDX = 0;
+
+    /** */
+    protected static final int CLIENT_NEAR_ONLY_IDX = 1;
+
+    /** */
+    protected static final int CLIENT_NODE_IDX = 2;
+
     /** Test timeout */
     private static final long TEST_TIMEOUT = 30 * 1000;
 
@@ -92,6 +101,12 @@ public abstract class CacheAbstractNewSelfTest extends GridCommonAbstractTest {
     @Override protected final void beforeTestsStarted() throws Exception {
         assert testsCfg != null;
 
+        if (testsCfg.multiNodeConfig() != null) {
+            testedNodeIdx = testsCfg.multiNodeConfig().testedNodeIndex();
+
+            assert testedNodeIdx >= 0 : "testedNodeIdx: " + testedNodeIdx;
+        }
+
         final CacheStartMode cacheStartMode = testsCfg.cacheStartMode();
         final int cnt = testsCfg.gridCount();
 
@@ -103,16 +118,21 @@ public abstract class CacheAbstractNewSelfTest extends GridCommonAbstractTest {
             for (int i = 0; i < cnt; i++) {
                 String gridName = getTestGridName(i);
 
-                IgniteConfiguration cfg1 = optimize(getConfiguration(gridName));
+                IgniteConfiguration cfg = optimize(getConfiguration(gridName));
 
-                CacheConfiguration cc = testsCfg.configurationFactory().cacheConfiguration(gridName);
 
-                cc.setName(cacheName());
+                if (i != CLIENT_NODE_IDX && i != CLIENT_NEAR_ONLY_IDX) {
+                    CacheConfiguration cc = testsCfg.configurationFactory().cacheConfiguration(gridName);
 
-                cfg1.setCacheConfiguration(cc);
+                    cc.setName(cacheName());
 
-                startGrid(gridName, cfg1, null);
+                    cfg.setCacheConfiguration(cc);
+                }
+
+                startGrid(gridName, cfg, null);
             }
+
+            grid(CLIENT_NEAR_ONLY_IDX).createNearCache(cacheName(), new NearCacheConfiguration());
         }
         else if (cacheStartMode == null || cacheStartMode == CacheStartMode.NODES_THEN_CACHES) {
             super.beforeTestsStarted();
@@ -122,11 +142,15 @@ public abstract class CacheAbstractNewSelfTest extends GridCommonAbstractTest {
 
                 IgniteEx grid = grid(i);
 
-                CacheConfiguration cc = testsCfg.configurationFactory().cacheConfiguration(grid.name());
+                if (i != CLIENT_NODE_IDX && i != CLIENT_NEAR_ONLY_IDX) {
+                    CacheConfiguration cc = testsCfg.configurationFactory().cacheConfiguration(grid.name());
 
-                cc.setName(cacheName());
+                    cc.setName(cacheName());
 
-                grid.getOrCreateCache(cc);
+                    grid.getOrCreateCache(cc);
+                }
+
+                grid(CLIENT_NEAR_ONLY_IDX).createNearCache(cacheName(), new NearCacheConfiguration());
             }
         }
         else
@@ -140,6 +164,8 @@ public abstract class CacheAbstractNewSelfTest extends GridCommonAbstractTest {
         for (int i = 0; i < gridCount(); i++)
             info("Grid " + i + ": " + grid(i).localNode().id());
 
+        assert grid(CLIENT_NEAR_ONLY_IDX).configuration().isClientMode();
+        assert grid(CLIENT_NODE_IDX).configuration().isClientMode();
     }
 
     /** {@inheritDoc} */
@@ -441,7 +467,14 @@ public abstract class CacheAbstractNewSelfTest extends GridCommonAbstractTest {
      */
     @SuppressWarnings({"unchecked"})
     @Override protected <K, V> IgniteCache<K, V> jcache() {
-        return jcache(0);
+        return jcache(testedNodeIdx);
+    }
+
+    /**
+     * @return A not near-only cache.
+     */
+    protected IgniteCache<String, Integer> serverNodeCache() {
+        return jcache(SERVER_NODE_IDX);
     }
 
     /**
@@ -586,13 +619,6 @@ public abstract class CacheAbstractNewSelfTest extends GridCommonAbstractTest {
                 return "gte200";
             }
         };
-
-    /**
-     * @param testedNodeIdx Tested node index.
-     */
-    public void setTestedNodeIdx(int testedNodeIdx) {
-        this.testedNodeIdx = testedNodeIdx;
-    }
 
     /**
      * {@link org.apache.ignite.lang.IgniteInClosure} for calculating sum.

@@ -26,7 +26,7 @@ import org.apache.ignite.internal.processors.cache.CacheFullApiNewSelfTest;
 import org.apache.ignite.marshaller.optimized.OptimizedMarshaller;
 import org.apache.ignite.spi.swapspace.inmemory.GridTestSwapSpaceSpi;
 import org.apache.ignite.testframework.CacheStartMode;
-import org.apache.ignite.testframework.GridMultiNodeTestSuite;
+import org.apache.ignite.testframework.GridTestSuite;
 import org.apache.ignite.testframework.TestsConfiguration;
 import org.apache.ignite.testframework.config.CacheConfigurationPermutations;
 import org.apache.ignite.testframework.config.FullApiStateConfigurationFactory;
@@ -70,9 +70,7 @@ public class CacheFullApiBasicCfgNewTestSuite extends TestSuite {
     public static TestSuite suite() throws Exception {
         TestSuite suite = new TestSuite("Cache New Full API Test Suite");
 
-//        addTestSuites(suite, 1, false);
-        addTestSuites(suite, 4, false);
-//        addTestSuites(suite, 5, true);
+        addTestSuites(suite, 5, true);
 
         return suite;
     }
@@ -107,6 +105,8 @@ public class CacheFullApiBasicCfgNewTestSuite extends TestSuite {
      */
     private static void addTestSuite(TestSuite suite, int[] igniteCfgState, int[] cacheCfgState, int gridsCnt,
         boolean stop, boolean withClient) {
+        int testedNodeCnt = 2;
+
         StateConfigurationFactory factory = new FullApiStateConfigurationFactory(withClient, igniteParams, igniteCfgState,
             cacheParams, cacheCfgState);
 
@@ -115,34 +115,8 @@ public class CacheFullApiBasicCfgNewTestSuite extends TestSuite {
             + "-[igniteCfg=" + factory.getIgniteConfigurationDescription()
             + ", cacheCfg=" + factory.getCacheConfigurationDescription() + "]";
 
-        TestsConfiguration testCfg = new TestsConfiguration(factory, clsNameSuffix, stop, cacheStartMode, gridsCnt);
+        TestsConfiguration testCfg = new TestsConfiguration(factory, clsNameSuffix, stop, cacheStartMode, gridsCnt, null);
 
-        suite.addTest(GridMultiNodeTestSuite.createTestSuite(CacheFullApiNewSelfTest.class, testCfg, 3));
+        suite.addTest(GridTestSuite.createMultiNodeTestSuite(CacheFullApiNewSelfTest.class, testCfg, testedNodeCnt));
     }
-
-    /**
-     *
-     */
-//    private static class BackupsFullApiStateConfigurationFactory extends FullApiStateConfigurationFactory {
-//        /**
-//         * @param igniteParams Param.
-//         * @param igniteCfgState State.
-//         * @param cacheParams Param.
-//         * @param cacheCfgState State.
-//         */
-//        BackupsFullApiStateConfigurationFactory(
-//            ConfigurationParameter<IgniteConfiguration>[][] igniteParams, int[] igniteCfgState,
-//            ConfigurationParameter<CacheConfiguration>[][] cacheParams, int[] cacheCfgState) {
-//            super(igniteParams, igniteCfgState, cacheParams, cacheCfgState);
-//        }
-//
-//        /** {@inheritDoc} */
-//        @Override public CacheConfiguration cacheConfiguration(String gridName) {
-//            CacheConfiguration cc = super.cacheConfiguration(gridName);
-//
-//            cc.setBackups(2);
-//
-//            return cc;
-//        }
-//    }
 }

@@ -17,6 +17,7 @@
 
 package org.apache.ignite.testframework.config;
 
+import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.util.typedef.internal.SB;
@@ -38,31 +39,32 @@ public class StateConfigurationFactory implements ConfigurationFactory {
     /** */
     private final int[] cacheCfgState;
 
+    /** */
+    private final boolean withClient;
+
+    /** */
+    private final AtomicInteger nodeNum = new AtomicInteger();
+
     /**
+     * @param withClients With client flag.
      * @param igniteParams Ignite Params.
      * @param igniteCfgState Ignite configuration state.
      * @param cacheParams Cache Params.
      * @param cacheCfgState Cache configuration state.
      */
-    public StateConfigurationFactory(ConfigurationParameter<IgniteConfiguration>[][] igniteParams,
+    public StateConfigurationFactory(boolean withClients, ConfigurationParameter<IgniteConfiguration>[][] igniteParams,
         int[] igniteCfgState,
         ConfigurationParameter<CacheConfiguration>[][] cacheParams,
         int[] cacheCfgState) {
+        this.withClient = withClients;
         this.igniteParams = igniteParams;
         this.igniteCfgState = igniteCfgState;
         this.cacheParams = cacheParams;
         this.cacheCfgState = cacheCfgState;
     }
 
-    /**
-     * @param cacheCfgState Cache configuration state.
-     * @param cacheParams Cache paramethers.
-     */
-    public StateConfigurationFactory(ConfigurationParameter<CacheConfiguration>[][] cacheParams, int[] cacheCfgState) {
-        this(null, null, cacheParams, cacheCfgState);
-    }
-
     /** {@inheritDoc} */
+    @SuppressWarnings("unchecked")
     @Override public IgniteConfiguration getConfiguration(String gridName, IgniteConfiguration srcCfg) {
         IgniteConfiguration cfg = new IgniteConfiguration();
 
@@ -79,6 +81,11 @@ public class StateConfigurationFactory implements ConfigurationFactory {
             if (cfgC != null)
                 cfgC.apply(cfg);
         }
+
+        final int nodeNum = this.nodeNum.getAndIncrement();
+
+        if (withClient && (nodeNum == 1 || nodeNum == 2))
+            cfg.setClientMode(true);
 
         return cfg;
     }

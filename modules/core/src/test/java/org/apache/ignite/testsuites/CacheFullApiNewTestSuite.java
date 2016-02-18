@@ -95,7 +95,7 @@ public class CacheFullApiNewTestSuite extends TestSuite {
     private static void addTestSuite(TestSuite suite, int[] igniteCfgState, int[] cacheCfgState, int gridsCnt,
         boolean stop, CacheStartMode cacheStartMode) {
         // TODO
-        StateConfigurationFactory factory = new FullApiStateConfigurationFactory(igniteParams, igniteCfgState,
+        StateConfigurationFactory factory = new FullApiStateConfigurationFactory(false, igniteParams, igniteCfgState,
             cacheParams, cacheCfgState);
 
         String clsNameSuffix = "[igniteCfg=" + Arrays.toString(igniteCfgState)

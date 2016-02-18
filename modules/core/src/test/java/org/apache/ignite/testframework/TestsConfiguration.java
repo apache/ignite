@@ -19,6 +19,7 @@ package org.apache.ignite.testframework;
 
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.testframework.config.ConfigurationFactory;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Immutable tests configuration.
@@ -39,14 +40,35 @@ public class TestsConfiguration {
     /** */
     private final CacheStartMode cacheStartMode;
 
+    /** */
+    private final MultiNodeTestsConfiguration multiNodeCfg;
+
     /**
      * @param factory Factory.
      * @param suffix Class suffix.
      * @param stopNodes Stope nodes.
      * @param gridCnt Grdi count.
      */
-    public TestsConfiguration(ConfigurationFactory factory, String suffix, boolean stopNodes,
-        CacheStartMode cacheStartMode, int gridCnt) {
+    public TestsConfiguration(ConfigurationFactory factory,
+        String suffix,
+        boolean stopNodes,
+        CacheStartMode cacheStartMode,
+        int gridCnt) {
+        this(factory, suffix, stopNodes, cacheStartMode, gridCnt, null);
+    }
+
+    /**
+     * @param factory Factory.
+     * @param suffix Class suffix.
+     * @param stopNodes Stope nodes.
+     * @param gridCnt Grdi count.
+     */
+    public TestsConfiguration(ConfigurationFactory factory,
+        String suffix,
+        boolean stopNodes,
+        CacheStartMode cacheStartMode,
+        int gridCnt,
+        @Nullable MultiNodeTestsConfiguration multiNodeCfg) {
         A.ensure(gridCnt >= 1, "Grids count cannot be less then 1.");
 
         this.factory = factory;
@@ -54,6 +76,7 @@ public class TestsConfiguration {
         this.stopNodes = stopNodes;
         this.gridCnt = gridCnt;
         this.cacheStartMode = cacheStartMode;
+        this.multiNodeCfg = multiNodeCfg;
     }
 
     /**
@@ -89,5 +112,46 @@ public class TestsConfiguration {
      */
     public CacheStartMode cacheStartMode() {
         return cacheStartMode;
+    }
+
+    /**
+     * @return Multi node config.
+     */
+    public MultiNodeTestsConfiguration multiNodeConfig() {
+        return multiNodeCfg;
+    }
+
+    /**
+     *
+     */
+    public static class MultiNodeTestsConfiguration {
+        /** */
+        private final int testedNodeIdx;
+
+        /** Custome number of tests. */
+        private final int numOfTests;
+
+        /**
+         * @param testedNodeIdx Tested node type.
+         * @param numOfTests
+         */
+        public MultiNodeTestsConfiguration(int testedNodeIdx, int numOfTests) {
+            this.testedNodeIdx = testedNodeIdx;
+            this.numOfTests = numOfTests;
+        }
+
+        /**
+         * @return Number of tests.
+         */
+        public int numOfTests() {
+            return numOfTests;
+        }
+
+        /**
+         * @return Index of tested node.
+         */
+        public int testedNodeIndex() {
+            return testedNodeIdx;
+        }
     }
 }

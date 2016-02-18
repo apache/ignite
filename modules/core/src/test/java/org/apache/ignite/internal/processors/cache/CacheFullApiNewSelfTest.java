@@ -221,13 +221,6 @@ public class CacheFullApiNewSelfTest extends CacheAbstractNewSelfTest {
     }
 
     /**
-     * @return A not near-only cache.
-     */
-    protected IgniteCache<String, Integer> fullCache() {
-        return jcache();
-    }
-
-    /**
      * @throws Exception In case of error.
      */
     public void testSize() throws Exception {
@@ -3870,7 +3863,7 @@ public class CacheFullApiNewSelfTest extends CacheAbstractNewSelfTest {
 
         final String key = primaryKeysForCache(jcache(), 1).get(0);
 
-        GridCacheAdapter<String, Integer> internalCache = internalCache(fullCache());
+        GridCacheAdapter<String, Integer> internalCache = internalCache(serverNodeCache());
 
         if (internalCache.isNear())
             internalCache = internalCache.context().near().dht();
@@ -4079,7 +4072,7 @@ public class CacheFullApiNewSelfTest extends CacheAbstractNewSelfTest {
 
         assert c.get(key) == null;
 
-        internalCache = internalCache(fullCache());
+        internalCache = internalCache(serverNodeCache());
 
         if (internalCache.isNear())
             internalCache = internalCache.context().near().dht();
@@ -4650,6 +4643,18 @@ public class CacheFullApiNewSelfTest extends CacheAbstractNewSelfTest {
      * @return Collection of keys for which given cache is primary.
      */
     protected List<String> primaryKeysForCache(IgniteCache cache, int cnt, int startFrom) {
+        if ((testedNodeIdx == CLIENT_NODE_IDX || testedNodeIdx == CLIENT_NEAR_ONLY_IDX) && cache == jcache())
+            return primaryKeysForCache0(serverNodeCache(), cnt, 1);
+
+        return primaryKeysForCache0(cache, cnt, 1);
+    }
+
+    /**
+     * @param cache Cache.
+     * @param cnt Keys count.
+     * @return Collection of keys for which given cache is primary.
+     */
+    protected List<String> primaryKeysForCache0(IgniteCache cache, int cnt, int startFrom) {
         return executeOnLocalOrRemoteJvm(cache, new CheckPrimaryKeysTask(startFrom, cnt));
     }
 

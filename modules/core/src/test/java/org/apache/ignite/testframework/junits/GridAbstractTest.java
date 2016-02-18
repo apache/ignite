@@ -159,9 +159,6 @@ public abstract class GridAbstractTest extends TestCase {
     /** */
     protected TestsConfiguration testsCfg;
 
-    /** Custome number of tests. It will affect a work of, {@link GridAbstractTest#isLastTest()}. */
-    private int numOfTests = -1;
-
     /**
      *
      */
@@ -1900,16 +1897,6 @@ public abstract class GridAbstractTest extends TestCase {
     }
 
     /**
-     * Sets custom number of tests. It will affect a work of {@link GridAbstractTest#isLastTest()}
-     * and as a result, {@link GridAbstractTest#afterTestsStopped()} will be called in custom time.
-     *
-     * @param numOfTests Custom number of tests.
-     */
-    public void setNumOfTests(Integer numOfTests) {
-        this.numOfTests = numOfTests;
-    }
-
-    /**
      *
      */
     private static interface WriteReplaceOwner {
@@ -2110,8 +2097,8 @@ public abstract class GridAbstractTest extends TestCase {
          */
         public int getNumberOfTests() {
             if (numOfTests == -1) {
-                if (GridAbstractTest.this.numOfTests > 0)
-                    numOfTests = GridAbstractTest.this.numOfTests;
+                if (testsCfg != null && testsCfg.multiNodeConfig() != null && testsCfg.multiNodeConfig().numOfTests() > 0)
+                    numOfTests = testsCfg.multiNodeConfig().numOfTests();
                 else {
                     int cnt = 0;
 

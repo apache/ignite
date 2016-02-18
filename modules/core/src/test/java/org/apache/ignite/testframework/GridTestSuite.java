@@ -17,10 +17,13 @@
 
 package org.apache.ignite.testframework;
 
+import java.lang.reflect.Method;
+import java.lang.reflect.Modifier;
 import junit.framework.Test;
-import junit.framework.TestCase;
 import junit.framework.TestResult;
 import junit.framework.TestSuite;
+import org.apache.ignite.internal.processors.cache.CacheAbstractNewSelfTest;
+import org.apache.ignite.testframework.TestsConfiguration.MultiNodeTestsConfiguration;
 import org.apache.ignite.testframework.junits.GridAbstractTest;
 
 /**
@@ -40,17 +43,43 @@ public class GridTestSuite extends TestSuite {
         this.cfg = cfg;
     }
 
-    /**
-     * Constructs a TestSuite from the given class with the given name.
-     *
-     * @param cfg Tests config.
-     * @see TestSuite#TestSuite(Class)
-     */
-    public GridTestSuite(Class<? extends TestCase> cls, String name,
-        TestsConfiguration cfg) {
-        super(cls, name);
 
-        this.cfg = cfg;
+    /**
+     * @param cls Test class.
+     * @param cfg Configuration.
+     * @param testedNodeCnt Count of tested nodes.
+     */
+    public static TestSuite createMultiNodeTestSuite(Class<? extends CacheAbstractNewSelfTest> cls,
+        TestsConfiguration cfg,
+        int testedNodeCnt) {
+
+        if (cls.isInstance(CacheAbstractNewSelfTest.class))
+            throw new IllegalArgumentException("An instance of CacheAbstractNewSelfTest expected, but was: " + cls);
+
+        TestSuite suite = new TestSuite();
+
+        if (cfg.gridCount() < testedNodeCnt)
+            throw new IllegalArgumentException("Failed to initialize test suite [nodeCnt=" + testedNodeCnt + ", cfgGridCnt="
+                + cfg.gridCount() + "]");
+
+        int numOfTests = 0;
+
+        for (Method m : cls.getMethods())
+            if (m.getName().startsWith("test") && Modifier.isPublic(m.getModifiers()))
+                numOfTests++;
+
+        numOfTests *= testedNodeCnt;
+
+        for (int i = 0; i < testedNodeCnt; i++) {
+            MultiNodeTestsConfiguration multiNodeCfg = new MultiNodeTestsConfiguration(i, numOfTests);
+
+            TestsConfiguration cfg0 = new TestsConfiguration(cfg.configurationFactory(), cfg.suffix(),
+                cfg.isStopNodes(), cfg.cacheStartMode(), cfg.gridCount(), multiNodeCfg);
+
+            suite.addTest(new GridTestSuite(cls, cfg0));
+        }
+
+        return suite;
     }
 
     /** {@inheritDoc} */

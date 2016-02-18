@@ -34,19 +34,10 @@ public class FullApiStateConfigurationFactory extends StateConfigurationFactory 
      * @param cacheParams Cache params.
      * @param cacheCfgState Cache config state.
      */
-    public FullApiStateConfigurationFactory(
+    public FullApiStateConfigurationFactory(boolean withClient,
         ConfigurationParameter<IgniteConfiguration>[][] igniteParams, int[] igniteCfgState,
         ConfigurationParameter<CacheConfiguration>[][] cacheParams, int[] cacheCfgState) {
-        super(igniteParams, igniteCfgState, cacheParams, cacheCfgState);
-    }
-
-    /**
-     * @param cacheParams Params.
-     * @param cacheCfgState State.
-     */
-    public FullApiStateConfigurationFactory(
-        ConfigurationParameter<CacheConfiguration>[][] cacheParams, int[] cacheCfgState) {
-        super(cacheParams, cacheCfgState);
+        super(withClient, igniteParams, igniteCfgState, cacheParams, cacheCfgState);
     }
 
     /** {@inheritDoc} */

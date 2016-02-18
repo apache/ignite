@@ -94,7 +94,7 @@ public class CacheFullApi4NodesNewTestSuite extends TestSuite {
      */
     private static void addTestSuite(TestSuite suite, int[] igniteCfgState, int[] cacheCfgState, int gridsCnt,
         boolean stop, CacheStartMode cacheStartMode) {
-        StateConfigurationFactory factory = new FullApiStateConfigurationFactory(igniteParams, igniteCfgState,
+        StateConfigurationFactory factory = new FullApiStateConfigurationFactory(false, igniteParams, igniteCfgState,
             cacheParams, cacheCfgState);
 
         String clsNameSuffix = "[igniteCfg=" + Arrays.toString(igniteCfgState)
@@ -120,7 +120,7 @@ public class CacheFullApi4NodesNewTestSuite extends TestSuite {
         BackupsFullApiStateConfigurationFactory(
             ConfigurationParameter<IgniteConfiguration>[][] igniteParams, int[] igniteCfgState,
             ConfigurationParameter<CacheConfiguration>[][] cacheParams, int[] cacheCfgState) {
-            super(igniteParams, igniteCfgState, cacheParams, cacheCfgState);
+            super(false, igniteParams, igniteCfgState, cacheParams, cacheCfgState);
         }
 
         /** {@inheritDoc} */
