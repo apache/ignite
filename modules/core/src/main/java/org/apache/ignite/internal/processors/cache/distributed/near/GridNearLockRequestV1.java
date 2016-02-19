@@ -250,15 +250,19 @@ public class GridNearLockRequestV1 extends GridDistributedLockRequest implements
     /**
      * @return Mini future ID.
      */
-    public IgniteUuid miniId() {
-        return miniId;
+    public int miniId() {
+        return (int) miniId.localId();
     }
 
     /**
      * @param miniId Mini future Id.
      */
-    public void miniId(IgniteUuid miniId) {
-        this.miniId = miniId;
+    public void miniId(int miniId) {
+        this.miniId = new IgniteUuid(GridNearLockFuture.DUMMY_UUID, miniId);
+    }
+
+    public IgniteUuid oldVersionMiniId() {
+        return miniId;
     }
 
     /**

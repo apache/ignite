@@ -878,12 +878,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
                             return new GridFinishedFuture<>(res);
                         }
 
-                        IgniteUuid miniId;
-
-                        if (req instanceof GridNearLockRequestV1)
-                            miniId = ((GridNearLockRequestV1)req).miniId();
-                        else
-                            miniId = ((GridNearLockRequestV2)req).oldVersionMiniId();
+                        IgniteUuid miniId = req.oldVersionMiniId();
 
                         tx = new GridDhtTxLocal(
                             ctx.shared(),
@@ -1058,12 +1053,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
         AffinityTopologyVersion topVer) {
         assert topVer != null;
 
-        IgniteUuid miniId;
-
-        if (req instanceof GridNearLockRequestV1)
-            miniId = ((GridNearLockRequestV1)req).miniId();
-        else
-            miniId = ((GridNearLockRequestV2)req).oldVersionMiniId();
+        IgniteUuid miniId = req.oldVersionMiniId();
 
         GridNearLockResponseV1 res = new GridNearLockResponseV1(
             ctx.cacheId(),
@@ -1126,7 +1116,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
             res = new GridNearLockResponseV1(ctx.cacheId(),
                 req.version(),
                 req.futureId(),
-                ((GridNearLockRequestV1)req).miniId(),
+                req.oldVersionMiniId(),
                 tx != null && tx.onePhaseCommit(),
                 entries.size(),
                 err,
@@ -1250,7 +1240,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
                 res = new GridNearLockResponseV1(ctx.cacheId(),
                     req.version(),
                     req.futureId(),
-                    ((GridNearLockRequestV1)req).miniId(),
+                    req.oldVersionMiniId(),
                     false,
                     entries.size(),
                     e,

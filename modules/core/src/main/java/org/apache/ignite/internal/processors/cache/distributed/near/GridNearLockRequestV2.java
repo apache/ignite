@@ -27,8 +27,6 @@ public class GridNearLockRequestV2 extends GridDistributedLockRequest implements
     /** */
     private static final long serialVersionUID = 0L;
 
-    public static final UUID DUMMY_UUID = new UUID(0, 0);
-
     /** Topology version. */
     private AffinityTopologyVersion topVer;
 
@@ -232,7 +230,7 @@ public class GridNearLockRequestV2 extends GridDistributedLockRequest implements
     }
 
     public IgniteUuid oldVersionMiniId() {
-        return new IgniteUuid(DUMMY_UUID, miniId);
+        return new IgniteUuid(GridNearLockFuture.DUMMY_UUID, miniId);
     }
 
     /**

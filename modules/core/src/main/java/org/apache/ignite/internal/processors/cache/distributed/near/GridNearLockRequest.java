@@ -79,4 +79,10 @@ public interface GridNearLockRequest extends Message, GridCacheDeployable, GridC
     long messageId();
 
     boolean returnValue(int idx);
+
+    int miniId();
+
+    void miniId(int miniId);
+
+    IgniteUuid oldVersionMiniId();
 }

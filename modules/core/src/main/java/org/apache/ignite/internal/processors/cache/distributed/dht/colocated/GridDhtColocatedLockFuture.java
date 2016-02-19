@@ -46,6 +46,7 @@ import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedCacheEntry;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCacheEntry;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTopologyFuture;
+import org.apache.ignite.internal.processors.cache.distributed.near.GridNearLockFuture;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearLockMapping;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearLockRequestV1;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearLockRequest;
@@ -1031,10 +1032,7 @@ public final class GridDhtColocatedLockFuture extends GridCompoundIdentityFuture
         else {
             final MiniFuture fut = new MiniFuture(node, mappedKeys);
 
-            if (req instanceof GridNearLockRequestV1)
-                ((GridNearLockRequestV1)req).miniId(new IgniteUuid(GridNearLockRequestV2.DUMMY_UUID, fut.futureId()));
-            else
-                ((GridNearLockRequestV2)req).miniId(fut.futureId());
+            req.miniId(fut.futureId());
 
             add(fut); // Append new future.
 

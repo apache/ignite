@@ -84,7 +84,7 @@ import static org.apache.ignite.events.EventType.EVT_CACHE_OBJECT_READ;
 public final class GridNearLockFuture extends GridFutureAdapter<Boolean>
     implements GridCacheMvccFuture<Boolean> {
 
-    private static final UUID DUMMY_UUID = new UUID(0L, 0L);
+    public static final UUID DUMMY_UUID = new UUID(0L, 0L);
 
     /** */
     private static final long serialVersionUID = 0L;
@@ -1366,10 +1366,7 @@ public final class GridNearLockFuture extends GridFutureAdapter<Boolean>
             sent.put(miniId, map);
         }
 
-        if (req instanceof GridNearLockRequestV2)
-            ((GridNearLockRequestV2)req).miniId(miniId);
-        else
-            ((GridNearLockRequestV1)req).miniId(new IgniteUuid(DUMMY_UUID, miniId));
+        req.miniId(miniId);
 
         if (node.isLocal()) {
             if (log.isDebugEnabled()) {
