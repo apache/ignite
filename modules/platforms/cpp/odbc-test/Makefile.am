@@ -34,6 +34,7 @@ ignite_odbc_tests_SOURCES = src/teamcity_boost.cpp \
                        src/configuration_test.cpp \
                        src/row_test.cpp \
                        src/utility_test.cpp \
+                       src/test_utils.cpp \
                        ../odbc/src/cursor.cpp \
                        ../odbc/src/config/connection_info.cpp \
                        ../odbc/src/app/application_data_buffer.cpp \

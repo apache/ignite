@@ -169,6 +169,7 @@
     <ClCompile Include="..\..\src\queries_test.cpp" />
     <ClCompile Include="..\..\src\parser_test.cpp" />
     <ClCompile Include="..\..\src\row_test.cpp" />
+    <ClCompile Include="..\..\src\test_utils.cpp" />
     <ClCompile Include="..\..\src\teamcity\teamcity_boost.cpp" />
     <ClCompile Include="..\..\src\teamcity\teamcity_messages.cpp" />
     <ClCompile Include="..\..\src\utility_test.cpp" />
@@ -176,6 +177,7 @@
   <ItemGroup>
     <ClInclude Include="..\..\include\teamcity_messages.h" />
     <ClInclude Include="..\..\include\test_type.h" />
+    <ClInclude Include="..\..\include\test_utils.h" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\..\binary\project\vs\binary.vcxproj">
