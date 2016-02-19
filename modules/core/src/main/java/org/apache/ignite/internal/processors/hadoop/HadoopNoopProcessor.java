@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.hadoop;
 
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.configuration.HadoopConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
@@ -47,7 +48,7 @@ public class HadoopNoopProcessor extends HadoopProcessorAdapter {
 
     /** {@inheritDoc} */
     @Override public HadoopJobId nextJobId() {
-        return null;
+        throw new IllegalStateException("Hadoop module is absent. Please use Ignite distribution with Hadoop module.");
     }
 
     /** {@inheritDoc} */
