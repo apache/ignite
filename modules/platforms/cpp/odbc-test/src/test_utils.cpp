@@ -15,11 +15,12 @@
  * limitations under the License.
  */
 
+#include <ctime>
+
 #include "test_utils.h"
 
-namespace test
+namespace test_utils
 {
-
     /**
      * Make Date in human understandable way.
      *
@@ -31,7 +32,7 @@ namespace test
      * @param sec Sec.
      * @return Date.
      */
-    Date MakeDate(int year = 1900, int month = 1, int day = 1, int hour = 0, int min = 0, int sec = 0)
+    ignite::Date MakeDate(int year, int month, int day, int hour, int min, int sec)
     {
         tm date;
 
@@ -44,7 +45,7 @@ namespace test
 
         time_t ct = mktime(&date);
 
-        return Date(ct * 1000);
+        return ignite::Date(ct * 1000);
     }
 
     /**
@@ -59,7 +60,8 @@ namespace test
      * @param ns Nanosecond.
      * @return Timestamp.
      */
-    Timestamp MakeTimestamp(int year = 1900, int month = 1, int day = 1, int hour = 0, int min = 0, int sec = 0, long ns = 0)
+    ignite::Timestamp MakeTimestamp(int year, int month, int day, int hour,
+        int min, int sec, long ns)
     {
         tm date;
 
@@ -72,7 +74,7 @@ namespace test
 
         time_t ct = mktime(&date);
 
-        return Timestamp(ct, ns);
+        return ignite::Timestamp(ct, ns);
     }
 
-} // namespace test
+} // namespace test_utils

@@ -100,8 +100,8 @@ namespace ignite
                 writer.WriteDouble("doubleField", obj.doubleField);
                 writer.WriteBool("boolField", obj.boolField);
                 writer.WriteGuid("guidField", obj.guidField);
-                writer.WriteGuid("dateField", obj.dateField);
-                writer.WriteGuid("timestampField", obj.timestampField);
+                writer.WriteDate("dateField", obj.dateField);
+                writer.WriteTimestamp("timestampField", obj.timestampField);
                 writer.WriteNull("nullField");
             }
 
@@ -119,8 +119,9 @@ namespace ignite
                 Date dateField = reader.ReadDate("dateField");
                 Timestamp timestampField = reader.ReadTimestamp("timestampField");
 
-                return TestType(i8Field, i16Field, i32Field, i64Field,
-                    strField, floatField, doubleField, boolField, guidField);
+                return TestType(i8Field, i16Field, i32Field, i64Field, strField,
+                    floatField, doubleField, boolField, guidField, dateField,
+                    timestampField);
             }
 
         IGNITE_BINARY_TYPE_END
