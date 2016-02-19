@@ -14,23 +14,6 @@ param($installPath, $toolsPath, $package, $project)
 
 Write-Host "Updating project properties..."
 
-Function SetProperties
-{
-    param ($projItem)
-    
-    Write-Host $projItem.Name 
-
-    $projItem.Properties.Item("CopyToOutputDirectory").Value = 2  # copy if newer
-}
-
-# Copy default config to output dir for user conveniece
-SetProperties $project.ProjectItems.Item("Config").ProjectItems.Item("default-config.xml")
-
-# ForEach ($item in $project.ProjectItems.Item("Libs").ProjectItems) 
-# {
-#    SetProperties $item
-# }
-
 . (Join-Path $toolsPath "PostBuild.ps1")
 
 # Get the current Post Build Event cmd
