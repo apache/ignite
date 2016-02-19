@@ -30,7 +30,9 @@ public class IgniteCacheBasicConfigPermutationsFullApiTestSuite extends TestSuit
      * @throws Exception If failed.
      */
     public static TestSuite suite() throws Exception {
-        return new ConfigPermutationsTestSuiteBuilder("Cache New Full API Test Suite", IgniteCacheConfigPermutationsFullApiTest.class)
+        return new ConfigPermutationsTestSuiteBuilder(
+            "Cache New Full API Test Suite", 
+            IgniteCacheConfigPermutationsFullApiTest.class)
             .withBasicCacheParams()
             .backups(1)
             .gridsCount(5)
