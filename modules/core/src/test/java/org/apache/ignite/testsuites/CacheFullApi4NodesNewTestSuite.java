@@ -22,7 +22,7 @@ import junit.framework.TestSuite;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
-import org.apache.ignite.internal.processors.cache.CacheFullApiNewSelfTest;
+import org.apache.ignite.internal.processors.cache.IgniteCacheConfigPermutationsFullApiTest;
 import org.apache.ignite.marshaller.optimized.OptimizedMarshaller;
 import org.apache.ignite.spi.swapspace.inmemory.GridTestSwapSpaceSpi;
 import org.apache.ignite.testframework.CacheStartMode;
@@ -103,6 +103,6 @@ public class CacheFullApi4NodesNewTestSuite extends TestSuite {
 
         TestsConfiguration testCfg = new TestsConfiguration(factory, clsNameSuffix, stop, cacheStartMode, gridsCnt);
 
-        suite.addTest(new GridTestSuite(CacheFullApiNewSelfTest.class, testCfg));
+        suite.addTest(new GridTestSuite(IgniteCacheConfigPermutationsFullApiTest.class, testCfg));
     }
 }

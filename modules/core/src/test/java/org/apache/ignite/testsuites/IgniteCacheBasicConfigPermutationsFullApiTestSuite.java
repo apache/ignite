@@ -18,19 +18,19 @@
 package org.apache.ignite.testsuites;
 
 import junit.framework.TestSuite;
-import org.apache.ignite.internal.processors.cache.CacheFullApiNewSelfTest;
+import org.apache.ignite.internal.processors.cache.IgniteCacheConfigPermutationsFullApiTest;
 import org.apache.ignite.testframework.config.generator.ConfigPermutationsTestSuiteBuilder;
 
 /**
  * Test suite for cache API.
  */
-public class CacheFullApiBasicCfgNewTestSuite extends TestSuite {
+public class IgniteCacheBasicConfigPermutationsFullApiTestSuite extends TestSuite {
     /**
      * @return Cache API test suite.
      * @throws Exception If failed.
      */
     public static TestSuite suite() throws Exception {
-        return new ConfigPermutationsTestSuiteBuilder("Cache New Full API Test Suite", CacheFullApiNewSelfTest.class)
+        return new ConfigPermutationsTestSuiteBuilder("Cache New Full API Test Suite", IgniteCacheConfigPermutationsFullApiTest.class)
             .withBasicCacheParams()
             .backups(1)
             .gridsCount(5)
