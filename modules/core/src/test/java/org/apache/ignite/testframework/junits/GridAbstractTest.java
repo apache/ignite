@@ -476,6 +476,7 @@ public abstract class GridAbstractTest extends TestCase {
      * @throws Exception If failed. {@link #afterTestsStopped()} will be called in this case.
      */
     protected void beforeTestsStarted() throws Exception {
+        // No-op.
     }
 
     /**
@@ -485,6 +486,7 @@ public abstract class GridAbstractTest extends TestCase {
      * @throws Exception If failed.
      */
     protected void afterTestsStopped() throws Exception {
+        // No-op.
     }
 
     /** {@inheritDoc} */
@@ -1294,24 +1296,9 @@ public abstract class GridAbstractTest extends TestCase {
      * @param rsrcs Resources.
      * @throws Exception If failed.
      */
-    protected IgniteConfiguration getConfiguration(String gridName,
-        IgniteTestResources rsrcs) throws Exception {
-        return getConfiguration(null, gridName, rsrcs);
-    }
-
-    /**
-     * This method should be overridden by subclasses to change configuration parameters.
-     *
-     * @return Grid configuration used for starting of grid.
-     * @param gridName Grid name.
-     * @param rsrcs Resources.
-     * @throws Exception If failed.
-     */
     @SuppressWarnings("deprecation")
-    protected IgniteConfiguration getConfiguration(@Nullable IgniteConfiguration cfg, String gridName,
-        IgniteTestResources rsrcs) throws Exception {
-        if (cfg == null)
-            cfg = new IgniteConfiguration();
+    protected IgniteConfiguration getConfiguration(String gridName, IgniteTestResources rsrcs) throws Exception {
+        IgniteConfiguration cfg = new IgniteConfiguration();
 
         cfg.setGridName(gridName);
         cfg.setGridLogger(rsrcs.getLogger());

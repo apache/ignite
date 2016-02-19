@@ -169,38 +169,16 @@ public class IgniteCacheConfigPermutationsFullApiTest extends IgniteCacheConfigP
     /** Dflt grid. */
     protected transient Ignite dfltIgnite;
 
-    /** */
-    private Map<String, CacheConfiguration[]> cacheCfgMap;
-
     /** {@inheritDoc} */
     @Override protected long getTestTimeout() {
         return TEST_TIMEOUT;
     }
-
-//    /** {@inheritDoc} */
-//    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-//        IgniteConfiguration cfg = super.getConfiguration(gridName);
-//
-//        ((TcpCommunicationSpi)cfg.getCommunicationSpi()).setSharedMemoryPort(-1);
-//
-//        ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setForceServerMode(true);
-//
-//        if (memoryMode() == OFFHEAP_TIERED || memoryMode() == OFFHEAP_VALUES)
-//            cfg.setSwapSpaceSpi(new GridTestSwapSpaceSpi());
-//
-//        return cfg;
-//    }
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
         super.beforeTest();
 
         IgniteCache<String, Integer> cache = jcache();
-
-        assertEquals(0, cache.localSize());
-        assertEquals(0, cache.size());
-
-        // TODO review.
 
         assertEquals(0, cache.localSize());
         assertEquals(0, cache.size());

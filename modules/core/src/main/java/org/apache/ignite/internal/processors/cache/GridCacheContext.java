@@ -1719,14 +1719,6 @@ public class GridCacheContext<K, V> implements Externalizable {
      * @return {@code True} if should use entry with offheap value pointer.
      */
     public boolean useOffheapEntry() {
-        if (cacheCfg == null) {
-            // We dump threads to stdout, because we can loose logs in case
-            // the build is cancelled on TeamCity.
-            log.info(">>>>>>> Cache cfg is null for cache: " + cacheName);
-
-            U.dumpThreads(log);
-        }
-
         return cacheCfg.getMemoryMode() == OFFHEAP_TIERED || cacheCfg.getMemoryMode() == OFFHEAP_VALUES;
     }
 
@@ -1960,8 +1952,6 @@ public class GridCacheContext<K, V> implements Externalizable {
         cacheObjCtx = null;
 
         mgrs.clear();
-
-//        U.dumpStack(log, ">>>>>>> GridCacheContext.cleanup: " + cacheName);
     }
 
     /**

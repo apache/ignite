@@ -33,6 +33,7 @@ import org.apache.ignite.cache.CacheMemoryMode;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.CacheRebalanceMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
+import org.apache.ignite.cache.affinity.fair.FairAffinityFunction;
 import org.apache.ignite.cache.eviction.EvictionFilter;
 import org.apache.ignite.cache.eviction.fifo.FifoEvictionPolicy;
 import org.apache.ignite.cache.store.CacheStoreSession;
@@ -109,10 +110,6 @@ public class ConfigurationPermutations {
         parameter("setOffHeapMaxMemory", 10 * 1024 * 1024L);
 
     /** */
-    public static final ConfigurationParameter<Object> OFFHEAP_SMALL_SIZE_ENABLED =
-        parameter("setOffHeapMaxMemory", 10 * 1024L);
-
-    /** */
     @SuppressWarnings("unchecked")
     private static final ConfigurationParameter<IgniteConfiguration>[][] BASIC_IGNITE_SET = new ConfigurationParameter[][] {
         objectParameters("setMarshaller", new BinaryMarshaller(), optimizedMarshaller()),
@@ -126,18 +123,13 @@ public class ConfigurationPermutations {
         objectParameters("setCacheMode", CacheMode.REPLICATED, CacheMode.PARTITIONED),
         enumParameters("setAtomicityMode", CacheAtomicityMode.class),
         enumParameters("setMemoryMode", CacheMemoryMode.class),
-//        booleanParameters("setStoreKeepBinary"),
-//        booleanParameters("setCopyOnRead"),
-
-        // Set default parameters (TODO make it in builder).
+        // Set default parameters.
         objectParameters("setLoadPreviousValue", true),
         objectParameters("setSwapEnabled", true),
-//        objectParameters(true, "setNearConfiguration", NEAR_CACHE_CFG), // TODO uncomment.
         asArray(SIMPLE_CACHE_STORE_PARAM),
-//        asArray(OFFHEAP_SMALL_SIZE_ENABLED),
         objectParameters("setWriteSynchronizationMode", CacheWriteSynchronizationMode.FULL_SYNC),
         objectParameters("setAtomicWriteOrderMode", CacheAtomicWriteOrderMode.PRIMARY),
-        objectParameters("setStartSize", 1024), // One value.
+        objectParameters("setStartSize", 1024),
     };
 
     /** */
@@ -150,35 +142,28 @@ public class ConfigurationPermutations {
             complexParameter(OFFHEAP_TIERED_MEMORY_PARAM, OFFHEAP_ENABLED),
             complexParameter(OFFHEAP_VALUES_MEMORY_PARAM, OFFHEAP_ENABLED)
         ),
-        booleanParameters("setLoadPreviousValue"), // TODO add check in tests.
-        booleanParameters("setReadFromBackup"), // TODO: add check in tests (disable for tests with localPeek)
+        booleanParameters("setLoadPreviousValue"),
+        booleanParameters("setReadFromBackup"),
         booleanParameters("setStoreKeepBinary"),
         objectParameters("setRebalanceMode", CacheRebalanceMode.SYNC, CacheRebalanceMode.ASYNC),
         booleanParameters("setSwapEnabled"),
         booleanParameters("setCopyOnRead"),
-//        objectParameters(true, "setNearConfiguration", NEAR_CACHE_CFG), // TODO uncomment.
-        asArray(/* // TODO add null variant. */
+        objectParameters(true, "setNearConfiguration", NEAR_CACHE_CFG),
+        asArray(null,
             complexParameter(
                 EVICTION_PARAM,
                 CACHE_STORE_PARAM,
                 REBALANCING_PARAM,
-//                parameter("setAffinity", new FairAffinityFunction()), // TODO enable "custom" affinity function.
+                parameter("setAffinity", new FairAffinityFunction()),
                 parameter("setInterceptor", new NoopInterceptor()),
                 parameter("setTopologyValidator", new NoopTopologyValidator()),
                 parameter("addCacheEntryListenerConfiguration", new EmptyCacheEntryListenerConfiguration())
             )
         ),
-
-        // Set default parameters (TODO make it in builder).
-        objectParameters("setWriteSynchronizationMode", CacheWriteSynchronizationMode.FULL_SYNC), // One value.
-        objectParameters("setAtomicWriteOrderMode", CacheAtomicWriteOrderMode.PRIMARY), // One value.
-        objectParameters("setStartSize", 1024), // One value.
-
-//        objectParameters("setBackups", 0, 1, 2),// TODO set depending to nodes count.
-
-        // TODO add test for indexes.
-//        objectParameters("setIndexedTypes"),// TODO index enabled
-//        booleanParameters("setSnapshotableIndex"),// TODO index enabled
+        // Set default parameters.
+        objectParameters("setWriteSynchronizationMode", CacheWriteSynchronizationMode.FULL_SYNC),
+        objectParameters("setAtomicWriteOrderMode", CacheAtomicWriteOrderMode.PRIMARY),
+        objectParameters("setStartSize", 1024),
     };
 
     static {
