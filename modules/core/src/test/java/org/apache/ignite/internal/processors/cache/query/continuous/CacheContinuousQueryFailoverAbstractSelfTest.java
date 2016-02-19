@@ -228,6 +228,12 @@ public abstract class CacheContinuousQueryFailoverAbstractSelfTest extends GridC
             qryClnCache.put(keys.get(0), 100);
         }
 
+        GridTestUtils.waitForCondition(new GridAbsPredicate() {
+            @Override public boolean apply() {
+                return lsnr.evts.size() == 1;
+            }
+        }, 5000);
+
         assertEquals(lsnr.evts.size(), 1);
     }
 

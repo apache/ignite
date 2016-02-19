@@ -26,9 +26,7 @@ import java.util.Collection;
 import java.util.Date;
 import java.util.Map;
 import java.util.UUID;
-
 import org.apache.ignite.binary.BinaryCollectionFactory;
-import org.apache.ignite.binary.BinaryIdMapper;
 import org.apache.ignite.binary.BinaryInvalidTypeException;
 import org.apache.ignite.binary.BinaryMapFactory;
 import org.apache.ignite.binary.BinaryObject;
@@ -40,6 +38,7 @@ import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import static org.apache.ignite.internal.binary.GridBinaryMarshaller.BINARY_OBJ;
 import static org.apache.ignite.internal.binary.GridBinaryMarshaller.BOOLEAN;
 import static org.apache.ignite.internal.binary.GridBinaryMarshaller.BOOLEAN_ARR;
 import static org.apache.ignite.internal.binary.GridBinaryMarshaller.BYTE;
@@ -69,7 +68,6 @@ import static org.apache.ignite.internal.binary.GridBinaryMarshaller.NULL;
 import static org.apache.ignite.internal.binary.GridBinaryMarshaller.OBJ;
 import static org.apache.ignite.internal.binary.GridBinaryMarshaller.OBJ_ARR;
 import static org.apache.ignite.internal.binary.GridBinaryMarshaller.OPTM_MARSH;
-import static org.apache.ignite.internal.binary.GridBinaryMarshaller.BINARY_OBJ;
 import static org.apache.ignite.internal.binary.GridBinaryMarshaller.SHORT;
 import static org.apache.ignite.internal.binary.GridBinaryMarshaller.SHORT_ARR;
 import static org.apache.ignite.internal.binary.GridBinaryMarshaller.STRING;
@@ -115,8 +113,8 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Bina
     /** Footer end. */
     private final int footerLen;
 
-    /** ID mapper. */
-    private final BinaryIdMapper idMapper;
+    /** Mapper. */
+    private final BinaryInternalMapper mapper;
 
     /** Schema Id. */
     private final int schemaId;
@@ -247,7 +245,7 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Bina
                 dataStart = start + DFLT_HDR_LEN;
             }
 
-            idMapper = userType ? ctx.userTypeIdMapper(typeId) : BinaryInternalIdMapper.defaultInstance();
+            mapper = userType ? ctx.userTypeMapper(typeId) : BinaryContext.defaultMapper();
             schema = BinaryUtils.hasSchema(flags) ? getOrCreateSchema() : null;
         }
         else {
@@ -256,7 +254,7 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Bina
             rawOff = 0;
             footerStart = 0;
             footerLen = 0;
-            idMapper = null;
+            mapper = null;
             schemaId = 0;
             userType = false;
             fieldIdLen = 0;
@@ -1653,7 +1651,7 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Bina
     private int fieldId(String name) {
         assert name != null;
 
-        return idMapper.fieldId(typeId, name);
+        return mapper.fieldId(typeId, name);
     }
 
     /**

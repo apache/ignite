@@ -39,6 +39,7 @@ import org.apache.ignite.internal.processors.hadoop.counter.HadoopPerformanceCou
 import org.apache.ignite.internal.processors.hadoop.shuffle.collections.HadoopConcurrentHashMultimap;
 import org.apache.ignite.internal.processors.hadoop.shuffle.collections.HadoopMultimap;
 import org.apache.ignite.internal.processors.hadoop.shuffle.collections.HadoopSkipList;
+import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
@@ -56,8 +57,6 @@ import org.apache.ignite.thread.IgniteThread;
 import static org.apache.ignite.internal.processors.hadoop.HadoopJobProperty.PARTITION_HASHMAP_SIZE;
 import static org.apache.ignite.internal.processors.hadoop.HadoopJobProperty.SHUFFLE_REDUCER_NO_SORTING;
 import static org.apache.ignite.internal.processors.hadoop.HadoopJobProperty.get;
-import static org.apache.ignite.internal.util.offheap.unsafe.GridUnsafeMemory.BYTE_ARR_OFF;
-import static org.apache.ignite.internal.util.offheap.unsafe.GridUnsafeMemory.UNSAFE;
 
 /**
  * Shuffle job.
@@ -299,7 +298,7 @@ public class HadoopShuffleJob<T> implements AutoCloseable {
 
         /** */
         @Override public void copyTo(long ptr) {
-            UNSAFE.copyMemory(buf, BYTE_ARR_OFF + off, null, ptr, size);
+            GridUnsafe.copyMemory(buf, GridUnsafe.BYTE_ARR_OFF + off, null, ptr, size);
         }
     }
 

@@ -486,7 +486,7 @@ public class GridTaskProcessor extends GridProcessorAdapter {
             map = EMPTY_ENUM_MAP;
         else
             // Reset thread-local context.
-            thCtx.remove();
+            thCtx.set(null);
 
         Long timeout = (Long)map.get(TC_TIMEOUT);
 

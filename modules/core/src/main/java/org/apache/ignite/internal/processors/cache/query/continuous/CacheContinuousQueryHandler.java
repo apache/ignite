@@ -754,6 +754,15 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
             List<CacheContinuousQueryEntry> entries;
 
             synchronized (pendingEvts) {
+                // Received first event.
+                if (curTop == AffinityTopologyVersion.NONE) {
+                    lastFiredEvt = entry.updateCounter();
+
+                    curTop = entry.topologyVersion();
+
+                    return F.asList(entry);
+                }
+
                 if (curTop.compareTo(entry.topologyVersion()) < 0) {
                     if (entry.updateCounter() == 1L && !entry.isBackup()) {
                         entries = new ArrayList<>(pendingEvts.size());

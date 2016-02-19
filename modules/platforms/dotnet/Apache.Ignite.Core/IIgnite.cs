@@ -21,6 +21,7 @@ namespace Apache.Ignite.Core
     using System.Diagnostics.CodeAnalysis;
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Cache;
+    using Apache.Ignite.Core.Cache.Configuration;
     using Apache.Ignite.Core.Cluster;
     using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Compute;
@@ -93,6 +94,15 @@ namespace Apache.Ignite.Core
         ICache<TK, TV> GetOrCreateCache<TK, TV>(string name);
 
         /// <summary>
+        /// Gets existing cache with the given name or creates new one using provided configuration.
+        /// </summary>
+        /// <typeparam name="TK">Cache key type.</typeparam>
+        /// <typeparam name="TV">Cache value type.</typeparam>
+        /// <param name="configuration">Cache configuration.</param>
+        /// <returns>Existing or newly created cache.</returns>
+        ICache<TK, TV> GetOrCreateCache<TK, TV>(CacheConfiguration configuration);
+
+        /// <summary>
         /// Dynamically starts new cache using template configuration.
         /// </summary>
         /// <typeparam name="TK">Cache key type.</typeparam>
@@ -102,8 +112,17 @@ namespace Apache.Ignite.Core
         ICache<TK, TV> CreateCache<TK, TV>(string name);
 
         /// <summary>
-        /// Destroys dynamically created (with <see cref="CreateCache{TK,TV}"/> or 
-        /// <see cref="GetOrCreateCache{TK,TV}"/>) cache.
+        /// Dynamically starts new cache using provided configuration.
+        /// </summary>
+        /// <typeparam name="TK">Cache key type.</typeparam>
+        /// <typeparam name="TV">Cache value type.</typeparam>
+        /// <param name="configuration">Cache configuration.</param>
+        /// <returns>Existing or newly created cache.</returns>
+        ICache<TK, TV> CreateCache<TK, TV>(CacheConfiguration configuration);
+
+        /// <summary>
+        /// Destroys dynamically created (with <see cref="CreateCache{TK,TV}(string)"/> or 
+        /// <see cref="GetOrCreateCache{TK,TV}(string)"/>) cache.
         /// </summary>
         /// <param name="name">The name of the cache to stop.</param>
         void DestroyCache(string name);
@@ -171,5 +190,11 @@ namespace Apache.Ignite.Core
         /// or null if it does not exist and <c>create</c> flag is not set.</returns>
         /// <exception cref="IgniteException">If atomic long could not be fetched or created.</exception>
         IAtomicLong GetAtomicLong(string name, long initialValue, bool create);
+
+        /// <summary>
+        /// Gets the configuration of this Ignite instance.
+        /// </summary>
+        [SuppressMessage("Microsoft.Design", "CA1024:UsePropertiesWhereAppropriate", Justification = "Semantics.")]
+        IgniteConfiguration GetConfiguration();
     }
 }
