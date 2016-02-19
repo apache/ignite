@@ -84,6 +84,8 @@ import static org.apache.ignite.events.EventType.EVT_CACHE_OBJECT_READ;
 public final class GridNearLockFuture extends GridFutureAdapter<Boolean>
     implements GridCacheMvccFuture<Boolean> {
 
+    private static final UUID DUMMY_UUID = new UUID(0L, 0L);
+
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -164,7 +166,9 @@ public final class GridNearLockFuture extends GridFutureAdapter<Boolean>
     private final boolean keepBinary;
 
     /** Mappings of sent requests. */
-    private final Map<IgniteUuid, GridNearLockMapping> sent = new HashMap<>();
+    private final Map<Integer, GridNearLockMapping> sent = new HashMap<>();
+
+    private final AtomicInteger counter = new AtomicInteger();
 
     /**
      * @param cctx Registry.
@@ -467,7 +471,12 @@ public final class GridNearLockFuture extends GridFutureAdapter<Boolean>
             if (log.isDebugEnabled())
                 log.debug("Received lock response from node [nodeId=" + nodeId + ", res=" + res + ", fut=" + this + ']');
 
-            IgniteUuid miniId = res.miniId();
+            int miniId;
+
+            if (res instanceof GridNearLockResponseV2)
+                miniId = ((GridNearLockResponseV2)res).miniId();
+            else
+                miniId = (int)((GridNearLockResponseV1)res).miniId().localId();
 
             GridNearLockMapping mapping;
 
@@ -1177,31 +1186,70 @@ public final class GridNearLockFuture extends GridFutureAdapter<Boolean>
                                                 first = false;
                                             }
 
-                                            req = new GridNearLockRequest(
-                                                cctx.cacheId(),
-                                                topVer,
-                                                cctx.nodeId(),
-                                                threadId,
-                                                futId,
-                                                lockVer,
-                                                inTx(),
-                                                implicitTx(),
-                                                implicitSingleTx(),
-                                                read,
-                                                retval,
-                                                isolation(),
-                                                isInvalidate(),
-                                                timeout,
-                                                mappedKeys.size(),
-                                                inTx() ? tx.size() : mappedKeys.size(),
-                                                inTx() && tx.syncCommit(),
-                                                inTx() ? tx.subjectId() : null,
-                                                inTx() ? tx.taskNameHash() : 0,
-                                                read ? accessTtl : -1L,
-                                                skipStore,
-                                                keepBinary,
-                                                clientFirst,
-                                                cctx.deploymentEnabled());
+                                            boolean optimize = true;
+
+                                            Collection<ClusterNode> topNodes = CU.affinityNodes(cctx, topVer);
+
+                                            for (ClusterNode topNode : topNodes) {
+                                                if (topNode.version().compareTo(cctx.localNode().version()) < 0) {
+                                                    optimize = false;
+
+                                                    break;
+                                                }
+                                            }
+
+                                            if (optimize)
+                                                req = new GridNearLockRequestV2(
+                                                    cctx.cacheId(),
+                                                    topVer,
+                                                    cctx.nodeId(),
+                                                    threadId,
+                                                    futId,
+                                                    lockVer,
+                                                    inTx(),
+                                                    implicitTx(),
+                                                    implicitSingleTx(),
+                                                    read,
+                                                    retval,
+                                                    isolation(),
+                                                    isInvalidate(),
+                                                    timeout,
+                                                    mappedKeys.size(),
+                                                    inTx() ? tx.size() : mappedKeys.size(),
+                                                    inTx() && tx.syncCommit(),
+                                                    inTx() ? tx.subjectId() : null,
+                                                    inTx() ? tx.taskNameHash() : 0,
+                                                    read ? accessTtl : -1L,
+                                                    skipStore,
+                                                    keepBinary,
+                                                    clientFirst,
+                                                    cctx.deploymentEnabled());
+                                            else
+                                                req = new GridNearLockRequestV1(
+                                                    cctx.cacheId(),
+                                                    topVer,
+                                                    cctx.nodeId(),
+                                                    threadId,
+                                                    futId,
+                                                    lockVer,
+                                                    inTx(),
+                                                    implicitTx(),
+                                                    implicitSingleTx(),
+                                                    read,
+                                                    retval,
+                                                    isolation(),
+                                                    isInvalidate(),
+                                                    timeout,
+                                                    mappedKeys.size(),
+                                                    inTx() ? tx.size() : mappedKeys.size(),
+                                                    inTx() && tx.syncCommit(),
+                                                    inTx() ? tx.subjectId() : null,
+                                                    inTx() ? tx.taskNameHash() : 0,
+                                                    read ? accessTtl : -1L,
+                                                    skipStore,
+                                                    keepBinary,
+                                                    clientFirst,
+                                                    cctx.deploymentEnabled());
 
                                             mapping.request(req);
                                         }
@@ -1312,13 +1360,16 @@ public final class GridNearLockFuture extends GridFutureAdapter<Boolean>
         if (filter != null && filter.length != 0)
             req.filter(filter, cctx);
 
-        IgniteUuid id = IgniteUuid.randomUuid();
+        int miniId = counter.incrementAndGet();
 
         synchronized (this) {
-            sent.put(id, map);
+            sent.put(miniId, map);
         }
 
-        req.miniId(id);
+        if (req instanceof GridNearLockRequestV2)
+            ((GridNearLockRequestV2)req).miniId(miniId);
+        else
+            ((GridNearLockRequestV1)req).miniId(new IgniteUuid(DUMMY_UUID, miniId));
 
         if (node.isLocal()) {
             if (log.isDebugEnabled()) {
@@ -1353,7 +1404,7 @@ public final class GridNearLockFuture extends GridFutureAdapter<Boolean>
                     if (log.isDebugEnabled())
                         log.debug("Sending near lock request [node=" + node.id() + ", req=" + req + ']');
 
-                    cctx.io().send(node, req, cctx.ioPolicy());
+                    cctx.io().send(node, (GridCacheMessage)req, cctx.ioPolicy());
                 }
                 catch (ClusterTopologyCheckedException ex) {
                     onDone(ex);
@@ -1366,7 +1417,7 @@ public final class GridNearLockFuture extends GridFutureAdapter<Boolean>
                             if (log.isDebugEnabled())
                                 log.debug("Sending near lock request [node=" + node.id() + ", req=" + req + ']');
 
-                            cctx.io().send(node, req, cctx.ioPolicy());
+                            cctx.io().send(node, (GridCacheMessage)req, cctx.ioPolicy());
                         }
                         catch (ClusterTopologyCheckedException ex) {
                             tx.removeMapping(node.id());
