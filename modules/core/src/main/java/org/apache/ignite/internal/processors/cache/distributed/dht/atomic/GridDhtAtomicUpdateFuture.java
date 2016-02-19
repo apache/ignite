@@ -38,6 +38,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheEntryRemovedExceptio
 import org.apache.ignite.internal.processors.cache.GridCacheMessage;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCacheEntry;
+import org.apache.ignite.internal.processors.cache.query.continuous.CacheContinuousQueryListener;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
@@ -102,6 +103,9 @@ public class GridDhtAtomicUpdateFuture extends GridFutureAdapter<Void> implement
     /** Response count. */
     private volatile int resCnt;
 
+    /** */
+    private Map<UUID, CacheContinuousQueryListener> lsnrs;
+
     /**
      * @param cctx Cache context.
      * @param completionCb Callback to invoke when future is completed.
@@ -133,6 +137,13 @@ public class GridDhtAtomicUpdateFuture extends GridFutureAdapter<Void> implement
         boolean topLocked = updateReq.topologyLocked() || (updateReq.fastMap() && !updateReq.clientRequest());
 
         waitForExchange = !topLocked;
+    }
+
+    /**
+     * @param lsnrs Continuous query listeners.
+     */
+    void listeners(@Nullable Map<UUID, CacheContinuousQueryListener> lsnrs) {
+        this.lsnrs = lsnrs;
     }
 
     /** {@inheritDoc} */
@@ -209,6 +220,8 @@ public class GridDhtAtomicUpdateFuture extends GridFutureAdapter<Void> implement
      * @param ttl TTL (optional).
      * @param conflictExpireTime Conflict expire time (optional).
      * @param conflictVer Conflict version (optional).
+     * @param addPrevVal If {@code true} sends previous value to backups.
+     * @param prevVal Previous value.
      * @param updateCntr Partition update counter.
      */
     public void addWriteEntry(GridDhtCacheEntry entry,
@@ -279,13 +292,22 @@ public class GridDhtAtomicUpdateFuture extends GridFutureAdapter<Void> implement
                     addPrevVal,
                     entry.partition(),
                     prevVal,
-                    updateCntr);
+                    updateCntr,
+                    lsnrs != null);
             }
-            else if (dhtNodes.size() == 1) {
+            else if (lsnrs != null && dhtNodes.size() == 1) {
                 try {
-                    cctx.continuousQueries().onEntryUpdated(entry.key(), val, prevVal,
-                        entry.key().internal() || !cctx.userCache(), entry.partition(), true, false,
-                        updateCntr, updateReq.topologyVersion());
+                    cctx.continuousQueries().onEntryUpdated(
+                        lsnrs,
+                        entry.key(),
+                        val,
+                        prevVal,
+                        entry.key().internal() || !cctx.userCache(),
+                        entry.partition(),
+                        true,
+                        false,
+                        updateCntr,
+                        updateReq.topologyVersion());
                 }
                 catch (IgniteCheckedException e) {
                     U.warn(log, "Failed to send continuous query message. [key=" + entry.key() + ", newVal="
@@ -376,7 +398,7 @@ public class GridDhtAtomicUpdateFuture extends GridFutureAdapter<Void> implement
             cctx.mvcc().removeAtomicFuture(version());
 
             if (err != null) {
-                if (!mappings.isEmpty()) {
+                if (!mappings.isEmpty() && lsnrs != null) {
                     Collection<KeyCacheObject> hndKeys = new ArrayList<>(keys.size());
 
                     exit:
@@ -387,7 +409,11 @@ public class GridDhtAtomicUpdateFuture extends GridFutureAdapter<Void> implement
                             if (!hndKeys.contains(key)) {
                                 updateRes.addFailedKey(key, err);
 
-                                cctx.continuousQueries().skipUpdateEvent(key, req.partitionId(i), req.updateCounter(i),
+                                cctx.continuousQueries().skipUpdateEvent(
+                                    lsnrs,
+                                    key,
+                                    req.partitionId(i),
+                                    req.updateCounter(i),
                                     updateReq.topologyVersion());
 
                                 hndKeys.add(key);
@@ -403,27 +429,38 @@ public class GridDhtAtomicUpdateFuture extends GridFutureAdapter<Void> implement
                         updateRes.addFailedKey(key, err);
             }
             else {
-                Collection<KeyCacheObject> hndKeys = new ArrayList<>(keys.size());
+                if (lsnrs != null) {
+                    Collection<KeyCacheObject> hndKeys = new ArrayList<>(keys.size());
 
-                exit: for (GridDhtAtomicUpdateRequest req : mappings.values()) {
-                    for (int i = 0; i < req.size(); i++) {
-                        KeyCacheObject key = req.key(i);
+                    exit: for (GridDhtAtomicUpdateRequest req : mappings.values()) {
+                        for (int i = 0; i < req.size(); i++) {
+                            KeyCacheObject key = req.key(i);
 
-                        if (!hndKeys.contains(key)) {
-                            try {
-                                cctx.continuousQueries().onEntryUpdated(key, req.value(i), req.localPreviousValue(i),
-                                    key.internal() || !cctx.userCache(), req.partitionId(i), true, false,
-                                    req.updateCounter(i), updateReq.topologyVersion());
+                            if (!hndKeys.contains(key)) {
+                                try {
+                                    cctx.continuousQueries().onEntryUpdated(
+                                        lsnrs,
+                                        key,
+                                        req.value(i),
+                                        req.localPreviousValue(i),
+                                        key.internal() || !cctx.userCache(),
+                                        req.partitionId(i),
+                                        true,
+                                        false,
+                                        req.updateCounter(i),
+                                        updateReq.topologyVersion());
+                                }
+                                catch (IgniteCheckedException e) {
+                                    U.warn(log, "Failed to send continuous query message. [key=" + key +
+                                        ", newVal=" + req.value(i) +
+                                        ", err=" + e + "]");
+                                }
+
+                                hndKeys.add(key);
+
+                                if (hndKeys.size() == keys.size())
+                                    break exit;
                             }
-                            catch (IgniteCheckedException e) {
-                                U.warn(log, "Failed to send continuous query message. [key=" + key + ", newVal="
-                                    + req.value(i) + ", err=" + e + "]");
-                            }
-
-                            hndKeys.add(key);
-
-                            if (hndKeys.size() == keys.size())
-                                break exit;
                         }
                     }
                 }

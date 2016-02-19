@@ -26,13 +26,18 @@ import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import java.util.UUID;
+import javax.cache.configuration.CacheEntryListenerConfiguration;
 import javax.cache.configuration.Factory;
+import javax.cache.configuration.MutableCacheEntryListenerConfiguration;
+import javax.cache.event.CacheEntryListener;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.cache.CacheEntryEventSerializableFilter;
 import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.cache.CacheRebalanceMode;
 import org.apache.ignite.cache.affinity.AffinityFunction;
 import org.apache.ignite.cache.affinity.AffinityFunctionContext;
+import org.apache.ignite.cache.affinity.AffinityKeyMapper;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -43,6 +48,8 @@ import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgnitePredicate;
+import org.apache.ignite.plugin.CachePluginConfiguration;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
@@ -71,10 +78,13 @@ public class GridCacheReplicatedPreloadSelfTest extends GridCommonAbstractTest {
     private int poolSize = 2;
 
     /** */
-    private volatile boolean needStore = false;
+    private volatile boolean extClassloadingAtCfg = false;
 
     /** */
     private volatile boolean isClient = false;
+
+    /** */
+    private volatile boolean useExtClassLoader = false;
 
     /** */
     private TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
@@ -108,7 +118,8 @@ public class GridCacheReplicatedPreloadSelfTest extends GridCommonAbstractTest {
 
         cfg.setEventStorageSpi(spi);
 
-        if (getTestGridName(1).equals(gridName) || cfg.getMarshaller() instanceof BinaryMarshaller)
+        if (getTestGridName(1).equals(gridName) || useExtClassLoader ||
+            cfg.getMarshaller() instanceof BinaryMarshaller)
             cfg.setClassLoader(getExternalClassLoader());
 
         if (isClient)
@@ -132,21 +143,47 @@ public class GridCacheReplicatedPreloadSelfTest extends GridCommonAbstractTest {
         cacheCfg.setRebalanceBatchSize(batchSize);
         cacheCfg.setRebalanceThreadPoolSize(poolSize);
 
-        if (needStore) {
-            Object sf = null;
-
-            try {
-                sf = getExternalClassLoader().
-                    loadClass("org.apache.ignite.tests.p2p.CacheDeploymentTestStoreFactory").newInstance();
-            }
-            catch (Exception e) {
-                throw new RuntimeException(e);
-            }
-
-            cacheCfg.setCacheStoreFactory((Factory)sf);
+        if (extClassloadingAtCfg) {
+            loadExternalClassesToCfg(cacheCfg);
         }
 
         return cacheCfg;
+    }
+
+    /**
+     *
+     * @param cacheCfg Configuration.
+     */
+    private void loadExternalClassesToCfg(CacheConfiguration cacheCfg) {
+        try {
+            Object sf = getExternalClassLoader().
+                loadClass("org.apache.ignite.tests.p2p.CacheDeploymentTestStoreFactory").newInstance();
+
+            cacheCfg.setCacheStoreFactory((Factory)sf);
+
+            Object sslf = getExternalClassLoader().
+                loadClass("org.apache.ignite.tests.p2p.CacheDeploymentStoreSessionListenerFactory").newInstance();
+
+            cacheCfg.setCacheStoreSessionListenerFactories((Factory)sslf);
+
+            Object cpc = getExternalClassLoader().
+                loadClass("org.apache.ignite.tests.p2p.CacheDeploymentCachePluginConfiguration").newInstance();
+
+            cacheCfg.setPluginConfigurations((CachePluginConfiguration)cpc);
+
+            Object akm = getExternalClassLoader().
+                loadClass("org.apache.ignite.tests.p2p.CacheDeploymentAffinityKeyMapper").newInstance();
+
+            cacheCfg.setAffinityMapper((AffinityKeyMapper)akm);
+
+            Object pred = getExternalClassLoader().
+                loadClass("org.apache.ignite.tests.p2p.CacheDeploymentAlwaysTruePredicate2").newInstance();
+
+            cacheCfg.setNodeFilter((IgnitePredicate)pred);
+        }
+        catch (Exception e) {
+            throw new RuntimeException(e);
+        }
     }
 
     /**
@@ -187,7 +224,7 @@ public class GridCacheReplicatedPreloadSelfTest extends GridCommonAbstractTest {
 
             for (int i = 0; i < 3; i++) {
                 evts = g2.events().localQuery(F.<Event>alwaysTrue(),
-                        EVT_CACHE_REBALANCE_STARTED, EVT_CACHE_REBALANCE_STOPPED);
+                    EVT_CACHE_REBALANCE_STARTED, EVT_CACHE_REBALANCE_STOPPED);
 
                 if (evts.size() != 2) {
                     info("Wrong events collection size (will retry in 1000 ms): " + evts.size());
@@ -284,7 +321,7 @@ public class GridCacheReplicatedPreloadSelfTest extends GridCommonAbstractTest {
             assert v3 != null;
             assert v3.toString().equals(v1.toString());
             assert !v3.getClass().getClassLoader().equals(getClass().getClassLoader());
-            assert v3.getClass().getClassLoader().getClass().getName().contains("GridDeploymentClassLoader")||
+            assert v3.getClass().getClassLoader().getClass().getName().contains("GridDeploymentClassLoader") ||
                 grid(3).configuration().getMarshaller() instanceof BinaryMarshaller;
         }
         finally {
@@ -295,72 +332,142 @@ public class GridCacheReplicatedPreloadSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If test failed.
      */
-    public void testStore() throws Exception {
+    public void testExternalClassesAtConfiguration() throws Exception {
         try {
+            extClassloadingAtCfg = true;
+            useExtClassLoader = true;
+
             Ignite g1 = startGrid(1);
 
-            if (g1.configuration().getMarshaller() instanceof BinaryMarshaller) {
-                stopAllGrids();
+            Ignite g2 = startGrid(2);  // Checks deserialization at node join.
 
-                needStore = true;
+            isClient = true;
 
-                g1 = startGrid(1);
+            Ignite g3 = startGrid(3);
 
-                ClassLoader ldr = grid(1).configuration().getClassLoader();
+            IgniteCache<Integer, Object> cache1 = g1.cache(null);
+            IgniteCache<Integer, Object> cache2 = g2.cache(null);
+            IgniteCache<Integer, Object> cache3 = g3.cache(null);
 
-                CacheConfiguration cfg = defaultCacheConfiguration();
+            final Class<CacheEntryListener> cls1 = (Class<CacheEntryListener>) getExternalClassLoader().
+                loadClass("org.apache.ignite.tests.p2p.CacheDeploymentCacheEntryListener");
+            final Class<CacheEntryEventSerializableFilter> cls2 = (Class<CacheEntryEventSerializableFilter>) getExternalClassLoader().
+                loadClass("org.apache.ignite.tests.p2p.CacheDeploymentCacheEntryEventSerializableFilter");
 
-                Ignite g2 = startGrid(2);  // Checks deserialization at node join.
+            CacheEntryListenerConfiguration<Integer, Object> lsnrCfg = new MutableCacheEntryListenerConfiguration<>(
+                new Factory<CacheEntryListener<Integer, Object>>() {
+                    @Override public CacheEntryListener<Integer, Object> create() {
+                        try {
+                            return cls1.newInstance();
+                        }
+                        catch (Exception e) {
+                            throw new RuntimeException(e);
+                        }
+                    }
+                },
+                new Factory<CacheEntryEventSerializableFilter<Integer, Object>>() {
+                    /** {@inheritDoc} */
+                    @Override public CacheEntryEventSerializableFilter<Integer, Object> create() {
+                        try {
 
-                isClient = true;
+                            return cls2.newInstance();
+                        }
+                        catch (Exception e) {
+                            throw new RuntimeException(e);
+                        }
+                    }
+                },
+                true,
+                true
+            );
 
-                Ignite g3 = startGrid(3);
+            cache1.registerCacheEntryListener(lsnrCfg);
 
-                isClient = false;
+            cache1.put(1, 1);
 
-                IgniteCache<Integer, Object> cache1 = g1.cache(null);
-                IgniteCache<Integer, Object> cache2 = g2.cache(null);
-                IgniteCache<Integer, Object> cache3 = g3.cache(null);
-
-                cache1.put(1, 1);
-
-                assertEquals(1, cache2.get(1));
-                assertEquals(1, cache3.get(1));
-
-                needStore = false;
-
-                stopAllGrids();
-
-                g1 = startGrid(1);
-                g2 = startGrid(2);
-
-                isClient = true;
-
-                g3 = startGrid(3);
-
-                isClient = false;
-
-                Object sf = ldr.loadClass("org.apache.ignite.tests.p2p.CacheDeploymentTestStoreFactory").newInstance();
-
-                cfg.setCacheStoreFactory((Factory)sf);
-                cfg.setName("customStore");
-
-                cache1 = g1.createCache(cfg);
-
-                cache2 = g2.getOrCreateCache(cfg); // Checks deserialization at cache creation.
-                cache3 = g3.getOrCreateCache(cfg); // Checks deserialization at cache creation.
-
-                cache1.put(1, 1);
-
-                assertEquals(1, cache2.get(1));
-                assertEquals(1, cache3.get(1));
-            }
+            assertEquals(1, cache2.get(1));
+            assertEquals(1, cache3.get(1));
         }
         finally {
-            needStore = false;
+            extClassloadingAtCfg = false;
             isClient = false;
+            useExtClassLoader = false;
+        }
+    }
 
-            stopAllGrids();
+    /**
+     * @throws Exception If test failed.
+     */
+    public void testExternalClassesAtConfigurationDynamicStart() throws Exception {
+        try {
+            extClassloadingAtCfg = false;
+            useExtClassLoader = true;
+
+            Ignite g1 = startGrid(1);
+            Ignite g2 = startGrid(2);
+
+            isClient = true;
+
+            Ignite g3 = startGrid(3);
+
+            CacheConfiguration cfg = defaultCacheConfiguration();
+
+            loadExternalClassesToCfg(cfg);
+
+            cfg.setName("customStore");
+
+            IgniteCache<Integer, Object> cache1 = g1.createCache(cfg);
+
+            IgniteCache<Integer, Object> cache2 = g2.getOrCreateCache(cfg); // Checks deserialization at cache creation.
+            IgniteCache<Integer, Object> cache3 = g3.getOrCreateCache(cfg); // Checks deserialization at cache creation.
+
+            cache1.put(1, 1);
+
+            assertEquals(1, cache2.get(1));
+            assertEquals(1, cache3.get(1));
+        }
+        finally {
+            extClassloadingAtCfg = false;
+            isClient = false;
+            useExtClassLoader = false;
+        }
+    }
+
+    /**
+     * @throws Exception If test failed.
+     */
+    public void testExternalClassesAtConfigurationDynamicStart2() throws Exception {
+        try {
+            extClassloadingAtCfg = false;
+            useExtClassLoader = true;
+
+            Ignite g1 = startGrid(1);
+            Ignite g2 = startGrid(2);
+
+            isClient = true;
+
+            Ignite g3 = startGrid(3);
+
+            CacheConfiguration cfg = defaultCacheConfiguration();
+
+            loadExternalClassesToCfg(cfg);
+
+            cfg.setName("customStore");
+
+            IgniteCache<Integer, Object> cache1 = g1.getOrCreateCache(cfg);
+
+            IgniteCache<Integer, Object> cache2 = g2.getOrCreateCache("customStore"); // Checks deserialization at cache creation.
+            IgniteCache<Integer, Object> cache3 = g3.getOrCreateCache("customStore"); // Checks deserialization at cache creation.
+
+            cache1.put(1, 1);
+
+            assertEquals(1, cache2.get(1));
+            assertEquals(1, cache3.get(1));
+        }
+        finally {
+            extClassloadingAtCfg = false;
+            isClient = false;
+            useExtClassLoader = false;
         }
     }
 

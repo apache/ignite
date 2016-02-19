@@ -614,6 +614,11 @@ public abstract class GridCacheMessage implements Message {
         }
     }
 
+    /** {@inheritDoc} */
+    @Override public void onAckReceived() {
+        // No-op.
+    }
+
     /**
      * @param bytes Byte array to unmarshal.
      * @param ctx Context.

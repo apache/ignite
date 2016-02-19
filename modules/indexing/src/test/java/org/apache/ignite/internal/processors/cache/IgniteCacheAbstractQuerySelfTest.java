@@ -386,7 +386,15 @@ public abstract class IgniteCacheAbstractQuerySelfTest extends GridCommonAbstrac
 
         assertEquals(1, res.getValue().intValue());
 
-        U.sleep(1020);
+        U.sleep(800); // Less than minimal amount of time that must pass before a cache entry is considered expired.
+
+        qry =  cache.query(new SqlQuery<Integer, Integer>(Integer.class, "1=1")).getAll();
+
+        res = F.first(qry);
+
+        assertEquals(1, res.getValue().intValue());
+
+        U.sleep(1200); // No expiry guarantee here. Test should be refactored in case of fails.
 
         qry = cache.query(new SqlQuery<Integer, Integer>(Integer.class, "1=1")).getAll();
 

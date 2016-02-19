@@ -109,7 +109,7 @@ namespace ignite
                 {
                     IgniteError err;
 
-                    QueryFieldsRow res = GetNext<T>(err);
+                    T res = GetNext<T>(err);
 
                     IgniteError::ThrowIfNeeded(err);
 

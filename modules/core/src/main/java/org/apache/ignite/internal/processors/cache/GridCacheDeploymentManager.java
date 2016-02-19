@@ -29,6 +29,7 @@ import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.binary.BinaryInvalidTypeException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.DeploymentMode;
 import org.apache.ignite.events.DiscoveryEvent;
@@ -340,6 +341,11 @@ public class GridCacheDeploymentManager<K, V> extends GridCacheSharedManagerAdap
             val0 = CU.value(v, cache.context(), false);
         }
         catch (GridCacheEntryRemovedException ignore) {
+            return false;
+        }
+        catch (BinaryInvalidTypeException ignore) {
+            log.error("An attempt to undeploy cache with binary objects.", ignore);
+
             return false;
         }
         catch (IgniteCheckedException | IgniteException ignore) {

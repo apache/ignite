@@ -113,7 +113,21 @@ public class IgniteClientReconnectContinuousProcessorTest extends IgniteClientRe
     /**
      * @throws Exception If failed.
      */
-    public void testMessageListenerReconnect() throws Exception {
+    public void testMessageListenerReconnectAndStopFromServer() throws Exception {
+        testMessageListenerReconnect(false);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testMessageListenerReconnectAndStopFromClient() throws Exception {
+        testMessageListenerReconnect(true);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    private void testMessageListenerReconnect(boolean stopFromClient) throws Exception {
         Ignite client = grid(serverCount());
 
         assertTrue(client.cluster().localNode().isClient());
@@ -166,7 +180,7 @@ public class IgniteClientReconnectContinuousProcessorTest extends IgniteClientRe
 
         log.info("Stop listen, should not get remote messages anymore.");
 
-        client.message().stopRemoteListen(opId);
+        (stopFromClient ? client : srv).message().stopRemoteListen(opId);
 
         srv.message().send(topic, "msg3");
 
@@ -175,6 +189,20 @@ public class IgniteClientReconnectContinuousProcessorTest extends IgniteClientRe
 
         assertTrue(locLsnr.latch.await(5000, MILLISECONDS));
         assertFalse(latch.await(3000, MILLISECONDS));
+
+        log.info("New nodes should not register stopped listeners.");
+
+        startGrid(serverCount() + 1);
+
+        srv.message().send(topic, "msg4");
+
+        locLsnr.latch = new CountDownLatch(1);
+        latch = new CountDownLatch(1);
+
+        assertTrue(locLsnr.latch.await(5000, MILLISECONDS));
+        assertFalse(latch.await(3000, MILLISECONDS));
+
+        stopGrid(serverCount() + 1);
     }
 
     /**

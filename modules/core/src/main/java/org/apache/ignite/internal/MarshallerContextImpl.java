@@ -83,7 +83,8 @@ public class MarshallerContextImpl extends MarshallerContextAdapter {
             new ContinuousQueryListener(ctx.log(MarshallerContextImpl.class), workDir),
             null,
             ctx.cache().marshallerCache().context().affinityNode(),
-            true
+            true,
+            false
         );
     }
 
