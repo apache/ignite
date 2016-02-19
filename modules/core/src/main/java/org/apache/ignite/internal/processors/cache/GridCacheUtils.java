@@ -89,6 +89,7 @@ import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteReducer;
 import org.apache.ignite.lifecycle.LifecycleAware;
+import org.apache.ignite.marshaller.MarshallerUtils;
 import org.apache.ignite.plugin.CachePluginConfiguration;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
@@ -966,7 +967,7 @@ public class GridCacheUtils {
             }
         }
 
-        return ctx.marshaller().marshal(obj);
+        return MarshallerUtils.marshal(ctx.marshaller(), obj, ctx.kernalContext());
     }
 
     /**

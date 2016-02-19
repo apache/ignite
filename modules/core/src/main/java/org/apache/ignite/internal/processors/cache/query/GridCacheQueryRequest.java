@@ -34,6 +34,7 @@ import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgniteReducer;
 import org.apache.ignite.marshaller.Marshaller;
+import org.apache.ignite.marshaller.MarshallerUtils;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 import org.jetbrains.annotations.Nullable;
@@ -315,19 +316,19 @@ public class GridCacheQueryRequest extends GridCacheMessage implements GridCache
     @Override public void finishUnmarshal(GridCacheSharedContext ctx, ClassLoader ldr) throws IgniteCheckedException {
         super.finishUnmarshal(ctx, ldr);
 
-        Marshaller mrsh = ctx.marshaller();
+        Marshaller marsh = ctx.marshaller();
 
         if (keyValFilterBytes != null && keyValFilter == null)
-            keyValFilter = mrsh.unmarshal(keyValFilterBytes, ldr);
+            keyValFilter = MarshallerUtils.unmarshal(marsh, keyValFilterBytes, ldr, ctx.kernalContext());
 
         if (rdcBytes != null && rdc == null)
-            rdc = mrsh.unmarshal(rdcBytes, ldr);
+            rdc = MarshallerUtils.unmarshal(marsh, rdcBytes, ldr, ctx.kernalContext());
 
         if (transBytes != null && trans == null)
-            trans = mrsh.unmarshal(transBytes, ldr);
+            trans = MarshallerUtils.unmarshal(marsh, transBytes, ldr, ctx.kernalContext());
 
         if (argsBytes != null && args == null)
-            args = mrsh.unmarshal(argsBytes, ldr);
+            args = MarshallerUtils.unmarshal(marsh, argsBytes, ldr, ctx.kernalContext());
     }
 
     /** {@inheritDoc} */
@@ -342,8 +343,11 @@ public class GridCacheQueryRequest extends GridCacheMessage implements GridCache
     void beforeLocalExecution(GridCacheContext ctx) throws IgniteCheckedException {
         Marshaller marsh = ctx.marshaller();
 
-        rdc = rdc != null ? marsh.<IgniteReducer<Object, Object>>unmarshal(marsh.marshal(rdc), null) : null;
-        trans = trans != null ? marsh.<IgniteClosure<Object, Object>>unmarshal(marsh.marshal(trans), null) : null;
+        rdc = rdc != null
+                ? MarshallerUtils.clone(marsh, rdc, null, ctx.kernalContext())
+                : null;
+        trans = trans != null ? MarshallerUtils.<IgniteClosure<Object, Object>>unmarshal(marsh,
+                MarshallerUtils.marshal(marsh, trans, ctx.kernalContext()), null, ctx.kernalContext()) : null;
     }
 
     /**

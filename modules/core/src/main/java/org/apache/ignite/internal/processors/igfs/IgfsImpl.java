@@ -266,7 +266,7 @@ public final class IgfsImpl implements IgfsEx {
         if (secondaryFs instanceof HadoopPayloadAware)
             secondaryFsPayload = ((HadoopPayloadAware) secondaryFs).getPayload();
 
-        secondaryPaths = new IgfsPaths(secondaryFsPayload, dfltMode, modeRslvr.modesOrdered());
+        secondaryPaths = new IgfsPaths(secondaryFsPayload, dfltMode, modeRslvr.modesOrdered(), igfsCtx);
 
         // Check whether IGFS LRU eviction policy is set on data cache.
         String dataCacheName = igfsCtx.configuration().getDataCacheName();
@@ -1833,7 +1833,8 @@ public final class IgfsImpl implements IgfsEx {
                         IgfsDeleteMessage msg0 = (IgfsDeleteMessage)msg;
 
                         try {
-                            msg0.finishUnmarshal(igfsCtx.kernalContext().config().getMarshaller(), null);
+                            msg0.finishUnmarshal(igfsCtx.kernalContext().config().getMarshaller(), null,
+                                    igfsCtx.kernalContext());
                         }
                         catch (IgniteCheckedException e) {
                             U.error(log, "Failed to unmarshal message (will ignore): " + msg0, e);

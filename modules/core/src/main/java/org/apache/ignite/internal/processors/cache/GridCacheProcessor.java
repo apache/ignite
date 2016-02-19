@@ -117,6 +117,7 @@ import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.lifecycle.LifecycleAware;
 import org.apache.ignite.marshaller.Marshaller;
+import org.apache.ignite.marshaller.MarshallerUtils;
 import org.apache.ignite.marshaller.jdk.JdkMarshaller;
 import org.apache.ignite.spi.IgniteNodeValidationResult;
 import org.jetbrains.annotations.Nullable;
@@ -3434,7 +3435,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                     if (ldr == null)
                         ldr = val.getCacheStoreFactory().getClass().getClassLoader();
 
-                    marshaller.unmarshal(marshaller.marshal(val.getCacheStoreFactory()), ldr);
+                    MarshallerUtils.clone(marshaller, val.getCacheStoreFactory(), ldr, ctx);
                 }
                 catch (IgniteCheckedException e) {
                     throw new IgniteCheckedException("Failed to validate cache configuration. " +
@@ -3443,7 +3444,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             }
 
             try {
-                return marshaller.unmarshal(marshaller.marshal(val), U.resolveClassLoader(ctx.config().getClassLoader()));
+                return MarshallerUtils.clone(marshaller, val, U.resolveClassLoader(ctx.config().getClassLoader()), ctx);
             }
             catch (IgniteCheckedException e) {
                 throw new IgniteCheckedException("Failed to validate cache configuration " +

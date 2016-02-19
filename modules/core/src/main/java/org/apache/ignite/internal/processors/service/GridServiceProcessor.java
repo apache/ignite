@@ -73,6 +73,7 @@ import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.marshaller.Marshaller;
+import org.apache.ignite.marshaller.MarshallerUtils;
 import org.apache.ignite.services.Service;
 import org.apache.ignite.services.ServiceConfiguration;
 import org.apache.ignite.services.ServiceDescriptor;
@@ -959,9 +960,9 @@ public class GridServiceProcessor extends GridProcessorAdapter {
         Marshaller m = ctx.config().getMarshaller();
 
         try {
-            byte[] bytes = m.marshal(svc);
+            byte[] bytes = MarshallerUtils.marshal(m, svc, ctx);
 
-            Service cp = m.unmarshal(bytes, svc.getClass().getClassLoader());
+            Service cp = MarshallerUtils.unmarshal(m, bytes, svc.getClass().getClassLoader(), ctx);
 
             ctx.resource().inject(cp);
 

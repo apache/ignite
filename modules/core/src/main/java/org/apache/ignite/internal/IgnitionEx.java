@@ -163,7 +163,9 @@ public class IgnitionEx {
     private static final Collection<IgnitionListener> lsnrs = new GridConcurrentHashSet<>(4);
 
     /** */
-    private static final ThreadLocal<GridKernalContext> GRID_KERNAL_CTX_THREAD_LOC = new ThreadLocal<>();
+//    private static final ThreadLocal<GridKernalContext> GRID_KERNAL_CTX_THREAD_LOC = new ThreadLocal<>();
+
+    private static final ThreadLocal<IgniteConfiguration> IGNITE_CFG_THREAD_LOC = new ThreadLocal<>();
 
     /** */
     private static ThreadLocal<Boolean> daemon = new ThreadLocal<Boolean>() {
@@ -1241,19 +1243,20 @@ public class IgnitionEx {
     }
 
     /**
-     * Gets a name of the grid, which is owner of current thread. An Exception is thrown if
+     * Gets a name of the grid from thread local config, which is owner of current thread. An Exception is thrown if
      * current thread is not an {@link IgniteThread}.
      *
      * @return Grid instance related to current thread
      * @throws IllegalArgumentException Thrown to indicate, that current thread is not an {@link IgniteThread}.
      */
     public static IgniteKernal localIgnite() throws IllegalArgumentException {
-        if (Thread.currentThread() instanceof IgniteThread)
+        if (IGNITE_CFG_THREAD_LOC.get() != null)
+            return gridx(IGNITE_CFG_THREAD_LOC.get().getGridName());
+        else if (Thread.currentThread() instanceof IgniteThread)
             return gridx(((IgniteThread)Thread.currentThread()).getGridName());
-        else if (GRID_KERNAL_CTX_THREAD_LOC.get() != null)
-            return gridx(GRID_KERNAL_CTX_THREAD_LOC.get().gridName());
         else
-            throw new IllegalArgumentException("This method should be accessed under " + IgniteThread.class.getName());
+            throw new IllegalArgumentException("Ignite conf thread local must be set or" +
+                    " this method should be accessed under " + IgniteThread.class.getName());
     }
 
     /**
@@ -1319,23 +1322,22 @@ public class IgnitionEx {
     }
 
     /**
-     * Set thread local GridKernalContext.
      *
-     * @param kernalCctx to set.
-     * @see #localIgnite()
+     * @param igniteCfg ignite config
+     * @return old ignite config.
      */
-    public static GridKernalContext setKernalCtxThreadLocal(final GridKernalContext kernalCctx) {
-        final GridKernalContext kernalCtx = GRID_KERNAL_CTX_THREAD_LOC.get();
-        GRID_KERNAL_CTX_THREAD_LOC.set(kernalCctx);
-        return kernalCtx;
+    public static IgniteConfiguration setIgniteCfgThreadLocal(final IgniteConfiguration igniteCfg) {
+        final IgniteConfiguration cfg = IGNITE_CFG_THREAD_LOC.get();
+        IGNITE_CFG_THREAD_LOC.set(igniteCfg);
+        return cfg;
     }
 
     /**
-     * @return thread local GridKernalContext
-     * @see #localIgnite()
+     *
+     * @return ignite config.
      */
-    public static GridKernalContext getKernalContextThreadLocal() {
-        return GRID_KERNAL_CTX_THREAD_LOC.get();
+    public static IgniteConfiguration getIgniteCfgThreadLocal() {
+        return IGNITE_CFG_THREAD_LOC.get();
     }
 
     /**

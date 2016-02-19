@@ -72,6 +72,7 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgnitePredicate;
+import org.apache.ignite.marshaller.MarshallerUtils;
 import org.jetbrains.annotations.Nullable;
 import org.jsr166.ConcurrentLinkedDeque8;
 
@@ -1219,7 +1220,7 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
 
             depInfo = new GridDeploymentInfoBean(dep);
 
-            bytes = ctx.config().getMarshaller().marshal(obj);
+            bytes = MarshallerUtils.marshal(ctx.config().getMarshaller(), obj, ctx);
         }
 
         /**
@@ -1237,7 +1238,7 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
             if (dep == null)
                 throw new IgniteDeploymentCheckedException("Failed to obtain deployment for class: " + clsName);
 
-            return ctx.config().getMarshaller().unmarshal(bytes, dep.classLoader());
+            return MarshallerUtils.unmarshal(ctx.config().getMarshaller(), bytes, dep.classLoader(), ctx);
         }
 
         /** {@inheritDoc} */

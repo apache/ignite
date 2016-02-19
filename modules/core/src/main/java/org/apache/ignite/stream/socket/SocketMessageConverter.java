@@ -17,6 +17,8 @@
 
 package org.apache.ignite.stream.socket;
 
+import org.apache.ignite.configuration.IgniteConfiguration;
+
 /**
  * Socket message converter.
  */
@@ -25,7 +27,8 @@ public interface SocketMessageConverter<T> {
      * Converter message represented by array of bytes to object.
      *
      * @param msg Message.
+     * @param igniteCfg Ignite config.
      * @return Converted object.
      */
-    public T convert(byte[] msg);
+    public T convert(byte[] msg, IgniteConfiguration igniteCfg);
 }

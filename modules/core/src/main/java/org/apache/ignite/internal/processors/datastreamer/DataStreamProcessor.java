@@ -36,6 +36,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.util.worker.GridWorker;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.marshaller.Marshaller;
+import org.apache.ignite.marshaller.MarshallerUtils;
 import org.apache.ignite.stream.StreamReceiver;
 import org.apache.ignite.thread.IgniteThread;
 import org.jetbrains.annotations.Nullable;
@@ -89,8 +90,8 @@ public class DataStreamProcessor<K, V> extends GridProcessorAdapter {
         if (ctx.config().isDaemon())
             return;
 
-        marshErrBytes = marsh.marshal(new IgniteCheckedException("Failed to marshal response error, " +
-            "see node log for details."));
+        marshErrBytes = MarshallerUtils.marshal(marsh, new IgniteCheckedException("Failed to marshal response error, " +
+            "see node log for details."), ctx);
 
         flusher = new IgniteThread(new GridWorker(ctx.gridName(), "grid-data-loader-flusher", log) {
             @Override protected void body() throws InterruptedException {
@@ -234,7 +235,7 @@ public class DataStreamProcessor<K, V> extends GridProcessorAdapter {
             Object topic;
 
             try {
-                topic = marsh.unmarshal(req.responseTopicBytes(), null);
+                topic = MarshallerUtils.unmarshal(marsh, req.responseTopicBytes(), null, ctx);
             }
             catch (IgniteCheckedException e) {
                 U.error(log, "Failed to unmarshal topic from request: " + req, e);
@@ -274,7 +275,7 @@ public class DataStreamProcessor<K, V> extends GridProcessorAdapter {
             StreamReceiver<K, V> updater;
 
             try {
-                updater = marsh.unmarshal(req.updaterBytes(), clsLdr);
+                updater = MarshallerUtils.unmarshal(marsh, req.updaterBytes(), clsLdr, ctx);
 
                 if (updater != null)
                     ctx.resource().injectGeneric(updater);
@@ -328,7 +329,7 @@ public class DataStreamProcessor<K, V> extends GridProcessorAdapter {
         byte[] errBytes;
 
         try {
-            errBytes = err != null ? marsh.marshal(err) : null;
+            errBytes = err != null ? MarshallerUtils.marshal(marsh, err, ctx) : null;
         }
         catch (Exception e) {
             U.error(log, "Failed to marshal error [err=" + err + ", marshErr=" + e + ']', e);

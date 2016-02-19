@@ -24,6 +24,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.GridDirectTransient;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.marshaller.MarshallerUtils;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
@@ -105,7 +106,7 @@ public class CacheInvokeDirectResult implements Message {
         key.prepareMarshal(ctx.cacheObjectContext());
 
         if (err != null && errBytes == null)
-            errBytes = ctx.marshaller().marshal(err);
+            errBytes = MarshallerUtils.marshal(ctx.marshaller(), err, ctx.kernalContext());
 
         if (res != null)
             res.prepareMarshal(ctx.cacheObjectContext());
@@ -120,7 +121,7 @@ public class CacheInvokeDirectResult implements Message {
         key.finishUnmarshal(ctx.cacheObjectContext(), ldr);
 
         if (errBytes != null && err == null)
-            err = ctx.marshaller().unmarshal(errBytes, ldr);
+            err = MarshallerUtils.unmarshal(ctx.marshaller(), errBytes, ldr, ctx.kernalContext());
 
         if (res != null)
             res.finishUnmarshal(ctx.cacheObjectContext(), ldr);

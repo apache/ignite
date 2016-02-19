@@ -1292,7 +1292,7 @@ public class IgfsDataManager extends IgfsManager {
      */
     private void processAckMessage(UUID nodeId, IgfsAckMessage ackMsg) {
         try {
-            ackMsg.finishUnmarshal(igfsCtx.kernalContext().config().getMarshaller(), null);
+            ackMsg.finishUnmarshal(igfsCtx.kernalContext().config().getMarshaller(), null, igfsCtx.kernalContext());
         }
         catch (IgniteCheckedException e) {
             U.error(log, "Failed to unmarshal message (will ignore): " + ackMsg, e);

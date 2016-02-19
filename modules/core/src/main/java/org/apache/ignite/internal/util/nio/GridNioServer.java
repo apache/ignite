@@ -49,6 +49,7 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.configuration.ConnectorConfiguration;
+import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.util.GridConcurrentHashSet;
@@ -203,6 +204,8 @@ public class GridNioServer<T> {
     /** Optional listener to monitor outbound message queue size. */
     private IgniteBiInClosure<GridNioSession, Integer> msgQueueLsnr;
 
+    private String gridName;
+
     /**
      * @param addr Address.
      * @param port Port.
@@ -267,6 +270,7 @@ public class GridNioServer<T> {
         this.sockSndBuf = sockSndBuf;
         this.sndQueueLimit = sndQueueLimit;
         this.msgQueueLsnr = msgQueueLsnr;
+        this.gridName = gridName;
 
         filterChain = new GridNioFilterChain<>(log, lsnr, new HeadFilter(), filters);
 
@@ -1642,6 +1646,10 @@ public class GridNioServer<T> {
                     readBuf.order(order);
                 }
 
+                final IgniteConfiguration cfg = new IgniteConfiguration(); // TODO provide real config
+
+                cfg.setGridName(gridName);
+
                 final GridSelectorNioSessionImpl ses = new GridSelectorNioSessionImpl(
                     log,
                     idx,
@@ -1651,7 +1659,8 @@ public class GridNioServer<T> {
                     req.accepted(),
                     sndQueueLimit,
                     writeBuf,
-                    readBuf);
+                    readBuf,
+                    cfg);
 
                 Map<Integer, ?> meta = req.meta();
 

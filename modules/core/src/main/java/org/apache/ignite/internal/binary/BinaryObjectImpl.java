@@ -21,6 +21,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.binary.BinaryType;
+import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.GridDirectTransient;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteCodeGeneratingFail;
@@ -533,13 +534,12 @@ public final class BinaryObjectImpl extends BinaryObjectExImpl implements Extern
      * @return Object.
      */
     private Object deserializeValue(@Nullable CacheObjectContext coCtx) {
-        GridKernalContext kernalCtx = IgnitionEx.getKernalContextThreadLocal();
+        final IgniteConfiguration cfg = IgnitionEx.getIgniteCfgThreadLocal();
 
         final ClassLoader cl;
 
         if (coCtx != null) {
-            if (kernalCtx == null)
-                kernalCtx = IgnitionEx.setKernalCtxThreadLocal(coCtx.kernalContext());
+            IgnitionEx.setIgniteCfgThreadLocal(coCtx.kernalContext().config());
 
             cl = coCtx.kernalContext().config().getClassLoader();
         } else
@@ -556,7 +556,7 @@ public final class BinaryObjectImpl extends BinaryObjectExImpl implements Extern
         if (coCtx != null && coCtx.storeValue())
             obj = obj0;
 
-        IgnitionEx.setKernalCtxThreadLocal(kernalCtx);
+        IgnitionEx.setIgniteCfgThreadLocal(cfg);
 
         return obj0;
     }

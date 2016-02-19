@@ -36,6 +36,7 @@ import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.marshaller.Marshaller;
+import org.apache.ignite.marshaller.MarshallerUtils;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
@@ -457,7 +458,7 @@ public abstract class GridCacheMessage implements Message {
         Marshaller marsh = ctx.marshaller();
 
         for (int i = 0; i < byteCol.length; i++)
-            args[i] = byteCol[i] == null ? null : marsh.unmarshal(byteCol[i], ldr);
+            args[i] = byteCol[i] == null ? null : MarshallerUtils.unmarshal(marsh, byteCol[i], ldr, ctx.kernalContext());
 
         return args;
     }
@@ -603,7 +604,7 @@ public abstract class GridCacheMessage implements Message {
         Marshaller marsh = ctx.marshaller();
 
         for (byte[] bytes : byteCol)
-            col.add(bytes == null ? null : marsh.<T>unmarshal(bytes, ldr));
+            col.add(bytes == null ? null : MarshallerUtils.<T>unmarshal(marsh, bytes, ldr, ctx.kernalContext()));
 
         return col;
     }

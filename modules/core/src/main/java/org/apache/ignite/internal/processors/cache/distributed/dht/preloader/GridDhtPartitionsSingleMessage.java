@@ -28,6 +28,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.marshaller.MarshallerUtils;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 import org.jetbrains.annotations.Nullable;
@@ -136,10 +137,10 @@ public class GridDhtPartitionsSingleMessage extends GridDhtPartitionsAbstractMes
         super.prepareMarshal(ctx);
 
         if (partsBytes == null && parts != null)
-            partsBytes = ctx.marshaller().marshal(parts);
+            partsBytes = MarshallerUtils.marshal(ctx.marshaller(), parts, ctx.kernalContext());
 
         if (partCntrsBytes == null && partCntrs != null)
-            partCntrsBytes = ctx.marshaller().marshal(partCntrs);
+            partCntrsBytes = MarshallerUtils.marshal(ctx.marshaller(), partCntrs, ctx.kernalContext());
     }
 
     /** {@inheritDoc} */
@@ -147,10 +148,10 @@ public class GridDhtPartitionsSingleMessage extends GridDhtPartitionsAbstractMes
         super.finishUnmarshal(ctx, ldr);
 
         if (partsBytes != null && parts == null)
-            parts = ctx.marshaller().unmarshal(partsBytes, ldr);
+            parts = MarshallerUtils.unmarshal(ctx.marshaller(), partsBytes, ldr, ctx.kernalContext());
 
         if (partCntrsBytes != null && partCntrs == null)
-            partCntrs = ctx.marshaller().unmarshal(partCntrsBytes, ldr);
+            partCntrs = MarshallerUtils.unmarshal(ctx.marshaller(), partCntrsBytes, ldr, ctx.kernalContext());
     }
 
     /** {@inheritDoc} */
