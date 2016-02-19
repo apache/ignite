@@ -146,10 +146,10 @@ public class GridH2ValueCacheObject extends Value {
             return c1.compareTo(o2);
         }
 
-        if (o1 instanceof BinaryObject) {
-            final BinaryObject bo1 = (BinaryObject)o1;
+        if (o1 instanceof BinaryEnumObjectImpl) {
+            final BinaryEnumObjectImpl bo1 = (BinaryEnumObjectImpl)o1;
 
-            if (bo1.type().isEnum() && ((BinaryEnumObjectImpl)bo1).isTypeEquals(o2.getClass()))
+            if (bo1.isTypeEquals(o2.getClass()))
                 return Integer.compare(bo1.enumOrdinal(), ((Enum)o2).ordinal());
         }
 
