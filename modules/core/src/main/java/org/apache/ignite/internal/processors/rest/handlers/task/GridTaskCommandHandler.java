@@ -63,6 +63,7 @@ import org.apache.ignite.internal.visor.util.VisorClusterGroupEmptyException;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgniteUuid;
+import org.apache.ignite.marshaller.MarshallerUtils;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.jetbrains.annotations.Nullable;
 
@@ -135,13 +136,13 @@ public class GridTaskCommandHandler extends GridRestCommandHandlerAdapter {
                             res.error(err.getMessage());
                         else {
                             res.result(desc.result());
-                            res.resultBytes(ctx.config().getMarshaller().marshal(desc.result()));
+                            res.resultBytes(MarshallerUtils.marshal(ctx.config().getMarshaller(), desc.result(), ctx));
                         }
                     }
                     else
                         res.found(false);
 
-                    Object topic = ctx.config().getMarshaller().unmarshal(req.topicBytes(), null);
+                    Object topic = MarshallerUtils.unmarshal(ctx.config().getMarshaller(), req.topicBytes(), null, ctx);
 
                     ctx.io().send(nodeId, topic, res, SYSTEM_POOL);
                 }
@@ -439,7 +440,7 @@ public class GridTaskCommandHandler extends GridRestCommandHandlerAdapter {
                     res = (GridTaskResultResponse)msg;
 
                 try {
-                    res.result(ctx.config().getMarshaller().unmarshal(res.resultBytes(), null));
+                    res.result(MarshallerUtils.unmarshal(ctx.config().getMarshaller(), res.resultBytes(), null, ctx));
                 }
                 catch (IgniteCheckedException e) {
                     U.error(log, "Failed to unmarshal task result: " + res, e);
@@ -492,7 +493,7 @@ public class GridTaskCommandHandler extends GridRestCommandHandlerAdapter {
 
             // 2. Send message.
             try {
-                byte[] topicBytes = ctx.config().getMarshaller().marshal(topic);
+                byte[] topicBytes = MarshallerUtils.marshal(ctx.config().getMarshaller(), topic, ctx);
 
                 ctx.io().send(taskNode, TOPIC_REST, new GridTaskResultRequest(taskId, topic, topicBytes), SYSTEM_POOL);
             }

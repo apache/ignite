@@ -43,6 +43,7 @@ import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteUuid;
+import org.apache.ignite.marshaller.MarshallerUtils;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.cache.CacheMemoryMode.OFFHEAP_VALUES;
@@ -104,7 +105,8 @@ public class IgniteCacheObjectProcessorImpl extends GridProcessorAdapter impleme
     @Override public Object unmarshal(CacheObjectContext ctx, byte[] bytes, ClassLoader clsLdr)
         throws IgniteCheckedException
     {
-        return ctx.kernalContext().cache().context().marshaller().unmarshal(bytes, clsLdr);
+        return MarshallerUtils.unmarshal(ctx.kernalContext().cache().context().marshaller(),
+                bytes, clsLdr, ctx.kernalContext());
     }
 
     /** {@inheritDoc} */

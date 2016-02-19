@@ -564,7 +564,7 @@ public class GridReduceQueryExecutor {
                     Marshaller m = ctx.config().getMarshaller();
 
                     for (GridCacheSqlQuery mapQry : mapQrys)
-                        mapQry.marshallParams(m);
+                        mapQry.marshallParams(m, ctx);
                 }
 
                 boolean retry = false;

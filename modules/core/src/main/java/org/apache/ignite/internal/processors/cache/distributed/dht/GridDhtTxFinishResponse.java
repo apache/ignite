@@ -27,6 +27,7 @@ import org.apache.ignite.internal.processors.cache.distributed.GridDistributedTx
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteUuid;
+import org.apache.ignite.marshaller.MarshallerUtils;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 
@@ -110,7 +111,7 @@ public class GridDhtTxFinishResponse extends GridDistributedTxFinishResponse {
         super.prepareMarshal(ctx);
 
         if (checkCommittedErr != null && checkCommittedErrBytes == null)
-            checkCommittedErrBytes = ctx.marshaller().marshal(checkCommittedErr);
+            checkCommittedErrBytes = MarshallerUtils.marshal(ctx.marshaller(), checkCommittedErr, ctx.kernalContext());
     }
 
     /** {@inheritDoc} */
@@ -119,7 +120,7 @@ public class GridDhtTxFinishResponse extends GridDistributedTxFinishResponse {
         super.finishUnmarshal(ctx, ldr);
 
         if (checkCommittedErrBytes != null && checkCommittedErr == null)
-            checkCommittedErr = ctx.marshaller().unmarshal(checkCommittedErrBytes, ldr);
+            checkCommittedErr = MarshallerUtils.unmarshal(ctx.marshaller(), checkCommittedErrBytes, ldr, ctx.kernalContext());
     }
 
     /** {@inheritDoc} */

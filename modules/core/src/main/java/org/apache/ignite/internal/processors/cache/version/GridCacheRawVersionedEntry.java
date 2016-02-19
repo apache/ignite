@@ -30,6 +30,7 @@ import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.datastreamer.DataStreamerEntry;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.marshaller.Marshaller;
+import org.apache.ignite.marshaller.MarshallerUtils;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 import org.jetbrains.annotations.Nullable;
@@ -190,7 +191,7 @@ public class GridCacheRawVersionedEntry<K, V> extends DataStreamerEntry implemen
         unmarshalKey(ctx, marsh);
 
         if (val == null && valBytes != null) {
-            val = marsh.unmarshal(valBytes, null);
+            val = MarshallerUtils.unmarshal(marsh, valBytes, null, ctx.kernalContext());
 
             val.finishUnmarshal(ctx, null);
         }
@@ -221,7 +222,7 @@ public class GridCacheRawVersionedEntry<K, V> extends DataStreamerEntry implemen
         if (key == null) {
             assert keyBytes != null;
 
-            key = marsh.unmarshal(keyBytes, null);
+            key = MarshallerUtils.unmarshal(marsh, keyBytes, null, ctx.kernalContext());
 
             key.finishUnmarshal(ctx, null);
         }
@@ -238,13 +239,13 @@ public class GridCacheRawVersionedEntry<K, V> extends DataStreamerEntry implemen
         if (keyBytes == null) {
             key.prepareMarshal(ctx);
 
-            keyBytes = marsh.marshal(key);
+            keyBytes = MarshallerUtils.marshal(marsh, key, ctx.kernalContext());
         }
 
         if (valBytes == null && val != null) {
             val.prepareMarshal(ctx);
 
-            valBytes = marsh.marshal(val);
+            valBytes = MarshallerUtils.marshal(marsh, val, ctx.kernalContext());
         }
     }
 

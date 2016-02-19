@@ -169,7 +169,7 @@ public class SocketStreamerSelfTest extends GridCommonAbstractTest {
      */
     public void testSizeBasedCustomConverter() throws Exception {
         SocketMessageConverter<Message> converter = new SocketMessageConverter<Message>() {
-            @Override public Message convert(byte[] msg) {
+            @Override public Message convert(byte[] msg, IgniteConfiguration cfg) {
                 int i = (msg[0] & 0xFF) << 24;
                 i |= (msg[1] & 0xFF) << 16;
                 i |= (msg[2] & 0xFF) << 8;
@@ -233,7 +233,7 @@ public class SocketStreamerSelfTest extends GridCommonAbstractTest {
      */
     public void testDelimiterBasedCustomConverter() throws Exception {
         SocketMessageConverter<Message> converter = new SocketMessageConverter<Message>() {
-            @Override public Message convert(byte[] msg) {
+            @Override public Message convert(byte[] msg, IgniteConfiguration cfg) {
                 int i = (msg[0] & 0xFF) << 24;
                 i |= (msg[1] & 0xFF) << 16;
                 i |= (msg[2] & 0xFF) << 8;

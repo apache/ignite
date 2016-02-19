@@ -25,6 +25,7 @@ import java.util.HashSet;
 import java.util.Map;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.marshaller.Marshaller;
@@ -116,8 +117,13 @@ class SharedFsTimeoutTask extends IgniteSpiThread {
                     SharedFsTimeData timeData = entry.getValue();
 
                     try {
-                        if (timeData.getLastAccessTime() != file.lastModified())
-                            timeData.setExpireTime(SharedFsUtils.read(file, marshaller, log).getExpireTime());
+                        if (timeData.getLastAccessTime() != file.lastModified()) {
+                            final IgniteConfiguration igniteCfg = new IgniteConfiguration();
+
+                            igniteCfg.setGridName(getGridName());
+
+                            timeData.setExpireTime(SharedFsUtils.read(file, marshaller, log, igniteCfg).getExpireTime());
+                        }
                     }
                     catch (IgniteCheckedException e) {
                         U.error(log, "Failed to marshal/unmarshal in checkpoint file: " + file.getAbsolutePath(), e);

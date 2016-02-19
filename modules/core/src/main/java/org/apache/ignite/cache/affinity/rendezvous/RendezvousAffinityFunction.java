@@ -42,6 +42,7 @@ import org.apache.ignite.cache.affinity.AffinityNodeHashResolver;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.GridKernalContextImpl;
 import org.apache.ignite.internal.processors.cache.GridCacheUtils;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.A;
@@ -49,6 +50,7 @@ import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.lang.IgniteBiTuple;
+import org.apache.ignite.marshaller.MarshallerUtils;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.resources.LoggerResource;
 import org.jetbrains.annotations.Nullable;
@@ -335,7 +337,8 @@ public class RendezvousAffinityFunction implements AffinityFunction, Externaliza
             try {
                 ByteArrayOutputStream out = new ByteArrayOutputStream();
 
-                byte[] nodeHashBytes = ignite.configuration().getMarshaller().marshal(nodeHash);
+                byte[] nodeHashBytes = MarshallerUtils.marshal(
+                        ignite.configuration().getMarshaller(), nodeHash, ignite.configuration());
 
                 out.write(U.intToBytes(part), 0, 4); // Avoid IOException.
                 out.write(nodeHashBytes, 0, nodeHashBytes.length); // Avoid IOException.

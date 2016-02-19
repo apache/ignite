@@ -25,6 +25,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicReference;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.util.nio.GridNioFilter;
 import org.apache.ignite.internal.util.nio.GridNioFilterAdapter;
 import org.apache.ignite.internal.util.nio.GridNioFilterChain;
@@ -73,10 +74,12 @@ public class IpcToNioAdapter<T> {
      * @param endp Endpoint.
      * @param lsnr Listener.
      * @param writerFactory Writer factory.
+     * @param igniteCfg Ignite config.
      * @param filters Filters.
      */
     public IpcToNioAdapter(GridNioMetricsListener metricsLsnr, IgniteLogger log, IpcEndpoint endp,
-        GridNioServerListener<T> lsnr, GridNioMessageWriterFactory writerFactory, GridNioFilter... filters) {
+                           GridNioServerListener<T> lsnr, GridNioMessageWriterFactory writerFactory,
+                           IgniteConfiguration igniteCfg, GridNioFilter... filters) {
         assert metricsLsnr != null;
 
         this.metricsLsnr = metricsLsnr;
@@ -84,7 +87,7 @@ public class IpcToNioAdapter<T> {
         this.writerFactory = writerFactory;
 
         chain = new GridNioFilterChain<>(log, lsnr, new HeadFilter(), filters);
-        ses = new GridNioSessionImpl(chain, null, null, true);
+        ses = new GridNioSessionImpl(chain, null, null, true, igniteCfg);
 
         writeBuf = ByteBuffer.allocate(8 << 10);
 

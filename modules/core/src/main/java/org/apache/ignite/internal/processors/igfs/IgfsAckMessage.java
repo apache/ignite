@@ -21,8 +21,10 @@ import java.io.Externalizable;
 import java.nio.ByteBuffer;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.GridDirectTransient;
+import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.marshaller.Marshaller;
+import org.apache.ignite.marshaller.MarshallerUtils;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 import org.jetbrains.annotations.Nullable;
@@ -91,20 +93,21 @@ public class IgfsAckMessage extends IgfsCommunicationMessage {
         // No-op.
     }
 
-    /** {@inheritDoc} */
-    @Override public void prepareMarshal(Marshaller marsh) throws IgniteCheckedException {
-        super.prepareMarshal(marsh);
+    @Override public void prepareMarshal(Marshaller marsh,
+        final GridKernalContext kernalCtx) throws IgniteCheckedException {
+        super.prepareMarshal(marsh, kernalCtx);
 
         if (err != null && errBytes == null)
-            errBytes = marsh.marshal(err);
+            errBytes = MarshallerUtils.marshal(marsh, err, kernalCtx);
     }
 
     /** {@inheritDoc} */
-    @Override public void finishUnmarshal(Marshaller marsh, @Nullable ClassLoader ldr) throws IgniteCheckedException {
-        super.finishUnmarshal(marsh, ldr);
+    @Override public void finishUnmarshal(Marshaller marsh, @Nullable ClassLoader ldr,
+        final GridKernalContext kernalCtx) throws IgniteCheckedException {
+        super.finishUnmarshal(marsh, ldr, kernalCtx);
 
         if (errBytes != null && err == null)
-            err = marsh.unmarshal(errBytes, ldr);
+            err = MarshallerUtils.unmarshal(marsh, errBytes, ldr, kernalCtx);
     }
 
     /** {@inheritDoc} */

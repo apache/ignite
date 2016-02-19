@@ -18,9 +18,12 @@
 package org.apache.ignite.spi.discovery.tcp.messages;
 
 import java.util.UUID;
+
+import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.marshaller.Marshaller;
+import org.apache.ignite.marshaller.MarshallerUtils;
 import org.apache.ignite.spi.discovery.DiscoverySpiCustomMessage;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -72,12 +75,14 @@ public class TcpDiscoveryCustomEventMessage extends TcpDiscoveryAbstractMessage 
     /**
      * @param marsh Marshaller.
      * @param ldr Classloader.
+     * @param igniteCfg Ignite config.
      * @return Deserialized message,
      * @throws java.lang.Throwable if unmarshal failed.
      */
-    @Nullable public DiscoverySpiCustomMessage message(@NotNull Marshaller marsh, ClassLoader ldr) throws Throwable {
+    @Nullable public DiscoverySpiCustomMessage message(@NotNull Marshaller marsh, ClassLoader ldr,
+        final IgniteConfiguration igniteCfg) throws Throwable {
         if (msg == null) {
-            msg = marsh.unmarshal(msgBytes, U.resolveClassLoader(ldr));
+            msg = MarshallerUtils.unmarshal(marsh, msgBytes, U.resolveClassLoader(ldr), igniteCfg);
 
             assert msg != null;
         }
