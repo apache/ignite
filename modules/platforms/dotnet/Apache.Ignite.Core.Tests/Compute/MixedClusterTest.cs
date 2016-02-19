@@ -15,8 +15,10 @@
  * limitations under the License.
  */
 
+#pragma warning disable 618  // SpringConfigUrl
 namespace Apache.Ignite.Core.Tests.Compute
 {
+    using System;
     using System.Diagnostics;
     using System.IO;
     using System.Linq;
@@ -28,13 +30,18 @@ namespace Apache.Ignite.Core.Tests.Compute
     /// </summary>
     public class MixedClusterTest
     {
+        /** */
+        private const string SpringConfig = @"Config\Compute\compute-grid1.xml";
+
         /// <summary>
         /// Tests the compute.
         /// </summary>
         [Test]
         public void TestCompute()
         {
-            using (var ignite = Ignition.Start(TestUtils.GetTestConfiguration()))
+            var cfg = new IgniteConfiguration(TestUtils.GetTestConfiguration()) {SpringConfigUrl = SpringConfig};
+
+            using (var ignite = Ignition.Start(cfg))
             {
                 var proc = StartJavaNode(ignite.GetConfiguration().IgniteHome);
 
@@ -59,14 +66,15 @@ namespace Apache.Ignite.Core.Tests.Compute
         /// </summary>
         private static Process StartJavaNode(string igniteHome)
         {
-            var batPath = Path.Combine(igniteHome, @"bin\\ignite.bat") + @" Config\Compute\compute-grid1.xml";
+            var batPath = Path.Combine(igniteHome, @"bin\\ignite.bat");
 
-            return Process.Start(batPath);
+            return Process.Start(batPath, SpringConfig);
         }
 
         /// <summary>
         /// Test func.
         /// </summary>
+        [Serializable]
         private class ComputeFunc : IComputeFunc<int>
         {
             /** <inheritdoc /> */
