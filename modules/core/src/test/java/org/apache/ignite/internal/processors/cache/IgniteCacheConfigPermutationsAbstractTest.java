@@ -100,56 +100,58 @@ public abstract class IgniteCacheConfigPermutationsAbstractTest extends IgniteCo
             assert testedNodeIdx >= 0 : "testedNodeIdx: " + testedNodeIdx;
         }
 
-        final CacheStartMode cacheStartMode = testsCfg.cacheStartMode();
-        final int cnt = testsCfg.gridCount();
+        if (testsCfg.isStartCache()) {
+            final CacheStartMode cacheStartMode = testsCfg.cacheStartMode();
+            final int cnt = testsCfg.gridCount();
 
-        if (cacheStartMode == CacheStartMode.STATIC) {
-            info("All nodes will be stopped, new " + cnt + " nodes will be started.");
+            if (cacheStartMode == CacheStartMode.STATIC) {
+                info("All nodes will be stopped, new " + cnt + " nodes will be started.");
 
-            Ignition.stopAll(true);
+                Ignition.stopAll(true);
 
-            for (int i = 0; i < cnt; i++) {
-                String gridName = getTestGridName(i);
+                for (int i = 0; i < cnt; i++) {
+                    String gridName = getTestGridName(i);
 
-                IgniteConfiguration cfg = optimize(getConfiguration(gridName));
+                    IgniteConfiguration cfg = optimize(getConfiguration(gridName));
 
 
-                if (i != CLIENT_NODE_IDX && i != CLIENT_NEAR_ONLY_IDX) {
-                    CacheConfiguration cc = testsCfg.configurationFactory().cacheConfiguration(gridName);
+                    if (i != CLIENT_NODE_IDX && i != CLIENT_NEAR_ONLY_IDX) {
+                        CacheConfiguration cc = testsCfg.configurationFactory().cacheConfiguration(gridName);
 
-                    cc.setName(cacheName());
+                        cc.setName(cacheName());
 
-                    cfg.setCacheConfiguration(cc);
-                }
+                        cfg.setCacheConfiguration(cc);
+                    }
 
-                startGrid(gridName, cfg, null);
-            }
-
-            if (testsCfg.multiNodeConfig() != null && testsCfg.gridCount() > CLIENT_NEAR_ONLY_IDX)
-                grid(CLIENT_NEAR_ONLY_IDX).createNearCache(cacheName(), new NearCacheConfiguration());
-        }
-        else if (cacheStartMode == null || cacheStartMode == CacheStartMode.NODES_THEN_CACHES) {
-            super.beforeTestsStarted();
-
-            for (int i = 0; i < gridCount(); i++) {
-                info("Starting cache dinamically on grid: " + i);
-
-                IgniteEx grid = grid(i);
-
-                if (i != CLIENT_NODE_IDX && i != CLIENT_NEAR_ONLY_IDX) {
-                    CacheConfiguration cc = testsCfg.configurationFactory().cacheConfiguration(grid.name());
-
-                    cc.setName(cacheName());
-
-                    grid.getOrCreateCache(cc);
+                    startGrid(gridName, cfg, null);
                 }
 
                 if (testsCfg.multiNodeConfig() != null && testsCfg.gridCount() > CLIENT_NEAR_ONLY_IDX)
                     grid(CLIENT_NEAR_ONLY_IDX).createNearCache(cacheName(), new NearCacheConfiguration());
             }
+            else if (cacheStartMode == null || cacheStartMode == CacheStartMode.NODES_THEN_CACHES) {
+                super.beforeTestsStarted();
+
+                for (int i = 0; i < gridCount(); i++) {
+                    info("Starting cache dinamically on grid: " + i);
+
+                    IgniteEx grid = grid(i);
+
+                    if (i != CLIENT_NODE_IDX && i != CLIENT_NEAR_ONLY_IDX) {
+                        CacheConfiguration cc = testsCfg.configurationFactory().cacheConfiguration(grid.name());
+
+                        cc.setName(cacheName());
+
+                        grid.getOrCreateCache(cc);
+                    }
+
+                    if (testsCfg.multiNodeConfig() != null && testsCfg.gridCount() > CLIENT_NEAR_ONLY_IDX)
+                        grid(CLIENT_NEAR_ONLY_IDX).createNearCache(cacheName(), new NearCacheConfiguration());
+                }
+            }
+            else
+                throw new IllegalArgumentException("Unknown cache start mode: " + cacheStartMode);
         }
-        else
-            throw new IllegalArgumentException("Unknown cache start mode: " + cacheStartMode);
 
         if (testsCfg.gridCount() > 1)
             checkTopology(testsCfg.gridCount());
@@ -167,6 +169,7 @@ public abstract class IgniteCacheConfigPermutationsAbstractTest extends IgniteCo
 
         IgniteEx grid = grid(testedNodeIdx);
 
+        // TODO fix near only detection.
         boolean nearEnabled = false;
 
         for (CacheConfiguration cc : grid.configuration().getCacheConfiguration()) {
@@ -183,15 +186,17 @@ public abstract class IgniteCacheConfigPermutationsAbstractTest extends IgniteCo
 
     /** {@inheritDoc} */
     @Override protected void afterTestsStopped() throws Exception {
-        for (int i = 0; i < gridCount(); i++) {
-            info("Destroing cache on grid: " + i);
+        if (testsCfg.isStopCache()) {
+            for (int i = 0; i < gridCount(); i++) {
+                info("Destroing cache on grid: " + i);
 
-            IgniteCache<String, Integer> cache = jcache(i);
+                IgniteCache<String, Integer> cache = jcache(i);
 
-            assert i != 0 || cache != null;
+                assert i != 0 || cache != null;
 
-            if (cache != null)
-                cache.destroy();
+                if (cache != null)
+                    cache.destroy();
+            }
         }
 
         map.clear();

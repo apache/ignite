@@ -17,8 +17,11 @@
 
 package org.apache.ignite.testframework.junits;
 
+import java.io.File;
+import org.apache.commons.io.FileUtils;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.TestsConfiguration;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
@@ -57,8 +60,17 @@ public abstract class IgniteConfigPermutationsAbstractTest extends GridCommonAbs
 
     /** {@inheritDoc} */
     @Override protected void afterTestsStopped() throws Exception {
-        if (testsCfg != null && testsCfg.isStopNodes())
+        if (testsCfg != null && testsCfg.isStopNodes()) {
+            info("Stopping all grids...");
+
             stopAllGrids();
+
+            File file = new File(U.getIgniteHome() + File.separator + "work");
+
+            FileUtils.deleteDirectory(file);
+
+            info("Ignite's 'work' directory has been cleaned.");
+        }
     }
 
     /** {@inheritDoc} */

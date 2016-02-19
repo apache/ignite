@@ -120,7 +120,13 @@ public class ConfigPermutationsTestSuiteBuilder {
         return suite;
     }
 
-    private TestSuite build(int[] igniteCfgState, @Nullable int[] cacheCfgState, boolean stop) {
+    /**
+     * @param igniteCfgState Ignite permutation.
+     * @param cacheCfgState Cache permutation.
+     * @param stopNodes Stop nodes.
+     * @return Test suite.
+     */
+    private TestSuite build(int[] igniteCfgState, @Nullable int[] cacheCfgState, boolean stopNodes) {
         // TODO FullApiStateConfigurationFactory
         StateConfigurationFactory factory = new FullApiStateConfigurationFactory(withClients, igniteParams,
             igniteCfgState, cacheParams, cacheCfgState);
@@ -130,8 +136,7 @@ public class ConfigPermutationsTestSuiteBuilder {
             + ", igniteCfg=" + factory.getIgniteConfigurationDescription()
             + ", cacheCfg=" + factory.getCacheConfigurationDescription() + "]";
 
-        TestsConfiguration testCfg = new TestsConfiguration(factory, clsNameSuffix, stop, cacheStartMode,
-            gridsCnt, null);
+        TestsConfiguration testCfg = new TestsConfiguration(factory, clsNameSuffix, stopNodes, cacheStartMode, gridsCnt);
 
         TestSuite addedSuite;
 

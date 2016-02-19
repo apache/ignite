@@ -73,8 +73,12 @@ public class GridTestSuite extends TestSuite {
         for (int i = 0; i < testedNodeCnt; i++) {
             MultiNodeTestsConfiguration multiNodeCfg = new MultiNodeTestsConfiguration(i, numOfTests);
 
+            boolean stopNodes = cfg.isStopNodes() && i + 1 == testedNodeCnt;
+            boolean startCache = i == 0;
+            boolean stopCache = i + 1 == testedNodeCnt;
+
             TestsConfiguration cfg0 = new TestsConfiguration(cfg.configurationFactory(), cfg.suffix(),
-                cfg.isStopNodes(), cfg.cacheStartMode(), cfg.gridCount(), multiNodeCfg);
+                stopNodes, startCache, stopCache, cfg.cacheStartMode(), cfg.gridCount(), multiNodeCfg);
 
             suite.addTest(new GridTestSuite(cls, cfg0));
         }

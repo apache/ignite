@@ -43,6 +43,12 @@ public class TestsConfiguration {
     /** */
     private final MultiNodeTestsConfiguration multiNodeCfg;
 
+    /** */
+    private boolean startCache;
+
+    /** */
+    private boolean stopCache;
+
     /**
      * @param factory Factory.
      * @param suffix Class suffix.
@@ -54,7 +60,7 @@ public class TestsConfiguration {
         boolean stopNodes,
         CacheStartMode cacheStartMode,
         int gridCnt) {
-        this(factory, suffix, stopNodes, cacheStartMode, gridCnt, null);
+        this(factory, suffix, stopNodes, true, true, cacheStartMode, gridCnt, null);
     }
 
     /**
@@ -66,6 +72,8 @@ public class TestsConfiguration {
     public TestsConfiguration(ConfigurationFactory factory,
         String suffix,
         boolean stopNodes,
+        boolean startCache,
+        boolean stopCache,
         CacheStartMode cacheStartMode,
         int gridCnt,
         @Nullable MultiNodeTestsConfiguration multiNodeCfg) {
@@ -77,6 +85,8 @@ public class TestsConfiguration {
         this.gridCnt = gridCnt;
         this.cacheStartMode = cacheStartMode;
         this.multiNodeCfg = multiNodeCfg;
+        this.startCache = startCache;
+        this.stopCache = stopCache;
     }
 
     /**
@@ -119,6 +129,20 @@ public class TestsConfiguration {
      */
     public MultiNodeTestsConfiguration multiNodeConfig() {
         return multiNodeCfg;
+    }
+
+    /**
+     * @return Whether cache should be started before tests execution or not.
+     */
+    public boolean isStartCache() {
+        return startCache;
+    }
+
+    /**
+     * @return Whether cache should be destroyed after tests execution or not.
+     */
+    public boolean isStopCache() {
+        return stopCache;
     }
 
     /**
