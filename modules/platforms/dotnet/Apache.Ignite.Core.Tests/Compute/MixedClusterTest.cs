@@ -78,6 +78,8 @@ namespace Apache.Ignite.Core.Tests.Compute
         private static void KillProcessTree(Process process)
         {
             RunCommand("cmd.exe", "/c taskkill /F /T /PID " + process.Id);
+
+            Assert.IsTrue(TestUtils.WaitForCondition(() => process.HasExited, 3000));
         }
 
         /// <summary>
