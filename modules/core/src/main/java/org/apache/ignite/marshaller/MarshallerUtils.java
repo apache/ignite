@@ -30,7 +30,8 @@ import java.io.OutputStream;
 import java.nio.ByteBuffer;
 
 /**
- *
+ * Util class that sets and discards thread local
+ * ignite configuration in {@link IgnitionEx} class.
  */
 public final class MarshallerUtils {
     /**
