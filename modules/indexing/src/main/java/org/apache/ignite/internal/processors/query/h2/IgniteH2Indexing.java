@@ -1501,7 +1501,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                 }
 
                 @Override public Object deserialize(byte[] bytes) throws Exception {
-                    return marshaller.unmarshal(bytes, null);
+                    return marshaller.unmarshal(bytes, U.resolveClassLoader(ctx.config()));
                 }
             };
     }

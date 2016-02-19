@@ -29,6 +29,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 import org.jetbrains.annotations.NotNull;
@@ -157,13 +158,13 @@ public class GridDhtPartitionsFullMessage extends GridDhtPartitionsAbstractMessa
         super.finishUnmarshal(ctx, ldr);
 
         if (partsBytes != null && parts == null)
-            parts = ctx.marshaller().unmarshal(partsBytes, ldr);
+            parts = ctx.marshaller().unmarshal(partsBytes, U.resolveClassLoader(ldr, ctx.gridConfig()));
 
         if (parts == null)
             parts = new HashMap<>();
 
         if (partCntrsBytes != null && partCntrs == null)
-            partCntrs = ctx.marshaller().unmarshal(partCntrsBytes, ldr);
+            partCntrs = ctx.marshaller().unmarshal(partCntrsBytes, U.resolveClassLoader(ldr, ctx.gridConfig()));
 
         if (partCntrs == null)
             partCntrs = new HashMap<>();

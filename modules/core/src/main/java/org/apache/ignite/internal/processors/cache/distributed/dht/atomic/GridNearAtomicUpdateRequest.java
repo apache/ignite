@@ -44,6 +44,7 @@ import org.apache.ignite.internal.util.GridLongList;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
@@ -629,10 +630,8 @@ public class GridNearAtomicUpdateRequest extends GridCacheMessage implements Gri
             }
         }
 
-        invokeArgs = unmarshalInvokeArguments(invokeArgsBytes, ctx, ldr);
-
         if (expiryPlcBytes != null)
-            expiryPlc = ctx.marshaller().unmarshal(expiryPlcBytes, ldr);
+            expiryPlc = ctx.marshaller().unmarshal(expiryPlcBytes, U.resolveClassLoader(ldr, ctx.gridConfig()));
     }
 
     /** {@inheritDoc} */

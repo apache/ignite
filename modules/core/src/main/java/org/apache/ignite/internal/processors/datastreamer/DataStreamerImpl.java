@@ -1428,7 +1428,7 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
 
                     err = ctx.config().getMarshaller().unmarshal(
                         errBytes,
-                        jobPda0 != null ? jobPda0.classLoader() : U.gridClassLoader());
+                        U.resolveClassLoader(jobPda0 != null ? jobPda0.classLoader() : null, ctx.config()));
                 }
                 catch (IgniteCheckedException e) {
                     f.onDone(null, new IgniteCheckedException("Failed to unmarshal response.", e));
