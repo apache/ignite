@@ -53,6 +53,7 @@ import static org.apache.ignite.internal.util.lang.GridFunc.asArray;
 import static org.apache.ignite.testframework.config.params.Parameters.booleanParameters;
 import static org.apache.ignite.testframework.config.params.Parameters.complexParameter;
 import static org.apache.ignite.testframework.config.params.Parameters.enumParameters;
+import static org.apache.ignite.testframework.config.params.Parameters.factory;
 import static org.apache.ignite.testframework.config.params.Parameters.objectParameters;
 import static org.apache.ignite.testframework.config.params.Parameters.parameter;
 
@@ -62,21 +63,21 @@ import static org.apache.ignite.testframework.config.params.Parameters.parameter
 public class ConfigurationPermutations {
     /** */
     public static final ConfigurationParameter<Object> EVICTION_PARAM = complexParameter(
-        parameter("setEvictionPolicy", new FifoEvictionPolicy<>()),
-        parameter("setEvictionFilter", new NoopEvictionFilter())
+        parameter("setEvictionPolicy", factory(FifoEvictionPolicy.class)),
+        parameter("setEvictionFilter", factory(NoopEvictionFilter.class))
     );
 
     /** */
     public static final ConfigurationParameter<Object> CACHE_STORE_PARAM = complexParameter(
-        parameter("setCacheStoreFactory", new IgniteCacheConfigPermutationsAbstractTest.TestStoreFactory()),
+        parameter("setCacheStoreFactory", factory(IgniteCacheConfigPermutationsAbstractTest.TestStoreFactory.class)),
         parameter("setReadThrough", true),
-        parameter("setWriteThrough", true),
-        parameter("setCacheStoreSessionListenerFactories", new Factory[] {new NoopCacheStoreSessionListenerFactory()})
+        parameter("setWriteThrough", true)
+//        parameter("setCacheStoreSessionListenerFactories", new Factory[] {new NoopCacheStoreSessionListenerFactory()})
     );
 
     /** */
     public static final ConfigurationParameter<Object> SIMPLE_CACHE_STORE_PARAM = complexParameter(
-        parameter("setCacheStoreFactory", new IgniteCacheConfigPermutationsAbstractTest.TestStoreFactory()),
+        parameter("setCacheStoreFactory", factory(IgniteCacheConfigPermutationsAbstractTest.TestStoreFactory.class)),
         parameter("setReadThrough", true),
         parameter("setWriteThrough", true)
     );
@@ -89,9 +90,6 @@ public class ConfigurationPermutations {
         parameter("setRebalanceTimeout", CacheConfiguration.DFLT_REBALANCE_TIMEOUT * 2),
         parameter("setRebalanceDelay", 1000L)
     );
-
-    /** */
-    public static final NearCacheConfiguration NEAR_CACHE_CFG = new NearCacheConfiguration();
 
     /** */
     public static final ConfigurationParameter<Object> ONHEAP_TIERED_MEMORY_PARAM =
@@ -112,9 +110,9 @@ public class ConfigurationPermutations {
     /** */
     @SuppressWarnings("unchecked")
     private static final ConfigurationParameter<IgniteConfiguration>[][] BASIC_IGNITE_SET = new ConfigurationParameter[][] {
-        objectParameters("setMarshaller", new BinaryMarshaller(), optimizedMarshaller()),
+        objectParameters("setMarshaller", factory(BinaryMarshaller.class), optimizedMarshallerFactory()),
         booleanParameters("setPeerClassLoadingEnabled"),
-        objectParameters("setSwapSpaceSpi", new GridTestSwapSpaceSpi()),
+        objectParameters("setSwapSpaceSpi", factory(GridTestSwapSpaceSpi.class)),
     };
 
     /** */
@@ -148,16 +146,16 @@ public class ConfigurationPermutations {
         objectParameters("setRebalanceMode", CacheRebalanceMode.SYNC, CacheRebalanceMode.ASYNC),
         booleanParameters("setSwapEnabled"),
         booleanParameters("setCopyOnRead"),
-        objectParameters(true, "setNearConfiguration", NEAR_CACHE_CFG),
+        objectParameters(true, "setNearConfiguration", nearCacheConfigurationFactory()),
         asArray(null,
             complexParameter(
                 EVICTION_PARAM,
                 CACHE_STORE_PARAM,
                 REBALANCING_PARAM,
-                parameter("setAffinity", new FairAffinityFunction()),
-                parameter("setInterceptor", new NoopInterceptor()),
-                parameter("setTopologyValidator", new NoopTopologyValidator()),
-                parameter("addCacheEntryListenerConfiguration", new EmptyCacheEntryListenerConfiguration())
+                parameter("setAffinity", factory(FairAffinityFunction.class)),
+                parameter("setInterceptor", factory(NoopInterceptor.class)),
+                parameter("setTopologyValidator", factory(NoopTopologyValidator.class)),
+                parameter("addCacheEntryListenerConfiguration", factory(EmptyCacheEntryListenerConfiguration.class))
             )
         ),
         // Set default parameters.
@@ -166,9 +164,19 @@ public class ConfigurationPermutations {
         objectParameters("setStartSize", 1024),
     };
 
-    static {
-        //noinspection unchecked
-        NEAR_CACHE_CFG.setNearEvictionPolicy(new FifoEvictionPolicy());
+    /**
+     * @return Custom near cache config.
+     */
+    private static Factory nearCacheConfigurationFactory() {
+        return new Factory() {
+            @Override public Object create() {
+                NearCacheConfiguration cfg = new NearCacheConfiguration<>();
+
+                cfg.setNearEvictionPolicy(new FifoEvictionPolicy());
+
+                return cfg;
+            }
+        };
     }
 
     /**
@@ -202,12 +210,16 @@ public class ConfigurationPermutations {
     /**
      * @return Marshaller.
      */
-    private static OptimizedMarshaller optimizedMarshaller() {
-        OptimizedMarshaller marsh = new OptimizedMarshaller(true);
+    private static Factory<OptimizedMarshaller> optimizedMarshallerFactory() {
+        return new Factory<OptimizedMarshaller>() {
+            @Override public OptimizedMarshaller create() {
+                OptimizedMarshaller marsh = new OptimizedMarshaller(true);
 
-        marsh.setRequireSerializable(false);
+                marsh.setRequireSerializable(false);
 
-        return marsh;
+                return marsh;
+            }
+        };
     }
 
     /**
