@@ -156,8 +156,8 @@ public class ConfigPermutationsTestSuiteBuilder {
      * @return {@code this} for chaining.
      */
     public ConfigPermutationsTestSuiteBuilder withClients() {
-        assert IgniteCacheConfigPermutationsAbstractTest.class.isAssignableFrom(cls) : "'WithClients' mode supported only for instances " +
-            "of CacheAbstractNewSelfTest: " + cls;
+        assert IgniteCacheConfigPermutationsAbstractTest.class.isAssignableFrom(cls) : "'WithClients' mode supported " +
+            "only for instances of " + IgniteCacheConfigPermutationsAbstractTest.class.getSimpleName() + ": " + cls;
 
         withClients = true;
         testedNodeCnt = 3;
