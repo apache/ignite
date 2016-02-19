@@ -47,7 +47,8 @@ public interface GridDhtAtomicUpdateRequest {
         boolean addPrevVal,
         int partId,
         @Nullable CacheObject prevVal,
-        @Nullable Long updateIdx);
+        @Nullable Long updateIdx,
+        boolean storeLocPrevVal);
 
     void addNearWriteValue(KeyCacheObject key,
         @Nullable CacheObject val,

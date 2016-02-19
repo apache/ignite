@@ -196,4 +196,11 @@ public interface GridNearAtomicUpdateRequest {
      * @return Response.
      */
     @Nullable public GridNearAtomicUpdateResponse response();
+
+    /**
+     * Cleanup values.
+     *
+     * @param clearKeys If {@code true} clears keys.
+     */
+    void cleanup(boolean clearKeys);
 }

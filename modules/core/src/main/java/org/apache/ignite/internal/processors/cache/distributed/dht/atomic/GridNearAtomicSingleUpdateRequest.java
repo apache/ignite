@@ -243,7 +243,7 @@ public class GridNearAtomicSingleUpdateRequest extends GridCacheMessage
         if (op == TRANSFORM) {
             assert val instanceof EntryProcessor : val;
 
-            entryProc = (EntryProcessor<Object, Object, Object>) val;
+            entryProc = (EntryProcessor<Object, Object, Object>)val;
         }
 
         assert val != null || op == DELETE;
@@ -867,6 +867,17 @@ public class GridNearAtomicSingleUpdateRequest extends GridCacheMessage
         }
 
         return reader.afterMessageRead(GridNearAtomicSingleUpdateRequest.class);
+    }
+
+    @Override public void cleanup(boolean clearKeys) {
+        val = null;
+        entryProc = null;
+        entryProcBytes = null;
+        invokeArgs = null;
+        invokeArgsBytes = null;
+
+        if (clearKeys)
+            key = null;
     }
 
     /** {@inheritDoc} */

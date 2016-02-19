@@ -216,12 +216,13 @@ public class GridDhtAtomicSingleUpdateRequest extends GridCacheMessage implement
         boolean addPrevVal,
         int partId,
         @Nullable CacheObject prevVal,
-        @Nullable Long updateIdx) {
+        @Nullable Long updateIdx,
+        boolean storeLocPrevVal) {
         this.key = key;
 
         this.partId = partId;
 
-        this.locPrevVal = prevVal;
+        this.locPrevVal = storeLocPrevVal ? prevVal : null;
 
         if (forceTransformBackups) {
             assert entryProcessor != null;
@@ -937,6 +938,26 @@ public class GridDhtAtomicSingleUpdateRequest extends GridCacheMessage implement
         }
 
         return reader.afterMessageRead(GridDhtAtomicSingleUpdateRequest.class);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void onAckReceived() {
+        cleanup();
+    }
+
+    /**
+     * Cleanup values not needed after message was sent.
+     */
+    private void cleanup() {
+        nearVal = null;
+        prevVal = null;
+
+        // Do not keep values if they are not needed for continuous query notification.
+        if (locPrevVal == null) {
+            key = null;
+            val = null;
+            locPrevVal = null;
+        }
     }
 
     /** {@inheritDoc} */

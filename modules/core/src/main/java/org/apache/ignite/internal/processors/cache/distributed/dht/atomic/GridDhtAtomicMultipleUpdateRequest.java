@@ -251,12 +251,18 @@ public class GridDhtAtomicMultipleUpdateRequest extends GridCacheMessage impleme
         boolean addPrevVal,
         int partId,
         @Nullable CacheObject prevVal,
-        @Nullable Long updateIdx) {
+        @Nullable Long updateCntr,
+        boolean storeLocPrevVal) {
         keys.add(key);
 
         partIds.add(partId);
 
-        locPrevVals.add(prevVal);
+        if (storeLocPrevVal) {
+            if (locPrevVals == null)
+                locPrevVals = new ArrayList<>();
+
+            locPrevVals.add(prevVal);
+        }
 
         if (forceTransformBackups) {
             assert entryProcessor != null;
@@ -273,11 +279,11 @@ public class GridDhtAtomicMultipleUpdateRequest extends GridCacheMessage impleme
             prevVals.add(prevVal);
         }
 
-        if (updateIdx != null) {
+        if (updateCntr != null) {
             if (updateCntrs == null)
                 updateCntrs = new GridLongList();
 
-            updateCntrs.add(updateIdx);
+            updateCntrs.add(updateCntr);
         }
 
         // In case there is no conflict, do not create the list.
@@ -521,6 +527,8 @@ public class GridDhtAtomicMultipleUpdateRequest extends GridCacheMessage impleme
      * @return Value.
      */
     @Override @Nullable public CacheObject localPreviousValue(int idx) {
+        assert locPrevVals != null;
+
         return locPrevVals.get(idx);
     }
 
@@ -1046,6 +1054,26 @@ public class GridDhtAtomicMultipleUpdateRequest extends GridCacheMessage impleme
         }
 
         return reader.afterMessageRead(GridDhtAtomicMultipleUpdateRequest.class);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void onAckReceived() {
+        cleanup();
+    }
+
+    /**
+     * Cleanup values not needed after message was sent.
+     */
+    private void cleanup() {
+        nearVals = null;
+        prevVals = null;
+
+        // Do not keep values if they are not needed for continuous query notification.
+        if (locPrevVals == null) {
+            keys = null;
+            vals = null;
+            locPrevVals = null;
+        }
     }
 
     /** {@inheritDoc} */
