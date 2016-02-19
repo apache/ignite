@@ -2542,7 +2542,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                                 T2<CacheObject, GridCacheVersion> res = primaryLocal(entry) ?
                                     entry.innerGetVersioned(this,
                                         /*swap*/false,
-                                        /*unmarshal*/retval,
+                                        /*unmarshal*/retval || needVal,
                                         /*metrics*/retval,
                                         /*events*/retval,
                                         CU.subjectId(this, cctx),
@@ -2561,7 +2561,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                                     /*swap*/false,
                                     /*read-through*/false,
                                     /*fail-fast*/false,
-                                    /*unmarshal*/retval,
+                                    /*unmarshal*/retval || needVal,
                                     /*metrics*/retval,
                                     /*events*/retval,
                                     /*temporary*/false,
