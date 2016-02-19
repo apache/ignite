@@ -47,7 +47,6 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteCallable;
 import org.apache.ignite.resources.IgniteInstanceResource;
-import org.apache.ignite.services.ServiceDescriptor;
 import org.jsr166.ThreadLocalRandom8;
 
 import static org.apache.ignite.internal.GridClosureCallMode.BALANCE;
@@ -210,7 +209,7 @@ class GridServiceProxy<T> implements Serializable {
          * @param name Service name.
          * @return Node with deployed service or {@code null} if there is no such node.
          */
-        private ClusterNode nodeForService(String name, boolean sticky) {
+        private ClusterNode nodeForService(String name, boolean sticky) throws IgniteCheckedException {
             do { // Repeat if reference to remote node was changed.
                 if (sticky) {
                     ClusterNode curNode = rmtNode.get();
@@ -237,11 +236,11 @@ class GridServiceProxy<T> implements Serializable {
          * @return Local node if it has a given service deployed or randomly chosen remote node,
          * otherwise ({@code null} if given service is not deployed on any node.
          */
-        private ClusterNode randomNodeForService(String name) {
+        private ClusterNode randomNodeForService(String name) throws IgniteCheckedException {
             if (hasLocNode && ctx.service().service(name) != null)
                 return ctx.discovery().localNode();
 
-            Map<UUID, Integer> snapshot = serviceTopology(name);
+            Map<UUID, Integer> snapshot = ctx.service().serviceTopology(name);
 
             if (snapshot == null || snapshot.isEmpty())
                 return null;
@@ -303,19 +302,6 @@ class GridServiceProxy<T> implements Serializable {
                 int idx = ThreadLocalRandom8.current().nextInt(nodeList.size());
 
                 return nodeList.get(idx);
-            }
-
-            return null;
-        }
-
-        /**
-         * @param name Service name.
-         * @return Map of number of service instances per node ID.
-         */
-        private Map<UUID, Integer> serviceTopology(String name) {
-            for (ServiceDescriptor desc : ctx.service().serviceDescriptors()) {
-                if (desc.name().equals(name))
-                    return desc.topologySnapshot();
             }
 
             return null;
