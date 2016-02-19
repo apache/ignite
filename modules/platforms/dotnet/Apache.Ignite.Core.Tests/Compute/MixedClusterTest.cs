@@ -18,6 +18,7 @@
 namespace Apache.Ignite.Core.Tests.Compute
 {
     using System.Diagnostics;
+    using System.IO;
     using System.Linq;
     using Apache.Ignite.Core.Compute;
     using NUnit.Framework;
@@ -33,11 +34,11 @@ namespace Apache.Ignite.Core.Tests.Compute
         [Test]
         public void TestCompute()
         {
-            var proc = StartJavaNode();
-
-            try
+            using (var ignite = Ignition.Start(TestUtils.GetTestConfiguration()))
             {
-                using (var ignite = Ignition.Start(TestUtils.GetTestConfiguration()))
+                var proc = StartJavaNode(ignite.GetConfiguration().IgniteHome);
+
+                try
                 {
                     ignite.WaitTopology(2);
 
@@ -46,20 +47,19 @@ namespace Apache.Ignite.Core.Tests.Compute
                     // There are two nodes, but only one can execute .NET jobs
                     Assert.AreEqual(new[] {int.MaxValue}, results.ToArray());
                 }
-            }
-            finally 
-            {
-                proc.Kill();
+                finally
+                {
+                    proc.Kill();
+                }
             }
         }
 
         /// <summary>
         /// Starts the java node.
         /// </summary>
-        private static Process StartJavaNode()
+        private static Process StartJavaNode(string igniteHome)
         {
-            // TODO
-            return Process.Start("");
+            return Process.Start(Path.Combine(igniteHome, @"bin\\ignite.bat"));
         }
 
         /// <summary>
