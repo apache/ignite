@@ -44,8 +44,10 @@ import org.apache.ignite.configuration.DeploymentMode;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.events.Event;
+import org.apache.ignite.internal.GridClosureCallMode;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteClientDisconnectedCheckedException;
+import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
@@ -58,21 +60,26 @@ import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
 import org.apache.ignite.internal.processors.cache.query.CacheQuery;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryManager;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
+import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutObject;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiPredicate;
+import org.apache.ignite.lang.IgniteCallable;
 import org.apache.ignite.lang.IgniteFuture;
+import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.marshaller.Marshaller;
+import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.services.Service;
 import org.apache.ignite.services.ServiceConfiguration;
 import org.apache.ignite.services.ServiceDescriptor;
@@ -166,11 +173,13 @@ public class GridServiceProcessor extends GridProcessorAdapter {
             if (ctx.deploy().enabled())
                 ctx.cache().context().deploy().ignoreOwnership(true);
 
+            boolean affNode = cache.context().affinityNode();
+
             cfgQryId = cache.context().continuousQueries().executeInternalQuery(
-                new DeploymentListener(), null, cache.context().affinityNode(), true);
+                new DeploymentListener(), null, affNode, true, !affNode);
 
             assignQryId = cache.context().continuousQueries().executeInternalQuery(
-                new AssignmentListener(), null, cache.context().affinityNode(), true);
+                new AssignmentListener(), null, affNode, true, !affNode);
         }
         finally {
             if (ctx.deploy().enabled())
@@ -541,6 +550,38 @@ public class GridServiceProcessor extends GridProcessorAdapter {
         }
         else
             return new GridFinishedFuture<>();
+    }
+
+    /**
+     * @param name Service name.
+     * @return Service topology.
+     */
+    public Map<UUID, Integer> serviceTopology(String name) throws IgniteCheckedException {
+        ClusterNode node = cache.affinity().mapKeyToNode(name);
+
+        if (node.version().compareTo(ServiceTopologyCallable.SINCE_VER) >= 0) {
+            return ctx.closure().callAsyncNoFailover(
+                GridClosureCallMode.BALANCE,
+                new ServiceTopologyCallable(name),
+                Collections.singletonList(node),
+                false
+            ).get();
+        }
+        else
+            return serviceTopology(cache, name);
+    }
+
+    /**
+     * @param cache Utility cache.
+     * @param svcName Service name.
+     * @return Service topology.
+     * @throws IgniteCheckedException In case of error.
+     */
+    private static Map<UUID, Integer> serviceTopology(IgniteInternalCache<Object, Object> cache, String svcName)
+        throws IgniteCheckedException {
+        GridServiceAssignments val = (GridServiceAssignments)cache.get(new GridServiceAssignmentsKey(svcName));
+
+        return val != null ? val.assigns() : null;
     }
 
     /**
@@ -1069,7 +1110,17 @@ public class GridServiceProcessor extends GridProcessorAdapter {
                         if (!(e.getKey() instanceof GridServiceDeploymentKey))
                             continue;
 
-                        GridServiceDeployment dep = (GridServiceDeployment)e.getValue();
+                        GridServiceDeployment dep;
+
+                        try {
+                            dep = (GridServiceDeployment)e.getValue();
+                        }
+                        catch (IgniteException ex) {
+                            if (X.hasCause(ex, ClassNotFoundException.class))
+                                continue;
+                            else
+                                throw ex;
+                        }
 
                         if (dep != null) {
                             svcName.set(dep.configuration().getName());
@@ -1346,7 +1397,17 @@ public class GridServiceProcessor extends GridProcessorAdapter {
                         if (!(e.getKey() instanceof GridServiceAssignmentsKey))
                             continue;
 
-                        GridServiceAssignments assigns = (GridServiceAssignments)e.getValue();
+                        GridServiceAssignments assigns;
+
+                        try {
+                            assigns = (GridServiceAssignments)e.getValue();
+                        }
+                        catch (IgniteException ex) {
+                            if (X.hasCause(ex, ClassNotFoundException.class))
+                                continue;
+                            else
+                                throw ex;
+                        }
 
                         if (assigns != null) {
                             svcName.set(assigns.name());
@@ -1465,6 +1526,36 @@ public class GridServiceProcessor extends GridProcessorAdapter {
         /** {@inheritDoc} */
         @Override public String toString() {
             return S.toString(ServiceAssignmentsPredicate.class, this);
+        }
+    }
+
+    /**
+     */
+    @GridInternal
+    private static class ServiceTopologyCallable implements IgniteCallable<Map<UUID, Integer>> {
+        /** */
+        private static final long serialVersionUID = 0L;
+
+        /** */
+        private static final IgniteProductVersion SINCE_VER = IgniteProductVersion.fromString("1.5.7");
+
+        /** */
+        private final String svcName;
+
+        /** */
+        @IgniteInstanceResource
+        private IgniteEx ignite;
+
+        /**
+         * @param svcName Service name.
+         */
+        public ServiceTopologyCallable(String svcName) {
+            this.svcName = svcName;
+        }
+
+        /** {@inheritDoc} */
+        @Override public Map<UUID, Integer> call() throws Exception {
+            return serviceTopology(ignite.context().cache().utilityCache(), svcName);
         }
     }
 }

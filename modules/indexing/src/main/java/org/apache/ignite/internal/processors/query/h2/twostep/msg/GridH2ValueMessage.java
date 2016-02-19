@@ -39,6 +39,11 @@ public abstract class GridH2ValueMessage implements Message {
     public abstract Value value(GridKernalContext ctx) throws IgniteCheckedException;
 
     /** {@inheritDoc} */
+    @Override public void onAckReceived() {
+        // No-op.
+    }
+
+    /** {@inheritDoc} */
     @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
         return true;
     }

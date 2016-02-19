@@ -233,6 +233,11 @@ public class GridIoManagerSelfTest extends GridCommonAbstractTest {
     /** */
     private static class TestMessage implements Message {
         /** {@inheritDoc} */
+        @Override public void onAckReceived() {
+            // No-op.
+        }
+
+        /** {@inheritDoc} */
         @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
             return true;
         }
