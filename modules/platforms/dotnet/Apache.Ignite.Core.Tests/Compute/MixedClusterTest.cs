@@ -56,7 +56,7 @@ namespace Apache.Ignite.Core.Tests.Compute
                 }
                 finally
                 {
-                    proc.Kill();
+                    KillProcessTree(proc);
                 }
             }
         }
@@ -68,9 +68,29 @@ namespace Apache.Ignite.Core.Tests.Compute
         {
             var batPath = Path.Combine(igniteHome, @"bin\\ignite.bat");
 
-            var startInfo = new ProcessStartInfo(batPath, SpringConfig) {CreateNoWindow = true};
+            return RunCommand(batPath, SpringConfig);
+        }
 
-            return Process.Start(startInfo);
+        /// <summary>
+        /// Kills the process tree.
+        /// </summary>
+        /// <param name="process">The root process.</param>
+        private static void KillProcessTree(Process process)
+        {
+            RunCommand("cmd.exe", "/c taskkill /F /T /PID " + process.Id);
+        }
+
+        /// <summary>
+        /// Runs the command.
+        /// </summary>
+        private static Process RunCommand(string path, string args)
+        {
+            return Process.Start(new ProcessStartInfo(path, args)
+            {
+                CreateNoWindow = true,
+                UseShellExecute = false,
+                RedirectStandardOutput = true
+            });
         }
 
         /// <summary>
