@@ -1040,7 +1040,7 @@ public abstract class GridCacheMapEntry implements GridCacheEntryEx {
 
             update(val, expireTime, ttl, newVer);
 
-            drReplicate(drType, val, newVer);
+            drReplicate(drType, val, newVer, topVer);
 
             recordNodeId(affNodeId, topVer);
 
@@ -1189,7 +1189,7 @@ public abstract class GridCacheMapEntry implements GridCacheEntryEx {
                 }
             }
 
-            drReplicate(drType, null, newVer);
+            drReplicate(drType, null, newVer, topVer);
 
             if (metrics && cctx.cache().configuration().isStatisticsEnabled())
                 cctx.cache().metrics0().onRemove();
@@ -2054,7 +2054,7 @@ public abstract class GridCacheMapEntry implements GridCacheEntryEx {
 
                 update(updated, newExpireTime, newTtl, newVer);
 
-                drReplicate(drType, updated, newVer);
+                drReplicate(drType, updated, newVer, topVer);
 
                 recordNodeId(affNodeId, topVer);
 
@@ -2142,7 +2142,7 @@ public abstract class GridCacheMapEntry implements GridCacheEntryEx {
 
                 recordNodeId(affNodeId, topVer);
 
-                drReplicate(drType, null, newVer);
+                drReplicate(drType, null, newVer, topVer);
 
                 if (evt) {
                     CacheObject evtOld = null;
@@ -2286,12 +2286,13 @@ public abstract class GridCacheMapEntry implements GridCacheEntryEx {
      * @param drType DR type.
      * @param val Value.
      * @param ver Version.
+     * @param topVer Topology version.
      * @throws IgniteCheckedException In case of exception.
      */
-    private void drReplicate(GridDrType drType, @Nullable CacheObject val, GridCacheVersion ver)
+    private void drReplicate(GridDrType drType, @Nullable CacheObject val, GridCacheVersion ver, AffinityTopologyVersion topVer)
         throws IgniteCheckedException {
         if (cctx.isDrEnabled() && drType != DR_NONE && !isInternal())
-            cctx.dr().replicate(key, val, rawTtl(), rawExpireTime(), ver.conflictVersion(), drType);
+            cctx.dr().replicate(key, val, rawTtl(), rawExpireTime(), ver.conflictVersion(), drType, topVer);
     }
 
     /**
@@ -2986,7 +2987,7 @@ public abstract class GridCacheMapEntry implements GridCacheEntryEx {
                 else if (deletedUnlocked())
                     deletedUnlocked(false);
 
-                drReplicate(drType, val, ver);
+                drReplicate(drType, val, ver, topVer);
 
                 if (!skipQryNtf) {
                     if (cctx.isLocal() || cctx.isReplicated() || cctx.affinity().primary(cctx.localNode(), key, topVer))
