@@ -29,9 +29,9 @@ import org.apache.ignite.testframework.CacheStartMode;
 import org.apache.ignite.testframework.GridTestSuite;
 import org.apache.ignite.testframework.TestsConfiguration;
 import org.apache.ignite.testframework.config.ConfigurationPermutations;
-import org.apache.ignite.testframework.config.StateConfigurationFactory;
+import org.apache.ignite.testframework.config.ConfigPermutationsFactory;
 import org.apache.ignite.testframework.config.generator.ConfigurationParameter;
-import org.apache.ignite.testframework.config.generator.StateIterator;
+import org.apache.ignite.testframework.config.generator.PermutationsIterator;
 
 import static org.apache.ignite.testframework.config.params.Parameters.booleanParameters;
 import static org.apache.ignite.testframework.config.params.Parameters.objectParameters;
@@ -73,7 +73,7 @@ public class CacheFullApiNewTestSuite extends TestSuite {
         final int[] igniteCfgState = new int[] {0, 0, 0}; // Default configuration.
         final int gridsCnt = 1;
 
-        for (StateIterator cacheIter = new StateIterator(cacheParams); cacheIter.hasNext();) {
+        for (PermutationsIterator cacheIter = new PermutationsIterator(cacheParams); cacheIter.hasNext();) {
             int[] cacheCfgState = cacheIter.next();
 
             // Stop all grids before starting new ignite configuration.
@@ -93,7 +93,7 @@ public class CacheFullApiNewTestSuite extends TestSuite {
      */
     private static void addTestSuite(TestSuite suite, int[] igniteCfgState, int[] cacheCfgState, int gridsCnt,
         boolean stop, CacheStartMode cacheStartMode) {
-        StateConfigurationFactory factory = new StateConfigurationFactory(false, igniteParams, igniteCfgState,
+        ConfigPermutationsFactory factory = new ConfigPermutationsFactory(false, igniteParams, igniteCfgState,
             cacheParams, cacheCfgState);
 
         String clsNameSuffix = "[igniteCfg=" + Arrays.toString(igniteCfgState)

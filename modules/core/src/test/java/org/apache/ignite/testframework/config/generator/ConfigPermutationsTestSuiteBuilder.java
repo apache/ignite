@@ -26,7 +26,7 @@ import org.apache.ignite.testframework.CacheStartMode;
 import org.apache.ignite.testframework.GridTestSuite;
 import org.apache.ignite.testframework.TestsConfiguration;
 import org.apache.ignite.testframework.config.ConfigurationPermutations;
-import org.apache.ignite.testframework.config.StateConfigurationFactory;
+import org.apache.ignite.testframework.config.ConfigPermutationsFactory;
 import org.apache.ignite.testframework.junits.IgniteConfigPermutationsAbstractTest;
 import org.jetbrains.annotations.Nullable;
 
@@ -86,33 +86,33 @@ public class ConfigPermutationsTestSuiteBuilder {
         assert testedNodeCnt > 0;
         assert gridsCnt > 0;
 
-        StateIterator igniteCfgIter;
+        PermutationsIterator igniteCfgIter;
 
         if (specificIgniteParam == null)
-            igniteCfgIter = new StateIterator(igniteParams);
+            igniteCfgIter = new PermutationsIterator(igniteParams);
         else
-            igniteCfgIter = new OneElementStateIterator(specificIgniteParam, igniteParams);
+            igniteCfgIter = new OneElementPermutationsIterator(specificIgniteParam, igniteParams);
 
         for (; igniteCfgIter.hasNext(); ) {
-            final int[] igniteCfgState = igniteCfgIter.next();
+            final int[] igniteCfgPermutation = igniteCfgIter.next();
 
             if (cacheParams == null)
-                suite.addTest(build(igniteCfgState, null, true));
+                suite.addTest(build(igniteCfgPermutation, null, true));
             else {
-                StateIterator cacheCfgIter;
+                PermutationsIterator cacheCfgIter;
 
                 if (specificCacheParam == null)
-                    cacheCfgIter = new StateIterator(cacheParams);
+                    cacheCfgIter = new PermutationsIterator(cacheParams);
                 else
-                    cacheCfgIter = new OneElementStateIterator(specificCacheParam, cacheParams);
+                    cacheCfgIter = new OneElementPermutationsIterator(specificCacheParam, cacheParams);
 
                 for (; cacheCfgIter.hasNext(); ) {
-                    int[] cacheCfgState = cacheCfgIter.next();
+                    int[] cacheCfgPermutation = cacheCfgIter.next();
 
                     // Stop all grids before starting new ignite configuration.
                     boolean stopNodes = !cacheCfgIter.hasNext();
 
-                    TestSuite addedSuite = build(igniteCfgState, cacheCfgState, stopNodes);
+                    TestSuite addedSuite = build(igniteCfgPermutation, cacheCfgPermutation, stopNodes);
 
                     suite.addTest(addedSuite);
                 }
@@ -123,19 +123,19 @@ public class ConfigPermutationsTestSuiteBuilder {
     }
 
     /**
-     * @param igniteCfgState Ignite permutation.
-     * @param cacheCfgState Cache permutation.
+     * @param igniteCfgPermutation Ignite permutation.
+     * @param cacheCfgPermutation Cache permutation.
      * @param stopNodes Stop nodes.
      * @return Test suite.
      */
-    private TestSuite build(int[] igniteCfgState, @Nullable int[] cacheCfgState, boolean stopNodes) {
-        StateConfigurationFactory factory = new StateConfigurationFactory(withClients, igniteParams,
-            igniteCfgState, cacheParams, cacheCfgState);
+    private TestSuite build(int[] igniteCfgPermutation, @Nullable int[] cacheCfgPermutation, boolean stopNodes) {
+        ConfigPermutationsFactory factory = new ConfigPermutationsFactory(withClients, igniteParams,
+            igniteCfgPermutation, cacheParams, cacheCfgPermutation);
 
         factory.backups(backups);
 
-        String clsNameSuffix = "[igniteCfg=" + Arrays.toString(igniteCfgState)
-            + ", cacheCfgState=" + Arrays.toString(cacheCfgState)
+        String clsNameSuffix = "[igniteCfgPermutation=" + Arrays.toString(igniteCfgPermutation)
+            + ", cacheCfgPermutation=" + Arrays.toString(cacheCfgPermutation)
             + ", igniteCfg=" + factory.getIgniteConfigurationDescription()
             + ", cacheCfg=" + factory.getCacheConfigurationDescription() + "]";
 
@@ -242,7 +242,7 @@ public class ConfigPermutationsTestSuiteBuilder {
     /**
      *
      */
-    private static class OneElementStateIterator extends StateIterator {
+    private static class OneElementPermutationsIterator extends PermutationsIterator {
         /** */
         private int[] elem;
 
@@ -252,7 +252,7 @@ public class ConfigPermutationsTestSuiteBuilder {
         /**
          * @param elem Element.
          */
-        OneElementStateIterator(int[] elem, Object[][] params) {
+        OneElementPermutationsIterator(int[] elem, Object[][] params) {
             super(params);
 
             this.elem = elem;

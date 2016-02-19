@@ -23,7 +23,7 @@ import java.util.Iterator;
 /**
  * State iterator.
  */
-public class StateIterator implements Iterator<int[]> {
+public class PermutationsIterator implements Iterator<int[]> {
     /** */
     private final Object[][] params;
 
@@ -42,7 +42,7 @@ public class StateIterator implements Iterator<int[]> {
     /**
      * @param params Paramethers.
      */
-    public StateIterator(Object[][] params) {
+    public PermutationsIterator(Object[][] params) {
         assert params != null;
         assert params.length > 0;
 

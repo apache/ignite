@@ -94,4 +94,18 @@ public abstract class IgniteConfigPermutationsAbstractTest extends GridCommonAbs
     protected final int gridCount() {
         return testsCfg.gridCount();
     }
+
+    /**
+     * @return Count of clients.
+     */
+    protected int clientsCount() {
+        int cnt = 0;
+
+        for (int i = 0; i < gridCount(); i++) {
+             if (grid(i).configuration().isClientMode())
+                 cnt++;
+        }
+
+        return cnt;
+    }
 }

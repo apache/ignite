@@ -21,14 +21,14 @@ import java.util.Iterator;
 import org.apache.ignite.internal.util.typedef.internal.A;
 
 /**
- * TODO: Add class description.
+ *
  */
 public abstract class AbstractConfigurationGenerator<T> implements ConfigurationGenerator<T> {
     /** */
     private final ConfigurationParamethers<T> params;
 
     /** */
-    private final StateIterator stateIter;
+    private final PermutationsIterator stateIter;
 
     /** */
     private State curState;
@@ -40,7 +40,7 @@ public abstract class AbstractConfigurationGenerator<T> implements Configuration
         A.notNull(params, "params");
 
         this.params = params;
-        stateIter = new StateIterator(null);
+        stateIter = new PermutationsIterator(null);
     }
 
     /** {@inheritDoc} */

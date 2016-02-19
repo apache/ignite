@@ -278,7 +278,7 @@ public class IgniteCacheConfigPermutationsFullApiTest extends IgniteCacheConfigP
         int times = 1;
 
         if (cacheMode() == REPLICATED)
-            times = gridCount();
+            times = gridCount() - clientsCount();
         else if (cacheMode() == PARTITIONED)
             times = Math.min(gridCount(), jcache().getConfiguration(CacheConfiguration.class).getBackups() + 1);
 

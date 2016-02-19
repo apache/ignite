@@ -30,18 +30,18 @@ import org.jetbrains.annotations.Nullable;
 /**
  *
  */
-public class StateConfigurationFactory implements ConfigurationFactory {
+public class ConfigPermutationsFactory implements ConfigurationFactory {
     /** */
     private final ConfigurationParameter<IgniteConfiguration>[][] igniteParams;
 
     /** */
-    private final int[] igniteCfgState;
+    private final int[] igniteCfgPermutation;
 
     /** */
     private final ConfigurationParameter<CacheConfiguration>[][] cacheParams;
 
     /** */
-    private final int[] cacheCfgState;
+    private final int[] cacheCfgPermutation;
 
     /** */
     private final boolean withClient;
@@ -55,19 +55,19 @@ public class StateConfigurationFactory implements ConfigurationFactory {
     /**
      * @param withClients With client flag.
      * @param igniteParams Ignite Params.
-     * @param igniteCfgState Ignite configuration state.
+     * @param igniteCfgPermutation Ignite Configuration Permutation.
      * @param cacheParams Cache Params.
-     * @param cacheCfgState Cache configuration state.
+     * @param cacheCfgPermutation Cache config permutation.
      */
-    public StateConfigurationFactory(boolean withClients, ConfigurationParameter<IgniteConfiguration>[][] igniteParams,
-        int[] igniteCfgState,
+    public ConfigPermutationsFactory(boolean withClients, ConfigurationParameter<IgniteConfiguration>[][] igniteParams,
+        int[] igniteCfgPermutation,
         @Nullable ConfigurationParameter<CacheConfiguration>[][] cacheParams,
-        @Nullable int[] cacheCfgState) {
+        @Nullable int[] cacheCfgPermutation) {
         this.withClient = withClients;
         this.igniteParams = igniteParams;
-        this.igniteCfgState = igniteCfgState;
+        this.igniteCfgPermutation = igniteCfgPermutation;
         this.cacheParams = cacheParams;
-        this.cacheCfgState = cacheCfgState;
+        this.cacheCfgPermutation = cacheCfgPermutation;
     }
 
     /** {@inheritDoc} */
@@ -80,8 +80,8 @@ public class StateConfigurationFactory implements ConfigurationFactory {
         if (igniteParams == null)
             return cfg;
 
-        for (int i = 0; i < igniteCfgState.length; i++) {
-            int var = igniteCfgState[i];
+        for (int i = 0; i < igniteCfgPermutation.length; i++) {
+            int var = igniteCfgPermutation[i];
 
             ConfigurationParameter<IgniteConfiguration> cfgC = igniteParams[i][var];
 
@@ -130,15 +130,15 @@ public class StateConfigurationFactory implements ConfigurationFactory {
 
         SB sb = new SB("[");
 
-        for (int i = 0; i < igniteCfgState.length; i++) {
-            int var = igniteCfgState[i];
+        for (int i = 0; i < igniteCfgPermutation.length; i++) {
+            int var = igniteCfgPermutation[i];
 
             ConfigurationParameter<IgniteConfiguration> cfgC = igniteParams[i][var];
 
             if (cfgC != null) {
                 sb.a(cfgC.name());
 
-                if (i + 1 < igniteCfgState.length)
+                if (i + 1 < igniteCfgPermutation.length)
                     sb.a(", ");
             }
         }
@@ -151,14 +151,14 @@ public class StateConfigurationFactory implements ConfigurationFactory {
 
     /** {@inheritDoc} */
     @Override public CacheConfiguration cacheConfiguration(String gridName) {
-        if (cacheParams == null || cacheCfgState == null)
+        if (cacheParams == null || cacheCfgPermutation == null)
             throw new IllegalStateException("Failed to configure cache [cacheParams=" + Arrays.deepToString(cacheParams)
-                + ", cacheCfgState=" + Arrays.toString(cacheCfgState) + "]");
+                + ", cacheCfgPermutation=" + Arrays.toString(cacheCfgPermutation) + "]");
 
         CacheConfiguration cfg = new CacheConfiguration();
 
-        for (int i = 0; i < cacheCfgState.length; i++) {
-            int var = cacheCfgState[i];
+        for (int i = 0; i < cacheCfgPermutation.length; i++) {
+            int var = cacheCfgPermutation[i];
 
             ConfigurationParameter<CacheConfiguration> cfgC = cacheParams[i][var];
 
@@ -176,20 +176,20 @@ public class StateConfigurationFactory implements ConfigurationFactory {
      * @return Description.
      */
     public String getCacheConfigurationDescription() {
-        if (cacheCfgState == null)
+        if (cacheCfgPermutation == null)
             return "";
 
         SB sb = new SB("[");
 
-        for (int i = 0; i < cacheCfgState.length; i++) {
-            int var = cacheCfgState[i];
+        for (int i = 0; i < cacheCfgPermutation.length; i++) {
+            int var = cacheCfgPermutation[i];
 
             ConfigurationParameter cfgC = cacheParams[i][var];
 
             if (cfgC != null) {
                 sb.a(cfgC.name());
 
-                if (i + 1 < cacheCfgState.length)
+                if (i + 1 < cacheCfgPermutation.length)
                     sb.a(", ");
             }
         }
