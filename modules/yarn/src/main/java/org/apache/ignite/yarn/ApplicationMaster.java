@@ -20,6 +20,7 @@ package org.apache.ignite.yarn;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.ByteBuffer;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -32,6 +33,8 @@ import org.apache.commons.io.IOUtils;
 import org.apache.hadoop.fs.FSDataOutputStream;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
+import org.apache.hadoop.security.Credentials;
+import org.apache.hadoop.security.UserGroupInformation;
 import org.apache.hadoop.service.Service;
 import org.apache.hadoop.yarn.api.records.Container;
 import org.apache.hadoop.yarn.api.records.ContainerId;
@@ -49,6 +52,7 @@ import org.apache.hadoop.yarn.client.api.async.AMRMClientAsync;
 import org.apache.hadoop.yarn.conf.YarnConfiguration;
 import org.apache.hadoop.yarn.util.Records;
 import org.apache.ignite.yarn.utils.IgniteYarnUtils;
+import static org.apache.ignite.yarn.utils.IgniteYarnUtils.createTokenBuffer;
 
 /**
  * Application master request containers from Yarn and decides how many resources will be occupied.
@@ -67,10 +71,10 @@ public class ApplicationMaster implements AMRMClientAsync.CallbackHandler {
     private long schedulerTimeout = TimeUnit.SECONDS.toMillis(1);
 
     /** Yarn configuration. */
-    private YarnConfiguration conf;
+    private final YarnConfiguration conf;
 
     /** Cluster properties. */
-    private ClusterProperties props;
+    private final ClusterProperties props;
 
     /** Network manager. */
     private NMClient nmClient;
@@ -79,7 +83,7 @@ public class ApplicationMaster implements AMRMClientAsync.CallbackHandler {
     private AMRMClientAsync<AMRMClient.ContainerRequest> rmClient;
 
     /** Ignite path. */
-    private Path ignitePath;
+    private final Path ignitePath;
 
     /** Config path. */
     private Path cfgPath;
@@ -87,8 +91,11 @@ public class ApplicationMaster implements AMRMClientAsync.CallbackHandler {
     /** Hadoop file system. */
     private FileSystem fs;
 
+    /** Buffered tokens to be injected into newly allocated containers. */
+    private ByteBuffer allTokens;
+
     /** Running containers. */
-    private Map<ContainerId, IgniteContainer> containers = new ConcurrentHashMap<>();
+    private final Map<ContainerId, IgniteContainer> containers = new ConcurrentHashMap<>();
 
     /**
      * @param ignitePath Hdfs path to ignite.
@@ -106,6 +113,11 @@ public class ApplicationMaster implements AMRMClientAsync.CallbackHandler {
             if (checkContainer(c)) {
                 try {
                     ContainerLaunchContext ctx = Records.newRecord(ContainerLaunchContext.class);
+
+                    if (UserGroupInformation.isSecurityEnabled()) {
+                        // Set the tokens to the newly allocated container:
+                        ctx.setTokens(allTokens.duplicate());
+                    }
 
                     Map<String, String> env = new HashMap<>(System.getenv());
 
@@ -192,10 +204,10 @@ public class ApplicationMaster implements AMRMClientAsync.CallbackHandler {
     /**
      * @return Address running nodes.
      */
-    private String getAddress(String address) {
+    private String getAddress(String addr) {
         if (containers.isEmpty()) {
-            if (address != null && !address.isEmpty())
-                return address + DEFAULT_PORT;
+            if (addr != null && !addr.isEmpty())
+                return addr + DEFAULT_PORT;
 
             return "";
         }
@@ -334,14 +346,31 @@ public class ApplicationMaster implements AMRMClientAsync.CallbackHandler {
     }
 
     /**
+     * If security enabled, caches the available tokens in a ByteBuffer to have them handy
+     * to inject into allocated containers.
+     *
+     * @throws IOException On error.
+     */
+    private void initTokens() throws IOException {
+        if (UserGroupInformation.isSecurityEnabled()) {
+            Credentials cred = UserGroupInformation.getCurrentUser().getCredentials();
+
+            allTokens = createTokenBuffer(cred);
+        }
+    }
+
+    /**
      * @throws IOException
      */
     public void init() throws IOException {
+        initTokens();
+
         fs = FileSystem.get(conf);
 
         nmClient = NMClient.createNMClient();
 
         nmClient.init(conf);
+
         nmClient.start();
 
         // Create async application master.
@@ -399,9 +428,11 @@ public class ApplicationMaster implements AMRMClientAsync.CallbackHandler {
 
     /**
      * Sets file system.
+     * Visible solely for tests.
+     *
      * @param fs File system.
      */
-    public void setFs(FileSystem fs) {
+    void setFs(FileSystem fs) {
         this.fs = fs;
     }
 

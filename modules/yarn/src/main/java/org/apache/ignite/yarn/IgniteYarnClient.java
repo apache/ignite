@@ -18,6 +18,7 @@
 package org.apache.ignite.yarn;
 
 import java.io.File;
+import java.io.IOException;
 import java.util.Collections;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
@@ -25,6 +26,9 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
+import org.apache.hadoop.security.Credentials;
+import org.apache.hadoop.security.UserGroupInformation;
+import org.apache.hadoop.security.token.Token;
 import org.apache.hadoop.yarn.api.records.ApplicationId;
 import org.apache.hadoop.yarn.api.records.ApplicationReport;
 import org.apache.hadoop.yarn.api.records.ApplicationSubmissionContext;
@@ -41,6 +45,7 @@ import org.apache.hadoop.yarn.util.Records;
 import org.apache.ignite.yarn.utils.IgniteYarnUtils;
 
 import static org.apache.hadoop.yarn.api.ApplicationConstants.Environment;
+import static org.apache.ignite.yarn.utils.IgniteYarnUtils.createTokenBuffer;
 
 /**
  * Ignite yarn client.
@@ -80,6 +85,7 @@ public class IgniteYarnClient {
         else
             ignite = new Path(props.ignitePath());
 
+        // Upload the jar file to HDFS:
         Path appJar = IgniteYarnUtils.copyLocalToHdfs(fs, pathAppMasterJar,
             props.igniteWorkDir() + File.separator + IgniteYarnUtils.JAR_NAME);
 
@@ -105,6 +111,37 @@ public class IgniteYarnClient {
         setupAppMasterEnv(appMasterEnv, conf);
 
         amContainer.setEnvironment(appMasterEnv);
+
+        // Setup security tokens
+        if (UserGroupInformation.isSecurityEnabled()) {
+            // Note: Credentials class is marked as LimitedPrivate for HDFS and MapReduce
+            Credentials creds = new Credentials();
+
+            String tokRenewer = conf.get(YarnConfiguration.RM_PRINCIPAL);
+
+            if (tokRenewer == null || tokRenewer.length() == 0) {
+                throw new IOException(
+                    "Can't get Master Kerberos principal for the RM to use as renewer. [property="
+                        + YarnConfiguration.RM_PRINCIPAL + ']');
+            }
+
+            log.info("Resource manager principal is " + tokRenewer);
+
+            // For now, only getting tokens for the default file-system.
+            final Token<?> tokens[] =
+                fs.addDelegationTokens(tokRenewer, creds);
+
+            if (tokens == null)
+                log.info("No token found for file system " + fs);
+            else {
+                log.info(tokens.length + " token(s) found for file system " + fs);
+
+                for (Token<?> token : tokens)
+                    log.info("Got dt for " + fs.getUri() + "; " + token);
+            }
+
+            amContainer.setTokens(createTokenBuffer(creds));
+        }
 
         // Set up resource type requirements for ApplicationMaster
         Resource capability = Records.newRecord(Resource.class);
