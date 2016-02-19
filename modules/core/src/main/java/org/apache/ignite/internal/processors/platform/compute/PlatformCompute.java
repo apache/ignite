@@ -162,7 +162,7 @@ public class PlatformCompute extends PlatformAbstractTarget {
                 ((PlatformBalancingMultiClosureTask)task).jobs(jobs);
         }
 
-        platformCtx.kernalContext().task().setThreadContext(TC_SUBGRID, compute.clusterGroup().nodes());
+        platformCtx.kernalContext().task().setThreadContext(TC_SUBGRID, computeForPlatform.clusterGroup().nodes());
 
         return executeNative0(task);
     }
@@ -204,7 +204,7 @@ public class PlatformCompute extends PlatformAbstractTarget {
      * @param topVer Topology version.
      */
     public PlatformListenable executeNative(long taskPtr, long topVer) {
-        final PlatformFullTask task = new PlatformFullTask(platformCtx, compute, taskPtr, topVer);
+        final PlatformFullTask task = new PlatformFullTask(platformCtx, computeForPlatform, taskPtr, topVer);
 
         return executeNative0(task);
     }
@@ -216,6 +216,7 @@ public class PlatformCompute extends PlatformAbstractTarget {
      */
     public void withTimeout(long timeout) {
         compute.withTimeout(timeout);
+        computeForPlatform.withTimeout(timeout);
     }
 
     /**
@@ -223,6 +224,7 @@ public class PlatformCompute extends PlatformAbstractTarget {
      */
     public void withNoFailover() {
         compute.withNoFailover();
+        computeForPlatform.withNoFailover();
     }
 
     /** <inheritDoc /> */
@@ -241,7 +243,7 @@ public class PlatformCompute extends PlatformAbstractTarget {
      * @param task Task.
      */
     private PlatformListenable executeNative0(final PlatformAbstractTask task) {
-        IgniteInternalFuture fut = compute.executeAsync(task, null);
+        IgniteInternalFuture fut = computeForPlatform.executeAsync(task, null);
 
         fut.listen(new IgniteInClosure<IgniteInternalFuture>() {
             private static final long serialVersionUID = 0L;

@@ -20,19 +20,15 @@ package org.apache.ignite.internal.processors.platform;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteAtomicSequence;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.IgniteCompute;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.cluster.ClusterGroup;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.PlatformConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
-import org.apache.ignite.internal.IgniteComputeImpl;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.binary.BinaryRawReaderEx;
 import org.apache.ignite.internal.binary.BinaryRawWriterEx;
-import org.apache.ignite.internal.cluster.ClusterGroupAdapter;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
 import org.apache.ignite.internal.processors.cache.IgniteCacheProxy;
 import org.apache.ignite.internal.processors.datastreamer.DataStreamerImpl;
@@ -211,12 +207,12 @@ public class PlatformProcessorImpl extends GridProcessorAdapter implements Platf
     }
 
     /** {@inheritDoc} */
-    public void releaseStart() {
+    @Override public void releaseStart() {
         startLatch.countDown();
     }
 
     /** {@inheritDoc} */
-    public void awaitStart() throws IgniteCheckedException {
+    @Override public void awaitStart() throws IgniteCheckedException {
         U.await(startLatch);
     }
 
@@ -343,7 +339,7 @@ public class PlatformProcessorImpl extends GridProcessorAdapter implements Platf
 
         try {
             if (stopped)
-                throw new IgniteCheckedException("Failed to initialize interop store becuase node is stopping: " +
+                throw new IgniteCheckedException("Failed to initialize interop store because node is stopping: " +
                     store);
 
             if (started)
