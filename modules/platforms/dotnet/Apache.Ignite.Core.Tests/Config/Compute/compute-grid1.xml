@@ -69,7 +69,9 @@
                         </bean>
                     </list>
                 </property>
-
+                <property name="idMapper">
+                    <bean class="org.apache.ignite.binary.BinaryBasicIdMapper" />
+                </property>
             </bean>
         </property>
 

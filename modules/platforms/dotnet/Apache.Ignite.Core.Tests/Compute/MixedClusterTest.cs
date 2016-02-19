@@ -68,7 +68,9 @@ namespace Apache.Ignite.Core.Tests.Compute
         {
             var batPath = Path.Combine(igniteHome, @"bin\\ignite.bat");
 
-            return Process.Start(batPath, SpringConfig);
+            var startInfo = new ProcessStartInfo(batPath, SpringConfig) {CreateNoWindow = true};
+
+            return Process.Start(startInfo);
         }
 
         /// <summary>
