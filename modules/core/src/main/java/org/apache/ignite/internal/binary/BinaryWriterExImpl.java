@@ -36,6 +36,7 @@ import org.apache.ignite.binary.BinaryWriter;
 import org.apache.ignite.internal.binary.streams.BinaryHeapOutputStream;
 import org.apache.ignite.internal.binary.streams.BinaryOutputStream;
 import org.apache.ignite.internal.util.typedef.internal.A;
+import org.apache.ignite.marshaller.MarshallerUtils;
 import org.jetbrains.annotations.Nullable;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
@@ -157,7 +158,7 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
             out.writeByte(GridBinaryMarshaller.OPTM_MARSH);
 
             try {
-                byte[] arr = ctx.optimizedMarsh().marshal(obj);
+                byte[] arr = MarshallerUtils.marshal(ctx.optimizedMarsh(), obj, ctx.configuration());
 
                 writeInt(arr.length);
 

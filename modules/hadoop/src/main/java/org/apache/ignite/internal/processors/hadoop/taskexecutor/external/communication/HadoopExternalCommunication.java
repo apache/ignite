@@ -35,6 +35,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.hadoop.message.HadoopMessage;
 import org.apache.ignite.internal.processors.hadoop.taskexecutor.external.HadoopProcessDescriptor;
@@ -1174,11 +1175,15 @@ public class HadoopExternalCommunication {
 
             this.endpoint = endpoint;
 
+            final IgniteConfiguration cfg = new IgniteConfiguration(); // TODO provide real config
+            cfg.setGridName(gridName);
+
             adapter = new HadoopIpcToNioAdapter<>(
                 HadoopExternalCommunication.this.log,
                 endpoint,
                 accepted,
                 srvLsnr,
+                cfg,
                 filters());
         }
 

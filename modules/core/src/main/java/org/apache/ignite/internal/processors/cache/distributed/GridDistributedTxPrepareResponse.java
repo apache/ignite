@@ -25,6 +25,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.tostring.GridToStringBuilder;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
+import org.apache.ignite.marshaller.MarshallerUtils;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 
@@ -94,7 +95,7 @@ public class GridDistributedTxPrepareResponse extends GridDistributedBaseMessage
         super.prepareMarshal(ctx);
 
         if (err != null && errBytes == null)
-            errBytes = ctx.marshaller().marshal(err);
+            errBytes = MarshallerUtils.marshal(ctx.marshaller(), err, ctx.kernalContext());
     }
 
     /** {@inheritDoc} */
@@ -102,7 +103,7 @@ public class GridDistributedTxPrepareResponse extends GridDistributedBaseMessage
         super.finishUnmarshal(ctx, ldr);
 
         if (errBytes != null && err == null)
-            err = ctx.marshaller().unmarshal(errBytes, ldr);
+            err = MarshallerUtils.unmarshal(ctx.marshaller(), errBytes, ldr, ctx.kernalContext());
     }
 
     /** {@inheritDoc} */

@@ -25,6 +25,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicReference;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.util.ipc.IpcEndpoint;
 import org.apache.ignite.internal.util.nio.GridNioFilter;
 import org.apache.ignite.internal.util.nio.GridNioFilterAdapter;
@@ -62,14 +63,15 @@ public class HadoopIpcToNioAdapter<T> {
      * @param log Log.
      * @param endp Endpoint.
      * @param lsnr Listener.
+     * @param igniteCfg Ignite config.
      * @param filters Filters.
      */
     public HadoopIpcToNioAdapter(IgniteLogger log, IpcEndpoint endp, boolean accepted,
-        GridNioServerListener<T> lsnr, GridNioFilter... filters) {
+        GridNioServerListener<T> lsnr, IgniteConfiguration igniteCfg, GridNioFilter... filters) {
         this.endp = endp;
 
         chain = new GridNioFilterChain<>(log, lsnr, new HeadFilter(), filters);
-        ses = new GridNioSessionImpl(chain, null, null, accepted);
+        ses = new GridNioSessionImpl(chain, null, null, accepted, igniteCfg);
 
         writeBuf = ByteBuffer.allocate(8 << 10);
 

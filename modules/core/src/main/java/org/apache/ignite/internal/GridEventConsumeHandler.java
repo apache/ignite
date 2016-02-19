@@ -51,6 +51,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.marshaller.Marshaller;
+import org.apache.ignite.marshaller.MarshallerUtils;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.events.EventType.EVTS_ALL;
@@ -218,7 +219,7 @@ class GridEventConsumeHandler implements GridContinuousHandler {
 
                                                         if (cctx.deploymentEnabled() &&
                                                             ctx.discovery().cacheNode(node, cacheName)) {
-                                                            wrapper.p2pMarshal(ctx.config().getMarshaller());
+                                                            wrapper.p2pMarshal(ctx);
 
                                                             wrapper.cacheName = cacheName;
 
@@ -337,7 +338,7 @@ class GridEventConsumeHandler implements GridContinuousHandler {
                 }
 
                 try {
-                    wrapper.p2pUnmarshal(ctx.config().getMarshaller(), ldr);
+                    wrapper.p2pUnmarshal(ctx, ldr);
                 }
                 catch (IgniteCheckedException e) {
                     U.error(ctx.log(getClass()), "Failed to unmarshal event.", e);
@@ -369,7 +370,7 @@ class GridEventConsumeHandler implements GridContinuousHandler {
 
             depInfo = new GridDeploymentInfoBean(dep);
 
-            filterBytes = ctx.config().getMarshaller().marshal(filter);
+            filterBytes = MarshallerUtils.marshal(ctx.config().getMarshaller(), filter, ctx);
         }
     }
 
@@ -386,7 +387,7 @@ class GridEventConsumeHandler implements GridContinuousHandler {
             if (dep == null)
                 throw new IgniteDeploymentCheckedException("Failed to obtain deployment for class: " + clsName);
 
-            filter = ctx.config().getMarshaller().unmarshal(filterBytes, dep.classLoader());
+            filter = MarshallerUtils.unmarshal(ctx.config().getMarshaller(), filterBytes, dep.classLoader(), ctx);
         }
     }
 
@@ -482,28 +483,19 @@ class GridEventConsumeHandler implements GridContinuousHandler {
             this.evt = evt;
         }
 
-        /**
-         * @param marsh Marshaller.
-         * @throws IgniteCheckedException In case of error.
-         */
-        void p2pMarshal(Marshaller marsh) throws IgniteCheckedException {
-            assert marsh != null;
+        void p2pMarshal(final GridKernalContext ctx) throws IgniteCheckedException {
+            assert ctx.config().getMarshaller() != null;
 
-            bytes = marsh.marshal(evt);
+            bytes = MarshallerUtils.marshal(ctx.config().getMarshaller(), evt, ctx);
         }
 
-        /**
-         * @param marsh Marshaller.
-         * @param ldr Class loader.
-         * @throws IgniteCheckedException In case of error.
-         */
-        void p2pUnmarshal(Marshaller marsh, @Nullable ClassLoader ldr) throws IgniteCheckedException {
-            assert marsh != null;
+        void p2pUnmarshal(final GridKernalContext ctx, @Nullable ClassLoader ldr) throws IgniteCheckedException {
+            assert ctx.config().getMarshaller() != null;
 
             assert evt == null;
             assert bytes != null;
 
-            evt = marsh.unmarshal(bytes, ldr);
+            evt = MarshallerUtils.unmarshal(ctx.config().getMarshaller(), bytes, ldr, ctx);
         }
 
         /** {@inheritDoc} */

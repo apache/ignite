@@ -30,6 +30,7 @@ import org.apache.ignite.internal.processors.rest.client.message.GridRouterRespo
 import org.apache.ignite.internal.processors.rest.protocols.tcp.GridTcpRestParser;
 import org.apache.ignite.internal.util.nio.GridNioSession;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.marshaller.MarshallerUtils;
 
 import static org.apache.ignite.internal.processors.rest.protocols.tcp.GridMemcachedMessage.IGNITE_REQ_FLAG;
 
@@ -85,7 +86,7 @@ class GridTcpRouterNioParser extends GridTcpRestParser {
 
             GridClientMessage clientMsg = (GridClientMessage)msg;
 
-            ByteBuffer res = marsh.marshal(msg, 45);
+            ByteBuffer res = MarshallerUtils.marshal(marsh, msg, 45, ses.igniteConfig());
 
             ByteBuffer slice = res.slice();
 

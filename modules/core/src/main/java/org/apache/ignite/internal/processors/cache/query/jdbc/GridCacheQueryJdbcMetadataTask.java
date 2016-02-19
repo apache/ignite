@@ -41,6 +41,7 @@ import org.apache.ignite.internal.processors.cache.query.GridCacheSqlMetadata;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.marshaller.Marshaller;
+import org.apache.ignite.marshaller.MarshallerUtils;
 import org.apache.ignite.marshaller.jdk.JdkMarshaller;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.resources.LoggerResource;
@@ -153,7 +154,7 @@ public class GridCacheQueryJdbcMetadataTask extends ComputeTaskAdapter<String, b
 
                 status = 0;
 
-                data = MARSHALLER.marshal(F.asList(schemasMap, indexesInfo));
+                data = MarshallerUtils.marshal(MARSHALLER, F.asList(schemasMap, indexesInfo), ignite.configuration());
             }
             catch (Throwable t) {
                 U.error(log, "Failed to get metadata for JDBC.", t);
@@ -163,7 +164,7 @@ public class GridCacheQueryJdbcMetadataTask extends ComputeTaskAdapter<String, b
                 status = 1;
 
                 try {
-                    data = MARSHALLER.marshal(err);
+                    data = MarshallerUtils.marshal(MARSHALLER, err, ignite.configuration());
                 }
                 catch (IgniteCheckedException e) {
                     throw new IgniteException(e);
