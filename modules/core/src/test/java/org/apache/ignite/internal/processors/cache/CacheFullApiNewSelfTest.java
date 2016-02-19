@@ -454,14 +454,14 @@ public class CacheFullApiNewSelfTest extends IgniteCacheConfigPermutationsAbstra
     /**
      * @throws Exception In case of error.
      */
-    public void testGetSerializable() throws Exception {
+    public void _testGetSerializable() throws Exception {
         checkGet(DataMode.SERIALIZABLE);
     }
 
     /**
      * @throws Exception In case of error.
      */
-    public void testGetExternalizable() throws Exception {
+    public void _testGetExternalizable() throws Exception {
         checkGet(DataMode.EXTERNALIZABLE);
     }
 
@@ -895,7 +895,7 @@ public class CacheFullApiNewSelfTest extends IgniteCacheConfigPermutationsAbstra
     /**
      * @throws Exception If failed.
      */
-    public void _testIgniteInvokeOptimisticRepeatableRead1() throws Exception {
+    public void testIgniteInvokeOptimisticRepeatableRead1() throws Exception {
         checkIgniteInvoke(OPTIMISTIC, REPEATABLE_READ, DataMode.PLANE_OBJECT);
     }
 
