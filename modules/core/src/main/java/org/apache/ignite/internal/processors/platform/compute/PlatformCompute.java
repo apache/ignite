@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.platform.compute;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteCompute;
 import org.apache.ignite.binary.BinaryObject;
+import org.apache.ignite.cluster.ClusterGroup;
 import org.apache.ignite.compute.ComputeTaskFuture;
 import org.apache.ignite.internal.IgniteComputeImpl;
 import org.apache.ignite.internal.IgniteInternalFuture;
@@ -30,6 +31,7 @@ import org.apache.ignite.internal.processors.platform.PlatformAbstractTarget;
 import org.apache.ignite.internal.processors.platform.PlatformContext;
 import org.apache.ignite.internal.processors.platform.utils.PlatformFutureUtils;
 import org.apache.ignite.internal.processors.platform.utils.PlatformListenable;
+import org.apache.ignite.internal.processors.platform.utils.PlatformUtils;
 import org.apache.ignite.internal.util.future.IgniteFutureImpl;
 import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgniteInClosure;
@@ -65,18 +67,25 @@ public class PlatformCompute extends PlatformAbstractTarget {
     /** Compute instance. */
     private final IgniteComputeImpl compute;
 
+    /** Compute instance for platform-only nodes. */
+    private final IgniteComputeImpl computeForPlatform;
+
     /** Future for previous asynchronous operation. */
     protected ThreadLocal<IgniteInternalFuture> curFut = new ThreadLocal<>();
     /**
      * Constructor.
      *
      * @param platformCtx Context.
-     * @param compute Compute instance.
+     * @param grp Cluster group.
      */
-    public PlatformCompute(PlatformContext platformCtx, IgniteComputeImpl compute) {
+    public PlatformCompute(PlatformContext platformCtx, ClusterGroup grp) {
         super(platformCtx);
 
-        this.compute = compute;
+        compute = (IgniteComputeImpl)grp.ignite().compute(grp);
+
+        ClusterGroup platformGrp = grp.forAttribute(PlatformUtils.ATTR_PLATFORM, platformCtx.platform());
+
+        computeForPlatform = (IgniteComputeImpl)grp.ignite().compute(platformGrp);
     }
 
     /** {@inheritDoc} */

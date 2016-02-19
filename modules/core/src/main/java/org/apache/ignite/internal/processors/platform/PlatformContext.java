@@ -272,4 +272,11 @@ public interface PlatformContext {
      * @return Cluster node filter.
      */
     public PlatformClusterNodeFilter createClusterNodeFilter(Object filter);
+
+    /**
+     * Gets the current platform name.
+     *
+     * @return Current platform name.
+     */
+    public String platform();
 }

@@ -20,9 +20,11 @@ package org.apache.ignite.internal.processors.platform;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteAtomicSequence;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteCompute;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.cluster.ClusterGroup;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.PlatformConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
@@ -122,7 +124,7 @@ public class PlatformProcessorImpl extends GridProcessorAdapter implements Platf
                 U.warn(log, w);
         }
 
-        platformCtx = new PlatformContextImpl(ctx, interopCfg.gate(), interopCfg.memory());
+        platformCtx = new PlatformContextImpl(ctx, interopCfg.gate(), interopCfg.memory(), interopCfg.platform());
     }
 
     /** {@inheritDoc} */
@@ -305,9 +307,7 @@ public class PlatformProcessorImpl extends GridProcessorAdapter implements Platf
     @Override public PlatformTarget compute(PlatformTarget grp) {
         PlatformClusterGroup grp0 = (PlatformClusterGroup)grp;
 
-        assert grp0.projection() instanceof ClusterGroupAdapter; // Safety for very complex ClusterGroup hierarchy.
-
-        return new PlatformCompute(platformCtx, (IgniteComputeImpl)((ClusterGroupAdapter)grp0.projection()).compute());
+        return new PlatformCompute(platformCtx, grp0.projection());
     }
 
     /** {@inheritDoc} */
