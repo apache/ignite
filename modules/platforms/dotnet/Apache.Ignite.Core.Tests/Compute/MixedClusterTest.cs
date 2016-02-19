@@ -47,7 +47,7 @@ namespace Apache.Ignite.Core.Tests.Compute
 
                 try
                 {
-                    ignite.WaitTopology(2);
+                    Assert.IsTrue(ignite.WaitTopology(2));
 
                     var results = ignite.GetCompute().Broadcast(new ComputeFunc());
 
