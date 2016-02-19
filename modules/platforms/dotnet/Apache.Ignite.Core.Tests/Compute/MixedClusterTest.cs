@@ -59,7 +59,9 @@ namespace Apache.Ignite.Core.Tests.Compute
         /// </summary>
         private static Process StartJavaNode(string igniteHome)
         {
-            return Process.Start(Path.Combine(igniteHome, @"bin\\ignite.bat"));
+            var batPath = Path.Combine(igniteHome, @"bin\\ignite.bat") + @" Config\Compute\compute-grid1.xml";
+
+            return Process.Start(batPath);
         }
 
         /// <summary>
