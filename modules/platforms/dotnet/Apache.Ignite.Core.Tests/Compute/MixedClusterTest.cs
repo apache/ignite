@@ -19,6 +19,7 @@
 namespace Apache.Ignite.Core.Tests.Compute
 {
     using System;
+    using System.Collections;
     using System.Diagnostics;
     using System.IO;
     using System.Linq;
@@ -49,16 +50,38 @@ namespace Apache.Ignite.Core.Tests.Compute
                 {
                     Assert.IsTrue(ignite.WaitTopology(2));
 
-                    var results = ignite.GetCompute().Broadcast(new ComputeFunc());
-
-                    // There are two nodes, but only one can execute .NET jobs
-                    Assert.AreEqual(new[] {int.MaxValue}, results.ToArray());
+                    TestDotNetTask(ignite);
+                    TestJavaTask(ignite);
                 }
                 finally
                 {
                     KillProcessTree(proc);
                 }
             }
+        }
+
+        /// <summary>
+        /// Tests the dot net task.
+        /// </summary>
+        /// <param name="ignite">The ignite.</param>
+        private static void TestDotNetTask(IIgnite ignite)
+        {
+            var results = ignite.GetCompute().Broadcast(new ComputeFunc());
+
+            // There are two nodes, but only one can execute .NET jobs.
+            Assert.AreEqual(new[] {int.MaxValue}, results.ToArray());
+        }
+
+        /// <summary>
+        /// Tests the dot net task.
+        /// </summary>
+        /// <param name="ignite">The ignite.</param>
+        private static void TestJavaTask(IIgnite ignite)
+        {
+            // Java task can execute on both nodes.
+            var res = ignite.GetCompute().ExecuteJavaTask<ICollection>(ComputeApiTest.BroadcastTask, null);
+
+            Assert.AreEqual(2, res.Count);
         }
 
         /// <summary>
