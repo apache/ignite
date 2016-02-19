@@ -26,7 +26,6 @@ import org.apache.ignite.testframework.CacheStartMode;
 import org.apache.ignite.testframework.GridTestSuite;
 import org.apache.ignite.testframework.TestsConfiguration;
 import org.apache.ignite.testframework.config.ConfigurationPermutations;
-import org.apache.ignite.testframework.config.FullApiStateConfigurationFactory;
 import org.apache.ignite.testframework.config.StateConfigurationFactory;
 import org.apache.ignite.testframework.junits.IgniteConfigPermutationsAbstractTest;
 import org.jetbrains.annotations.Nullable;
@@ -67,6 +66,9 @@ public class ConfigPermutationsTestSuiteBuilder {
 
     /** */
     private int[] specificCacheParam;
+
+    /** */
+    private int backups = -1;
 
     /**
      * @param name Name.
@@ -127,9 +129,10 @@ public class ConfigPermutationsTestSuiteBuilder {
      * @return Test suite.
      */
     private TestSuite build(int[] igniteCfgState, @Nullable int[] cacheCfgState, boolean stopNodes) {
-        // TODO FullApiStateConfigurationFactory
-        StateConfigurationFactory factory = new FullApiStateConfigurationFactory(withClients, igniteParams,
+        StateConfigurationFactory factory = new StateConfigurationFactory(withClients, igniteParams,
             igniteCfgState, cacheParams, cacheCfgState);
+
+        factory.backups(backups);
 
         String clsNameSuffix = "[igniteCfg=" + Arrays.toString(igniteCfgState)
             + ", cacheCfgState=" + Arrays.toString(cacheCfgState)
@@ -193,10 +196,25 @@ public class ConfigPermutationsTestSuiteBuilder {
     }
 
     /**
+     * Sets basic cache params and basic count of backups.
      *
+     * @return {@code this} for chaining.
      */
     public ConfigPermutationsTestSuiteBuilder withBasicCacheParams() {
         cacheParams = ConfigurationPermutations.cacheBasicSet();
+        backups = 1;
+
+        return this;
+    }
+
+    /**
+     * @param backups Backups.
+     * @return {@code this} for chaining.
+     */
+    public ConfigPermutationsTestSuiteBuilder backups(int backups) {
+        assert backups > 0: backups;
+
+        this.backups = backups;
 
         return this;
     }

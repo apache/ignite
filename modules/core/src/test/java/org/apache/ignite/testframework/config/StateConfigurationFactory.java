@@ -22,6 +22,8 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.util.typedef.internal.SB;
+import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
+import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.testframework.config.generator.ConfigurationParameter;
 import org.jetbrains.annotations.Nullable;
 
@@ -46,6 +48,9 @@ public class StateConfigurationFactory implements ConfigurationFactory {
 
     /** */
     private final AtomicInteger nodeNum = new AtomicInteger();
+
+    /** */
+    private int backups = -1;
 
     /**
      * @param withClients With client flag.
@@ -93,19 +98,15 @@ public class StateConfigurationFactory implements ConfigurationFactory {
     }
 
     /**
-     * TODO: delete this method and usage.
-     *
      * @param cfg Config.
      * @param srcCfg Source config.
      */
     private static void copyDefaultsFromSource(IgniteConfiguration cfg, IgniteConfiguration srcCfg) {
         cfg.setGridName(srcCfg.getGridName());
         cfg.setGridLogger(srcCfg.getGridLogger());
-//        cfg.setMarshaller(srcCfg.getMarshaller());
         cfg.setNodeId(srcCfg.getNodeId());
         cfg.setIgniteHome(srcCfg.getIgniteHome());
         cfg.setMBeanServer(srcCfg.getMBeanServer());
-//        cfg.setPeerClassLoadingEnabled(srcCfg.isPeerClassLoadingEnabled());
         cfg.setMetricsLogFrequency(srcCfg.getMetricsLogFrequency());
         cfg.setConnectorConfiguration(srcCfg.getConnectorConfiguration());
         cfg.setCommunicationSpi(srcCfg.getCommunicationSpi());
@@ -113,12 +114,17 @@ public class StateConfigurationFactory implements ConfigurationFactory {
         cfg.setDiscoverySpi(srcCfg.getDiscoverySpi());
         cfg.setCheckpointSpi(srcCfg.getCheckpointSpi());
         cfg.setIncludeEventTypes(srcCfg.getIncludeEventTypes());
+
+        // Specials.
+        ((TcpCommunicationSpi)cfg.getCommunicationSpi()).setSharedMemoryPort(-1);
+        ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setForceServerMode(true);
+        cfg.getTransactionConfiguration().setTxSerializableEnabled(true);
     }
 
     /**
      * @return Description.
      */
-    public String getIgniteConfigurationDescription(){
+    public String getIgniteConfigurationDescription() {
         if (igniteParams == null)
             return "";
 
@@ -146,7 +152,7 @@ public class StateConfigurationFactory implements ConfigurationFactory {
     /** {@inheritDoc} */
     @Override public CacheConfiguration cacheConfiguration(String gridName) {
         if (cacheParams == null || cacheCfgState == null)
-            throw new IllegalStateException("Failed to configure cache [cacheParams="+ Arrays.deepToString(cacheParams)
+            throw new IllegalStateException("Failed to configure cache [cacheParams=" + Arrays.deepToString(cacheParams)
                 + ", cacheCfgState=" + Arrays.toString(cacheCfgState) + "]");
 
         CacheConfiguration cfg = new CacheConfiguration();
@@ -160,13 +166,16 @@ public class StateConfigurationFactory implements ConfigurationFactory {
                 cfgC.apply(cfg);
         }
 
+        if (backups > 0)
+            cfg.setBackups(backups);
+
         return cfg;
     }
 
     /**
      * @return Description.
      */
-    public String getCacheConfigurationDescription(){
+    public String getCacheConfigurationDescription() {
         if (cacheCfgState == null)
             return "";
 
@@ -185,9 +194,18 @@ public class StateConfigurationFactory implements ConfigurationFactory {
             }
         }
 
+        if (backups > 0)
+            sb.a(", backups=").a(backups);
+
         sb.a("]");
 
         return sb.toString();
+    }
 
+    /**
+     * @param backups New backups.
+     */
+    public void backups(int backups) {
+        this.backups = backups;
     }
 }

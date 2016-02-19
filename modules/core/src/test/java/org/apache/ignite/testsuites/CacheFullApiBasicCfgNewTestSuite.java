@@ -32,6 +32,7 @@ public class CacheFullApiBasicCfgNewTestSuite extends TestSuite {
     public static TestSuite suite() throws Exception {
         return new ConfigPermutationsTestSuiteBuilder("Cache New Full API Test Suite", CacheFullApiNewSelfTest.class)
             .withBasicCacheParams()
+            .backups(1)
             .gridsCount(5)
             .withClients()
             .build();

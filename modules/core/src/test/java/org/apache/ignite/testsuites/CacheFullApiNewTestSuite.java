@@ -29,7 +29,6 @@ import org.apache.ignite.testframework.CacheStartMode;
 import org.apache.ignite.testframework.GridTestSuite;
 import org.apache.ignite.testframework.TestsConfiguration;
 import org.apache.ignite.testframework.config.ConfigurationPermutations;
-import org.apache.ignite.testframework.config.FullApiStateConfigurationFactory;
 import org.apache.ignite.testframework.config.StateConfigurationFactory;
 import org.apache.ignite.testframework.config.generator.ConfigurationParameter;
 import org.apache.ignite.testframework.config.generator.StateIterator;
@@ -94,8 +93,7 @@ public class CacheFullApiNewTestSuite extends TestSuite {
      */
     private static void addTestSuite(TestSuite suite, int[] igniteCfgState, int[] cacheCfgState, int gridsCnt,
         boolean stop, CacheStartMode cacheStartMode) {
-        // TODO
-        StateConfigurationFactory factory = new FullApiStateConfigurationFactory(false, igniteParams, igniteCfgState,
+        StateConfigurationFactory factory = new StateConfigurationFactory(false, igniteParams, igniteCfgState,
             cacheParams, cacheCfgState);
 
         String clsNameSuffix = "[igniteCfg=" + Arrays.toString(igniteCfgState)

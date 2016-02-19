@@ -29,7 +29,6 @@ import org.apache.ignite.testframework.CacheStartMode;
 import org.apache.ignite.testframework.GridTestSuite;
 import org.apache.ignite.testframework.TestsConfiguration;
 import org.apache.ignite.testframework.config.ConfigurationPermutations;
-import org.apache.ignite.testframework.config.FullApiStateConfigurationFactory;
 import org.apache.ignite.testframework.config.StateConfigurationFactory;
 import org.apache.ignite.testframework.config.generator.ConfigurationParameter;
 import org.apache.ignite.testframework.config.generator.StateIterator;
@@ -94,7 +93,7 @@ public class CacheFullApi4NodesNewTestSuite extends TestSuite {
      */
     private static void addTestSuite(TestSuite suite, int[] igniteCfgState, int[] cacheCfgState, int gridsCnt,
         boolean stop, CacheStartMode cacheStartMode) {
-        StateConfigurationFactory factory = new FullApiStateConfigurationFactory(false, igniteParams, igniteCfgState,
+        StateConfigurationFactory factory = new StateConfigurationFactory(false, igniteParams, igniteCfgState,
             cacheParams, cacheCfgState);
 
         String clsNameSuffix = "[igniteCfg=" + Arrays.toString(igniteCfgState)
@@ -105,31 +104,5 @@ public class CacheFullApi4NodesNewTestSuite extends TestSuite {
         TestsConfiguration testCfg = new TestsConfiguration(factory, clsNameSuffix, stop, cacheStartMode, gridsCnt);
 
         suite.addTest(new GridTestSuite(CacheFullApiNewSelfTest.class, testCfg));
-    }
-
-    /**
-     *
-     */
-    private static class BackupsFullApiStateConfigurationFactory extends FullApiStateConfigurationFactory {
-        /**
-         * @param igniteParams Param.
-         * @param igniteCfgState State.
-         * @param cacheParams Param.
-         * @param cacheCfgState State.
-         */
-        BackupsFullApiStateConfigurationFactory(
-            ConfigurationParameter<IgniteConfiguration>[][] igniteParams, int[] igniteCfgState,
-            ConfigurationParameter<CacheConfiguration>[][] cacheParams, int[] cacheCfgState) {
-            super(false, igniteParams, igniteCfgState, cacheParams, cacheCfgState);
-        }
-
-        /** {@inheritDoc} */
-        @Override public CacheConfiguration cacheConfiguration(String gridName) {
-            CacheConfiguration cc = super.cacheConfiguration(gridName);
-
-            cc.setBackups(2);
-
-            return cc;
-        }
     }
 }
