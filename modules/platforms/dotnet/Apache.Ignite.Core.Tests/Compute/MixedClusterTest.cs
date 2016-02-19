@@ -17,8 +17,9 @@
 
 namespace Apache.Ignite.Core.Tests.Compute
 {
-    using System;
     using System.Diagnostics;
+    using System.Linq;
+    using Apache.Ignite.Core.Compute;
     using NUnit.Framework;
 
     /// <summary>
@@ -36,11 +37,15 @@ namespace Apache.Ignite.Core.Tests.Compute
 
             try
             {
-                using (var ignite = Ignition.Start())
+                using (var ignite = Ignition.Start(TestUtils.GetTestConfiguration()))
                 {
-                    
-                }
+                    ignite.WaitTopology(2);
 
+                    var results = ignite.GetCompute().Broadcast(new ComputeFunc());
+
+                    // There are two nodes, but only one can execute .NET jobs
+                    Assert.AreEqual(new[] {int.MaxValue}, results.ToArray());
+                }
             }
             finally 
             {
@@ -55,6 +60,18 @@ namespace Apache.Ignite.Core.Tests.Compute
         {
             // TODO
             return Process.Start("");
+        }
+
+        /// <summary>
+        /// Test func.
+        /// </summary>
+        private class ComputeFunc : IComputeFunc<int>
+        {
+            /** <inheritdoc /> */
+            public int Invoke()
+            {
+                return int.MaxValue;
+            }
         }
     }
 }

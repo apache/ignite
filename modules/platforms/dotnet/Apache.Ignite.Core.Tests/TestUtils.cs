@@ -215,7 +215,7 @@ namespace Apache.Ignite.Core.Tests
         /// <returns>
         ///   <c>True</c> if topology took required size.
         /// </returns>
-        public static bool WaitTopology(this IIgnite grid, int size, int timeout)
+        public static bool WaitTopology(this IIgnite grid, int size, int timeout = 30000)
         {
             int left = timeout;
 
