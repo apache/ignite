@@ -63,6 +63,11 @@ public class CacheEntrySerializablePredicate implements CacheEntryPredicate {
     }
 
     /** {@inheritDoc} */
+    @Override public void onAckReceived() {
+        // No-op.
+    }
+
+    /** {@inheritDoc} */
     @Override public void entryLocked(boolean locked) {
         assert p != null;
 
@@ -86,7 +91,8 @@ public class CacheEntrySerializablePredicate implements CacheEntryPredicate {
 
         p.prepareMarshal(ctx);
 
-        bytes = ctx.marshaller().marshal(p);
+        if (bytes == null)
+            bytes = ctx.marshaller().marshal(p);
     }
 
     /** {@inheritDoc} */

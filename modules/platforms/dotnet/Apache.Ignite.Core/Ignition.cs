@@ -15,10 +15,12 @@
  * limitations under the License.
  */
 
+#pragma warning disable 618  // deprecated SpringConfigUrl
 namespace Apache.Ignite.Core 
 {
     using System;
     using System.Collections.Generic;
+    using System.Configuration;
     using System.Diagnostics.CodeAnalysis;
     using System.IO;
     using System.Linq;
@@ -41,7 +43,7 @@ namespace Apache.Ignite.Core
     /// <summary>
     /// This class defines a factory for the main Ignite API.
     /// <p/>
-    /// Use <see cref="Ignition.Start()"/> method to start Ignite with default configuration.
+    /// Use <see cref="Start()"/> method to start Ignite with default configuration.
     /// <para/>
     /// All members are thread-safe and may be used concurrently from multiple threads.
     /// </summary>
@@ -49,9 +51,6 @@ namespace Apache.Ignite.Core
     {
         /** */
         internal const string EnvIgniteSpringConfigUrlPrefix = "IGNITE_SPRING_CONFIG_URL_PREFIX";
-
-        /** */
-        private const string DefaultCfg = "config/default-config.xml";
 
         /** */
         private static readonly object SyncRoot = new object();
@@ -118,21 +117,50 @@ namespace Apache.Ignite.Core
         }
 
         /// <summary>
+        /// Reads <see cref="IgniteConfiguration"/> from first <see cref="IgniteConfigurationSection"/> in the 
+        /// application configuration and starts Ignite.
+        /// </summary>
+        /// <returns>Started Ignite.</returns>
+        public static IIgnite StartFromApplicationConfiguration()
+        {
+            var cfg = ConfigurationManager.OpenExeConfiguration(ConfigurationUserLevel.None);
+
+            var section = cfg.Sections.OfType<IgniteConfigurationSection>().FirstOrDefault();
+
+            if (section == null)
+                throw new ConfigurationErrorsException(
+                    string.Format("Could not find {0} in current application configuration",
+                        typeof(IgniteConfigurationSection).Name));
+
+            return Start(section.IgniteConfiguration);
+        }
+
+        /// <summary>
+        /// Reads <see cref="IgniteConfiguration"/> from application configuration 
+        /// <see cref="IgniteConfigurationSection"/> with specified name and starts Ignite.
+        /// </summary>
+        /// <param name="sectionName">Name of the section.</param>
+        /// <returns>Started Ignite.</returns>
+        public static IIgnite StartFromApplicationConfiguration(string sectionName)
+        {
+            IgniteArgumentCheck.NotNullOrEmpty(sectionName, "sectionName");
+
+            var section = ConfigurationManager.GetSection(sectionName) as IgniteConfigurationSection;
+
+            if (section == null)
+                throw new ConfigurationErrorsException(string.Format("Could not find {0} with name '{1}'",
+                    typeof(IgniteConfigurationSection).Name, sectionName));
+
+            return Start(section.IgniteConfiguration);
+        }
+
+        /// <summary>
         /// Starts Ignite with given configuration.
         /// </summary>
         /// <returns>Started Ignite.</returns>
         public unsafe static IIgnite Start(IgniteConfiguration cfg)
         {
             IgniteArgumentCheck.NotNull(cfg, "cfg");
-
-            // Copy configuration to avoid changes to user-provided instance.
-            IgniteConfigurationEx cfgEx = cfg as IgniteConfigurationEx;
-
-            cfg = cfgEx == null ? new IgniteConfiguration(cfg) : new IgniteConfigurationEx(cfgEx);
-
-            // Set default Spring config if needed.
-            if (cfg.SpringConfigUrl == null)
-                cfg.SpringConfigUrl = DefaultCfg;
 
             lock (SyncRoot)
             {
@@ -146,10 +174,11 @@ namespace Apache.Ignite.Core
 
                 IgniteManager.CreateJvmContext(cfg, cbs);
 
-                var gridName = cfgEx != null ? cfgEx.GridName : null;
+                var gridName = cfg.GridName;
 
-                var cfgPath = Environment.GetEnvironmentVariable(EnvIgniteSpringConfigUrlPrefix) +
-                    (cfg.SpringConfigUrl ?? DefaultCfg);
+                var cfgPath = cfg.SpringConfigUrl == null 
+                    ? null 
+                    : Environment.GetEnvironmentVariable(EnvIgniteSpringConfigUrlPrefix) + cfg.SpringConfigUrl;
 
                 // 3. Create startup object which will guide us through the rest of the process.
                 _startup = new Startup(cfg, cbs);
@@ -230,7 +259,7 @@ namespace Apache.Ignite.Core
             {
                 BinaryReader reader = BinaryUtils.Marshaller.StartUnmarshal(inStream);
 
-                PrepareConfiguration(reader);
+                PrepareConfiguration(reader, outStream);
 
                 PrepareLifecycleBeans(reader, outStream, handleRegistry);
             }
@@ -246,7 +275,8 @@ namespace Apache.Ignite.Core
         /// Preapare configuration.
         /// </summary>
         /// <param name="reader">Reader.</param>
-        private static void PrepareConfiguration(BinaryReader reader)
+        /// <param name="outStream">Response stream.</param>
+        private static void PrepareConfiguration(BinaryReader reader, PlatformMemoryStream outStream)
         {
             // 1. Load assemblies.
             IgniteConfiguration cfg = _startup.Configuration;
@@ -265,6 +295,9 @@ namespace Apache.Ignite.Core
                 cfg.BinaryConfiguration = binaryCfg;
 
             _startup.Marshaller = new Marshaller(cfg.BinaryConfiguration);
+
+            // 3. Send configuration details to Java
+            cfg.Write(_startup.Marshaller.StartMarshal(outStream));
         }
 
         /// <summary>

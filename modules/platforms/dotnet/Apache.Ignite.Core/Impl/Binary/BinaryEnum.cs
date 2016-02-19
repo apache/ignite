@@ -87,6 +87,12 @@ namespace Apache.Ignite.Core.Impl.Binary
         }
 
         /** <inheritdoc /> */
+        public IBinaryObjectBuilder ToBuilder()
+        {
+            return _marsh.Ignite.GetBinary().GetBuilder(this);
+        }
+
+        /** <inheritdoc /> */
         public bool Equals(BinaryEnum other)
         {
             if (ReferenceEquals(null, other))

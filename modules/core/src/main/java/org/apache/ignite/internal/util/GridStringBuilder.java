@@ -425,6 +425,25 @@ public class GridStringBuilder implements Serializable {
     }
 
     /**
+     * Appends given long value as a hex string to this string builder.
+     *
+     * @param val Value to append.
+     * @return This builder for chaining method calls.
+     */
+    public GridStringBuilder appendHex(long val) {
+        String hex = Long.toHexString(val);
+
+        int len = hex.length();
+
+        for (int i = 0; i < 16 - len; i++)
+            a('0');
+
+        a(hex);
+
+        return this;
+    }
+
+    /**
      *
      * @param s Stream to write to.
      * @throws IOException Thrown in case of any IO errors.

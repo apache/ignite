@@ -106,7 +106,7 @@ public class HadoopMapReduceEmbeddedSelfTest extends HadoopMapReduceTest {
 
             Job job = Job.getInstance(jobConf);
 
-            HadoopWordCount2.setTasksClasses(job, useNewAPI, useNewAPI, useNewAPI);
+            HadoopWordCount2.setTasksClasses(job, useNewAPI, useNewAPI, useNewAPI, false);
 
             if (useNewAPI) {
                 job.setPartitionerClass(CustomV2Partitioner.class);
