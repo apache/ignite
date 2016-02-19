@@ -20,13 +20,12 @@
             .modal-header
                 button.close(ng-click='$hide()') &times;
                 h4.modal-title New SQL notebook
-            form.form-horizontal(name='ui.inputForm' novalidate)
-                .modal-body.row
-                    .login
-                        .col-sm-3
-                            label.required.labelFormField Name:&nbsp;
-                        .col-sm-9
-                            input.form-control(id='create-notebook' type='text' ng-model='name' required on-enter='ui.inputForm.$valid && createNewNotebook(name)' auto-focus)
+            form.form-horizontal.modal-body.row(name='ui.inputForm' novalidate)
+                div
+                    .col-sm-2
+                        label.required.labelFormField Name:&nbsp;
+                    .col-sm-10
+                        input.form-control(id='create-notebook' type='text' ng-model='name' required on-enter='ui.inputForm.$valid && createNewNotebook(name)' auto-focus)
             .modal-footer
                 button.btn.btn-default(id='copy-btn-cancel' ng-click='$hide()') Cancel
                 button.btn.btn-primary(id='copy-btn-confirm' ng-disabled='ui.inputForm.$invalid' ng-click='createNewNotebook(name)') Create

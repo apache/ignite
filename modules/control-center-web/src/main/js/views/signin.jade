@@ -63,7 +63,7 @@ header#header.header
                             .settings-row(ng-show='action != "password/forgot"')
                                 +lblRequired('Password:')
                                 .col-xs-9.col-md-8
-                                    input#user_password.form-control(enter-focus-next='user_confirm' type='password' ng-model='user_info.password' placeholder='Password' ng-required='action != "password/forgot"' on-enter='action == "login" && form.$valid && auth(action, user_info)')
+                                    input#user_password.form-control(enter-focus-next='user_confirm' type='password' ng-model='user_info.password' placeholder='Password' ng-required='action != "password/forgot"' on-enter='action == "signin" && form.$valid && auth(action, user_info)')
                             .settings-row(ng-if='action == "signup"')
                                 +lblRequired('Confirm:')
                                 .col-xs-9.col-md-8

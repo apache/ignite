@@ -21,11 +21,11 @@
                 button.close(ng-click='$hide()') &times;
                 h4.modal-title Clone
             form.form-horizontal.modal-body.row(name='ui.inputForm' novalidate)
-                    .login
-                        .col-sm-3
-                            label.required.labelFormField New name:&nbsp;
-                        .col-sm-9
-                            input.form-control(id='copy-new-name' type='text' ng-model='newName' required auto-focus)
+                div
+                    .col-sm-2
+                        label.required.labelFormField New name:&nbsp;
+                    .col-sm-10
+                        input.form-control(id='copy-new-name' type='text' ng-model='newName' required auto-focus)
             .modal-footer
                 button.btn.btn-default(id='copy-btn-cancel' ng-click='$hide()') Cancel
                 button.btn.btn-primary(id='copy-btn-confirm' ng-disabled='ui.inputForm.$invalid' ng-click='ok(newName)') Confirm
