@@ -373,4 +373,90 @@ BOOST_AUTO_TEST_CASE(TestTwoRowsString)
     BOOST_CHECK(ret == SQL_NO_DATA);
 }
 
+BOOST_AUTO_TEST_CASE(TestOneRowString)
+{
+    SQLRETURN ret;
+
+    testCache.Put(1, TestType(1, 2, 3, 4, "5", 6.0f, 7.0, true, Guid(8, 9)));
+
+    const size_t columnsCnt = 9;
+
+    SQLCHAR columns[ODBC_BUFFER_SIZE][columnsCnt] = { 0 };
+
+    SQLLEN columnLens[columnsCnt] = { 0 };
+
+    // Binding colums.
+    for (SQLSMALLINT i = 0; i < columnsCnt; ++i)
+    {
+        ret = SQLBindCol(stmt, i + 1, SQL_C_CHAR, &columns[i], ODBC_BUFFER_SIZE, &columnLens[i]);
+
+        if (!SQL_SUCCEEDED(ret))
+            BOOST_ERROR(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
+    }
+
+    ret = SQLFetch(stmt);
+    if (!SQL_SUCCEEDED(ret))
+        BOOST_ERROR(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
+
+    BOOST_CHECK_EQUAL(std::string(reinterpret_cast<char*>(columns[0])), "1");
+    BOOST_CHECK_EQUAL(std::string(reinterpret_cast<char*>(columns[1])), "2");
+    BOOST_CHECK_EQUAL(std::string(reinterpret_cast<char*>(columns[2])), "3");
+    BOOST_CHECK_EQUAL(std::string(reinterpret_cast<char*>(columns[3])), "4");
+    BOOST_CHECK_EQUAL(std::string(reinterpret_cast<char*>(columns[4])), "5");
+    BOOST_CHECK_EQUAL(std::string(reinterpret_cast<char*>(columns[5])), "6");
+    BOOST_CHECK_EQUAL(std::string(reinterpret_cast<char*>(columns[6])), "7");
+    BOOST_CHECK_EQUAL(std::string(reinterpret_cast<char*>(columns[7])), "1");
+    BOOST_CHECK_EQUAL(std::string(reinterpret_cast<char*>(columns[8])), "00000000-0000-0008-0000-000000000009");
+
+    BOOST_CHECK_EQUAL(columnLens[0], 1);
+    BOOST_CHECK_EQUAL(columnLens[1], 1);
+    BOOST_CHECK_EQUAL(columnLens[2], 1);
+    BOOST_CHECK_EQUAL(columnLens[3], 1);
+    BOOST_CHECK_EQUAL(columnLens[4], 1);
+    BOOST_CHECK_EQUAL(columnLens[5], 1);
+    BOOST_CHECK_EQUAL(columnLens[6], 1);
+    BOOST_CHECK_EQUAL(columnLens[7], 1);
+    BOOST_CHECK_EQUAL(columnLens[8], 36);
+
+    ret = SQLFetch(stmt);
+    BOOST_CHECK(ret == SQL_NO_DATA);
+}
+
+BOOST_AUTO_TEST_CASE(TestOneRowStringLen)
+{
+    SQLRETURN ret;
+
+    testCache.Put(1, TestType(1, 2, 3, 4, "5", 6.0f, 7.0, true, Guid(8, 9)));
+
+    const size_t columnsCnt = 9;
+
+    SQLLEN columnLens[columnsCnt] = { 0 };
+
+    // Binding colums.
+    for (SQLSMALLINT i = 0; i < columnsCnt; ++i)
+    {
+        ret = SQLBindCol(stmt, i + 1, SQL_C_CHAR, 0, 0, &columnLens[i]);
+
+        if (!SQL_SUCCEEDED(ret))
+            BOOST_ERROR(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
+    }
+
+    ret = SQLFetch(stmt);
+    if (!SQL_SUCCEEDED(ret))
+        BOOST_ERROR(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
+
+    BOOST_CHECK_EQUAL(columnLens[0], 1);
+    BOOST_CHECK_EQUAL(columnLens[1], 1);
+    BOOST_CHECK_EQUAL(columnLens[2], 1);
+    BOOST_CHECK_EQUAL(columnLens[3], 1);
+    BOOST_CHECK_EQUAL(columnLens[4], 1);
+    BOOST_CHECK_EQUAL(columnLens[5], 1);
+    BOOST_CHECK_EQUAL(columnLens[6], 1);
+    BOOST_CHECK_EQUAL(columnLens[7], 1);
+    BOOST_CHECK_EQUAL(columnLens[8], 36);
+
+    ret = SQLFetch(stmt);
+    BOOST_CHECK(ret == SQL_NO_DATA);
+}
+
 BOOST_AUTO_TEST_SUITE_END()
