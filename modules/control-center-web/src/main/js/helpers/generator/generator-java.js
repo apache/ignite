@@ -2561,13 +2561,7 @@ $generatorJava.dataSourceClassName = function (res, storeFactory) {
     return undefined;
 };
 
-var MAX_PARKING_CNT = 5;
-var MAX_CAR_CNT = 10;
-var MAX_COUNTRY_CNT = 5;
-var MAX_DEPARTMENT_CNT = 5;
-var MAX_EMPLOYE_CNT = 10;
-
-// Defined queries for demo data.
+// Descriptors for generation of demo data.
 var PREDEFINED_QUERIES = [
     {
         schema: 'CARS',
@@ -2576,13 +2570,13 @@ var PREDEFINED_QUERIES = [
             'ID       INTEGER     NOT NULL PRIMARY KEY,\n' +
             'NAME     VARCHAR(50) NOT NULL,\n' +
             'CAPACITY INTEGER NOT NULL)',
-        fillQuery: function () {
-            var queries = ['DELETE FROM CARS.PARKING;'];
-
-            for (var id = 0; id < MAX_PARKING_CNT; id++)
-                queries.push('INSERT INTO CARS.PARKING(ID, NAME, CAPACITY) VALUES(' + id + ', \'Parking #' + (id + 1) +  '\', 10);');
-
-            return queries;
+        clearQuery: 'DELETE FROM CARS.PARKING',
+        insertCntConsts: [{name: 'EXAMPLE_MAX_PARKING_CNT', val: 5, comment: 'How many parkings to generate.'}],
+        insertPattern: ['INSERT INTO CARS.PARKING(ID, NAME, CAPACITY) VALUES(?, ?, ?)'],
+        fillInsertParameters: function (res) {
+            res.line('stmt.setInt(1, id);');
+            res.line('stmt.setString(2, "Parking #" + (id + 1));');
+            res.line('stmt.setInt(3, 10 + rnd.nextInt(20));');
         },
         selectQuery: [
             "SELECT * FROM PARKING WHERE CAPACITY >= 20"
@@ -2595,13 +2589,17 @@ var PREDEFINED_QUERIES = [
             'ID         INTEGER NOT NULL PRIMARY KEY,\n' +
             'PARKING_ID INTEGER NOT NULL,\n' +
             'NAME       VARCHAR(50) NOT NULL);',
-        fillQuery: function () {
-            var queries = ['DELETE FROM CARS.CAR;'];
-
-            for (var id = 0; id < MAX_CAR_CNT; id++)
-                queries.push('INSERT INTO CARS.CAR(ID, PARKING_ID, NAME) VALUES(' + id + ', ' + Math.floor(Math.random() * MAX_PARKING_CNT) + ', \'Car #' + (id + 1) + '\');');
-
-            return queries;
+        clearQuery: 'DELETE FROM CARS.CAR',
+        rndRequired: true,
+        insertCntConsts: [
+            {name: 'EXAMPLE_MAX_CAR_CNT', val: 10, comment: 'How many cars to generate.'},
+            {name: 'EXAMPLE_MAX_PARKING_CNT', val: 5, comment: 'How many parkings to generate.'}
+        ],
+        insertPattern: ['INSERT INTO CARS.CAR(ID, PARKING_ID, NAME) VALUES(?, ?, ?)'],
+        fillInsertParameters: function (res) {
+            res.line('stmt.setInt(1, id);');
+            res.line('stmt.setInt(2, rnd.nextInt(EXAMPLE_MAX_PARKING_CNT));');
+            res.line('stmt.setString(3, "Car #" + (id + 1));');
         },
         selectQuery: [
             "SELECT * FROM CAR WHERE PARKINGID = 2"
@@ -2613,13 +2611,13 @@ var PREDEFINED_QUERIES = [
             'ID         INTEGER NOT NULL PRIMARY KEY,\n' +
             'NAME       VARCHAR(50),\n' +
             'POPULATION INTEGER NOT NULL);',
-        fillQuery: function () {
-            var queries = ['DELETE FROM COUNTRY;'];
-
-            for (var id = 0; id < MAX_COUNTRY_CNT; id++)
-                queries.push('INSERT INTO COUNTRY(ID, NAME, POPULATION) VALUES(' + id + ', \'Country #' + (id + 1) + '\', ' + ((id + 1) * 10000000) + ');');
-
-            return queries;
+        clearQuery: 'DELETE FROM COUNTRY',
+        insertCntConsts: [{name: 'EXAMPLE_MAX_COUNTRY_CNT', val: 5, comment: 'How many countries to generate.'}],
+        insertPattern: ['INSERT INTO COUNTRY(ID, NAME, POPULATION) VALUES(?, ?, ?)'],
+        fillInsertParameters: function (res) {
+            res.line('stmt.setInt(1, id);');
+            res.line('stmt.setString(2, "Country #" + (id + 1));');
+            res.line('stmt.setInt(3, 10000000 + rnd.nextInt(100000000));');
         },
         selectQuery: [
             "SELECT * FROM COUNTRY WHERE POPULATION BETWEEN 15000000 AND 25000000"
@@ -2631,13 +2629,17 @@ var PREDEFINED_QUERIES = [
             'ID         INTEGER NOT NULL PRIMARY KEY,\n' +
             'COUNTRY_ID INTEGER NOT NULL,\n' +
             'NAME       VARCHAR(50) NOT NULL);',
-        fillQuery: function () {
-            var queries = ['DELETE FROM DEPARTMENT;'];
-
-            for (var id = 0; id < MAX_DEPARTMENT_CNT; id++)
-                queries.push('INSERT INTO DEPARTMENT(ID, COUNTRY_ID, NAME) VALUES(' + id + ', ' + Math.floor(Math.random() * MAX_COUNTRY_CNT) + ', \'Department #' + (id + 1) + '\');');
-
-            return queries;
+        clearQuery: 'DELETE FROM DEPARTMENT',
+        rndRequired: true,
+        insertCntConsts: [
+            {name: 'EXAMPLE_MAX_DEPARTMENT_CNT', val: 5, comment: 'How many departments to generate.'},
+            {name: 'EXAMPLE_MAX_COUNTRY_CNT', val: 5, comment: 'How many countries to generate.'}
+        ],
+        insertPattern: ['INSERT INTO DEPARTMENT(ID, COUNTRY_ID, NAME) VALUES(?, ?, ?)'],
+        fillInsertParameters: function (res) {
+            res.line('stmt.setInt(1, id);');
+            res.line('stmt.setInt(2, rnd.nextInt(EXAMPLE_MAX_COUNTRY_CNT));');
+            res.line('stmt.setString(3, "Department #" + (id + 1));');
         },
         selectQuery: [
             "SELECT * FROM DEPARTMENT"
@@ -2656,23 +2658,62 @@ var PREDEFINED_QUERIES = [
             'HIRE_DATE     DATE        NOT NULL,\n' +
             'JOB           VARCHAR(50) NOT NULL,\n' +
             'SALARY        DOUBLE);',
-        fillQuery: function () {
-            var queries = ['DELETE FROM EMPLOYEE;'];
+        clearQuery: 'DELETE FROM EMPLOYEE',
+        rndRequired: true,
+        insertCntConsts: [
+            {name: 'EXAMPLE_MAX_EMPLOYEE_CNT', val: 10, comment: 'How many employees to generate.'},
+            {name: 'EXAMPLE_MAX_DEPARTMENT_CNT', val: 5, comment: 'How many departments to generate.'}
+        ],
+        specialGeneration: function (res, conVar) {
+            $generatorJava.declareVariableCustom(res, 'stmt', 'java.sql.PreparedStatement', conVar +
+                '.prepareStatement("INSERT INTO EMPLOYEE(ID, DEPARTMENT_ID, FIRST_NAME, LAST_NAME, EMAIL, PHONE_NUMBER, HIRE_DATE, JOB, SALARY) VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?)")');
 
-            for (var id = 0; id < MAX_DEPARTMENT_CNT; id++)
-                queries.push('INSERT INTO EMPLOYEE(ID, DEPARTMENT_ID, FIRST_NAME, LAST_NAME, EMAIL, PHONE_NUMBER, HIRE_DATE, JOB, SALARY) VALUES(' +
-                        id + ', ' + id + ', \'First name manager #' + (id + 1) + '\', \'Last name manager #' + (id + 1) + '\', \'Email manager #' +
-                        (id + 1) + '\', \'Phone number manager #' + (id + 1) + '\', \'2014-01-01\', \'Job manager #' + (id + 1) + '\', ' + (1100 + 50 * id) + ');');
+            res.startBlock('for (int id = 0; id < EXAMPLE_MAX_DEPARTMENT_CNT; id ++) {');
+            res.line('stmt.setInt(1, id);');
+            res.line('stmt.setInt(2, id);');
+            res.line('stmt.setString(3, "First name manager #" + (id + 1));');
+            res.line('stmt.setString(4, "Last name manager#" + (id + 1));');
+            res.line('stmt.setString(5, "Email manager#" + (id + 1));');
+            res.line('stmt.setString(6, "Phone number manager#" + (id + 1));');
+            res.line('stmt.setString(7, "2014-01-01");');
+            res.line('stmt.setString(8, "Job manager #" + (id + 1));');
+            res.line('stmt.setDouble(9, 1000.0 + rnd.nextInt(500));');
 
-            for (id = 0; id < MAX_EMPLOYE_CNT; id++) {
-                var depId = Math.floor(Math.random() * MAX_DEPARTMENT_CNT);
+            res.needEmptyLine = true;
 
-                queries.push('INSERT INTO EMPLOYEE(ID, DEPARTMENT_ID, MANAGER_ID, FIRST_NAME, LAST_NAME, EMAIL, PHONE_NUMBER, HIRE_DATE, JOB, SALARY) VALUES(' +
-                    (100 + id) + ', ' + depId + ', ' + depId + ', \'First name employee #' + (id + 1) + '\', \'Last name employee #' + (id + 1) + '\', \'Email employee #' +
-                    (id + 1) + '\', \'Phone number employee #' + (id + 1) + '\', \'2014-01-01\', \'Job employee #' + (id + 1) + '\', ' + (600 + 50 * id + 50 * depId) + ');');
-            }
+            res.line('stmt.executeUpdate();');
 
-            return queries;
+            res.endBlock('}');
+
+            res.needEmptyLine = true;
+
+            $generatorJava.declareVariableCustom(res, 'stmt', 'java.sql.PreparedStatement', conVar +
+                '.prepareStatement("INSERT INTO EMPLOYEE(ID, DEPARTMENT_ID, MANAGER_ID, FIRST_NAME, LAST_NAME, EMAIL, PHONE_NUMBER, HIRE_DATE, JOB, SALARY) VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?)")');
+
+            res.startBlock('for (int id = 0; id < EXAMPLE_MAX_EMPLOYEE_CNT; id ++) {');
+
+            res.needEmptyLine = true;
+
+            res.line('int depId = rnd.nextInt(EXAMPLE_MAX_DEPARTMENT_CNT);');
+
+            res.line('stmt.setInt(1, EXAMPLE_MAX_DEPARTMENT_CNT + id);');
+            res.line('stmt.setInt(2, depId);');
+            res.line('stmt.setInt(3, depId);');
+            res.line('stmt.setString(4, "First name manager #" + (id + 1));');
+            res.line('stmt.setString(5, "Last name manager#" + (id + 1));');
+            res.line('stmt.setString(6, "Email manager#" + (id + 1));');
+            res.line('stmt.setString(7, "Phone number manager#" + (id + 1));');
+            res.line('stmt.setString(8, "2014-01-01");');
+            res.line('stmt.setString(9, "Job manager #" + (id + 1));');
+            res.line('stmt.setDouble(10, 600.0 + rnd.nextInt(300));');
+
+            res.needEmptyLine = true;
+
+            res.line('stmt.executeUpdate();');
+
+            res.endBlock('}');
+
+            res.needEmptyLine = true;
         },
         selectQuery: [
             "SELECT * FROM EMPLOYEE WHERE MANAGERID IS NOT NULL"
@@ -2765,14 +2806,49 @@ $generatorJava.generateExample = function (cluster, res, factoryCls) {
                 typeByDs[ds].push(type);
         });
 
+        var rndDefined = false;
+
+        var generatedConsts = [];
+
+        _.forEach(typeByDs, function (types) {
+            _.forEach(types, function (type) {
+                _.forEach(type.domains, function (domain) {
+                    var desc = _.find(PREDEFINED_QUERIES, function (desc) {
+                        return domain.valueType.toUpperCase().endsWith(desc.type);
+                    });
+
+                    if (desc) {
+                        if (!rndDefined && desc.rndRequired) {
+                            res.line('/** Random generator for demo data. */');
+                            $generatorJava.declareVariableCustom(res, 'rnd', 'java.util.Random', 'new Random()', 'private static final');
+
+                            rndDefined = true;
+                        }
+
+                        _.forEach(desc.insertCntConsts, function (cnt) {
+                            if (!_.contains(generatedConsts, cnt.name)) {
+                                res.line('/** ' + cnt.comment + ' */');
+                                res.line('private static final int ' + cnt.name + ' = ' + cnt.val + ';');
+                                res.needEmptyLine = true;
+
+                                generatedConsts.push(cnt.name);
+                            }
+                        });
+                    }
+                });
+            });
+        });
+
+        res.needEmptyLine = true;
+
         // Generation of fill database method
-        res.line('/** Fill data for domain model demo example. */');
+        res.line('/** Fill data for Demo example. */');
         res.startBlock('private static void prepareExampleData() throws ' + res.importClass('java.sql.SQLException') + ' {');
 
         _.forEach(typeByDs, function (types, ds) {
             var conVar = ds + 'Con';
 
-            res.startBlock('try (' + res.importClass('java.sql.Connection') + ' ' + conVar + ' = ' + factoryCls + '.DataSources.INSTANCE_' + ds + '.getConnection()) {');
+            res.startBlock('try (' + res.importClass('java.sql.Connection') + ' ' + conVar + ' = ' + res.importClass(factoryCls) + '.DataSources.INSTANCE_' + ds + '.getConnection()) {');
 
             _.forEach(types, function (type) {
                 _.forEach(type.domains, function (domain) {
@@ -2785,7 +2861,28 @@ $generatorJava.generateExample = function (cluster, res, factoryCls) {
                             _prepareStatement(res, conVar, 'CREATE SCHEMA IF NOT EXISTS ' + desc.schema);
 
                         _prepareStatement(res, conVar, desc.create);
-                        _prepareStatement(res, conVar, desc.fillQuery().join('\n'));
+
+                        _prepareStatement(res, conVar, desc.clearQuery);
+
+                        res.needEmptyLine = true;
+
+                        if (!desc.specialGeneration) {
+                            $generatorJava.declareVariableCustom(res, 'stmt', 'java.sql.PreparedStatement', conVar + '.prepareStatement("' + desc.insertPattern + '")');
+
+                            res.startBlock('for (int id = 0; id < ' + desc.insertCntConsts[0].name + '; id ++) {');
+
+                            desc.fillInsertParameters(res);
+
+                            res.needEmptyLine = true;
+
+                            res.line('stmt.executeUpdate();');
+
+                            res.endBlock('}');
+
+                            res.needEmptyLine = true;
+                        }
+                        else
+                            desc.specialGeneration(res, conVar);
 
                         res.line(conVar + '.commit();');
 
