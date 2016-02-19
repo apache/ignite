@@ -35,6 +35,9 @@
 #include "ignite/ignition.h"
 
 #include "test_type.h"
+#include "test_utils.h"
+
+using namespace test_utils;
 
 using namespace ignite;
 using namespace ignite::cache;
@@ -155,10 +158,10 @@ struct QueriesTestSuiteFixture
     {
         SQLRETURN ret;
 
-        testCache.Put(1, TestType(1, 2, 3, 4, "5", 6.0f, 7.0, true, Guid(8, 9)));
-        testCache.Put(2, TestType(8, 7, 6, 5, "4", 3.0f, 2.0, false, Guid(1, 0)));
+        testCache.Put(1, TestType(1, 2, 3, 4, "5", 6.0f, 7.0, true, Guid(8, 9), MakeDate(1987, 6, 5), MakeTimestamp(1998, 12, 27, 1, 2, 3, 456)));
+        testCache.Put(2, TestType(8, 7, 6, 5, "4", 3.0f, 2.0, false, Guid(1, 0), MakeDate(1976, 1, 12), MakeTimestamp(1978, 8, 21, 23, 13, 45, 456)));
 
-        const size_t columnsCnt = 9;
+        const size_t columnsCnt = 11;
 
         T columns[columnsCnt] = { 0 };
 
@@ -193,6 +196,8 @@ struct QueriesTestSuiteFixture
         BOOST_CHECK_EQUAL(columns[6], 7);
         BOOST_CHECK_EQUAL(columns[7], 1);
         BOOST_CHECK_EQUAL(columns[8], 0);
+        BOOST_CHECK_EQUAL(columns[9], 0);
+        BOOST_CHECK_EQUAL(columns[10], 0);
 
         SQLLEN columnLens[columnsCnt] = { 0 };
 
@@ -218,6 +223,8 @@ struct QueriesTestSuiteFixture
         BOOST_CHECK_EQUAL(columns[6], 2);
         BOOST_CHECK_EQUAL(columns[7], 0);
         BOOST_CHECK_EQUAL(columns[8], 0);
+        BOOST_CHECK_EQUAL(columns[9], 0);
+        BOOST_CHECK_EQUAL(columns[10], 0);
 
         BOOST_CHECK_EQUAL(columnLens[0], 0);
         BOOST_CHECK_EQUAL(columnLens[1], 0);
@@ -228,6 +235,8 @@ struct QueriesTestSuiteFixture
         BOOST_CHECK_EQUAL(columnLens[6], 0);
         BOOST_CHECK_EQUAL(columnLens[7], 0);
         BOOST_CHECK_EQUAL(columnLens[8], SQL_NO_TOTAL);
+        BOOST_CHECK_EQUAL(columnLens[9], SQL_NO_TOTAL);
+        BOOST_CHECK_EQUAL(columnLens[10], SQL_NO_TOTAL);
 
         ret = SQLFetch(stmt);
         BOOST_CHECK(ret == SQL_NO_DATA);
@@ -295,10 +304,10 @@ BOOST_AUTO_TEST_CASE(TestTwoRowsString)
 {
     SQLRETURN ret;
 
-    testCache.Put(1, TestType(1, 2, 3, 4, "5", 6.0f, 7.0, true, Guid(8, 9)));
-    testCache.Put(2, TestType(8, 7, 6, 5, "4", 3.0f, 2.0, false, Guid(1, 0)));
+    testCache.Put(1, TestType(1, 2, 3, 4, "5", 6.0f, 7.0, true, Guid(8, 9), MakeDate(1987, 6, 5), MakeTimestamp(1998, 12, 27, 1, 2, 3, 456)));
+    testCache.Put(2, TestType(8, 7, 6, 5, "4", 3.0f, 2.0, false, Guid(1, 0), MakeDate(1976, 1, 12), MakeTimestamp(1978, 8, 21, 23, 13, 45, 999999999)));
 
-    const size_t columnsCnt = 9;
+    const size_t columnsCnt = 11;
 
     SQLCHAR columns[ODBC_BUFFER_SIZE][columnsCnt] = { 0 };
 
@@ -333,6 +342,8 @@ BOOST_AUTO_TEST_CASE(TestTwoRowsString)
     BOOST_CHECK_EQUAL(std::string(reinterpret_cast<char*>(columns[6])), "7");
     BOOST_CHECK_EQUAL(std::string(reinterpret_cast<char*>(columns[7])), "1");
     BOOST_CHECK_EQUAL(std::string(reinterpret_cast<char*>(columns[8])), "00000000-0000-0008-0000-000000000009");
+    BOOST_CHECK_EQUAL(std::string(reinterpret_cast<char*>(columns[9])), "1987-06-05");
+    BOOST_CHECK_EQUAL(std::string(reinterpret_cast<char*>(columns[10])), "1998-12-27 01:02:03");
 
     SQLLEN columnLens[columnsCnt] = { 0 };
 
@@ -358,6 +369,8 @@ BOOST_AUTO_TEST_CASE(TestTwoRowsString)
     BOOST_CHECK_EQUAL(std::string(reinterpret_cast<char*>(columns[6])), "2");
     BOOST_CHECK_EQUAL(std::string(reinterpret_cast<char*>(columns[7])), "0");
     BOOST_CHECK_EQUAL(std::string(reinterpret_cast<char*>(columns[8])), "00000000-0000-0001-0000-000000000000");
+    BOOST_CHECK_EQUAL(std::string(reinterpret_cast<char*>(columns[9])), "1976-01-12");
+    BOOST_CHECK_EQUAL(std::string(reinterpret_cast<char*>(columns[10])), "1978-08-21 23:13:45");
 
     BOOST_CHECK_EQUAL(columnLens[0], 1);
     BOOST_CHECK_EQUAL(columnLens[1], 1);
@@ -368,6 +381,8 @@ BOOST_AUTO_TEST_CASE(TestTwoRowsString)
     BOOST_CHECK_EQUAL(columnLens[6], 1);
     BOOST_CHECK_EQUAL(columnLens[7], 1);
     BOOST_CHECK_EQUAL(columnLens[8], 36);
+    BOOST_CHECK_EQUAL(columnLens[9], 11);
+    BOOST_CHECK_EQUAL(columnLens[10], 20);
 
     ret = SQLFetch(stmt);
     BOOST_CHECK(ret == SQL_NO_DATA);
@@ -377,9 +392,9 @@ BOOST_AUTO_TEST_CASE(TestOneRowString)
 {
     SQLRETURN ret;
 
-    testCache.Put(1, TestType(1, 2, 3, 4, "5", 6.0f, 7.0, true, Guid(8, 9)));
+    testCache.Put(1, TestType(1, 2, 3, 4, "5", 6.0f, 7.0, true, Guid(8, 9), MakeDate(1987, 6, 5), MakeTimestamp(1998, 12, 27, 1, 2, 3, 456)));
 
-    const size_t columnsCnt = 9;
+    const size_t columnsCnt = 11;
 
     SQLCHAR columns[ODBC_BUFFER_SIZE][columnsCnt] = { 0 };
 
@@ -407,6 +422,8 @@ BOOST_AUTO_TEST_CASE(TestOneRowString)
     BOOST_CHECK_EQUAL(std::string(reinterpret_cast<char*>(columns[6])), "7");
     BOOST_CHECK_EQUAL(std::string(reinterpret_cast<char*>(columns[7])), "1");
     BOOST_CHECK_EQUAL(std::string(reinterpret_cast<char*>(columns[8])), "00000000-0000-0008-0000-000000000009");
+    BOOST_CHECK_EQUAL(std::string(reinterpret_cast<char*>(columns[9])), "1987-06-05");
+    BOOST_CHECK_EQUAL(std::string(reinterpret_cast<char*>(columns[10])), "1998-12-27 01:02:03");
 
     BOOST_CHECK_EQUAL(columnLens[0], 1);
     BOOST_CHECK_EQUAL(columnLens[1], 1);
@@ -417,6 +434,8 @@ BOOST_AUTO_TEST_CASE(TestOneRowString)
     BOOST_CHECK_EQUAL(columnLens[6], 1);
     BOOST_CHECK_EQUAL(columnLens[7], 1);
     BOOST_CHECK_EQUAL(columnLens[8], 36);
+    BOOST_CHECK_EQUAL(columnLens[9], 11);
+    BOOST_CHECK_EQUAL(columnLens[10], 20);
 
     ret = SQLFetch(stmt);
     BOOST_CHECK(ret == SQL_NO_DATA);
@@ -426,9 +445,9 @@ BOOST_AUTO_TEST_CASE(TestOneRowStringLen)
 {
     SQLRETURN ret;
 
-    testCache.Put(1, TestType(1, 2, 3, 4, "5", 6.0f, 7.0, true, Guid(8, 9)));
+    testCache.Put(1, TestType(1, 2, 3, 4, "5", 6.0f, 7.0, true, Guid(8, 9), MakeDate(1987, 6, 5), MakeTimestamp(1998, 12, 27, 1, 2, 3, 456)));
 
-    const size_t columnsCnt = 9;
+    const size_t columnsCnt = 11;
 
     SQLLEN columnLens[columnsCnt] = { 0 };
 
@@ -454,6 +473,8 @@ BOOST_AUTO_TEST_CASE(TestOneRowStringLen)
     BOOST_CHECK_EQUAL(columnLens[6], 1);
     BOOST_CHECK_EQUAL(columnLens[7], 1);
     BOOST_CHECK_EQUAL(columnLens[8], 36);
+    BOOST_CHECK_EQUAL(columnLens[9], 11);
+    BOOST_CHECK_EQUAL(columnLens[10], 20);
 
     ret = SQLFetch(stmt);
     BOOST_CHECK(ret == SQL_NO_DATA);

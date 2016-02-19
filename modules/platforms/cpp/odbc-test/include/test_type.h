@@ -34,14 +34,17 @@ namespace ignite
             i64Field(0),
             floatField(0.0f),
             doubleField(0.0),
-            boolField(false)
+            boolField(false),
+            dateField(),
+            timestampField()
         {
             // No-op.
         }
 
         TestType(int8_t i8Field, int16_t i16Field, int32_t i32Field,
             int64_t i64Field, const std::string& strField, float floatField,
-            double doubleField, bool boolField, const Guid& guidField) :
+            double doubleField, bool boolField, const Guid& guidField,
+            const Date& dateField, const Timestamp& timestampField) :
             i8Field(i8Field),
             i16Field(i16Field),
             i32Field(i32Field),
@@ -50,7 +53,9 @@ namespace ignite
             floatField(floatField),
             doubleField(doubleField),
             boolField(boolField),
-            guidField(guidField)
+            guidField(guidField),
+            dateField(dateField),
+            timestampField(timestampField)
         {
             // No-op.
         }
@@ -64,6 +69,8 @@ namespace ignite
         double doubleField;
         bool boolField;
         Guid guidField;
+        Date dateField;
+        Timestamp timestampField;
     };
 }
 
@@ -93,6 +100,8 @@ namespace ignite
                 writer.WriteDouble("doubleField", obj.doubleField);
                 writer.WriteBool("boolField", obj.boolField);
                 writer.WriteGuid("guidField", obj.guidField);
+                writer.WriteGuid("dateField", obj.dateField);
+                writer.WriteGuid("timestampField", obj.timestampField);
                 writer.WriteNull("nullField");
             }
 
@@ -107,6 +116,8 @@ namespace ignite
                 double doubleField = reader.ReadDouble("doubleField");
                 bool boolField = reader.ReadBool("boolField");
                 Guid guidField = reader.ReadGuid("guidField");
+                Date dateField = reader.ReadDate("dateField");
+                Timestamp timestampField = reader.ReadTimestamp("timestampField");
 
                 return TestType(i8Field, i16Field, i32Field, i64Field,
                     strField, floatField, doubleField, boolField, guidField);

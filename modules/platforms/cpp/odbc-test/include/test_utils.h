@@ -21,34 +21,37 @@
 #include "ignite/date.h"
 #include "ignite/timestamp.h"
 
-/**
- * Make Date in human understandable way.
- *
- * @param year Year.
- * @param month Month.
- * @param day Day.
- * @param hour Hour.
- * @param min Min.
- * @param sec Sec.
- * @return Date.
- */
-ignite::Date MakeDate(int year = 1900, int month = 1, int day = 1,
-    int hour = 0, int min = 0, int sec = 0);
+namespace test_utils
+{
+    /**
+     * Make Date in human understandable way.
+     *
+     * @param year Year.
+     * @param month Month.
+     * @param day Day.
+     * @param hour Hour.
+     * @param min Min.
+     * @param sec Sec.
+     * @return Date.
+     */
+    ignite::Date MakeDate(int year = 1900, int month = 1, int day = 1,
+        int hour = 0, int min = 0, int sec = 0);
 
-/**
- * Make Date in human understandable way.
- *
- * @param year Year.
- * @param month Month.
- * @param day Day.
- * @param hour Hour.
- * @param min Minute.
- * @param sec Second.
- * @param ns Nanosecond.
- * @return Timestamp.
- */
-ignite::Timestamp MakeTimestamp(int year = 1900, int month = 1, int day = 1,
-    int hour = 0, int min = 0, int sec = 0, long ns = 0);
+    /**
+     * Make Date in human understandable way.
+     *
+     * @param year Year.
+     * @param month Month.
+     * @param day Day.
+     * @param hour Hour.
+     * @param min Minute.
+     * @param sec Second.
+     * @param ns Nanosecond.
+     * @return Timestamp.
+     */
+    ignite::Timestamp MakeTimestamp(int year = 1900, int month = 1, int day = 1,
+        int hour = 0, int min = 0, int sec = 0, long ns = 0);
+} // namespace test_utils
 
 #endif // _IGNITE_ODBC_TEST_TEST_UTILS_H
 
