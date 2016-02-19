@@ -225,6 +225,22 @@ namespace Apache.Ignite.Core.Tests.Process
         }
 
         /// <summary>
+        /// Suspends the process.
+        /// </summary>
+        public void Suspend()
+        {
+            _proc.Suspend();
+        }
+
+        /// <summary>
+        /// Resumes the process.
+        /// </summary>
+        public void Resume()
+        {
+            _proc.Resume();
+        }
+
+        /// <summary>
         /// Join process.
         /// </summary>
         /// <returns>Exit code.</returns>

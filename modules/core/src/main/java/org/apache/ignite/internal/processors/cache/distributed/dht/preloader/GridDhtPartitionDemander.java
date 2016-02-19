@@ -975,7 +975,8 @@ public class GridDhtPartitionDemander {
                 if (parts != null) {
                     boolean rmvd = parts.remove(p);
 
-                    assert rmvd;
+                    assert rmvd : "Partition already done [cache=" + cctx.name() + ", fromNode=" + nodeId +
+                        ", part=" + p + ", left=" + parts + "]";
 
                     if (parts.isEmpty()) {
                         U.log(log, "Completed " + ((remaining.size() == 1 ? "(final) " : "") +

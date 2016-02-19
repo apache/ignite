@@ -68,6 +68,7 @@ import static org.apache.ignite.internal.binary.GridBinaryMarshaller.NULL;
 import static org.apache.ignite.internal.binary.GridBinaryMarshaller.OBJ;
 import static org.apache.ignite.internal.binary.GridBinaryMarshaller.OBJ_ARR;
 import static org.apache.ignite.internal.binary.GridBinaryMarshaller.OPTM_MARSH;
+import static org.apache.ignite.internal.binary.GridBinaryMarshaller.PROXY;
 import static org.apache.ignite.internal.binary.GridBinaryMarshaller.SHORT;
 import static org.apache.ignite.internal.binary.GridBinaryMarshaller.SHORT_ARR;
 import static org.apache.ignite.internal.binary.GridBinaryMarshaller.STRING;
@@ -1621,6 +1622,11 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Bina
 
                 break;
 
+            case PROXY:
+                obj = BinaryUtils.doReadProxy(in, ctx, ldr, this);
+
+                break;
+
             case OPTM_MARSH:
                 obj = BinaryUtils.doReadOptimized(in, ctx, ldr);
 
@@ -2013,7 +2019,7 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Bina
     /**
      * Flag.
      */
-    private static enum Flag {
+    private enum Flag {
         /** Regular. */
         NORMAL,
 

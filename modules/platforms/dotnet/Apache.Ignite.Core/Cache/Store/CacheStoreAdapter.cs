@@ -21,7 +21,6 @@ namespace Apache.Ignite.Core.Cache.Store
     using System.Collections;
     using System.Diagnostics.CodeAnalysis;
     using System.Linq;
-    using Apache.Ignite.Core.Impl.Common;
 
     /// <summary>
     /// Cache storage convenience adapter. It provides default implementation for 

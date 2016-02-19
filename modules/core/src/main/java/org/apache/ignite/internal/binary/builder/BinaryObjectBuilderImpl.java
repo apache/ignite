@@ -36,6 +36,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
@@ -508,10 +509,19 @@ public class BinaryObjectBuilderImpl implements BinaryObjectBuilder {
 
     /** {@inheritDoc} */
     @Override public <T> BinaryObjectBuilder setField(String name, @Nullable T val, Class<? super T> type) {
+        byte typeId;
+
+        if (Collection.class.equals(type))
+            typeId = GridBinaryMarshaller.COL;
+        else if (Map.class.equals(type))
+            typeId = GridBinaryMarshaller.MAP;
+        else
+            typeId = BinaryUtils.typeByClass(type);
+
         if (assignedVals == null)
             assignedVals = new LinkedHashMap<>();
 
-        assignedVals.put(name, new BinaryValueWithType(BinaryUtils.typeByClass(type), val));
+        assignedVals.put(name, new BinaryValueWithType(typeId, val));
 
         return this;
     }
