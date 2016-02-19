@@ -628,7 +628,7 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
 
         Map<ClusterNode, Collection<DataStreamerEntry>> mappings = new HashMap<>();
 
-        boolean initPda = ctx.deploy().enabled() && jobPda == null;
+        boolean initPda = ctx.deploy().enabled() && cacheObjCtx.addDeploymentInfo() && jobPda == null;
 
         AffinityTopologyVersion topVer = ctx.cache().context().exchange().readyAffinityVersion();
 
@@ -1304,7 +1304,7 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
                 GridDeployment dep = null;
                 GridPeerDeployAware jobPda0 = null;
 
-                if (ctx.deploy().enabled()) {
+                if (ctx.deploy().enabled() && cacheObjCtx.addDeploymentInfo()) {
                     try {
                         jobPda0 = jobPda;
 

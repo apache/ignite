@@ -917,7 +917,7 @@ public interface GridCacheEntryEx {
      * @param ver Version.
      * @param ttl Time to live.
      */
-    public void updateTtl(@Nullable GridCacheVersion ver, long ttl);
+    public void updateTtl(@Nullable GridCacheVersion ver, long ttl) throws GridCacheEntryRemovedException;
 
     /**
      * Called when entry should be evicted from offheap.

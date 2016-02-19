@@ -151,6 +151,9 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
     /** */
     private AffinityTopologyVersion initTopVer;
 
+    /** */
+    private transient boolean ignoreClassNotFound;
+
     /**
      * Required by {@link Externalizable}.
      */
@@ -188,7 +191,8 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
         int taskHash,
         boolean skipPrimaryCheck,
         boolean locCache,
-        boolean keepBinary) {
+        boolean keepBinary,
+        boolean ignoreClassNotFound) {
         assert topic != null;
         assert locLsnr != null;
 
@@ -205,6 +209,7 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
         this.skipPrimaryCheck = skipPrimaryCheck;
         this.locCache = locCache;
         this.keepBinary = keepBinary;
+        this.ignoreClassNotFound = ignoreClassNotFound;
 
         cacheId = CU.cacheId(cacheName);
     }
@@ -566,6 +571,8 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
 
         final GridCacheContext cctx = cacheContext(ctx);
 
+        Collection<CacheContinuousQueryEntry> entries0 = new ArrayList<>();
+
         for (CacheContinuousQueryEntry e : entries) {
             GridCacheDeploymentManager depMgr = cctx.deploy();
 
@@ -582,18 +589,18 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
 
             try {
                 e.unmarshal(cctx, ldr);
+
+                entries0.addAll(handleEvent(ctx, e));
             }
             catch (IgniteCheckedException ex) {
-                U.error(ctx.log(getClass()), "Failed to unmarshal entry.", ex);
+                if (ignoreClassNotFound)
+                    assert internal;
+                else
+                    U.error(ctx.log(getClass()), "Failed to unmarshal entry.", ex);
             }
         }
 
         final IgniteCache cache = cctx.kernalContext().cache().jcache(cctx.name());
-
-        Collection<CacheContinuousQueryEntry> entries0 = new ArrayList<>();
-
-        for (CacheContinuousQueryEntry e : entries)
-            entries0.addAll(handleEvent(ctx, e));
 
         if (!entries0.isEmpty()) {
             Iterable<CacheEntryEvent<? extends K, ? extends V>> evts = F.viewReadOnly(entries0,
