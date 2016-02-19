@@ -1606,4 +1606,25 @@ public abstract class IgfsDualAbstractSelfTest extends IgfsAbstractSelfTest {
             clear(igfs, igfsSecondary);
         }
     }
+
+    /**
+     * Test for file modification time upwards propagation when files are unknown on primary file system.
+     *
+     * @throws Exception
+     */
+    public void testModificationTimePropagation() throws Exception {
+        create(igfsSecondary, paths(DIR, SUBDIR), paths(FILE));
+
+        long modFile = igfsSecondaryFileSystem.info(FILE).modificationTime();
+        long modDir = igfsSecondaryFileSystem.info(SUBDIR).modificationTime();
+        long modFileListing = igfsSecondaryFileSystem.listFiles(SUBDIR).iterator().next().modificationTime();
+        long modDirListing = igfsSecondaryFileSystem.listFiles(DIR).iterator().next().modificationTime();
+
+        Thread.sleep(500L);
+
+        assertEquals(modFile, igfs.info(FILE).modificationTime());
+        assertEquals(modDir, igfs.info(SUBDIR).modificationTime());
+        assertEquals(modFileListing, igfs.listFiles(SUBDIR).iterator().next().modificationTime());
+        assertEquals(modDirListing, igfs.listFiles(DIR).iterator().next().modificationTime());
+    }
 }

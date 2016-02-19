@@ -25,6 +25,7 @@ import java.util.Collections;
 import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.configuration.FileSystemConfiguration;
+import org.apache.ignite.igfs.IgfsFile;
 import org.apache.ignite.igfs.IgfsPath;
 import org.apache.ignite.internal.util.GridLeanMap;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
@@ -319,6 +320,18 @@ public final class IgfsFileInfo implements Externalizable {
     public IgfsFileInfo(IgfsFileInfo info) {
         this(info.isDirectory(), info.id, info.blockSize, info.len, info.affKey, info.listing, info.props,
             info.fileMap(), info.lockId, true, info.accessTime, info.modificationTime, info.evictExclude());
+    }
+
+    /**
+     * Creates the info from an {@link }IgfsFile} instance.
+     *
+     * @param f The IgfsFile instance to use.
+     */
+    IgfsFileInfo(IgfsFile f, boolean evictExclude) {
+        this(f.isDirectory(), null,
+            f.isDirectory() ? 0 : f.blockSize(),
+            f.isDirectory() ? 0 : f.length(), null, null, f.properties(),
+            null, false, f.modificationTime(), evictExclude);
     }
 
     /**
