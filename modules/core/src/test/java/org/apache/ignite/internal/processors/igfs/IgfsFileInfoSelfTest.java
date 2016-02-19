@@ -52,10 +52,11 @@ public class IgfsFileInfoSelfTest extends IgfsCommonAbstractTest {
                 for (int i = 0; i < 10000; i++) {
                     testSerialization(new IgfsFileInfo());
                     testSerialization(new IgfsFileInfo());
-                    testSerialization(new IgfsFileInfo(true, null));
-                    testSerialization(new IgfsFileInfo(false, null));
+                    testSerialization(new IgfsFileInfo(true, null, System.currentTimeMillis()));
+                    testSerialization(new IgfsFileInfo(false, null, System.currentTimeMillis()));
 
-                    IgfsFileInfo rndInfo = new IgfsFileInfo(rnd.nextInt(max), null, false, null);
+                    IgfsFileInfo rndInfo =
+                        new IgfsFileInfo(rnd.nextInt(max), 0, false, null, System.currentTimeMillis());
 
                     testSerialization(rndInfo);
                     testSerialization(new IgfsFileInfo(rndInfo, rnd.nextInt(max)));

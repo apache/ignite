@@ -30,6 +30,7 @@ import org.apache.ignite.igfs.IgfsFile;
 import org.apache.ignite.igfs.IgfsInputStream;
 import org.apache.ignite.igfs.IgfsMode;
 import org.apache.ignite.igfs.IgfsPath;
+import org.apache.ignite.igfs.secondary.IgfsSecondaryFileSystem;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
@@ -1202,7 +1203,8 @@ public abstract class IgfsDualAbstractSelfTest extends IgfsAbstractSelfTest {
 
                 try {
                     in0.read(readBuf);
-                } finally {
+                }
+                finally {
                     U.closeQuiet(in0);
                 }
 
@@ -1608,23 +1610,65 @@ public abstract class IgfsDualAbstractSelfTest extends IgfsAbstractSelfTest {
     }
 
     /**
-     * Test for file modification time upwards propagation when files are unknown on primary file system.
+     * Checks file modification time equality in the file itself and in the same file found through
+     * the listing of its parent.
      *
-     * @throws Exception
+     * @param fs The file system.
+     * @param p The file path.
+     */
+    private long checkParentListingTime(IgfsSecondaryFileSystem fs, IgfsPath p) {
+        IgfsFile f0 = fs.info(p);
+
+        // Root cannot be seen through the parent listing:
+        if (!p.isSame(p.root())) {
+
+            assertNotNull(f0);
+
+            Collection<IgfsFile> listing = fs.listFiles(p.parent());
+
+            IgfsFile f1 = null;
+
+            for (IgfsFile fi : listing) {
+                if (fi.path().isSame(p)) {
+                    f1 = fi;
+
+                    break;
+                }
+            }
+
+            assertNotNull(f1); // file should be found in parent listing.
+
+            assertEquals(f0.modificationTime(), f1.modificationTime());
+        }
+
+        return f0.modificationTime();
+    }
+
+    /**
+     * Test for file modification time upwards propagation when files are
+     * created on the secondary file system and initially
+     * unknown on the primary file system.
+     *
+     * @throws Exception On error.
      */
     public void testModificationTimePropagation() throws Exception {
-        create(igfsSecondary, paths(DIR, SUBDIR), paths(FILE));
+        create(igfsSecondary, paths(DIR, SUBDIR), paths(FILE, FILE2));
 
-        long modFile = igfsSecondaryFileSystem.info(FILE).modificationTime();
-        long modDir = igfsSecondaryFileSystem.info(SUBDIR).modificationTime();
-        long modFileListing = igfsSecondaryFileSystem.listFiles(SUBDIR).iterator().next().modificationTime();
-        long modDirListing = igfsSecondaryFileSystem.listFiles(DIR).iterator().next().modificationTime();
+        long modDir0 = checkParentListingTime(igfsSecondaryFileSystem, DIR);
+        long modSubDir0 = checkParentListingTime(igfsSecondaryFileSystem, SUBDIR);
+        long modFile0 = checkParentListingTime(igfsSecondaryFileSystem, FILE);
+        long modFile20 = checkParentListingTime(igfsSecondaryFileSystem, FILE2);
 
         Thread.sleep(500L);
 
-        assertEquals(modFile, igfs.info(FILE).modificationTime());
-        assertEquals(modDir, igfs.info(SUBDIR).modificationTime());
-        assertEquals(modFileListing, igfs.listFiles(SUBDIR).iterator().next().modificationTime());
-        assertEquals(modDirListing, igfs.listFiles(DIR).iterator().next().modificationTime());
+        long modDir1 = checkParentListingTime(igfs.asSecondary(), DIR);
+        long modSubDir1 = checkParentListingTime(igfs.asSecondary(), SUBDIR);
+        long modFile1 = checkParentListingTime(igfs.asSecondary(), FILE);
+        long modFile21 = checkParentListingTime(igfs.asSecondary(), FILE2);
+
+        assertEquals(modDir0, modDir1);
+        assertEquals(modSubDir0, modSubDir1);
+        assertEquals(modFile0, modFile1);
+        assertEquals(modFile20, modFile21);
     }
 }

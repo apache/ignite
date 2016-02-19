@@ -109,10 +109,11 @@ public final class IgfsFileInfo implements Externalizable {
      *
      * @param isDir Constructs directory info if {@code true} or file info if {@code false}.
      * @param props Meta properties to set.
+     * @param modificationTime The modification time.
      */
-    public IgfsFileInfo(boolean isDir, @Nullable Map<String, String> props) {
+    public IgfsFileInfo(boolean isDir, @Nullable Map<String, String> props, long modificationTime) {
         this(isDir, null, isDir ? 0 : FileSystemConfiguration.DFLT_BLOCK_SIZE, 0, null, null, props, null, false,
-            System.currentTimeMillis(), false);
+            modificationTime, false);
     }
 
     /**
@@ -138,29 +139,16 @@ public final class IgfsFileInfo implements Externalizable {
      * Constructs file info.
      *
      * @param blockSize Block size.
-     * @param affKey Affinity key.
-     * @param evictExclude Eviction exclude flag.
-     * @param props File properties.
-     */
-    IgfsFileInfo(int blockSize, @Nullable IgniteUuid affKey, boolean evictExclude,
-        @Nullable Map<String, String> props) {
-        this(false, null, blockSize, 0, affKey, null, props, null, true, System.currentTimeMillis(), evictExclude);
-    }
-
-    /**
-     * Constructs file info.
-     *
-     * @param blockSize Block size.
      * @param len Length.
      * @param affKey Affinity key.
      * @param lockId Lock ID.
      * @param props Properties.
      * @param evictExclude Evict exclude flag.
+     * @param modificationTime The modification time.
      */
     public IgfsFileInfo(int blockSize, long len, @Nullable IgniteUuid affKey, @Nullable IgniteUuid lockId,
-        boolean evictExclude, @Nullable Map<String, String> props) {
-        this(false, null, blockSize, len, affKey, null, props, lockId, true,
-            /* IGNITE-2352: problem there. */System.currentTimeMillis(), evictExclude);
+        boolean evictExclude, @Nullable Map<String, String> props, long modificationTime) {
+        this(false, null, blockSize, len, affKey, null, props, lockId, true, modificationTime, evictExclude);
     }
 
     /**
@@ -204,10 +192,12 @@ public final class IgfsFileInfo implements Externalizable {
      * @param len Size of a file.
      * @param props File properties to set.
      * @param evictExclude Evict exclude flag.
+     * @param modificationTime The modification time.
      */
-    IgfsFileInfo(int blockSize, long len, boolean evictExclude, @Nullable Map<String, String> props) {
+    IgfsFileInfo(int blockSize, long len, boolean evictExclude, @Nullable Map<String, String> props,
+                 long modificationTime) {
         this(blockSize == 0, // NB The contract is: (blockSize == 0) <=> isDirectory()
-            null, blockSize, len, null, null, props, null, true, System.currentTimeMillis(), evictExclude);
+            null, blockSize, len, null, null, props, null, true, modificationTime, evictExclude);
     }
 
     /**

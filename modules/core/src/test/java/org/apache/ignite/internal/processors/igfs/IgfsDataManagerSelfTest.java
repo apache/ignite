@@ -167,7 +167,7 @@ public class IgfsDataManagerSelfTest extends IgfsCommonAbstractTest {
             IgfsPath path = new IgfsPath();
 
             IgfsFileInfo info = new IgfsFileInfo(200, 0L, null, IgfsMetaManager.DELETE_LOCK_ID,
-                    false, null);
+                    false, null, System.currentTimeMillis());
 
             assertNull(mgr.dataBlock(info, path, 0, null).get());
 
@@ -250,7 +250,7 @@ public class IgfsDataManagerSelfTest extends IgfsCommonAbstractTest {
             IgfsPath path = new IgfsPath();
 
             IgfsFileInfo info = new IgfsFileInfo(blockSize, 0L, null, IgfsMetaManager.DELETE_LOCK_ID,
-                false, null);
+                false, null, System.currentTimeMillis());
 
             assertNull(mgr.dataBlock(info, path, 0, null).get());
 
@@ -340,7 +340,7 @@ public class IgfsDataManagerSelfTest extends IgfsCommonAbstractTest {
 
             IgfsFileInfo info =
                 new IgfsFileInfo(blockSize, 0L, null, IgfsMetaManager.DELETE_LOCK_ID,
-                    false, null);
+                    false, null, System.currentTimeMillis());
 
             IgfsFileAffinityRange range = new IgfsFileAffinityRange();
 
@@ -408,7 +408,8 @@ public class IgfsDataManagerSelfTest extends IgfsCommonAbstractTest {
         final int grpSize = blockSize * DATA_BLOCK_GROUP_CNT;
 
         //IgfsFileInfo info = new IgfsFileInfo(blockSize, 0);
-        IgfsFileInfo info = new IgfsFileInfo(blockSize, 1024 * 1024, null, null, false, null);
+        IgfsFileInfo info = new IgfsFileInfo(blockSize, 1024 * 1024, null, null, false, null,
+            System.currentTimeMillis());
 
         for (int pos = 0; pos < 5 * grpSize; pos++) {
             assertEquals("Expects no affinity for zero length.", Collections.<IgfsBlockLocation>emptyList(),
@@ -456,7 +457,8 @@ public class IgfsDataManagerSelfTest extends IgfsCommonAbstractTest {
     public void testAffinity2() throws Exception {
         int blockSize = BLOCK_SIZE;
 
-        IgfsFileInfo info = new IgfsFileInfo(blockSize, 1024 * 1024, null, null, false, null);
+        IgfsFileInfo info = new IgfsFileInfo(blockSize, 1024 * 1024, null, null, false, null,
+            System.currentTimeMillis());
 
         Collection<IgfsBlockLocation> affinity = mgr.affinity(info, 0, info.length());
 
@@ -487,7 +489,8 @@ public class IgfsDataManagerSelfTest extends IgfsCommonAbstractTest {
     public void testAffinityFileMap() throws Exception {
         int blockSize = BLOCK_SIZE;
 
-        IgfsFileInfo info = new IgfsFileInfo(blockSize, 1024 * 1024, null, null, false, null);
+        IgfsFileInfo info = new IgfsFileInfo(blockSize, 1024 * 1024, null, null, false, null,
+            System.currentTimeMillis());
 
         IgniteUuid affKey = IgniteUuid.randomUuid();
 
