@@ -1321,7 +1321,7 @@ public class IgnitionEx {
 
     /**
      *
-     * @param igniteCfg ignite config
+     * @param igniteCfg ignite  config
      * @return old ignite config.
      */
     public static IgniteConfiguration setIgniteCfgThreadLocal(final IgniteConfiguration igniteCfg) {
