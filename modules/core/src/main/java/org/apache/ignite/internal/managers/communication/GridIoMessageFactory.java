@@ -733,7 +733,7 @@ public class GridIoMessageFactory implements MessageFactory {
 
                 break;
 
-            case 127:
+            case 126:
                 msg = new GridNearLockResponseV2();
 
                 break;

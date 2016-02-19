@@ -41,4 +41,8 @@ public interface GridNearLockResponse extends Message, GridCacheDeployable, Grid
     Collection<GridCacheVersion> rolledbackVersions();
 
     IgniteUuid futureId();
+
+    void completedVersions(Collection<GridCacheVersion> committedVers, Collection<GridCacheVersion> rolledbackVers);
+
+    void error(Throwable err);
 }
