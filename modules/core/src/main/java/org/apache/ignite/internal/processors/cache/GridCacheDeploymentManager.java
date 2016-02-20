@@ -855,7 +855,7 @@ public class GridCacheDeploymentManager<K, V> extends GridCacheSharedManagerAdap
                 }
             }
 
-            Class cls = super.loadClass(name);
+            Class cls = getParent().loadClass(name);
 
             if (cls != null)
                 return cls;
