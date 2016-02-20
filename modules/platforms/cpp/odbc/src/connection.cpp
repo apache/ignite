@@ -172,7 +172,7 @@ namespace ignite
 
             OdbcProtocolHeader hdr;
 
-            hdr.len = len;
+            hdr.len = static_cast<int32_t>(len);
 
             int sent = socket.Send(reinterpret_cast<int8_t*>(&hdr), sizeof(hdr));
 

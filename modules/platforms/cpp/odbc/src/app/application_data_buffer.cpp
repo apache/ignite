@@ -611,7 +611,7 @@ namespace ignite
                                 *GetResLen() = strlen(buffer);
                         }
                         else if (GetResLen())
-                            *GetResLen() = sizeof("HHHH-MM-DD");
+                            *GetResLen() = sizeof("HHHH-MM-DD") - 1;
 
                         break;
                     }
@@ -637,7 +637,7 @@ namespace ignite
                                 *GetResLen() = toCopy;
                         }
                         else if (GetResLen())
-                            *GetResLen() = sizeof("HHHH-MM-DD");
+                            *GetResLen() = sizeof("HHHH-MM-DD") - 1;
 
                         break;
                     }
@@ -722,7 +722,7 @@ namespace ignite
                                 *GetResLen() = strlen(buffer);
                         }
                         else if (GetResLen())
-                            *GetResLen() = sizeof("HHHH-MM-DD HH:MM:SS");
+                            *GetResLen() = sizeof("HHHH-MM-DD HH:MM:SS") - 1;
 
                         break;
                     }
@@ -748,7 +748,7 @@ namespace ignite
                                 *GetResLen() = toCopy;
                         }
                         else if (GetResLen())
-                            *GetResLen() = sizeof("HHHH-MM-DD HH:MM:SS");
+                            *GetResLen() = sizeof("HHHH-MM-DD HH:MM:SS") - 1;
 
                         break;
                     }
