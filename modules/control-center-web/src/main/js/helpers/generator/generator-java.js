@@ -2854,6 +2854,8 @@ $generatorJava.generateExample = function (cluster, res, factoryCls) {
                     });
 
                     if (desc) {
+                        res.line('// Generate ' + desc.type + '.');
+
                         if (desc.schema)
                             _prepareStatement(res, conVar, 'CREATE SCHEMA IF NOT EXISTS ' + desc.schema);
 
