@@ -899,8 +899,26 @@ consoleModule.controller('domainsController', function ($filter, $http, $timeout
                         newDomain.valueFields = keyFields.slice();
 
                     // Use Java built-in type for key.
-                    if ($scope.ui.builtinKeys && newDomain.keyFields.length === 1)
-                        newDomain.keyType = newDomain.keyFields[0].jdbcType.javaType;
+                    if ($scope.ui.builtinKeys && newDomain.keyFields.length === 1) {
+                        var keyField = newDomain.keyFields[0];
+
+                        newDomain.keyType = keyField.jdbcType.javaType;
+
+                        // Exclude key column from query fields and indexes.
+                        newDomain.fields = _.filter(newDomain.fields, function (field) {
+                            return field.name != keyField.javaFieldName;
+                        });
+
+                        _.forEach(newDomain.indexes, function (index) {
+                            index.fields = _.filter(index.fields, function (field) {
+                                return field.name !== keyField.javaFieldName;
+                            })
+                        });
+
+                        newDomain.indexes = _.filter(newDomain.indexes, function (index) {
+                            return !$common.isEmptyArray(index.fields);
+                        });
+                    }
 
                     // Prepare caches for generation.
                     if (table.action === IMPORT_DM_NEW_CACHE) {
