@@ -496,21 +496,21 @@ public class IgniteCacheConfigPermutationsFullApiTest extends IgniteCacheConfigP
     /**
      * @throws Exception In case of error.
      */
-    public void testGetAll1() throws Exception {
+    public void _testGetAll1() throws Exception {
         checkGetAll(DataMode.PLANE_OBJECT);
     }
 
     /**
      * @throws Exception In case of error.
      */
-    public void testGetAll2() throws Exception {
+    public void _testGetAll2() throws Exception {
         checkGetAll(DataMode.SERIALIZABLE);
     }
 
     /**
      * @throws Exception In case of error.
      */
-    public void testGetAll3() throws Exception {
+    public void _testGetAll3() throws Exception {
         checkGetAll(DataMode.EXTERNALIZABLE);
     }
 
@@ -604,7 +604,7 @@ public class IgniteCacheConfigPermutationsFullApiTest extends IgniteCacheConfigP
     /**
      * @throws Exception In case of error.
      */
-    public void testGetAllWithNulls() throws Exception {
+    public void _testGetAllWithNulls() throws Exception {
         final IgniteCache<String, Integer> cache = jcache();
 
         final Set<String> c = new HashSet<>();
@@ -624,7 +624,7 @@ public class IgniteCacheConfigPermutationsFullApiTest extends IgniteCacheConfigP
     /**
      * @throws Exception If failed.
      */
-    public void testGetTxNonExistingKey() throws Exception {
+    public void _testGetTxNonExistingKey() throws Exception {
         if (txShouldBeUsed()) {
             try (Transaction ignored = transactions().txStart()) {
                 assert jcache().get("key999123") == null;
@@ -635,7 +635,7 @@ public class IgniteCacheConfigPermutationsFullApiTest extends IgniteCacheConfigP
     /**
      * @throws Exception In case of error.
      */
-    public void testGetAllAsync() throws Exception {
+    public void _testGetAllAsync() throws Exception {
         final IgniteCache<String, Integer> cache = jcache();
 
         final IgniteCache<String, Integer> cacheAsync = cache.withAsync();
@@ -666,21 +666,21 @@ public class IgniteCacheConfigPermutationsFullApiTest extends IgniteCacheConfigP
     /**
      * @throws Exception In case of error.
      */
-    public void testPutSerializable() throws Exception {
+    public void _testPutSerializable() throws Exception {
         checkPut(DataMode.SERIALIZABLE);
     }
 
     /**
      * @throws Exception In case of error.
      */
-    public void testPutExternalizable() throws Exception {
+    public void _testPutExternalizable() throws Exception {
         checkPut(DataMode.EXTERNALIZABLE);
     }
 
     /**
      * @throws Exception In case of error.
      */
-    public void testPutObject() throws Exception {
+    public void _testPutObject() throws Exception {
         checkPut(DataMode.PLANE_OBJECT);
     }
 
@@ -729,7 +729,7 @@ public class IgniteCacheConfigPermutationsFullApiTest extends IgniteCacheConfigP
     /**
      * @throws Exception In case of error.
      */
-    public void testPutTx() throws Exception {
+    public void _testPutTx() throws Exception {
         if (txShouldBeUsed()) {
             IgniteCache<String, Integer> cache = jcache();
 
