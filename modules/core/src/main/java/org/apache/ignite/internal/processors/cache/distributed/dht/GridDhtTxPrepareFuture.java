@@ -171,7 +171,7 @@ public final class GridDhtTxPrepareFuture extends GridCompoundFuture<IgniteInter
     private boolean trackable = true;
 
     /** Near mini future id. */
-    private IgniteUuid nearMiniId;
+    private int nearMiniId;
 
     /** DHT versions map. */
     private Map<IgniteTxKey, GridCacheVersion> dhtVerMap;
@@ -212,7 +212,7 @@ public final class GridDhtTxPrepareFuture extends GridCompoundFuture<IgniteInter
     public GridDhtTxPrepareFuture(
         GridCacheSharedContext cctx,
         final GridDhtTxLocalAdapter tx,
-        IgniteUuid nearMiniId,
+        int nearMiniId,
         Map<IgniteTxKey, GridCacheVersion> dhtVerMap,
         boolean last,
         boolean retVal
@@ -248,7 +248,7 @@ public final class GridDhtTxPrepareFuture extends GridCompoundFuture<IgniteInter
     /**
      * @return Near mini future id.
      */
-    public IgniteUuid nearMiniId() {
+    public int nearMiniId() {
         return nearMiniId;
     }
 
@@ -757,7 +757,7 @@ public final class GridDhtTxPrepareFuture extends GridCompoundFuture<IgniteInter
         GridNearTxPrepareResponse res = new GridNearTxPrepareResponse(
             tx.nearXidVersion(),
             tx.colocated() ? tx.xid() : tx.nearFutureId(),
-            nearMiniId == null ? tx.xid() : nearMiniId,
+            nearMiniId,
             tx.xidVersion(),
             tx.writeVersion(),
             ret,

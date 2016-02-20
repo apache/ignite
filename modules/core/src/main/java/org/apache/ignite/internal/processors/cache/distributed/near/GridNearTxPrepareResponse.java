@@ -61,7 +61,7 @@ public class GridNearTxPrepareResponse extends GridDistributedTxPrepareResponse 
     private IgniteUuid futId;
 
     /** Mini future ID. */
-    private IgniteUuid miniId;
+    private int miniId;
 
     /** DHT version. */
     private GridCacheVersion dhtVer;
@@ -120,7 +120,7 @@ public class GridNearTxPrepareResponse extends GridDistributedTxPrepareResponse 
     public GridNearTxPrepareResponse(
         GridCacheVersion xid,
         IgniteUuid futId,
-        IgniteUuid miniId,
+        int miniId,
         GridCacheVersion dhtVer,
         GridCacheVersion writeVer,
         GridCacheReturn retVal,
@@ -131,7 +131,6 @@ public class GridNearTxPrepareResponse extends GridDistributedTxPrepareResponse 
         super(xid, err, addDepInfo);
 
         assert futId != null;
-        assert miniId != null;
         assert dhtVer != null;
 
         this.futId = futId;
@@ -170,7 +169,7 @@ public class GridNearTxPrepareResponse extends GridDistributedTxPrepareResponse 
     /**
      * @return Mini future ID.
      */
-    public IgniteUuid miniId() {
+    public int miniId() {
         return miniId;
     }
 
@@ -386,7 +385,7 @@ public class GridNearTxPrepareResponse extends GridDistributedTxPrepareResponse 
                 writer.incrementState();
 
             case 13:
-                if (!writer.writeIgniteUuid("miniId", miniId))
+                if (!writer.writeInt("miniId", miniId))
                     return false;
 
                 writer.incrementState();
@@ -478,7 +477,7 @@ public class GridNearTxPrepareResponse extends GridDistributedTxPrepareResponse 
                 reader.incrementState();
 
             case 13:
-                miniId = reader.readIgniteUuid("miniId");
+                miniId = reader.readInt("miniId");
 
                 if (!reader.isLastRead())
                     return false;

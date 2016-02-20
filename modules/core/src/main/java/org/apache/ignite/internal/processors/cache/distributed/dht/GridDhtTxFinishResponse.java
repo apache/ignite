@@ -38,7 +38,7 @@ public class GridDhtTxFinishResponse extends GridDistributedTxFinishResponse {
     private static final long serialVersionUID = 0L;
 
     /** Mini future ID. */
-    private IgniteUuid miniId;
+    private int miniId;
 
     /** Error. */
     @GridDirectTransient
@@ -62,10 +62,8 @@ public class GridDhtTxFinishResponse extends GridDistributedTxFinishResponse {
      * @param futId Future ID.
      * @param miniId Mini future ID.
      */
-    public GridDhtTxFinishResponse(GridCacheVersion xid, IgniteUuid futId, IgniteUuid miniId) {
+    public GridDhtTxFinishResponse(GridCacheVersion xid, IgniteUuid futId, int miniId) {
         super(xid, futId);
-
-        assert miniId != null;
 
         this.miniId = miniId;
     }
@@ -73,7 +71,7 @@ public class GridDhtTxFinishResponse extends GridDistributedTxFinishResponse {
     /**
      * @return Mini future ID.
      */
-    public IgniteUuid miniId() {
+    public int miniId() {
         return miniId;
     }
 
@@ -155,7 +153,7 @@ public class GridDhtTxFinishResponse extends GridDistributedTxFinishResponse {
                 writer.incrementState();
 
             case 7:
-                if (!writer.writeIgniteUuid("miniId", miniId))
+                if (!writer.writeInt("miniId", miniId))
                     return false;
 
                 writer.incrementState();
@@ -193,7 +191,7 @@ public class GridDhtTxFinishResponse extends GridDistributedTxFinishResponse {
                 reader.incrementState();
 
             case 7:
-                miniId = reader.readIgniteUuid("miniId");
+                miniId = reader.readInt("miniId");
 
                 if (!reader.isLastRead())
                     return false;

@@ -62,7 +62,7 @@ public class GridDhtLockRequest extends GridDistributedLockRequest {
     private BitSet invalidateEntries;
 
     /** Mini future ID. */
-    private IgniteUuid miniId;
+    private int miniId;
 
     /** Owner mapped version, if any. */
     @GridToStringInclude
@@ -129,7 +129,7 @@ public class GridDhtLockRequest extends GridDistributedLockRequest {
         GridCacheVersion nearXidVer,
         long threadId,
         IgniteUuid futId,
-        IgniteUuid miniId,
+        int miniId,
         GridCacheVersion lockVer,
         @NotNull AffinityTopologyVersion topVer,
         boolean isInTx,
@@ -168,8 +168,6 @@ public class GridDhtLockRequest extends GridDistributedLockRequest {
 
         nearKeys = nearCnt == 0 ? Collections.<KeyCacheObject>emptyList() : new ArrayList<KeyCacheObject>(nearCnt);
         invalidateEntries = new BitSet(dhtCnt == 0 ? nearCnt : dhtCnt);
-
-        assert miniId != null;
 
         this.miniId = miniId;
         this.subjId = subjId;
@@ -294,7 +292,7 @@ public class GridDhtLockRequest extends GridDistributedLockRequest {
     /**
      * @return Mini ID.
      */
-    public IgniteUuid miniId() {
+    public int miniId() {
         return miniId;
     }
 
@@ -372,7 +370,7 @@ public class GridDhtLockRequest extends GridDistributedLockRequest {
                 writer.incrementState();
 
             case 22:
-                if (!writer.writeIgniteUuid("miniId", miniId))
+                if (!writer.writeInt("miniId", miniId))
                     return false;
 
                 writer.incrementState();
@@ -452,7 +450,7 @@ public class GridDhtLockRequest extends GridDistributedLockRequest {
                 reader.incrementState();
 
             case 22:
-                miniId = reader.readIgniteUuid("miniId");
+                miniId = reader.readInt("miniId");
 
                 if (!reader.isLastRead())
                     return false;

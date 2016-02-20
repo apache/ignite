@@ -878,7 +878,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
                             return new GridFinishedFuture<>(res);
                         }
 
-                        IgniteUuid miniId = req.oldVersionMiniId();
+                        int miniId = req.miniId();
 
                         tx = new GridDhtTxLocal(
                             ctx.shared(),
