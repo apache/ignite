@@ -23,6 +23,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 
 import org.apache.ignite.IgniteCheckedException;
@@ -80,6 +81,8 @@ public class GridNearOptimisticSerializableTxPrepareFuture extends GridNearOptim
     /** */
     @GridToStringExclude
     private ClientRemapFuture remapFut;
+
+    private final AtomicInteger counter = new AtomicInteger();
 
     /**
      * @param cctx Context.
@@ -228,7 +231,7 @@ public class GridNearOptimisticSerializableTxPrepareFuture extends GridNearOptim
      * @return Mini future.
      */
     @SuppressWarnings("ForLoopReplaceableByForEach")
-    private MiniFuture miniFuture(IgniteUuid miniId) {
+    private MiniFuture miniFuture(int miniId) {
         // We iterate directly over the futs collection here to avoid copy.
         synchronized (futs) {
             // Avoid iterator creation.
@@ -240,7 +243,7 @@ public class GridNearOptimisticSerializableTxPrepareFuture extends GridNearOptim
 
                 MiniFuture mini = (MiniFuture)fut;
 
-                if (mini.futureId().equals(miniId)) {
+                if (mini.miniId() == miniId) {
                     if (!mini.isDone())
                         return mini;
                     else
@@ -462,7 +465,7 @@ public class GridNearOptimisticSerializableTxPrepareFuture extends GridNearOptim
             }
         }
 
-        req.miniId(fut.futureId());
+        req.miniId(fut.miniId());
 
         // If this is the primary node for the keys.
         if (n.isLocal()) {
@@ -674,16 +677,16 @@ public class GridNearOptimisticSerializableTxPrepareFuture extends GridNearOptim
     /**
      *
      */
-    private static class MiniFuture extends GridFutureAdapter<GridNearTxPrepareResponse> {
+    private class MiniFuture extends GridFutureAdapter<GridNearTxPrepareResponse> {
         /** */
         private static final long serialVersionUID = 0L;
 
         /** Receive result flag updater. */
-        private static AtomicIntegerFieldUpdater<MiniFuture> RCV_RES_UPD =
+        private AtomicIntegerFieldUpdater<MiniFuture> RCV_RES_UPD =
             AtomicIntegerFieldUpdater.newUpdater(MiniFuture.class, "rcvRes");
 
         /** */
-        private final IgniteUuid futId = IgniteUuid.randomUuid();
+        private final int miniId = counter.incrementAndGet();
 
         /** Parent future. */
         private final GridNearOptimisticSerializableTxPrepareFuture parent;
@@ -708,8 +711,8 @@ public class GridNearOptimisticSerializableTxPrepareFuture extends GridNearOptim
         /**
          * @return Future ID.
          */
-        IgniteUuid futureId() {
-            return futId;
+        int miniId() {
+            return miniId;
         }
 
         /**

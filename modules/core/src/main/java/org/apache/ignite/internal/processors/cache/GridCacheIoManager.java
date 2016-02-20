@@ -42,22 +42,16 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLockRe
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxPrepareRequest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxPrepareResponse;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridPartitionedSingleGetFuture;
-import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridDhtAtomicMultipleUpdateRequest;
-import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridDhtAtomicMultipleUpdateResponse;
-import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridDhtAtomicSingleUpdateRequest;
-import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridDhtAtomicSingleUpdateResponse;
 import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridDhtAtomicUpdateRequest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridDhtAtomicUpdateResponse;
-import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridNearAtomicSingleUpdateRequest;
-import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridNearAtomicMultipleUpdateRequest;
-import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridNearAtomicMultipleUpdateResponse;
-import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridNearAtomicSingleUpdateResponse;
+import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridNearAtomicUpdateRequest;
+import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridNearAtomicUpdateResponse;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtForceKeysRequest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtForceKeysResponse;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearGetRequest;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearGetResponse;
-import org.apache.ignite.internal.processors.cache.distributed.near.GridNearLockRequest;
-import org.apache.ignite.internal.processors.cache.distributed.near.GridNearLockResponse;
+import org.apache.ignite.internal.processors.cache.distributed.near.GridNearLockRequestV1;
+import org.apache.ignite.internal.processors.cache.distributed.near.GridNearLockResponseV1;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearSingleGetRequest;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearSingleGetResponse;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxPrepareRequest;
@@ -402,30 +396,22 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
             case 38: {
                 GridDhtAtomicUpdateRequest req = (GridDhtAtomicUpdateRequest)msg;
 
-                GridDhtAtomicUpdateResponse res;
-
-                if (req instanceof GridDhtAtomicSingleUpdateRequest)
-                    res = new GridDhtAtomicSingleUpdateResponse(
-                        ctx.cacheId(),
-                        req.futureVersion(),
-                        ctx.deploymentEnabled());
-                else
-                    res = new GridDhtAtomicMultipleUpdateResponse(
-                        ctx.cacheId(),
-                        req.futureVersion(),
-                        ctx.deploymentEnabled());
+                GridDhtAtomicUpdateResponse res = new GridDhtAtomicUpdateResponse(
+                    ctx.cacheId(),
+                    req.futureVersion(),
+                    ctx.deploymentEnabled());
 
                 res.onError(req.classError());
 
-                sendResponseOnFailedMessage(nodeId, (GridCacheMessage) res, cctx, ctx.ioPolicy());
+                sendResponseOnFailedMessage(nodeId, res, cctx, ctx.ioPolicy());
             }
 
             break;
 
             case 40: {
-                GridNearAtomicMultipleUpdateRequest req = (GridNearAtomicMultipleUpdateRequest)msg;
+                GridNearAtomicUpdateRequest req = (GridNearAtomicUpdateRequest)msg;
 
-                GridNearAtomicMultipleUpdateResponse res = new GridNearAtomicMultipleUpdateResponse(
+                GridNearAtomicUpdateResponse res = new GridNearAtomicUpdateResponse(
                     ctx.cacheId(),
                     nodeId,
                     req.futureVersion(),
@@ -456,7 +442,7 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
             break;
 
             case 45: {
-                processMessage(nodeId, msg, c);// Will be handled by Rebalance Demander.
+                processMessage(nodeId,msg,c);// Will be handled by Rebalance Demander.
             }
 
             break;
@@ -498,13 +484,13 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
             break;
 
             case 51: {
-                GridNearLockRequest req = (GridNearLockRequest)msg;
+                GridNearLockRequestV1 req = (GridNearLockRequestV1)msg;
 
-                GridNearLockResponse res = new GridNearLockResponse(
+                GridNearLockResponseV1 res = new GridNearLockResponseV1(
                     ctx.cacheId(),
                     req.version(),
                     req.futureId(),
-                    req.miniId(),
+                    req.oldVersionMiniId(),
                     false,
                     0,
                     req.classError(),
@@ -557,7 +543,7 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
             break;
 
             case 114: {
-                processMessage(nodeId, msg, c);// Will be handled by Rebalance Demander.
+                processMessage(nodeId,msg,c);// Will be handled by Rebalance Demander.
             }
 
             break;
@@ -596,22 +582,6 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
                 res.error(res.classError());
 
                 fut.onResult(nodeId, res);
-            }
-
-            break;
-
-            case -23: {
-                GridNearAtomicSingleUpdateRequest req = (GridNearAtomicSingleUpdateRequest)msg;
-
-                GridNearAtomicSingleUpdateResponse res = new GridNearAtomicSingleUpdateResponse(
-                    ctx.cacheId(),
-                    nodeId,
-                    req.futureVersion(),
-                    ctx.deploymentEnabled());
-
-                res.error(req.classError());
-
-                sendResponseOnFailedMessage(nodeId, res, cctx, ctx.ioPolicy());
             }
 
             break;

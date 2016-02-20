@@ -29,7 +29,7 @@ import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.internal.managers.communication.GridIoMessage;
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedLockRequest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLockRequest;
-import org.apache.ignite.internal.processors.cache.distributed.near.GridNearLockRequest;
+import org.apache.ignite.internal.processors.cache.distributed.near.GridNearLockRequestV1;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.spi.IgniteSpiException;
@@ -158,7 +158,7 @@ public abstract class IgniteTxReentryAbstractSelfTest extends GridCommonAbstract
             if (origMsg instanceof GridDistributedLockRequest) {
                 distLocks.incrementAndGet();
 
-                if (origMsg instanceof GridNearLockRequest)
+                if (origMsg instanceof GridNearLockRequestV1)
                     nearLocks.incrementAndGet();
                 else if (origMsg instanceof GridDhtLockRequest)
                     dhtLocks.incrementAndGet();

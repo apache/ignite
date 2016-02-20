@@ -17,86 +17,624 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.dht.atomic;
 
+import java.io.Externalizable;
+import java.nio.ByteBuffer;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
+import java.util.UUID;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.GridDirectCollection;
+import org.apache.ignite.internal.GridDirectTransient;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
+import org.apache.ignite.internal.processors.cache.GridCacheDeployable;
+import org.apache.ignite.internal.processors.cache.GridCacheMessage;
 import org.apache.ignite.internal.processors.cache.GridCacheReturn;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
+import org.apache.ignite.internal.util.GridLongList;
+import org.apache.ignite.internal.util.tostring.GridToStringInclude;
+import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 import org.jetbrains.annotations.Nullable;
 
-import java.nio.ByteBuffer;
-import java.util.Collection;
-import java.util.List;
-import java.util.UUID;
+/**
+ * DHT atomic cache near update response.
+ */
+public class GridNearAtomicUpdateResponse extends GridCacheMessage implements GridCacheDeployable {
+    /** */
+    private static final long serialVersionUID = 0L;
 
-public interface GridNearAtomicUpdateResponse {
+    /** Cache message index. */
+    public static final int CACHE_MSG_IDX = nextIndexId();
 
-    int lookupIndex();
+    /** Node ID this reply should be sent to. */
+    @GridDirectTransient
+    private UUID nodeId;
 
-    UUID nodeId();
+    /** Future version. */
+    private GridCacheVersion futVer;
 
-    void nodeId(UUID nodeId);
+    /** Update error. */
+    @GridDirectTransient
+    private volatile IgniteCheckedException err;
 
-    GridCacheVersion futureVersion();
+    /** Serialized error. */
+    private byte[] errBytes;
 
-    void error(IgniteCheckedException err);
+    /** Return value. */
+    @GridToStringInclude
+    private GridCacheReturn ret;
 
-    IgniteCheckedException error();
+    /** Failed keys. */
+    @GridToStringInclude
+    @GridDirectCollection(KeyCacheObject.class)
+    private volatile Collection<KeyCacheObject> failedKeys;
 
-    Collection<KeyCacheObject> failedKeys();
+    /** Keys that should be remapped. */
+    @GridToStringInclude
+    @GridDirectCollection(KeyCacheObject.class)
+    private List<KeyCacheObject> remapKeys;
 
-    GridCacheReturn returnValue();
+    /** Indexes of keys for which values were generated on primary node (used if originating node has near cache). */
+    @GridDirectCollection(int.class)
+    private List<Integer> nearValsIdxs;
 
-    @SuppressWarnings("unchecked") void returnValue(GridCacheReturn ret);
+    /** Indexes of keys for which update was skipped (used if originating node has near cache). */
+    @GridDirectCollection(int.class)
+    private List<Integer> nearSkipIdxs;
 
-    void remapKeys(List<KeyCacheObject> remapKeys);
+    /** Values generated on primary node which should be put to originating node's near cache. */
+    @GridToStringInclude
+    @GridDirectCollection(CacheObject.class)
+    private List<CacheObject> nearVals;
 
-    Collection<KeyCacheObject> remapKeys();
+    /** Version generated on primary node to be used for originating node's near cache update. */
+    private GridCacheVersion nearVer;
 
-    void addNearValue(int keyIdx,
+    /** Near TTLs. */
+    private GridLongList nearTtls;
+
+    /** Near expire times. */
+    private GridLongList nearExpireTimes;
+
+    /**
+     * Empty constructor required by {@link Externalizable}.
+     */
+    public GridNearAtomicUpdateResponse() {
+        // No-op.
+    }
+
+    /**
+     * @param cacheId Cache ID.
+     * @param nodeId Node ID this reply should be sent to.
+     * @param futVer Future version.
+     * @param addDepInfo Deployment info flag.
+     */
+    public GridNearAtomicUpdateResponse(int cacheId, UUID nodeId, GridCacheVersion futVer, boolean addDepInfo) {
+        assert futVer != null;
+
+        this.cacheId = cacheId;
+        this.nodeId = nodeId;
+        this.futVer = futVer;
+        this.addDepInfo = addDepInfo;
+    }
+
+    /** {@inheritDoc} */
+    @Override public int lookupIndex() {
+        return CACHE_MSG_IDX;
+    }
+
+    /**
+     * @return Node ID this response should be sent to.
+     */
+    public UUID nodeId() {
+        return nodeId;
+    }
+
+    /**
+     * @param nodeId Node ID.
+     */
+    public void nodeId(UUID nodeId) {
+        this.nodeId = nodeId;
+    }
+
+    /**
+     * @return Future version.
+     */
+    public GridCacheVersion futureVersion() {
+        return futVer;
+    }
+
+    /**
+     * Sets update error.
+     *
+     * @param err Error.
+     */
+    public void error(IgniteCheckedException err){
+        this.err = err;
+    }
+
+    /** {@inheritDoc} */
+    @Override public IgniteCheckedException error() {
+        return err;
+    }
+
+    /**
+     * @return Collection of failed keys.
+     */
+    public Collection<KeyCacheObject> failedKeys() {
+        return failedKeys;
+    }
+
+    /**
+     * @return Return value.
+     */
+    public GridCacheReturn returnValue() {
+        return ret;
+    }
+
+    /**
+     * @param ret Return value.
+     */
+    @SuppressWarnings("unchecked")
+    public void returnValue(GridCacheReturn ret) {
+        this.ret = ret;
+    }
+
+    /**
+     * @param remapKeys Remap keys.
+     */
+    public void remapKeys(List<KeyCacheObject> remapKeys) {
+        this.remapKeys = remapKeys;
+    }
+
+    /**
+     * @return Remap keys.
+     */
+    public Collection<KeyCacheObject> remapKeys() {
+        return remapKeys;
+    }
+
+    /**
+     * Adds value to be put in near cache on originating node.
+     *
+     * @param keyIdx Key index.
+     * @param val Value.
+     * @param ttl TTL for near cache update.
+     * @param expireTime Expire time for near cache update.
+     */
+    public void addNearValue(int keyIdx,
         @Nullable CacheObject val,
         long ttl,
-        long expireTime);
+        long expireTime) {
+        if (nearValsIdxs == null) {
+            nearValsIdxs = new ArrayList<>();
+            nearVals = new ArrayList<>();
+        }
 
-    @SuppressWarnings("ForLoopReplaceableByForEach") void addNearTtl(int keyIdx, long ttl, long expireTime);
+        addNearTtl(keyIdx, ttl, expireTime);
 
-    long nearExpireTime(int idx);
+        nearValsIdxs.add(keyIdx);
+        nearVals.add(val);
+    }
 
-    long nearTtl(int idx);
+    /**
+     * @param keyIdx Key index.
+     * @param ttl TTL for near cache update.
+     * @param expireTime Expire time for near cache update.
+     */
+    @SuppressWarnings("ForLoopReplaceableByForEach")
+    public void addNearTtl(int keyIdx, long ttl, long expireTime) {
+        if (ttl >= 0) {
+            if (nearTtls == null) {
+                nearTtls = new GridLongList(16);
 
-    void nearVersion(GridCacheVersion nearVer);
+                for (int i = 0; i < keyIdx; i++)
+                    nearTtls.add(-1L);
+            }
+        }
 
-    GridCacheVersion nearVersion();
+        if (nearTtls != null)
+            nearTtls.add(ttl);
 
-    void addSkippedIndex(int keyIdx);
+        if (expireTime >= 0) {
+            if (nearExpireTimes == null) {
+                nearExpireTimes = new GridLongList(16);
 
-    @Nullable List<Integer> skippedIndexes();
+                for (int i = 0; i < keyIdx; i++)
+                    nearExpireTimes.add(-1);
+            }
+        }
 
-    @Nullable List<Integer> nearValuesIndexes();
+        if (nearExpireTimes != null)
+            nearExpireTimes.add(expireTime);
+    }
 
-    @Nullable CacheObject nearValue(int idx);
+    /**
+     * @param idx Index.
+     * @return Expire time for near cache update.
+     */
+    public long nearExpireTime(int idx) {
+        if (nearExpireTimes != null) {
+            assert idx >= 0 && idx < nearExpireTimes.size();
 
-    void addFailedKey(KeyCacheObject key, Throwable e);
+            return nearExpireTimes.get(idx);
+        }
 
-    void addFailedKeys(Collection<KeyCacheObject> keys, Throwable e);
+        return -1L;
+    }
 
-    void addFailedKeys(Collection<KeyCacheObject> keys, Throwable e, GridCacheContext ctx);
+    /**
+     * @param idx Index.
+     * @return TTL for near cache update.
+     */
+    public long nearTtl(int idx) {
+        if (nearTtls != null) {
+            assert idx >= 0 && idx < nearTtls.size();
 
-    void prepareMarshal(GridCacheSharedContext ctx) throws IgniteCheckedException;
+            return nearTtls.get(idx);
+        }
 
-    void finishUnmarshal(GridCacheSharedContext ctx, ClassLoader ldr) throws IgniteCheckedException;
+        return -1L;
+    }
 
-    boolean addDeploymentInfo();
+    /**
+     * @param nearVer Version generated on primary node to be used for originating node's near cache update.
+     */
+    public void nearVersion(GridCacheVersion nearVer) {
+        this.nearVer = nearVer;
+    }
 
-    boolean writeTo(ByteBuffer buf, MessageWriter writer);
+    /**
+     * @return Version generated on primary node to be used for originating node's near cache update.
+     */
+    public GridCacheVersion nearVersion() {
+        return nearVer;
+    }
 
-    boolean readFrom(ByteBuffer buf, MessageReader reader);
+    /**
+     * @param keyIdx Index of key for which update was skipped
+     */
+    public void addSkippedIndex(int keyIdx) {
+        if (nearSkipIdxs == null)
+            nearSkipIdxs = new ArrayList<>();
 
-    byte directType();
+        nearSkipIdxs.add(keyIdx);
 
-    byte fieldsCount();
+        addNearTtl(keyIdx, -1L, -1L);
+    }
+
+    /**
+     * @return Indexes of keys for which update was skipped
+     */
+    @Nullable public List<Integer> skippedIndexes() {
+        return nearSkipIdxs;
+    }
+
+    /**
+     * @return Indexes of keys for which values were generated on primary node.
+     */
+   @Nullable public List<Integer> nearValuesIndexes() {
+        return nearValsIdxs;
+   }
+
+    /**
+     * @param idx Index.
+     * @return Value generated on primary node which should be put to originating node's near cache.
+     */
+    @Nullable public CacheObject nearValue(int idx) {
+        return nearVals.get(idx);
+    }
+
+    /**
+     * Adds key to collection of failed keys.
+     *
+     * @param key Key to add.
+     * @param e Error cause.
+     */
+    public synchronized void addFailedKey(KeyCacheObject key, Throwable e) {
+        if (failedKeys == null)
+            failedKeys = new ConcurrentLinkedQueue<>();
+
+        failedKeys.add(key);
+
+        if (err == null)
+            err = new IgniteCheckedException("Failed to update keys on primary node.");
+
+        err.addSuppressed(e);
+    }
+
+    /**
+     * Adds keys to collection of failed keys.
+     *
+     * @param keys Key to add.
+     * @param e Error cause.
+     */
+    public synchronized void addFailedKeys(Collection<KeyCacheObject> keys, Throwable e) {
+        if (keys != null) {
+            if (failedKeys == null)
+                failedKeys = new ArrayList<>(keys.size());
+
+            failedKeys.addAll(keys);
+        }
+
+        if (err == null)
+            err = new IgniteCheckedException("Failed to update keys on primary node.");
+
+        err.addSuppressed(e);
+    }
+
+    /**
+     * Adds keys to collection of failed keys.
+     *
+     * @param keys Key to add.
+     * @param e Error cause.
+     * @param ctx Context.
+     */
+    public synchronized void addFailedKeys(Collection<KeyCacheObject> keys, Throwable e, GridCacheContext ctx) {
+        if (failedKeys == null)
+            failedKeys = new ArrayList<>(keys.size());
+
+        failedKeys.addAll(keys);
+
+        if (err == null)
+            err = new IgniteCheckedException("Failed to update keys on primary node.");
+
+        err.addSuppressed(e);
+    }
+
+    /** {@inheritDoc}
+     * @param ctx*/
+    @Override public void prepareMarshal(GridCacheSharedContext ctx) throws IgniteCheckedException {
+        super.prepareMarshal(ctx);
+
+        if (err != null && errBytes == null)
+            errBytes = ctx.marshaller().marshal(err);
+
+        GridCacheContext cctx = ctx.cacheContext(cacheId);
+
+        prepareMarshalCacheObjects(failedKeys, cctx);
+
+        prepareMarshalCacheObjects(remapKeys, cctx);
+
+        prepareMarshalCacheObjects(nearVals, cctx);
+
+        if (ret != null)
+            ret.prepareMarshal(cctx);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void finishUnmarshal(GridCacheSharedContext ctx, ClassLoader ldr) throws IgniteCheckedException {
+        super.finishUnmarshal(ctx, ldr);
+
+        if (errBytes != null && err == null)
+            err = ctx.marshaller().unmarshal(errBytes, ldr);
+
+        GridCacheContext cctx = ctx.cacheContext(cacheId);
+
+        finishUnmarshalCacheObjects(failedKeys, cctx, ldr);
+
+        finishUnmarshalCacheObjects(remapKeys, cctx, ldr);
+
+        finishUnmarshalCacheObjects(nearVals, cctx, ldr);
+
+        if (ret != null)
+            ret.finishUnmarshal(cctx, ldr);
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean addDeploymentInfo() {
+        return addDepInfo;
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
+        writer.setBuffer(buf);
+
+        if (!super.writeTo(buf, writer))
+            return false;
+
+        if (!writer.isHeaderWritten()) {
+            if (!writer.writeHeader(directType(), fieldsCount()))
+                return false;
+
+            writer.onHeaderWritten();
+        }
+
+        switch (writer.state()) {
+            case 3:
+                if (!writer.writeByteArray("errBytes", errBytes))
+                    return false;
+
+                writer.incrementState();
+
+            case 4:
+                if (!writer.writeCollection("failedKeys", failedKeys, MessageCollectionItemType.MSG))
+                    return false;
+
+                writer.incrementState();
+
+            case 5:
+                if (!writer.writeMessage("futVer", futVer))
+                    return false;
+
+                writer.incrementState();
+
+            case 6:
+                if (!writer.writeMessage("nearExpireTimes", nearExpireTimes))
+                    return false;
+
+                writer.incrementState();
+
+            case 7:
+                if (!writer.writeCollection("nearSkipIdxs", nearSkipIdxs, MessageCollectionItemType.INT))
+                    return false;
+
+                writer.incrementState();
+
+            case 8:
+                if (!writer.writeMessage("nearTtls", nearTtls))
+                    return false;
+
+                writer.incrementState();
+
+            case 9:
+                if (!writer.writeCollection("nearVals", nearVals, MessageCollectionItemType.MSG))
+                    return false;
+
+                writer.incrementState();
+
+            case 10:
+                if (!writer.writeCollection("nearValsIdxs", nearValsIdxs, MessageCollectionItemType.INT))
+                    return false;
+
+                writer.incrementState();
+
+            case 11:
+                if (!writer.writeMessage("nearVer", nearVer))
+                    return false;
+
+                writer.incrementState();
+
+            case 12:
+                if (!writer.writeCollection("remapKeys", remapKeys, MessageCollectionItemType.MSG))
+                    return false;
+
+                writer.incrementState();
+
+            case 13:
+                if (!writer.writeMessage("ret", ret))
+                    return false;
+
+                writer.incrementState();
+
+        }
+
+        return true;
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
+        reader.setBuffer(buf);
+
+        if (!reader.beforeMessageRead())
+            return false;
+
+        if (!super.readFrom(buf, reader))
+            return false;
+
+        switch (reader.state()) {
+            case 3:
+                errBytes = reader.readByteArray("errBytes");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+            case 4:
+                failedKeys = reader.readCollection("failedKeys", MessageCollectionItemType.MSG);
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+            case 5:
+                futVer = reader.readMessage("futVer");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+            case 6:
+                nearExpireTimes = reader.readMessage("nearExpireTimes");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+            case 7:
+                nearSkipIdxs = reader.readCollection("nearSkipIdxs", MessageCollectionItemType.INT);
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+            case 8:
+                nearTtls = reader.readMessage("nearTtls");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+            case 9:
+                nearVals = reader.readCollection("nearVals", MessageCollectionItemType.MSG);
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+            case 10:
+                nearValsIdxs = reader.readCollection("nearValsIdxs", MessageCollectionItemType.INT);
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+            case 11:
+                nearVer = reader.readMessage("nearVer");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+            case 12:
+                remapKeys = reader.readCollection("remapKeys", MessageCollectionItemType.MSG);
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+            case 13:
+                ret = reader.readMessage("ret");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+        }
+
+        return reader.afterMessageRead(GridNearAtomicUpdateResponse.class);
+    }
+
+    /** {@inheritDoc} */
+    @Override public byte directType() {
+        return 41;
+    }
+
+    /** {@inheritDoc} */
+    @Override public byte fieldsCount() {
+        return 14;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(GridNearAtomicUpdateResponse.class, this, "parent");
+    }
 }

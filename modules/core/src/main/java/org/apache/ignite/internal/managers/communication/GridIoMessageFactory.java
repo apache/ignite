@@ -66,14 +66,10 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxPrep
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxPrepareResponse;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtUnlockRequest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridDhtAtomicDeferredUpdateResponse;
-import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridDhtAtomicMultipleUpdateRequest;
-import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridDhtAtomicSingleUpdateRequest;
-import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridDhtAtomicMultipleUpdateResponse;
-import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridDhtAtomicSingleUpdateResponse;
-import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridNearAtomicMultipleUpdateResponse;
-import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridNearAtomicSingleUpdateRequest;
-import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridNearAtomicMultipleUpdateRequest;
-import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridNearAtomicSingleUpdateResponse;
+import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridDhtAtomicUpdateRequest;
+import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridDhtAtomicUpdateResponse;
+import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridNearAtomicUpdateRequest;
+import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridNearAtomicUpdateResponse;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtForceKeysRequest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtForceKeysResponse;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionDemandMessage;
@@ -86,8 +82,10 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.Gri
 import org.apache.ignite.internal.processors.cache.distributed.near.CacheVersionedValue;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearGetRequest;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearGetResponse;
-import org.apache.ignite.internal.processors.cache.distributed.near.GridNearLockRequest;
-import org.apache.ignite.internal.processors.cache.distributed.near.GridNearLockResponse;
+import org.apache.ignite.internal.processors.cache.distributed.near.GridNearLockRequestV1;
+import org.apache.ignite.internal.processors.cache.distributed.near.GridNearLockRequestV2;
+import org.apache.ignite.internal.processors.cache.distributed.near.GridNearLockResponseV1;
+import org.apache.ignite.internal.processors.cache.distributed.near.GridNearLockResponseV2;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearSingleGetRequest;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearSingleGetResponse;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxFinishRequest;
@@ -356,22 +354,22 @@ public class GridIoMessageFactory implements MessageFactory {
                 break;
 
             case 38:
-                msg = new GridDhtAtomicMultipleUpdateRequest();
+                msg = new GridDhtAtomicUpdateRequest();
 
                 break;
 
             case 39:
-                msg = new GridDhtAtomicMultipleUpdateResponse();
+                msg = new GridDhtAtomicUpdateResponse();
 
                 break;
 
             case 40:
-                msg = new GridNearAtomicMultipleUpdateRequest();
+                msg = new GridNearAtomicUpdateRequest();
 
                 break;
 
             case 41:
-                msg = new GridNearAtomicMultipleUpdateResponse();
+                msg = new GridNearAtomicUpdateResponse();
 
                 break;
 
@@ -421,12 +419,12 @@ public class GridIoMessageFactory implements MessageFactory {
                 break;
 
             case 51:
-                msg = new GridNearLockRequest();
+                msg = new GridNearLockRequestV1();
 
                 break;
 
             case 52:
-                msg = new GridNearLockResponse();
+                msg = new GridNearLockResponseV1();
 
                 break;
 
@@ -730,23 +728,13 @@ public class GridIoMessageFactory implements MessageFactory {
 
                 break;
 
-            case -23:
-                msg = new GridNearAtomicSingleUpdateRequest();
+            case 125:
+                msg = new GridNearLockRequestV2();
 
                 break;
 
-            case -24:
-                msg = new GridNearAtomicSingleUpdateResponse();
-
-                break;
-
-            case -25:
-                msg = new GridDhtAtomicSingleUpdateRequest();
-
-                break;
-
-            case -26:
-                msg = new GridDhtAtomicSingleUpdateResponse();
+            case 126:
+                msg = new GridNearLockResponseV2();
 
                 break;
 

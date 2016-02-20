@@ -22,6 +22,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.IgniteInternalFuture;
@@ -55,6 +56,9 @@ import static org.apache.ignite.transactions.TransactionState.PREPARING;
  *
  */
 public class GridNearPessimisticTxPrepareFuture extends GridNearTxPrepareFutureAdapter {
+
+    private final AtomicInteger counter = new AtomicInteger();
+
     /**
      * @param cctx Context.
      * @param tx Transaction.
@@ -117,14 +121,14 @@ public class GridNearPessimisticTxPrepareFuture extends GridNearTxPrepareFutureA
      * @return Mini future.
      */
     @SuppressWarnings("ForLoopReplaceableByForEach")
-    private MiniFuture miniFuture(IgniteUuid miniId) {
+    private MiniFuture miniFuture(int miniId) {
         // We iterate directly over the futs collection here to avoid copy.
         synchronized (futs) {
             // Avoid iterator creation.
             for (int i = 0; i < futs.size(); i++) {
                 MiniFuture mini = (MiniFuture)futs.get(i);
 
-                if (mini.futureId().equals(miniId)) {
+                if (mini.miniId() == miniId) {
                     if (!mini.isDone())
                         return mini;
                     else
@@ -237,7 +241,7 @@ public class GridNearPessimisticTxPrepareFuture extends GridNearTxPrepareFutureA
 
             final MiniFuture fut = new MiniFuture(m);
 
-            req.miniId(fut.futureId());
+            req.miniId(fut.miniId());
 
             add(fut);
 
@@ -322,7 +326,7 @@ public class GridNearPessimisticTxPrepareFuture extends GridNearTxPrepareFutureA
         private static final long serialVersionUID = 0L;
 
         /** */
-        private final IgniteUuid futId = IgniteUuid.randomUuid();
+        private final int miniId = counter.incrementAndGet();
 
         /** */
         private GridDistributedTxMapping m;
@@ -337,8 +341,8 @@ public class GridNearPessimisticTxPrepareFuture extends GridNearTxPrepareFutureA
         /**
          * @return Future ID.
          */
-        IgniteUuid futureId() {
-            return futId;
+        int miniId() {
+            return miniId;
         }
 
         /**

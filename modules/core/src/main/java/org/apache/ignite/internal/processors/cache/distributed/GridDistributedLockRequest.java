@@ -21,6 +21,7 @@ import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
+
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.GridDirectCollection;
 import org.apache.ignite.internal.GridDirectTransient;
@@ -232,7 +233,7 @@ public class GridDistributedLockRequest extends GridDistributedBaseMessage {
      *
      * @param skipStore Skip store flag.
      */
-    private void skipStore(boolean skipStore){
+    private void skipStore(boolean skipStore) {
         flags = skipStore ? (byte)(flags | SKIP_STORE_FLAG_MASK) : (byte)(flags & ~SKIP_STORE_FLAG_MASK);
     }
 
@@ -299,6 +300,10 @@ public class GridDistributedLockRequest extends GridDistributedBaseMessage {
      */
     public List<KeyCacheObject> keys() {
         return keys;
+    }
+
+    public void keys(List<KeyCacheObject> keys) {
+        this.keys = keys;
     }
 
     /**

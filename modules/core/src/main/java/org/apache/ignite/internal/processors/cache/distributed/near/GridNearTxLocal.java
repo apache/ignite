@@ -961,7 +961,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter {
         GridDhtTxPrepareFuture fut = new GridDhtTxPrepareFuture(
             cctx,
             this,
-            IgniteUuid.randomUuid(),
+            0,
             Collections.<IgniteTxKey, GridCacheVersion>emptyMap(),
             last,
             needReturnValue() && implicit());

@@ -15,27 +15,20 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache.distributed.dht;
+package org.apache.ignite.internal.processors.cache.distributed.near;
 
 import java.io.Externalizable;
 import java.nio.ByteBuffer;
-import java.util.ArrayList;
-import java.util.BitSet;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
+import java.util.Arrays;
 import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.internal.GridDirectCollection;
-import org.apache.ignite.internal.GridDirectTransient;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.processors.cache.CacheEntryPredicate;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedLockRequest;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
-import org.apache.ignite.internal.util.GridLeanMap;
-import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteUuid;
@@ -47,38 +40,33 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * DHT lock request.
+ * Near cache lock request.
  */
-public class GridDhtLockRequest extends GridDistributedLockRequest {
+public class GridNearLockRequestV1 extends GridDistributedLockRequest implements GridNearLockRequest {
     /** */
     private static final long serialVersionUID = 0L;
 
-    /** Near keys to lock. */
-    @GridToStringInclude
-    @GridDirectCollection(KeyCacheObject.class)
-    private List<KeyCacheObject> nearKeys;
-
-    /** Invalidate reader flags. */
-    private BitSet invalidateEntries;
-
-    /** Mini future ID. */
-    private int miniId;
-
-    /** Owner mapped version, if any. */
-    @GridToStringInclude
-    @GridDirectTransient
-    private Map<KeyCacheObject, GridCacheVersion> owned;
-
-    /** Array of keys from {@link #owned}. Used during marshalling and unmarshalling. */
-    @GridToStringExclude
-    private KeyCacheObject[] ownedKeys;
-
-    /** Array of values from {@link #owned}. Used during marshalling and unmarshalling. */
-    @GridToStringExclude
-    private GridCacheVersion[] ownedValues;
-
     /** Topology version. */
     private AffinityTopologyVersion topVer;
+
+    /** Mini future ID. */
+    private IgniteUuid miniId;
+
+    /** Filter. */
+    private CacheEntryPredicate[] filter;
+
+    /** Implicit flag. */
+    private boolean implicitTx;
+
+    /** Implicit transaction with one key flag. */
+    private boolean implicitSingleTx;
+
+    /** Flag is kept for backward compatibility. */
+    private boolean onePhaseCommit;
+
+    /** Array of mapped DHT versions for this entry. */
+    @GridToStringInclude
+    private GridCacheVersion[] dhtVers;
 
     /** Subject ID. */
     private UUID subjId;
@@ -86,70 +74,84 @@ public class GridDhtLockRequest extends GridDistributedLockRequest {
     /** Task name hash. */
     private int taskNameHash;
 
-    /** Indexes of keys needed to be preloaded. */
-    private BitSet preloadKeys;
+    /** Has transforms flag. */
+    private boolean hasTransforms;
+
+    /** Sync commit flag. */
+    private boolean syncCommit;
 
     /** TTL for read operation. */
     private long accessTtl;
 
+    /** Flag indicating whether cache operation requires a previous value. */
+    private boolean retVal;
+
+    /** {@code True} if first lock request for lock operation sent from client node. */
+    private boolean firstClientReq;
+
     /**
      * Empty constructor required for {@link Externalizable}.
      */
-    public GridDhtLockRequest() {
+    public GridNearLockRequestV1() {
         // No-op.
     }
 
     /**
      * @param cacheId Cache ID.
+     * @param topVer Topology version.
      * @param nodeId Node ID.
-     * @param nearXidVer Near transaction ID.
      * @param threadId Thread ID.
      * @param futId Future ID.
-     * @param miniId Mini future ID.
      * @param lockVer Cache version.
-     * @param topVer Topology version.
      * @param isInTx {@code True} if implicit transaction lock.
+     * @param implicitTx Flag to indicate that transaction is implicit.
+     * @param implicitSingleTx Implicit-transaction-with-one-key flag.
      * @param isRead Indicates whether implicit lock is for read or write operation.
+     * @param retVal Return value flag.
      * @param isolation Transaction isolation.
      * @param isInvalidate Invalidation flag.
      * @param timeout Lock timeout.
-     * @param dhtCnt DHT count.
-     * @param nearCnt Near count.
+     * @param keyCnt Number of keys.
      * @param txSize Expected transaction size.
+     * @param syncCommit Synchronous commit flag.
      * @param subjId Subject ID.
      * @param taskNameHash Task name hash code.
      * @param accessTtl TTL for read operation.
      * @param skipStore Skip store flag.
-     * @param keepBinary Keep binary flag.
+     * @param firstClientReq {@code True} if first lock request for lock operation sent from client node.
      * @param addDepInfo Deployment info flag.
      */
-    public GridDhtLockRequest(
+    public GridNearLockRequestV1(
         int cacheId,
+        @NotNull AffinityTopologyVersion topVer,
         UUID nodeId,
-        GridCacheVersion nearXidVer,
         long threadId,
         IgniteUuid futId,
-        int miniId,
         GridCacheVersion lockVer,
-        @NotNull AffinityTopologyVersion topVer,
         boolean isInTx,
+        boolean implicitTx,
+        boolean implicitSingleTx,
         boolean isRead,
+        boolean retVal,
         TransactionIsolation isolation,
         boolean isInvalidate,
         long timeout,
-        int dhtCnt,
-        int nearCnt,
+        int keyCnt,
         int txSize,
+        boolean syncCommit,
         @Nullable UUID subjId,
         int taskNameHash,
         long accessTtl,
         boolean skipStore,
         boolean keepBinary,
+        boolean firstClientReq,
         boolean addDepInfo
+
     ) {
-        super(cacheId,
+        super(
+            cacheId,
             nodeId,
-            nearXidVer,
+            lockVer,
             threadId,
             futId,
             lockVer,
@@ -158,42 +160,32 @@ public class GridDhtLockRequest extends GridDistributedLockRequest {
             isolation,
             isInvalidate,
             timeout,
-            dhtCnt == 0 ? nearCnt : dhtCnt,
+            keyCnt,
             txSize,
             skipStore,
             keepBinary,
             addDepInfo);
 
+        assert topVer.compareTo(AffinityTopologyVersion.ZERO) > 0;
+
         this.topVer = topVer;
-
-        nearKeys = nearCnt == 0 ? Collections.<KeyCacheObject>emptyList() : new ArrayList<KeyCacheObject>(nearCnt);
-        invalidateEntries = new BitSet(dhtCnt == 0 ? nearCnt : dhtCnt);
-
-        this.miniId = miniId;
+        this.implicitTx = implicitTx;
+        this.implicitSingleTx = implicitSingleTx;
+        this.syncCommit = syncCommit;
         this.subjId = subjId;
         this.taskNameHash = taskNameHash;
         this.accessTtl = accessTtl;
+        this.retVal = retVal;
+        this.firstClientReq = firstClientReq;
+
+        dhtVers = new GridCacheVersion[keyCnt];
     }
 
     /**
-     * @return Near node ID.
+     * @return {@code True} if first lock request for lock operation sent from client node.
      */
-    public UUID nearNodeId() {
-        return nodeId();
-    }
-
-    /**
-     * @return Subject ID.
-     */
-    public UUID subjectId() {
-        return subjId;
-    }
-
-    /**
-     * @return Task name hash.
-     */
-    public int taskNameHash() {
-        return taskNameHash;
+    @Override public boolean firstClientRequest() {
+        return firstClientReq;
     }
 
     /**
@@ -204,102 +196,129 @@ public class GridDhtLockRequest extends GridDistributedLockRequest {
     }
 
     /**
-     * Adds a Near key.
-     *
-     * @param key Key.
+     * @return Subject ID.
+     */
+    @Override public UUID subjectId() {
+        return subjId;
+    }
+
+    /**
+     * @return Task name hash.q
+     */
+    @Override public int taskNameHash() {
+        return taskNameHash;
+    }
+
+    /**
+     * @return Implicit transaction flag.
+     */
+    @Override public boolean implicitTx() {
+        return implicitTx;
+    }
+
+    /**
+     * @return Implicit-transaction-with-one-key flag.
+     */
+    @Override public boolean implicitSingleTx() {
+        return implicitSingleTx;
+    }
+
+    /**
+     * @return Sync commit flag.
+     */
+    @Override public boolean syncCommit() {
+        return syncCommit;
+    }
+
+    /**
+     * @return Filter.
+     */
+    @Override public CacheEntryPredicate[] filter() {
+        return filter;
+    }
+
+    /**
+     * @param filter Filter.
      * @param ctx Context.
      * @throws IgniteCheckedException If failed.
      */
-    public void addNearKey(KeyCacheObject key, GridCacheSharedContext ctx)
+    @Override public void filter(CacheEntryPredicate[] filter, GridCacheContext ctx)
         throws IgniteCheckedException {
-        nearKeys.add(key);
+        this.filter = filter;
     }
 
     /**
-     * @return Near keys.
-     */
-    public List<KeyCacheObject> nearKeys() {
-        return nearKeys == null ? Collections.<KeyCacheObject>emptyList() : nearKeys;
-    }
-
-    /**
-     * Adds a DHT key.
-     *
-     * @param key Key.
-     * @param invalidateEntry Flag indicating whether node should attempt to invalidate reader.
-     * @param ctx Context.
-     * @throws IgniteCheckedException If failed.
-     */
-    public void addDhtKey(
-        KeyCacheObject key,
-        boolean invalidateEntry,
-        GridCacheContext ctx
-    ) throws IgniteCheckedException {
-        invalidateEntries.set(idx, invalidateEntry);
-
-        addKeyBytes(key, false, ctx);
-    }
-
-    /**
-     * Marks last added key for preloading.
-     */
-    public void markLastKeyForPreload() {
-        assert idx > 0;
-
-        if (preloadKeys == null)
-            preloadKeys = new BitSet();
-
-        preloadKeys.set(idx - 1, true);
-    }
-
-    /**
-     * @param idx Key index.
-     * @return {@code True} if need to preload key with given index.
-     */
-    public boolean needPreloadKey(int idx) {
-        return preloadKeys != null && preloadKeys.get(idx);
-    }
-
-    /**
-     * Sets owner and its mapped version.
-     *
-     * @param key Key.
-     * @param ownerMapped Owner mapped version.
-     */
-    public void owned(KeyCacheObject key, GridCacheVersion ownerMapped) {
-        if (owned == null)
-            owned = new GridLeanMap<>(3);
-
-        owned.put(key, ownerMapped);
-    }
-
-    /**
-     * @param key Key.
-     * @return Owner and its mapped versions.
-     */
-    @Nullable public GridCacheVersion owned(KeyCacheObject key) {
-        return owned == null ? null : owned.get(key);
-    }
-
-    /**
-     * @param idx Entry index to check.
-     * @return {@code True} if near entry should be invalidated.
-     */
-    public boolean invalidateNearEntry(int idx) {
-        return invalidateEntries.get(idx);
-    }
-
-    /**
-     * @return Mini ID.
+     * @return Mini future ID.
      */
     public int miniId() {
+        return (int) miniId.localId();
+    }
+
+    /**
+     * @param miniId Mini future Id.
+     */
+    public void miniId(int miniId) {
+        this.miniId = new IgniteUuid(GridNearLockFuture.DUMMY_UUID, miniId);
+    }
+
+    public IgniteUuid oldVersionMiniId() {
         return miniId;
+    }
+
+    /**
+     * @param hasTransforms {@code True} if originating transaction has transform entries.
+     */
+    @Override public void hasTransforms(boolean hasTransforms) {
+        this.hasTransforms = hasTransforms;
+    }
+
+    /**
+     * @return {@code True} if originating transaction has transform entries.
+     */
+    @Override public boolean hasTransforms() {
+        return hasTransforms;
+    }
+
+    /**
+     * @return Need return value flag.
+     */
+    @Override public boolean needReturnValue() {
+        return retVal;
+    }
+
+    /**
+     * Adds a key.
+     *
+     * @param key Key.
+     * @param retVal Flag indicating whether value should be returned.
+     * @param dhtVer DHT version.
+     * @param ctx Context.
+     * @throws IgniteCheckedException If failed.
+     */
+    @Override public void addKeyBytes(
+        KeyCacheObject key,
+        boolean retVal,
+        @Nullable GridCacheVersion dhtVer,
+        GridCacheContext ctx
+    ) throws IgniteCheckedException {
+        dhtVers[idx] = dhtVer;
+
+        // Delegate to super.
+        addKeyBytes(key, retVal, ctx);
+    }
+
+    /**
+     * @param idx Index of the key.
+     * @return DHT version for key at given index.
+     */
+    @Override public GridCacheVersion dhtVersion(int idx) {
+        return dhtVers[idx];
     }
 
     /**
      * @return TTL for read operation.
      */
-    public long accessTtl() {
+    @Override public long accessTtl() {
         return accessTtl;
     }
 
@@ -307,18 +326,12 @@ public class GridDhtLockRequest extends GridDistributedLockRequest {
     @Override public void prepareMarshal(GridCacheSharedContext ctx) throws IgniteCheckedException {
         super.prepareMarshal(ctx);
 
-        prepareMarshalCacheObjects(nearKeys, ctx.cacheContext(cacheId));
+        if (filter != null) {
+            GridCacheContext cctx = ctx.cacheContext(cacheId);
 
-        if (owned != null && ownedKeys == null) {
-            ownedKeys = new KeyCacheObject[owned.size()];
-            ownedValues = new GridCacheVersion[ownedKeys.length];
-
-            int i = 0;
-
-            for (Map.Entry<KeyCacheObject, GridCacheVersion> entry : owned.entrySet()) {
-                ownedKeys[i] = entry.getKey();
-                ownedValues[i] = entry.getValue();
-                i++;
+            for (CacheEntryPredicate p : filter) {
+                if (p != null)
+                    p.prepareMarshal(cctx);
             }
         }
     }
@@ -327,18 +340,13 @@ public class GridDhtLockRequest extends GridDistributedLockRequest {
     @Override public void finishUnmarshal(GridCacheSharedContext ctx, ClassLoader ldr) throws IgniteCheckedException {
         super.finishUnmarshal(ctx, ldr);
 
-        finishUnmarshalCacheObjects(nearKeys, ctx.cacheContext(cacheId), ldr);
+        if (filter != null) {
+            GridCacheContext cctx = ctx.cacheContext(cacheId);
 
-        if (ownedKeys != null) {
-            owned = new GridLeanMap<>(ownedKeys.length);
-
-            for (int i = 0; i < ownedKeys.length; i++) {
-                ownedKeys[i].finishUnmarshal(ctx.cacheContext(cacheId).cacheObjectContext(), ldr);
-                owned.put(ownedKeys[i], ownedValues[i]);
+            for (CacheEntryPredicate p : filter) {
+                if (p != null)
+                    p.finishUnmarshal(cctx, ldr);
             }
-
-            ownedKeys = null;
-            ownedValues = null;
         }
     }
 
@@ -364,54 +372,78 @@ public class GridDhtLockRequest extends GridDistributedLockRequest {
                 writer.incrementState();
 
             case 21:
-                if (!writer.writeBitSet("invalidateEntries", invalidateEntries))
+                if (!writer.writeObjectArray("dhtVers", dhtVers, MessageCollectionItemType.MSG))
                     return false;
 
                 writer.incrementState();
 
             case 22:
-                if (!writer.writeInt("miniId", miniId))
+                if (!writer.writeObjectArray("filter", filter, MessageCollectionItemType.MSG))
                     return false;
 
                 writer.incrementState();
 
             case 23:
-                if (!writer.writeCollection("nearKeys", nearKeys, MessageCollectionItemType.MSG))
+                if (!writer.writeBoolean("firstClientReq", firstClientReq))
                     return false;
 
                 writer.incrementState();
 
             case 24:
-                if (!writer.writeObjectArray("ownedKeys", ownedKeys, MessageCollectionItemType.MSG))
+                if (!writer.writeBoolean("hasTransforms", hasTransforms))
                     return false;
 
                 writer.incrementState();
 
             case 25:
-                if (!writer.writeObjectArray("ownedValues", ownedValues, MessageCollectionItemType.MSG))
+                if (!writer.writeBoolean("implicitSingleTx", implicitSingleTx))
                     return false;
 
                 writer.incrementState();
 
             case 26:
-                if (!writer.writeBitSet("preloadKeys", preloadKeys))
+                if (!writer.writeBoolean("implicitTx", implicitTx))
                     return false;
 
                 writer.incrementState();
 
             case 27:
-                if (!writer.writeUuid("subjId", subjId))
+                if (!writer.writeIgniteUuid("miniId", miniId))
                     return false;
 
                 writer.incrementState();
 
             case 28:
-                if (!writer.writeInt("taskNameHash", taskNameHash))
+                if (!writer.writeBoolean("onePhaseCommit", onePhaseCommit))
                     return false;
 
                 writer.incrementState();
 
             case 29:
+                if (!writer.writeBoolean("retVal", retVal))
+                    return false;
+
+                writer.incrementState();
+
+            case 30:
+                if (!writer.writeUuid("subjId", subjId))
+                    return false;
+
+                writer.incrementState();
+
+            case 31:
+                if (!writer.writeBoolean("syncCommit", syncCommit))
+                    return false;
+
+                writer.incrementState();
+
+            case 32:
+                if (!writer.writeInt("taskNameHash", taskNameHash))
+                    return false;
+
+                writer.incrementState();
+
+            case 33:
                 if (!writer.writeMessage("topVer", topVer))
                     return false;
 
@@ -442,7 +474,7 @@ public class GridDhtLockRequest extends GridDistributedLockRequest {
                 reader.incrementState();
 
             case 21:
-                invalidateEntries = reader.readBitSet("invalidateEntries");
+                dhtVers = reader.readObjectArray("dhtVers", MessageCollectionItemType.MSG, GridCacheVersion.class);
 
                 if (!reader.isLastRead())
                     return false;
@@ -450,7 +482,7 @@ public class GridDhtLockRequest extends GridDistributedLockRequest {
                 reader.incrementState();
 
             case 22:
-                miniId = reader.readInt("miniId");
+                filter = reader.readObjectArray("filter", MessageCollectionItemType.MSG, CacheEntryPredicate.class);
 
                 if (!reader.isLastRead())
                     return false;
@@ -458,7 +490,7 @@ public class GridDhtLockRequest extends GridDistributedLockRequest {
                 reader.incrementState();
 
             case 23:
-                nearKeys = reader.readCollection("nearKeys", MessageCollectionItemType.MSG);
+                firstClientReq = reader.readBoolean("firstClientReq");
 
                 if (!reader.isLastRead())
                     return false;
@@ -466,7 +498,7 @@ public class GridDhtLockRequest extends GridDistributedLockRequest {
                 reader.incrementState();
 
             case 24:
-                ownedKeys = reader.readObjectArray("ownedKeys", MessageCollectionItemType.MSG, KeyCacheObject.class);
+                hasTransforms = reader.readBoolean("hasTransforms");
 
                 if (!reader.isLastRead())
                     return false;
@@ -474,7 +506,7 @@ public class GridDhtLockRequest extends GridDistributedLockRequest {
                 reader.incrementState();
 
             case 25:
-                ownedValues = reader.readObjectArray("ownedValues", MessageCollectionItemType.MSG, GridCacheVersion.class);
+                implicitSingleTx = reader.readBoolean("implicitSingleTx");
 
                 if (!reader.isLastRead())
                     return false;
@@ -482,7 +514,7 @@ public class GridDhtLockRequest extends GridDistributedLockRequest {
                 reader.incrementState();
 
             case 26:
-                preloadKeys = reader.readBitSet("preloadKeys");
+                implicitTx = reader.readBoolean("implicitTx");
 
                 if (!reader.isLastRead())
                     return false;
@@ -490,7 +522,7 @@ public class GridDhtLockRequest extends GridDistributedLockRequest {
                 reader.incrementState();
 
             case 27:
-                subjId = reader.readUuid("subjId");
+                miniId = reader.readIgniteUuid("miniId");
 
                 if (!reader.isLastRead())
                     return false;
@@ -498,7 +530,7 @@ public class GridDhtLockRequest extends GridDistributedLockRequest {
                 reader.incrementState();
 
             case 28:
-                taskNameHash = reader.readInt("taskNameHash");
+                onePhaseCommit = reader.readBoolean("onePhaseCommit");
 
                 if (!reader.isLastRead())
                     return false;
@@ -506,6 +538,38 @@ public class GridDhtLockRequest extends GridDistributedLockRequest {
                 reader.incrementState();
 
             case 29:
+                retVal = reader.readBoolean("retVal");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+            case 30:
+                subjId = reader.readUuid("subjId");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+            case 31:
+                syncCommit = reader.readBoolean("syncCommit");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+            case 32:
+                taskNameHash = reader.readInt("taskNameHash");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+            case 33:
                 topVer = reader.readMessage("topVer");
 
                 if (!reader.isLastRead())
@@ -515,21 +579,22 @@ public class GridDhtLockRequest extends GridDistributedLockRequest {
 
         }
 
-        return reader.afterMessageRead(GridDhtLockRequest.class);
+        return reader.afterMessageRead(GridNearLockRequestV1.class);
     }
 
     /** {@inheritDoc} */
     @Override public byte directType() {
-        return 30;
+        return 51;
     }
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 30;
+        return 34;
     }
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(GridDhtLockRequest.class, this, "super", super.toString());
+        return S.toString(GridNearLockRequestV1.class, this, "filter", Arrays.toString(filter),
+            "super", super.toString());
     }
 }

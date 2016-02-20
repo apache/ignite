@@ -24,6 +24,7 @@ import java.util.Deque;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
@@ -38,15 +39,21 @@ import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryRemovedException;
 import org.apache.ignite.internal.processors.cache.GridCacheLockTimeoutException;
+import org.apache.ignite.internal.processors.cache.GridCacheMessage;
 import org.apache.ignite.internal.processors.cache.GridCacheMvccCandidate;
 import org.apache.ignite.internal.processors.cache.GridCacheMvccFuture;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedCacheEntry;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCacheEntry;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTopologyFuture;
+import org.apache.ignite.internal.processors.cache.distributed.near.GridNearLockFuture;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearLockMapping;
+import org.apache.ignite.internal.processors.cache.distributed.near.GridNearLockRequestV1;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearLockRequest;
+import org.apache.ignite.internal.processors.cache.distributed.near.GridNearLockRequestV2;
+import org.apache.ignite.internal.processors.cache.distributed.near.GridNearLockResponseV1;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearLockResponse;
+import org.apache.ignite.internal.processors.cache.distributed.near.GridNearLockResponseV2;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxKey;
@@ -146,6 +153,8 @@ public final class GridDhtColocatedLockFuture extends GridCompoundIdentityFuture
 
     /** Keep binary. */
     private final boolean keepBinary;
+
+    private final AtomicInteger counter = new AtomicInteger();
 
     /**
      * @param cctx Registry.
@@ -425,7 +434,14 @@ public final class GridDhtColocatedLockFuture extends GridCompoundIdentityFuture
                 log.debug("Received lock response from node [nodeId=" + nodeId + ", res=" + res + ", fut=" +
                     this + ']');
 
-            MiniFuture mini = miniFuture(res.miniId());
+            int miniId;
+
+            if (res instanceof GridNearLockResponseV1)
+                miniId = (int) ((GridNearLockResponseV1)res).miniId().localId();
+            else
+                miniId = ((GridNearLockResponseV2)res).miniId();
+
+            MiniFuture mini = miniFuture(miniId);
 
             if (mini != null) {
                 assert mini.node().id().equals(nodeId);
@@ -457,7 +473,7 @@ public final class GridDhtColocatedLockFuture extends GridCompoundIdentityFuture
      * @return Mini future.
      */
     @SuppressWarnings({"ForLoopReplaceableByForEach", "IfMayBeConditional"})
-    private MiniFuture miniFuture(IgniteUuid miniId) {
+    private MiniFuture miniFuture(int miniId) {
         // We iterate directly over the futs collection here to avoid copy.
         synchronized (futs) {
             // Avoid iterator creation.
@@ -469,7 +485,7 @@ public final class GridDhtColocatedLockFuture extends GridCompoundIdentityFuture
 
                 MiniFuture mini = (MiniFuture)fut;
 
-                if (mini.futureId().equals(miniId)) {
+                if (mini.futureId() == miniId) {
                     if (!mini.isDone())
                         return mini;
                     else
@@ -813,7 +829,7 @@ public final class GridDhtColocatedLockFuture extends GridCompoundIdentityFuture
 
             assert !mappedKeys.isEmpty();
 
-            GridNearLockRequest req = null;
+            GridNearLockRequestV1 req = null;
 
             Collection<KeyCacheObject> distributedKeys = new ArrayList<>(mappedKeys.size());
 
@@ -880,7 +896,7 @@ public final class GridDhtColocatedLockFuture extends GridCompoundIdentityFuture
                                         first = false;
                                     }
 
-                                    req = new GridNearLockRequest(
+                                    req = new GridNearLockRequestV1(
                                         cctx.cacheId(),
                                         topVer,
                                         cctx.nodeId(),
@@ -1030,7 +1046,7 @@ public final class GridDhtColocatedLockFuture extends GridCompoundIdentityFuture
                     if (log.isDebugEnabled())
                         log.debug("Sending near lock request [node=" + node.id() + ", req=" + req + ']');
 
-                    cctx.io().send(node, req, cctx.ioPolicy());
+                    cctx.io().send(node, ((GridCacheMessage)req), cctx.ioPolicy());
                 }
                 catch (ClusterTopologyCheckedException ex) {
                     assert fut != null;
@@ -1045,7 +1061,7 @@ public final class GridDhtColocatedLockFuture extends GridCompoundIdentityFuture
                             if (log.isDebugEnabled())
                                 log.debug("Sending near lock request [node=" + node.id() + ", req=" + req + ']');
 
-                            cctx.io().send(node, req, cctx.ioPolicy());
+                            cctx.io().send(node, ((GridCacheMessage)req), cctx.ioPolicy());
                         }
                         catch (ClusterTopologyCheckedException ex) {
                             assert fut != null;
@@ -1306,7 +1322,7 @@ public final class GridDhtColocatedLockFuture extends GridCompoundIdentityFuture
         private static final long serialVersionUID = 0L;
 
         /** */
-        private final IgniteUuid futId = IgniteUuid.randomUuid();
+        private int futId = counter.incrementAndGet();
 
         /** Node ID. */
         @GridToStringExclude
@@ -1334,7 +1350,7 @@ public final class GridDhtColocatedLockFuture extends GridCompoundIdentityFuture
         /**
          * @return Future ID.
          */
-        IgniteUuid futureId() {
+        int futureId() {
             return futId;
         }
 
