@@ -507,7 +507,16 @@ namespace Apache.Ignite.Core.Tests.Services
         [Test]
         public void TestCallJavaService()
         {
-            
+            const string javaSvcName = "javaService";
+
+            Grid1.GetCompute().ExecuteJavaTask<object>("org.apache.ignite.platform.PlatformDeployServiceTask", 
+                javaSvcName);
+
+            var svc = Services.GetServiceProxy<IJavaService>(javaSvcName, false);
+
+            Assert.IsTrue(svc.isInitialized());
+            Assert.IsTrue(svc.isExecuted());
+            Assert.IsFalse(svc.isCancelled());
         }
 
         /// <summary>
