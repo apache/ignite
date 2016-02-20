@@ -21,7 +21,6 @@ import junit.framework.Test;
 import junit.framework.TestResult;
 import junit.framework.TestSuite;
 import org.apache.ignite.internal.processors.cache.IgniteCacheConfigPermutationsAbstractTest;
-import org.apache.ignite.testframework.junits.GridAbstractTest;
 import org.apache.ignite.testframework.junits.IgniteConfigPermutationsAbstractTest;
 
 /**
@@ -76,7 +75,7 @@ public class IgniteConfigPermutationsTestSuite extends TestSuite {
 
     /** {@inheritDoc} */
     @Override public void runTest(Test test, TestResult res) {
-        if (test instanceof GridAbstractTest)
+        if (test instanceof IgniteConfigPermutationsAbstractTest)
             ((IgniteConfigPermutationsAbstractTest)test).setTestsConfiguration(cfg);
 
         super.runTest(test, res);
