@@ -17,35 +17,35 @@
 
 import angular from 'angular';
 
-import ConfigurationSummaryCtrl from './summary/summary.controller';
-import ConfigurationSummaryResource from './summary/summary.resource';
-import summaryTabs from './summary/summary-tabs.directive';
-import previewPanel from './clusters/preview-panel.directive';
+import ConfigurationSummaryCtrl from './configuration/summary/summary.controller';
+import ConfigurationSummaryResource from './configuration/summary/summary.resource';
+import summaryTabs from './configuration/summary/summary-tabs.directive';
+import previewPanel from './configuration/clusters/preview-panel.directive';
 
-import clustersTransactions from './clusters/transactions.directive';
-import clustersThread from './clusters/thread.directive';
-import clustersTime from './clusters/time.directive';
-import clustersSwap from './clusters/swap.directive';
-import clustersSsl from './clusters/ssl.directive';
-import clustersMetrics from './clusters/metrics.directive';
-import clustersMarshaller from './clusters/marshaller.directive';
-import clustersIgfs from './clusters/igfs.directive';
-import clustersEvents from './clusters/events.directive';
-import clustersDiscovery from './clusters/discovery.directive';
-import clustersDeployment from './clusters/deployment.directive';
-import clustersConnector from './clusters/connector.directive';
-import clustersCommunication from './clusters/communication.directive';
-import clustersBinary from './clusters/binary.directive';
-import clustersAtomic from './clusters/atomic.directive';
+import clustersTransactions from './configuration/clusters/transactions.directive';
+import clustersThread from './configuration/clusters/thread.directive';
+import clustersTime from './configuration/clusters/time.directive';
+import clustersSwap from './configuration/clusters/swap.directive';
+import clustersSsl from './configuration/clusters/ssl.directive';
+import clustersMetrics from './configuration/clusters/metrics.directive';
+import clustersMarshaller from './configuration/clusters/marshaller.directive';
+import clustersIgfs from './configuration/clusters/igfs.directive';
+import clustersEvents from './configuration/clusters/events.directive';
+import clustersDiscovery from './configuration/clusters/discovery.directive';
+import clustersDeployment from './configuration/clusters/deployment.directive';
+import clustersConnector from './configuration/clusters/connector.directive';
+import clustersCommunication from './configuration/clusters/communication.directive';
+import clustersBinary from './configuration/clusters/binary.directive';
+import clustersAtomic from './configuration/clusters/atomic.directive';
 
-import clustersGeneral from './clusters/general.directive';
-import generalDiscoveryCloud from './clusters/general/discovery/cloud.directive';
-import generalDiscoveryGoogle from './clusters/general/discovery/google.directive';
-import generalDiscoveryJdbc from './clusters/general/discovery/jdbc.directive';
-import generalDiscoveryMulticast from './clusters/general/discovery/multicast.directive';
-import generalDiscoveryS3 from './clusters/general/discovery/s3.directive';
-import generalDiscoveryShared from './clusters/general/discovery/shared.directive';
-import generalDiscoveryVm from './clusters/general/discovery/vm.directive';
+import clustersGeneral from './configuration/clusters/general.directive';
+import generalDiscoveryCloud from './configuration/clusters/general/discovery/cloud.directive';
+import generalDiscoveryGoogle from './configuration/clusters/general/discovery/google.directive';
+import generalDiscoveryJdbc from './configuration/clusters/general/discovery/jdbc.directive';
+import generalDiscoveryMulticast from './configuration/clusters/general/discovery/multicast.directive';
+import generalDiscoveryS3 from './configuration/clusters/general/discovery/s3.directive';
+import generalDiscoveryShared from './configuration/clusters/general/discovery/shared.directive';
+import generalDiscoveryVm from './configuration/clusters/general/discovery/vm.directive';
 
 angular
 .module('ignite-console.states.configuration', [
