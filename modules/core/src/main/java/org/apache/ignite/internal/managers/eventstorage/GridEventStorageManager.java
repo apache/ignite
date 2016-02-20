@@ -892,10 +892,10 @@ public class GridEventStorageManager extends GridManagerAdapter<EventStorageSpi>
 
                 try {
                     if (res.eventsBytes() != null)
-                        res.events(MarshallerUtils.unmarshal(marsh, res.eventsBytes(), null, ctx));
+                        res.events(MarshallerUtils.<Collection<Event>>unmarshal(marsh, res.eventsBytes(), null, ctx));
 
                     if (res.exceptionBytes() != null)
-                        res.exception(MarshallerUtils.unmarshal(marsh, res.exceptionBytes(), null, ctx));
+                        res.exception(MarshallerUtils.<Throwable>unmarshal(marsh, res.exceptionBytes(), null, ctx));
                 }
                 catch (IgniteCheckedException e) {
                     U.error(log, "Failed to unmarshal events query response: " + msg, e);
