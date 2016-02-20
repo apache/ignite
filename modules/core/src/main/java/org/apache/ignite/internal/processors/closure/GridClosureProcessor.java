@@ -65,6 +65,7 @@ import org.apache.ignite.internal.util.worker.GridWorker;
 import org.apache.ignite.internal.util.worker.GridWorkerFuture;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteClosure;
+import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.lang.IgniteReducer;
 import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.resources.LoadBalancerResource;
@@ -80,6 +81,9 @@ import static org.apache.ignite.internal.processors.task.GridTaskThreadContextKe
  *
  */
 public class GridClosureProcessor extends GridProcessorAdapter {
+
+    public static final IgniteProductVersion BINARYLIZABLE_CLOSURES_SINCE = IgniteProductVersion.fromString("1.6.0");
+
     /** */
     private final Executor sysPool;
 
@@ -257,7 +261,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
                     case BROADCAST: {
                         for (ClusterNode n : nodes)
                             for (Runnable r : jobs)
-                                mapper.map(job(r), n);
+                                mapper.map(job(r, n.version()), n);
 
                         break;
                     }
@@ -266,7 +270,9 @@ public class GridClosureProcessor extends GridProcessorAdapter {
                         for (Runnable r : jobs) {
                             ComputeJob job = job(r);
 
-                            mapper.map(job, lb.getBalancedNode(job, null));
+                            ClusterNode n = lb.getBalancedNode(job, null);
+
+                            mapper.map(job(r, n.version()), n);
                         }
 
                         break;
@@ -309,7 +315,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
                     case BROADCAST: {
                         for (ClusterNode n : nodes)
                             for (Callable<R> c : jobs)
-                                mapper.map(job(c), n);
+                                mapper.map(job(c, n.version()), n);
 
                         break;
                     }
@@ -318,7 +324,9 @@ public class GridClosureProcessor extends GridProcessorAdapter {
                         for (Callable<R> c : jobs) {
                             ComputeJob job = job(c);
 
-                            mapper.map(job, lb.getBalancedNode(job, null));
+                            ClusterNode n = lb.getBalancedNode(job, null);
+
+                            mapper.map(job(c, n.version()), n);
                         }
 
                         break;
@@ -1031,6 +1039,22 @@ public class GridClosureProcessor extends GridProcessorAdapter {
     }
 
     /**
+     * Converts given closure with arguments to grid job.
+     * @param job Job.
+     * @param arg Optional argument.
+     * @return Job.
+     */
+    private static <T, R> ComputeJob job(final IgniteClosure<T, R> job, @Nullable final T arg,
+        IgniteProductVersion targetVersion) {
+        A.notNull(job, "job");
+
+        if (targetVersion.compareTo(BINARYLIZABLE_CLOSURES_SINCE) < 0)
+            return job(job, arg);
+
+        return job instanceof ComputeJobMasterLeaveAware ? new C1MLAV2<>(job, arg) : new C1V2<>(job, arg);
+    }
+
+    /**
      * Converts given closure to a grid job.
      *
      * @param c Closure to convert to grid job.
@@ -1045,6 +1069,21 @@ public class GridClosureProcessor extends GridProcessorAdapter {
     /**
      * Converts given closure to a grid job.
      *
+     * @param c Closure to convert to grid job.
+     * @return Grid job made out of closure.
+     */
+    private static <R> ComputeJob job(final Callable<R> c, IgniteProductVersion targetVersion) {
+        A.notNull(c, "job");
+
+        if (targetVersion.compareTo(BINARYLIZABLE_CLOSURES_SINCE) < 0)
+            return job(c);
+
+        return c instanceof ComputeJobMasterLeaveAware ? new C2MLAV2<>(c) : new C2V2<>(c);
+    }
+
+    /**
+     * Converts given closure to a grid job.
+     *
      * @param r Closure to convert to grid job.
      * @return Grid job made out of closure.
      */
@@ -1052,6 +1091,21 @@ public class GridClosureProcessor extends GridProcessorAdapter {
         A.notNull(r, "job");
 
         return r instanceof ComputeJobMasterLeaveAware ? new C4MLA(r) : new C4(r);
+    }
+
+    /**
+     * Converts given closure to a grid job.
+     *
+     * @param r Closure to convert to grid job.
+     * @return Grid job made out of closure.
+     */
+    private static ComputeJob job(final Runnable r, IgniteProductVersion targetVersion) {
+        A.notNull(r, "job");
+
+        if (targetVersion.compareTo(BINARYLIZABLE_CLOSURES_SINCE) < 0)
+            return job(r);
+
+        return r instanceof ComputeJobMasterLeaveAware ? new C4MLAV2(r) : new C4V2(r);
     }
 
     /**
@@ -1296,7 +1350,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
 
         /** {@inheritDoc} */
         @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, @Nullable Void arg) {
-            ComputeJob job = job(this.job);
+            ComputeJob job = job(this.job, node.version());
 
             return Collections.singletonMap(job, node);
         }
@@ -1350,7 +1404,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
 
         /** {@inheritDoc} */
         @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, @Nullable Void arg) {
-            ComputeJob job = job(this.job);
+            ComputeJob job = job(this.job, node.version());
 
             return Collections.singletonMap(job, node);
         }
@@ -1490,7 +1544,9 @@ public class GridClosureProcessor extends GridProcessorAdapter {
         @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid, @Nullable Void arg) {
             ComputeJob job = job(this.job, this.arg);
 
-            return Collections.singletonMap(job, lb.getBalancedNode(job, null));
+            ClusterNode node = lb.getBalancedNode(job, null);
+
+            return Collections.singletonMap(job(this.job, this.arg, node.version()), node);
         }
 
         /** {@inheritDoc} */
@@ -1539,7 +1595,9 @@ public class GridClosureProcessor extends GridProcessorAdapter {
                 for (T jobArg : args) {
                     ComputeJob job = job(this.job, jobArg);
 
-                    mapper.map(job, lb.getBalancedNode(job, null));
+                    ClusterNode node = lb.getBalancedNode(job, null);
+
+                    mapper.map(job(this.job, jobArg, node.version()), node);
                 }
 
                 return mapper.map();
@@ -1595,7 +1653,9 @@ public class GridClosureProcessor extends GridProcessorAdapter {
                 for (T jobArg : args) {
                     ComputeJob job = job(this.job, jobArg);
 
-                    mapper.map(job, lb.getBalancedNode(job, null));
+                    ClusterNode node = lb.getBalancedNode(job, null);
+
+                    mapper.map(job(this.job, jobArg, node.version()), node);
                 }
 
                 return mapper.map();
@@ -1649,7 +1709,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
                 JobMapper mapper = new JobMapper(subgrid.size());
 
                 for (ClusterNode n : subgrid)
-                    mapper.map(job(job, arg), n);
+                    mapper.map(job(job, arg, n.version()), n);
 
                 return mapper.map();
             }
@@ -2178,6 +2238,38 @@ public class GridClosureProcessor extends GridProcessorAdapter {
         /** {@inheritDoc} */
         @Override public String toString() {
             return S.toString(C4MLA.class, this, super.toString());
+        }
+    }
+
+    /**
+     *
+     */
+    private static class C4MLAV2 extends C4V2 implements ComputeJobMasterLeaveAware {
+        /** */
+        private static final long serialVersionUID = 0L;
+
+        /**
+         *
+         */
+        public C4MLAV2() {
+            // No-op.
+        }
+
+        /**
+         * @param r Runnable.
+         */
+        private C4MLAV2(Runnable r) {
+            super(r);
+        }
+
+        /** {@inheritDoc} */
+        @Override public void onMasterNodeLeft(ComputeTaskSession ses) {
+            ((ComputeJobMasterLeaveAware)r).onMasterNodeLeft(ses);
+        }
+
+        /** {@inheritDoc} */
+        @Override public String toString() {
+            return S.toString(C4MLAV2.class, this, super.toString());
         }
     }
 }
