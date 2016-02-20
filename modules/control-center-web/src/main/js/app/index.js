@@ -62,13 +62,13 @@ import './modules/form/form.module';
 import './modules/JavaTypes/JavaTypes.provider';
 import './modules/QueryNotebooks/QueryNotebooks.provider';
 
-import './modules/states/login/index';
-import './modules/states/logout/index';
-import './modules/states/password/index';
-import './modules/states/configuration/index';
-import './modules/states/sql/index';
-import './modules/states/profile/index';
-import './modules/states/admin/index';
+import './modules/states/signin.state';
+import './modules/states/logout.state';
+import './modules/states/password.state';
+import './modules/states/configuration.state';
+import './modules/states/sql.state';
+import './modules/states/profile.state';
+import './modules/states/admin.state';
 
 // ignite:modules
 import './modules/user/user.module';
