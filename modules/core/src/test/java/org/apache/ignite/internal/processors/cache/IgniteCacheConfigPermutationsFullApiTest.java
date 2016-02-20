@@ -201,7 +201,7 @@ public class IgniteCacheConfigPermutationsFullApiTest extends IgniteCacheConfigP
     /**
      * @throws Exception In case of error.
      */
-    public void testSize() throws Exception {
+    public void _testSize() throws Exception {
         assert jcache().localSize() == 0;
 
         int size = 10;
@@ -269,7 +269,7 @@ public class IgniteCacheConfigPermutationsFullApiTest extends IgniteCacheConfigP
     /**
      * @throws Exception In case of error.
      */
-    public void testContainsKey() throws Exception {
+    public void _testContainsKey() throws Exception {
         jcache().put("testContainsKey", 1);
 
         checkContainsKey(true, "testContainsKey");
@@ -279,7 +279,7 @@ public class IgniteCacheConfigPermutationsFullApiTest extends IgniteCacheConfigP
     /**
      * @throws Exception If failed.
      */
-    public void testContainsKeyTx() throws Exception {
+    public void _testContainsKeyTx() throws Exception {
         if (!txEnabled())
             return;
 
@@ -313,7 +313,7 @@ public class IgniteCacheConfigPermutationsFullApiTest extends IgniteCacheConfigP
     /**
      * @throws Exception If failed.
      */
-    public void testContainsKeysTx() throws Exception {
+    public void _testContainsKeysTx() throws Exception {
         if (!txEnabled())
             return;
 
@@ -354,7 +354,7 @@ public class IgniteCacheConfigPermutationsFullApiTest extends IgniteCacheConfigP
     /**
      * @throws Exception If failed.
      */
-    public void testRemoveInExplicitLocks() throws Exception {
+    public void _testRemoveInExplicitLocks() throws Exception {
         if (lockingEnabled()) {
             IgniteCache<String, Integer> cache = jcache();
 
@@ -379,7 +379,7 @@ public class IgniteCacheConfigPermutationsFullApiTest extends IgniteCacheConfigP
     /**
      * @throws Exception If failed.
      */
-    public void testRemoveAllSkipStore() throws Exception {
+    public void _testRemoveAllSkipStore() throws Exception {
         if (isMultiJvm())
             fail("https://issues.apache.org/jira/browse/IGNITE-1088");
 
@@ -400,7 +400,7 @@ public class IgniteCacheConfigPermutationsFullApiTest extends IgniteCacheConfigP
     /**
      * @throws IgniteCheckedException If failed.
      */
-    public void testAtomicOps() throws IgniteCheckedException {
+    public void _testAtomicOps() throws IgniteCheckedException {
         IgniteCache<String, Integer> c = jcache();
 
         final int cnt = 10;
@@ -432,21 +432,21 @@ public class IgniteCacheConfigPermutationsFullApiTest extends IgniteCacheConfigP
     /**
      * @throws Exception In case of error.
      */
-    public void testGetSerializable() throws Exception {
+    public void _testGetSerializable() throws Exception {
         checkGet(DataMode.SERIALIZABLE);
     }
 
     /**
      * @throws Exception In case of error.
      */
-    public void testGetExternalizable() throws Exception {
+    public void _testGetExternalizable() throws Exception {
         checkGet(DataMode.EXTERNALIZABLE);
     }
 
     /**
      * @throws Exception In case of error.
      */
-    public void testGetObject() throws Exception {
+    public void _testGetObject() throws Exception {
         checkGet(DataMode.PLANE_OBJECT);
     }
 
@@ -468,7 +468,7 @@ public class IgniteCacheConfigPermutationsFullApiTest extends IgniteCacheConfigP
     /**
      * @throws Exception In case of error.
      */
-    public void testGetAsync() throws Exception {
+    public void _testGetAsync() throws Exception {
         IgniteCache<String, Integer> cache = jcache();
 
         cache.put("key1", 1);
@@ -496,21 +496,21 @@ public class IgniteCacheConfigPermutationsFullApiTest extends IgniteCacheConfigP
     /**
      * @throws Exception In case of error.
      */
-    public void testGetAll1() throws Exception {
+    public void _testGetAll1() throws Exception {
         checkGetAll(DataMode.PLANE_OBJECT);
     }
 
     /**
      * @throws Exception In case of error.
      */
-    public void testGetAll2() throws Exception {
+    public void _testGetAll2() throws Exception {
         checkGetAll(DataMode.SERIALIZABLE);
     }
 
     /**
      * @throws Exception In case of error.
      */
-    public void testGetAll3() throws Exception {
+    public void _testGetAll3() throws Exception {
         checkGetAll(DataMode.EXTERNALIZABLE);
     }
 
@@ -604,7 +604,7 @@ public class IgniteCacheConfigPermutationsFullApiTest extends IgniteCacheConfigP
     /**
      * @throws Exception In case of error.
      */
-    public void testGetAllWithNulls() throws Exception {
+    public void _testGetAllWithNulls() throws Exception {
         final IgniteCache<String, Integer> cache = jcache();
 
         final Set<String> c = new HashSet<>();
@@ -624,7 +624,7 @@ public class IgniteCacheConfigPermutationsFullApiTest extends IgniteCacheConfigP
     /**
      * @throws Exception If failed.
      */
-    public void testGetTxNonExistingKey() throws Exception {
+    public void _testGetTxNonExistingKey() throws Exception {
         if (txShouldBeUsed()) {
             try (Transaction ignored = transactions().txStart()) {
                 assert jcache().get("key999123") == null;
@@ -635,7 +635,7 @@ public class IgniteCacheConfigPermutationsFullApiTest extends IgniteCacheConfigP
     /**
      * @throws Exception In case of error.
      */
-    public void testGetAllAsync() throws Exception {
+    public void _testGetAllAsync() throws Exception {
         final IgniteCache<String, Integer> cache = jcache();
 
         final IgniteCache<String, Integer> cacheAsync = cache.withAsync();
@@ -666,21 +666,21 @@ public class IgniteCacheConfigPermutationsFullApiTest extends IgniteCacheConfigP
     /**
      * @throws Exception In case of error.
      */
-    public void testPutSerializable() throws Exception {
+    public void _testPutSerializable() throws Exception {
         checkPut(DataMode.SERIALIZABLE);
     }
 
     /**
      * @throws Exception In case of error.
      */
-    public void testPutExternalizable() throws Exception {
+    public void _testPutExternalizable() throws Exception {
         checkPut(DataMode.EXTERNALIZABLE);
     }
 
     /**
      * @throws Exception In case of error.
      */
-    public void testPutObject() throws Exception {
+    public void _testPutObject() throws Exception {
         checkPut(DataMode.PLANE_OBJECT);
     }
 
@@ -729,7 +729,7 @@ public class IgniteCacheConfigPermutationsFullApiTest extends IgniteCacheConfigP
     /**
      * @throws Exception In case of error.
      */
-    public void testPutTx() throws Exception {
+    public void _testPutTx() throws Exception {
         if (txShouldBeUsed()) {
             IgniteCache<String, Integer> cache = jcache();
 
@@ -768,105 +768,105 @@ public class IgniteCacheConfigPermutationsFullApiTest extends IgniteCacheConfigP
     /**
      * @throws Exception If failed.
      */
-    public void testInvokeOptimisticReadCommitted1() throws Exception {
+    public void _testInvokeOptimisticReadCommitted1() throws Exception {
         checkInvoke(OPTIMISTIC, READ_COMMITTED, DataMode.PLANE_OBJECT);
     }
 
     /**
      * @throws Exception If failed.
      */
-    public void testInvokeOptimisticReadCommitted2() throws Exception {
+    public void _testInvokeOptimisticReadCommitted2() throws Exception {
         checkInvoke(OPTIMISTIC, READ_COMMITTED, DataMode.SERIALIZABLE);
     }
 
     /**
      * @throws Exception If failed.
      */
-    public void testInvokeOptimisticReadCommitted3() throws Exception {
+    public void _testInvokeOptimisticReadCommitted3() throws Exception {
         checkInvoke(OPTIMISTIC, READ_COMMITTED, DataMode.EXTERNALIZABLE);
     }
 
     /**
      * @throws Exception If failed.
      */
-    public void testInvokeOptimisticRepeatableRead1() throws Exception {
+    public void _testInvokeOptimisticRepeatableRead1() throws Exception {
         checkInvoke(OPTIMISTIC, REPEATABLE_READ, DataMode.PLANE_OBJECT);
     }
 
     /**
      * @throws Exception If failed.
      */
-    public void testInvokeOptimisticRepeatableRead2() throws Exception {
+    public void _testInvokeOptimisticRepeatableRead2() throws Exception {
         checkInvoke(OPTIMISTIC, REPEATABLE_READ, DataMode.SERIALIZABLE);
     }
 
     /**
      * @throws Exception If failed.
      */
-    public void testInvokeOptimisticRepeatableRead3() throws Exception {
+    public void _testInvokeOptimisticRepeatableRead3() throws Exception {
         checkInvoke(OPTIMISTIC, REPEATABLE_READ, DataMode.PLANE_OBJECT);
     }
 
     /**
      * @throws Exception If failed.
      */
-    public void testInvokePessimisticReadCommitted1() throws Exception {
+    public void _testInvokePessimisticReadCommitted1() throws Exception {
         checkInvoke(PESSIMISTIC, READ_COMMITTED, DataMode.PLANE_OBJECT);
     }
 
     /**
      * @throws Exception If failed.
      */
-    public void testInvokePessimisticReadCommitted2() throws Exception {
+    public void _testInvokePessimisticReadCommitted2() throws Exception {
         checkInvoke(PESSIMISTIC, READ_COMMITTED, DataMode.SERIALIZABLE);
     }
 
     /**
      * @throws Exception If failed.
      */
-    public void testInvokePessimisticReadCommitted3() throws Exception {
+    public void _testInvokePessimisticReadCommitted3() throws Exception {
         checkInvoke(PESSIMISTIC, READ_COMMITTED, DataMode.EXTERNALIZABLE);
     }
 
     /**
      * @throws Exception If failed.
      */
-    public void testInvokePessimisticRepeatableRead1() throws Exception {
+    public void _testInvokePessimisticRepeatableRead1() throws Exception {
         checkInvoke(PESSIMISTIC, REPEATABLE_READ, DataMode.PLANE_OBJECT);
     }
 
     /**
      * @throws Exception If failed.
      */
-    public void testInvokePessimisticRepeatableRead2() throws Exception {
+    public void _testInvokePessimisticRepeatableRead2() throws Exception {
         checkInvoke(PESSIMISTIC, REPEATABLE_READ, DataMode.SERIALIZABLE);
     }
 
     /**
      * @throws Exception If failed.
      */
-    public void testInvokePessimisticRepeatableRead3() throws Exception {
+    public void _testInvokePessimisticRepeatableRead3() throws Exception {
         checkInvoke(PESSIMISTIC, REPEATABLE_READ, DataMode.EXTERNALIZABLE);
     }
 
     /**
      * @throws Exception If failed.
      */
-    public void testIgniteInvokeOptimisticReadCommitted1() throws Exception {
+    public void _testIgniteInvokeOptimisticReadCommitted1() throws Exception {
         checkIgniteInvoke(OPTIMISTIC, READ_COMMITTED, DataMode.PLANE_OBJECT);
     }
 
     /**
      * @throws Exception If failed.
      */
-    public void testIgniteInvokeOptimisticReadCommitted2() throws Exception {
+    public void _testIgniteInvokeOptimisticReadCommitted2() throws Exception {
         checkIgniteInvoke(OPTIMISTIC, READ_COMMITTED, DataMode.SERIALIZABLE);
     }
 
     /**
      * @throws Exception If failed.
      */
-    public void testIgniteInvokeOptimisticReadCommitted3() throws Exception {
+    public void _testIgniteInvokeOptimisticReadCommitted3() throws Exception {
         checkIgniteInvoke(OPTIMISTIC, READ_COMMITTED, DataMode.EXTERNALIZABLE);
     }
 
