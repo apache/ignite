@@ -506,6 +506,12 @@ namespace Apache.Ignite.Core.Tests.Services
             Assert.IsNull(svc0);
         }
 
+        [Test]
+        public void TestCallJavaService()
+        {
+            
+        }
+
         /// <summary>
         /// Starts the grids.
         /// </summary>
