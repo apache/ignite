@@ -510,9 +510,9 @@ public class GridNearAtomicUpdateFuture extends GridFutureAdapter<Object> implem
 
         if (locUpdate != null) {
             cache.updateAllAsyncInternal(cctx.localNodeId(), locUpdate,
-                new CI2<GridNearAtomicMultipleUpdateRequest, GridNearAtomicMultipleUpdateResponse>() {
-                    @Override public void apply(GridNearAtomicMultipleUpdateRequest req,
-                        GridNearAtomicMultipleUpdateResponse res) {
+                new CI2<GridNearAtomicUpdateRequest, GridNearAtomicUpdateResponse>() {
+                    @Override public void apply(GridNearAtomicUpdateRequest req,
+                        GridNearAtomicUpdateResponse res) {
                         onResult(res.nodeId(), res);
                     }
                 });
@@ -1207,6 +1207,8 @@ public class GridNearAtomicUpdateFuture extends GridFutureAdapter<Object> implem
                     break;
                 }
             }
+
+            optimize = false;
 
             if (optimize) {
                 return new GridNearAtomicSingleUpdateRequest(

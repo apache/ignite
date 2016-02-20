@@ -1451,7 +1451,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                             UpdateBatchResult updRes = updateWithBatch(node,
                                 hasNear,
                                 req,
-                                (GridNearAtomicMultipleUpdateResponse)res,
+                                res,
                                 locked,
                                 ver,
                                 dhtFut,
@@ -1589,7 +1589,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
         ClusterNode node,
         boolean hasNear,
         GridNearAtomicUpdateRequest req,
-        GridNearAtomicMultipleUpdateResponse res,
+        GridNearAtomicUpdateResponse res,
         List<GridDhtCacheEntry> locked,
         GridCacheVersion ver,
         @Nullable GridDhtAtomicUpdateFuture dhtFut,
@@ -2268,7 +2268,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
         @Nullable GridDhtAtomicUpdateFuture dhtFut,
         CI2<GridNearAtomicUpdateRequest, GridNearAtomicUpdateResponse> completionCb,
         final GridNearAtomicUpdateRequest req,
-        final GridNearAtomicMultipleUpdateResponse res,
+        final GridNearAtomicUpdateResponse res,
         boolean replicate,
         UpdateBatchResult batchRes,
         String taskName,
@@ -2659,7 +2659,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
      * @return {@code True} if filter evaluation succeeded.
      */
     private boolean checkFilter(GridCacheEntryEx entry, GridNearAtomicUpdateRequest req,
-        GridNearAtomicMultipleUpdateResponse res) {
+        GridNearAtomicUpdateResponse res) {
         try {
             return ctx.isAllLocked(entry, req.filter());
         }

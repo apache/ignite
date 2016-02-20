@@ -28,6 +28,7 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.managers.communication.GridIoMessage;
 import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridDhtAtomicMultipleUpdateRequest;
+import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridDhtAtomicSingleUpdateRequest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridNearAtomicSingleUpdateRequest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridNearAtomicMultipleUpdateRequest;
 import org.apache.ignite.lang.IgniteInClosure;
@@ -141,6 +142,7 @@ public class GridCacheAtomicMessageCountSelfTest extends GridCommonAbstractTest 
             commSpi.registerMessage(GridNearAtomicMultipleUpdateRequest.class);
             commSpi.registerMessage(GridNearAtomicSingleUpdateRequest.class);
             commSpi.registerMessage(GridDhtAtomicMultipleUpdateRequest.class);
+            commSpi.registerMessage(GridDhtAtomicSingleUpdateRequest.class);
 
             int putCnt = 15;
 
@@ -210,7 +212,8 @@ public class GridCacheAtomicMessageCountSelfTest extends GridCommonAbstractTest 
      * @return Count.
      */
     private int dhtRequestsCount(TestCommunicationSpi commSpi) {
-        return commSpi.messageCount(GridDhtAtomicMultipleUpdateRequest.class);
+        return commSpi.messageCount(GridDhtAtomicMultipleUpdateRequest.class) +
+            commSpi.messageCount(GridDhtAtomicSingleUpdateRequest.class);
     }
 
     /**
