@@ -109,6 +109,7 @@
     <Compile Include="Common\IFactory.cs" />
     <Compile Include="Cache\Store\ICacheStoreSession.cs" />
     <Compile Include="Cache\Store\Package-Info.cs" />
+    <Compile Include="Common\ClientDisconnectedException.cs" />
     <Compile Include="Cluster\ClusterGroupEmptyException.cs" />
     <Compile Include="Cluster\ClusterTopologyException.cs" />
     <Compile Include="Cluster\ICluster.cs" />
@@ -440,6 +441,10 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="Apache.Ignite.Core.ruleset" />
+    <None Include="Apache.Ignite.Core.nuspec" />
+    <None Include="NuGet\Uninstall.ps1" />
+    <None Include="NuGet\PostBuild.ps1" />
+    <None Include="NuGet\Install.ps1" />
     <None Include="Apache.Ignite.Core.snk" />
     <None Include="IgniteConfigurationSection.xsd">
       <SubType>Designer</SubType>

@@ -191,9 +191,9 @@ public class GridCacheAffinityImpl<K, V> implements Affinity<K> {
     @Override public Map<ClusterNode, Collection<K>> mapKeysToNodes(@Nullable Collection<? extends K> keys) {
         A.notNull(keys, "keys");
 
-        int nodesCnt;
-
         AffinityTopologyVersion topVer = topologyVersion();
+
+        int nodesCnt;
 
         if (!cctx.isLocal())
             nodesCnt = cctx.discovery().cacheAffinityNodes(cctx.name(), topVer).size();

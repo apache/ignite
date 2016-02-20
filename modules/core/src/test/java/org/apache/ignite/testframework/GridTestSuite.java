@@ -17,46 +17,79 @@
 
 package org.apache.ignite.testframework;
 
+import java.lang.reflect.Method;
+import java.lang.reflect.Modifier;
 import junit.framework.Test;
-import junit.framework.TestCase;
 import junit.framework.TestResult;
 import junit.framework.TestSuite;
+import org.apache.ignite.internal.processors.cache.IgniteCacheConfigPermutationsAbstractTest;
+import org.apache.ignite.testframework.TestsConfiguration.MultiNodeTestsConfiguration;
 import org.apache.ignite.testframework.junits.GridAbstractTest;
+import org.apache.ignite.testframework.junits.IgniteConfigPermutationsAbstractTest;
 
 /**
  * Grid test suite.
  */
 public class GridTestSuite extends TestSuite {
     /** */
-    private final TestsConfiguration cfg;
+    protected final TestsConfiguration cfg;
 
     /**
      * @param cls Test class.
      * @param cfg Configuration.
      */
-    public GridTestSuite(Class<? extends GridAbstractTest> cls, TestsConfiguration cfg) {
+    public GridTestSuite(Class<? extends IgniteConfigPermutationsAbstractTest> cls, TestsConfiguration cfg) {
         super(cls);
 
         this.cfg = cfg;
     }
 
     /**
-     * Constructs a TestSuite from the given class with the given name.
-     *
-     * @param cfg Tests config.
-     * @see TestSuite#TestSuite(Class)
+     * @param cls Test class.
+     * @param cfg Configuration.
+     * @param testedNodeCnt Count of tested nodes.
      */
-    public GridTestSuite(Class<? extends TestCase> cls, String name,
-        TestsConfiguration cfg) {
-        super(cls, name);
+    public static TestSuite createMultiNodeTestSuite(Class<? extends IgniteCacheConfigPermutationsAbstractTest> cls,
+        TestsConfiguration cfg,
+        int testedNodeCnt) {
 
-        this.cfg = cfg;
+        if (cls.isInstance(IgniteCacheConfigPermutationsAbstractTest.class))
+            throw new IllegalArgumentException("An instance of CacheAbstractNewSelfTest expected, but was: " + cls);
+
+        TestSuite suite = new TestSuite();
+
+        if (cfg.gridCount() < testedNodeCnt)
+            throw new IllegalArgumentException("Failed to initialize test suite [nodeCnt=" + testedNodeCnt
+                + ", cfgGridCnt=" + cfg.gridCount() + "]");
+
+        int numOfTests = 0;
+
+        for (Method m : cls.getMethods())
+            if (m.getName().startsWith("test") && Modifier.isPublic(m.getModifiers()))
+                numOfTests++;
+
+        numOfTests *= testedNodeCnt;
+
+        for (int i = 0; i < testedNodeCnt; i++) {
+            MultiNodeTestsConfiguration multiNodeCfg = new MultiNodeTestsConfiguration(i, numOfTests);
+
+            boolean stopNodes = cfg.isStopNodes() && i + 1 == testedNodeCnt;
+            boolean startCache = i == 0;
+            boolean stopCache = i + 1 == testedNodeCnt;
+
+            TestsConfiguration cfg0 = new TestsConfiguration(cfg.configurationFactory(), cfg.suffix(),
+                stopNodes, startCache, stopCache, cfg.cacheStartMode(), cfg.gridCount(), multiNodeCfg);
+
+            suite.addTest(new GridTestSuite(cls, cfg0));
+        }
+
+        return suite;
     }
 
     /** {@inheritDoc} */
     @Override public void runTest(Test test, TestResult res) {
         if (test instanceof GridAbstractTest)
-            ((GridAbstractTest)test).setTestsConfiguration(cfg);
+            ((IgniteConfigPermutationsAbstractTest)test).setTestsConfiguration(cfg);
 
         super.runTest(test, res);
     }

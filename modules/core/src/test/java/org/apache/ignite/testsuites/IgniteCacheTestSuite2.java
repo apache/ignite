@@ -24,6 +24,8 @@ import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunctionBac
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunctionExcludeNeighborsSelfTest;
 import org.apache.ignite.internal.processors.cache.CacheConfigurationLeakTest;
 import org.apache.ignite.internal.processors.cache.CacheDhtLocalPartitionAfterRemoveSelfTest;
+import org.apache.ignite.internal.processors.cache.CacheEnumOperationsSingleNodeTest;
+import org.apache.ignite.internal.processors.cache.CacheEnumOperationsTest;
 import org.apache.ignite.internal.processors.cache.CrossCacheTxRandomOperationsTest;
 import org.apache.ignite.internal.processors.cache.GridCacheAtomicMessageCountSelfTest;
 import org.apache.ignite.internal.processors.cache.GridCacheFinishPartitionsSelfTest;
@@ -250,6 +252,8 @@ public class IgniteCacheTestSuite2 extends TestSuite {
         suite.addTest(new TestSuite(CacheLockReleaseNodeLeaveTest.class));
         suite.addTest(new TestSuite(NearCacheSyncUpdateTest.class));
         suite.addTest(new TestSuite(CacheConfigurationLeakTest.class));
+        suite.addTest(new TestSuite(CacheEnumOperationsSingleNodeTest.class));
+        suite.addTest(new TestSuite(CacheEnumOperationsTest.class));
 
         return suite;
     }

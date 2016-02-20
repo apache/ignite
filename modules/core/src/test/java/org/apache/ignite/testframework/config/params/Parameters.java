@@ -17,6 +17,7 @@
 
 package org.apache.ignite.testframework.config.params;
 
+import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.ArrayDeque;
@@ -24,6 +25,7 @@ import java.util.Arrays;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import javax.cache.configuration.Factory;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T2;
@@ -31,6 +33,7 @@ import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.config.generator.ConfigurationParameter;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Enum variants.
@@ -66,6 +69,11 @@ public class Parameters {
      */
     @SuppressWarnings("unchecked")
     private static <T> ConfigurationParameter<T>[] parameters0(String mtdName, boolean withNull, Object[] values) {
+        for (Object val : values) {
+            if (!isPrimitiveOrEnum(val) && !(val instanceof Factory))
+                throw new IllegalArgumentException("Value have to be primite, enum or factory: " + val);
+        }
+
         if (withNull) {
             Object[] valuesWithNull = new Object[values.length + 1];
 
@@ -84,6 +92,23 @@ public class Parameters {
             resArr[i] = new ReflectionConfigurationApplier<>(mtdName, values[i]);
 
         return resArr;
+    }
+
+    /**
+     * @param val Value.
+     * @return Primitive or enum or not.
+     */
+    private static boolean isPrimitiveOrEnum(Object val) {
+        return val.getClass().isPrimitive()
+            || val.getClass().equals(Boolean.class)
+            || val.getClass().equals(Byte.class)
+            || val.getClass().equals(Short.class)
+            || val.getClass().equals(Character.class)
+            || val.getClass().equals(Integer.class)
+            || val.getClass().equals(Long.class)
+            || val.getClass().equals(Float.class)
+            || val.getClass().equals(Double.class)
+            || val.getClass().isEnum();
     }
 
     /**
@@ -138,23 +163,34 @@ public class Parameters {
     }
 
     /**
+     * @param cls Class.
+     * @return Factory.
+     */
+    public static <T> Factory<T> factory(Class<?> cls) {
+        return new ReflectionFactory<>(cls);
+    }
+
+    /**
      * Reflection configuration applier.
      */
     @SuppressWarnings("serial")
     private static class ReflectionConfigurationApplier<T> implements ConfigurationParameter<T> {
         /** Classes of marameters cache. */
-        private static final ConcurrentMap<T2<Class, String>, Class> paramClasses = new ConcurrentHashMap();
+        private static final ConcurrentMap<T2<Class, String>, Class> paramClassesCache = new ConcurrentHashMap();
 
         /** */
         private final String mtdName;
 
-        /** */
+        /** Primitive, enum or factory. */
         private final Object val;
 
         /**
          * @param mtdName Method name.
          */
-        ReflectionConfigurationApplier(String mtdName, Object val) {
+        ReflectionConfigurationApplier(String mtdName, @Nullable Object val) {
+            if (val != null && !isPrimitiveOrEnum(val) && !(val instanceof Factory))
+                throw new IllegalArgumentException("Value have to be primite, enum or factory: " + val);
+
             this.mtdName = mtdName;
             this.val = val;
         }
@@ -175,29 +211,34 @@ public class Parameters {
                 return null;
 
             try {
-                Class<?> paramCls = paramClasses.get(new T2<Class, String>(cfg.getClass(), mtdName));
+                Object val0 = val;
+
+                if (!isPrimitiveOrEnum(val))
+                    val0 = ((Factory)val0).create();
+
+                Class<?> paramCls = paramClassesCache.get(new T2<Class, String>(cfg.getClass(), mtdName));
 
                 if (paramCls == null)
-                    paramCls = val.getClass();
-                else if (!paramCls.isInstance(val))
+                    paramCls = val0.getClass();
+                else if (!paramCls.isInstance(val0))
                     throw new IgniteException("Class parameter from cache does not match value argument class " +
-                        "[paramCls=" + paramCls + ", val=" + val + "]");
+                        "[paramCls=" + paramCls + ", val=" + val0 + "]");
 
-                if (val.getClass().equals(Boolean.class))
+                if (val0.getClass().equals(Boolean.class))
                     paramCls = Boolean.TYPE;
-                else if (val.getClass().equals(Byte.class))
+                else if (val0.getClass().equals(Byte.class))
                     paramCls = Byte.TYPE;
-                else if (val.getClass().equals(Short.class))
+                else if (val0.getClass().equals(Short.class))
                     paramCls = Short.TYPE;
-                else if (val.getClass().equals(Character.class))
+                else if (val0.getClass().equals(Character.class))
                     paramCls = Character.TYPE;
-                else if (val.getClass().equals(Integer.class))
+                else if (val0.getClass().equals(Integer.class))
                     paramCls = Integer.TYPE;
-                else if (val.getClass().equals(Long.class))
+                else if (val0.getClass().equals(Long.class))
                     paramCls = Long.TYPE;
-                else if (val.getClass().equals(Float.class))
+                else if (val0.getClass().equals(Float.class))
                     paramCls = Float.TYPE;
-                else if (val.getClass().equals(Double.class))
+                else if (val0.getClass().equals(Double.class))
                     paramCls = Double.TYPE;
 
                 Method mtd;
@@ -211,7 +252,7 @@ public class Parameters {
                         mtd = cfg.getClass().getMethod(mtdName, paramCls);
 
                         if (failed)
-                            paramClasses.put(new T2<Class, String>(cfg.getClass(), mtdName), paramCls);
+                            paramClassesCache.put(new T2<Class, String>(cfg.getClass(), mtdName), paramCls);
 
                         break;
                     }
@@ -233,19 +274,50 @@ public class Parameters {
 
                         if (queue.isEmpty())
                             throw new IgniteException("Method not found [cfgCls=" + cfg.getClass() + ", mtdName="
-                                + mtdName + ", paramCls=" + val.getClass() + "]", e);
+                                + mtdName + ", paramCls=" + val0.getClass() + "]", e);
 
                         paramCls = queue.remove();
                     }
                 }
 
-                mtd.invoke(cfg, val);
+                mtd.invoke(cfg, val0);
             }
             catch (InvocationTargetException | IllegalAccessException e) {
                 throw new IgniteException(e);
             }
 
             return null;
+        }
+    }
+
+    /**
+     *
+     */
+    private static class ReflectionFactory<T> implements Factory<T> {
+        /** */
+        private static final long serialVersionUID = 0;
+
+        /** */
+        private Class<?> cls;
+
+        /**
+         * @param cls Class.
+         */
+        ReflectionFactory(Class<?> cls) {
+            this.cls = cls;
+        }
+
+        /** {@inheritDoc} */
+        @Override public T create() {
+            try {
+                Constructor<?> constructor = cls.getConstructor();
+
+                return (T)constructor.newInstance();
+            }
+            catch (NoSuchMethodException | InstantiationException | InvocationTargetException |
+                IllegalAccessException e) {
+                throw new IgniteException(e);
+            }
         }
     }
 

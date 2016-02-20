@@ -2940,8 +2940,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         IgniteCacheProxy<K, V> jcache = (IgniteCacheProxy<K, V>)jCacheProxies.get(maskNull(name));
 
-        assert jcache == null || jcache.getName().equals(maskNull(name)): ">>>>>> cache Name: " + maskNull(name);
-
         return jcache == null ? null : jcache.internalProxy();
     }
 
@@ -3289,8 +3287,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     public void onUndeployed(ClassLoader ldr) {
         if (!ctx.isStopping()) {
             for (GridCacheAdapter<?, ?> cache : caches.values()) {
-                // Do not notify system caches.
-                if (cache.context().userCache())
+                // Do not notify system caches and caches for which deployment is disabled.
+                if (cache.context().userCache() && cache.context().deploymentEnabled())
                     cache.onUndeploy(ldr);
             }
         }

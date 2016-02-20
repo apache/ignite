@@ -21,9 +21,9 @@ package org.apache.ignite.testframework;
  * Cache start mode.
  */
 public enum CacheStartMode {
-    /** Start caches together nodes (not dynamically) */
+    /** Start caches together with nodes (not dynamically). */
     STATIC,
 
-    /** */
+    /** Start caches dynamically. */
     NODES_THEN_CACHES
 }
