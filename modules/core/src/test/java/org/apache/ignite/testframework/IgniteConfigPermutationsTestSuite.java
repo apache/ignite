@@ -25,9 +25,9 @@ import org.apache.ignite.testframework.junits.GridAbstractTest;
 import org.apache.ignite.testframework.junits.IgniteConfigPermutationsAbstractTest;
 
 /**
- * Grid test suite.
+ * Configuration permutations test suite.
  */
-public class GridTestSuite extends TestSuite {
+public class IgniteConfigPermutationsTestSuite extends TestSuite {
     /** */
     protected final TestsConfiguration cfg;
 
@@ -35,7 +35,8 @@ public class GridTestSuite extends TestSuite {
      * @param cls Test class.
      * @param cfg Configuration.
      */
-    public GridTestSuite(Class<? extends IgniteConfigPermutationsAbstractTest> cls, TestsConfiguration cfg) {
+    public IgniteConfigPermutationsTestSuite(Class<? extends IgniteConfigPermutationsAbstractTest> cls,
+        TestsConfiguration cfg) {
         super(cls);
 
         this.cfg = cfg;
@@ -49,9 +50,9 @@ public class GridTestSuite extends TestSuite {
     public static TestSuite createMultiNodeTestSuite(Class<? extends IgniteCacheConfigPermutationsAbstractTest> cls,
         TestsConfiguration cfg,
         int testedNodeCnt) {
-
-        if (cls.isInstance(IgniteCacheConfigPermutationsAbstractTest.class))
-            throw new IllegalArgumentException("An instance of CacheAbstractNewSelfTest expected, but was: " + cls);
+        if (!IgniteCacheConfigPermutationsAbstractTest.class.isAssignableFrom(cls))
+            throw new IllegalArgumentException("An instance of "
+                + IgniteCacheConfigPermutationsAbstractTest.class.getName() + " expected, but was: " + cls);
 
         TestSuite suite = new TestSuite();
 
@@ -67,7 +68,7 @@ public class GridTestSuite extends TestSuite {
             TestsConfiguration cfg0 = new TestsConfiguration(cfg.configurationFactory(), cfg.description(),
                 stopNodes, startCache, stopCache, cfg.cacheStartMode(), cfg.gridCount(), i);
 
-            suite.addTest(new GridTestSuite(cls, cfg0));
+            suite.addTest(new IgniteConfigPermutationsTestSuite(cls, cfg0));
         }
 
         return suite;

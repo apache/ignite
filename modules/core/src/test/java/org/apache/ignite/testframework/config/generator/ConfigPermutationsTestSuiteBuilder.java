@@ -23,7 +23,7 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.processors.cache.IgniteCacheConfigPermutationsAbstractTest;
 import org.apache.ignite.testframework.CacheStartMode;
-import org.apache.ignite.testframework.GridTestSuite;
+import org.apache.ignite.testframework.IgniteConfigPermutationsTestSuite;
 import org.apache.ignite.testframework.TestsConfiguration;
 import org.apache.ignite.testframework.config.ConfigurationPermutations;
 import org.apache.ignite.testframework.config.ConfigPermutationsFactory;
@@ -144,10 +144,10 @@ public class ConfigPermutationsTestSuiteBuilder {
         TestSuite addedSuite;
 
         if (withClients)
-            addedSuite = GridTestSuite.createMultiNodeTestSuite(
+            addedSuite = IgniteConfigPermutationsTestSuite.createMultiNodeTestSuite(
                 (Class<? extends IgniteCacheConfigPermutationsAbstractTest>)cls, testCfg, testedNodeCnt);
         else
-            addedSuite = new GridTestSuite(cls, testCfg);
+            addedSuite = new IgniteConfigPermutationsTestSuite(cls, testCfg);
 
         return addedSuite;
     }
