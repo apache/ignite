@@ -169,7 +169,7 @@ public abstract class IgniteCacheConfigPermutationsAbstractTest extends IgniteCo
 
         IgniteEx grid = grid(testedNodeIdx);
 
-        // TODO fix near only detection.
+        // TODO fix near only detection...
         boolean nearEnabled = false;
 
         for (CacheConfiguration cc : grid.configuration().getCacheConfiguration()) {
@@ -240,21 +240,15 @@ public abstract class IgniteCacheConfigPermutationsAbstractTest extends IgniteCo
                                 @Override public boolean applyx() throws IgniteCheckedException {
                                     jcache(fi).removeAll();
 
-                                    info(">>>>> Debug removeAll() for grid: " + fi);
-
                                     if (jcache(fi).size(CachePeekMode.ALL) > 0) {
-                                        for (Cache.Entry<?, ?> k : jcache(fi).localEntries()) {
+                                        for (Cache.Entry<?, ?> k : jcache(fi).localEntries())
                                             jcache(fi).remove(k.getKey());
-
-                                            info(">>>>> Debug remove for grid: " + fi);
-                                        }
                                     }
 
-                                    int localSize = jcache(fi).localSize(CachePeekMode.ALL);
+                                    int locSize = jcache(fi).localSize(CachePeekMode.ALL);
 
-                                    info(">>>>> Debug localSize for grid: " + fi + " is " + localSize);
-
-                                    if (localSize != 0) {
+                                    if (locSize != 0) {
+                                        info(">>>>> Debug localSize for grid: " + fi + " is " + locSize);
                                         info(">>>>> Debug ONHEAP  localSize for grid: " + fi + " is " + jcache(fi).localSize(CachePeekMode.ONHEAP));
                                         info(">>>>> Debug OFFHEAP localSize for grid: " + fi + " is " + jcache(fi).localSize(CachePeekMode.OFFHEAP));
                                         info(">>>>> Debug PRIMARY localSize for grid: " + fi + " is " + jcache(fi).localSize(CachePeekMode.PRIMARY));
@@ -263,7 +257,7 @@ public abstract class IgniteCacheConfigPermutationsAbstractTest extends IgniteCo
                                         info(">>>>> Debug SWAP    localSize for grid: " + fi + " is " + jcache(fi).localSize(CachePeekMode.SWAP));
                                     }
 
-                                    return localSize == 0;
+                                    return locSize == 0;
                                 }
                             },
                             getTestTimeout()));
