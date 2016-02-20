@@ -96,12 +96,12 @@ public abstract class IgniteConfigPermutationsAbstractTest extends GridCommonAbs
 
     /** {@inheritDoc} */
     @Override protected String testClassDescription() {
-        return super.testClassDescription() + '-' + testsCfg.suffix() + '-' + testsCfg.gridCount() + "-node(s)";
+        return super.testClassDescription() + '-' + testsCfg.description() + '-' + testsCfg.gridCount() + "-node(s)";
     }
 
     /** {@inheritDoc} */
     @Override protected String testDescription() {
-        return super.testDescription() + '-' + testsCfg.suffix() + '-' + testsCfg.gridCount() + "-node(s)";
+        return super.testDescription() + '-' + testsCfg.description() + '-' + testsCfg.gridCount() + "-node(s)";
     }
 
     /** {@inheritDoc} */

@@ -31,12 +31,14 @@ public class IgniteCacheBasicConfigPermutationsFullApiTestSuite extends TestSuit
      */
     public static TestSuite suite() throws Exception {
         return new ConfigPermutationsTestSuiteBuilder(
-            "Cache New Full API Test Suite", 
+            "Cache New Full API Test Suite",
             IgniteCacheConfigPermutationsFullApiTest.class)
             .withBasicCacheParams()
             .backups(1)
             .gridsCount(5)
             .withClients()
+//            .specifyIgniteParam(0, 0, 0)
+//            .specifyCacheParam(0, 0, 0, 0, 0, 0, 0, 0, 0)
             .build();
     }
 }

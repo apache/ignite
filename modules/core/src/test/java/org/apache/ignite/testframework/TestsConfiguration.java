@@ -19,7 +19,6 @@ package org.apache.ignite.testframework;
 
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.testframework.config.ConfigurationFactory;
-import org.jetbrains.annotations.Nullable;
 
 /**
  * Immutable tests configuration.
@@ -29,7 +28,7 @@ public class TestsConfiguration {
     private final ConfigurationFactory factory;
 
     /** */
-    private final String suffix;
+    private final String desc;
 
     /** */
     private final boolean stopNodes;
@@ -41,7 +40,7 @@ public class TestsConfiguration {
     private final CacheStartMode cacheStartMode;
 
     /** */
-    private final MultiNodeTestsConfiguration multiNodeCfg;
+    private final Integer testedNodeIdx;
 
     /** */
     private boolean startCache;
@@ -51,40 +50,40 @@ public class TestsConfiguration {
 
     /**
      * @param factory Factory.
-     * @param suffix Class suffix.
+     * @param desc Class suffix.
      * @param stopNodes Stope nodes.
      * @param gridCnt Grdi count.
      */
     public TestsConfiguration(ConfigurationFactory factory,
-        String suffix,
+        String desc,
         boolean stopNodes,
         CacheStartMode cacheStartMode,
         int gridCnt) {
-        this(factory, suffix, stopNodes, true, true, cacheStartMode, gridCnt, null);
+        this(factory, desc, stopNodes, true, true, cacheStartMode, gridCnt, null);
     }
 
     /**
      * @param factory Factory.
-     * @param suffix Class suffix.
+     * @param desc Config description.
      * @param stopNodes Stope nodes.
      * @param gridCnt Grdi count.
      */
     public TestsConfiguration(ConfigurationFactory factory,
-        String suffix,
+        String desc,
         boolean stopNodes,
         boolean startCache,
         boolean stopCache,
         CacheStartMode cacheStartMode,
         int gridCnt,
-        @Nullable MultiNodeTestsConfiguration multiNodeCfg) {
+        Integer testedNodeIdx) {
         A.ensure(gridCnt >= 1, "Grids count cannot be less then 1.");
 
         this.factory = factory;
-        this.suffix = suffix;
-        this.stopNodes = stopNodes;
+        this.desc = desc;
         this.gridCnt = gridCnt;
         this.cacheStartMode = cacheStartMode;
-        this.multiNodeCfg = multiNodeCfg;
+        this.testedNodeIdx = testedNodeIdx;
+        this.stopNodes = stopNodes;
         this.startCache = startCache;
         this.stopCache = stopCache;
     }
@@ -97,10 +96,10 @@ public class TestsConfiguration {
     }
 
     /**
-     * @return Test class name suffix.
+     * @return Configuration description..
      */
-    public String suffix() {
-        return suffix;
+    public String description() {
+        return desc;
     }
 
     /**
@@ -125,10 +124,10 @@ public class TestsConfiguration {
     }
 
     /**
-     * @return Multi node config.
+     * @return Index of node which should be tested or {@code null}.
      */
-    public MultiNodeTestsConfiguration multiNodeConfig() {
-        return multiNodeCfg;
+    public Integer testedNodeIndex() {
+        return testedNodeIdx;
     }
 
     /**
@@ -143,39 +142,5 @@ public class TestsConfiguration {
      */
     public boolean isStopCache() {
         return stopCache;
-    }
-
-    /**
-     *
-     */
-    public static class MultiNodeTestsConfiguration {
-        /** */
-        private final int testedNodeIdx;
-
-        /** Custome number of tests. */
-        private final int numOfTests;
-
-        /**
-         * @param testedNodeIdx Tested node type.
-         * @param numOfTests
-         */
-        public MultiNodeTestsConfiguration(int testedNodeIdx, int numOfTests) {
-            this.testedNodeIdx = testedNodeIdx;
-            this.numOfTests = numOfTests;
-        }
-
-        /**
-         * @return Number of tests.
-         */
-        public int numOfTests() {
-            return numOfTests;
-        }
-
-        /**
-         * @return Index of tested node.
-         */
-        public int testedNodeIndex() {
-            return testedNodeIdx;
-        }
     }
 }

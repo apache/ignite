@@ -94,10 +94,10 @@ public abstract class IgniteCacheConfigPermutationsAbstractTest extends IgniteCo
     @Override protected final void beforeTestsStarted() throws Exception {
         assert testsCfg != null;
 
-        if (testsCfg.multiNodeConfig() != null) {
-            testedNodeIdx = testsCfg.multiNodeConfig().testedNodeIndex();
+        if (testsCfg.testedNodeIndex() != null) {
+            assert testsCfg.testedNodeIndex() >= 0 : "testedNodeIdx: " + testedNodeIdx;
 
-            assert testedNodeIdx >= 0 : "testedNodeIdx: " + testedNodeIdx;
+            testedNodeIdx = testsCfg.testedNodeIndex();
         }
 
         if (testsCfg.isStartCache()) {
@@ -126,7 +126,7 @@ public abstract class IgniteCacheConfigPermutationsAbstractTest extends IgniteCo
                     startGrid(gridName, cfg, null);
                 }
 
-                if (testsCfg.multiNodeConfig() != null && testsCfg.gridCount() > CLIENT_NEAR_ONLY_IDX)
+                if (testsCfg.testedNodeIndex() != null && testsCfg.gridCount() > CLIENT_NEAR_ONLY_IDX)
                     grid(CLIENT_NEAR_ONLY_IDX).createNearCache(cacheName(), new NearCacheConfiguration());
             }
             else if (cacheStartMode == null || cacheStartMode == CacheStartMode.NODES_THEN_CACHES) {
@@ -145,7 +145,7 @@ public abstract class IgniteCacheConfigPermutationsAbstractTest extends IgniteCo
                         grid.getOrCreateCache(cc);
                     }
 
-                    if (testsCfg.multiNodeConfig() != null && testsCfg.gridCount() > CLIENT_NEAR_ONLY_IDX)
+                    if (testsCfg.testedNodeIndex() != null && testsCfg.gridCount() > CLIENT_NEAR_ONLY_IDX)
                         grid(CLIENT_NEAR_ONLY_IDX).createNearCache(cacheName(), new NearCacheConfiguration());
                 }
             }
@@ -161,10 +161,10 @@ public abstract class IgniteCacheConfigPermutationsAbstractTest extends IgniteCo
         for (int i = 0; i < gridCount(); i++)
             info("Grid " + i + ": " + grid(i).localNode().id());
 
-        if (testsCfg.multiNodeConfig() != null && testsCfg.gridCount() > CLIENT_NEAR_ONLY_IDX)
+        if (testsCfg.testedNodeIndex() != null && testsCfg.gridCount() > CLIENT_NEAR_ONLY_IDX)
             assert grid(CLIENT_NEAR_ONLY_IDX).configuration().isClientMode();
 
-        if (testsCfg.multiNodeConfig() != null && testsCfg.gridCount() > CLIENT_NODE_IDX)
+        if (testsCfg.testedNodeIndex() != null && testsCfg.gridCount() > CLIENT_NODE_IDX)
             assert grid(CLIENT_NODE_IDX).configuration().isClientMode();
 
         IgniteEx grid = grid(testedNodeIdx);
@@ -477,11 +477,7 @@ public abstract class IgniteCacheConfigPermutationsAbstractTest extends IgniteCo
      * @return Cache name.
      */
     protected String cacheName() {
-        String name = "testcache-" + testsCfg.suffix().hashCode();
-
-//        info(">>>>>> Getting cacheName: " + name);
-
-        return name;
+        return "testcache-" + testsCfg.description().hashCode();
     }
 
     /**
