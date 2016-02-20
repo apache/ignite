@@ -128,5 +128,12 @@ public class PlatformDeployServiceTask extends ComputeTaskAdapter<String, Object
         }
 
         // TODO: test overloads, test all primitive types
+        public int test(int arg) {
+            return arg + 1;
+        }
+
+        public float test(float arg) {
+            return arg + 1.5f;
+        }
     }
 }

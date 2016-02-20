@@ -517,6 +517,9 @@ namespace Apache.Ignite.Core.Tests.Services
             Assert.IsTrue(svc.isInitialized());
             Assert.IsTrue(svc.isExecuted());
             Assert.IsFalse(svc.isCancelled());
+
+            Assert.AreEqual(6, svc.test(5));
+            Assert.AreEqual(3.8, svc.test(2.3f));
         }
 
         /// <summary>
@@ -864,6 +867,9 @@ namespace Apache.Ignite.Core.Tests.Services
             /// Determines whether this instance is executed.
             /// </summary>
             bool isExecuted();
+
+            int test(int x);
+            float test(float x);
         }
     }
 }
