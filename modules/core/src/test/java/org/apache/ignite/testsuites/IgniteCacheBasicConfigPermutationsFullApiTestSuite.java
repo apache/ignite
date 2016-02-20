@@ -37,8 +37,6 @@ public class IgniteCacheBasicConfigPermutationsFullApiTestSuite extends TestSuit
             .backups(1)
             .gridsCount(5)
             .withClients()
-//            .specifyIgniteParam(0, 0, 0)
-//            .specifyCacheParam(0, 0, 0, 0, 0, 0, 0, 0, 0)
             .build();
     }
 }
