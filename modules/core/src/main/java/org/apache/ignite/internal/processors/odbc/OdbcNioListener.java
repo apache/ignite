@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.odbc;
 
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.binary.BinaryReaderExImpl;
@@ -32,7 +33,6 @@ import org.apache.ignite.internal.util.nio.GridNioSession;
 import org.apache.ignite.internal.util.nio.GridNioSessionMetaKey;
 import org.jetbrains.annotations.Nullable;
 
-import java.io.IOException;
 import java.util.Collection;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -98,8 +98,9 @@ public class OdbcNioListener extends GridNioServerListenerAdapter<byte[]> {
     @Override public void onMessage(GridNioSession ses, byte[] msg) {
         assert msg != null;
 
+        long reqId = REQ_ID_GEN.incrementAndGet();
+
         try {
-            long reqId = REQ_ID_GEN.incrementAndGet();
             long startTime = 0;
 
             OdbcRequest req = decode(msg);
@@ -129,25 +130,9 @@ public class OdbcNioListener extends GridNioServerListenerAdapter<byte[]> {
             ses.send(outMsg);
         }
         catch (Exception e) {
-            trySendErrorMessage(ses, e.getMessage());
-        }
-    }
+            log.error("Failed to process ODBC request [id=" + reqId + ", err=" + e + ']');
 
-    /**
-     * Try to send simple response message to ODBC driver.
-     * @param ses Session.
-     * @param err Error message.
-     */
-    private void trySendErrorMessage(GridNioSession ses, String err) {
-        log.error(err);
-
-        try {
-            ses.send(encode(new OdbcResponse(OdbcResponse.STATUS_FAILED, err)));
-        }
-        catch (Exception e) {
-            // TODO: ???
-
-            log.error("Can not send error response message: [err=" + e.getMessage() + ']');
+            ses.send(encode(new OdbcResponse(OdbcResponse.STATUS_FAILED, e.getMessage())));
         }
     }
 
@@ -157,7 +142,7 @@ public class OdbcNioListener extends GridNioServerListenerAdapter<byte[]> {
      * @param msg Message.
      * @return Assembled ODBC request.
      */
-    private OdbcRequest decode(byte[] msg) throws IOException {
+    private OdbcRequest decode(byte[] msg) {
         assert msg != null;
 
         BinaryInputStream stream = new BinaryHeapInputStream(msg);
@@ -224,7 +209,7 @@ public class OdbcNioListener extends GridNioServerListenerAdapter<byte[]> {
             }
 
             default:
-                throw new IOException("Unknown ODBC command: " + cmd);
+                throw new IgniteException("Unknown ODBC command: " + cmd);
         }
 
         return res;
@@ -236,7 +221,7 @@ public class OdbcNioListener extends GridNioServerListenerAdapter<byte[]> {
      * @param msg Message.
      * @return Byte array.
      */
-    private byte[] encode(OdbcResponse msg) throws IOException {
+    private byte[] encode(OdbcResponse msg) {
         assert msg != null;
 
         // Creating new binary writer

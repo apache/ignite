@@ -19,8 +19,6 @@ package org.apache.ignite.internal.processors.odbc;
 
 import org.apache.ignite.internal.binary.BinaryRawWriterEx;
 
-import java.io.IOException;
-
 /**
  * ODBC table-related metadata.
  */
@@ -77,9 +75,8 @@ public class OdbcTableMeta {
      * Write in a binary format.
      *
      * @param writer Binary writer.
-     * @throws IOException
      */
-    public void writeBinary(BinaryRawWriterEx writer) throws IOException {
+    public void writeBinary(BinaryRawWriterEx writer) {
         writer.writeString(catalog);
         writer.writeString(schema);
         writer.writeString(table);
