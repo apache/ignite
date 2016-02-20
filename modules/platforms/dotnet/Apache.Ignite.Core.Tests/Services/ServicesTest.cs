@@ -15,6 +15,7 @@
  * limitations under the License.
  */
 
+#pragma warning disable 618   // SpringConfigUrl
 namespace Apache.Ignite.Core.Tests.Services
 {
     using System;
@@ -239,11 +240,7 @@ namespace Apache.Ignite.Core.Tests.Services
         public void TestGetServiceProxy([Values(true, false)] bool binarizable)
         {
             // Test proxy without a service
-            var prx = Services.GetServiceProxy<ITestIgniteService>(SvcName);
-
-            Assert.IsTrue(prx != null);
-
-            var ex = Assert.Throws<ServiceInvocationException>(() => Assert.IsTrue(prx.Initialized)).InnerException;
+            var ex = Assert.Throws<IgniteException>(()=> Services.GetServiceProxy<ITestIgniteService>(SvcName));
             Assert.AreEqual("Failed to find deployed service: " + SvcName, ex.Message);
 
             // Deploy to grid2 & grid3
@@ -259,7 +256,7 @@ namespace Apache.Ignite.Core.Tests.Services
             Assert.IsNull(Services.GetService<ITestIgniteService>(SvcName));
 
             // Get proxy
-            prx = Services.GetServiceProxy<ITestIgniteService>(SvcName);
+            var prx = Services.GetServiceProxy<ITestIgniteService>(SvcName);
 
             // Check proxy properties
             Assert.IsNotNull(prx);
