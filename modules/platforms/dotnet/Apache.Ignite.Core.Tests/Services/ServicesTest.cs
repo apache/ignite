@@ -20,6 +20,7 @@ namespace Apache.Ignite.Core.Tests.Services
 {
     using System;
     using System.Collections.Generic;
+    using System.Diagnostics.CodeAnalysis;
     using System.Linq;
     using System.Threading;
     using Apache.Ignite.Core.Binary;
@@ -832,6 +833,28 @@ namespace Apache.Ignite.Core.Tests.Services
         private class BinarizableObject
         {
             public int Val { get; set; }
+        }
+
+        /// <summary>
+        /// Java service proxy interface.
+        /// </summary>
+        [SuppressMessage("ReSharper", "InconsistentNaming")]
+        private interface IJavaService
+        {
+            /// <summary>
+            /// Determines whether this instance is cancelled.
+            /// </summary>
+            bool isCancelled();
+
+            /// <summary>
+            /// Determines whether this instance is initialized.
+            /// </summary>
+            bool isInitialized();
+
+            /// <summary>
+            /// Determines whether this instance is executed.
+            /// </summary>
+            bool isExecuted();
         }
     }
 }
