@@ -2653,27 +2653,27 @@ var PREDEFINED_QUERIES = [
             {name: 'EXAMPLE_MAX_DEPARTMENT_CNT', val: 5, comment: 'How many departments to generate.'}
         ],
         specialGeneration: function (res, conVar) {
-            $generatorJava.declareVariableCustom(res, 'stmt', 'java.sql.PreparedStatement', conVar +
-                '.prepareStatement("INSERT INTO EMPLOYEE(ID, DEPARTMENT_ID, FIRST_NAME, LAST_NAME, EMAIL, PHONE_NUMBER, HIRE_DATE, JOB, SALARY) VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?)")');
-
-            res.startBlock('for (int id = 0; id < EXAMPLE_MAX_DEPARTMENT_CNT; id ++) {');
-            res.line('stmt.setInt(1, id);');
-            res.line('stmt.setInt(2, id);');
-            res.line('stmt.setString(3, "First name manager #" + (id + 1));');
-            res.line('stmt.setString(4, "Last name manager#" + (id + 1));');
-            res.line('stmt.setString(5, "Email manager#" + (id + 1));');
-            res.line('stmt.setString(6, "Phone number manager#" + (id + 1));');
-            res.line('stmt.setString(7, "2014-01-01");');
-            res.line('stmt.setString(8, "Job manager #" + (id + 1));');
-            res.line('stmt.setDouble(9, 1000.0 + rnd.nextInt(500));');
-
-            res.needEmptyLine = true;
-
-            res.line('stmt.executeUpdate();');
-
-            res.endBlock('}');
-
-            res.needEmptyLine = true;
+            //$generatorJava.declareVariableCustom(res, 'stmt', 'java.sql.PreparedStatement', conVar +
+            //    '.prepareStatement("INSERT INTO EMPLOYEE(ID, DEPARTMENT_ID, FIRST_NAME, LAST_NAME, EMAIL, PHONE_NUMBER, HIRE_DATE, JOB, SALARY) VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?)")');
+            //
+            //res.startBlock('for (int id = 0; id < EXAMPLE_MAX_DEPARTMENT_CNT; id ++) {');
+            //res.line('stmt.setInt(1, id);');
+            //res.line('stmt.setInt(2, id);');
+            //res.line('stmt.setString(3, "First name manager #" + (id + 1));');
+            //res.line('stmt.setString(4, "Last name manager#" + (id + 1));');
+            //res.line('stmt.setString(5, "Email manager#" + (id + 1));');
+            //res.line('stmt.setString(6, "Phone number manager#" + (id + 1));');
+            //res.line('stmt.setString(7, "2014-01-01");');
+            //res.line('stmt.setString(8, "Job manager #" + (id + 1));');
+            //res.line('stmt.setDouble(9, 1000.0 + rnd.nextInt(500));');
+            //
+            //res.needEmptyLine = true;
+            //
+            //res.line('stmt.executeUpdate();');
+            //
+            //res.endBlock('}');
+            //
+            //res.needEmptyLine = true;
 
             $generatorJava.declareVariableCustom(res, 'stmt', 'java.sql.PreparedStatement', conVar +
                 '.prepareStatement("INSERT INTO EMPLOYEE(ID, DEPARTMENT_ID, MANAGER_ID, FIRST_NAME, LAST_NAME, EMAIL, PHONE_NUMBER, HIRE_DATE, JOB, SALARY) VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?)")');
@@ -2704,7 +2704,7 @@ var PREDEFINED_QUERIES = [
             res.needEmptyLine = true;
         },
         selectQuery: [
-            "SELECT * FROM EMPLOYEE WHERE MANAGERID IS NOT NULL"
+            "SELECT * FROM EMPLOYEE WHERE SALARY > 700"
         ]
     }
 ];
