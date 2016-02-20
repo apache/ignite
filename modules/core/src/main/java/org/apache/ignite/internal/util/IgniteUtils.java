@@ -2208,7 +2208,7 @@ public abstract class IgniteUtils {
     public static ClassLoader resolveClassLoader(ClassLoader ldr, IgniteConfiguration cfg) {
         assert cfg != null;
 
-        return (ldr != null & ldr != gridClassLoader) ?
+        return (ldr != null && ldr != gridClassLoader) ?
             ldr :
             cfg.getClassLoader() != null ?
                 cfg.getClassLoader() :

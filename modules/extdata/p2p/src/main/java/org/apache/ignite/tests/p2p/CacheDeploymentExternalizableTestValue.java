@@ -31,20 +31,21 @@ public class CacheDeploymentExternalizableTestValue implements Serializable {
     private CacheDeploymentExternalizableTestValue2 field;
 
     /**
-     * @return
+     * @return value
      */
     public CacheDeploymentExternalizableTestValue2 getField() {
         return field;
     }
 
     /**
-     * @param field
+     * @param field field
      */
     public void setField(
         CacheDeploymentExternalizableTestValue2 field) {
         this.field = field;
     }
 
+    /** {@inheritDoc} */
     @Override public String toString() {
         field = new CacheDeploymentExternalizableTestValue2();
 
