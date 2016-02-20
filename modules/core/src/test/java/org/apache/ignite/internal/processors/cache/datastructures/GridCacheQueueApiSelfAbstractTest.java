@@ -616,7 +616,7 @@ public abstract class GridCacheQueueApiSelfAbstractTest extends IgniteCollection
 
         GridTestUtils.assertThrows(log, new Callable<Void>() {
             @Override public Void call() throws Exception {
-                queue.affinityRun(() -> new IgniteRunnable() {
+                queue.affinityRun(new IgniteRunnable() {
                     @Override public void run() { ; }});
                 return null;
             }
