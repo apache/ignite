@@ -19,11 +19,14 @@
 #   define BOOST_TEST_DYN_LINK
 #endif
 
+#include <ignite/odbc/system/odbc_constants.h>
+
 #include <boost/test/unit_test.hpp>
 
 #include <ignite/guid.h>
 #include <ignite/odbc/decimal.h>
 #include <ignite/odbc/app/application_data_buffer.h>
+#include <ignite/odbc/utility.h>
 
 #define FLOAT_PRECISION 0.0000001f
 
@@ -31,6 +34,63 @@ using namespace ignite;
 using namespace ignite::odbc;
 using namespace ignite::odbc::app;
 using namespace ignite::odbc::type_traits;
+
+/**
+ * Make Date in human understandable way.
+ *
+ * @param year Year.
+ * @param month Month.
+ * @param day Day.
+ * @param hour Hour.
+ * @param min Min.
+ * @param sec Sec.
+ * @return Date.
+ */
+Date MakeDate(int year = 1900, int month = 1, int day = 1, int hour = 0,
+    int min = 0, int sec = 0)
+{
+    tm date;
+
+    date.tm_year = year - 1900;
+    date.tm_mon = month - 1;
+    date.tm_mday = day;
+    date.tm_hour = hour;
+    date.tm_min = min;
+    date.tm_sec = sec;
+
+    time_t ct = mktime(&date) - timezone;
+
+    return Date(ct * 1000);
+}
+
+/**
+ * Make Date in human understandable way.
+ *
+ * @param year Year.
+ * @param month Month.
+ * @param day Day.
+ * @param hour Hour.
+ * @param min Minute.
+ * @param sec Second.
+ * @param ns Nanosecond.
+ * @return Timestamp.
+ */
+Timestamp MakeTimestamp(int year = 1900, int month = 1, int day = 1,
+    int hour = 0, int min = 0, int sec = 0, long ns = 0)
+{
+    tm date;
+
+    date.tm_year = year - 1900;
+    date.tm_mon = month - 1;
+    date.tm_mday = day;
+    date.tm_hour = hour;
+    date.tm_min = min;
+    date.tm_sec = sec;
+
+    time_t ct = mktime(&date) - timezone;
+
+    return Timestamp(ct, ns);
+}
 
 BOOST_AUTO_TEST_SUITE(ApplicationDataBufferTestSuite)
 
@@ -330,6 +390,119 @@ BOOST_AUTO_TEST_CASE(TestPutDecimalToString)
     BOOST_REQUIRE(std::string(strBuf, reslen) == "-53.5");
 }
 
+BOOST_AUTO_TEST_CASE(TestPutDateToString)
+{
+    char strBuf[64] = { 0 };
+    SqlLen reslen = 0;
+
+    ApplicationDataBuffer appBuf(IGNITE_ODBC_C_TYPE_CHAR, &strBuf, sizeof(strBuf), &reslen, 0);
+
+    Date date = MakeDate(1999, 2, 22);
+
+    appBuf.PutDate(date);
+
+    BOOST_CHECK_EQUAL(std::string(strBuf, reslen), std::string("1999-02-22"));
+}
+
+BOOST_AUTO_TEST_CASE(TestPutTimestampToString)
+{
+    char strBuf[64] = { 0 };
+    SqlLen reslen = 0;
+
+    ApplicationDataBuffer appBuf(IGNITE_ODBC_C_TYPE_CHAR, &strBuf, sizeof(strBuf), &reslen, 0);
+
+    Timestamp date = MakeTimestamp(2018, 11, 1, 17, 45, 59);
+
+    appBuf.PutTimestamp(date);
+
+    BOOST_CHECK_EQUAL(std::string(strBuf, reslen), std::string("2018-11-01 17:45:59"));
+}
+
+BOOST_AUTO_TEST_CASE(TestPutDateToDate)
+{
+    SQL_DATE_STRUCT buf = { 0 };
+    SqlLen reslen = sizeof(buf);
+
+    size_t offset = 0;
+    size_t* offsetPtr = &offset;
+
+    ApplicationDataBuffer appBuf(IGNITE_ODBC_C_TYPE_TDATE, &buf, sizeof(buf), &reslen, &offsetPtr);
+
+    Date date = MakeDate(1984, 5, 27);
+
+    appBuf.PutDate(date);
+
+    BOOST_CHECK_EQUAL(1984, buf.year);
+    BOOST_CHECK_EQUAL(5, buf.month);
+    BOOST_CHECK_EQUAL(27, buf.day);
+}
+
+BOOST_AUTO_TEST_CASE(TestPutTimestampToDate)
+{
+    SQL_DATE_STRUCT buf = { 0 };
+    SqlLen reslen = sizeof(buf);
+
+    size_t offset = 0;
+    size_t* offsetPtr = &offset;
+
+    ApplicationDataBuffer appBuf(IGNITE_ODBC_C_TYPE_TDATE, &buf, sizeof(buf), &reslen, &offsetPtr);
+
+    Timestamp ts = MakeTimestamp(2004, 8, 14, 6, 34, 51, 573948623);
+
+    appBuf.PutTimestamp(ts);
+
+    BOOST_CHECK_EQUAL(2004, buf.year);
+    BOOST_CHECK_EQUAL(8, buf.month);
+    BOOST_CHECK_EQUAL(14, buf.day);
+}
+
+BOOST_AUTO_TEST_CASE(TestPutTimestampToTimestamp)
+{
+    SQL_TIMESTAMP_STRUCT buf = { 0 };
+    SqlLen reslen = sizeof(buf);
+
+    size_t offset = 0;
+    size_t* offsetPtr = &offset;
+
+    ApplicationDataBuffer appBuf(IGNITE_ODBC_C_TYPE_TTIMESTAMP, &buf, sizeof(buf), &reslen, &offsetPtr);
+
+    Timestamp ts = MakeTimestamp(2004, 8, 14, 6, 34, 51, 573948623);
+
+    appBuf.PutTimestamp(ts);
+
+    BOOST_CHECK_EQUAL(2004, buf.year);
+    BOOST_CHECK_EQUAL(8, buf.month);
+    BOOST_CHECK_EQUAL(14, buf.day);
+    BOOST_CHECK_EQUAL(6, buf.hour);
+    BOOST_CHECK_EQUAL(34, buf.minute);
+    BOOST_CHECK_EQUAL(51, buf.second);
+    BOOST_CHECK_EQUAL(573948623, buf.fraction);
+}
+
+BOOST_AUTO_TEST_CASE(TestPutDateToTimestamp)
+{
+    SQL_TIMESTAMP_STRUCT buf = { 0 };
+
+    SqlLen reslen = sizeof(buf);
+
+    size_t offset = 0;
+    size_t* offsetPtr = &offset;
+
+    ApplicationDataBuffer appBuf(IGNITE_ODBC_C_TYPE_TTIMESTAMP, &buf, sizeof(buf), &reslen, &offsetPtr);
+
+    Date date = MakeDate(1984, 5, 27);
+
+    appBuf.PutDate(date);
+
+    BOOST_CHECK_EQUAL(1984, buf.year);
+    BOOST_CHECK_EQUAL(5, buf.month);
+    BOOST_CHECK_EQUAL(27, buf.day);
+    BOOST_CHECK_EQUAL(0, buf.hour);
+    BOOST_CHECK_EQUAL(0, buf.minute);
+    BOOST_CHECK_EQUAL(0, buf.second);
+    BOOST_CHECK_EQUAL(0, buf.fraction);
+}
+
 BOOST_AUTO_TEST_CASE(TestGetStringFromLong)
 {
     long numBuf = 42;
@@ -625,6 +798,191 @@ BOOST_AUTO_TEST_CASE(TestSetStringWithOffset)
     BOOST_REQUIRE(res == "Hello with offset!");
     BOOST_REQUIRE(res.size() == strlen("Hello with offset!"));
     BOOST_REQUIRE(buf[1].reslen == strlen("Hello with offset!"));
+}
+
+BOOST_AUTO_TEST_CASE(TestGetDateFromString)
+{
+    char buf[] = "1999-02-22";
+    SqlLen reslen = sizeof(buf);
+
+    size_t offset = 0;
+    size_t* offsetPtr = &offset;
+
+    ApplicationDataBuffer appBuf(IGNITE_ODBC_C_TYPE_CHAR, &buf[0], sizeof(buf), &reslen, &offsetPtr);
+
+    Date date = appBuf.GetDate();
+
+    time_t cTime = utility::DateToCTime(date);
+
+    tm *tmDate = gmtime(&cTime);
+
+    BOOST_REQUIRE(tmDate != 0);
+
+    BOOST_CHECK_EQUAL(1999, tmDate->tm_year + 1900);
+    BOOST_CHECK_EQUAL(2, tmDate->tm_mon + 1);
+    BOOST_CHECK_EQUAL(22, tmDate->tm_mday);
+    BOOST_CHECK_EQUAL(0, tmDate->tm_hour);
+    BOOST_CHECK_EQUAL(0, tmDate->tm_min);
+    BOOST_CHECK_EQUAL(0, tmDate->tm_sec);
+}
+
+BOOST_AUTO_TEST_CASE(TestGetTimestampFromString)
+{
+    char buf[] = "2018-11-01 17:45:59";
+    SqlLen reslen = sizeof(buf);
+
+    size_t offset = 0;
+    size_t* offsetPtr = &offset;
+
+    ApplicationDataBuffer appBuf(IGNITE_ODBC_C_TYPE_CHAR, &buf[0], sizeof(buf), &reslen, &offsetPtr);
+
+    Timestamp date = appBuf.GetTimestamp();
+
+    time_t cTime = utility::TimestampToCTime(date);
+
+    tm *tmDate = gmtime(&cTime);
+
+    BOOST_REQUIRE(tmDate != 0);
+
+    BOOST_CHECK_EQUAL(2018, tmDate->tm_year + 1900);
+    BOOST_CHECK_EQUAL(11, tmDate->tm_mon + 1);
+    BOOST_CHECK_EQUAL(1, tmDate->tm_mday);
+    BOOST_CHECK_EQUAL(17, tmDate->tm_hour);
+    BOOST_CHECK_EQUAL(45, tmDate->tm_min);
+    BOOST_CHECK_EQUAL(59, tmDate->tm_sec);
+}
+
+BOOST_AUTO_TEST_CASE(TestGetDateFromDate)
+{
+    SQL_DATE_STRUCT buf = { 0 };
+
+    buf.year = 1984;
+    buf.month = 5;
+    buf.day   = 27;
+
+    SqlLen reslen = sizeof(buf);
+
+    size_t offset = 0;
+    size_t* offsetPtr = &offset;
+
+    ApplicationDataBuffer appBuf(IGNITE_ODBC_C_TYPE_TDATE, &buf, sizeof(buf), &reslen, &offsetPtr);
+
+    Date date = appBuf.GetDate();
+
+    time_t cTime = utility::DateToCTime(date);
+
+    tm *tmDate = gmtime(&cTime);
+
+    BOOST_REQUIRE(tmDate != 0);
+
+    BOOST_CHECK_EQUAL(1984, tmDate->tm_year + 1900);
+    BOOST_CHECK_EQUAL(5, tmDate->tm_mon + 1);
+    BOOST_CHECK_EQUAL(27, tmDate->tm_mday);
+    BOOST_CHECK_EQUAL(0, tmDate->tm_hour);
+    BOOST_CHECK_EQUAL(0, tmDate->tm_min);
+    BOOST_CHECK_EQUAL(0, tmDate->tm_sec);
+}
+
+BOOST_AUTO_TEST_CASE(TestGetTimestampFromDate)
+{
+    SQL_DATE_STRUCT buf = { 0 };
+
+    buf.year = 1984;
+    buf.month = 5;
+    buf.day = 27;
+
+    SqlLen reslen = sizeof(buf);
+
+    size_t offset = 0;
+    size_t* offsetPtr = &offset;
+
+    ApplicationDataBuffer appBuf(IGNITE_ODBC_C_TYPE_TDATE, &buf, sizeof(buf), &reslen, &offsetPtr);
+
+    Timestamp ts = appBuf.GetTimestamp();
+
+    time_t cTime = utility::TimestampToCTime(ts);
+
+    tm *tmDate = gmtime(&cTime);
+
+    BOOST_REQUIRE(tmDate != 0);
+
+    BOOST_CHECK_EQUAL(1984, tmDate->tm_year + 1900);
+    BOOST_CHECK_EQUAL(5, tmDate->tm_mon + 1);
+    BOOST_CHECK_EQUAL(27, tmDate->tm_mday);
+    BOOST_CHECK_EQUAL(0, tmDate->tm_hour);
+    BOOST_CHECK_EQUAL(0, tmDate->tm_min);
+    BOOST_CHECK_EQUAL(0, tmDate->tm_sec);
+}
+
+BOOST_AUTO_TEST_CASE(TestGetTimestampFromTimestamp)
+{
+    SQL_TIMESTAMP_STRUCT buf = { 0 };
+
+    buf.year = 2004;
+    buf.month = 8;
+    buf.day = 14;
+    buf.hour = 6;
+    buf.minute = 34;
+    buf.second = 51;
+    buf.fraction = 573948623;
+
+    SqlLen reslen = sizeof(buf);
+
+    size_t offset = 0;
+    size_t* offsetPtr = &offset;
+
+    ApplicationDataBuffer appBuf(IGNITE_ODBC_C_TYPE_TTIMESTAMP, &buf, sizeof(buf), &reslen, &offsetPtr);
+
+    Timestamp ts = appBuf.GetTimestamp();
+
+    time_t cTime = utility::TimestampToCTime(ts);
+
+    tm *tmDate = gmtime(&cTime);
+
+    BOOST_REQUIRE(tmDate != 0);
+
+    BOOST_CHECK_EQUAL(2004, tmDate->tm_year + 1900);
+    BOOST_CHECK_EQUAL(8, tmDate->tm_mon + 1);
+    BOOST_CHECK_EQUAL(14, tmDate->tm_mday);
+    BOOST_CHECK_EQUAL(6, tmDate->tm_hour);
+    BOOST_CHECK_EQUAL(34, tmDate->tm_min);
+    BOOST_CHECK_EQUAL(51, tmDate->tm_sec);
+    BOOST_CHECK_EQUAL(573948623, ts.GetSecondFraction());
+}
+
+BOOST_AUTO_TEST_CASE(TestGetDateFromTimestamp)
+{
+    SQL_TIMESTAMP_STRUCT buf = { 0 };
+
+    buf.year = 2004;
+    buf.month = 8;
+    buf.day = 14;
+    buf.hour = 6;
+    buf.minute = 34;
+    buf.second = 51;
+    buf.fraction = 573948623;
+
+    SqlLen reslen = sizeof(buf);
+
+    size_t offset = 0;
+    size_t* offsetPtr = &offset;
+
+    ApplicationDataBuffer appBuf(IGNITE_ODBC_C_TYPE_TTIMESTAMP, &buf, sizeof(buf), &reslen, &offsetPtr);
+
+    Date date = appBuf.GetDate();
+
+    time_t cTime = utility::DateToCTime(date);
+
+    tm *tmDate = gmtime(&cTime);
+
+    BOOST_REQUIRE(tmDate != 0);
+
+    BOOST_CHECK_EQUAL(2004, tmDate->tm_year + 1900);
+    BOOST_CHECK_EQUAL(8, tmDate->tm_mon + 1);
+    BOOST_CHECK_EQUAL(14, tmDate->tm_mday);
+    BOOST_CHECK_EQUAL(6, tmDate->tm_hour);
+    BOOST_CHECK_EQUAL(34, tmDate->tm_min);
+    BOOST_CHECK_EQUAL(51, tmDate->tm_sec);
 }
 
 BOOST_AUTO_TEST_SUITE_END()

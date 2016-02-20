@@ -148,6 +148,9 @@ namespace ignite
                 /** DATE SQL type name constant. */
                 static const std::string DATE;
 
+                /** TIMESTAMP SQL type name constant. */
+                static const std::string TIMESTAMP;
+
                 /** GUID SQL type name constant. */
                 static const std::string GUID;
             };

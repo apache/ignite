@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.odbc;
 
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.binary.BinaryReaderExImpl;
@@ -29,9 +30,9 @@ import org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProce
 import org.apache.ignite.internal.util.GridSpinBusyLock;
 import org.apache.ignite.internal.util.nio.GridNioServerListenerAdapter;
 import org.apache.ignite.internal.util.nio.GridNioSession;
+import org.apache.ignite.internal.util.nio.GridNioSessionMetaKey;
 import org.jetbrains.annotations.Nullable;
 
-import java.io.IOException;
 import java.util.Collection;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -42,14 +43,17 @@ public class OdbcNioListener extends GridNioServerListenerAdapter<byte[]> {
     /** Initial output stream capacity. */
     private static final int INIT_CAP = 1024;
 
+    /** Handler metadata key. */
+    private static final int HANDLER_META_KEY = GridNioSessionMetaKey.nextUniqueKey();
+
     /** Request ID generator. */
     private static final AtomicLong REQ_ID_GEN = new AtomicLong();
 
     /** Busy lock. */
     private final GridSpinBusyLock busyLock;
 
-    /** Request handler. */
-    private final OdbcRequestHandler handler;
+    /** Kernal context. */
+    private final GridKernalContext ctx;
 
     /** Marshaller. */
     private final GridBinaryMarshaller marsh;
@@ -60,15 +64,14 @@ public class OdbcNioListener extends GridNioServerListenerAdapter<byte[]> {
     /**
      * @param ctx Context.
      * @param busyLock Shutdown busy lock.
-     * @param handler Request handler.
      */
-    public OdbcNioListener(GridKernalContext ctx, GridSpinBusyLock busyLock, OdbcRequestHandler handler) {
+    public OdbcNioListener(GridKernalContext ctx, GridSpinBusyLock busyLock) {
+        this.ctx = ctx;
         this.busyLock = busyLock;
-        this.handler = handler;
 
         CacheObjectBinaryProcessorImpl cacheObjProc = (CacheObjectBinaryProcessorImpl)ctx.cacheObjects();
 
-        marsh = cacheObjProc.marshaller();
+        this.marsh = cacheObjProc.marshaller();
 
         this.log = ctx.log(getClass());
     }
@@ -77,6 +80,8 @@ public class OdbcNioListener extends GridNioServerListenerAdapter<byte[]> {
     @Override public void onConnected(GridNioSession ses) {
         if (log.isDebugEnabled())
             log.debug("ODBC client connected: " + ses.remoteAddress());
+
+        ses.addMeta(HANDLER_META_KEY, new OdbcRequestHandler(ctx, busyLock));
     }
 
     /** {@inheritDoc} */
@@ -93,8 +98,9 @@ public class OdbcNioListener extends GridNioServerListenerAdapter<byte[]> {
     @Override public void onMessage(GridNioSession ses, byte[] msg) {
         assert msg != null;
 
+        long reqId = REQ_ID_GEN.incrementAndGet();
+
         try {
-            long reqId = REQ_ID_GEN.incrementAndGet();
             long startTime = 0;
 
             OdbcRequest req = decode(msg);
@@ -102,10 +108,15 @@ public class OdbcNioListener extends GridNioServerListenerAdapter<byte[]> {
             if (log.isDebugEnabled()) {
                 startTime = System.nanoTime();
 
-                log.debug("ODBC request received [id=" + reqId + ", addr=" + ses.remoteAddress() + ", req=" + req + ']');
+                log.debug("ODBC request received [id=" + reqId + ", addr=" + ses.remoteAddress() +
+                    ", req=" + req + ']');
             }
 
-            OdbcResponse resp = handle(req);
+            OdbcRequestHandler handler = ses.meta(HANDLER_META_KEY);
+
+            assert handler != null;
+
+            OdbcResponse resp = handler.handle(req);
 
             if (log.isDebugEnabled()) {
                 long dur = (System.nanoTime() - startTime) / 1000;
@@ -119,25 +130,9 @@ public class OdbcNioListener extends GridNioServerListenerAdapter<byte[]> {
             ses.send(outMsg);
         }
         catch (Exception e) {
-            trySendErrorMessage(ses, e.getMessage());
-        }
-    }
+            log.error("Failed to process ODBC request [id=" + reqId + ", err=" + e + ']');
 
-    /**
-     * Try to send simple response message to ODBC driver.
-     * @param ses Session.
-     * @param err Error message.
-     */
-    private void trySendErrorMessage(GridNioSession ses, String err) {
-        log.error(err);
-
-        try {
-            ses.send(encode(new OdbcResponse(OdbcResponse.STATUS_FAILED, err)));
-        }
-        catch (Exception e) {
-            // TODO: ???
-
-            log.error("Can not send error response message: [err=" + e.getMessage() + ']');
+            ses.send(encode(new OdbcResponse(OdbcResponse.STATUS_FAILED, e.getMessage())));
         }
     }
 
@@ -147,7 +142,7 @@ public class OdbcNioListener extends GridNioServerListenerAdapter<byte[]> {
      * @param msg Message.
      * @return Assembled ODBC request.
      */
-    private OdbcRequest decode(byte[] msg) throws IOException {
+    private OdbcRequest decode(byte[] msg) {
         assert msg != null;
 
         BinaryInputStream stream = new BinaryHeapInputStream(msg);
@@ -160,15 +155,9 @@ public class OdbcNioListener extends GridNioServerListenerAdapter<byte[]> {
 
         switch (cmd) {
             case OdbcRequest.EXECUTE_SQL_QUERY: {
-
                 String cache = reader.readString();
                 String sql = reader.readString();
                 int argsNum = reader.readInt();
-
-                if (log.isDebugEnabled()) {
-                    log.debug("Message: [cmd=EXECUTE_SQL_QUERY, cache=" + cache +
-                            ", query=" + sql + ", argsNum=" + argsNum + ']');
-                }
 
                 Object[] params = new Object[argsNum];
 
@@ -181,12 +170,8 @@ public class OdbcNioListener extends GridNioServerListenerAdapter<byte[]> {
             }
 
             case OdbcRequest.FETCH_SQL_QUERY: {
-
                 long queryId = reader.readLong();
                 int pageSize = reader.readInt();
-
-                if (log.isDebugEnabled())
-                    log.debug("Message: [cmd=FETCH_SQL_QUERY, queryId=" + queryId + ", pageSize=" + pageSize + ']');
 
                 res = new OdbcQueryFetchRequest(queryId, pageSize);
 
@@ -194,12 +179,7 @@ public class OdbcNioListener extends GridNioServerListenerAdapter<byte[]> {
             }
 
             case OdbcRequest.CLOSE_SQL_QUERY: {
-
                 long queryId = reader.readLong();
-
-                if (log.isDebugEnabled()) {
-                    log.debug("Message: [cmd=CLOSE_SQL_QUERY, queryId=" + queryId + ']');
-                }
 
                 res = new OdbcQueryCloseRequest(queryId);
 
@@ -212,27 +192,16 @@ public class OdbcNioListener extends GridNioServerListenerAdapter<byte[]> {
                 String table = reader.readString();
                 String column = reader.readString();
 
-                if (log.isDebugEnabled()) {
-                    log.debug("Message: [cmd=GET_COLUMNS_META, cache=" + cache +
-                            ", table=" + table + ", column: " + column + ']');
-                }
-
                 res = new OdbcQueryGetColumnsMetaRequest(cache, table, column);
 
                 break;
             }
 
             case OdbcRequest.GET_TABLES_META: {
-
                 String catalog = reader.readString();
                 String schema = reader.readString();
                 String table = reader.readString();
                 String tableType = reader.readString();
-
-                if (log.isDebugEnabled()) {
-                    log.debug("Message: [cmd=GET_COLUMNS_META, catalog=" + catalog +
-                            ", schema=" + schema + ", table=" + table + ", tableType=" + tableType + ']');
-                }
 
                 res = new OdbcQueryGetTablesMetaRequest(catalog, schema, table, tableType);
 
@@ -240,8 +209,7 @@ public class OdbcNioListener extends GridNioServerListenerAdapter<byte[]> {
             }
 
             default:
-                throw new IOException("Failed to parse incoming packet (unknown command type) " +
-                        "[cmd=[" + Byte.toString(cmd) + ']');
+                throw new IgniteException("Unknown ODBC command: " + cmd);
         }
 
         return res;
@@ -253,7 +221,7 @@ public class OdbcNioListener extends GridNioServerListenerAdapter<byte[]> {
      * @param msg Message.
      * @return Byte array.
      */
-    private byte[] encode(OdbcResponse msg) throws IOException {
+    private byte[] encode(OdbcResponse msg) {
         assert msg != null;
 
         // Creating new binary writer
@@ -351,26 +319,5 @@ public class OdbcNioListener extends GridNioServerListenerAdapter<byte[]> {
             assert false : "Should nor reach here.";
 
         return writer.array();
-    }
-
-    /**
-     * Handle request.
-     *
-     * @param req Request.
-     * @return Response.
-     */
-    private OdbcResponse handle(OdbcRequest req) {
-        assert req != null;
-
-        if (!busyLock.enterBusy())
-            return new OdbcResponse(OdbcResponse.STATUS_FAILED,
-                "Failed to handle ODBC request because node is stopping: " + req);
-
-        try {
-            return handler.handle(req);
-        }
-        finally {
-            busyLock.leaveBusy();
-        }
     }
 }

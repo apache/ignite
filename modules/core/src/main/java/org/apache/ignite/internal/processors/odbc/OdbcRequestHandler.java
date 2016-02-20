@@ -20,10 +20,12 @@ package org.apache.ignite.internal.processors.odbc;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
+import org.apache.ignite.configuration.OdbcConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.cache.QueryCursorImpl;
 import org.apache.ignite.internal.processors.query.GridQueryFieldMetadata;
 import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
+import org.apache.ignite.internal.util.GridSpinBusyLock;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.lang.IgniteBiTuple;
 
@@ -43,16 +45,21 @@ public class OdbcRequestHandler {
     /** Kernel context. */
     private final GridKernalContext ctx;
 
+    /** Busy lock. */
+    private final GridSpinBusyLock busyLock;
+
     /** Current queries cursors. */
-    private final ConcurrentHashMap<Long, IgniteBiTuple<QueryCursor, Iterator>> qryCurs = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<Long, IgniteBiTuple<QueryCursor, Iterator>> qryCursors = new ConcurrentHashMap<>();
 
     /**
      * Constructor.
      *
      * @param ctx Context.
+     * @param busyLock Shutdown latch.
      */
-    public OdbcRequestHandler(final GridKernalContext ctx) {
+    public OdbcRequestHandler(final GridKernalContext ctx, final GridSpinBusyLock busyLock) {
         this.ctx = ctx;
+        this.busyLock = busyLock;
     }
 
     /**
@@ -64,24 +71,33 @@ public class OdbcRequestHandler {
     public OdbcResponse handle(OdbcRequest req) {
         assert req != null;
 
-        switch (req.command()) {
-            case EXECUTE_SQL_QUERY:
-                return executeQuery((OdbcQueryExecuteRequest)req);
+        if (!busyLock.enterBusy())
+            return new OdbcResponse(OdbcResponse.STATUS_FAILED,
+                    "Failed to handle ODBC request because node is stopping: " + req);
 
-            case FETCH_SQL_QUERY:
-                return fetchQuery((OdbcQueryFetchRequest)req);
+        try {
+            switch (req.command()) {
+                case EXECUTE_SQL_QUERY:
+                    return executeQuery((OdbcQueryExecuteRequest)req);
 
-            case CLOSE_SQL_QUERY:
-                return closeQuery((OdbcQueryCloseRequest)req);
+                case FETCH_SQL_QUERY:
+                    return fetchQuery((OdbcQueryFetchRequest)req);
 
-            case GET_COLUMNS_META:
-                return getColumnsMeta((OdbcQueryGetColumnsMetaRequest) req);
+                case CLOSE_SQL_QUERY:
+                    return closeQuery((OdbcQueryCloseRequest)req);
 
-            case GET_TABLES_META:
-                return getTablesMeta((OdbcQueryGetTablesMetaRequest) req);
+                case GET_COLUMNS_META:
+                    return getColumnsMeta((OdbcQueryGetColumnsMetaRequest) req);
+
+                case GET_TABLES_META:
+                    return getTablesMeta((OdbcQueryGetTablesMetaRequest) req);
+            }
+
+            return new OdbcResponse(OdbcResponse.STATUS_FAILED, "Unsupported ODBC request: " + req);
         }
-
-        return new OdbcResponse(OdbcResponse.STATUS_FAILED, "Unsupported ODBC request: " + req);
+        finally {
+            busyLock.leaveBusy();
+        }
     }
 
     /**
@@ -91,6 +107,17 @@ public class OdbcRequestHandler {
      * @return Response.
      */
     private OdbcResponse executeQuery(OdbcQueryExecuteRequest req) {
+        OdbcConfiguration cfg = ctx.config().getOdbcConfiguration();
+
+        assert cfg != null;
+
+        int cursorCnt = qryCursors.size();
+
+        if (cursorCnt >= cfg.getMaxOpenCursors())
+            return new OdbcResponse(OdbcResponse.STATUS_FAILED, "Too many opened cursors (either close other " +
+                "opened cursors or increase the limit through OdbcConfiguration.setMaxOpenCursors()) " +
+                "[maximum=" + cfg.getMaxOpenCursors() + ", current=" + cursorCnt + ']');
+
         long qryId = QRY_ID_GEN.getAndIncrement();
 
         try {
@@ -108,7 +135,7 @@ public class OdbcRequestHandler {
 
             Iterator iter = qryCur.iterator();
 
-            qryCurs.put(qryId, new IgniteBiTuple<>(qryCur, iter));
+            qryCursors.put(qryId, new IgniteBiTuple<>(qryCur, iter));
 
             List<?> fieldsMeta = ((QueryCursorImpl) qryCur).fieldsMeta();
 
@@ -117,7 +144,7 @@ public class OdbcRequestHandler {
             return new OdbcResponse(res);
         }
         catch (Exception e) {
-            qryCurs.remove(qryId);
+            qryCursors.remove(qryId);
 
             return new OdbcResponse(OdbcResponse.STATUS_FAILED, e.getMessage());
         }
@@ -131,21 +158,21 @@ public class OdbcRequestHandler {
      */
     private OdbcResponse closeQuery(OdbcQueryCloseRequest req) {
         try {
-            QueryCursor cur = qryCurs.get(req.queryId()).get1();
+            QueryCursor cur = qryCursors.get(req.queryId()).get1();
 
             if (cur == null)
                 return new OdbcResponse(OdbcResponse.STATUS_FAILED, "Failed to find query with ID: " + req.queryId());
 
             cur.close();
 
-            qryCurs.remove(req.queryId());
+            qryCursors.remove(req.queryId());
 
             OdbcQueryCloseResult res = new OdbcQueryCloseResult(req.queryId());
 
             return new OdbcResponse(res);
         }
         catch (Exception e) {
-            qryCurs.remove(req.queryId());
+            qryCursors.remove(req.queryId());
 
             return new OdbcResponse(OdbcResponse.STATUS_FAILED, e.getMessage());
         }
@@ -159,7 +186,7 @@ public class OdbcRequestHandler {
      */
     private OdbcResponse fetchQuery(OdbcQueryFetchRequest req) {
         try {
-            Iterator cur = qryCurs.get(req.queryId()).get2();
+            Iterator cur = qryCursors.get(req.queryId()).get2();
 
             if (cur == null)
                 return new OdbcResponse(OdbcResponse.STATUS_FAILED, "Failed to find query with ID: " + req.queryId());
@@ -174,8 +201,6 @@ public class OdbcRequestHandler {
             return new OdbcResponse(res);
         }
         catch (Exception e) {
-            qryCurs.remove(req.queryId());
-
             return new OdbcResponse(OdbcResponse.STATUS_FAILED, e.getMessage());
         }
     }
