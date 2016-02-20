@@ -31,6 +31,10 @@ import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.TimeUnit;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.binary.BinaryObjectException;
+import org.apache.ignite.binary.BinaryReader;
+import org.apache.ignite.binary.BinaryWriter;
+import org.apache.ignite.binary.Binarylizable;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.compute.ComputeJob;
 import org.apache.ignite.compute.ComputeJobMasterLeaveAware;
@@ -148,7 +152,8 @@ public class GridClosureProcessor extends GridProcessorAdapter {
      * @param nodes Grid nodes.
      * @return Task execution future.
      */
-    public ComputeTaskInternalFuture<?> runAsync(GridClosureCallMode mode, @Nullable Collection<? extends Runnable> jobs,
+    public ComputeTaskInternalFuture<?> runAsync(GridClosureCallMode mode,
+        @Nullable Collection<? extends Runnable> jobs,
         @Nullable Collection<ClusterNode> nodes) {
         return runAsync(mode, jobs, nodes, false);
     }
@@ -163,8 +168,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
     public ComputeTaskInternalFuture<?> runAsync(GridClosureCallMode mode,
         Collection<? extends Runnable> jobs,
         @Nullable Collection<ClusterNode> nodes,
-        boolean sys)
-    {
+        boolean sys) {
         assert mode != null;
         assert !F.isEmpty(jobs) : jobs;
 
@@ -209,8 +213,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
     public ComputeTaskInternalFuture<?> runAsync(GridClosureCallMode mode,
         Runnable job,
         @Nullable Collection<ClusterNode> nodes,
-        boolean sys)
-    {
+        boolean sys) {
         assert mode != null;
         assert job != null;
 
@@ -344,8 +347,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
     public <R1, R2> ComputeTaskInternalFuture<R2> forkjoinAsync(GridClosureCallMode mode,
         Collection<? extends Callable<R1>> jobs,
         IgniteReducer<R1, R2> rdc,
-        @Nullable Collection<ClusterNode> nodes)
-    {
+        @Nullable Collection<ClusterNode> nodes) {
         assert mode != null;
         assert rdc != null;
         assert !F.isEmpty(jobs);
@@ -390,8 +392,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
     public <R> ComputeTaskInternalFuture<Collection<R>> callAsync(GridClosureCallMode mode,
         Collection<? extends Callable<R>> jobs,
         @Nullable Collection<ClusterNode> nodes,
-        boolean sys)
-    {
+        boolean sys) {
         assert mode != null;
         assert !F.isEmpty(jobs);
 
@@ -567,8 +568,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
     public <R> ComputeTaskInternalFuture<R> callAsync(GridClosureCallMode mode,
         Callable<R> job,
         @Nullable Collection<ClusterNode> nodes,
-        boolean sys)
-    {
+        boolean sys) {
         assert mode != null;
         assert job != null;
 
@@ -665,8 +665,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
      */
     public <T, R> ComputeTaskInternalFuture<Collection<R>> callAsync(IgniteClosure<T, R> job,
         @Nullable Collection<? extends T> args,
-        @Nullable Collection<ClusterNode> nodes)
-    {
+        @Nullable Collection<ClusterNode> nodes) {
         busyLock.readLock();
 
         try {
@@ -766,7 +765,8 @@ public class GridClosureProcessor extends GridProcessorAdapter {
      * @return Future.
      * @throws IgniteCheckedException Thrown in case of any errors.
      */
-    private IgniteInternalFuture<?> runLocal(@Nullable final Runnable c, GridClosurePolicy plc) throws IgniteCheckedException {
+    private IgniteInternalFuture<?> runLocal(@Nullable final Runnable c,
+        GridClosurePolicy plc) throws IgniteCheckedException {
         if (c == null)
             return new GridFinishedFuture();
 
@@ -896,7 +896,8 @@ public class GridClosureProcessor extends GridProcessorAdapter {
      * @return Future.
      * @throws IgniteCheckedException Thrown in case of any errors.
      */
-    private <R> IgniteInternalFuture<R> callLocal(@Nullable final Callable<R> c, boolean sys) throws IgniteCheckedException {
+    private <R> IgniteInternalFuture<R> callLocal(@Nullable final Callable<R> c,
+        boolean sys) throws IgniteCheckedException {
         return callLocal(c, sys ? GridClosurePolicy.SYSTEM_POOL : GridClosurePolicy.PUBLIC_POOL);
     }
 
@@ -907,7 +908,8 @@ public class GridClosureProcessor extends GridProcessorAdapter {
      * @return Future.
      * @throws IgniteCheckedException Thrown in case of any errors.
      */
-    private <R> IgniteInternalFuture<R> callLocal(@Nullable final Callable<R> c, GridClosurePolicy plc) throws IgniteCheckedException {
+    private <R> IgniteInternalFuture<R> callLocal(@Nullable final Callable<R> c,
+        GridClosurePolicy plc) throws IgniteCheckedException {
         if (c == null)
             return new GridFinishedFuture<>();
 
@@ -1049,7 +1051,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
     private static ComputeJob job(final Runnable r) {
         A.notNull(r, "job");
 
-       return r instanceof ComputeJobMasterLeaveAware ? new C4MLA(r) : new C4(r);
+        return r instanceof ComputeJobMasterLeaveAware ? new C4MLA(r) : new C4(r);
     }
 
     /**
@@ -1607,7 +1609,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
         @Override public ComputeJobResultPolicy result(ComputeJobResult res, List<ComputeJobResult> rcvd) {
             ComputeJobResultPolicy resPlc = super.result(res, rcvd);
 
-            if (res.getException() == null && resPlc != FAILOVER && !rdc.collect((R1) res.getData()))
+            if (res.getException() == null && resPlc != FAILOVER && !rdc.collect((R1)res.getData()))
                 resPlc = REDUCE; // If reducer returned false - reduce right away.
 
             return resPlc;
@@ -1680,7 +1682,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
         /**
          *
          */
-        public C1(){
+        public C1() {
             // No-op.
         }
 
@@ -1729,6 +1731,68 @@ public class GridClosureProcessor extends GridProcessorAdapter {
     /**
      *
      */
+    private static class C1V2<T, R> implements ComputeJob, Binarylizable, GridNoImplicitInjection,
+        GridInternalWrapper<IgniteClosure> {
+        /** */
+        private static final long serialVersionUID = 0L;
+
+        /** */
+        protected IgniteClosure<T, R> job;
+
+        /** */
+        @GridToStringInclude
+        private T arg;
+
+        /**
+         *
+         */
+        public C1V2() {
+            // No-op.
+        }
+
+        /**
+         * @param job Job.
+         * @param arg Argument.
+         */
+        C1V2(IgniteClosure<T, R> job, T arg) {
+            this.job = job;
+            this.arg = arg;
+        }
+
+        /** {@inheritDoc} */
+        @Nullable @Override public Object execute() {
+            return job.apply(arg);
+        }
+
+        /** {@inheritDoc} */
+        @Override public void cancel() {
+            // No-op.
+        }
+
+        @Override public void writeBinary(BinaryWriter writer) throws BinaryObjectException {
+            writer.writeObject("job", job);
+            writer.writeObject("arg", arg);
+        }
+
+        @Override public void readBinary(BinaryReader reader) throws BinaryObjectException {
+            job = reader.readObject("job");
+            arg = reader.readObject("arg");
+        }
+
+        /** {@inheritDoc} */
+        @Override public IgniteClosure userObject() {
+            return job;
+        }
+
+        /** {@inheritDoc} */
+        @Override public String toString() {
+            return S.toString(C1V2.class, this);
+        }
+    }
+
+    /**
+     *
+     */
     private static class C1MLA<T, R> extends C1<T, R> implements ComputeJobMasterLeaveAware {
         /** */
         private static final long serialVersionUID = 0L;
@@ -1762,6 +1826,39 @@ public class GridClosureProcessor extends GridProcessorAdapter {
     /**
      *
      */
+    private static class C1MLAV2<T, R> extends C1V2<T, R> implements ComputeJobMasterLeaveAware {
+        /** */
+        private static final long serialVersionUID = 0L;
+
+        /**
+         *
+         */
+        public C1MLAV2() {
+            // No-op.
+        }
+
+        /**
+         * @param job Job.
+         * @param arg Argument.
+         */
+        private C1MLAV2(IgniteClosure<T, R> job, T arg) {
+            super(job, arg);
+        }
+
+        /** {@inheritDoc} */
+        @Override public void onMasterNodeLeft(ComputeTaskSession ses) {
+            ((ComputeJobMasterLeaveAware)job).onMasterNodeLeft(ses);
+        }
+
+        /** {@inheritDoc} */
+        @Override public String toString() {
+            return S.toString(C1MLAV2.class, this, super.toString());
+        }
+    }
+
+    /**
+     *
+     */
     private static class C2<R> implements ComputeJob, Externalizable, GridNoImplicitInjection, GridInternalWrapper<Callable> {
         /** */
         private static final long serialVersionUID = 0L;
@@ -1772,7 +1869,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
         /**
          *
          */
-        public C2(){
+        public C2() {
             // No-op.
         }
 
@@ -1822,7 +1919,66 @@ public class GridClosureProcessor extends GridProcessorAdapter {
     /**
      *
      */
-    private static class C2MLA<R> extends C2<R> implements ComputeJobMasterLeaveAware{
+    private static class C2V2<R> implements ComputeJob, Binarylizable, GridNoImplicitInjection,
+        GridInternalWrapper<Callable> {
+        /** */
+        private static final long serialVersionUID = 0L;
+
+        /** */
+        protected Callable<R> c;
+
+        /**
+         *
+         */
+        public C2V2() {
+            // No-op.
+        }
+
+        /**
+         * @param c Callable.
+         */
+        private C2V2(Callable<R> c) {
+            this.c = c;
+        }
+
+        /** {@inheritDoc} */
+        @Override public Object execute() {
+            try {
+                return c.call();
+            }
+            catch (Exception e) {
+                throw new IgniteException(e);
+            }
+        }
+
+        /** {@inheritDoc} */
+        @Override public void cancel() {
+            // No-op.
+        }
+
+        @Override public void writeBinary(BinaryWriter writer) throws BinaryObjectException {
+            writer.writeObject("c", c);
+        }
+
+        @Override public void readBinary(BinaryReader reader) throws BinaryObjectException {
+            c = reader.readObject("c");
+        }
+
+        /** {@inheritDoc} */
+        @Override public Callable userObject() {
+            return c;
+        }
+
+        /** {@inheritDoc} */
+        @Override public String toString() {
+            return S.toString(C2V2.class, this);
+        }
+    }
+
+    /**
+     *
+     */
+    private static class C2MLA<R> extends C2<R> implements ComputeJobMasterLeaveAware {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -1852,6 +2008,38 @@ public class GridClosureProcessor extends GridProcessorAdapter {
     }
 
     /**
+     *
+     */
+    private static class C2MLAV2<R> extends C2V2<R> implements ComputeJobMasterLeaveAware {
+        /** */
+        private static final long serialVersionUID = 0L;
+
+        /**
+         *
+         */
+        public C2MLAV2() {
+            // No-op.
+        }
+
+        /**
+         * @param c Callable.
+         */
+        private C2MLAV2(Callable<R> c) {
+            super(c);
+        }
+
+        /** {@inheritDoc} */
+        @Override public void onMasterNodeLeft(ComputeTaskSession ses) {
+            ((ComputeJobMasterLeaveAware)c).onMasterNodeLeft(ses);
+        }
+
+        /** {@inheritDoc} */
+        @Override public String toString() {
+            return S.toString(C2MLAV2.class, this, super.toString());
+        }
+    }
+
+    /**
      */
     private static class C4 implements ComputeJob, Externalizable, GridNoImplicitInjection, GridInternalWrapper<Runnable> {
         /** */
@@ -1863,7 +2051,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
         /**
          *
          */
-        public C4(){
+        public C4() {
             // No-op.
         }
 
@@ -1904,6 +2092,60 @@ public class GridClosureProcessor extends GridProcessorAdapter {
         /** {@inheritDoc} */
         @Override public String toString() {
             return S.toString(C4.class, this);
+        }
+    }
+
+    /**
+     */
+    private static class C4V2 implements ComputeJob, Binarylizable, GridNoImplicitInjection, GridInternalWrapper<Runnable> {
+        /** */
+        private static final long serialVersionUID = 0L;
+
+        /** */
+        protected Runnable r;
+
+        /**
+         *
+         */
+        public C4V2() {
+            // No-op.
+        }
+
+        /**
+         * @param r Runnable.
+         */
+        private C4V2(Runnable r) {
+            this.r = r;
+        }
+
+        /** {@inheritDoc} */
+        @Nullable @Override public Object execute() {
+            r.run();
+
+            return null;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void cancel() {
+            // No-op.
+        }
+
+        @Override public void writeBinary(BinaryWriter writer) throws BinaryObjectException {
+            writer.writeObject("r", r);
+        }
+
+        @Override public void readBinary(BinaryReader reader) throws BinaryObjectException {
+            r = reader.readObject("r");
+        }
+
+        /** {@inheritDoc} */
+        @Override public Runnable userObject() {
+            return r;
+        }
+
+        /** {@inheritDoc} */
+        @Override public String toString() {
+            return S.toString(C4V2.class, this);
         }
     }
 
