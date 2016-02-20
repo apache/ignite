@@ -259,7 +259,7 @@ export default [
             zip.file(srcPath + 'config/ClientConfigurationFactory.java', $generatorJava.cluster(cluster, 'config', 'ClientConfigurationFactory', clientNearCfg));
 
             if ($generatorCommon.dataForExampleConfigured(cluster)) {
-                zip.file(srcPath + 'example/ExampleStartup.java', $generatorJava.nodeStartup(cluster, 'startup', 'ExampleStartup',
+                zip.file(srcPath + 'example/ExampleStartup.java', $generatorJava.nodeStartup(cluster, 'example', 'ExampleStartup',
                     'ServerConfigurationFactory.createConfiguration()', 'config.ServerConfigurationFactory'));
             }
 
