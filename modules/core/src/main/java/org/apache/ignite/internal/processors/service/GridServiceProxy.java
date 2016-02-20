@@ -56,7 +56,7 @@ import static org.apache.ignite.internal.GridClosureCallMode.BALANCE;
 /**
  * Wrapper for making {@link Service} class proxies.
  */
-class GridServiceProxy<T> implements Serializable {
+public class GridServiceProxy<T> implements Serializable {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -94,7 +94,7 @@ class GridServiceProxy<T> implements Serializable {
      * @param ctx Context.
      */
     @SuppressWarnings("unchecked")
-    GridServiceProxy(ClusterGroup prj,
+    public GridServiceProxy(ClusterGroup prj,
         String name,
         Class<? super T> svc,
         boolean sticky,

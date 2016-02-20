@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.platform.services;
 
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteServices;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.binary.BinaryRawReaderEx;
@@ -29,6 +30,7 @@ import org.apache.ignite.internal.processors.platform.dotnet.PlatformDotNetServi
 import org.apache.ignite.internal.processors.platform.utils.PlatformUtils;
 import org.apache.ignite.internal.processors.platform.utils.PlatformWriterBiClosure;
 import org.apache.ignite.internal.processors.platform.utils.PlatformWriterClosure;
+import org.apache.ignite.internal.processors.service.GridServiceProxy;
 import org.apache.ignite.internal.util.future.IgniteFutureImpl;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.services.Service;
@@ -126,7 +128,29 @@ public class PlatformServices extends PlatformAbstractTarget {
      * @return Either proxy over remote service or local service if it is deployed locally.
      */
     public Object dotNetServiceProxy(String name, boolean sticky) {
-        return services.serviceProxy(name, PlatformDotNetService.class, sticky);
+        ServiceDescriptor d = findDescriptor(name);
+
+        if (d == null)
+            throw new IgniteException("Failed to find deployed service: " + name);
+
+        if (PlatformService.class.isAssignableFrom(d.serviceClass()))
+            return services.serviceProxy(name, PlatformDotNetService.class, sticky);
+
+        return new GridServiceProxy<>(services.clusterGroup(), name, Object.class, sticky, platformCtx.kernalContext());
+    }
+
+    /**
+     * Finds a service descriptor by name.
+     *
+     * @param name Service name.
+     * @return Descriptor or null.
+     */
+    private ServiceDescriptor findDescriptor(String name) {
+        for (ServiceDescriptor d : services.serviceDescriptors())
+            if (d.name().equals(name))
+                return d;
+
+        return null;
     }
 
     /** {@inheritDoc} */
@@ -220,7 +244,7 @@ public class PlatformServices extends PlatformAbstractTarget {
                     args = null;
 
                 try {
-                    Object result = ((PlatformDotNetService)arg).invokeMethod(mthdName, srvKeepBinary, args);
+                    Object result = ((PlatformService)arg).invokeMethod(mthdName, srvKeepBinary, args);
 
                     PlatformUtils.writeInvocationResult(writer, result, null);
                 }
