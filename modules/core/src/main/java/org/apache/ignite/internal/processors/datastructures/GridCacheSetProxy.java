@@ -591,7 +591,7 @@ public class GridCacheSetProxy<T> implements IgniteSet<T>, Externalizable {
     }
 
     /** {@inheritDoc} */
-    @Override public void affinityRun(IgniteRunnable job) {
+    @Override public void affinityRun(final IgniteRunnable job) {
         gate.enter();
 
         try {
@@ -603,7 +603,8 @@ public class GridCacheSetProxy<T> implements IgniteSet<T>, Externalizable {
                         return null;
                     }
                 }, cctx);
-            delegate.affinityRun(job);
+            else
+              delegate.affinityRun(job);
         }
         catch (IgniteCheckedException e) {
             throw U.convertException(e);
@@ -614,7 +615,7 @@ public class GridCacheSetProxy<T> implements IgniteSet<T>, Externalizable {
     }
 
     /** {@inheritDoc} */
-    @Override public <R> R affinityCall(IgniteCallable<R> job) {
+    @Override public <R> R affinityCall(final IgniteCallable<R> job) {
         gate.enter();
 
         try {

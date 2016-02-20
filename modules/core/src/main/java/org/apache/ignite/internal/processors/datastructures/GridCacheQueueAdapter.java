@@ -1075,7 +1075,8 @@ public abstract class GridCacheQueueAdapter<T> extends AbstractCollection<T> imp
     /** {@inheritDoc} */
     public void affinityRun(IgniteRunnable job) {
         if (!collocated)
-            throw new IgniteException("Illegal operation requested on non-collocated queue:affinityRun().");
+            throw new IgniteException("Failed to execute affinityCall() for non-collocated queue: " + name() +
+                                      ". This operation is supported only for collocated queues.");
 
         compute.affinityRun(cache.name(),queueKey,job);
     }
@@ -1083,7 +1084,8 @@ public abstract class GridCacheQueueAdapter<T> extends AbstractCollection<T> imp
     /** {@inheritDoc} */
     public <R> R affinityCall(IgniteCallable<R> job) {
         if (!collocated)
-            throw new IgniteException("Illegal operation requested on non-collocated queue:affinityCall().");
+            throw new IgniteException("Failed to execute affinityCall() for non-collocated queue: " + name() +
+                                      ". This operation is supported only for collocated queues.");
 
         return compute.affinityCall(cache.name(),queueKey,job);
     }

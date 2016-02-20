@@ -783,11 +783,11 @@ public class GridCacheQueueProxy<T> implements IgniteQueue<T>, Externalizable {
     }
 
     /** {@inheritDoc} */
-    @Override public void affinityRun(IgniteRunnable job) {
+    @Override public void affinityRun(final IgniteRunnable job) {
         gate.enter();
 
         try {
-            if (cctx.transactional())
+            if (cctx.transactional()) {
                 CU.outTx(new Callable<Void>() {
                     @Override
                     public Void call() throws Exception {
@@ -795,7 +795,9 @@ public class GridCacheQueueProxy<T> implements IgniteQueue<T>, Externalizable {
                         return null;
                     }
                 }, cctx);
-            delegate.affinityRun(job);
+            }
+            else
+                delegate.affinityRun(job);
         }
         catch (IgniteCheckedException e) {
             throw U.convertException(e);
@@ -806,7 +808,7 @@ public class GridCacheQueueProxy<T> implements IgniteQueue<T>, Externalizable {
     }
 
     /** {@inheritDoc} */
-    @Override public <R> R affinityCall(IgniteCallable<R> job) {
+    @Override public <R> R affinityCall(final IgniteCallable<R> job) {
         gate.enter();
 
         try {

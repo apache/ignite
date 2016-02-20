@@ -550,7 +550,8 @@ public class GridCacheSetImpl<T> extends AbstractCollection<T> implements Ignite
     /** {@inheritDoc} */
     public void affinityRun(IgniteRunnable job) {
         if (!collocated)
-            throw new IgniteException("Illegal operation requested on non-collocated set:affinityRun().");
+            throw new IgniteException("Failed to execute affinityCall() for non-collocated set: " + name() +
+                                      ". This operation is supported only for collocated sets.");
 
         compute.affinityRun(cache.name(),setKey,job);
     }
@@ -558,7 +559,8 @@ public class GridCacheSetImpl<T> extends AbstractCollection<T> implements Ignite
     /** {@inheritDoc} */
     public <R> R affinityCall(IgniteCallable<R> job) {
         if (!collocated)
-            throw new IgniteException("Illegal operation requested on non-collocated set:affinityCall().");
+            throw new IgniteException("Failed to execute affinityCall() for non-collocated queue: " + name() +
+                                      ". This operation is supported only for collocated queues.");
 
         return compute.affinityCall(cache.name(),setKey,job);
     }

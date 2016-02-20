@@ -27,6 +27,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteQueue;
+import org.apache.ignite.cache.affinity.AffinityKeyMapped;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.CollectionConfiguration;
 import org.apache.ignite.internal.IgniteInternalFuture;
@@ -607,19 +608,36 @@ public abstract class GridCacheQueueApiSelfAbstractTest extends IgniteCollection
     }
 
     public void testAffinityRun() throws Exception {
-        CollectionConfiguration colCfg = collectionConfiguration();
+        /** Test exception on non-collocated queue */
+        final CollectionConfiguration colCfg = collectionConfiguration();
+        colCfg.setCollocated(false);
+
+        final IgniteQueue queue = grid(0).queue("Queue1", 0, colCfg);
+
+        GridTestUtils.assertThrows(log, new Callable<Void>() {
+            @Override public Void call() throws Exception {
+                queue.affinityRun(() -> new IgniteRunnable() {
+                    @Override public void run() { ; }});
+                return null;
+            }
+        }, IgniteException.class, "Cannot execute affinityRun() on a non-collocated queue");
+
+        queue.close();
+
+        /** Test running a job on a collocated queue */
         colCfg.setCollocated(true);
+        final IgniteQueue queue2 = grid(0).queue("Queue2", 0, colCfg);
 
-        IgniteQueue queue = grid(0).queue("Queue1", 0, colCfg);
-        queue.affinityRun(new FailRunnable());
-    }
+        /** add a number to the queue */
+        queue2.add(100);
 
-    public void testAffinityCall() throws Exception {
-        CollectionConfiguration colCfg = collectionConfiguration();
-        colCfg.setCollocated(true);
-
-        IgniteQueue queue = grid(0).queue("Queue1", 0, colCfg);
-        queue.affinityCall(new FailCallable());
+        /** read the number back using affinityRun() */
+        queue2.affinityRun(new IgniteRunnable() {
+            @Override public void run() {
+                assert((int)queue2.take() == 100);
+            }
+        });
+        queue2.close();
     }
 
     /**
@@ -661,25 +679,4 @@ public abstract class GridCacheQueueApiSelfAbstractTest extends IgniteCollection
         }
     }
 
-    /**
-     *
-     */
-    private static class FailRunnable implements IgniteRunnable {
-        /** {@inheritDoc} */
-        @Override public void run() {
-            fail();
-        }
-    }
-
-    /**
-     *
-     */
-    private static class FailCallable implements IgniteCallable<Object> {
-        /** {@inheritDoc} */
-        @Override public Object call() throws Exception {
-            fail();
-
-            return null;
-        }
-    }
 }

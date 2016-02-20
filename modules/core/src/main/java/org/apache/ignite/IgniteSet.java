@@ -115,7 +115,6 @@ public interface IgniteSet<T> extends Set<T>, Closeable {
      * @param job Job which will be co-located on the node with given affinity key.
      * @throws IgniteException If job failed.
      */
-    @IgniteAsyncSupported
     public void affinityRun(IgniteRunnable job) throws IgniteException;
 
     /**
@@ -125,6 +124,5 @@ public interface IgniteSet<T> extends Set<T>, Closeable {
      * @param job Job which will be co-located on the node with given affinity key.
      * @throws IgniteException If job failed.
      */
-    @IgniteAsyncSupported
     public <R> R affinityCall(IgniteCallable<R> job) throws IgniteException;
 }

@@ -37,7 +37,6 @@ import org.apache.ignite.lang.IgniteCallable;
  * {@link Collection} methods in the queue may throw {@link IgniteException} in case
  * of failure.
  * <p>
- * All queue operations have synchronous and asynchronous counterparts.
  * <h1 class="header">Bounded vs Unbounded</h1>
  * Queues can be {@code unbounded} or {@code bounded}. {@code Bounded} queues can
  * have maximum capacity. Queue capacity can be set at creation time and cannot be
@@ -192,7 +191,6 @@ public interface IgniteQueue<T> extends BlockingQueue<T>, Closeable {
      * @param job Job which will be co-located on the node with given affinity key.
      * @throws IgniteException If job failed.
      */
-    @IgniteAsyncSupported
     public void affinityRun(IgniteRunnable job) throws IgniteException;
 
     /**
@@ -202,6 +200,5 @@ public interface IgniteQueue<T> extends BlockingQueue<T>, Closeable {
      * @param job Job which will be co-located on the node with given affinity key.
      * @throws IgniteException If job failed.
      */
-    @IgniteAsyncSupported
     public <R> R affinityCall(IgniteCallable<R> job) throws IgniteException;
 }
