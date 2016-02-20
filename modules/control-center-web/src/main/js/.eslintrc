@@ -22,6 +22,7 @@ globals:
     _: true
     window: true
     global: true
+    $generatorCommon: true
     $generatorProperties: true
     $generatorXml: true
     $generatorJava: true
