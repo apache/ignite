@@ -81,7 +81,7 @@ public class PlatformDeployServiceTask extends ComputeTaskAdapter<String, Object
     /**
      * Test service.
      */
-    private static class PlatformTestService implements Service {
+    public static class PlatformTestService implements Service {
         /** */
         private boolean isCancelled;
 
