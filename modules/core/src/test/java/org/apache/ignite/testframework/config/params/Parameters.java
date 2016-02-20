@@ -202,7 +202,14 @@ public class Parameters {
             if (mtdName0.startsWith("set") && mtdName0.length() > 3)
                 mtdName0=mtdName0.substring(3, mtdName0.length());
 
-            return mtdName0 + "=" + val;
+            String val0;
+
+            if (val instanceof Factory)
+                val0 = ((Factory)val).create().toString();
+            else
+                val0 = val.toString();
+
+            return mtdName0 + "=" + val0;
         }
 
         /** {@inheritDoc} */
