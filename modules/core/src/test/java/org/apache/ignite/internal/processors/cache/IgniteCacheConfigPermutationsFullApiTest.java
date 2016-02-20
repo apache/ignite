@@ -768,105 +768,105 @@ public class IgniteCacheConfigPermutationsFullApiTest extends IgniteCacheConfigP
     /**
      * @throws Exception If failed.
      */
-    public void testInvokeOptimisticReadCommitted1() throws Exception {
+    public void _testInvokeOptimisticReadCommitted1() throws Exception {
         checkInvoke(OPTIMISTIC, READ_COMMITTED, DataMode.PLANE_OBJECT);
     }
 
     /**
      * @throws Exception If failed.
      */
-    public void testInvokeOptimisticReadCommitted2() throws Exception {
+    public void _testInvokeOptimisticReadCommitted2() throws Exception {
         checkInvoke(OPTIMISTIC, READ_COMMITTED, DataMode.SERIALIZABLE);
     }
 
     /**
      * @throws Exception If failed.
      */
-    public void testInvokeOptimisticReadCommitted3() throws Exception {
+    public void _testInvokeOptimisticReadCommitted3() throws Exception {
         checkInvoke(OPTIMISTIC, READ_COMMITTED, DataMode.EXTERNALIZABLE);
     }
 
     /**
      * @throws Exception If failed.
      */
-    public void testInvokeOptimisticRepeatableRead1() throws Exception {
+    public void _testInvokeOptimisticRepeatableRead1() throws Exception {
         checkInvoke(OPTIMISTIC, REPEATABLE_READ, DataMode.PLANE_OBJECT);
     }
 
     /**
      * @throws Exception If failed.
      */
-    public void testInvokeOptimisticRepeatableRead2() throws Exception {
+    public void _testInvokeOptimisticRepeatableRead2() throws Exception {
         checkInvoke(OPTIMISTIC, REPEATABLE_READ, DataMode.SERIALIZABLE);
     }
 
     /**
      * @throws Exception If failed.
      */
-    public void testInvokeOptimisticRepeatableRead3() throws Exception {
+    public void _testInvokeOptimisticRepeatableRead3() throws Exception {
         checkInvoke(OPTIMISTIC, REPEATABLE_READ, DataMode.PLANE_OBJECT);
     }
 
     /**
      * @throws Exception If failed.
      */
-    public void testInvokePessimisticReadCommitted1() throws Exception {
+    public void _testInvokePessimisticReadCommitted1() throws Exception {
         checkInvoke(PESSIMISTIC, READ_COMMITTED, DataMode.PLANE_OBJECT);
     }
 
     /**
      * @throws Exception If failed.
      */
-    public void testInvokePessimisticReadCommitted2() throws Exception {
+    public void _testInvokePessimisticReadCommitted2() throws Exception {
         checkInvoke(PESSIMISTIC, READ_COMMITTED, DataMode.SERIALIZABLE);
     }
 
     /**
      * @throws Exception If failed.
      */
-    public void testInvokePessimisticReadCommitted3() throws Exception {
+    public void _testInvokePessimisticReadCommitted3() throws Exception {
         checkInvoke(PESSIMISTIC, READ_COMMITTED, DataMode.EXTERNALIZABLE);
     }
 
     /**
      * @throws Exception If failed.
      */
-    public void testInvokePessimisticRepeatableRead1() throws Exception {
+    public void _testInvokePessimisticRepeatableRead1() throws Exception {
         checkInvoke(PESSIMISTIC, REPEATABLE_READ, DataMode.PLANE_OBJECT);
     }
 
     /**
      * @throws Exception If failed.
      */
-    public void testInvokePessimisticRepeatableRead2() throws Exception {
+    public void _testInvokePessimisticRepeatableRead2() throws Exception {
         checkInvoke(PESSIMISTIC, REPEATABLE_READ, DataMode.SERIALIZABLE);
     }
 
     /**
      * @throws Exception If failed.
      */
-    public void testInvokePessimisticRepeatableRead3() throws Exception {
+    public void _testInvokePessimisticRepeatableRead3() throws Exception {
         checkInvoke(PESSIMISTIC, REPEATABLE_READ, DataMode.EXTERNALIZABLE);
     }
 
     /**
      * @throws Exception If failed.
      */
-    public void testIgniteInvokeOptimisticReadCommitted1() throws Exception {
+    public void _testIgniteInvokeOptimisticReadCommitted1() throws Exception {
         checkIgniteInvoke(OPTIMISTIC, READ_COMMITTED, DataMode.PLANE_OBJECT);
     }
 
     /**
      * @throws Exception If failed.
      */
-    public void testIgniteInvokeOptimisticReadCommitted2() throws Exception {
+    public void _testIgniteInvokeOptimisticReadCommitted2() throws Exception {
         checkIgniteInvoke(OPTIMISTIC, READ_COMMITTED, DataMode.SERIALIZABLE);
     }
 
     /**
      * @throws Exception If failed.
      */
-    public void testIgniteInvokeOptimisticReadCommitted3() throws Exception {
+    public void _testIgniteInvokeOptimisticReadCommitted3() throws Exception {
         checkIgniteInvoke(OPTIMISTIC, READ_COMMITTED, DataMode.EXTERNALIZABLE);
     }
 
@@ -1013,7 +1013,7 @@ public class IgniteCacheConfigPermutationsFullApiTest extends IgniteCacheConfigP
     /**
      * @param concurrency Concurrency.
      * @param isolation Isolation.
-     * @param mode
+     * @param mode Data mode.
      * @throws Exception If failed.
      */
     private void checkInvoke(TransactionConcurrency concurrency, TransactionIsolation isolation,
