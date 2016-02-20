@@ -630,6 +630,8 @@ public class GridNearAtomicUpdateRequest extends GridCacheMessage implements Gri
             }
         }
 
+        invokeArgs = unmarshalInvokeArguments(invokeArgsBytes, ctx, ldr);
+
         if (expiryPlcBytes != null)
             expiryPlc = ctx.marshaller().unmarshal(expiryPlcBytes, U.resolveClassLoader(ldr, ctx.gridConfig()));
     }
