@@ -43,7 +43,7 @@ namespace test_utils
         date.tm_min = min;
         date.tm_sec = sec;
 
-        time_t ct = mktime(&date);
+        time_t ct = mktime(&date) - timezone;
 
         return ignite::Date(ct * 1000);
     }
@@ -72,7 +72,7 @@ namespace test_utils
         date.tm_min = min;
         date.tm_sec = sec;
 
-        time_t ct = mktime(&date);
+        time_t ct = mktime(&date) - timezone;
 
         return ignite::Timestamp(ct, ns);
     }

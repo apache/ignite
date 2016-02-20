@@ -309,7 +309,7 @@ BOOST_AUTO_TEST_CASE(TestTwoRowsString)
 
     const size_t columnsCnt = 11;
 
-    SQLCHAR columns[ODBC_BUFFER_SIZE][columnsCnt] = { 0 };
+    SQLCHAR columns[columnsCnt][ODBC_BUFFER_SIZE] = { 0 };
 
     // Binding colums.
     for (SQLSMALLINT i = 0; i < columnsCnt; ++i)
@@ -342,7 +342,8 @@ BOOST_AUTO_TEST_CASE(TestTwoRowsString)
     BOOST_CHECK_EQUAL(std::string(reinterpret_cast<char*>(columns[6])), "7");
     BOOST_CHECK_EQUAL(std::string(reinterpret_cast<char*>(columns[7])), "1");
     BOOST_CHECK_EQUAL(std::string(reinterpret_cast<char*>(columns[8])), "00000000-0000-0008-0000-000000000009");
-    BOOST_CHECK_EQUAL(std::string(reinterpret_cast<char*>(columns[9])), "1987-06-05");
+    // Such format is used because Date returned as Timestamp.
+    BOOST_CHECK_EQUAL(std::string(reinterpret_cast<char*>(columns[9])), "1987-06-05 00:00:00");
     BOOST_CHECK_EQUAL(std::string(reinterpret_cast<char*>(columns[10])), "1998-12-27 01:02:03");
 
     SQLLEN columnLens[columnsCnt] = { 0 };
@@ -369,7 +370,8 @@ BOOST_AUTO_TEST_CASE(TestTwoRowsString)
     BOOST_CHECK_EQUAL(std::string(reinterpret_cast<char*>(columns[6])), "2");
     BOOST_CHECK_EQUAL(std::string(reinterpret_cast<char*>(columns[7])), "0");
     BOOST_CHECK_EQUAL(std::string(reinterpret_cast<char*>(columns[8])), "00000000-0000-0001-0000-000000000000");
-    BOOST_CHECK_EQUAL(std::string(reinterpret_cast<char*>(columns[9])), "1976-01-12");
+    // Such format is used because Date returned as Timestamp.
+    BOOST_CHECK_EQUAL(std::string(reinterpret_cast<char*>(columns[9])), "1976-01-12 00:00:00");
     BOOST_CHECK_EQUAL(std::string(reinterpret_cast<char*>(columns[10])), "1978-08-21 23:13:45");
 
     BOOST_CHECK_EQUAL(columnLens[0], 1);
@@ -381,8 +383,8 @@ BOOST_AUTO_TEST_CASE(TestTwoRowsString)
     BOOST_CHECK_EQUAL(columnLens[6], 1);
     BOOST_CHECK_EQUAL(columnLens[7], 1);
     BOOST_CHECK_EQUAL(columnLens[8], 36);
-    BOOST_CHECK_EQUAL(columnLens[9], 11);
-    BOOST_CHECK_EQUAL(columnLens[10], 20);
+    BOOST_CHECK_EQUAL(columnLens[9], 19);
+    BOOST_CHECK_EQUAL(columnLens[10], 19);
 
     ret = SQLFetch(stmt);
     BOOST_CHECK(ret == SQL_NO_DATA);
@@ -396,7 +398,7 @@ BOOST_AUTO_TEST_CASE(TestOneRowString)
 
     const size_t columnsCnt = 11;
 
-    SQLCHAR columns[ODBC_BUFFER_SIZE][columnsCnt] = { 0 };
+    SQLCHAR columns[columnsCnt][ODBC_BUFFER_SIZE] = { 0 };
 
     SQLLEN columnLens[columnsCnt] = { 0 };
 
@@ -427,7 +429,8 @@ BOOST_AUTO_TEST_CASE(TestOneRowString)
     BOOST_CHECK_EQUAL(std::string(reinterpret_cast<char*>(columns[6])), "7");
     BOOST_CHECK_EQUAL(std::string(reinterpret_cast<char*>(columns[7])), "1");
     BOOST_CHECK_EQUAL(std::string(reinterpret_cast<char*>(columns[8])), "00000000-0000-0008-0000-000000000009");
-    BOOST_CHECK_EQUAL(std::string(reinterpret_cast<char*>(columns[9])), "1987-06-05");
+    // Such format is used because Date returned as Timestamp.
+    BOOST_CHECK_EQUAL(std::string(reinterpret_cast<char*>(columns[9])), "1987-06-05 00:00:00");
     BOOST_CHECK_EQUAL(std::string(reinterpret_cast<char*>(columns[10])), "1998-12-27 01:02:03");
 
     BOOST_CHECK_EQUAL(columnLens[0], 1);
@@ -439,8 +442,8 @@ BOOST_AUTO_TEST_CASE(TestOneRowString)
     BOOST_CHECK_EQUAL(columnLens[6], 1);
     BOOST_CHECK_EQUAL(columnLens[7], 1);
     BOOST_CHECK_EQUAL(columnLens[8], 36);
-    BOOST_CHECK_EQUAL(columnLens[9], 11);
-    BOOST_CHECK_EQUAL(columnLens[10], 20);
+    BOOST_CHECK_EQUAL(columnLens[9], 19);
+    BOOST_CHECK_EQUAL(columnLens[10], 19);
 
     ret = SQLFetch(stmt);
     BOOST_CHECK(ret == SQL_NO_DATA);
@@ -483,8 +486,8 @@ BOOST_AUTO_TEST_CASE(TestOneRowStringLen)
     BOOST_CHECK_EQUAL(columnLens[6], 1);
     BOOST_CHECK_EQUAL(columnLens[7], 1);
     BOOST_CHECK_EQUAL(columnLens[8], 36);
-    BOOST_CHECK_EQUAL(columnLens[9], 11);
-    BOOST_CHECK_EQUAL(columnLens[10], 20);
+    BOOST_CHECK_EQUAL(columnLens[9], 19);
+    BOOST_CHECK_EQUAL(columnLens[10], 19);
 
     ret = SQLFetch(stmt);
     BOOST_CHECK(ret == SQL_NO_DATA);
