@@ -139,29 +139,29 @@ public class IgniteCacheConfigPermutationsFullApiTest extends IgniteCacheConfigP
         };
 
     /** Increment processor for invoke operations. */
-    public static final EntryProcessor<TestObject, TestObject, TestObject> INCR_PROCESSOR = new IncrementEntryProcessor();
+    public static final EntryProcessor<Object, Object, Object> INCR_PROCESSOR = new IncrementEntryProcessor();
 
     /** Increment processor for invoke operations with IgniteEntryProcessor. */
-    public static final CacheEntryProcessor<TestObject, TestObject, TestObject> INCR_IGNITE_PROCESSOR =
-        new CacheEntryProcessor<TestObject, TestObject, TestObject>() {
+    public static final CacheEntryProcessor<Object, Object, Object> INCR_IGNITE_PROCESSOR =
+        new CacheEntryProcessor<Object, Object, Object>() {
             /** */
             private static final long serialVersionUID = 0L;
 
-            @Override public TestObject process(MutableEntry<TestObject, TestObject> e, Object... args) {
+            @Override public Object process(MutableEntry<Object, Object> e, Object... args) {
                 return INCR_PROCESSOR.process(e, args);
             }
         };
 
     /** Increment processor for invoke operations. */
-    public static final EntryProcessor<TestObject, TestObject, TestObject> RMV_PROCESSOR = new RemoveEntryProcessor();
+    public static final EntryProcessor<Object, Object, Object> RMV_PROCESSOR = new RemoveEntryProcessor();
 
     /** Increment processor for invoke operations with IgniteEntryProcessor. */
-    public static final CacheEntryProcessor<TestObject, TestObject, TestObject> RMV_IGNITE_PROCESSOR =
-        new CacheEntryProcessor<TestObject, TestObject, TestObject>() {
+    public static final CacheEntryProcessor<Object, Object, Object> RMV_IGNITE_PROCESSOR =
+        new CacheEntryProcessor<Object, Object, Object>() {
             /** */
             private static final long serialVersionUID = 0L;
 
-            @Override public TestObject process(MutableEntry<TestObject, TestObject> e, Object... args) {
+            @Override public Object process(MutableEntry<Object, Object> e, Object... args) {
                 return RMV_PROCESSOR.process(e, args);
             }
         };
@@ -518,16 +518,16 @@ public class IgniteCacheConfigPermutationsFullApiTest extends IgniteCacheConfigP
      * @param mode Data mode.
      */
     private void checkGetAll(DataMode mode) {
-        final TestObject key1 = key(1, mode);
-        final TestObject key2 = key(2, mode);
-        final TestObject key9999 = key(9999, mode);
+        final Object key1 = key(1, mode);
+        final Object key2 = key(2, mode);
+        final Object key9999 = key(9999, mode);
 
-        final TestObject val1 = value(1, mode);
-        final TestObject val2 = value(2, mode);
+        final Object val1 = value(1, mode);
+        final Object val2 = value(2, mode);
 
         Transaction tx = txShouldBeUsed() ? transactions().txStart() : null;
 
-        final IgniteCache<TestObject, TestObject> cache = jcache();
+        final IgniteCache<Object, Object> cache = jcache();
 
         try {
             cache.put(key1, val1);
@@ -549,9 +549,9 @@ public class IgniteCacheConfigPermutationsFullApiTest extends IgniteCacheConfigP
             }
         }, NullPointerException.class, null);
 
-        assert cache.getAll(Collections.<TestObject>emptySet()).isEmpty();
+        assert cache.getAll(Collections.<Object>emptySet()).isEmpty();
 
-        Map<TestObject, TestObject> map1 = cache.getAll(ImmutableSet.of(key1, key2, key9999));
+        Map<Object, Object> map1 = cache.getAll(ImmutableSet.of(key1, key2, key9999));
 
         info("Retrieved map1: " + map1);
 
@@ -561,7 +561,7 @@ public class IgniteCacheConfigPermutationsFullApiTest extends IgniteCacheConfigP
         assertEquals(val2, map1.get(key2));
         assertNull(map1.get(key9999));
 
-        Map<TestObject, TestObject> map2 = cache.getAll(ImmutableSet.of(key1, key2, key9999));
+        Map<Object, Object> map2 = cache.getAll(ImmutableSet.of(key1, key2, key9999));
 
         info("Retrieved map2: " + map2);
 
@@ -574,7 +574,7 @@ public class IgniteCacheConfigPermutationsFullApiTest extends IgniteCacheConfigP
         // Now do the same checks but within transaction.
         if (txShouldBeUsed()) {
             try (Transaction tx0 = transactions().txStart()) {
-                assert cache.getAll(Collections.<TestObject>emptySet()).isEmpty();
+                assert cache.getAll(Collections.<Object>emptySet()).isEmpty();
 
                 map1 = cache.getAll(ImmutableSet.of(key1, key2, key9999));
 
@@ -952,8 +952,8 @@ public class IgniteCacheConfigPermutationsFullApiTest extends IgniteCacheConfigP
      */
     private void checkInvoke(TransactionConcurrency concurrency, TransactionIsolation isolation,
         DataMode mode,
-        EntryProcessor<TestObject, TestObject, TestObject> incrProcessor,
-        EntryProcessor<TestObject, TestObject, TestObject> rmvProseccor) {
+        EntryProcessor<Object, Object, Object> incrProcessor,
+        EntryProcessor<Object, Object, Object> rmvProseccor) {
         IgniteCache cache = jcache();
 
         final Object key1 = key(1, mode);
@@ -1117,22 +1117,22 @@ public class IgniteCacheConfigPermutationsFullApiTest extends IgniteCacheConfigP
         if (mode != DataMode.EXTERNALIZABLE && gridCount() > 1)
             fail("https://issues.apache.org/jira/browse/IGNITE-2664");
 
-        final TestObject key1 = key(1, mode);
-        final TestObject key2 = key(2, mode);
-        final TestObject key3 = key(3, mode);
+        final Object key1 = key(1, mode);
+        final Object key2 = key(2, mode);
+        final Object key3 = key(3, mode);
 
-        final TestObject val1 = value(1, mode);
-        final TestObject val2 = value(2, mode);
-        final TestObject val3 = value(3, mode);
-        final TestObject val4 = value(4, mode);
+        final Object val1 = value(1, mode);
+        final Object val2 = value(2, mode);
+        final Object val3 = value(3, mode);
+        final Object val4 = value(4, mode);
 
-        final IgniteCache<TestObject, TestObject> cache = jcache();
+        final IgniteCache<Object, Object> cache = jcache();
 
         cache.put(key2, val1);
         cache.put(key3, val3);
 
         if (txShouldBeUsed()) {
-            Map<TestObject, EntryProcessorResult<TestObject>> res;
+            Map<Object, EntryProcessorResult<Object>> res;
 
             try (Transaction tx = ignite(0).transactions().txStart(concurrency, isolation)) {
                 res = cache.invokeAll(F.asSet(key1, key2, key3), INCR_PROCESSOR, mode);
@@ -1155,7 +1155,7 @@ public class IgniteCacheConfigPermutationsFullApiTest extends IgniteCacheConfigP
             cache.put(key3, val3);
         }
 
-        Map<TestObject, EntryProcessorResult<TestObject>> res = cache.invokeAll(F.asSet(key1, key2, key3), RMV_PROCESSOR);
+        Map<Object, EntryProcessorResult<Object>> res = cache.invokeAll(F.asSet(key1, key2, key3), RMV_PROCESSOR);
 
         for (int i = 0; i < gridCount(); i++) {
             assertNull(jcache(i).localPeek(key1, ONHEAP));
@@ -1227,13 +1227,13 @@ public class IgniteCacheConfigPermutationsFullApiTest extends IgniteCacheConfigP
      * @param mode Mode.
      */
     private void checkInvokeAllWithNulls(final DataMode mode) {
-        final TestObject key1 = key(1, mode);
+        final Object key1 = key(1, mode);
 
-        final IgniteCache<TestObject, TestObject> cache = jcache();
+        final IgniteCache<Object, Object> cache = jcache();
 
         GridTestUtils.assertThrows(log, new Callable<Void>() {
             @Override public Void call() throws Exception {
-                cache.invokeAll((Set<TestObject>)null, INCR_PROCESSOR, mode);
+                cache.invokeAll((Set<Object>)null, INCR_PROCESSOR, mode);
 
                 return null;
             }
@@ -1248,7 +1248,7 @@ public class IgniteCacheConfigPermutationsFullApiTest extends IgniteCacheConfigP
         }, NullPointerException.class, null);
 
         {
-            final Set<TestObject> keys = new LinkedHashSet<>(2);
+            final Set<Object> keys = new LinkedHashSet<>(2);
 
             keys.add(key1);
             keys.add(null);
@@ -1364,13 +1364,13 @@ public class IgniteCacheConfigPermutationsFullApiTest extends IgniteCacheConfigP
     private void checkInvokeSequential0(boolean startVal, TransactionConcurrency concurrency,
         DataMode mode)
         throws Exception {
-        final TestObject val1 = value(1, mode);
-        final TestObject val2 = value(2, mode);
-        final TestObject val3 = value(3, mode);
+        final Object val1 = value(1, mode);
+        final Object val2 = value(2, mode);
+        final Object val3 = value(3, mode);
 
-        IgniteCache<TestObject, TestObject> cache = jcache();
+        IgniteCache<Object, Object> cache = jcache();
 
-        final TestObject key = primaryTestObjectKeysForCache(cache, 1, mode).get(0);
+        final Object key = primaryTestObjectKeysForCache(cache, 1, mode).get(0);
 
         Transaction tx = txShouldBeUsed() ? ignite(0).transactions().txStart(concurrency, READ_COMMITTED) : null;
 
@@ -1380,7 +1380,7 @@ public class IgniteCacheConfigPermutationsFullApiTest extends IgniteCacheConfigP
             else
                 assertEquals(null, cache.get(key));
 
-            TestObject expRes = startVal ? val2 : null;
+            Object expRes = startVal ? val2 : null;
 
             assertEquals(expRes, cache.invoke(key, INCR_PROCESSOR, mode));
 
@@ -1388,7 +1388,7 @@ public class IgniteCacheConfigPermutationsFullApiTest extends IgniteCacheConfigP
 
             assertEquals(expRes, cache.invoke(key, INCR_PROCESSOR, mode));
 
-            expRes = value(expRes.value() + 1, mode);
+            expRes = value(valueOf(expRes) + 1, mode);
 
             assertEquals(expRes, cache.invoke(key, INCR_PROCESSOR, mode));
 
@@ -1400,7 +1400,7 @@ public class IgniteCacheConfigPermutationsFullApiTest extends IgniteCacheConfigP
                 tx.close();
         }
 
-        TestObject exp = value((startVal ? 2 : 0) + 3, mode);
+        Object exp = value((startVal ? 2 : 0) + 3, mode);
 
         assertEquals(exp, cache.get(key));
 
@@ -1458,9 +1458,9 @@ public class IgniteCacheConfigPermutationsFullApiTest extends IgniteCacheConfigP
      * @throws Exception If failed.
      */
     private void checkInvokeAfterRemove(TransactionConcurrency concurrency, DataMode mode) throws Exception {
-        IgniteCache<TestObject, TestObject> cache = jcache();
+        IgniteCache<Object, Object> cache = jcache();
 
-        TestObject key = key(1, mode);
+        Object key = key(1, mode);
 
         cache.put(key, value(4, mode));
 
@@ -1601,11 +1601,11 @@ public class IgniteCacheConfigPermutationsFullApiTest extends IgniteCacheConfigP
         DataMode mode)
         throws Exception
     {
-        IgniteCache<TestObject, TestObject> cache = jcache();
+        IgniteCache<Object, Object> cache = jcache();
 
-        TestObject key = key(1, mode);
-        TestObject val1 = value(1, mode);
-        TestObject val2 = value(2, mode);
+        Object key = key(1, mode);
+        Object val1 = value(1, mode);
+        Object val2 = value(2, mode);
 
         if (!put)
             cache.put(key, val1);
@@ -1702,20 +1702,20 @@ public class IgniteCacheConfigPermutationsFullApiTest extends IgniteCacheConfigP
      * @param mode Mode.
      */
     private void checkInvokeAsync(DataMode mode) {
-        final TestObject key1 = key(1, mode);
-        final TestObject key2 = key(2, mode);
-        final TestObject key3 = key(3, mode);
+        final Object key1 = key(1, mode);
+        final Object key2 = key(2, mode);
+        final Object key3 = key(3, mode);
 
-        final TestObject val1 = value(1, mode);
-        final TestObject val2 = value(2, mode);
-        final TestObject val3 = value(3, mode);
+        final Object val1 = value(1, mode);
+        final Object val2 = value(2, mode);
+        final Object val3 = value(3, mode);
 
-        IgniteCache<TestObject, TestObject> cache = jcache();
+        IgniteCache<Object, Object> cache = jcache();
 
         cache.put(key2, val1);
         cache.put(key3, val3);
 
-        IgniteCache<TestObject, TestObject> cacheAsync = cache.withAsync();
+        IgniteCache<Object, Object> cacheAsync = cache.withAsync();
 
         assertNull(cacheAsync.invoke(key1, INCR_PROCESSOR, mode));
 
@@ -1766,14 +1766,14 @@ public class IgniteCacheConfigPermutationsFullApiTest extends IgniteCacheConfigP
      * @param mode Mode.
      */
     private void checkInvoke(DataMode mode) {
-        final TestObject k0 = key(0, mode);
-        final TestObject k1 = key(1, mode);
+        final Object k0 = key(0, mode);
+        final Object k1 = key(1, mode);
 
-        final TestObject val1 = value(1, mode);
-        final TestObject val2 = value(2, mode);
-        final TestObject val3 = value(3, mode);
+        final Object val1 = value(1, mode);
+        final Object val2 = value(2, mode);
+        final Object val3 = value(3, mode);
 
-        final IgniteCache<TestObject, TestObject> cache = jcache();
+        final IgniteCache<Object, Object> cache = jcache();
 
         assertNull(cache.invoke(k0, INCR_PROCESSOR, mode));
 
@@ -1801,7 +1801,7 @@ public class IgniteCacheConfigPermutationsFullApiTest extends IgniteCacheConfigP
         for (int i = 0; i < gridCount(); i++)
             assertNull(jcache(i).localPeek(k1, ONHEAP));
 
-        final EntryProcessor<TestObject, TestObject, TestObject> errProcessor = new FailedEntryProcessor();
+        final EntryProcessor<Object, Object, Object> errProcessor = new FailedEntryProcessor();
 
         GridTestUtils.assertThrows(log, new Callable<Void>() {
             @Override public Void call() throws Exception {
@@ -4641,7 +4641,7 @@ public class IgniteCacheConfigPermutationsFullApiTest extends IgniteCacheConfigP
      * @param cnt Keys count.
      * @return Collection of keys for which given cache is primary.
      */
-    protected List<TestObject> primaryTestObjectKeysForCache(IgniteCache cache, int cnt, DataMode mode) {
+    protected List<Object> primaryTestObjectKeysForCache(IgniteCache cache, int cnt, DataMode mode) {
         return primaryTestObjectKeysForCache(cache, cnt, 1, mode);
     }
 
@@ -4650,7 +4650,7 @@ public class IgniteCacheConfigPermutationsFullApiTest extends IgniteCacheConfigP
      * @param cnt Keys count.
      * @return Collection of keys for which given cache is primary.
      */
-    protected List<TestObject> primaryTestObjectKeysForCache(IgniteCache cache, int cnt, int startFrom, DataMode mode) {
+    protected List<Object> primaryTestObjectKeysForCache(IgniteCache cache, int cnt, int startFrom, DataMode mode) {
         return executeOnLocalOrRemoteJvm(cache, new CheckPrimaryTestObjectKeysTask(startFrom, cnt, mode));
     }
 
@@ -5805,19 +5805,19 @@ public class IgniteCacheConfigPermutationsFullApiTest extends IgniteCacheConfigP
     private void checkContinuousQuery(DataMode mode) throws IgniteInterruptedCheckedException {
         final AtomicInteger updCnt = new AtomicInteger();
 
-        ContinuousQuery<TestObject, TestObject> qry = new ContinuousQuery<>();
+        ContinuousQuery<Object, Object> qry = new ContinuousQuery<>();
 
-        qry.setInitialQuery(new ScanQuery<>(new IgniteBiPredicate<TestObject, TestObject>() {
-            @Override public boolean apply(TestObject key, TestObject val) {
-                return key.value() >= 3;
+        qry.setInitialQuery(new ScanQuery<>(new IgniteBiPredicate<Object, Object>() {
+            @Override public boolean apply(Object key, Object val) {
+                return valueOf(key) >= 3;
             }
         }));
 
-        qry.setLocalListener(new CacheEntryUpdatedListener<TestObject, TestObject>() {
+        qry.setLocalListener(new CacheEntryUpdatedListener<Object, Object>() {
             @Override public void onUpdated(
-                Iterable<CacheEntryEvent<? extends TestObject, ? extends TestObject>> evts) throws CacheEntryListenerException {
-                for (CacheEntryEvent<? extends TestObject, ? extends TestObject> evt : evts) {
-                    int v = evt.getKey().value();
+                Iterable<CacheEntryEvent<? extends Object, ? extends Object>> evts) throws CacheEntryListenerException {
+                for (CacheEntryEvent<? extends Object, ? extends Object> evt : evts) {
+                    int v = valueOf(evt.getKey());
 
                     // Check filter.
                     assertTrue("v=" + v, v >= 10 && v < 15);
@@ -5829,18 +5829,18 @@ public class IgniteCacheConfigPermutationsFullApiTest extends IgniteCacheConfigP
 
         qry.setRemoteFilter(new TestCacheEntryEventSerializableFilter());
 
-        IgniteCache<TestObject, TestObject> cache = jcache();
+        IgniteCache<Object, Object> cache = jcache();
 
         for (int i = 0; i < 10; i++)
             cache.put(key(i, mode), value(i, mode));
 
-        try (QueryCursor<Cache.Entry<TestObject, TestObject>> cur = cache.query(qry)) {
+        try (QueryCursor<Cache.Entry<Object, Object>> cur = cache.query(qry)) {
             int cnt = 0;
 
-            for (Cache.Entry<TestObject, TestObject> e : cur) {
+            for (Cache.Entry<Object, Object> e : cur) {
                 cnt++;
 
-                int val = e.getKey().value();
+                int val = valueOf(e.getKey());
 
                 assertTrue("v=" + val, val >= 3);
             }
@@ -5859,11 +5859,11 @@ public class IgniteCacheConfigPermutationsFullApiTest extends IgniteCacheConfigP
     }
 
     /**
-     * @param keyId Key Id..
+     * @param keyId Key Id.
      * @param mode Mode.
      * @return Key.
      */
-    public static TestObject key(int keyId, DataMode mode) {
+    public static Object key(int keyId, DataMode mode) {
         switch (mode) {
             case SERIALIZABLE:
                 return new SerializableObject(keyId);
@@ -5877,11 +5877,22 @@ public class IgniteCacheConfigPermutationsFullApiTest extends IgniteCacheConfigP
     }
 
     /**
+     * @param obj Key object
+     * @return Value.
+     */
+    public static int valueOf(Object obj) {
+        if (obj instanceof TestObject)
+            return ((TestObject)obj).value();
+        else
+            throw new IllegalStateException();
+    }
+
+    /**
      * @param idx Index.
      * @param mode Mode.
      * @return Value.
      */
-    public static TestObject value(int idx, DataMode mode) {
+    public static Object value(int idx, DataMode mode) {
         switch (mode) {
             case SERIALIZABLE:
                 return new SerializableObject(idx);
@@ -5935,12 +5946,12 @@ public class IgniteCacheConfigPermutationsFullApiTest extends IgniteCacheConfigP
     /**
      *
      */
-    private static class RemoveEntryProcessor implements EntryProcessor<TestObject, TestObject, TestObject>, Serializable {
+    private static class RemoveEntryProcessor implements EntryProcessor<Object, Object, Object>, Serializable {
         /** {@inheritDoc} */
-        @Override public TestObject process(MutableEntry<TestObject, TestObject> e, Object... args) {
+        @Override public Object process(MutableEntry<Object, Object> e, Object... args) {
             assertNotNull(e.getKey());
 
-            TestObject old = e.getValue();
+            Object old = e.getValue();
 
             e.remove();
 
@@ -5951,18 +5962,18 @@ public class IgniteCacheConfigPermutationsFullApiTest extends IgniteCacheConfigP
     /**
      *
      */
-    private static class IncrementEntryProcessor implements EntryProcessor<TestObject, TestObject, TestObject>, Serializable {
+    private static class IncrementEntryProcessor implements EntryProcessor<Object, Object, Object>, Serializable {
         /** {@inheritDoc} */
-        @Override public TestObject process(MutableEntry<TestObject, TestObject> e, Object... args) {
+        @Override public Object process(MutableEntry<Object, Object> e, Object... args) {
             assert !F.isEmpty(args);
 
             DataMode mode = (DataMode)args[0];
 
             assertNotNull(e.getKey());
 
-            TestObject old = e.getValue();
+            Object old = e.getValue();
 
-            e.setValue(old == null ? value(1, mode) : value(old.value() + 1, mode));
+            e.setValue(old == null ? value(1, mode) : value(valueOf(old) + 1, mode));
 
             return old;
         }
@@ -6088,7 +6099,7 @@ public class IgniteCacheConfigPermutationsFullApiTest extends IgniteCacheConfigP
     /**
      *
      */
-    private static class CheckPrimaryTestObjectKeysTask implements TestCacheCallable<TestObject, TestObject, List<TestObject>> {
+    private static class CheckPrimaryTestObjectKeysTask implements TestCacheCallable<Object, Object, List<Object>> {
         /** Start from. */
         private final int startFrom;
 
@@ -6109,13 +6120,13 @@ public class IgniteCacheConfigPermutationsFullApiTest extends IgniteCacheConfigP
         }
 
         /** {@inheritDoc} */
-        @Override public List<TestObject> call(Ignite ignite, IgniteCache<TestObject, TestObject> cache) throws Exception {
-            List<TestObject> found = new ArrayList<>();
+        @Override public List<Object> call(Ignite ignite, IgniteCache<Object, Object> cache) throws Exception {
+            List<Object> found = new ArrayList<>();
 
-            Affinity<TestObject> affinity = ignite.affinity(cache.getName());
+            Affinity<Object> affinity = ignite.affinity(cache.getName());
 
             for (int i = startFrom; i < startFrom + 100_000; i++) {
-                TestObject key = key(i, mode);
+                Object key = key(i, mode);
 
                 if (affinity.isPrimary(ignite.cluster().localNode(), key)) {
                     found.add(key);
@@ -6163,10 +6174,10 @@ public class IgniteCacheConfigPermutationsFullApiTest extends IgniteCacheConfigP
      *
      */
     private static class RemoveAndReturnNullEntryProcessor implements
-        EntryProcessor<TestObject, TestObject, TestObject>, Serializable {
+        EntryProcessor<Object, Object, Object>, Serializable {
 
         /** {@inheritDoc} */
-        @Override public TestObject process(MutableEntry<TestObject, TestObject> e, Object... args) {
+        @Override public Object process(MutableEntry<Object, Object> e, Object... args) {
             e.remove();
 
             return null;
@@ -6279,9 +6290,9 @@ public class IgniteCacheConfigPermutationsFullApiTest extends IgniteCacheConfigP
     /**
      *
      */
-    private static class FailedEntryProcessor implements EntryProcessor<TestObject, TestObject, TestObject>, Serializable {
+    private static class FailedEntryProcessor implements EntryProcessor<Object, Object, Object>, Serializable {
         /** {@inheritDoc} */
-        @Override public TestObject process(MutableEntry<TestObject, TestObject> e, Object... args) {
+        @Override public Object process(MutableEntry<Object, Object> e, Object... args) {
             throw new EntryProcessorException("Test entry processor exception.");
         }
     }
@@ -6427,11 +6438,11 @@ public class IgniteCacheConfigPermutationsFullApiTest extends IgniteCacheConfigP
     /**
      *
      */
-    private static class TestCacheEntryEventSerializableFilter implements CacheEntryEventSerializableFilter<TestObject, TestObject> {
+    private static class TestCacheEntryEventSerializableFilter implements CacheEntryEventSerializableFilter<Object, Object> {
         /** {@inheritDoc} */
         @Override public boolean evaluate(
-            CacheEntryEvent<? extends TestObject, ? extends TestObject> evt) throws CacheEntryListenerException {
-            return evt.getKey().value() < 15;
+            CacheEntryEvent<? extends Object, ? extends Object> evt) throws CacheEntryListenerException {
+            return valueOf(evt.getKey()) < 15;
         }
     }
 
