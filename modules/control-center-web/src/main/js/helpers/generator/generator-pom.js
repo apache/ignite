@@ -18,6 +18,13 @@
 // pom.xml generation entry point.
 $generatorPom = {};
 
+$generatorPom.escapeId = function (s) {
+    if (typeof(s) !== 'string')
+        return s;
+
+    return s.replace(/[^A-Za-z0-9_\-.]+/g, '_');
+};
+
 $generatorPom.addProperty = function (res, tag, val) {
     res.line('<' + tag + '>' + val + '</' + tag + '>');
 };
@@ -124,7 +131,7 @@ $generatorPom.pom = function (cluster, igniteVersion, mvnRepositories, res) {
     res.needEmptyLine = true;
 
     $generatorPom.addProperty(res, 'groupId', 'org.apache.ignite');
-    $generatorPom.addProperty(res, 'artifactId', 'ignite-generated-model');
+    $generatorPom.addProperty(res, 'artifactId', 'ignite-generated-' + $generatorPom.escapeId(cluster.name));
     $generatorPom.addProperty(res, 'version', igniteVersion);
 
     res.needEmptyLine = true;
