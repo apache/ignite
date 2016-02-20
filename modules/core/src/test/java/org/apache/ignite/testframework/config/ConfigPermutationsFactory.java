@@ -18,7 +18,6 @@
 package org.apache.ignite.testframework.config;
 
 import java.util.Arrays;
-import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.util.typedef.internal.SB;
@@ -43,26 +42,18 @@ public class ConfigPermutationsFactory implements ConfigurationFactory {
     private final int[] cacheCfgPermutation;
 
     /** */
-    private final boolean withClient;
-
-    /** */
-    private final AtomicInteger nodeNum = new AtomicInteger();
-
-    /** */
     private int backups = -1;
 
     /**
-     * @param withClients With client flag.
      * @param igniteParams Ignite Params.
      * @param igniteCfgPermutation Ignite Configuration Permutation.
      * @param cacheParams Cache Params.
      * @param cacheCfgPermutation Cache config permutation.
      */
-    public ConfigPermutationsFactory(boolean withClients, ConfigurationParameter<IgniteConfiguration>[][] igniteParams,
+    public ConfigPermutationsFactory(ConfigurationParameter<IgniteConfiguration>[][] igniteParams,
         int[] igniteCfgPermutation,
         @Nullable ConfigurationParameter<CacheConfiguration>[][] cacheParams,
         @Nullable int[] cacheCfgPermutation) {
-        this.withClient = withClients;
         this.igniteParams = igniteParams;
         this.igniteCfgPermutation = igniteCfgPermutation;
         this.cacheParams = cacheParams;
@@ -87,11 +78,6 @@ public class ConfigPermutationsFactory implements ConfigurationFactory {
             if (cfgC != null)
                 cfgC.apply(cfg);
         }
-
-        final int nodeNum = this.nodeNum.getAndIncrement();
-
-        if (withClient && (nodeNum == 1 || nodeNum == 2))
-            cfg.setClientMode(true);
 
         return cfg;
     }

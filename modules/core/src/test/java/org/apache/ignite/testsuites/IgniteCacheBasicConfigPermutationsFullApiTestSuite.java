@@ -34,9 +34,8 @@ public class IgniteCacheBasicConfigPermutationsFullApiTestSuite extends TestSuit
             "Cache New Full API Test Suite",
             IgniteCacheConfigPermutationsFullApiTest.class)
             .withBasicCacheParams()
-            .backups(1)
-            .gridsCount(5)
-            .withClients()
+            .gridsCount(5).backups(1)
+            .testedNodesCount(3).withClients()
             .build();
     }
 }

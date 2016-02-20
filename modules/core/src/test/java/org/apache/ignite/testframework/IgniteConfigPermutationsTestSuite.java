@@ -47,8 +47,7 @@ public class IgniteConfigPermutationsTestSuite extends TestSuite {
      * @param testedNodeCnt Count of tested nodes.
      */
     public static TestSuite createMultiNodeTestSuite(Class<? extends IgniteCacheConfigPermutationsAbstractTest> cls,
-        TestsConfiguration cfg,
-        int testedNodeCnt) {
+        TestsConfiguration cfg, int testedNodeCnt, boolean withClients) {
         if (!IgniteCacheConfigPermutationsAbstractTest.class.isAssignableFrom(cls))
             throw new IllegalArgumentException("An instance of "
                 + IgniteCacheConfigPermutationsAbstractTest.class.getName() + " expected, but was: " + cls);
@@ -65,7 +64,7 @@ public class IgniteConfigPermutationsTestSuite extends TestSuite {
             boolean stopCache = i + 1 == testedNodeCnt;
 
             TestsConfiguration cfg0 = new TestsConfiguration(cfg.configurationFactory(), cfg.description(),
-                stopNodes, startCache, stopCache, cfg.cacheStartMode(), cfg.gridCount(), i);
+                stopNodes, startCache, stopCache, cfg.cacheStartMode(), cfg.gridCount(), i, withClients);
 
             suite.addTest(new IgniteConfigPermutationsTestSuite(cls, cfg0));
         }

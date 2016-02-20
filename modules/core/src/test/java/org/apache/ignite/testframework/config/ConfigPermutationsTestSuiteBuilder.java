@@ -126,7 +126,7 @@ public class ConfigPermutationsTestSuiteBuilder {
      * @return Test suite.
      */
     private TestSuite build(int[] igniteCfgPermutation, @Nullable int[] cacheCfgPermutation, boolean stopNodes) {
-        ConfigPermutationsFactory factory = new ConfigPermutationsFactory(withClients, igniteParams,
+        ConfigPermutationsFactory factory = new ConfigPermutationsFactory(igniteParams,
             igniteCfgPermutation, cacheParams, cacheCfgPermutation);
 
         factory.backups(backups);
@@ -140,9 +140,9 @@ public class ConfigPermutationsTestSuiteBuilder {
 
         TestSuite addedSuite;
 
-        if (withClients)
+        if (testedNodeCnt > 1)
             addedSuite = IgniteConfigPermutationsTestSuite.createMultiNodeTestSuite(
-                (Class<? extends IgniteCacheConfigPermutationsAbstractTest>)cls, testCfg, testedNodeCnt);
+                (Class<? extends IgniteCacheConfigPermutationsAbstractTest>)cls, testCfg, testedNodeCnt, withClients);
         else
             addedSuite = new IgniteConfigPermutationsTestSuite(cls, testCfg);
 
@@ -153,11 +153,20 @@ public class ConfigPermutationsTestSuiteBuilder {
      * @return {@code this} for chaining.
      */
     public ConfigPermutationsTestSuiteBuilder withClients() {
-        assert IgniteCacheConfigPermutationsAbstractTest.class.isAssignableFrom(cls) : "'WithClients' mode supported " +
-            "only for instances of " + IgniteCacheConfigPermutationsAbstractTest.class.getSimpleName() + ": " + cls;
+        if (testedNodeCnt < 2)
+            throw new IllegalStateException("Tested node count should be more than 1: " + testedNodeCnt);
 
         withClients = true;
-        testedNodeCnt = 3;
+
+        return this;
+    }
+
+    /**
+     * @param testedNodeCnt Tested node count.
+     * @return {@code this} for chaining.
+     */
+    public ConfigPermutationsTestSuiteBuilder testedNodesCount(int testedNodeCnt) {
+        this.testedNodeCnt = testedNodeCnt;
 
         return this;
     }

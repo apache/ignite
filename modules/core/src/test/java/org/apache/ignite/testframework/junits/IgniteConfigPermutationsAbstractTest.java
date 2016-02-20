@@ -21,6 +21,7 @@ import java.io.File;
 import org.apache.commons.io.FileUtils;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.TestsConfiguration;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
@@ -29,6 +30,15 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
  * Common abstract test for Ignite tests based on configurations permutations.
  */
 public abstract class IgniteConfigPermutationsAbstractTest extends GridCommonAbstractTest {
+    /** */
+    protected static final int SERVER_NODE_IDX = 0;
+
+    /** */
+    protected static final int CLIENT_NODE_IDX = 1;
+
+    /** */
+    protected int testedNodeIdx;
+
     /** */
     private static final File workDir = new File(U.getIgniteHome() + File.separator + "workOfConfigPermutationsTests");
 
@@ -63,6 +73,24 @@ public abstract class IgniteConfigPermutationsAbstractTest extends GridCommonAbs
             for (int i = 0; i < testsCfg.gridCount(); i++)
                 info("Grid " + i + ": " + grid(i).localNode().id());
         }
+
+        assert testsCfg.testedNodeIndex() >= 0 : "testedNodeIdx: " + testedNodeIdx;
+
+        testedNodeIdx = testsCfg.testedNodeIndex();
+
+        if (testsCfg.withClients()) {
+            for (int i = 0; i < gridCount(); i++)
+                assertEquals("i: " + i, expectedClient(getTestGridName(i)),
+                    (boolean)grid(i).configuration().isClientMode());
+        }
+    }
+
+    /**
+     * @param testGridName Name.
+     * @return {@code True} if node is client should be client.
+     */
+    protected boolean expectedClient(String testGridName) {
+        return getTestGridName(CLIENT_NODE_IDX).equals(testGridName);
     }
 
     /** {@inheritDoc} */
@@ -117,6 +145,9 @@ public abstract class IgniteConfigPermutationsAbstractTest extends GridCommonAbs
 
         resCfg.setWorkDirectory(workDir.getAbsolutePath());
 
+        if (testsCfg.withClients())
+            resCfg.setClientMode(expectedClient(gridName));
+
         return resCfg;
     }
 
@@ -137,5 +168,17 @@ public abstract class IgniteConfigPermutationsAbstractTest extends GridCommonAbs
         }
 
         return cnt;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected IgniteEx grid() {
+        throw new UnsupportedOperationException("Not supported, grid(int idx) or testedGrid() should be used instead.");
+    }
+
+    /**
+     * @return Grid which should be tested.
+     */
+    protected IgniteEx testedGrid() {
+        return grid(testedNodeIdx);
     }
 }

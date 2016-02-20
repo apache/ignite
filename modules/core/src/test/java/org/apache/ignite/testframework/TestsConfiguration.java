@@ -41,13 +41,16 @@ public class TestsConfiguration {
     private final CacheStartMode cacheStartMode;
 
     /** */
-    private final Integer testedNodeIdx;
+    private final int testedNodeIdx;
 
     /** */
     private boolean startCache;
 
     /** */
     private boolean stopCache;
+
+    /** */
+    private boolean withClients;
 
     /**
      * @param factory Factory.
@@ -60,7 +63,7 @@ public class TestsConfiguration {
         boolean stopNodes,
         CacheStartMode cacheStartMode,
         int gridCnt) {
-        this(factory, desc, stopNodes, true, true, cacheStartMode, gridCnt, null);
+        this(factory, desc, stopNodes, true, true, cacheStartMode, gridCnt, 0, false);
     }
 
     /**
@@ -76,7 +79,8 @@ public class TestsConfiguration {
         boolean stopCache,
         CacheStartMode cacheStartMode,
         int gridCnt,
-        Integer testedNodeIdx) {
+        int testedNodeIdx,
+        boolean withClients) {
         A.ensure(gridCnt >= 1, "Grids count cannot be less then 1.");
 
         this.factory = factory;
@@ -87,6 +91,7 @@ public class TestsConfiguration {
         this.stopNodes = stopNodes;
         this.startCache = startCache;
         this.stopCache = stopCache;
+        this.withClients = withClients;
     }
 
     /**
@@ -127,7 +132,7 @@ public class TestsConfiguration {
     /**
      * @return Index of node which should be tested or {@code null}.
      */
-    public Integer testedNodeIndex() {
+    public int testedNodeIndex() {
         return testedNodeIdx;
     }
 
@@ -143,5 +148,12 @@ public class TestsConfiguration {
      */
     public boolean isStopCache() {
         return stopCache;
+    }
+
+    /**
+     * @return With clients.
+     */
+    public boolean withClients() {
+        return withClients;
     }
 }

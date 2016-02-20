@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.cache;
 
 import java.util.Map;
-import java.util.Objects;
 import java.util.concurrent.atomic.AtomicInteger;
 import javax.cache.Cache;
 import javax.cache.configuration.Factory;
@@ -62,13 +61,7 @@ import static org.apache.ignite.cache.CacheMemoryMode.ONHEAP_TIERED;
  */
 public abstract class IgniteCacheConfigPermutationsAbstractTest extends IgniteConfigPermutationsAbstractTest {
     /** */
-    protected static final int SERVER_NODE_IDX = 0;
-
-    /** */
-    protected static final int CLIENT_NEAR_ONLY_IDX = 1;
-
-    /** */
-    protected static final int CLIENT_NODE_IDX = 2;
+    protected static final int CLIENT_NEAR_ONLY_IDX = 2;
 
     /** Test timeout */
     private static final long TEST_TIMEOUT = 30 * 1000;
@@ -79,9 +72,6 @@ public abstract class IgniteCacheConfigPermutationsAbstractTest extends IgniteCo
     /** VM ip finder for TCP discovery. */
     protected static TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
 
-    /** */
-    protected int testedNodeIdx;
-
     /** {@inheritDoc} */
     @Override protected long getTestTimeout() {
         return TEST_TIMEOUT;
@@ -90,12 +80,11 @@ public abstract class IgniteCacheConfigPermutationsAbstractTest extends IgniteCo
     /** {@inheritDoc} */
     @Override protected final void beforeTestsStarted() throws Exception {
         assert testsCfg != null;
+        assert !testsCfg.withClients() || testsCfg.gridCount() >= 3;
 
-        if (testsCfg.testedNodeIndex() != null) {
-            assert testsCfg.testedNodeIndex() >= 0 : "testedNodeIdx: " + testedNodeIdx;
+        assert testsCfg.testedNodeIndex() >= 0 : "testedNodeIdx: " + testedNodeIdx;
 
-            testedNodeIdx = testsCfg.testedNodeIndex();
-        }
+        testedNodeIdx = testsCfg.testedNodeIndex();
 
         if (testsCfg.isStartCache()) {
             final CacheStartMode cacheStartMode = testsCfg.cacheStartMode();
@@ -123,7 +112,7 @@ public abstract class IgniteCacheConfigPermutationsAbstractTest extends IgniteCo
                     startGrid(gridName, cfg, null);
                 }
 
-                if (testsCfg.testedNodeIndex() != null && testsCfg.gridCount() > CLIENT_NEAR_ONLY_IDX)
+                if (testsCfg.withClients() && testsCfg.gridCount() > CLIENT_NEAR_ONLY_IDX)
                     grid(CLIENT_NEAR_ONLY_IDX).createNearCache(cacheName(), new NearCacheConfiguration());
             }
             else if (cacheStartMode == null || cacheStartMode == CacheStartMode.NODES_THEN_CACHES) {
@@ -142,7 +131,7 @@ public abstract class IgniteCacheConfigPermutationsAbstractTest extends IgniteCo
                         grid.getOrCreateCache(cc);
                     }
 
-                    if (testsCfg.testedNodeIndex() != null && testsCfg.gridCount() > CLIENT_NEAR_ONLY_IDX)
+                    if (testsCfg.withClients() && testsCfg.gridCount() > CLIENT_NEAR_ONLY_IDX)
                         grid(CLIENT_NEAR_ONLY_IDX).createNearCache(cacheName(), new NearCacheConfiguration());
                 }
             }
@@ -158,27 +147,23 @@ public abstract class IgniteCacheConfigPermutationsAbstractTest extends IgniteCo
         for (int i = 0; i < gridCount(); i++)
             info("Grid " + i + ": " + grid(i).localNode().id());
 
-        if (testsCfg.testedNodeIndex() != null && testsCfg.gridCount() > CLIENT_NEAR_ONLY_IDX)
-            assert grid(CLIENT_NEAR_ONLY_IDX).configuration().isClientMode();
+        if (testsCfg.withClients()) {
+            boolean testedNodeNearEnabled = grid(testedNodeIdx).cachex(cacheName()).context().isNear();
 
-        if (testsCfg.testedNodeIndex() != null && testsCfg.gridCount() > CLIENT_NODE_IDX)
-            assert grid(CLIENT_NODE_IDX).configuration().isClientMode();
+            if (testedNodeIdx != SERVER_NODE_IDX)
+                assertEquals(testedNodeIdx == CLIENT_NEAR_ONLY_IDX, testedNodeNearEnabled);
 
-        IgniteEx grid = grid(testedNodeIdx);
-
-        // TODO fix near only detection...
-        boolean nearEnabled = false;
-
-        for (CacheConfiguration cc : grid.configuration().getCacheConfiguration()) {
-            if (Objects.equals(cc.getName(), cacheName())) {
-                nearEnabled = cc.getNearConfiguration() != null;
-
-                break;
-            }
+            info(">>> Starting set of tests [testedNodeIdx=" + testedNodeIdx
+                + ", id=" + grid(testedNodeIdx).localNode().id()
+                + ", isClient=" + grid(testedNodeIdx).configuration().isClientMode()
+                + ", nearEnabled=" + testedNodeNearEnabled + "]");
         }
+    }
 
-        info(">>> Starting set of tests [testedNodeIdx=" + testedNodeIdx + ", isClient="
-            + grid.configuration().isClientMode() + ", nearEnabled=" + nearEnabled + "]");
+    /** {@inheritDoc} */
+    @Override protected boolean expectedClient(String testGridName) {
+        return getTestGridName(CLIENT_NODE_IDX).equals(testGridName) 
+            || getTestGridName(CLIENT_NEAR_ONLY_IDX).equals(testGridName);
     }
 
     /** {@inheritDoc} */
