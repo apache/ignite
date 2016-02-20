@@ -30,6 +30,9 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
  */
 public abstract class IgniteConfigPermutationsAbstractTest extends GridCommonAbstractTest {
     /** */
+    private static final File workDir = new File(U.getIgniteHome() + File.separator + "workOfConfigPermutationsTests");
+
+    /** */
     protected TestsConfiguration testsCfg;
 
     /**
@@ -45,6 +48,10 @@ public abstract class IgniteConfigPermutationsAbstractTest extends GridCommonAbs
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
         assert testsCfg != null;
+
+        FileUtils.deleteDirectory(workDir);
+
+        info("Ignite's 'work' directory has been cleaned.");
 
         if (Ignition.allGrids().size() != testsCfg.gridCount()) {
             info("All nodes will be stopped, new " + testsCfg.gridCount() + " nodes will be started.");
@@ -65,9 +72,7 @@ public abstract class IgniteConfigPermutationsAbstractTest extends GridCommonAbs
 
             stopAllGrids();
 
-            File file = new File(U.getIgniteHome() + File.separator + "work");
-
-            FileUtils.deleteDirectory(file);
+            FileUtils.deleteDirectory(workDir);
 
             info("Ignite's 'work' directory has been cleaned.");
 
@@ -108,7 +113,11 @@ public abstract class IgniteConfigPermutationsAbstractTest extends GridCommonAbs
     @Override protected final IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
-        return testsCfg.configurationFactory().getConfiguration(gridName, cfg);
+        IgniteConfiguration resCfg = testsCfg.configurationFactory().getConfiguration(gridName, cfg);
+
+        resCfg.setWorkDirectory(workDir.getAbsolutePath());
+
+        return resCfg;
     }
 
     /** {@inheritDoc} */
