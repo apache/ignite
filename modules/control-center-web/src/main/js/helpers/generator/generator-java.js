@@ -2426,24 +2426,12 @@ $generatorJava.tryLoadSecretProperties = function (cluster, res) {
         $generatorJava.declareVariableCustom(res, 'props', 'java.util.Properties', 'new Properties()', 'private static final');
 
         res.startBlock('static {');
-
-        $generatorJava.declareVariableCustom(res, 'res', 'java.net.URL', 'IgniteConfiguration.class.getResource("/secret.properties")');
-
-        res.startBlock('try {');
-
-        $generatorJava.declareVariableCustom(res, 'propsFile', 'java.io.File', 'new File(res.toURI())');
-
-        res.needEmptyLine = true;
-
-        res.startBlock('try (' + res.importClass('java.io.InputStream') + ' in = new ' + res.importClass('java.io.FileInputStream') + '(propsFile)) {');
+        res.startBlock('try (' + res.importClass('java.io.InputStream') + ' in = IgniteConfiguration.class.getClassLoader().getResourceAsStream("secret.properties")) {');
         res.line('props.load(in);');
-        res.endBlock('}');
-
         res.endBlock('}');
         res.startBlock('catch (Exception ignored) {');
         res.line('// No-op.');
         res.endBlock('}');
-
         res.endBlock('}');
 
         res.needEmptyLine = true;
