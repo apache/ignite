@@ -27,7 +27,6 @@ namespace Apache.Ignite.Core.Tests.Compute
     /// <summary>
     /// Tests compute in a cluster with Java-only and .NET nodes.
     /// </summary>
-    [Category("FOO")]
     public class MixedClusterTest
     {
         /** */
