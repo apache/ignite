@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.testframework;
+package org.apache.ignite.testframework.config;
 
 /**
  * Cache start mode.

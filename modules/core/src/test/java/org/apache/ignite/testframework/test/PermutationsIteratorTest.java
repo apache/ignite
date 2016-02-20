@@ -21,7 +21,7 @@ import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
 import junit.framework.TestCase;
-import org.apache.ignite.testframework.config.generator.PermutationsIterator;
+import org.apache.ignite.testframework.config.PermutationsIterator;
 
 /**
  * Test start iterator.

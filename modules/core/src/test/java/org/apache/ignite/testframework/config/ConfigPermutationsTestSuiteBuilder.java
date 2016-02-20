@@ -15,18 +15,15 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.testframework.config.generator;
+package org.apache.ignite.testframework.config;
 
 import java.util.Arrays;
 import junit.framework.TestSuite;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.processors.cache.IgniteCacheConfigPermutationsAbstractTest;
-import org.apache.ignite.testframework.CacheStartMode;
 import org.apache.ignite.testframework.IgniteConfigPermutationsTestSuite;
 import org.apache.ignite.testframework.TestsConfiguration;
-import org.apache.ignite.testframework.config.ConfigurationPermutations;
-import org.apache.ignite.testframework.config.ConfigPermutationsFactory;
 import org.apache.ignite.testframework.junits.IgniteConfigPermutationsAbstractTest;
 import org.jetbrains.annotations.Nullable;
 

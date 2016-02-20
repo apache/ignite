@@ -18,6 +18,7 @@
 package org.apache.ignite.testframework;
 
 import org.apache.ignite.internal.util.typedef.internal.A;
+import org.apache.ignite.testframework.config.CacheStartMode;
 import org.apache.ignite.testframework.config.ConfigurationFactory;
 
 /**

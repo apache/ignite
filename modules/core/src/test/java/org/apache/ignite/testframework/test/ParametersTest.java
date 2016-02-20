@@ -22,8 +22,8 @@ import java.util.Set;
 import junit.framework.TestCase;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.testframework.config.generator.ConfigurationParameter;
-import org.apache.ignite.testframework.config.params.Parameters;
+import org.apache.ignite.testframework.config.ConfigurationParameter;
+import org.apache.ignite.testframework.config.Parameters;
 
 /**
  * Test.

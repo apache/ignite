@@ -47,15 +47,14 @@ import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.processors.cache.IgniteCacheConfigPermutationsAbstractTest;
 import org.apache.ignite.marshaller.optimized.OptimizedMarshaller;
 import org.apache.ignite.spi.swapspace.inmemory.GridTestSwapSpaceSpi;
-import org.apache.ignite.testframework.config.generator.ConfigurationParameter;
 
 import static org.apache.ignite.internal.util.lang.GridFunc.asArray;
-import static org.apache.ignite.testframework.config.params.Parameters.booleanParameters;
-import static org.apache.ignite.testframework.config.params.Parameters.complexParameter;
-import static org.apache.ignite.testframework.config.params.Parameters.enumParameters;
-import static org.apache.ignite.testframework.config.params.Parameters.factory;
-import static org.apache.ignite.testframework.config.params.Parameters.objectParameters;
-import static org.apache.ignite.testframework.config.params.Parameters.parameter;
+import static org.apache.ignite.testframework.config.Parameters.booleanParameters;
+import static org.apache.ignite.testframework.config.Parameters.complexParameter;
+import static org.apache.ignite.testframework.config.Parameters.enumParameters;
+import static org.apache.ignite.testframework.config.Parameters.factory;
+import static org.apache.ignite.testframework.config.Parameters.objectParameters;
+import static org.apache.ignite.testframework.config.Parameters.parameter;
 
 /**
  * Cache configuration permutations.

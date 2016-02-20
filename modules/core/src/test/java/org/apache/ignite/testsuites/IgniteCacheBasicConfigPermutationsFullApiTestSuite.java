@@ -19,7 +19,7 @@ package org.apache.ignite.testsuites;
 
 import junit.framework.TestSuite;
 import org.apache.ignite.internal.processors.cache.IgniteCacheConfigPermutationsFullApiTest;
-import org.apache.ignite.testframework.config.generator.ConfigPermutationsTestSuiteBuilder;
+import org.apache.ignite.testframework.config.ConfigPermutationsTestSuiteBuilder;
 
 /**
  * Test suite for cache API.

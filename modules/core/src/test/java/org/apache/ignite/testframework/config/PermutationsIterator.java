@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.testframework.config.generator;
+package org.apache.ignite.testframework.config;
 
 import java.util.Arrays;
 import java.util.Iterator;
