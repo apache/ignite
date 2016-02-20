@@ -620,7 +620,8 @@ public abstract class GridCacheQueueApiSelfAbstractTest extends IgniteCollection
                     @Override public void run() { ; }});
                 return null;
             }
-        }, IgniteException.class, "Cannot execute affinityRun() on a non-collocated queue");
+        }, IgniteException.class,
+           "Failed to execute affinityCall() for non-collocated queue: Queue1. This operation is supported only for collocated queues.");
 
         queue.close();
 
