@@ -136,7 +136,7 @@ public class PlatformServices extends PlatformAbstractTarget {
 
         Object proxy = PlatformService.class.isAssignableFrom(d.serviceClass())
             ? services.serviceProxy(name, PlatformDotNetService.class, sticky)
-            : new GridServiceProxy<>(services.clusterGroup(), name, Object.class, sticky, platformCtx.kernalContext());
+            : new GridServiceProxy<>(services.clusterGroup(), name, Service.class, sticky, platformCtx.kernalContext());
 
         return new ServiceProxyHolder(proxy, d.serviceClass());
     }
