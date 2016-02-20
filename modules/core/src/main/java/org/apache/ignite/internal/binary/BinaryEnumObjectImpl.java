@@ -316,4 +316,13 @@ public class BinaryEnumObjectImpl implements BinaryObjectEx, Externalizable, Cac
 
         return reader.afterMessageRead(BinaryEnumObjectImpl.class);
     }
+
+    /**
+     * @param cls type to examine.
+     * @return true if typeId equals for passed type and current
+     * binary enum.
+     */
+    public boolean isTypeEquals(final Class<?> cls) {
+        return ctx.descriptorForClass(cls, false).typeId() == typeId();
+    }
 }
