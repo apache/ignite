@@ -823,7 +823,7 @@ BOOST_AUTO_TEST_CASE(TestFieldsQueryExceptions)
     CheckEmpty(cursor);
 
     // Test simple query.
-    cache.Put(1, QueryPerson("A1", 10));
+    cache.Put(1, QueryPerson("A1", 10, MakeDate(1990, 03, 18), MakeTimestamp(2016, 02, 10, 17, 39, 34, 579304685)));
 
     cursor = cache.Query(qry);
 

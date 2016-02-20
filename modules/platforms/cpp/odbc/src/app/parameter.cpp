@@ -121,6 +121,18 @@ namespace ignite
                         break;
                     }
 
+                    case SQL_DATE:
+                    {
+                        writer.WriteDate(buffer.GetDate());
+                        break;
+                    }
+
+                    case SQL_TIMESTAMP:
+                    {
+                        writer.WriteTimestamp(buffer.GetTimestamp());
+                        break;
+                    }
+
                     case SQL_BINARY:
                     case SQL_VARBINARY:
                     case SQL_LONGVARBINARY:

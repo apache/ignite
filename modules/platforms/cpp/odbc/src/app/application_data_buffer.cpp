@@ -191,6 +191,20 @@ namespace ignite
                         break;
                     }
 
+                    case IGNITE_ODBC_C_TYPE_TDATE:
+                    {
+                        PutDate(Date(static_cast<int64_t>(value)));
+
+                        break;
+                    }
+
+                    case IGNITE_ODBC_C_TYPE_TTIMESTAMP:
+                    {
+                        PutTimestamp(Timestamp(static_cast<int64_t>(value)));
+
+                        break;
+                    }
+
                     default:
                     {
                         if (GetResLen())
@@ -575,6 +589,228 @@ namespace ignite
                 }
             }
 
+            void ApplicationDataBuffer::PutDate(const Date& value)
+            {
+                using namespace type_traits;
+
+                time_t time = utility::DateToCTime(value);
+
+                tm* tmTime = std::gmtime(&time);
+
+                switch (type)
+                {
+                    case IGNITE_ODBC_C_TYPE_CHAR:
+                    {
+                        char* buffer = reinterpret_cast<char*>(GetData());
+
+                        if (buffer)
+                        {
+                            strftime(buffer, GetSize(), "%Y-%m-%d", tmTime);
+
+                            if (GetResLen())
+                                *GetResLen() = strlen(buffer);
+                        }
+                        else if (GetResLen())
+                            *GetResLen() = sizeof("HHHH-MM-DD");
+
+                        break;
+                    }
+
+                    case IGNITE_ODBC_C_TYPE_WCHAR:
+                    {
+                        SQLWCHAR* buffer = reinterpret_cast<SQLWCHAR*>(GetData());
+
+                        if (buffer)
+                        {
+                            std::string tmp(GetSize(), 0);
+
+                            strftime(&tmp[0], GetSize(), "%Y-%m-%d", tmTime);
+
+                            SqlLen toCopy = std::min(static_cast<SqlLen>(strlen(tmp.c_str()) + 1), GetSize());
+
+                            for (SqlLen i = 0; i < toCopy; ++i)
+                                buffer[i] = tmp[i];
+
+                            buffer[toCopy] = 0;
+
+                            if (GetResLen())
+                                *GetResLen() = toCopy;
+                        }
+                        else if (GetResLen())
+                            *GetResLen() = sizeof("HHHH-MM-DD");
+
+                        break;
+                    }
+
+                    case IGNITE_ODBC_C_TYPE_TDATE:
+                    {
+                        SQL_DATE_STRUCT* buffer = reinterpret_cast<SQL_DATE_STRUCT*>(GetData());
+
+                        buffer->year = tmTime->tm_year + 1900;
+                        buffer->month = tmTime->tm_mon + 1;
+                        buffer->day = tmTime->tm_mday;
+
+                        break;
+                    }
+
+                    case IGNITE_ODBC_C_TYPE_TTIMESTAMP:
+                    {
+                        SQL_TIMESTAMP_STRUCT* buffer = reinterpret_cast<SQL_TIMESTAMP_STRUCT*>(GetData());
+
+                        buffer->year = tmTime->tm_year + 1900;
+                        buffer->month = tmTime->tm_mon + 1;
+                        buffer->day = tmTime->tm_mday;
+                        buffer->hour = tmTime->tm_hour;
+                        buffer->minute = tmTime->tm_min;
+                        buffer->second = tmTime->tm_sec;
+                        buffer->fraction = 0;
+
+                        break;
+                    }
+
+                    case IGNITE_ODBC_C_TYPE_BINARY:
+                    case IGNITE_ODBC_C_TYPE_DEFAULT:
+                    {
+                        if (GetData())
+                            memcpy(GetData(), &value, std::min(static_cast<size_t>(buflen), sizeof(value)));
+
+                        if (GetResLen())
+                            *GetResLen() = sizeof(value);
+
+                        break;
+                    }
+
+                    case IGNITE_ODBC_C_TYPE_SIGNED_TINYINT:
+                    case IGNITE_ODBC_C_TYPE_BIT:
+                    case IGNITE_ODBC_C_TYPE_UNSIGNED_TINYINT:
+                    case IGNITE_ODBC_C_TYPE_SIGNED_SHORT:
+                    case IGNITE_ODBC_C_TYPE_UNSIGNED_SHORT:
+                    case IGNITE_ODBC_C_TYPE_SIGNED_LONG:
+                    case IGNITE_ODBC_C_TYPE_UNSIGNED_LONG:
+                    case IGNITE_ODBC_C_TYPE_SIGNED_BIGINT:
+                    case IGNITE_ODBC_C_TYPE_UNSIGNED_BIGINT:
+                    case IGNITE_ODBC_C_TYPE_FLOAT:
+                    case IGNITE_ODBC_C_TYPE_DOUBLE:
+                    case IGNITE_ODBC_C_TYPE_NUMERIC:
+                    default:
+                    {
+                        if (GetResLen())
+                            *GetResLen() = SQL_NO_TOTAL;
+                    }
+                }
+            }
+
+            void ApplicationDataBuffer::PutTimestamp(const Timestamp& value)
+            {
+                using namespace type_traits;
+
+                time_t time = utility::TimestampToCTime(value);
+
+                tm* tmTime = std::gmtime(&time);
+
+                switch (type)
+                {
+                    case IGNITE_ODBC_C_TYPE_CHAR:
+                    {
+                        char* buffer = reinterpret_cast<char*>(GetData());
+
+                        if (buffer)
+                        {
+                            strftime(buffer, GetSize(), "%Y-%m-%d %H:%M:%S", tmTime);
+
+                            if (GetResLen())
+                                *GetResLen() = strlen(buffer);
+                        }
+                        else if (GetResLen())
+                            *GetResLen() = sizeof("HHHH-MM-DD HH:MM:SS");
+
+                        break;
+                    }
+
+                    case IGNITE_ODBC_C_TYPE_WCHAR:
+                    {
+                        SQLWCHAR* buffer = reinterpret_cast<SQLWCHAR*>(GetData());
+
+                        if (buffer)
+                        {
+                            std::string tmp(GetSize(), 0);
+
+                            strftime(&tmp[0], GetSize(), "%Y-%m-%d %H:%M:%S", tmTime);
+
+                            SqlLen toCopy = std::min(static_cast<SqlLen>(strlen(tmp.c_str()) + 1), GetSize());
+
+                            for (SqlLen i = 0; i < toCopy; ++i)
+                                buffer[i] = tmp[i];
+
+                            buffer[toCopy] = 0;
+
+                            if (GetResLen())
+                                *GetResLen() = toCopy;
+                        }
+                        else if (GetResLen())
+                            *GetResLen() = sizeof("HHHH-MM-DD HH:MM:SS");
+
+                        break;
+                    }
+
+                    case IGNITE_ODBC_C_TYPE_TDATE:
+                    {
+                        SQL_DATE_STRUCT* buffer = reinterpret_cast<SQL_DATE_STRUCT*>(GetData());
+
+                        buffer->year = tmTime->tm_year + 1900;
+                        buffer->month = tmTime->tm_mon + 1;
+                        buffer->day = tmTime->tm_mday;
+
+                        break;
+                    }
+
+                    case IGNITE_ODBC_C_TYPE_TTIMESTAMP:
+                    {
+                        SQL_TIMESTAMP_STRUCT* buffer = reinterpret_cast<SQL_TIMESTAMP_STRUCT*>(GetData());
+
+                        buffer->year = tmTime->tm_year + 1900;
+                        buffer->month = tmTime->tm_mon + 1;
+                        buffer->day = tmTime->tm_mday;
+                        buffer->hour = tmTime->tm_hour;
+                        buffer->minute = tmTime->tm_min;
+                        buffer->second = tmTime->tm_sec;
+                        buffer->fraction = value.GetSecondFraction();
+
+                        break;
+                    }
+
+                    case IGNITE_ODBC_C_TYPE_BINARY:
+                    case IGNITE_ODBC_C_TYPE_DEFAULT:
+                    {
+                        if (GetData())
+                            memcpy(GetData(), &value, std::min(static_cast<size_t>(buflen), sizeof(value)));
+
+                        if (GetResLen())
+                            *GetResLen() = sizeof(value);
+
+                        break;
+                    }
+
+                    case IGNITE_ODBC_C_TYPE_SIGNED_TINYINT:
+                    case IGNITE_ODBC_C_TYPE_BIT:
+                    case IGNITE_ODBC_C_TYPE_UNSIGNED_TINYINT:
+                    case IGNITE_ODBC_C_TYPE_SIGNED_SHORT:
+                    case IGNITE_ODBC_C_TYPE_UNSIGNED_SHORT:
+                    case IGNITE_ODBC_C_TYPE_SIGNED_LONG:
+                    case IGNITE_ODBC_C_TYPE_UNSIGNED_LONG:
+                    case IGNITE_ODBC_C_TYPE_SIGNED_BIGINT:
+                    case IGNITE_ODBC_C_TYPE_UNSIGNED_BIGINT:
+                    case IGNITE_ODBC_C_TYPE_FLOAT:
+                    case IGNITE_ODBC_C_TYPE_DOUBLE:
+                    case IGNITE_ODBC_C_TYPE_NUMERIC:
+                    default:
+                    {
+                        if (GetResLen())
+                            *GetResLen() = SQL_NO_TOTAL;
+                    }
+                }
+            }
+
             std::string ApplicationDataBuffer::GetString(size_t maxLen) const
             {
                 using namespace type_traits;
@@ -818,6 +1054,124 @@ namespace ignite
                 }
 
                 return res;
+            }
+
+            Date ApplicationDataBuffer::GetDate() const
+            {
+                using namespace type_traits;
+
+                tm tmTime = { 0 };
+
+                switch (type)
+                {
+                    case IGNITE_ODBC_C_TYPE_TDATE:
+                    {
+                        const SQL_DATE_STRUCT* buffer = reinterpret_cast<const SQL_DATE_STRUCT*>(GetData());
+
+                        tmTime.tm_year = buffer->year - 1900;
+                        tmTime.tm_mon = buffer->month - 1;
+                        tmTime.tm_mday = buffer->day;
+
+                        break;
+                    }
+
+                    case IGNITE_ODBC_C_TYPE_TTIMESTAMP:
+                    {
+                        const SQL_TIMESTAMP_STRUCT* buffer = reinterpret_cast<const SQL_TIMESTAMP_STRUCT*>(GetData());
+
+                        tmTime.tm_year = buffer->year - 1900;
+                        tmTime.tm_mon = buffer->month - 1;
+                        tmTime.tm_mday = buffer->day;
+                        tmTime.tm_hour = buffer->hour;
+                        tmTime.tm_min = buffer->minute;
+                        tmTime.tm_sec = buffer->second;
+
+                        break;
+                    }
+
+                    case IGNITE_ODBC_C_TYPE_CHAR:
+                    {
+                        std::string str = utility::SqlStringToString(
+                            reinterpret_cast<const unsigned char*>(GetData()),
+                            static_cast<int32_t>(GetSize()));
+
+                        sscanf(str.c_str(), "%d-%d-%d %d:%d:%d", &tmTime.tm_year, &tmTime.tm_mon,
+                            &tmTime.tm_mday, &tmTime.tm_hour, &tmTime.tm_min, &tmTime.tm_sec);
+
+                        tmTime.tm_year = tmTime.tm_year - 1900;
+                        tmTime.tm_mon = tmTime.tm_mon - 1;
+
+                        break;
+                    }
+
+                    default:
+                        break;
+                }
+
+                time_t cTime = mktime(&tmTime) - timezone;
+
+                return Date(cTime * 1000);
+            }
+
+            Timestamp ApplicationDataBuffer::GetTimestamp() const
+            {
+                using namespace type_traits;
+
+                tm tmTime = { 0 };
+
+                int32_t nanos = 0;
+
+                switch (type)
+                {
+                    case IGNITE_ODBC_C_TYPE_TDATE:
+                    {
+                        const SQL_DATE_STRUCT* buffer = reinterpret_cast<const SQL_DATE_STRUCT*>(GetData());
+
+                        tmTime.tm_year = buffer->year - 1900;
+                        tmTime.tm_mon = buffer->month - 1;
+                        tmTime.tm_mday = buffer->day;
+
+                        break;
+                    }
+
+                    case IGNITE_ODBC_C_TYPE_TTIMESTAMP:
+                    {
+                        const SQL_TIMESTAMP_STRUCT* buffer = reinterpret_cast<const SQL_TIMESTAMP_STRUCT*>(GetData());
+
+                        tmTime.tm_year = buffer->year - 1900;
+                        tmTime.tm_mon = buffer->month - 1;
+                        tmTime.tm_mday = buffer->day;
+                        tmTime.tm_hour = buffer->hour;
+                        tmTime.tm_min = buffer->minute;
+                        tmTime.tm_sec = buffer->second;
+
+                        nanos = buffer->fraction;
+
+                        break;
+                    }
+
+                    case IGNITE_ODBC_C_TYPE_CHAR:
+                    {
+                        std::string str = utility::SqlStringToString(
+                            reinterpret_cast<const unsigned char*>(GetData()),
+                            static_cast<int32_t>(GetSize()));
+
+                        sscanf(str.c_str(), "%d-%d-%d %d:%d:%d", &tmTime.tm_year, &tmTime.tm_mon,
+                            &tmTime.tm_mday, &tmTime.tm_hour, &tmTime.tm_min, &tmTime.tm_sec);
+
+                        tmTime.tm_year = tmTime.tm_year - 1900;
+                        tmTime.tm_mon = tmTime.tm_mon - 1;
+
+                        break;
+                    }
+
+                    default:
+                        break;
+                }
+
+                time_t cTime = mktime(&tmTime) - timezone;
+
+                return Timestamp(cTime, nanos);
             }
 
             template<typename T>
