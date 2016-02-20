@@ -65,7 +65,14 @@
                 <property name="idMapper">
                     <bean class="org.apache.ignite.binary.BinaryBasicIdMapper" />
                 </property>
+                <property name="nameMapper">
+                    <bean class="org.apache.ignite.binary.BinaryBasicNameMapper" />
+                </property>
             </bean>
+        </property>
+
+        <property name="marshaller">
+            <bean class="org.apache.ignite.internal.binary.BinaryMarshaller" />
         </property>
 
         <property name="discoverySpi">
