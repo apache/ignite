@@ -2759,9 +2759,6 @@ function _multilineQuery(res, query, prefix, postfix) {
                 res.line('"' + line + '"' + (ix === lines.length - 1 ? postfix : ' +'));
         });
 
-        if (lines.length > 0)
-            res.needEmptyLine = true;
-
         if (lines.length > 1)
             res.endBlock();
     }
@@ -2900,6 +2897,14 @@ $generatorJava.generateExample = function (cluster, res, factoryCls) {
 
         res.needEmptyLine = true;
 
+        res.line('/** Print result table to console */');
+        res.startBlock('private static void printResult(' + res.importClass('java.util.List') + '<' + res.importClass('javax.cache.Cache') + '.Entry<Object, Object>> rows) {');
+        res.startBlock('for (Cache.Entry<Object, Object> row: rows) {');
+        res.line('System.out.println(row);');
+        res.endBlock('}');
+        res.endBlock('}');
+        res.needEmptyLine = true;
+
         // Generation of execute queries method.
         res.line('/** Run demo examples. */');
         res.startBlock('private static void runExamples(Ignite ignite) throws SQLException {');
@@ -2907,6 +2912,9 @@ $generatorJava.generateExample = function (cluster, res, factoryCls) {
         var getType = function (fullType) {
             return fullType.substr(fullType.lastIndexOf('.') + 1);
         };
+
+        var cacheLoaded = [];
+        var rowVariableDeclared = false;
 
         _.forEach(typeByDs, function (types, ds) {
             var conVar = ds + 'Con';
@@ -2921,8 +2929,19 @@ $generatorJava.generateExample = function (cluster, res, factoryCls) {
 
                     if (desc) {
                         _.forEach(desc.selectQuery, function (query) {
-                            _multilineQuery(res, query, 'ignite.cache("' + type.cache.name + '").query(new ' + res.importClass('org.apache.ignite.cache.query.SqlQuery') +
-                                '<>("' + getType(domain.valueType) + '", ', '));');
+                            var cacheName = type.cache.name;
+
+                            if (!_.contains(cacheLoaded, cacheName)) {
+                                res.line('ignite.cache("' + cacheName + '").loadCache(null);');
+
+                                cacheLoaded.push(cacheName);
+                            }
+
+                            _multilineQuery(res, query, (rowVariableDeclared ? 'rows' : 'List<Cache.Entry<Object, Object>> rows') +
+                                ' = ignite.cache("' + cacheName + '").query(new ' + res.importClass('org.apache.ignite.cache.query.SqlQuery') +
+                                '<>("' + getType(domain.valueType) + '", ', ')).getAll();');
+                            res.line('printResult(rows);');
+                            rowVariableDeclared = true;
 
                             res.needEmptyLine = true;
                         })
@@ -2954,14 +2973,26 @@ $generatorJava.generateExample = function (cluster, res, factoryCls) {
  * @param clientNearCfg Optional near cache configuration for client node.
  */
 $generatorJava.nodeStartup = function (cluster, pkg, cls, cfg, factoryCls, clientNearCfg) {
+    var example = cls === 'ExampleStartup';
+
     var res = $generatorCommon.builder();
 
     res.line('/**');
     res.line(' * ' + $generatorCommon.mainComment());
+
+    if (example) {
+        res.line(' *');
+        res.line(' * To start example configure data sources in secret.properties file.');
+        res.line(' * For H2 database it should be like following:');
+        res.line(' * dsH2.jdbc.url=jdbc:h2:tcp://localhost/mem:ExampleDb;DB_CLOSE_DELAY=-1');
+        res.line(' * dsH2.jdbc.username=sa');
+        res.line(' * dsH2.jdbc.password=');
+    }
+
     res.line(' */');
     res.startBlock('public class ' + cls + ' {');
 
-    if (factoryCls)
+    if (example)
         var demoTypes = $generatorJava.generateExample(cluster, res, factoryCls);
 
     res.line('/**');
@@ -2972,6 +3003,18 @@ $generatorJava.nodeStartup = function (cluster, pkg, cls, cfg, factoryCls, clien
     res.line(' */');
 
     res.startBlock('public static void main(String[] args) throws Exception {');
+
+    if (example) {
+        res.startBlock('try {');
+        res.line('// Start H2 database server.');
+        res.line(res.importClass('org.h2.tools.Server') + '.createTcpServer("-tcpDaemon").start();');
+        res.endBlock('}');
+        res.startBlock('catch (' + res.importClass('java.sql.SQLException') + ' ignore) {');
+        res.line('// No-op.');
+        res.endBlock('}');
+
+        res.needEmptyLine = true;
+    }
 
     if (factoryCls)
         res.importClass(factoryCls);
@@ -3002,7 +3045,7 @@ $generatorJava.nodeStartup = function (cluster, pkg, cls, cfg, factoryCls, clien
         }
     }
 
-    if ($commonUtils.isDefinedAndNotEmpty(demoTypes)) {
+    if (example) {
         res.needEmptyLine = true;
 
         res.line('prepareExampleData();');
