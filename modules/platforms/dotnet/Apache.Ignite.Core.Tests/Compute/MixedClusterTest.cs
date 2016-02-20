@@ -20,8 +20,6 @@ namespace Apache.Ignite.Core.Tests.Compute
 {
     using System;
     using System.Collections;
-    using System.Diagnostics;
-    using System.IO;
     using System.Linq;
     using Apache.Ignite.Core.Compute;
     using NUnit.Framework;
@@ -35,6 +33,15 @@ namespace Apache.Ignite.Core.Tests.Compute
         /** */
         private const string SpringConfig = @"Config\Compute\compute-grid1.xml";
 
+        /** */
+        private const string SpringConfig2 = @"Config\Compute\compute-grid2.xml";
+
+        /** */
+        private const string StartTask = "org.apache.ignite.platform.PlatformStartIgniteTask";
+
+        /** */
+        private const string StopTask = "org.apache.ignite.platform.PlatformStopIgniteTask";
+
         /// <summary>
         /// Tests the compute.
         /// </summary>
@@ -45,18 +52,18 @@ namespace Apache.Ignite.Core.Tests.Compute
 
             using (var ignite = Ignition.Start(cfg))
             {
-                var proc = StartJavaNode(ignite.GetConfiguration().IgniteHome);
+                var javaNodeName = StartJavaNode(ignite, SpringConfig2);
 
                 try
                 {
                     Assert.IsTrue(ignite.WaitTopology(2));
 
                     TestDotNetTask(ignite);
-                    TestJavaTask(ignite);
+                    //TestJavaTask(ignite);
                 }
                 finally
                 {
-                    KillProcessTree(proc);
+                    StopJavaNode(ignite, javaNodeName);
                 }
             }
         }
@@ -88,35 +95,17 @@ namespace Apache.Ignite.Core.Tests.Compute
         /// <summary>
         /// Starts the java node.
         /// </summary>
-        private static Process StartJavaNode(string igniteHome)
+        private static string StartJavaNode(IIgnite grid, string config)
         {
-            var batPath = Path.Combine(igniteHome, @"bin\\ignite.bat");
-
-            return RunCommand(batPath, SpringConfig);
+            return grid.GetCompute().ExecuteJavaTask<string>(StartTask, config);
         }
 
         /// <summary>
-        /// Kills the process tree.
+        /// Stops the java node.
         /// </summary>
-        /// <param name="process">The root process.</param>
-        private static void KillProcessTree(Process process)
+        private static void StopJavaNode(IIgnite grid, string name)
         {
-            RunCommand("cmd.exe", "/c taskkill /F /T /PID " + process.Id);
-
-            Assert.IsTrue(TestUtils.WaitForCondition(() => process.HasExited, 3000));
-        }
-
-        /// <summary>
-        /// Runs the command.
-        /// </summary>
-        private static Process RunCommand(string path, string args)
-        {
-            return Process.Start(new ProcessStartInfo(path, args)
-            {
-                CreateNoWindow = true,
-                UseShellExecute = false,
-                RedirectStandardOutput = true
-            });
+            grid.GetCompute().ExecuteJavaTask<object>(StopTask, name);
         }
 
         /// <summary>
