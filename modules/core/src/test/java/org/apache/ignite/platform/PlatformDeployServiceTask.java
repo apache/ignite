@@ -82,19 +82,51 @@ public class PlatformDeployServiceTask extends ComputeTaskAdapter<String, Object
      * Test service.
      */
     private static class PlatformTestService implements Service {
+        /** */
+        private boolean isCancelled;
+
+        /** */
+        private boolean isInitialized;
+
+        /** */
+        private boolean isExecuted;
+
         /** {@inheritDoc} */
         @Override public void cancel(ServiceContext ctx) {
-            // No-op.
+            isCancelled = true;
         }
 
         /** {@inheritDoc} */
         @Override public void init(ServiceContext ctx) throws Exception {
-            // No-op.
+            isInitialized = true;
         }
 
         /** {@inheritDoc} */
         @Override public void execute(ServiceContext ctx) throws Exception {
-            // No-op.
+            isExecuted = true;
         }
+
+        /**
+         * Returns a value indicating whether this service is cancelled.
+         */
+        public boolean isCancelled() {
+            return isCancelled;
+        }
+
+        /**
+         * Returns a value indicating whether this service is initialized.
+         */
+        public boolean isInitialized() {
+            return isInitialized;
+        }
+
+        /**
+         * Returns a value indicating whether this service is executed.
+         */
+        public boolean isExecuted() {
+            return isExecuted;
+        }
+
+        // TODO: test overloads, test all primitive types
     }
 }
