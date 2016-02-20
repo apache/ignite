@@ -59,7 +59,7 @@ namespace Apache.Ignite.Core.Tests.Compute
                     Assert.IsTrue(ignite.WaitTopology(2));
 
                     TestDotNetTask(ignite);
-                    //TestJavaTask(ignite);
+                    TestJavaTask(ignite);
                 }
                 finally
                 {
