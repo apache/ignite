@@ -175,7 +175,7 @@ struct QueriesTestSuiteFixture
         }
 
         SQLCHAR request[] = "SELECT i8Field, i16Field, i32Field, i64Field, strField, "
-            "floatField, doubleField, boolField, guidField FROM TestType";
+            "floatField, doubleField, boolField, guidField, dateField, timestampField FROM TestType";
 
         ret = SQLExecDirect(stmt, request, SQL_NTS);
 
@@ -321,7 +321,7 @@ BOOST_AUTO_TEST_CASE(TestTwoRowsString)
     }
 
     SQLCHAR request[] = "SELECT i8Field, i16Field, i32Field, i64Field, strField, "
-        "floatField, doubleField, boolField, guidField FROM TestType";
+        "floatField, doubleField, boolField, guidField, dateField, timestampField FROM TestType";
 
     ret = SQLExecDirect(stmt, request, SQL_NTS);
 
@@ -409,6 +409,11 @@ BOOST_AUTO_TEST_CASE(TestOneRowString)
             BOOST_ERROR(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
     }
 
+    SQLCHAR request[] = "SELECT i8Field, i16Field, i32Field, i64Field, strField, "
+        "floatField, doubleField, boolField, guidField, dateField, timestampField FROM TestType";
+
+    ret = SQLExecDirect(stmt, request, SQL_NTS);
+
     ret = SQLFetch(stmt);
     if (!SQL_SUCCEEDED(ret))
         BOOST_ERROR(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
@@ -459,6 +464,11 @@ BOOST_AUTO_TEST_CASE(TestOneRowStringLen)
         if (!SQL_SUCCEEDED(ret))
             BOOST_ERROR(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
     }
+
+    SQLCHAR request[] = "SELECT i8Field, i16Field, i32Field, i64Field, strField, "
+        "floatField, doubleField, boolField, guidField, dateField, timestampField FROM TestType";
+
+    ret = SQLExecDirect(stmt, request, SQL_NTS);
 
     ret = SQLFetch(stmt);
     if (!SQL_SUCCEEDED(ret))

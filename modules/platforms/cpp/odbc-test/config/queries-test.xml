@@ -54,6 +54,8 @@
                                         <entry key="doubleField" value="java.lang.Double"/>
                                         <entry key="boolField" value="java.lang.Boolean"/>
                                         <entry key="guidField" value="java.util.UUID"/>
+                                        <entry key="dateField" value="java.util.Date"/>
+                                        <entry key="timestampField" value="java.sql.Timestamp"/>
                                     </map>
                                 </property>
                             </bean>

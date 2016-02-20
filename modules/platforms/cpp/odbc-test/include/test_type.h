@@ -102,7 +102,6 @@ namespace ignite
                 writer.WriteGuid("guidField", obj.guidField);
                 writer.WriteDate("dateField", obj.dateField);
                 writer.WriteTimestamp("timestampField", obj.timestampField);
-                writer.WriteNull("nullField");
             }
 
             TestType Read(BinaryReader& reader)
