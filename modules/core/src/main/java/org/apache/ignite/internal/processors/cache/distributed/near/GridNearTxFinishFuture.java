@@ -23,6 +23,7 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
@@ -100,6 +101,8 @@ public final class GridNearTxFinishFuture<K, V> extends GridCompoundIdentityFutu
     /** */
     private boolean finishOnePhaseCalled;
 
+    private final AtomicInteger counter = new AtomicInteger();
+
     /**
      * @param cctx Context.
      * @param tx Transaction.
@@ -175,7 +178,7 @@ public final class GridNearTxFinishFuture<K, V> extends GridCompoundIdentityFutu
                     if (fut.getClass() == FinishMiniFuture.class) {
                         FinishMiniFuture f = (FinishMiniFuture)fut;
 
-                        if (f.futureId().equals(res.miniId())) {
+                        if (f.miniId() == res.miniId()) {
                             assert f.node().id().equals(nodeId);
 
                             finishFut = f;
@@ -201,7 +204,7 @@ public final class GridNearTxFinishFuture<K, V> extends GridCompoundIdentityFutu
                 if (fut.getClass() == CheckBackupMiniFuture.class) {
                     CheckBackupMiniFuture f = (CheckBackupMiniFuture)fut;
 
-                    if (f.futureId().equals(res.miniId())) {
+                    if (f.miniId() == res.miniId()) {
                         assert f.node().id().equals(nodeId);
 
                         f.onDhtFinishResponse(res);
@@ -210,7 +213,7 @@ public final class GridNearTxFinishFuture<K, V> extends GridCompoundIdentityFutu
                 else if (fut.getClass() == CheckRemoteTxMiniFuture.class) {
                     CheckRemoteTxMiniFuture f = (CheckRemoteTxMiniFuture)fut;
 
-                    if (f.futureId().equals(res.miniId()))
+                    if (f.miniId() == res.miniId())
                         f.onDhtFinishResponse(nodeId);
                 }
             }
@@ -470,7 +473,7 @@ public final class GridNearTxFinishFuture<K, V> extends GridCompoundIdentityFutu
                         }
                     }
                     else {
-                        GridDhtTxFinishRequest finishReq = checkCommittedRequest(mini.futureId());
+                        GridDhtTxFinishRequest finishReq = checkCommittedRequest(mini.miniId());
 
                         // Preserve old behavior, otherwise response is not sent.
                         if (WAIT_REMOTE_TXS_SINCE.compareTo(backup.version()) > 0)
@@ -599,7 +602,7 @@ public final class GridNearTxFinishFuture<K, V> extends GridCompoundIdentityFutu
 
         // If this is the primary node for the keys.
         if (n.isLocal()) {
-            req.miniId(IgniteUuid.randomUuid());
+            req.miniId(counter.incrementAndGet());
 
             IgniteInternalFuture<IgniteInternalTx> fut = cctx.tm().txHandler().finish(n.id(), tx, req);
 
@@ -610,7 +613,7 @@ public final class GridNearTxFinishFuture<K, V> extends GridCompoundIdentityFutu
         else {
             FinishMiniFuture fut = new FinishMiniFuture(m);
 
-            req.miniId(fut.futureId());
+            req.miniId(fut.miniId());
 
             add(fut); // Append new future.
 
@@ -689,7 +692,7 @@ public final class GridNearTxFinishFuture<K, V> extends GridCompoundIdentityFutu
      * @param miniId Mini future ID.
      * @return Finish request.
      */
-    private GridDhtTxFinishRequest checkCommittedRequest(IgniteUuid miniId) {
+    private GridDhtTxFinishRequest checkCommittedRequest(int miniId) {
         GridDhtTxFinishRequest finishReq = new GridDhtTxFinishRequest(
             cctx.localNodeId(),
             futureId(),
@@ -725,7 +728,7 @@ public final class GridNearTxFinishFuture<K, V> extends GridCompoundIdentityFutu
      */
     private abstract class MinFuture extends GridFutureAdapter<IgniteInternalTx> {
         /** */
-        private final IgniteUuid futId = IgniteUuid.randomUuid();
+        private final int miniId = counter.incrementAndGet();
 
         /**
           * @param nodeId Node ID.
@@ -736,8 +739,8 @@ public final class GridNearTxFinishFuture<K, V> extends GridCompoundIdentityFutu
         /**
          * @return Future ID.
          */
-        final IgniteUuid futureId() {
-            return futId;
+        final int miniId() {
+            return miniId;
         }
     }
 
@@ -793,7 +796,7 @@ public final class GridNearTxFinishFuture<K, V> extends GridCompoundIdentityFutu
 
                             add(mini);
 
-                            GridDhtTxFinishRequest req = checkCommittedRequest(mini.futureId());
+                            GridDhtTxFinishRequest req = checkCommittedRequest(mini.miniId());
 
                             req.waitRemoteTransactions(true);
 

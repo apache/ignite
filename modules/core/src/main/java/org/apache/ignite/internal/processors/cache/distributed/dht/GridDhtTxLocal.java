@@ -79,7 +79,7 @@ public class GridDhtTxLocal extends GridDhtTxLocalAdapter implements GridCacheMa
     private IgniteUuid nearFinFutId;
 
     /** Near future ID. */
-    private IgniteUuid nearFinMiniId;
+    private int nearFinMiniId;
 
     /** Near XID. */
     private GridCacheVersion nearXidVer;
@@ -253,14 +253,14 @@ public class GridDhtTxLocal extends GridDhtTxLocalAdapter implements GridCacheMa
     /**
      * @return Near future mini ID.
      */
-    public IgniteUuid nearFinishMiniId() {
+    public int nearFinishMiniId() {
         return nearFinMiniId;
     }
 
     /**
      * @param nearFinMiniId Near future mini ID.
      */
-    public void nearFinishMiniId(IgniteUuid nearFinMiniId) {
+    public void nearFinishMiniId(int nearFinMiniId) {
         this.nearFinMiniId = nearFinMiniId;
     }
 
