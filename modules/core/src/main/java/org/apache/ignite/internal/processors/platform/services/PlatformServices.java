@@ -133,10 +133,11 @@ public class PlatformServices extends PlatformAbstractTarget {
         if (d == null)
             throw new IgniteException("Failed to find deployed service: " + name);
 
-        if (PlatformService.class.isAssignableFrom(d.serviceClass()))
-            return services.serviceProxy(name, PlatformDotNetService.class, sticky);
+        Object proxy = PlatformService.class.isAssignableFrom(d.serviceClass())
+            ? services.serviceProxy(name, PlatformDotNetService.class, sticky)
+            : new GridServiceProxy<>(services.clusterGroup(), name, Object.class, sticky, platformCtx.kernalContext());
 
-        return new GridServiceProxy<>(services.clusterGroup(), name, Object.class, sticky, platformCtx.kernalContext());
+        return new ServiceProxyHolder(proxy, d.serviceClass());
     }
 
     /**
@@ -228,7 +229,7 @@ public class PlatformServices extends PlatformAbstractTarget {
         switch (type) {
             case OP_DOTNET_INVOKE: {
                 assert arg != null;
-                assert arg instanceof PlatformDotNetService;
+                assert arg instanceof ServiceProxyHolder;
 
                 String mthdName = reader.readString();
 
@@ -244,7 +245,7 @@ public class PlatformServices extends PlatformAbstractTarget {
                     args = null;
 
                 try {
-                    Object result = ((PlatformService)arg).invokeMethod(mthdName, srvKeepBinary, args);
+                    Object result = ((ServiceProxyHolder)arg).invoke(mthdName, srvKeepBinary, args);
 
                     PlatformUtils.writeInvocationResult(writer, result, null);
                 }
@@ -297,5 +298,30 @@ public class PlatformServices extends PlatformAbstractTarget {
     /** <inheritDoc /> */
     @Override protected IgniteInternalFuture currentFuture() throws IgniteCheckedException {
         return ((IgniteFutureImpl)services.future()).internalFuture();
+    }
+
+    /** */
+    private static class ServiceProxyHolder {
+        private final Object proxy;
+
+        private final Class serviceClass;
+
+        private ServiceProxyHolder(Object proxy, Class clazz) {
+            assert proxy != null;
+            assert clazz != null;
+
+            this.proxy = proxy;
+            serviceClass = clazz;
+        }
+
+        public Object invoke(String mthdName, boolean srvKeepBinary, Object[] args) throws IgniteCheckedException {
+            if (proxy instanceof PlatformService) {
+                return ((PlatformService)proxy).invokeMethod(mthdName, srvKeepBinary, args);
+            }
+            else {
+                assert proxy instanceof GridServiceProxy;
+                throw new IgniteCheckedException("NOT SUPPORTD YET");
+            }
+        }
     }
 }

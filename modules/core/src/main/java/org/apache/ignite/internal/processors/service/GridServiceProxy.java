@@ -124,7 +124,7 @@ public class GridServiceProxy<T> implements Serializable {
      * @return Invocation result.
      */
     @SuppressWarnings("BusyWait")
-    public Object invokeServiceMethod(final Method mtd,
+    public Object invokeMethod(final Method mtd,
         final Object[] args) {
         while (true) {
             ClusterNode node = null;
@@ -313,7 +313,7 @@ public class GridServiceProxy<T> implements Serializable {
         /** {@inheritDoc} */
         @SuppressWarnings("BusyWait")
         @Override public Object invoke(Object proxy, final Method mtd, final Object[] args) {
-            return invokeServiceMethod(mtd, args);
+            return invokeMethod(mtd, args);
         }
     }
 
