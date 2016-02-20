@@ -60,7 +60,7 @@ public abstract class IgniteConfigPermutationsAbstractTest extends GridCommonAbs
 
     /** {@inheritDoc} */
     @Override protected void afterTestsStopped() throws Exception {
-        if (testsCfg != null && testsCfg.isStopNodes()) {
+        if (testsCfg.isStopNodes()) {
             info("Stopping all grids...");
 
             stopAllGrids();
@@ -70,7 +70,28 @@ public abstract class IgniteConfigPermutationsAbstractTest extends GridCommonAbs
             FileUtils.deleteDirectory(file);
 
             info("Ignite's 'work' directory has been cleaned.");
+
+            memoryUsage();
+
+            System.gc();
+
+            memoryUsage();
         }
+    }
+
+    /**
+     * Prints memory usage.
+     */
+    private void memoryUsage() {
+        int mb = 1024*1024;
+
+        Runtime runtime = Runtime.getRuntime();
+
+        info("##### Heap utilization statistics [MB] #####");
+        info("Used Memory  (mb): " + (runtime.totalMemory() - runtime.freeMemory()) / mb);
+        info("Free Memory  (mb): " + runtime.freeMemory() / mb);
+        info("Total Memory (mb): " + runtime.totalMemory() / mb);
+        info("Max Memory   (mb): " + runtime.maxMemory() / mb);
     }
 
     /** {@inheritDoc} */
