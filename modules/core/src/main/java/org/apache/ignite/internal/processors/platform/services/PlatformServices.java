@@ -37,6 +37,7 @@ import org.apache.ignite.services.Service;
 import org.apache.ignite.services.ServiceConfiguration;
 import org.apache.ignite.services.ServiceDescriptor;
 
+import java.lang.reflect.Method;
 import java.util.Collection;
 import java.util.Map;
 import java.util.UUID;
@@ -300,12 +301,22 @@ public class PlatformServices extends PlatformAbstractTarget {
         return ((IgniteFutureImpl)services.future()).internalFuture();
     }
 
-    /** */
+    /**
+     * Proxy holder.
+     */
     private static class ServiceProxyHolder {
+        /** */
         private final Object proxy;
 
+        /** */
         private final Class serviceClass;
 
+        /**
+         * Ctor.
+         *
+         * @param proxy Proxy object.
+         * @param clazz Proxy class.
+         */
         private ServiceProxyHolder(Object proxy, Class clazz) {
             assert proxy != null;
             assert clazz != null;
@@ -314,13 +325,29 @@ public class PlatformServices extends PlatformAbstractTarget {
             serviceClass = clazz;
         }
 
-        public Object invoke(String mthdName, boolean srvKeepBinary, Object[] args) throws IgniteCheckedException {
+        /**
+         * Invokes the proxy.
+         * @param mthdName Method name.
+         * @param srvKeepBinary Binary flag.
+         * @param args Args.
+         * @return Invocation result.
+         * @throws IgniteCheckedException
+         * @throws NoSuchMethodException
+         */
+        @SuppressWarnings("unchecked")
+        public Object invoke(String mthdName, boolean srvKeepBinary, Object[] args)
+            throws IgniteCheckedException, NoSuchMethodException {
             if (proxy instanceof PlatformService) {
                 return ((PlatformService)proxy).invokeMethod(mthdName, srvKeepBinary, args);
             }
             else {
                 assert proxy instanceof GridServiceProxy;
-                throw new IgniteCheckedException("NOT SUPPORTD YET");
+
+                Class[] argTypes = new Class[args.length];
+
+                Method mtd = serviceClass.getMethod(mthdName, argTypes);
+
+                return ((GridServiceProxy)proxy).invokeMethod(mtd, args);
             }
         }
     }
