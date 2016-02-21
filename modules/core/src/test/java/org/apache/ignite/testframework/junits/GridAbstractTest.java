@@ -452,6 +452,14 @@ public abstract class GridAbstractTest extends TestCase {
     }
 
     /**
+     * @param cfg Configuration to use in Test
+     * @return Test kernal context.
+     */
+    protected GridTestKernalContext newContext(IgniteConfiguration cfg) throws IgniteCheckedException {
+        return new GridTestKernalContext(log(), cfg);
+    }
+
+    /**
      * Called before execution of every test method in class.
      *
      * @throws Exception If failed. {@link #afterTest()} will be called in this case.
