@@ -621,7 +621,8 @@ public abstract class GridCacheQueueApiSelfAbstractTest extends IgniteCollection
                 return null;
             }
         }, IgniteException.class,
-           "Failed to execute affinityCall() for non-collocated queue: Queue1. This operation is supported only for collocated queues.");
+           "Failed to execute affinityRun() for non-collocated queue: " + queue.name() +
+           ". This operation is supported only for collocated queues.");
 
         queue.close();
 

@@ -1075,7 +1075,7 @@ public abstract class GridCacheQueueAdapter<T> extends AbstractCollection<T> imp
     /** {@inheritDoc} */
     public void affinityRun(IgniteRunnable job) {
         if (!collocated)
-            throw new IgniteException("Failed to execute affinityCall() for non-collocated queue: " + name() +
+            throw new IgniteException("Failed to execute affinityRun() for non-collocated queue: " + name() +
                                       ". This operation is supported only for collocated queues.");
 
         compute.affinityRun(cache.name(),queueKey,job);
