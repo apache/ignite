@@ -786,11 +786,11 @@ public class GridCacheQueueProxy<T> implements IgniteQueue<T>, Externalizable {
     @Override public void affinityRun(final IgniteRunnable job) {
         gate.enter();
 
-        if (!collocated())
-            throw new IgniteException("Failed to execute affinityCall() for non-collocated queue: " + name() +
-                                      ". This operation is supported only for collocated queues.");
-
         try {
+            if (!collocated())
+                throw new IgniteException("Failed to execute affinityCall() for non-collocated queue: " + name() +
+                        ". This operation is supported only for collocated queues.");
+
             if (cctx.transactional()) {
                 CU.outTx(new Callable<Void>() {
                     @Override
@@ -815,11 +815,10 @@ public class GridCacheQueueProxy<T> implements IgniteQueue<T>, Externalizable {
     @Override public <R> R affinityCall(final IgniteCallable<R> job) {
         gate.enter();
 
-        if (!collocated())
-            throw new IgniteException("Failed to execute affinityCall() for non-collocated queue: " + name() +
-                                      ". This operation is supported only for collocated queues.");
-
         try {
+            if (!collocated())
+                throw new IgniteException("Failed to execute affinityCall() for non-collocated queue: " + name() +
+                        ". This operation is supported only for collocated queues.");
             if (cctx.transactional())
                 return CU.outTx(new Callable<R>() {
                     @Override public R call() throws Exception {
