@@ -576,12 +576,7 @@ public final class IgfsImpl implements IgfsEx {
 
                 IgfsMode mode = resolveMode(path);
 
-                IgfsFileInfo info = resolveFileInfo(path, mode);
-
-                if (info == null)
-                    return null;
-
-                return new IgfsFileImpl(path, info, data.groupBlockSize());
+                return resolveFileInfo(path, mode);
             }
         });
     }
@@ -856,9 +851,9 @@ public final class IgfsImpl implements IgfsEx {
                     Collection<IgfsFile> children = secondaryFs.listFiles(path);
 
                     for (IgfsFile child : children) {
-                        IgfsFileInfo fsInfo = new IgfsFileInfo(child, evictExclude(path, false));
+                        IgfsFileImpl impl = new IgfsFileImpl(child, data.groupBlockSize());
 
-                        files.add(new IgfsFileImpl(child.path(), fsInfo, data.groupBlockSize()));
+                        files.add(impl);
                     }
                 }
 
@@ -1556,7 +1551,7 @@ public final class IgfsImpl implements IgfsEx {
      * @return File info or {@code null} in case file is not found.
      * @throws IgniteCheckedException If failed.
      */
-    private IgfsFileInfo resolveFileInfo(IgfsPath path, IgfsMode mode) throws IgniteCheckedException {
+    private IgfsFileImpl resolveFileInfo(IgfsPath path, IgfsMode mode) throws IgniteCheckedException {
         assert path != null;
         assert mode != null;
 
@@ -1576,7 +1571,7 @@ public final class IgfsImpl implements IgfsEx {
                     IgfsFile status = secondaryFs.info(path);
 
                     if (status != null)
-                        info = new IgfsFileInfo(status, false);
+                        return new IgfsFileImpl(status, data.groupBlockSize());
                 }
 
                 break;
@@ -1585,7 +1580,10 @@ public final class IgfsImpl implements IgfsEx {
                 assert false : "Unknown mode: " + mode;
         }
 
-        return info;
+        if (info == null)
+            return null;
+
+        return new IgfsFileImpl(path, info, data.groupBlockSize());
     }
 
     /** {@inheritDoc} */

@@ -25,7 +25,6 @@ import java.util.Collections;
 import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.configuration.FileSystemConfiguration;
-import org.apache.ignite.igfs.IgfsFile;
 import org.apache.ignite.igfs.IgfsPath;
 import org.apache.ignite.internal.util.GridLeanMap;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
@@ -101,19 +100,23 @@ public final class IgfsFileInfo implements Externalizable {
      * @param id ID.
      */
     IgfsFileInfo(IgniteUuid id) {
-        this(true, id, 0, 0, null, null, null, null, false, System.currentTimeMillis(), false);
+        this(true, id, 0, 0, null, null, null, null, false, 0L, System.currentTimeMillis(), false);
+
+        this.accessTime = this.modificationTime;
     }
 
     /**
-     * Constructs directory or file info with {@link org.apache.ignite.configuration.FileSystemConfiguration#DFLT_BLOCK_SIZE default} block size.
+     * Constructs directory or file info with
+     * {@link org.apache.ignite.configuration.FileSystemConfiguration#DFLT_BLOCK_SIZE default} block size.
      *
      * @param isDir Constructs directory info if {@code true} or file info if {@code false}.
      * @param props Meta properties to set.
+     * @param accessTime The modification time.
      * @param modificationTime The modification time.
      */
-    public IgfsFileInfo(boolean isDir, @Nullable Map<String, String> props, long modificationTime) {
+    public IgfsFileInfo(boolean isDir, @Nullable Map<String, String> props, long accessTime, long modificationTime) {
         this(isDir, null, isDir ? 0 : FileSystemConfiguration.DFLT_BLOCK_SIZE, 0, null, null, props, null, false,
-            modificationTime, false);
+            accessTime, modificationTime, false);
     }
 
     /**
@@ -122,7 +125,9 @@ public final class IgfsFileInfo implements Externalizable {
      * @param listing Listing.
      */
     IgfsFileInfo(Map<String, IgfsListingEntry> listing) {
-        this(true, null, 0, 0, null, listing, null, null, false, System.currentTimeMillis(), false);
+        this(true, null, 0, 0, null, listing, null, null, false, 0L, System.currentTimeMillis(), false);
+
+        this.accessTime = this.modificationTime;
     }
 
     /**
@@ -132,7 +137,9 @@ public final class IgfsFileInfo implements Externalizable {
      * @param props The properties to set for the new directory.
      */
     IgfsFileInfo(@Nullable Map<String, IgfsListingEntry> listing, @Nullable Map<String,String> props) {
-        this(true/*dir*/, null, 0, 0, null, listing, props, null, false, System.currentTimeMillis(), false);
+        this(true/*dir*/, null, 0, 0, null, listing, props, null, false, 0L, System.currentTimeMillis(), false);
+
+        this.accessTime = this.modificationTime;
     }
 
     /**
@@ -144,11 +151,13 @@ public final class IgfsFileInfo implements Externalizable {
      * @param lockId Lock ID.
      * @param props Properties.
      * @param evictExclude Evict exclude flag.
+     * @param accessTime The modification time.
      * @param modificationTime The modification time.
      */
     public IgfsFileInfo(int blockSize, long len, @Nullable IgniteUuid affKey, @Nullable IgniteUuid lockId,
-        boolean evictExclude, @Nullable Map<String, String> props, long modificationTime) {
-        this(false, null, blockSize, len, affKey, null, props, lockId, true, modificationTime, evictExclude);
+        boolean evictExclude, @Nullable Map<String, String> props, long accessTime, long modificationTime) {
+        this(false, null, blockSize, len, affKey, null, props, lockId, true, accessTime, modificationTime,
+            evictExclude);
     }
 
     /**
@@ -192,12 +201,13 @@ public final class IgfsFileInfo implements Externalizable {
      * @param len Size of a file.
      * @param props File properties to set.
      * @param evictExclude Evict exclude flag.
+     * @param accessTime The modification time.
      * @param modificationTime The modification time.
      */
     IgfsFileInfo(int blockSize, long len, boolean evictExclude, @Nullable Map<String, String> props,
-                 long modificationTime) {
+                 long accessTime, long modificationTime) {
         this(blockSize == 0, // NB The contract is: (blockSize == 0) <=> isDirectory()
-            null, blockSize, len, null, null, props, null, true, modificationTime, evictExclude);
+            null, blockSize, len, null, null, props, null, true, accessTime, modificationTime, evictExclude);
     }
 
     /**
@@ -235,13 +245,14 @@ public final class IgfsFileInfo implements Externalizable {
      * @param props File properties.
      * @param lockId Lock ID.
      * @param cpProps Flag to copy properties map.
+     * @param accessTime The modification time.
      * @param modificationTime Last modification time.
      * @param evictExclude Evict exclude flag.
      */
     private IgfsFileInfo(boolean isDir, @Nullable IgniteUuid id, int blockSize, long len, @Nullable IgniteUuid affKey,
         @Nullable Map<String, IgfsListingEntry> listing, @Nullable Map<String, String> props,
-        @Nullable IgniteUuid lockId, boolean cpProps, long modificationTime, boolean evictExclude) {
-        this(isDir, id, blockSize, len, affKey, listing, props, null, lockId, cpProps, modificationTime,
+        @Nullable IgniteUuid lockId, boolean cpProps, long accessTime, long modificationTime, boolean evictExclude) {
+        this(isDir, id, blockSize, len, affKey, listing, props, null, lockId, cpProps, accessTime,
             modificationTime, evictExclude);
     }
 
@@ -310,18 +321,6 @@ public final class IgfsFileInfo implements Externalizable {
     public IgfsFileInfo(IgfsFileInfo info) {
         this(info.isDirectory(), info.id, info.blockSize, info.len, info.affKey, info.listing, info.props,
             info.fileMap(), info.lockId, true, info.accessTime, info.modificationTime, info.evictExclude());
-    }
-
-    /**
-     * Creates the info from an {@link }IgfsFile} instance.
-     *
-     * @param f The IgfsFile instance to use.
-     */
-    IgfsFileInfo(IgfsFile f, boolean evictExclude) {
-        this(f.isDirectory(), null,
-            f.isDirectory() ? 0 : f.blockSize(),
-            f.isDirectory() ? 0 : f.length(), null, null, f.properties(),
-            null, false, f.modificationTime(), evictExclude);
     }
 
     /**

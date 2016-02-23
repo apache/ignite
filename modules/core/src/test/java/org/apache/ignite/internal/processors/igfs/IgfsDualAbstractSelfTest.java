@@ -32,6 +32,7 @@ import org.apache.ignite.igfs.IgfsMode;
 import org.apache.ignite.igfs.IgfsPath;
 import org.apache.ignite.igfs.secondary.IgfsSecondaryFileSystem;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
 
@@ -1615,9 +1616,13 @@ public abstract class IgfsDualAbstractSelfTest extends IgfsAbstractSelfTest {
      *
      * @param fs The file system.
      * @param p The file path.
+     *
+     * @return Tuple of access and modification times of the file.
      */
-    private long checkParentListingTime(IgfsSecondaryFileSystem fs, IgfsPath p) {
+    private T2<Long, Long> checkParentListingTime(IgfsSecondaryFileSystem fs, IgfsPath p) {
         IgfsFile f0 = fs.info(p);
+
+        T2<Long, Long> t0 = new T2<>(f0.accessTime(), f0.modificationTime());
 
         // Root cannot be seen through the parent listing:
         if (!p.isSame(p.root())) {
@@ -1638,10 +1643,12 @@ public abstract class IgfsDualAbstractSelfTest extends IgfsAbstractSelfTest {
 
             assertNotNull(f1); // file should be found in parent listing.
 
-            assertEquals(f0.modificationTime(), f1.modificationTime());
+            T2<Long, Long> t1 = new T2<>(f1.accessTime(), f1.modificationTime());
+
+            assertEquals(t0, t1);
         }
 
-        return f0.modificationTime();
+        return t0;
     }
 
     /**
@@ -1651,24 +1658,24 @@ public abstract class IgfsDualAbstractSelfTest extends IgfsAbstractSelfTest {
      *
      * @throws Exception On error.
      */
-    public void testModificationTimePropagation() throws Exception {
+    public void testAccessAndModificationTimeUpwardsPropagation() throws Exception {
         create(igfsSecondary, paths(DIR, SUBDIR), paths(FILE, FILE2));
 
-        long modDir0 = checkParentListingTime(igfsSecondaryFileSystem, DIR);
-        long modSubDir0 = checkParentListingTime(igfsSecondaryFileSystem, SUBDIR);
-        long modFile0 = checkParentListingTime(igfsSecondaryFileSystem, FILE);
-        long modFile20 = checkParentListingTime(igfsSecondaryFileSystem, FILE2);
+        T2<Long,Long> timesDir0 = checkParentListingTime(igfsSecondaryFileSystem, DIR);
+        T2<Long,Long> timesSubDir0 = checkParentListingTime(igfsSecondaryFileSystem, SUBDIR);
+        T2<Long,Long> timesFile0 = checkParentListingTime(igfsSecondaryFileSystem, FILE);
+        T2<Long,Long> timesFile20 = checkParentListingTime(igfsSecondaryFileSystem, FILE2);
 
         Thread.sleep(500L);
 
-        long modDir1 = checkParentListingTime(igfs.asSecondary(), DIR);
-        long modSubDir1 = checkParentListingTime(igfs.asSecondary(), SUBDIR);
-        long modFile1 = checkParentListingTime(igfs.asSecondary(), FILE);
-        long modFile21 = checkParentListingTime(igfs.asSecondary(), FILE2);
+        T2<Long,Long> timesDir1 = checkParentListingTime(igfs.asSecondary(), DIR);
+        T2<Long,Long> timesSubDir1 = checkParentListingTime(igfs.asSecondary(), SUBDIR);
+        T2<Long,Long> timesFile1 = checkParentListingTime(igfs.asSecondary(), FILE);
+        T2<Long,Long> timesFile21 = checkParentListingTime(igfs.asSecondary(), FILE2);
 
-        assertEquals(modDir0, modDir1);
-        assertEquals(modSubDir0, modSubDir1);
-        assertEquals(modFile0, modFile1);
-        assertEquals(modFile20, modFile21);
+        assertEquals(timesDir0, timesDir1);
+        assertEquals(timesSubDir0, timesSubDir1);
+        assertEquals(timesFile0, timesFile1);
+        assertEquals(timesFile20, timesFile21);
     }
 }
