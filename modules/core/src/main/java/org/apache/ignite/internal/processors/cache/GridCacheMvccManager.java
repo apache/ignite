@@ -455,7 +455,7 @@ public class GridCacheMvccManager extends GridCacheSharedManagerAdapter {
             Collection<GridCacheMvccFuture<?>> old = mvccFuts.get(fut.version());
 
             if (old == null) {
-                Collection<GridCacheMvccFuture<?>> col = new HashSet<GridCacheMvccFuture<?>>(U.capacity(4), 0.75f) {
+                Collection<GridCacheMvccFuture<?>> col = new HashSet<GridCacheMvccFuture<?>>(U.capacity(1), 0.75f) {
                     {
                         // Make sure that we add future to queue before
                         // adding queue to the map of futures.
