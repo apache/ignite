@@ -31,6 +31,7 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ConcurrentMap;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.events.Event;
 import org.apache.ignite.internal.IgniteClientDisconnectedCheckedException;
@@ -49,6 +50,7 @@ import org.apache.ignite.internal.util.GridConcurrentFactory;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
+import org.apache.ignite.internal.util.lang.GridPlainRunnable;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.CI1;
@@ -64,6 +66,8 @@ import org.jetbrains.annotations.Nullable;
 import org.jsr166.ConcurrentHashMap8;
 import org.jsr166.ConcurrentLinkedDeque8;
 
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_MAX_NESTED_LISTENER_CALLS;
+import static org.apache.ignite.IgniteSystemProperties.getInteger;
 import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
 import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
 import static org.apache.ignite.internal.util.GridConcurrentFactory.newMap;
@@ -75,6 +79,9 @@ import static org.jsr166.ConcurrentLinkedHashMap.QueuePolicy.PER_SEGMENT_Q;
 public class GridCacheMvccManager extends GridCacheSharedManagerAdapter {
     /** Maxim number of removed locks. */
     private static final int MAX_REMOVED_LOCKS = 10240;
+
+    /** */
+    private static final int MAX_NESTED_LSNR_CALLS = getInteger(IGNITE_MAX_NESTED_LISTENER_CALLS, 5);
 
     /** Pending locks per thread. */
     private final ThreadLocal<Deque<GridCacheMvccCandidate>> pending = new ThreadLocal<>();
@@ -111,6 +118,13 @@ public class GridCacheMvccManager extends GridCacheSharedManagerAdapter {
     /** Finish futures. */
     private final ConcurrentLinkedDeque8<FinishLockFuture> finishFuts = new ConcurrentLinkedDeque8<>();
 
+    /** Nested listener calls. */
+    private final ThreadLocal<Integer> nestedLsnrCalls = new ThreadLocal<Integer>() {
+        @Override protected Integer initialValue() {
+            return 0;
+        }
+    };
+
     /** Logger. */
     @SuppressWarnings( {"FieldAccessedSynchronizedAndUnsynchronized"})
     private IgniteLogger exchLog;
@@ -123,8 +137,8 @@ public class GridCacheMvccManager extends GridCacheSharedManagerAdapter {
     private final GridCacheMvccCallback cb = new GridCacheMvccCallback() {
         /** {@inheritDoc} */
         @SuppressWarnings({"unchecked"})
-        @Override public void onOwnerChanged(GridCacheEntryEx entry, GridCacheMvccCandidate prev,
-            GridCacheMvccCandidate owner) {
+        @Override public void onOwnerChanged(final GridCacheEntryEx entry, GridCacheMvccCandidate prev,
+            final GridCacheMvccCandidate owner) {
             assert entry != null;
             assert owner != prev : "New and previous owner are identical instances: " + owner;
             assert owner == null || prev == null || !owner.version().equals(prev.version()) :
@@ -146,18 +160,37 @@ public class GridCacheMvccManager extends GridCacheSharedManagerAdapter {
                         futColCp.addAll(futCol);
                     }
 
-                    // Must invoke onOwnerChanged outside of synchronization block.
-                    for (GridCacheMvccFuture<?> fut : futColCp) {
-                        if (!fut.isDone()) {
-                            GridCacheMvccFuture<Boolean> mvccFut = (GridCacheMvccFuture<Boolean>)fut;
+                    int nested = nestedLsnrCalls.get();
 
-                            // Since this method is called outside of entry synchronization,
-                            // we can safely invoke any method on the future.
-                            // Also note that we don't remove future here if it is done.
-                            // The removal is initiated from within future itself.
-                            if (mvccFut.onOwnerChanged(entry, owner))
-                                return;
+                    nestedLsnrCalls.set(nested + 1);
+
+                    try {
+                        // Must invoke onOwnerChanged outside of synchronization block.
+                        for (GridCacheMvccFuture<?> fut : futColCp) {
+                            if (!fut.isDone()) {
+                                final GridCacheMvccFuture<Boolean> mvccFut = (GridCacheMvccFuture<Boolean>)fut;
+
+                                if (nested <= MAX_NESTED_LSNR_CALLS) {
+                                    if (mvccFut.onOwnerChanged(entry, owner))
+                                        return;
+                                }
+                                else {
+                                    cctx.kernalContext().closure().runLocalSafe(new GridPlainRunnable() {
+                                        @Override
+                                        public void run() {
+                                            // Since this method is called outside of entry synchronization,
+                                            // we can safely invoke any method on the future.
+                                            // Also note that we don't remove future here if it is done.
+                                            // The removal is initiated from within future itself.
+                                            mvccFut.onOwnerChanged(entry, owner);
+                                        }
+                                    }, true);
+                                }
+                            }
                         }
+                    }
+                    finally {
+                        nestedLsnrCalls.set(nested);
                     }
                 }
             }
