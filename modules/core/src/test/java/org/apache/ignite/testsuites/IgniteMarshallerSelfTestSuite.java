@@ -20,6 +20,7 @@ package org.apache.ignite.testsuites;
 import java.util.Set;
 import junit.framework.TestSuite;
 import org.apache.ignite.internal.direct.stream.v2.DirectByteBufferStreamImplV2ByteOrderSelfTest;
+import org.apache.ignite.internal.util.GridHandleTableSelfTest;
 import org.apache.ignite.internal.util.io.GridUnsafeDataInputOutputByteOrderSelfTest;
 import org.apache.ignite.internal.util.io.GridUnsafeDataOutputArraySizingSelfTest;
 import org.apache.ignite.marshaller.jdk.GridJdkMarshallerSelfTest;
@@ -44,7 +45,7 @@ public class IgniteMarshallerSelfTestSuite extends TestSuite {
     }
 
     /**
-     * @param ignoredTests
+     * @param ignoredTests Ignored tests.
      * @return Test suite.
      * @throws Exception Thrown in case of the failure.
      */
@@ -61,6 +62,7 @@ public class IgniteMarshallerSelfTestSuite extends TestSuite {
         GridTestUtils.addTestIfNeeded(suite, OptimizedMarshallerNodeFailoverTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, OptimizedMarshallerSerialPersistentFieldsSelfTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, DirectByteBufferStreamImplV2ByteOrderSelfTest.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, GridHandleTableSelfTest.class, ignoredTests);
 
         return suite;
     }
