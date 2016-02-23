@@ -44,9 +44,13 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteAsyncSupported;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.Nullable;
+import org.apache.ignite.lang.IgniteRunnable;
+import org.apache.ignite.lang.IgniteCallable;
+import org.apache.ignite.IgniteCompute;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
@@ -95,6 +99,9 @@ public abstract class GridCacheQueueAdapter<T> extends AbstractCollection<T> imp
     @GridToStringExclude
     private final Semaphore writeSem;
 
+    /** access to affinityRun() and affinityCall() functions */
+    private final IgniteCompute compute;
+
     /** */
     private final boolean binaryMarsh;
 
@@ -113,6 +120,7 @@ public abstract class GridCacheQueueAdapter<T> extends AbstractCollection<T> imp
         queueKey = new GridCacheQueueHeaderKey(queueName);
         cache = cctx.kernalContext().cache().internalCache(cctx.name());
         binaryMarsh = cctx.binaryMarshaller();
+        this.compute = cctx.kernalContext().grid().compute();
 
         log = cctx.logger(getClass());
 
@@ -1062,5 +1070,23 @@ public abstract class GridCacheQueueAdapter<T> extends AbstractCollection<T> imp
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(GridCacheQueueAdapter.class, this);
+    }
+
+    /** {@inheritDoc} */
+    public void affinityRun(IgniteRunnable job) {
+        if (!collocated)
+            throw new IgniteException("Failed to execute affinityRun() for non-collocated queue: " + name() +
+                                      ". This operation is supported only for collocated queues.");
+
+        compute.affinityRun(cache.name(),queueKey,job);
+    }
+
+    /** {@inheritDoc} */
+    public <R> R affinityCall(IgniteCallable<R> job) {
+        if (!collocated)
+            throw new IgniteException("Failed to execute affinityCall() for non-collocated queue: " + name() +
+                                      ". This operation is supported only for collocated queues.");
+
+        return compute.affinityCall(cache.name(),queueKey,job);
     }
 }
