@@ -22,6 +22,7 @@ import junit.framework.TestSuite;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.processors.cache.IgniteCacheConfigPermutationsAbstractTest;
+import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.testframework.IgniteConfigPermutationsTestSuite;
 import org.apache.ignite.testframework.TestsConfiguration;
 import org.apache.ignite.testframework.junits.IgniteConfigPermutationsAbstractTest;
@@ -67,6 +68,9 @@ public class ConfigPermutationsTestSuiteBuilder {
     /** */
     private int backups = -1;
 
+    /** */
+    private IgnitePredicate<IgniteConfiguration>[] filters;
+
     /**
      * @param name Name.
      * @param cls Test class.
@@ -93,6 +97,9 @@ public class ConfigPermutationsTestSuiteBuilder {
         for (; igniteCfgIter.hasNext(); ) {
             final int[] igniteCfgPermutation = igniteCfgIter.next();
 
+            if (!passIgniteConfigFilter(igniteCfgPermutation))
+                continue;
+
             if (cacheParams == null)
                 suite.addTest(build(igniteCfgPermutation, null, true));
             else {
@@ -117,6 +124,25 @@ public class ConfigPermutationsTestSuiteBuilder {
         }
 
         return suite;
+    }
+
+    /**
+     * @param permutation Permutation.
+     * @return {@code True} if permutation pass filters.
+     */
+    private boolean passIgniteConfigFilter(int[] permutation) {
+        ConfigPermutationsFactory factory = new ConfigPermutationsFactory(igniteParams, permutation, null, null);
+
+        IgniteConfiguration cfg = factory.getConfiguration(null, null);
+
+        if (filters != null) {
+            for (IgnitePredicate<IgniteConfiguration> filter : filters) {
+                if (!filter.apply(cfg))
+                    return false;
+            }
+        }
+
+        return true;
     }
 
     /**
@@ -241,6 +267,16 @@ public class ConfigPermutationsTestSuiteBuilder {
      */
     public ConfigPermutationsTestSuiteBuilder specifyCacheParam(int... singleParam) {
         specificCacheParam = singleParam;
+
+        return this;
+    }
+
+    /**
+     * @param filters Ignite configuration filters.
+     * @return {@code this} for chaining.
+     */
+    public ConfigPermutationsTestSuiteBuilder withIgniteConfigFilters(IgnitePredicate<IgniteConfiguration>... filters) {
+        this.filters = filters;
 
         return this;
     }

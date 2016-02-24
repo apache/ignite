@@ -65,7 +65,8 @@ public class ConfigPermutationsFactory implements ConfigurationFactory {
     @Override public IgniteConfiguration getConfiguration(String gridName, IgniteConfiguration srcCfg) {
         IgniteConfiguration cfg = new IgniteConfiguration();
 
-        copyDefaultsFromSource(cfg, srcCfg);
+        if (srcCfg != null)
+            copyDefaultsFromSource(cfg, srcCfg);
 
         if (igniteParams == null)
             return cfg;
