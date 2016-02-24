@@ -203,6 +203,62 @@ public class PlatformDeployServiceTask extends ComputeTaskAdapter<String, Object
             return arg == null ? null :  (char) (arg + 1);
         }
 
+        public byte[] testArray(byte[] arg) {
+            if (arg != null)
+                for (int i = 0; i < arg.length; i++)
+                    arg[i] = (byte) (arg[i] + 1);
+
+            return arg;
+        }
+
+        public short[] testArray(short[] arg) {
+            if (arg != null)
+                for (int i = 0; i < arg.length; i++)
+                    arg[i] = (short) (arg[i] + 1);
+
+            return arg;
+        }
+
+        public int[] testArray(int[] arg) {
+            if (arg != null)
+                for (int i = 0; i < arg.length; i++)
+                    arg[i] = arg[i] + 1;
+
+            return arg;
+        }
+
+        public long[] testArray(long[] arg) {
+            if (arg != null)
+                for (int i = 0; i < arg.length; i++)
+                    arg[i] = arg[i] + 1;
+
+            return arg;
+        }
+
+        public double[] testArray(double[] arg) {
+            if (arg != null)
+                for (int i = 0; i < arg.length; i++)
+                    arg[i] = arg[i] + 1;
+
+            return arg;
+        }
+
+        public float[] testArray(float[] arg) {
+            if (arg != null)
+                for (int i = 0; i < arg.length; i++)
+                    arg[i] = arg[i] + 1;
+
+            return arg;
+        }
+
+        public String[] testArray(String[] arg) {
+            if (arg != null)
+                for (int i = 0; i < arg.length; i++)
+                    arg[i] = arg[i] + 1;
+
+            return arg;
+        }
+
         public Integer testNull(Integer arg) {
             return arg == null ? null : arg + 1;
         }
