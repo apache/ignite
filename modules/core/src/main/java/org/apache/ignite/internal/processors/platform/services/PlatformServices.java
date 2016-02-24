@@ -343,16 +343,24 @@ public class PlatformServices extends PlatformAbstractTarget {
             else {
                 assert proxy instanceof GridServiceProxy;
 
-                // TODO: Same algorithm as in ServiceProxyInvoker
-                Class[] argTypes = new Class[args.length];
-
-                for (int i = 0; i < args.length; i++)
-                    argTypes[i] = args[i] == null ? null : args[i].getClass();
-
-                Method mtd = serviceClass.getMethod(mthdName, argTypes);
+                Method mtd = getMethod(serviceClass, mthdName, args);
 
                 return ((GridServiceProxy)proxy).invokeMethod(mtd, args);
             }
+        }
+
+        /**
+         * Finds a suitable method in a class
+         *
+         * @param clazz Class.
+         * @param mthdName Name.
+         * @param args Args.
+         * @return Method.
+         */
+        private static Method getMethod(Class clazz, String mthdName, Object[] args) {
+            assert clazz != null;
+            assert mthdName != null;
+            assert args != null;
         }
     }
 }
