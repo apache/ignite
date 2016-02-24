@@ -376,7 +376,7 @@ public class PlatformServices extends PlatformAbstractTarget {
                 return methods.get(0);
 
             if (methods.size() == 0)
-                throw new NoSuchMethodException("Could not find proxy method " + mthdName + " in class " + clazz);
+                throw new NoSuchMethodException("Could not find proxy method '" + mthdName + "' in class " + clazz);
 
             // Filter by param types
             for (int i = 0; i < methods.size(); i++)
@@ -387,9 +387,9 @@ public class PlatformServices extends PlatformAbstractTarget {
                 return methods.get(0);
 
             if (methods.size() == 0)
-                throw new NoSuchMethodException("Could not find proxy method " + mthdName + " in class " + clazz);
+                throw new NoSuchMethodException("Could not find proxy method '" + mthdName + "' in class " + clazz);
 
-            throw new NoSuchMethodException("Ambiguous proxy method " + mthdName + " in class " + clazz);
+            throw new NoSuchMethodException("Ambiguous proxy method '" + mthdName + "' in class " + clazz);
         }
 
         /**
