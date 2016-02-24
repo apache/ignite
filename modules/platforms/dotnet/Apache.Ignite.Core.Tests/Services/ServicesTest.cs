@@ -518,8 +518,11 @@ namespace Apache.Ignite.Core.Tests.Services
             Assert.IsTrue(svc.isExecuted());
             Assert.IsFalse(svc.isCancelled());
 
+            Assert.AreEqual(4, svc.test((byte) 3));
+            Assert.AreEqual(5, svc.test((short) 4));
             Assert.AreEqual(6, svc.test(5));
             Assert.AreEqual(3.8f, svc.test(2.3f));
+            Assert.AreEqual(4.8, svc.test(3.3));
         }
 
         /// <summary>
