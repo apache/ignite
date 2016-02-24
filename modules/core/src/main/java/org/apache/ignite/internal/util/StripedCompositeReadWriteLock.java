@@ -20,7 +20,6 @@ package org.apache.ignite.internal.util;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReadWriteLock;
@@ -45,18 +44,6 @@ public class StripedCompositeReadWriteLock implements ReadWriteLock {
     private final CompositeWriteLock compositeWriteLock;
 
     /**
-     * Atomic field updated for {@link #counter}.
-     */
-    private static final AtomicIntegerFieldUpdater<StripedCompositeReadWriteLock> COUNTER_UPD =
-        AtomicIntegerFieldUpdater.newUpdater(StripedCompositeReadWriteLock.class, "counter");
-
-    /**
-     * Counter of {@link #readLock()} calls.
-     */
-    @SuppressWarnings("UnusedDeclaration")
-    private volatile int counter = 0;
-
-    /**
      * Creates a new instance with given concurrency level.
      *
      * @param concurrencyLvl Number of internal read locks.
@@ -72,7 +59,7 @@ public class StripedCompositeReadWriteLock implements ReadWriteLock {
 
     /** {@inheritDoc} */
     @NotNull @Override public Lock readLock() {
-        int idx = Math.abs(COUNTER_UPD.getAndIncrement(this) % locks.length);
+        int idx = (int) Thread.currentThread().getId() % locks.length;
 
         return locks[idx].readLock();
     }
