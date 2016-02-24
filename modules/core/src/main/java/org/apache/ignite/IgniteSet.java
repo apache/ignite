@@ -21,8 +21,6 @@ import java.io.Closeable;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.Set;
-
-import org.apache.ignite.lang.IgniteAsyncSupported;
 import org.apache.ignite.lang.IgniteCallable;
 import org.apache.ignite.lang.IgniteRunnable;
 
@@ -111,8 +109,10 @@ public interface IgniteSet<T> extends Set<T>, Closeable {
     /**
      * Executes given job on collocated set on the node where the set is located
      * (a.k.a. affinity co-location).
+     * <p>
+     * This is not supported for non-collocated sets.
      *
-     * @param job Job which will be co-located on the node with given affinity key.
+     * @param job Job which will be co-located with the set.
      * @throws IgniteException If job failed.
      */
     public void affinityRun(IgniteRunnable job) throws IgniteException;
@@ -120,8 +120,10 @@ public interface IgniteSet<T> extends Set<T>, Closeable {
     /**
      * Executes given job on collocated set on the node where the set is located
      * (a.k.a. affinity co-location).
+     * <p>
+     * This is not supported for non-collocated sets.
      *
-     * @param job Job which will be co-located on the node with given affinity key.
+     * @param job Job which will be co-located with the set.
      * @throws IgniteException If job failed.
      */
     public <R> R affinityCall(IgniteCallable<R> job) throws IgniteException;

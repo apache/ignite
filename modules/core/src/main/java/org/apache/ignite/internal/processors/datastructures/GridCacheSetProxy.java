@@ -526,6 +526,16 @@ public class GridCacheSetProxy<T> implements IgniteSet<T>, Externalizable {
         return delegate.removed();
     }
 
+    /** {@inheritDoc} */
+    @Override public void affinityRun(final IgniteRunnable job) {
+        delegate.affinityRun(job);
+    }
+
+    /** {@inheritDoc} */
+    @Override public <R> R affinityCall(final IgniteCallable<R> job) {
+        return delegate.affinityCall(job);
+    }
+
     /**
      * Enters busy state.
      */
@@ -588,52 +598,6 @@ public class GridCacheSetProxy<T> implements IgniteSet<T>, Externalizable {
 
         t.set1((GridKernalContext)in.readObject());
         t.set2(U.readString(in));
-    }
-
-    /** {@inheritDoc} */
-    @Override public void affinityRun(final IgniteRunnable job) {
-        gate.enter();
-
-        try {
-            if (cctx.transactional())
-                CU.outTx(new Callable<Void>() {
-                    @Override
-                    public Void call() throws Exception {
-                        delegate.affinityRun(job);
-                        return null;
-                    }
-                }, cctx);
-            else
-              delegate.affinityRun(job);
-        }
-        catch (IgniteCheckedException e) {
-            throw U.convertException(e);
-        }
-        finally {
-            gate.leave();
-        }
-    }
-
-    /** {@inheritDoc} */
-    @Override public <R> R affinityCall(final IgniteCallable<R> job) {
-        gate.enter();
-
-        try {
-            if (cctx.transactional())
-                return CU.outTx(new Callable<R>() {
-                    @Override public R call() throws Exception {
-                        return delegate.affinityCall(job);
-                    }
-                }, cctx);
-
-            return delegate.affinityCall(job);
-        }
-        catch (IgniteCheckedException e) {
-            throw U.convertException(e);
-        }
-        finally {
-            gate.leave();
-        }
     }
 
     /**

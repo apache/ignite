@@ -81,10 +81,10 @@ public class GridCacheSetImpl<T> extends AbstractCollection<T> implements Ignite
     /** Collocation flag. */
     private final boolean collocated;
 
-    /** Queue header partition. */
+    /** Set header partition. */
     private final int hdrPart;
 
-    /** Queue header key. */
+    /** Set header key. */
     protected final GridCacheSetHeaderKey setKey;
 
     /** Removed flag. */
@@ -93,7 +93,7 @@ public class GridCacheSetImpl<T> extends AbstractCollection<T> implements Ignite
     /** */
     private final boolean binaryMarsh;
 
-    /** access to affinityRun() and affinityCall() functions */
+    /** Access to affinityRun() and affinityCall() functions. */
     private final IgniteCompute compute;
 
     /**
@@ -374,6 +374,24 @@ public class GridCacheSetImpl<T> extends AbstractCollection<T> implements Ignite
     }
 
     /** {@inheritDoc} */
+    public void affinityRun(IgniteRunnable job) {
+        if (!collocated)
+            throw new IgniteException("Failed to execute affinityRun() for non-collocated set: " + name() +
+                ". This operation is supported only for collocated sets.");
+
+        compute.affinityRun(cache.name(), setKey, job);
+    }
+
+    /** {@inheritDoc} */
+    public <R> R affinityCall(IgniteCallable<R> job) {
+        if (!collocated)
+            throw new IgniteException("Failed to execute affinityCall() for non-collocated set: " + name() +
+                ". This operation is supported only for collocated sets.");
+
+        return compute.affinityCall(cache.name(), setKey, job);
+    }
+
+    /** {@inheritDoc} */
     @Override public void close() {
         try {
             if (rmvd)
@@ -545,24 +563,6 @@ public class GridCacheSetImpl<T> extends AbstractCollection<T> implements Ignite
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(GridCacheSetImpl.class, this);
-    }
-
-    /** {@inheritDoc} */
-    public void affinityRun(IgniteRunnable job) {
-        if (!collocated)
-            throw new IgniteException("Failed to execute affinityCall() for non-collocated set: " + name() +
-                                      ". This operation is supported only for collocated sets.");
-
-        compute.affinityRun(cache.name(),setKey,job);
-    }
-
-    /** {@inheritDoc} */
-    public <R> R affinityCall(IgniteCallable<R> job) {
-        if (!collocated)
-            throw new IgniteException("Failed to execute affinityCall() for non-collocated queue: " + name() +
-                                      ". This operation is supported only for collocated queues.");
-
-        return compute.affinityCall(cache.name(),setKey,job);
     }
 
     /**

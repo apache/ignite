@@ -28,8 +28,6 @@ import java.util.Iterator;
 import java.util.concurrent.Callable;
 import java.util.concurrent.TimeUnit;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.IgniteCompute;
-import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteQueue;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
@@ -726,6 +724,16 @@ public class GridCacheQueueProxy<T> implements IgniteQueue<T>, Externalizable {
     }
 
     /** {@inheritDoc} */
+    @Override public void affinityRun(final IgniteRunnable job) {
+        delegate.affinityRun(job);
+    }
+
+    /** {@inheritDoc} */
+    @Override public <R> R affinityCall(final IgniteCallable<R> job) {
+        return delegate.affinityCall(job);
+    }
+
+    /** {@inheritDoc} */
     @Override public int hashCode() {
         return delegate.hashCode();
     }
@@ -780,57 +788,5 @@ public class GridCacheQueueProxy<T> implements IgniteQueue<T>, Externalizable {
     /** {@inheritDoc} */
     @Override public String toString() {
         return delegate.toString();
-    }
-
-    /** {@inheritDoc} */
-    @Override public void affinityRun(final IgniteRunnable job) {
-        gate.enter();
-
-        try {
-            if (cctx.transactional()) {
-                CU.outTx(new Callable<Void>() {
-                    @Override
-                    public Void call() throws Exception {
-                        if (!delegate.collocated())
-                            throw new IgniteException("Failed to execute affinityRun() for non-collocated queue: " + name() +
-                                    ". This operation is supported only for collocated queues.");
-                        delegate.affinityRun(job);
-                        return null;
-                    }
-                }, cctx);
-            } else
-                delegate.affinityRun(job);
-        }
-        catch (IgniteCheckedException e) {
-            throw U.convertException(e);
-        }
-        finally {
-            gate.leave();
-        }
-    }
-
-    /** {@inheritDoc} */
-    @Override public <R> R affinityCall(final IgniteCallable<R> job) {
-        gate.enter();
-
-        try {
-            if (cctx.transactional())
-                return CU.outTx(new Callable<R>() {
-                    @Override public R call() throws Exception {
-                        if (!delegate.collocated())
-                            throw new IgniteException("Failed to execute affinityCall() for non-collocated queue: " + name() +
-                                    ". This operation is supported only for collocated queues.");
-                        return delegate.affinityCall(job);
-                    }
-                }, cctx);
-
-            return delegate.affinityCall(job);
-        }
-        catch (IgniteCheckedException e) {
-            throw U.convertException(e);
-        }
-        finally {
-            gate.leave();
-        }
     }
 }
