@@ -904,6 +904,7 @@ namespace Apache.Ignite.Core.Tests.Services
             char test(char x);
             string test(string x);
             bool test(bool x);
+
             byte? testWrapper(byte? x);
             short? testWrapper(short? x);
             int? testWrapper(int? x);
@@ -912,6 +913,16 @@ namespace Apache.Ignite.Core.Tests.Services
             double? testWrapper(double? x);
             char? testWrapper(char? x);
             bool? testWrapper(bool? x);
+
+            byte[] testArray(byte[] x);
+            short[] testArray(short[] x);
+            int[] testArray(int[] x);
+            long[] testArray(long[] x);
+            float[] testArray(float[] x);
+            double[] testArray(double[] x);
+            char[] testArray(char[] x);
+            string[] testArray(string[] x);
+            bool[] testArray(bool[] x);
 
             int? testNull(int? x);
 
