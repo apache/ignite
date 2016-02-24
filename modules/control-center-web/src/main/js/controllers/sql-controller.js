@@ -407,23 +407,25 @@ consoleModule.controller('sqlController', function ($http, $timeout, $interval, 
     $scope.removeParagraph = function(paragraph) {
         $confirm.confirm('Are you sure you want to remove: "' + paragraph.name + '"?')
             .then(function () {
-                    var paragraph_idx = _.findIndex($scope.notebook.paragraphs, function (item) {
-                        return paragraph == item;
-                    });
+                $scope.stopRefresh(paragraph);
 
-                    var panel_idx = _.findIndex($scope.expandedParagraphs, function (item) {
-                        return paragraph_idx == item;
-                    });
+                var paragraph_idx = _.findIndex($scope.notebook.paragraphs, function (item) {
+                    return paragraph == item;
+                });
 
-                    if (panel_idx >= 0)
-                        $scope.expandedParagraphs.splice(panel_idx, 1);
+                var panel_idx = _.findIndex($scope.expandedParagraphs, function (item) {
+                    return paragraph_idx == item;
+                });
 
-                    $scope.notebook.paragraphs.splice(paragraph_idx, 1);
+                if (panel_idx >= 0)
+                    $scope.expandedParagraphs.splice(panel_idx, 1);
 
-                    $scope.rebuildScrollParagraphs();
+                $scope.notebook.paragraphs.splice(paragraph_idx, 1);
 
-                    QueryNotebooks.save($scope.demo, $scope.notebook)
-                        .catch(_handleException);
+                $scope.rebuildScrollParagraphs();
+
+                QueryNotebooks.save($scope.demo, $scope.notebook)
+                    .catch(_handleException);
             });
     };
 
