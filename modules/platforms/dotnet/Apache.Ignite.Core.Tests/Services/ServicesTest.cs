@@ -924,6 +924,9 @@ namespace Apache.Ignite.Core.Tests.Services
             string[] testArray(string[] x);
             bool[] testArray(bool[] x);
 
+            int test(int x, string y);
+            int test(string x, int y);
+
             int? testNull(int? x);
 
             int testParams(params object[] args);

@@ -275,6 +275,14 @@ public class PlatformDeployServiceTask extends ComputeTaskAdapter<String, Object
             return args.length;
         }
 
+        public int test(int x, String y) {
+            return x + 1;
+        }
+
+        public int test(String x, int y) {
+            return y + 1;
+        }
+
         public PlatformComputeBinarizable testBinarizable(PlatformComputeBinarizable arg) {
             return arg == null ? null : new PlatformComputeBinarizable(arg.field + 1);
         }
