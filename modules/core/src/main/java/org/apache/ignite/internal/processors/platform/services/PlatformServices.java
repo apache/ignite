@@ -38,10 +38,7 @@ import org.apache.ignite.services.ServiceConfiguration;
 import org.apache.ignite.services.ServiceDescriptor;
 
 import java.lang.reflect.Method;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Map;
-import java.util.UUID;
+import java.util.*;
 
 /**
  * Interop services.
@@ -313,6 +310,24 @@ public class PlatformServices extends PlatformAbstractTarget {
         /** */
         private final Class serviceClass;
 
+        /** */
+        private static final Map<Class<?>, Class<?>> PRIMITIVES_TO_WRAPPERS = new HashMap<>();
+
+        /**
+         * Class initializer.
+         */
+        static  {
+            PRIMITIVES_TO_WRAPPERS.put(boolean.class, Boolean.class);
+            PRIMITIVES_TO_WRAPPERS.put(byte.class, Byte.class);
+            PRIMITIVES_TO_WRAPPERS.put(char.class, Character.class);
+            PRIMITIVES_TO_WRAPPERS.put(double.class, Double.class);
+            PRIMITIVES_TO_WRAPPERS.put(float.class, Float.class);
+            PRIMITIVES_TO_WRAPPERS.put(int.class, Integer.class);
+            PRIMITIVES_TO_WRAPPERS.put(long.class, Long.class);
+            PRIMITIVES_TO_WRAPPERS.put(short.class, Short.class);
+            PRIMITIVES_TO_WRAPPERS.put(void.class, Void.class);
+        }
+
         /**
          * Ctor.
          *
@@ -400,13 +415,27 @@ public class PlatformServices extends PlatformAbstractTarget {
          * @return Whether specified args are compatible with argTypes.
          */
         private static boolean areMethodArgsCompatible(Class[] argTypes, Object[] args) {
-            for (int j = 0; j < args.length; j++){
-                Object arg = args[j];
-                if (arg != null && !argTypes[j].isAssignableFrom(arg.getClass()))
+            for (int i = 0; i < args.length; i++){
+                // arg is always of a primitive wrapper class, and argTypes can have actual primitive
+                Object arg = args[i];
+                Class argType = wrap(argTypes[i]);
+
+                if (arg != null && !argType.isAssignableFrom(arg.getClass()))
                     return false;
             }
 
             return true;
+        }
+
+        /**
+         * Gets corresponding wrapper for a primitive type.
+         * @param c Class to convert.
+         *
+         * @return Primitive wrapper, or the same class.
+         */
+        @SuppressWarnings("unchecked")
+        private static  Class wrap(Class c) {
+            return c.isPrimitive() ? PRIMITIVES_TO_WRAPPERS.get(c) : c;
         }
     }
 }
