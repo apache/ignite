@@ -515,10 +515,12 @@ namespace Apache.Ignite.Core.Tests.Services
             var binSvc = Services.WithKeepBinary().WithServerKeepBinary()
                 .GetServiceProxy<IJavaService>(javaSvcName, false);
 
+            // Basics
             Assert.IsTrue(svc.isInitialized());
             Assert.IsTrue(svc.isExecuted());
             Assert.IsFalse(svc.isCancelled());
 
+            // Primitives
             Assert.AreEqual(4, svc.test((byte) 3));
             Assert.AreEqual(5, svc.test((short) 4));
             Assert.AreEqual(6, svc.test(5));
@@ -529,6 +531,7 @@ namespace Apache.Ignite.Core.Tests.Services
             Assert.AreEqual('b', svc.test('a'));
             Assert.AreEqual("Foo!", svc.test("Foo"));
 
+            // Nullables (Java wrapper types)
             Assert.AreEqual(4, svc.testWrapper(3));
             Assert.AreEqual(5, svc.testWrapper((short?) 4));
             Assert.AreEqual(6, svc.testWrapper((int?)5));
@@ -538,6 +541,7 @@ namespace Apache.Ignite.Core.Tests.Services
             Assert.AreEqual(false, svc.testWrapper(true));
             Assert.AreEqual('b', svc.testWrapper('a'));
 
+            // Arrays
             Assert.AreEqual(new byte[] {2, 3, 4}, svc.testArray(new byte[] {1, 2, 3}));
             Assert.AreEqual(new short[] {2, 3, 4}, svc.testArray(new short[] {1, 2, 3}));
             Assert.AreEqual(new[] {2, 3, 4}, svc.testArray(new[] {1, 2, 3}));
@@ -547,12 +551,19 @@ namespace Apache.Ignite.Core.Tests.Services
             Assert.AreEqual(new[] {"a1", "b1"}, svc.testArray(new [] {"a", "b"}));
             Assert.AreEqual(new[] {'c', 'd'}, svc.testArray(new[] {'b', 'c'}));
 
+            // Nulls
             Assert.AreEqual(9, svc.testNull(8));
             Assert.IsNull(svc.testNull(null));
 
+            // params / varargs
             Assert.AreEqual(5, svc.testParams(1, 2, 3, 4, "5"));
             Assert.AreEqual(0, svc.testParams());
 
+            // Overloads
+            Assert.AreEqual(3, svc.test(2, "1"));
+            Assert.AreEqual(3, svc.test(1, "2"));
+
+            // Binary
             Assert.AreEqual(7, svc.testBinarizable(new PlatformComputeBinarizable {Field = 6}).Field);
             Assert.AreEqual(15,
                 binSvc.testBinaryObject(
