@@ -24,6 +24,7 @@ import org.apache.ignite.cache.store.spring.CacheSpringStoreSessionListenerSelfT
 import org.apache.ignite.internal.GridFactorySelfTest;
 import org.apache.ignite.internal.GridSpringBeanSerializationSelfTest;
 import org.apache.ignite.internal.IgniteDynamicCacheConfigTest;
+import org.apache.ignite.internal.processors.resource.GridTransformSpringInjectionSelfTest;
 import org.apache.ignite.p2p.GridP2PUserVersionChangeSelfTest;
 import org.apache.ignite.spring.GridSpringCacheManagerSelfTest;
 import org.apache.ignite.spring.IgniteExcludeInConfigurationTest;
@@ -64,6 +65,8 @@ public class IgniteSpringTestSuite extends TestSuite {
         suite.addTestSuite(CacheJdbcPojoStoreFactorySelfTest.class);
 
         suite.addTest(new TestSuite(GridSpringTransactionManagerSelfTest.class));
+
+        suite.addTestSuite(GridTransformSpringInjectionSelfTest.class);
 
         return suite;
     }

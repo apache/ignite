@@ -18,11 +18,12 @@ package org.apache.ignite.internal.processors.cache;
  */
 
 import java.io.Serializable;
-import java.lang.annotation.Annotation;
 import javax.cache.processor.EntryProcessor;
 import javax.cache.processor.EntryProcessorException;
 import javax.cache.processor.MutableEntry;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteException;
+import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.resource.GridResourceProcessor;
 import org.apache.ignite.resources.CacheNameResource;
 import org.apache.ignite.resources.IgniteInstanceResource;
@@ -30,6 +31,7 @@ import org.apache.ignite.resources.LoggerResource;
 import org.apache.ignite.resources.ServiceResource;
 import org.apache.ignite.resources.SpringApplicationContextResource;
 import org.apache.ignite.resources.SpringResource;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * @param <K>
@@ -39,7 +41,8 @@ import org.apache.ignite.resources.SpringResource;
 public class EntryProcessorResourceInjectorProxy<K, V, T> implements EntryProcessor<K, V, T>, Serializable {
     /** Annotations supported. */
     @SuppressWarnings("unchecked")
-    public static final Class<? extends Annotation>[] annotationsSupported = new Class[] {
+    public static final GridResourceProcessor.AnnotationSet annotationsSupported =
+            new GridResourceProcessor.AnnotationSet(new Class[] {
         CacheNameResource.class,
 
         SpringApplicationContextResource.class,
@@ -47,7 +50,7 @@ public class EntryProcessorResourceInjectorProxy<K, V, T> implements EntryProces
         IgniteInstanceResource.class,
         LoggerResource.class,
         ServiceResource.class
-    };
+    });
 
     /** Delegate. */
     private EntryProcessor<K, V, T> delegate;
@@ -73,11 +76,52 @@ public class EntryProcessorResourceInjectorProxy<K, V, T> implements EntryProces
                 rsrcProcessor.injectCacheName(delegate, cctx.name());
             }
             catch (IgniteCheckedException e) {
-                throw new RuntimeException(e);
+                throw new IgniteException(e);
             }
             injected = true;
         }
 
         return delegate.process(entry, arguments);
     }
+
+    /** */
+    public EntryProcessor<K, V, T> getDelegate() {
+        return this.delegate;
+    }
+
+    /**
+     * Wrap EntryProcessor if needed.
+     * @param processor Processor.
+     */
+    public static <K,V,T> EntryProcessor<K,V,T> wrap(GridKernalContext ctx,
+        @Nullable EntryProcessor<K,V,T> processor) {
+        if (processor == null || processor instanceof EntryProcessorResourceInjectorProxy)
+            return processor;
+
+        GridResourceProcessor rsrcProcessor = ctx.resource();
+
+        int annMask = rsrcProcessor.isAnnotationsPresent(null, processor,
+            EntryProcessorResourceInjectorProxy.annotationsSupported);
+
+        return annMask != 0 ? new EntryProcessorResourceInjectorProxy<K,V,T>(processor) : processor;
+    }
+
+    /**
+     * Unwrap EntryProcessor if needed.
+     */
+    public static <K,V,T> EntryProcessor<K,V,T> unwrap(EntryProcessor<K,V,T> processor) {
+        return processor == null || !(processor instanceof EntryProcessorResourceInjectorProxy) ?
+                processor :
+                ((EntryProcessorResourceInjectorProxy)processor).getDelegate();
+    }
+
+    /**
+     * Unwrap EntryProcessor as Object if needed.
+     */
+    public static Object unwrapAsObject(Object obj) {
+        return obj == null || !(obj instanceof EntryProcessorResourceInjectorProxy) ?
+            obj :
+            ((EntryProcessorResourceInjectorProxy)obj).getDelegate();
+    }
+
 }

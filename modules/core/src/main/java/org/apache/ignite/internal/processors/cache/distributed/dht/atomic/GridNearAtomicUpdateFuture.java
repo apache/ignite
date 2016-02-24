@@ -526,20 +526,6 @@ public class GridNearAtomicUpdateFuture extends GridFutureAdapter<Object>
     }
 
     /**
-     * Wrap EntryProcessor
-     * @param processor Processor.
-     */
-    @SuppressWarnings("unchecked")
-    private EntryProcessor wrapEntryProcessor(EntryProcessor processor) {
-        GridResourceProcessor rsrcProcessor = cctx.kernalContext().resource();
-
-        int annMask = rsrcProcessor.isAnnotationsPresent(null, processor,
-            EntryProcessorResourceInjectorProxy.annotationsSupported);
-
-        return annMask != 0 ? new EntryProcessorResourceInjectorProxy(processor) : processor;
-    }
-
-    /**
      *
      */
     private class UpdateState {
@@ -1030,7 +1016,6 @@ public class GridNearAtomicUpdateFuture extends GridFutureAdapter<Object>
 
             Map<UUID, GridNearAtomicUpdateRequest> pendingMappings = U.newHashMap(topNodes.size());
 
-            IdentityHashMap<EntryProcessor, EntryProcessor> entryProcessorProxies = null;
             // Create mappings first, then send messages.
             for (Object key : keys) {
                 if (key == null)
@@ -1125,20 +1110,8 @@ public class GridNearAtomicUpdateFuture extends GridFutureAdapter<Object>
                         pendingMappings.put(nodeId, mapped);
                     }
 
-                    if (op == TRANSFORM) {
-                        EntryProcessor processor = (EntryProcessor)val;
-                        if (!(processor instanceof EntryProcessorResourceInjectorProxy)) {
-                            if (entryProcessorProxies == null)
-                                entryProcessorProxies = new IdentityHashMap<>();
-
-                            EntryProcessor proxy = entryProcessorProxies.get(processor);
-
-                            if (proxy == null)
-                                entryProcessorProxies.put(processor, proxy = wrapEntryProcessor(processor));
-
-                            val = proxy;
-                        }
-                    }
+                    if (op == TRANSFORM)
+                        val = EntryProcessorResourceInjectorProxy.wrap(cctx.kernalContext(), (EntryProcessor)val);
 
                     mapped.addUpdateEntry(cacheKey, val, conflictTtl, conflictExpireTime, conflictVer, i == 0);
 
@@ -1238,7 +1211,7 @@ public class GridNearAtomicUpdateFuture extends GridFutureAdapter<Object>
                 1);
 
             if (op == TRANSFORM)
-                val = wrapEntryProcessor((EntryProcessor)val);
+                val = EntryProcessorResourceInjectorProxy.wrap(cctx.kernalContext(), (EntryProcessor)val);
 
             req.addUpdateEntry(cacheKey,
                 val,

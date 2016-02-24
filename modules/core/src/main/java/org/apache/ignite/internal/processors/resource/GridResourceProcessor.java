@@ -412,11 +412,11 @@ public class GridResourceProcessor extends GridProcessorAdapter {
      *
      * @param dep Class deployment.
      * @param target Object to check.
-     * @param annCls Annotation to find.
+     * @param annSet Annotations to find.
      * @return if annotation is presented, corresponding bit is set.
      */
-    public int isAnnotationsPresent(GridDeployment dep, Object target, Class<? extends Annotation>[] annCls) {
-        return ioc.isAnnotationsPresent(dep, target, annCls);
+    public int isAnnotationsPresent(GridDeployment dep, Object target, AnnotationSet annSet) {
+        return ioc.isAnnotationsPresent(dep, target, annSet);
     }
 
     /**
@@ -613,5 +613,17 @@ public class GridResourceProcessor extends GridProcessorAdapter {
         X.println(">>> Resource processor memory stats [grid=" + ctx.gridName() + ']');
 
         ioc.printMemoryStats();
+    }
+
+    /**
+     *
+     */
+    public static class AnnotationSet extends GridResourceIoc.AnnotationSet {
+        /**
+         * @param classes Classes.
+         */
+        public AnnotationSet(Class<? extends Annotation>[] classes) {
+            super(classes);
+        }
     }
 }

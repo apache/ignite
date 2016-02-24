@@ -21,12 +21,15 @@ import java.lang.annotation.Annotation;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.managers.deployment.GridDeployment;
 import org.apache.ignite.internal.util.GridLeanIdentitySet;
@@ -205,27 +208,15 @@ class GridResourceIoc {
      * Checks if annotation is presented on a field or method of the specified object.
      *
      * @param target Target object.
-     * @param annCls Annotation class to find on fields or methods of target object.
+     * @param annSet Annotation classes to find on fields or methods of target object.
      * @param dep Deployment.
-     * @return {@code true} if annotation is presented, {@code false} if it's not.
+     * @return if annotation is presented, corresponding bit is set.
      */
-    int isAnnotationsPresent(@Nullable GridDeployment dep, Object target, Class<? extends Annotation>[] annCls) {
+    int isAnnotationsPresent(@Nullable GridDeployment dep, Object target, AnnotationSet annSet) {
         assert target != null;
-        assert annCls != null && annCls.length > 0 && annCls.length <= 32;
+        assert annSet != null && annSet.classes.length > 0 && annSet.classes.length <= 32;
 
-        ClassDescriptor desc = descriptor(dep, target.getClass());
-
-        if (desc.recursiveFields().length > 0)
-            return ~(-1 << annCls.length);
-        int res = 0, mask = 1;
-
-        for (Class<? extends Annotation> ann : annCls) {
-            if (desc.annotatedMembers(ann) != null)
-                res |= mask;
-            mask <<= 1;
-        }
-
-        return res;
+        return descriptor(dep, target.getClass()).isAnnotated(annSet);
     }
 
     /**
@@ -293,6 +284,9 @@ class GridResourceIoc {
 
         /** */
         private final Map<Class<? extends Annotation>, T2<GridResourceField[], GridResourceMethod[]>> annMap;
+
+        /** */
+        private final AtomicReference<Integer[]> annotationSets = new AtomicReference<>(new Integer[4]);
 
         /**
          * @param cls Class.
@@ -376,6 +370,84 @@ class GridResourceIoc {
          */
         @Nullable public T2<GridResourceField[], GridResourceMethod[]> annotatedMembers(Class<? extends Annotation> annCls) {
             return annMap.get(annCls);
+        }
+
+        /**
+         * @param set Set of annotations.
+         * @param mask Mask.
+         */
+        private void appendAnnotationSet(AnnotationSet set, int mask) {
+            Integer[] oldSets, newSets;
+
+            do {
+                oldSets = annotationSets.get();
+
+                if (oldSets.length < set.descIdx) {
+                    oldSets[set.descIdx] = mask;
+
+                    newSets = oldSets;
+                }
+                else {
+                    newSets = Arrays.copyOf(oldSets, oldSets.length << 1);
+
+                    newSets[set.descIdx] = mask;
+                }
+            }
+            while (!annotationSets.compareAndSet(oldSets, newSets));
+        }
+
+        /**
+         * @param set Set.
+         * @return if annotation is presented, corresponding bit is set.
+         */
+        int isAnnotated(AnnotationSet set) {
+            Integer[] oldSets = annotationSets.get();
+
+            if (oldSets.length < set.descIdx && oldSets[set.descIdx] != null)
+                return oldSets[set.descIdx];
+
+            int val;
+
+            if (recursiveFields().length > 0)
+                val = ~(-1 << set.classes.length);
+            else {
+                val = 0;
+
+                int mask = 1;
+
+                for (Class<? extends Annotation> ann : set.classes) {
+                    if (annotatedMembers(ann) != null)
+                        val |= mask;
+
+                    mask <<= 1;
+                }
+            }
+
+            appendAnnotationSet(set, val);
+
+            return val;
+        }
+    }
+
+    /**
+     * Set of annotations.
+     */
+    static class AnnotationSet {
+        /** Index counter. */
+        private static final AtomicInteger indexCounter = new AtomicInteger();
+
+        /** */
+        private final Class<? extends Annotation>[] classes;
+
+        /** Index in class descriptor. */
+        final int descIdx;
+
+        /**
+         * @param classes Classes.
+         */
+        public AnnotationSet(Class<? extends Annotation>[] classes) {
+            this.classes = classes;
+            this.descIdx = indexCounter.getAndIncrement();
         }
     }
 }

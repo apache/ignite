@@ -31,10 +31,14 @@ import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.ThreadLocalRandom;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.Lock;
 import javax.cache.Cache;
@@ -50,6 +54,7 @@ import junit.framework.AssertionFailedError;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteEvents;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteTransactions;
@@ -61,7 +66,9 @@ import org.apache.ignite.cache.affinity.Affinity;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.events.CacheEvent;
 import org.apache.ignite.events.Event;
+import org.apache.ignite.events.EventType;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.IgnitionEx;
@@ -76,12 +83,16 @@ import org.apache.ignite.internal.util.typedef.PA;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.resources.CacheNameResource;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.resources.LoggerResource;
+import org.apache.ignite.resources.ServiceResource;
+import org.apache.ignite.services.Service;
+import org.apache.ignite.services.ServiceContext;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.swapspace.inmemory.GridTestSwapSpaceSpi;
@@ -126,6 +137,9 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
     /** Test timeout */
     private static final long TEST_TIMEOUT = 60 * 1000;
 
+    /** Service name. */
+    private static final String SERVICE_NAME1 = "testService1";
+
     /** */
     public static final CacheEntryProcessor<String, Integer, String> ERR_PROCESSOR =
         new CacheEntryProcessor<String, Integer, String>() {
@@ -153,10 +167,6 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
 
     /** Increment processor for invoke operations. */
     public static final EntryProcessor<String, Integer, String> RMV_PROCESSOR = new RemoveEntryProcessor();
-
-    /** Increment processor for invoke operations. */
-    public static final EntryProcessor<String, Integer, Integer> INJECT_PROCESSOR =
-                                                new ResourceInjectionEntryProcessor();
 
     /** Increment processor for invoke operations with IgniteEntryProcessor. */
     public static final CacheEntryProcessor<String, Integer, String> RMV_IGNITE_PROCESSOR =
@@ -207,6 +217,18 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
 
         if (memoryMode() == OFFHEAP_TIERED || memoryMode() == OFFHEAP_VALUES)
             cfg.setSwapSpaceSpi(new GridTestSwapSpaceSpi());
+
+        int[] evtTypes = cfg.getIncludeEventTypes();
+
+        if (evtTypes == null || evtTypes.length == 0)
+            cfg.setIncludeEventTypes(EventType.EVT_CACHE_OBJECT_READ);
+        else {
+            for (int evtType : evtTypes)
+                if (evtType == EventType.EVT_CACHE_OBJECT_READ)
+                    return cfg;
+            int[] updatedEvtTypes = Arrays.copyOf(evtTypes, evtTypes.length + 1);
+            updatedEvtTypes[updatedEvtTypes.length - 1] = EventType.EVT_CACHE_OBJECT_READ;
+        }
 
         return cfg;
     }
@@ -262,6 +284,8 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
 
             cacheCfgMap = null;
         }
+
+        grid(0).services().deployNodeSingleton(SERVICE_NAME1, new DummyServiceImpl());
 
         for (int i = 0; i < gridCount(); i++)
             info("Grid " + i + ": " + grid(i).localNode().id());
@@ -5397,45 +5421,105 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
      * @throws Exception If failed.
      */
     public void testTransformResourceInjection() throws Exception {
-        final IgniteCache<String, Integer> cache = jcache();
+        IgniteCache<String, Integer> cache = jcache();
+        Ignite ignite = ignite(0);
+
+        doTransformResourceInjection(ignite, cache);
 
         if (txEnabled()) {
-            IgniteTransactions txs = ignite(0).transactions();
+            try {
+                doTransformResourceInjection(ignite, cache);
 
-            try (Transaction tx = txs.txStart()) {
-                doTransformResourceInjection(cache);
+                for (TransactionConcurrency concurrency : TransactionConcurrency.values()) {
+                    for (TransactionIsolation isolation : TransactionIsolation.values()) {
+                        IgniteTransactions txs = ignite.transactions();
 
-                tx.rollback();
+                        try (Transaction tx = txs.txStart(concurrency, isolation)) {
+                            doTransformResourceInjection(ignite, cache);
+
+                            tx.commit();
+                        }
+                    }
+                }
+            }
+            finally {
+                cache.destroy();
             }
         }
-        else
-            doTransformResourceInjection(cache);
     }
 
     /**
      * @throws Exception If failed.
      */
-    protected void doTransformResourceInjection(IgniteCache<String, Integer> cache) throws Exception {
-        Integer flags = cache.invoke("key1", INJECT_PROCESSOR);
+    protected void doTransformResourceInjection(Ignite ignite, IgniteCache<String, Integer> cache) throws Exception {
+        final Collection<ResourceType> required = Arrays.asList(ResourceType.IGNITE_INSTANCE,
+                                                    ResourceType.CACHE_NAME, ResourceType.LOGGER, ResourceType.SERVICE);
+        final CacheEventListener lsnr = new CacheEventListener();
 
-        assertTrue("Processor result is null", flags != null);
+        IgniteEvents evts = ignite.events(ignite.cluster());
 
-        log.info("Injection flag: " + Integer.toBinaryString(flags));
+        evts.localListen(lsnr, EventType.EVT_CACHE_OBJECT_READ);
 
-        Collection<ResourceType> notInjected = ResourceInfoSet.valueOf(flags).notInjected();
+        try {
+            String key = UUID.randomUUID().toString();
 
-        if (!notInjected.isEmpty())
-            assertTrue("Can't inject resource(s) " + Arrays.toString(notInjected.toArray()), false);
+            cache.put(key, ThreadLocalRandom.current().nextInt());
 
-        Set<String> keys = new HashSet<>(Arrays.asList("key1", "key2", "key3", "key4"));
+            Integer flags = cache.invoke(key, new ResourceInjectionEntryProcessor());
 
-        Map<String, EntryProcessorResult<Integer>> results = cache.invokeAll(keys, INJECT_PROCESSOR);
+            assertTrue("Processor result is null", flags != null);
 
-        for (EntryProcessorResult<Integer> res : results.values()) {
-            Collection<ResourceType> notInjected1 = ResourceInfoSet.valueOf(res.get()).notInjected();
+            log.info("Injection flag: " + Integer.toBinaryString(flags));
 
-            if (!notInjected1.isEmpty())
-                assertTrue("Can't inject resource(s) " + Arrays.toString(notInjected1.toArray()), false);
+            Collection<ResourceType> notInjected = ResourceInfoSet.valueOf(flags).notInjected(required);
+
+            if (!notInjected.isEmpty())
+                assertTrue("Can't inject resource(s) " + Arrays.toString(notInjected.toArray()), false);
+
+            CacheEvent evt;
+
+            long start = System.currentTimeMillis();
+
+            do {
+                long wait = 10000 - (System.currentTimeMillis() - start);
+
+                assert wait > 0 : "Timeout expired";
+
+                evt = lsnr.evts.poll(wait, TimeUnit.MILLISECONDS);
+            } while (evt == null || !(Objects.equals(key, evt.key()) &&
+                    Objects.equals(ResourceInjectionEntryProcessor.class.getName(), evt.closureClassName())));
+
+            Set<String> keys = new HashSet<>(Arrays.asList(UUID.randomUUID().toString(),
+                UUID.randomUUID().toString(), UUID.randomUUID().toString(),
+                UUID.randomUUID().toString()));
+
+            Map<String, EntryProcessorResult<Integer>> results = cache.invokeAll(keys, new ResourceInjectionEntryProcessor());
+
+            for (EntryProcessorResult<Integer> res : results.values()) {
+                Collection<ResourceType> notInjected1 = ResourceInfoSet.valueOf(res.get()).notInjected(required);
+
+                if (!notInjected1.isEmpty())
+                    assertTrue("Can't inject resource(s) " + Arrays.toString(notInjected1.toArray()), false);
+            }
+
+            start = System.currentTimeMillis();
+
+            do {
+                long wait = 10000 - (System.currentTimeMillis() - start);
+
+                assert wait > 0 : "Timeout expired";
+
+                evt = lsnr.evts.poll(wait, TimeUnit.MILLISECONDS);
+
+                if (evt != null && keys.contains(evt.key()) &&
+                    Objects.equals(ResourceInjectionEntryProcessor.class.getName(), evt.closureClassName())) {
+                    keys.remove(evt.key());
+                    break;
+                }
+            } while (true);
+        }
+        finally {
+            evts.stopLocalListen(lsnr, EventType.EVT_CACHE_OBJECT_READ);
         }
     }
 
@@ -5509,107 +5593,31 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
         }
     }
 
-    /** */
-    enum ResourceType {
-        /** */
-        IGNITE_INSTANCE,
-
-        /** */
-        CACHE_NAME
-    }
-
     /**
      *
      */
-    static class ResourceInfoSet {
+    public static class ResourceInjectionEntryProcessor extends ResourceInjectionEntryProcessorBase<String, Integer> {
         /** */
-        int val;
-
-        /** */
-        public ResourceInfoSet() {
-            this(0);
-        }
+        protected transient Ignite ignite;
 
         /** */
-        public ResourceInfoSet(int val) {
-            this.val = val;
-        }
-
-        /**
-         * @param val Value.
-         */
-        public static ResourceInfoSet valueOf(int val) {
-            return new ResourceInfoSet(val);
-        }
+        protected transient String cacheName;
 
         /** */
-        public int getValue() {
-            return val;
-        }
-
-        /**
-         * @param type Type.
-         * @param injected Injected.
-         */
-        public ResourceInfoSet set(ResourceType type, boolean injected) {
-            int mask = 1 << type.ordinal();
-
-            if (injected)
-                val |= mask;
-            else
-                val &= ~mask;
-
-            return this;
-        }
-
-        /**
-         * @see {@link #set(ResourceType, boolean)}
-         */
-        public ResourceInfoSet set(ResourceType type, Object toCheck) {
-            return set(type, toCheck != null);
-        }
-
-        /**
-         * @return collection of not injected resources
-         */
-        public Collection<ResourceType> notInjected() {
-            ResourceType[] types = ResourceType.values();
-            ArrayList<ResourceType> res = new ArrayList<>(types.length);
-            int mask = 1;
-
-            for (ResourceType type : types) {
-                if ((this.val & mask) == 0)
-                    res.add(type);
-                mask <<= 1;
-            }
-
-            return res;
-        }
-    }
-
-    /**
-     *
-     */
-    private static class ResourceInjectionEntryProcessor implements EntryProcessor<String, Integer, Integer>,
-                Serializable {
-        /** */
-        private transient ResourceInfoSet infoSet;
+        protected IgniteLogger log;
 
         /** */
-        private transient Ignite ignite;
-
-        /** */
-        private transient String cacheName;
+        protected DummyService svc;
 
         @IgniteInstanceResource
         public void setIgnite(Ignite ignite) {
+            assert ignite != null;
+
             checkSet();
 
             infoSet.set(ResourceType.IGNITE_INSTANCE, true);
 
             this.ignite = ignite;
-
-            System.out.println("Set ignite: " + this);
         }
 
         @CacheNameResource
@@ -5621,15 +5629,35 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
             this.cacheName = cacheName;
         }
 
-        /** {@inheritDoc} */
-        @Override public Integer process(MutableEntry<String, Integer> e, Object... args) {
-            return infoSet == null ? null : infoSet.getValue();
+        @LoggerResource
+        public void setLoggerResource(IgniteLogger log) {
+            assert log != null;
+
+            checkSet();
+
+            infoSet.set(ResourceType.LOGGER, true);
+
+            this.log = log;
         }
 
-        /** */
-        private void checkSet() {
-            if (infoSet == null)
-                infoSet = new ResourceInfoSet();
+        @ServiceResource(serviceName = SERVICE_NAME1)
+        public void setDummyService(DummyService svc) {
+            assert svc != null;
+
+            checkSet();
+
+            infoSet.set(ResourceType.SERVICE, true);
+
+            this.svc = svc;
+        }
+
+        /** {@inheritDoc} */
+        @Override public Integer process(MutableEntry<String, Integer> e, Object... args) {
+            Integer oldVal = e.getValue();
+
+            e.setValue(ThreadLocalRandom.current().nextInt() + (oldVal == null ? 0 : oldVal));
+
+            return super.process(e, args);
         }
     }
 
@@ -5917,6 +5945,62 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
         /** {@inheritDoc} */
         @Override public int hashCode() {
             return val;
+        }
+    }
+
+    /**
+     * Dummy Service.
+     */
+    public interface DummyService {
+        public void noop();
+    }
+
+    /**
+     * No-op test service.
+     */
+    public static class DummyServiceImpl implements DummyService, Service {
+        /** */
+        private static final long serialVersionUID = 0L;
+
+        /** {@inheritDoc} */
+        @Override public void noop() {
+            // No-op.
+        }
+
+        /** {@inheritDoc} */
+        @Override public void cancel(ServiceContext ctx) {
+            System.out.println("Cancelling service: " + ctx.name());
+        }
+
+        /** {@inheritDoc} */
+        @Override public void init(ServiceContext ctx) throws Exception {
+            System.out.println("Initializing service: " + ctx.name());
+        }
+
+        /** {@inheritDoc} */
+        @Override public void execute(ServiceContext ctx) {
+            System.out.println("Executing service: " + ctx.name());
+        }
+    }
+
+    public static class DummyBean {
+        public void test() {
+            // No-op
+        }
+    }
+
+    /**
+     *
+     */
+    public static class CacheEventListener implements IgnitePredicate<CacheEvent> {
+        /** */
+        public final LinkedBlockingQueue<CacheEvent> evts = new LinkedBlockingQueue<>();
+
+        /** {@inheritDoc} */
+        @Override public boolean apply(CacheEvent evt) {
+            evts.add(evt);
+
+            return true;
         }
     }
 }

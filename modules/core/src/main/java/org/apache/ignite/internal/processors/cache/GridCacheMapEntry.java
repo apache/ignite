@@ -861,6 +861,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
             }
 
             if (evt && !expired && cctx.events().isRecordable(EVT_CACHE_OBJECT_READ)) {
+                transformClo = EntryProcessorResourceInjectorProxy.unwrapAsObject(transformClo);
                 cctx.events().addEvent(
                     partition(),
                     key,
@@ -948,7 +949,9 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                         deletedUnlocked(false);
                 }
 
-                if (evt && cctx.events().isRecordable(EVT_CACHE_OBJECT_READ))
+                if (evt && cctx.events().isRecordable(EVT_CACHE_OBJECT_READ)) {
+                    transformClo = EntryProcessorResourceInjectorProxy.unwrapAsObject(transformClo);
+
                     cctx.events().addEvent(
                         partition(),
                         key,
@@ -963,6 +966,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                         transformClo != null ? transformClo.getClass().getName() : null,
                         taskName,
                         keepBinary);
+                }
             }
         }
 
@@ -2356,6 +2360,8 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                     if (transformClo != null && cctx.events().isRecordable(EVT_CACHE_OBJECT_READ)) {
                         evtOld = cctx.unwrapTemporary(oldVal);
 
+                        transformClo = EntryProcessorResourceInjectorProxy.unwrapAsObject(transformClo);
+
                         cctx.events().addEvent(partition(), key, evtNodeId, null,
                             newVer, EVT_CACHE_OBJECT_READ, evtOld, evtOld != null || hadVal, evtOld,
                             evtOld != null || hadVal, subjId, transformClo.getClass().getName(), taskName,
@@ -2451,6 +2457,8 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
                     if (transformClo != null && cctx.events().isRecordable(EVT_CACHE_OBJECT_READ)) {
                         evtOld = cctx.unwrapTemporary(oldVal);
+
+                        transformClo = EntryProcessorResourceInjectorProxy.unwrapAsObject(transformClo);
 
                         cctx.events().addEvent(partition(), key, evtNodeId, null,
                             newVer, EVT_CACHE_OBJECT_READ, evtOld, evtOld != null || hadVal, evtOld,
