@@ -103,7 +103,6 @@ public abstract class IgniteCacheConfigPermutationsAbstractTest extends IgniteCo
 
                     IgniteConfiguration cfg = optimize(getConfiguration(gridName));
 
-
                     if (i != CLIENT_NODE_IDX && i != CLIENT_NEAR_ONLY_IDX) {
                         CacheConfiguration cc = testsCfg.configurationFactory().cacheConfiguration(gridName);
 
@@ -170,6 +169,13 @@ public abstract class IgniteCacheConfigPermutationsAbstractTest extends IgniteCo
         }
 
         awaitPartitionMapExchange();
+
+        for (int i = 0; i < gridCount(); i++)
+            assertNotNull(jcache(i));
+
+        for (int i = 0; i < gridCount(); i++)
+            assertEquals("Cache is not empty [idx=" + i + ", entrySet=" + jcache(i).localEntries() + ']',
+                0, jcache(i).localSize(CachePeekMode.ALL));
     }
 
     /** {@inheritDoc} */
@@ -254,8 +260,7 @@ public abstract class IgniteCacheConfigPermutationsAbstractTest extends IgniteCo
 
                                 return locSize == 0;
                             }
-                        },
-                        getTestTimeout());
+                        }, 10_000);
 
                     // TODO ticket number.
                     if (cacheIsEmpty)
@@ -314,6 +319,7 @@ public abstract class IgniteCacheConfigPermutationsAbstractTest extends IgniteCo
 
         resetStore();
 
+        // Restore cache if current cache has garbage.
         if (cacheIsNotEmptyError != null) {
             for (int i = 0; i < gridCount(); i++) {
                 info("Destroing cache on grid: " + i);
@@ -326,11 +332,21 @@ public abstract class IgniteCacheConfigPermutationsAbstractTest extends IgniteCo
                     cache.destroy();
             }
 
+            assertTrue(GridTestUtils.waitForCondition(new GridAbsPredicateX() {
+                @Override public boolean applyx() throws IgniteCheckedException {
+                    for (int i = 0; i < gridCount(); i++) {
+                        if (jcache(i) != null)
+                            return false;
+                    }
+
+                    return true;
+                }
+            }, 10_000));
+
             startCachesDinamically();
 
             throw cacheIsNotEmptyError;
         }
-
     }
 
     /**

@@ -17,7 +17,12 @@
 
 package org.apache.ignite.testframework.junits;
 
+import java.io.Externalizable;
 import java.io.File;
+import java.io.IOException;
+import java.io.ObjectInput;
+import java.io.ObjectOutput;
+import java.io.Serializable;
 import org.apache.commons.io.FileUtils;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -44,6 +49,9 @@ public abstract class IgniteConfigPermutationsAbstractTest extends GridCommonAbs
 
     /** */
     protected TestsConfiguration testsCfg;
+
+    /** */
+    protected volatile DataMode dataMode;
 
     /**
      * @param testsCfg Tests configuration.
@@ -180,5 +188,239 @@ public abstract class IgniteConfigPermutationsAbstractTest extends GridCommonAbs
      */
     protected IgniteEx testedGrid() {
         return grid(testedNodeIdx);
+    }
+
+    /**
+     * Runs in all data modes.
+     */
+    protected void runInAllDataModes(TestRunnable call) throws Exception {
+        for (int i = 0; i < DataMode.values().length; i++) {
+            dataMode = DataMode.values()[i];
+
+            info("Running test in data mode: " + dataMode);
+
+            if (i != 0)
+                beforeTest();
+
+            try {
+                call.run();
+            }
+            finally {
+                if (i + 1 != DataMode.values().length)
+                    afterTest();
+            }
+
+        }
+    }
+
+    /**
+     * @param keyId Key Id.
+     * @return Key.
+     */
+    public Object key(int keyId) {
+        return key(keyId, dataMode);
+    }
+
+    /**
+     * @param valId Key Id.
+     * @return Value.
+     */
+    public Object value(int valId) {
+        return value(valId, dataMode);
+    }
+
+    /**
+     * @param keyId Key Id.
+     * @param mode Mode.
+     * @return Key.
+     */
+    public static Object key(int keyId, DataMode mode) {
+        switch (mode) {
+            case SERIALIZABLE:
+                return new SerializableObject(keyId);
+            case EXTERNALIZABLE:
+                return new ExternalizableObject(keyId);
+            case PLANE_OBJECT:
+                return new TestObject(keyId);
+            default:
+                throw new IllegalArgumentException("mode: " + mode);
+        }
+    }
+
+    /**
+     * @param obj Key or value object
+     * @return Value.
+     */
+    public static int valueOf(Object obj) {
+        if (obj instanceof TestObject)
+            return ((TestObject)obj).value();
+        else
+            throw new IllegalStateException();
+    }
+
+    /**
+     * @param idx Index.
+     * @param mode Mode.
+     * @return Value.
+     */
+    public static Object value(int idx, DataMode mode) {
+        switch (mode) {
+            case SERIALIZABLE:
+                return new SerializableObject(idx);
+            case EXTERNALIZABLE:
+                return new ExternalizableObject(idx);
+            case PLANE_OBJECT:
+                return new TestObject(idx);
+            default:
+                throw new IllegalArgumentException("mode: " + mode);
+        }
+    }
+
+    /**
+     *
+     */
+    public static class TestObject {
+        /** */
+        protected int val;
+
+        /** */
+        protected String strVal;
+
+        /** */
+        protected TestEnum enumVal;
+
+        /**
+         * @param val Value.
+         */
+        TestObject(int val) {
+            this.val = val;
+            strVal = "val" + val;
+
+            TestEnum[] values = TestEnum.values();
+            enumVal = values[Math.abs(val) % values.length];
+        }
+
+        /**
+         * @return Value.
+         */
+        public int value() {
+            return val;
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean equals(Object o) {
+            if (this == o)
+                return true;
+
+            if (!(o instanceof TestObject))
+                return false;
+
+            TestObject val = (TestObject)o;
+
+            return this.val == val.val && enumVal == val.enumVal && strVal.equals(val.strVal);
+
+        }
+
+        /** {@inheritDoc} */
+        @Override public int hashCode() {
+            int res = val;
+
+            res = 31 * res + strVal.hashCode();
+            res = 31 * res + enumVal.hashCode();
+
+            return res;
+        }
+
+        /** {@inheritDoc} */
+        @Override public String toString() {
+            return getClass().getSimpleName() + "[" +
+                "val=" + val +
+                ", strVal='" + strVal + '\'' +
+                ", enumVal=" + enumVal +
+                ']';
+        }
+    }
+
+    /**
+     *
+     */
+    protected static class SerializableObject extends TestObject implements Serializable {
+        /**
+         * @param val Value.
+         */
+        public SerializableObject(int val) {
+            super(val);
+        }
+    }
+
+    /**
+     *
+     */
+    private static class ExternalizableObject extends TestObject implements Externalizable {
+        /**
+         * Default constructor.
+         */
+        ExternalizableObject() {
+            super(-1);
+        }
+
+        /**
+         * @param val Value.
+         */
+        ExternalizableObject(int val) {
+            super(val);
+        }
+
+        /** {@inheritDoc} */
+        @Override public void writeExternal(ObjectOutput out) throws IOException {
+            out.writeInt(val);
+            out.writeObject(strVal);
+            out.writeObject(enumVal);
+        }
+
+        /** {@inheritDoc} */
+        @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
+            val = in.readInt();
+            strVal = (String)in.readObject();
+            enumVal = (TestEnum)in.readObject();
+        }
+    }
+
+    /**
+     * Data mode.
+     */
+    public enum DataMode {
+        /** Serializable objects. */
+        SERIALIZABLE,
+
+        /** Externalizable objects. */
+        EXTERNALIZABLE,
+
+        /** Objects without Serializable and Externalizable. */
+        PLANE_OBJECT
+    }
+
+    /**
+     *
+     */
+    private enum TestEnum {
+        /** */
+        TEST_VALUE_1,
+
+        /** */
+        TEST_VALUE_2,
+
+        /** */
+        TEST_VALUE_3
+    }
+
+    /**
+     *
+     */
+    public static interface TestRunnable {
+        /**
+         * @throws Exception If failed.
+         */
+        public void run() throws Exception;
     }
 }
