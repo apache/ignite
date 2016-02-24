@@ -486,6 +486,18 @@ consoleModule.controller('sqlController', function ($http, $timeout, $interval, 
     var _rebuildColumns = function (paragraph) {
         var columnDefs = [];
 
+        _.forEach(_.groupBy(paragraph.meta, 'fieldName'), function (colsByName, fieldName) {
+            var colsByTypes = _.groupBy(colsByName, 'typeName');
+
+            var needType = _.keys(colsByTypes).length > 1;
+
+            _.forEach(colsByTypes, function(colsByType, typeName) {
+                _.forEach(colsByType, function (col, ix) {
+                    col.fieldName = (needType && !$common.isEmptyString(typeName) ? typeName + '.' : '') + fieldName + (ix > 0 ? ix : '');
+                })
+            });
+        });
+
         _.forEach(paragraph.meta, function (col, idx) {
             if (paragraph.columnFilter(col)) {
                 if (_notObjectType(col.fieldTypeName))
