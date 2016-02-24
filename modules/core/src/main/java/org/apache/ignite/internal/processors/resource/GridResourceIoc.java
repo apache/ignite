@@ -382,16 +382,10 @@ class GridResourceIoc {
             do {
                 oldSets = annotationSets.get();
 
-                if (oldSets.length < set.descIdx) {
-                    oldSets[set.descIdx] = mask;
+                newSets = oldSets.length < set.descIdx ? oldSets :
+                    Arrays.copyOf(oldSets, Math.max(oldSets.length << 1, set.descIdx + 1));
 
-                    newSets = oldSets;
-                }
-                else {
-                    newSets = Arrays.copyOf(oldSets, oldSets.length << 1);
-
-                    newSets[set.descIdx] = mask;
-                }
+                newSets[set.descIdx] = mask;
             }
             while (!annotationSets.compareAndSet(oldSets, newSets));
         }
