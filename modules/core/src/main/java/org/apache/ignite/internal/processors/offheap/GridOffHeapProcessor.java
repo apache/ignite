@@ -212,7 +212,7 @@ public class GridOffHeapProcessor extends GridProcessorAdapter {
         if (valBytes == null)
             return null;
 
-        return marsh.unmarshal(valBytes, ldr == null ? U.gridClassLoader() : ldr);
+        return marsh.unmarshal(valBytes, U.resolveClassLoader(ldr, ctx.config()));
     }
 
     /**

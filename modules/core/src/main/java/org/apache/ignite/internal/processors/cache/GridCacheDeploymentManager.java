@@ -855,6 +855,11 @@ public class GridCacheDeploymentManager<K, V> extends GridCacheSharedManagerAdap
                 }
             }
 
+            Class cls = getParent().loadClass(name);
+
+            if (cls != null)
+                return cls;
+
             throw new ClassNotFoundException("Failed to load class [name=" + name+ ", ctx=" + deps + ']');
         }
 
