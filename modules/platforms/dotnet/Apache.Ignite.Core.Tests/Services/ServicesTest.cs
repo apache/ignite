@@ -512,6 +512,8 @@ namespace Apache.Ignite.Core.Tests.Services
                 javaSvcName);
 
             var svc = Services.GetServiceProxy<IJavaService>(javaSvcName, false);
+            var binSvc = Services.WithKeepBinary().WithServerKeepBinary()
+                .GetServiceProxy<IJavaService>(javaSvcName, false);
 
             Assert.IsTrue(svc.isInitialized());
             Assert.IsTrue(svc.isExecuted());
@@ -543,6 +545,10 @@ namespace Apache.Ignite.Core.Tests.Services
             Assert.AreEqual(0, svc.testParams());
 
             Assert.AreEqual(7, svc.testBinarizable(new PlatformComputeBinarizable {Field = 6}).Field);
+            Assert.AreEqual(15,
+                binSvc.testBinaryObject(
+                    Grid1.GetBinary().ToBinary<IBinaryObject>(new PlatformComputeBinarizable {Field = 6}))
+                    .GetField<int>("Field"));
 
             Services.Cancel(javaSvcName);
         }
@@ -913,7 +919,7 @@ namespace Apache.Ignite.Core.Tests.Services
 
 
             PlatformComputeBinarizable testBinarizable(PlatformComputeBinarizable x);
-            IBinaryObject TestBinaryObject(IBinaryObject x);
+            IBinaryObject testBinaryObject(IBinaryObject x);
         }
 
         private class PlatformComputeBinarizable
