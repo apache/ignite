@@ -44,7 +44,7 @@ include ../includes/infos
                                     .scrollable-y(ng-show='(displayedRows | domainsValidation:ui.showValid:true).length > 0' style='max-height: 200px')
                                         table
                                             tbody
-                                                tr(ng-repeat='row in (displayedRows | domainsValidation:ui.showValid:true) track by row._id')
+                                                tr(ng-repeat='row in (displayedRows | domainsValidation:ui.showValid:true) track by row._id' ignite-bs-affix-update)
                                                     td
                                                         a(ng-class='{active: row._id == selectedItem._id}' ng-click='selectItem(row)') {{$index + 1}}) {{row.valueType}}
                                     label.placeholder(ng-show='(displayedRows | domainsValidation:ui.showValid:true).length == 0') No domain models found
