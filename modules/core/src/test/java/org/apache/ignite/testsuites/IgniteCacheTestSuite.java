@@ -106,6 +106,9 @@ import org.apache.ignite.internal.processors.cache.IgniteCacheTxNearEnabledInvok
 import org.apache.ignite.internal.processors.cache.IgniteClientAffinityAssignmentSelfTest;
 import org.apache.ignite.internal.processors.cache.IgnitePutAllLargeBatchSelfTest;
 import org.apache.ignite.internal.processors.cache.IgnitePutAllUpdateNonPreloadedPartitionSelfTest;
+import org.apache.ignite.internal.processors.cache.binary.GridCacheLocalIgniteOffheapSerializationTest;
+import org.apache.ignite.internal.processors.cache.binary.GridCacheLocalIgniteOffheapTieredSerializationTest;
+import org.apache.ignite.internal.processors.cache.binary.GridCacheLocalIgniteSerializationTest;
 import org.apache.ignite.internal.processors.cache.context.IgniteCacheAtomicExecutionContextTest;
 import org.apache.ignite.internal.processors.cache.context.IgniteCacheContinuousExecutionContextTest;
 import org.apache.ignite.internal.processors.cache.context.IgniteCacheIsolatedExecutionContextTest;
@@ -290,6 +293,11 @@ public class IgniteCacheTestSuite extends TestSuite {
         suite.addTestSuite(IgniteCacheNearLockValueSelfTest.class);
 
         suite.addTestSuite(CachePutEventListenerErrorSelfTest.class);
+
+        // Ignition.localIgnite() check
+        suite.addTestSuite(GridCacheLocalIgniteSerializationTest.class);
+        suite.addTestSuite(GridCacheLocalIgniteOffheapSerializationTest.class);
+        suite.addTestSuite(GridCacheLocalIgniteOffheapTieredSerializationTest.class);
 
         return suite;
     }

@@ -1324,10 +1324,8 @@ public class IgnitionEx {
      * @param igniteCfg ignite  config
      * @return old ignite config.
      */
-    public static IgniteConfiguration setIgniteCfgThreadLocal(final IgniteConfiguration igniteCfg) {
-        final IgniteConfiguration cfg = IGNITE_CFG_THREAD_LOC.get();
+    public static void setIgniteCfgThreadLocal(final IgniteConfiguration igniteCfg) {
         IGNITE_CFG_THREAD_LOC.set(igniteCfg);
-        return cfg;
     }
 
     /**

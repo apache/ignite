@@ -18,9 +18,12 @@
 package org.apache.ignite.marshaller;
 
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgnitionEx;
+import org.apache.ignite.internal.binary.GridBinaryMarshaller;
+import org.apache.ignite.internal.binary.streams.BinaryInputStream;
 import org.apache.ignite.internal.client.marshaller.GridClientMarshaller;
 import org.jetbrains.annotations.Nullable;
 
@@ -84,7 +87,7 @@ public final class MarshallerUtils {
     /**
      *
      * @param marshaller marshaller.
-     * @param arr byte array.
+     * @param arr binary data.
      * @param clsLdr class loader.
      * @param kernalCtx kernal context.
      * @param <T> target type
@@ -158,7 +161,7 @@ public final class MarshallerUtils {
     /**
      *
      * @param marshaller marshaller.
-     * @param arr byte array.
+     * @param arr binary data.
      * @param clsLdr class loader.
      * @param igniteCfg ignite config.
      * @param <T> target type
@@ -235,7 +238,7 @@ public final class MarshallerUtils {
     /**
      *
      * @param gridMarshaller grid marshaller.
-     * @param bytes byte array.
+     * @param bytes binary data.
      * @param igniteCfg ignite config.
      * @param <T> target type.
      * @return deserialized value.
@@ -247,6 +250,66 @@ public final class MarshallerUtils {
 
         try {
             return gridMarshaller.unmarshal(bytes);
+        } finally {
+            restoreCfg(cfg);
+        }
+    }
+
+    /**
+     *
+     * @param gridBinaryMarshaller grid binary marshaller.
+     * @param obj object.
+     * @param igniteCfg ignite config.
+     * @return serialized data.
+     * @throws BinaryObjectException
+     */
+    public static byte[] marshal(GridBinaryMarshaller gridBinaryMarshaller, @Nullable Object obj,
+        IgniteConfiguration igniteCfg) throws BinaryObjectException {
+        final IgniteConfiguration cfg = setCfg(igniteCfg);
+
+        try {
+            return gridBinaryMarshaller.marshal(obj);
+        } finally {
+            restoreCfg(cfg);
+        }
+    }
+
+    /**
+     *
+     * @param gridBinaryMarshaller c
+     * @param bytes binary data.
+     * @param clsLdr class loader.
+     * @param igniteCfg ignite config.
+     * @param <T> target type.
+     * @return deserialized object.
+     * @throws BinaryObjectException
+     */
+    public static <T> T unmarshal(GridBinaryMarshaller gridBinaryMarshaller, byte[] bytes, @Nullable ClassLoader clsLdr,
+        IgniteConfiguration igniteCfg) throws BinaryObjectException {
+        final IgniteConfiguration cfg = setCfg(igniteCfg);
+
+        try {
+            return gridBinaryMarshaller.unmarshal(bytes, clsLdr);
+        } finally {
+            restoreCfg(cfg);
+        }
+    }
+
+    /**
+     *
+     * @param gridBinaryMarshaller grid binary marshaller.
+     * @param in input stream.
+     * @param igniteCfg ignite config.
+     * @param <T> target type.
+     * @return deserialized object.
+     * @throws BinaryObjectException
+     */
+    public static <T> T unmarshal(GridBinaryMarshaller gridBinaryMarshaller, BinaryInputStream in,
+        IgniteConfiguration igniteCfg) throws BinaryObjectException {
+        final IgniteConfiguration cfg = setCfg(igniteCfg);
+
+        try {
+            return gridBinaryMarshaller.unmarshal(in);
         } finally {
             restoreCfg(cfg);
         }
