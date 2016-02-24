@@ -884,6 +884,14 @@ namespace Apache.Ignite.Core.Tests.Services
             double? testWrapper(double? x);
             char? testWrapper(char? x);
             bool? testWrapper(bool? x);
+
+            PlatformComputeBinarizable testBinarizable(PlatformComputeBinarizable x);
+            IBinaryObject TestBinaryObject(IBinaryObject x);
+        }
+
+        private class PlatformComputeBinarizable
+        {
+            public int Field { get; set; }
         }
     }
 }
