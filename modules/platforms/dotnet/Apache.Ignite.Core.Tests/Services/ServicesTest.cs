@@ -536,14 +536,8 @@ namespace Apache.Ignite.Core.Tests.Services
             Assert.AreEqual(false, svc.testWrapper(true));
             Assert.AreEqual('b', svc.testWrapper('a'));
 
-            Assert.IsNull(svc.testWrapper((byte?) null));
-            Assert.IsNull(svc.testWrapper((short?) null));
-            Assert.IsNull(svc.testWrapper((int?) null));
-            Assert.IsNull(svc.testWrapper((long?) null));
-            Assert.IsNull(svc.testWrapper((float?) null));
-            Assert.IsNull(svc.testWrapper((double?) null));
-            Assert.IsNull(svc.testWrapper((bool?) null));
-            Assert.IsNull(svc.testWrapper((char?) null));
+            Assert.AreEqual(9, svc.testNull(8));
+            Assert.IsNull(svc.testNull(null));
 
             Services.Cancel(javaSvcName);
         }
@@ -910,6 +904,9 @@ namespace Apache.Ignite.Core.Tests.Services
             double? testWrapper(double? x);
             char? testWrapper(char? x);
             bool? testWrapper(bool? x);
+
+            int? testNull(int? x);
+
 
             PlatformComputeBinarizable testBinarizable(PlatformComputeBinarizable x);
             IBinaryObject TestBinaryObject(IBinaryObject x);

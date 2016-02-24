@@ -197,6 +197,10 @@ public class PlatformDeployServiceTask extends ComputeTaskAdapter<String, Object
             return arg == null ? null :  (char) (arg + 1);
         }
 
+        public Integer testNull(Integer arg) {
+            return arg == null ? null : arg + 1;
+        }
+
         public PlatformComputeBinarizable testBinarizable(PlatformComputeBinarizable arg) {
             return arg == null ? null : new PlatformComputeBinarizable(arg.field + 1);
         }
