@@ -343,7 +343,11 @@ public class PlatformServices extends PlatformAbstractTarget {
             else {
                 assert proxy instanceof GridServiceProxy;
 
+                // TODO: Same algorithm as in ServiceProxyInvoker
                 Class[] argTypes = new Class[args.length];
+
+                for (int i = 0; i < args.length; i++)
+                    argTypes[i] = args[i] == null ? null : args[i].getClass();
 
                 Method mtd = serviceClass.getMethod(mthdName, argTypes);
 
