@@ -38,6 +38,7 @@ import org.apache.ignite.services.ServiceConfiguration;
 import org.apache.ignite.services.ServiceDescriptor;
 
 import java.lang.reflect.Method;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Map;
 import java.util.UUID;
@@ -357,10 +358,24 @@ public class PlatformServices extends PlatformAbstractTarget {
          * @param args Args.
          * @return Method.
          */
-        private static Method getMethod(Class clazz, String mthdName, Object[] args) {
+        private static Method getMethod(Class clazz, String mthdName, Object[] args) throws NoSuchMethodException {
             assert clazz != null;
             assert mthdName != null;
             assert args != null;
+
+            Method[] allMethods = clazz.getMethods();
+
+            ArrayList<Method> methods = new ArrayList<>(allMethods.length);
+
+            for (Method m : allMethods)
+                if (m.getName().equals(mthdName))
+                    methods.add(m);
+
+            if (methods.size() == 1)
+                return methods.get(0);
+
+            if (methods.size() == 0)
+                throw new NoSuchMethodException("Could not find proxy method " + mthdName + " in class " + clazz);
         }
     }
 }
