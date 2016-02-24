@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-import jQuery from 'jquery';
+import angular from 'angular';
 
 export default ['igniteBsAffixUpdate', ['$window', '$timeout', ($window, $timeout) => {
     let update = null;
@@ -23,7 +23,7 @@ export default ['igniteBsAffixUpdate', ['$window', '$timeout', ($window, $timeou
     const link = ({$last}) => {
         if ($last) {
             update && $timeout.cancel(update);
-            update = $timeout(() => jQuery($window).trigger('resize'), 1000);
+            update = $timeout(() => angular.element($window).triggerHandler('resize'), 1000);
         }
     };
 
