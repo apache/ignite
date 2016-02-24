@@ -555,9 +555,9 @@ namespace Apache.Ignite.Core.Tests.Services
             if (Grid1 != null)
                 return;
 
-            Grid1 = Ignition.Start(Configuration("config\\compute\\compute-grid1.xml"));
-            Grid2 = Ignition.Start(Configuration("config\\compute\\compute-grid2.xml"));
-            Grid3 = Ignition.Start(Configuration("config\\compute\\compute-grid3.xml"));
+            Grid1 = Ignition.Start(GetConfiguration("config\\compute\\compute-grid1.xml"));
+            Grid2 = Ignition.Start(GetConfiguration("config\\compute\\compute-grid2.xml"));
+            Grid3 = Ignition.Start(GetConfiguration("config\\compute\\compute-grid3.xml"));
 
             Grids = new[] { Grid1, Grid2, Grid3 };
         }
@@ -599,7 +599,7 @@ namespace Apache.Ignite.Core.Tests.Services
         /// <summary>
         /// Gets the Ignite configuration.
         /// </summary>
-        private static IgniteConfiguration Configuration(string springConfigUrl)
+        private static IgniteConfiguration GetConfiguration(string springConfigUrl)
         {
             return new IgniteConfiguration
             {
@@ -609,6 +609,7 @@ namespace Apache.Ignite.Core.Tests.Services
                 BinaryConfiguration = new BinaryConfiguration(
                     typeof (TestIgniteServiceBinarizable),
                     typeof (TestIgniteServiceBinarizableErr),
+                    typeof (PlatformComputeBinarizable),
                     typeof (BinarizableObject))
             };
         }
