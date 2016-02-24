@@ -167,5 +167,8 @@ public interface GridNioSession {
      */
     @Nullable public GridNioRecoveryDescriptor recoveryDescriptor();
 
+    /**
+     * @return Ignite config.
+     */
     public IgniteConfiguration igniteConfig();
 }

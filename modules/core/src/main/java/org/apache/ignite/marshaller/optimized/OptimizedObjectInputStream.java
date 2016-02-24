@@ -98,6 +98,10 @@ import static org.apache.ignite.marshaller.optimized.OptimizedMarshallerUtils.se
 
 /**
  * Optimized object input stream.
+ * <P>Note, may be used only in {@link OptimizedMarshaller} to
+ * avoid case when before marshalling/unmarshalling ignite
+ * thread local config doesn't set.</P>
+ * @see org.apache.ignite.marshaller.MarshallerUtils
  */
 class OptimizedObjectInputStream extends ObjectInputStream {
     /** Dummy object for HashSet. */

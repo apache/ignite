@@ -204,6 +204,7 @@ public class GridNioServer<T> {
     /** Optional listener to monitor outbound message queue size. */
     private IgniteBiInClosure<GridNioSession, Integer> msgQueueLsnr;
 
+    /** Grid name. */
     private String gridName;
 
     /**

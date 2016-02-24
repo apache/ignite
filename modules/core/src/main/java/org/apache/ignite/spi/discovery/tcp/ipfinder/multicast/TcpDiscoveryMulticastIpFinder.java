@@ -644,7 +644,6 @@ public class TcpDiscoveryMulticastIpFinder extends TcpDiscoveryVmIpFinder {
     }
 
     /**
-     *
      * @return Ignite config.
      */
     @Nullable private IgniteConfiguration getIgniteCfg() {

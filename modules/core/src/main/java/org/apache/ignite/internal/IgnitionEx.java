@@ -162,7 +162,7 @@ public class IgnitionEx {
     /** List of state listeners. */
     private static final Collection<IgnitionListener> lsnrs = new GridConcurrentHashSet<>(4);
 
-    /** */
+    /** Thread local ignite config. */
     private static final ThreadLocal<IgniteConfiguration> IGNITE_CFG_THREAD_LOC = new ThreadLocal<>();
 
     /** */
@@ -1320,15 +1320,16 @@ public class IgnitionEx {
     }
 
     /**
+     * Save ignite config to thread local var.
      *
-     * @param igniteCfg ignite  config
-     * @return old ignite config.
+     * @param igniteCfg ignite config.
      */
     public static void setIgniteCfgThreadLocal(final IgniteConfiguration igniteCfg) {
         IGNITE_CFG_THREAD_LOC.set(igniteCfg);
     }
 
     /**
+     * Get ignite config from thread local var.
      *
      * @return ignite config.
      */

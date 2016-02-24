@@ -49,6 +49,7 @@ final class SharedFsUtils {
      * @param file File which contains checkpoint data.
      * @param m Grid marshaller.
      * @param log Messages logger.
+     * @param igniteCfg Ignite config.
      * @return Checkpoint data object read from given file.
      * @throws IgniteCheckedException Thrown if data could not be converted
      *    to {@link SharedFsCheckpointData} object.

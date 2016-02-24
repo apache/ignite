@@ -37,13 +37,13 @@ import java.nio.ByteBuffer;
  * ignite configuration in {@link IgnitionEx} class.
  */
 public final class MarshallerUtils {
-    /**
-     *
-     */
+    /** */
     private MarshallerUtils() {
     }
 
     /**
+     * Method delegates call to {@link Marshaller#marshal(Object, OutputStream)} and
+     * sets/restores {@link IgnitionEx#setIgniteCfgThreadLocal(IgniteConfiguration)}
      *
      * @param marshaller marshaller.
      * @param obj object.
@@ -57,6 +57,8 @@ public final class MarshallerUtils {
     }
 
     /**
+     * Method delegates call to {@link Marshaller#marshal(Object)} and
+     * sets/restores {@link IgnitionEx#setIgniteCfgThreadLocal(IgniteConfiguration)}
      *
      * @param marshaller marshaller.
      * @param obj object.
@@ -70,6 +72,8 @@ public final class MarshallerUtils {
     }
 
     /**
+     * Method delegates call to {@link Marshaller#unmarshal(InputStream, ClassLoader)} and
+     * sets/restores {@link IgnitionEx#setIgniteCfgThreadLocal(IgniteConfiguration)}
      *
      * @param marshaller marshaller.
      * @param in input stream.
@@ -85,6 +89,8 @@ public final class MarshallerUtils {
     }
 
     /**
+     * Method delegates call to {@link Marshaller#unmarshal(byte[], ClassLoader)} and
+     * sets/restores {@link IgnitionEx#setIgniteCfgThreadLocal(IgniteConfiguration)}
      *
      * @param marshaller marshaller.
      * @param arr binary data.
@@ -100,6 +106,8 @@ public final class MarshallerUtils {
     }
 
     /**
+     * Method delegates call to {@link Marshaller#marshal(Object, OutputStream)} and
+     * sets/restores {@link IgnitionEx#setIgniteCfgThreadLocal(IgniteConfiguration)}
      *
      * @param marshaller marshaller.
      * @param obj object.
@@ -119,6 +127,8 @@ public final class MarshallerUtils {
     }
 
     /**
+     * Method delegates call to {@link Marshaller#marshal(Object)} and
+     * sets/restores {@link IgnitionEx#setIgniteCfgThreadLocal(IgniteConfiguration)}
      *
      * @param marshaller marshaller.
      * @param obj object.
@@ -138,6 +148,8 @@ public final class MarshallerUtils {
     }
 
     /**
+     * Method delegates call to {@link Marshaller#unmarshal(InputStream, ClassLoader)}
+     * sets/restores {@link IgnitionEx#setIgniteCfgThreadLocal(IgniteConfiguration)}
      *
      * @param marshaller marshaller.
      * @param in input stream.
@@ -159,6 +171,8 @@ public final class MarshallerUtils {
     }
 
     /**
+     * Method delegates call to {@link Marshaller#unmarshal(byte[], ClassLoader)} and
+     * sets/restores {@link IgnitionEx#setIgniteCfgThreadLocal(IgniteConfiguration)}
      *
      * @param marshaller marshaller.
      * @param arr binary data.
@@ -180,6 +194,8 @@ public final class MarshallerUtils {
     }
 
     /**
+     * Marshal, unmarshal object and set/restore
+     * {@link IgnitionEx#setIgniteCfgThreadLocal(IgniteConfiguration)}
      *
      * @param marshaller marshaller.
      * @param obj object
@@ -201,6 +217,8 @@ public final class MarshallerUtils {
     }
 
     /**
+     * Marshal, unmarshal object and set/restore
+     * {@link IgnitionEx#setIgniteCfgThreadLocal(IgniteConfiguration)}
      *
      * @param marshaller marshaller.
      * @param obj object
@@ -216,6 +234,8 @@ public final class MarshallerUtils {
     }
 
     /**
+     * Method delegates call to {@link GridClientMarshaller#marshal(Object, int)} and
+     * sets/restores {@link IgnitionEx#setIgniteCfgThreadLocal(IgniteConfiguration)}
      *
      * @param gridMarshaller grid marshaller.
      * @param obj object.
@@ -236,6 +256,8 @@ public final class MarshallerUtils {
     }
 
     /**
+     * Method delegates call to {@link GridClientMarshaller#unmarshal(byte[])} and
+     * sets/restores {@link IgnitionEx#setIgniteCfgThreadLocal(IgniteConfiguration)}
      *
      * @param gridMarshaller grid marshaller.
      * @param bytes binary data.
@@ -256,6 +278,8 @@ public final class MarshallerUtils {
     }
 
     /**
+     * Method delegates call to {@link GridBinaryMarshaller#marshal(Object)} and
+     * sets/restores {@link IgnitionEx#setIgniteCfgThreadLocal(IgniteConfiguration)}
      *
      * @param gridBinaryMarshaller grid binary marshaller.
      * @param obj object.
@@ -275,6 +299,8 @@ public final class MarshallerUtils {
     }
 
     /**
+     * Method delegates call to {@link GridBinaryMarshaller#unmarshal(byte[], ClassLoader)} and
+     * sets/restores {@link IgnitionEx#setIgniteCfgThreadLocal(IgniteConfiguration)}
      *
      * @param gridBinaryMarshaller c
      * @param bytes binary data.
@@ -296,6 +322,8 @@ public final class MarshallerUtils {
     }
 
     /**
+     * Method delegates call to {@link GridBinaryMarshaller#unmarshal(BinaryInputStream)} and
+     * sets/restores {@link IgnitionEx#setIgniteCfgThreadLocal(IgniteConfiguration)}
      *
      * @param gridBinaryMarshaller grid binary marshaller.
      * @param in input stream.
@@ -316,9 +344,10 @@ public final class MarshallerUtils {
     }
 
     /**
+     * Set config to {@link IgnitionEx#setIgniteCfgThreadLocal(IgniteConfiguration)}
      *
      * @param igniteCfg itgnite config.
-     * @return old ignite config
+     * @return old ignite config.
      */
     private static IgniteConfiguration setCfg(final IgniteConfiguration igniteCfg) {
         final IgniteConfiguration cfg = IgnitionEx.getIgniteCfgThreadLocal();
@@ -330,6 +359,7 @@ public final class MarshallerUtils {
     }
 
     /**
+     * Calls {@link IgnitionEx#setIgniteCfgThreadLocal(IgniteConfiguration)}
      *
      * @param igniteCfg ignite config
      */
@@ -338,7 +368,6 @@ public final class MarshallerUtils {
     }
 
     /**
-     *
      * @param kernalCtx kernal context.
      * @return ignite config or null.
      */

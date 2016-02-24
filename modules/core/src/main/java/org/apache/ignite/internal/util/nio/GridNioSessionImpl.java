@@ -70,6 +70,7 @@ public class GridNioSessionImpl implements GridNioSession {
     /** Accepted flag. */
     private final boolean accepted;
 
+    /** Ignite config. */
     private IgniteConfiguration igniteCfg;
 
     /**
@@ -195,6 +196,7 @@ public class GridNioSessionImpl implements GridNioSession {
     }
 
     /** {@inheritDoc} */
+    @SuppressWarnings("unchecked")
     @Override public <T> T meta(int key) {
         assert key < meta.length;
 
@@ -202,6 +204,7 @@ public class GridNioSessionImpl implements GridNioSession {
     }
 
     /** {@inheritDoc} */
+    @SuppressWarnings("unchecked")
     @Override public <T> T addMeta(int key, @Nullable T val) {
         assert key < meta.length;
 
@@ -213,6 +216,7 @@ public class GridNioSessionImpl implements GridNioSession {
     }
 
     /** {@inheritDoc} */
+    @SuppressWarnings("unchecked")
     @Override public <T> T removeMeta(int key) {
         assert key < meta.length;
 
@@ -316,6 +320,7 @@ public class GridNioSessionImpl implements GridNioSession {
         return S.toString(GridNioSessionImpl.class, this);
     }
 
+    /** {@inheritDoc} */
     @Override public IgniteConfiguration igniteConfig() {
         return igniteCfg;
     }
