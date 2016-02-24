@@ -360,6 +360,8 @@ public class PlatformServices extends PlatformAbstractTarget {
 
                 Method mtd = getMethod(serviceClass, mthdName, args);
 
+                // TODO: when not srvKeepBinary, deserialize binary args
+
                 return ((GridServiceProxy)proxy).invokeMethod(mtd, args);
             }
         }
