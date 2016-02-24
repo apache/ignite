@@ -19,7 +19,6 @@
 namespace Apache.Ignite.Core.Tests.Services
 {
     using System;
-    using System.Collections.Generic;
     using System.Diagnostics.CodeAnalysis;
     using System.Linq;
     using System.Threading;
@@ -543,6 +542,8 @@ namespace Apache.Ignite.Core.Tests.Services
             Assert.AreEqual(5, svc.testParams(1, 2, 3, 4, "5"));
             Assert.AreEqual(0, svc.testParams());
 
+            Assert.AreEqual(7, svc.testBinarizable(new PlatformComputeBinarizable {Field = 6}).Field);
+
             Services.Cancel(javaSvcName);
         }
 
@@ -605,15 +606,10 @@ namespace Apache.Ignite.Core.Tests.Services
                 SpringConfigUrl = springConfigUrl,
                 JvmClasspath = TestUtils.CreateTestClasspath(),
                 JvmOptions = TestUtils.TestJavaOptions(),
-                BinaryConfiguration = new BinaryConfiguration
-                {
-                    TypeConfigurations = new List<BinaryTypeConfiguration>
-                    {
-                        new BinaryTypeConfiguration(typeof(TestIgniteServiceBinarizable)),
-                        new BinaryTypeConfiguration(typeof(TestIgniteServiceBinarizableErr)),
-                        new BinaryTypeConfiguration(typeof(BinarizableObject))
-                    }
-                }
+                BinaryConfiguration = new BinaryConfiguration(
+                    typeof (TestIgniteServiceBinarizable),
+                    typeof (TestIgniteServiceBinarizableErr),
+                    typeof (BinarizableObject))
             };
         }
 
