@@ -131,6 +131,7 @@ public class PlatformDeployServiceTask extends ComputeTaskAdapter<String, Object
         // TODO: test overloads, test all primitive types
         // test primitive wrappers and nulls
         // test binary objects
+        // test arrays and strings
 
         public byte test(byte arg) {
             return (byte) (arg + 1);
