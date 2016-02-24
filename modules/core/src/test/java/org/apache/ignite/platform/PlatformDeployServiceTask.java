@@ -165,6 +165,10 @@ public class PlatformDeployServiceTask extends ComputeTaskAdapter<String, Object
             return (char) (arg + 1);
         }
 
+        public String test(String arg) {
+            return arg == null ? null : arg + "!";
+        }
+
         public Byte testWrapper(Byte arg) {
             return arg == null ? null : (byte) (arg + 1);
         }
@@ -199,6 +203,10 @@ public class PlatformDeployServiceTask extends ComputeTaskAdapter<String, Object
 
         public Integer testNull(Integer arg) {
             return arg == null ? null : arg + 1;
+        }
+
+        public int testParams(Object... args) {
+            return args.length;
         }
 
         public PlatformComputeBinarizable testBinarizable(PlatformComputeBinarizable arg) {

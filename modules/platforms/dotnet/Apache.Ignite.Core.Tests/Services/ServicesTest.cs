@@ -526,6 +526,7 @@ namespace Apache.Ignite.Core.Tests.Services
             Assert.AreEqual(5.8, svc.test(3.3));
             Assert.IsFalse(svc.test(true));
             Assert.AreEqual('b', svc.test('a'));
+            Assert.AreEqual("Foo!", svc.test("Foo"));
 
             Assert.AreEqual(4, svc.testWrapper((byte?) 3));
             Assert.AreEqual(5, svc.testWrapper((short?) 4));
@@ -538,6 +539,9 @@ namespace Apache.Ignite.Core.Tests.Services
 
             Assert.AreEqual(9, svc.testNull(8));
             Assert.IsNull(svc.testNull(null));
+
+            Assert.AreEqual(5, svc.testParams(1, 2, 3, 4, "5"));
+            Assert.AreEqual(0, svc.testParams());
 
             Services.Cancel(javaSvcName);
         }
@@ -895,6 +899,7 @@ namespace Apache.Ignite.Core.Tests.Services
             float test(float x);
             double test(double x);
             char test(char x);
+            string test(string x);
             bool test(bool x);
             byte? testWrapper(byte? x);
             short? testWrapper(short? x);
@@ -906,6 +911,8 @@ namespace Apache.Ignite.Core.Tests.Services
             bool? testWrapper(bool? x);
 
             int? testNull(int? x);
+
+            int testParams(params object[] args);
 
 
             PlatformComputeBinarizable testBinarizable(PlatformComputeBinarizable x);
