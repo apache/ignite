@@ -536,6 +536,15 @@ namespace Apache.Ignite.Core.Tests.Services
             Assert.AreEqual(false, svc.testWrapper(true));
             Assert.AreEqual('b', svc.testWrapper('a'));
 
+            Assert.IsNull(svc.testWrapper((byte?) null));
+            Assert.IsNull(svc.testWrapper((short?) null));
+            Assert.IsNull(svc.testWrapper((int?) null));
+            Assert.IsNull(svc.testWrapper((long?) null));
+            Assert.IsNull(svc.testWrapper((float?) null));
+            Assert.IsNull(svc.testWrapper((double?) null));
+            Assert.IsNull(svc.testWrapper((bool?) null));
+            Assert.IsNull(svc.testWrapper((char?) null));
+
             Services.Cancel(javaSvcName);
         }
 
