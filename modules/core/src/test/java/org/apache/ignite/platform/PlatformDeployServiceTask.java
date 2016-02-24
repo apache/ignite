@@ -164,6 +164,38 @@ public class PlatformDeployServiceTask extends ComputeTaskAdapter<String, Object
             return (char) (arg + 1);
         }
 
+        public Byte testWrapper(Byte arg) {
+            return arg == null ? null : (byte) (arg + 1);
+        }
+
+        public Short testWrapper(Short arg) {
+            return arg == null ? null : (short) (arg + 1);
+        }
+
+        public Integer testWrapper(Integer arg) {
+            return arg == null ? null : arg + 1;
+        }
+
+        public Long testWrapper(Long arg) {
+            return arg == null ? null : arg + 1;
+        }
+
+        public Float testWrapper(Float arg) {
+            return arg == null ? null : arg + 1.5f;
+        }
+
+        public Double testWrapper(Double arg) {
+            return arg == null ? null :  arg + 2.5;
+        }
+
+        public Boolean testWrapper(Boolean arg) {
+            return arg == null ? null :  !arg;
+        }
+
+        public Character testWrapper(Character arg) {
+            return arg == null ? null :  (char) (arg + 1);
+        }
+
         public PlatformComputeBinarizable testBinarizable(PlatformComputeBinarizable arg) {
             return arg == null ? null : new PlatformComputeBinarizable(arg.field + 1);
         }
