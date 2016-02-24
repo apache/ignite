@@ -397,7 +397,7 @@ class GridResourceIoc {
         int isAnnotated(AnnotationSet set) {
             Integer[] oldSets = annotationSets.get();
 
-            if (oldSets.length < set.descIdx && oldSets[set.descIdx] != null)
+            if (set.descIdx < oldSets.length && oldSets[set.descIdx] != null)
                 return oldSets[set.descIdx];
 
             int val;
