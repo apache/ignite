@@ -529,7 +529,7 @@ namespace Apache.Ignite.Core.Tests.Services
             Assert.AreEqual('b', svc.test('a'));
             Assert.AreEqual("Foo!", svc.test("Foo"));
 
-            Assert.AreEqual(4, svc.testWrapper((byte?) 3));
+            Assert.AreEqual(4, svc.testWrapper(3));
             Assert.AreEqual(5, svc.testWrapper((short?) 4));
             Assert.AreEqual(6, svc.testWrapper((int?)5));
             Assert.AreEqual(6, svc.testWrapper((long?) 5));
@@ -537,6 +537,15 @@ namespace Apache.Ignite.Core.Tests.Services
             Assert.AreEqual(5.8, svc.testWrapper(3.3));
             Assert.AreEqual(false, svc.testWrapper(true));
             Assert.AreEqual('b', svc.testWrapper('a'));
+
+            Assert.AreEqual(new byte[] {2, 3, 4}, svc.testArray(new byte[] {1, 2, 3}));
+            Assert.AreEqual(new short[] {2, 3, 4}, svc.testArray(new short[] {1, 2, 3}));
+            Assert.AreEqual(new[] {2, 3, 4}, svc.testArray(new[] {1, 2, 3}));
+            Assert.AreEqual(new long[] {2, 3, 4}, svc.testArray(new long[] {1, 2, 3}));
+            Assert.AreEqual(new float[] {2, 3, 4}, svc.testArray(new float[] {1, 2, 3}));
+            Assert.AreEqual(new double[] {2, 3, 4}, svc.testArray(new double[] {1, 2, 3}));
+            Assert.AreEqual(new[] {"a1", "b1"}, svc.testArray(new [] {"a", "b"}));
+            Assert.AreEqual(new[] {'c', 'd'}, svc.testArray(new[] {'b', 'c'}));
 
             Assert.AreEqual(9, svc.testNull(8));
             Assert.IsNull(svc.testNull(null));
