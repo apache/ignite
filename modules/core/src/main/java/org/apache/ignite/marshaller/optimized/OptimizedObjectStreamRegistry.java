@@ -92,9 +92,9 @@ class OptimizedObjectStreamRegistry {
 
         StreamHolder holder = holders.get();
 
-        holder.releaseOut();
+        assert holder != null;
 
-        if (pool != null) {
+        if (holder.releaseOut() && pool != null) {
             holders.set(null);
 
             boolean b = pool.offer(holder);
@@ -114,9 +114,9 @@ class OptimizedObjectStreamRegistry {
 
         StreamHolder holder = holders.get();
 
-        holder.releaseIn();
+        assert holder != null;
 
-        if (pool != null) {
+        if (holder.releaseIn() && pool != null) {
             holders.set(null);
 
             boolean b = pool.offer(holder);
@@ -183,15 +183,15 @@ class OptimizedObjectStreamRegistry {
         /**
          * Releases output stream.
          */
-        void releaseOut() {
-            outAcquireCnt--;
+        boolean releaseOut() {
+            return --outAcquireCnt == 0;
         }
 
         /**
          * Releases input stream.
          */
-        void releaseIn() {
-            inAcquireCnt--;
+        boolean releaseIn() {
+            return --inAcquireCnt == 0;
         }
 
         /**

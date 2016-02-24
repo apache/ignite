@@ -30,9 +30,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.Callable;
-import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.IgniteSet;
+
+import org.apache.ignite.*;
 import org.apache.ignite.cache.affinity.AffinityKeyMapped;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
@@ -49,7 +48,9 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteCallable;
 import org.apache.ignite.lang.IgniteReducer;
+import org.apache.ignite.lang.IgniteRunnable;
 import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.Nullable;
 
@@ -80,14 +81,20 @@ public class GridCacheSetImpl<T> extends AbstractCollection<T> implements Ignite
     /** Collocation flag. */
     private final boolean collocated;
 
-    /** Queue header partition. */
+    /** Set header partition. */
     private final int hdrPart;
+
+    /** Set header key. */
+    protected final GridCacheSetHeaderKey setKey;
 
     /** Removed flag. */
     private volatile boolean rmvd;
 
     /** */
     private final boolean binaryMarsh;
+
+    /** Access to affinityRun() and affinityCall() functions. */
+    private final IgniteCompute compute;
 
     /**
      * @param ctx Cache context.
@@ -101,8 +108,11 @@ public class GridCacheSetImpl<T> extends AbstractCollection<T> implements Ignite
         id = hdr.id();
         collocated = hdr.collocated();
         binaryMarsh = ctx.binaryMarshaller();
+        compute = ctx.kernalContext().grid().compute();
 
         cache = ctx.cache();
+
+        setKey = new GridCacheSetHeaderKey(name);
 
         log = ctx.logger(GridCacheSetImpl.class);
 
@@ -361,6 +371,24 @@ public class GridCacheSetImpl<T> extends AbstractCollection<T> implements Ignite
         onAccess();
 
         return iterator0();
+    }
+
+    /** {@inheritDoc} */
+    public void affinityRun(IgniteRunnable job) {
+        if (!collocated)
+            throw new IgniteException("Failed to execute affinityRun() for non-collocated set: " + name() +
+                ". This operation is supported only for collocated sets.");
+
+        compute.affinityRun(cache.name(), setKey, job);
+    }
+
+    /** {@inheritDoc} */
+    public <R> R affinityCall(IgniteCallable<R> job) {
+        if (!collocated)
+            throw new IgniteException("Failed to execute affinityCall() for non-collocated set: " + name() +
+                ". This operation is supported only for collocated sets.");
+
+        return compute.affinityCall(cache.name(), setKey, job);
     }
 
     /** {@inheritDoc} */
