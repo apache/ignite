@@ -1644,7 +1644,8 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Bina
                     throw new BinaryObjectException("Invalid flag value: " + flag);
             }
         } finally {
-            IgnitionEx.setIgniteCfgThreadLocal(cfg);
+            if (cfg != ctx.configuration())
+                IgnitionEx.setIgniteCfgThreadLocal(cfg);
         }
 
         return obj;

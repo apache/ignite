@@ -122,7 +122,7 @@ public final class MarshallerUtils {
         try {
             marshaller.marshal(obj, out);
         } finally {
-            restoreCfg(cfg);
+            restoreCfg(cfg, igniteCfg);
         }
     }
 
@@ -143,7 +143,7 @@ public final class MarshallerUtils {
         try {
             return marshaller.marshal(obj);
         } finally {
-            restoreCfg(cfg);
+            restoreCfg(cfg, igniteCfg);
         }
     }
 
@@ -166,7 +166,7 @@ public final class MarshallerUtils {
         try {
             return marshaller.unmarshal(in, clsLdr);
         } finally {
-            restoreCfg(cfg);
+            restoreCfg(cfg, igniteCfg);
         }
     }
 
@@ -189,7 +189,7 @@ public final class MarshallerUtils {
         try {
             return marshaller.unmarshal(arr, clsLdr);
         } finally {
-            restoreCfg(cfg);
+            restoreCfg(cfg, igniteCfg);
         }
     }
 
@@ -212,7 +212,7 @@ public final class MarshallerUtils {
         try {
             return marshaller.unmarshal(marshaller.marshal(obj), clsLdr);
         } finally {
-            restoreCfg(cfg);
+            restoreCfg(cfg, igniteCfg);
         }
     }
 
@@ -251,7 +251,7 @@ public final class MarshallerUtils {
         try {
             return gridMarshaller.marshal(obj, off);
         } finally {
-            restoreCfg(cfg);
+            restoreCfg(cfg, igniteCfg);
         }
     }
 
@@ -273,7 +273,7 @@ public final class MarshallerUtils {
         try {
             return gridMarshaller.unmarshal(bytes);
         } finally {
-            restoreCfg(cfg);
+            restoreCfg(cfg, igniteCfg);
         }
     }
 
@@ -294,7 +294,7 @@ public final class MarshallerUtils {
         try {
             return gridBinaryMarshaller.marshal(obj);
         } finally {
-            restoreCfg(cfg);
+            restoreCfg(cfg, igniteCfg);
         }
     }
 
@@ -317,7 +317,7 @@ public final class MarshallerUtils {
         try {
             return gridBinaryMarshaller.unmarshal(bytes, clsLdr);
         } finally {
-            restoreCfg(cfg);
+            restoreCfg(cfg, igniteCfg);
         }
     }
 
@@ -339,7 +339,7 @@ public final class MarshallerUtils {
         try {
             return gridBinaryMarshaller.unmarshal(in);
         } finally {
-            restoreCfg(cfg);
+            restoreCfg(cfg, igniteCfg);
         }
     }
 
@@ -363,8 +363,9 @@ public final class MarshallerUtils {
      *
      * @param igniteCfg ignite config
      */
-    private static void restoreCfg(final IgniteConfiguration igniteCfg) {
-        IgnitionEx.setIgniteCfgThreadLocal(igniteCfg);
+    private static void restoreCfg(final IgniteConfiguration igniteCfg, final IgniteConfiguration newIgniteCfg) {
+        if (igniteCfg != newIgniteCfg)
+            IgnitionEx.setIgniteCfgThreadLocal(igniteCfg);
     }
 
     /**
