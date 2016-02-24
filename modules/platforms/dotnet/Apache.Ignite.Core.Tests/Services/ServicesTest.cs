@@ -561,7 +561,7 @@ namespace Apache.Ignite.Core.Tests.Services
 
             // Overloads
             Assert.AreEqual(3, svc.test(2, "1"));
-            Assert.AreEqual(3, svc.test(1, "2"));
+            Assert.AreEqual(3, svc.test("1", 2));
 
             // Binary
             Assert.AreEqual(7, svc.testBinarizable(new PlatformComputeBinarizable {Field = 6}).Field);
