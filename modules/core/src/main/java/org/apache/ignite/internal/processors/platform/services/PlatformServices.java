@@ -305,6 +305,7 @@ public class PlatformServices extends PlatformAbstractTarget {
     /**
      * Proxy holder.
      */
+    @SuppressWarnings("unchecked")
     private static class ServiceProxyHolder {
         /** */
         private final Object proxy;
@@ -335,7 +336,6 @@ public class PlatformServices extends PlatformAbstractTarget {
          * @throws IgniteCheckedException
          * @throws NoSuchMethodException
          */
-        @SuppressWarnings("unchecked")
         public Object invoke(String mthdName, boolean srvKeepBinary, Object[] args)
             throws IgniteCheckedException, NoSuchMethodException {
             if (proxy instanceof PlatformService) {
@@ -367,8 +367,9 @@ public class PlatformServices extends PlatformAbstractTarget {
 
             ArrayList<Method> methods = new ArrayList<>(allMethods.length);
 
+            // Filter by name and param count
             for (Method m : allMethods)
-                if (m.getName().equals(mthdName))
+                if (m.getName().equals(mthdName) && m.getParameterTypes().length == args.length)
                     methods.add(m);
 
             if (methods.size() == 1)
@@ -376,6 +377,36 @@ public class PlatformServices extends PlatformAbstractTarget {
 
             if (methods.size() == 0)
                 throw new NoSuchMethodException("Could not find proxy method " + mthdName + " in class " + clazz);
+
+            // Filter by param types
+            for (int i = 0; i < methods.size(); i++)
+                if (!areMethodArgsCompatible(methods.get(i).getParameterTypes(), args))
+                    methods.remove(i--);
+
+            if (methods.size() == 1)
+                return methods.get(0);
+
+            if (methods.size() == 0)
+                throw new NoSuchMethodException("Could not find proxy method " + mthdName + " in class " + clazz);
+
+            throw new NoSuchMethodException("Ambiguous proxy method " + mthdName + " in class " + clazz);
+        }
+
+        /**
+         * Determines whether specified method arguments are comatible with given method parameter definitions.
+         *
+         * @param argTypes Method arg types.
+         * @param args Method args.
+         * @return Whether specified args are compatible with argTypes.
+         */
+        private static boolean areMethodArgsCompatible(Class[] argTypes, Object[] args) {
+            for (int j = 0; j < args.length; j++){
+                Object arg = args[j];
+                if (arg != null && !argTypes[j].isAssignableFrom(arg.getClass()))
+                    return false;
+            }
+
+            return true;
         }
     }
 }
