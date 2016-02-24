@@ -33,6 +33,8 @@ import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.binary.BinaryRawReader;
 import org.apache.ignite.binary.BinaryReader;
+import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.IgnitionEx;
 import org.apache.ignite.internal.binary.streams.BinaryInputStream;
 import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.jetbrains.annotations.NotNull;
@@ -1413,227 +1415,237 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Bina
     @Nullable Object deserialize() throws BinaryObjectException {
         Object obj;
 
-        byte flag = in.readByte();
+        final IgniteConfiguration cfg = IgnitionEx.getIgniteCfgThreadLocal();
 
-        switch (flag) {
-            case NULL:
-                obj = null;
+        if (cfg != ctx.configuration())
+            IgnitionEx.setIgniteCfgThreadLocal(ctx.configuration());
 
-                break;
+        try {
+            byte flag = in.readByte();
 
-            case HANDLE:
-                int handlePos = start - in.readInt();
+            switch (flag) {
+                case NULL:
+                    obj = null;
 
-                obj = getHandle(handlePos);
+                    break;
 
-                if (obj == null) {
-                    int retPos = in.position();
+                case HANDLE:
+                    int handlePos = start - in.readInt();
 
-                    streamPosition(handlePos);
+                    obj = getHandle(handlePos);
 
-                    obj = BinaryUtils.doReadObject(in, ctx, ldr, this);
+                    if (obj == null) {
+                        int retPos = in.position();
 
-                    streamPosition(retPos);
-                }
+                        streamPosition(handlePos);
 
-                break;
+                        obj = BinaryUtils.doReadObject(in, ctx, ldr, this);
 
-            case OBJ:
-                BinaryClassDescriptor desc = ctx.descriptorForTypeId(userType, typeId, ldr, true);
+                        streamPosition(retPos);
+                    }
 
-                streamPosition(dataStart);
+                    break;
 
-                if (desc == null)
-                    throw new BinaryInvalidTypeException("Unknown type ID: " + typeId);
+                case OBJ:
+                    BinaryClassDescriptor desc = ctx.descriptorForTypeId(userType, typeId, ldr, true);
 
-                obj = desc.read(this);
+                    streamPosition(dataStart);
 
-                streamPosition(footerStart + footerLen);
+                    if (desc == null)
+                        throw new BinaryInvalidTypeException("Unknown type ID: " + typeId);
 
-                break;
+                    obj = desc.read(this);
 
-            case BYTE:
-                obj = in.readByte();
+                    streamPosition(footerStart + footerLen);
 
-                break;
+                    break;
 
-            case SHORT:
-                obj = in.readShort();
+                case BYTE:
+                    obj = in.readByte();
 
-                break;
+                    break;
 
-            case INT:
-                obj = in.readInt();
+                case SHORT:
+                    obj = in.readShort();
 
-                break;
+                    break;
 
-            case LONG:
-                obj = in.readLong();
+                case INT:
+                    obj = in.readInt();
 
-                break;
+                    break;
 
-            case FLOAT:
-                obj = in.readFloat();
+                case LONG:
+                    obj = in.readLong();
 
-                break;
+                    break;
 
-            case DOUBLE:
-                obj = in.readDouble();
+                case FLOAT:
+                    obj = in.readFloat();
 
-                break;
+                    break;
 
-            case CHAR:
-                obj = in.readChar();
+                case DOUBLE:
+                    obj = in.readDouble();
 
-                break;
+                    break;
 
-            case BOOLEAN:
-                obj = in.readBoolean();
+                case CHAR:
+                    obj = in.readChar();
 
-                break;
+                    break;
 
-            case DECIMAL:
-                obj = BinaryUtils.doReadDecimal(in);
+                case BOOLEAN:
+                    obj = in.readBoolean();
 
-                break;
+                    break;
 
-            case STRING:
-                obj = BinaryUtils.doReadString(in);
+                case DECIMAL:
+                    obj = BinaryUtils.doReadDecimal(in);
 
-                break;
+                    break;
 
-            case UUID:
-                obj = BinaryUtils.doReadUuid(in);
+                case STRING:
+                    obj = BinaryUtils.doReadString(in);
 
-                break;
+                    break;
 
-            case DATE:
-                obj = BinaryUtils.doReadDate(in);
+                case UUID:
+                    obj = BinaryUtils.doReadUuid(in);
 
-                break;
+                    break;
 
-            case TIMESTAMP:
-                obj = BinaryUtils.doReadTimestamp(in);
+                case DATE:
+                    obj = BinaryUtils.doReadDate(in);
 
-                break;
+                    break;
 
-            case BYTE_ARR:
-                obj = BinaryUtils.doReadByteArray(in);
+                case TIMESTAMP:
+                    obj = BinaryUtils.doReadTimestamp(in);
 
-                break;
+                    break;
 
-            case SHORT_ARR:
-                obj = BinaryUtils.doReadShortArray(in);
+                case BYTE_ARR:
+                    obj = BinaryUtils.doReadByteArray(in);
 
-                break;
+                    break;
 
-            case INT_ARR:
-                obj = BinaryUtils.doReadIntArray(in);
+                case SHORT_ARR:
+                    obj = BinaryUtils.doReadShortArray(in);
 
-                break;
+                    break;
 
-            case LONG_ARR:
-                obj = BinaryUtils.doReadLongArray(in);
+                case INT_ARR:
+                    obj = BinaryUtils.doReadIntArray(in);
 
-                break;
+                    break;
 
-            case FLOAT_ARR:
-                obj = BinaryUtils.doReadFloatArray(in);
+                case LONG_ARR:
+                    obj = BinaryUtils.doReadLongArray(in);
 
-                break;
+                    break;
 
-            case DOUBLE_ARR:
-                obj = BinaryUtils.doReadDoubleArray(in);
+                case FLOAT_ARR:
+                    obj = BinaryUtils.doReadFloatArray(in);
 
-                break;
+                    break;
 
-            case CHAR_ARR:
-                obj = BinaryUtils.doReadCharArray(in);
+                case DOUBLE_ARR:
+                    obj = BinaryUtils.doReadDoubleArray(in);
 
-                break;
+                    break;
 
-            case BOOLEAN_ARR:
-                obj = BinaryUtils.doReadBooleanArray(in);
+                case CHAR_ARR:
+                    obj = BinaryUtils.doReadCharArray(in);
 
-                break;
+                    break;
 
-            case DECIMAL_ARR:
-                obj = BinaryUtils.doReadDecimalArray(in);
+                case BOOLEAN_ARR:
+                    obj = BinaryUtils.doReadBooleanArray(in);
 
-                break;
+                    break;
 
-            case STRING_ARR:
-                obj = BinaryUtils.doReadStringArray(in);
+                case DECIMAL_ARR:
+                    obj = BinaryUtils.doReadDecimalArray(in);
 
-                break;
+                    break;
 
-            case UUID_ARR:
-                obj = BinaryUtils.doReadUuidArray(in);
+                case STRING_ARR:
+                    obj = BinaryUtils.doReadStringArray(in);
 
-                break;
+                    break;
 
-            case DATE_ARR:
-                obj = BinaryUtils.doReadDateArray(in);
+                case UUID_ARR:
+                    obj = BinaryUtils.doReadUuidArray(in);
 
-                break;
+                    break;
 
-            case TIMESTAMP_ARR:
-                obj = BinaryUtils.doReadTimestampArray(in);
+                case DATE_ARR:
+                    obj = BinaryUtils.doReadDateArray(in);
 
-                break;
+                    break;
 
-            case OBJ_ARR:
-                obj = BinaryUtils.doReadObjectArray(in, ctx, ldr, this, true);
+                case TIMESTAMP_ARR:
+                    obj = BinaryUtils.doReadTimestampArray(in);
 
-                break;
+                    break;
 
-            case COL:
-                obj = BinaryUtils.doReadCollection(in, ctx, ldr, this, true, null);
+                case OBJ_ARR:
+                    obj = BinaryUtils.doReadObjectArray(in, ctx, ldr, this, true);
 
-                break;
+                    break;
 
-            case MAP:
-                obj = BinaryUtils.doReadMap(in, ctx, ldr, this, true, null);
+                case COL:
+                    obj = BinaryUtils.doReadCollection(in, ctx, ldr, this, true, null);
 
-                break;
+                    break;
 
-            case BINARY_OBJ:
-                obj = BinaryUtils.doReadBinaryObject(in, ctx);
+                case MAP:
+                    obj = BinaryUtils.doReadMap(in, ctx, ldr, this, true, null);
 
-                ((BinaryObjectImpl)obj).context(ctx);
+                    break;
 
-                if (!GridBinaryMarshaller.KEEP_BINARIES.get())
-                    obj = ((BinaryObject)obj).deserialize();
+                case BINARY_OBJ:
+                    obj = BinaryUtils.doReadBinaryObject(in, ctx);
 
-                break;
+                    ((BinaryObjectImpl)obj).context(ctx);
 
-            case ENUM:
-                obj = BinaryUtils.doReadEnum(in, BinaryUtils.doReadClass(in, ctx, ldr));
+                    if (!GridBinaryMarshaller.KEEP_BINARIES.get())
+                        obj = ((BinaryObject)obj).deserialize();
 
-                break;
+                    break;
 
-            case ENUM_ARR:
-                obj = BinaryUtils.doReadEnumArray(in, ctx, ldr, BinaryUtils.doReadClass(in, ctx, ldr));
+                case ENUM:
+                    obj = BinaryUtils.doReadEnum(in, BinaryUtils.doReadClass(in, ctx, ldr));
 
-                break;
+                    break;
 
-            case CLASS:
-                obj = BinaryUtils.doReadClass(in, ctx, ldr);
+                case ENUM_ARR:
+                    obj = BinaryUtils.doReadEnumArray(in, ctx, ldr, BinaryUtils.doReadClass(in, ctx, ldr));
 
-                break;
+                    break;
 
-            case PROXY:
-                obj = BinaryUtils.doReadProxy(in, ctx, ldr, this);
+                case CLASS:
+                    obj = BinaryUtils.doReadClass(in, ctx, ldr);
 
-                break;
+                    break;
 
-            case OPTM_MARSH:
-                obj = BinaryUtils.doReadOptimized(in, ctx, ldr);
+                case PROXY:
+                    obj = BinaryUtils.doReadProxy(in, ctx, ldr, this);
 
-                break;
+                    break;
 
-            default:
-                throw new BinaryObjectException("Invalid flag value: " + flag);
+                case OPTM_MARSH:
+                    obj = BinaryUtils.doReadOptimized(in, ctx, ldr);
+
+                    break;
+
+                default:
+                    throw new BinaryObjectException("Invalid flag value: " + flag);
+            }
+        } finally {
+            if (cfg != ctx.configuration())
+                IgnitionEx.setIgniteCfgThreadLocal(cfg);
         }
 
         return obj;

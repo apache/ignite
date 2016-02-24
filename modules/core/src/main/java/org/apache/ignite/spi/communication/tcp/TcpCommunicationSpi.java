@@ -2985,6 +2985,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
                     endpoint,
                     srvLsnr,
                     writerFactory,
+                    ignite.configuration(),
                     new GridNioCodecFilter(
                         new GridDirectParser(log.getLogger(GridDirectParser.class),msgFactory, readerFactory),
                         log,

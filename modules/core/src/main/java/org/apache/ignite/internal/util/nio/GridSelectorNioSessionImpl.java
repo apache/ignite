@@ -24,6 +24,7 @@ import java.util.Collection;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -77,6 +78,7 @@ class GridSelectorNioSessionImpl extends GridNioSessionImpl {
      * @param sndQueueLimit Send queue limit.
      * @param writeBuf Write buffer.
      * @param readBuf Read buffer.
+     * @param igniteCfg Ignite config.
      */
     GridSelectorNioSessionImpl(
         IgniteLogger log,
@@ -87,9 +89,10 @@ class GridSelectorNioSessionImpl extends GridNioSessionImpl {
         boolean accepted,
         int sndQueueLimit,
         @Nullable ByteBuffer writeBuf,
-        @Nullable ByteBuffer readBuf
+        @Nullable ByteBuffer readBuf,
+        IgniteConfiguration igniteCfg
     ) {
-        super(filterChain, locAddr, rmtAddr, accepted);
+        super(filterChain, locAddr, rmtAddr, accepted, igniteCfg);
 
         assert selectorIdx >= 0;
         assert sndQueueLimit >= 0;

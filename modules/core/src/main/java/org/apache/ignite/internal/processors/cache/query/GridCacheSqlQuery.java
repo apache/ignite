@@ -21,11 +21,13 @@ import java.nio.ByteBuffer;
 import java.util.LinkedHashMap;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.GridDirectTransient;
+import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.marshaller.Marshaller;
+import org.apache.ignite.marshaller.MarshallerUtils;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
@@ -130,28 +132,30 @@ public class GridCacheSqlQuery implements Message {
 
     /**
      * @param m Marshaller.
+     * @param kernalCtx kernal context.
      * @throws IgniteCheckedException If failed.
      */
-    public void marshallParams(Marshaller m) throws IgniteCheckedException {
+    public void marshallParams(Marshaller m, final GridKernalContext kernalCtx) throws IgniteCheckedException {
         if (paramsBytes != null)
             return;
 
         assert params != null;
 
-        paramsBytes = m.marshal(params);
+        paramsBytes = MarshallerUtils.marshal(m, params, kernalCtx);
     }
 
     /**
      * @param m Marshaller.
+     * @param kernalCtx kernal context.
      * @throws IgniteCheckedException If failed.
      */
-    public void unmarshallParams(Marshaller m) throws IgniteCheckedException {
+    public void unmarshallParams(Marshaller m, final GridKernalContext kernalCtx) throws IgniteCheckedException {
         if (params != null)
             return;
 
         assert paramsBytes != null;
 
-        params = m.unmarshal(paramsBytes, null);
+        params = MarshallerUtils.unmarshal(m, paramsBytes, null, kernalCtx);
     }
 
     /** {@inheritDoc} */

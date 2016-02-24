@@ -162,6 +162,9 @@ public class IgnitionEx {
     /** List of state listeners. */
     private static final Collection<IgnitionListener> lsnrs = new GridConcurrentHashSet<>(4);
 
+    /** Thread local ignite config. */
+    private static final ThreadLocal<IgniteConfiguration> IGNITE_CFG_THREAD_LOC = new ThreadLocal<>();
+
     /** */
     private static ThreadLocal<Boolean> daemon = new ThreadLocal<Boolean>() {
         @Override protected Boolean initialValue() {
@@ -1238,17 +1241,20 @@ public class IgnitionEx {
     }
 
     /**
-     * Gets a name of the grid, which is owner of current thread. An Exception is thrown if
+     * Gets a name of the grid from thread local config, which is owner of current thread. An Exception is thrown if
      * current thread is not an {@link IgniteThread}.
      *
      * @return Grid instance related to current thread
      * @throws IllegalArgumentException Thrown to indicate, that current thread is not an {@link IgniteThread}.
      */
     public static IgniteKernal localIgnite() throws IllegalArgumentException {
-        if (Thread.currentThread() instanceof IgniteThread)
+        if (IGNITE_CFG_THREAD_LOC.get() != null)
+            return gridx(IGNITE_CFG_THREAD_LOC.get().getGridName());
+        else if (Thread.currentThread() instanceof IgniteThread)
             return gridx(((IgniteThread)Thread.currentThread()).getGridName());
         else
-            throw new IllegalArgumentException("This method should be accessed under " + IgniteThread.class.getName());
+            throw new IllegalArgumentException("Ignite conf thread local must be set or" +
+                    " this method should be accessed under " + IgniteThread.class.getName());
     }
 
     /**
@@ -1311,6 +1317,24 @@ public class IgnitionEx {
 
         for (IgnitionListener lsnr : lsnrs)
             lsnr.onStateChange(gridName, state);
+    }
+
+    /**
+     * Save ignite config to thread local var.
+     *
+     * @param igniteCfg ignite config.
+     */
+    public static void setIgniteCfgThreadLocal(final IgniteConfiguration igniteCfg) {
+        IGNITE_CFG_THREAD_LOC.set(igniteCfg);
+    }
+
+    /**
+     * Get ignite config from thread local var.
+     *
+     * @return ignite config.
+     */
+    public static IgniteConfiguration getIgniteCfgThreadLocal() {
+        return IGNITE_CFG_THREAD_LOC.get();
     }
 
     /**

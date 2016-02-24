@@ -21,6 +21,7 @@ import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 import java.util.concurrent.atomic.AtomicReference;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.util.lang.GridMetadataAwareAdapter;
 import org.apache.ignite.internal.util.nio.GridNioFilterAdapter;
 import org.apache.ignite.internal.util.nio.GridNioFilterChain;
@@ -375,6 +376,11 @@ public class GridNioFilterChainSelfTest extends GridCommonAbstractTest {
 
         /** {@inheritDoc} */
         @Nullable @Override public GridNioRecoveryDescriptor recoveryDescriptor() {
+            return null;
+        }
+
+        /** {@inheritDoc} */
+        @Override public IgniteConfiguration igniteConfig() {
             return null;
         }
     }

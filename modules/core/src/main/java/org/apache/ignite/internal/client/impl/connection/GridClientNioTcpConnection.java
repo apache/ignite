@@ -77,6 +77,7 @@ import org.apache.ignite.internal.util.nio.GridNioSessionMetaKey;
 import org.apache.ignite.internal.util.nio.ssl.GridNioSslFilter;
 import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.marshaller.MarshallerUtils;
 import org.jetbrains.annotations.Nullable;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
@@ -536,7 +537,7 @@ public class GridClientNioTcpConnection extends GridClientConnection {
             GridClientMessage res0 = res;
 
             if (res instanceof GridRouterResponse) {
-                res0 = marsh.unmarshal(((GridRouterResponse)res).body());
+                res0 = MarshallerUtils.unmarshal(marsh, ((GridRouterResponse)res).body(), ses.igniteConfig());
 
                 res0.requestId(res.requestId());
                 res0.clientId(res.clientId());

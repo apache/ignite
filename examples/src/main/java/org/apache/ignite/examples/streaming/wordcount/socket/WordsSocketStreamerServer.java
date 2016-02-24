@@ -36,6 +36,7 @@ import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.stream.StreamSingleTupleExtractor;
 import org.apache.ignite.stream.socket.SocketMessageConverter;
 import org.apache.ignite.stream.socket.SocketStreamer;
+import org.apache.ignite.configuration.IgniteConfiguration;
 
 /**
  * Example demonstrates streaming of data from external components into Ignite cache.
@@ -99,7 +100,7 @@ public class WordsSocketStreamerServer {
 
                 // Converter from zero-terminated string to Java strings.
                 sockStmr.setConverter(new SocketMessageConverter<String>() {
-                    @Override public String convert(byte[] msg) {
+                    @Override public String convert(byte[] msg, IgniteConfiguration igniteCfg) {
                         try {
                             return new String(msg, "ASCII");
                         }

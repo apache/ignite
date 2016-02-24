@@ -18,6 +18,8 @@
 package org.apache.ignite.internal.util.nio;
 
 import java.net.InetSocketAddress;
+
+import org.apache.ignite.configuration.IgniteConfiguration;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -164,4 +166,9 @@ public interface GridNioSession {
      * @return Recovery descriptor if recovery is supported, {@code null otherwise.}
      */
     @Nullable public GridNioRecoveryDescriptor recoveryDescriptor();
+
+    /**
+     * @return Ignite config.
+     */
+    public IgniteConfiguration igniteConfig();
 }

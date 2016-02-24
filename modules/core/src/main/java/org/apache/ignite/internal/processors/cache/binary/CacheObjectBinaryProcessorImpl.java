@@ -99,6 +99,7 @@ import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.marshaller.Marshaller;
+import org.apache.ignite.marshaller.MarshallerUtils;
 import org.apache.ignite.spi.IgniteNodeValidationResult;
 import org.jetbrains.annotations.Nullable;
 import org.jsr166.ConcurrentHashMap8;
@@ -411,7 +412,7 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
      * @throws org.apache.ignite.binary.BinaryObjectException If failed.
      */
     public byte[] marshal(@Nullable Object obj) throws BinaryObjectException {
-        byte[] arr = binaryMarsh.marshal(obj);
+        byte[] arr = MarshallerUtils.marshal(binaryMarsh, obj, ctx.config());
 
         assert arr.length > 0;
 
@@ -438,7 +439,7 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
 
             BinaryInputStream in = new BinaryOffheapInputStream(ptr, size, forceHeap);
 
-            return binaryMarsh.unmarshal(in);
+            return MarshallerUtils.unmarshal(binaryMarsh, in, ctx.config());
         }
         else
             return U.copyMemory(ptr, size);
@@ -508,11 +509,11 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
         if (binaryMarsh.mustDeserialize(obj))
             return obj; // No need to go through marshal-unmarshal because result will be the same as initial object.
 
-        byte[] arr = binaryMarsh.marshal(obj);
+        byte[] arr = MarshallerUtils.marshal(binaryMarsh, obj, ctx.config());
 
         assert arr.length > 0;
 
-        Object obj0 = binaryMarsh.unmarshal(arr, null);
+        Object obj0 = MarshallerUtils.unmarshal(binaryMarsh, arr, null, ctx.config());
 
         // Possible if a class has writeObject method.
         if (obj0 instanceof BinaryObjectImpl)
@@ -756,7 +757,7 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
         if (!((CacheObjectBinaryContext)ctx).binaryEnabled() || binaryMarsh == null)
             return super.marshal(ctx, val);
 
-        byte[] arr = binaryMarsh.marshal(val);
+        byte[] arr = MarshallerUtils.marshal(binaryMarsh, val, this.ctx.config());
 
         assert arr.length > 0;
 
@@ -769,7 +770,7 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
         if (!((CacheObjectBinaryContext)ctx).binaryEnabled() || binaryMarsh == null)
             return super.unmarshal(ctx, bytes, clsLdr);
 
-        return binaryMarsh.unmarshal(bytes, clsLdr);
+        return MarshallerUtils.unmarshal(binaryMarsh, bytes, clsLdr, this.ctx.config());
     }
 
     /** {@inheritDoc} */

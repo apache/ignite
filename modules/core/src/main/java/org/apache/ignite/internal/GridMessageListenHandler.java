@@ -35,6 +35,7 @@ import org.apache.ignite.internal.util.lang.GridPeerDeployAware;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiPredicate;
+import org.apache.ignite.marshaller.MarshallerUtils;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -158,9 +159,9 @@ public class GridMessageListenHandler implements GridContinuousHandler {
         assert ctx.config().isPeerClassLoadingEnabled();
 
         if (topic != null)
-            topicBytes = ctx.config().getMarshaller().marshal(topic);
+            topicBytes = MarshallerUtils.marshal(ctx.config().getMarshaller(), topic, ctx);
 
-        predBytes = ctx.config().getMarshaller().marshal(pred);
+        predBytes = MarshallerUtils.marshal(ctx.config().getMarshaller(), pred, ctx);
 
         // Deploy only listener, as it is very likely to be of some user class.
         GridPeerDeployAware pda = U.peerDeployAware(pred);
@@ -192,9 +193,9 @@ public class GridMessageListenHandler implements GridContinuousHandler {
         ClassLoader ldr = dep.classLoader();
 
         if (topicBytes != null)
-            topic = ctx.config().getMarshaller().unmarshal(topicBytes, ldr);
+            topic = MarshallerUtils.unmarshal(ctx.config().getMarshaller(), topicBytes, ldr, ctx);
 
-        pred = ctx.config().getMarshaller().unmarshal(predBytes, ldr);
+        pred = MarshallerUtils.unmarshal(ctx.config().getMarshaller(), predBytes, ldr, ctx);
     }
 
     /** {@inheritDoc} */

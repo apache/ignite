@@ -52,6 +52,7 @@ import org.apache.ignite.internal.util.typedef.CAX;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.marshaller.Marshaller;
+import org.apache.ignite.marshaller.MarshallerUtils;
 import org.apache.ignite.marshaller.jdk.JdkMarshaller;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.resources.LoggerResource;
@@ -82,7 +83,7 @@ public class GridCacheQueryJdbcTask extends ComputeTaskAdapter<byte[], byte[]> {
         try {
             assert arg != null;
 
-            Map<String, Object> args = MARSHALLER.unmarshal(arg, null);
+            Map<String, Object> args = MarshallerUtils.unmarshal(MARSHALLER, arg, null, ignite.configuration());
 
             boolean first = true;
 
@@ -130,12 +131,13 @@ public class GridCacheQueryJdbcTask extends ComputeTaskAdapter<byte[], byte[]> {
             if (res.getException() == null) {
                 status = 0;
 
-                bytes = MARSHALLER.marshal(res.getData());
+                bytes = MarshallerUtils.marshal(MARSHALLER, res.getData(), ignite.configuration());
             }
             else {
                 status = 1;
 
-                bytes = MARSHALLER.marshal(new SQLException(res.getException().getMessage()));
+                bytes = MarshallerUtils.marshal(MARSHALLER, new SQLException(res.getException().getMessage()),
+                        ignite.configuration());
             }
 
             byte[] packet = new byte[bytes.length + 1];

@@ -71,6 +71,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.marshaller.Marshaller;
+import org.apache.ignite.marshaller.MarshallerUtils;
 import org.apache.ignite.plugin.security.SecurityPermission;
 import org.jetbrains.annotations.Nullable;
 import org.jsr166.LongAdder8;
@@ -913,7 +914,7 @@ public class GridTaskProcessor extends GridProcessorAdapter {
                     GridTaskSessionRequest req = new GridTaskSessionRequest(
                         ses.getId(),
                         null,
-                        loc ? null : marsh.marshal(attrs),
+                        loc ? null : MarshallerUtils.marshal(marsh, attrs, ctx),
                         attrs);
 
                     // Make sure to go through IO manager always, since order
@@ -1029,7 +1030,8 @@ public class GridTaskProcessor extends GridProcessorAdapter {
             boolean loc = ctx.localNodeId().equals(nodeId) && !ctx.config().isMarshalLocalJobs();
 
             Map<?, ?> attrs = loc ? msg.getAttributes() :
-                marsh.<Map<?, ?>>unmarshal(msg.getAttributesBytes(), task.getTask().getClass().getClassLoader());
+                MarshallerUtils.<Map<?, ?>>unmarshal(marsh, msg.getAttributesBytes(),
+                        task.getTask().getClass().getClassLoader(), ctx);
 
             GridTaskSessionImpl ses = task.getSession();
 
@@ -1304,7 +1306,7 @@ public class GridTaskProcessor extends GridProcessorAdapter {
                     if (topic == null) {
                         assert req.topicBytes() != null;
 
-                        topic = marsh.unmarshal(req.topicBytes(), null);
+                        topic = MarshallerUtils.unmarshal(marsh, req.topicBytes(), null, ctx);
                     }
 
                     boolean loc = ctx.localNodeId().equals(nodeId);
@@ -1312,7 +1314,7 @@ public class GridTaskProcessor extends GridProcessorAdapter {
                     ctx.io().send(nodeId, topic,
                         new GridJobSiblingsResponse(
                             loc ? siblings : null,
-                            loc ? null : marsh.marshal(siblings)),
+                            loc ? null : MarshallerUtils.marshal(marsh, siblings, ctx)),
                         SYSTEM_POOL);
                 }
                 catch (IgniteCheckedException e) {
