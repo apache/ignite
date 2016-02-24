@@ -408,7 +408,7 @@ public class PlatformServices extends PlatformAbstractTarget {
         }
 
         /**
-         * Determines whether specified method arguments are comatible with given method parameter definitions.
+         * Determines whether specified method arguments are compatible with given method parameter definitions.
          *
          * @param argTypes Method arg types.
          * @param args Method args.
