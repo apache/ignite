@@ -325,7 +325,6 @@ public class PlatformServices extends PlatformAbstractTarget {
             PRIMITIVES_TO_WRAPPERS.put(int.class, Integer.class);
             PRIMITIVES_TO_WRAPPERS.put(long.class, Long.class);
             PRIMITIVES_TO_WRAPPERS.put(short.class, Short.class);
-            PRIMITIVES_TO_WRAPPERS.put(void.class, Void.class);
         }
 
         /**

@@ -19,6 +19,7 @@ package org.apache.ignite.platform;
 
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.compute.ComputeJob;
 import org.apache.ignite.compute.ComputeJobAdapter;
@@ -128,12 +129,50 @@ public class PlatformDeployServiceTask extends ComputeTaskAdapter<String, Object
         }
 
         // TODO: test overloads, test all primitive types
+        // test primitive wrappers and nulls
+        // test binary objects
+
+        public byte test(byte arg) {
+            return (byte) (arg + 1);
+        }
+
+        public short test(short arg) {
+            return (short) (arg + 1);
+        }
+
         public int test(int arg) {
+            return arg + 1;
+        }
+
+        public long test(long arg) {
             return arg + 1;
         }
 
         public float test(float arg) {
             return arg + 1.5f;
+        }
+
+        public double test(double arg) {
+            return arg + 2.5;
+        }
+
+        public boolean test(boolean arg) {
+            return !arg;
+        }
+
+        public char test(char arg) {
+            return (char) (arg + 1);
+        }
+
+        public PlatformComputeBinarizable testBinarizable(PlatformComputeBinarizable arg) {
+            return arg == null ? null : new PlatformComputeBinarizable(arg.field + 1);
+        }
+
+        public BinaryObject testBinaryObject(BinaryObject o) {
+            if (o == null)
+                return null;
+
+            return o.toBuilder().setField("field", 15).build();
         }
     }
 }
