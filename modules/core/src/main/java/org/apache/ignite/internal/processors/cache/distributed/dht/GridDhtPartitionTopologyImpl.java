@@ -953,7 +953,7 @@ class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
                     List<UUID> ids = p2n.get(p);
 
                     if (ids == null)
-                        // Initialize HashSet to size 3 in anticipation that there won't be
+                        // Initialize ArrayList to size 3 in anticipation that there won't be
                         // more than 3 nodes per partitions.
                         p2n.put(p, ids = new ArrayList<>(3));
 
@@ -1059,7 +1059,7 @@ class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
                 List<UUID> ids = part2node.get(p);
 
                 if (ids == null)
-                    // Initialize HashSet to size 3 in anticipation that there won't be
+                    // Initialize ArrayList to size 3 in anticipation that there won't be
                     // more than 3 nodes per partition.
                     part2node.put(p, ids = new ArrayList<>(3));
 
