@@ -408,6 +408,18 @@ public class GridResourceProcessor extends GridProcessorAdapter {
     }
 
     /**
+     * Checks if annotations presents in specified object.
+     *
+     * @param dep Class deployment.
+     * @param target Object to check.
+     * @param annCls Annotation to find.
+     * @return if annotation is presented, corresponding bit is set.
+     */
+    public int isAnnotationsPresent(GridDeployment dep, Object target, Class<? extends Annotation>[] annCls) {
+        return ioc.isAnnotationsPresent(dep, target, annCls);
+    }
+
+    /**
      * Injects held resources into given SPI implementation.
      *
      * @param spi SPI implementation.

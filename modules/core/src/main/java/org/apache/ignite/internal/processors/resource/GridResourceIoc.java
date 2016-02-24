@@ -202,6 +202,33 @@ class GridResourceIoc {
     }
 
     /**
+     * Checks if annotation is presented on a field or method of the specified object.
+     *
+     * @param target Target object.
+     * @param annCls Annotation class to find on fields or methods of target object.
+     * @param dep Deployment.
+     * @return {@code true} if annotation is presented, {@code false} if it's not.
+     */
+    int isAnnotationsPresent(@Nullable GridDeployment dep, Object target, Class<? extends Annotation>[] annCls) {
+        assert target != null;
+        assert annCls != null && annCls.length > 0 && annCls.length <= 32;
+
+        ClassDescriptor desc = descriptor(dep, target.getClass());
+
+        if (desc.recursiveFields().length > 0)
+            return ~(-1 << annCls.length);
+        int res = 0, mask = 1;
+
+        for (Class<? extends Annotation> ann : annCls) {
+            if (desc.annotatedMembers(ann) != null)
+                res |= mask;
+            mask <<= 1;
+        }
+
+        return res;
+    }
+
+    /**
      * @param dep Deployment.
      * @param target Target.
      * @param annClss Annotations.

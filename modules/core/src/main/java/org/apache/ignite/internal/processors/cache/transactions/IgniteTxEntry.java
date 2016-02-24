@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.cache.transactions;
 import java.io.Externalizable;
 import java.nio.ByteBuffer;
 import java.util.Collection;
+import java.util.IdentityHashMap;
 import java.util.LinkedList;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
@@ -32,6 +33,7 @@ import org.apache.ignite.internal.IgniteCodeGeneratingFail;
 import org.apache.ignite.internal.processors.cache.CacheEntryPredicate;
 import org.apache.ignite.internal.processors.cache.CacheInvokeEntry;
 import org.apache.ignite.internal.processors.cache.CacheObject;
+import org.apache.ignite.internal.processors.cache.EntryProcessorResourceInjectorProxy;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryRemovedException;
@@ -40,6 +42,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.distributed.IgniteExternalizableExpiryPolicy;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
+import org.apache.ignite.internal.processors.resource.GridResourceProcessor;
 import org.apache.ignite.internal.util.lang.GridPeerDeployAware;
 import org.apache.ignite.internal.util.tostring.GridToStringBuilder;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
@@ -186,6 +189,12 @@ public class IgniteTxEntry implements GridPeerDeployAware, Message {
 
     /** Expiry policy bytes. */
     private byte[] expiryPlcBytes;
+
+    /** EntryProcessor proxies (EntryProcessorResourceInjectorProxy). */
+    @GridDirectTransient
+    IdentityHashMap<EntryProcessor<Object, Object, Object>,
+                        EntryProcessor<Object, Object, Object>> entryProcessorProxies = null;
+
 
     /**
      * Additional flags.
@@ -650,15 +659,46 @@ public class IgniteTxEntry implements GridPeerDeployAware, Message {
      * @param invokeArgs Optional arguments for EntryProcessor.
      */
     public void addEntryProcessor(EntryProcessor<Object, Object, Object> entryProcessor, Object[] invokeArgs) {
-        if (entryProcessorsCol == null)
-            entryProcessorsCol = new LinkedList<>();
-
-        entryProcessorsCol.add(new T2<>(entryProcessor, invokeArgs));
+        addEntryProcessor0(entryProcessor, invokeArgs);
 
         // Must clear transform closure bytes since collection has changed.
         transformClosBytes = null;
 
         val.op(TRANSFORM);
+    }
+
+    /**
+     * @param entryProcessor Entry processor.
+     * @param invokeArgs Optional arguments for EntryProcessor.
+     */
+    private void addEntryProcessor0(EntryProcessor<Object, Object, Object> entryProcessor, Object[] invokeArgs) {
+        if (entryProcessorsCol == null)
+            entryProcessorsCol = new LinkedList<>();
+
+        if (!(entryProcessor instanceof EntryProcessorResourceInjectorProxy)) {
+            if (entryProcessorProxies == null)
+                entryProcessorProxies = new IdentityHashMap<>();
+
+            EntryProcessor<Object, Object, Object> proxy = entryProcessorProxies.get(entryProcessor);
+
+            if (proxy == null) {
+                assert ctx != null;
+
+                GridResourceProcessor rsrcProcessor = ctx.kernalContext().resource();
+
+                int annMask = rsrcProcessor.isAnnotationsPresent(null, entryProcessor,
+                    EntryProcessorResourceInjectorProxy.annotationsSupported);
+
+                proxy = annMask != 0 ? new EntryProcessorResourceInjectorProxy<Object, Object, Object>(entryProcessor) :
+                    entryProcessor;
+
+                entryProcessorProxies.put(entryProcessor, proxy);
+
+                entryProcessor = proxy;
+            }
+        }
+
+        entryProcessorsCol.add(new T2<>(entryProcessor, invokeArgs));
     }
 
     /**
@@ -714,7 +754,12 @@ public class IgniteTxEntry implements GridPeerDeployAware, Message {
      */
     public void entryProcessors(
         @Nullable Collection<T2<EntryProcessor<Object, Object, Object>, Object[]>> entryProcessorsCol) {
-        this.entryProcessorsCol = entryProcessorsCol;
+        if (entryProcessorsCol == null || entryProcessorsCol.isEmpty())
+            this.entryProcessorsCol = null;
+        else {
+            for (T2<EntryProcessor<Object, Object, Object>, Object[]> t2 : entryProcessors())
+                addEntryProcessor(t2.get1(), t2.get2());
+        }
 
         // Must clear transform closure bytes since collection has changed.
         transformClosBytes = null;

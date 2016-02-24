@@ -20,11 +20,13 @@ package org.apache.ignite.internal.processors.cache.distributed.dht.atomic;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.IdentityHashMap;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicReference;
 import javax.cache.expiry.ExpiryPolicy;
+import javax.cache.processor.EntryProcessor;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
@@ -35,6 +37,7 @@ import org.apache.ignite.internal.cluster.ClusterTopologyServerNotFoundException
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheEntryPredicate;
 import org.apache.ignite.internal.processors.cache.CachePartialUpdateCheckedException;
+import org.apache.ignite.internal.processors.cache.EntryProcessorResourceInjectorProxy;
 import org.apache.ignite.internal.processors.cache.GridCacheAffinityManager;
 import org.apache.ignite.internal.processors.cache.GridCacheAtomicFuture;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
@@ -47,6 +50,7 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTopolo
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearAtomicCache;
 import org.apache.ignite.internal.processors.cache.dr.GridCacheDrInfo;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
+import org.apache.ignite.internal.processors.resource.GridResourceProcessor;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
@@ -519,6 +523,20 @@ public class GridNearAtomicUpdateFuture extends GridFutureAdapter<Object>
 
         if (syncMode == FULL_ASYNC)
             onDone(new GridCacheReturn(cctx, true, true, null, true));
+    }
+
+    /**
+     * Wrap EntryProcessor
+     * @param processor Processor.
+     */
+    @SuppressWarnings("unchecked")
+    private EntryProcessor wrapEntryProcessor(EntryProcessor processor) {
+        GridResourceProcessor rsrcProcessor = cctx.kernalContext().resource();
+
+        int annMask = rsrcProcessor.isAnnotationsPresent(null, processor,
+            EntryProcessorResourceInjectorProxy.annotationsSupported);
+
+        return annMask != 0 ? new EntryProcessorResourceInjectorProxy(processor) : processor;
     }
 
     /**
@@ -1012,6 +1030,7 @@ public class GridNearAtomicUpdateFuture extends GridFutureAdapter<Object>
 
             Map<UUID, GridNearAtomicUpdateRequest> pendingMappings = U.newHashMap(topNodes.size());
 
+            IdentityHashMap<EntryProcessor, EntryProcessor> entryProcessorProxies = null;
             // Create mappings first, then send messages.
             for (Object key : keys) {
                 if (key == null)
@@ -1104,6 +1123,21 @@ public class GridNearAtomicUpdateFuture extends GridFutureAdapter<Object>
                             keys.size());
 
                         pendingMappings.put(nodeId, mapped);
+                    }
+
+                    if (op == TRANSFORM) {
+                        EntryProcessor processor = (EntryProcessor)val;
+                        if (!(processor instanceof EntryProcessorResourceInjectorProxy)) {
+                            if (entryProcessorProxies == null)
+                                entryProcessorProxies = new IdentityHashMap<>();
+
+                            EntryProcessor proxy = entryProcessorProxies.get(processor);
+
+                            if (proxy == null)
+                                entryProcessorProxies.put(processor, proxy = wrapEntryProcessor(processor));
+
+                            val = proxy;
+                        }
                     }
 
                     mapped.addUpdateEntry(cacheKey, val, conflictTtl, conflictExpireTime, conflictVer, i == 0);
@@ -1203,6 +1237,9 @@ public class GridNearAtomicUpdateFuture extends GridFutureAdapter<Object>
                 cctx.deploymentEnabled(),
                 1);
 
+            if (op == TRANSFORM)
+                val = wrapEntryProcessor((EntryProcessor)val);
+
             req.addUpdateEntry(cacheKey,
                 val,
                 conflictTtl,
@@ -1260,4 +1297,83 @@ public class GridNearAtomicUpdateFuture extends GridFutureAdapter<Object>
     public String toString() {
         return S.toString(GridNearAtomicUpdateFuture.class, this, super.toString());
     }
+
+    /**
+     * Resource injector
+     */
+    interface ResourceInjector {
+        /**
+         * Inject resource(s) to object
+         * @param ctx Cache context.
+         * @param obj Object.
+         */
+        ResourceInjector injectResources(GridCacheContext ctx, Object obj) throws IgniteCheckedException;
+    }
+
+    /**
+     * Base class for injectors
+     */
+    private abstract static class ResourceInjectorBase implements ResourceInjector {
+        /**
+         * @param ctx Context.
+         * @param obj Object.
+         */
+        protected void injectResourcesInternal(GridCacheContext ctx, Object obj) throws IgniteCheckedException {
+
+
+            GridResourceProcessor resourceProcessor = ctx.kernalContext().resource();
+
+            resourceProcessor.injectGeneric(obj);
+
+            resourceProcessor.injectCacheName(obj, ctx.name());
+        }
+    }
+
+    private static class ResourceInjectorSingleton extends ResourceInjectorBase {
+        private Object obj;
+
+        @Override public ResourceInjector injectResources(GridCacheContext ctx,
+            Object obj) throws IgniteCheckedException {
+            ResourceInjector res = this;
+
+            if (this.obj != obj) {
+                if (this.obj == null)
+                    this.obj = obj;
+                else
+                    res = new ResourceInjectorBasedOnMap(this.obj, obj);
+
+                injectResourcesInternal(ctx, obj);
+            }
+            return res;
+        }
+    }
+
+    /**
+     * Resource injector
+     */
+    private static class ResourceInjectorBasedOnMap extends ResourceInjectorBase {
+        private final IdentityHashMap<Object, Object> map;
+
+        /**
+         * @param obj1 object1
+         * @param obj2 object2
+         */
+        ResourceInjectorBasedOnMap(Object obj1, Object obj2) {
+            map = new IdentityHashMap<>();
+            map.put(obj1, null);
+            map.put(obj2, null);
+        }
+
+        /** {@inheritDoc} */
+        @Override public ResourceInjector injectResources(GridCacheContext ctx,
+            Object obj) throws IgniteCheckedException {
+            if (!map.containsKey(obj)) {
+                injectResourcesInternal(ctx, obj);
+                map.put(obj, null);
+            }
+            return this;
+        }
+    }
+
+
 }

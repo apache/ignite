@@ -37,7 +37,6 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.Lock;
-import javax.annotation.Resource;
 import javax.cache.Cache;
 import javax.cache.CacheException;
 import javax.cache.expiry.Duration;
@@ -5400,6 +5399,23 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
     public void testTransformResourceInjection() throws Exception {
         final IgniteCache<String, Integer> cache = jcache();
 
+        if (txEnabled()) {
+            IgniteTransactions txs = ignite(0).transactions();
+
+            try (Transaction tx = txs.txStart()) {
+                doTransformResourceInjection(cache);
+
+                tx.rollback();
+            }
+        }
+        else
+            doTransformResourceInjection(cache);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    protected void doTransformResourceInjection(IgniteCache<String, Integer> cache) throws Exception {
         Integer flags = cache.invoke("key1", INJECT_PROCESSOR);
 
         assertTrue("Processor result is null", flags != null);
@@ -5410,6 +5426,17 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
 
         if (!notInjected.isEmpty())
             assertTrue("Can't inject resource(s) " + Arrays.toString(notInjected.toArray()), false);
+
+        Set<String> keys = new HashSet<>(Arrays.asList("key1", "key2", "key3", "key4"));
+
+        Map<String, EntryProcessorResult<Integer>> results = cache.invokeAll(keys, INJECT_PROCESSOR);
+
+        for (EntryProcessorResult<Integer> res : results.values()) {
+            Collection<ResourceType> notInjected1 = ResourceInfoSet.valueOf(res.get()).notInjected();
+
+            if (!notInjected1.isEmpty())
+                assertTrue("Can't inject resource(s) " + Arrays.toString(notInjected1.toArray()), false);
+        }
     }
 
     /**
@@ -5565,16 +5592,44 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
      */
     private static class ResourceInjectionEntryProcessor implements EntryProcessor<String, Integer, Integer>,
                 Serializable {
+        /** */
+        private transient ResourceInfoSet infoSet;
+
+        /** */
+        private transient Ignite ignite;
+
+        /** */
+        private transient String cacheName;
+
         @IgniteInstanceResource
-        transient Ignite ignite;
+        public void setIgnite(Ignite ignite) {
+            checkSet();
+
+            infoSet.set(ResourceType.IGNITE_INSTANCE, true);
+
+            this.ignite = ignite;
+
+            System.out.println("Set ignite: " + this);
+        }
 
         @CacheNameResource
-        transient String cacheName;
+        public void setCacheName(String cacheName) {
+            checkSet();
+
+            infoSet.set(ResourceType.CACHE_NAME, true);
+
+            this.cacheName = cacheName;
+        }
 
         /** {@inheritDoc} */
         @Override public Integer process(MutableEntry<String, Integer> e, Object... args) {
-            return new ResourceInfoSet().set(ResourceType.IGNITE_INSTANCE, ignite).
-                                            set(ResourceType.CACHE_NAME, cacheName).getValue();
+            return infoSet == null ? null : infoSet.getValue();
+        }
+
+        /** */
+        private void checkSet() {
+            if (infoSet == null)
+                infoSet = new ResourceInfoSet();
         }
     }
 
