@@ -868,8 +868,22 @@ namespace Apache.Ignite.Core.Tests.Services
             /// </summary>
             bool isExecuted();
 
+            byte test(byte x);
+            short test(short x);
             int test(int x);
+            long test(long x);
             float test(float x);
+            double test(double x);
+            char test(char x);
+            bool test(bool x);
+            byte? testWrapper(byte? x);
+            short? testWrapper(short? x);
+            int? testWrapper(int? x);
+            long? testWrapper(long? x);
+            float? testWrapper(float? x);
+            double? testWrapper(double? x);
+            char? testWrapper(char? x);
+            bool? testWrapper(bool? x);
         }
     }
 }
