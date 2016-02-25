@@ -795,6 +795,12 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// </summary>
         private int[] ReadSchema()
         {
+            if (_curHdr.IsCompactFooter)
+            {
+                // TODO: Get schema from context
+                return null;
+            }
+
             Stream.Seek(_curPos + _curHdr.SchemaOffset, SeekOrigin.Begin);
 
             var count = _curHdr.SchemaFieldCount;
