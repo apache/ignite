@@ -1133,7 +1133,11 @@ namespace Apache.Ignite.Core.Impl.Binary
                         ? BinaryObjectHeader.Flag.UserType
                         : BinaryObjectHeader.Flag.None;
 
-                    var hasSchema = _schema.WriteSchema(_stream, schemaIdx, out schemaId, ref flags);
+                    if (Marshaller.CompactFooter && desc.UserType)
+                        flags |= BinaryObjectHeader.Flag.CompactFooter;
+
+                    var hasSchema = _schema.WriteSchema(_stream, schemaIdx, out schemaId, ref flags, 
+                        Marshaller.CompactFooter);
 
                     if (hasSchema)
                     {
