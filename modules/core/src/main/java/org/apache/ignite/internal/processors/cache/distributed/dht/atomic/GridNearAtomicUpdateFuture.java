@@ -455,8 +455,7 @@ public class GridNearAtomicUpdateFuture extends GridFutureAdapter<Object> implem
         if (cctx.localNodeId().equals(nodeId)) {
             cache.updateAllAsyncInternal(nodeId, req,
                 new CI2<GridNearAtomicUpdateRequest, GridNearAtomicUpdateResponse>() {
-                    @Override public void apply(GridNearAtomicUpdateRequest req,
-                        GridNearAtomicUpdateResponse res) {
+                    @Override public void apply(GridNearAtomicUpdateRequest req, GridNearAtomicUpdateResponse res) {
                         onResult(res.nodeId(), res);
                     }
                 });
@@ -511,8 +510,7 @@ public class GridNearAtomicUpdateFuture extends GridFutureAdapter<Object> implem
         if (locUpdate != null) {
             cache.updateAllAsyncInternal(cctx.localNodeId(), locUpdate,
                 new CI2<GridNearAtomicUpdateRequest, GridNearAtomicUpdateResponse>() {
-                    @Override public void apply(GridNearAtomicUpdateRequest req,
-                        GridNearAtomicUpdateResponse res) {
+                    @Override public void apply(GridNearAtomicUpdateRequest req, GridNearAtomicUpdateResponse res) {
                         onResult(res.nodeId(), res);
                     }
                 });
@@ -611,8 +609,8 @@ public class GridNearAtomicUpdateFuture extends GridFutureAdapter<Object> implem
          * @param res Response.
          * @param nodeErr {@code True} if response was created on node failure.
          */
-        @SuppressWarnings({"unchecked", "ThrowableResultOfMethodCallIgnored"}) void onResult(UUID nodeId,
-            GridNearAtomicUpdateResponse res, boolean nodeErr) {
+        @SuppressWarnings({"unchecked", "ThrowableResultOfMethodCallIgnored"})
+        void onResult(UUID nodeId, GridNearAtomicUpdateResponse res, boolean nodeErr) {
             GridNearAtomicUpdateRequest req;
 
             AffinityTopologyVersion remapTopVer = null;
@@ -1207,8 +1205,6 @@ public class GridNearAtomicUpdateFuture extends GridFutureAdapter<Object> implem
                     break;
                 }
             }
-
-            optimize = false;
 
             if (optimize) {
                 return new GridNearAtomicSingleUpdateRequest(

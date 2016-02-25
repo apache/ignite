@@ -401,8 +401,7 @@ public class GridDhtAtomicUpdateFuture extends GridFutureAdapter<Void> implement
                 if (!mappings.isEmpty() && lsnrs != null) {
                     Collection<KeyCacheObject> hndKeys = new ArrayList<>(keys.size());
 
-                    exit:
-                    for (GridDhtAtomicUpdateRequest req : mappings.values()) {
+                    exit: for (GridDhtAtomicUpdateRequest req : mappings.values()) {
                         for (int i = 0; i < req.size(); i++) {
                             KeyCacheObject key = req.key(i);
 

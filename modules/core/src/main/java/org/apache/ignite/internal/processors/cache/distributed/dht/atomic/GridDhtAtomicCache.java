@@ -252,49 +252,57 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
             }
         });
 
-        ctx.io().addHandler(ctx.cacheId(), GridNearAtomicMultipleUpdateRequest.class, new CI2<UUID, GridNearAtomicMultipleUpdateRequest>() {
+        ctx.io().addHandler(ctx.cacheId(), GridNearAtomicMultipleUpdateRequest.class,
+            new CI2<UUID, GridNearAtomicMultipleUpdateRequest>() {
             @Override public void apply(UUID nodeId, GridNearAtomicMultipleUpdateRequest req) {
                 processNearAtomicUpdateRequest(nodeId, req);
             }
         });
 
-        ctx.io().addHandler(ctx.cacheId(), GridNearAtomicSingleUpdateRequest.class, new CI2<UUID, GridNearAtomicSingleUpdateRequest>() {
+        ctx.io().addHandler(ctx.cacheId(), GridNearAtomicSingleUpdateRequest.class,
+            new CI2<UUID, GridNearAtomicSingleUpdateRequest>() {
             @Override public void apply(UUID nodeId, GridNearAtomicSingleUpdateRequest req) {
                 processNearAtomicUpdateRequest(nodeId, req);
             }
         });
 
-        ctx.io().addHandler(ctx.cacheId(), GridNearAtomicMultipleUpdateResponse.class, new CI2<UUID, GridNearAtomicMultipleUpdateResponse>() {
+        ctx.io().addHandler(ctx.cacheId(), GridNearAtomicMultipleUpdateResponse.class,
+            new CI2<UUID, GridNearAtomicMultipleUpdateResponse>() {
             @Override public void apply(UUID nodeId, GridNearAtomicMultipleUpdateResponse res) {
                 processNearAtomicUpdateResponse(nodeId, res);
             }
         });
 
-        ctx.io().addHandler(ctx.cacheId(), GridNearAtomicSingleUpdateResponse.class, new CI2<UUID, GridNearAtomicSingleUpdateResponse>() {
+        ctx.io().addHandler(ctx.cacheId(), GridNearAtomicSingleUpdateResponse.class,
+            new CI2<UUID, GridNearAtomicSingleUpdateResponse>() {
             @Override public void apply(UUID nodeId, GridNearAtomicSingleUpdateResponse res) {
                 processNearAtomicUpdateResponse(nodeId, res);
             }
         });
 
-        ctx.io().addHandler(ctx.cacheId(), GridDhtAtomicMultipleUpdateRequest.class, new CI2<UUID, GridDhtAtomicMultipleUpdateRequest>() {
+        ctx.io().addHandler(ctx.cacheId(), GridDhtAtomicMultipleUpdateRequest.class,
+            new CI2<UUID, GridDhtAtomicMultipleUpdateRequest>() {
             @Override public void apply(UUID nodeId, GridDhtAtomicMultipleUpdateRequest req) {
                 processDhtAtomicUpdateRequest(nodeId, req);
             }
         });
 
-        ctx.io().addHandler(ctx.cacheId(), GridDhtAtomicSingleUpdateRequest.class, new CI2<UUID, GridDhtAtomicSingleUpdateRequest>() {
+        ctx.io().addHandler(ctx.cacheId(), GridDhtAtomicSingleUpdateRequest.class,
+            new CI2<UUID, GridDhtAtomicSingleUpdateRequest>() {
             @Override public void apply(UUID nodeId, GridDhtAtomicSingleUpdateRequest req) {
                 processDhtAtomicUpdateRequest(nodeId, req);
             }
         });
 
-        ctx.io().addHandler(ctx.cacheId(), GridDhtAtomicMultipleUpdateResponse.class, new CI2<UUID, GridDhtAtomicMultipleUpdateResponse>() {
+        ctx.io().addHandler(ctx.cacheId(), GridDhtAtomicMultipleUpdateResponse.class,
+            new CI2<UUID, GridDhtAtomicMultipleUpdateResponse>() {
             @Override public void apply(UUID nodeId, GridDhtAtomicMultipleUpdateResponse res) {
                 processDhtAtomicUpdateResponse(nodeId, res);
             }
         });
 
-        ctx.io().addHandler(ctx.cacheId(), GridDhtAtomicSingleUpdateResponse.class, new CI2<UUID, GridDhtAtomicSingleUpdateResponse>() {
+        ctx.io().addHandler(ctx.cacheId(), GridDhtAtomicSingleUpdateResponse.class,
+            new CI2<UUID, GridDhtAtomicSingleUpdateResponse>() {
             @Override public void apply(UUID nodeId, GridDhtAtomicSingleUpdateResponse res) {
                 processDhtAtomicUpdateResponse(nodeId, res);
             }
@@ -1842,7 +1850,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                             req.keepBinary());
 
                         Object val = ctx.config().getInterceptor().onBeforePut(new CacheLazyEntry(ctx, entry.key(),
-                                old, req.keepBinary()),
+                            old, req.keepBinary()),
                             updated.value(ctx.cacheObjectContext(), false));
 
                         if (val == null)

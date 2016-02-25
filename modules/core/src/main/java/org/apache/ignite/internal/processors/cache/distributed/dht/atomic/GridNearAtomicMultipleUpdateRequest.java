@@ -58,8 +58,8 @@ import static org.apache.ignite.internal.processors.cache.GridCacheOperation.UPD
 /**
  * Lite DHT cache update request sent from near node to primary node.
  */
-public class GridNearAtomicMultipleUpdateRequest extends GridCacheMessage
-    implements GridNearAtomicUpdateRequest, GridCacheDeployable {
+public class GridNearAtomicMultipleUpdateRequest extends GridCacheMessage implements GridNearAtomicUpdateRequest,
+    GridCacheDeployable {
     /** */
     private static final long serialVersionUID = 0L;
 
