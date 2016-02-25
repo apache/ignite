@@ -52,6 +52,9 @@ public class EntryProcessorResourceInjectorProxy<K, V, T> implements EntryProces
         ServiceResource.class
     });
 
+    /** Serial version uid. */
+    private static final long serialVersionUID = -5032286375274064774L;
+
     /** Delegate. */
     private EntryProcessor<K, V, T> delegate;
 
@@ -123,5 +126,6 @@ public class EntryProcessorResourceInjectorProxy<K, V, T> implements EntryProces
             obj :
             ((EntryProcessorResourceInjectorProxy)obj).getDelegate();
     }
+
 
 }

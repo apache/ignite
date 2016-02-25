@@ -388,6 +388,7 @@ class GridResourceIoc {
                     newSets = oldSets;
                 else {
                     newSets = Arrays.copyOf(oldSets, Math.max(oldSets.length << 1, set.descIdx + 1));
+
                     Arrays.fill(newSets, oldSets.length, newSets.length, -1);
                 }
 
