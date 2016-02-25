@@ -628,7 +628,7 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
 
         Map<ClusterNode, Collection<DataStreamerEntry>> mappings = new HashMap<>();
 
-        boolean initPda = ctx.deploy().enabled() && cacheObjCtx.addDeploymentInfo() && jobPda == null;
+        boolean initPda = ctx.deploy().enabled() && jobPda == null;
 
         AffinityTopologyVersion topVer = ctx.cache().context().exchange().readyAffinityVersion();
 
@@ -641,9 +641,12 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
                 assert key != null;
 
                 if (initPda) {
-                    jobPda = new DataStreamerPda(key.value(cacheObjCtx, false),
-                        entry.getValue() != null ? entry.getValue().value(cacheObjCtx, false) : null,
-                        rcvr);
+                    if (cacheObjCtx.addDeploymentInfo())
+                        jobPda = new DataStreamerPda(key.value(cacheObjCtx, false),
+                            entry.getValue() != null ? entry.getValue().value(cacheObjCtx, false) : null,
+                            rcvr);
+                    else if (rcvr != null)
+                        jobPda = new DataStreamerPda(rcvr);
 
                     initPda = false;
                 }
@@ -1304,12 +1307,10 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
                 GridDeployment dep = null;
                 GridPeerDeployAware jobPda0 = null;
 
-                if (ctx.deploy().enabled() && cacheObjCtx.addDeploymentInfo()) {
+                jobPda0 = jobPda;
+
+                if (ctx.deploy().enabled() && jobPda0 != null) {
                     try {
-                        jobPda0 = jobPda;
-
-                        assert jobPda0 != null;
-
                         dep = ctx.deploy().deploy(jobPda0.deployClass(), jobPda0.classLoader());
 
                         GridCacheAdapter<Object, Object> cache = ctx.cache().internalCache(cacheName);
@@ -1428,7 +1429,7 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
 
                     err = ctx.config().getMarshaller().unmarshal(
                         errBytes,
-                        jobPda0 != null ? jobPda0.classLoader() : U.gridClassLoader());
+                        U.resolveClassLoader(jobPda0 != null ? jobPda0.classLoader() : null, ctx.config()));
                 }
                 catch (IgniteCheckedException e) {
                     f.onDone(null, new IgniteCheckedException("Failed to unmarshal response.", e));
