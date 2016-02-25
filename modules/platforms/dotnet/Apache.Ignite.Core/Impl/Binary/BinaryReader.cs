@@ -797,7 +797,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         {
             if (_curHdr.IsCompactFooter)
             {
-                // TODO: Get schema from context
+                // TODO: Get schema from Java?
                 return null;
             }
 
