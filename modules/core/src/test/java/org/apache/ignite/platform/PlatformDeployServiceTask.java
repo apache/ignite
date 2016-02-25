@@ -262,6 +262,14 @@ public class PlatformDeployServiceTask extends ComputeTaskAdapter<String, Object
             return arg;
         }
 
+        public boolean[] testArray(boolean[] arg) {
+            if (arg != null)
+                for (int i = 0; i < arg.length; i++)
+                    arg[i] = !arg[i];
+
+            return arg;
+        }
+
         public Integer testNull(Integer arg) {
             return arg == null ? null : arg + 1;
         }
