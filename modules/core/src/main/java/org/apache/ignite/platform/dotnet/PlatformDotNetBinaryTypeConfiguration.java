@@ -62,7 +62,6 @@ public class PlatformDotNetBinaryTypeConfiguration {
         idMapper = cfg.getIdMapper();
         serializer = cfg.getSerializer();
         affinityKeyFieldName = cfg.getAffinityKeyFieldName();
-        //noinspection deprecation
         keepDeserialized = cfg.isKeepDeserialized();
         isEnum = cfg.isEnum();
     }
@@ -186,6 +185,7 @@ public class PlatformDotNetBinaryTypeConfiguration {
     public void setEnum(boolean isEnum) {
         this.isEnum = isEnum;
     }
+
 
     /** {@inheritDoc} */
     @Override public String toString() {

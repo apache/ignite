@@ -593,7 +593,6 @@ import java.util.Map;
                 w.writeInt(multiFinder.getMulticastPort());
                 w.writeInt(multiFinder.getAddressRequestAttempts());
                 w.writeInt(multiFinder.getResponseWaitTime());
-                w.writeInt(multiFinder.getTimeToLive());
 
                 int ttl = multiFinder.getTimeToLive();
                 w.writeBoolean(ttl != -1);
