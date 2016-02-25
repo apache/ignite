@@ -75,22 +75,21 @@ public class GridLogCommandHandler extends GridRestCommandHandlerAdapter {
             if (log.isDebugEnabled())
                 log.debug("Handling log REST request: " + req);
 
-            GridRestLogRequest req0 = (GridRestLogRequest)req;
+            GridRestLogRequest req0 = (GridRestLogRequest) req;
 
             if (req0.from() < -1 || req0.to() < -1)
                 return new GridFinishedFuture<>(new GridRestResponse(GridRestResponse.STATUS_FAILED,
-                    "One of the request parameters is invalid [from=" + req0.from() + ", to=" + req0.to() + ']'));
+                        "One of the request parameters is invalid [from=" + req0.from() + ", to=" + req0.to() + ']'));
 
             int from;
 
             if (req0.from() != -1) {
                 if (req0.to() == -1)
                     return new GridFinishedFuture<>(new GridRestResponse(GridRestResponse.STATUS_FAILED,
-                        "Request parameter 'to' is not set."));
+                            "Request parameter 'to' is not set."));
 
                 from = req0.from();
-            }
-            else
+            } else
                 from = DEFAULT_FROM;
 
 
@@ -99,30 +98,43 @@ public class GridLogCommandHandler extends GridRestCommandHandlerAdapter {
             if (req0.to() != -1) {
                 if (req0.from() == -1)
                     return new GridFinishedFuture<>(new GridRestResponse(GridRestResponse.STATUS_FAILED,
-                        "Request parameter 'from' is not set."));
+                            "Request parameter 'from' is not set."));
 
                 to = req0.to();
-            }
-            else
+            } else
                 to = DEFAULT_TO;
 
             if (from >= to)
                 return new GridFinishedFuture<>(new GridRestResponse(GridRestResponse.STATUS_FAILED,
-                    "Request parameter 'from' must be less than 'to'."));
+                        "Request parameter 'from' must be less than 'to'."));
 
             File logFile;
+            String igniteHome = ctx.config().getIgniteHome();
 
-            try {
-                if (req0.path() != null)
-                    logFile = new File(req0.path());
-                else
-                    logFile = new File(log.fileName() == null ?
-                        ctx.config().getIgniteHome() + "/" + "work/log/ignite.log" :
-                        log.fileName());
+            if (log.fileName() == null){
+                logFile = new File(igniteHome + "/" + "work/log/ignite.log");
+            } else{
+                logFile = new File(log.fileName());
             }
-            catch (InvalidPathException e) {
+            try {
+                if (req0.path() != null) {
+                    if (log.fileName() != null) {
+                        if (req0.path() != log.fileName()) {
+                            return new GridFinishedFuture<>(new GridRestResponse(GridRestResponse.STATUS_FAILED,
+                                    "Request parameter 'path' must contain valid file."));
+                        } else {
+                            logFile = new File(req0.path());
+                        }
+                    } else if (req0.path().contains(igniteHome)) {
+                        logFile = new File(req0.path());
+                    } else {
+                        return new GridFinishedFuture<>(new GridRestResponse(GridRestResponse.STATUS_FAILED,
+                                "Request parameter 'path' must contain valid file."));
+                    }
+                }
+            } catch (InvalidPathException e) {
                 return new GridFinishedFuture<>(new GridRestResponse(GridRestResponse.STATUS_FAILED,
-                    "Incorrect path to a log file [msg=" + e.getMessage() + ']'));
+                        "Incorrect path to a log file [msg=" + e.getMessage() + ']'));
             }
 
             try {
@@ -160,6 +172,10 @@ public class GridLogCommandHandler extends GridRestCommandHandlerAdapter {
                     content.append(line);
 
                 start++;
+            }
+
+            if (content.length() == 0){
+                throw new IgniteCheckedException("Request parameter 'from' and 'to' are for lines that do not exist in log file.");
             }
         }
         catch (IOException e) {
