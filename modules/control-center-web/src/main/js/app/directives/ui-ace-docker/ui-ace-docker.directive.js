@@ -19,12 +19,12 @@ import template from './ui-ace-docker.jade!';
 import controller from './ui-ace-docker.controller';
 
 export default ['igniteUiAceDocker', [() => {
-    const link = ($scope, $el, $attrs, [igniteUiAce]) => {
-        if (igniteUiAce.onLoad)
-            $scope.onLoad = igniteUiAce.onLoad;
+    const link = ($scope, $el, $attrs, [igniteUiAceTabs]) => {
+        if (igniteUiAceTabs.onLoad)
+            $scope.onLoad = igniteUiAceTabs.onLoad;
 
-        if (igniteUiAce.onChange)
-            $scope.onChange = igniteUiAce.onChange;
+        if (igniteUiAceTabs.onChange)
+            $scope.onChange = igniteUiAceTabs.onChange;
     };
 
     return {
@@ -41,6 +41,6 @@ export default ['igniteUiAceDocker', [() => {
         template,
         controller,
         controllerAs: 'ctrl',
-        require: ['?^igniteUiAce']
+        require: ['?^igniteUiAceTabs']
     };
 }]];

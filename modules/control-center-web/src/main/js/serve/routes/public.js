@@ -116,7 +116,7 @@ module.exports.factory = function(express, passport, nodemailer, settings, mail,
         });
 
         /**
-         * Login in exist account.
+         * Sign in into exist account.
          */
         router.post('/signin', (req, res, next) => {
             passport.authenticate('local', (errAuth, user) => {

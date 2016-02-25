@@ -25,6 +25,10 @@ export default ['igniteFormFieldInputNumber', ['IgniteFormGUID', (guid) => {
         scope.field = field;
         label.for = scope.id = id || guid();
 
+        scope.$watch('required', (required) => {
+            label.required = required || false;
+        });
+
         form.$defaults = form.$defaults || {};
         form.$defaults[name] = _.cloneDeep(scope.value);
 

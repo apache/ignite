@@ -41,7 +41,6 @@ import 'angular-drag-and-drop-lists';
 import 'angular-nvd3';
 import 'angular-retina';
 import 'angular-strap';
-import 'angular-ui-ace';
 import 'angular-tree-control';
 import 'angular-smart-table';
 
@@ -65,13 +64,13 @@ import './modules/form/form.module';
 import './modules/JavaTypes/JavaTypes.provider';
 import './modules/QueryNotebooks/QueryNotebooks.provider';
 
-import './modules/states/login/index';
-import './modules/states/logout/index';
-import './modules/states/password/index';
-import './modules/states/configuration/index';
-import './modules/states/sql/index';
-import './modules/states/profile/index';
-import './modules/states/admin/index';
+import './modules/states/signin.state';
+import './modules/states/logout.state';
+import './modules/states/password.state';
+import './modules/states/configuration.state';
+import './modules/states/sql.state';
+import './modules/states/profile.state';
+import './modules/states/admin.state';
 
 // ignite:modules
 import './modules/user/user.module';
@@ -81,19 +80,20 @@ import './modules/configuration/configuration.module';
 import './modules/getting-started/GettingStarted.provider';
 import './modules/dialog/dialog.module';
 import './modules/Version/Version.provider';
+import './modules/ace.module';
 // endignite
 
 // Directives.
 import igniteLoading from './directives/loading/loading.directive';
 import igniteInformation from './directives/information/information.directive';
-import igniteUiAce from './directives/ui-ace/ui-ace.directive';
+import igniteUiAceTabs from './directives/ui-ace-tabs.directive';
 import igniteUiAceXml from './directives/ui-ace-xml/ui-ace-xml.directive';
 import igniteUiAceJava from './directives/ui-ace-java/ui-ace-java.directive';
 import igniteUiAcePom from './directives/ui-ace-pom/ui-ace-pom.directive';
 import igniteUiAceDocker from './directives/ui-ace-docker/ui-ace-docker.directive';
 import igniteUiAcePojos from './directives/ui-ace-pojos/ui-ace-pojos.directive';
 import igniteFormFieldJavaClass from './directives/form-field-java-class/form-field-java-class.directive';
-import igniteBsAffixUpdate from './directives/bs-affix-update/bs-affix-update.directive';
+import igniteBsAffixUpdate from './directives/bs-affix-update.directive';
 
 // Services.
 import cleanup from './services/cleanup/cleanup.service';
@@ -118,6 +118,7 @@ angular
     'ignite-console.Form',
     'ignite-console.JavaTypes',
     'ignite-console.QueryNotebooks',
+    'ignite-console.ace',
     // States.
     'ignite-console.states.login',
     'ignite-console.states.logout',
@@ -136,7 +137,7 @@ angular
 // Directives.
 .directive(...igniteLoading)
 .directive(...igniteInformation)
-.directive(...igniteUiAce)
+.directive(...igniteUiAceTabs)
 .directive(...igniteUiAceXml)
 .directive(...igniteUiAceJava)
 .directive(...igniteUiAcePom)

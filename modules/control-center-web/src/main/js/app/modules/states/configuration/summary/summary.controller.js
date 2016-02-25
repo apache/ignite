@@ -73,6 +73,14 @@ export default [
             ]
         };
 
+        const exampleFolder = {
+            type: 'folder',
+            name: 'example',
+            children: [
+                { type: 'file', name: 'ExampleStartup.java' }
+            ]
+        };
+
         const javaFolder = {
             type: 'folder',
             name: 'java',
@@ -188,6 +196,9 @@ export default [
 
             javaFolder.children = [javaConfigFolder, javaStartupFolder];
 
+            if ($generatorCommon.dataForExampleConfigured(cluster))
+                javaFolder.children.push(exampleFolder);
+
             _.forEach(cluster.caches, (cache) => {
                 if (cache.cacheStoreFactory) {
                     const store = cache.cacheStoreFactory[cache.cacheStoreFactory.kind];
@@ -246,6 +257,11 @@ export default [
 
             zip.file(srcPath + 'config/ServerConfigurationFactory.java', $generatorJava.cluster(cluster, 'config', 'ServerConfigurationFactory', null));
             zip.file(srcPath + 'config/ClientConfigurationFactory.java', $generatorJava.cluster(cluster, 'config', 'ClientConfigurationFactory', clientNearCfg));
+
+            if ($generatorCommon.dataForExampleConfigured(cluster)) {
+                zip.file(srcPath + 'example/ExampleStartup.java', $generatorJava.nodeStartup(cluster, 'example', 'ExampleStartup',
+                    'ServerConfigurationFactory.createConfiguration()', 'config.ServerConfigurationFactory'));
+            }
 
             zip.file(srcPath + 'startup/ServerNodeSpringStartup.java', $generatorJava.nodeStartup(cluster, 'startup', 'ServerNodeSpringStartup', '"' + serverXml + '"'));
             zip.file(srcPath + 'startup/ClientNodeSpringStartup.java', $generatorJava.nodeStartup(cluster, 'startup', 'ClientNodeSpringStartup', '"' + clientXml + '"'));

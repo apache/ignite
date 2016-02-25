@@ -19,12 +19,12 @@ import template from './ui-ace-pom.jade!';
 import controller from './ui-ace-pom.controller';
 
 export default ['igniteUiAcePom', [() => {
-    const link = ($scope, $el, $attrs, [igniteUiAce]) => {
-        if (igniteUiAce.onLoad)
-            $scope.onLoad = igniteUiAce.onLoad;
+    const link = ($scope, $el, $attrs, [igniteUiAceTabs]) => {
+        if (igniteUiAceTabs.onLoad)
+            $scope.onLoad = igniteUiAceTabs.onLoad;
 
-        if (igniteUiAce.onChange)
-            $scope.onChange = igniteUiAce.onChange;
+        if (igniteUiAceTabs.onChange)
+            $scope.onChange = igniteUiAceTabs.onChange;
     };
 
     return {
@@ -36,6 +36,6 @@ export default ['igniteUiAcePom', [() => {
         template,
         controller,
         controllerAs: 'ctrl',
-        require: ['?^igniteUiAce']
+        require: ['?^igniteUiAceTabs']
     };
 }]];

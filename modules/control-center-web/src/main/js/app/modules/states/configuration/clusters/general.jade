@@ -93,7 +93,7 @@ form.panel.panel-default(name='general' novalidate)
                             ng-if='#{model}.discovery.kind === "SharedFs"')
                         ignite-configuration-clusters-general-discovery-vm(
                             ng-if='#{model}.discovery.kind === "Vm"')
-            ignite-ui-ace.col-sm-6
+            ignite-ui-ace-tabs.col-sm-6
                 .preview-panel(ng-init='mode = false')
                     .preview-legend
                         a(ng-class='{active: !mode, inactive: mode}' ng-click='mode = false') XML

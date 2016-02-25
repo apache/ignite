@@ -566,7 +566,7 @@ mixin preview-content(preview, state, mode)
     -var previewMode = 'group.preview'
 
     .preview-content(ng-if='!preview[#{preview}].allDefaults && #{previewMode} == #{state}' id='#{id}'
-        ui-ace='{onLoad: previewInit, onChange: previewChanged, mode: "#{mode}", rendererOptions: {minLines: group.previewMinLines || 3}}' ng-model='preview[#{preview}].#{mode}')
+        ignite-ace='{onLoad: previewInit, onChange: previewChanged, mode: "#{mode}", rendererOptions: {minLines: group.previewMinLines || 3}}' ng-model='preview[#{preview}].#{mode}')
 
 mixin preview(preview, id)
     -var previewMode = 'group.preview'

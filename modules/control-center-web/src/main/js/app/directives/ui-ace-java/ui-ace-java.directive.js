@@ -19,20 +19,20 @@ import template from './ui-ace-java.jade!';
 import controller from './ui-ace-java.controller';
 
 export default ['igniteUiAceJava', ['GeneratorJava', (generator) => {
-    const link = (scope, $el, attrs, [ctrl, igniteUiAce, formCtrl, ngModelCtrl]) => {
+    const link = (scope, $el, attrs, [ctrl, igniteUiAceTabs, formCtrl, ngModelCtrl]) => {
         if (formCtrl && ngModelCtrl)
             formCtrl.$removeControl(ngModelCtrl);
 
-        if (igniteUiAce && igniteUiAce.onLoad) {
+        if (igniteUiAceTabs && igniteUiAceTabs.onLoad) {
             scope.onLoad = (editor) => {
-                igniteUiAce.onLoad(editor);
+                igniteUiAceTabs.onLoad(editor);
 
                 scope.$watch('cluster', () => editor.attractAttention = false);
             };
         }
 
-        if (igniteUiAce && igniteUiAce.onChange)
-            scope.onChange = igniteUiAce.onChange;
+        if (igniteUiAceTabs && igniteUiAceTabs.onChange)
+            scope.onChange = igniteUiAceTabs.onChange;
 
         const render = (data) => {
             delete ctrl.data;
@@ -123,6 +123,6 @@ export default ['igniteUiAceJava', ['GeneratorJava', (generator) => {
         template,
         controller,
         controllerAs: 'ctrl',
-        require: ['igniteUiAceJava', '?^igniteUiAce', '?^form', '?ngModel']
+        require: ['igniteUiAceJava', '?^igniteUiAceTabs', '?^form', '?ngModel']
     };
 }]];

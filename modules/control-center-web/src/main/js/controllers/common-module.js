@@ -17,7 +17,7 @@
 
 var consoleModule = angular.module('ignite-web-console',
     [
-        'ngAnimate', 'ngSanitize', 'mgcrea.ngStrap', 'smart-table', 'ui.ace', 'treeControl', 'darthwade.dwLoading', 'ui.grid', 'ui.grid.autoResize', 'ui.grid.exporter', 'nvd3', 'dndLists', 'btford.socket-io',
+        'ngAnimate', 'ngSanitize', 'mgcrea.ngStrap', 'smart-table', 'treeControl', 'darthwade.dwLoading', 'ui.grid', 'ui.grid.autoResize', 'ui.grid.exporter', 'nvd3', 'dndLists', 'btford.socket-io',
         /* ignite:modules */
         , 'ignite-console'
         /* endignite */
@@ -730,6 +730,12 @@ consoleModule.service('$common', [
             return DS_CHECK_SUCCESS;
         }
 
+        function toJavaName(prefix, name) {
+            var javaName = name ? name.replace(/[^A-Za-z_0-9]+/g, '_') : 'dflt';
+
+            return prefix + javaName.charAt(0).toLocaleUpperCase() + javaName.slice(1);
+        }
+
         return {
             getModel: getModel,
             joinTip: function (arr) {
@@ -1095,7 +1101,7 @@ consoleModule.service('$common', [
                         cacheStoreFactory: {
                             kind: 'CacheJdbcPojoStoreFactory',
                             CacheJdbcPojoStoreFactory: {
-                                dataSourceBean: 'ds' + cache.name,
+                                dataSourceBean: toJavaName('ds', cache.name),
                                 dialect: 'Generic'
                             }
                         },
@@ -2048,7 +2054,7 @@ consoleModule.controller('resetPassword', [
     }
 ]);
 
-// Login popup controller.
+// Sign in controller.
 // TODO IGNITE-1936 Refactor this controller.
 consoleModule.controller('auth', ['$scope', '$focus', 'Auth', 'IgniteCountries', function ($scope, $focus, Auth, countries) {
     $scope.auth = Auth.auth;

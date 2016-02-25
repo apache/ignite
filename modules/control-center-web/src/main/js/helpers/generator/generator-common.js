@@ -499,11 +499,24 @@ $generatorCommon.secretPropertiesNeeded = function (cluster) {
 
 // Check that binary is configured.
 $generatorCommon.binaryIsDefined = function (binary) {
-    return binary && ($commonUtils.isDefinedAndNotEmpty(binary.idMapper) || $commonUtils.isDefinedAndNotEmpty(binary.serializer) ||
-        $commonUtils.isDefinedAndNotEmpty(binary.typeConfigurations) || ($commonUtils.isDefined(binary.compactFooter) && !binary.compactFooter));
+    return binary && ($commonUtils.isDefinedAndNotEmpty(binary.idMapper) || $commonUtils.isDefinedAndNotEmpty(binary.nameMapper) ||
+        $commonUtils.isDefinedAndNotEmpty(binary.serializer) || $commonUtils.isDefinedAndNotEmpty(binary.typeConfigurations) ||
+        ($commonUtils.isDefined(binary.compactFooter) && !binary.compactFooter));
 };
 
 // Extract domain model metadata location.
 $generatorCommon.domainQueryMetadata = function(domain) {
     return domain.queryMetadata ? domain.queryMetadata : 'Configuration';
+};
+
+/**
+ * Checks if cluster has demo types.
+ *
+ * @param cluster Cluster to check.
+ * @returns {boolean} True if cluster has caches with demo types.
+ */
+$generatorCommon.dataForExampleConfigured = function(cluster) {
+    return $commonUtils.isDefined(_.find(cluster.caches, function (cache) {
+        return _.find(cache.domains, {demo: true});
+    }));
 };

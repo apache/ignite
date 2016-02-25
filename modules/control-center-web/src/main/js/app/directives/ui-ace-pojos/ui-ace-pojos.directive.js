@@ -19,12 +19,12 @@ import template from './ui-ace-pojos.jade!';
 import controller from './ui-ace-pojos.controller';
 
 export default ['igniteUiAcePojos', [() => {
-    const link = ($scope, $el, $attrs, [igniteUiAce]) => {
-        if (igniteUiAce.onLoad)
-            $scope.onLoad = igniteUiAce.onLoad;
+    const link = ($scope, $el, $attrs, [igniteUiAceTabs]) => {
+        if (igniteUiAceTabs.onLoad)
+            $scope.onLoad = igniteUiAceTabs.onLoad;
 
-        if (igniteUiAce.onChange)
-            $scope.onChange = igniteUiAce.onChange;
+        if (igniteUiAceTabs.onChange)
+            $scope.onChange = igniteUiAceTabs.onChange;
     };
 
     return {
@@ -41,6 +41,6 @@ export default ['igniteUiAcePojos', [() => {
         template,
         controller,
         controllerAs: 'ctrl',
-        require: ['?^igniteUiAce']
+        require: ['?^igniteUiAceTabs']
     };
 }]];

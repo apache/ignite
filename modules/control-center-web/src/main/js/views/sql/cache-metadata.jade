@@ -18,7 +18,7 @@
         label.labelField Metadata for caches:
         button.close(id='cache-metadata-close' ng-click='$hide()') &times;
         .input-tip
-            input.form-control(type='text' ng-model='metaFilter' placeholder='Filter matadata...')
+            input.form-control(type='text' ng-model='metaFilter' placeholder='Filter metadata...')
     .popover-content(ng-if='metadata && metadata.length > 0')
         treecontrol.tree-classic(tree-model='metadata' options='metaOptions' filter-expression='metaFilter')
             span(ng-switch='' on='node.type')
@@ -33,7 +33,7 @@
                 label(ng-switch-when='indexes') {{node.name}}
                 label(ng-switch-when='index') {{node.name}}
                 span(ng-switch-when='index-field' ng-dblclick='dblclickMetadata(paragraph, node)')
-                    i.fa(ng-class='node.order ? "fa-sort-amount-asc" : "fa-sort-amount-desc"')
+                    i.fa(ng-class='node.order ? "fa-sort-amount-desc" : "fa-sort-amount-asc"')
                     label.clickable {{node.name}}
     .popover-content(ng-if='!metadata || metadata.length == 0')
         label.content-empty No types found

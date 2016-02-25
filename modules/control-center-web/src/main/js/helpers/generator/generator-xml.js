@@ -62,21 +62,6 @@ $generatorXml.property = function (res, obj, propName, setterName, dflt) {
     return false;
 };
 
-// Add property.
-$generatorXml.emptyBeanProperty = function (res, obj, propName) {
-    if ($commonUtils.isDefined(obj)) {
-        var val = obj[propName];
-
-        if ($commonUtils.isDefinedAndNotEmpty(val)) {
-            res.startBlock('<property name="' + propName + '">');
-            res.line('<bean class="' + val + '"/>');
-            res.endBlock('</property>');
-        }
-    }
-
-    return false;
-};
-
 // Add property for class name.
 $generatorXml.classNameProperty = function (res, obj, propName) {
     var val = obj[propName];
@@ -138,7 +123,15 @@ $generatorXml.arrayProperty = function (res, obj, propName, descr, rowFactory) {
     }
 };
 
-// Add bean property.
+/**
+ * Add bean property with internal content.
+ *
+ * @param res Optional configuration presentation builder object.
+ * @param bean Bean object for code generation.
+ * @param beanPropName Name of property to set generated bean as value.
+ * @param desc Bean metadata object.
+ * @param createBeanAlthoughNoProps Always generate bean even it has no properties defined.
+ */
 $generatorXml.beanProperty = function (res, bean, beanPropName, desc, createBeanAlthoughNoProps) {
     var props = desc.fields;
 
@@ -234,6 +227,27 @@ $generatorXml.beanProperty = function (res, bean, beanPropName, desc, createBean
         res.line('<bean class="' + desc.className + '"/>');
         res.endBlock('</property>');
     }
+};
+
+/**
+ * Add bean property without internal content.
+ *
+ * @param res Optional configuration presentation builder object.
+ * @param obj Object to take bean class name.
+ * @param propName Property name.
+ */
+$generatorXml.simpleBeanProperty = function (res, obj, propName) {
+    if ($commonUtils.isDefined(obj)) {
+        var val = obj[propName];
+
+        if ($commonUtils.isDefinedAndNotEmpty(val)) {
+            res.startBlock('<property name="' + propName + '">');
+            res.line('<bean class="' + val + '"/>');
+            res.endBlock('</property>');
+        }
+    }
+
+    return false;
 };
 
 // Generate eviction policy.
@@ -417,8 +431,9 @@ $generatorXml.clusterBinary = function (cluster, res) {
         res.startBlock('<property name="binaryConfiguration">');
         res.startBlock('<bean class="org.apache.ignite.configuration.BinaryConfiguration">');
 
-        $generatorXml.emptyBeanProperty(res, binary, 'idMapper');
-        $generatorXml.emptyBeanProperty(res, binary, 'serializer');
+        $generatorXml.simpleBeanProperty(res, binary, 'idMapper');
+        $generatorXml.simpleBeanProperty(res, binary, 'serializer');
+        $generatorXml.simpleBeanProperty(res, binary, 'nameMapper');
 
         if ($commonUtils.isDefinedAndNotEmpty(binary.typeConfigurations)) {
             res.startBlock('<property name="typeConfigurations">');
@@ -428,8 +443,9 @@ $generatorXml.clusterBinary = function (cluster, res) {
                 res.startBlock('<bean class="org.apache.ignite.binary.BinaryTypeConfiguration">');
 
                 $generatorXml.property(res, type, 'typeName');
-                $generatorXml.emptyBeanProperty(res, type, 'idMapper');
-                $generatorXml.emptyBeanProperty(res, type, 'serializer');
+                $generatorXml.simpleBeanProperty(res, type, 'idMapper');
+                $generatorXml.simpleBeanProperty(res, type, 'nameMapper');
+                $generatorXml.simpleBeanProperty(res, type, 'serializer');
                 $generatorXml.property(res, type, 'enum', undefined, false);
 
                 res.endBlock('</bean>');

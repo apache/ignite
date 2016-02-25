@@ -294,7 +294,7 @@ form.panel.panel-default(name='connector' novalidate)
                             data-ng-required='#{model}.sslEnabled'
                             data-ng-disabled='!#{model}.enabled || !#{model}.sslEnabled'
                         )
-            ignite-ui-ace.col-sm-6
+            ignite-ui-ace-tabs.col-sm-6
                 .preview-panel(ng-init='mode = false')
                     .preview-legend
                         a(ng-class='{active: !mode, inactive: mode}' ng-click='mode = false') XML
