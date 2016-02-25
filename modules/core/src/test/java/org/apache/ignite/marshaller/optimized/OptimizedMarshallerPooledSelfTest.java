@@ -39,6 +39,6 @@ public class OptimizedMarshallerPooledSelfTest extends OptimizedMarshallerSelfTe
         super.afterTestsStopped();
 
         // Reset static registry.
-        new OptimizedMarshaller().setPoolSize(-1);
+        new OptimizedMarshaller().setPoolSize(0);
     }
 }
