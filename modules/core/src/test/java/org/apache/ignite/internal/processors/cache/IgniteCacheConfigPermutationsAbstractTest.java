@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.cache;
 
 import java.util.Map;
-import java.util.concurrent.atomic.AtomicInteger;
 import javax.cache.Cache;
 import javax.cache.configuration.Factory;
 import org.apache.ignite.Ignite;
@@ -39,15 +38,9 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.util.lang.GridAbsPredicateX;
-import org.apache.ignite.internal.util.typedef.CI1;
-import org.apache.ignite.internal.util.typedef.P1;
-import org.apache.ignite.internal.util.typedef.R1;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiInClosure;
-import org.apache.ignite.lang.IgnitePredicate;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.config.CacheStartMode;
 import org.apache.ignite.testframework.junits.IgniteConfigPermutationsAbstractTest;
@@ -60,7 +53,7 @@ import static org.apache.ignite.cache.CacheMemoryMode.OFFHEAP_TIERED;
 import static org.apache.ignite.cache.CacheMemoryMode.ONHEAP_TIERED;
 
 /**
- * Abstract class for cache tests.
+ * Abstract class for cache configuration permutation tests.
  */
 public abstract class IgniteCacheConfigPermutationsAbstractTest extends IgniteConfigPermutationsAbstractTest {
     /** */
@@ -71,9 +64,6 @@ public abstract class IgniteCacheConfigPermutationsAbstractTest extends IgniteCo
 
     /** Store map. */
     protected static final Map<Object, Object> map = new ConcurrentHashMap8<>();
-
-    /** VM ip finder for TCP discovery. */
-    protected static TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
 
     /** {@inheritDoc} */
     @Override protected long getTestTimeout() {
@@ -212,8 +202,8 @@ public abstract class IgniteCacheConfigPermutationsAbstractTest extends IgniteCo
 
         assert jcache().unwrap(Ignite.class).transactions().tx() == null;
 
-        // TODO fix it.
-//        assertEquals(0, jcache().localSize());
+        assertEquals(0, jcache().localSize());
+        assertEquals(0, jcache().size());
     }
 
     /** {@inheritDoc} */
@@ -268,7 +258,6 @@ public abstract class IgniteCacheConfigPermutationsAbstractTest extends IgniteCo
                             }
                         }, 10_000);
 
-                    // TODO ticket number.
                     if (cacheIsEmpty)
                         assertTrue("Cache is not empty: " + " localSize = " + jcache(fi).localSize(CachePeekMode.ALL)
                             + ", local entries " + entrySet(jcache(fi).localEntries()), cacheIsEmpty);
@@ -339,7 +328,7 @@ public abstract class IgniteCacheConfigPermutationsAbstractTest extends IgniteCo
             }
 
             assertTrue(GridTestUtils.waitForCondition(new GridAbsPredicateX() {
-                @Override public boolean applyx() throws IgniteCheckedException {
+                @Override public boolean applyx() {
                     for (int i = 0; i < gridCount(); i++) {
                         if (jcache(i) != null)
                             return false;
@@ -355,6 +344,9 @@ public abstract class IgniteCacheConfigPermutationsAbstractTest extends IgniteCo
 
             throw new IllegalStateException(cacheIsNotEmptyMsg);
         }
+
+        assertEquals(0, jcache().localSize());
+        assertEquals(0, jcache().size());
     }
 
     /**
@@ -375,13 +367,6 @@ public abstract class IgniteCacheConfigPermutationsAbstractTest extends IgniteCo
             throw new IllegalStateException("Failed to put to store because store is disabled.");
 
         map.put(key, val);
-    }
-
-    /**
-     * Indexed types.
-     */
-    protected Class<?>[] indexedTypes() {
-        return null;
     }
 
     /**
@@ -446,13 +431,6 @@ public abstract class IgniteCacheConfigPermutationsAbstractTest extends IgniteCo
     }
 
     /**
-     * @return Partitioned mode.
-     */
-    protected NearCacheConfiguration nearConfiguration() {
-        return cacheConfiguration().getNearConfiguration();
-    }
-
-    /**
      * @return Write through storage emulator.
      */
     public static CacheStore<?, ?> cacheStore() {
@@ -481,7 +459,7 @@ public abstract class IgniteCacheConfigPermutationsAbstractTest extends IgniteCo
      * @return {@code true} if near cache should be enabled.
      */
     protected boolean nearEnabled() {
-        return nearConfiguration() != null;
+        return grid(testedNodeIdx).cachex(cacheName()).context().isNear();
     }
 
     /**
@@ -564,15 +542,6 @@ public abstract class IgniteCacheConfigPermutationsAbstractTest extends IgniteCo
     }
 
     /**
-     * @param key Key.
-     * @param idx Node index.
-     * @return {@code True} if key belongs to node with index idx.
-     */
-    protected boolean belongs(String key, int idx) {
-        return context(idx).cache().affinity().isPrimaryOrBackup(context(idx).localNode(), key);
-    }
-
-    /**
      * @param cache Cache.
      * @return {@code True} if cache has OFFHEAP_TIERED memory mode.
      */
@@ -601,129 +570,6 @@ public abstract class IgniteCacheConfigPermutationsAbstractTest extends IgniteCo
     @SuppressWarnings("unchecked")
     protected static boolean containsKey(IgniteCache cache, Object key) throws Exception {
         return offheapTiered(cache) ? cache.localPeek(key, CachePeekMode.OFFHEAP) != null : cache.containsKey(key);
-    }
-
-    /**
-     * Filters cache entry projections leaving only ones with keys containing 'key'.
-     */
-    protected static IgnitePredicate<Cache.Entry<String, Integer>> entryKeyFilter =
-        new P1<Cache.Entry<String, Integer>>() {
-        @Override public boolean apply(Cache.Entry<String, Integer> entry) {
-            return entry.getKey().contains("key");
-        }
-    };
-
-    /**
-     * Filters cache entry projections leaving only ones with keys not containing 'key'.
-     */
-    protected static IgnitePredicate<Cache.Entry<String, Integer>> entryKeyFilterInv =
-        new P1<Cache.Entry<String, Integer>>() {
-        @Override public boolean apply(Cache.Entry<String, Integer> entry) {
-            return !entry.getKey().contains("key");
-        }
-    };
-
-    /**
-     * Filters cache entry projections leaving only ones with values less than 50.
-     */
-    protected static final IgnitePredicate<Cache.Entry<String, Integer>> lt50 =
-        new P1<Cache.Entry<String, Integer>>() {
-            @Override public boolean apply(Cache.Entry<String, Integer> entry) {
-                Integer i = entry.getValue();
-
-                return i != null && i < 50;
-            }
-        };
-
-    /**
-     * Filters cache entry projections leaving only ones with values greater or equal than 100.
-     */
-    protected static final IgnitePredicate<Cache.Entry<String, Integer>> gte100 =
-        new P1<Cache.Entry<String, Integer>>() {
-            @Override public boolean apply(Cache.Entry<String, Integer> entry) {
-                Integer i = entry.getValue();
-
-                return i != null && i >= 100;
-            }
-
-            @Override public String toString() {
-                return "gte100";
-            }
-        };
-
-    /**
-     * Filters cache entry projections leaving only ones with values greater or equal than 200.
-     */
-    protected static final IgnitePredicate<Cache.Entry<String, Integer>> gte200 =
-        new P1<Cache.Entry<String, Integer>>() {
-            @Override public boolean apply(Cache.Entry<String, Integer> entry) {
-                Integer i = entry.getValue();
-
-                return i != null && i >= 200;
-            }
-
-            @Override public String toString() {
-                return "gte200";
-            }
-        };
-
-    /**
-     * {@link org.apache.ignite.lang.IgniteInClosure} for calculating sum.
-     */
-    @SuppressWarnings({"PublicConstructorInNonPublicClass"})
-    protected static final class SumVisitor implements CI1<Cache.Entry<String, Integer>> {
-        /** */
-        private final AtomicInteger sum;
-
-        /**
-         * @param sum {@link AtomicInteger} instance for accumulating sum.
-         */
-        public SumVisitor(AtomicInteger sum) {
-            this.sum = sum;
-        }
-
-        /** {@inheritDoc} */
-        @Override public void apply(Cache.Entry<String, Integer> entry) {
-            if (entry.getValue() != null) {
-                Integer i = entry.getValue();
-
-                assert i != null : "Value cannot be null for entry: " + entry;
-
-                sum.addAndGet(i);
-            }
-        }
-    }
-
-    /**
-     * {@link org.apache.ignite.lang.IgniteReducer} for calculating sum.
-     */
-    @SuppressWarnings({"PublicConstructorInNonPublicClass"})
-    protected static final class SumReducer implements R1<Cache.Entry<String, Integer>, Integer> {
-        /** */
-        private int sum;
-
-        /** */
-        public SumReducer() {
-            // no-op
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean collect(Cache.Entry<String, Integer> entry) {
-            if (entry.getValue() != null) {
-                Integer i = entry.getValue();
-
-                assert i != null;
-
-                sum += i;
-            }
-
-            return true;
-        }
-
-        /** {@inheritDoc} */
-        @Override public Integer reduce() {
-            return sum;
-        }
     }
 
     /**

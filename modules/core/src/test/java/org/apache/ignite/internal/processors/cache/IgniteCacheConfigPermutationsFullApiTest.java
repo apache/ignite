@@ -166,26 +166,6 @@ public class IgniteCacheConfigPermutationsFullApiTest extends IgniteCacheConfigP
         return TEST_TIMEOUT;
     }
 
-    /** {@inheritDoc} */
-    @Override protected void beforeTest() throws Exception {
-        super.beforeTest();
-
-        IgniteCache<String, Integer> cache = jcache();
-
-        assertEquals(0, cache.localSize());
-        assertEquals(0, cache.size());
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void afterTest() throws Exception {
-        super.afterTest();
-
-        IgniteCache<String, Integer> cache = jcache();
-
-        assertEquals(0, cache.localSize());
-        assertEquals(0, cache.size());
-    }
-
     /**
      * @throws Exception In case of error.
      */
@@ -2200,7 +2180,6 @@ public class IgniteCacheConfigPermutationsFullApiTest extends IgniteCacheConfigP
 
         assert cache.get("key") == 3;
 
-        // TODO delete the check and rewrite test.
         if (!storeEnabled())
             return;
 
@@ -2273,11 +2252,9 @@ public class IgniteCacheConfigPermutationsFullApiTest extends IgniteCacheConfigP
 
         assert !cache.replace("wrong", 2);
 
-        // TODO delete the check and rewrite test.
         if (!storeEnabled())
             return;
 
-        // TODO improve smartTestEvict
         cache.localEvict(Collections.singleton("key"));
 
         if (!isLoadPreviousValue())
@@ -2358,7 +2335,6 @@ public class IgniteCacheConfigPermutationsFullApiTest extends IgniteCacheConfigP
 
         assert cache.get("key") == 3;
 
-        // TODO delete the check and rewrite test.
         if (!storeEnabled())
             return;
 
@@ -2430,7 +2406,6 @@ public class IgniteCacheConfigPermutationsFullApiTest extends IgniteCacheConfigP
 
         assert !cacheAsync.<Boolean>future().get();
 
-        // TODO delete the check and rewrite test.
         if (!storeEnabled())
             return;
 
@@ -3778,7 +3753,6 @@ public class IgniteCacheConfigPermutationsFullApiTest extends IgniteCacheConfigP
      * @throws Exception If failed.
      */
     public void testUnswap() throws Exception {
-        // TODO implement testUnswap for case when offheap is enabled.
         if (swapEnabled() && !offheapEnabled()) {
             IgniteCache<String, Integer> cache = jcache();
 
@@ -5510,20 +5484,6 @@ public class IgniteCacheConfigPermutationsFullApiTest extends IgniteCacheConfigP
     /**
      *
      */
-    public enum CacheStartMode {
-        /** Start caches together nodes (not dynamically) */
-        STATIC,
-
-        /** */
-        NODES_THEN_CACHES,
-
-        /** */
-        ONE_BY_ONE
-    }
-
-    /**
-     *
-     */
     private static class RemoveEntryProcessor implements EntryProcessor<Object, Object, Object>, Serializable {
         /** {@inheritDoc} */
         @Override public Object process(MutableEntry<Object, Object> e, Object... args) {
@@ -5569,9 +5529,9 @@ public class IgniteCacheConfigPermutationsFullApiTest extends IgniteCacheConfigP
 
         /**
          * @param keys Keys.
-         * @param s
+         * @param s Cache.
          */
-        public CheckEntriesTask(Collection<String> keys, String s) {
+        CheckEntriesTask(Collection<String> keys, String s) {
             this.keys = keys;
             cacheName = s;
         }
@@ -5614,7 +5574,7 @@ public class IgniteCacheConfigPermutationsFullApiTest extends IgniteCacheConfigP
         /**
          * @param map Map.
          */
-        public CheckCacheSizeTask(Map<String, Integer> map, String cacheName) {
+        CheckCacheSizeTask(Map<String, Integer> map, String cacheName) {
             this.map = map;
 
             this.cacheName = cacheName;
@@ -5803,6 +5763,9 @@ public class IgniteCacheConfigPermutationsFullApiTest extends IgniteCacheConfigP
         }
     }
 
+    /**
+     *
+     */
     private static class CheckEntriesDeletedTask extends TestIgniteIdxRunnable {
         private final int cnt;
 

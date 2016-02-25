@@ -59,7 +59,7 @@ import static org.apache.ignite.testframework.config.Parameters.parameter;
 /**
  * Cache configuration permutations.
  */
-public class ConfigurationPermutations {
+@SuppressWarnings("serial") public class ConfigurationPermutations {
     /** */
     public static final ConfigurationParameter<Object> EVICTION_PARAM = complexParameter(
         parameter("setEvictionPolicy", factory(FifoEvictionPolicy.class)),
@@ -70,8 +70,8 @@ public class ConfigurationPermutations {
     public static final ConfigurationParameter<Object> CACHE_STORE_PARAM = complexParameter(
         parameter("setCacheStoreFactory", factory(IgniteCacheConfigPermutationsAbstractTest.TestStoreFactory.class)),
         parameter("setReadThrough", true),
-        parameter("setWriteThrough", true)
-//        parameter("setCacheStoreSessionListenerFactories", new Factory[] {new NoopCacheStoreSessionListenerFactory()})
+        parameter("setWriteThrough", true),
+        parameter("setCacheStoreSessionListenerFactories", noopCacheStoreSessionListenerFactory())
     );
 
     /** */
@@ -164,6 +164,13 @@ public class ConfigurationPermutations {
     };
 
     /**
+     * Private constructor.
+     */
+    private ConfigurationPermutations() {
+        // No-op.
+    }
+
+    /**
      * @return Custom near cache config.
      */
     private static Factory nearCacheConfigurationFactory() {
@@ -179,10 +186,14 @@ public class ConfigurationPermutations {
     }
 
     /**
-     * Private constructor.
+     * @return Noop cache store session listener factory.
      */
-    private ConfigurationPermutations() {
-        // No-op.
+    private static Factory noopCacheStoreSessionListenerFactory() {
+        return new Factory() {
+            @Override public Object create() {
+                return new Factory[] {new NoopCacheStoreSessionListenerFactory()};
+            }
+        };
     }
 
     /**
@@ -224,7 +235,7 @@ public class ConfigurationPermutations {
     /**
      *
      */
-    private static class NoopEvictionFilter implements EvictionFilter {
+    public static class NoopEvictionFilter implements EvictionFilter {
         /** */
         private static final long serialVersionUID = 0;
 
@@ -237,7 +248,7 @@ public class ConfigurationPermutations {
     /**
      *
      */
-    private static class NoopInterceptor extends CacheInterceptorAdapter {
+    public static class NoopInterceptor extends CacheInterceptorAdapter {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -247,7 +258,7 @@ public class ConfigurationPermutations {
     /**
      *
      */
-    private static class NoopCacheStoreSessionListenerFactory implements Factory<NoopCacheStoreSessionListener> {
+    public static class NoopCacheStoreSessionListenerFactory implements Factory<NoopCacheStoreSessionListener> {
         /** Serial version uid. */
         private static final long serialVersionUID = 0L;
 
@@ -260,7 +271,7 @@ public class ConfigurationPermutations {
     /**
      *
      */
-    private static class NoopCacheStoreSessionListener implements CacheStoreSessionListener {
+    public static class NoopCacheStoreSessionListener implements CacheStoreSessionListener {
         /** {@inheritDoc} */
         @Override public void onSessionStart(CacheStoreSession ses) {
             // No-op.
@@ -275,7 +286,7 @@ public class ConfigurationPermutations {
     /**
      *
      */
-    private static class NoopTopologyValidator implements TopologyValidator {
+    public static class NoopTopologyValidator implements TopologyValidator {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -289,11 +300,11 @@ public class ConfigurationPermutations {
      *
      */
     @SuppressWarnings({"serial", "unchecked"})
-    private static class EmptyCacheEntryListenerConfiguration extends MutableCacheEntryListenerConfiguration {
+    public static class EmptyCacheEntryListenerConfiguration extends MutableCacheEntryListenerConfiguration {
         /**
          *
          */
-        EmptyCacheEntryListenerConfiguration() {
+        public EmptyCacheEntryListenerConfiguration() {
             super(new NoopCacheEntryListenerConfiguration());
         }
     }
@@ -331,7 +342,7 @@ public class ConfigurationPermutations {
     /**
      *
      */
-    private static class NoopCacheEntryListener implements CacheEntryCreatedListener {
+    public static class NoopCacheEntryListener implements CacheEntryCreatedListener {
         /** {@inheritDoc} */
         @Override public void onCreated(Iterable iterable) throws CacheEntryListenerException {
             // No-op.

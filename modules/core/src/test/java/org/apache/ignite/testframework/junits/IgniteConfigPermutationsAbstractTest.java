@@ -209,7 +209,6 @@ public abstract class IgniteConfigPermutationsAbstractTest extends GridCommonAbs
                 if (i + 1 != DataMode.values().length)
                     afterTest();
             }
-
         }
     }
 

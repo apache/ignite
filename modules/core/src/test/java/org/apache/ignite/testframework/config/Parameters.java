@@ -88,7 +88,7 @@ public class Parameters {
         ConfigurationParameter<T>[] resArr = new ConfigurationParameter[values.length];
 
         for (int i = 0; i < resArr.length; i++)
-            resArr[i] = new ReflectionConfigurationApplier<>(mtdName, values[i]);
+            resArr[i] = new ReflectionParameter<>(mtdName, values[i]);
 
         return resArr;
     }
@@ -150,11 +150,11 @@ public class Parameters {
      * @return Configuration parameter.
      */
     public static <T> ConfigurationParameter<T> parameter(String mtdName, Object val) {
-        return new ReflectionConfigurationApplier<>(mtdName, val);
+        return new ReflectionParameter<>(mtdName, val);
     }
 
     /**
-     * @return COmplex parameter.
+     * @return Complex parameter.
      */
     @SuppressWarnings("unchecked")
     public static <T> ConfigurationParameter<T> complexParameter(ConfigurationParameter<T>... params) {
@@ -163,7 +163,7 @@ public class Parameters {
 
     /**
      * @param cls Class.
-     * @return Factory.
+     * @return Factory that uses default constructor to initiate object by given class.
      */
     public static <T> Factory<T> factory(Class<?> cls) {
         return new ReflectionFactory<>(cls);
@@ -173,7 +173,7 @@ public class Parameters {
      * Reflection configuration applier.
      */
     @SuppressWarnings("serial")
-    private static class ReflectionConfigurationApplier<T> implements ConfigurationParameter<T> {
+    private static class ReflectionParameter<T> implements ConfigurationParameter<T> {
         /** Classes of marameters cache. */
         private static final ConcurrentMap<T2<Class, String>, Class> paramClassesCache = new ConcurrentHashMap();
 
@@ -186,7 +186,7 @@ public class Parameters {
         /**
          * @param mtdName Method name.
          */
-        ReflectionConfigurationApplier(String mtdName, @Nullable Object val) {
+        ReflectionParameter(String mtdName, @Nullable Object val) {
             if (val != null && !isPrimitiveOrEnum(val) && !(val instanceof Factory))
                 throw new IllegalArgumentException("Value have to be primite, enum or factory: " + val);
 
@@ -203,7 +203,9 @@ public class Parameters {
 
             String val0;
 
-            if (val instanceof Factory)
+            if (val == null)
+                val0 = "null";
+            else if (val instanceof Factory)
                 val0 = ((Factory)val).create().toString();
             else
                 val0 = val.toString();
@@ -322,7 +324,7 @@ public class Parameters {
             }
             catch (NoSuchMethodException | InstantiationException | InvocationTargetException |
                 IllegalAccessException e) {
-                throw new IgniteException(e);
+                throw new IgniteException("Failed to create object using default constructor: " + cls, e);
             }
         }
     }

@@ -26,7 +26,7 @@ import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.jetbrains.annotations.Nullable;
 
 /**
- *
+ * Configurations permutation factory.
  */
 public class ConfigPermutationsFactory implements ConfigurationFactory {
     /** */

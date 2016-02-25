@@ -58,9 +58,9 @@ public class ParametersTest extends TestCase {
      * @throws Exception If failed.
      */
     @SuppressWarnings("unchecked")
-    public void test2() throws Exception {
+    public void testEnumVariantsWithNull() throws Exception {
         ConfigurationParameter<CacheConfiguration>[] cfgParam =
-            Parameters.objectParameters("setCacheMode", CacheMode.class);
+            Parameters.enumParameters(true, "setCacheMode", CacheMode.class);
 
         assertEquals(CacheMode.values().length + 1, cfgParam.length);
 
