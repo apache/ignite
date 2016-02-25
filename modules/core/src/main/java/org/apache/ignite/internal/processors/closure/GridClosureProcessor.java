@@ -17,18 +17,6 @@
 
 package org.apache.ignite.internal.processors.closure;
 
-import java.io.Externalizable;
-import java.io.IOException;
-import java.io.ObjectInput;
-import java.io.ObjectOutput;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.Callable;
-import java.util.concurrent.Executor;
-import java.util.concurrent.RejectedExecutionException;
-import java.util.concurrent.TimeUnit;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.binary.BinaryObjectException;
@@ -71,6 +59,18 @@ import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.resources.LoadBalancerResource;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+import java.io.Externalizable;
+import java.io.IOException;
+import java.io.ObjectInput;
+import java.io.ObjectOutput;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.Callable;
+import java.util.concurrent.Executor;
+import java.util.concurrent.RejectedExecutionException;
+import java.util.concurrent.TimeUnit;
 
 import static org.apache.ignite.compute.ComputeJobResultPolicy.FAILOVER;
 import static org.apache.ignite.compute.ComputeJobResultPolicy.REDUCE;
@@ -272,7 +272,10 @@ public class GridClosureProcessor extends GridProcessorAdapter {
 
                             ClusterNode n = lb.getBalancedNode(job, null);
 
-                            mapper.map(job(r, n.version()), n);
+                            if (needDowngrade(job, n.version()))
+                                job = job(r, n.version());
+
+                            mapper.map(job, n);
                         }
 
                         break;
@@ -326,7 +329,10 @@ public class GridClosureProcessor extends GridProcessorAdapter {
 
                             ClusterNode n = lb.getBalancedNode(job, null);
 
-                            mapper.map(job(c, n.version()), n);
+                            if (needDowngrade(job, n.version()))
+                                job = job(c, n.version());
+
+                            mapper.map(job, n);
                         }
 
                         break;
@@ -1042,6 +1048,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
      * Converts given closure with arguments to grid job.
      * @param job Job.
      * @param arg Optional argument.
+     * @param targetVersion Version of the node where job will be executed.
      * @return Job.
      */
     private static <T, R> ComputeJob job(final IgniteClosure<T, R> job, @Nullable final T arg,
@@ -1070,6 +1077,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
      * Converts given closure to a grid job.
      *
      * @param c Closure to convert to grid job.
+     * @param targetVersion Version of the node where job will be executed.
      * @return Grid job made out of closure.
      */
     private static <R> ComputeJob job(final Callable<R> c, IgniteProductVersion targetVersion) {
@@ -1097,6 +1105,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
      * Converts given closure to a grid job.
      *
      * @param r Closure to convert to grid job.
+     * @param targetVersion Version of the node where job will be executed.
      * @return Grid job made out of closure.
      */
     private static ComputeJob job(final Runnable r, IgniteProductVersion targetVersion) {
@@ -1106,6 +1115,21 @@ public class GridClosureProcessor extends GridProcessorAdapter {
             return job(r);
 
         return r instanceof ComputeJobMasterLeaveAware ? new C4MLAV2(r) : new C4V2(r);
+    }
+
+    /**
+     * Checks if job needs to be converted to older version.
+     * @param job Job.
+     * @param targetVersion Version of the node where job will be executed.
+     * @return True if job needs to be converted to older version.
+     */
+    private static boolean needDowngrade(ComputeJob job, IgniteProductVersion targetVersion) {
+        A.notNull(job, "job");
+
+        if (job instanceof C1V2 || job instanceof C2V2 || job instanceof C4V2)
+            return targetVersion.compareTo(BINARYLIZABLE_CLOSURES_SINCE) < 0;
+
+        return false;
     }
 
     /**
@@ -1546,7 +1570,10 @@ public class GridClosureProcessor extends GridProcessorAdapter {
 
             ClusterNode node = lb.getBalancedNode(job, null);
 
-            return Collections.singletonMap(job(this.job, this.arg, node.version()), node);
+            if (needDowngrade(job, node.version()))
+                job = job(this.job, this.arg, node.version());
+
+            return Collections.singletonMap(job, node);
         }
 
         /** {@inheritDoc} */
@@ -1597,7 +1624,10 @@ public class GridClosureProcessor extends GridProcessorAdapter {
 
                     ClusterNode node = lb.getBalancedNode(job, null);
 
-                    mapper.map(job(this.job, jobArg, node.version()), node);
+                    if (needDowngrade(job, node.version()))
+                        job = job(this.job, jobArg, node.version());
+
+                    mapper.map(job, node);
                 }
 
                 return mapper.map();
@@ -1655,7 +1685,10 @@ public class GridClosureProcessor extends GridProcessorAdapter {
 
                     ClusterNode node = lb.getBalancedNode(job, null);
 
-                    mapper.map(job(this.job, jobArg, node.version()), node);
+                    if (needDowngrade(job, node.version()))
+                        job = job(this.job, jobArg, node.version());
+
+                    mapper.map(job, node);
                 }
 
                 return mapper.map();
@@ -1830,13 +1863,13 @@ public class GridClosureProcessor extends GridProcessorAdapter {
         }
 
         @Override public void writeBinary(BinaryWriter writer) throws BinaryObjectException {
-            writer.writeObject("job", job);
-            writer.writeObject("arg", arg);
+            writer.rawWriter().writeObject(job);
+            writer.rawWriter().writeObject(arg);
         }
 
         @Override public void readBinary(BinaryReader reader) throws BinaryObjectException {
-            job = reader.readObject("job");
-            arg = reader.readObject("arg");
+            job = reader.rawReader().readObject();
+            arg = reader.rawReader().readObject();
         }
 
         /** {@inheritDoc} */
@@ -2017,11 +2050,11 @@ public class GridClosureProcessor extends GridProcessorAdapter {
         }
 
         @Override public void writeBinary(BinaryWriter writer) throws BinaryObjectException {
-            writer.writeObject("c", c);
+            writer.rawWriter().writeObject(c);
         }
 
         @Override public void readBinary(BinaryReader reader) throws BinaryObjectException {
-            c = reader.readObject("c");
+            c = reader.rawReader().readObject();
         }
 
         /** {@inheritDoc} */
@@ -2191,11 +2224,11 @@ public class GridClosureProcessor extends GridProcessorAdapter {
         }
 
         @Override public void writeBinary(BinaryWriter writer) throws BinaryObjectException {
-            writer.writeObject("r", r);
+            writer.rawWriter().writeObject(r);
         }
 
         @Override public void readBinary(BinaryReader reader) throws BinaryObjectException {
-            r = reader.readObject("r");
+            r = reader.rawReader().readObject();
         }
 
         /** {@inheritDoc} */
