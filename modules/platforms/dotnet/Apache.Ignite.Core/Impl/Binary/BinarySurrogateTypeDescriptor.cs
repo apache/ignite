@@ -130,12 +130,6 @@ namespace Apache.Ignite.Core.Impl.Binary
             get { return false; }
         }
 
-        /** <inheritdoc/> */
-        public bool SerializeRaw
-        {
-            get { return false; }
-        }
-
         /** <inheritDoc /> */
         public BinaryStructure WriterTypeStructure
         {
