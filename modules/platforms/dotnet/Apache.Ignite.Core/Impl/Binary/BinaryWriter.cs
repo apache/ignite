@@ -1146,6 +1146,10 @@ namespace Apache.Ignite.Core.Impl.Binary
                         // Calculate and write header.
                         if (_curRawPos > 0)
                             _stream.WriteInt(_curRawPos - pos); // raw offset is in the last 4 bytes
+
+                        // Update schema in type descriptor
+                        // TODO: Performance - we don't always need to allocate that array
+                        desc.Schema.Add(schemaId, _schema.GetSchema(schemaIdx));
                     }
                     else
                         schemaOffset = BinaryObjectHeader.Size;

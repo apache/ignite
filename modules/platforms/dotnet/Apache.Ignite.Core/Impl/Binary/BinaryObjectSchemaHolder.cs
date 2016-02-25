@@ -104,5 +104,20 @@ namespace Apache.Ignite.Core.Impl.Binary
 
             return true;
         }
+
+        /// <summary>
+        /// Gets the schema.
+        /// </summary>
+        /// <param name="schemaOffset">The schema offset.</param>
+        /// <returns>Current schema as an array of field ids.</returns>
+        public int[] GetSchema(int schemaOffset)
+        {
+            int[] result = new int[_idx - schemaOffset];
+
+            for (int i = 0; i < result.Length; i++)
+                result[i] = _fields[i + schemaOffset].Id;
+
+            return result;
+        }
     }
 }
