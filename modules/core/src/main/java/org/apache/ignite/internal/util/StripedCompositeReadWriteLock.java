@@ -19,6 +19,7 @@ package org.apache.ignite.internal.util;
 
 import org.jetbrains.annotations.NotNull;
 
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
@@ -32,6 +33,15 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
  * It also supports reentrancy semantics like {@link ReentrantReadWriteLock}.
  */
 public class StripedCompositeReadWriteLock implements ReadWriteLock {
+
+    /**
+     * Thread local index generator.
+     */
+    private static final ThreadLocal<Integer> IDX = new ThreadLocal<Integer>() {
+        @Override protected Integer initialValue() {
+            return ThreadLocalRandom.current().nextInt(100000);
+        }
+    };
 
     /**
      * Locks.
@@ -59,7 +69,7 @@ public class StripedCompositeReadWriteLock implements ReadWriteLock {
 
     /** {@inheritDoc} */
     @NotNull @Override public Lock readLock() {
-        int idx = (int) Thread.currentThread().getId() % locks.length;
+        int idx = IDX.get() % locks.length;
 
         return locks[idx].readLock();
     }
@@ -99,7 +109,8 @@ public class StripedCompositeReadWriteLock implements ReadWriteLock {
         @Override public void lock() {
             try {
                 lock(false);
-            } catch (InterruptedException e) {
+            }
+            catch (InterruptedException e) {
                 // This should never happen.
                 throw new RuntimeException(e);
             }
