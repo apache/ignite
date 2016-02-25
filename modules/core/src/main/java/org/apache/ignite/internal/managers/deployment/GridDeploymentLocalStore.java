@@ -174,7 +174,7 @@ class GridDeploymentLocalStore extends GridDeploymentStoreAdapter {
 
                 // Safety.
                 if (ldr == null)
-                    ldr = U.gridClassLoader();
+                    ldr = U.resolveClassLoader(ctx.config());
             }
 
             if (ldr instanceof GridDeploymentClassLoader) {

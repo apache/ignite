@@ -2190,10 +2190,26 @@ public abstract class IgniteUtils {
     }
 
     /**
-     * @return Class loader passed as an argument or classloader used to load Ignite itself in case argument is null.
+     * @return ClassLoader at IgniteConfiguration in case it is not null or
+     * ClassLoader used to start Ignite.
      */
-    public static ClassLoader resolveClassLoader(ClassLoader ldr) {
-        return ldr != null ? ldr : gridClassLoader;
+    public static ClassLoader resolveClassLoader(IgniteConfiguration cfg) {
+        return resolveClassLoader(null, cfg);
+    }
+
+    /**
+     * @return ClassLoader passed as param in case it is not null or
+     * ClassLoader at IgniteConfiguration in case it is not null or
+     * ClassLoader used to start Ignite.
+     */
+    public static ClassLoader resolveClassLoader(ClassLoader ldr, IgniteConfiguration cfg) {
+        assert cfg != null;
+
+        return (ldr != null && ldr != gridClassLoader) ?
+            ldr :
+            cfg.getClassLoader() != null ?
+                cfg.getClassLoader() :
+                gridClassLoader;
     }
 
     /**
@@ -5878,7 +5894,9 @@ public abstract class IgniteUtils {
      * @return {@code True} if given class is of {@code Ignite} type.
      */
     public static boolean isIgnite(Class<?> cls) {
-        return cls.getName().startsWith("org.apache.ignite");
+        String name = cls.getName();
+
+        return name.startsWith("org.apache.ignite") || name.startsWith("org.jsr166");
     }
 
     /**

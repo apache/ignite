@@ -234,7 +234,7 @@ public class DataStreamProcessor<K, V> extends GridProcessorAdapter {
             Object topic;
 
             try {
-                topic = marsh.unmarshal(req.responseTopicBytes(), null);
+                topic = marsh.unmarshal(req.responseTopicBytes(), U.resolveClassLoader(null, ctx.config()));
             }
             catch (IgniteCheckedException e) {
                 U.error(log, "Failed to unmarshal topic from request: " + req, e);
@@ -274,7 +274,7 @@ public class DataStreamProcessor<K, V> extends GridProcessorAdapter {
             StreamReceiver<K, V> updater;
 
             try {
-                updater = marsh.unmarshal(req.updaterBytes(), clsLdr);
+                updater = marsh.unmarshal(req.updaterBytes(), U.resolveClassLoader(clsLdr, ctx.config()));
 
                 if (updater != null)
                     ctx.resource().injectGeneric(updater);

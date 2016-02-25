@@ -411,7 +411,7 @@ public class GridMapQueryExecutor {
                     Marshaller m = ctx.config().getMarshaller();
 
                     for (GridCacheSqlQuery qry : qrys)
-                        qry.unmarshallParams(m);
+                        qry.unmarshallParams(m, ctx);
                 }
             }
             catch (IgniteCheckedException e) {
