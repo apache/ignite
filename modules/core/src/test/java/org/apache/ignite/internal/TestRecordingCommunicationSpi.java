@@ -17,12 +17,6 @@
 
 package org.apache.ignite.internal;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.managers.communication.GridIoMessage;
@@ -33,6 +27,13 @@ import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.jetbrains.annotations.Nullable;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_GRID_NAME;
 
@@ -41,7 +42,7 @@ import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_GRID_NAME;
  */
 public class TestRecordingCommunicationSpi extends TcpCommunicationSpi {
     /** */
-    private Class<?> recordCls;
+    private Collection<Class<?>> recordClss = new HashSet<>();
 
     /** */
     private List<Object> recordedMsgs = new ArrayList<>();
@@ -64,7 +65,7 @@ public class TestRecordingCommunicationSpi extends TcpCommunicationSpi {
             Object msg0 = ioMsg.message();
 
             synchronized (this) {
-                if (recordCls != null && msg0.getClass().equals(recordCls))
+                if (recordClss.contains(msg0.getClass()))
                     recordedMsgs.add(msg0);
 
                 boolean block = false;
@@ -97,7 +98,7 @@ public class TestRecordingCommunicationSpi extends TcpCommunicationSpi {
      */
     public void record(@Nullable Class<?> recordCls) {
         synchronized (this) {
-            this.recordCls = recordCls;
+            recordClss.add(recordCls);
         }
     }
 
