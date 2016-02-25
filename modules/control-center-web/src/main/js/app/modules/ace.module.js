@@ -38,23 +38,22 @@ angular
          *   </ul>
          *
          * @param acee
-         * @param session ACE editor session
-         * @param {object} opts Options to be set
+         * @param session ACE editor session.
+         * @param {object} opts Options to be set.
          */
         const setOptions = (acee, session, opts) => {
-            // sets the ace worker path, if running from concatenated
-            // or minified source
+            // Sets the ace worker path, if running from concatenated or minified source.
             if (angular.isDefined(opts.workerPath)) {
                 const config = window.ace.require('ace/config');
 
                 config.set('workerPath', opts.workerPath);
             }
 
-            // ace requires loading
+            // Ace requires loading.
             if (angular.isDefined(opts.require))
                 opts.require.forEach((n) => window.ace.require(n));
 
-            // Boolean options
+            // Boolean options.
             if (angular.isDefined(opts.showGutter))
                 acee.renderer.setShowGutter(opts.showGutter);
 
@@ -73,7 +72,7 @@ angular
             if (angular.isDefined(opts.showPrintMargin))
                 acee.setShowPrintMargin(opts.showPrintMargin);
 
-            // commands
+            // Commands.
             if (angular.isDefined(opts.disableSearch) && opts.disableSearch) {
                 acee.commands.addCommands([{
                     name: 'unfind',
@@ -86,14 +85,13 @@ angular
                 }]);
             }
 
-            // Basic options
+            // Base options.
             if (angular.isString(opts.theme))
                 acee.setTheme('ace/theme/' + opts.theme);
 
             if (angular.isString(opts.mode))
                 session.setMode('ace/mode/' + opts.mode);
 
-            // Advanced options
             if (angular.isDefined(opts.firstLineNumber)) {
                 if (angular.isNumber(opts.firstLineNumber))
                     session.setOption('firstLineNumber', opts.firstLineNumber);
@@ -101,33 +99,33 @@ angular
                     session.setOption('firstLineNumber', opts.firstLineNumber());
             }
 
-            // advanced options
+            // Advanced options.
             if (angular.isDefined(opts.advanced)) {
                 for (const key in opts.advanced) {
                     if (opts.advanced.hasOwnProperty(key)) {
-                        // create a javascript object with the key and value
+                        // Create a javascript object with the key and value.
                         const obj = {name: key, value: opts.advanced[key]};
 
-                        // try to assign the option to the ace editor
+                        // Try to assign the option to the ace editor.
                         acee.setOption(obj.name, obj.value);
                     }
                 }
             }
 
-            // advanced options for the renderer
+            // Advanced options for the renderer.
             if (angular.isDefined(opts.rendererOptions)) {
                 for (const key in opts.rendererOptions) {
                     if (opts.rendererOptions.hasOwnProperty(key)) {
-                        // create a javascript object with the key and value
+                        // Create a javascript object with the key and value.
                         const obj = {name: key, value: opts.rendererOptions[key]};
 
-                        // try to assign the option to the ace editor
+                        // Try to assign the option to the ace editor.
                         acee.renderer.setOption(obj.name, obj.value);
                     }
                 }
             }
 
-            // onLoad callbacks
+            // onLoad callbacks.
             angular.forEach(opts.callbacks, (cb) => {
                 if (angular.isFunction(cb))
                     cb(acee);
@@ -141,24 +139,28 @@ angular
 
                 /**
                  * Corresponds the igniteAceConfig ACE configuration.
+                 *
                  * @type object
                  */
                 const options = aceConfig.ace || {};
 
                 /**
-                 * igniteAceConfig merged with user options via json in attribute or data binding
+                 * IgniteAceConfig merged with user options via json in attribute or data binding.
+                 *
                  * @type object
                  */
                 let opts = angular.extend({}, options, scope.$eval(attrs.igniteAce));
 
                 /**
-                 * ACE editor
+                 * ACE editor.
+                 *
                  * @type object
                  */
                 const acee = window.ace.edit(elm[0]);
 
                 /**
                  * ACE editor session.
+                 *
                  * @type object
                  * @see [EditSession]{@link http://ace.c9.io/#nav=api&api=edit_session}
                  */
@@ -166,18 +168,18 @@ angular
 
                 /**
                  * Reference to a change listener created by the listener factory.
+                 *
                  * @function
                  * @see listenerFactory.onChange
                  */
                 let onChangeListener;
 
                 /**
-                 * Creates a change listener which propagates the change event
-                 * and the editor session to the callback from the user option
-                 * onChange. It might be exchanged during runtime, if this
-                 * happens the old listener will be unbound.
+                 * Creates a change listener which propagates the change event and the editor session
+                 * to the callback from the user option onChange.
+                 * It might be exchanged during runtime, if this happens the old listener will be unbound.
                  *
-                 * @param callback callback function defined in the user options
+                 * @param callback Callback function defined in the user options.
                  * @see onChangeListener
                  */
                 const onChangeFactory = (callback) => {
@@ -196,7 +198,7 @@ angular
                                 if (angular.isFunction(callback))
                                     callback([e, acee]);
                                 else
-                                    throw new Error('ignite-ace use a function as callback.');
+                                    throw new Error('ignite-ace use a function as callback');
                             });
                         }
                     };
@@ -251,14 +253,12 @@ angular
 
                 elm.on('$destroy', () => {
                     acee.session.$stopWorker();
-
                     acee.destroy();
                 });
 
                 scope.$watch(() => [elm[0].offsetWidth, elm[0].offsetHeight],
                     () => {
                         acee.resize();
-
                         acee.renderer.updateFull();
                     }, true);
             }
