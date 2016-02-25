@@ -357,9 +357,7 @@ class GridResourceIoc {
                 this.annMap.put(entry.getKey(), new T2<>(fields, mtds));
             }
 
-            this.annotationSets = recursiveFields.length > 0 || !annMap.isEmpty() ?
-                                        new AtomicReference<>(new int[]{-1, -1, -1, -1}) :
-                                        null;
+            this.annotationSets = annMap.isEmpty() ? null : new AtomicReference<>(new int[]{-1, -1, -1, -1});
         }
 
         /**
@@ -403,6 +401,9 @@ class GridResourceIoc {
          * @return if annotation is presented, corresponding bit is set.
          */
         int isAnnotated(AnnotationSet set) {
+            if (recursiveFields.length > 0)
+                return ~(-1 << set.classes.length);
+
             if (annotationSets == null)
                 return 0;
 
@@ -411,21 +412,13 @@ class GridResourceIoc {
             if (set.descIdx < oldSets.length && oldSets[set.descIdx] > 0)
                 return oldSets[set.descIdx];
 
-            int val;
+            int val = 0, mask = 1;
 
-            if (recursiveFields().length > 0)
-                val = ~(-1 << set.classes.length);
-            else {
-                val = 0;
+            for (Class<? extends Annotation> ann : set.classes) {
+                if (annotatedMembers(ann) != null)
+                    val |= mask;
 
-                int mask = 1;
-
-                for (Class<? extends Annotation> ann : set.classes) {
-                    if (annotatedMembers(ann) != null)
-                        val |= mask;
-
-                    mask <<= 1;
-                }
+                mask <<= 1;
             }
 
             appendAnnotationSet(set, val);
