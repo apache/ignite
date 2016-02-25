@@ -106,6 +106,14 @@ namespace Apache.Ignite.Core.Impl.Binary
         public Ignite Ignite { get; set; }
 
         /// <summary>
+        /// Gets the compact footer flag.
+        /// </summary>
+        public bool CompactFooter
+        {
+            get { return _cfg.CompactFooter; }
+        }
+
+        /// <summary>
         /// Marshal object.
         /// </summary>
         /// <param name="val">Value.</param>
