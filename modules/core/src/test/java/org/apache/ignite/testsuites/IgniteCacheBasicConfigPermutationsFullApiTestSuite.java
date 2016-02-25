@@ -18,10 +18,7 @@
 package org.apache.ignite.testsuites;
 
 import junit.framework.TestSuite;
-import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.processors.cache.IgniteCacheConfigPermutationsFullApiTest;
-import org.apache.ignite.lang.IgnitePredicate;
-import org.apache.ignite.marshaller.optimized.OptimizedMarshaller;
 import org.apache.ignite.testframework.config.ConfigPermutationsTestSuiteBuilder;
 
 /**
@@ -37,11 +34,6 @@ public class IgniteCacheBasicConfigPermutationsFullApiTestSuite extends TestSuit
             "Cache New Full API Test Suite",
             IgniteCacheConfigPermutationsFullApiTest.class)
             .withBasicCacheParams()
-            .withIgniteConfigFilters(new IgnitePredicate<IgniteConfiguration>() {
-                @Override public boolean apply(IgniteConfiguration configuration) {
-                    return configuration.getMarshaller() instanceof OptimizedMarshaller;
-                }
-            })
             .gridsCount(5).backups(1)
             .testedNodesCount(3).withClients()
             .build();
