@@ -226,7 +226,7 @@ public abstract class IgniteCacheConfigPermutationsAbstractTest extends IgniteCo
             fail("Cache transaction remained after test completion: " + tx);
         }
 
-        Exception cacheIsNotEmptyError = null;
+        String cacheIsNotEmptyMsg = null;
 
         for (int i = 0; i < gridCount(); i++) {
             info("Checking grid: " + i);
@@ -250,12 +250,18 @@ public abstract class IgniteCacheConfigPermutationsAbstractTest extends IgniteCo
 
                                 if (locSize != 0) {
                                     info(">>>>> Debug localSize for grid: " + fi + " is " + locSize);
-                                    info(">>>>> Debug ONHEAP  localSize for grid: " + fi + " is " + jcache(fi).localSize(CachePeekMode.ONHEAP));
-                                    info(">>>>> Debug OFFHEAP localSize for grid: " + fi + " is " + jcache(fi).localSize(CachePeekMode.OFFHEAP));
-                                    info(">>>>> Debug PRIMARY localSize for grid: " + fi + " is " + jcache(fi).localSize(CachePeekMode.PRIMARY));
-                                    info(">>>>> Debug BACKUP  localSize for grid: " + fi + " is " + jcache(fi).localSize(CachePeekMode.BACKUP));
-                                    info(">>>>> Debug NEAR    localSize for grid: " + fi + " is " + jcache(fi).localSize(CachePeekMode.NEAR));
-                                    info(">>>>> Debug SWAP    localSize for grid: " + fi + " is " + jcache(fi).localSize(CachePeekMode.SWAP));
+                                    info(">>>>> Debug ONHEAP  localSize for grid: " + fi + " is "
+                                        + jcache(fi).localSize(CachePeekMode.ONHEAP));
+                                    info(">>>>> Debug OFFHEAP localSize for grid: " + fi + " is "
+                                        + jcache(fi).localSize(CachePeekMode.OFFHEAP));
+                                    info(">>>>> Debug PRIMARY localSize for grid: " + fi + " is "
+                                        + jcache(fi).localSize(CachePeekMode.PRIMARY));
+                                    info(">>>>> Debug BACKUP  localSize for grid: " + fi + " is "
+                                        + jcache(fi).localSize(CachePeekMode.BACKUP));
+                                    info(">>>>> Debug NEAR    localSize for grid: " + fi + " is "
+                                        + jcache(fi).localSize(CachePeekMode.NEAR));
+                                    info(">>>>> Debug SWAP    localSize for grid: " + fi + " is "
+                                        + jcache(fi).localSize(CachePeekMode.SWAP));
                                 }
 
                                 return locSize == 0;
@@ -282,9 +288,9 @@ public abstract class IgniteCacheConfigPermutationsAbstractTest extends IgniteCo
                         ", entrySet=" + jcache(i).localEntries() + ']');
 
                     if (!cacheIsEmpty) {
-                        cacheIsNotEmptyError = new IllegalStateException("Cache is not empty: " + " localSize = "
+                        cacheIsNotEmptyMsg = "Cache is not empty: localSize = "
                             + jcache(fi).localSize(CachePeekMode.ALL) + ", local entries "
-                            + entrySet(jcache(fi).localEntries()));
+                            + entrySet(jcache(fi).localEntries());
 
                         break;
                     }
@@ -305,7 +311,7 @@ public abstract class IgniteCacheConfigPermutationsAbstractTest extends IgniteCo
                 }
             }
 
-            if (cacheIsNotEmptyError != null)
+            if (cacheIsNotEmptyMsg != null)
                 break;
 
             for (Cache.Entry entry : jcache(i).localEntries(CachePeekMode.SWAP))
@@ -314,13 +320,13 @@ public abstract class IgniteCacheConfigPermutationsAbstractTest extends IgniteCo
 
         assert jcache().unwrap(Ignite.class).transactions().tx() == null;
 
-        if (cacheIsNotEmptyError == null)
+        if (cacheIsNotEmptyMsg == null)
             assertEquals("Cache is not empty", 0, jcache().localSize(CachePeekMode.ALL));
 
         resetStore();
 
         // Restore cache if current cache has garbage.
-        if (cacheIsNotEmptyError != null) {
+        if (cacheIsNotEmptyMsg != null) {
             for (int i = 0; i < gridCount(); i++) {
                 info("Destroing cache on grid: " + i);
 
@@ -345,9 +351,9 @@ public abstract class IgniteCacheConfigPermutationsAbstractTest extends IgniteCo
 
             startCachesDinamically();
 
-            // TODO uncomment.
-//            throw cacheIsNotEmptyError;
-            log.warning(cacheIsNotEmptyError.toString());
+            log.warning(cacheIsNotEmptyMsg);
+
+            throw new IllegalStateException(cacheIsNotEmptyMsg);
         }
     }
 
