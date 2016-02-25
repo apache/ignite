@@ -79,20 +79,20 @@ public class GridDhtAtomicUpdateFuture extends GridFutureAdapter<Void> implement
 
     /** Completion callback. */
     @GridToStringExclude
-    private final CI2<GridNearAtomicUpdateRequestInterface, GridNearAtomicUpdateResponseInterface> completionCb;
+    private final CI2<GridNearAtomicUpdateRequest, GridNearAtomicUpdateResponse> completionCb;
 
     /** Mappings. */
     @GridToStringInclude
-    private final Map<UUID, GridDhtAtomicUpdateRequestInterface> mappings;
+    private final Map<UUID, GridDhtAtomicUpdateRequest> mappings;
 
     /** Entries with readers. */
     private Map<KeyCacheObject, GridDhtCacheEntry> nearReadersEntries;
 
     /** Update request. */
-    private final GridNearAtomicUpdateRequestInterface updateReq;
+    private final GridNearAtomicUpdateRequest updateReq;
 
     /** Update response. */
-    private final GridNearAtomicUpdateResponseInterface updateRes;
+    private final GridNearAtomicUpdateResponse updateRes;
 
     /** Future keys. */
     private final Collection<KeyCacheObject> keys;
@@ -115,10 +115,10 @@ public class GridDhtAtomicUpdateFuture extends GridFutureAdapter<Void> implement
      */
     public GridDhtAtomicUpdateFuture(
         GridCacheContext cctx,
-        CI2<GridNearAtomicUpdateRequestInterface, GridNearAtomicUpdateResponseInterface> completionCb,
+        CI2<GridNearAtomicUpdateRequest, GridNearAtomicUpdateResponse> completionCb,
         GridCacheVersion writeVer,
-        GridNearAtomicUpdateRequestInterface updateReq,
-        GridNearAtomicUpdateResponseInterface updateRes
+        GridNearAtomicUpdateRequest updateReq,
+        GridNearAtomicUpdateResponse updateRes
     ) {
         this.cctx = cctx;
         this.writeVer = writeVer;
@@ -171,7 +171,7 @@ public class GridDhtAtomicUpdateFuture extends GridFutureAdapter<Void> implement
     private boolean registerResponse(UUID nodeId) {
         int resCnt0;
 
-        GridDhtAtomicUpdateRequestInterface req = mappings.get(nodeId);
+        GridDhtAtomicUpdateRequest req = mappings.get(nodeId);
 
         if (req != null) {
             synchronized (this) {
@@ -248,7 +248,7 @@ public class GridDhtAtomicUpdateFuture extends GridFutureAdapter<Void> implement
             UUID nodeId = node.id();
 
             if (!nodeId.equals(cctx.localNodeId())) {
-                GridDhtAtomicUpdateRequestInterface updateReq = mappings.get(nodeId);
+                GridDhtAtomicUpdateRequest updateReq = mappings.get(nodeId);
 
                 if (updateReq == null) {
                     if (this.updateReq instanceof GridNearAtomicSingleUpdateRequest)
@@ -338,7 +338,7 @@ public class GridDhtAtomicUpdateFuture extends GridFutureAdapter<Void> implement
         AffinityTopologyVersion topVer = updateReq.topologyVersion();
 
         for (UUID nodeId : readers) {
-            GridDhtAtomicUpdateRequestInterface updateReq = mappings.get(nodeId);
+            GridDhtAtomicUpdateRequest updateReq = mappings.get(nodeId);
 
             if (updateReq == null) {
                 ClusterNode node = cctx.discovery().node(nodeId);
@@ -402,7 +402,7 @@ public class GridDhtAtomicUpdateFuture extends GridFutureAdapter<Void> implement
                     Collection<KeyCacheObject> hndKeys = new ArrayList<>(keys.size());
 
                     exit:
-                    for (GridDhtAtomicUpdateRequestInterface req : mappings.values()) {
+                    for (GridDhtAtomicUpdateRequest req : mappings.values()) {
                         for (int i = 0; i < req.size(); i++) {
                             KeyCacheObject key = req.key(i);
 
@@ -432,7 +432,7 @@ public class GridDhtAtomicUpdateFuture extends GridFutureAdapter<Void> implement
                 if (lsnrs != null) {
                     Collection<KeyCacheObject> hndKeys = new ArrayList<>(keys.size());
 
-                    exit: for (GridDhtAtomicUpdateRequestInterface req : mappings.values()) {
+                    exit: for (GridDhtAtomicUpdateRequest req : mappings.values()) {
                         for (int i = 0; i < req.size(); i++) {
                             KeyCacheObject key = req.key(i);
 
@@ -480,7 +480,7 @@ public class GridDhtAtomicUpdateFuture extends GridFutureAdapter<Void> implement
      */
     public void map() {
         if (!mappings.isEmpty()) {
-            for (GridDhtAtomicUpdateRequestInterface req : mappings.values()) {
+            for (GridDhtAtomicUpdateRequest req : mappings.values()) {
                 try {
                     if (log.isDebugEnabled())
                         log.debug("Sending DHT atomic update request [nodeId=" + req.nodeId() + ", req=" + req + ']');
@@ -516,7 +516,7 @@ public class GridDhtAtomicUpdateFuture extends GridFutureAdapter<Void> implement
      * @param nodeId Backup node ID.
      * @param updateRes Update response.
      */
-    public void onResult(UUID nodeId, GridDhtAtomicUpdateResponseInterface updateRes) {
+    public void onResult(UUID nodeId, GridDhtAtomicUpdateResponse updateRes) {
         if (log.isDebugEnabled())
             log.debug("Received DHT atomic update future result [nodeId=" + nodeId + ", updateRes=" + updateRes + ']');
 

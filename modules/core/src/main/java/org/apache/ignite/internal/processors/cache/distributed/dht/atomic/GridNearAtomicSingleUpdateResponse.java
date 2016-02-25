@@ -41,7 +41,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
 
-public class GridNearAtomicSingleUpdateResponse extends GridCacheMessage implements GridCacheDeployable, GridNearAtomicUpdateResponseInterface {
+public class GridNearAtomicSingleUpdateResponse extends GridCacheMessage implements GridCacheDeployable, GridNearAtomicUpdateResponse {
 
     /** */
     private static final long serialVersionUID = 0L;

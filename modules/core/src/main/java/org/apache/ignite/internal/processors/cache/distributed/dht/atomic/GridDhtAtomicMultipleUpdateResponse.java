@@ -41,7 +41,7 @@ import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 /**
  * DHT atomic cache backup update response.
  */
-public class GridDhtAtomicMultipleUpdateResponse extends GridCacheMessage implements GridCacheDeployable, GridDhtAtomicUpdateResponseInterface {
+public class GridDhtAtomicMultipleUpdateResponse extends GridCacheMessage implements GridCacheDeployable, GridDhtAtomicUpdateResponse {
     /** */
     private static final long serialVersionUID = 0L;
 

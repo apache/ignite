@@ -339,7 +339,7 @@ public class GridNearAtomicUpdateFuture extends GridFutureAdapter<Object> implem
      * @param nodeId Node ID.
      * @param res Update response.
      */
-    public void onResult(UUID nodeId, GridNearAtomicUpdateResponseInterface res) {
+    public void onResult(UUID nodeId, GridNearAtomicUpdateResponse res) {
         state.onResult(nodeId, res, false);
     }
 
@@ -349,7 +349,7 @@ public class GridNearAtomicUpdateFuture extends GridFutureAdapter<Object> implem
      * @param req Update request.
      * @param res Update response.
      */
-    private void updateNear(GridNearAtomicUpdateRequestInterface req, GridNearAtomicUpdateResponseInterface res) {
+    private void updateNear(GridNearAtomicUpdateRequest req, GridNearAtomicUpdateResponse res) {
         assert nearEnabled;
 
         if (res.remapKeys() != null || !req.hasPrimary())
@@ -451,12 +451,12 @@ public class GridNearAtomicUpdateFuture extends GridFutureAdapter<Object> implem
      * @param nodeId Node ID.
      * @param req Request.
      */
-    private void mapSingle(UUID nodeId, GridNearAtomicUpdateRequestInterface req) {
+    private void mapSingle(UUID nodeId, GridNearAtomicUpdateRequest req) {
         if (cctx.localNodeId().equals(nodeId)) {
             cache.updateAllAsyncInternal(nodeId, req,
-                new CI2<GridNearAtomicUpdateRequestInterface, GridNearAtomicUpdateResponseInterface>() {
-                    @Override public void apply(GridNearAtomicUpdateRequestInterface req,
-                        GridNearAtomicUpdateResponseInterface res) {
+                new CI2<GridNearAtomicUpdateRequest, GridNearAtomicUpdateResponse>() {
+                    @Override public void apply(GridNearAtomicUpdateRequest req,
+                        GridNearAtomicUpdateResponse res) {
                         onResult(res.nodeId(), res);
                     }
                 });
@@ -510,9 +510,9 @@ public class GridNearAtomicUpdateFuture extends GridFutureAdapter<Object> implem
 
         if (locUpdate != null) {
             cache.updateAllAsyncInternal(cctx.localNodeId(), locUpdate,
-                new CI2<GridNearAtomicUpdateRequestInterface, GridNearAtomicUpdateResponseInterface>() {
-                    @Override public void apply(GridNearAtomicUpdateRequestInterface req,
-                        GridNearAtomicUpdateResponseInterface res) {
+                new CI2<GridNearAtomicUpdateRequest, GridNearAtomicUpdateResponse>() {
+                    @Override public void apply(GridNearAtomicUpdateRequest req,
+                        GridNearAtomicUpdateResponse res) {
                         onResult(res.nodeId(), res);
                     }
                 });
@@ -555,7 +555,7 @@ public class GridNearAtomicUpdateFuture extends GridFutureAdapter<Object> implem
         private Collection<KeyCacheObject> remapKeys;
 
         /** Not null is operation is mapped to single node. */
-        private GridNearAtomicUpdateRequestInterface singleReq;
+        private GridNearAtomicUpdateRequest singleReq;
 
         /** Operation result. */
         private GridCacheReturn opRes;
@@ -571,10 +571,10 @@ public class GridNearAtomicUpdateFuture extends GridFutureAdapter<Object> implem
          * @param nodeId Left node ID.
          */
         void onNodeLeft(UUID nodeId) {
-            GridNearAtomicUpdateResponseInterface res = null;
+            GridNearAtomicUpdateResponse res = null;
 
             synchronized (this) {
-                GridNearAtomicUpdateRequestInterface req;
+                GridNearAtomicUpdateRequest req;
 
                 if (singleReq != null)
                     req = singleReq.nodeId().equals(nodeId) ? singleReq : null;
@@ -612,8 +612,8 @@ public class GridNearAtomicUpdateFuture extends GridFutureAdapter<Object> implem
          * @param nodeErr {@code True} if response was created on node failure.
          */
         @SuppressWarnings({"unchecked", "ThrowableResultOfMethodCallIgnored"}) void onResult(UUID nodeId,
-            GridNearAtomicUpdateResponseInterface res, boolean nodeErr) {
-            GridNearAtomicUpdateRequestInterface req;
+            GridNearAtomicUpdateResponse res, boolean nodeErr) {
+            GridNearAtomicUpdateRequest req;
 
             AffinityTopologyVersion remapTopVer = null;
 
@@ -744,7 +744,7 @@ public class GridNearAtomicUpdateFuture extends GridFutureAdapter<Object> implem
             if (rcvAll && nearEnabled) {
                 if (mappings != null) {
                     for (GridNearAtomicMultipleUpdateRequest req0 : mappings.values()) {
-                        GridNearAtomicUpdateResponseInterface res0 = req0.response();
+                        GridNearAtomicUpdateResponse res0 = req0.response();
 
                         assert res0 != null : req0;
 
@@ -817,9 +817,9 @@ public class GridNearAtomicUpdateFuture extends GridFutureAdapter<Object> implem
          * @param req Request.
          * @param e Error.
          */
-        void onSendError(GridNearAtomicUpdateRequestInterface req, IgniteCheckedException e) {
+        void onSendError(GridNearAtomicUpdateRequest req, IgniteCheckedException e) {
             synchronized (this) {
-                GridNearAtomicUpdateResponseInterface res;
+                GridNearAtomicUpdateResponse res;
 
                 if (req instanceof GridNearAtomicSingleUpdateRequest)
                     res = new GridNearAtomicSingleUpdateResponse(cctx.cacheId(),
@@ -853,7 +853,7 @@ public class GridNearAtomicUpdateFuture extends GridFutureAdapter<Object> implem
             }
 
             Exception err = null;
-            GridNearAtomicUpdateRequestInterface singleReq0 = null;
+            GridNearAtomicUpdateRequest singleReq0 = null;
             Map<UUID, GridNearAtomicMultipleUpdateRequest> mappings0 = null;
 
             int size = keys.size();
@@ -1138,7 +1138,7 @@ public class GridNearAtomicUpdateFuture extends GridFutureAdapter<Object> implem
          * @return Request.
          * @throws Exception If failed.
          */
-        private GridNearAtomicUpdateRequestInterface mapSingleUpdate(AffinityTopologyVersion topVer,
+        private GridNearAtomicUpdateRequest mapSingleUpdate(AffinityTopologyVersion topVer,
             Collection<ClusterNode> topNodes, GridCacheVersion futVer, @Nullable GridCacheVersion updVer)
             throws Exception {
             Object key = F.first(keys);

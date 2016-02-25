@@ -35,7 +35,7 @@ import java.util.UUID;
 /**
  * Base interface for near atomic update requests.
  */
-public interface GridNearAtomicUpdateRequestInterface extends Message {
+public interface GridNearAtomicUpdateRequest extends Message {
     /**
      * @return Message ID.
      */
@@ -191,12 +191,12 @@ public interface GridNearAtomicUpdateRequestInterface extends Message {
      * @param res Response.
      * @return {@code True} if current response was {@code null}.
      */
-    public boolean onResponse(GridNearAtomicUpdateResponseInterface res);
+    public boolean onResponse(GridNearAtomicUpdateResponse res);
 
     /**
      * @return Response.
      */
-    @Nullable public GridNearAtomicUpdateResponseInterface response();
+    @Nullable public GridNearAtomicUpdateResponse response();
 
     /**
      * Cleanup values.

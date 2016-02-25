@@ -28,8 +28,7 @@ import java.util.Collection;
 /**
  * Base interface for DHT atomic update responses.
  */
-public interface GridDhtAtomicUpdateResponseInterface extends Message {
-
+public interface GridDhtAtomicUpdateResponse extends Message {
     /**
      * Gets message lookup index. See {@link GridCacheMessage#lookupIndex()}.
      *

@@ -58,7 +58,7 @@ import static org.apache.ignite.internal.processors.cache.GridCacheOperation.UPD
  * Lite DHT cache update request sent from near node to primary node.
  */
 public class GridNearAtomicSingleUpdateRequest extends GridCacheMessage
-    implements GridNearAtomicUpdateRequestInterface, GridCacheDeployable {
+    implements GridNearAtomicUpdateRequest, GridCacheDeployable {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -150,7 +150,7 @@ public class GridNearAtomicSingleUpdateRequest extends GridCacheMessage
 
     /** */
     @GridDirectTransient
-    private GridNearAtomicUpdateResponseInterface res;
+    private GridNearAtomicUpdateResponse res;
 
     /**
      * Empty constructor required by {@link Externalizable}.
@@ -428,7 +428,7 @@ public class GridNearAtomicSingleUpdateRequest extends GridCacheMessage
     }
 
     /** {@inheritDoc} */
-    @Override public boolean onResponse(GridNearAtomicUpdateResponseInterface res) {
+    @Override public boolean onResponse(GridNearAtomicUpdateResponse res) {
         if (this.res == null) {
             this.res = res;
 
@@ -439,7 +439,7 @@ public class GridNearAtomicSingleUpdateRequest extends GridCacheMessage
     }
 
     /** {@inheritDoc} */
-    @Override @Nullable public GridNearAtomicUpdateResponseInterface response() {
+    @Override @Nullable public GridNearAtomicUpdateResponse response() {
         return res;
     }
 

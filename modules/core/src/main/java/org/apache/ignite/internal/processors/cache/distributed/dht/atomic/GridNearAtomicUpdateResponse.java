@@ -34,7 +34,7 @@ import java.util.UUID;
 /**
  * Base interface for near atomic update responses.
  */
-public interface GridNearAtomicUpdateResponseInterface extends Message {
+public interface GridNearAtomicUpdateResponse extends Message {
 
     /**
      * Gets message lookup index. See {@link GridCacheMessage#lookupIndex()}.

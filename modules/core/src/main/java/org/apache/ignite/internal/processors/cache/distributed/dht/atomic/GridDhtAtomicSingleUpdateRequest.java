@@ -43,7 +43,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.UUID;
 
-public class GridDhtAtomicSingleUpdateRequest extends GridCacheMessage implements GridCacheDeployable, GridDhtAtomicUpdateRequestInterface {
+public class GridDhtAtomicSingleUpdateRequest extends GridCacheMessage implements GridCacheDeployable, GridDhtAtomicUpdateRequest {
     /** */
     private static final long serialVersionUID = 0L;
 
