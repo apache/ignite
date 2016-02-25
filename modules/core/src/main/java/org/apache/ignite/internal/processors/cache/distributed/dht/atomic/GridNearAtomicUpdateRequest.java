@@ -58,7 +58,7 @@ import static org.apache.ignite.internal.processors.cache.GridCacheOperation.UPD
 /**
  * Lite DHT cache update request sent from near node to primary node.
  */
-public class GridNearAtomicMultipleUpdateRequest extends GridCacheMessage
+public class GridNearAtomicUpdateRequest extends GridCacheMessage
     implements GridNearAtomicUpdateRequestInterface, GridCacheDeployable {
     /** */
     private static final long serialVersionUID = 0L;
@@ -167,7 +167,7 @@ public class GridNearAtomicMultipleUpdateRequest extends GridCacheMessage
     /**
      * Empty constructor required by {@link Externalizable}.
      */
-    public GridNearAtomicMultipleUpdateRequest() {
+    public GridNearAtomicUpdateRequest() {
         // No-op.
     }
 
@@ -195,7 +195,7 @@ public class GridNearAtomicMultipleUpdateRequest extends GridCacheMessage
      * @param addDepInfo Deployment info flag.
      * @param maxEntryCnt Maximum entries count.
      */
-    public GridNearAtomicMultipleUpdateRequest(
+    public GridNearAtomicUpdateRequest(
         int cacheId,
         UUID nodeId,
         GridCacheVersion futVer,
@@ -956,7 +956,7 @@ public class GridNearAtomicMultipleUpdateRequest extends GridCacheMessage
 
         }
 
-        return reader.afterMessageRead(GridNearAtomicMultipleUpdateRequest.class);
+        return reader.afterMessageRead(GridNearAtomicUpdateRequest.class);
     }
 
     /** {@inheritDoc} */
@@ -983,7 +983,7 @@ public class GridNearAtomicMultipleUpdateRequest extends GridCacheMessage
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(GridNearAtomicMultipleUpdateRequest.class, this, "filter", Arrays.toString(filter),
+        return S.toString(GridNearAtomicUpdateRequest.class, this, "filter", Arrays.toString(filter),
             "parent", super.toString());
     }
 }

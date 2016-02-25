@@ -47,7 +47,7 @@ import org.jetbrains.annotations.Nullable;
 /**
  * DHT atomic cache near update response.
  */
-public class GridNearAtomicMultipleUpdateResponse extends GridCacheMessage implements GridCacheDeployable, GridNearAtomicUpdateResponseInterface {
+public class GridNearAtomicUpdateResponse extends GridCacheMessage implements GridCacheDeployable, GridNearAtomicUpdateResponseInterface {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -107,7 +107,7 @@ public class GridNearAtomicMultipleUpdateResponse extends GridCacheMessage imple
     /**
      * Empty constructor required by {@link Externalizable}.
      */
-    public GridNearAtomicMultipleUpdateResponse() {
+    public GridNearAtomicUpdateResponse() {
         // No-op.
     }
 
@@ -117,7 +117,7 @@ public class GridNearAtomicMultipleUpdateResponse extends GridCacheMessage imple
      * @param futVer Future version.
      * @param addDepInfo Deployment info flag.
      */
-    public GridNearAtomicMultipleUpdateResponse(int cacheId, UUID nodeId, GridCacheVersion futVer, boolean addDepInfo) {
+    public GridNearAtomicUpdateResponse(int cacheId, UUID nodeId, GridCacheVersion futVer, boolean addDepInfo) {
         assert futVer != null;
 
         this.cacheId = cacheId;
@@ -622,7 +622,7 @@ public class GridNearAtomicMultipleUpdateResponse extends GridCacheMessage imple
 
         }
 
-        return reader.afterMessageRead(GridNearAtomicMultipleUpdateResponse.class);
+        return reader.afterMessageRead(GridNearAtomicUpdateResponse.class);
     }
 
     /** {@inheritDoc} */
@@ -637,6 +637,6 @@ public class GridNearAtomicMultipleUpdateResponse extends GridCacheMessage imple
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(GridNearAtomicMultipleUpdateResponse.class, this, "parent");
+        return S.toString(GridNearAtomicUpdateResponse.class, this, "parent");
     }
 }

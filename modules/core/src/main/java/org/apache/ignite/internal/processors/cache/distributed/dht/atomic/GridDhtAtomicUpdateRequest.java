@@ -49,7 +49,7 @@ import org.jetbrains.annotations.Nullable;
 /**
  * Lite dht cache backup update request.
  */
-public class GridDhtAtomicMultipleUpdateRequest extends GridCacheMessage implements GridCacheDeployable, GridDhtAtomicUpdateRequestInterface {
+public class GridDhtAtomicUpdateRequest extends GridCacheMessage implements GridCacheDeployable, GridDhtAtomicUpdateRequestInterface {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -165,7 +165,7 @@ public class GridDhtAtomicMultipleUpdateRequest extends GridCacheMessage impleme
     /**
      * Empty constructor required by {@link Externalizable}.
      */
-    public GridDhtAtomicMultipleUpdateRequest() {
+    public GridDhtAtomicUpdateRequest() {
         // No-op.
     }
 
@@ -184,7 +184,7 @@ public class GridDhtAtomicMultipleUpdateRequest extends GridCacheMessage impleme
      * @param taskNameHash Task name hash code.
      * @param addDepInfo Deployment info.
      */
-    public GridDhtAtomicMultipleUpdateRequest(
+    public GridDhtAtomicUpdateRequest(
         int cacheId,
         UUID nodeId,
         GridCacheVersion futVer,
@@ -1053,7 +1053,7 @@ public class GridDhtAtomicMultipleUpdateRequest extends GridCacheMessage impleme
 
         }
 
-        return reader.afterMessageRead(GridDhtAtomicMultipleUpdateRequest.class);
+        return reader.afterMessageRead(GridDhtAtomicUpdateRequest.class);
     }
 
     /** {@inheritDoc} */
@@ -1088,6 +1088,6 @@ public class GridDhtAtomicMultipleUpdateRequest extends GridCacheMessage impleme
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(GridDhtAtomicMultipleUpdateRequest.class, this, "super", super.toString());
+        return S.toString(GridDhtAtomicUpdateRequest.class, this, "super", super.toString());
     }
 }
