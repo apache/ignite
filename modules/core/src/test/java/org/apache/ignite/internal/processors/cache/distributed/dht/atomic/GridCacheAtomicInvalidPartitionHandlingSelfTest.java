@@ -477,8 +477,12 @@ public class GridCacheAtomicInvalidPartitionHandlingSelfTest extends GridCommonA
         private boolean delayMessage(GridIoMessage msg) {
             Object origMsg = msg.message();
 
-            return delay &&
-                ((origMsg instanceof GridNearAtomicUpdateRequest) || (origMsg instanceof GridDhtAtomicUpdateRequest));
+            return delay && (
+                (origMsg instanceof GridNearAtomicMultipleUpdateRequest) ||
+                (origMsg instanceof GridNearAtomicSingleUpdateRequest) ||
+                (origMsg instanceof GridDhtAtomicMultipleUpdateRequest) ||
+                (origMsg instanceof GridDhtAtomicSingleUpdateRequest)
+            );
         }
     }
 }

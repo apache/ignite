@@ -426,7 +426,7 @@ public abstract class IgniteClientReconnectAbstractTest extends GridCommonAbstra
                 classes.put(((GridIoMessage)msg).message().getClass().getName(), node);
 
             if (msgCls0 != null && msg instanceof GridIoMessage
-                && ((GridIoMessage)msg).message().getClass().equals(msgCls)) {
+                && msgCls.isAssignableFrom(((GridIoMessage)msg).message().getClass())) {
                 log.info("Block message: " + msg);
 
                 return;

@@ -55,6 +55,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryRemovedException;
 import org.apache.ignite.internal.processors.cache.GridCacheMapEntry;
 import org.apache.ignite.internal.processors.cache.GridCacheMapEntryFactory;
+import org.apache.ignite.internal.processors.cache.GridCacheMessage;
 import org.apache.ignite.internal.processors.cache.GridCacheOperation;
 import org.apache.ignite.internal.processors.cache.GridCacheReturn;
 import org.apache.ignite.internal.processors.cache.GridCacheUpdateAtomicResult;
@@ -251,26 +252,50 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
             }
         });
 
-        ctx.io().addHandler(ctx.cacheId(), GridNearAtomicUpdateRequest.class, new CI2<UUID, GridNearAtomicUpdateRequest>() {
-            @Override public void apply(UUID nodeId, GridNearAtomicUpdateRequest req) {
+        ctx.io().addHandler(ctx.cacheId(), GridNearAtomicMultipleUpdateRequest.class, new CI2<UUID, GridNearAtomicMultipleUpdateRequest>() {
+            @Override public void apply(UUID nodeId, GridNearAtomicMultipleUpdateRequest req) {
                 processNearAtomicUpdateRequest(nodeId, req);
             }
         });
 
-        ctx.io().addHandler(ctx.cacheId(), GridNearAtomicUpdateResponse.class, new CI2<UUID, GridNearAtomicUpdateResponse>() {
-            @Override public void apply(UUID nodeId, GridNearAtomicUpdateResponse res) {
+        ctx.io().addHandler(ctx.cacheId(), GridNearAtomicSingleUpdateRequest.class, new CI2<UUID, GridNearAtomicSingleUpdateRequest>() {
+            @Override public void apply(UUID nodeId, GridNearAtomicSingleUpdateRequest req) {
+                processNearAtomicUpdateRequest(nodeId, req);
+            }
+        });
+
+        ctx.io().addHandler(ctx.cacheId(), GridNearAtomicMultipleUpdateResponse.class, new CI2<UUID, GridNearAtomicMultipleUpdateResponse>() {
+            @Override public void apply(UUID nodeId, GridNearAtomicMultipleUpdateResponse res) {
                 processNearAtomicUpdateResponse(nodeId, res);
             }
         });
 
-        ctx.io().addHandler(ctx.cacheId(), GridDhtAtomicUpdateRequest.class, new CI2<UUID, GridDhtAtomicUpdateRequest>() {
-            @Override public void apply(UUID nodeId, GridDhtAtomicUpdateRequest req) {
+        ctx.io().addHandler(ctx.cacheId(), GridNearAtomicSingleUpdateResponse.class, new CI2<UUID, GridNearAtomicSingleUpdateResponse>() {
+            @Override public void apply(UUID nodeId, GridNearAtomicSingleUpdateResponse res) {
+                processNearAtomicUpdateResponse(nodeId, res);
+            }
+        });
+
+        ctx.io().addHandler(ctx.cacheId(), GridDhtAtomicMultipleUpdateRequest.class, new CI2<UUID, GridDhtAtomicMultipleUpdateRequest>() {
+            @Override public void apply(UUID nodeId, GridDhtAtomicMultipleUpdateRequest req) {
                 processDhtAtomicUpdateRequest(nodeId, req);
             }
         });
 
-        ctx.io().addHandler(ctx.cacheId(), GridDhtAtomicUpdateResponse.class, new CI2<UUID, GridDhtAtomicUpdateResponse>() {
-            @Override public void apply(UUID nodeId, GridDhtAtomicUpdateResponse res) {
+        ctx.io().addHandler(ctx.cacheId(), GridDhtAtomicSingleUpdateRequest.class, new CI2<UUID, GridDhtAtomicSingleUpdateRequest>() {
+            @Override public void apply(UUID nodeId, GridDhtAtomicSingleUpdateRequest req) {
+                processDhtAtomicUpdateRequest(nodeId, req);
+            }
+        });
+
+        ctx.io().addHandler(ctx.cacheId(), GridDhtAtomicMultipleUpdateResponse.class, new CI2<UUID, GridDhtAtomicMultipleUpdateResponse>() {
+            @Override public void apply(UUID nodeId, GridDhtAtomicMultipleUpdateResponse res) {
+                processDhtAtomicUpdateResponse(nodeId, res);
+            }
+        });
+
+        ctx.io().addHandler(ctx.cacheId(), GridDhtAtomicSingleUpdateResponse.class, new CI2<UUID, GridDhtAtomicSingleUpdateResponse>() {
+            @Override public void apply(UUID nodeId, GridDhtAtomicSingleUpdateResponse res) {
                 processDhtAtomicUpdateResponse(nodeId, res);
             }
         });
@@ -862,7 +887,8 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
             TRANSFORM);
 
         return resFut.chain(new CX1<IgniteInternalFuture<Map<K, EntryProcessorResult<T>>>, Map<K, EntryProcessorResult<T>>>() {
-            @Override public Map<K, EntryProcessorResult<T>> applyx(IgniteInternalFuture<Map<K, EntryProcessorResult<T>>> fut) throws IgniteCheckedException {
+            @Override public Map<K, EntryProcessorResult<T>> applyx(
+                IgniteInternalFuture<Map<K, EntryProcessorResult<T>>> fut) throws IgniteCheckedException {
                 Map<Object, EntryProcessorResult> resMap = (Map)fut.get();
 
                 return ctx.unwrapInvokeResult(resMap, keepBinary);
@@ -1333,8 +1359,14 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
         GridNearAtomicUpdateRequest req,
         CI2<GridNearAtomicUpdateRequest, GridNearAtomicUpdateResponse> completionCb
     ) {
-        GridNearAtomicUpdateResponse res = new GridNearAtomicUpdateResponse(ctx.cacheId(), nodeId, req.futureVersion(),
-            ctx.deploymentEnabled());
+        GridNearAtomicUpdateResponse res;
+
+        if (req instanceof GridNearAtomicSingleUpdateRequest)
+            res = new GridNearAtomicSingleUpdateResponse(ctx.cacheId(), nodeId, req.futureVersion(),
+                ctx.deploymentEnabled());
+        else
+            res = new GridNearAtomicMultipleUpdateResponse(ctx.cacheId(), nodeId, req.futureVersion(),
+                ctx.deploymentEnabled());
 
         List<KeyCacheObject> keys = req.keys();
 
@@ -1795,7 +1827,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
                     if (intercept) {
                         CacheObject old = entry.innerGet(
-                             null,
+                            null,
                             /*read swap*/true,
                             /*read through*/ctx.loadPreviousValue(),
                             /*fail fast*/false,
@@ -1810,7 +1842,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                             req.keepBinary());
 
                         Object val = ctx.config().getInterceptor().onBeforePut(new CacheLazyEntry(ctx, entry.key(),
-                            old, req.keepBinary()),
+                                old, req.keepBinary()),
                             updated.value(ctx.cacheObjectContext(), false));
 
                         if (val == null)
@@ -2793,8 +2825,14 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
         GridCacheVersion ver = req.writeVersion();
 
         // Always send update reply.
-        GridDhtAtomicUpdateResponse res = new GridDhtAtomicUpdateResponse(ctx.cacheId(), req.futureVersion(),
-            ctx.deploymentEnabled());
+        GridDhtAtomicUpdateResponse res;
+
+        if (req instanceof GridDhtAtomicSingleUpdateRequest)
+            res = new GridDhtAtomicSingleUpdateResponse(ctx.cacheId(), req.futureVersion(),
+                ctx.deploymentEnabled());
+        else
+            res = new GridDhtAtomicMultipleUpdateResponse(ctx.cacheId(), req.futureVersion(),
+                ctx.deploymentEnabled());
 
         Boolean replicate = ctx.isDrEnabled();
 
@@ -2911,7 +2949,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
         try {
             if (res.failedKeys() != null || res.nearEvicted() != null || req.writeSynchronizationMode() == FULL_SYNC)
-                ctx.io().send(nodeId, res, ctx.ioPolicy());
+                ctx.io().send(nodeId, (GridCacheMessage) res, ctx.ioPolicy());
             else {
                 // No failed keys and sync mode is not FULL_SYNC, thus sending deferred response.
                 sendDeferredUpdateResponse(nodeId, req.futureVersion());
@@ -3000,7 +3038,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
      */
     private void sendNearUpdateReply(UUID nodeId, GridNearAtomicUpdateResponse res) {
         try {
-            ctx.io().send(nodeId, res, ctx.ioPolicy());
+            ctx.io().send(nodeId, (GridCacheMessage)res, ctx.ioPolicy());
         }
         catch (ClusterTopologyCheckedException ignored) {
             U.warn(log, "Failed to send near update reply to node because it left grid: " +
@@ -3242,7 +3280,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
                 respVers.add(ver);
 
-                if  (respVers.sizex() > DEFERRED_UPDATE_RESPONSE_BUFFER_SIZE && guard.compareAndSet(false, true))
+                if (respVers.sizex() > DEFERRED_UPDATE_RESPONSE_BUFFER_SIZE && guard.compareAndSet(false, true))
                     snd = true;
             }
             finally {

@@ -463,6 +463,24 @@ public abstract class GridCacheMessage implements Message {
     }
 
     /**
+     * @param obj Object to marshal.
+     * @param ctx Context.
+     * @return Marshalled collection.
+     * @throws IgniteCheckedException If failed.
+     */
+    @Nullable protected byte[] marshal(@Nullable Object obj, GridCacheContext ctx) throws IgniteCheckedException {
+        assert ctx != null;
+
+        if (obj == null)
+            return null;
+
+        if (addDepInfo)
+            prepareObject(obj, ctx);
+
+        return CU.marshal(ctx, obj);
+    }
+
+    /**
      * @param col Collection to marshal.
      * @param ctx Context.
      * @return Marshalled collection.
@@ -539,6 +557,19 @@ public abstract class GridCacheMessage implements Message {
     }
 
     /**
+     * @param obj Object.
+     * @param ctx Context.
+     * @param ldr Class loader.
+     * @throws IgniteCheckedException If failed.
+     */
+    @SuppressWarnings("ForLoopReplaceableByForEach")
+    protected final void finishUnmarshalCacheObject(@Nullable CacheObject obj, GridCacheContext ctx, ClassLoader ldr)
+        throws IgniteCheckedException {
+        if (obj != null)
+            obj.finishUnmarshal(ctx.cacheObjectContext(), ldr);
+    }
+
+    /**
      * @param col Collection.
      * @param ctx Context.
      * @param ldr Class loader.
@@ -586,6 +617,24 @@ public abstract class GridCacheMessage implements Message {
     /** {@inheritDoc} */
     @Override public void onAckReceived() {
         // No-op.
+    }
+
+    /**
+     * @param bytes Byte array to unmarshal.
+     * @param ctx Context.
+     * @param ldr Loader.
+     * @return Unmarshalled object.
+     * @throws IgniteCheckedException If failed.
+     */
+    @Nullable protected <T> T unmarshal(@Nullable byte[] bytes, GridCacheSharedContext ctx, ClassLoader ldr)
+        throws IgniteCheckedException {
+        assert ldr != null;
+        assert ctx != null;
+
+        if (bytes == null)
+            return null;
+
+        return ctx.marshaller().unmarshal(bytes, ldr);
     }
 
     /**

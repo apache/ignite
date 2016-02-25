@@ -81,6 +81,7 @@ import org.apache.ignite.internal.util.typedef.PA;
 import org.apache.ignite.internal.util.typedef.PAX;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.T3;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgniteOutClosure;
 import org.apache.ignite.plugin.extensions.communication.Message;
@@ -1156,12 +1157,14 @@ public abstract class CacheContinuousQueryFailoverAbstractSelfTest extends GridC
      */
     private void checkEvents(final List<T3<Object, Object, Object>> expEvts, final CacheEventListener3 lsnr,
         boolean allowLoseEvt) throws Exception {
-        if (!allowLoseEvt)
+        if (!allowLoseEvt) {
+            U.sleep(2000);
             assert GridTestUtils.waitForCondition(new PA() {
                 @Override public boolean apply() {
                     return lsnr.evts.size() == expEvts.size();
                 }
             }, 2000L);
+        }
 
         for (T3<Object, Object, Object> exp : expEvts) {
             CacheEntryEvent<?, ?> e = lsnr.evts.get(exp.get1());
