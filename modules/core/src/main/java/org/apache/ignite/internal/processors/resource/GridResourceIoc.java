@@ -382,7 +382,7 @@ class GridResourceIoc {
             do {
                 oldSets = annotationSets.get();
 
-                newSets = oldSets.length < set.descIdx ? oldSets :
+                newSets =  set.descIdx < oldSets.length ? oldSets :
                     Arrays.copyOf(oldSets, Math.max(oldSets.length << 1, set.descIdx + 1));
 
                 newSets[set.descIdx] = mask;
