@@ -27,7 +27,6 @@ import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.benchmarks.jmh.JmhAbstractBenchmark;
-import org.apache.ignite.internal.direct.stream.v2.DirectByteBufferStreamImplV2;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
@@ -127,9 +126,9 @@ public class JmhCacheAbstractBenchmark extends JmhAbstractBenchmark {
      */
     @TearDown
     public void tearDown() throws Exception {
-        System.out.println("TOTAL: " + DirectByteBufferStreamImplV2.TOTAL.longValue());
-        System.out.println("AVG: " + (DirectByteBufferStreamImplV2.TOTAL.longValue() / DirectByteBufferStreamImplV2.COUNT.longValue()));
-        System.out.println("LAST: " + DirectByteBufferStreamImplV2.LAST.longValue());
+//        System.out.println("TOTAL: " + DirectByteBufferStreamImplV2.TOTAL.longValue());
+//        System.out.println("AVG: " + (DirectByteBufferStreamImplV2.TOTAL.longValue() / DirectByteBufferStreamImplV2.COUNT.longValue()));
+//        System.out.println("LAST: " + DirectByteBufferStreamImplV2.LAST.longValue());
 
         Ignition.stopAll(true);
     }
