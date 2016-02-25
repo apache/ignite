@@ -17,14 +17,13 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.dht.atomic;
 
+import javax.cache.expiry.ExpiryPolicy;
+import javax.cache.processor.EntryProcessor;
 import java.io.Externalizable;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
-import javax.cache.expiry.ExpiryPolicy;
-import javax.cache.processor.EntryProcessor;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.internal.GridDirectCollection;
@@ -38,22 +37,17 @@ import org.apache.ignite.internal.processors.cache.GridCacheMessage;
 import org.apache.ignite.internal.processors.cache.GridCacheOperation;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
-import org.apache.ignite.internal.processors.cache.distributed.IgniteExternalizableExpiryPolicy;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
-import org.apache.ignite.internal.util.GridLongList;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import static org.apache.ignite.internal.processors.cache.GridCacheOperation.DELETE;
-import static org.apache.ignite.internal.processors.cache.GridCacheOperation.TRANSFORM;
-import static org.apache.ignite.internal.processors.cache.GridCacheOperation.UPDATE;
+import static org.apache.ignite.internal.processors.cache.GridCacheOperation.*;
 
 /**
  * Lite DHT cache update request sent from near node to primary node.
@@ -70,7 +64,7 @@ public class GridNearAtomicUpdateRequest extends GridCacheMessage implements Gri
     private UUID nodeId;
 
     /** Future version. */
-    private GridCacheVersion futVer;
+    private long futVer;
 
     /** Fast map flag. */
     private boolean fastMap;
@@ -197,7 +191,7 @@ public class GridNearAtomicUpdateRequest extends GridCacheMessage implements Gri
     public GridNearAtomicUpdateRequest(
         int cacheId,
         UUID nodeId,
-        GridCacheVersion futVer,
+        long futVer,
         boolean fastMap,
         @Nullable GridCacheVersion updateVer,
         @NotNull AffinityTopologyVersion topVer,
@@ -216,7 +210,7 @@ public class GridNearAtomicUpdateRequest extends GridCacheMessage implements Gri
         boolean addDepInfo,
         int maxEntryCnt
     ) {
-        assert futVer != null;
+//        assert futVer != null;
 
         this.cacheId = cacheId;
         this.nodeId = nodeId;
@@ -284,7 +278,7 @@ public class GridNearAtomicUpdateRequest extends GridCacheMessage implements Gri
     /**
      * @return Future version.
      */
-    public GridCacheVersion futureVersion() {
+    public long futureVersion() {
         return futVer;
     }
 
@@ -636,7 +630,7 @@ public class GridNearAtomicUpdateRequest extends GridCacheMessage implements Gri
                 writer.incrementState();
 
             case 11:
-                if (!writer.writeMessage("futVer", futVer))
+                if (!writer.writeLong("futVer", futVer))
                     return false;
 
                 writer.incrementState();
@@ -755,7 +749,7 @@ public class GridNearAtomicUpdateRequest extends GridCacheMessage implements Gri
                 reader.incrementState();
 
             case 11:
-                futVer = reader.readMessage("futVer");
+                futVer = reader.readLong("futVer");
 
                 if (!reader.isLastRead())
                     return false;

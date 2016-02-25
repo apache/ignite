@@ -17,13 +17,13 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.dht.atomic;
 
+import javax.cache.processor.EntryProcessor;
 import java.io.Externalizable;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.UUID;
-import javax.cache.processor.EntryProcessor;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.internal.GridDirectCollection;
@@ -60,7 +60,7 @@ public class GridDhtAtomicUpdateRequest extends GridCacheMessage implements Grid
     private UUID nodeId;
 
     /** Future version. */
-    private GridCacheVersion futVer;
+    private long futVer;
 
     /** Write version. */
     private GridCacheVersion writeVer;
@@ -187,7 +187,7 @@ public class GridDhtAtomicUpdateRequest extends GridCacheMessage implements Grid
     public GridDhtAtomicUpdateRequest(
         int cacheId,
         UUID nodeId,
-        GridCacheVersion futVer,
+        long futVer,
         GridCacheVersion writeVer,
         CacheWriteSynchronizationMode syncMode,
         @NotNull AffinityTopologyVersion topVer,
@@ -428,7 +428,7 @@ public class GridDhtAtomicUpdateRequest extends GridCacheMessage implements Grid
     /**
      * @return Version assigned on primary node.
      */
-    public GridCacheVersion futureVersion() {
+    public long futureVersion() {
         return futVer;
     }
 
@@ -750,7 +750,7 @@ public class GridDhtAtomicUpdateRequest extends GridCacheMessage implements Grid
                 writer.incrementState();
 
             case 7:
-                if (!writer.writeMessage("futVer", futVer))
+                if (!writer.writeLong("futVer", futVer))
                     return false;
 
                 writer.incrementState();
@@ -906,7 +906,7 @@ public class GridDhtAtomicUpdateRequest extends GridCacheMessage implements Grid
                 reader.incrementState();
 
             case 7:
-                futVer = reader.readMessage("futVer");
+                futVer = reader.readLong("futVer");
 
                 if (!reader.isLastRead())
                     return false;

@@ -31,7 +31,6 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ConcurrentMap;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.events.Event;
 import org.apache.ignite.internal.IgniteClientDisconnectedCheckedException;
@@ -106,7 +105,7 @@ public class GridCacheMvccManager extends GridCacheSharedManagerAdapter {
     private final ConcurrentMap<GridCacheVersion, Collection<GridCacheMvccFuture<?>>> mvccFuts = newMap();
 
     /** Pending atomic futures. */
-    private final ConcurrentMap<GridCacheVersion, GridCacheAtomicFuture<?>> atomicFuts =
+    private final ConcurrentMap<Long, GridCacheAtomicFuture<?>> atomicFuts =
         new ConcurrentHashMap8<>();
 
     /** */
@@ -257,9 +256,9 @@ public class GridCacheMvccManager extends GridCacheSharedManagerAdapter {
                 cacheFut.onNodeLeft(discoEvt.eventNode().id());
 
                 if (cacheFut.isCancelled() || cacheFut.isDone()) {
-                    GridCacheVersion futVer = cacheFut.version();
+                    long futVer = cacheFut.version();
 
-                    if (futVer != null)
+                    if (futVer != 0)
                         atomicFuts.remove(futVer, cacheFut);
                 }
             }
@@ -431,7 +430,7 @@ public class GridCacheMvccManager extends GridCacheSharedManagerAdapter {
      * @param fut Future.
      * @return {@code False} if future was forcibly completed with error.
      */
-    public boolean addAtomicFuture(GridCacheVersion futVer, GridCacheAtomicFuture<?> fut) {
+    public boolean addAtomicFuture(long futVer, GridCacheAtomicFuture<?> fut) {
         IgniteInternalFuture<?> old = atomicFuts.put(futVer, fut);
 
         assert old == null : "Old future is not null [futVer=" + futVer + ", fut=" + fut + ", old=" + old + ']';
@@ -452,7 +451,7 @@ public class GridCacheMvccManager extends GridCacheSharedManagerAdapter {
      * @param futVer Future ID.
      * @return Future.
      */
-    @Nullable public IgniteInternalFuture<?> atomicFuture(GridCacheVersion futVer) {
+    @Nullable public IgniteInternalFuture<?> atomicFuture(long futVer) {
         return atomicFuts.get(futVer);
     }
 
@@ -460,7 +459,7 @@ public class GridCacheMvccManager extends GridCacheSharedManagerAdapter {
      * @param futVer Future ID.
      * @return Removed future.
      */
-    @Nullable public IgniteInternalFuture<?> removeAtomicFuture(GridCacheVersion futVer) {
+    @Nullable public IgniteInternalFuture<?> removeAtomicFuture(long futVer) {
         return atomicFuts.remove(futVer);
     }
 
