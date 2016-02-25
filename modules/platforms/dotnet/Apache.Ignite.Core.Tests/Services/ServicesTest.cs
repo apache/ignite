@@ -550,6 +550,7 @@ namespace Apache.Ignite.Core.Tests.Services
             Assert.AreEqual(new double[] {2, 3, 4}, svc.testArray(new double[] {1, 2, 3}));
             Assert.AreEqual(new[] {"a1", "b1"}, svc.testArray(new [] {"a", "b"}));
             Assert.AreEqual(new[] {'c', 'd'}, svc.testArray(new[] {'b', 'c'}));
+            Assert.AreEqual(new[] {false, true, false}, svc.testArray(new[] {true, false, true}));
 
             // Nulls
             Assert.AreEqual(9, svc.testNull(8));
