@@ -26,7 +26,7 @@ import org.apache.ignite.IgniteClientDisconnectedException;
 import org.apache.ignite.IgniteQueue;
 import org.apache.ignite.IgniteSet;
 import org.apache.ignite.configuration.CollectionConfiguration;
-import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridNearAtomicUpdateResponse;
+import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridNearAtomicMultipleUpdateResponse;
 import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridNearAtomicUpdateResponseInterface;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxPrepareResponse;
 import org.apache.ignite.testframework.GridTestUtils;
@@ -316,7 +316,7 @@ public class IgniteClientReconnectCollectionsTest extends IgniteClientReconnectA
         BlockTpcCommunicationSpi commSpi = commSpi(srv);
 
         if (colCfg.getAtomicityMode() == ATOMIC)
-            commSpi.blockMessage(GridNearAtomicUpdateResponse.class);
+            commSpi.blockMessage(GridNearAtomicMultipleUpdateResponse.class);
         else
             commSpi.blockMessage(GridNearTxPrepareResponse.class);
 

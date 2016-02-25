@@ -62,7 +62,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
 import org.apache.ignite.internal.processors.cache.GridCacheAffinityManager;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
 import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridNearAtomicSingleUpdateRequest;
-import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridNearAtomicUpdateRequest;
+import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridNearAtomicMultipleUpdateRequest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridNearAtomicUpdateRequestInterface;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearCacheAdapter;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearCacheEntry;
@@ -233,10 +233,10 @@ public class IgniteCacheClientNodeChangingTopologyTest extends GridCommonAbstrac
         TestCommunicationSpi spi = (TestCommunicationSpi)ignite2.configuration().getCommunicationSpi();
 
         // Block messages requests for both nodes.
-        spi.blockMessages(GridNearAtomicUpdateRequest.class, ignite0.localNode().id());
+        spi.blockMessages(GridNearAtomicMultipleUpdateRequest.class, ignite0.localNode().id());
         spi.blockMessages(GridNearAtomicSingleUpdateRequest.class, ignite0.localNode().id());
 
-        spi.blockMessages(GridNearAtomicUpdateRequest.class, ignite1.localNode().id());
+        spi.blockMessages(GridNearAtomicMultipleUpdateRequest.class, ignite1.localNode().id());
         spi.blockMessages(GridNearAtomicSingleUpdateRequest.class, ignite1.localNode().id());
 
         final IgniteCache<Integer, Integer> cache = ignite2.cache(null);
@@ -278,7 +278,7 @@ public class IgniteCacheClientNodeChangingTopologyTest extends GridCommonAbstrac
             map.put(i, i + 1);
 
         // Block messages requests for single node.
-        spi.blockMessages(GridNearAtomicUpdateRequest.class, ignite0.localNode().id());
+        spi.blockMessages(GridNearAtomicMultipleUpdateRequest.class, ignite0.localNode().id());
         spi.blockMessages(GridNearAtomicSingleUpdateRequest.class, ignite0.localNode().id());
 
         putFut = GridTestUtils.runAsync(new Callable<Object>() {
@@ -366,16 +366,16 @@ public class IgniteCacheClientNodeChangingTopologyTest extends GridCommonAbstrac
         TestCommunicationSpi spi = (TestCommunicationSpi)ignite3.configuration().getCommunicationSpi();
 
         // Block messages requests for both nodes.
-        spi.blockMessages(GridNearAtomicUpdateRequest.class, ignite0.localNode().id());
+        spi.blockMessages(GridNearAtomicMultipleUpdateRequest.class, ignite0.localNode().id());
         spi.blockMessages(GridNearAtomicSingleUpdateRequest.class, ignite0.localNode().id());
 
-        spi.blockMessages(GridNearAtomicUpdateRequest.class, ignite1.localNode().id());
+        spi.blockMessages(GridNearAtomicMultipleUpdateRequest.class, ignite1.localNode().id());
         spi.blockMessages(GridNearAtomicSingleUpdateRequest.class, ignite1.localNode().id());
 
-        spi.blockMessages(GridNearAtomicUpdateRequest.class, ignite2.localNode().id());
+        spi.blockMessages(GridNearAtomicMultipleUpdateRequest.class, ignite2.localNode().id());
         spi.blockMessages(GridNearAtomicSingleUpdateRequest.class, ignite2.localNode().id());
 
-        spi.record(GridNearAtomicUpdateRequest.class, GridNearAtomicSingleUpdateRequest.class);
+        spi.record(GridNearAtomicMultipleUpdateRequest.class, GridNearAtomicSingleUpdateRequest.class);
 
         final IgniteCache<Integer, Integer> cache = ignite3.cache(null);
 
@@ -469,10 +469,10 @@ public class IgniteCacheClientNodeChangingTopologyTest extends GridCommonAbstrac
         TestCommunicationSpi spi = (TestCommunicationSpi)ignite2.configuration().getCommunicationSpi();
 
         // Block messages requests for both nodes.
-        spi.blockMessages(GridNearAtomicUpdateRequest.class, ignite0.localNode().id());
+        spi.blockMessages(GridNearAtomicMultipleUpdateRequest.class, ignite0.localNode().id());
         spi.blockMessages(GridNearAtomicSingleUpdateRequest.class, ignite0.localNode().id());
 
-        spi.blockMessages(GridNearAtomicUpdateRequest.class, ignite1.localNode().id());
+        spi.blockMessages(GridNearAtomicMultipleUpdateRequest.class, ignite1.localNode().id());
         spi.blockMessages(GridNearAtomicSingleUpdateRequest.class, ignite1.localNode().id());
 
         final IgniteCache<Integer, Integer> cache = ignite2.cache(null);

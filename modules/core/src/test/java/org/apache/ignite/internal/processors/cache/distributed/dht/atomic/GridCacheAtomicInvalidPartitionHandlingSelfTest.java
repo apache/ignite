@@ -478,9 +478,9 @@ public class GridCacheAtomicInvalidPartitionHandlingSelfTest extends GridCommonA
             Object origMsg = msg.message();
 
             return delay && (
-                (origMsg instanceof GridNearAtomicUpdateRequest) ||
+                (origMsg instanceof GridNearAtomicMultipleUpdateRequest) ||
                 (origMsg instanceof GridNearAtomicSingleUpdateRequest) ||
-                (origMsg instanceof GridDhtAtomicUpdateRequest) ||
+                (origMsg instanceof GridDhtAtomicMultipleUpdateRequest) ||
                 (origMsg instanceof GridDhtAtomicSingleUpdateRequest)
             );
         }

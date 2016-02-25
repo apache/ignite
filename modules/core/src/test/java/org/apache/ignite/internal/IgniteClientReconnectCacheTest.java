@@ -50,7 +50,7 @@ import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.events.Event;
 import org.apache.ignite.internal.managers.communication.GridIoMessage;
 import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
-import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridNearAtomicUpdateResponse;
+import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridNearAtomicMultipleUpdateResponse;
 import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridNearAtomicSingleUpdateResponse;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsFullMessage;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearGetResponse;
@@ -816,7 +816,7 @@ public class IgniteClientReconnectCacheTest extends IgniteClientReconnectAbstrac
 
                         if (ccfg.getAtomicityMode() == ATOMIC)
                             checkOperationInProgressFails(client, ccfg, F.<Class<?>>asList(
-                                GridNearAtomicUpdateResponse.class, GridNearAtomicSingleUpdateResponse.class),
+                                GridNearAtomicMultipleUpdateResponse.class, GridNearAtomicSingleUpdateResponse.class),
                                 putOp);
                         else
                             checkOperationInProgressFails(client, ccfg, GridNearTxPrepareResponse.class, putOp);

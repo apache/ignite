@@ -266,7 +266,7 @@ public class GridDhtAtomicUpdateFuture extends GridFutureAdapter<Void> implement
                             cctx.deploymentEnabled(),
                             this.updateReq.keepBinary());
                     else
-                        updateReq = new GridDhtAtomicUpdateRequest(
+                        updateReq = new GridDhtAtomicMultipleUpdateRequest(
                             cctx.cacheId(),
                             nodeId,
                             futVer,
@@ -362,7 +362,7 @@ public class GridDhtAtomicUpdateFuture extends GridFutureAdapter<Void> implement
                         cctx.deploymentEnabled(),
                         this.updateReq.keepBinary());
                 else
-                    updateReq = new GridDhtAtomicUpdateRequest(
+                    updateReq = new GridDhtAtomicMultipleUpdateRequest(
                         cctx.cacheId(),
                         nodeId,
                         futVer,

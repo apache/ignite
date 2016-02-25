@@ -27,10 +27,10 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.managers.communication.GridIoMessage;
-import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridDhtAtomicUpdateRequest;
+import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridDhtAtomicMultipleUpdateRequest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridDhtAtomicSingleUpdateRequest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridNearAtomicSingleUpdateRequest;
-import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridNearAtomicUpdateRequest;
+import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridNearAtomicMultipleUpdateRequest;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.spi.IgniteSpiException;
@@ -139,9 +139,9 @@ public class GridCacheAtomicMessageCountSelfTest extends GridCommonAbstractTest 
 
             TestCommunicationSpi commSpi = (TestCommunicationSpi)grid(0).configuration().getCommunicationSpi();
 
-            commSpi.registerMessage(GridNearAtomicUpdateRequest.class);
+            commSpi.registerMessage(GridNearAtomicMultipleUpdateRequest.class);
             commSpi.registerMessage(GridNearAtomicSingleUpdateRequest.class);
-            commSpi.registerMessage(GridDhtAtomicUpdateRequest.class);
+            commSpi.registerMessage(GridDhtAtomicMultipleUpdateRequest.class);
             commSpi.registerMessage(GridDhtAtomicSingleUpdateRequest.class);
 
             int putCnt = 15;
@@ -201,7 +201,7 @@ public class GridCacheAtomicMessageCountSelfTest extends GridCommonAbstractTest 
      * @return Count.
      */
     private int nearRequestsCount(TestCommunicationSpi commSpi) {
-        return commSpi.messageCount(GridNearAtomicUpdateRequest.class) +
+        return commSpi.messageCount(GridNearAtomicMultipleUpdateRequest.class) +
             commSpi.messageCount(GridNearAtomicSingleUpdateRequest.class);
     }
 
@@ -212,7 +212,7 @@ public class GridCacheAtomicMessageCountSelfTest extends GridCommonAbstractTest 
      * @return Count.
      */
     private int dhtRequestsCount(TestCommunicationSpi commSpi) {
-        return commSpi.messageCount(GridDhtAtomicUpdateRequest.class) +
+        return commSpi.messageCount(GridDhtAtomicMultipleUpdateRequest.class) +
             commSpi.messageCount(GridDhtAtomicSingleUpdateRequest.class);
     }
 

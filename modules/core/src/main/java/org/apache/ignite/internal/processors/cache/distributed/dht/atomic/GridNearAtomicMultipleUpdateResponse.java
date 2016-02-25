@@ -47,7 +47,7 @@ import org.jetbrains.annotations.Nullable;
 /**
  * DHT atomic cache near update response.
  */
-public class GridNearAtomicUpdateResponse extends GridCacheMessage implements GridCacheDeployable, GridNearAtomicUpdateResponseInterface {
+public class GridNearAtomicMultipleUpdateResponse extends GridCacheMessage implements GridCacheDeployable, GridNearAtomicUpdateResponseInterface {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -107,7 +107,7 @@ public class GridNearAtomicUpdateResponse extends GridCacheMessage implements Gr
     /**
      * Empty constructor required by {@link Externalizable}.
      */
-    public GridNearAtomicUpdateResponse() {
+    public GridNearAtomicMultipleUpdateResponse() {
         // No-op.
     }
 
@@ -117,7 +117,7 @@ public class GridNearAtomicUpdateResponse extends GridCacheMessage implements Gr
      * @param futVer Future version.
      * @param addDepInfo Deployment info flag.
      */
-    public GridNearAtomicUpdateResponse(int cacheId, UUID nodeId, GridCacheVersion futVer, boolean addDepInfo) {
+    public GridNearAtomicMultipleUpdateResponse(int cacheId, UUID nodeId, GridCacheVersion futVer, boolean addDepInfo) {
         assert futVer != null;
 
         this.cacheId = cacheId;
@@ -555,7 +555,7 @@ public class GridNearAtomicUpdateResponse extends GridCacheMessage implements Gr
 
         }
 
-        return reader.afterMessageRead(GridNearAtomicUpdateResponse.class);
+        return reader.afterMessageRead(GridNearAtomicMultipleUpdateResponse.class);
     }
 
     /** {@inheritDoc} */
@@ -570,6 +570,6 @@ public class GridNearAtomicUpdateResponse extends GridCacheMessage implements Gr
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(GridNearAtomicUpdateResponse.class, this, "parent");
+        return S.toString(GridNearAtomicMultipleUpdateResponse.class, this, "parent");
     }
 }

@@ -252,8 +252,8 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
             }
         });
 
-        ctx.io().addHandler(ctx.cacheId(), GridNearAtomicUpdateRequest.class, new CI2<UUID, GridNearAtomicUpdateRequest>() {
-            @Override public void apply(UUID nodeId, GridNearAtomicUpdateRequest req) {
+        ctx.io().addHandler(ctx.cacheId(), GridNearAtomicMultipleUpdateRequest.class, new CI2<UUID, GridNearAtomicMultipleUpdateRequest>() {
+            @Override public void apply(UUID nodeId, GridNearAtomicMultipleUpdateRequest req) {
                 processNearAtomicUpdateRequest(nodeId, req);
             }
         });
@@ -264,8 +264,8 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
             }
         });
 
-        ctx.io().addHandler(ctx.cacheId(), GridNearAtomicUpdateResponse.class, new CI2<UUID, GridNearAtomicUpdateResponse>() {
-            @Override public void apply(UUID nodeId, GridNearAtomicUpdateResponse res) {
+        ctx.io().addHandler(ctx.cacheId(), GridNearAtomicMultipleUpdateResponse.class, new CI2<UUID, GridNearAtomicMultipleUpdateResponse>() {
+            @Override public void apply(UUID nodeId, GridNearAtomicMultipleUpdateResponse res) {
                 processNearAtomicUpdateResponse(nodeId, res);
             }
         });
@@ -276,8 +276,8 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
             }
         });
 
-        ctx.io().addHandler(ctx.cacheId(), GridDhtAtomicUpdateRequest.class, new CI2<UUID, GridDhtAtomicUpdateRequest>() {
-            @Override public void apply(UUID nodeId, GridDhtAtomicUpdateRequest req) {
+        ctx.io().addHandler(ctx.cacheId(), GridDhtAtomicMultipleUpdateRequest.class, new CI2<UUID, GridDhtAtomicMultipleUpdateRequest>() {
+            @Override public void apply(UUID nodeId, GridDhtAtomicMultipleUpdateRequest req) {
                 processDhtAtomicUpdateRequest(nodeId, req);
             }
         });
@@ -288,8 +288,8 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
             }
         });
 
-        ctx.io().addHandler(ctx.cacheId(), GridDhtAtomicUpdateResponse.class, new CI2<UUID, GridDhtAtomicUpdateResponse>() {
-            @Override public void apply(UUID nodeId, GridDhtAtomicUpdateResponse res) {
+        ctx.io().addHandler(ctx.cacheId(), GridDhtAtomicMultipleUpdateResponse.class, new CI2<UUID, GridDhtAtomicMultipleUpdateResponse>() {
+            @Override public void apply(UUID nodeId, GridDhtAtomicMultipleUpdateResponse res) {
                 processDhtAtomicUpdateResponse(nodeId, res);
             }
         });
@@ -1365,7 +1365,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
             res = new GridNearAtomicSingleUpdateResponse(ctx.cacheId(), nodeId, req.futureVersion(),
                 ctx.deploymentEnabled());
         else
-            res = new GridNearAtomicUpdateResponse(ctx.cacheId(), nodeId, req.futureVersion(),
+            res = new GridNearAtomicMultipleUpdateResponse(ctx.cacheId(), nodeId, req.futureVersion(),
                 ctx.deploymentEnabled());
 
         List<KeyCacheObject> keys = req.keys();
@@ -2831,7 +2831,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
             res = new GridDhtAtomicSingleUpdateResponse(ctx.cacheId(), req.futureVersion(),
                 ctx.deploymentEnabled());
         else
-            res = new GridDhtAtomicUpdateResponse(ctx.cacheId(), req.futureVersion(),
+            res = new GridDhtAtomicMultipleUpdateResponse(ctx.cacheId(), req.futureVersion(),
                 ctx.deploymentEnabled());
 
         Boolean replicate = ctx.isDrEnabled();

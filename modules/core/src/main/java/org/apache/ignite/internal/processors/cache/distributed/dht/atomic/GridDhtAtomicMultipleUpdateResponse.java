@@ -41,7 +41,7 @@ import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 /**
  * DHT atomic cache backup update response.
  */
-public class GridDhtAtomicUpdateResponse extends GridCacheMessage implements GridCacheDeployable, GridDhtAtomicUpdateResponseInterface {
+public class GridDhtAtomicMultipleUpdateResponse extends GridCacheMessage implements GridCacheDeployable, GridDhtAtomicUpdateResponseInterface {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -71,7 +71,7 @@ public class GridDhtAtomicUpdateResponse extends GridCacheMessage implements Gri
     /**
      * Empty constructor required by {@link Externalizable}.
      */
-    public GridDhtAtomicUpdateResponse() {
+    public GridDhtAtomicMultipleUpdateResponse() {
         // No-op.
     }
 
@@ -80,7 +80,7 @@ public class GridDhtAtomicUpdateResponse extends GridCacheMessage implements Gri
      * @param futVer Future version.
      * @param addDepInfo Deployment info.
      */
-    public GridDhtAtomicUpdateResponse(int cacheId, GridCacheVersion futVer, boolean addDepInfo) {
+    public GridDhtAtomicMultipleUpdateResponse(int cacheId, GridCacheVersion futVer, boolean addDepInfo) {
         this.cacheId = cacheId;
         this.futVer = futVer;
         this.addDepInfo = addDepInfo;
@@ -259,7 +259,7 @@ public class GridDhtAtomicUpdateResponse extends GridCacheMessage implements Gri
 
         }
 
-        return reader.afterMessageRead(GridDhtAtomicUpdateResponse.class);
+        return reader.afterMessageRead(GridDhtAtomicMultipleUpdateResponse.class);
     }
 
     /** {@inheritDoc} */
@@ -274,6 +274,6 @@ public class GridDhtAtomicUpdateResponse extends GridCacheMessage implements Gri
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(GridDhtAtomicUpdateResponse.class, this);
+        return S.toString(GridDhtAtomicMultipleUpdateResponse.class, this);
     }
 }
