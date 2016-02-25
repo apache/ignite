@@ -230,8 +230,6 @@ namespace Apache.Ignite.Core.Impl.Binary
         {
             Debug.Assert(stream != null);
 
-            ThrowIfUnsupported();
-
             var schemaSize = SchemaFieldCount;
 
             if (schemaSize == 0)
@@ -271,8 +269,6 @@ namespace Apache.Ignite.Core.Impl.Binary
         public BinaryObjectSchemaField[] ReadSchema(IBinaryStream stream, int position)
         {
             Debug.Assert(stream != null);
-
-            ThrowIfUnsupported();
 
             var schemaSize = SchemaFieldCount;
 
@@ -450,8 +446,6 @@ namespace Apache.Ignite.Core.Impl.Binary
             else
                 hdr = new BinaryObjectHeader(stream);
 
-            hdr.ThrowIfUnsupported();
-
             // Only one of the flags can be set
             var f = hdr.Flags;
             Debug.Assert((f & (Flag.OffsetOneByte | Flag.OffsetTwoBytes)) !=
@@ -507,16 +501,6 @@ namespace Apache.Ignite.Core.Impl.Binary
         public static bool operator !=(BinaryObjectHeader left, BinaryObjectHeader right)
         {
             return !left.Equals(right);
-        }
-
-        /// <summary>
-        /// Throws an exception if current header represents unsupported mode.
-        /// </summary>
-        private void ThrowIfUnsupported()
-        {
-            // Compact schema is not supported
-            if (IsCompactFooter)
-                throw new NotSupportedException("Compact binary object footer is not supported in Ignite.NET.");
         }
     }
 }

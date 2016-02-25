@@ -719,6 +719,7 @@ namespace Apache.Ignite.Core.Impl.Binary
                     _curHdr = hdr;
                     _curPos = pos;
                     
+                    // TODO: Where do we get schema for compact footers?
                     _curSchema = desc.Schema.Get(hdr.SchemaId);
 
                     if (_curSchema == null)
