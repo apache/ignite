@@ -45,9 +45,6 @@ public class PlatformDotNetBinaryTypeConfiguration {
     /** Enum flag. */
     private boolean isEnum;
 
-    /** Raw mode flag. */
-    private boolean serializeRaw;
-
     /**
      * Default constructor.
      */
@@ -65,9 +62,9 @@ public class PlatformDotNetBinaryTypeConfiguration {
         idMapper = cfg.getIdMapper();
         serializer = cfg.getSerializer();
         affinityKeyFieldName = cfg.getAffinityKeyFieldName();
+        //noinspection deprecation
         keepDeserialized = cfg.isKeepDeserialized();
         isEnum = cfg.isEnum();
-        serializeRaw = cfg.serializeRaw();
     }
 
     /**
@@ -188,24 +185,6 @@ public class PlatformDotNetBinaryTypeConfiguration {
      */
     public void setEnum(boolean isEnum) {
         this.isEnum = isEnum;
-    }
-
-    /**
-     * Gets whether this type should be serialized in raw mode.
-     *
-     * @return {@code True} if enum.
-     */
-    public boolean serializeRaw() {
-        return serializeRaw;
-    }
-
-    /**
-     * Sets whether this type should be serialized in raw mode.
-     *
-     * @param serializeRaw {@code True} if raw mode.
-     */
-    public void setSerializeRaw(boolean serializeRaw) {
-        this.serializeRaw = serializeRaw;
     }
 
     /** {@inheritDoc} */

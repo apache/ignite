@@ -1734,7 +1734,6 @@ namespace Apache.Ignite.Core.Impl.Binary
                             AffinityKeyFieldName = reader.ReadString(),
                             KeepDeserialized = reader.ReadObject<bool?>(),
                             IsEnum = reader.ReadBoolean(),
-                            SerializeRaw = reader.ReadBoolean()
                         });
                     }
                 }

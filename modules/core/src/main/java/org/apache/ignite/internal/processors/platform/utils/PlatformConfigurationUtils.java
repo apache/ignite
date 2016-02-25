@@ -79,7 +79,6 @@ import java.util.Map;
                         writer.writeString(typ.getAffinityKeyFieldName());
                         writer.writeObject(typ.getKeepDeserialized());
                         writer.writeBoolean(typ.isEnum());
-                        writer.writeBoolean(typ.serializeRaw());
                     }
                 });
 
@@ -594,12 +593,7 @@ import java.util.Map;
                 w.writeInt(multiFinder.getMulticastPort());
                 w.writeInt(multiFinder.getAddressRequestAttempts());
                 w.writeInt(multiFinder.getResponseWaitTime());
-
-                Integer ttl = multiFinder.getTimeToLive();
-                w.writeBoolean(ttl != null);
-
-                if (ttl != null)
-                    w.writeInt(ttl);
+                w.writeInt(multiFinder.getTimeToLive());
             }
         }
         else {

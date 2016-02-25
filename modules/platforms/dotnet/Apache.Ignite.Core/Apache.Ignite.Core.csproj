@@ -328,7 +328,7 @@
     <Compile Include="Impl\Binary\BinaryReaderHandleDictionary.cs" />
     <Compile Include="Impl\Binary\BinaryReader.cs" />
     <Compile Include="Impl\Binary\BinaryReflectiveActions.cs" />
-    <Compile Include="Impl\Binary\BinaryReflectiveSerializer.cs" />
+    <Compile Include="Binary\BinaryReflectiveSerializer.cs" />
     <Compile Include="Impl\Binary\Binary.cs" />
     <Compile Include="Impl\Binary\Structure\BinaryStructureTracker.cs" />
     <Compile Include="Impl\Binary\BinarySurrogateTypeDescriptor.cs" />
