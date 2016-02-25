@@ -48,10 +48,6 @@ public class IgniteConfigPermutationsTestSuite extends TestSuite {
      */
     public static TestSuite createMultiNodeTestSuite(Class<? extends IgniteCacheConfigPermutationsAbstractTest> cls,
         TestsConfiguration cfg, int testedNodeCnt, boolean withClients) {
-        if (!IgniteCacheConfigPermutationsAbstractTest.class.isAssignableFrom(cls))
-            throw new IllegalArgumentException("An instance of "
-                + IgniteCacheConfigPermutationsAbstractTest.class.getName() + " expected, but was: " + cls);
-
         TestSuite suite = new TestSuite();
 
         if (cfg.gridCount() < testedNodeCnt)

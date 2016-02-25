@@ -69,7 +69,10 @@ public class ConfigPermutationsTestSuiteBuilder {
     private int backups = -1;
 
     /** */
-    private IgnitePredicate<IgniteConfiguration>[] filters;
+    private IgnitePredicate<IgniteConfiguration>[] igniteCfgFilters;
+
+    /** */
+    private IgnitePredicate<CacheConfiguration>[] cacheCfgFilters;
 
     /**
      * @param name Name.
@@ -100,8 +103,11 @@ public class ConfigPermutationsTestSuiteBuilder {
             if (!passIgniteConfigFilter(igniteCfgPermutation))
                 continue;
 
-            if (cacheParams == null)
-                suite.addTest(build(igniteCfgPermutation, null, true));
+            if (cacheParams == null) {
+                TestSuite addedSuite = build(igniteCfgPermutation, null, true);
+
+                suite.addTest(addedSuite);
+            }
             else {
                 PermutationsIterator cacheCfgIter;
 
@@ -112,6 +118,9 @@ public class ConfigPermutationsTestSuiteBuilder {
 
                 for (; cacheCfgIter.hasNext(); ) {
                     int[] cacheCfgPermutation = cacheCfgIter.next();
+
+                    if (!passCacheConfigFilter(cacheCfgPermutation))
+                        continue;
 
                     // Stop all grids before starting new ignite configuration.
                     boolean stopNodes = !cacheCfgIter.hasNext();
@@ -135,8 +144,27 @@ public class ConfigPermutationsTestSuiteBuilder {
 
         IgniteConfiguration cfg = factory.getConfiguration(null, null);
 
-        if (filters != null) {
-            for (IgnitePredicate<IgniteConfiguration> filter : filters) {
+        if (igniteCfgFilters != null) {
+            for (IgnitePredicate<IgniteConfiguration> filter : igniteCfgFilters) {
+                if (!filter.apply(cfg))
+                    return false;
+            }
+        }
+
+        return true;
+    }
+
+    /**
+     * @param permutation Permutation.
+     * @return {@code True} if permutation pass filters.
+     */
+    private boolean passCacheConfigFilter(int[] permutation) {
+        ConfigPermutationsFactory factory = new ConfigPermutationsFactory(null, null, cacheParams, permutation);
+
+        CacheConfiguration cfg = factory.cacheConfiguration(null);
+
+        if (cacheCfgFilters != null) {
+            for (IgnitePredicate<CacheConfiguration> filter : cacheCfgFilters) {
                 if (!filter.apply(cfg))
                     return false;
             }
@@ -252,7 +280,7 @@ public class ConfigPermutationsTestSuiteBuilder {
     }
 
     /**
-     * @param singleIgniteParam Param
+     * @param singleIgniteParam Param.
      * @return {@code this} for chaining.
      */
     public ConfigPermutationsTestSuiteBuilder specifyIgniteParam(int... singleIgniteParam) {
@@ -262,7 +290,7 @@ public class ConfigPermutationsTestSuiteBuilder {
     }
 
     /**
-     * @param singleParam Param
+     * @param singleParam Param.
      * @return {@code this} for chaining.
      */
     public ConfigPermutationsTestSuiteBuilder specifyCacheParam(int... singleParam) {
@@ -276,7 +304,17 @@ public class ConfigPermutationsTestSuiteBuilder {
      * @return {@code this} for chaining.
      */
     public ConfigPermutationsTestSuiteBuilder withIgniteConfigFilters(IgnitePredicate<IgniteConfiguration>... filters) {
-        this.filters = filters;
+        igniteCfgFilters = filters;
+
+        return this;
+    }
+
+    /**
+     * @param filters Ignite configuration filters.
+     * @return {@code this} for chaining.
+     */
+    public ConfigPermutationsTestSuiteBuilder withCacheConfigFilters(IgnitePredicate<CacheConfiguration>... filters) {
+        cacheCfgFilters = filters;
 
         return this;
     }
