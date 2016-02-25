@@ -47,6 +47,9 @@ public final class IgfsFileInfo implements Externalizable {
     /** ID of the trash directory. */
     public static final IgniteUuid TRASH_ID = new IgniteUuid(new UUID(0, 1), 0);
 
+    /** Special access time value, indicating that the modification time value should be taken. */
+    private static final long ACCESS_TIME_TAKE_MODIFICATION_TIME = -1L;
+
     /** Info ID. */
     private IgniteUuid id;
 
@@ -100,9 +103,8 @@ public final class IgfsFileInfo implements Externalizable {
      * @param id ID.
      */
     IgfsFileInfo(IgniteUuid id) {
-        this(true, id, 0, 0, null, null, null, null, false, 0L, System.currentTimeMillis(), false);
-
-        this.accessTime = this.modificationTime;
+        this(true, id, 0, 0, null, null, null, null, false, ACCESS_TIME_TAKE_MODIFICATION_TIME,
+            System.currentTimeMillis(), false);
     }
 
     /**
@@ -111,7 +113,7 @@ public final class IgfsFileInfo implements Externalizable {
      *
      * @param isDir Constructs directory info if {@code true} or file info if {@code false}.
      * @param props Meta properties to set.
-     * @param accessTime The modification time.
+     * @param accessTime The access time.
      * @param modificationTime The modification time.
      */
     public IgfsFileInfo(boolean isDir, @Nullable Map<String, String> props, long accessTime, long modificationTime) {
@@ -125,9 +127,7 @@ public final class IgfsFileInfo implements Externalizable {
      * @param listing Listing.
      */
     IgfsFileInfo(Map<String, IgfsListingEntry> listing) {
-        this(true, null, 0, 0, null, listing, null, null, false, 0L, System.currentTimeMillis(), false);
-
-        this.accessTime = this.modificationTime;
+        this(listing, (Map<String,String>)null);
     }
 
     /**
@@ -137,9 +137,8 @@ public final class IgfsFileInfo implements Externalizable {
      * @param props The properties to set for the new directory.
      */
     IgfsFileInfo(@Nullable Map<String, IgfsListingEntry> listing, @Nullable Map<String,String> props) {
-        this(true/*dir*/, null, 0, 0, null, listing, props, null, false, 0L, System.currentTimeMillis(), false);
-
-        this.accessTime = this.modificationTime;
+        this(true/*dir*/, null, 0, 0, null, listing, props, null, false, ACCESS_TIME_TAKE_MODIFICATION_TIME,
+            System.currentTimeMillis(), false);
     }
 
     /**
@@ -151,7 +150,7 @@ public final class IgfsFileInfo implements Externalizable {
      * @param lockId Lock ID.
      * @param props Properties.
      * @param evictExclude Evict exclude flag.
-     * @param accessTime The modification time.
+     * @param accessTime The access time.
      * @param modificationTime The modification time.
      */
     public IgfsFileInfo(int blockSize, long len, @Nullable IgniteUuid affKey, @Nullable IgniteUuid lockId,
@@ -201,7 +200,7 @@ public final class IgfsFileInfo implements Externalizable {
      * @param len Size of a file.
      * @param props File properties to set.
      * @param evictExclude Evict exclude flag.
-     * @param accessTime The modification time.
+     * @param accessTime The access time.
      * @param modificationTime The modification time.
      */
     IgfsFileInfo(int blockSize, long len, boolean evictExclude, @Nullable Map<String, String> props,
@@ -245,7 +244,7 @@ public final class IgfsFileInfo implements Externalizable {
      * @param props File properties.
      * @param lockId Lock ID.
      * @param cpProps Flag to copy properties map.
-     * @param accessTime The modification time.
+     * @param accessTime The access time.
      * @param modificationTime Last modification time.
      * @param evictExclude Evict exclude flag.
      */
@@ -298,7 +297,7 @@ public final class IgfsFileInfo implements Externalizable {
             fileMap = new IgfsFileMap();
 
         this.fileMap = fileMap;
-        this.accessTime = accessTime;
+        this.accessTime = accessTime == ACCESS_TIME_TAKE_MODIFICATION_TIME ? modificationTime : accessTime;
         this.modificationTime = modificationTime;
 
         // Always make a copy of passed properties collection to escape concurrent modifications.

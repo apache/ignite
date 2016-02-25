@@ -1611,7 +1611,7 @@ public abstract class IgfsDualAbstractSelfTest extends IgfsAbstractSelfTest {
     }
 
     /**
-     * Checks file modification time equality in the file itself and in the same file found through
+     * Checks file access & modification time equality in the file itself and in the same file found through
      * the listing of its parent.
      *
      * @param fs The file system.
