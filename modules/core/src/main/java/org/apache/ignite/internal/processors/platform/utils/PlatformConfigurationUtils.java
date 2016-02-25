@@ -79,6 +79,7 @@ import java.util.Map;
                         writer.writeString(typ.getAffinityKeyFieldName());
                         writer.writeObject(typ.getKeepDeserialized());
                         writer.writeBoolean(typ.isEnum());
+                        writer.writeBoolean(typ.serializeRaw());
                     }
                 });
 

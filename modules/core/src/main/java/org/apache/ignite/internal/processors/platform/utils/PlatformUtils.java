@@ -783,20 +783,6 @@ public class PlatformUtils {
             marsh.setContext(new MarshallerContextImpl(null));
 
             ctx.configure(marsh, new IgniteConfiguration());
-            /**
-            writeNullableCollection(writer, binaryCfg.getTypesConfiguration(),
-                new PlatformWriterClosure<PlatformDotNetBinaryTypeConfiguration>() {
-                @Override public void write(BinaryRawWriterEx writer, PlatformDotNetBinaryTypeConfiguration typ) {
-                    writer.writeString(typ.getTypeName());
-                    writer.writeString(typ.getNameMapper());
-                    writer.writeString(typ.getIdMapper());
-                    writer.writeString(typ.getSerializer());
-                    writer.writeString(typ.getAffinityKeyFieldName());
-                    writer.writeObject(typ.getKeepDeserialized());
-                    writer.writeBoolean(typ.isEnum());
-                    writer.writeBoolean(typ.serializeRaw());
-                }
-            });*/
 
             return new GridBinaryMarshaller(ctx);
         }
