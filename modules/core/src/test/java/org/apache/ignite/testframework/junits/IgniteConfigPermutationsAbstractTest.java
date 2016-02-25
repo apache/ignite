@@ -317,9 +317,8 @@ public abstract class IgniteConfigPermutationsAbstractTest extends GridCommonAbs
 
             TestObject val = (TestObject)o;
 
-            return getClass().equals(o.getClass()) && this.val == val.val && enumVal == val.enumVal 
+            return getClass().equals(o.getClass()) && this.val == val.val && enumVal == val.enumVal
                 && strVal.equals(val.strVal);
-
         }
 
         /** {@inheritDoc} */
