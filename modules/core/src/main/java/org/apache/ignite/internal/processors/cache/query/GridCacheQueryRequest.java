@@ -30,6 +30,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgniteReducer;
@@ -318,16 +319,16 @@ public class GridCacheQueryRequest extends GridCacheMessage implements GridCache
         Marshaller mrsh = ctx.marshaller();
 
         if (keyValFilterBytes != null && keyValFilter == null)
-            keyValFilter = mrsh.unmarshal(keyValFilterBytes, ldr);
+            keyValFilter = mrsh.unmarshal(keyValFilterBytes, U.resolveClassLoader(ldr, ctx.gridConfig()));
 
         if (rdcBytes != null && rdc == null)
             rdc = mrsh.unmarshal(rdcBytes, ldr);
 
         if (transBytes != null && trans == null)
-            trans = mrsh.unmarshal(transBytes, ldr);
+            trans = mrsh.unmarshal(transBytes, U.resolveClassLoader(ldr, ctx.gridConfig()));
 
         if (argsBytes != null && args == null)
-            args = mrsh.unmarshal(argsBytes, ldr);
+            args = mrsh.unmarshal(argsBytes, U.resolveClassLoader(ldr, ctx.gridConfig()));
     }
 
     /** {@inheritDoc} */
@@ -342,8 +343,10 @@ public class GridCacheQueryRequest extends GridCacheMessage implements GridCache
     void beforeLocalExecution(GridCacheContext ctx) throws IgniteCheckedException {
         Marshaller marsh = ctx.marshaller();
 
-        rdc = rdc != null ? marsh.<IgniteReducer<Object, Object>>unmarshal(marsh.marshal(rdc), null) : null;
-        trans = trans != null ? marsh.<IgniteClosure<Object, Object>>unmarshal(marsh.marshal(trans), null) : null;
+        rdc = rdc != null ? marsh.<IgniteReducer<Object, Object>>unmarshal(marsh.marshal(rdc),
+            U.resolveClassLoader(ctx.gridConfig())) : null;
+        trans = trans != null ? marsh.<IgniteClosure<Object, Object>>unmarshal(marsh.marshal(trans),
+            U.resolveClassLoader(ctx.gridConfig())) : null;
     }
 
     /**

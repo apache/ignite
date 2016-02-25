@@ -3779,6 +3779,10 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
             old.cached(entry);
             old.filters(filter);
 
+            // Keep old skipStore and keepBinary flags.
+            old.skipStore(skipStore);
+            old.keepBinary(keepBinary);
+
             // Update ttl if specified.
             if (drTtl >= 0L) {
                 assert drExpireTime >= 0L;
