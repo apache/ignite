@@ -131,32 +131,22 @@ public class GridNearAtomicUpdateResponse extends GridCacheMessage implements Gr
         return CACHE_MSG_IDX;
     }
 
-    /**
-     * @return Node ID this response should be sent to.
-     */
+    /** {@inheritDoc} */
     @Override public UUID nodeId() {
         return nodeId;
     }
 
-    /**
-     * @param nodeId Node ID.
-     */
+    /** {@inheritDoc} */
     @Override public void nodeId(UUID nodeId) {
         this.nodeId = nodeId;
     }
 
-    /**
-     * @return Future version.
-     */
+    /** {@inheritDoc} */
     @Override public GridCacheVersion futureVersion() {
         return futVer;
     }
 
-    /**
-     * Sets update error.
-     *
-     * @param err Error.
-     */
+    /** {@inheritDoc} */
     @Override public void error(IgniteCheckedException err) {
         this.err = err;
     }
@@ -166,50 +156,33 @@ public class GridNearAtomicUpdateResponse extends GridCacheMessage implements Gr
         return err;
     }
 
-    /**
-     * @return Collection of failed keys.
-     */
+    /** {@inheritDoc} */
     @Override public Collection<KeyCacheObject> failedKeys() {
         return failedKeys;
     }
 
-    /**
-     * @return Return value.
-     */
+    /** {@inheritDoc} */
     @Override public GridCacheReturn returnValue() {
         return ret;
     }
 
-    /**
-     * @param ret Return value.
-     */
+    /** {@inheritDoc} */
     @Override @SuppressWarnings("unchecked")
     public void returnValue(GridCacheReturn ret) {
         this.ret = ret;
     }
 
-    /**
-     * @param remapKeys Remap keys.
-     */
+    /** {@inheritDoc} */
     @Override public void remapKeys(List<KeyCacheObject> remapKeys) {
         this.remapKeys = remapKeys;
     }
 
-    /**
-     * @return Remap keys.
-     */
+    /** {@inheritDoc} */
     @Override public Collection<KeyCacheObject> remapKeys() {
         return remapKeys;
     }
 
-    /**
-     * Adds value to be put in near cache on originating node.
-     *
-     * @param keyIdx Key index.
-     * @param val Value.
-     * @param ttl TTL for near cache update.
-     * @param expireTime Expire time for near cache update.
-     */
+    /** {@inheritDoc} */
     @Override public void addNearValue(int keyIdx,
         @Nullable CacheObject val,
         long ttl,
@@ -225,11 +198,7 @@ public class GridNearAtomicUpdateResponse extends GridCacheMessage implements Gr
         nearVals.add(val);
     }
 
-    /**
-     * @param keyIdx Key index.
-     * @param ttl TTL for near cache update.
-     * @param expireTime Expire time for near cache update.
-     */
+    /** {@inheritDoc} */
     @Override @SuppressWarnings("ForLoopReplaceableByForEach")
     public void addNearTtl(int keyIdx, long ttl, long expireTime) {
         if (ttl >= 0) {
@@ -257,10 +226,7 @@ public class GridNearAtomicUpdateResponse extends GridCacheMessage implements Gr
             nearExpireTimes.add(expireTime);
     }
 
-    /**
-     * @param idx Index.
-     * @return Expire time for near cache update.
-     */
+    /** {@inheritDoc} */
     @Override public long nearExpireTime(int idx) {
         if (nearExpireTimes != null) {
             assert idx >= 0 && idx < nearExpireTimes.size();
@@ -271,10 +237,7 @@ public class GridNearAtomicUpdateResponse extends GridCacheMessage implements Gr
         return -1L;
     }
 
-    /**
-     * @param idx Index.
-     * @return TTL for near cache update.
-     */
+    /** {@inheritDoc} */
     @Override public long nearTtl(int idx) {
         if (nearTtls != null) {
             assert idx >= 0 && idx < nearTtls.size();
@@ -285,23 +248,17 @@ public class GridNearAtomicUpdateResponse extends GridCacheMessage implements Gr
         return -1L;
     }
 
-    /**
-     * @param nearVer Version generated on primary node to be used for originating node's near cache update.
-     */
+    /** {@inheritDoc} */
     @Override public void nearVersion(GridCacheVersion nearVer) {
         this.nearVer = nearVer;
     }
 
-    /**
-     * @return Version generated on primary node to be used for originating node's near cache update.
-     */
+    /** {@inheritDoc} */
     @Override public GridCacheVersion nearVersion() {
         return nearVer;
     }
 
-    /**
-     * @param keyIdx Index of key for which update was skipped
-     */
+    /** {@inheritDoc} */
     @Override public void addSkippedIndex(int keyIdx) {
         if (nearSkipIdxs == null)
             nearSkipIdxs = new ArrayList<>();
@@ -311,34 +268,22 @@ public class GridNearAtomicUpdateResponse extends GridCacheMessage implements Gr
         addNearTtl(keyIdx, -1L, -1L);
     }
 
-    /**
-     * @return Indexes of keys for which update was skipped
-     */
+    /** {@inheritDoc} */
     @Override @Nullable public List<Integer> skippedIndexes() {
         return nearSkipIdxs;
     }
 
-    /**
-     * @return Indexes of keys for which values were generated on primary node.
-     */
+    /** {@inheritDoc} */
     @Override @Nullable public List<Integer> nearValuesIndexes() {
         return nearValsIdxs;
     }
 
-    /**
-     * @param idx Index.
-     * @return Value generated on primary node which should be put to originating node's near cache.
-     */
+    /** {@inheritDoc} */
     @Override @Nullable public CacheObject nearValue(int idx) {
         return nearVals.get(idx);
     }
 
-    /**
-     * Adds key to collection of failed keys.
-     *
-     * @param key Key to add.
-     * @param e Error cause.
-     */
+    /** {@inheritDoc} */
     @Override public synchronized void addFailedKey(KeyCacheObject key, Throwable e) {
         if (failedKeys == null)
             failedKeys = new ConcurrentLinkedQueue<>();
@@ -351,12 +296,7 @@ public class GridNearAtomicUpdateResponse extends GridCacheMessage implements Gr
         err.addSuppressed(e);
     }
 
-    /**
-     * Adds keys to collection of failed keys.
-     *
-     * @param keys Key to add.
-     * @param e Error cause.
-     */
+    /** {@inheritDoc} */
     @Override public synchronized void addFailedKeys(Collection<KeyCacheObject> keys, Throwable e) {
         if (keys != null) {
             if (failedKeys == null)
@@ -371,13 +311,7 @@ public class GridNearAtomicUpdateResponse extends GridCacheMessage implements Gr
         err.addSuppressed(e);
     }
 
-    /**
-     * Adds keys to collection of failed keys.
-     *
-     * @param keys Key to add.
-     * @param e Error cause.
-     * @param ctx Context.
-     */
+    /** {@inheritDoc} */
     @Override public synchronized void addFailedKeys(Collection<KeyCacheObject> keys, Throwable e,
         GridCacheContext ctx) {
         if (failedKeys == null)
@@ -391,8 +325,7 @@ public class GridNearAtomicUpdateResponse extends GridCacheMessage implements Gr
         err.addSuppressed(e);
     }
 
-    /** {@inheritDoc}
-     * @param ctx*/
+    /** {@inheritDoc} */
     @Override public void prepareMarshal(GridCacheSharedContext ctx) throws IgniteCheckedException {
         super.prepareMarshal(ctx);
 

@@ -91,18 +91,12 @@ public class GridDhtAtomicUpdateResponse extends GridCacheMessage implements Gri
         return CACHE_MSG_IDX;
     }
 
-    /**
-     * @return Future version.
-     */
+    /** {@inheritDoc} */
     @Override public GridCacheVersion futureVersion() {
         return futVer;
     }
 
-    /**
-     * Sets update error.
-     *
-     * @param err Error.
-     */
+    /** {@inheritDoc} */
     @Override public void onError(IgniteCheckedException err) {
         this.err = err;
     }
@@ -112,19 +106,12 @@ public class GridDhtAtomicUpdateResponse extends GridCacheMessage implements Gri
         return err;
     }
 
-    /**
-     * @return Failed keys.
-     */
+    /** {@inheritDoc} */
     @Override public Collection<KeyCacheObject> failedKeys() {
         return failedKeys;
     }
 
-    /**
-     * Adds key to collection of failed keys.
-     *
-     * @param key Key to add.
-     * @param e Error cause.
-     */
+    /** {@inheritDoc} */
     @Override public void addFailedKey(KeyCacheObject key, Throwable e) {
         if (failedKeys == null)
             failedKeys = new ArrayList<>();
@@ -137,18 +124,12 @@ public class GridDhtAtomicUpdateResponse extends GridCacheMessage implements Gri
         err.addSuppressed(e);
     }
 
-    /**
-     * @return Evicted readers.
-     */
+    /** {@inheritDoc} */
     @Override public Collection<KeyCacheObject> nearEvicted() {
         return nearEvicted;
     }
 
-    /**
-     * Adds near evicted key..
-     *
-     * @param key Evicted key.
-     */
+    /** {@inheritDoc} */
     @Override public void addNearEvicted(KeyCacheObject key) {
         if (nearEvicted == null)
             nearEvicted = new ArrayList<>();
