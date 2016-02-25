@@ -42,37 +42,38 @@ mixin chart-settings(mdl)
         .col-xs-4
             +result-toolbar
 
-.row
-    ignite-information(data-title='With SQL notebook you can')
-        ul
-            li Create any number of queries
-            li Execute and explain SQL queries
-            li Execute scan queries
-            li View data in tabular form and as charts
-    ignite-loading
-        .docs-content(ng-controller='sqlController')
-            hr
+.row(ng-controller='sqlController')
+    .docs-content
+        .row(ng-if='notebook' bs-affix style='margin-bottom: 20px;')
+            .docs-header.notebook-header
+                h1.col-sm-6(ng-hide='notebook.edit')
+                    label(style='max-width: calc(100% - 60px)') {{notebook.name}}
+                    .btn-group(ng-if='!demo')
+                        +btn-toolbar('fa-pencil', 'notebook.edit = true;notebook.editName = notebook.name', 'Rename notebook')
+                        +btn-toolbar('fa-trash', 'removeNotebook()', 'Remove notebook')
+                h1.col-sm-6(ng-show='notebook.edit')
+                    i.btn.fa.fa-floppy-o(ng-show='notebook.editName' ng-click='renameNotebook(notebook.editName)' bs-tooltip data-title='Save notebook name' data-trigger='hover')
+                    .input-tip
+                        input.form-control(ng-model='notebook.editName' required on-enter='renameNotebook(notebook.editName)' on-escape='notebook.edit = false;')
+                h1.pull-right
+                    a.dropdown-toggle(data-toggle='dropdown' bs-dropdown='scrollParagraphs' data-placement='bottom-right') Scroll to query
+                        span.caret
+                    .btn-group(style='margin-top: 2px')
+                        +btn-toolbar('fa-plus', 'addParagraph()', 'Add new query')
+
+        ignite-information(data-title='With SQL notebook you can' style='margin-top: 0; margin-bottom: 30px')
+            ul
+                li Create any number of queries
+                li Execute and explain SQL queries
+                li Execute scan queries
+                li View data in tabular form and as charts
+
+        ignite-loading
             div(ng-if='notebookLoadFailed' style='text-align: center')
                 h2 Failed to load notebook
                 label.col-sm-12 Notebook not accessible any more. Go back to configuration or open to another notebook.
                 button.h3.btn.btn-primary(ui-sref='base.configuration.clusters') Back to configuration
             div(ng-if='notebook')
-                .row(bs-affix style='margin-bottom: 10px')
-                    .docs-header.notebook-header
-                        h1.col-sm-6(ng-hide='notebook.edit')
-                            label(style='max-width: calc(100% - 60px)') {{notebook.name}}
-                            .btn-group(ng-if='!demo')
-                                +btn-toolbar('fa-pencil', 'notebook.edit = true;notebook.editName = notebook.name', 'Rename notebook')
-                                +btn-toolbar('fa-trash', 'removeNotebook()', 'Remove notebook')
-                        h1.col-sm-6(ng-show='notebook.edit')
-                            i.btn.fa.fa-floppy-o(ng-show='notebook.editName' ng-click='renameNotebook(notebook.editName)' bs-tooltip data-title='Save notebook name' data-trigger='hover')
-                            .input-tip
-                                input.form-control(ng-model='notebook.editName' required on-enter='renameNotebook(notebook.editName)' on-escape='notebook.edit = false;')
-                        h1.pull-right
-                            a.dropdown-toggle(data-toggle='dropdown' bs-dropdown='scrollParagraphs' data-placement='bottom-right') Scroll to query
-                                span.caret
-                            .btn-group(style='margin-top: 2px')
-                                +btn-toolbar('fa-plus', 'addParagraph()', 'Add new query')
                 .docs-body.paragraphs
                     .panel-group(bs-collapse ng-model='notebook.expandedParagraphs' data-allow-multiple='true' data-start-collapsed='false')
                         .panel.panel-default(ng-repeat='paragraph in notebook.paragraphs')
