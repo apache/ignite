@@ -214,7 +214,7 @@ class GridResourceIoc {
      */
     int isAnnotationsPresent(@Nullable GridDeployment dep, Object target, AnnotationSet annSet) {
         assert target != null;
-        assert annSet != null && annSet.classes.length > 0 && annSet.classes.length <= 32;
+        assert annSet != null && annSet.classes.length > 0 && annSet.classes.length <= 31;
 
         return descriptor(dep, target.getClass()).isAnnotated(annSet);
     }
@@ -286,7 +286,7 @@ class GridResourceIoc {
         private final Map<Class<? extends Annotation>, T2<GridResourceField[], GridResourceMethod[]>> annMap;
 
         /** */
-        private final AtomicReference<Integer[]> annotationSets = new AtomicReference<>(new Integer[4]);
+        private final AtomicReference<int[]> annotationSets = new AtomicReference<>(new int[]{-1, -1, -1, -1});
 
         /**
          * @param cls Class.
@@ -377,13 +377,17 @@ class GridResourceIoc {
          * @param mask Mask.
          */
         private void appendAnnotationSet(AnnotationSet set, int mask) {
-            Integer[] oldSets, newSets;
+            int[] oldSets, newSets;
 
             do {
                 oldSets = annotationSets.get();
 
-                newSets =  set.descIdx < oldSets.length ? oldSets :
-                    Arrays.copyOf(oldSets, Math.max(oldSets.length << 1, set.descIdx + 1));
+                if (set.descIdx < oldSets.length)
+                    newSets = oldSets;
+                else {
+                    newSets = Arrays.copyOf(oldSets, Math.max(oldSets.length << 1, set.descIdx + 1));
+                    Arrays.fill(newSets, oldSets.length, newSets.length, -1);
+                }
 
                 newSets[set.descIdx] = mask;
             }
@@ -395,9 +399,9 @@ class GridResourceIoc {
          * @return if annotation is presented, corresponding bit is set.
          */
         int isAnnotated(AnnotationSet set) {
-            Integer[] oldSets = annotationSets.get();
+            int[] oldSets = annotationSets.get();
 
-            if (set.descIdx < oldSets.length && oldSets[set.descIdx] != null)
+            if (set.descIdx < oldSets.length && oldSets[set.descIdx] > 0)
                 return oldSets[set.descIdx];
 
             int val;
