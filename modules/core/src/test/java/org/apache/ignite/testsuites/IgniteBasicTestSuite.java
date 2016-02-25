@@ -51,6 +51,9 @@ import org.apache.ignite.messaging.GridMessagingSelfTest;
 import org.apache.ignite.messaging.IgniteMessagingWithClientTest;
 import org.apache.ignite.spi.GridSpiLocalHostInjectionTest;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.test.ConfigPermutationsTestSuiteBuilderTest;
+import org.apache.ignite.testframework.test.ParametersTest;
+import org.apache.ignite.testframework.test.PermutationsIteratorTest;
 
 /**
  * Basic test suite.
@@ -120,6 +123,11 @@ public class IgniteBasicTestSuite extends TestSuite {
         suite.addTestSuite(IgniteExceptionInNioWorkerSelfTest.class);
 
         GridTestUtils.addTestIfNeeded(suite, DynamicProxySerializationMultiJvmSelfTest.class, ignoredTests);
+
+        // Tests against configuration permutations framework.
+        suite.addTestSuite(ParametersTest.class);
+        suite.addTestSuite(PermutationsIteratorTest.class);
+        suite.addTestSuite(ConfigPermutationsTestSuiteBuilderTest.class);
 
         return suite;
     }
