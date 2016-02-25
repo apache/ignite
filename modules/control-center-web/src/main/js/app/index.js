@@ -102,6 +102,7 @@ import IgniteCountries from './services/Countries/Countries.service';
 
 // Filters.
 import hasPojo from './filters/hasPojo/hasPojo.filter';
+import byName from './filters/byName/byName.filter';
 
 angular
 .module('ignite-console', [
@@ -149,6 +150,7 @@ angular
 // Providers.
 // Filters.
 .filter(...hasPojo)
+.filter(...byName)
 .config(['$stateProvider', '$locationProvider', '$urlRouterProvider', function($stateProvider, $locationProvider, $urlRouterProvider) {
     // Set up the states.
     $stateProvider

@@ -222,15 +222,18 @@ export default [
             srvCfg.name = cluster.name + '-server.xml';
         };
 
-        const updateTab = (cluster) => {
+        $scope.$watch('cluster', (cluster) => {
             if (!cluster)
                 return;
 
             if (!$filter('hasPojo')(cluster) && $scope.tabsClient.activeTab === 3)
                 $scope.tabsClient.activeTab = 0;
-        };
+        });
 
-        $scope.$watch('cluster', updateTab);
+        $scope.$watch('cluster._id', () => {
+            $scope.tabsClient.init = [];
+            $scope.tabsServer.init = [];
+        });
 
         // TODO IGNITE-2114: implemented as independent logic for download.
         $scope.downloadConfiguration = function() {
