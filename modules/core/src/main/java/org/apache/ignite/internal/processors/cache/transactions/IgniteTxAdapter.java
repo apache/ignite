@@ -31,6 +31,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import javax.cache.expiry.ExpiryPolicy;
 import javax.cache.processor.EntryProcessor;
 import org.apache.ignite.IgniteCheckedException;
@@ -95,13 +96,16 @@ import static org.apache.ignite.transactions.TransactionState.ROLLING_BACK;
 /**
  * Managed transaction adapter.
  */
-public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter
-    implements IgniteInternalTx, Externalizable {
+public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implements IgniteInternalTx, Externalizable {
     /** */
     private static final long serialVersionUID = 0L;
 
     /** Static logger to avoid re-creation. */
     private static final AtomicReference<IgniteLogger> logRef = new AtomicReference<>();
+
+    /** Finalizing status updater. */
+    private static final AtomicReferenceFieldUpdater<IgniteTxAdapter, FinalizationStatus> FINALIZING_UPD =
+        AtomicReferenceFieldUpdater.newUpdater(IgniteTxAdapter.class, FinalizationStatus.class, "finalizing");
 
     /** Logger. */
     protected static IgniteLogger log;
@@ -191,8 +195,8 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter
     /** Commit version. */
     private volatile GridCacheVersion commitVer;
 
-    /** */
-    private AtomicReference<FinalizationStatus> finalizing = new AtomicReference<>(FinalizationStatus.NONE);
+    /** Finalizing status. */
+    private volatile FinalizationStatus finalizing = FinalizationStatus.NONE;
 
     /** Done marker. */
     protected volatile boolean isDone;
@@ -524,23 +528,23 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter
 
         switch (status) {
             case USER_FINISH:
-                res = finalizing.compareAndSet(FinalizationStatus.NONE, FinalizationStatus.USER_FINISH);
+                res = FINALIZING_UPD.compareAndSet(this, FinalizationStatus.NONE, FinalizationStatus.USER_FINISH);
 
                 break;
 
             case RECOVERY_WAIT:
-                finalizing.compareAndSet(FinalizationStatus.NONE, FinalizationStatus.RECOVERY_WAIT);
+                FINALIZING_UPD.compareAndSet(this, FinalizationStatus.NONE, FinalizationStatus.RECOVERY_WAIT);
 
-                FinalizationStatus cur = finalizing.get();
+                FinalizationStatus cur = finalizing;
 
                 res = cur == FinalizationStatus.RECOVERY_WAIT || cur == FinalizationStatus.RECOVERY_FINISH;
 
                 break;
 
             case RECOVERY_FINISH:
-                FinalizationStatus old = finalizing.get();
+                FinalizationStatus old = finalizing;
 
-                res = old != FinalizationStatus.USER_FINISH && finalizing.compareAndSet(old, status);
+                res = old != FinalizationStatus.USER_FINISH && FINALIZING_UPD.compareAndSet(this, old, status);
 
                 break;
 
@@ -565,7 +569,7 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter
      * @return Finalization status.
      */
     protected FinalizationStatus finalizationStatus() {
-        return finalizing.get();
+        return finalizing;
     }
 
     /**
@@ -797,6 +801,22 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter
     /** {@inheritDoc} */
     @Override public TransactionState state() {
         return state;
+    }
+
+    /** {@inheritDoc} */
+    public final void errorWhenCommitting() {
+        synchronized (this) {
+            TransactionState prev = state;
+
+            assert prev == COMMITTING : prev;
+
+            state = MARKED_ROLLBACK;
+
+            if (log.isDebugEnabled())
+                log.debug("Changed transaction state [prev=" + prev + ", new=" + this.state + ", tx=" + this + ']');
+
+            notifyAll();
+        }
     }
 
     /** {@inheritDoc} */
@@ -1079,7 +1099,7 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter
                 }
 
                 case MARKED_ROLLBACK: {
-                    valid = prev == ACTIVE || prev == PREPARING || prev == PREPARED || prev == COMMITTING;
+                    valid = prev == ACTIVE || prev == PREPARING || prev == PREPARED;
 
                     break;
                 }
@@ -1697,6 +1717,11 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter
 
         /** {@inheritDoc} */
         @Override public boolean setRollbackOnly() {
+            throw new IllegalStateException("Deserialized transaction can only be used as read-only.");
+        }
+
+        /** {@inheritDoc} */
+        @Override public void errorWhenCommitting() {
             throw new IllegalStateException("Deserialized transaction can only be used as read-only.");
         }
 

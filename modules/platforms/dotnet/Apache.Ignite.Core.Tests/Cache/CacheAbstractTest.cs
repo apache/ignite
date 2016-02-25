@@ -292,7 +292,7 @@ namespace Apache.Ignite.Core.Tests.Cache
         public virtual void StartGrids() {
             TestUtils.KillProcesses();
 
-            IgniteConfigurationEx cfg = new IgniteConfigurationEx();
+            IgniteConfiguration cfg = new IgniteConfiguration();
 
             BinaryConfiguration portCfg = new BinaryConfiguration();
 
@@ -935,6 +935,64 @@ namespace Apache.Ignite.Core.Tests.Cache
 
             cache0.RemoveAll(new List<int> { key0, key1 });
 
+            // Test regular expiration.
+            cache = cache0.WithExpiryPolicy(new ExpiryPolicy(TimeSpan.FromMilliseconds(100),
+                TimeSpan.FromMilliseconds(100), TimeSpan.FromMilliseconds(100)));
+
+            cache.Put(key0, key0);
+            cache.Put(key1, key1);
+            Assert.IsTrue(cache0.ContainsKey(key0));
+            Assert.IsTrue(cache0.ContainsKey(key1));
+            Thread.Sleep(200);
+            Assert.IsFalse(cache0.ContainsKey(key0));
+            Assert.IsFalse(cache0.ContainsKey(key1));
+
+            cache0.Put(key0, key0);
+            cache0.Put(key1, key1);
+            cache.Put(key0, key0 + 1);
+            cache.Put(key1, key1 + 1);
+            Assert.IsTrue(cache0.ContainsKey(key0));
+            Assert.IsTrue(cache0.ContainsKey(key1));
+            Thread.Sleep(200);
+            Assert.IsFalse(cache0.ContainsKey(key0));
+            Assert.IsFalse(cache0.ContainsKey(key1));
+
+            cache0.Put(key0, key0);
+            cache0.Put(key1, key1);
+            cache.Get(key0); 
+            cache.Get(key1);
+            Assert.IsTrue(cache0.ContainsKey(key0));
+            Assert.IsTrue(cache0.ContainsKey(key1));
+            Thread.Sleep(200);
+            Assert.IsFalse(cache0.ContainsKey(key0));
+            Assert.IsFalse(cache0.ContainsKey(key1));
+        }
+        
+        /// <summary>
+        /// Expiry policy tests for zero and negative expiry values.
+        /// </summary>
+        [Test]
+        [Ignore("IGNITE-1423")]
+        public void TestWithExpiryPolicyZeroNegative()
+        {
+            ICache<int, int> cache0 = Cache(0);
+            
+            int key0;
+            int key1;
+
+            if (LocalCache())
+            {
+                key0 = 0;
+                key1 = 1;
+            }
+            else
+            {
+                key0 = PrimaryKeyForCache(cache0);
+                key1 = PrimaryKeyForCache(Cache(1));
+            }
+
+            var cache = cache0.WithExpiryPolicy(new ExpiryPolicy(null, null, null));
+
             // Test zero expiration.
             cache = cache0.WithExpiryPolicy(new ExpiryPolicy(TimeSpan.Zero, TimeSpan.Zero, TimeSpan.Zero));
 
@@ -987,38 +1045,6 @@ namespace Apache.Ignite.Core.Tests.Cache
             Assert.IsFalse(cache0.ContainsKey(key1));
 
             cache0.RemoveAll(new List<int> { key0, key1 });
-
-            // Test regular expiration.
-            cache = cache0.WithExpiryPolicy(new ExpiryPolicy(TimeSpan.FromMilliseconds(100),
-                TimeSpan.FromMilliseconds(100), TimeSpan.FromMilliseconds(100)));
-
-            cache.Put(key0, key0);
-            cache.Put(key1, key1);
-            Assert.IsTrue(cache0.ContainsKey(key0));
-            Assert.IsTrue(cache0.ContainsKey(key1));
-            Thread.Sleep(200);
-            Assert.IsFalse(cache0.ContainsKey(key0));
-            Assert.IsFalse(cache0.ContainsKey(key1));
-
-            cache0.Put(key0, key0);
-            cache0.Put(key1, key1);
-            cache.Put(key0, key0 + 1);
-            cache.Put(key1, key1 + 1);
-            Assert.IsTrue(cache0.ContainsKey(key0));
-            Assert.IsTrue(cache0.ContainsKey(key1));
-            Thread.Sleep(200);
-            Assert.IsFalse(cache0.ContainsKey(key0));
-            Assert.IsFalse(cache0.ContainsKey(key1));
-
-            cache0.Put(key0, key0);
-            cache0.Put(key1, key1);
-            cache.Get(key0); 
-            cache.Get(key1);
-            Assert.IsTrue(cache0.ContainsKey(key0));
-            Assert.IsTrue(cache0.ContainsKey(key1));
-            Thread.Sleep(200);
-            Assert.IsFalse(cache0.ContainsKey(key0));
-            Assert.IsFalse(cache0.ContainsKey(key1));
         }
 
         [Test]
@@ -3074,6 +3100,27 @@ namespace Apache.Ignite.Core.Tests.Cache
 
             Assert.AreEqual(10, cache1.Get(1));
         }
+
+        [Test]
+        public void TestDestroy()
+        {
+            var cacheName = "template" + Guid.NewGuid();
+
+            var ignite = GetIgnite(0);
+
+            var cache = ignite.CreateCache<int, int>(cacheName);
+
+            Assert.IsNotNull(ignite.GetCache<int, int>(cacheName));
+
+            ignite.DestroyCache(cache.Name);
+
+            var ex = Assert.Throws<ArgumentException>(() => ignite.GetCache<int, int>(cacheName));
+
+            Assert.IsTrue(ex.Message.StartsWith("Cache doesn't exist"));
+
+            Assert.Throws<InvalidOperationException>(() => cache.Get(1));
+        }
+
 
         [Test]
         public void TestIndexer()

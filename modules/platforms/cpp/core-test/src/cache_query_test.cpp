@@ -713,6 +713,51 @@ BOOST_AUTO_TEST_CASE(TestFieldsQuerySingle)
 }
 
 /**
+ * Test fields query with single entry.
+ */
+BOOST_AUTO_TEST_CASE(TestFieldsQueryExceptions)
+{
+    // Test simple query.
+    Cache<int, QueryPerson> cache = GetCache();
+
+    // Test query with two fields of different type.
+    SqlFieldsQuery qry("select age, name from QueryPerson");
+
+    QueryFieldsCursor cursor = cache.Query(qry);
+    CheckEmpty(cursor);
+
+    // Test simple query.
+    cache.Put(1, QueryPerson("A1", 10));
+
+    cursor = cache.Query(qry);
+
+    try
+    {
+        BOOST_REQUIRE(cursor.HasNext());
+
+        QueryFieldsRow row = cursor.GetNext();
+
+        BOOST_REQUIRE(row.HasNext());
+
+        int age = row.GetNext<int>();
+
+        BOOST_REQUIRE(age == 10);
+
+        std::string name = row.GetNext<std::string>();
+
+        BOOST_REQUIRE(name == "A1");
+
+        BOOST_REQUIRE(!row.HasNext());
+
+        CheckEmpty(cursor);
+    }
+    catch (IgniteError& error)
+    {
+        BOOST_FAIL(error.GetText());
+    }
+}
+
+/**
  * Test fields query with two simultaneously handled rows.
  */
 BOOST_AUTO_TEST_CASE(TestFieldsQueryTwo)

@@ -42,7 +42,7 @@ namespace Apache.Ignite.Core.Impl.Binary
     internal class BinaryReflectiveSerializer : IBinarySerializer
     {
         /** Cached binding flags. */
-        private static readonly BindingFlags Flags = BindingFlags.Instance | BindingFlags.Public |
+        private const BindingFlags Flags = BindingFlags.Instance | BindingFlags.Public | 
             BindingFlags.NonPublic | BindingFlags.DeclaredOnly;
 
         /** Cached type descriptors. */

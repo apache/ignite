@@ -26,10 +26,12 @@ import java.util.Map;
 import java.util.Set;
 import javax.cache.Cache;
 import javax.cache.processor.EntryProcessor;
+import javax.cache.processor.EntryProcessorException;
 import javax.cache.processor.MutableEntry;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteBinary;
+import org.apache.ignite.binary.BinaryNameMapper;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.CachePeekMode;
@@ -38,6 +40,7 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.internal.IgniteKernal;
+import org.apache.ignite.internal.binary.BinaryContext;
 import org.apache.ignite.internal.binary.BinaryObjectImpl;
 import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
@@ -58,6 +61,8 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
+import org.apache.ignite.transactions.TransactionConcurrency;
+import org.apache.ignite.transactions.TransactionIsolation;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
@@ -76,6 +81,9 @@ public abstract class GridCacheBinaryObjectsAbstractSelfTest extends GridCommonA
 
     /** */
     private static final int ENTRY_CNT = 100;
+
+    /** */
+    private static IgniteConfiguration cfg;
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
@@ -108,6 +116,8 @@ public abstract class GridCacheBinaryObjectsAbstractSelfTest extends GridCommonA
         cfg.setCacheConfiguration(cacheCfg);
 
         cfg.setMarshaller(new BinaryMarshaller());
+
+        this.cfg = cfg;
 
         return cfg;
     }
@@ -200,8 +210,14 @@ public abstract class GridCacheBinaryObjectsAbstractSelfTest extends GridCommonA
 
         assertNotNull(str);
 
-        assertTrue("Unexpected toString: " + str,
-            str.startsWith("TestReferenceObject") && str.contains("obj=TestReferenceObject ["));
+        BinaryNameMapper nameMapper = BinaryContext.defaultNameMapper();
+
+        if (cfg.getBinaryConfiguration() != null && cfg.getBinaryConfiguration().getNameMapper() != null)
+            nameMapper = cfg.getBinaryConfiguration().getNameMapper();
+
+        String typeName = nameMapper.typeName(TestReferenceObject.class.getName());
+
+        assertTrue("Unexpected toString: " + str, str.startsWith(typeName) && str.contains("obj=" + typeName + " ["));
 
         TestReferenceObject obj1_r = po.deserialize();
 
@@ -719,6 +735,30 @@ public abstract class GridCacheBinaryObjectsAbstractSelfTest extends GridCommonA
     }
 
     /**
+     * @throws Exception if failed.
+     */
+    public void testKeepBinaryTxOverwrite() throws Exception {
+        if (atomicityMode() != TRANSACTIONAL)
+            return;
+
+        IgniteCache<Integer, TestObject> cache = ignite(0).cache(null);
+
+        cache.put(0, new TestObject(1));
+
+        for (TransactionConcurrency conc : TransactionConcurrency.values()) {
+            for (TransactionIsolation iso : TransactionIsolation.values()) {
+                try (Transaction tx = ignite(0).transactions().txStart(conc, iso)) {
+                    cache.withKeepBinary().get(0);
+
+                    cache.invoke(0, new ObjectEntryProcessor());
+
+                    tx.commit();
+                }
+            }
+        }
+    }
+
+    /**
      * @throws Exception If failed.
      */
     public void testLoadCache() throws Exception {
@@ -919,6 +959,19 @@ public abstract class GridCacheBinaryObjectsAbstractSelfTest extends GridCommonA
         /** {@inheritDoc} */
         @Override public void readBinary(BinaryReader reader) throws BinaryObjectException {
             val = reader.readInt("val");
+        }
+    }
+
+    /**
+     * No-op entry processor.
+     */
+    private static class ObjectEntryProcessor implements EntryProcessor<Integer, TestObject, Boolean> {
+        @Override public Boolean process(MutableEntry<Integer, TestObject> entry, Object... args) throws EntryProcessorException {
+            TestObject obj = entry.getValue();
+
+            entry.setValue(new TestObject(obj.val));
+
+            return true;
         }
     }
 

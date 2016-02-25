@@ -27,6 +27,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheMessage;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 import org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoveryNode;
@@ -104,7 +105,7 @@ public class GridDhtAffinityAssignmentResponse extends GridCacheMessage {
     @Override public void prepareMarshal(GridCacheSharedContext ctx) throws IgniteCheckedException {
         super.prepareMarshal(ctx);
 
-        if (affAssignment != null)
+        if (affAssignment != null && affAssignmentBytes == null)
             affAssignmentBytes = ctx.marshaller().marshal(affAssignment);
     }
 
@@ -113,8 +114,8 @@ public class GridDhtAffinityAssignmentResponse extends GridCacheMessage {
     @Override public void finishUnmarshal(GridCacheSharedContext ctx, ClassLoader ldr) throws IgniteCheckedException {
         super.finishUnmarshal(ctx, ldr);
 
-        if (affAssignmentBytes != null) {
-            affAssignment = ctx.marshaller().unmarshal(affAssignmentBytes, ldr);
+        if (affAssignmentBytes != null && affAssignment == null) {
+            affAssignment = ctx.marshaller().unmarshal(affAssignmentBytes, U.resolveClassLoader(ldr, ctx.gridConfig()));
 
             // TODO IGNITE-2110: setting 'local' for nodes not needed when IGNITE-2110 is implemented.
             int assignments = affAssignment.size();

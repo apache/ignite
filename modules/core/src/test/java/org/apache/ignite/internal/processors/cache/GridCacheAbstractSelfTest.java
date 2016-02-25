@@ -69,6 +69,15 @@ public abstract class GridCacheAbstractSelfTest extends GridCommonAbstractTest {
     /** Store map. */
     protected static final Map<Object, Object> map = new ConcurrentHashMap8<>();
 
+    /** Reads counter. */
+    protected static final AtomicInteger reads = new AtomicInteger();
+
+    /** Writes counter. */
+    protected static final AtomicInteger writes = new AtomicInteger();
+
+    /** Removes counter. */
+    protected static final AtomicInteger removes = new AtomicInteger();
+
     /** VM ip finder for TCP discovery. */
     protected static TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
 
@@ -187,6 +196,10 @@ public abstract class GridCacheAbstractSelfTest extends GridCommonAbstractTest {
      */
     protected void resetStore() {
         map.clear();
+
+        reads.set(0);
+        writes.set(0);
+        removes.set(0);
     }
 
     /**
@@ -301,14 +314,20 @@ public abstract class GridCacheAbstractSelfTest extends GridCommonAbstractTest {
             }
 
             @Override public Object load(Object key) {
+                reads.incrementAndGet();
+
                 return map.get(key);
             }
 
             @Override public void write(javax.cache.Cache.Entry<? extends Object, ? extends Object> e) {
+                writes.incrementAndGet();
+
                 map.put(e.getKey(), e.getValue());
             }
 
             @Override public void delete(Object key) {
+                removes.incrementAndGet();
+
                 map.remove(key);
             }
         };

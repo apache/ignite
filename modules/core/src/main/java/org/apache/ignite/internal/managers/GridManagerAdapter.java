@@ -19,6 +19,7 @@ package org.apache.ignite.internal.managers;
 
 import java.io.Serializable;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Map;
 import java.util.UUID;
 import javax.cache.expiry.Duration;
@@ -58,7 +59,6 @@ import org.apache.ignite.spi.IgniteSpiNoop;
 import org.apache.ignite.spi.IgniteSpiTimeoutObject;
 import org.jetbrains.annotations.Nullable;
 
-import static java.util.Arrays.asList;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.SYSTEM_POOL;
 
@@ -370,7 +370,7 @@ public abstract class GridManagerAdapter<T extends IgniteSpi> implements GridMan
                             if (msg instanceof Message)
                                 ctx.io().send(node, topic, (Message)msg, SYSTEM_POOL);
                             else
-                                ctx.io().sendUserMessage(asList(node), msg, topic, false, 0);
+                                ctx.io().sendUserMessage(Collections.singletonList(node), msg, topic, false, 0);
                         }
                         catch (IgniteCheckedException e) {
                             throw unwrapException(e);

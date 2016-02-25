@@ -35,9 +35,6 @@ public class VisorCacheQueryConfiguration implements Serializable {
     private long longQryWarnTimeout;
 
     /** */
-    private String sqlSchema;
-
-    /** */
     private boolean sqlEscapeAll;
 
     /** */
@@ -67,17 +64,14 @@ public class VisorCacheQueryConfiguration implements Serializable {
      * @param ccfg Cache configuration.
      * @return Fill data transfer object with cache query configuration data.
      */
-    public static VisorCacheQueryConfiguration from(CacheConfiguration ccfg) {
-        VisorCacheQueryConfiguration cfg = new VisorCacheQueryConfiguration();
+    public VisorCacheQueryConfiguration from(CacheConfiguration ccfg) {
+        sqlFuncClss = compactClasses(ccfg.getSqlFunctionClasses());
+        longQryWarnTimeout = ccfg.getLongQueryWarningTimeout();
+        sqlEscapeAll = ccfg.isSqlEscapeAll();
+        indexedTypes = compactClasses(ccfg.getIndexedTypes());
+        sqlOnheapRowCacheSize = ccfg.getSqlOnheapRowCacheSize();
 
-        cfg.sqlFuncClss = compactClasses(ccfg.getSqlFunctionClasses());
-        cfg.longQryWarnTimeout = ccfg.getLongQueryWarningTimeout();
-        cfg.sqlSchema = ccfg.getSqlSchema();
-        cfg.sqlEscapeAll = ccfg.isSqlEscapeAll();
-        cfg.indexedTypes = compactClasses(ccfg.getIndexedTypes());
-        cfg.sqlOnheapRowCacheSize = ccfg.getSqlOnheapRowCacheSize();
-
-        return cfg;
+        return this;
     }
 
     /**
@@ -92,13 +86,6 @@ public class VisorCacheQueryConfiguration implements Serializable {
      */
     public long longQueryWarningTimeout() {
         return longQryWarnTimeout;
-    }
-
-    /**
-     * @return Schema name, which is used by SQL engine for SQL statements generation.
-     */
-    public String sqlSchema() {
-        return sqlSchema;
     }
 
     /**

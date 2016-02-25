@@ -19,6 +19,7 @@ package org.apache.ignite.testsuites;
 
 import junit.framework.TestSuite;
 import org.apache.ignite.internal.ClusterNodeMetricsSelfTest;
+import org.apache.ignite.internal.GridAffinityNoCacheSelfTest;
 import org.apache.ignite.internal.GridAffinitySelfTest;
 import org.apache.ignite.internal.GridAlwaysFailoverSpiFailSelfTest;
 import org.apache.ignite.internal.GridCancelOnGridStopSelfTest;
@@ -137,6 +138,7 @@ public class IgniteComputeGridTestSuite {
         suite.addTestSuite(GridFailoverTaskWithPredicateSelfTest.class);
         suite.addTestSuite(GridProjectionLocalJobMultipleArgumentsSelfTest.class);
         suite.addTestSuite(GridAffinitySelfTest.class);
+        suite.addTestSuite(GridAffinityNoCacheSelfTest.class);
         suite.addTestSuite(GridEventStorageRuntimeConfigurationSelfTest.class);
         suite.addTestSuite(GridMultinodeRedeployContinuousModeSelfTest.class);
         suite.addTestSuite(GridMultinodeRedeploySharedModeSelfTest.class);
