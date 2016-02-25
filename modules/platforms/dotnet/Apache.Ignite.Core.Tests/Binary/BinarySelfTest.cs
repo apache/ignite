@@ -733,7 +733,10 @@ namespace Apache.Ignite.Core.Tests.Binary
             {
                 TypeConfigurations = new[]
                 {
-                    new BinaryTypeConfiguration(typeof (PrimitiveFieldType)) {SerializeRaw = raw}
+                    new BinaryTypeConfiguration(typeof (PrimitiveFieldType))
+                    {
+                        Serializer = new BinaryReflectiveSerializer(raw)
+                    }
                 }
             });
 
@@ -933,8 +936,14 @@ namespace Apache.Ignite.Core.Tests.Binary
                 {
                     TypeConfigurations = new[]
                     {
-                        new BinaryTypeConfiguration(typeof (EnumType)) {SerializeRaw = raw},
-                        new BinaryTypeConfiguration(typeof (TestEnum)) {SerializeRaw = raw}
+                        new BinaryTypeConfiguration(typeof (EnumType))
+                        {
+                            Serializer = new BinaryReflectiveSerializer(raw)
+                        },
+                        new BinaryTypeConfiguration(typeof (TestEnum))
+                        {
+                            Serializer = new BinaryReflectiveSerializer(raw)
+                        }
                     }
                 });
 
@@ -985,10 +994,16 @@ namespace Apache.Ignite.Core.Tests.Binary
         {
             var marsh = new Marshaller(new BinaryConfiguration
             {
-                TypeConfigurations = new []
+                TypeConfigurations = new[]
                 {
-                    new BinaryTypeConfiguration(typeof (CollectionsType)) {SerializeRaw = raw},
-                    new BinaryTypeConfiguration(typeof (InnerObjectType)) {SerializeRaw = raw}
+                    new BinaryTypeConfiguration(typeof (CollectionsType))
+                    {
+                        Serializer = new BinaryReflectiveSerializer(raw)
+                    },
+                    new BinaryTypeConfiguration(typeof (InnerObjectType))
+                    {
+                        Serializer = new BinaryReflectiveSerializer(raw)
+                    }
                 }
             });
             
@@ -1056,8 +1071,14 @@ namespace Apache.Ignite.Core.Tests.Binary
             {
                 TypeConfigurations = new[]
                 {
-                    new BinaryTypeConfiguration(typeof (OuterObjectType)) {SerializeRaw = raw},
-                    new BinaryTypeConfiguration(typeof (InnerObjectType)) {SerializeRaw = raw}
+                    new BinaryTypeConfiguration(typeof (OuterObjectType))
+                    {
+                        Serializer = new BinaryReflectiveSerializer(raw)
+                    },
+                    new BinaryTypeConfiguration(typeof (InnerObjectType))
+                    {
+                        Serializer = new BinaryReflectiveSerializer(raw)
+                    }
                 }
             });
 
@@ -1070,7 +1091,13 @@ namespace Apache.Ignite.Core.Tests.Binary
             var marsh = new Marshaller(new BinaryConfiguration
             {
                 TypeConfigurations =
-                    new[] {new BinaryTypeConfiguration(typeof (ReflectiveStruct)) {SerializeRaw = raw}}
+                    new[]
+                    {
+                        new BinaryTypeConfiguration(typeof (ReflectiveStruct))
+                        {
+                            Serializer = new BinaryReflectiveSerializer(raw)
+                        }
+                    }
             });
 
             var obj = new ReflectiveStruct(15, 28.8);
