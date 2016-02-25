@@ -1987,8 +1987,9 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                     else if (val instanceof BinaryObject && ((BinaryObject)val).hasField(propName))
                         isKeyProp = isKeyProp0 = -1;
                     else {
-                        U.warn(log, "Neither key nor value have property " +
-                            "[propName=" + propName + ", key=" + key + ", val=" + val + "]");
+                        if (log.isDebugEnabled())
+                            U.warn(log, "Neither key nor value have property " +
+                                "[propName=" + propName + ", key=" + key + ", val=" + val + "]");
 
                         return null;
                     }
