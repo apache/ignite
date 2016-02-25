@@ -331,7 +331,7 @@ module.exports.factory = function(deepPopulatePlugin, passportMongo, settings, p
             authenticator: String,
             forceServerMode: Boolean,
             clientReconnectDisabled: Boolean,
-            kind: {type: String, enum: ['Vm', 'Multicast', 'S3', 'Cloud', 'GoogleStorage', 'Jdbc', 'SharedFs']},
+            kind: {type: String, enum: ['Vm', 'Multicast', 'S3', 'Cloud', 'GoogleStorage', 'Jdbc', 'SharedFs', 'ZooKeeper']},
             Vm: {
                 addresses: [String]
             },
@@ -366,6 +366,44 @@ module.exports.factory = function(deepPopulatePlugin, passportMongo, settings, p
             },
             SharedFs: {
                 path: String
+            },
+            ZooKeeper: {
+                curator: String,
+                zkConnectionString: String,
+                retryPolicy: {
+                    kind: {type: String, enum: ['ExponentialBackoff', 'BoundedExponentialBackoff', 'UntilElapsed',
+                        'NTimes', 'OneTime', 'Forever', 'Custom']},
+                    ExponentialBackoff: {
+                        baseSleepTimeMs: Number,
+                        maxRetries: Number,
+                        maxSleepMs: Number
+                    },
+                    BoundedExponentialBackoff: {
+                        baseSleepTimeMs: Number,
+                        maxSleepTimeMs: Number,
+                        maxRetries: Number
+                    },
+                    UntilElapsed: {
+                        maxElapsedTimeMs: Number,
+                        sleepMsBetweenRetries: Number
+                    },
+                    NTimes: {
+                        n: Number,
+                        sleepMsBetweenRetries: Number
+                    },
+                    OneTime: {
+                        sleepMsBetweenRetry: Number
+                    },
+                    Forever: {
+                        retryIntervalMs: Number
+                    },
+                    Custom: {
+                        className: String
+                    }
+                },
+                basePath: String,
+                serviceName: String,
+                allowDuplicateRegistrations: Boolean
             }
         },
         atomicConfiguration: {

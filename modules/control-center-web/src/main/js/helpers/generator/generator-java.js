@@ -62,6 +62,18 @@ $generatorJava.setterName = function (propName, setterName) {
     return setterName ? setterName : $commonUtils.toJavaName('set', propName);
 };
 
+// Add constructor argument
+$generatorJava.constructorArg = function (obj, propName, notFirst, opt) {
+    var v = obj ? obj[propName] : undefined;
+
+    if ($commonUtils.isDefinedAndNotEmpty(v))
+        return (notFirst ? ', ' : '') + v;
+    else if (!opt)
+        return notFirst ? ', null' : 'null';
+    else
+        return '';
+};
+
 /**
  * Add variable declaration.
  *
@@ -522,6 +534,81 @@ $generatorJava.clusterGeneral = function (cluster, clientNearCfg, res) {
             case 'SharedFs':
                 $generatorJava.beanProperty(res, 'discovery', d.SharedFs, 'ipFinder', 'ipFinder',
                     'org.apache.ignite.spi.discovery.tcp.ipfinder.sharedfs.TcpDiscoverySharedFsIpFinder', {path: null}, true);
+
+                break;
+
+            case 'ZooKeeper':
+                var finderVar = 'ipFinder';
+
+                $generatorJava.declareVariable(res, 'ipFinder', 'org.apache.ignite.spi.discovery.tcp.ipfinder.zk.TcpDiscoveryZookeeperIpFinder');
+
+                if (d.ZooKeeper) {
+                    if ($commonUtils.isDefinedAndNotEmpty(d.ZooKeeper.curator))
+                        res.line(finderVar + '.setCurator(new ' + res.importClass(d.ZooKeeper.curator) + '());');
+
+                    $generatorJava.property(res, finderVar, d.ZooKeeper, 'zkConnectionString');
+
+                    if (d.ZooKeeper.retryPolicy && d.ZooKeeper.retryPolicy.kind) {
+                        var kind = d.ZooKeeper.retryPolicy.kind;
+                        var retryPolicy = d.ZooKeeper.retryPolicy[kind];
+
+                        switch (kind) {
+                            case 'ExponentialBackoff':
+                                res.line(finderVar + '.setRetryPolicy(new ' + res.importClass('org.apache.curator.retry.ExponentialBackoffRetry') + '(' +
+                                    $generatorJava.constructorArg(retryPolicy, 'baseSleepTimeMs') +
+                                    $generatorJava.constructorArg(retryPolicy, 'maxRetries', true) +
+                                    $generatorJava.constructorArg(retryPolicy, 'maxSleepMs', true, true) + '));');
+
+                                break;
+
+                            case 'BoundedExponentialBackoff':
+                                res.line(finderVar + '.setRetryPolicy(new ' + res.importClass('org.apache.curator.retry.BoundedExponentialBackoffRetry') + '(' +
+                                    $generatorJava.constructorArg(retryPolicy, 'baseSleepTimeMs') +
+                                    $generatorJava.constructorArg(retryPolicy, 'maxSleepTimeMs', true) +
+                                    $generatorJava.constructorArg(retryPolicy, 'maxRetries', true) + '));');
+
+                                break;
+
+                            case 'UntilElapsed':
+                                res.line(finderVar + '.setRetryPolicy(new ' + res.importClass('org.apache.curator.retry.RetryUntilElapsed') + '(' +
+                                    $generatorJava.constructorArg(retryPolicy, 'maxElapsedTimeMs') +
+                                    $generatorJava.constructorArg(retryPolicy, 'sleepMsBetweenRetries', true) + '));');
+
+                                break;
+
+                            case 'NTimes':
+                                res.line(finderVar + '.setRetryPolicy(new ' + res.importClass('org.apache.curator.retry.RetryNTimes') + '(' +
+                                    $generatorJava.constructorArg(retryPolicy, 'n') +
+                                    $generatorJava.constructorArg(retryPolicy, 'sleepMsBetweenRetries', true) + '));');
+
+                                break;
+
+                            case 'OneTime':
+                                res.line(finderVar + '.setRetryPolicy(new ' + res.importClass('org.apache.curator.retry.RetryOneTime') + '(' +
+                                    $generatorJava.constructorArg(retryPolicy, 'sleepMsBetweenRetry') + '));');
+
+                                break;
+
+                            case 'Forever':
+                                res.line(finderVar + '.setRetryPolicy(new ' + res.importClass('org.apache.curator.retry.RetryForever') + '(' +
+                                    $generatorJava.constructorArg(retryPolicy, 'retryIntervalMs') + '));');
+
+                                break;
+
+                            case 'Custom':
+                                if (retryPolicy && $commonUtils.isDefinedAndNotEmpty(retryPolicy.className))
+                                    res.line(finderVar + '.setRetryPolicy(new ' + res.importClass(retryPolicy.className) + '());');
+
+                                break;
+                        }
+                    }
+
+                    $generatorJava.property(res, finderVar, d.ZooKeeper, 'basePath', null, null, '/services');
+                    $generatorJava.property(res, finderVar, d.ZooKeeper, 'serviceName', null, null, 'ignite');
+                    $generatorJava.property(res, finderVar, d.ZooKeeper, 'allowDuplicateRegistrations', null, null, false);
+                }
+
+                res.line('discovery.setIpFinder(ipFinder);');
 
                 break;
 

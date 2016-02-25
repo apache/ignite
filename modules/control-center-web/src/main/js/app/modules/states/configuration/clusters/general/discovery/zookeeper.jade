@@ -1,0 +1,113 @@
+//-
+    Licensed to the Apache Software Foundation (ASF) under one or more
+    contributor license agreements.  See the NOTICE file distributed with
+    this work for additional information regarding copyright ownership.
+    The ASF licenses this file to You under the Apache License, Version 2.0
+    (the "License"); you may not use this file except in compliance with
+    the License.  You may obtain a copy of the License at
+
+         http://www.apache.org/licenses/LICENSE-2.0
+
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
+
+- var model = 'backupItem.discovery.ZooKeeper';
+
+div
+    .details-row
+        ignite-form-field
+            ignite-form-field-label
+                | Curator:
+            ignite-form-field-tooltip
+                | The Curator framework in use
+            ignite-form-field-java-class(
+                data-id='curator'
+                data-name='curator'
+                data-ng-model='#{model}.curator'
+            )
+    .details-row
+        ignite-form-field
+            ignite-form-field-label
+                | Connection string:
+            ignite-form-field-tooltip
+                | This property will be used when "IGNITE_ZK_CONNECTION_STRING" system property is not configured
+            ignite-form-field-input-text(
+                data-id='zkConnectionString'
+                data-name='zkConnectionString'
+                data-ng-model='#{model}.zkConnectionString'
+                data-placeholder='host:port[chroot][,host:port[chroot]]'
+                data-ng-required='true'
+            )
+    .details-row
+        ignite-form-field
+            ignite-form-field-label
+                | Retry policy:
+            ignite-form-field-tooltip
+                | Retry policy
+            ignite-form-field-dropdown(
+                data-id='retryPolicy'
+                data-name='retryPolicy'
+                data-options='[\
+                    {value: "ExponentialBackoff", label: "Exponential backoff"},\
+                    {value: "BoundedExponentialBackoff", label: "Bounded exponential backoff"},\
+                    {value: "UntilElapsed", label: "Until elapsed"},\
+                    {value: "NTimes", label: "Max number of times"},\
+                    {value: "OneTime", label: "Only once"},\
+                    {value: "Forever", label: "Always allowsRetry"},\
+                    {value: "Custom", label: "Custom"},\
+                    {value: undefined, label: "Default"}\
+                ]'
+                data-ng-model='#{model}.retryPolicy.kind'
+                data-multiple='false'
+            )
+    .details-row(ng-if='#{model}.retryPolicy.kind')
+        .col-sm-12.panel-details()
+            div(ng-switch='#{model}.retryPolicy.kind')
+                ignite-configuration-clusters-general-discovery-zookeeper-exponential(ng-switch-when='ExponentialBackoff')
+                ignite-configuration-clusters-general-discovery-zookeeper-bounded-exponential(ng-switch-when='BoundedExponentialBackoff')
+                ignite-configuration-clusters-general-discovery-zookeeper-until-elapsed(ng-switch-when='UntilElapsed')
+                ignite-configuration-clusters-general-discovery-zookeeper-n-times(ng-switch-when='NTimes')
+                ignite-configuration-clusters-general-discovery-zookeeper-one-time(ng-switch-when='OneTime')
+                ignite-configuration-clusters-general-discovery-zookeeper-forever(ng-switch-when='Forever')
+                ignite-configuration-clusters-general-discovery-zookeeper-custom(ng-switch-when='Custom')
+    .details-row
+        ignite-form-field
+            ignite-form-field-label
+                | Base path:
+            ignite-form-field-tooltip
+                | Base path for service registration
+            ignite-form-field-input-text(
+                data-id='basePath'
+                data-name='basePath'
+                data-ng-model='#{model}.basePath'
+                data-placeholder='/services'
+            )
+    .details-row
+        ignite-form-field
+            ignite-form-field-label
+                | Service name:
+            ignite-form-field-tooltip
+                | Service name to use, as defined by Curator's ServiceDiscovery recipe#[br]
+                | In physical ZooKeeper terms, it represents the node under basePath, under which services will be registered
+            ignite-form-field-input-text(
+                data-id='serviceName'
+                data-name='serviceName'
+                data-ng-model='#{model}.serviceName'
+                data-placeholder='ignite'
+            )
+    .details-row
+        ignite-form-field.checkbox
+            ignite-form-field-input-checkbox(
+                data-id='allowDuplicateRegistrations'
+                data-name='allowDuplicateRegistrations'
+                data-ng-model='#{model}.allowDuplicateRegistrations'
+            )
+            | Allow duplicate registrations
+            ignite-form-field-tooltip
+                | Whether to register each node only once, or if duplicate registrations are allowed#[br]
+                | Nodes will attempt to register themselves, plus those they know about #[br]
+                | By default, duplicate registrations are not allowed, but you might want to set this property to
+                | #[b true] if you have multiple network interfaces or if you are facing troubles

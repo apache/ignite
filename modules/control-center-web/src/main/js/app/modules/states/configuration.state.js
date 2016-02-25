@@ -46,6 +46,15 @@ import generalDiscoveryMulticast from './configuration/clusters/general/discover
 import generalDiscoveryS3 from './configuration/clusters/general/discovery/s3.directive';
 import generalDiscoveryShared from './configuration/clusters/general/discovery/shared.directive';
 import generalDiscoveryVm from './configuration/clusters/general/discovery/vm.directive';
+import generalDiscoveryZookeeper from './configuration/clusters/general/discovery/zookeeper.directive';
+
+import generalDiscoveryZookeeperRetryExponential from './configuration/clusters/general/discovery/zookeeper/retrypolicy/exponential-backoff.directive';
+import generalDiscoveryZookeeperRetryBoundedExponential from './configuration/clusters/general/discovery/zookeeper/retrypolicy/bounded-exponential-backoff.directive';
+import generalDiscoveryZookeeperRetryUntilElapsed from './configuration/clusters/general/discovery/zookeeper/retrypolicy/until-elapsed.directive';
+import generalDiscoveryZookeeperRetryNTimes from './configuration/clusters/general/discovery/zookeeper/retrypolicy/n-times.directive';
+import generalDiscoveryZookeeperRetryOneTime from './configuration/clusters/general/discovery/zookeeper/retrypolicy/one-time.directive';
+import generalDiscoveryZookeeperRetryForever from './configuration/clusters/general/discovery/zookeeper/retrypolicy/forever.directive';
+import generalDiscoveryZookeeperRetryCustom from './configuration/clusters/general/discovery/zookeeper/retrypolicy/custom.directive';
 
 angular
 .module('ignite-console.states.configuration', [
@@ -76,6 +85,14 @@ angular
 .directive(...generalDiscoveryS3)
 .directive(...generalDiscoveryShared)
 .directive(...generalDiscoveryVm)
+.directive(...generalDiscoveryZookeeper)
+.directive(...generalDiscoveryZookeeperRetryExponential)
+.directive(...generalDiscoveryZookeeperRetryBoundedExponential)
+.directive(...generalDiscoveryZookeeperRetryUntilElapsed)
+.directive(...generalDiscoveryZookeeperRetryNTimes)
+.directive(...generalDiscoveryZookeeperRetryOneTime)
+.directive(...generalDiscoveryZookeeperRetryForever)
+.directive(...generalDiscoveryZookeeperRetryCustom)
 // Services.
 .service(...ConfigurationSummaryResource)
 .config(['$stateProvider', function($stateProvider) {

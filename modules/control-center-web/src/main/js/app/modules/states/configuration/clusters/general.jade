@@ -93,6 +93,8 @@ form.panel.panel-default(name='general' novalidate)
                             ng-if='#{model}.discovery.kind === "SharedFs"')
                         ignite-configuration-clusters-general-discovery-vm(
                             ng-if='#{model}.discovery.kind === "Vm"')
+                        ignite-configuration-clusters-general-discovery-zookeeper(
+                            ng-if='#{model}.discovery.kind === "ZooKeeper"')
             ignite-ui-ace-tabs.col-sm-6
                 .preview-panel(ng-init='mode = false')
                     .preview-legend
