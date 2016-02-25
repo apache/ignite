@@ -43,7 +43,7 @@ module.exports.factory = function(_, express, apacheIgnite, fs, JSZip, settings,
 
         const _client = (userId) => {
             return new Promise((resolve, reject) => {
-                const agent = agentMgr.findClient(userId);
+                const agent = agentMgr.findAgent(userId);
 
                 if (agent)
                     return resolve(agent);

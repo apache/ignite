@@ -17,12 +17,11 @@
 
 package org.apache.ignite.console.agent;
 
-import org.apache.log4j.Logger;
-
 import java.io.File;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.security.ProtectionDomain;
+import org.apache.log4j.Logger;
 
 /**
  * Utility methods.
@@ -101,10 +100,7 @@ public class AgentUtils {
                 return file;
         }
 
-        /*
-         * 2. Check given path as absolute.
-         */
-
+        // 2. Check given path as absolute.
         File file = new File(path);
 
         if (file.exists())

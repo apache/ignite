@@ -108,12 +108,12 @@ public class AgentSqlDemo {
         CacheConfiguration<K, V> ccfg = new CacheConfiguration<>(COUNTRY_CACHE_NAME);
 
         // Configure cacheCountry types.
-        Collection<QueryEntity> queryEntities = new ArrayList<>();
+        Collection<QueryEntity> qryEntities = new ArrayList<>();
 
         // COUNTRY.
         QueryEntity type = new QueryEntity();
 
-        queryEntities.add(type);
+        qryEntities.add(type);
 
         type.setKeyType(Integer.class.getName());
         type.setValueType(Country.class.getName());
@@ -130,7 +130,7 @@ public class AgentSqlDemo {
         // Indexes for COUNTRY.
         type.setIndexes(Collections.singletonList(new QueryIndex("id", QueryIndexType.SORTED, false, "PRIMARY_KEY_6")));
 
-        ccfg.setQueryEntities(queryEntities);
+        ccfg.setQueryEntities(qryEntities);
 
         return ccfg;
     }
@@ -142,12 +142,12 @@ public class AgentSqlDemo {
         CacheConfiguration<K, V> ccfg = new CacheConfiguration<>(DEPARTMENT_CACHE_NAME);
 
         // Configure cacheDepartment types.
-        Collection<QueryEntity> queryEntities = new ArrayList<>();
+        Collection<QueryEntity> qryEntities = new ArrayList<>();
 
         // DEPARTMENT.
         QueryEntity type = new QueryEntity();
 
-        queryEntities.add(type);
+        qryEntities.add(type);
 
         type.setKeyType(Integer.class.getName());
         type.setValueType(Department.class.getName());
@@ -164,7 +164,7 @@ public class AgentSqlDemo {
         // Indexes for DEPARTMENT.
         type.setIndexes(Collections.singletonList(new QueryIndex("id", QueryIndexType.SORTED, false, "PRIMARY_KEY_4")));
 
-        ccfg.setQueryEntities(queryEntities);
+        ccfg.setQueryEntities(qryEntities);
 
         return ccfg;
     }
@@ -176,12 +176,12 @@ public class AgentSqlDemo {
         CacheConfiguration<K, V> ccfg = new CacheConfiguration<>(EMPLOYEE_CACHE_NAME);
 
         // Configure cacheEmployee types.
-        Collection<QueryEntity> queryEntities = new ArrayList<>();
+        Collection<QueryEntity> qryEntities = new ArrayList<>();
 
         // EMPLOYEE.
         QueryEntity type = new QueryEntity();
 
-        queryEntities.add(type);
+        qryEntities.add(type);
 
         type.setKeyType(Integer.class.getName());
         type.setValueType(Employee.class.getName());
@@ -207,23 +207,23 @@ public class AgentSqlDemo {
 
         indexes.add(new QueryIndex("id", QueryIndexType.SORTED, false, "PRIMARY_KEY_7"));
 
-        QueryIndex index = new QueryIndex();
+        QueryIndex idx = new QueryIndex();
 
-        index.setName("EMP_NAMES");
-        index.setIndexType(QueryIndexType.SORTED);
+        idx.setName("EMP_NAMES");
+        idx.setIndexType(QueryIndexType.SORTED);
         LinkedHashMap<String, Boolean> indFlds = new LinkedHashMap<>();
 
         indFlds.put("firstName", false);
         indFlds.put("lastName", false);
 
-        index.setFields(indFlds);
+        idx.setFields(indFlds);
 
-        indexes.add(index);
+        indexes.add(idx);
         indexes.add(new QueryIndex("salary", QueryIndexType.SORTED, false, "EMP_SALARY"));
 
         type.setIndexes(indexes);
 
-        ccfg.setQueryEntities(queryEntities);
+        ccfg.setQueryEntities(qryEntities);
 
         return ccfg;
     }
@@ -235,12 +235,12 @@ public class AgentSqlDemo {
         CacheConfiguration<K, V> ccfg = new CacheConfiguration<>(PARKING_CACHE_NAME);
 
         // Configure cacheParking types.
-        Collection<QueryEntity> queryEntities = new ArrayList<>();
+        Collection<QueryEntity> qryEntities = new ArrayList<>();
 
         // PARKING.
         QueryEntity type = new QueryEntity();
 
-        queryEntities.add(type);
+        qryEntities.add(type);
 
         type.setKeyType(Integer.class.getName());
         type.setValueType(Parking.class.getName());
@@ -250,14 +250,14 @@ public class AgentSqlDemo {
 
         qryFlds.put("id", "java.lang.Integer");
         qryFlds.put("name", "java.lang.String");
-        qryFlds.put("capacity", "java.lang.Integer");;
+        qryFlds.put("capacity", "java.lang.Integer");
 
         type.setFields(qryFlds);
 
         // Indexes for PARKING.
         type.setIndexes(Collections.singletonList(new QueryIndex("id", QueryIndexType.SORTED, false, "PRIMARY_KEY_F")));
 
-        ccfg.setQueryEntities(queryEntities);
+        ccfg.setQueryEntities(qryEntities);
 
         return ccfg;
     }
@@ -269,12 +269,12 @@ public class AgentSqlDemo {
         CacheConfiguration<K, V> ccfg = new CacheConfiguration<>(CAR_CACHE_NAME);
 
         // Configure cacheCar types.
-        Collection<QueryEntity> queryEntities = new ArrayList<>();
+        Collection<QueryEntity> qryEntities = new ArrayList<>();
 
         // CAR.
         QueryEntity type = new QueryEntity();
 
-        queryEntities.add(type);
+        qryEntities.add(type);
 
         type.setKeyType(Integer.class.getName());
         type.setValueType(Car.class.getName());
@@ -291,7 +291,7 @@ public class AgentSqlDemo {
         // Indexes for CAR.
         type.setIndexes(Collections.singletonList(new QueryIndex("id", QueryIndexType.SORTED, false, "PRIMARY_KEY_1")));
 
-        ccfg.setQueryEntities(queryEntities);
+        ccfg.setQueryEntities(qryEntities);
 
         return ccfg;
     }
@@ -517,6 +517,8 @@ public class AgentSqlDemo {
 
                 cfg.setCacheConfiguration(cacheCountry(), cacheDepartment(), cacheEmployee(), cacheParking(), cacheCar());
 
+                cfg.getConnectorConfiguration().setPort(60700);
+
                 System.setProperty(IGNITE_JETTY_PORT, "60800");
                 System.setProperty(IGNITE_NO_ASCII, "true");
 
@@ -524,8 +526,9 @@ public class AgentSqlDemo {
 
                 IgniteEx ignite = (IgniteEx)Ignition.start(cfg);
 
-                String host = ((Collection<String>)
-                    ignite.localNode().attribute(ATTR_REST_JETTY_ADDRS)).iterator().next();
+                Collection<String> jettyAddrs = ignite.localNode().attribute(ATTR_REST_JETTY_ADDRS);
+
+                String host = jettyAddrs == null ? null : jettyAddrs.iterator().next();
 
                 Integer port = ignite.localNode().attribute(ATTR_REST_JETTY_PORT);
 

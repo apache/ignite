@@ -21,10 +21,18 @@
 
 module.exports = {
     implements: 'agent',
-    inject: ['require(fs)', 'require(ws)', 'require(apache-ignite)', 'mongo']
+    inject: ['require(lodash)', 'require(fs)', 'require(socket.io)', 'require(apache-ignite)', 'mongo']
 };
 
-module.exports.factory = function(fs, ws, apacheIgnite, mongo) {
+/**
+ * @param _
+ * @param fs
+ * @param socketio
+ * @param apacheIgnite
+ * @param mongo
+ * @returns {AgentManager}
+ */
+module.exports.factory = function(_, fs, socketio, apacheIgnite, mongo) {
     /**
      * Creates an instance of server for Ignite.
      */
@@ -72,22 +80,28 @@ module.exports.factory = function(fs, ws, apacheIgnite, mongo) {
 
     class Agent {
         /**
+         * @param {socketIo.Socket} _wsSrv
          * @param {AgentManager} manager
-         * @param {WebSocket} _wsSrv
          */
         constructor(_wsSrv, manager) {
             const self = this;
 
             this._manager = manager;
 
-            this._wsSrv = _wsSrv;
+            /**
+             * @type {socketIo.Socket}
+             * @private
+             */
+            this._wsSocket = _wsSrv;
 
-            this._wsSrv.on('close', () => {
+            this._wsSocket.on('disconnect', () => {
                 if (self._user)
-                    self._manager._removeClient(self._user._id, self);
+                    self._manager._removeAgent(self._user._id, self);
             });
 
-            this._wsSrv.on('message', (msgStr) => {
+            this._wsSocket.on('agent:auth', (msg, cb) => self._processAuth(msg, cb));
+
+            this._wsSocket.on('message', (msgStr) => {
                 const msg = JSON.parse(msgStr);
 
                 self['_rmt' + msg.type](msg);
@@ -98,11 +112,17 @@ module.exports.factory = function(fs, ws, apacheIgnite, mongo) {
             this._cbMap = {};
         }
 
-        _runCommand(method, args) {
+        /**
+         *
+         * @param event
+         * @param data
+         * @returns {Promise}
+         */
+        _exec(event, data) {
             const self = this;
 
             return new Promise((resolve, reject) =>
-                self._invokeRmtMethod(method, args, (error, res) => {
+                self._emit(event, data, (error, res) => {
                     if (error)
                         return reject(error);
 
@@ -145,38 +165,35 @@ module.exports.factory = function(fs, ws, apacheIgnite, mongo) {
                 if (error)
                     return cb(error);
 
-                const restError = restResult.error;
+                error = restResult.error;
 
-                if (restError)
-                    return cb(restError);
+                if (error)
+                    return cb(error);
 
-                const restCode = restResult.restCode;
+                const code = restResult.code;
 
-                if (restCode !== 200) {
-                    if (restCode === 401)
-                        return cb.call({code: restCode, message: 'Failed to authenticate on node.'});
+                if (code !== 200) {
+                    if (code === 401)
+                        return cb({code, message: 'Failed to authenticate on node.'});
 
-                    return cb.call({
-                        code: restCode,
-                        message: restError || 'Failed connect to node and execute REST command.'
-                    });
+                    return cb({code, message: error || 'Failed connect to node and execute REST command.'});
                 }
 
                 try {
-                    const nodeResponse = JSON.parse(restResult.response);
+                    const response = JSON.parse(restResult.data);
 
-                    if (nodeResponse.successStatus === 0)
-                        return cb(null, nodeResponse.response);
+                    if (response.successStatus === 0)
+                        return cb(null, response.response);
 
-                    switch (nodeResponse.successStatus) {
+                    switch (response.successStatus) {
                         case 1:
-                            return cb({code: 500, message: nodeResponse.error});
+                            return cb({code: 500, message: response.error});
                         case 2:
-                            return cb({code: 401, message: nodeResponse.error});
+                            return cb({code: 401, message: response.error});
                         case 3:
-                            return cb({code: 403, message: nodeResponse.error});
+                            return cb({code: 403, message: response.error});
                         default:
-                            return cb(nodeResponse.error);
+                            return cb(response.error);
                     }
                 }
                 catch (e) {
@@ -184,14 +201,7 @@ module.exports.factory = function(fs, ws, apacheIgnite, mongo) {
                 }
             };
 
-            this._invokeRmtMethod('executeRest', [uri, params, demo, method, headers, body], _cb);
-        }
-
-        /**
-         * @param {?String} error
-         */
-        authResult(error) {
-            return this._runCommand('authResult', [error]);
+            this._emit('node:rest', {uri, params, demo, method, headers, body}, _cb);
         }
 
         /**
@@ -202,7 +212,7 @@ module.exports.factory = function(fs, ws, apacheIgnite, mongo) {
          * @returns {Promise} Promise on list of tables (see org.apache.ignite.schema.parser.DbTable java class)
          */
         metadataSchemas(driverPath, driverClass, url, info) {
-            return this._runCommand('schemas', [driverPath, driverClass, url, info]);
+            return this._exec('schemaImport:schemas', {driverPath, driverClass, url, info});
         }
 
         /**
@@ -215,46 +225,43 @@ module.exports.factory = function(fs, ws, apacheIgnite, mongo) {
          * @returns {Promise} Promise on list of tables (see org.apache.ignite.schema.parser.DbTable java class)
          */
         metadataTables(driverPath, driverClass, url, info, schemas, tablesOnly) {
-            return this._runCommand('metadata', [driverPath, driverClass, url, info, schemas, tablesOnly]);
+            return this._exec('schemaImport:metadata', {driverPath, driverClass, url, info, schemas, tablesOnly});
         }
 
         /**
          * @returns {Promise} Promise on list of jars from driver folder.
          */
         availableDrivers() {
-            return this._runCommand('availableDrivers', []);
+            return this._exec('schemaImport:drivers');
         }
 
         /**
          * Run http request
          *
-         * @this {AgentServer}
-         * @param {String} method Command name.
-         * @param {Array} args Command params.
-         * @param {Function} callback on finish
+         * @this {Agent}
+         * @param {String} event Command name.
+         * @param {Object} data Command params.
+         * @param {?Function} callback on finish
          */
-        _invokeRmtMethod(method, args, callback) {
-            if (this._wsSrv.readyState !== 1) {
+        _emit(event, data, callback) {
+            if (!this._wsSocket.connected) {
                 if (callback)
                     callback('org.apache.ignite.agent.AgentException: Connection is closed');
 
                 return;
             }
 
-            const msg = {method, args};
-
-            if (callback) {
-                const reqId = this._reqCounter++;
-
-                this._cbMap[reqId] = callback;
-
-                msg.reqId = reqId;
-            }
-
-            this._wsSrv.send(JSON.stringify(msg));
+            this._wsSocket.emit(event, data, callback);
         }
 
-        _rmtAuthMessage(msg) {
+        /**
+         * Process auth request.
+         *
+         * @param {Object} data
+         * @param {Function} cb
+         * @private
+         */
+        _processAuth(data, cb) {
             const self = this;
 
             fs.stat('public/agent/ignite-web-agent-1.5.0.final.zip', (errFs, stats) => {
@@ -263,18 +270,16 @@ module.exports.factory = function(fs, ws, apacheIgnite, mongo) {
                 if (!errFs)
                     relDate = stats.birthtime.getTime();
 
-                if ((msg.relDate || 0) < relDate)
-                    self.authResult('You are using an older version of the agent. Please reload agent archive');
+                if ((data.relDate || 0) < relDate)
+                    cb('You are using an older version of the agent. Please reload agent archive');
 
-                mongo.Account.findOne({token: msg.token}, (err, account) => {
+                mongo.Account.findOne({token: data.token}, (err, account) => {
                     // TODO IGNITE-1379 send error to web master.
                     if (err)
-                        self.authResult('Failed to authorize user');
+                        cb('Failed to authorize user');
                     else if (!account)
-                        self.authResult('Invalid token, user not found');
+                        cb('Invalid token, user not found');
                     else {
-                        self.authResult(null);
-
                         self._user = account;
 
                         self._manager._addAgent(account._id, self);
@@ -282,20 +287,11 @@ module.exports.factory = function(fs, ws, apacheIgnite, mongo) {
                         self._cluster = new apacheIgnite.Ignite(new AgentServer(self));
 
                         self._demo = new apacheIgnite.Ignite(new AgentServer(self, true));
+
+                        cb();
                     }
                 });
             });
-        }
-
-        _rmtCallRes(msg) {
-            const callback = this._cbMap[msg.reqId];
-
-            if (!callback)
-                return;
-
-            delete this._cbMap[msg.reqId];
-
-            callback(msg.error, msg.response);
         }
 
         /**
@@ -311,11 +307,14 @@ module.exports.factory = function(fs, ws, apacheIgnite, mongo) {
          * @constructor
          */
         constructor() {
+            /**
+             * @type {Object.<ObjectId, Array.<Agent>>}
+             */
             this._agents = {};
         }
 
         /**
-         *
+         * @param {http.Server|https.Server} srv
          */
         listen(srv) {
             if (this._server)
@@ -323,29 +322,56 @@ module.exports.factory = function(fs, ws, apacheIgnite, mongo) {
 
             this._server = srv;
 
-            this._wsSrv = new ws.Server({server: this._server});
+            /**
+             * @type {WebSocketServer}
+             */
+            this._wsSocket = socketio(this._server);
 
             const self = this;
 
-            this._wsSrv.on('connection', (_wsSrv) => new Agent(_wsSrv, self));
+            this._wsSocket.on('connection', (_wsSrv) => new Agent(_wsSrv, self));
+        }
+
+        /**
+         * @param {ObjectId} userId
+         * @returns {Agent}
+         */
+        findAgent(userId) {
+            if (!this._server)
+                throw 'Agent server not started yet!';
+
+            const agents = this._agents[userId];
+
+            if (!agents || agents.length === 0)
+                return null;
+
+            return agents[0];
+        }
+
+        /**
+         * Close connections for all user agents.
+         * @param {ObjectId} userId
+         */
+        close(userId) {
+            if (!this._server)
+                throw 'Agent server not started yet!';
+
+            const agents = this._agents[userId];
+
+            this._agents[userId] = [];
+
+            for (const agent of agents)
+                agent._emit('close', 'Security token was changed for user');
         }
 
         /**
          * @param userId
-         * @param {Agent} client
+         * @param {Agent} agent
          */
-        _removeClient(userId, client) {
+        _removeAgent(userId, agent) {
             const agents = this._agents[userId];
 
-            if (agents) {
-                let idx;
-
-                while ((idx = agents.indexOf(client)) !== -1)
-                    agents.splice(idx, 1);
-
-                if (agents.length === 0)
-                    delete this._agents[userId];
-            }
+            _.remove(agents, (_agent) => _agent === agent);
         }
 
         /**
@@ -353,28 +379,12 @@ module.exports.factory = function(fs, ws, apacheIgnite, mongo) {
          * @param {Agent} agent
          */
         _addAgent(userId, agent) {
-            let agents = this._agents[userId];
-
-            if (!agents) {
-                agents = [];
-
-                this._agents[userId] = agents;
-            }
-
-            agents.push(agent);
-        }
-
-        /**
-         * @param {ObjectId} userId
-         * @returns {Agent}
-         */
-        findClient(userId) {
             const agents = this._agents[userId];
 
-            if (!agents || agents.length === 0)
-                return null;
+            if (agents)
+                return agents.push(agent);
 
-            return agents[0];
+            this._agents[userId] = [agent];
         }
     }
 

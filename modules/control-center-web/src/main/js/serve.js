@@ -98,7 +98,7 @@ Promise.all([fireUp('settings'), fireUp('app'), fireUp('agent'), fireUp('io')])
         if (process.send)
             process.send('running');
     }).catch((err) => {
-        console.error(err);
+        console.error(error);
 
         process.exit(1);
     });

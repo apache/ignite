@@ -21,10 +21,18 @@
 
 module.exports = {
     implements: 'profile-routes',
-    inject: ['require(lodash)', 'require(express)', 'mongo']
+    inject: ['require(lodash)', 'require(express)', 'mongo', 'agent']
 };
 
-module.exports.factory = function(_, express, mongo) {
+/**
+ *
+ * @param _
+ * @param express
+ * @param mongo
+ * @param {AgentManager} agent
+ * @returns {Promise}
+ */
+module.exports.factory = function(_, express, mongo, agent) {
     return new Promise((resolveFactory) => {
         const router = new express.Router();
 
@@ -71,6 +79,9 @@ module.exports.factory = function(_, express, mongo) {
                     });
                 })
                 .then((user) => {
+                    if (!params.token || user.token !== params.token)
+                        agent.close(user._id);
+
                     for (const param in params) {
                         if (params.hasOwnProperty(param))
                             user[param] = params[param];

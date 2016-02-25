@@ -2177,29 +2177,29 @@ consoleModule.service('$agentDownload', [
                 _timedOut = true;
             }, _timeout);
 
-            socket.on('agent:avail', function(data) {
-                _modal.check.cb(data, _modalAlertHide, _handleException);
-            });
+            //socket.on('agent:avail', function(data) {
+            //    _modal.check.cb(data, _modalAlertHide, _handleException);
+            //});
 
             // socket.on()
 
-            // $http.post(_modal.check.url, _modal.check.params, {timeout: _timeout})
-            //     .success(function (data) {
-            //         if (_modal.awaitFirstSuccess)
-            //             _stopInterval();
+             $http.post(_modal.check.url, _modal.check.params, {timeout: _timeout})
+                 .success(function (data) {
+                     if (_modal.awaitFirstSuccess)
+                         _stopInterval();
 
-            //         $loading.finish('loading');
+                     $loading.finish('loading');
 
-            //         _modal.check.cb(data, _modalAlertHide, _handleException);
+                     _modal.check.cb(data, _modalAlertHide, _handleException);
 
-            //         if (!_modal.skipSingleError && _modal.check.onConnect)
-            //             _modal.check.onConnect();
+                     if (!_modal.skipSingleError && _modal.check.onConnect)
+                         _modal.check.onConnect();
 
-            //         _modal.skipSingleError = true;
-            //     })
-            //     .error(function (errMsg, status) {
-            //         _handleException(errMsg, status, _timedOut);
-            //     });
+                     _modal.skipSingleError = true;
+                 })
+                 .error(function (errMsg, status) {
+                     _handleException(errMsg, status, _timedOut);
+                 });
         }
 
         return {

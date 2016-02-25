@@ -498,12 +498,12 @@ consoleModule.controller('domainsController', function ($filter, $http, $timeout
                                         }
                                     }
                                     else {
-                                        drivers.forEach(function (driver) {
+                                        drivers.forEach(function (drv) {
                                             $scope.jdbcDriverJars.push({
-                                                label: driver.jdbcDriverJar,
+                                                label: drv.jdbcDriverJar,
                                                 value: {
-                                                    jdbcDriverJar: driver.jdbcDriverJar,
-                                                    jdbcDriverClass: driver.jdbcDriverClass
+                                                    jdbcDriverJar: drv.jdbcDriverJar,
+                                                    jdbcDriverClass: drv.jdbcDriverCls
                                                 }
                                             });
                                         });

@@ -26,7 +26,7 @@ mixin tipLabel(lines)
     i.tipLabel.fa.fa-question-circle.blank(ng-if='!#{lines}')
 
 mixin ico-exclamation(mdl, err, msg)
-    i.fa.fa-exclamation-triangle.form-control-feedback(ng-show='ui.inputForm["#{mdl}"].$error.#{err}' bs-tooltip='' data-title='#{msg}')
+    i.fa.fa-exclamation-triangle.form-control-feedback(ng-show='ui.inputForm["#{mdl}"].$error.#{error}' bs-tooltip='' data-title='#{msg}')
 
 mixin btn-save(show, click)
     i.tipField.fa.fa-floppy-o(ng-show=show ng-click=click bs-tooltip='' data-title='Click icon or press [Enter] to save item' data-trigger='hover')

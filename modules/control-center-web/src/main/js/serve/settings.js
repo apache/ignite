@@ -55,7 +55,7 @@ module.exports.factory = function(nconf, fs) {
             }
         },
         server: {
-            port: _normalizePort(nconf.get('server:port') || (nconf.get('server:ssl') ? 3443 : 3000)),
+            port: _normalizePort(nconf.get('server:port') || 3000),
             SSLOptions: nconf.get('server:ssl') && {
                 enable301Redirects: true,
                 trustXFPHeader: true,

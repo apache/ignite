@@ -32,7 +32,7 @@ module.exports.factory = (socketio, configure) => {
             configure.socketio(io);
 
             io.sockets.on('connection', (socket) => {
-                var user = socket.client.request.user;
+                const user = socket.client.request.user;
 
                 socket.on('agent:ping', () => {
                     console.log('agent:ping', user);

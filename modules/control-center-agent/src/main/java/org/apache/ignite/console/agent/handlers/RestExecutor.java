@@ -37,7 +37,6 @@ import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClientBuilder;
 import org.apache.ignite.console.agent.AgentConfiguration;
-import org.apache.ignite.console.agent.remote.Remote;
 import org.apache.ignite.console.demo.AgentSqlDemo;
 import org.apache.log4j.Logger;
 
@@ -46,7 +45,7 @@ import static org.apache.ignite.console.agent.AgentConfiguration.DFLT_NODE_PORT;
 /**
  * Executor for REST requests.
  */
-public class RestExecutor {
+public class RestExecutor extends AbstractListener {
     /** */
     private static final Logger log = Logger.getLogger(RestExecutor.class.getName());
 
@@ -73,9 +72,54 @@ public class RestExecutor {
     /**
      *
      */
-    public void stop() throws IOException {
-        if (httpClient != null)
-            httpClient.close();
+    public void stop() {
+        if (httpClient != null) {
+            try {
+                httpClient.close();
+            }
+            catch (IOException ignore) {
+                // No-op.
+            }
+        }
+
+    }
+
+    /** On rest request. */
+    @SuppressWarnings("unchecked")
+    @Override public Object execute(Map<String, Object> args) throws Exception {
+        log.debug("Start parse REST command args: " + args);
+
+        String uri = null;
+
+        if (args.containsKey("uri"))
+            uri = args.get("uri").toString();
+
+        Map<String, Object> params = null;
+
+        if (args.containsKey("params"))
+            params = (Map<String, Object>) args.get("params");
+
+        if (!args.containsKey("demo"))
+            throw new IllegalArgumentException("Missing demo flag in arguments: " + args);
+
+        boolean demo = (boolean)args.get("demo");
+
+        if (!args.containsKey("method"))
+            throw new IllegalArgumentException("Missing method in arguments: " + args);
+
+        String mtd = args.get("method").toString();
+
+        Map<String, Object> headers = null;
+
+        if (args.containsKey("headers"))
+            headers = (Map<String, Object>) args.get("headers");
+
+        String body = null;
+
+        if (args.containsKey("body"))
+            body = args.get("body").toString();
+
+        return executeRest(uri, params, demo, mtd, headers, body);
     }
 
     /**
@@ -86,10 +130,10 @@ public class RestExecutor {
      * @param headers Headers.
      * @param body Body.
      */
-    @Remote
-    public RestResult executeRest(String uri, Map<String, String> params, boolean demo,
-        String mtd, Map<String, String> headers, String body) throws IOException, URISyntaxException {
-        log.debug("Start execute REST command [method=" + mtd + ", uri=/" + uri + ", parameters=" + params + "]");
+    public RestResult executeRest(String uri, Map<String, Object> params, boolean demo,
+        String mtd, Map<String, Object> headers, String body) throws IOException, URISyntaxException {
+        log.debug("Start execute REST command [method=" + mtd + ", uri=/" + (uri == null ? "" : uri) +
+            ", parameters=" + params + "]");
 
         final URIBuilder builder;
 
@@ -99,7 +143,7 @@ public class RestExecutor {
 
             // null if demo node not started yet.
             if (cfg.demoNodeUri() == null)
-                return RestResult.fail(404, "Demo node is not started yet.");
+                return RestResult.fail("Demo node is not started yet.", 404);
 
             builder = new URIBuilder(cfg.demoNodeUri());
         }
@@ -117,8 +161,8 @@ public class RestExecutor {
         }
 
         if (params != null) {
-            for (Map.Entry<String, String> entry : params.entrySet())
-                builder.addParameter(entry.getKey(), entry.getValue());
+            for (Map.Entry<String, Object> entry : params.entrySet())
+                builder.addParameter(entry.getKey(), entry.getValue() == null ? null : entry.getValue().toString());
         }
 
         HttpRequestBase httpReq;
@@ -150,8 +194,8 @@ public class RestExecutor {
             throw new IOException("Unknown HTTP-method: " + mtd);
 
         if (headers != null) {
-            for (Map.Entry<String, String> entry : headers.entrySet())
-                httpReq.addHeader(entry.getKey(), entry.getValue());
+            for (Map.Entry<String, Object> entry : headers.entrySet())
+                httpReq.addHeader(entry.getKey(), entry.getValue() == null ? null : entry.getValue().toString());
         }
 
         try (CloseableHttpResponse resp = httpClient.execute(httpReq)) {
@@ -174,7 +218,7 @@ public class RestExecutor {
         catch (ConnectException e) {
             log.info("Failed connect to node and execute REST command [uri=" + builder.build() + "]");
 
-            return RestResult.fail(404, "Failed connect to node and execute REST command.");
+            return RestResult.fail("Failed connect to node and execute REST command.", 404);
         }
     }
 
@@ -182,44 +226,42 @@ public class RestExecutor {
      * Request result.
      */
     public static class RestResult {
-        /** REST http code. */
-        private int restCode;
-
         /** The field contains description of error if server could not handle the request. */
-        private String error;
+        public final String error;
+
+        /** REST http code. */
+        public final int code;
 
         /** The field contains result of command. */
-        private String response;
+        public final String data;
 
         /**
-         * @param restCode REST http code.
          * @param error The field contains description of error if server could not handle the request.
-         * @param response The field contains result of command.
+         * @param resCode REST http code.
+         * @param res The field contains result of command.
          */
-        private RestResult(int restCode, String error, String response) {
-            this.restCode = restCode;
+        private RestResult(String error, int resCode, String res) {
             this.error = error;
-            this.response = response;
+            this.code = resCode;
+            this.data = res;
         }
 
         /**
-         * @param restCode REST http code.
          * @param error The field contains description of error if server could not handle the request.
-
+         * @param restCode REST http code.
          * @return Request result.
          */
-        public static RestResult fail(int restCode, String error) {
-            return new RestResult(restCode, error, null);
+        public static RestResult fail(String error, int restCode) {
+            return new RestResult(error, restCode, null);
         }
 
         /**
-         * @param restCode REST http code.
-         * @param response The field contains result of command.
-
+         * @param code REST http code.
+         * @param data The field contains result of command.
          * @return Request result.
          */
-        public static RestResult success(int restCode, String response) {
-            return new RestResult(restCode, null, response);
+        public static RestResult success(int code, String data) {
+            return new RestResult(null, code, data);
         }
     }
 }
