@@ -20,13 +20,14 @@ ACLOCAL_AMFLAGS = "-Im4"
 SUBDIRS = .
 DIST_SUBDIRS = .
 
-AM_CPPFLAGS = -I$(srcdir)/include -I$(srcdir)/../odbc/include -DIGNITE_IMPL
+AM_CPPFLAGS = -I$(srcdir)/include -I$(srcdir)/../odbc/include -I$(srcdir)/../common/include -I$(JAVA_HOME)/include -I$(JAVA_HOME)/include/linux -DIGNITE_IMPL
 AM_CXXFLAGS = -Wall -std=c++0x
 
 noinst_PROGRAMS = ignite-odbc-tests
 
-ignite_odbc_tests_SOURCES = src/teamcity_boost.cpp \
-                       src/teamcity_messages.cpp \
+ignite_odbc_tests_SOURCES = \
+                       src/teamcity/teamcity_boost.cpp \
+                       src/teamcity/teamcity_messages.cpp \
                        src/parser_test.cpp \
                        src/cursor_test.cpp \
                        src/connection_info_test.cpp \
@@ -34,17 +35,19 @@ ignite_odbc_tests_SOURCES = src/teamcity_boost.cpp \
                        src/configuration_test.cpp \
                        src/row_test.cpp \
                        src/utility_test.cpp \
+                       src/queries_test.cpp \
                        src/test_utils.cpp \
                        ../odbc/src/cursor.cpp \
                        ../odbc/src/config/connection_info.cpp \
                        ../odbc/src/app/application_data_buffer.cpp \
                        ../odbc/src/config/configuration.cpp \
                        ../odbc/src/row.cpp \
+                       ../odbc/src/column.cpp \
                        ../odbc/src/decimal.cpp \
                        ../odbc/src/utility.cpp \
                        ../odbc/src/result_page.cpp
 
-ignite_odbc_tests_LDFLAGS = -static-libtool-libs -L/usr/local/lib -lignite-binary -ldl
+ignite_odbc_tests_LDFLAGS = -static-libtool-libs -L/usr/local/lib -ldl -lignite-binary -lignite -lodbc
 
 run-check: check
 	./ignite-odbc-tests -p

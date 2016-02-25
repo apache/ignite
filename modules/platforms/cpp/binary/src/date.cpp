@@ -51,32 +51,32 @@ namespace ignite
         return milliseconds / 1000;
     }
 
-    bool operator==(Date& val1, Date& val2)
+    bool operator==(const Date& val1, const Date& val2)
     {
         return val1.milliseconds == val2.milliseconds;
     }
 
-    bool operator!=(Date& val1, Date& val2)
+    bool operator!=(const Date& val1, const Date& val2)
     {
         return val1.milliseconds != val2.milliseconds;
     }
 
-    bool operator<(Date& val1, Date& val2)
+    bool operator<(const Date& val1, const Date& val2)
     {
         return val1.milliseconds < val2.milliseconds;
     }
 
-    bool operator<=(Date& val1, Date& val2)
+    bool operator<=(const Date& val1, const Date& val2)
     {
         return val1.milliseconds <= val2.milliseconds;
     }
 
-    bool operator>(Date& val1, Date& val2)
+    bool operator>(const Date& val1, const Date& val2)
     {
         return val1.milliseconds > val2.milliseconds;
     }
 
-    bool operator>=(Date& val1, Date& val2)
+    bool operator>=(const Date& val1, const Date& val2)
     {
         return val1.milliseconds >= val2.milliseconds;
     }

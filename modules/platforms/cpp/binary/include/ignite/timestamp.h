@@ -108,7 +108,7 @@ namespace ignite
          * @param val2 Second value.
          * @return True if equal.
          */
-        friend bool IGNITE_IMPORT_EXPORT operator==(Timestamp& val1, Timestamp& val2);
+        friend bool IGNITE_IMPORT_EXPORT operator==(const Timestamp& val1, const Timestamp& val2);
 
         /**
          * Comparison operator override.
@@ -117,7 +117,7 @@ namespace ignite
          * @param val2 Second value.
          * @return True if not equal.
          */
-        friend bool IGNITE_IMPORT_EXPORT operator!=(Timestamp& val1, Timestamp& val2);
+        friend bool IGNITE_IMPORT_EXPORT operator!=(const Timestamp& val1, const Timestamp& val2);
 
         /**
          * Comparison operator override.
@@ -126,7 +126,7 @@ namespace ignite
          * @param val2 Second value.
          * @return True if less.
          */
-        friend bool IGNITE_IMPORT_EXPORT operator<(Timestamp& val1, Timestamp& val2);
+        friend bool IGNITE_IMPORT_EXPORT operator<(const Timestamp& val1, const Timestamp& val2);
 
         /**
          * Comparison operator override.
@@ -135,7 +135,7 @@ namespace ignite
          * @param val2 Second value.
          * @return True if less or equal.
          */
-        friend bool IGNITE_IMPORT_EXPORT operator<=(Timestamp& val1, Timestamp& val2);
+        friend bool IGNITE_IMPORT_EXPORT operator<=(const Timestamp& val1, const Timestamp& val2);
 
         /**
          * Comparison operator override.
@@ -144,7 +144,7 @@ namespace ignite
          * @param val2 Second value.
          * @return True if gretter.
          */
-        friend bool IGNITE_IMPORT_EXPORT operator>(Timestamp& val1, Timestamp& val2);
+        friend bool IGNITE_IMPORT_EXPORT operator>(const Timestamp& val1, const Timestamp& val2);
 
         /**
          * Comparison operator override.
@@ -153,7 +153,7 @@ namespace ignite
          * @param val2 Second value.
          * @return True if gretter or equal.
          */
-        friend bool IGNITE_IMPORT_EXPORT operator>=(Timestamp& val1, Timestamp& val2);
+        friend bool IGNITE_IMPORT_EXPORT operator>=(const Timestamp& val1, const Timestamp& val2);
     private:
         /** Number of seconds since 00:00 hours, Jan 1, 1970 UTC. */
         int64_t seconds;
