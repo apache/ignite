@@ -130,74 +130,92 @@ public class PlatformDeployServiceTask extends ComputeTaskAdapter<String, Object
             return isExecuted;
         }
 
+        /** */
         public byte test(byte arg) {
             return (byte) (arg + 1);
         }
 
+        /** */
         public short test(short arg) {
             return (short) (arg + 1);
         }
 
+        /** */
         public int test(int arg) {
             return arg + 1;
         }
 
+        /** */
         public long test(long arg) {
             return arg + 1;
         }
 
+        /** */
         public float test(float arg) {
             return arg + 1.5f;
         }
 
+        /** */
         public double test(double arg) {
             return arg + 2.5;
         }
 
+        /** */
         public boolean test(boolean arg) {
             return !arg;
         }
 
+        /** */
         public char test(char arg) {
             return (char) (arg + 1);
         }
 
+        /** */
         public String test(String arg) {
             return arg == null ? null : arg + "!";
         }
 
+        /** */
         public Byte testWrapper(Byte arg) {
             return arg == null ? null : (byte) (arg + 1);
         }
 
+        /** */
         public Short testWrapper(Short arg) {
             return arg == null ? null : (short) (arg + 1);
         }
 
+        /** */
         public Integer testWrapper(Integer arg) {
             return arg == null ? null : arg + 1;
         }
 
+        /** */
         public Long testWrapper(Long arg) {
             return arg == null ? null : arg + 1;
         }
 
+        /** */
         public Float testWrapper(Float arg) {
             return arg == null ? null : arg + 1.5f;
         }
 
+        /** */
         public Double testWrapper(Double arg) {
             return arg == null ? null :  arg + 2.5;
         }
 
+        /** */
         public Boolean testWrapper(Boolean arg) {
             return arg == null ? null :  !arg;
         }
 
+        /** */
         public Character testWrapper(Character arg) {
             return arg == null ? null :  (char) (arg + 1);
         }
 
+        /** */
         public byte[] testArray(byte[] arg) {
             if (arg != null)
                 for (int i = 0; i < arg.length; i++)
@@ -206,6 +224,7 @@ public class PlatformDeployServiceTask extends ComputeTaskAdapter<String, Object
             return arg;
         }
 
+        /** */
         public short[] testArray(short[] arg) {
             if (arg != null)
                 for (int i = 0; i < arg.length; i++)
@@ -214,6 +233,7 @@ public class PlatformDeployServiceTask extends ComputeTaskAdapter<String, Object
             return arg;
         }
 
+        /** */
         public int[] testArray(int[] arg) {
             if (arg != null)
                 for (int i = 0; i < arg.length; i++)
@@ -222,6 +242,7 @@ public class PlatformDeployServiceTask extends ComputeTaskAdapter<String, Object
             return arg;
         }
 
+        /** */
         public long[] testArray(long[] arg) {
             if (arg != null)
                 for (int i = 0; i < arg.length; i++)
@@ -230,6 +251,7 @@ public class PlatformDeployServiceTask extends ComputeTaskAdapter<String, Object
             return arg;
         }
 
+        /** */
         public double[] testArray(double[] arg) {
             if (arg != null)
                 for (int i = 0; i < arg.length; i++)
@@ -238,6 +260,7 @@ public class PlatformDeployServiceTask extends ComputeTaskAdapter<String, Object
             return arg;
         }
 
+        /** */
         public float[] testArray(float[] arg) {
             if (arg != null)
                 for (int i = 0; i < arg.length; i++)
@@ -246,6 +269,7 @@ public class PlatformDeployServiceTask extends ComputeTaskAdapter<String, Object
             return arg;
         }
 
+        /** */
         public String[] testArray(String[] arg) {
             if (arg != null)
                 for (int i = 0; i < arg.length; i++)
@@ -254,6 +278,7 @@ public class PlatformDeployServiceTask extends ComputeTaskAdapter<String, Object
             return arg;
         }
 
+        /** */
         public char[] testArray(char[] arg) {
             if (arg != null)
                 for (int i = 0; i < arg.length; i++)
@@ -262,6 +287,7 @@ public class PlatformDeployServiceTask extends ComputeTaskAdapter<String, Object
             return arg;
         }
 
+        /** */
         public boolean[] testArray(boolean[] arg) {
             if (arg != null)
                 for (int i = 0; i < arg.length; i++)
@@ -270,26 +296,32 @@ public class PlatformDeployServiceTask extends ComputeTaskAdapter<String, Object
             return arg;
         }
 
+        /** */
         public Integer testNull(Integer arg) {
             return arg == null ? null : arg + 1;
         }
 
+        /** */
         public int testParams(Object... args) {
             return args.length;
         }
 
+        /** */
         public int test(int x, String y) {
             return x + 1;
         }
 
+        /** */
         public int test(String x, int y) {
             return y + 1;
         }
 
+        /** */
         public PlatformComputeBinarizable testBinarizable(PlatformComputeBinarizable arg) {
             return arg == null ? null : new PlatformComputeBinarizable(arg.field + 1);
         }
 
+        /** */
         public BinaryObject testBinaryObject(BinaryObject o) {
             if (o == null)
                 return null;
