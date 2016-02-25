@@ -311,12 +311,13 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// <param name="stream">Stream.</param>
         /// <param name="offset">Offset in the array.</param>
         /// <param name="count">Field count to write.</param>
+        /// <param name="compact">Compact mode without field ids.</param>
         /// <returns>
         /// Flags according to offset sizes: <see cref="Flag.OffsetOneByte" />,
         /// <see cref="Flag.OffsetTwoBytes" />, or 0.
         /// </returns>
         public static unsafe Flag WriteSchema(BinaryObjectSchemaField[] fields, IBinaryStream stream, int offset,
-            int count)
+            int count, bool compact)
         {
             Debug.Assert(fields != null);
             Debug.Assert(stream != null);
@@ -329,50 +330,75 @@ namespace Apache.Ignite.Core.Impl.Binary
                 // Last field is the farthest in the stream
                 var maxFieldOffset = fields[offset + count - 1].Offset;
 
-                if (maxFieldOffset <= byte.MaxValue)
+                if (compact)
                 {
+                    if (maxFieldOffset <= byte.MaxValue)
+                    {
+                        for (int i = offset; i < count + offset; i++)
+                            stream.WriteByte((byte) fields[i].Offset);
+
+                        return Flag.OffsetOneByte;
+                    }
+
+                    if (maxFieldOffset <= ushort.MaxValue)
+                    {
+                        for (int i = offset; i < count + offset; i++)
+                            stream.WriteShort((short) fields[i].Offset);
+
+                        return Flag.OffsetTwoBytes;
+                    }
+
                     for (int i = offset; i < count + offset; i++)
-                    {
-                        var field = fields[i];
-
-                        stream.WriteInt(field.Id);
-                        stream.WriteByte((byte)field.Offset);
-                    }
-
-                    return Flag.OffsetOneByte;
-                }
-
-                if (maxFieldOffset <= ushort.MaxValue)
-                {
-                    for (int i = offset; i < count + offset; i++)
-                    {
-                        var field = fields[i];
-
-                        stream.WriteInt(field.Id);
-
-                        stream.WriteShort((short)field.Offset);
-                    }
-
-                    return Flag.OffsetTwoBytes;
-                }
-
-                if (BitConverter.IsLittleEndian)
-                {
-                    fixed (BinaryObjectSchemaField* ptr = &fields[offset])
-                    {
-                        stream.Write((byte*)ptr, count / BinaryObjectSchemaField.Size);
-                    }
+                        stream.WriteInt(fields[i].Offset);
                 }
                 else
                 {
-                    for (int i = offset; i < count + offset; i++)
+                    if (maxFieldOffset <= byte.MaxValue)
                     {
-                        var field = fields[i];
+                        for (int i = offset; i < count + offset; i++)
+                        {
+                            var field = fields[i];
 
-                        stream.WriteInt(field.Id);
-                        stream.WriteInt(field.Offset);
+                            stream.WriteInt(field.Id);
+                            stream.WriteByte((byte)field.Offset);
+                        }
+
+                        return Flag.OffsetOneByte;
+                    }
+
+                    if (maxFieldOffset <= ushort.MaxValue)
+                    {
+                        for (int i = offset; i < count + offset; i++)
+                        {
+                            var field = fields[i];
+
+                            stream.WriteInt(field.Id);
+
+                            stream.WriteShort((short)field.Offset);
+                        }
+
+                        return Flag.OffsetTwoBytes;
+                    }
+
+                    if (BitConverter.IsLittleEndian)
+                    {
+                        fixed (BinaryObjectSchemaField* ptr = &fields[offset])
+                        {
+                            stream.Write((byte*)ptr, count / BinaryObjectSchemaField.Size);
+                        }
+                    }
+                    else
+                    {
+                        for (int i = offset; i < count + offset; i++)
+                        {
+                            var field = fields[i];
+
+                            stream.WriteInt(field.Id);
+                            stream.WriteInt(field.Offset);
+                        }
                     }
                 }
+
 
                 return Flag.None;
             }
