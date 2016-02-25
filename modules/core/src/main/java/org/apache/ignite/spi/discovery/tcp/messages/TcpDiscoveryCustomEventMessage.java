@@ -77,7 +77,7 @@ public class TcpDiscoveryCustomEventMessage extends TcpDiscoveryAbstractMessage 
      */
     @Nullable public DiscoverySpiCustomMessage message(@NotNull Marshaller marsh, ClassLoader ldr) throws Throwable {
         if (msg == null) {
-            msg = marsh.unmarshal(msgBytes, U.resolveClassLoader(ldr));
+            msg = marsh.unmarshal(msgBytes, ldr);
 
             assert msg != null;
         }

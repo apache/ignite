@@ -885,7 +885,7 @@ class ClientImpl extends TcpDiscoveryImpl {
                         TcpDiscoveryAbstractMessage msg;
 
                         try {
-                            msg = spi.marsh.unmarshal(in, U.gridClassLoader());
+                            msg = spi.marsh.unmarshal(in, U.resolveClassLoader(spi.ignite().configuration()));
                         }
                         catch (IgniteCheckedException e) {
                             if (log.isDebugEnabled())
@@ -1210,7 +1210,8 @@ class ClientImpl extends TcpDiscoveryImpl {
                         List<TcpDiscoveryAbstractMessage> msgs = null;
 
                         while (!isInterrupted()) {
-                            TcpDiscoveryAbstractMessage msg = spi.marsh.unmarshal(in, U.gridClassLoader());
+                            TcpDiscoveryAbstractMessage msg = spi.marsh.unmarshal(in,
+                                U.resolveClassLoader(spi.ignite().configuration()));
 
                             if (msg instanceof TcpDiscoveryClientReconnectMessage) {
                                 TcpDiscoveryClientReconnectMessage res = (TcpDiscoveryClientReconnectMessage)msg;
@@ -1642,7 +1643,8 @@ class ClientImpl extends TcpDiscoveryImpl {
                         Map<Integer, byte[]> data = msg.newNodeDiscoveryData();
 
                         if (data != null)
-                            spi.onExchange(newNodeId, newNodeId, data, null);
+                            spi.onExchange(newNodeId, newNodeId, data,
+                                U.resolveClassLoader(spi.ignite().configuration()));
                     }
                 }
                 else {
@@ -1666,7 +1668,7 @@ class ClientImpl extends TcpDiscoveryImpl {
                     if (dataMap != null) {
                         for (Map.Entry<UUID, Map<Integer, byte[]>> entry : dataMap.entrySet())
                             spi.onExchange(getLocalNodeId(), entry.getKey(), entry.getValue(),
-                                U.resolveClassLoader(spi.ignite().configuration().getClassLoader()));
+                                U.resolveClassLoader(spi.ignite().configuration()));
                     }
 
                     locNode.setAttributes(msg.clientNodeAttributes());
@@ -1963,7 +1965,7 @@ class ClientImpl extends TcpDiscoveryImpl {
                     if (node != null && node.visible()) {
                         try {
                             DiscoverySpiCustomMessage msgObj = msg.message(spi.marsh,
-                                spi.ignite().configuration().getClassLoader());
+                                U.resolveClassLoader(spi.ignite().configuration()));
 
                             notifyDiscovery(EVT_DISCOVERY_CUSTOM_EVT, topVer, node, allVisibleNodes(), msgObj);
                         }
