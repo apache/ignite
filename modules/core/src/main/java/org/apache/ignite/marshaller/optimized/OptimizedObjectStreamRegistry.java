@@ -92,9 +92,7 @@ class OptimizedObjectStreamRegistry {
 
         StreamHolder holder = holders.get();
 
-        assert holder != null;
-
-        if (holder.releaseOut() && pool != null) {
+        if (holder != null && holder.releaseOut() && pool != null) {
             holders.set(null);
 
             boolean b = pool.offer(holder);
@@ -114,9 +112,7 @@ class OptimizedObjectStreamRegistry {
 
         StreamHolder holder = holders.get();
 
-        assert holder != null;
-
-        if (holder.releaseIn() && pool != null) {
+        if (holder != null && holder.releaseIn() && pool != null) {
             holders.set(null);
 
             boolean b = pool.offer(holder);
