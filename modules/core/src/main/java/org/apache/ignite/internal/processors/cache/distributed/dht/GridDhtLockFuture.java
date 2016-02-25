@@ -1021,8 +1021,21 @@ public final class GridDhtLockFuture extends GridCompoundIdentityFuture<Boolean>
             final GridCacheVersion ver = version();
 
             for (GridDhtCacheEntry entry : entries) {
-                if (!entry.hasValue())
-                    loadMap.put(entry.key(), entry);
+                try {
+                    entry.unswap(false);
+
+                    if (!entry.hasValue())
+                        loadMap.put(entry.key(), entry);
+                }
+                catch (GridCacheEntryRemovedException e) {
+                    assert false : "Should not get removed exception while holding lock on entry " +
+                        "[entry=" + entry + ", e=" + e + ']';
+                }
+                catch (IgniteCheckedException e) {
+                    onDone(e);
+
+                    return;
+                }
             }
 
             try {

@@ -765,13 +765,16 @@ class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObject {
                     try {
                         boolean loc = ctx.localNodeId().equals(res.getNodeId()) && !ctx.config().isMarshalLocalJobs();
 
-                        Object res0 = loc ? res.getJobResult() : marsh.unmarshal(res.getJobResultBytes(), clsLdr);
+                        Object res0 = loc ? res.getJobResult() : marsh.unmarshal(res.getJobResultBytes(),
+                            U.resolveClassLoader(clsLdr, ctx.config()));
 
                         IgniteException ex = loc ? res.getException() :
-                            marsh.<IgniteException>unmarshal(res.getExceptionBytes(), clsLdr);
+                            marsh.<IgniteException>unmarshal(res.getExceptionBytes(),
+                                U.resolveClassLoader(clsLdr, ctx.config()));
 
                         Map<Object, Object> attrs = loc ? res.getJobAttributes() :
-                            marsh.<Map<Object, Object>>unmarshal(res.getJobAttributesBytes(), clsLdr);
+                            marsh.<Map<Object, Object>>unmarshal(res.getJobAttributesBytes(),
+                                U.resolveClassLoader(clsLdr, ctx.config()));
 
                         jobRes.onResponse(res0, ex, attrs, res.isCancelled());
 

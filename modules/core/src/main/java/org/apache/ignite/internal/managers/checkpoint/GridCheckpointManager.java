@@ -338,7 +338,7 @@ public class GridCheckpointManager extends GridManagerAdapter<CheckpointSpi> {
 
             // Always deserialize with task/session class loader.
             if (data != null)
-                state = marsh.unmarshal(data, ses.getClassLoader());
+                state = marsh.unmarshal(data, U.resolveClassLoader(ses.getClassLoader(), ctx.config()));
 
             record(EVT_CHECKPOINT_LOADED, key);
 

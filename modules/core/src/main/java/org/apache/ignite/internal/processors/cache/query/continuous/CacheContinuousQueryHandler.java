@@ -152,7 +152,7 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
     private AffinityTopologyVersion initTopVer;
 
     /** */
-    private transient boolean ignoreClassNotFound;
+    private transient boolean ignoreClsNotFound;
 
     /**
      * Required by {@link Externalizable}.
@@ -192,7 +192,7 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
         boolean skipPrimaryCheck,
         boolean locCache,
         boolean keepBinary,
-        boolean ignoreClassNotFound) {
+        boolean ignoreClsNotFound) {
         assert topic != null;
         assert locLsnr != null;
 
@@ -209,7 +209,7 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
         this.skipPrimaryCheck = skipPrimaryCheck;
         this.locCache = locCache;
         this.keepBinary = keepBinary;
-        this.ignoreClassNotFound = ignoreClassNotFound;
+        this.ignoreClsNotFound = ignoreClsNotFound;
 
         cacheId = CU.cacheId(cacheName);
     }
@@ -593,7 +593,7 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
                 entries0.addAll(handleEvent(ctx, e));
             }
             catch (IgniteCheckedException ex) {
-                if (ignoreClassNotFound)
+                if (ignoreClsNotFound)
                     assert internal;
                 else
                     U.error(ctx.log(getClass()), "Failed to unmarshal entry.", ex);
@@ -736,6 +736,12 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
          */
         public Collection<CacheContinuousQueryEntry> collectEntries(CacheContinuousQueryEntry entry) {
             assert entry != null;
+
+            if (entry.topologyVersion() == null) { // Possible if entry is sent from old node.
+                assert entry.updateCounter() == 0L : entry;
+
+                return F.asList(entry);
+            }
 
             List<CacheContinuousQueryEntry> entries;
 
@@ -991,28 +997,25 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
                         routineId,
                         t.get1());
 
-                    Collection<ClusterNode> nodes = new HashSet<>();
+                    for (AffinityTopologyVersion topVer : t.get2()) {
+                        for (ClusterNode node : ctx.discovery().cacheAffinityNodes(cctx.name(), topVer)) {
+                            if (!node.isLocal() && node.version().compareTo(CacheContinuousQueryBatchAck.SINCE_VER) >= 0) {
+                                try {
+                                    cctx.io().send(node, msg, GridIoPolicy.SYSTEM_POOL);
+                                }
+                                catch (ClusterTopologyCheckedException e) {
+                                    IgniteLogger log = ctx.log(getClass());
 
-                    for (AffinityTopologyVersion topVer : t.get2())
-                        nodes.addAll(ctx.discovery().cacheAffinityNodes(cctx.name(), topVer));
+                                    if (log.isDebugEnabled())
+                                        log.debug("Failed to send acknowledge message, node left " +
+                                            "[msg=" + msg + ", node=" + node + ']');
+                                }
+                                catch (IgniteCheckedException e) {
+                                    IgniteLogger log = ctx.log(getClass());
 
-                    for (ClusterNode node : nodes) {
-                        if (!node.isLocal()) {
-                            try {
-                                cctx.io().send(node, msg, GridIoPolicy.SYSTEM_POOL);
-                            }
-                            catch (ClusterTopologyCheckedException e) {
-                                IgniteLogger log = ctx.log(getClass());
-
-                                if (log.isDebugEnabled())
-                                    log.debug("Failed to send acknowledge message, node left " +
-                                        "[msg=" + msg + ", node=" + node + ']');
-                            }
-                            catch (IgniteCheckedException e) {
-                                IgniteLogger log = ctx.log(getClass());
-
-                                U.error(log, "Failed to send acknowledge message " +
-                                    "[msg=" + msg + ", node=" + node + ']', e);
+                                    U.error(log, "Failed to send acknowledge message " +
+                                        "[msg=" + msg + ", node=" + node + ']', e);
+                                }
                             }
                         }
                     }
@@ -1244,7 +1247,7 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
             if (dep == null)
                 throw new IgniteDeploymentCheckedException("Failed to obtain deployment for class: " + clsName);
 
-            return ctx.config().getMarshaller().unmarshal(bytes, dep.classLoader());
+            return ctx.config().getMarshaller().unmarshal(bytes, U.resolveClassLoader(dep.classLoader(), ctx.config()));
         }
 
         /** {@inheritDoc} */

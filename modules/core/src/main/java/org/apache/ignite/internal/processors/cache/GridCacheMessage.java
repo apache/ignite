@@ -457,7 +457,7 @@ public abstract class GridCacheMessage implements Message {
         Marshaller marsh = ctx.marshaller();
 
         for (int i = 0; i < byteCol.length; i++)
-            args[i] = byteCol[i] == null ? null : marsh.unmarshal(byteCol[i], ldr);
+            args[i] = byteCol[i] == null ? null : marsh.unmarshal(byteCol[i], U.resolveClassLoader(ldr, ctx.gridConfig()));
 
         return args;
     }
@@ -608,7 +608,7 @@ public abstract class GridCacheMessage implements Message {
         Marshaller marsh = ctx.marshaller();
 
         for (byte[] bytes : byteCol)
-            col.add(bytes == null ? null : marsh.<T>unmarshal(bytes, ldr));
+            col.add(bytes == null ? null : marsh.<T>unmarshal(bytes, U.resolveClassLoader(ldr, ctx.gridConfig())));
 
         return col;
     }

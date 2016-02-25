@@ -1002,7 +1002,8 @@ public class GridServiceProcessor extends GridProcessorAdapter {
         try {
             byte[] bytes = m.marshal(svc);
 
-            Service cp = m.unmarshal(bytes, svc.getClass().getClassLoader());
+            Service cp = m.unmarshal(bytes,
+                U.resolveClassLoader(svc.getClass().getClassLoader(), ctx.config()));
 
             ctx.resource().inject(cp);
 

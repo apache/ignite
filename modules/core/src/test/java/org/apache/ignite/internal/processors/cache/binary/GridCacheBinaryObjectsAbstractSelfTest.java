@@ -26,6 +26,7 @@ import java.util.Map;
 import java.util.Set;
 import javax.cache.Cache;
 import javax.cache.processor.EntryProcessor;
+import javax.cache.processor.EntryProcessorException;
 import javax.cache.processor.MutableEntry;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
@@ -60,6 +61,8 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
+import org.apache.ignite.transactions.TransactionConcurrency;
+import org.apache.ignite.transactions.TransactionIsolation;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
@@ -732,6 +735,30 @@ public abstract class GridCacheBinaryObjectsAbstractSelfTest extends GridCommonA
     }
 
     /**
+     * @throws Exception if failed.
+     */
+    public void testKeepBinaryTxOverwrite() throws Exception {
+        if (atomicityMode() != TRANSACTIONAL)
+            return;
+
+        IgniteCache<Integer, TestObject> cache = ignite(0).cache(null);
+
+        cache.put(0, new TestObject(1));
+
+        for (TransactionConcurrency conc : TransactionConcurrency.values()) {
+            for (TransactionIsolation iso : TransactionIsolation.values()) {
+                try (Transaction tx = ignite(0).transactions().txStart(conc, iso)) {
+                    cache.withKeepBinary().get(0);
+
+                    cache.invoke(0, new ObjectEntryProcessor());
+
+                    tx.commit();
+                }
+            }
+        }
+    }
+
+    /**
      * @throws Exception If failed.
      */
     public void testLoadCache() throws Exception {
@@ -932,6 +959,19 @@ public abstract class GridCacheBinaryObjectsAbstractSelfTest extends GridCommonA
         /** {@inheritDoc} */
         @Override public void readBinary(BinaryReader reader) throws BinaryObjectException {
             val = reader.readInt("val");
+        }
+    }
+
+    /**
+     * No-op entry processor.
+     */
+    private static class ObjectEntryProcessor implements EntryProcessor<Integer, TestObject, Boolean> {
+        @Override public Boolean process(MutableEntry<Integer, TestObject> entry, Object... args) throws EntryProcessorException {
+            TestObject obj = entry.getValue();
+
+            entry.setValue(new TestObject(obj.val));
+
+            return true;
         }
     }
 
