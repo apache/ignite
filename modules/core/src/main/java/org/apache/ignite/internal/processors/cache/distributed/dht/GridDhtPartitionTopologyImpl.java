@@ -1063,7 +1063,8 @@ class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
                     // more than 3 nodes per partition.
                     part2node.put(p, ids = new ArrayList<>(3));
 
-                changed |= ids.add(parts.nodeId());
+                if (!ids.contains(parts.nodeId()))
+                    changed |= ids.add(parts.nodeId());
             }
 
             // Remove obsolete mappings.
