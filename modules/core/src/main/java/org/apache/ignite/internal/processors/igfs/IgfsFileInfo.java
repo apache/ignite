@@ -47,6 +47,9 @@ public final class IgfsFileInfo implements Externalizable {
     /** ID of the trash directory. */
     public static final IgniteUuid TRASH_ID = new IgniteUuid(new UUID(0, 1), 0);
 
+    /** Special access time value, indicating that the modification time value should be taken. */
+    private static final long ACCESS_TIME_TAKE_MODIFICATION_TIME = -1L;
+
     /** Info ID. */
     private IgniteUuid id;
 
@@ -100,18 +103,22 @@ public final class IgfsFileInfo implements Externalizable {
      * @param id ID.
      */
     IgfsFileInfo(IgniteUuid id) {
-        this(true, id, 0, 0, null, null, null, null, false, System.currentTimeMillis(), false);
+        this(true, id, 0, 0, null, null, null, null, false, ACCESS_TIME_TAKE_MODIFICATION_TIME,
+            System.currentTimeMillis(), false);
     }
 
     /**
-     * Constructs directory or file info with {@link org.apache.ignite.configuration.FileSystemConfiguration#DFLT_BLOCK_SIZE default} block size.
+     * Constructs directory or file info with
+     * {@link org.apache.ignite.configuration.FileSystemConfiguration#DFLT_BLOCK_SIZE default} block size.
      *
      * @param isDir Constructs directory info if {@code true} or file info if {@code false}.
      * @param props Meta properties to set.
+     * @param accessTime The access time.
+     * @param modificationTime The modification time.
      */
-    public IgfsFileInfo(boolean isDir, @Nullable Map<String, String> props) {
+    public IgfsFileInfo(boolean isDir, @Nullable Map<String, String> props, long accessTime, long modificationTime) {
         this(isDir, null, isDir ? 0 : FileSystemConfiguration.DFLT_BLOCK_SIZE, 0, null, null, props, null, false,
-            System.currentTimeMillis(), false);
+            accessTime, modificationTime, false);
     }
 
     /**
@@ -120,7 +127,7 @@ public final class IgfsFileInfo implements Externalizable {
      * @param listing Listing.
      */
     IgfsFileInfo(Map<String, IgfsListingEntry> listing) {
-        this(true, null, 0, 0, null, listing, null, null, false, System.currentTimeMillis(), false);
+        this(listing, (Map<String,String>)null);
     }
 
     /**
@@ -130,20 +137,8 @@ public final class IgfsFileInfo implements Externalizable {
      * @param props The properties to set for the new directory.
      */
     IgfsFileInfo(@Nullable Map<String, IgfsListingEntry> listing, @Nullable Map<String,String> props) {
-        this(true/*dir*/, null, 0, 0, null, listing, props, null, false, System.currentTimeMillis(), false);
-    }
-
-    /**
-     * Constructs file info.
-     *
-     * @param blockSize Block size.
-     * @param affKey Affinity key.
-     * @param evictExclude Eviction exclude flag.
-     * @param props File properties.
-     */
-    IgfsFileInfo(int blockSize, @Nullable IgniteUuid affKey, boolean evictExclude,
-        @Nullable Map<String, String> props) {
-        this(false, null, blockSize, 0, affKey, null, props, null, true, System.currentTimeMillis(), evictExclude);
+        this(true/*dir*/, null, 0, 0, null, listing, props, null, false, ACCESS_TIME_TAKE_MODIFICATION_TIME,
+            System.currentTimeMillis(), false);
     }
 
     /**
@@ -155,10 +150,13 @@ public final class IgfsFileInfo implements Externalizable {
      * @param lockId Lock ID.
      * @param props Properties.
      * @param evictExclude Evict exclude flag.
+     * @param accessTime The access time.
+     * @param modificationTime The modification time.
      */
     public IgfsFileInfo(int blockSize, long len, @Nullable IgniteUuid affKey, @Nullable IgniteUuid lockId,
-        boolean evictExclude, @Nullable Map<String, String> props) {
-        this(false, null, blockSize, len, affKey, null, props, lockId, true, System.currentTimeMillis(), evictExclude);
+        boolean evictExclude, @Nullable Map<String, String> props, long accessTime, long modificationTime) {
+        this(false, null, blockSize, len, affKey, null, props, lockId, true, accessTime, modificationTime,
+            evictExclude);
     }
 
     /**
@@ -202,10 +200,13 @@ public final class IgfsFileInfo implements Externalizable {
      * @param len Size of a file.
      * @param props File properties to set.
      * @param evictExclude Evict exclude flag.
+     * @param accessTime The access time.
+     * @param modificationTime The modification time.
      */
-    IgfsFileInfo(int blockSize, long len, boolean evictExclude, @Nullable Map<String, String> props) {
+    IgfsFileInfo(int blockSize, long len, boolean evictExclude, @Nullable Map<String, String> props,
+        long accessTime, long modificationTime) {
         this(blockSize == 0, // NB The contract is: (blockSize == 0) <=> isDirectory()
-            null, blockSize, len, null, null, props, null, true, System.currentTimeMillis(), evictExclude);
+            null, blockSize, len, null, null, props, null, true, accessTime, modificationTime, evictExclude);
     }
 
     /**
@@ -243,13 +244,14 @@ public final class IgfsFileInfo implements Externalizable {
      * @param props File properties.
      * @param lockId Lock ID.
      * @param cpProps Flag to copy properties map.
+     * @param accessTime The access time.
      * @param modificationTime Last modification time.
      * @param evictExclude Evict exclude flag.
      */
     private IgfsFileInfo(boolean isDir, @Nullable IgniteUuid id, int blockSize, long len, @Nullable IgniteUuid affKey,
         @Nullable Map<String, IgfsListingEntry> listing, @Nullable Map<String, String> props,
-        @Nullable IgniteUuid lockId, boolean cpProps, long modificationTime, boolean evictExclude) {
-        this(isDir, id, blockSize, len, affKey, listing, props, null, lockId, cpProps, modificationTime,
+        @Nullable IgniteUuid lockId, boolean cpProps, long accessTime, long modificationTime, boolean evictExclude) {
+        this(isDir, id, blockSize, len, affKey, listing, props, null, lockId, cpProps, accessTime,
             modificationTime, evictExclude);
     }
 
@@ -295,7 +297,7 @@ public final class IgfsFileInfo implements Externalizable {
             fileMap = new IgfsFileMap();
 
         this.fileMap = fileMap;
-        this.accessTime = accessTime;
+        this.accessTime = accessTime == ACCESS_TIME_TAKE_MODIFICATION_TIME ? modificationTime : accessTime;
         this.modificationTime = modificationTime;
 
         // Always make a copy of passed properties collection to escape concurrent modifications.
