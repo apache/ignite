@@ -17,9 +17,13 @@
 
 package org.apache.ignite.yarn.utils;
 
+import java.io.IOException;
+import java.nio.ByteBuffer;
 import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
+import org.apache.hadoop.io.DataOutputBuffer;
+import org.apache.hadoop.security.Credentials;
 import org.apache.hadoop.yarn.api.records.LocalResource;
 import org.apache.hadoop.yarn.api.records.LocalResourceType;
 import org.apache.hadoop.yarn.api.records.LocalResourceVisibility;
@@ -82,5 +86,20 @@ public class IgniteYarnUtils {
         fs.copyFromLocalFile(false, true, new Path(src), dstPath);
 
         return dstPath;
+    }
+
+    /**
+     * Creates a ByteBuffer with serialized {@link Credentials}.
+     *
+     * @param creds The credentials.
+     * @return The ByteBuffer with the credentials.
+     * @throws IOException
+     */
+    public static ByteBuffer createTokenBuffer(Credentials creds) throws IOException {
+        DataOutputBuffer dob = new DataOutputBuffer();
+
+        creds.writeTokenStorageToStream(dob);
+
+        return ByteBuffer.wrap(dob.getData(), 0, dob.getLength());
     }
 }

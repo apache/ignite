@@ -263,9 +263,9 @@ public class GridNearOptimisticTxPrepareFuture extends GridNearOptimisticTxPrepa
             IgniteTxEntry singleWrite = tx.singleWrite();
 
             if (singleWrite != null)
-                prepareSingle(singleWrite, topLocked);
+                prepareSingle(singleWrite, topLocked, remap);
             else
-                prepare(tx.writeEntries(), topLocked);
+                prepare(tx.writeEntries(), topLocked, remap);
 
             markInitialized();
         }
@@ -278,7 +278,7 @@ public class GridNearOptimisticTxPrepareFuture extends GridNearOptimisticTxPrepa
      * @param write Write.
      * @param topLocked {@code True} if thread already acquired lock preventing topology change.
      */
-    private void prepareSingle(IgniteTxEntry write, boolean topLocked) {
+    private void prepareSingle(IgniteTxEntry write, boolean topLocked, boolean remap) {
         write.clearEntryReadVersion();
 
         AffinityTopologyVersion topVer = tx.topologyVersion();
@@ -287,7 +287,7 @@ public class GridNearOptimisticTxPrepareFuture extends GridNearOptimisticTxPrepa
 
         txMapping = new GridDhtTxMapping();
 
-        GridDistributedTxMapping mapping = map(write, topVer, null, topLocked);
+        GridDistributedTxMapping mapping = map(write, topVer, null, topLocked, remap);
 
         if (mapping.node().isLocal()) {
             if (write.context().isNear())
@@ -325,7 +325,8 @@ public class GridNearOptimisticTxPrepareFuture extends GridNearOptimisticTxPrepa
      */
     private void prepare(
         Iterable<IgniteTxEntry> writes,
-        boolean topLocked
+        boolean topLocked,
+        boolean remap
     ) {
         AffinityTopologyVersion topVer = tx.topologyVersion();
 
@@ -343,7 +344,7 @@ public class GridNearOptimisticTxPrepareFuture extends GridNearOptimisticTxPrepa
         for (IgniteTxEntry write : writes) {
             write.clearEntryReadVersion();
 
-            GridDistributedTxMapping updated = map(write, topVer, cur, topLocked);
+            GridDistributedTxMapping updated = map(write, topVer, cur, topLocked, remap);
 
             if (cur != updated) {
                 mappings.offer(updated);
@@ -508,7 +509,8 @@ public class GridNearOptimisticTxPrepareFuture extends GridNearOptimisticTxPrepa
         IgniteTxEntry entry,
         AffinityTopologyVersion topVer,
         @Nullable GridDistributedTxMapping cur,
-        boolean topLocked
+        boolean topLocked,
+        boolean remap
     ) {
         GridCacheContext cacheCtx = entry.context();
 
@@ -542,7 +544,7 @@ public class GridNearOptimisticTxPrepareFuture extends GridNearOptimisticTxPrepa
             entry.cached(cacheCtx.local().entryEx(entry.key(), topVer));
 
         if (cacheCtx.isNear() || cacheCtx.isLocal()) {
-            if (entry.explicitVersion() == null) {
+            if (entry.explicitVersion() == null && !remap) {
                 if (keyLockFut == null) {
                     keyLockFut = new KeyLockFuture();
 

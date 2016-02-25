@@ -367,7 +367,7 @@ public class ZookeeperIpFinderTest extends GridCommonAbstractTest {
                     return true;
                 }
             }
-        }, 5000);
+        }, 2 * 60000);
 
         assertTrue(wait);
 

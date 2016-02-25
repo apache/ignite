@@ -1170,7 +1170,7 @@ namespace Apache.Ignite.Core.Impl.Cache
 
             var msg = Unmarshal<string>(inStream);
                 
-            return new CacheEntryProcessorException(ExceptionUtils.GetException(clsName, msg));
+            return new CacheEntryProcessorException(ExceptionUtils.GetException(_ignite, clsName, msg));
         }
 
         /// <summary>

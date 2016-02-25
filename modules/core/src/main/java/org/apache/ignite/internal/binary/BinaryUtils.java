@@ -584,10 +584,7 @@ public class BinaryUtils {
     public static boolean isBinaryType(Class<?> cls) {
         assert cls != null;
 
-        return BinaryObject.class.isAssignableFrom(cls) ||
-            BINARY_CLS.contains(cls) ||
-            cls.isEnum() ||
-            (cls.isArray() && cls.getComponentType().isEnum());
+        return BinaryObject.class.isAssignableFrom(cls) || BINARY_CLS.contains(cls);
     }
 
     /**
@@ -1055,7 +1052,7 @@ public class BinaryUtils {
      * @param cls Class.
      * @return {@code True} if this is a special collection class.
      */
-    private static boolean isSpecialCollection(Class cls) {
+    public static boolean isSpecialCollection(Class cls) {
         return ArrayList.class.equals(cls) || LinkedList.class.equals(cls) ||
             HashSet.class.equals(cls) || LinkedHashSet.class.equals(cls);
     }
@@ -1066,7 +1063,7 @@ public class BinaryUtils {
      * @param cls Class.
      * @return {@code True} if this is a special map class.
      */
-    private static boolean isSpecialMap(Class cls) {
+    public static boolean isSpecialMap(Class cls) {
         return HashMap.class.equals(cls) || LinkedHashMap.class.equals(cls);
     }
 
@@ -1563,7 +1560,7 @@ public class BinaryUtils {
         ByteArrayInputStream input = new ByteArrayInputStream(in.array(), in.position(), len);
 
         try {
-            return ctx.optimizedMarsh().unmarshal(input, clsLdr);
+            return ctx.optimizedMarsh().unmarshal(input, U.resolveClassLoader(clsLdr, ctx.configuration()));
         }
         catch (IgniteCheckedException e) {
             throw new BinaryObjectException("Failed to unmarshal object with optimized marshaller", e);

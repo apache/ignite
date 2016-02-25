@@ -94,4 +94,9 @@ public abstract class CacheEntryPredicateAdapter implements CacheEntryPredicate 
             throw new IgniteException(e);
         }
     }
+
+    /** {@inheritDoc} */
+    @Override public void onAckReceived() {
+        // No-op.
+    }
 }

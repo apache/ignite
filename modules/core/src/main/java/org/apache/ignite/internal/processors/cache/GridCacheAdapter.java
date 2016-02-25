@@ -54,6 +54,7 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cache.CacheEntry;
 import org.apache.ignite.cache.CacheInterceptor;
+import org.apache.ignite.cache.CacheMemoryMode;
 import org.apache.ignite.cache.CacheMetrics;
 import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.cache.affinity.Affinity;
@@ -1249,7 +1250,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
 
             try {
                 if (e != null)
-                    e.clear(obsoleteVer, readers, null);
+                    e.clear(obsoleteVer, readers);
             }
             catch (IgniteCheckedException ex) {
                 U.error(log, "Failed to clearLocally entry (will continue to clearLocally other entries): " + e,
@@ -3764,7 +3765,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
 
         if (!F.isEmpty(oldNodes.nodes())) {
             ComputeTaskInternalFuture oldNodesFut = ctx.kernalContext().closure().callAsync(BROADCAST,
-                Arrays.asList(new LoadCacheClosure<>(ctx.name(), p, args, plc)),
+                Collections.singletonList(new LoadCacheClosure<>(ctx.name(), p, args, plc)),
                 oldNodes.nodes());
 
             fut.add(oldNodesFut);
@@ -3772,7 +3773,8 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
 
         if (!F.isEmpty(newNodes.nodes())) {
             ComputeTaskInternalFuture newNodesFut = ctx.kernalContext().closure().callAsync(BROADCAST,
-                Arrays.asList(new LoadCacheJob<>(ctx.name(), ctx.affinity().affinityTopologyVersion(), p, args, plc)),
+                Collections.singletonList(
+                    new LoadCacheJob<>(ctx.name(), ctx.affinity().affinityTopologyVersion(), p, args, plc)),
                 newNodes.nodes());
 
             fut.add(newNodesFut);
@@ -4121,6 +4123,12 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
 
     /** {@inheritDoc} */
     @Override public long offHeapAllocatedSize() {
+        if (ctx.config().getMemoryMode() == CacheMemoryMode.OFFHEAP_VALUES) {
+            assert ctx.unsafeMemory() != null;
+
+            return ctx.unsafeMemory().allocatedSize();
+        }
+
         GridCacheSwapManager swapMgr = ctx.swap();
 
         return swapMgr != null ? swapMgr.offHeapAllocatedSize() : -1;
@@ -4602,7 +4610,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
             GridCacheEntryEx entry = ctx.isSwapOrOffheapEnabled() ? entryEx(cacheKey) : peekEx(cacheKey);
 
             if (entry != null)
-                return entry.clear(obsoleteVer, readers, null);
+                return entry.clear(obsoleteVer, readers);
         }
         catch (GridDhtInvalidPartitionException ignored) {
             // No-op.
