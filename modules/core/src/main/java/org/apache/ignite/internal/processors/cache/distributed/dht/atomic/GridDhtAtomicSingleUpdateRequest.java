@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.cache.distributed.dht.atomic;
 
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
-import org.apache.ignite.internal.GridDirectCollection;
 import org.apache.ignite.internal.GridDirectTransient;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheObject;
@@ -29,7 +28,6 @@ import org.apache.ignite.internal.processors.cache.GridCacheMessage;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
-import org.apache.ignite.internal.util.GridLongList;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -41,10 +39,8 @@ import org.jetbrains.annotations.Nullable;
 import javax.cache.processor.EntryProcessor;
 import java.io.Externalizable;
 import java.nio.ByteBuffer;
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.List;
 import java.util.UUID;
 
 public class GridDhtAtomicSingleUpdateRequest extends GridCacheMessage implements GridCacheDeployable, GridDhtAtomicUpdateRequest {
@@ -66,47 +62,64 @@ public class GridDhtAtomicSingleUpdateRequest extends GridCacheMessage implement
     /** Topology version. */
     private AffinityTopologyVersion topVer;
 
+    /** Key. */
     @GridToStringInclude
     private KeyCacheObject key;
 
+    /** Value. */
     @GridToStringInclude
     private CacheObject val;
 
+    /** Previous value. */
     @GridToStringInclude
     private CacheObject prevVal;
 
+    /** Conflict version. */
     @GridToStringInclude
     private GridCacheVersion conflictVer;
 
+    /** TTL. */
     private long ttl = CU.TTL_NOT_CHANGED;
 
+    /** Conflict expire time. */
     private long conflictExpireTime = CU.EXPIRE_TIME_CALCULATE;
 
+    /** Near TTL. */
     private long nearTtl = CU.TTL_NOT_CHANGED;
 
+    /** Near expire time. */
     private long nearExpireTime = CU.EXPIRE_TIME_CALCULATE;
 
+    /** Near key. */
     @GridToStringInclude
     private KeyCacheObject nearKey;
 
+    /** Near value. */
     @GridToStringInclude
     private CacheObject nearVal;
 
+    /** Entry processor. */
     @GridDirectTransient
     private EntryProcessor<Object, Object, Object> entryProcessor;
 
+    /** Entry processor bytes. */
     private byte[] entryProcessorBytes;
 
+    /** Near entry processor. */
     @GridDirectTransient
     private EntryProcessor<Object, Object, Object> nearEntryProcessor;
 
+    /** Near entry processor bytes. */
     private byte[] nearEntryProcessorBytes;
 
+    /** Update counter. */
     private long updateCntr = -1;
 
+    /** Partition ID. */
     @GridDirectTransient
     private int partId;
 
+    /** Local previous value. */
     @GridDirectTransient
     private CacheObject locPrevVal;
 

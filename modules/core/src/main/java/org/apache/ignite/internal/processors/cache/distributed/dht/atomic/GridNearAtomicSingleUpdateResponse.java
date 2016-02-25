@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.cache.distributed.dht.atomic;
 
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.internal.GridDirectCollection;
 import org.apache.ignite.internal.GridDirectTransient;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
@@ -28,16 +27,13 @@ import org.apache.ignite.internal.processors.cache.GridCacheReturn;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
-import org.apache.ignite.internal.util.GridLongList;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 import org.jetbrains.annotations.Nullable;
-
 import java.io.Externalizable;
 import java.nio.ByteBuffer;
 import java.util.Collection;
@@ -71,30 +67,32 @@ public class GridNearAtomicSingleUpdateResponse extends GridCacheMessage impleme
     @GridToStringInclude
     private GridCacheReturn ret;
 
+    /** Key. */
     private KeyCacheObject key;
 
+    /** Failed. */
     private boolean failed;
 
+    /** Remap. */
     private boolean remap;
 
+    /** Has near value. */
     private boolean hasNearVal;
 
+    /** Near value. */
     private CacheObject nearVal;
 
+    /** Skipped near update. */
     private boolean nearSkip;
 
+    /** Near TTL. */
     private long nearTtl = -1;
 
+    /** Near expire time. */
     private long nearExpireTime = -1;
 
     /** Version generated on primary node to be used for originating node's near cache update. */
     private GridCacheVersion nearVer;
-
-    /** Near TTLs. */
-    private GridLongList nearTtls;
-
-    /** Near expire times. */
-    private GridLongList nearExpireTimes;
 
     /**
      * Empty constructor required by {@link Externalizable}.
