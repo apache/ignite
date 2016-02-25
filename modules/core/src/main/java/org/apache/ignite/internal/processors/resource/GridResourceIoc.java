@@ -286,7 +286,7 @@ class GridResourceIoc {
         private final Map<Class<? extends Annotation>, T2<GridResourceField[], GridResourceMethod[]>> annMap;
 
         /** */
-        private final AtomicReference<int[]> annotationSets = new AtomicReference<>(new int[]{-1, -1, -1, -1});
+        private final AtomicReference<int[]> annotationSets;
 
         /**
          * @param cls Class.
@@ -356,6 +356,10 @@ class GridResourceIoc {
 
                 this.annMap.put(entry.getKey(), new T2<>(fields, mtds));
             }
+
+            this.annotationSets = recursiveFields.length > 0 || !annMap.isEmpty() ?
+                                        new AtomicReference<>(new int[]{-1, -1, -1, -1}) :
+                                        null;
         }
 
         /**
@@ -399,6 +403,9 @@ class GridResourceIoc {
          * @return if annotation is presented, corresponding bit is set.
          */
         int isAnnotated(AnnotationSet set) {
+            if (annotationSets == null)
+                return 0;
+
             int[] oldSets = annotationSets.get();
 
             if (set.descIdx < oldSets.length && oldSets[set.descIdx] > 0)
