@@ -737,6 +737,12 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
         public Collection<CacheContinuousQueryEntry> collectEntries(CacheContinuousQueryEntry entry) {
             assert entry != null;
 
+            if (entry.topologyVersion() == null) { // Possible if entry is sent from old node.
+                assert entry.updateCounter() == 0L : entry;
+
+                return F.asList(entry);
+            }
+
             List<CacheContinuousQueryEntry> entries;
 
             synchronized (pendingEvts) {
@@ -991,28 +997,25 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
                         routineId,
                         t.get1());
 
-                    Collection<ClusterNode> nodes = new HashSet<>();
+                    for (AffinityTopologyVersion topVer : t.get2()) {
+                        for (ClusterNode node : ctx.discovery().cacheAffinityNodes(cctx.name(), topVer)) {
+                            if (!node.isLocal() && node.version().compareTo(CacheContinuousQueryBatchAck.SINCE_VER) >= 0) {
+                                try {
+                                    cctx.io().send(node, msg, GridIoPolicy.SYSTEM_POOL);
+                                }
+                                catch (ClusterTopologyCheckedException e) {
+                                    IgniteLogger log = ctx.log(getClass());
 
-                    for (AffinityTopologyVersion topVer : t.get2())
-                        nodes.addAll(ctx.discovery().cacheAffinityNodes(cctx.name(), topVer));
+                                    if (log.isDebugEnabled())
+                                        log.debug("Failed to send acknowledge message, node left " +
+                                            "[msg=" + msg + ", node=" + node + ']');
+                                }
+                                catch (IgniteCheckedException e) {
+                                    IgniteLogger log = ctx.log(getClass());
 
-                    for (ClusterNode node : nodes) {
-                        if (!node.isLocal() && node.version().compareTo(CacheContinuousQueryBatchAck.SINCE_VER) >= 0) {
-                            try {
-                                cctx.io().send(node, msg, GridIoPolicy.SYSTEM_POOL);
-                            }
-                            catch (ClusterTopologyCheckedException e) {
-                                IgniteLogger log = ctx.log(getClass());
-
-                                if (log.isDebugEnabled())
-                                    log.debug("Failed to send acknowledge message, node left " +
-                                        "[msg=" + msg + ", node=" + node + ']');
-                            }
-                            catch (IgniteCheckedException e) {
-                                IgniteLogger log = ctx.log(getClass());
-
-                                U.error(log, "Failed to send acknowledge message " +
-                                    "[msg=" + msg + ", node=" + node + ']', e);
+                                    U.error(log, "Failed to send acknowledge message " +
+                                        "[msg=" + msg + ", node=" + node + ']', e);
+                                }
                             }
                         }
                     }
