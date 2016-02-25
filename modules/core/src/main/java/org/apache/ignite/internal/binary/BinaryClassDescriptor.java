@@ -175,7 +175,7 @@ public class BinaryClassDescriptor {
         }
 
         if (useOptMarshaller && userType && !U.isIgnite(cls) && !U.isJdk(cls)) {
-            U.quietAndWarn(ctx.log(), "Class \"" + cls.getName() + "\" cannot be serialized using " +
+            U.warn(ctx.log(), "Class \"" + cls.getName() + "\" cannot be serialized using " +
                 BinaryMarshaller.class.getSimpleName() + " because it either implements Externalizable interface " +
                 "or have writeObject/readObject methods. " + OptimizedMarshaller.class.getSimpleName() + " will be " +
                 "used instead and class instances will be deserialized on the server. Please ensure that all nodes " +
