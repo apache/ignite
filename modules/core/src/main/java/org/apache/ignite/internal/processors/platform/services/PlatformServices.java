@@ -39,7 +39,11 @@ import org.apache.ignite.services.ServiceConfiguration;
 import org.apache.ignite.services.ServiceDescriptor;
 
 import java.lang.reflect.Method;
-import java.util.*;
+import java.util.Map;
+import java.util.UUID;
+import java.util.HashMap;
+import java.util.Collection;
+import java.util.ArrayList;
 
 /**
  * Interop services.

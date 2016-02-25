@@ -337,6 +337,7 @@ public class GridServiceProxy<T> implements Serializable {
         private Object[] args;
 
         /** Grid instance. */
+        @SuppressWarnings("UnusedDeclaration")
         @IgniteInstanceResource
         private transient Ignite ignite;
 
