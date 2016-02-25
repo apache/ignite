@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-export default ['igniteUiAce', [() => {
+export default ['igniteUiAceTabs', [() => {
     const controller = () => {};
 
     return {

@@ -52,7 +52,7 @@ mixin ignite-form-field-tooltip(message)
                             label Server
 
                         .panel-collapse(id='server' role='tabpanel' bs-collapse-target)
-                            .summary-tabs(ignite-ui-ace)
+                            ignite-ui-ace-tabs.summary-tabs
                                 div(bs-tabs data-bs-active-pane="tabsServer.activeTab" template='configuration/summary-tabs.html')
                                     div(bs-pane title='XML')
                                         ignite-ui-ace-xml(data-cluster='cluster')
@@ -132,7 +132,7 @@ mixin ignite-form-field-tooltip(message)
                                                     data-placeholder='100000'
                                                 )
 
-                            .summary-tabs(ignite-ui-ace)
+                            .summary-tabs(ignite-ui-ace-tabs)
                                 div(bs-tabs data-bs-active-pane="tabsClient.activeTab" template='configuration/summary-tabs.html')
                                     div(bs-pane title='XML')
                                         ignite-ui-ace-xml(data-cluster='cluster' data-cluster-cfg='#{nearCfg}')

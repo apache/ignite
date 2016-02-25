@@ -16,13 +16,13 @@
  */
 
 export default ['summaryTabs', [() => {
-    const link = (scope, $element, $attrs, [igniteUiAce1, igniteUiAce2]) => {
-        const igniteUiAce = igniteUiAce1 || igniteUiAce2;
+    const link = (scope, $element, $attrs, [igniteUiAceTabs1, igniteUiAceTabs2]) => {
+        const igniteUiAceTabs = igniteUiAceTabs1 || igniteUiAceTabs2;
 
-        if (!igniteUiAce)
+        if (!igniteUiAceTabs)
             return;
 
-        igniteUiAce.onLoad = (editor) => {
+        igniteUiAceTabs.onLoad = (editor) => {
             editor.setReadOnly(true);
             editor.setOption('highlightActiveLine', false);
             editor.setAutoScrollEditorIntoView(true);
@@ -45,6 +45,6 @@ export default ['summaryTabs', [() => {
         priority: 1000,
         restrict: 'C',
         link,
-        require: ['?igniteUiAce', '?^igniteUiAce']
+        require: ['?igniteUiAceTabs', '?^igniteUiAceTabs']
     };
 }]];

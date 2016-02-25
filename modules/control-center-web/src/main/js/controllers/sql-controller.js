@@ -1477,13 +1477,7 @@ consoleModule.controller('sqlController', function ($http, $timeout, $interval, 
     $scope.dblclickMetadata = function (paragraph, node) {
         paragraph.ace.insert(node.name);
 
-        var position = paragraph.ace.selection.getCursor();
-
-        paragraph.query = paragraph.ace.getValue();
-
         setTimeout(function () {
-            paragraph.ace.selection.moveCursorToPosition(position);
-
             paragraph.ace.focus();
         }, 1);
     };

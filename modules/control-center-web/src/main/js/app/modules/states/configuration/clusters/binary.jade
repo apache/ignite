@@ -145,7 +145,7 @@ form.panel.panel-default(name='binary' novalidate)
                         | Compact footer
                         ignite-form-field-tooltip
                             | When enabled, Ignite will not write fields metadata when serializing objects(this will increase serialization performance), because internally #[b BinaryMarshaller] already distribute metadata inside cluster
-            ignite-ui-ace.col-sm-6
+            ignite-ui-ace-tabs.col-sm-6
                 .preview-panel(ng-init='mode = false')
                     .preview-legend
                         a(ng-class='{active: !mode, inactive: mode}' ng-click='mode = false') XML

@@ -81,7 +81,6 @@
       "angular-smart-table": "github:lorenzofox3/Smart-Table@^2.1.4",
       "angular-strap": "github:akuznetsov-gridgain/angular-strap@fix-1852-2.3.6",
       "angular-tree-control": "github:wix/angular-tree-control@^0.2.23",
-      "angular-ui-ace": "github:angular-ui/ui-ace@^0.2.3",
       "angular-ui-grid": "github:angular-ui/bower-ui-grid@^3.0.7",
       "angular-ui-router": "github:angular-ui/ui-router@^0.2.15",
       "angular-ui-router-title": "github:nonplus/angular-ui-router-title@^0.0.4",
@@ -231,11 +230,6 @@
               "./angular-strap"
             ]
           }
-        }
-      },
-      "github:angular-ui/ui-ace@0.2.3": {
-        "dependencies": {
-          "ace": "github:ajaxorg/ace-builds@^1.2.2"
         }
       },
       "github:eligrey/FileSaver.js@master": {

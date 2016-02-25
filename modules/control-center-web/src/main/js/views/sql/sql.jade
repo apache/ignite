@@ -98,7 +98,7 @@ mixin chart-settings(mdl)
                             .panel-collapse(role='tabpanel' bs-collapse-target)
                                 .col-sm-12
                                     .col-xs-8.col-sm-9(style='border-right: 1px solid #eee')
-                                        .sql-editor(ui-ace='{onLoad: aceInit(paragraph), theme: "chrome", mode: "sql", require: ["ace/ext/language_tools"],' +
+                                        .sql-editor(ignite-ace='{onLoad: aceInit(paragraph), theme: "chrome", mode: "sql", require: ["ace/ext/language_tools"],' +
                                         'advanced: {enableSnippets: false, enableBasicAutocompletion: true, enableLiveAutocompletion: true}}'
                                         ng-model='paragraph.query')
                                     .col-xs-4.col-sm-3

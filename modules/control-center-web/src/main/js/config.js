@@ -45,7 +45,7 @@ System.config({
     "file-saver": "github:eligrey/FileSaver.js@master",
     "font-awesome": "npm:font-awesome@4.5.0",
     "jade": "github:johnsoftek/plugin-jade@0.5.1",
-    "jquery": "github:components/jquery@2.2.0",
+    "jquery": "github:components/jquery@2.2.1",
     "json": "github:systemjs/plugin-json@0.1.0",
     "jszip": "github:Stuk/jszip@2.5.0",
     "lodash": "npm:lodash@3.10.1",
@@ -75,7 +75,7 @@ System.config({
       "angular": "github:angular/bower-angular@1.5.0"
     },
     "github:angular/bower-angular@1.5.0": {
-      "jquery": "github:components/jquery@2.2.0"
+      "jquery": "github:components/jquery@2.2.1"
     },
     "github:darthwade/angular-loading@0.1.4": {
       "spinjs": "github:fgnass/spin.js@2.3.2"
@@ -140,7 +140,7 @@ System.config({
       "css": "github:systemjs/plugin-css@0.1.20"
     },
     "github:twbs/bootstrap@3.3.6": {
-      "jquery": "github:components/jquery@2.2.0"
+      "jquery": "github:components/jquery@2.2.1"
     },
     "github:wix/angular-tree-control@0.2.23": {
       "angular": "github:angular/bower-angular@1.5.0"
@@ -247,7 +247,7 @@ System.config({
       "process": "github:jspm/nodelibs-process@0.1.2"
     },
     "npm:decamelize@1.1.2": {
-      "escape-string-regexp": "npm:escape-string-regexp@1.0.4"
+      "escape-string-regexp": "npm:escape-string-regexp@1.0.5"
     },
     "npm:font-awesome@4.5.0": {
       "css": "github:systemjs/plugin-css@0.1.20"
@@ -276,7 +276,7 @@ System.config({
       "process": "github:jspm/nodelibs-process@0.1.2",
       "systemjs-json": "github:systemjs/plugin-json@0.1.0",
       "transformers": "npm:transformers@2.1.0",
-      "uglify-js": "npm:uglify-js@2.6.1",
+      "uglify-js": "npm:uglify-js@2.6.2",
       "void-elements": "npm:void-elements@2.0.1",
       "with": "npm:with@4.0.3"
     },
@@ -381,7 +381,7 @@ System.config({
       "util": "github:jspm/nodelibs-util@0.1.0",
       "vm": "github:jspm/nodelibs-vm@0.1.0"
     },
-    "npm:uglify-js@2.6.1": {
+    "npm:uglify-js@2.6.2": {
       "async": "npm:async@0.2.10",
       "fs": "github:jspm/nodelibs-fs@0.1.2",
       "path": "github:jspm/nodelibs-path@0.1.0",
