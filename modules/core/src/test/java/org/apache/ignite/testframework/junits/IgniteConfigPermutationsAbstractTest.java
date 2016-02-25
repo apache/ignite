@@ -317,18 +317,14 @@ public abstract class IgniteConfigPermutationsAbstractTest extends GridCommonAbs
 
             TestObject val = (TestObject)o;
 
-            return this.val == val.val && enumVal == val.enumVal && strVal.equals(val.strVal);
+            return getClass().equals(o.getClass()) && this.val == val.val && enumVal == val.enumVal 
+                && strVal.equals(val.strVal);
 
         }
 
         /** {@inheritDoc} */
         @Override public int hashCode() {
-            int res = val;
-
-            res = 31 * res + strVal.hashCode();
-            res = 31 * res + enumVal.hashCode();
-
-            return res;
+            return val;
         }
 
         /** {@inheritDoc} */
