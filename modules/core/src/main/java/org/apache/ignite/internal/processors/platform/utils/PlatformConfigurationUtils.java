@@ -594,6 +594,12 @@ import java.util.Map;
                 w.writeInt(multiFinder.getAddressRequestAttempts());
                 w.writeInt(multiFinder.getResponseWaitTime());
                 w.writeInt(multiFinder.getTimeToLive());
+
+                int ttl = multiFinder.getTimeToLive();
+                w.writeBoolean(ttl != -1);
+
+                if (ttl != -1)
+                    w.writeInt(ttl);
             }
         }
         else {
