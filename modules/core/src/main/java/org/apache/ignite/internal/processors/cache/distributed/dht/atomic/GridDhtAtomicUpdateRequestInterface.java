@@ -34,7 +34,7 @@ import java.util.UUID;
 /**
  * Base interface for DHT atomic update requests.
  */
-public interface GridDhtAtomicUpdateRequest extends Message {
+public interface GridDhtAtomicUpdateRequestInterface extends Message {
 
     /**
      * @return Force transform backups flag.

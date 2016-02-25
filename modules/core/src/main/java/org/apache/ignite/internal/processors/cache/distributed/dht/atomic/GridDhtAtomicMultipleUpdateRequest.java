@@ -49,7 +49,7 @@ import org.jetbrains.annotations.Nullable;
 /**
  * Lite dht cache backup update request.
  */
-public class GridDhtAtomicMultipleUpdateRequest extends GridCacheMessage implements GridCacheDeployable, GridDhtAtomicUpdateRequest {
+public class GridDhtAtomicMultipleUpdateRequest extends GridCacheMessage implements GridCacheDeployable, GridDhtAtomicUpdateRequestInterface {
     /** */
     private static final long serialVersionUID = 0L;
 

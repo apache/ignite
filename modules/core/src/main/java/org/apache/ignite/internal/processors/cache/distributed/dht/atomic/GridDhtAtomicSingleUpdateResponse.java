@@ -35,7 +35,7 @@ import java.nio.ByteBuffer;
 import java.util.Collection;
 import java.util.Collections;
 
-public class GridDhtAtomicSingleUpdateResponse extends GridCacheMessage implements GridCacheDeployable, GridDhtAtomicUpdateResponse {
+public class GridDhtAtomicSingleUpdateResponse extends GridCacheMessage implements GridCacheDeployable, GridDhtAtomicUpdateResponseInterface {
     /** */
     private static final long serialVersionUID = 0L;
 
