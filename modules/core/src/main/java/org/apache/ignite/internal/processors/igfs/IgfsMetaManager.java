@@ -1669,7 +1669,7 @@ public class IgfsMetaManager extends IgfsManager {
 
                 assert validTxState(false);
 
-                id2InfoPrj.invokeAsync(parentId, new UpdateListingEntry(fileId, fileName, lenDelta, 0,
+                id2InfoPrj.invokeAsync(parentId, new UpdateListingEntry(fileId, fileName, lenDelta, -1,
                     modificationTime));
             }
             finally {
@@ -1995,7 +1995,8 @@ public class IgfsMetaManager extends IgfsManager {
                                     "the secondary file system because the path points to a directory: " + path);
 
                             IgfsFileInfo newInfo = new IgfsFileInfo(status.blockSize(), status.length(), affKey,
-                                composeLockId(false), igfsCtx.igfs().evictExclude(path, false), status.properties());
+                                composeLockId(false), igfsCtx.igfs().evictExclude(path, false), status.properties(),
+                                status.accessTime(), status.modificationTime());
 
                             // Add new file info to the listing optionally removing the previous one.
                             IgniteUuid oldId = putIfAbsentNonTx(parentInfo.id(), path.name(), newInfo);
@@ -2626,9 +2627,11 @@ public class IgfsMetaManager extends IgfsManager {
                 }
 
                 // Recreate the path locally.
-                IgfsFileInfo curInfo = status.isDirectory() ? new IgfsFileInfo(true, status.properties()) :
+                IgfsFileInfo curInfo = status.isDirectory() ?
+                    new IgfsFileInfo(true, status.properties(), status.accessTime(), status.modificationTime()) :
                     new IgfsFileInfo(igfsCtx.configuration().getBlockSize(), status.length(),
-                        igfsCtx.igfs().evictExclude(curPath, false), status.properties());
+                        igfsCtx.igfs().evictExclude(curPath, false), status.properties(),
+                        status.accessTime(), status.modificationTime());
 
                 IgniteUuid oldId = putIfAbsentNonTx(parentInfo.id(), components.get(i), curInfo);
 
@@ -3390,8 +3393,10 @@ public class IgfsMetaManager extends IgfsManager {
                     b = new DirectoryChainBuilder(path, dirProps, fileProps) {
                         /** {@inheritDoc} */
                         @Override protected IgfsFileInfo buildLeaf() {
+                            long t = System.currentTimeMillis();
+
                             return new IgfsFileInfo(blockSize, 0L, affKey, composeLockId(false),
-                                 evictExclude, leafProps);
+                                 evictExclude, leafProps, t, t);
                         }
                     };
 
@@ -3485,8 +3490,10 @@ public class IgfsMetaManager extends IgfsManager {
                                         id2InfoPrj.invoke(lowermostExistingInfo.id(), new UpdatePath(path));
 
                                         // Make a new locked info:
+                                        long t = System.currentTimeMillis();
+
                                         final IgfsFileInfo newFileInfo = new IgfsFileInfo(cfg.getBlockSize(), 0L,
-                                            affKey, composeLockId(false), evictExclude, fileProps);
+                                            affKey, composeLockId(false), evictExclude, fileProps, t, t);
 
                                         assert newFileInfo.lockId() != null; // locked info should be created.
 
@@ -3657,7 +3664,9 @@ public class IgfsMetaManager extends IgfsManager {
          * Builds leaf.
          */
         protected IgfsFileInfo buildLeaf()  {
-            return new IgfsFileInfo(true, leafProps);
+            long t = System.currentTimeMillis();
+
+            return new IgfsFileInfo(true, leafProps, t, t);
         }
 
         /**

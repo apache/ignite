@@ -70,6 +70,29 @@ public final class IgfsFileImpl implements IgfsFile, Externalizable {
     }
 
     /**
+     * A copy constructor. All the fields are copied from the copied {@code igfsFile}, but the {@code groupBlockSize}
+     * which is specified separately.
+     *
+     * @param igfsFile The file to copy.
+     */
+    public IgfsFileImpl(IgfsFile igfsFile, long grpBlockSize) {
+        A.notNull(igfsFile, "igfsFile");
+
+        this.path = igfsFile.path();
+        this.fileId = igfsFile instanceof IgfsFileImpl ? ((IgfsFileImpl)igfsFile).fileId : IgniteUuid.randomUuid();
+
+        this.blockSize = igfsFile.blockSize();
+        this.len = igfsFile.length();
+
+        this.grpBlockSize = igfsFile.isFile() ? grpBlockSize : 0L;
+
+        this.props = igfsFile.properties();
+
+        this.accessTime = igfsFile.accessTime();
+        this.modificationTime = igfsFile.modificationTime();
+    }
+
+    /**
      * Constructs directory info.
      *
      * @param path Path.
