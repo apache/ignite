@@ -24,13 +24,8 @@ import javax.cache.processor.MutableEntry;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.processors.resource.GridResourceIoc;
 import org.apache.ignite.internal.processors.resource.GridResourceProcessor;
-import org.apache.ignite.resources.CacheNameResource;
-import org.apache.ignite.resources.IgniteInstanceResource;
-import org.apache.ignite.resources.LoggerResource;
-import org.apache.ignite.resources.ServiceResource;
-import org.apache.ignite.resources.SpringApplicationContextResource;
-import org.apache.ignite.resources.SpringResource;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -39,19 +34,6 @@ import org.jetbrains.annotations.Nullable;
  * @param <T>
  */
 public class EntryProcessorResourceInjectorProxy<K, V, T> implements EntryProcessor<K, V, T>, Serializable {
-    /** Annotations supported. */
-    @SuppressWarnings("unchecked")
-    public static final GridResourceProcessor.AnnotationSet annotationsSupported =
-            new GridResourceProcessor.AnnotationSet(new Class[] {
-        CacheNameResource.class,
-
-        SpringApplicationContextResource.class,
-        SpringResource.class,
-        IgniteInstanceResource.class,
-        LoggerResource.class,
-        ServiceResource.class
-    });
-
     /** Serial version uid. */
     private static final long serialVersionUID = -5032286375274064774L;
 
@@ -72,7 +54,9 @@ public class EntryProcessorResourceInjectorProxy<K, V, T> implements EntryProces
     @Override public T process(MutableEntry<K, V> entry, Object... arguments) throws EntryProcessorException {
         if (!injected) {
             GridCacheContext cctx = entry.unwrap(GridCacheContext.class);
+
             GridResourceProcessor rsrcProcessor = cctx.kernalContext().resource();
+
             try {
                 rsrcProcessor.injectGeneric(delegate);
 
@@ -81,6 +65,7 @@ public class EntryProcessorResourceInjectorProxy<K, V, T> implements EntryProces
             catch (IgniteCheckedException e) {
                 throw new IgniteException(e);
             }
+
             injected = true;
         }
 
@@ -103,10 +88,8 @@ public class EntryProcessorResourceInjectorProxy<K, V, T> implements EntryProces
 
         GridResourceProcessor rsrcProcessor = ctx.resource();
 
-        int annMask = rsrcProcessor.isAnnotationsPresent(null, processor,
-            EntryProcessorResourceInjectorProxy.annotationsSupported);
-
-        return annMask != 0 ? new EntryProcessorResourceInjectorProxy<K,V,T>(processor) : processor;
+        return rsrcProcessor.isAnnotationsPresent(null, processor, GridResourceIoc.AnnotationSet.ENTRY_PROCESSOR) ?
+                new EntryProcessorResourceInjectorProxy<K,V,T>(processor) : processor;
     }
 
     /**
@@ -126,6 +109,4 @@ public class EntryProcessorResourceInjectorProxy<K, V, T> implements EntryProces
             obj :
             ((EntryProcessorResourceInjectorProxy)obj).getDelegate();
     }
-
-
 }

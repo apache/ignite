@@ -21,15 +21,12 @@ import java.lang.annotation.Annotation;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicReference;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.managers.deployment.GridDeployment;
 import org.apache.ignite.internal.util.GridLeanIdentitySet;
@@ -38,6 +35,12 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.resources.CacheNameResource;
+import org.apache.ignite.resources.IgniteInstanceResource;
+import org.apache.ignite.resources.LoggerResource;
+import org.apache.ignite.resources.ServiceResource;
+import org.apache.ignite.resources.SpringApplicationContextResource;
+import org.apache.ignite.resources.SpringResource;
 import org.jetbrains.annotations.Nullable;
 import org.jsr166.ConcurrentHashMap8;
 
@@ -45,7 +48,8 @@ import org.jsr166.ConcurrentHashMap8;
  * Resource container contains caches for classes used for injection.
  * Caches used to improve the efficiency of standard Java reflection mechanism.
  */
-class GridResourceIoc {
+public class GridResourceIoc {
+
     /** Task class resource mapping. Used to efficiently cleanup resources related to class loader. */
     private final ConcurrentMap<ClassLoader, Set<Class<?>>> taskMap =
         new ConcurrentHashMap8<>();
@@ -210,11 +214,11 @@ class GridResourceIoc {
      * @param target Target object.
      * @param annSet Annotation classes to find on fields or methods of target object.
      * @param dep Deployment.
-     * @return if annotation is presented, corresponding bit is set.
+     * * @return {@code true} if any annotation is presented, {@code false} if it's not.
      */
-    int isAnnotationsPresent(@Nullable GridDeployment dep, Object target, AnnotationSet annSet) {
+    boolean isAnnotationsPresent(@Nullable GridDeployment dep, Object target, AnnotationSet annSet) {
         assert target != null;
-        assert annSet != null && annSet.classes.length > 0 && annSet.classes.length <= 31;
+        assert annSet != null;
 
         return descriptor(dep, target.getClass()).isAnnotated(annSet);
     }
@@ -286,7 +290,7 @@ class GridResourceIoc {
         private final Map<Class<? extends Annotation>, T2<GridResourceField[], GridResourceMethod[]>> annMap;
 
         /** */
-        private final AtomicReference<int[]> annotationSets;
+        private final boolean containsAnnSets[];
 
         /**
          * @param cls Class.
@@ -357,7 +361,23 @@ class GridResourceIoc {
                 this.annMap.put(entry.getKey(), new T2<>(fields, mtds));
             }
 
-            this.annotationSets = annMap.isEmpty() ? null : new AtomicReference<>(new int[]{-1, -1, -1, -1});
+            if (annMap.isEmpty())
+                this.containsAnnSets = null;
+            else {
+                AnnotationSet[] sets = AnnotationSet.values();
+
+                this.containsAnnSets = new boolean[sets.length];
+
+                for (int i = 0; i < sets.length; i++) {
+                    for (Class<? extends Annotation> ann : sets[i].annotations) {
+                        if (annotatedMembers(ann) != null) {
+                            this.containsAnnSets[i] = true;
+
+                            break;
+                        }
+                    }
+                }
+            }
         }
 
         /**
@@ -375,78 +395,38 @@ class GridResourceIoc {
         }
 
         /**
-         * @param set Set of annotations.
-         * @param mask Mask.
-         */
-        private void appendAnnotationSet(AnnotationSet set, int mask) {
-            int[] oldSets, newSets;
-
-            do {
-                oldSets = annotationSets.get();
-
-                if (set.descIdx < oldSets.length)
-                    newSets = oldSets;
-                else {
-                    newSets = Arrays.copyOf(oldSets, Math.max(oldSets.length << 1, set.descIdx + 1));
-
-                    Arrays.fill(newSets, oldSets.length, newSets.length, -1);
-                }
-
-                newSets[set.descIdx] = mask;
-            }
-            while (!annotationSets.compareAndSet(oldSets, newSets));
-        }
-
-        /**
          * @param set Set.
          * @return if annotation is presented, corresponding bit is set.
          */
-        int isAnnotated(AnnotationSet set) {
-            if (recursiveFields.length > 0)
-                return ~(-1 << set.classes.length);
-
-            if (annotationSets == null)
-                return 0;
-
-            int[] oldSets = annotationSets.get();
-
-            if (set.descIdx < oldSets.length && oldSets[set.descIdx] > 0)
-                return oldSets[set.descIdx];
-
-            int val = 0, mask = 1;
-
-            for (Class<? extends Annotation> ann : set.classes) {
-                if (annotatedMembers(ann) != null)
-                    val |= mask;
-
-                mask <<= 1;
-            }
-
-            appendAnnotationSet(set, val);
-
-            return val;
+        boolean isAnnotated(AnnotationSet set) {
+            return recursiveFields.length > 0 || (this.containsAnnSets != null && this.containsAnnSets[set.ordinal()]);
         }
     }
 
     /**
-     * Set of annotations.
+     *
      */
-    static class AnnotationSet {
-        /** Index counter. */
-        private static final AtomicInteger indexCounter = new AtomicInteger();
+    public enum AnnotationSet {
 
         /** */
-        private final Class<? extends Annotation>[] classes;
+        ENTRY_PROCESSOR(new Class[] {
+            CacheNameResource.class,
 
-        /** Index in class descriptor. */
-        final int descIdx;
+            SpringApplicationContextResource.class,
+            SpringResource.class,
+            IgniteInstanceResource.class,
+            LoggerResource.class,
+            ServiceResource.class
+        });
+
+        /** Annotations. */
+        public final Class<? extends Annotation>[] annotations;
 
         /**
-         * @param classes Classes.
+         * @param annotations Annotations.
          */
-        public AnnotationSet(Class<? extends Annotation>[] classes) {
-            this.classes = classes;
-            this.descIdx = indexCounter.getAndIncrement();
+        AnnotationSet(Class<? extends Annotation>[] annotations) {
+            this.annotations = annotations;
         }
     }
 }

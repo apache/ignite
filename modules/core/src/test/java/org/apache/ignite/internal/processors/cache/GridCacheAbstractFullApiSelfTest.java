@@ -5463,7 +5463,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
         try {
             String key = UUID.randomUUID().toString();
 
-            cache.put(key, ThreadLocalRandom.current().nextInt());
+            //cache.put(key, ThreadLocalRandom.current().nextInt());
 
             Integer flags = cache.invoke(key, new ResourceInjectionEntryProcessor());
 
