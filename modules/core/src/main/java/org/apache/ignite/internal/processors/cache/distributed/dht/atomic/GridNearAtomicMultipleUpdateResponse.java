@@ -157,7 +157,7 @@ public class GridNearAtomicMultipleUpdateResponse extends GridCacheMessage imple
      *
      * @param err Error.
      */
-    @Override public void error(IgniteCheckedException err){
+    @Override public void error(IgniteCheckedException err) {
         this.err = err;
     }
 
@@ -321,9 +321,9 @@ public class GridNearAtomicMultipleUpdateResponse extends GridCacheMessage imple
     /**
      * @return Indexes of keys for which values were generated on primary node.
      */
-   @Override @Nullable public List<Integer> nearValuesIndexes() {
+    @Override @Nullable public List<Integer> nearValuesIndexes() {
         return nearValsIdxs;
-   }
+    }
 
     /**
      * @param idx Index.
@@ -378,7 +378,8 @@ public class GridNearAtomicMultipleUpdateResponse extends GridCacheMessage imple
      * @param e Error cause.
      * @param ctx Context.
      */
-    @Override public synchronized void addFailedKeys(Collection<KeyCacheObject> keys, Throwable e, GridCacheContext ctx) {
+    @Override public synchronized void addFailedKeys(Collection<KeyCacheObject> keys, Throwable e,
+        GridCacheContext ctx) {
         if (failedKeys == null)
             failedKeys = new ArrayList<>(keys.size());
 

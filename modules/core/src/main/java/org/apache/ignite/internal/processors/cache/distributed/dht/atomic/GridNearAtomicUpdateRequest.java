@@ -24,6 +24,7 @@ import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.GridCacheOperation;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
+import org.apache.ignite.plugin.extensions.communication.Message;
 import org.jetbrains.annotations.Nullable;
 
 import javax.cache.expiry.ExpiryPolicy;
@@ -34,7 +35,7 @@ import java.util.UUID;
 /**
  * Base interface for near atomic update requests.
  */
-public interface GridNearAtomicUpdateRequest {
+public interface GridNearAtomicUpdateRequest extends Message {
     /**
      * @return Message ID.
      */
