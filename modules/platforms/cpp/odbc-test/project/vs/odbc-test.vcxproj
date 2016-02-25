@@ -175,7 +175,7 @@
     <ClCompile Include="..\..\src\utility_test.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\..\include\teamcity_messages.h" />
+    <ClInclude Include="..\..\include\teamcity\teamcity_messages.h" />
     <ClInclude Include="..\..\include\test_type.h" />
     <ClInclude Include="..\..\include\test_utils.h" />
   </ItemGroup>
