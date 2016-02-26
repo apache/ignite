@@ -199,6 +199,9 @@ namespace Apache.Ignite.Core.Impl.Binary
 
                 var schemaSize = Length - SchemaOffset;
 
+                if (HasRaw)
+                    schemaSize -= 4;
+
                 return schemaSize / SchemaFieldSize;
             }
         }
