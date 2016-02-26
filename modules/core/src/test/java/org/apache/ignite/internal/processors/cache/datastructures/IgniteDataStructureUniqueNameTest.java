@@ -30,6 +30,7 @@ import org.apache.ignite.IgniteAtomicStamped;
 import org.apache.ignite.IgniteCountDownLatch;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteQueue;
+import org.apache.ignite.IgniteReentrantLock;
 import org.apache.ignite.IgniteSemaphore;
 import org.apache.ignite.IgniteSet;
 import org.apache.ignite.cache.CacheAtomicityMode;
@@ -240,7 +241,7 @@ public class IgniteDataStructureUniqueNameTest extends IgniteCollectionAbstractT
     private void testUniqueName(final boolean singleGrid) throws Exception {
         final String name = IgniteUuid.randomUuid().toString();
 
-        final int DS_TYPES = 8;
+        final int DS_TYPES = 9;
 
         final int THREADS = DS_TYPES * 3;
 
@@ -321,6 +322,13 @@ public class IgniteDataStructureUniqueNameTest extends IgniteCollectionAbstractT
                                     res = ignite.semaphore(name, 0, false, true);
 
                                     break;
+
+                                case 8:
+                                    log.info("Create atomic reentrant lock, grid: " + ignite.name());
+
+                                    res = ignite.reentrantLock(name, true, true);
+
+                                    break;
                                 default:
                                     fail();
 
@@ -360,7 +368,8 @@ public class IgniteDataStructureUniqueNameTest extends IgniteCollectionAbstractT
                         res instanceof IgniteCountDownLatch ||
                         res instanceof IgniteQueue ||
                         res instanceof IgniteSet ||
-                        res instanceof IgniteSemaphore);
+                        res instanceof IgniteSemaphore ||
+                        res instanceof IgniteReentrantLock);
 
                 log.info("Data structure created: " + dataStructure);
 

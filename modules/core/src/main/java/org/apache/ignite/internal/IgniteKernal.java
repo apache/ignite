@@ -64,6 +64,7 @@ import org.apache.ignite.IgniteFileSystem;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteMessaging;
 import org.apache.ignite.IgniteQueue;
+import org.apache.ignite.IgniteReentrantLock;
 import org.apache.ignite.IgniteScheduler;
 import org.apache.ignite.IgniteSemaphore;
 import org.apache.ignite.IgniteServices;
@@ -2983,6 +2984,25 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
 
         try {
             return ctx.dataStructures().semaphore(name, cnt, failoverSafe, create);
+        }
+        catch (IgniteCheckedException e) {
+            throw U.convertException(e);
+        }
+        finally {
+            unguard();
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Nullable @Override public IgniteReentrantLock reentrantLock(
+        String name,
+        boolean failoverSafe,
+        boolean create
+    ) {
+        guard();
+
+        try {
+            return ctx.dataStructures().reentrantLock(name, failoverSafe, create);
         }
         catch (IgniteCheckedException e) {
             throw U.convertException(e);

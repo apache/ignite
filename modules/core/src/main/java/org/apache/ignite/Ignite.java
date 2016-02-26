@@ -466,6 +466,22 @@ public interface Ignite extends AutoCloseable {
         throws IgniteException;
 
     /**
+     * Gets or creates reentrant lock. If reentrant lock is not found in cache and {@code create} flag
+     * is {@code true}, it is created using provided name.
+     *
+     * @param name Name of the lock.
+     * @param failoverSafe {@code True} to create failover safe lock which means that
+     *      if any node leaves topology lock already acquired by that node is silently released
+     *      and become available for alive nodes to acquire. If flag is {@code false} then
+     *      all threads waiting to acquire lock get interrupted.
+     * @param create Boolean flag indicating whether data structure should be created if does not exist.
+     * @return ReentrantLock for the given name.
+     * @throws IgniteException If reentrant lock could not be fetched or created.
+     */
+    public IgniteReentrantLock reentrantLock(String name, boolean failoverSafe, boolean create)
+        throws IgniteException;
+
+    /**
      * Will get a named queue from cache and create one if it has not been created yet and {@code cfg} is not
      * {@code null}.
      * If queue is present already, queue properties will not be changed. Use
