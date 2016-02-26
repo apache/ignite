@@ -184,7 +184,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// </summary>
         public int SchemaFieldSize
         {
-            get { return IsCompactFooter ? SchemaFieldOffsetSize : SchemaFieldSize + 4; }
+            get { return IsCompactFooter ? SchemaFieldOffsetSize : SchemaFieldOffsetSize + 4; }
         }
 
         /// <summary>
