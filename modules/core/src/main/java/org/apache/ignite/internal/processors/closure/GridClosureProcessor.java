@@ -17,6 +17,18 @@
 
 package org.apache.ignite.internal.processors.closure;
 
+import java.io.Externalizable;
+import java.io.IOException;
+import java.io.ObjectInput;
+import java.io.ObjectOutput;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.Callable;
+import java.util.concurrent.Executor;
+import java.util.concurrent.RejectedExecutionException;
+import java.util.concurrent.TimeUnit;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.binary.BinaryObjectException;
@@ -59,18 +71,6 @@ import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.resources.LoadBalancerResource;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-import java.io.Externalizable;
-import java.io.IOException;
-import java.io.ObjectInput;
-import java.io.ObjectOutput;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.Callable;
-import java.util.concurrent.Executor;
-import java.util.concurrent.RejectedExecutionException;
-import java.util.concurrent.TimeUnit;
 
 import static org.apache.ignite.compute.ComputeJobResultPolicy.FAILOVER;
 import static org.apache.ignite.compute.ComputeJobResultPolicy.REDUCE;
@@ -82,6 +82,7 @@ import static org.apache.ignite.internal.processors.task.GridTaskThreadContextKe
  */
 public class GridClosureProcessor extends GridProcessorAdapter {
 
+    /** Ignite version in which binarylizable versions of closures were introduced. */
     public static final IgniteProductVersion BINARYLIZABLE_CLOSURES_SINCE = IgniteProductVersion.fromString("1.6.0");
 
     /** */
@@ -272,8 +273,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
 
                             ClusterNode n = lb.getBalancedNode(job, null);
 
-                            if (needDowngrade(job, n.version()))
-                                job = job(r, n.version());
+                            job = downgradeJobIfNeed(job, n.version());
 
                             mapper.map(job, n);
                         }
@@ -329,8 +329,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
 
                             ClusterNode n = lb.getBalancedNode(job, null);
 
-                            if (needDowngrade(job, n.version()))
-                                job = job(c, n.version());
+                            job = downgradeJobIfNeed(job, n.version());
 
                             mapper.map(job, n);
                         }
@@ -1041,7 +1040,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
     private static <T, R> ComputeJob job(final IgniteClosure<T, R> job, @Nullable final T arg) {
         A.notNull(job, "job");
 
-        return job instanceof ComputeJobMasterLeaveAware ? new C1MLA<>(job, arg) : new C1<>(job, arg);
+        return job instanceof ComputeJobMasterLeaveAware ? new C1MLAV2<>(job, arg) : new C1V2<>(job, arg);
     }
 
     /**
@@ -1056,9 +1055,9 @@ public class GridClosureProcessor extends GridProcessorAdapter {
         A.notNull(job, "job");
 
         if (targetVersion.compareTo(BINARYLIZABLE_CLOSURES_SINCE) < 0)
-            return job(job, arg);
+            return job instanceof ComputeJobMasterLeaveAware ? new C1MLA<>(job, arg) : new C1<>(job, arg);
 
-        return job instanceof ComputeJobMasterLeaveAware ? new C1MLAV2<>(job, arg) : new C1V2<>(job, arg);
+        return job(job, arg);
     }
 
     /**
@@ -1070,7 +1069,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
     private static <R> ComputeJob job(final Callable<R> c) {
         A.notNull(c, "job");
 
-        return c instanceof ComputeJobMasterLeaveAware ? new C2MLA<>(c) : new C2<>(c);
+        return c instanceof ComputeJobMasterLeaveAware ? new C2MLAV2<>(c) : new C2V2<>(c);
     }
 
     /**
@@ -1084,9 +1083,9 @@ public class GridClosureProcessor extends GridProcessorAdapter {
         A.notNull(c, "job");
 
         if (targetVersion.compareTo(BINARYLIZABLE_CLOSURES_SINCE) < 0)
-            return job(c);
+            return c instanceof ComputeJobMasterLeaveAware ? new C2MLA<>(c) : new C2<>(c);
 
-        return c instanceof ComputeJobMasterLeaveAware ? new C2MLAV2<>(c) : new C2V2<>(c);
+        return job(c);
     }
 
     /**
@@ -1098,7 +1097,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
     private static ComputeJob job(final Runnable r) {
         A.notNull(r, "job");
 
-        return r instanceof ComputeJobMasterLeaveAware ? new C4MLA(r) : new C4(r);
+        return r instanceof ComputeJobMasterLeaveAware ? new C4MLAV2(r) : new C4V2(r);
     }
 
     /**
@@ -1112,24 +1111,37 @@ public class GridClosureProcessor extends GridProcessorAdapter {
         A.notNull(r, "job");
 
         if (targetVersion.compareTo(BINARYLIZABLE_CLOSURES_SINCE) < 0)
-            return job(r);
+            return r instanceof ComputeJobMasterLeaveAware ? new C4MLA(r) : new C4(r);
 
-        return r instanceof ComputeJobMasterLeaveAware ? new C4MLAV2(r) : new C4V2(r);
+        return job(r);
     }
 
-    /**
-     * Checks if job needs to be converted to older version.
-     * @param job Job.
-     * @param targetVersion Version of the node where job will be executed.
-     * @return True if job needs to be converted to older version.
-     */
-    private static boolean needDowngrade(ComputeJob job, IgniteProductVersion targetVersion) {
+    private static ComputeJob downgradeJobIfNeed(ComputeJob job, IgniteProductVersion targetVersion) {
         A.notNull(job, "job");
 
-        if (job instanceof C1V2 || job instanceof C2V2 || job instanceof C4V2)
-            return targetVersion.compareTo(BINARYLIZABLE_CLOSURES_SINCE) < 0;
+        if (targetVersion.compareTo(BINARYLIZABLE_CLOSURES_SINCE) >= 0)
+            return job;
 
-        return false;
+        if (job instanceof C1V2) {
+            if (job instanceof C1MLAV2)
+                return new C1MLA<>(((C1MLAV2)job).job, ((C1MLAV2)job).arg);
+            else
+                return new C1<>(((C1V2)job).job, ((C1V2)job).arg);
+        }
+        else if (job instanceof C2V2) {
+            if (job instanceof C2MLAV2)
+                return new C2MLA<>(((C2MLAV2)job).c);
+            else
+                return new C2<>(((C2V2)job).c);
+        }
+        else if (job instanceof C4V2) {
+            if (job instanceof C4MLAV2)
+                return new C4MLA(((C4MLAV2)job).r);
+            else
+                return new C4(((C4V2)job).r);
+        }
+
+        return job;
     }
 
     /**
@@ -1570,8 +1582,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
 
             ClusterNode node = lb.getBalancedNode(job, null);
 
-            if (needDowngrade(job, node.version()))
-                job = job(this.job, this.arg, node.version());
+            job = downgradeJobIfNeed(job, node.version());
 
             return Collections.singletonMap(job, node);
         }
@@ -1624,8 +1635,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
 
                     ClusterNode node = lb.getBalancedNode(job, null);
 
-                    if (needDowngrade(job, node.version()))
-                        job = job(this.job, jobArg, node.version());
+                    job = downgradeJobIfNeed(job, node.version());
 
                     mapper.map(job, node);
                 }
@@ -1685,8 +1695,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
 
                     ClusterNode node = lb.getBalancedNode(job, null);
 
-                    if (needDowngrade(job, node.version()))
-                        job = job(this.job, jobArg, node.version());
+                    job = downgradeJobIfNeed(job, node.version());
 
                     mapper.map(job, node);
                 }
@@ -1834,7 +1843,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
 
         /** */
         @GridToStringInclude
-        private T arg;
+        protected T arg;
 
         /**
          *
