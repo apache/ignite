@@ -25,6 +25,7 @@ public interface ConfigurationParameter<T> {
      * @return Name
      */
     public String name();
+    
     /**
      * @param cfg Configuration.
      * @return Configuration.

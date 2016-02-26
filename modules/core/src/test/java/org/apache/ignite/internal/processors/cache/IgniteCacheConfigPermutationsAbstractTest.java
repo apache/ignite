@@ -59,7 +59,7 @@ public abstract class IgniteCacheConfigPermutationsAbstractTest extends IgniteCo
     /** */
     protected static final int CLIENT_NEAR_ONLY_IDX = 2;
 
-    /** Test timeout */
+    /** Test timeout. */
     private static final long TEST_TIMEOUT = 30 * 1000;
 
     /** Store map. */

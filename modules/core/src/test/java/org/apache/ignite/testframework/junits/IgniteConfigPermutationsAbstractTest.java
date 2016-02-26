@@ -57,7 +57,7 @@ public abstract class IgniteConfigPermutationsAbstractTest extends GridCommonAbs
      * @param testsCfg Tests configuration.
      */
     public void setTestsConfiguration(TestsConfiguration testsCfg) {
-        assert this.testsCfg == null: "Test config must be set only once [oldTestCfg=" + this.testsCfg
+        assert this.testsCfg == null : "Test config must be set only once [oldTestCfg=" + this.testsCfg
             + ", newTestCfg=" + testsCfg + "]";
 
         this.testsCfg = testsCfg;
@@ -124,7 +124,7 @@ public abstract class IgniteConfigPermutationsAbstractTest extends GridCommonAbs
      * Prints memory usage.
      */
     private void memoryUsage() {
-        int mb = 1024*1024;
+        int mb = 1024 * 1024;
 
         Runtime runtime = Runtime.getRuntime();
 
@@ -171,8 +171,8 @@ public abstract class IgniteConfigPermutationsAbstractTest extends GridCommonAbs
         int cnt = 0;
 
         for (int i = 0; i < gridCount(); i++) {
-             if (grid(i).configuration().isClientMode())
-                 cnt++;
+            if (grid(i).configuration().isClientMode())
+                cnt++;
         }
 
         return cnt;

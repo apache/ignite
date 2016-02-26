@@ -199,7 +199,7 @@ public class Parameters {
             String mtdName0 = mtdName;
 
             if (mtdName0.startsWith("set") && mtdName0.length() > 3)
-                mtdName0=mtdName0.substring(3, mtdName0.length());
+                mtdName0 = mtdName0.substring(3, mtdName0.length());
 
             String val0;
 
@@ -342,8 +342,7 @@ public class Parameters {
         /**
          * @param params Params
          */
-        @SafeVarargs
-        ComplexParameter(ConfigurationParameter<T>... params) {
+        @SafeVarargs ComplexParameter(ConfigurationParameter<T>... params) {
             A.notEmpty(params, "params");
 
             this.params = params;

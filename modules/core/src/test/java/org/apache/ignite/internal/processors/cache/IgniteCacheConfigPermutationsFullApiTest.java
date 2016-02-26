@@ -1258,8 +1258,7 @@ public class IgniteCacheConfigPermutationsFullApiTest extends IgniteCacheConfigP
     private void checkInvokeReturnValue(boolean put,
         TransactionConcurrency concurrency,
         TransactionIsolation isolation)
-        throws Exception
-    {
+        throws Exception {
         IgniteCache<Object, Object> cache = jcache();
 
         Object key = key(1);
@@ -1594,7 +1593,7 @@ public class IgniteCacheConfigPermutationsFullApiTest extends IgniteCacheConfigP
 
             cache.put(key, 1);
 
-            assertEquals(1, (int) cache.get(key));
+            assertEquals(1, (int)cache.get(key));
 
             GridTestUtils.assertThrows(log, new Callable<Void>() {
                 @Override public Void call() throws Exception {
@@ -1612,7 +1611,7 @@ public class IgniteCacheConfigPermutationsFullApiTest extends IgniteCacheConfigP
                 }
             }, NullPointerException.class, null);
 
-            assertEquals(1, (int) cache.get(key));
+            assertEquals(1, (int)cache.get(key));
 
             cache.put(key, 2);
 
@@ -1643,7 +1642,7 @@ public class IgniteCacheConfigPermutationsFullApiTest extends IgniteCacheConfigP
             assertNull(cache.get("k1"));
             assertNull(cache.get("k2"));
 
-            assertEquals(2, (int) cache.get(key));
+            assertEquals(2, (int)cache.get(key));
 
             cache.put(key, 3);
 
@@ -1694,7 +1693,7 @@ public class IgniteCacheConfigPermutationsFullApiTest extends IgniteCacheConfigP
 
             cache.putAll(m);
 
-            assertEquals(3, (int) cache.get("key3"));
+            assertEquals(3, (int)cache.get("key3"));
             assertEquals(4, (int)cache.get("key4"));
         }
 
@@ -2046,7 +2045,7 @@ public class IgniteCacheConfigPermutationsFullApiTest extends IgniteCacheConfigP
     }
 
     /**
-     * @param  inTx In tx flag.
+     * @param inTx In tx flag.
      * @throws Exception If failed.
      */
     private void checkPutxIfAbsentAsync(boolean inTx) throws Exception {
@@ -2739,7 +2738,7 @@ public class IgniteCacheConfigPermutationsFullApiTest extends IgniteCacheConfigP
     /**
      * @return Count of entries to be removed in removeAll() test.
      */
-    protected long hugeRemoveAllEntryCount(){
+    protected long hugeRemoveAllEntryCount() {
         return 1000L;
     }
 
@@ -4031,7 +4030,8 @@ public class IgniteCacheConfigPermutationsFullApiTest extends IgniteCacheConfigP
      * @param isolation Isolation.
      * @throws Exception If failed.
      */
-    private void checkRemovexInTx(final TransactionConcurrency concurrency, final TransactionIsolation isolation) throws Exception {
+    private void checkRemovexInTx(final TransactionConcurrency concurrency,
+        final TransactionIsolation isolation) throws Exception {
         if (txShouldBeUsed()) {
             final int cnt = 10;
 
@@ -4704,7 +4704,7 @@ public class IgniteCacheConfigPermutationsFullApiTest extends IgniteCacheConfigP
      * @throws Exception If failed.
      */
     public void testWithSkipStore() throws Exception {
-        if(isMultiJvm())
+        if (isMultiJvm())
             fail("https://issues.apache.org/jira/browse/IGNITE-1088");
 
         if (!storeEnabled())
@@ -5006,7 +5006,6 @@ public class IgniteCacheConfigPermutationsFullApiTest extends IgniteCacheConfigP
      * @param keys Keys list.
      * @param txConcurrency Concurrency mode.
      * @param txIsolation Isolation mode.
-     *
      * @throws Exception If failed.
      */
     private void checkSkipStoreWithTransaction(IgniteCache<String, Integer> cache,
@@ -5015,8 +5014,7 @@ public class IgniteCacheConfigPermutationsFullApiTest extends IgniteCacheConfigP
         List<String> keys,
         TransactionConcurrency txConcurrency,
         TransactionIsolation txIsolation)
-        throws  Exception
-    {
+        throws Exception {
         info("Test tx skip store [concurrency=" + txConcurrency + ", isolation=" + txIsolation + ']');
 
         cache.removeAll(data.keySet());
@@ -5028,10 +5026,10 @@ public class IgniteCacheConfigPermutationsFullApiTest extends IgniteCacheConfigP
 
         // Several put check.
         try (Transaction tx = txs.txStart(txConcurrency, txIsolation)) {
-            for (String key: keys)
+            for (String key : keys)
                 cacheSkipStore.put(key, val);
 
-            for (String key: keys) {
+            for (String key : keys) {
                 assertEquals(val, cacheSkipStore.get(key));
                 assertEquals(val, cache.get(key));
                 assertFalse(map.containsKey(key));
@@ -5040,7 +5038,7 @@ public class IgniteCacheConfigPermutationsFullApiTest extends IgniteCacheConfigP
             tx.commit();
         }
 
-        for (String key: keys) {
+        for (String key : keys) {
             assertEquals(val, cacheSkipStore.get(key));
             assertEquals(val, cache.get(key));
             assertFalse(map.containsKey(key));
@@ -5055,7 +5053,7 @@ public class IgniteCacheConfigPermutationsFullApiTest extends IgniteCacheConfigP
             tx.commit();
         }
 
-        for (String key: keys) {
+        for (String key : keys) {
             val = data.get(key);
 
             assertEquals(val, cacheSkipStore.get(key));
@@ -5071,7 +5069,7 @@ public class IgniteCacheConfigPermutationsFullApiTest extends IgniteCacheConfigP
             tx.commit();
         }
 
-        for (String key: keys) {
+        for (String key : keys) {
             assertNull(cacheSkipStore.get(key));
             assertNotNull(cache.get(key));
             assertTrue(map.containsKey(key));
@@ -5085,7 +5083,7 @@ public class IgniteCacheConfigPermutationsFullApiTest extends IgniteCacheConfigP
         try (Transaction tx = txs.txStart(txConcurrency, txIsolation)) {
             cache.putAll(data);
 
-            for (String key: keys) {
+            for (String key : keys) {
                 assertNotNull(cacheSkipStore.get(key));
                 assertNotNull(cache.get(key));
                 assertFalse(map.containsKey(key));
@@ -5093,7 +5091,7 @@ public class IgniteCacheConfigPermutationsFullApiTest extends IgniteCacheConfigP
 
             cache.removeAll(data.keySet());
 
-            for (String key: keys) {
+            for (String key : keys) {
                 assertNull(cacheSkipStore.get(key));
                 assertNull(cache.get(key));
                 assertFalse(map.containsKey(key));
@@ -5120,7 +5118,7 @@ public class IgniteCacheConfigPermutationsFullApiTest extends IgniteCacheConfigP
 
             cache.putAll(subMap);
 
-            for (String key: keys) {
+            for (String key : keys) {
                 assertNotNull(cacheSkipStore.get(key));
                 assertNotNull(cache.get(key));
                 assertFalse(map.containsKey(key));
@@ -5147,7 +5145,7 @@ public class IgniteCacheConfigPermutationsFullApiTest extends IgniteCacheConfigP
 
         cache.removeAll(data.keySet());
 
-        for (String key: keys) {
+        for (String key : keys) {
             assertNull(cacheSkipStore.get(key));
             assertNull(cache.get(key));
             assertFalse(map.containsKey(key));
@@ -5242,7 +5240,6 @@ public class IgniteCacheConfigPermutationsFullApiTest extends IgniteCacheConfigP
     /**
      * @param cache Cache instance.
      * @param cacheSkipStore Cache skip store projection.
-     *
      * @throws Exception If failed.
      */
     private void checkEmpty(IgniteCache<String, Integer> cache, IgniteCache<String, Integer> cacheSkipStore)
@@ -5473,7 +5470,8 @@ public class IgniteCacheConfigPermutationsFullApiTest extends IgniteCacheConfigP
         }
 
         /** {@inheritDoc} */
-        @Override public Integer process(MutableEntry<String, Integer> entry, Object... arguments) throws EntryProcessorException {
+        @Override public Integer process(MutableEntry<String, Integer> entry,
+            Object... arguments) throws EntryProcessorException {
             Integer val = entry.getValue();
 
             entry.setValue(newVal);

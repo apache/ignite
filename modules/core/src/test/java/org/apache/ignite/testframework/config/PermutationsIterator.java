@@ -48,7 +48,7 @@ public class PermutationsIterator implements Iterator<int[]> {
 
         for (int i = 0; i < params.length; i++) {
             assert params[i] != null : i;
-            assert params[i].length > 0: i;
+            assert params[i].length > 0 : i;
         }
 
         this.params = params;

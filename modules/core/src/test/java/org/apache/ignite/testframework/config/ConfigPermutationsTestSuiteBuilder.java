@@ -226,6 +226,7 @@ public class ConfigPermutationsTestSuiteBuilder {
     }
 
     /**
+     * @param cnt Count.
      * @return {@code this} for chaining.
      */
     public ConfigPermutationsTestSuiteBuilder gridsCount(int cnt) {
@@ -238,6 +239,7 @@ public class ConfigPermutationsTestSuiteBuilder {
 
     /**
      * @param igniteParams New ignite params.
+     * @return {@code this} for chaining.
      */
     public ConfigPermutationsTestSuiteBuilder igniteParams(
         ConfigurationParameter<IgniteConfiguration>[][] igniteParams) {
@@ -248,6 +250,7 @@ public class ConfigPermutationsTestSuiteBuilder {
 
     /**
      * @param cacheParams New cache params.
+     * @return {@code this} for chaining.
      */
     public ConfigPermutationsTestSuiteBuilder cacheParams(ConfigurationParameter<CacheConfiguration>[][] cacheParams) {
         this.cacheParams = cacheParams;
@@ -272,7 +275,7 @@ public class ConfigPermutationsTestSuiteBuilder {
      * @return {@code this} for chaining.
      */
     public ConfigPermutationsTestSuiteBuilder backups(int backups) {
-        assert backups > 0: backups;
+        assert backups > 0 : backups;
 
         this.backups = backups;
 
@@ -284,7 +287,7 @@ public class ConfigPermutationsTestSuiteBuilder {
      * @return {@code this} for chaining.
      */
     public ConfigPermutationsTestSuiteBuilder specifyIgniteParam(int... singleIgniteParam) {
-        this.specificIgniteParam = singleIgniteParam;
+        specificIgniteParam = singleIgniteParam;
 
         return this;
     }
