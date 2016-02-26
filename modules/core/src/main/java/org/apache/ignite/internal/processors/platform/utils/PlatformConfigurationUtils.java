@@ -28,6 +28,7 @@ import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.QueryIndex;
 import org.apache.ignite.cache.QueryIndexType;
+import org.apache.ignite.configuration.BinaryConfiguration;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.binary.*;
@@ -259,6 +260,13 @@ import java.util.Map;
 
         readCacheConfigurations(in, cfg);
         readDiscoveryConfiguration(in, cfg);
+
+        if (in.readBoolean()) {
+            if (cfg.getBinaryConfiguration() == null)
+                cfg.setBinaryConfiguration(new BinaryConfiguration());
+
+            cfg.getBinaryConfiguration().setCompactFooter(in.readBoolean());
+        }
     }
 
     /**
@@ -548,6 +556,12 @@ import java.util.Map;
 
         w.writeLong(ManagementFactory.getMemoryMXBean().getHeapMemoryUsage().getInit());
         w.writeLong(ManagementFactory.getMemoryMXBean().getHeapMemoryUsage().getMax());
+
+        BinaryConfiguration bc = cfg.getBinaryConfiguration();
+        w.writeBoolean(bc != null);
+
+        if (bc != null)
+            w.writeBoolean(bc.isCompactFooter());
     }
 
     /**
