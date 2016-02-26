@@ -797,7 +797,7 @@ namespace Apache.Ignite.Core.Impl.Binary
             if (_curHdr.IsCompactFooter)
             {
                 // TODO: Get schema from Java!
-                return null;
+                throw new NotSupportedException("TODO");
             }
 
             Stream.Seek(_curPos + _curHdr.SchemaOffset, SeekOrigin.Begin);
@@ -935,9 +935,9 @@ namespace Apache.Ignite.Core.Impl.Binary
 
             if (_curSchema == null || actionId >= _curSchema.Length || fieldId != _curSchema[actionId])
             {
-                _curSchema = null; // read order is different, ignore schema for future reads
+                _curSchemaMap = _curSchemaMap ?? _curHdr.ReadSchemaAsDictionary(Stream, _curPos, _curSchema);
 
-                _curSchemaMap = _curSchemaMap ?? _curHdr.ReadSchemaAsDictionary(Stream, _curPos);
+                _curSchema = null; // read order is different, ignore schema for future reads
 
                 int pos;
 
