@@ -1455,15 +1455,7 @@ namespace Apache.Ignite.Core.Impl.Binary
                 BinaryType meta;
 
                 if (_metas.TryGetValue(desc.TypeId, out meta))
-                {
-                    if (fields != null)
-                    {
-                        var existingFields = meta.GetFieldsMap();
-
-                        foreach (var field in fields)
-                            existingFields[field.Key] = field.Value;
-                    }
-                }
+                    meta.UpdateFields(fields);
                 else
                     _metas[desc.TypeId] = new BinaryType(desc, fields);
             }

@@ -18,6 +18,7 @@
 namespace Apache.Ignite.Core.Impl.Binary.Metadata
 {
     using System.Collections.Generic;
+    using System.Diagnostics;
     using System.Diagnostics.CodeAnalysis;
     using Apache.Ignite.Core.Binary;
 
@@ -217,6 +218,20 @@ namespace Apache.Ignite.Core.Impl.Binary.Metadata
         public IDictionary<string, int> GetFieldsMap()
         {
             return _fields ?? EmptyDict;
+        }
+
+        /// <summary>
+        /// Updates the fields.
+        /// </summary>
+        public void UpdateFields(IDictionary<string, int> fields)
+        {
+            if (fields == null || fields.Count == 0)
+                return;
+
+            Debug.Assert(_fields != null);
+
+            foreach (var field in fields)
+                _fields[field.Key] = field.Value;
         }
     }
 }
