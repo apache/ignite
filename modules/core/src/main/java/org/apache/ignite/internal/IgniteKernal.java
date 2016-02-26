@@ -657,8 +657,8 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
             @Override public void run() {
                 while (true) {
                     try {
-                        U.sleep(10000L);
-                        String filename = "timesample-" + getLocalNodeId() + ".txt";
+                        U.sleep(60000L);
+                        String filename = "timesample-" + getLocalNodeId() + "-" + System.currentTimeMillis() + ".txt";
                         try (PrintWriter pw = new PrintWriter(filename)) {
                             printTimeMetrics("NEAR MSG", pw, GridCacheIoManager.SAMPLING_DATA_NEAR_SND, GridCacheIoManager.SAMPLING_DATA_NEAR_RCV);
                             printTimeMetrics("NEAR FUT", pw, GridNearAtomicUpdateFuture.NEAR_FUT_START, GridNearAtomicUpdateFuture.NEAR_FUT_FINISH);
