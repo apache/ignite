@@ -84,7 +84,7 @@ public class DirectByteBufferStreamImplV2 implements DirectByteBufferStream {
     public static final ConcurrentMap<String, Long> NEAR_MSG_MARSHALLED_START = new ConcurrentHashMap8<>();
     public static final ConcurrentMap<String, Long> NEAR_MSG_MARSHALLED_FINISH = new ConcurrentHashMap8<>();
 
-    public static final int SAMPLING_MOD = 100;
+    public static final int SAMPLING_MOD = 1000;
 
     /** */
     private static final ArrayCreator<byte[]> BYTE_ARR_CREATOR = new ArrayCreator<byte[]>() {

@@ -147,7 +147,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
     public static final ConcurrentMap<String, Long> NEAR_PROC_START = new ConcurrentHashMap8<>();
     public static final ConcurrentMap<String, Long> NEAR_PROC_FINISH = new ConcurrentHashMap8<>();
 
-    public static final int SAMPLING_MOD = 100;
+    public static final int SAMPLING_MOD = 1000;
 
     /**
      * Empty constructor required by {@link Externalizable}.

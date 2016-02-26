@@ -152,7 +152,7 @@ public class GridNearAtomicUpdateFuture extends GridFutureAdapter<Object>
     public static final ConcurrentMap<String, Long> NEAR_FUT_START = new ConcurrentHashMap8<>();
     public static final ConcurrentMap<String, Long> NEAR_FUT_FINISH = new ConcurrentHashMap8<>();
 
-    public static final int SAMPLING_MOD = 100;
+    public static final int SAMPLING_MOD = 1000;
 
     /**
      * @param cctx Cache context.

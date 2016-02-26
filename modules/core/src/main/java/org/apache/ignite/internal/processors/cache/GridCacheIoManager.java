@@ -116,7 +116,7 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
     public static final ConcurrentMap<String, Long> SAMPLING_DATA_NEAR_RCV = new ConcurrentHashMap8<>();
     public static final ConcurrentMap<String, Long> SAMPLING_DATA_DHT_RCV = new ConcurrentHashMap8<>();
 
-    public static final int SAMPLING_MOD = 100;
+    public static final int SAMPLING_MOD = 1000;
 
     /** Message listener. */
     private GridMessageListener lsnr = new GridMessageListener() {
