@@ -33,6 +33,7 @@ import org.apache.ignite.internal.direct.stream.v2.DirectByteBufferStreamImplV2;
 import org.apache.ignite.internal.processors.cache.GridCacheIoManager;
 import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridDhtAtomicCache;
 import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridNearAtomicUpdateFuture;
+import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridNearAtomicUpdateRequest;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
@@ -143,6 +144,8 @@ public class JmhCacheAbstractBenchmark extends JmhAbstractBenchmark {
             printTimeMetrics("NEAR FUT", pw, GridNearAtomicUpdateFuture.NEAR_FUT_START, GridNearAtomicUpdateFuture.NEAR_FUT_FINISH);
             printTimeMetrics("NEAR PROC", pw, GridDhtAtomicCache.NEAR_PROC_START, GridDhtAtomicCache.NEAR_PROC_FINISH);
             printTimeMetrics("NEAR MSG MARSH", pw, DirectByteBufferStreamImplV2.NEAR_MSG_MARSHALLED_START, DirectByteBufferStreamImplV2.NEAR_MSG_MARSHALLED_FINISH);
+            printTimeMetrics("NEAR MSG PREP SENT", pw, GridCacheIoManager.SAMPLING_DATA_NEAR_SND, GridNearAtomicUpdateRequest.SENT);
+            printTimeMetrics("NEAR MSG RCVD PROC", pw, GridNearAtomicUpdateRequest.RECEIVED, GridDhtAtomicCache.NEAR_PROC_START);
             printTimeMetrics("DHT MSG", pw, GridCacheIoManager.SAMPLING_DATA_DHT_SND, GridCacheIoManager.SAMPLING_DATA_DHT_RCV);
         }
         finally {
@@ -161,7 +164,6 @@ public class JmhCacheAbstractBenchmark extends JmhAbstractBenchmark {
             Long sndTime = start.get(k);
             Long rcvTime = finish.get(k);
             if (sndTime != null && rcvTime != null) {
-//                    if (k.contains(": 5000"))
                 pw.append(marker + " [" + k + "] " + sndTime + " " + rcvTime + " " + (rcvTime - sndTime) + "\n");
                 totalTime += (rcvTime - sndTime);
                 totalMsgs++;

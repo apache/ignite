@@ -26,6 +26,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentMap;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.internal.GridDirectCollection;
@@ -41,6 +42,8 @@ import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
+import org.apache.ignite.internal.util.typedef.G;
+import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType;
@@ -48,6 +51,7 @@ import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+import org.jsr166.ConcurrentHashMap8;
 
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.*;
 
@@ -61,11 +65,24 @@ public class GridNearAtomicUpdateRequest extends GridCacheMessage implements Gri
     /** Message index. */
     public static final int CACHE_MSG_IDX = nextIndexId();
 
-    public static final ThreadLocal<Set<Long>> FUT_VERS = new ThreadLocal<Set<Long>>() {
-        @Override protected Set<Long> initialValue() {
+    public static final ThreadLocal<Set<T2<Long, UUID>>> FUT_VERS = new ThreadLocal<Set<T2<Long, UUID>>>() {
+        @Override protected Set<T2<Long, UUID>> initialValue() {
             return new HashSet<>();
         }
     };
+
+    public static final ThreadLocal<Long> RECEIVED_TIMESTAMP = new ThreadLocal<Long>() {
+        @Override protected Long initialValue() {
+            return 0L;
+        }
+    };
+
+    public static final ConcurrentMap<String, Long> PREPARED = new ConcurrentHashMap8<>();
+    public static final ConcurrentMap<String, Long> SENT = new ConcurrentHashMap8<>();
+    public static final ConcurrentMap<String, Long> RECEIVED = new ConcurrentHashMap8<>();
+    public static final ConcurrentMap<String, Long> HANDLED = new ConcurrentHashMap8<>();
+
+    public static final int SAMPLE_MOD = 100;
 
     /** Target node ID. */
     @GridDirectTransient
@@ -711,7 +728,7 @@ public class GridNearAtomicUpdateRequest extends GridCacheMessage implements Gri
 
         }
 
-        FUT_VERS.get().add(futVer);
+        FUT_VERS.get().add(new T2<Long, UUID>(futVer, nodeId));
 
         return true;
     }
@@ -872,6 +889,14 @@ public class GridNearAtomicUpdateRequest extends GridCacheMessage implements Gri
             skipStore = true;
         if ((flags & 64) != 0)
             topLocked = true;
+
+        if (futVer != 0 && futVer % SAMPLE_MOD == 0) {
+            long rcvTimestamp = RECEIVED_TIMESTAMP.get();
+            if (rcvTimestamp != 0) {
+                String k = G.localIgnite().cluster().localNode().id() + " : " + futVer;
+                RECEIVED.putIfAbsent(k, rcvTimestamp);
+            }
+        }
 
         return reader.afterMessageRead(GridNearAtomicUpdateRequest.class);
     }

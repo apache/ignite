@@ -70,7 +70,7 @@ import static org.apache.ignite.internal.processors.cache.GridCacheOperation.TRA
  * DHT atomic cache near update future.
  */
 public class GridNearAtomicUpdateFuture extends GridFutureAdapter<Object>
-    implements GridCacheAtomicFuture<Object>{
+    implements GridCacheAtomicFuture<Object> {
     /** Logger reference. */
     private static final AtomicReference<IgniteLogger> logRef = new AtomicReference<>();
 
@@ -474,6 +474,11 @@ public class GridNearAtomicUpdateFuture extends GridFutureAdapter<Object>
                 if (log.isDebugEnabled())
                     log.debug("Sending near atomic update request [nodeId=" + req.nodeId() + ", req=" + req + ']');
 
+                if (req.futureVersion() != 0 && req.futureVersion() % GridNearAtomicUpdateRequest.SAMPLE_MOD == 0) {
+                    String k = cctx.kernalContext().localNodeId() + " : " + req.futureVersion() + " : " + req.nodeId();
+                    GridNearAtomicUpdateRequest.PREPARED.putIfAbsent(k, System.nanoTime());
+                }
+
                 cctx.io().send(req.nodeId(), req, cctx.ioPolicy());
 
                 if (syncMode == FULL_ASYNC)
@@ -507,6 +512,11 @@ public class GridNearAtomicUpdateFuture extends GridFutureAdapter<Object>
                 try {
                     if (log.isDebugEnabled())
                         log.debug("Sending near atomic update request [nodeId=" + req.nodeId() + ", req=" + req + ']');
+
+                    if (req.futureVersion() != 0 && req.futureVersion() % GridNearAtomicUpdateRequest.SAMPLE_MOD == 0) {
+                        String k = cctx.kernalContext().localNodeId() + " : " + req.futureVersion() + " : " + req.nodeId();
+                        GridNearAtomicUpdateRequest.PREPARED.putIfAbsent(k, System.nanoTime());
+                    }
 
                     cctx.io().send(req.nodeId(), req, cctx.ioPolicy());
                 }
@@ -612,8 +622,7 @@ public class GridNearAtomicUpdateFuture extends GridFutureAdapter<Object>
          * @param res Response.
          * @param nodeErr {@code True} if response was created on node failure.
          */
-        @SuppressWarnings("unchecked")
-        void onResult(UUID nodeId, GridNearAtomicUpdateResponse res, boolean nodeErr) {
+        @SuppressWarnings("unchecked") void onResult(UUID nodeId, GridNearAtomicUpdateResponse res, boolean nodeErr) {
             GridNearAtomicUpdateRequest req;
 
             AffinityTopologyVersion remapTopVer = null;
@@ -1047,7 +1056,7 @@ public class GridNearAtomicUpdateFuture extends GridFutureAdapter<Object>
 
                     val = conflictPutVal.valueEx();
                     conflictVer = conflictPutVal.version();
-                    conflictTtl =  conflictPutVal.ttl();
+                    conflictTtl = conflictPutVal.ttl();
                     conflictExpireTime = conflictPutVal.expireTime();
                 }
                 else if (conflictRmvVals != null) {
@@ -1262,7 +1271,7 @@ public class GridNearAtomicUpdateFuture extends GridFutureAdapter<Object>
         }
 
         /** {@inheritDoc} */
-        @Override public synchronized  String toString() {
+        @Override public synchronized String toString() {
             return S.toString(UpdateState.class, this);
         }
     }
