@@ -78,10 +78,10 @@ struct QueriesTestSuiteFixture
     /**
      * Constructor.
      */
-    QueriesTestSuiteFixture() : testCache(0)
+    QueriesTestSuiteFixture() : testCache(0), env(NULL), dbc(NULL), stmt(NULL)
     {
         IgniteConfiguration cfg;
-        
+
         cfg.jvmOpts.push_back("-Xdebug");
         cfg.jvmOpts.push_back("-Xnoagent");
         cfg.jvmOpts.push_back("-Djava.compiler=NONE");
@@ -105,18 +105,22 @@ struct QueriesTestSuiteFixture
         grid = Ignition::Start(cfg, &err);
 
         if (err.GetCode() != IgniteError::IGNITE_SUCCESS)
-            BOOST_ERROR(err.GetText());
+            BOOST_FAIL(err.GetText());
 
         testCache = grid.GetCache<int64_t, TestType>("cache");
 
         // Allocate an environment handle
         SQLAllocHandle(SQL_HANDLE_ENV, SQL_NULL_HANDLE, &env);
 
+        BOOST_REQUIRE(env != NULL);
+
         // We want ODBC 3 support
         SQLSetEnvAttr(env, SQL_ATTR_ODBC_VERSION, reinterpret_cast<void*>(SQL_OV_ODBC3), 0);
 
         // Allocate a connection handle
         SQLAllocHandle(SQL_HANDLE_DBC, env, &dbc);
+
+        BOOST_REQUIRE(dbc != NULL);
 
         // Connect string
         SQLCHAR connectStr[] = "DRIVER={Apache Ignite};SERVER=localhost;PORT=11443;CACHE=cache";
@@ -129,10 +133,12 @@ struct QueriesTestSuiteFixture
             outstr, sizeof(outstr), &outstrlen, SQL_DRIVER_COMPLETE);
 
         if (!SQL_SUCCEEDED(ret))
-            BOOST_ERROR(GetOdbcErrorMessage(SQL_HANDLE_DBC, dbc));
+            BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_DBC, dbc));
 
         // Allocate a statement handle
         SQLAllocHandle(SQL_HANDLE_STMT, dbc, &stmt);
+
+        BOOST_REQUIRE(stmt != NULL);
     }
 
     /**
@@ -171,7 +177,7 @@ struct QueriesTestSuiteFixture
             ret = SQLBindCol(stmt, i + 1, type, &columns[i], sizeof(columns[i]), 0);
 
             if (!SQL_SUCCEEDED(ret))
-                BOOST_ERROR(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
+                BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
         }
 
         SQLCHAR request[] = "SELECT i8Field, i16Field, i32Field, i64Field, strField, "
@@ -180,12 +186,12 @@ struct QueriesTestSuiteFixture
         ret = SQLExecDirect(stmt, request, SQL_NTS);
 
         if (!SQL_SUCCEEDED(ret))
-            BOOST_ERROR(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
+            BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
 
         ret = SQLFetch(stmt);
 
         if (!SQL_SUCCEEDED(ret))
-            BOOST_ERROR(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
+            BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
 
         BOOST_CHECK_EQUAL(columns[0], 1);
         BOOST_CHECK_EQUAL(columns[1], 2);
@@ -207,12 +213,12 @@ struct QueriesTestSuiteFixture
             ret = SQLBindCol(stmt, i + 1, type, &columns[i], sizeof(columns[i]), &columnLens[i]);
 
             if (!SQL_SUCCEEDED(ret))
-                BOOST_ERROR(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
+                BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
         }
 
         ret = SQLFetch(stmt);
         if (!SQL_SUCCEEDED(ret))
-            BOOST_ERROR(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
+            BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
 
         BOOST_CHECK_EQUAL(columns[0], 8);
         BOOST_CHECK_EQUAL(columns[1], 7);
@@ -317,7 +323,7 @@ BOOST_AUTO_TEST_CASE(TestTwoRowsString)
         ret = SQLBindCol(stmt, i + 1, SQL_C_CHAR, &columns[i], ODBC_BUFFER_SIZE, 0);
 
         if (!SQL_SUCCEEDED(ret))
-            BOOST_ERROR(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
+            BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
     }
 
     SQLCHAR request[] = "SELECT i8Field, i16Field, i32Field, i64Field, strField, "
@@ -326,12 +332,12 @@ BOOST_AUTO_TEST_CASE(TestTwoRowsString)
     ret = SQLExecDirect(stmt, request, SQL_NTS);
 
     if (!SQL_SUCCEEDED(ret))
-        BOOST_ERROR(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
+        BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
 
     ret = SQLFetch(stmt);
 
     if (!SQL_SUCCEEDED(ret))
-        BOOST_ERROR(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
+        BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
 
     BOOST_CHECK_EQUAL(std::string(reinterpret_cast<char*>(columns[0])), "1");
     BOOST_CHECK_EQUAL(std::string(reinterpret_cast<char*>(columns[1])), "2");
@@ -354,12 +360,12 @@ BOOST_AUTO_TEST_CASE(TestTwoRowsString)
         ret = SQLBindCol(stmt, i + 1, SQL_C_CHAR, &columns[i], ODBC_BUFFER_SIZE, &columnLens[i]);
 
         if (!SQL_SUCCEEDED(ret))
-            BOOST_ERROR(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
+            BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
     }
 
     ret = SQLFetch(stmt);
     if (!SQL_SUCCEEDED(ret))
-        BOOST_ERROR(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
+        BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
 
     BOOST_CHECK_EQUAL(std::string(reinterpret_cast<char*>(columns[0])), "8");
     BOOST_CHECK_EQUAL(std::string(reinterpret_cast<char*>(columns[1])), "7");
@@ -408,7 +414,7 @@ BOOST_AUTO_TEST_CASE(TestOneRowString)
         ret = SQLBindCol(stmt, i + 1, SQL_C_CHAR, &columns[i], ODBC_BUFFER_SIZE, &columnLens[i]);
 
         if (!SQL_SUCCEEDED(ret))
-            BOOST_ERROR(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
+            BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
     }
 
     SQLCHAR request[] = "SELECT i8Field, i16Field, i32Field, i64Field, strField, "
@@ -418,7 +424,7 @@ BOOST_AUTO_TEST_CASE(TestOneRowString)
 
     ret = SQLFetch(stmt);
     if (!SQL_SUCCEEDED(ret))
-        BOOST_ERROR(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
+        BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
 
     BOOST_CHECK_EQUAL(std::string(reinterpret_cast<char*>(columns[0])), "1");
     BOOST_CHECK_EQUAL(std::string(reinterpret_cast<char*>(columns[1])), "2");
@@ -465,7 +471,7 @@ BOOST_AUTO_TEST_CASE(TestOneRowStringLen)
         ret = SQLBindCol(stmt, i + 1, SQL_C_CHAR, 0, 0, &columnLens[i]);
 
         if (!SQL_SUCCEEDED(ret))
-            BOOST_ERROR(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
+            BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
     }
 
     SQLCHAR request[] = "SELECT i8Field, i16Field, i32Field, i64Field, strField, "
@@ -475,7 +481,7 @@ BOOST_AUTO_TEST_CASE(TestOneRowStringLen)
 
     ret = SQLFetch(stmt);
     if (!SQL_SUCCEEDED(ret))
-        BOOST_ERROR(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
+        BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
 
     BOOST_CHECK_EQUAL(columnLens[0], 1);
     BOOST_CHECK_EQUAL(columnLens[1], 1);
