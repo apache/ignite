@@ -37,7 +37,6 @@ import javax.net.ssl.X509TrustManager;
 import org.apache.ignite.console.agent.handlers.DatabaseExecutor;
 import org.apache.ignite.console.agent.handlers.RestExecutor;
 import org.apache.ignite.internal.util.typedef.X;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.log4j.Logger;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -95,7 +94,7 @@ public class AgentLauncher {
 
                 if (ignore != null) {
                     log.error("Failed to establish SSL connection to server, due to errors with SSL handshake.");
-                    log.error("Start agent with \"-Dtrust.all=true\" to skip certificate validation in case of using self-signed certificate.");
+                    log.error("Add to environment variable JVM_OPTS parameter \"-Dtrust.all=true\" to skip certificate validation in case of using self-signed certificate.");
 
                     System.exit(1);
                 }
