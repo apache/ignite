@@ -22,6 +22,7 @@ namespace Apache.Ignite.Core.Impl.Binary
     using System.Diagnostics;
     using System.IO;
     using System.Runtime.InteropServices;
+    using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Impl.Binary.IO;
 
     /// <summary>
@@ -183,7 +184,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// </summary>
         public int SchemaFieldSize
         {
-            get { return SchemaFieldOffsetSize + 4; }
+            get { return IsCompactFooter ? SchemaFieldOffsetSize : SchemaFieldSize + 4; }
         }
 
         /// <summary>
@@ -225,10 +226,15 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// </summary>
         /// <param name="stream">The stream.</param>
         /// <param name="position">The position.</param>
-        /// <returns>Schema.</returns>
-        public Dictionary<int, int> ReadSchemaAsDictionary(IBinaryStream stream, int position)
+        /// <param name="schema">The schema.</param>
+        /// <returns>
+        /// Schema as a dictionary.
+        /// </returns>
+        public Dictionary<int, int> ReadSchemaAsDictionary(IBinaryStream stream, int position,
+            BinaryObjectSchema schema)
         {
             Debug.Assert(stream != null);
+            Debug.Assert(schema != null);
 
             var schemaSize = SchemaFieldCount;
 
@@ -237,27 +243,57 @@ namespace Apache.Ignite.Core.Impl.Binary
 
             stream.Seek(position + SchemaOffset, SeekOrigin.Begin);
 
-            var schema = new Dictionary<int, int>(schemaSize);
+            var res = new Dictionary<int, int>(schemaSize);
 
             var offsetSize = SchemaFieldOffsetSize;
 
-            if (offsetSize == 1)
+            if (IsCompactFooter)
             {
-                for (var i = 0; i < schemaSize; i++)
-                    schema.Add(stream.ReadInt(), stream.ReadByte());
-            }
-            else if (offsetSize == 2)
-            {
-                for (var i = 0; i < schemaSize; i++)
-                    schema.Add(stream.ReadInt(), stream.ReadShort());
+                // Footer contains offsets only, need to combine them with field ids from the descriptor
+                var fieldIds = schema.Get(SchemaId);
+
+                if (fieldIds == null)
+                    throw new BinaryObjectException("Cannot find schema for object with compact footer [" +
+                                                    "typeId=" + TypeId + ", schemaId=" + SchemaId + ']');
+
+                Debug.Assert(fieldIds.Length == schemaSize);
+
+                if (offsetSize == 1)
+                {
+                    for (var i = 0; i < schemaSize; i++)
+                        res.Add(fieldIds[i], stream.ReadByte());
+                }
+                else if (offsetSize == 2)
+                {
+                    for (var i = 0; i < schemaSize; i++)
+                        res.Add(fieldIds[i], stream.ReadShort());
+                }
+                else
+                {
+                    for (var i = 0; i < schemaSize; i++)
+                        res.Add(fieldIds[i], stream.ReadInt());
+                }
             }
             else
             {
-                for (var i = 0; i < schemaSize; i++)
-                    schema.Add(stream.ReadInt(), stream.ReadInt());
+                if (offsetSize == 1)
+                {
+                    for (var i = 0; i < schemaSize; i++)
+                        res.Add(stream.ReadInt(), stream.ReadByte());
+                }
+                else if (offsetSize == 2)
+                {
+                    for (var i = 0; i < schemaSize; i++)
+                        res.Add(stream.ReadInt(), stream.ReadShort());
+                }
+                else
+                {
+                    for (var i = 0; i < schemaSize; i++)
+                        res.Add(stream.ReadInt(), stream.ReadInt());
+                }
             }
 
-            return schema;
+            return res;
         }
 
         /// <summary>
