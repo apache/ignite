@@ -1458,13 +1458,10 @@ namespace Apache.Ignite.Core.Impl.Binary
                 {
                     if (fields != null)
                     {
-                        IDictionary<string, int> existingFields = meta.GetFieldsMap();
+                        var existingFields = meta.GetFieldsMap();
 
-                        foreach (KeyValuePair<string, int> field in fields)
-                        {
-                            if (!existingFields.ContainsKey(field.Key))
-                                existingFields[field.Key] = field.Value;
-                        }
+                        foreach (var field in fields)
+                            existingFields[field.Key] = field.Value;
                     }
                 }
                 else
