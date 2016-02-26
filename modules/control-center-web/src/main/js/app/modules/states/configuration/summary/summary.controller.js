@@ -15,6 +15,7 @@
  * limitations under the License.
  */
 
+import _ from 'lodash';
 import JSZip from 'jszip';
 
 export default [
@@ -26,6 +27,14 @@ export default [
 
         Resource.read().then(({clusters}) => {
             $scope.clusters = clusters;
+            $scope.clustersMap = {};
+            $scope.clustersView = _.map(clusters, (item) => {
+                const { _id, name } = item;
+
+                $scope.clustersMap[_id] = item;
+
+                return { _id, name };
+            });
 
             $loading.finish('loading');
 
@@ -185,6 +194,8 @@ export default [
 
             if (!cluster)
                 return;
+
+            cluster = $scope.clustersMap[cluster._id];
 
             ctrl.cluster = cluster;
 
