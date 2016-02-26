@@ -718,14 +718,17 @@ namespace Apache.Ignite.Core.Impl.Binary
                     // Set new frame.
                     _curHdr = hdr;
                     _curPos = pos;
-                    
-                    _curSchema = desc.Schema.Get(hdr.SchemaId);
 
-                    if (_curSchema == null)
+                    if (hdr.HasSchema)
                     {
-                        _curSchema = ReadSchema();
+                        _curSchema = desc.Schema.Get(hdr.SchemaId);
 
-                        desc.Schema.Add(hdr.SchemaId, _curSchema);
+                        if (_curSchema == null)
+                        {
+                            _curSchema = ReadSchema();
+
+                            desc.Schema.Add(hdr.SchemaId, _curSchema);
+                        }
                     }
 
                     _curStruct = new BinaryStructureTracker(desc, desc.ReaderTypeStructure);
