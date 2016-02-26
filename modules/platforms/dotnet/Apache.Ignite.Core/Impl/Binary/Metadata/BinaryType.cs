@@ -55,6 +55,9 @@ namespace Apache.Ignite.Core.Impl.Binary.Metadata
         /** Aff key field name. */
         private readonly string _affinityKeyFieldName;
 
+        /** Type descriptor. */
+        private readonly IBinaryTypeDescriptor _descriptor;
+
         /// <summary>
         /// Initializes the <see cref="BinaryType"/> class.
         /// </summary>
@@ -130,7 +133,7 @@ namespace Apache.Ignite.Core.Impl.Binary.Metadata
         public BinaryType(IBinaryTypeDescriptor desc, IDictionary<string, int> fields = null) 
             : this (desc.TypeId, desc.TypeName, fields, desc.AffinityKeyFieldName, desc.IsEnum)
         {
-            // No-op.
+            _descriptor = desc;
         }
 
         /// <summary>
@@ -209,6 +212,14 @@ namespace Apache.Ignite.Core.Impl.Binary.Metadata
         public bool IsEnum
         {
             get { return _isEnum; }
+        }
+
+        /// <summary>
+        /// Gets the descriptor.
+        /// </summary>
+        public IBinaryTypeDescriptor Descriptor
+        {
+            get { return _descriptor; }
         }
 
         /// <summary>
