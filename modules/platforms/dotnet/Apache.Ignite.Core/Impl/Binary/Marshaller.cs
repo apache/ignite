@@ -288,15 +288,14 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// Puts the binary type metadata to Ignite.
         /// </summary>
         /// <param name="desc">Descriptor.</param>
-        /// <param name="fields">Fields.</param>
-        public void PutBinaryType(IBinaryTypeDescriptor desc, IDictionary<string, int> fields = null)
+        public void PutBinaryType(IBinaryTypeDescriptor desc)
         {
             Debug.Assert(desc != null);
 
             GetBinaryTypeHandler(desc);  // ensure that handler exists
 
             if (Ignite != null)
-                Ignite.PutBinaryTypes(new[] {new BinaryType(desc, fields)});
+                Ignite.PutBinaryTypes(new[] {new BinaryType(desc)});
         }
 
         /// <summary>
