@@ -67,7 +67,7 @@ $generatorJava.constructorArg = function (obj, propName, notFirst, opt) {
     var v = obj ? obj[propName] : undefined;
 
     if ($commonUtils.isDefinedAndNotEmpty(v))
-        return (notFirst ? ', ' : '') + v;
+        return (notFirst ? ', ' : '') + $generatorJava.toJavaCode(v);
     else if (!opt)
         return notFirst ? ', null' : 'null';
     else
@@ -2378,15 +2378,14 @@ $generatorJava.igfsSecondFS = function(igfs, varName, res) {
     if (igfs.secondaryFileSystemEnabled) {
         var secondFs = igfs.secondaryFileSystem || {};
 
-        var uriDefined = $commonUtils.isDefinedAndNotEmpty(secondFs.uri);
         var nameDefined = $commonUtils.isDefinedAndNotEmpty(secondFs.userName);
         var cfgDefined = $commonUtils.isDefinedAndNotEmpty(secondFs.cfgPath);
 
         res.line(varName + '.setSecondaryFileSystem(new ' +
             res.importClass('org.apache.ignite.hadoop.fs.IgniteHadoopIgfsSecondaryFileSystem') + '(' +
-                (uriDefined ? '"' + secondFs.uri + '"' : 'null') +
-                (cfgDefined || nameDefined ? (cfgDefined ? ', "' + secondFs.cfgPath + '"' : ', null') : '') +
-                (nameDefined ? ', "' + secondFs.userName + '"' : '') +
+                $generatorJava.constructorArg(secondFs, 'uri') +
+                (cfgDefined || nameDefined ? $generatorJava.constructorArg(secondFs, 'cfgPath', true) : '') +
+                $generatorJava.constructorArg(secondFs, 'userName', true, true) +
             '));');
 
         res.needEmptyLine = true;

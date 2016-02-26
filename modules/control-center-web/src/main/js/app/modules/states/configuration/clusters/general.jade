@@ -70,6 +70,14 @@ form.panel.panel-default(name='general' novalidate)
                             | Discovery:
                         ignite-form-field-tooltip
                             | Discovery allows to discover remote nodes in grid
+                            ul: li Static IPs - IP Finder which works only with pre configured list of IP addresses specified
+                                li Multicast - Multicast based IP finder
+                                li AWS S3 - AWS S3 based IP finder
+                                li Apache jclouds - Apache jclouds multi cloud toolkit based IP finder
+                                li Google cloud storage - Google Cloud Storage based IP finder
+                                li JDBC - JDBC based IP finder
+                                li Shared filesystem - Shared filesystem based IP finder
+                                li Apache ZooKeeper - Apache ZooKeeper based IP finder
                         ignite-form-field-dropdown(
                             data-id='discovery'
                             data-name='discovery'

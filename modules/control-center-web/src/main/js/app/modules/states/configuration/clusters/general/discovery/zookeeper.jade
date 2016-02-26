@@ -31,9 +31,9 @@ div
     .details-row
         ignite-form-field
             ignite-form-field-label
-                | Connection string:
+                | Connect string:
             ignite-form-field-tooltip
-                | This property will be used when "IGNITE_ZK_CONNECTION_STRING" system property is not configured
+                | When "IGNITE_ZK_CONNECTION_STRING" system property is not configured this property will be used
             ignite-form-field-input-text(
                 data-id='zkConnectionString'
                 data-name='zkConnectionString'
@@ -46,7 +46,14 @@ div
             ignite-form-field-label
                 | Retry policy:
             ignite-form-field-tooltip
-                | Retry policy
+                | Available retry policies:
+                ul: li Exponential backoff - retries a set number of times with increasing sleep time between retries
+                   li Bounded exponential backoff - retries a set number of times with an increasing (up to a maximum bound) sleep time between retries
+                    li Until elapsed - retries until a given amount of time elapses
+                    li Max number of times - retries a max number of times
+                    li Only once - retries only once
+                    li Always allow retry - retries infinitely
+                    li Custom - custom retry policy implementation
             ignite-form-field-dropdown(
                 data-id='retryPolicy'
                 data-name='retryPolicy'
@@ -56,7 +63,7 @@ div
                     {value: "UntilElapsed", label: "Until elapsed"},\
                     {value: "NTimes", label: "Max number of times"},\
                     {value: "OneTime", label: "Only once"},\
-                    {value: "Forever", label: "Always allowsRetry"},\
+                    {value: "Forever", label: "Always allow retry"},\
                     {value: "Custom", label: "Custom"},\
                     {value: undefined, label: "Default"}\
                 ]'
@@ -108,6 +115,6 @@ div
             | Allow duplicate registrations
             ignite-form-field-tooltip
                 | Whether to register each node only once, or if duplicate registrations are allowed#[br]
-                | Nodes will attempt to register themselves, plus those they know about #[br]
-                | By default, duplicate registrations are not allowed, but you might want to set this property to
-                | #[b true] if you have multiple network interfaces or if you are facing troubles
+                | Nodes will attempt to register themselves, plus those they know about#[br]
+                | By default, duplicate registrations are not allowed, but you might want to set this property
+                | to #[b true] if you have multiple network interfaces or if you are facing troubles

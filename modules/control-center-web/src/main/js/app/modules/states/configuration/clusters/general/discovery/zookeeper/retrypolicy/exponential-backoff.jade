@@ -20,7 +20,7 @@ div
     .details-row
         ignite-form-field
             ignite-form-field-label
-                | Base sleep time:
+                | Base interval:
             ignite-form-field-tooltip
                 | Initial amount of time to wait between retries
             ignite-form-field-input-number(
@@ -28,6 +28,7 @@ div
                 data-name='baseSleepTimeMs'
                 data-ng-model='#{model}.baseSleepTimeMs'
                 data-ng-required='true'
+                data-placeholder='1000'
             )
     .details-row
         ignite-form-field
@@ -40,12 +41,13 @@ div
                 data-name='maxRetries'
                 data-ng-model='#{model}.maxRetries'
                 data-ng-required='true'
+                data-placeholder='10'
                 data-max='29'
             )
     .details-row
         ignite-form-field
             ignite-form-field-label
-                | Max sleep time:
+                | Max interval:
             ignite-form-field-tooltip
                 | Max time in ms to sleep on each retry
             ignite-form-field-input-number(

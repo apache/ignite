@@ -1073,7 +1073,7 @@ $generatorXml.cacheRebalance = function(cache, res) {
     if (cache.igfsAffinnityGroupSize) {
         res.startBlock('<property name="affinityMapper">');
         res.startBlock('<bean class="org.apache.ignite.igfs.IgfsGroupDataBlocksKeyMapper">');
-        res.line('<constructor-arg value="' + cache.igfsAffinnityGroupSize + '"/>');
+        $generatorXml.constructorArg(res, -1, cache, 'igfsAffinnityGroupSize');
         res.endBlock('</bean>');
         res.endBlock('</property>');
     }
@@ -1525,26 +1525,12 @@ $generatorXml.igfsSecondFS = function(igfs, res) {
         var nameDefined = $commonUtils.isDefinedAndNotEmpty(secondFs.userName);
         var cfgDefined = $commonUtils.isDefinedAndNotEmpty(secondFs.cfgPath);
 
-        if ($commonUtils.isDefinedAndNotEmpty(secondFs.uri))
-            res.line('<constructor-arg index="0" value="' + secondFs.uri + '"/>');
-        else {
-            res.startBlock('<constructor-arg index="0">');
-            res.line('<null/>');
-            res.endBlock('</constructor-arg>');
-        }
+        $generatorXml.constructorArg(res, 0, secondFs, 'uri');
 
-        if (cfgDefined || nameDefined) {
-            if (cfgDefined)
-                res.line('<constructor-arg index="1" value="' + secondFs.cfgPath + '"/>');
-            else {
-                res.startBlock('<constructor-arg index="1">');
-                res.line('<null/>');
-                res.endBlock('</constructor-arg>');
-            }
-        }
+        if (cfgDefined || nameDefined)
+            $generatorXml.constructorArg(res, 1, secondFs, 'cfgPath');
 
-        if ($commonUtils.isDefinedAndNotEmpty(secondFs.userName))
-            res.line('<constructor-arg index="2" value="' + secondFs.userName + '"/>');
+        $generatorXml.constructorArg(res, 2, secondFs, 'userName', true);
 
         res.endBlock('</bean>');
         res.endBlock('</property>');
