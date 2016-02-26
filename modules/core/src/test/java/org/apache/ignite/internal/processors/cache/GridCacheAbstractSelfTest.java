@@ -688,7 +688,7 @@ public abstract class GridCacheAbstractSelfTest extends GridCommonAbstractTest {
                 }
             }
 
-            return res == null ? Collections.emptyList() : res;
+            return res == null ? Collections.<ResourceType>emptyList() : res;
         }
 
         /**
