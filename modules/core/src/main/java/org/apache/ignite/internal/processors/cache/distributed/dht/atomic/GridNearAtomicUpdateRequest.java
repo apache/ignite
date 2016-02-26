@@ -22,7 +22,9 @@ import javax.cache.processor.EntryProcessor;
 import java.io.Externalizable;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
@@ -58,6 +60,12 @@ public class GridNearAtomicUpdateRequest extends GridCacheMessage implements Gri
 
     /** Message index. */
     public static final int CACHE_MSG_IDX = nextIndexId();
+
+    public static final ThreadLocal<Set<Long>> FUT_VERS = new ThreadLocal<Set<Long>>() {
+        @Override protected Set<Long> initialValue() {
+            return new HashSet<>();
+        }
+    };
 
     /** Target node ID. */
     @GridDirectTransient
@@ -702,6 +710,8 @@ public class GridNearAtomicUpdateRequest extends GridCacheMessage implements Gri
                 writer.incrementState();
 
         }
+
+        FUT_VERS.get().add(futVer);
 
         return true;
     }

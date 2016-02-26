@@ -24,6 +24,7 @@ import java.util.Collections;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicReference;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
@@ -59,6 +60,7 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.Nullable;
+import org.jsr166.ConcurrentHashMap8;
 
 import static org.apache.ignite.cache.CacheAtomicWriteOrderMode.CLOCK;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.*;
@@ -146,6 +148,11 @@ public class GridNearAtomicUpdateFuture extends GridFutureAdapter<Object>
 
     /** State. */
     private final UpdateState state;
+
+    public static final ConcurrentMap<String, Long> NEAR_FUT_START = new ConcurrentHashMap8<>();
+    public static final ConcurrentMap<String, Long> NEAR_FUT_FINISH = new ConcurrentHashMap8<>();
+
+    public static final int SAMPLING_MOD = 100;
 
     /**
      * @param cctx Cache context.
@@ -323,8 +330,11 @@ public class GridNearAtomicUpdateFuture extends GridFutureAdapter<Object>
         if (super.onDone(retval, err)) {
             long futVer = state.onFutureDone();
 
-            if (futVer != 0)
+            if (futVer != 0) {
+                if (futVer % SAMPLING_MOD == 0)
+                    NEAR_FUT_FINISH.putIfAbsent(cctx.localNodeId() + " : " + futVer, System.nanoTime());
                 cctx.mvcc().removeAtomicFuture(futVer);
+            }
 
             return true;
         }
@@ -842,6 +852,9 @@ public class GridNearAtomicUpdateFuture extends GridFutureAdapter<Object>
             int size = keys.size();
 
             long futVer = cctx.versions().nextLong(topVer);
+
+            if (futVer % SAMPLING_MOD == 0)
+                NEAR_FUT_START.putIfAbsent(cctx.localNodeId() + " : " + futVer, System.nanoTime());
 
             GridCacheVersion updVer;
 

@@ -17,16 +17,14 @@
 
 package org.apache.ignite.internal.benchmarks.jmh.cache;
 
+import java.util.concurrent.ThreadLocalRandom;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.internal.benchmarks.jmh.runner.JmhIdeBenchmarkRunner;
 import org.apache.ignite.internal.benchmarks.model.IntValue;
 import org.openjdk.jmh.annotations.Benchmark;
-import org.openjdk.jmh.annotations.TearDown;
 import org.openjdk.jmh.profile.GCProfiler;
-
-import java.util.concurrent.ThreadLocalRandom;
 
 /**
  * Put benchmark.
@@ -97,8 +95,8 @@ public class JmhCacheBenchmark extends JmhCacheAbstractBenchmark {
      * @throws Exception If failed.
      */
     private static void run(String benchmark, CacheAtomicityMode atomicityMode) throws Exception {
-        run(benchmark, 4, true, atomicityMode, CacheWriteSynchronizationMode.PRIMARY_SYNC);
-//        run(benchmark, 4, true, atomicityMode, CacheWriteSynchronizationMode.FULL_SYNC);
+//        run(benchmark, 4, true, atomicityMode, CacheWriteSynchronizationMode.PRIMARY_SYNC);
+        run(benchmark, 4, true, atomicityMode, CacheWriteSynchronizationMode.FULL_SYNC);
 //        run(benchmark, 4, false, atomicityMode, CacheWriteSynchronizationMode.PRIMARY_SYNC);
 //        run(benchmark, 4, false, atomicityMode, CacheWriteSynchronizationMode.FULL_SYNC);
     }
@@ -137,9 +135,10 @@ public class JmhCacheBenchmark extends JmhCacheAbstractBenchmark {
                 "-XX:+UnlockCommercialFeatures",
                 "-XX:+FlightRecorder",
                 "-XX:StartFlightRecording=delay=30s,dumponexit=true,settings=alloc,filename=" + output + ".jfr",
+                JmhIdeBenchmarkRunner.createProperty(PROP_BACKUPS, 1),
                 JmhIdeBenchmarkRunner.createProperty(PROP_ATOMICITY_MODE, atomicityMode),
                 JmhIdeBenchmarkRunner.createProperty(PROP_WRITE_SYNC_MODE, writeSyncMode),
-                JmhIdeBenchmarkRunner.createProperty(PROP_DATA_NODES, 2),
+                JmhIdeBenchmarkRunner.createProperty(PROP_DATA_NODES, 4),
                 JmhIdeBenchmarkRunner.createProperty(PROP_CLIENT_MODE, client))
             .run();
     }

@@ -111,6 +111,13 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
     /** Deployment enabled. */
     private boolean depEnabled;
 
+    public static final ConcurrentMap<String, Long> SAMPLING_DATA_NEAR_SND = new ConcurrentHashMap8<>();
+    public static final ConcurrentMap<String, Long> SAMPLING_DATA_DHT_SND = new ConcurrentHashMap8<>();
+    public static final ConcurrentMap<String, Long> SAMPLING_DATA_NEAR_RCV = new ConcurrentHashMap8<>();
+    public static final ConcurrentMap<String, Long> SAMPLING_DATA_DHT_RCV = new ConcurrentHashMap8<>();
+
+    public static final int SAMPLING_MOD = 100;
+
     /** Message listener. */
     private GridMessageListener lsnr = new GridMessageListener() {
         @Override public void onMessage(final UUID nodeId, Object msg) {
@@ -442,7 +449,7 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
             break;
 
             case 45: {
-                processMessage(nodeId,msg,c);// Will be handled by Rebalance Demander.
+                processMessage(nodeId, msg, c);// Will be handled by Rebalance Demander.
             }
 
             break;
@@ -543,7 +550,7 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
             break;
 
             case 114: {
-                processMessage(nodeId,msg,c);// Will be handled by Rebalance Demander.
+                processMessage(nodeId, msg, c);// Will be handled by Rebalance Demander.
             }
 
             break;
@@ -602,6 +609,28 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
             // We will not end up with storing a bunch of new UUIDs
             // in each cache entry, since node ID is stored in NIO session
             // on handshake.
+
+            if (msg instanceof GridNearAtomicUpdateResponse || msg instanceof GridDhtAtomicUpdateResponse) {
+
+                long futVer = 0;
+                ConcurrentMap<String, Long> map = null;
+
+                if (msg instanceof GridNearAtomicUpdateResponse) {
+                    futVer = ((GridNearAtomicUpdateResponse)msg).futureVersion();
+                    map = SAMPLING_DATA_NEAR_RCV;
+                }
+                else if (msg instanceof GridDhtAtomicUpdateResponse) {
+                    futVer = ((GridDhtAtomicUpdateResponse)msg).futureVersion();
+                    map = SAMPLING_DATA_DHT_RCV;
+                }
+
+                if (futVer != 0 && futVer % SAMPLING_MOD == 0) {
+                    String key = cctx.kernalContext().localNodeId() + " : " + futVer + " : " + nodeId;
+                    long value = System.nanoTime();
+                    map.putIfAbsent(key, value);
+                }
+            }
+
             c.apply(nodeId, msg);
 
             if (log.isDebugEnabled())
@@ -667,6 +696,25 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
 
         if (log.isDebugEnabled())
             log.debug("Sending cache message [msg=" + msg + ", node=" + U.toShortString(node) + ']');
+
+        if (msg instanceof GridNearAtomicUpdateRequest || msg instanceof GridDhtAtomicUpdateRequest) {
+            long futVer = 0;
+            ConcurrentMap<String, Long> map = null;
+            if (msg instanceof GridNearAtomicUpdateRequest) {
+                futVer = ((GridNearAtomicUpdateRequest)msg).futureVersion();
+                map = SAMPLING_DATA_NEAR_SND;
+            }
+            else if (msg instanceof GridDhtAtomicUpdateRequest) {
+                futVer = ((GridDhtAtomicUpdateRequest)msg).futureVersion();
+                map = SAMPLING_DATA_DHT_SND;
+            }
+
+            if (futVer != 0 && futVer % SAMPLING_MOD == 0) {
+                String key = cctx.kernalContext().localNodeId() + " : " + futVer + " : " + node.id();
+                long value = System.nanoTime();
+                map.putIfAbsent(key, value);
+            }
+        }
 
         int cnt = 0;
 

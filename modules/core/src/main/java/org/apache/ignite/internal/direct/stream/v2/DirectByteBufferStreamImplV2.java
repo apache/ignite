@@ -27,9 +27,13 @@ import java.util.List;
 import java.util.Map;
 import java.util.RandomAccess;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentMap;
 import org.apache.ignite.internal.direct.stream.DirectByteBufferStream;
+import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridNearAtomicUpdateRequest;
+import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridNearAtomicUpdateResponse;
 import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
+import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteUuid;
@@ -38,6 +42,7 @@ import org.apache.ignite.plugin.extensions.communication.MessageCollectionItemTy
 import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
+import org.jsr166.ConcurrentHashMap8;
 import sun.nio.ch.DirectBuffer;
 
 import static org.apache.ignite.internal.util.GridUnsafe.*;
@@ -75,6 +80,11 @@ public class DirectByteBufferStreamImplV2 implements DirectByteBufferStream {
 //    public static final LongAdder8 COUNT = new LongAdder8();
 //
 //    public static final AtomicInteger LAST = new AtomicInteger();
+
+    public static final ConcurrentMap<String, Long> NEAR_MSG_MARSHALLED_START = new ConcurrentHashMap8<>();
+    public static final ConcurrentMap<String, Long> NEAR_MSG_MARSHALLED_FINISH = new ConcurrentHashMap8<>();
+
+    public static final int SAMPLING_MOD = 100;
 
     /** */
     private static final ArrayCreator<byte[]> BYTE_ARR_CREATOR = new ArrayCreator<byte[]>() {
@@ -642,17 +652,15 @@ public class DirectByteBufferStreamImplV2 implements DirectByteBufferStream {
 
                     writer.setCurrentWriteClass(msg.getClass());
 
-//                    int startPos = buf.position();
-
                     lastFinished = msg.writeTo(buf, writer);
 
-//                    int endPos = buf.position();
-//                    int diff = endPos - startPos;
-//                    if (msg instanceof GridNearAtomicUpdateRequest) {
-//                        TOTAL.add(diff);
-//                        LAST.set(diff);
-//                        COUNT.increment();
-//                    }
+                    if (msg instanceof GridNearAtomicUpdateRequest) {
+                        long futVer = ((GridNearAtomicUpdateRequest)msg).futureVersion();
+                        if (futVer != 0 && futVer % SAMPLING_MOD == 0) {
+                            String k = G.localIgnite().cluster().localNode().id() + " : " + futVer;
+                            NEAR_MSG_MARSHALLED_START.putIfAbsent(k, System.nanoTime());
+                        }
+                    }
                 }
                 finally {
                     writer.afterInnerMessageWrite(lastFinished);
@@ -1141,6 +1149,8 @@ public class DirectByteBufferStreamImplV2 implements DirectByteBufferStream {
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
     @Override public <T extends Message> T readMessage(MessageReader reader) {
+        long time = System.nanoTime();
+
         if (!msgTypeDone) {
             if (!buf.hasRemaining()) {
                 lastFinished = false;
@@ -1162,6 +1172,14 @@ public class DirectByteBufferStreamImplV2 implements DirectByteBufferStream {
                 reader.setCurrentReadClass(msg.getClass());
 
                 lastFinished = msg.readFrom(buf, reader);
+
+                if (msg instanceof GridNearAtomicUpdateResponse) {
+                    long futVer = ((GridNearAtomicUpdateResponse)msg).futureVersion();
+                    if (futVer != 0 && futVer % SAMPLING_MOD == 0) {
+                        String k = G.localIgnite().cluster().localNode().id()  + " : " + futVer;
+                        NEAR_MSG_MARSHALLED_FINISH.putIfAbsent(k, time);
+                    }
+                }
             }
             finally {
                 reader.afterInnerMessageRead(lastFinished);

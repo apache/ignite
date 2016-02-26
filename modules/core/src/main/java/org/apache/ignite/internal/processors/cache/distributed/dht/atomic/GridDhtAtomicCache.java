@@ -144,6 +144,11 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
     /** */
     private GridNearAtomicCache<K, V> near;
 
+    public static final ConcurrentMap<String, Long> NEAR_PROC_START = new ConcurrentHashMap8<>();
+    public static final ConcurrentMap<String, Long> NEAR_PROC_FINISH = new ConcurrentHashMap8<>();
+
+    public static final int SAMPLING_MOD = 100;
+
     /**
      * Empty constructor required by {@link Externalizable}.
      */
@@ -2753,6 +2758,11 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
         if (log.isDebugEnabled())
             log.debug("Processing near atomic update request [nodeId=" + nodeId + ", req=" + req + ']');
 
+        if (req.futureVersion() != 0 && req.futureVersion() % SAMPLING_MOD == 0) {
+            String k = ctx.kernalContext().localNodeId() + " : " + req.futureVersion();
+            NEAR_PROC_START.putIfAbsent(k, System.nanoTime());
+        }
+
         req.nodeId(ctx.localNodeId());
 
         updateAllAsyncInternal(nodeId, req, updateReplyClos);
@@ -2995,6 +3005,11 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
      * @param res Near update response.
      */
     private void sendNearUpdateReply(UUID nodeId, GridNearAtomicUpdateResponse res) {
+        if (res.futureVersion() != 0 && res.futureVersion() % SAMPLING_MOD == 0) {
+            String k = ctx.kernalContext().localNodeId() + " : " + res.futureVersion();
+            NEAR_PROC_FINISH.putIfAbsent(k, System.nanoTime());
+        }
+
         try {
             ctx.io().send(nodeId, res, ctx.ioPolicy());
         }
