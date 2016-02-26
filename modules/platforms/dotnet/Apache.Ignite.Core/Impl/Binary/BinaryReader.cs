@@ -806,6 +806,7 @@ namespace Apache.Ignite.Core.Impl.Binary
             if (_curHdr.IsCompactFooter)
             {
                 // TODO: Get schema from Java!
+                //Marshaller.Ignite.GetBinary().GetBinaryType()
                 throw new NotSupportedException("TODO");
             }
 
