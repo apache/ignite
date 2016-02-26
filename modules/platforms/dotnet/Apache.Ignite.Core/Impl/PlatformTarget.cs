@@ -637,7 +637,13 @@ namespace Apache.Ignite.Core.Impl
                     foreach (var schema in desc.Schema.GetAll())
                     {
                         w.WriteInt(schema.Key);
-                        w.WriteIntArray(schema.Value);
+
+                        var ids = schema.Value;
+                        w.WriteInt(ids.Length);
+
+                        foreach (var id in ids)
+                            w.WriteInt(id);
+
                         count++;
                     }
 

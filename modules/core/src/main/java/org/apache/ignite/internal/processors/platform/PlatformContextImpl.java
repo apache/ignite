@@ -69,11 +69,13 @@ import org.apache.ignite.lang.IgniteBiTuple;
 import org.jetbrains.annotations.Nullable;
 
 import java.sql.Timestamp;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
@@ -355,7 +357,27 @@ public class PlatformContextImpl implements PlatformContext {
 
                     boolean isEnum = reader.readBoolean();
 
-                    return new Metadata(typeId, typeName, affKey, fields, isEnum);
+                    // Read schemas
+                    int schemaCnt = reader.readInt();
+
+                    List<BinarySchema> schemas = null;
+
+                    if (schemaCnt > 0) {
+                        schemas = new ArrayList<>(schemaCnt);
+
+                        for (int i = 0; i < schemaCnt; i++) {
+                            int id = reader.readInt();
+                            int fieldCnt = reader.readInt();
+                            List<Integer> fieldIds = new ArrayList<>(fieldCnt);
+
+                            for (int j = 0; j < fieldCnt; j++)
+                                fieldIds.add(reader.readInt());
+
+                            schemas.add(new BinarySchema(id, fieldIds));
+                        }
+                    }
+
+                    return new Metadata(typeId, typeName, affKey, fields, isEnum, schemas);
                 }
             }
         );
@@ -639,21 +661,26 @@ public class PlatformContextImpl implements PlatformContext {
         /** Enum flag. */
         private final boolean isEnum;
 
+        /** Schemas. */
+        private final List<BinarySchema> schemas;
+
         /**
          * Constructor.
-         *
-         * @param typeId Type ID.
+         *  @param typeId Type ID.
          * @param typeName Type name.
          * @param affKey Affinity key.
          * @param fields Fields.
          * @param isEnum Enum flag.
+         * @param schemas Schemas.
          */
-        public Metadata(int typeId, String typeName, String affKey, Map<String, Integer> fields, boolean isEnum) {
+        private Metadata(int typeId, String typeName, String affKey, Map<String, Integer> fields, boolean isEnum,
+            List<BinarySchema> schemas) {
             this.typeId = typeId;
             this.typeName = typeName;
             this.affKey = affKey;
             this.fields = fields;
             this.isEnum = isEnum;
+            this.schemas = schemas;
         }
     }
 }
