@@ -610,13 +610,11 @@ namespace Apache.Ignite.Core.Impl
 
                 foreach (var meta in types)
                 {
-                    BinaryType meta0 = meta;
+                    metaWriter.WriteInt(meta.TypeId);
+                    metaWriter.WriteString(meta.TypeName);
+                    metaWriter.WriteString(meta.AffinityKeyFieldName);
 
-                    metaWriter.WriteInt(meta0.TypeId);
-                    metaWriter.WriteString(meta0.TypeName);
-                    metaWriter.WriteString(meta0.AffinityKeyFieldName);
-
-                    IDictionary<string, int> fields = meta0.GetFieldsMap();
+                    IDictionary<string, int> fields = meta.GetFieldsMap();
 
                     metaWriter.WriteInt(fields.Count);
 
@@ -628,7 +626,11 @@ namespace Apache.Ignite.Core.Impl
 
                     metaWriter.WriteBoolean(meta.IsEnum);
 
+                    var desc = meta.Descriptor;
+                    Debug.Assert(desc != null);
+
                     // TODO: Send schema
+                    desc.Schema.Get()
                 }
 
                 _marsh.FinishMarshal(metaWriter);
