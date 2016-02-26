@@ -584,7 +584,9 @@ public class BinaryUtils {
     public static boolean isBinaryType(Class<?> cls) {
         assert cls != null;
 
-        return BinaryObject.class.isAssignableFrom(cls) || BINARY_CLS.contains(cls);
+        return BinaryObject.class.isAssignableFrom(cls) ||
+            Proxy.class.isAssignableFrom(cls) ||
+            BINARY_CLS.contains(cls);
     }
 
     /**
@@ -1757,6 +1759,9 @@ public class BinaryUtils {
 
             case GridBinaryMarshaller.CLASS:
                 return doReadClass(in, ctx, ldr);
+
+            case GridBinaryMarshaller.PROXY:
+                return doReadProxy(in, ctx, ldr, handles);
 
             case GridBinaryMarshaller.OPTM_MARSH:
                 return doReadOptimized(in, ctx, ldr);
