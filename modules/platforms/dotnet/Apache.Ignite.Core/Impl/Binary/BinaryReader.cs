@@ -718,19 +718,7 @@ namespace Apache.Ignite.Core.Impl.Binary
                     // Set new frame.
                     _curHdr = hdr;
                     _curPos = pos;
-
-                    if (hdr.HasSchema)
-                    {
-                        _curSchema = desc.Schema.Get(hdr.SchemaId);
-
-                        if (_curSchema == null)
-                        {
-                            _curSchema = ReadSchema();
-
-                            desc.Schema.Add(hdr.SchemaId, _curSchema);
-                        }
-                    }
-
+                    SetCurSchema(desc);
                     _curStruct = new BinaryStructureTracker(desc, desc.ReaderTypeStructure);
                     _curRaw = false;
 
@@ -789,6 +777,24 @@ namespace Apache.Ignite.Core.Impl.Binary
             {
                 // Advance stream pointer.
                 Stream.Seek(pos + hdr.Length, SeekOrigin.Begin);
+            }
+        }
+
+        /// <summary>
+        /// Sets the current schema.
+        /// </summary>
+        private void SetCurSchema(IBinaryTypeDescriptor desc)
+        {
+            if (_curHdr.HasSchema)
+            {
+                _curSchema = desc.Schema.Get(_curHdr.SchemaId);
+
+                if (_curSchema == null)
+                {
+                    _curSchema = ReadSchema();
+
+                    desc.Schema.Add(_curHdr.SchemaId, _curSchema);
+                }
             }
         }
 
