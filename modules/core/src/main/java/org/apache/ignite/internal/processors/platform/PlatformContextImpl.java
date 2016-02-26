@@ -84,6 +84,7 @@ import java.util.concurrent.ConcurrentHashMap;
 /**
  * Implementation of platform context.
  */
+@SuppressWarnings("TypeMayBeWeakened")
 public class PlatformContextImpl implements PlatformContext {
     /** Supported event types. */
     private static final Set<Integer> evtTyps;
@@ -382,8 +383,11 @@ public class PlatformContextImpl implements PlatformContext {
             }
         );
 
+        BinaryContext binCtx = cacheObjProc.binaryContext();
+
         for (Metadata meta : metas)
-            cacheObjProc.updateMetadata(meta.typeId, meta.typeName, meta.affKey, meta.fields, meta.isEnum);
+            binCtx.updateMetadata(meta.typeId, new BinaryMetadata(meta.typeId,
+                meta.typeName, meta.fields, meta.affKey, meta.schemas, meta.isEnum));
     }
 
     /** {@inheritDoc} */
