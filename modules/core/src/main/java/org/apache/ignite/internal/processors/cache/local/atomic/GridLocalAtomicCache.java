@@ -780,7 +780,7 @@ public class GridLocalAtomicCache<K, V> extends GridCacheAdapter<K, V> {
         if (keyCheck)
             validateCacheKeys(keys);
 
-        EntryProcessor<K, V, T> entryProcessor0 = EntryProcessorResourceInjectorProxy.wrap(ctx.kernalContext(),
+        final EntryProcessor<K, V, T> entryProcessor0 = EntryProcessorResourceInjectorProxy.wrap(ctx.kernalContext(),
             entryProcessor);
 
         Map<? extends K, EntryProcessor> invokeMap = F.viewAsMap(keys, new C1<K, EntryProcessor>() {
