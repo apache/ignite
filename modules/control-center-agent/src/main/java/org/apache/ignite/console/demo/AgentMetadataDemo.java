@@ -18,9 +18,11 @@
 package org.apache.ignite.console.demo;
 
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.sql.Connection;
 import java.sql.DriverManager;
+import java.sql.SQLException;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.apache.log4j.Logger;
@@ -52,7 +54,7 @@ public class AgentMetadataDemo {
     /**
      * Start H2 database and populate it with several tables.
      */
-    public static void testDrive() {
+    public static Connection testDrive() throws SQLException {
         if (initLatch.compareAndSet(false, true)) {
             log.info("DEMO: Prepare in-memory H2 database...");
 
@@ -61,13 +63,7 @@ public class AgentMetadataDemo {
 
                 File sqlScript = resolvePath("demo/db-init.sql");
 
-                if (sqlScript == null) {
-                    log.error("DEMO: Failed to find demo database init script file: demo/db-init.sql");
-                    log.error("DEMO: Failed to start demo for metadata");
-
-                    return;
-                }
-
+                //noinspection ConstantConditions
                 RunScript.execute(conn, new FileReader(sqlScript));
 
                 log.info("DEMO: Sample tables created.");
@@ -80,9 +76,18 @@ public class AgentMetadataDemo {
 
                 log.info("DEMO: JDBC URL for test drive metadata load: jdbc:h2:mem:demo-db");
             }
-            catch (Exception e) {
+            catch (SQLException e) {
                 log.error("DEMO: Failed to start test drive for metadata!", e);
+
+                throw e;
+            }
+            catch (FileNotFoundException | NullPointerException ignore) {
+                log.error("DEMO: Failed to find demo database init script file: demo/db-init.sql");
+
+                throw new SQLException("Failed to start demo for metadata");
             }
         }
+
+        return DriverManager.getConnection("jdbc:h2:mem:demo-db;DB_CLOSE_DELAY=-1", "sa", "");
     }
 }

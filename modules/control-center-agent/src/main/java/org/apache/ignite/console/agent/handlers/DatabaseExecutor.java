@@ -66,11 +66,11 @@ public class DatabaseExecutor {
      * @throws SQLException
      */
     private Connection connect(String jdbcDriverJarPath, String jdbcDriverCls, String jdbcUrl, Properties jdbcInfo) throws SQLException {
+        if (AgentMetadataDemo.isTestDriveUrl(jdbcUrl))
+            return AgentMetadataDemo.testDrive();
+
         if (!new File(jdbcDriverJarPath).isAbsolute() && driversFolder != null)
             jdbcDriverJarPath = new File(driversFolder, jdbcDriverJarPath).getPath();
-
-        if (AgentMetadataDemo.isTestDriveUrl(jdbcUrl))
-            AgentMetadataDemo.testDrive();
 
         return DbMetadataReader.getInstance().connect(jdbcDriverJarPath, jdbcDriverCls, jdbcUrl, jdbcInfo);
     }
@@ -109,10 +109,10 @@ public class DatabaseExecutor {
     public Emitter.Listener schemasListener() {
         return new AbstractListener() {
             @Override public Object execute(Map<String, Object> args) throws Exception {
-                if (!args.containsKey("driverPath"))
-                    throw new IllegalArgumentException("Missing driverPath in arguments: " + args);
+                String driverPath = null;
 
-                String driverPath = args.get("driverPath").toString();
+                if (args.containsKey("driverPath"))
+                    driverPath = args.get("driverPath").toString();
 
                 if (!args.containsKey("driverClass"))
                     throw new IllegalArgumentException("Missing driverClass in arguments: " + args);
@@ -172,10 +172,10 @@ public class DatabaseExecutor {
         return new AbstractListener() {
             @SuppressWarnings("unchecked")
             @Override public Object execute(Map<String, Object> args) throws Exception {
-                if (!args.containsKey("driverPath"))
-                    throw new IllegalArgumentException("Missing driverPath in arguments: " + args);
+                String driverPath = null;
 
-                String driverPath = args.get("driverPath").toString();
+                if (args.containsKey("driverPath"))
+                    driverPath = args.get("driverPath").toString();
 
                 if (!args.containsKey("driverClass"))
                     throw new IllegalArgumentException("Missing driverClass in arguments: " + args);

@@ -445,8 +445,8 @@ consoleModule.controller('domainsController', function ($filter, $http, $timeout
 
                 $scope.importDomain = {
                     demo: demo,
-                    action: 'drivers',
-                    jdbcDriversNotFound: false,
+                    action: demo ? 'connect' : 'drivers',
+                    jdbcDriversNotFound: demo,
                     schemas: [],
                     allSchemasSelected: false,
                     tables: [],
