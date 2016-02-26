@@ -384,7 +384,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             // Indexed types must be translated to CacheTypeMetadata in CacheConfiguration.
 
             if (mustDeserializeClss != null) {
-                U.quietAndWarn(log, "Some classes in query configuration cannot be written in binary format " +
+                U.warn(log, "Some classes in query configuration cannot be written in binary format " +
                     "because they either implement Externalizable interface or have writeObject/readObject methods. " +
                     "Instances of these classes will be deserialized in order to build indexes. Please ensure that " +
                     "all nodes have these classes in classpath. To enable binary serialization either implement " +
