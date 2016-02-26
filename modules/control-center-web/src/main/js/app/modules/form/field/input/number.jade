@@ -16,7 +16,7 @@
 
 mixin feedback(error, message)
     i.fa.fa-exclamation-triangle.form-control-feedback(
-        ng-show='field.$error.#{error}'
+        ng-show='!field.$pristine && field.$error.#{error}'
         bs-tooltip='"#{message}"'
         ignite-error='#{error}'
         ignite-error-message='#{message}'
