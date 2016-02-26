@@ -1581,7 +1581,7 @@ public class HadoopJobTracker extends HadoopComponent {
 
         /** {@inheritDoc} */
         @Override protected void update(HadoopJobMetadata meta, HadoopJobMetadata cp) {
-            assert meta.phase() == PHASE_CANCELLING || err != null: "Invalid phase for cancel: " + meta;
+            //assert meta.phase() == PHASE_CANCELLING || err != null: "Invalid phase for cancel: " + meta + ", err = " + err;
 
             Collection<Integer> rdcCp = new HashSet<>(cp.pendingReducers());
 

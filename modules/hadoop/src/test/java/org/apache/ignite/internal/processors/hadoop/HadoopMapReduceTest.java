@@ -81,6 +81,11 @@ public class HadoopMapReduceTest extends HadoopAbstractWordCountTest {
     /** Amount of sequential block reads before prefetch is triggered. */
     protected static final int SEQ_READS_BEFORE_PREFETCH = 2;
 
+    protected static final int red = 10_000;
+    protected static final int blue = 20_000;
+    protected static final int green = 15_000;
+    protected static final int yellow = 7_000;
+
     /** Secondary file system URI. */
     protected static final String SECONDARY_URI = "igfs://igfs-secondary:grid-secondary@127.0.0.1:11500/";
 
@@ -141,6 +146,7 @@ public class HadoopMapReduceTest extends HadoopAbstractWordCountTest {
 
     /**
      * Tests whole job execution with all phases in all combination of new and old versions of API.
+     *
      * @throws Exception If fails.
      */
     public void testWholeMapReduceExecution() throws Exception {
@@ -149,11 +155,6 @@ public class HadoopMapReduceTest extends HadoopAbstractWordCountTest {
         igfs.mkdirs(inDir);
 
         IgfsPath inFile = new IgfsPath(inDir, HadoopWordCount2.class.getSimpleName() + "-input");
-
-        final int red = 10_000;
-        final int blue = 20_000;
-        final int green = 15_000;
-        final int yellow = 7_000;
 
         generateTestFile(inFile.toString(), "red", red, "blue", blue, "green", green, "yellow", yellow );
 
@@ -164,60 +165,136 @@ public class HadoopMapReduceTest extends HadoopAbstractWordCountTest {
             boolean useNewCombiner = (i & 2) == 0;
             boolean useNewReducer = (i & 4) == 0;
 
-            JobConf jobConf = new JobConf();
+            doTest(inFile, useNewMapper, useNewCombiner, useNewReducer);
+        }
+    }
 
-            jobConf.set(JOB_COUNTER_WRITER_PROPERTY, IgniteHadoopFileSystemCounterWriter.class.getName());
-            jobConf.setUser(USER);
-            jobConf.set(IgniteHadoopFileSystemCounterWriter.COUNTER_WRITER_DIR_PROPERTY, "/xxx/${USER}/zzz");
 
-            //To split into about 40 items for v2
-            jobConf.setInt(FileInputFormat.SPLIT_MAXSIZE, 65000);
+    /**
+     * Tests correct work after an error.
+     *
+     * @throws Exception
+     */
+    public void testRecoveryAfterAnError() throws Exception {
+        try {
+            IgfsPath inDir = new IgfsPath(PATH_INPUT);
 
-            //For v1
-            jobConf.setInt("fs.local.block.size", 65000);
+            igfs.mkdirs(inDir);
 
-            // File system coordinates.
-            setupFileSystems(jobConf);
+            IgfsPath inFile = new IgfsPath(inDir, HadoopWordCount2.class.getSimpleName() + "-input");
 
-            HadoopWordCount1.setTasksClasses(jobConf, !useNewMapper, !useNewCombiner, !useNewReducer);
+            generateTestFile(inFile.toString(), "red", red, "blue", blue, "green", green, "yellow", yellow);
 
-            Job job = Job.getInstance(jobConf);
+            //for (int i = 0; i < 3; i++) {
 
-            HadoopWordCount2.setTasksClasses(job, useNewMapper, useNewCombiner, useNewReducer, compressOutputSnappy());
+            boolean useNewMapper = false;//(i & 1) == 0;
+            boolean useNewCombiner = false;//(i & 2) == 0;
+            boolean useNewReducer = false;//(i & 4) == 0;
 
-            job.setOutputKeyClass(Text.class);
-            job.setOutputValueClass(IntWritable.class);
+            for (int i = 0; i < 12; i++) {
+                System.out.println("################################################# i = " + i);
 
-            FileInputFormat.setInputPaths(job, new Path(igfsScheme() + inFile.toString()));
-            FileOutputFormat.setOutputPath(job, new Path(igfsScheme() + PATH_OUTPUT));
+                int bits = 1 << i;
 
-            job.setJarByClass(HadoopWordCount2.class);
+                ErrorSimulator sim = new ErrorSimulator.
+                    //RuntimeExceptionBitErrorSimulator(bits);
+                    //IOExceptionBitErrorSimulator(bits);
+                    ErrorBitErrorSimulator(bits);
 
-            HadoopJobId jobId = new HadoopJobId(UUID.randomUUID(), 1);
+                doTestWithErrorSimulator(sim, inFile, useNewMapper, useNewCombiner, useNewReducer);
+            }
+        } catch (Throwable t) {
+            t.printStackTrace();
 
-            IgniteInternalFuture<?> fut = grid(0).hadoop().submit(jobId, createJobInfo(job.getConfiguration()));
+            throw t;
+        }
+    }
 
-            fut.get();
+    private void doTestWithErrorSimulator(ErrorSimulator sim, IgfsPath inFile, boolean useNewMapper,
+            boolean useNewCombiner, boolean useNewReducer) throws Exception {
+        assertTrue(ErrorSimulator.setInstance(ErrorSimulator.noopInstance, sim));
 
-            checkJobStatistics(jobId);
+        try {
+            // expect failure there:
+            doTest(inFile, useNewMapper, useNewCombiner, useNewReducer);
 
-            final String outFile = PATH_OUTPUT + "/" + (useNewReducer ? "part-r-" : "part-") + "00000";
+            //fail("Exception expected."); Combiner may not be called.
+        }
+        catch (Throwable t) { // This may be an Error.
+            // expected:
+            t.printStackTrace();
+        }
 
-            checkOwner(new IgfsPath(PATH_OUTPUT + "/" + "_SUCCESS"));
+        assertTrue(ErrorSimulator.setInstance(sim, ErrorSimulator.noopInstance));
 
-            checkOwner(new IgfsPath(outFile));
+        // but expect success there:
+        doTest(inFile, useNewMapper, useNewCombiner, useNewReducer);
+    }
 
-            String actual = readAndSortFile(outFile, job.getConfiguration());
+    /**
+     *
+     *
+     * @param useNewMapper
+     * @param useNewCombiner
+     * @param useNewReducer
+     */
+    private void doTest(IgfsPath inFile, boolean useNewMapper, boolean useNewCombiner, boolean useNewReducer)
+            throws Exception {
+        igfs.delete(new IgfsPath(PATH_OUTPUT), true);
 
-            assertEquals("Use new mapper: " + useNewMapper + ", new combiner: " + useNewCombiner + ", new reducer: " +
+        JobConf jobConf = new JobConf();
+
+        jobConf.set(JOB_COUNTER_WRITER_PROPERTY, IgniteHadoopFileSystemCounterWriter.class.getName());
+        jobConf.setUser(USER);
+        jobConf.set(IgniteHadoopFileSystemCounterWriter.COUNTER_WRITER_DIR_PROPERTY, "/xxx/${USER}/zzz");
+
+        //To split into about 40 items for v2
+        jobConf.setInt(FileInputFormat.SPLIT_MAXSIZE, 65000);
+
+        //For v1
+        jobConf.setInt("fs.local.block.size", 65000);
+
+        // File system coordinates.
+        setupFileSystems(jobConf);
+
+        HadoopWordCount1.setTasksClasses(jobConf, !useNewMapper, !useNewCombiner, !useNewReducer);
+
+        Job job = Job.getInstance(jobConf);
+
+        HadoopWordCount2.setTasksClasses(job, useNewMapper, useNewCombiner, useNewReducer, compressOutputSnappy());
+
+        job.setOutputKeyClass(Text.class);
+        job.setOutputValueClass(IntWritable.class);
+
+        FileInputFormat.setInputPaths(job, new Path(igfsScheme() + inFile.toString()));
+        FileOutputFormat.setOutputPath(job, new Path(igfsScheme() + PATH_OUTPUT));
+
+        job.setJarByClass(HadoopWordCount2.class);
+
+        HadoopJobId jobId = new HadoopJobId(UUID.randomUUID(), 1);
+
+        IgniteInternalFuture<?> fut = grid(0).hadoop().submit(jobId, createJobInfo(job.getConfiguration()));
+
+        fut.get();
+
+        checkJobStatistics(jobId);
+
+        final String outFile = PATH_OUTPUT + "/" + (useNewReducer ? "part-r-" : "part-") + "00000";
+
+        checkOwner(new IgfsPath(PATH_OUTPUT + "/" + "_SUCCESS"));
+
+        checkOwner(new IgfsPath(outFile));
+
+        String actual = readAndSortFile(outFile, job.getConfiguration());
+
+        assertEquals("Use new mapper: " + useNewMapper + ", new combiner: " + useNewCombiner + ", new reducer: " +
                 useNewReducer,
-                "blue\t" + blue + "\n" +
+            "blue\t" + blue + "\n" +
                 "green\t" + green + "\n" +
                 "red\t" + red + "\n" +
                 "yellow\t" + yellow + "\n",
-                actual
-            );
-        }
+            actual
+        );
     }
 
     /**
