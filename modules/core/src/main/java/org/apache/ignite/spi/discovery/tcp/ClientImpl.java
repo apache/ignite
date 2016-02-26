@@ -242,11 +242,11 @@ class ClientImpl extends TcpDiscoveryImpl {
         sockReader = new SocketReader();
         sockReader.start();
 
-        msgWorker = new MessageWorker();
-        msgWorker.start();
-
         if (spi.ipFinder.isShared())
             registerLocalNodeAddress();
+
+        msgWorker = new MessageWorker();
+        msgWorker.start();
 
         try {
             joinLatch.await();

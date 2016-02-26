@@ -313,7 +313,7 @@ class ServerImpl extends TcpDiscoveryImpl {
         else {
             if (F.isEmpty(spi.ipFinder.getRegisteredAddresses()))
                 throw new IgniteSpiException("Non-shared IP finder must have IP addresses specified in " +
-                    "GridTcpDiscoveryIpFinder.getRegisteredAddresses() configuration property " +
+                    "TcpDiscoveryIpFinder.getRegisteredAddresses() configuration property " +
                     "(specify list of IP addresses in configuration).");
 
             ipFinderHasLocAddr = spi.ipFinderHasLocalAddress();
