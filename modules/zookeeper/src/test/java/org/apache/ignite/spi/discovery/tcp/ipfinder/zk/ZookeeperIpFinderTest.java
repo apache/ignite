@@ -27,6 +27,7 @@ import org.apache.curator.retry.ExponentialBackoffRetry;
 import org.apache.curator.retry.RetryNTimes;
 import org.apache.curator.test.InstanceSpec;
 import org.apache.curator.test.TestingCluster;
+import org.apache.curator.utils.CloseableUtils;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.events.Event;
@@ -73,6 +74,9 @@ public class ZookeeperIpFinderTest extends GridCommonAbstractTest {
         // remove stale system properties
         System.getProperties().remove(TcpDiscoveryZookeeperIpFinder.PROP_ZK_CONNECTION_STRING);
 
+        // disable JMX for tests
+        System.setProperty("zookeeper.jmx.log4j.disable", "true");
+
         // start the ZK cluster
         zkCluster = new TestingCluster(ZK_CLUSTER_SIZE);
         zkCluster.start();
@@ -90,12 +94,10 @@ public class ZookeeperIpFinderTest extends GridCommonAbstractTest {
         super.afterTest();
 
         if (zkCurator != null)
-            zkCurator.close();
+            CloseableUtils.closeQuietly(zkCurator);
 
-        if (zkCluster != null) {
-            zkCluster.stop();
-            zkCluster.close();
-        }
+        if (zkCluster != null)
+            CloseableUtils.closeQuietly(zkCluster);
 
         stopAllGrids();
     }
