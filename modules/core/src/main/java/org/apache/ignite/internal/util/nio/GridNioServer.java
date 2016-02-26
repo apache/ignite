@@ -53,6 +53,7 @@ import org.apache.ignite.configuration.ConnectorConfiguration;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridNearAtomicUpdateRequest;
+import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridNearAtomicUpdateResponse;
 import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.util.nio.ssl.GridNioSslFilter;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
@@ -705,11 +706,11 @@ public class GridNioServer<T> {
         }
 
         /**
-        * Processes read-available event on the key.
-        *
-        * @param key Key that is ready to be read.
-        * @throws IOException If key read failed.
-        */
+         * Processes read-available event on the key.
+         *
+         * @param key Key that is ready to be read.
+         * @throws IOException If key read failed.
+         */
         @Override protected void processRead(SelectionKey key) throws IOException {
             if (skipRead) {
                 try {
@@ -744,6 +745,7 @@ public class GridNioServer<T> {
                 return;
 
             GridNearAtomicUpdateRequest.RECEIVED_TIMESTAMP.set(System.nanoTime());
+            GridNearAtomicUpdateResponse.RECEIVED_TIMESTAMP.set(System.nanoTime());
 
             if (log.isTraceEnabled())
                 log.trace("Bytes received [sockCh=" + sockCh + ", cnt=" + cnt + ']');
@@ -775,11 +777,11 @@ public class GridNioServer<T> {
         }
 
         /**
-        * Processes write-ready event on the key.
-        *
-        * @param key Key that is ready to be written.
-        * @throws IOException If write failed.
-        */
+         * Processes write-ready event on the key.
+         *
+         * @param key Key that is ready to be written.
+         * @throws IOException If write failed.
+         */
         @Override protected void processWrite(SelectionKey key) throws IOException {
             WritableByteChannel sockCh = (WritableByteChannel)key.channel();
 
@@ -895,6 +897,7 @@ public class GridNioServer<T> {
             }
 
             GridNearAtomicUpdateRequest.RECEIVED_TIMESTAMP.set(System.nanoTime());
+            GridNearAtomicUpdateResponse.RECEIVED_TIMESTAMP.set(System.nanoTime());
 
             if (log.isTraceEnabled())
                 log.trace("Bytes received [sockCh=" + sockCh + ", cnt=" + cnt + ']');
@@ -1214,18 +1217,31 @@ public class GridNioServer<T> {
                 int cnt = sockCh.write(buf);
 
                 long time = System.nanoTime();
-
-                Set<T2<Long, UUID>> futVers = GridNearAtomicUpdateRequest.FUT_VERS.get();
-                if (!futVers.isEmpty()) {
-                    for (T2<Long, UUID> entry : futVers) {
-                        long futVer = entry.get1();
-                        UUID nodeId = entry.get2();
-                        if (futVer != 0 && futVer % GridNearAtomicUpdateRequest.SAMPLE_MOD == 0) {
-                            String k = G.localIgnite().cluster().localNode().id() + " : " + futVer + " : " + nodeId;
-                            GridNearAtomicUpdateRequest.SENT.putIfAbsent(k, time);
+                {
+                    Set<T2<Long, UUID>> futVers = GridNearAtomicUpdateRequest.FUT_VERS.get();
+                    if (!futVers.isEmpty()) {
+                        for (T2<Long, UUID> entry : futVers) {
+                            long futVer = entry.get1();
+                            UUID nodeId = entry.get2();
+                            if (futVer != 0 && futVer % GridNearAtomicUpdateRequest.SAMPLE_MOD == 0) {
+                                String k = G.localIgnite().cluster().localNode().id() + " : " + futVer + " : " + nodeId;
+                                GridNearAtomicUpdateRequest.SENT.putIfAbsent(k, time);
+                            }
                         }
+                        futVers.clear();
                     }
-                    futVers.clear();
+                }
+                {
+                    Set<Long> futVers = GridNearAtomicUpdateResponse.FUT_VERS.get();
+                    if (!futVers.isEmpty()) {
+                        for (Long futVer : futVers) {
+                            if (futVer != 0 && futVer % GridNearAtomicUpdateResponse.SAMPLE_MOD == 0) {
+                                String k = G.localIgnite().cluster().localNode().id() + " : " + futVer;
+                                GridNearAtomicUpdateResponse.SENT.putIfAbsent(k, time);
+                            }
+                        }
+                        futVers.clear();
+                    }
                 }
 
                 if (log.isTraceEnabled())
@@ -1510,7 +1526,7 @@ public class GridNioServer<T> {
          * @throws ClosedByInterruptException If this thread was interrupted while reading data.
          */
         private void processSelectedKeysOptimized(SelectionKey[] keys) throws ClosedByInterruptException {
-            for (int i = 0; ; i ++) {
+            for (int i = 0; ; i++) {
                 final SelectionKey key = keys[i];
 
                 if (key == null)
@@ -1630,7 +1646,7 @@ public class GridNioServer<T> {
                     }
                 }
                 catch (IgniteCheckedException e) {
-                    close(ses,  e);
+                    close(ses, e);
                 }
             }
         }
@@ -1950,7 +1966,7 @@ public class GridNioServer<T> {
             if (log.isDebugEnabled())
                 log.debug("Processing keys in accept worker: " + keys.size());
 
-            for (Iterator<SelectionKey> iter = keys.iterator(); iter.hasNext();) {
+            for (Iterator<SelectionKey> iter = keys.iterator(); iter.hasNext(); ) {
                 SelectionKey key = iter.next();
 
                 iter.remove();
@@ -2239,7 +2255,8 @@ public class GridNioServer<T> {
         }
 
         /** {@inheritDoc} */
-        @Override public void onExceptionCaught(GridNioSession ses, IgniteCheckedException ex) throws IgniteCheckedException {
+        @Override public void onExceptionCaught(GridNioSession ses,
+            IgniteCheckedException ex) throws IgniteCheckedException {
             proceedExceptionCaught(ses, ex);
         }
 

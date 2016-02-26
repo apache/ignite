@@ -34,6 +34,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheIoManager;
 import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridDhtAtomicCache;
 import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridNearAtomicUpdateFuture;
 import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridNearAtomicUpdateRequest;
+import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridNearAtomicUpdateResponse;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
@@ -144,8 +145,10 @@ public class JmhCacheAbstractBenchmark extends JmhAbstractBenchmark {
             printTimeMetrics("NEAR FUT", pw, GridNearAtomicUpdateFuture.NEAR_FUT_START, GridNearAtomicUpdateFuture.NEAR_FUT_FINISH);
             printTimeMetrics("NEAR PROC", pw, GridDhtAtomicCache.NEAR_PROC_START, GridDhtAtomicCache.NEAR_PROC_FINISH);
             printTimeMetrics("NEAR MSG MARSH", pw, DirectByteBufferStreamImplV2.NEAR_MSG_MARSHALLED_START, DirectByteBufferStreamImplV2.NEAR_MSG_MARSHALLED_FINISH);
-            printTimeMetrics("NEAR MSG PREP SENT", pw, GridCacheIoManager.SAMPLING_DATA_NEAR_SND, GridNearAtomicUpdateRequest.SENT);
-            printTimeMetrics("NEAR MSG RCVD PROC", pw, GridNearAtomicUpdateRequest.RECEIVED, GridDhtAtomicCache.NEAR_PROC_START);
+            printTimeMetrics("NEAR REQ MSG PREP SENT", pw, GridCacheIoManager.SAMPLING_DATA_NEAR_SND, GridNearAtomicUpdateRequest.SENT);
+            printTimeMetrics("NEAR REQ MSG RCVD PROC", pw, GridNearAtomicUpdateRequest.RECEIVED, GridDhtAtomicCache.NEAR_PROC_START);
+            printTimeMetrics("NEAR RESP MSG PREP SENT", pw, GridDhtAtomicCache.NEAR_PROC_FINISH, GridNearAtomicUpdateResponse.SENT);
+            printTimeMetrics("NEAR RESP MSG RCVD PROC", pw, GridNearAtomicUpdateResponse.RECEIVED, GridCacheIoManager.SAMPLING_DATA_NEAR_RCV);
             printTimeMetrics("DHT MSG", pw, GridCacheIoManager.SAMPLING_DATA_DHT_SND, GridCacheIoManager.SAMPLING_DATA_DHT_RCV);
         }
         finally {

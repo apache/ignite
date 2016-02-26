@@ -618,6 +618,11 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
                 if (msg instanceof GridNearAtomicUpdateResponse) {
                     futVer = ((GridNearAtomicUpdateResponse)msg).futureVersion();
                     map = SAMPLING_DATA_NEAR_RCV;
+                    long timestamp = ((GridNearAtomicUpdateResponse)msg).receivedTimestamp;
+                    if (timestamp != 0) {
+                        String k = cctx.kernalContext().localNodeId() + " : " + futVer + " : " + nodeId;
+                        GridNearAtomicUpdateResponse.RECEIVED.putIfAbsent(k, timestamp);
+                    }
                 }
                 else if (msg instanceof GridDhtAtomicUpdateResponse) {
                     futVer = ((GridDhtAtomicUpdateResponse)msg).futureVersion();
