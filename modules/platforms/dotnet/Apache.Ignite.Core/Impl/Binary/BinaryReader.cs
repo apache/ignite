@@ -807,6 +807,7 @@ namespace Apache.Ignite.Core.Impl.Binary
             {
                 // TODO: Get schema from Java!
                 //Marshaller.Ignite.GetBinary().GetBinaryType()
+                // New method like GetBinarySchema
                 throw new NotSupportedException("TODO");
             }
 
