@@ -584,7 +584,9 @@ public class BinaryUtils {
     public static boolean isBinaryType(Class<?> cls) {
         assert cls != null;
 
-        return BinaryObject.class.isAssignableFrom(cls) || BINARY_CLS.contains(cls);
+        return BinaryObject.class.isAssignableFrom(cls) ||
+            Proxy.class.isAssignableFrom(cls) ||
+            BINARY_CLS.contains(cls);
     }
 
     /**
@@ -1560,7 +1562,7 @@ public class BinaryUtils {
         ByteArrayInputStream input = new ByteArrayInputStream(in.array(), in.position(), len);
 
         try {
-            return ctx.optimizedMarsh().unmarshal(input, clsLdr);
+            return ctx.optimizedMarsh().unmarshal(input, U.resolveClassLoader(clsLdr, ctx.configuration()));
         }
         catch (IgniteCheckedException e) {
             throw new BinaryObjectException("Failed to unmarshal object with optimized marshaller", e);
@@ -1757,6 +1759,9 @@ public class BinaryUtils {
 
             case GridBinaryMarshaller.CLASS:
                 return doReadClass(in, ctx, ldr);
+
+            case GridBinaryMarshaller.PROXY:
+                return doReadProxy(in, ctx, ldr, handles);
 
             case GridBinaryMarshaller.OPTM_MARSH:
                 return doReadOptimized(in, ctx, ldr);

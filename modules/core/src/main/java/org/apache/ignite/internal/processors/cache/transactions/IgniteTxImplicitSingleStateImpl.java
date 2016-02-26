@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache.transactions;
 
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
@@ -213,7 +212,7 @@ public class IgniteTxImplicitSingleStateImpl extends IgniteTxLocalStateAdapter {
 
     /** {@inheritDoc} */
     @Override public Collection<IgniteTxEntry> writeEntries() {
-        return entry != null ? Arrays.asList(entry) : Collections.<IgniteTxEntry>emptyList();
+        return entry != null ? Collections.singletonList(entry) : Collections.<IgniteTxEntry>emptyList();
     }
 
     /** {@inheritDoc} */
@@ -238,7 +237,7 @@ public class IgniteTxImplicitSingleStateImpl extends IgniteTxLocalStateAdapter {
 
     /** {@inheritDoc} */
     @Override public Collection<IgniteTxEntry> allEntries() {
-        return entry != null ? Arrays.asList(entry) : Collections.<IgniteTxEntry>emptyList();
+        return entry != null ? Collections.singletonList(entry) : Collections.<IgniteTxEntry>emptyList();
     }
 
     /** {@inheritDoc} */
