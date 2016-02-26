@@ -627,6 +627,8 @@ namespace Apache.Ignite.Core.Impl
                     }
 
                     metaWriter.WriteBoolean(meta.IsEnum);
+
+                    // TODO: Send schema
                 }
 
                 _marsh.FinishMarshal(metaWriter);
