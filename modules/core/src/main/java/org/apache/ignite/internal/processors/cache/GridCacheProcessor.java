@@ -3309,6 +3309,18 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     }
 
     /**
+     * Starts client caches that do not exist yet.
+     *
+     * @throws IgniteCheckedException In case of error.
+     */
+    public void createMissingCaches() throws IgniteCheckedException {
+        for (String cacheName : registeredCaches.keySet()) {
+            if (!CU.isSystemCache(cacheName) && !caches.containsKey(cacheName))
+                dynamicStartCache(null, cacheName, null, false, true, true).get();
+        }
+    }
+
+    /**
      * Registers MBean for cache components.
      *
      * @param o Cache component.
