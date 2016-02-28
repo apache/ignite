@@ -77,4 +77,32 @@ public class CacheQueryNewClientSelfTest extends GridCommonAbstractTest {
 
         assertEquals(100, res.size());
     }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testQueryFromNewClientCustomSchemaName() throws Exception {
+        Ignite server = startGrid("server");
+
+        IgniteCache<Integer, Integer> cache1 = server.createCache(new CacheConfiguration<Integer, Integer>().
+            setName("cache1").setSqlSchema("cache1_sql").setIndexedTypes(Integer.class, Integer.class));
+        IgniteCache<Integer, Integer> cache2 = server.createCache(new CacheConfiguration<Integer, Integer>().
+            setName("cache2").setSqlSchema("cache2_sql").setIndexedTypes(Integer.class, Integer.class));
+
+        for (int i = 0; i < 10; i++) {
+            cache1.put(i, i);
+            cache2.put(i, i);
+        }
+
+        Ignition.setClientMode(true);
+
+        Ignite client = startGrid("client");
+
+        IgniteCache<Integer, Integer> cache = client.cache("cache1");
+
+        List<List<?>> res = cache.query(new SqlFieldsQuery(
+            "select i1._val, i2._val from Integer i1 cross join cache2_sql.Integer i2")).getAll();
+
+        assertEquals(100, res.size());
+    }
 }
