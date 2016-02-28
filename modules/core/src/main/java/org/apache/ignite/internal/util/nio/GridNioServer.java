@@ -65,6 +65,7 @@ import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
+import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.thread.IgniteThread;
 import org.jetbrains.annotations.Nullable;
 import sun.nio.ch.DirectBuffer;
@@ -106,6 +107,10 @@ public class GridNioServer<T> {
     /** */
     private static final boolean DISABLE_KEYSET_OPTIMIZATION =
         IgniteSystemProperties.getBoolean(IgniteSystemProperties.IGNITE_NO_SELECTOR_OPTS);
+
+    /** */
+    private static final boolean PRINT_COMM_CONN_STATS =
+        IgniteSystemProperties.getBoolean("IGNITE_PRINT_COMM_CONN_STATS");
 
     /**
      *
@@ -1578,11 +1583,30 @@ public class GridNioServer<T> {
          *
          * @param keys Keys registered to selector.
          */
-        private void checkIdle(Iterable<SelectionKey> keys) {
+        private void checkIdle(Set<SelectionKey> keys) {
             long now = U.currentTimeMillis();
+
+            StringBuilder sb;
+
+            if (PRINT_COMM_CONN_STATS) {
+                sb = new StringBuilder();
+
+                sb.append(U.nl())
+                    .append(">> Selector info [idx=").append(idx)
+                    .append(", cnt=").append(keys.size())
+                    .append("]").append(U.nl());
+            }
+            else
+                sb = null;
 
             for (SelectionKey key : keys) {
                 GridSelectorNioSessionImpl ses = (GridSelectorNioSessionImpl)key.attachment();
+
+                if (sb != null) {
+                    sb.append("    Conn [nodeId=").append(ses.meta(TcpCommunicationSpi.NODE_ID_META))
+                        .append(", bytesRcvd=").append(ses.bytesReceived())
+                        .append(", bytesSent=").append(ses.bytesSent()).append("]").append(U.nl());
+                }
 
                 try {
                     long writeTimeout0 = writeTimeout;
@@ -1612,6 +1636,9 @@ public class GridNioServer<T> {
                     close(ses,  e);
                 }
             }
+
+            if (sb != null && log.isInfoEnabled())
+                log.info(sb.toString());
         }
 
         /**
