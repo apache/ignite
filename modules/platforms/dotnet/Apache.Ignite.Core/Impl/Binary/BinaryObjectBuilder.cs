@@ -723,6 +723,9 @@ namespace Apache.Ignite.Core.Impl.Binary
 
                                 if (inHeader.HasRaw)
                                     outStream.WriteInt(outRawOff);
+
+                                // TODO: Performance
+                                _desc.Schema.Add(outSchemaId, outSchema.GetSchema(schemaIdx));
                             }
 
                             var outLen = outStream.Position - outStartPos;
