@@ -710,9 +710,10 @@ namespace Apache.Ignite.Core.Impl.Binary
                             var schemaPos = outStream.Position;
                             int outSchemaId;
 
-                            // TODO: Compact footer??
-                            var hasSchema = outSchema.WriteSchema(outStream, schemaIdx, out outSchemaId, ref flags, 
-                                false);
+                            if (inHeader.IsCompactFooter)
+                                flags |= BinaryObjectHeader.Flag.CompactFooter;
+
+                            var hasSchema = outSchema.WriteSchema(outStream, schemaIdx, out outSchemaId, ref flags);
 
                             if (hasSchema)
                             {

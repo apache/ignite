@@ -1136,8 +1136,7 @@ namespace Apache.Ignite.Core.Impl.Binary
                     if (Marshaller.CompactFooter && desc.UserType)
                         flags |= BinaryObjectHeader.Flag.CompactFooter;
 
-                    var hasSchema = _schema.WriteSchema(_stream, schemaIdx, out schemaId, ref flags, 
-                        Marshaller.CompactFooter);
+                    var hasSchema = _schema.WriteSchema(_stream, schemaIdx, out schemaId, ref flags);
 
                     if (hasSchema)
                     {

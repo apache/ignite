@@ -83,12 +83,11 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// <param name="schemaOffset">The schema offset.</param>
         /// <param name="schemaId">The schema identifier.</param>
         /// <param name="flags">Flags according to offset sizes.</param>
-        /// <param name="compact">Compact footer flag.</param>
         /// <returns>
         /// True if current schema was non empty; false otherwise.
         /// </returns>
         public bool WriteSchema(IBinaryStream stream, int schemaOffset, out int schemaId, 
-            ref BinaryObjectHeader.Flag flags, bool compact)
+            ref BinaryObjectHeader.Flag flags)
         {
             schemaId = Fnv1Hash.Basis;
 
@@ -97,7 +96,8 @@ namespace Apache.Ignite.Core.Impl.Binary
             if (count == 0) 
                 return false;
 
-            flags |= BinaryObjectSchemaSerializer.WriteSchema(_fields, stream, schemaOffset, count, compact);
+            flags |= BinaryObjectSchemaSerializer.WriteSchema(_fields, stream, schemaOffset, count, 
+                (flags & BinaryObjectHeader.Flag.CompactFooter) == BinaryObjectHeader.Flag.CompactFooter);
 
             for (var i = schemaOffset; i < _idx; i++)
                 schemaId = Fnv1Hash.Update(schemaId, _fields[i].Id);
