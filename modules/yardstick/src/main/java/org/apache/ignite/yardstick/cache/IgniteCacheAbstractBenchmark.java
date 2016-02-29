@@ -87,9 +87,11 @@ public abstract class IgniteCacheAbstractBenchmark<K, V> extends IgniteAbstractB
                 List<Integer> primary = e.getValue().get1();
                 List<Integer> backup = e.getValue().get2();
 
-                BenchmarkUtils.println(cfg, e.getKey().id() + " " + primary.size() + " " + primary.size() * 1. /
-                    aff.partitions() + " " + backup.size() + " "
-                    + backup.size() * 1. / (aff.partitions() * args.backups() == 0 ? 1 : args.backups())
+                BenchmarkUtils.println(cfg, e.getKey().id() + "  "
+                    + primary.size() + "  " + primary.size() * 1. /aff.partitions() + "  "
+                    + backup.size() + "  "
+                    + backup.size() * 1. / (aff.partitions() * (args.backups() == 0 ? 1 : args.backups())) + "  "
+                    + (primary.size() + backup.size()) + "  "
                     + (primary.size() + backup.size() * 1.) / (aff.partitions() * args.backups() + aff.partitions())
                 );
             }
