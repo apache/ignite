@@ -19,6 +19,7 @@ namespace Apache.Ignite.Core.Binary
 {
     using System;
     using System.Collections.Generic;
+    using System.ComponentModel;
     using System.Diagnostics.CodeAnalysis;
     using System.Linq;
     using Apache.Ignite.Core.Impl.Common;
@@ -117,6 +118,7 @@ namespace Apache.Ignite.Core.Binary
         /// sources (e.g.cache store which stores data in binary form, data center replication, etc.). 
         /// Otherwise binary objects without any associated metadata could could not be deserialized.
         /// </summary>
+        [DefaultValue(DefaultCompactFooter)]
         public bool CompactFooter
         {
             get { return _compactFooter ?? DefaultCompactFooter; }

@@ -22,6 +22,7 @@ namespace Apache.Ignite.Core.Tests
     using System.ComponentModel;
     using System.IO;
     using System.Linq;
+    using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Cache.Configuration;
     using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Discovery;
@@ -61,6 +62,7 @@ namespace Apache.Ignite.Core.Tests
         public void TestDefaultValueAttributes()
         {
             CheckDefaultValueAttributes(new IgniteConfiguration());
+            CheckDefaultValueAttributes(new BinaryConfiguration());
             CheckDefaultValueAttributes(new TcpDiscoverySpi());
             CheckDefaultValueAttributes(new CacheConfiguration());
             CheckDefaultValueAttributes(new TcpDiscoveryMulticastIpFinder());
