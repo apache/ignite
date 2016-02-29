@@ -261,6 +261,15 @@ public class BinarySchema implements Externalizable {
     }
 
     /**
+     * Gets field ids array.
+     *
+     * @return Field ids.
+     */
+    public int[] fieldIds() {
+        return ids;
+    }
+
+    /**
      * Parse values.
      *
      * @param vals Values.

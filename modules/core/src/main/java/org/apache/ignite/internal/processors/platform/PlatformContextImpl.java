@@ -405,6 +405,15 @@ public class PlatformContextImpl implements PlatformContext {
             writeMetadata0(writer, cacheObjProc.typeId(m.typeName()), m);
     }
 
+    /** {@inheritDoc} */
+    @Override public void writeSchema(BinaryRawWriterEx writer, int typeId, int schemaId) {
+        BinarySchema schema = cacheObjProc.binaryContext().schemaRegistry(typeId).schema(schemaId);
+
+        int[] fieldIds = schema == null ? null : schema.fieldIds();
+
+        writer.writeIntArray(fieldIds);
+    }
+
     /**
      * Write binary metadata.
      *
@@ -426,8 +435,6 @@ public class PlatformContextImpl implements PlatformContext {
             writer.writeString(meta.affinityKeyFieldName());
             writer.writeMap(fields);
             writer.writeBoolean(meta.isEnum());
-
-            // TODO: Write meta0.schemas()
         }
     }
 
