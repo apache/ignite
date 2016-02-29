@@ -266,8 +266,18 @@ class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
         return stopping;
     }
 
+    /**
+     * @param part Partition.
+     * @param aff Affinity assignments.
+     * @return {@code True} if given partition belongs to local node.
+     */
+    private boolean localNode(int part, List<List<ClusterNode>> aff) {
+        return aff.get(part).contains(cctx.localNode());
+    }
+
     /** {@inheritDoc} */
-    @Override public void beforeExchange(GridDhtPartitionsExchangeFuture exchFut) throws IgniteCheckedException {
+    @Override public void beforeExchange(GridDhtPartitionsExchangeFuture exchFut, List<List<ClusterNode>> aff)
+        throws IgniteCheckedException {
         waitForRent();
 
         ClusterNode loc = cctx.localNode();
@@ -333,10 +343,8 @@ class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
                     if ((oldest.id().equals(loc.id()) && oldest.id().equals(exchId.nodeId()) && exchId.isJoined()) || added) {
                         assert exchId.isJoined() || added;
 
-                        try {
-                            GridDhtLocalPartition locPart = localPartition(p, topVer, true, false);
-
-                            assert locPart != null;
+                        if (localNode(p, aff)) {
+                            GridDhtLocalPartition locPart = createPartition(p);
 
                             boolean owned = locPart.own();
 
@@ -348,42 +356,22 @@ class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
 
                             updateLocal(p, loc.id(), locPart.state(), updateSeq);
                         }
-                        catch (GridDhtInvalidPartitionException e) {
-                            if (log.isDebugEnabled())
-                                log.debug("Ignoring invalid partition on oldest node (no need to create a partition " +
-                                    "if it no longer belongs to local node: " + e.partition());
-                        }
                     }
                     // If this is not the first node in grid.
                     else {
                         if (node2part != null && node2part.valid()) {
-                            if (cctx.affinity().localNode(p, topVer)) {
-                                try {
-                                    // This will make sure that all non-existing partitions
-                                    // will be created in MOVING state.
-                                    GridDhtLocalPartition locPart = localPartition(p, topVer, true, false);
+                            if (localNode(p, aff)) {
+                                // This will make sure that all non-existing partitions
+                                // will be created in MOVING state.
+                                GridDhtLocalPartition locPart = createPartition(p);
 
-                                    updateLocal(p, loc.id(), locPart.state(), updateSeq);
-                                }
-                                catch (GridDhtInvalidPartitionException e) {
-                                    if (log.isDebugEnabled())
-                                        log.debug("Ignoring invalid partition (no need to create a partition if it " +
-                                            "no longer belongs to local node: " + e.partition());
-                                }
+                                updateLocal(p, loc.id(), locPart.state(), updateSeq);
                             }
                         }
                         // If this node's map is empty, we pre-create local partitions,
                         // so local map will be sent correctly during exchange.
-                        else if (cctx.affinity().localNode(p, topVer)) {
-                            try {
-                                localPartition(p, topVer, true, false);
-                            }
-                            catch (GridDhtInvalidPartitionException e) {
-                                if (log.isDebugEnabled())
-                                    log.debug("Ignoring invalid partition (no need to pre-create a partition if it " +
-                                        "no longer belongs to local node: " + e.partition());
-                            }
-                        }
+                        else if (localNode(p, aff))
+                            createPartition(p);
                     }
                 }
             }
@@ -393,7 +381,7 @@ class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
                 for (int p = 0; p < num; p++) {
                     GridDhtLocalPartition locPart = localPartition(p, topVer, false, false);
 
-                    boolean belongs = cctx.affinity().localNode(p, topVer);
+                    boolean belongs = localNode(p, aff);
 
                     if (locPart != null) {
                         if (!belongs) {
@@ -410,24 +398,15 @@ class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
                             }
                         }
                     }
-                    else if (belongs) {
-                        try {
-                            // Pre-create partitions.
-                            localPartition(p, topVer, true, false);
-                        }
-                        catch (GridDhtInvalidPartitionException e) {
-                            if (log.isDebugEnabled())
-                                log.debug("Ignoring invalid partition with disabled rebalancer (no need to " +
-                                    "pre-create a partition if it no longer belongs to local node: " + e.partition());
-                        }
-                    }
+                    else if (belongs)
+                        createPartition(p);
                 }
             }
 
             if (node2part != null && node2part.valid())
                 checkEvictions(updateSeq);
 
-            updateRebalanceVersion();
+            updateRebalanceVersion(aff);
 
             consistencyCheck();
 
@@ -535,7 +514,7 @@ class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
                 }
             }
 
-            updateRebalanceVersion();
+            updateRebalanceVersion(null);
 
             consistencyCheck();
         }
@@ -550,6 +529,28 @@ class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
     @Nullable @Override public GridDhtLocalPartition localPartition(int p, AffinityTopologyVersion topVer, boolean create)
         throws GridDhtInvalidPartitionException {
         return localPartition(p, topVer, create, true);
+    }
+
+    private GridDhtLocalPartition createPartition(int p) {
+        assert lock.writeLock().isHeldByCurrentThread();
+
+        GridDhtLocalPartition loc = locParts.get(p);
+
+        if (loc != null && loc.state() == EVICTED) {
+            boolean rmv = locParts.remove(p, loc);
+
+            assert rmv;
+
+            loc = null;
+        }
+
+        if (loc == null) {
+            GridDhtLocalPartition old = locParts.putIfAbsent(p, loc = new GridDhtLocalPartition(cctx, p));
+
+            assert old == null : old;
+        }
+
+        return loc;
     }
 
     /**
@@ -961,7 +962,7 @@ class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
 
             boolean changed = checkEvictions(updateSeq);
 
-            updateRebalanceVersion();
+            updateRebalanceVersion(null);
 
             consistencyCheck();
 
@@ -1074,7 +1075,7 @@ class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
 
             changed |= checkEvictions(updateSeq);
 
-            updateRebalanceVersion();
+            updateRebalanceVersion(null);
 
             consistencyCheck();
 
@@ -1365,13 +1366,13 @@ class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
     /**
      *
      */
-    private void updateRebalanceVersion() {
+    private void updateRebalanceVersion(@Nullable  List<List<ClusterNode>> aff) {
         if (!rebalancedTopVer.equals(topVer)) {
             if (node2part == null || !node2part.valid())
                 return;
 
             for (int i = 0; i < cctx.affinity().partitions(); i++) {
-                List<ClusterNode> affNodes = cctx.affinity().nodes(i, topVer);
+                List<ClusterNode> affNodes = aff != null ? aff.get(i) : cctx.affinity().nodes(i, topVer);
 
                 // Topology doesn't contain server nodes (just clients).
                 if (affNodes.isEmpty())

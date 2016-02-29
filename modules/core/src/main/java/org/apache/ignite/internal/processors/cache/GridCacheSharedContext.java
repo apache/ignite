@@ -85,6 +85,9 @@ public class GridCacheSharedContext<K, V> {
     /** Deployment manager. */
     private GridCacheDeploymentManager<K, V> depMgr;
 
+    /** */
+    private CacheTopologyManager topMgr;
+
     /** Cache contexts map. */
     private ConcurrentMap<Integer, GridCacheContext<K, V>> ctxMap;
 
@@ -101,6 +104,7 @@ public class GridCacheSharedContext<K, V> {
      * @param mvccMgr MVCC manager.
      * @param depMgr Deployment manager.
      * @param exchMgr Exchange manager.
+     * @param topMgr Topology manager.
      * @param ioMgr IO manager.
      * @param jtaMgr JTA manager.
      * @param storeSesLsnrs Store session listeners.
@@ -112,13 +116,14 @@ public class GridCacheSharedContext<K, V> {
         GridCacheMvccManager mvccMgr,
         GridCacheDeploymentManager<K, V> depMgr,
         GridCachePartitionExchangeManager<K, V> exchMgr,
+        CacheTopologyManager<K, V> topMgr,
         GridCacheIoManager ioMgr,
         CacheJtaManagerAdapter jtaMgr,
         Collection<CacheStoreSessionListener> storeSesLsnrs
     ) {
         this.kernalCtx = kernalCtx;
 
-        setManagers(mgrs, txMgr, jtaMgr, verMgr, mvccMgr, depMgr, exchMgr, ioMgr);
+        setManagers(mgrs, txMgr, jtaMgr, verMgr, mvccMgr, depMgr, exchMgr, topMgr, ioMgr);
 
         this.storeSesLsnrs = storeSesLsnrs;
 
@@ -162,6 +167,7 @@ public class GridCacheSharedContext<K, V> {
             mvccMgr,
             new GridCacheDeploymentManager<K, V>(),
             new GridCachePartitionExchangeManager<K, V>(),
+            topMgr,
             ioMgr);
 
         this.mgrs = mgrs;
@@ -200,6 +206,7 @@ public class GridCacheSharedContext<K, V> {
         GridCacheMvccManager mvccMgr,
         GridCacheDeploymentManager<K, V> depMgr,
         GridCachePartitionExchangeManager<K, V> exchMgr,
+        CacheTopologyManager topMgr,
         GridCacheIoManager ioMgr) {
         this.mvccMgr = add(mgrs, mvccMgr);
         this.verMgr = add(mgrs, verMgr);
@@ -207,6 +214,7 @@ public class GridCacheSharedContext<K, V> {
         this.jtaMgr = add(mgrs, jtaMgr);
         this.depMgr = add(mgrs, depMgr);
         this.exchMgr = add(mgrs, exchMgr);
+        this.topMgr = add(mgrs, topMgr);
         this.ioMgr = add(mgrs, ioMgr);
     }
 
@@ -363,6 +371,13 @@ public class GridCacheSharedContext<K, V> {
      */
     public GridCachePartitionExchangeManager<K, V> exchange() {
         return exchMgr;
+    }
+
+    /**
+     * @return Topology manager.
+     */
+    public CacheTopologyManager topology() {
+        return topMgr;
     }
 
     /**

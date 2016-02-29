@@ -219,32 +219,36 @@ public class GridAffinityAssignmentCache {
 
         assert assignment != null;
 
-        GridAffinityAssignment updated = new GridAffinityAssignment(topVer, assignment);
+        return assignment;
 
-        updated = F.addIfAbsent(affCache, topVer, updated);
-
-        // Update top version, if required.
-        while (true) {
-            GridAffinityAssignment headItem = head.get();
-
-            if (headItem.topologyVersion().compareTo(topVer) >= 0)
-                break;
-
-            if (head.compareAndSet(headItem, updated))
-                break;
-        }
-
-        for (Map.Entry<AffinityTopologyVersion, AffinityReadyFuture> entry : readyFuts.entrySet()) {
-            if (entry.getKey().compareTo(topVer) <= 0) {
-                if (log.isDebugEnabled())
-                    log.debug("Completing topology ready future (calculated affinity) [locNodeId=" + ctx.localNodeId() +
-                        ", futVer=" + entry.getKey() + ", topVer=" + topVer + ']');
-
-                entry.getValue().onDone(topVer);
-            }
-        }
-
-        return updated.assignment();
+//        assert assignment != null;
+//
+//        GridAffinityAssignment updated = new GridAffinityAssignment(topVer, assignment);
+//
+//        updated = F.addIfAbsent(affCache, topVer, updated);
+//
+//        // Update top version, if required.
+//        while (true) {
+//            GridAffinityAssignment headItem = head.get();
+//
+//            if (headItem.topologyVersion().compareTo(topVer) >= 0)
+//                break;
+//
+//            if (head.compareAndSet(headItem, updated))
+//                break;
+//        }
+//
+//        for (Map.Entry<AffinityTopologyVersion, AffinityReadyFuture> entry : readyFuts.entrySet()) {
+//            if (entry.getKey().compareTo(topVer) <= 0) {
+//                if (log.isDebugEnabled())
+//                    log.debug("Completing topology ready future (calculated affinity) [locNodeId=" + ctx.localNodeId() +
+//                        ", futVer=" + entry.getKey() + ", topVer=" + topVer + ']');
+//
+//                entry.getValue().onDone(topVer);
+//            }
+//        }
+//
+//        return updated.assignment();
     }
 
     /**

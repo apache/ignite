@@ -449,4 +449,8 @@ public class GridCacheAffinityManager extends GridCacheManagerAdapter {
         if (aff0 != null)
             aff0.dumpDebugInfo();
     }
+
+    public boolean partitionNode(int part, AffinityTopologyVersion topVer) {
+        return nodes(part, topVer).contains(cctx.localNode());
+    }
 }

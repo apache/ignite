@@ -356,35 +356,19 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
     }
 
     /**
-     * @param cacheId Cache ID.
-     * @return {@code True} if local client has been added.
-     */
-    public boolean isLocalClientAdded(int cacheId) {
-        if (!F.isEmpty(reqs)) {
-            for (DynamicCacheChangeRequest req : reqs) {
-                if (req.start() && F.eq(req.initiatingNodeId(), cctx.localNodeId())) {
-                    if (CU.cacheId(req.cacheName()) == cacheId)
-                        return true;
-                }
-            }
-        }
-
-        return false;
-    }
-
-    /**
      * @param cacheCtx Cache context.
      * @throws IgniteCheckedException If failed.
+     * @return Affinity assignments.
      */
-    private void initTopology(GridCacheContext cacheCtx) throws IgniteCheckedException {
+    private List<List<ClusterNode>> initTopology(GridCacheContext cacheCtx) throws IgniteCheckedException {
         if (stopping(cacheCtx.cacheId()))
-            return;
+            return null;
 
         if (canCalculateAffinity(cacheCtx)) {
             if (log.isDebugEnabled())
                 log.debug("Will recalculate affinity [locNodeId=" + cctx.localNodeId() + ", exchId=" + exchId + ']');
 
-            cacheCtx.affinity().calculateAffinity(exchId.topologyVersion(), discoEvt);
+            return cacheCtx.affinity().calculateAffinity(exchId.topologyVersion(), discoEvt);
         }
         else {
             if (log.isDebugEnabled())
@@ -413,7 +397,7 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
                     affAssignment.add(empty);
             }
 
-            cacheCtx.affinity().initializeAffinity(exchId.topologyVersion(), affAssignment);
+            return affAssignment;
         }
     }
 
@@ -564,9 +548,11 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
                             top.updateTopologyVersion(exchId, this, -1, stopping(cacheCtx.cacheId()));
 
                             if (cacheCtx.affinity().affinityTopologyVersion() == AffinityTopologyVersion.NONE) {
-                                initTopology(cacheCtx);
+                                List<List<ClusterNode>> aff = initTopology(cacheCtx);
 
-                                top.beforeExchange(this);
+                                cacheCtx.affinity().initializeAffinity(exchId.topologyVersion(), aff);
+
+                                top.beforeExchange(this, aff);
                             }
                             else
                                 cacheCtx.affinity().clientEventTopologyChange(discoEvt, exchId.topologyVersion());
@@ -607,7 +593,9 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
                         if (cacheCtx.isLocal())
                             continue;
 
-                        initTopology(cacheCtx);
+                        List<List<ClusterNode>> aff = initTopology(cacheCtx);
+
+                        cacheCtx.affinity().initializeAffinity(exchId.topologyVersion(), aff);
                     }
 
                     if (oldest != null) {
@@ -753,12 +741,23 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
 
                 AffinityTopologyVersion topVer = exchId.topologyVersion();
 
+                boolean delayedAffAssign = cctx.topology().delayedAffinityAssignment(topVer);
+
+                Map<Integer, List<List<ClusterNode>>> newAff = U.newHashMap(cctx.cacheContexts().size());
+
                 for (GridCacheContext cacheCtx : cctx.cacheContexts()) {
                     if (cacheCtx.isLocal())
                         continue;
 
                     // Must initialize topology after we get discovery event.
-                    initTopology(cacheCtx);
+                    List<List<ClusterNode>> aff = initTopology(cacheCtx);
+
+                    if (delayedAffAssign) {
+                        if (aff != null)
+                            newAff.put(cacheCtx.cacheId(), aff);
+                    }
+                    else
+                        cacheCtx.affinity().initializeAffinity(topVer, aff);
 
                     cacheCtx.preloader().onTopologyChanged(exchId.topologyVersion());
 
@@ -858,13 +857,19 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
                     assert topVer.equals(top.topologyVersion()) :
                         "Topology version is updated only in this class instances inside single ExchangeWorker thread.";
 
-                    top.beforeExchange(this);
+                    if (!stopping(cacheCtx.cacheId())) {
+                        List<List<ClusterNode>> aff = newAff.get(cacheCtx.cacheId());
+
+                        assert aff != null;
+
+                        top.beforeExchange(this, aff);
+                    }
                 }
 
                 for (GridClientPartitionTopology top : cctx.exchange().clientTopologies()) {
                     top.updateTopologyVersion(exchId, this, -1, stopping(top.cacheId()));
 
-                    top.beforeExchange(this);
+                    top.beforeExchange(this, null);
                 }
             }
             catch (IgniteInterruptedCheckedException e) {
@@ -1263,6 +1268,8 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
 
                         // If got all replies, and initialization finished, and reply has not been sent yet.
                         if (allReceived && ready.get() && replied.compareAndSet(false, true)) {
+                            cctx.topology();
+
                             spreadPartitions();
 
                             onDone(exchId.topologyVersion());
@@ -1480,10 +1487,11 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
                                             // If local node is just joining.
                                             if (exchId.nodeId().equals(cctx.localNodeId())) {
                                                 try {
+                                                    // TODO GG-10885.
                                                     for (GridCacheContext cacheCtx : cctx.cacheContexts()) {
                                                         if (!cacheCtx.isLocal())
                                                             cacheCtx.topology().beforeExchange(
-                                                                GridDhtPartitionsExchangeFuture.this);
+                                                                GridDhtPartitionsExchangeFuture.this, null);
                                                     }
                                                 }
                                                 catch (IgniteCheckedException e) {
