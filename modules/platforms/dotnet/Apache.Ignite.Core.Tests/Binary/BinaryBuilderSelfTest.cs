@@ -17,7 +17,6 @@
 
 // ReSharper disable UnassignedField.Global
 // ReSharper disable CollectionNeverUpdated.Global
-#pragma warning disable 618  // SpringConfigUrl
 namespace Apache.Ignite.Core.Tests.Binary
 {
     using System;
@@ -25,6 +24,8 @@ namespace Apache.Ignite.Core.Tests.Binary
     using System.Collections.Generic;
     using System.Linq;
     using Apache.Ignite.Core.Binary;
+    using Apache.Ignite.Core.Discovery.Tcp;
+    using Apache.Ignite.Core.Discovery.Tcp.Static;
     using Apache.Ignite.Core.Impl;
     using Apache.Ignite.Core.Impl.Binary;
     using NUnit.Framework;
@@ -89,7 +90,13 @@ namespace Apache.Ignite.Core.Tests.Binary
                 },
                 JvmClasspath = TestUtils.CreateTestClasspath(),
                 JvmOptions = TestUtils.TestJavaOptions(),
-                SpringConfigUrl = "config\\binary.xml"
+                DiscoverySpi = new TcpDiscoverySpi
+                {
+                    IpFinder = new TcpDiscoveryStaticIpFinder
+                    {
+                        Endpoints = new[] { "127.0.0.1:47500", "127.0.0.1:47501" }
+                    }
+                }
             };
 
             _grid = (Ignite) Ignition.Start(cfg);
