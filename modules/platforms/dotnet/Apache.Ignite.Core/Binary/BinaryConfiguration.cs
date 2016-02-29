@@ -34,6 +34,11 @@ namespace Apache.Ignite.Core.Binary
         /// </summary>
         public const bool DefaultCompactFooter = true;
 
+        /// <summary>
+        /// Default <see cref="DefaultKeepDeserialized"/> setting.
+        /// </summary>
+        public const bool DefaultDefaultKeepDeserialized = true;
+
         /** Footer setting. */
         private bool? _compactFooter;
 
@@ -42,7 +47,7 @@ namespace Apache.Ignite.Core.Binary
         /// </summary>
         public BinaryConfiguration()
         {
-            DefaultKeepDeserialized = true;
+            DefaultKeepDeserialized = DefaultDefaultKeepDeserialized;
         }
 
         /// <summary>
@@ -106,6 +111,7 @@ namespace Apache.Ignite.Core.Binary
         /// <summary>
         /// Default keep deserialized flag.
         /// </summary>
+        [DefaultValue(DefaultDefaultKeepDeserialized)]
         public bool DefaultKeepDeserialized { get; set; }
 
         /// <summary>
