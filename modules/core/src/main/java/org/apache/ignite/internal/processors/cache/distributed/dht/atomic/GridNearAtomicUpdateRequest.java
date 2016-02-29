@@ -81,6 +81,7 @@ public class GridNearAtomicUpdateRequest extends GridCacheMessage implements Gri
     public static final ConcurrentMap<String, Long> SENT = new ConcurrentHashMap8<>();
     public static final ConcurrentMap<String, Long> RECEIVED = new ConcurrentHashMap8<>();
     public static final ConcurrentMap<String, Long> HANDLED = new ConcurrentHashMap8<>();
+    public static final ConcurrentMap<String, Long> SUBMITTED = new ConcurrentHashMap8<>();
 
     public static final int SAMPLE_MOD = 100;
 

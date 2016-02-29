@@ -615,12 +615,12 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
         }
 
         if (totalMsgs == 0) {
-            pw.append("No recorded sample data for " + marker);
+            pw.append("No recorded sample data for " + marker + "\n");
             return;
         }
 
-        pw.append(marker + " AVG TIME: " + (totalTime / totalMsgs));
-        pw.append(marker + " SAMPLE SIZE: " + totalMsgs);
+        pw.append(marker + " AVG TIME: " + (totalTime / totalMsgs) + "\n");
+        pw.append(marker + " SAMPLE SIZE: " + totalMsgs + "\n");
     }
 
     /**
@@ -658,7 +658,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
                 while (true) {
                     try {
                         U.sleep(60000L);
-                        String filename = "timesample-" + getLocalNodeId() + "-" + System.currentTimeMillis() + ".txt";
+                        String filename = "timesample-" + getLocalNodeId() + ".txt";
                         try (PrintWriter pw = new PrintWriter(filename)) {
                             printTimeMetrics("NEAR MSG", pw, GridCacheIoManager.SAMPLING_DATA_NEAR_SND, GridCacheIoManager.SAMPLING_DATA_NEAR_RCV);
                             printTimeMetrics("NEAR FUT", pw, GridNearAtomicUpdateFuture.NEAR_FUT_START, GridNearAtomicUpdateFuture.NEAR_FUT_FINISH);
@@ -666,6 +666,8 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
                             printTimeMetrics("NEAR MSG MARSH", pw, DirectByteBufferStreamImplV2.NEAR_MSG_MARSHALLED_START, DirectByteBufferStreamImplV2.NEAR_MSG_MARSHALLED_FINISH);
                             printTimeMetrics("NEAR REQ MSG PREP SENT", pw, GridCacheIoManager.SAMPLING_DATA_NEAR_SND, GridNearAtomicUpdateRequest.SENT);
                             printTimeMetrics("NEAR REQ MSG RCVD PROC", pw, GridNearAtomicUpdateRequest.RECEIVED, GridDhtAtomicCache.NEAR_PROC_START);
+                            printTimeMetrics("NEAR REQ MSG RCVD SUBMIT", pw, GridNearAtomicUpdateRequest.RECEIVED, GridNearAtomicUpdateRequest.SUBMITTED);
+                            printTimeMetrics("NEAR REQ MSG SUBMIT PROC", pw, GridNearAtomicUpdateRequest.SUBMITTED, GridDhtAtomicCache.NEAR_PROC_START);
                             printTimeMetrics("NEAR RESP MSG PREP SENT", pw, GridDhtAtomicCache.NEAR_PROC_FINISH, GridNearAtomicUpdateResponse.SENT);
                             printTimeMetrics("NEAR RESP MSG RCVD PROC", pw, GridNearAtomicUpdateResponse.RECEIVED, GridCacheIoManager.SAMPLING_DATA_NEAR_RCV);
                             printTimeMetrics("DHT MSG", pw, GridCacheIoManager.SAMPLING_DATA_DHT_SND, GridCacheIoManager.SAMPLING_DATA_DHT_RCV);
