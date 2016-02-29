@@ -66,6 +66,7 @@ public class ZookeeperIpFinderTest extends GridCommonAbstractTest {
 
     /**
      * Before test.
+     *
      * @throws Exception
      */
     @Override public void beforeTest() throws Exception {
@@ -88,6 +89,7 @@ public class ZookeeperIpFinderTest extends GridCommonAbstractTest {
 
     /**
      * After test.
+     *
      * @throws Exception
      */
     @Override public void afterTest() throws Exception {
@@ -112,7 +114,7 @@ public class ZookeeperIpFinderTest extends GridCommonAbstractTest {
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration configuration = super.getConfiguration(gridName);
 
-        TcpDiscoverySpi tcpDisco = (TcpDiscoverySpi) configuration.getDiscoverySpi();
+        TcpDiscoverySpi tcpDisco = (TcpDiscoverySpi)configuration.getDiscoverySpi();
         TcpDiscoveryZookeeperIpFinder zkIpFinder = new TcpDiscoveryZookeeperIpFinder();
         zkIpFinder.setAllowDuplicateRegistrations(allowDuplicateRegistrations);
 
@@ -149,7 +151,7 @@ public class ZookeeperIpFinderTest extends GridCommonAbstractTest {
         startGrid(0);
 
         // set up an event listener to expect one NODE_JOINED event
-        CountDownLatch latch =  expectJoinEvents(grid(0), 1);
+        CountDownLatch latch = expectJoinEvents(grid(0), 1);
 
         // start the other node
         startGrid(1);
@@ -172,7 +174,7 @@ public class ZookeeperIpFinderTest extends GridCommonAbstractTest {
         startGrid(0);
 
         // set up an event listener to expect one NODE_JOINED event
-        CountDownLatch latch =  expectJoinEvents(grid(0), 2);
+        CountDownLatch latch = expectJoinEvents(grid(0), 2);
 
         // start the 2nd node
         startGrid(1);
@@ -203,7 +205,7 @@ public class ZookeeperIpFinderTest extends GridCommonAbstractTest {
         startGrid(0);
 
         // set up an event listener to expect one NODE_JOINED event
-        CountDownLatch latch =  expectJoinEvents(grid(0), 3);
+        CountDownLatch latch = expectJoinEvents(grid(0), 3);
 
         // start the 2nd node
         startGrid(1);
