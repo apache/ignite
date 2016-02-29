@@ -32,7 +32,7 @@ namespace Apache.Ignite.Core.Tests.Binary
     /// <summary>
     /// Binary builder self test.
     /// </summary>
-    public sealed class BinaryBuilderSelfTest
+    public class BinaryBuilderSelfTest
     {
         /** Undefined type: Empty. */
         private const string TypeEmpty = "EmptyUndefined";
@@ -94,6 +94,14 @@ namespace Apache.Ignite.Core.Tests.Binary
             _grid = (Ignite) Ignition.Start(cfg);
 
             _marsh = _grid.Marshaller;
+        }
+
+        /// <summary>
+        /// Gets the compact footer setting.
+        /// </summary>
+        protected virtual bool GetCompactFooter()
+        {
+            return true;
         }
 
         /// <summary>
@@ -1419,6 +1427,16 @@ namespace Apache.Ignite.Core.Tests.Binary
                 Assert.AreEqual((TestEnumRegistered)val, binEnum.Deserialize<TestEnumRegistered>());
             }
         }
+
+        /// <summary>
+        /// Tests the compact footer setting.
+        /// </summary>
+        [Test]
+        public void TestCompactFooterSetting()
+        {
+            Assert.AreEqual(GetCompactFooter(), _marsh.CompactFooter);
+        }
+
     }
 
     /// <summary>
