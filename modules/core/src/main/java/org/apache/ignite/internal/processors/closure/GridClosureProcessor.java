@@ -32,6 +32,8 @@ import java.util.concurrent.TimeUnit;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.binary.BinaryObjectException;
+import org.apache.ignite.binary.BinaryRawReader;
+import org.apache.ignite.binary.BinaryRawWriter;
 import org.apache.ignite.binary.BinaryReader;
 import org.apache.ignite.binary.BinaryWriter;
 import org.apache.ignite.binary.Binarylizable;
@@ -1872,13 +1874,17 @@ public class GridClosureProcessor extends GridProcessorAdapter {
         }
 
         @Override public void writeBinary(BinaryWriter writer) throws BinaryObjectException {
-            writer.rawWriter().writeObject(job);
-            writer.rawWriter().writeObject(arg);
+            BinaryRawWriter rawWriter = writer.rawWriter();
+
+            rawWriter.writeObject(job);
+            rawWriter.writeObject(arg);
         }
 
         @Override public void readBinary(BinaryReader reader) throws BinaryObjectException {
-            job = reader.rawReader().readObject();
-            arg = reader.rawReader().readObject();
+            BinaryRawReader rawReader = reader.rawReader();
+
+            job = rawReader.readObject();
+            arg = rawReader.readObject();
         }
 
         /** {@inheritDoc} */
