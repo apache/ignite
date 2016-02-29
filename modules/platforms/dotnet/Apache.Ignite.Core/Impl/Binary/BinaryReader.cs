@@ -805,10 +805,8 @@ namespace Apache.Ignite.Core.Impl.Binary
         {
             if (_curHdr.IsCompactFooter)
             {
-                // TODO: Get schema from Java!
-                //Marshaller.Ignite.GetBinary().GetBinaryType()
-                // New method like GetBinarySchema
-                throw new NotSupportedException("TODO");
+                // Get schema from Java
+                return Marshaller.Ignite.ClusterGroup.GetSchema(_curHdr.TypeId, _curHdr.SchemaId);
             }
 
             Stream.Seek(_curPos + _curHdr.SchemaOffset, SeekOrigin.Begin);
