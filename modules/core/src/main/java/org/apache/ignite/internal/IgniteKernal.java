@@ -680,7 +680,9 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
             }
         };
 
-        new Thread(runnable).start();
+        Thread thread = new Thread(runnable);
+        thread.setDaemon(true);
+        thread.start();
 
         try {
             switch (gw.getState()) {
