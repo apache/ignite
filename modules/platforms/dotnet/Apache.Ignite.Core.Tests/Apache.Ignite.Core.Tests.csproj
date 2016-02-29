@@ -61,6 +61,7 @@
     <Reference Include="System.XML" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Binary\BinarySelfTestFullFooter.cs" />
     <Compile Include="Cache\CacheConfigurationTest.cs" />
     <Compile Include="Cache\CacheDynamicStartTest.cs" />
     <Compile Include="Cache\CacheTestAsyncWrapper.cs" />
