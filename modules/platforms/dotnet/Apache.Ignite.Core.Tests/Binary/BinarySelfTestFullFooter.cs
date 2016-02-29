@@ -18,10 +18,12 @@
 namespace Apache.Ignite.Core.Tests.Binary
 {
     using Apache.Ignite.Core.Binary;
+    using NUnit.Framework;
 
     /// <summary>
     /// Binary test with full footers.
     /// </summary>
+    [TestFixture]
     public class BinarySelfTestFullFooter : BinarySelfTest
     {
         /** <inheritdoc /> */

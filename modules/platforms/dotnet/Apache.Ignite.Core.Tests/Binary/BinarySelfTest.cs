@@ -1392,6 +1392,15 @@ namespace Apache.Ignite.Core.Tests.Binary
             Assert.Throws<BinaryObjectException>(() => new Marshaller(cfg));
         }
 
+        /// <summary>
+        /// Tests the compact footer setting.
+        /// </summary>
+        [Test]
+        public void TestCompactFooterSetting()
+        {
+            Assert.AreEqual(GetBinaryConfiguration().CompactFooter, _marsh.CompactFooter);
+        }
+
         private static void CheckKeepSerialized(BinaryConfiguration cfg, bool expKeep)
         {
             if (cfg.TypeConfigurations == null)
