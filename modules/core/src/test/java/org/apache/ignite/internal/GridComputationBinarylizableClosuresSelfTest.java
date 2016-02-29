@@ -26,11 +26,9 @@ import org.apache.ignite.binary.BinaryWriter;
 import org.apache.ignite.binary.Binarylizable;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
-import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.lang.IgniteCallable;
 import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgniteRunnable;
-import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 public class GridComputationBinarylizableClosuresSelfTest extends GridCommonAbstractTest {
@@ -57,6 +55,9 @@ public class GridComputationBinarylizableClosuresSelfTest extends GridCommonAbst
         TestBinarylizableRunnable.writeCalled.set(false);
         TestBinarylizableRunnable.readCalled.set(false);
         TestBinarylizableRunnable.executed.set(false);
+
+        TestBinarylizableObject.writeCalled.set(false);
+        TestBinarylizableObject.readCalled.set(false);
     }
 
     @Override protected void afterTest() throws Exception {
@@ -71,14 +72,14 @@ public class GridComputationBinarylizableClosuresSelfTest extends GridCommonAbst
 
         final TestBinarylizableJob job = new TestBinarylizableJob();
 
-        ignite.compute(ignite.cluster().forRemotes()).apply(job, (Object)null);
+        ignite.compute(ignite.cluster().forRemotes()).apply(job, new TestBinarylizableObject());
 
-        assert GridTestUtils.waitForCondition(new GridAbsPredicate() {
-            @Override public boolean apply() {
-                return TestBinarylizableJob.writeCalled.get() && TestBinarylizableJob.readCalled.get() &&
-                    TestBinarylizableJob.executed.get();
-            }
-        }, 5000);
+        assert TestBinarylizableJob.executed.get();
+        assert TestBinarylizableJob.writeCalled.get();
+        assert TestBinarylizableJob.readCalled.get();
+
+        assert TestBinarylizableObject.writeCalled.get();
+        assert TestBinarylizableObject.readCalled.get();
     }
 
     public void testCallable() throws Exception {
@@ -89,12 +90,9 @@ public class GridComputationBinarylizableClosuresSelfTest extends GridCommonAbst
 
         ignite.compute(ignite.cluster().forRemotes()).call(callable);
 
-        assert GridTestUtils.waitForCondition(new GridAbsPredicate() {
-            @Override public boolean apply() {
-                return TestBinarylizableCallable.writeCalled.get() && TestBinarylizableCallable.readCalled.get() &&
-                    TestBinarylizableCallable.executed.get();
-            }
-        }, 5000);
+        assert TestBinarylizableCallable.executed.get();
+        assert TestBinarylizableCallable.writeCalled.get();
+        assert TestBinarylizableCallable.readCalled.get();
     }
 
     public void testRunnable() throws Exception {
@@ -105,12 +103,9 @@ public class GridComputationBinarylizableClosuresSelfTest extends GridCommonAbst
 
         ignite.compute(ignite.cluster().forRemotes()).run(runnable);
 
-        assert GridTestUtils.waitForCondition(new GridAbsPredicate() {
-            @Override public boolean apply() {
-                return TestBinarylizableRunnable.writeCalled.get() && TestBinarylizableRunnable.readCalled.get() &&
-                    TestBinarylizableRunnable.executed.get();
-            }
-        }, 5000);
+        assert TestBinarylizableRunnable.executed.get();
+        assert TestBinarylizableRunnable.writeCalled.get();
+        assert TestBinarylizableRunnable.readCalled.get();
     }
 
     private static class TestBinarylizableJob implements IgniteClosure, Binarylizable {
@@ -123,6 +118,20 @@ public class GridComputationBinarylizableClosuresSelfTest extends GridCommonAbst
             executed.set(true);
             return null;
         }
+
+        @Override public void writeBinary(BinaryWriter writer) throws BinaryObjectException {
+            writeCalled.set(true);
+        }
+
+        @Override public void readBinary(BinaryReader reader) throws BinaryObjectException {
+            readCalled.set(true);
+        }
+    }
+
+    private static class TestBinarylizableObject implements Binarylizable {
+
+        private static AtomicBoolean writeCalled = new AtomicBoolean();
+        private static AtomicBoolean readCalled = new AtomicBoolean();
 
         @Override public void writeBinary(BinaryWriter writer) throws BinaryObjectException {
             writeCalled.set(true);

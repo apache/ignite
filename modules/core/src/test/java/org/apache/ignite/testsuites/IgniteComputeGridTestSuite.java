@@ -26,7 +26,6 @@ import org.apache.ignite.internal.GridCancelOnGridStopSelfTest;
 import org.apache.ignite.internal.GridCancelUnusedJobSelfTest;
 import org.apache.ignite.internal.GridCancelledJobsMetricsSelfTest;
 import org.apache.ignite.internal.GridCollisionJobsContextSelfTest;
-import org.apache.ignite.internal.GridComputationBinarylizableClosuresSelfTest;
 import org.apache.ignite.internal.GridDeploymentMultiThreadedSelfTest;
 import org.apache.ignite.internal.GridDeploymentSelfTest;
 import org.apache.ignite.internal.GridEventStorageCheckAllEventsSelfTest;
@@ -149,7 +148,6 @@ public class IgniteComputeGridTestSuite {
         suite.addTestSuite(IgniteComputeTopologyExceptionTest.class);
         suite.addTestSuite(GridTaskFailoverAffinityRunTest.class);
         suite.addTestSuite(TaskNodeRestartTest.class);
-        suite.addTestSuite(GridComputationBinarylizableClosuresSelfTest.class);
 
         return suite;
     }
