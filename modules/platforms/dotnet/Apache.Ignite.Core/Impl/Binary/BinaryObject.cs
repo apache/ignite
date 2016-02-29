@@ -222,8 +222,15 @@ namespace Apache.Ignite.Core.Impl.Binary
 
                 if (hdr.IsCompactFooter)
                 {
-                    schema = desc.Schema.Get(hdr.SchemaId) ??
-                             _marsh.Ignite.ClusterGroup.GetSchema(hdr.TypeId, hdr.SchemaId);
+                    schema = desc.Schema.Get(hdr.SchemaId);
+
+                    if (schema == null)
+                    {
+                        schema = _marsh.Ignite.ClusterGroup.GetSchema(hdr.TypeId, hdr.SchemaId);
+
+                        if (schema != null)
+                            desc.Schema.Add(hdr.SchemaId, schema);
+                    }
 
                     if (schema == null)
                         throw new BinaryObjectException("Cannot find schema for object with compact footer [" +
