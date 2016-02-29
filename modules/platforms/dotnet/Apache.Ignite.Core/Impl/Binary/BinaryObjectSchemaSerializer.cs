@@ -23,7 +23,6 @@ namespace Apache.Ignite.Core.Impl.Binary
     using System.IO;
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Impl.Binary.IO;
-    using Apache.Ignite.Core.Impl.Cluster;
 
     /// <summary>
     /// Schema reader/writer.
@@ -55,16 +54,18 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// <param name="position">The position.</param>
         /// <param name="hdr">The header.</param>
         /// <param name="schema">The schema.</param>
-        /// <param name="cluster">The cluster.</param>
-        /// <returns>Schema.</returns>
+        /// <param name="marsh">The marshaller.</param>
+        /// <returns>
+        /// Schema.
+        /// </returns>
         public static BinaryObjectSchemaField[] ReadSchema(IBinaryStream stream, int position, BinaryObjectHeader hdr, 
-            BinaryObjectSchema schema, ClusterGroupImpl cluster)
+            BinaryObjectSchema schema, Marshaller marsh)
         {
             Debug.Assert(stream != null);
             Debug.Assert(schema != null);
-            Debug.Assert(cluster != null);
+            Debug.Assert(marsh != null);
 
-            return ReadSchema(stream, position, hdr, () => GetFieldIds(hdr, schema, cluster));
+            return ReadSchema(stream, position, hdr, () => GetFieldIds(hdr, schema, marsh));
         }
 
         /// <summary>
@@ -239,13 +240,14 @@ namespace Apache.Ignite.Core.Impl.Binary
             }
         }
 
-        private static int[] GetFieldIds(BinaryObjectHeader hdr, BinaryObjectSchema schema, ClusterGroupImpl cluster)
+        private static int[] GetFieldIds(BinaryObjectHeader hdr, BinaryObjectSchema schema, Marshaller marsh)
         {
             var fieldIds = schema.Get(hdr.SchemaId);
 
             if (fieldIds == null)
             {
-                fieldIds = cluster.GetSchema(hdr.TypeId, hdr.SchemaId);
+                if (marsh.Ignite != null)
+                    fieldIds = marsh.Ignite.ClusterGroup.GetSchema(hdr.TypeId, hdr.SchemaId);
 
                 if (fieldIds == null)
                     throw new BinaryObjectException("Cannot find schema for object with compact footer [" +
