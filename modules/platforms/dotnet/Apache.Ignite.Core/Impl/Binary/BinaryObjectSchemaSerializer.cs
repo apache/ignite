@@ -31,21 +31,12 @@ namespace Apache.Ignite.Core.Impl.Binary
     internal static class BinaryObjectSchemaSerializer
     {
         /// <summary>
-        /// Reads the schema as dictionary according to this header data.
+        /// Converts schema fields to dictionary.
         /// </summary>
-        /// <param name="stream">The stream.</param>
-        /// <param name="offset">The position.</param>
-        /// <param name="hdr">The header.</param>
-        /// <param name="schema">The schema.</param>
-        /// <param name="cluster">The cluster.</param>
-        /// <returns>
-        /// Schema as a dictionary.
-        /// </returns>
-        public static Dictionary<int, int> ReadSchemaAsDictionary(IBinaryStream stream, int offset, 
-            BinaryObjectHeader hdr, BinaryObjectSchema schema, ClusterGroupImpl cluster)
+        /// <param name="fields">The fields.</param>
+        /// <returns>Fields as dictionary.</returns>
+        public static Dictionary<int, int> ToDictionary(this BinaryObjectSchemaField[] fields)
         {
-            var fields = ReadSchema(stream, offset, hdr, schema, cluster);
-
             if (fields == null)
                 return null;
 
@@ -70,6 +61,27 @@ namespace Apache.Ignite.Core.Impl.Binary
             BinaryObjectSchema schema, ClusterGroupImpl cluster)
         {
             Debug.Assert(stream != null);
+            Debug.Assert(schema != null);
+            Debug.Assert(cluster != null);
+
+            return ReadSchema(stream, position, hdr, () => GetFieldIds(hdr, schema, cluster));
+        }
+
+        /// <summary>
+        /// Reads the schema according to this header data.
+        /// </summary>
+        /// <param name="stream">The stream.</param>
+        /// <param name="position">The position.</param>
+        /// <param name="hdr">The header.</param>
+        /// <param name="fieldIdsFunc">The field ids function.</param>
+        /// <returns>
+        /// Schema.
+        /// </returns>
+        public static BinaryObjectSchemaField[] ReadSchema(IBinaryStream stream, int position, BinaryObjectHeader hdr, 
+            Func<int[]> fieldIdsFunc)
+        {
+            Debug.Assert(stream != null);
+            Debug.Assert(fieldIdsFunc != null);
 
             var schemaSize = hdr.SchemaFieldCount;
 
@@ -84,7 +96,7 @@ namespace Apache.Ignite.Core.Impl.Binary
 
             if (hdr.IsCompactFooter)
             {
-                var fieldIds = GetFieldIds(hdr, schema, cluster);
+                var fieldIds = fieldIdsFunc();
 
                 Debug.Assert(fieldIds.Length == schemaSize);
 

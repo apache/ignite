@@ -218,8 +218,8 @@ namespace Apache.Ignite.Core.Impl.Binary
             {
                 var hdr = BinaryObjectHeader.Read(stream, _offset);
 
-                _fields = BinaryObjectSchemaSerializer.ReadSchemaAsDictionary(stream, _offset, hdr, desc.Schema,
-                    _marsh.Ignite.ClusterGroup) ?? EmptyFields;
+                _fields = BinaryObjectSchemaSerializer.ReadSchema(stream, _offset, hdr, desc.Schema,
+                    _marsh.Ignite.ClusterGroup).ToDictionary() ?? EmptyFields;
             }
         }
 

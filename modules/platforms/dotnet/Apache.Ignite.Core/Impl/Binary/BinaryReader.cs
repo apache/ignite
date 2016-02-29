@@ -950,8 +950,8 @@ namespace Apache.Ignite.Core.Impl.Binary
 
             if (_curSchema == null || actionId >= _curSchema.Length || fieldId != _curSchema[actionId])
             {
-                _curSchemaMap = _curSchemaMap ?? _curHdr.ReadSchemaAsDictionary(Stream, _curPos, _curSchema);
-                //_curSchemaMap = _curSchemaMap ?? BinaryObjectSchemaSerializer.ReadSchemaAsDictionary(Stream, _curPos, _curHdr, );
+                _curSchemaMap = _curSchemaMap ?? BinaryObjectSchemaSerializer.ReadSchema(Stream, _curPos, _curHdr,
+                                    () => _curSchema).ToDictionary();
 
                 _curSchema = null; // read order is different, ignore schema for future reads
 
