@@ -552,16 +552,16 @@ import java.util.Map;
 
         writeDiscoveryConfiguration(w, cfg.getDiscoverySpi());
 
-        w.writeString(cfg.getIgniteHome());
-
-        w.writeLong(ManagementFactory.getMemoryMXBean().getHeapMemoryUsage().getInit());
-        w.writeLong(ManagementFactory.getMemoryMXBean().getHeapMemoryUsage().getMax());
-
         BinaryConfiguration bc = cfg.getBinaryConfiguration();
         w.writeBoolean(bc != null);
 
         if (bc != null)
             w.writeBoolean(bc.isCompactFooter());
+
+        w.writeString(cfg.getIgniteHome());
+
+        w.writeLong(ManagementFactory.getMemoryMXBean().getHeapMemoryUsage().getInit());
+        w.writeLong(ManagementFactory.getMemoryMXBean().getHeapMemoryUsage().getMax());
     }
 
     /**
