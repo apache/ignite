@@ -103,6 +103,9 @@ public class GridResourceProcessor extends GridProcessorAdapter {
     /** */
     private final GridResourceIoc ioc = new GridResourceIoc();
 
+    /** */
+    private final GridResourceInjector[] injectorByAnnotation;
+
     /**
      * Creates resources processor.
      *
@@ -114,6 +117,16 @@ public class GridResourceProcessor extends GridProcessorAdapter {
         gridInjector = new GridResourceBasicInjector<>(ctx.grid());
         logInjector = new GridResourceLoggerInjector(ctx.config().getGridLogger());
         srvcInjector = new GridResourceServiceInjector(ctx.grid());
+
+        injectorByAnnotation = new GridResourceInjector[GridResourceIoc.ResourceAnnotation.values().length];
+
+        injectorByAnnotation[GridResourceIoc.ResourceAnnotation.SERVICE.ordinal()] = srvcInjector;
+        injectorByAnnotation[GridResourceIoc.ResourceAnnotation.LOGGER.ordinal()] = logInjector;
+        injectorByAnnotation[GridResourceIoc.ResourceAnnotation.IGNITE_INSTANCE.ordinal()] = gridInjector;
+
+        injectorByAnnotation[GridResourceIoc.ResourceAnnotation.SPRING.ordinal()] = springBeanInjector;
+        injectorByAnnotation[GridResourceIoc.ResourceAnnotation.SPRING_APPLICATION_CONTEXT.ordinal()] =
+                            springCtxInjector;
     }
 
     /** {@inheritDoc} */
@@ -258,6 +271,43 @@ public class GridResourceProcessor extends GridProcessorAdapter {
         ioc.inject(obj, IgniteInstanceResource.class, gridInjector, null, null);
         ioc.inject(obj, LoggerResource.class, logInjector, null, null);
         ioc.inject(obj, ServiceResource.class, srvcInjector, null, null);
+    }
+
+    /**
+     * @param obj Object to inject.
+     * @throws IgniteCheckedException If failed to inject.
+     */
+    public void inject(Object obj, GridResourceIoc.AnnotationSet annSet, Object... params)
+        throws IgniteCheckedException
+    {
+        assert obj != null;
+
+        if (log.isDebugEnabled())
+            log.debug("Injecting resources: " + obj);
+
+        // Unwrap Proxy object.
+        obj = unwrapTarget(obj);
+
+        GridResourceIoc.ClassDescriptor clsDesc = ioc.descriptor(null, obj.getClass());
+
+        assert clsDesc != null;
+
+        if (!clsDesc.isAnnotated(annSet))
+            return;
+
+        int i = 0;
+        for (GridResourceIoc.ResourceAnnotation ann : annSet.annotations) {
+            if (clsDesc.isAnnotated(ann)) {
+                GridResourceInjector injector = ann == GridResourceIoc.ResourceAnnotation.CACHE_NAME ?
+                    new GridResourceBasicInjector<>(params[i]) :
+                    injectorByAnnotation[ann.ordinal()];
+
+                if (injector != null)
+                    clsDesc.inject(obj, ann, injector);
+
+                i++;
+            }
+        }
     }
 
     /**

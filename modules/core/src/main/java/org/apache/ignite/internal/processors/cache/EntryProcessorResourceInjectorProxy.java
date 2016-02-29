@@ -58,9 +58,7 @@ public class EntryProcessorResourceInjectorProxy<K, V, T> implements EntryProces
             GridResourceProcessor rsrcProcessor = cctx.kernalContext().resource();
 
             try {
-                rsrcProcessor.injectGeneric(delegate);
-
-                rsrcProcessor.injectCacheName(delegate, cctx.name());
+                rsrcProcessor.inject(delegate, GridResourceIoc.AnnotationSet.ENTRY_PROCESSOR, cctx.name());
             }
             catch (IgniteCheckedException e) {
                 throw new IgniteException(e);

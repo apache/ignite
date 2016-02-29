@@ -107,7 +107,7 @@ public class GridResourceIoc {
     /**
      * @param cls Class.
      */
-    private ClassDescriptor descriptor(@Nullable GridDeployment dep, Class<?> cls) {
+    ClassDescriptor descriptor(@Nullable GridDeployment dep, Class<?> cls) {
         ClassDescriptor res = clsDescs.get(cls);
 
         if (res == null) {
@@ -147,48 +147,7 @@ public class GridResourceIoc {
 
         T2<GridResourceField[], GridResourceMethod[]> annotatedMembers = descr.annotatedMembers(annCls);
 
-        if (descr.recursiveFields().length == 0 && annotatedMembers == null)
-            return false;
-
-        if (checkedObjs == null && descr.recursiveFields().length > 0)
-            checkedObjs = new GridLeanIdentitySet<>();
-
-        if (checkedObjs != null && !checkedObjs.add(target))
-            return false;
-
-        boolean injected = false;
-
-        for (Field field : descr.recursiveFields()) {
-            try {
-                Object obj = field.get(target);
-
-                if (obj != null) {
-                    assert checkedObjs != null;
-
-                    injected |= injectInternal(obj, annCls, injector, dep, depCls, checkedObjs);
-                }
-            }
-            catch (IllegalAccessException e) {
-                throw new IgniteCheckedException("Failed to inject resource [field=" + field.getName() +
-                    ", target=" + target + ']', e);
-            }
-        }
-
-        if (annotatedMembers != null) {
-            for (GridResourceField field : annotatedMembers.get1()) {
-                injector.inject(field, target, depCls, dep);
-
-                injected = true;
-            }
-
-            for (GridResourceMethod mtd : annotatedMembers.get2()) {
-                injector.inject(mtd, target, depCls, dep);
-
-                injected = true;
-            }
-        }
-
-        return injected;
+        return descr.injectInternal(target, annCls, annotatedMembers, injector, dep, depCls, checkedObjs);
     }
 
     /**
@@ -282,7 +241,7 @@ public class GridResourceIoc {
     /**
      *
      */
-    private static class ClassDescriptor {
+    class ClassDescriptor {
         /** */
         private final Field[] recursiveFields;
 
@@ -290,11 +249,16 @@ public class GridResourceIoc {
         private final Map<Class<? extends Annotation>, T2<GridResourceField[], GridResourceMethod[]>> annMap;
 
         /** */
-        private final boolean containsAnnSets[];
+        private final int[] containsAnnSets;
+
+        /** */
+        private final T2<GridResourceField[], GridResourceMethod[]>[] annArr;
+
 
         /**
          * @param cls Class.
          */
+        @SuppressWarnings("unchecked")
         ClassDescriptor(Class<?> cls) {
             Map<Class<? extends Annotation>, T2<List<GridResourceField>, List<GridResourceMethod>>> annMap
                 = new HashMap<>();
@@ -356,28 +320,37 @@ public class GridResourceIoc {
             for (Map.Entry<Class<? extends Annotation>, T2<List<GridResourceField>, List<GridResourceMethod>>> entry
                 : annMap.entrySet()) {
                 GridResourceField[] fields = GridResourceField.toArray(entry.getValue().get1());
+
                 GridResourceMethod[] mtds = GridResourceMethod.toArray(entry.getValue().get2());
 
                 this.annMap.put(entry.getKey(), new T2<>(fields, mtds));
             }
 
+            T2<GridResourceField[], GridResourceMethod[]>[] annArr = null;
             if (annMap.isEmpty())
                 this.containsAnnSets = null;
             else {
                 AnnotationSet[] sets = AnnotationSet.values();
 
-                this.containsAnnSets = new boolean[sets.length];
+                this.containsAnnSets = new int[sets.length];
 
                 for (int i = 0; i < sets.length; i++) {
-                    for (Class<? extends Annotation> ann : sets[i].annotations) {
-                        if (annotatedMembers(ann) != null) {
-                            this.containsAnnSets[i] = true;
-
-                            break;
+                    int res = 0, mask = 1;
+                    for (ResourceAnnotation ann : sets[i].annotations) {
+                        T2<GridResourceField[], GridResourceMethod[]> member = annotatedMembers(ann.clazz);
+                        if (member != null) {
+                            if (annArr == null)
+                                annArr = new T2[ResourceAnnotation.values().length];
+                            annArr[ann.ordinal()] = member;
+                            res |= mask;
                         }
+                        mask <<= 1;
                     }
+
+                    this.containsAnnSets[i] = res;
                 }
             }
+            this.annArr = annArr;
         }
 
         /**
@@ -396,10 +369,134 @@ public class GridResourceIoc {
 
         /**
          * @param set Set.
-         * @return if annotation is presented, corresponding bit is set.
+         * @return {@code True} if any annotation is presented.
          */
         boolean isAnnotated(AnnotationSet set) {
-            return recursiveFields.length > 0 || (this.containsAnnSets != null && this.containsAnnSets[set.ordinal()]);
+            return recursiveFields.length > 0 || (containsAnnSets != null && containsAnnSets[set.ordinal()] != 0);
+        }
+
+        /**
+         * @param ann  Annotation.
+         * @return {@code True} if annotation is presented.
+         */
+        boolean isAnnotated(ResourceAnnotation ann) {
+            return recursiveFields.length > 0 || (annArr != null && annArr[ann.ordinal()] != null);
+        }
+
+        /**
+         * @param target Target object.
+         * @param annotatedMembers Setter annotation.
+         * @param injector Resource to inject.
+         * @param dep Deployment.
+         * @param depCls Deployment class.
+         * @param checkedObjs Set of already inspected objects to avoid indefinite recursion.
+         * @throws IgniteCheckedException Thrown in case of any errors during injection.
+         * @return {@code True} if resource was injected.
+         */
+        boolean injectInternal(Object target,
+            Class<? extends Annotation> annCls,
+            T2<GridResourceField[], GridResourceMethod[]> annotatedMembers,
+            GridResourceInjector injector,
+            @Nullable GridDeployment dep,
+            @Nullable Class<?> depCls,
+            @Nullable Set<Object> checkedObjs)
+            throws IgniteCheckedException
+        {
+            if (recursiveFields.length == 0 && annotatedMembers == null)
+                return false;
+
+            if (checkedObjs == null && recursiveFields.length > 0)
+                checkedObjs = new GridLeanIdentitySet<>();
+
+            if (checkedObjs != null && !checkedObjs.add(target))
+                return false;
+
+            boolean injected = false;
+
+            for (Field field : recursiveFields) {
+                try {
+                    Object obj = field.get(target);
+
+                    if (obj != null) {
+                        assert checkedObjs != null;
+
+                        ClassDescriptor desc = descriptor(dep, obj.getClass());
+                        injected |= desc.injectInternal(obj, annCls, desc.annotatedMembers(annCls),
+                                                                    injector, dep, depCls, checkedObjs);
+                    }
+                }
+                catch (IllegalAccessException e) {
+                    throw new IgniteCheckedException("Failed to inject resource [field=" + field.getName() +
+                        ", target=" + target + ']', e);
+                }
+            }
+
+            if (annotatedMembers != null) {
+                for (GridResourceField field : annotatedMembers.get1()) {
+                    injector.inject(field, target, depCls, dep);
+
+                    injected = true;
+                }
+
+                for (GridResourceMethod mtd : annotatedMembers.get2()) {
+                    injector.inject(mtd, target, depCls, dep);
+
+                    injected = true;
+                }
+            }
+
+            return injected;
+        }
+
+        /**
+         * @param target Target object.
+         * @param ann Setter annotation.
+         * @param injector Resource to inject.
+         * @throws IgniteCheckedException Thrown in case of any errors during injection.
+         * @return {@code True} if resource was injected.
+         */
+        public boolean inject(Object target,
+            ResourceAnnotation ann,
+            GridResourceInjector injector)
+            throws IgniteCheckedException
+        {
+            return annArr != null && annArr[ann.ordinal()] != null &&
+                    injectInternal(target, ann.clazz, annArr[ann.ordinal()], injector, null, null, null);
+        }
+
+    }
+
+    /**
+     *
+     */
+    public enum ResourceAnnotation {
+        /** */
+        CACHE_NAME(CacheNameResource.class),
+
+        /** */
+        SPRING_APPLICATION_CONTEXT(SpringApplicationContextResource.class),
+
+        /** */
+        SPRING(SpringResource.class),
+
+        /** */
+        IGNITE_INSTANCE(IgniteInstanceResource.class),
+
+        /** */
+        LOGGER(LoggerResource.class),
+
+        /** */
+        SERVICE(ServiceResource.class);
+
+
+        /** */
+        public final Class<? extends Annotation> clazz;
+
+        /**
+         * @param clazz annotation class.
+         */
+        ResourceAnnotation(Class<? extends Annotation> clazz) {
+            this.clazz = clazz;
         }
     }
 
@@ -409,23 +506,23 @@ public class GridResourceIoc {
     public enum AnnotationSet {
 
         /** */
-        ENTRY_PROCESSOR(new Class[] {
-            CacheNameResource.class,
+        ENTRY_PROCESSOR(new ResourceAnnotation[] {
+            ResourceAnnotation.CACHE_NAME,
 
-            SpringApplicationContextResource.class,
-            SpringResource.class,
-            IgniteInstanceResource.class,
-            LoggerResource.class,
-            ServiceResource.class
+            ResourceAnnotation.SPRING_APPLICATION_CONTEXT,
+            ResourceAnnotation.SPRING,
+            ResourceAnnotation.IGNITE_INSTANCE,
+            ResourceAnnotation.LOGGER,
+            ResourceAnnotation.SERVICE
         });
 
         /** Annotations. */
-        public final Class<? extends Annotation>[] annotations;
+        public final ResourceAnnotation[] annotations;
 
         /**
          * @param annotations Annotations.
          */
-        AnnotationSet(Class<? extends Annotation>[] annotations) {
+        AnnotationSet(ResourceAnnotation[] annotations) {
             this.annotations = annotations;
         }
     }

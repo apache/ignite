@@ -5549,6 +5549,8 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
                 assert wait > 0 : "Timeout expired";
 
                 evt = lsnr.evts.poll(wait, TimeUnit.MILLISECONDS);
+
+                log.info("Received: " + evt);
             } while (evt == null || !(Objects.equals(key, evt.key()) &&
                     Objects.equals(ResourceInjectionEntryProcessor.class.getName(), evt.closureClassName())));
 
