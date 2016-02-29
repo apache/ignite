@@ -249,6 +249,7 @@ namespace Apache.Ignite.Core.Impl.Binary
 
             if (IsCompactFooter)
             {
+                Debug.Assert(fieldIds != null);
                 Debug.Assert(fieldIds.Length == schemaSize);
 
                 if (offsetSize == 1)

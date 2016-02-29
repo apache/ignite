@@ -218,9 +218,19 @@ namespace Apache.Ignite.Core.Impl.Binary
             {
                 var hdr = BinaryObjectHeader.Read(stream, _offset);
 
-                //var schema = desc.Schema.Get(hdr.SchemaId) ?? 
+                int[] schema = null;
 
-                _fields = hdr.ReadSchemaAsDictionary(stream, _offset, desc.Schema.Get(hdr.SchemaId)) ?? EmptyFields;
+                if (hdr.IsCompactFooter)
+                {
+                    schema = desc.Schema.Get(hdr.SchemaId) ??
+                             _marsh.Ignite.ClusterGroup.GetSchema(hdr.TypeId, hdr.SchemaId);
+
+                    if (schema == null)
+                        throw new BinaryObjectException("Cannot find schema for object with compact footer [" +
+                            "typeId=" + hdr.TypeId + ", schemaId=" + hdr.SchemaId + ']');
+                }
+
+                _fields = hdr.ReadSchemaAsDictionary(stream, _offset, schema) ?? EmptyFields;
             }
         }
 
