@@ -284,6 +284,7 @@ public class GridCacheUtils {
         }
     };
 
+    /** NoopSwapSpaceSpi used attribute. */
     private static final String NOOP_SWAP_SPACE_SPI_ATTR_NAME = U.spiAttribute(new NoopSwapSpaceSpi(),
         IgniteNodeAttributes.ATTR_SPI_CLASS);
 

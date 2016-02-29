@@ -17,8 +17,6 @@
 
 package org.apache.ignite.spi.swapspace;
 
-
-import java.io.StringWriter;
 import java.util.concurrent.Callable;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
@@ -28,29 +26,31 @@ import org.apache.ignite.spi.swapspace.file.FileSwapSpaceSpi;
 import org.apache.ignite.spi.swapspace.noop.NoopSwapSpaceSpi;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.apache.ignite.testframework.junits.common.GridCommonTest;
-import org.apache.log4j.Layout;
-import org.apache.log4j.Logger;
-import org.apache.log4j.SimpleLayout;
-import org.apache.log4j.WriterAppender;
 
 /**
- * Check that all server nodes in grid have configured the same swap space spi.
- * Check that client nodes could have any swap space spi.
+ * Check that all server nodes in grid have configured the same swap space spi. Check that client nodes could have any
+ * swap space spi.
  */
 @SuppressWarnings({"ProhibitedExceptionDeclared"})
 public class GridSwapSpaceSpiConsistencySelfTest extends GridCommonAbstractTest {
-
+    /** */
     protected static final String GRID_WITHOUT_SWAP_SPACE = "grid-without-swap-space";
 
+    /** */
     protected static final String GRID_WITH_SWAP_SPACE = "grid-with-swap-space";
 
+    /** */
     protected static final String GRID_CLIENT_WITHOUT_SWAP_SPACE = "grid-client-without-swap-space";
 
+    /** */
     protected static final String GRID_CLIENT_WITH_SWAP_SPACE = "grid-client-with-swap-space";
 
+    /** */
     protected static final String CACHE_NAME = "TestCache";
 
+    /**
+     *
+     */
     public GridSwapSpaceSpiConsistencySelfTest() {
         super(false);
     }
@@ -79,6 +79,7 @@ public class GridSwapSpaceSpiConsistencySelfTest extends GridCommonAbstractTest 
         return cfg;
     }
 
+    /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
         stopAllGrids();
     }
@@ -115,15 +116,15 @@ public class GridSwapSpaceSpiConsistencySelfTest extends GridCommonAbstractTest 
     public void testClientNodeAnySwapSpaceSpi() throws Exception {
         startGrid(GRID_WITHOUT_SWAP_SPACE);
 
-        Ignite gclnt1 = startGrid(GRID_CLIENT_WITH_SWAP_SPACE);
+        Ignite client1 = startGrid(GRID_CLIENT_WITH_SWAP_SPACE);
 
-        Ignite gclnt2 = startGrid(GRID_CLIENT_WITHOUT_SWAP_SPACE);
+        Ignite client2 = startGrid(GRID_CLIENT_WITHOUT_SWAP_SPACE);
 
-        IgniteCache<Integer,String> cache1 = gclnt1.createCache("TestCache");
+        IgniteCache<Integer, String> cache1 = client1.createCache("TestCache");
 
         cache1.put(1, "one");
 
-        IgniteCache<Integer,String> cache2 = gclnt2.getOrCreateCache("TestCache");
+        IgniteCache<Integer, String> cache2 = client2.getOrCreateCache("TestCache");
 
         assert cache2.get(1).equals("one");
     }
