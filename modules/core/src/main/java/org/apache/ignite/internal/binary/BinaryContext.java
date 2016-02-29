@@ -55,6 +55,7 @@ import org.apache.ignite.binary.BinaryReflectiveSerializer;
 import org.apache.ignite.binary.BinarySerializer;
 import org.apache.ignite.binary.BinaryType;
 import org.apache.ignite.binary.BinaryTypeConfiguration;
+import org.apache.ignite.binary.Binarylizable;
 import org.apache.ignite.cache.CacheKeyConfiguration;
 import org.apache.ignite.cache.affinity.AffinityKey;
 import org.apache.ignite.cache.affinity.AffinityKeyMapped;
@@ -586,7 +587,7 @@ public class BinaryContext {
 
         String clsName = cls.getName();
 
-        if (marshCtx.isSystemType(clsName)) {
+        if (marshCtx.isSystemType(clsName) && !Binarylizable.class.isAssignableFrom(cls)) {
             desc = new BinaryClassDescriptor(this,
                 cls,
                 false,
