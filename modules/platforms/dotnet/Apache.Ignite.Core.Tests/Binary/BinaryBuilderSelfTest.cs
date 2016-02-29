@@ -17,6 +17,7 @@
 
 // ReSharper disable UnassignedField.Global
 // ReSharper disable CollectionNeverUpdated.Global
+#pragma warning disable 618  // SpringConfigUrl
 namespace Apache.Ignite.Core.Tests.Binary
 {
     using System;
@@ -31,7 +32,7 @@ namespace Apache.Ignite.Core.Tests.Binary
     /// <summary>
     /// Binary builder self test.
     /// </summary>
-    public class BinaryBuilderSelfTest
+    public sealed class BinaryBuilderSelfTest
     {
         /** Undefined type: Empty. */
         private const string TypeEmpty = "EmptyUndefined";
@@ -99,7 +100,7 @@ namespace Apache.Ignite.Core.Tests.Binary
         /// Tear down routine.
         /// </summary>
         [TestFixtureTearDown]
-        public virtual void TearDown()
+        public void TearDown()
         {
             if (_grid != null)
                 Ignition.Stop(_grid.Name, true);
