@@ -90,6 +90,14 @@ export default [
             ]
         };
 
+        const resourcesFolder = {
+            type: 'folder',
+            name: 'resources',
+            children: [
+                { type: 'file', name: 'secret.properties' }
+            ]
+        };
+
         const javaFolder = {
             type: 'folder',
             name: 'java',
@@ -108,6 +116,12 @@ export default [
         const clnCfg = { type: 'file', name: 'client.xml' };
 
         const srvCfg = { type: 'file', name: 'server.xml' };
+
+        const mainFolder = {
+            type: 'folder',
+            name: 'main',
+            children: [javaFolder]
+        };
 
         const projectStructureRoot = {
             type: 'folder',
@@ -128,13 +142,7 @@ export default [
                 {
                     type: 'folder',
                     name: 'src',
-                    children: [
-                        {
-                            type: 'folder',
-                            name: 'main',
-                            children: [javaFolder]
-                        }
-                    ]
+                    children: [mainFolder]
                 },
                 { type: 'file', name: '.dockerignore' },
                 { type: 'file', name: 'Dockerfile' },
@@ -205,7 +213,11 @@ export default [
 
             sessionStorage.summarySelectedId = $scope.clusters.indexOf(cluster);
 
+            mainFolder.children = [javaFolder];
             javaFolder.children = [javaConfigFolder, javaStartupFolder];
+
+            if ($generatorCommon.secretPropertiesNeeded(cluster))
+                mainFolder.children.push(resourcesFolder);
 
             if ($generatorCommon.dataForExampleConfigured(cluster))
                 javaFolder.children.push(exampleFolder);
