@@ -55,7 +55,6 @@ import org.apache.ignite.binary.BinaryReflectiveSerializer;
 import org.apache.ignite.binary.BinarySerializer;
 import org.apache.ignite.binary.BinaryType;
 import org.apache.ignite.binary.BinaryTypeConfiguration;
-import org.apache.ignite.binary.Binarylizable;
 import org.apache.ignite.cache.CacheKeyConfiguration;
 import org.apache.ignite.cache.affinity.AffinityKey;
 import org.apache.ignite.cache.affinity.AffinityKeyMapped;
@@ -79,6 +78,7 @@ import org.jsr166.ConcurrentHashMap8;
  * Binary context.
  */
 public class BinaryContext {
+
     /** */
     private static final ClassLoader dfltLdr = U.gridClassLoader();
 
@@ -89,6 +89,21 @@ public class BinaryContext {
     /** */
     static final BinaryInternalMapper SIMPLE_NAME_LOWER_CASE_MAPPER =
         new BinaryInternalMapper(new BinaryBasicNameMapper(true), new BinaryBasicIdMapper(true), false);
+
+    private static final Set<String> BINARYLIZABLE_SYSTEM_CLASSES;
+
+    static {
+        Set<String> classes = new HashSet<>();
+
+        classes.add("org.apache.ignite.internal.processors.closure.GridClosureProcessor$C1V2");
+        classes.add("org.apache.ignite.internal.processors.closure.GridClosureProcessor$C1MLAV2");
+        classes.add("org.apache.ignite.internal.processors.closure.GridClosureProcessor$C2V2");
+        classes.add("org.apache.ignite.internal.processors.closure.GridClosureProcessor$C2MLAV2");
+        classes.add("org.apache.ignite.internal.processors.closure.GridClosureProcessor$C4V2");
+        classes.add("org.apache.ignite.internal.processors.closure.GridClosureProcessor$C4MLAV2");
+
+        BINARYLIZABLE_SYSTEM_CLASSES = Collections.unmodifiableSet(classes);
+    }
 
     /** */
     private final ConcurrentMap<Class<?>, BinaryClassDescriptor> descByCls = new ConcurrentHashMap8<>();
@@ -256,7 +271,7 @@ public class BinaryContext {
     /**
      * @return Ignite configuration.
      */
-    public IgniteConfiguration configuration(){
+    public IgniteConfiguration configuration() {
         return igniteCfg;
     }
 
@@ -587,7 +602,7 @@ public class BinaryContext {
 
         String clsName = cls.getName();
 
-        if (marshCtx.isSystemType(clsName) && !Binarylizable.class.isAssignableFrom(cls)) {
+        if (marshCtx.isSystemType(clsName) && !BINARYLIZABLE_SYSTEM_CLASSES.contains(clsName)) {
             desc = new BinaryClassDescriptor(this,
                 cls,
                 false,
@@ -776,7 +791,7 @@ public class BinaryContext {
 
         if (prevMap != null && !mapper.equals(prevMap))
             throw new IgniteException("Different mappers [clsName=" + clsName + ", newMapper=" + mapper
-            + ", prevMap=" + prevMap + "]");
+                + ", prevMap=" + prevMap + "]");
 
         prevMap = typeId2Mapper.putIfAbsent(mapper.typeId(clsName), mapper);
 
