@@ -218,7 +218,9 @@ namespace Apache.Ignite.Core.Impl.Binary
             {
                 var hdr = BinaryObjectHeader.Read(stream, _offset);
 
-                _fields = hdr.ReadSchemaAsDictionary(stream, _offset, desc.Schema) ?? EmptyFields;
+                //var schema = desc.Schema.Get(hdr.SchemaId) ?? 
+
+                _fields = hdr.ReadSchemaAsDictionary(stream, _offset, desc.Schema.Get(hdr.SchemaId)) ?? EmptyFields;
             }
         }
 

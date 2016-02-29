@@ -22,7 +22,6 @@ namespace Apache.Ignite.Core.Impl.Binary
     using System.Diagnostics;
     using System.IO;
     using System.Runtime.InteropServices;
-    using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Impl.Binary.IO;
 
     /// <summary>
@@ -229,28 +228,6 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// </summary>
         /// <param name="stream">The stream.</param>
         /// <param name="position">The position.</param>
-        /// <param name="schema">The schema.</param>
-        /// <returns>
-        /// Schema as a dictionary.
-        /// </returns>
-        public Dictionary<int, int> ReadSchemaAsDictionary(IBinaryStream stream, int position,
-            BinaryObjectSchema schema)
-        {
-            // Footer contains offsets only, need to combine them with field ids from the descriptor
-            var fieldIds = schema.Get(SchemaId);
-
-            if (fieldIds == null)
-                throw new BinaryObjectException("Cannot find schema for object with compact footer [" +
-                                                "typeId=" + TypeId + ", schemaId=" + SchemaId + ']');
-
-            return ReadSchemaAsDictionary(stream, position, fieldIds);
-        }
-
-        /// <summary>
-        /// Reads the schema as dictionary according to this header data.
-        /// </summary>
-        /// <param name="stream">The stream.</param>
-        /// <param name="position">The position.</param>
         /// <param name="fieldIds">The schema.</param>
         /// <returns>
         /// Schema as a dictionary.
@@ -258,7 +235,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         public Dictionary<int, int> ReadSchemaAsDictionary(IBinaryStream stream, int position, int[] fieldIds)
         {
             Debug.Assert(stream != null);
-            Debug.Assert(fieldIds != null);
+            Debug.Assert(fieldIds != null);  // TODO: Refactor into two methods?
 
             var schemaSize = SchemaFieldCount;
 
