@@ -65,6 +65,7 @@ namespace Apache.Ignite.Core.Impl.Binary
             if (cfg == null)
                 cfg = new BinaryConfiguration();
 
+            // TODO: Can we introduce an environment variable and run whole suite in specific mode?
             CompactFooter = cfg.CompactFooter;
 
             if (cfg.TypeConfigurations == null)
