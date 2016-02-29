@@ -16,6 +16,8 @@
  */
 
 // ReSharper disable SpecifyACultureInStringConversionExplicitly
+// ReSharper disable UnusedAutoPropertyAccessor.Global
+#pragma warning disable 618  // SpringConfigUrl
 namespace Apache.Ignite.Core.Tests.Compute
 {
     using System;
@@ -27,6 +29,7 @@ namespace Apache.Ignite.Core.Tests.Compute
     using Apache.Ignite.Core.Cluster;
     using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Compute;
+    using Apache.Ignite.Core.Impl;
     using Apache.Ignite.Core.Impl.Common;
     using Apache.Ignite.Core.Resource;
     using NUnit.Framework;
@@ -121,7 +124,7 @@ namespace Apache.Ignite.Core.Tests.Compute
         /// Initialization routine.
         /// </summary>
         [TestFixtureSetUp]
-        public virtual void InitClient()
+        public void InitClient()
         {
             TestUtils.KillProcesses();
 
@@ -142,6 +145,15 @@ namespace Apache.Ignite.Core.Tests.Compute
                 "config\\compute\\compute-grid2.xml",
                 "config\\compute\\compute-grid3.xml");
         }
+
+        /// <summary>
+        /// Gets the expected compact footers setting.
+        /// </summary>
+        protected virtual bool CompactFooter
+        {
+            get { return true; }
+        }
+
 
         [TestFixtureTearDown]
         public void StopClient()
@@ -1144,6 +1156,9 @@ namespace Apache.Ignite.Core.Tests.Compute
             Assert.AreEqual(_grid1.GetCompute().ClusterGroup.GetNodes().Count, res);
         }
 
+        /// <summary>
+        /// Tests the exceptions.
+        /// </summary>
         [Test]
         public void TestExceptions()
         {
@@ -1152,6 +1167,18 @@ namespace Apache.Ignite.Core.Tests.Compute
             Assert.Throws<BinaryObjectException>(
                 () => _grid1.GetCompute().Execute<NetSimpleJobArgument, NetSimpleJobResult, NetSimpleTaskResult>(
                     typeof (NetSimpleTask), new NetSimpleJobArgument(-1)));
+        }
+
+        /// <summary>
+        /// Tests the footer setting.
+        /// </summary>
+        [Test]
+        public void TestFooterSetting()
+        {
+            Assert.AreEqual(CompactFooter, ((Ignite)_grid1).Marshaller.CompactFooter);
+
+            foreach (var g in new[] {_grid1, _grid2, _grid3})
+                Assert.AreEqual(CompactFooter, g.GetConfiguration().BinaryConfiguration.CompactFooter);
         }
 
         /// <summary>

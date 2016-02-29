@@ -26,6 +26,14 @@ namespace Apache.Ignite.Core.Tests.Compute
     public class ComputeApiTestFullFooter : ComputeApiTest
     {
         /// <summary>
+        /// Gets the expected compact footers setting.
+        /// </summary>
+        protected override bool CompactFooter
+        {
+            get { return false; }
+        }
+
+        /// <summary>
         /// Gets the configs.
         /// </summary>
         protected override Tuple<string, string, string> GetConfigs()
