@@ -84,7 +84,8 @@ namespace Apache.Ignite.Core.Tests.Binary
                         new BinaryTypeConfiguration(TypeEmpty),
                         new BinaryTypeConfiguration(typeof(TestEnumRegistered))
                     },
-                    DefaultIdMapper = new IdMapper()
+                    DefaultIdMapper = new IdMapper(),
+                    CompactFooter = GetCompactFooter()
                 },
                 JvmClasspath = TestUtils.CreateTestClasspath(),
                 JvmOptions = TestUtils.TestJavaOptions(),
