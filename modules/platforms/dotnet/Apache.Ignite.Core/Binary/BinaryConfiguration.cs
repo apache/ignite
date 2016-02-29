@@ -42,7 +42,6 @@ namespace Apache.Ignite.Core.Binary
         public BinaryConfiguration()
         {
             DefaultKeepDeserialized = true;
-            CompactFooter = DefaultCompactFooter;
         }
 
         /// <summary>

@@ -209,9 +209,11 @@
                 writer.WriteBoolean(false);
 
             // Binary config
-            writer.WriteBoolean(BinaryConfiguration != null);
+            var isCompactFooterSet = BinaryConfiguration != null && BinaryConfiguration.CompactFooterInternal != null;
 
-            if (BinaryConfiguration != null)
+            writer.WriteBoolean(isCompactFooterSet);
+
+            if (isCompactFooterSet)
                 writer.WriteBoolean(BinaryConfiguration.CompactFooter);
         }
 

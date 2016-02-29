@@ -145,10 +145,10 @@ namespace Apache.Ignite.Core.Impl
         /// </summary>
         private void SetCompactFooter()
         {
-            if (!string.IsNullOrEmpty(_cfg.SpringConfigUrl) &&
-                (_cfg.BinaryConfiguration == null || _cfg.BinaryConfiguration.CompactFooterInternal == null))
+            if (!string.IsNullOrEmpty(_cfg.SpringConfigUrl))
             {
-                // If there is a Spring config, and .NET config does not set CompactFooter, use setting from Spring.
+                // If there is a Spring config, use setting from Spring, 
+                // since we ignore .NET config in legacy mode.
                 var cfg0 = GetConfiguration().BinaryConfiguration;
 
                 if (cfg0 != null)
