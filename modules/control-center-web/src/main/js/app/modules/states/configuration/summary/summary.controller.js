@@ -265,6 +265,12 @@ export default [
 
             const zip = new JSZip();
 
+            if (!ctrl.data)
+                ctrl.data = {};
+
+            if (!ctrl.data.docker)
+                ctrl.data.docker = $generatorDocker.clusterDocker(cluster, 'latest');
+
             zip.file('Dockerfile', ctrl.data.docker);
             zip.file('.dockerignore', $generatorDocker.ignoreFile());
 
@@ -301,6 +307,9 @@ export default [
 
             zip.file('README.txt', $generatorReadme.readme().asString());
             zip.file('jdbc-drivers/README.txt', $generatorReadme.readmeJdbc().asString());
+
+            if (!ctrl.data.pojos)
+                ctrl.data.pojos = $generatorJava.pojos(cluster.caches);
 
             for (const pojo of ctrl.data.pojos) {
                 if (pojo.keyClass && JavaTypes.nonBuiltInClass(pojo.keyType))
