@@ -97,7 +97,7 @@ namespace Apache.Ignite.Core.Impl.Binary
             if (count == 0) 
                 return false;
 
-            flags |= BinaryObjectHeader.WriteSchema(_fields, stream, schemaOffset, count, compact);
+            flags |= BinaryObjectSchemaSerializer.WriteSchema(_fields, stream, schemaOffset, count, compact);
 
             for (var i = schemaOffset; i < _idx; i++)
                 schemaId = Fnv1Hash.Update(schemaId, _fields[i].Id);
