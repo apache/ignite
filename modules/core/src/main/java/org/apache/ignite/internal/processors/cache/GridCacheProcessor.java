@@ -97,6 +97,7 @@ import org.apache.ignite.internal.processors.cache.store.CacheStoreManager;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTransactionsImpl;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxManager;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersionManager;
+import org.apache.ignite.internal.processors.cache.GridCacheUtils;
 import org.apache.ignite.internal.processors.cacheobject.IgniteCacheObjectProcessor;
 import org.apache.ignite.internal.processors.plugin.CachePluginManager;
 import org.apache.ignite.internal.processors.query.GridQueryProcessor;
@@ -2270,6 +2271,17 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             req.deploymentId(desc.deploymentId());
             req.startCacheConfiguration(ccfg);
         }
+
+        /**
+         * Fail cache with swap enabled creation on grid without swap space SPI.
+         */
+        if( ccfg.isSwapEnabled())
+            for (ClusterNode n : ctx.discovery().allNodes())
+                if(!GridCacheUtils.clientNode(n))
+                    if(!GridCacheUtils.isSwapEnabled(n))
+                        return new GridFinishedFuture<>(new IgniteCheckedException("Failed to start cache " +
+                            cacheName + " with swap enabled: Remote Node with ID " + n.id().toString().toUpperCase() +
+                            " has not swap SPI configured"));
 
         if (nearCfg != null)
             req.nearCacheConfiguration(nearCfg);
