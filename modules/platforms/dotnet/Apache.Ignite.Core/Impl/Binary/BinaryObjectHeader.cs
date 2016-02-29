@@ -228,14 +228,13 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// </summary>
         /// <param name="stream">The stream.</param>
         /// <param name="position">The position.</param>
-        /// <param name="fieldIds">The schema.</param>
+        /// <param name="fieldIds">Schema part for compact footer mode.</param>
         /// <returns>
         /// Schema as a dictionary.
         /// </returns>
         public Dictionary<int, int> ReadSchemaAsDictionary(IBinaryStream stream, int position, int[] fieldIds)
         {
             Debug.Assert(stream != null);
-            Debug.Assert(fieldIds != null);  // TODO: Refactor into two methods?
 
             var schemaSize = SchemaFieldCount;
 
