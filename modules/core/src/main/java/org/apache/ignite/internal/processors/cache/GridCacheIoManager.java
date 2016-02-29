@@ -28,10 +28,12 @@ import java.util.concurrent.atomic.AtomicLong;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
+import org.apache.ignite.internal.managers.communication.GridIoPolicy;
 import org.apache.ignite.internal.managers.communication.GridMessageListener;
 import org.apache.ignite.internal.managers.deployment.GridDeploymentInfo;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
@@ -272,6 +274,8 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
             rw.writeUnlock();
         }
     }
+
+    private static final String CHEAT_CACHE_NAME = IgniteSystemProperties.getString("IGNITE_CHEAT_CACHE_NAME");
 
     /**
      * @param nodeId Node ID.
@@ -599,19 +603,37 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
      */
     private void processMessage(UUID nodeId, GridCacheMessage msg, IgniteBiInClosure<UUID, GridCacheMessage> c) {
         try {
-            // We will not end up with storing a bunch of new UUIDs
-            // in each cache entry, since node ID is stored in NIO session
-            // on handshake.
-            c.apply(nodeId, msg);
+            if (CHEAT_CACHE_NAME != null && msg.cacheId() == CHEAT_CACHE_NAME.hashCode() && msg instanceof GridNearAtomicUpdateRequest) {
+                GridNearAtomicUpdateRequest req = (GridNearAtomicUpdateRequest)msg;
+                GridNearAtomicUpdateResponse res = new GridNearAtomicUpdateResponse(
+                    req.cacheId,
+                    nodeId,
+                    req.futureVersion(),
+                    false);
 
-            if (log.isDebugEnabled())
-                log.debug("Finished processing cache communication message [nodeId=" + nodeId + ", msg=" + msg + ']');
+                send(nodeId,
+                    res,
+                    GridIoPolicy.SYSTEM_POOL);
+            }
+            else
+            {
+
+                // We will not end up with storing a bunch of new UUIDs
+                // in each cache entry, since node ID is stored in NIO session
+                // on handshake.
+                c.apply(
+                    nodeId,
+                    msg);
+
+                if (log.isDebugEnabled())
+                    log.debug("Finished processing cache communication message [nodeId=" + nodeId + ", msg=" + msg + ']');
+            }
         }
         catch (Throwable e) {
             U.error(log, "Failed processing message [senderId=" + nodeId + ", msg=" + msg + ']', e);
 
-            if (e instanceof Error)
-                throw e;
+//            if (e instanceof Error)
+//                throw e;
         }
         finally {
             // Reset thread local context.
