@@ -295,8 +295,9 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// </summary>
         /// <param name="stream">The stream.</param>
         /// <param name="position">The position.</param>
+        /// <param name="fieldIds">Schema part for compact footer mode.</param>
         /// <returns>Schema.</returns>
-        public BinaryObjectSchemaField[] ReadSchema(IBinaryStream stream, int position)
+        public BinaryObjectSchemaField[] ReadSchema(IBinaryStream stream, int position, int[] fieldIds)
         {
             Debug.Assert(stream != null);
 
@@ -311,20 +312,45 @@ namespace Apache.Ignite.Core.Impl.Binary
 
             var offsetSize = SchemaFieldOffsetSize;
 
-            if (offsetSize == 1)
+            if (IsCompactFooter)
             {
-                for (var i = 0; i < schemaSize; i++)
-                    schema[i] = new BinaryObjectSchemaField(stream.ReadInt(), stream.ReadByte());
-            }
-            else if (offsetSize == 2)
-            {
-                for (var i = 0; i < schemaSize; i++)
-                    schema[i] = new BinaryObjectSchemaField(stream.ReadInt(), stream.ReadShort());
+                Debug.Assert(fieldIds != null);
+                Debug.Assert(fieldIds.Length == schemaSize);
+
+                if (offsetSize == 1)
+                {
+                    for (var i = 0; i < schemaSize; i++)
+                        schema[i] = new BinaryObjectSchemaField(fieldIds[i], stream.ReadByte());
+
+                }
+                else if (offsetSize == 2)
+                {
+                    for (var i = 0; i < schemaSize; i++)
+                        schema[i] = new BinaryObjectSchemaField(fieldIds[i], stream.ReadShort());
+                }
+                else
+                {
+                    for (var i = 0; i < schemaSize; i++)
+                        schema[i] = new BinaryObjectSchemaField(fieldIds[i], stream.ReadInt());
+                }
             }
             else
             {
-                for (var i = 0; i < schemaSize; i++)
-                    schema[i] = new BinaryObjectSchemaField(stream.ReadInt(), stream.ReadInt());
+                if (offsetSize == 1)
+                {
+                    for (var i = 0; i < schemaSize; i++)
+                        schema[i] = new BinaryObjectSchemaField(stream.ReadInt(), stream.ReadByte());
+                }
+                else if (offsetSize == 2)
+                {
+                    for (var i = 0; i < schemaSize; i++)
+                        schema[i] = new BinaryObjectSchemaField(stream.ReadInt(), stream.ReadShort());
+                }
+                else
+                {
+                    for (var i = 0; i < schemaSize; i++)
+                        schema[i] = new BinaryObjectSchemaField(stream.ReadInt(), stream.ReadInt());
+                }
             }
 
             return schema;
