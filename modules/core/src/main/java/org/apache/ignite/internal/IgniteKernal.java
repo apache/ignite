@@ -668,6 +668,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
                             printTimeMetrics("NEAR REQ MSG RCVD PROC", pw, GridNearAtomicUpdateRequest.RECEIVED, GridDhtAtomicCache.NEAR_PROC_START);
                             printTimeMetrics("NEAR REQ MSG RCVD SUBMIT", pw, GridNearAtomicUpdateRequest.RECEIVED, GridNearAtomicUpdateRequest.SUBMITTED);
                             printTimeMetrics("NEAR REQ MSG SUBMIT PROC", pw, GridNearAtomicUpdateRequest.SUBMITTED, GridDhtAtomicCache.NEAR_PROC_START);
+                            printTimeMetrics("NEAR REQ MSG SUBMIT PROCSTART", pw, GridNearAtomicUpdateRequest.SUBMITTED, GridNearAtomicUpdateRequest.PROC_STARTED);
                             printTimeMetrics("NEAR RESP MSG PREP SENT", pw, GridDhtAtomicCache.NEAR_PROC_FINISH, GridNearAtomicUpdateResponse.SENT);
                             printTimeMetrics("NEAR RESP MSG RCVD PROC", pw, GridNearAtomicUpdateResponse.RECEIVED, GridCacheIoManager.SAMPLING_DATA_NEAR_RCV);
                             printTimeMetrics("DHT MSG", pw, GridCacheIoManager.SAMPLING_DATA_DHT_SND, GridCacheIoManager.SAMPLING_DATA_DHT_RCV);

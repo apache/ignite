@@ -773,6 +773,14 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
                 try {
                     threadProcessingMessage(true);
 
+                    if (msg.message() instanceof GridNearAtomicUpdateRequest) {
+                        long futVer = ((GridNearAtomicUpdateRequest)msg.message()).futureVersion();
+                        if (futVer != 0 && futVer % GridNearAtomicUpdateRequest.SAMPLE_MOD == 0) {
+                            String k = ctx.localNodeId() + " : " + futVer;
+                            GridNearAtomicUpdateRequest.PROC_STARTED.putIfAbsent(k, System.nanoTime());
+                        }
+                    }
+
                     processRegularMessage0(msg, nodeId);
                 }
                 finally {
