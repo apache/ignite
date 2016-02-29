@@ -121,14 +121,26 @@ namespace Apache.Ignite.Core.Tests.Compute
         /// Initialization routine.
         /// </summary>
         [TestFixtureSetUp]
-        public void InitClient()
+        public virtual void InitClient()
         {
-            //TestUtils.JVM_DEBUG = true;
             TestUtils.KillProcesses();
 
-            _grid1 = Ignition.Start(Configuration("config\\compute\\compute-grid1.xml"));
-            _grid2 = Ignition.Start(Configuration("config\\compute\\compute-grid2.xml"));
-            _grid3 = Ignition.Start(Configuration("config\\compute\\compute-grid3.xml"));
+            var configs = GetConfigs();
+
+            _grid1 = Ignition.Start(Configuration(configs.Item1));
+            _grid2 = Ignition.Start(Configuration(configs.Item2));
+            _grid3 = Ignition.Start(Configuration(configs.Item3));
+        }
+
+        /// <summary>
+        /// Gets the configs.
+        /// </summary>
+        protected virtual Tuple<string, string, string> GetConfigs()
+        {
+            return Tuple.Create(
+                "config\\compute\\compute-grid1.xml",
+                "config\\compute\\compute-grid2.xml",
+                "config\\compute\\compute-grid3.xml");
         }
 
         [TestFixtureTearDown]
