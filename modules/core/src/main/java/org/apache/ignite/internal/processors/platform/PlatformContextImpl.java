@@ -407,9 +407,22 @@ public class PlatformContextImpl implements PlatformContext {
 
     /** {@inheritDoc} */
     @Override public void writeSchema(BinaryRawWriterEx writer, int typeId, int schemaId) {
-        // TODO: schemaRegistry can be outdated, try metadata also
-        // See how other code works with registry
-        BinarySchema schema = cacheObjProc.binaryContext().schemaRegistry(typeId).schema(schemaId);
+        BinarySchemaRegistry schemaReg = cacheObjProc.binaryContext().schemaRegistry(typeId);
+        BinarySchema schema = schemaReg.schema(schemaId);
+
+        if (schema == null) {
+            BinaryTypeImpl meta = (BinaryTypeImpl)cacheObjProc.metadata(typeId);
+
+            for (BinarySchema typeSchema : meta.metadata().schemas()) {
+                if (schemaId == typeSchema.schemaId()) {
+                    schema = typeSchema;
+                    break;
+                }
+            }
+
+            if (schema != null)
+                schemaReg.addSchema(schemaId, schema);
+        }
 
         int[] fieldIds = schema == null ? null : schema.fieldIds();
 
