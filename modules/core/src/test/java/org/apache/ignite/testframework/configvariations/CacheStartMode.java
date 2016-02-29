@@ -15,20 +15,15 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.testframework.config;
+package org.apache.ignite.testframework.configvariations;
 
 /**
- *
+ * Cache start mode.
  */
-public interface ConfigurationParameter<T> {
-    /**
-     * @return Name
-     */
-    public String name();
-    
-    /**
-     * @param cfg Configuration.
-     * @return Configuration.
-     */
-    public T apply(T cfg);
+public enum CacheStartMode {
+    /** Start caches together with nodes (not dynamically). */
+    STATIC,
+
+    /** Starts nodes first and then starts caches dynamically. */
+    DYNAMIC
 }

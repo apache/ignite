@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache;
+package org.apache.ignite.testframework.junits;
 
 import java.util.Map;
 import javax.cache.Cache;
@@ -37,13 +37,13 @@ import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
+import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.util.lang.GridAbsPredicateX;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiInClosure;
 import org.apache.ignite.testframework.GridTestUtils;
-import org.apache.ignite.testframework.config.CacheStartMode;
-import org.apache.ignite.testframework.junits.IgniteConfigPermutationsAbstractTest;
+import org.apache.ignite.testframework.configvariations.CacheStartMode;
 import org.apache.ignite.transactions.Transaction;
 import org.jetbrains.annotations.Nullable;
 import org.jsr166.ConcurrentHashMap8;
@@ -53,9 +53,9 @@ import static org.apache.ignite.cache.CacheMemoryMode.OFFHEAP_TIERED;
 import static org.apache.ignite.cache.CacheMemoryMode.ONHEAP_TIERED;
 
 /**
- * Abstract class for cache configuration permutation tests.
+ * Abstract class for cache configuration variations tests.
  */
-public abstract class IgniteCacheConfigPermutationsAbstractTest extends IgniteConfigPermutationsAbstractTest {
+public abstract class IgniteCacheConfigVariationsAbstractTest extends IgniteConfigVariationsAbstractTest {
     /** */
     protected static final int CLIENT_NEAR_ONLY_IDX = 2;
 
@@ -107,7 +107,7 @@ public abstract class IgniteCacheConfigPermutationsAbstractTest extends IgniteCo
                 if (testsCfg.withClients() && testsCfg.gridCount() > CLIENT_NEAR_ONLY_IDX)
                     grid(CLIENT_NEAR_ONLY_IDX).createNearCache(cacheName(), new NearCacheConfiguration());
             }
-            else if (cacheStartMode == null || cacheStartMode == CacheStartMode.NODES_THEN_CACHES) {
+            else if (cacheStartMode == null || cacheStartMode == CacheStartMode.DYNAMIC) {
                 super.beforeTestsStarted();
 
                 startCachesDinamically();

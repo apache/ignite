@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.testframework.config;
+package org.apache.ignite.testframework.configvariations;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
@@ -35,7 +35,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * Enum variants.
+ * Parameters utils.
  */
 public class Parameters {
     /**
@@ -49,7 +49,7 @@ public class Parameters {
      * @return Array of configuration processors for given enum.
      */
     @SuppressWarnings("unchecked")
-    public static <T> ConfigurationParameter<T>[] enumParameters(String mtdName, Class<?> enumCls) {
+    public static <T> ConfigParameter<T>[] enumParameters(String mtdName, Class<?> enumCls) {
         return enumParameters(false, mtdName, enumCls);
     }
 
@@ -57,7 +57,7 @@ public class Parameters {
      * @return Array of configuration processors for given enum.
      */
     @SuppressWarnings("unchecked")
-    public static <T> ConfigurationParameter<T>[] enumParameters(boolean withNull, String mtdName, Class<?> enumCls) {
+    public static <T> ConfigParameter<T>[] enumParameters(boolean withNull, String mtdName, Class<?> enumCls) {
         return parameters0(mtdName, withNull, enumCls.getEnumConstants());
     }
 
@@ -67,7 +67,7 @@ public class Parameters {
      * @return Array of configuration paramethers.
      */
     @SuppressWarnings("unchecked")
-    private static <T> ConfigurationParameter<T>[] parameters0(String mtdName, boolean withNull, Object[] values) {
+    private static <T> ConfigParameter<T>[] parameters0(String mtdName, boolean withNull, Object[] values) {
         for (Object val : values) {
             if (!isPrimitiveOrEnum(val) && !(val instanceof Factory))
                 throw new IllegalArgumentException("Value have to be primite, enum or factory: " + val);
@@ -85,7 +85,7 @@ public class Parameters {
 
         assert values != null && values.length > 0 : "MtdName:" + mtdName;
 
-        ConfigurationParameter<T>[] resArr = new ConfigurationParameter[values.length];
+        ConfigParameter<T>[] resArr = new ConfigParameter[values.length];
 
         for (int i = 0; i < resArr.length; i++)
             resArr[i] = new ReflectionParameter<>(mtdName, values[i]);
@@ -114,7 +114,7 @@ public class Parameters {
      * @return Array of configuration processors for given enum.
      */
     @SuppressWarnings("unchecked")
-    public static <T> ConfigurationParameter<T>[] booleanParameters(String mtdName) {
+    public static <T> ConfigParameter<T>[] booleanParameters(String mtdName) {
         return parameters0(mtdName, false, new Boolean[] {true, false});
     }
 
@@ -122,7 +122,7 @@ public class Parameters {
      * @return Array of configuration processors for given enum.
      */
     @SuppressWarnings("unchecked")
-    public static <T> ConfigurationParameter<T>[] booleanParameters(boolean withNull, String mtdName) {
+    public static <T> ConfigParameter<T>[] booleanParameters(boolean withNull, String mtdName) {
         return parameters0(mtdName, withNull, new Boolean[] {true, false});
     }
 
@@ -131,7 +131,7 @@ public class Parameters {
      * @param values Values.
      * @return Array of configuration processors for given classes.
      */
-    public static ConfigurationParameter[] objectParameters(String mtdName, Object... values) {
+    public static ConfigParameter[] objectParameters(String mtdName, Object... values) {
         return objectParameters(false, mtdName, values);
     }
 
@@ -140,7 +140,7 @@ public class Parameters {
      * @param values Values.
      * @return Array of configuration processors for given classes.
      */
-    public static ConfigurationParameter[] objectParameters(boolean withNull, String mtdName, Object... values) {
+    public static ConfigParameter[] objectParameters(boolean withNull, String mtdName, Object... values) {
         return parameters0(mtdName, withNull, values);
     }
 
@@ -149,7 +149,7 @@ public class Parameters {
      * @param val Value.
      * @return Configuration parameter.
      */
-    public static <T> ConfigurationParameter<T> parameter(String mtdName, Object val) {
+    public static <T> ConfigParameter<T> parameter(String mtdName, Object val) {
         return new ReflectionParameter<>(mtdName, val);
     }
 
@@ -157,7 +157,7 @@ public class Parameters {
      * @return Complex parameter.
      */
     @SuppressWarnings("unchecked")
-    public static <T> ConfigurationParameter<T> complexParameter(ConfigurationParameter<T>... params) {
+    public static <T> ConfigParameter<T> complexParameter(ConfigParameter<T>... params) {
         return new ComplexParameter<T>(params);
     }
 
@@ -173,7 +173,7 @@ public class Parameters {
      * Reflection configuration applier.
      */
     @SuppressWarnings("serial")
-    private static class ReflectionParameter<T> implements ConfigurationParameter<T> {
+    private static class ReflectionParameter<T> implements ConfigParameter<T> {
         /** Classes of marameters cache. */
         private static final ConcurrentMap<T2<Class, String>, Class> paramClassesCache = new ConcurrentHashMap();
 
@@ -332,17 +332,18 @@ public class Parameters {
     /**
      *
      */
-    private static class ComplexParameter<T> implements ConfigurationParameter<T> {
+    private static class ComplexParameter<T> implements ConfigParameter<T> {
         /** */
         private final String name;
 
         /** */
-        private ConfigurationParameter<T>[] params;
+        private ConfigParameter<T>[] params;
 
         /**
          * @param params Params
          */
-        @SafeVarargs ComplexParameter(ConfigurationParameter<T>... params) {
+        @SafeVarargs 
+        ComplexParameter(ConfigParameter<T>... params) {
             A.notEmpty(params, "params");
 
             this.params = params;
@@ -367,7 +368,7 @@ public class Parameters {
         /** {@inheritDoc} */
         @SuppressWarnings("unchecked")
         @Override public T apply(T cfg) {
-            for (ConfigurationParameter param : params)
+            for (ConfigParameter param : params)
                 param.apply(cfg);
 
             return cfg;

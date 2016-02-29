@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.testframework.config;
+package org.apache.ignite.testframework.configvariations;
 
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -23,7 +23,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 /**
  *
  */
-public interface ConfigurationFactory {
+public interface ConfigFactory {
     /**
      * @param gridName Grid name.
      * @param srcCfg Source config.

@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.testframework.config;
+package org.apache.ignite.testframework.configvariations;
 
 import java.util.Arrays;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -26,38 +26,38 @@ import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * Configurations permutation factory.
+ * Configurations variations factory.
  */
-public class ConfigPermutationsFactory implements ConfigurationFactory {
+public class ConfigVariationsFactory implements ConfigFactory {
     /** */
-    private final ConfigurationParameter<IgniteConfiguration>[][] igniteParams;
+    private final ConfigParameter<IgniteConfiguration>[][] igniteParams;
 
     /** */
-    private final int[] igniteCfgPermutation;
+    private final int[] igniteCfgVariation;
 
     /** */
-    private final ConfigurationParameter<CacheConfiguration>[][] cacheParams;
+    private final ConfigParameter<CacheConfiguration>[][] cacheParams;
 
     /** */
-    private final int[] cacheCfgPermutation;
+    private final int[] cacheCfgVariation;
 
     /** */
     private int backups = -1;
 
     /**
      * @param igniteParams Ignite Params.
-     * @param igniteCfgPermutation Ignite Configuration Permutation.
+     * @param igniteCfgVariation Ignite configuration variation.
      * @param cacheParams Cache Params.
-     * @param cacheCfgPermutation Cache config permutation.
+     * @param cacheCfgVariation Cache config variation.
      */
-    public ConfigPermutationsFactory(ConfigurationParameter<IgniteConfiguration>[][] igniteParams,
-        int[] igniteCfgPermutation,
-        @Nullable ConfigurationParameter<CacheConfiguration>[][] cacheParams,
-        @Nullable int[] cacheCfgPermutation) {
+    public ConfigVariationsFactory(ConfigParameter<IgniteConfiguration>[][] igniteParams,
+        int[] igniteCfgVariation,
+        @Nullable ConfigParameter<CacheConfiguration>[][] cacheParams,
+        @Nullable int[] cacheCfgVariation) {
         this.igniteParams = igniteParams;
-        this.igniteCfgPermutation = igniteCfgPermutation;
+        this.igniteCfgVariation = igniteCfgVariation;
         this.cacheParams = cacheParams;
-        this.cacheCfgPermutation = cacheCfgPermutation;
+        this.cacheCfgVariation = cacheCfgVariation;
     }
 
     /** {@inheritDoc} */
@@ -71,10 +71,10 @@ public class ConfigPermutationsFactory implements ConfigurationFactory {
         if (igniteParams == null)
             return cfg;
 
-        for (int i = 0; i < igniteCfgPermutation.length; i++) {
-            int var = igniteCfgPermutation[i];
+        for (int i = 0; i < igniteCfgVariation.length; i++) {
+            int var = igniteCfgVariation[i];
 
-            ConfigurationParameter<IgniteConfiguration> cfgC = igniteParams[i][var];
+            ConfigParameter<IgniteConfiguration> cfgC = igniteParams[i][var];
 
             if (cfgC != null)
                 cfgC.apply(cfg);
@@ -116,15 +116,15 @@ public class ConfigPermutationsFactory implements ConfigurationFactory {
 
         SB sb = new SB("[");
 
-        for (int i = 0; i < igniteCfgPermutation.length; i++) {
-            int var = igniteCfgPermutation[i];
+        for (int i = 0; i < igniteCfgVariation.length; i++) {
+            int var = igniteCfgVariation[i];
 
-            ConfigurationParameter<IgniteConfiguration> cfgC = igniteParams[i][var];
+            ConfigParameter<IgniteConfiguration> cfgC = igniteParams[i][var];
 
             if (cfgC != null) {
                 sb.a(cfgC.name());
 
-                if (i + 1 < igniteCfgPermutation.length)
+                if (i + 1 < igniteCfgVariation.length)
                     sb.a(", ");
             }
         }
@@ -137,16 +137,16 @@ public class ConfigPermutationsFactory implements ConfigurationFactory {
 
     /** {@inheritDoc} */
     @Override public CacheConfiguration cacheConfiguration(String gridName) {
-        if (cacheParams == null || cacheCfgPermutation == null)
+        if (cacheParams == null || cacheCfgVariation == null)
             throw new IllegalStateException("Failed to configure cache [cacheParams=" + Arrays.deepToString(cacheParams)
-                + ", cacheCfgPermutation=" + Arrays.toString(cacheCfgPermutation) + "]");
+                + ", cacheCfgVariation=" + Arrays.toString(cacheCfgVariation) + "]");
 
         CacheConfiguration cfg = new CacheConfiguration();
 
-        for (int i = 0; i < cacheCfgPermutation.length; i++) {
-            int var = cacheCfgPermutation[i];
+        for (int i = 0; i < cacheCfgVariation.length; i++) {
+            int var = cacheCfgVariation[i];
 
-            ConfigurationParameter<CacheConfiguration> cfgC = cacheParams[i][var];
+            ConfigParameter<CacheConfiguration> cfgC = cacheParams[i][var];
 
             if (cfgC != null)
                 cfgC.apply(cfg);
@@ -162,20 +162,20 @@ public class ConfigPermutationsFactory implements ConfigurationFactory {
      * @return Description.
      */
     public String getCacheConfigurationDescription() {
-        if (cacheCfgPermutation == null)
+        if (cacheCfgVariation == null)
             return "";
 
         SB sb = new SB("[");
 
-        for (int i = 0; i < cacheCfgPermutation.length; i++) {
-            int var = cacheCfgPermutation[i];
+        for (int i = 0; i < cacheCfgVariation.length; i++) {
+            int var = cacheCfgVariation[i];
 
-            ConfigurationParameter cfgC = cacheParams[i][var];
+            ConfigParameter cfgC = cacheParams[i][var];
 
             if (cfgC != null) {
                 sb.a(cfgC.name());
 
-                if (i + 1 < cacheCfgPermutation.length)
+                if (i + 1 < cacheCfgVariation.length)
                     sb.a(", ");
             }
         }

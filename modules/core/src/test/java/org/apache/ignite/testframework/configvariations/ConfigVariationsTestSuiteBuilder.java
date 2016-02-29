@@ -15,37 +15,35 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.testframework.config;
+package org.apache.ignite.testframework.configvariations;
 
 import java.util.Arrays;
 import junit.framework.TestSuite;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.internal.processors.cache.IgniteCacheConfigPermutationsAbstractTest;
+import org.apache.ignite.testframework.junits.IgniteCacheConfigVariationsAbstractTest;
 import org.apache.ignite.lang.IgnitePredicate;
-import org.apache.ignite.testframework.IgniteConfigPermutationsTestSuite;
-import org.apache.ignite.testframework.TestsConfiguration;
-import org.apache.ignite.testframework.junits.IgniteConfigPermutationsAbstractTest;
+import org.apache.ignite.testframework.junits.IgniteConfigVariationsAbstractTest;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * Configuration permutations test suite builder.
+ * Configuration variations test suite builder.
  */
-public class ConfigPermutationsTestSuiteBuilder {
+public class ConfigVariationsTestSuiteBuilder {
     /** */
     private final TestSuite suite;
 
     /** */
     @SuppressWarnings("unchecked")
-    private ConfigurationParameter<IgniteConfiguration>[][] igniteParams =
-        ConfigurationPermutations.igniteBasicSet();
+    private ConfigParameter<IgniteConfiguration>[][] igniteParams =
+        ConfigVariations.igniteBasicSet();
 
     /** */
     @SuppressWarnings("unchecked")
-    private ConfigurationParameter<CacheConfiguration>[][] cacheParams;
+    private ConfigParameter<CacheConfiguration>[][] cacheParams;
 
     /** */
-    private CacheStartMode cacheStartMode = CacheStartMode.NODES_THEN_CACHES;
+    private CacheStartMode cacheStartMode = CacheStartMode.DYNAMIC;
 
     /** */
     private boolean withClients;
@@ -57,7 +55,7 @@ public class ConfigPermutationsTestSuiteBuilder {
     private int testedNodeCnt = 1;
 
     /** */
-    private Class<? extends IgniteConfigPermutationsAbstractTest> cls;
+    private Class<? extends IgniteConfigVariationsAbstractTest> cls;
 
     /** */
     private int[] specificIgniteParam;
@@ -78,7 +76,7 @@ public class ConfigPermutationsTestSuiteBuilder {
      * @param name Name.
      * @param cls Test class.
      */
-    public ConfigPermutationsTestSuiteBuilder(String name, Class<? extends IgniteConfigPermutationsAbstractTest> cls) {
+    public ConfigVariationsTestSuiteBuilder(String name, Class<? extends IgniteConfigVariationsAbstractTest> cls) {
         suite = new TestSuite(name);
         this.cls = cls;
     }
@@ -90,42 +88,42 @@ public class ConfigPermutationsTestSuiteBuilder {
         assert testedNodeCnt > 0;
         assert gridsCnt > 0;
 
-        PermutationsIterator igniteCfgIter;
+        VariationsIterator igniteCfgIter;
 
         if (specificIgniteParam == null)
-            igniteCfgIter = new PermutationsIterator(igniteParams);
+            igniteCfgIter = new VariationsIterator(igniteParams);
         else
-            igniteCfgIter = new OneElementPermutationsIterator(specificIgniteParam, igniteParams);
+            igniteCfgIter = new OneElementVariationsIterator(specificIgniteParam, igniteParams);
 
         for (; igniteCfgIter.hasNext(); ) {
-            final int[] igniteCfgPermutation = igniteCfgIter.next();
+            final int[] igniteCfgVariation = igniteCfgIter.next();
 
-            if (!passIgniteConfigFilter(igniteCfgPermutation))
+            if (!passIgniteConfigFilter(igniteCfgVariation))
                 continue;
 
             if (cacheParams == null) {
-                TestSuite addedSuite = build(igniteCfgPermutation, null, true);
+                TestSuite addedSuite = build(igniteCfgVariation, null, true);
 
                 suite.addTest(addedSuite);
             }
             else {
-                PermutationsIterator cacheCfgIter;
+                VariationsIterator cacheCfgIter;
 
                 if (specificCacheParam == null)
-                    cacheCfgIter = new PermutationsIterator(cacheParams);
+                    cacheCfgIter = new VariationsIterator(cacheParams);
                 else
-                    cacheCfgIter = new OneElementPermutationsIterator(specificCacheParam, cacheParams);
+                    cacheCfgIter = new OneElementVariationsIterator(specificCacheParam, cacheParams);
 
                 for (; cacheCfgIter.hasNext(); ) {
-                    int[] cacheCfgPermutation = cacheCfgIter.next();
+                    int[] cacheCfgVariation = cacheCfgIter.next();
 
-                    if (!passCacheConfigFilter(cacheCfgPermutation))
+                    if (!passCacheConfigFilter(cacheCfgVariation))
                         continue;
 
                     // Stop all grids before starting new ignite configuration.
                     boolean stopNodes = !cacheCfgIter.hasNext();
 
-                    TestSuite addedSuite = build(igniteCfgPermutation, cacheCfgPermutation, stopNodes);
+                    TestSuite addedSuite = build(igniteCfgVariation, cacheCfgVariation, stopNodes);
 
                     suite.addTest(addedSuite);
                 }
@@ -136,11 +134,11 @@ public class ConfigPermutationsTestSuiteBuilder {
     }
 
     /**
-     * @param permutation Permutation.
-     * @return {@code True} if permutation pass filters.
+     * @param variation Variation.
+     * @return {@code True} if variation pass filters.
      */
-    private boolean passIgniteConfigFilter(int[] permutation) {
-        ConfigPermutationsFactory factory = new ConfigPermutationsFactory(igniteParams, permutation, null, null);
+    private boolean passIgniteConfigFilter(int[] variation) {
+        ConfigVariationsFactory factory = new ConfigVariationsFactory(igniteParams, variation, null, null);
 
         IgniteConfiguration cfg = factory.getConfiguration(null, null);
 
@@ -155,11 +153,11 @@ public class ConfigPermutationsTestSuiteBuilder {
     }
 
     /**
-     * @param permutation Permutation.
-     * @return {@code True} if permutation pass filters.
+     * @param variation Variation.
+     * @return {@code True} if variation pass filters.
      */
-    private boolean passCacheConfigFilter(int[] permutation) {
-        ConfigPermutationsFactory factory = new ConfigPermutationsFactory(null, null, cacheParams, permutation);
+    private boolean passCacheConfigFilter(int[] variation) {
+        ConfigVariationsFactory factory = new ConfigVariationsFactory(null, null, cacheParams, variation);
 
         CacheConfiguration cfg = factory.cacheConfiguration(null);
 
@@ -174,31 +172,32 @@ public class ConfigPermutationsTestSuiteBuilder {
     }
 
     /**
-     * @param igniteCfgPermutation Ignite permutation.
-     * @param cacheCfgPermutation Cache permutation.
+     * @param igniteCfgVariation Ignite Variation.
+     * @param cacheCfgVariation Cache Variation.
      * @param stopNodes Stop nodes.
      * @return Test suite.
      */
-    private TestSuite build(int[] igniteCfgPermutation, @Nullable int[] cacheCfgPermutation, boolean stopNodes) {
-        ConfigPermutationsFactory factory = new ConfigPermutationsFactory(igniteParams,
-            igniteCfgPermutation, cacheParams, cacheCfgPermutation);
+    private TestSuite build(int[] igniteCfgVariation, @Nullable int[] cacheCfgVariation, boolean stopNodes) {
+        ConfigVariationsFactory factory = new ConfigVariationsFactory(igniteParams,
+            igniteCfgVariation, cacheParams, cacheCfgVariation);
 
         factory.backups(backups);
 
-        String clsNameSuffix = "[igniteCfgPermutation=" + Arrays.toString(igniteCfgPermutation)
-            + ", cacheCfgPermutation=" + Arrays.toString(cacheCfgPermutation)
+        String clsNameSuffix = "[igniteCfgVariation=" + Arrays.toString(igniteCfgVariation)
+            + ", cacheCfgVariation=" + Arrays.toString(cacheCfgVariation)
             + ", igniteCfg=" + factory.getIgniteConfigurationDescription()
             + ", cacheCfg=" + factory.getCacheConfigurationDescription() + "]";
 
-        TestsConfiguration testCfg = new TestsConfiguration(factory, clsNameSuffix, stopNodes, cacheStartMode, gridsCnt);
+        VariationsTestsConfig testCfg = new VariationsTestsConfig(factory, clsNameSuffix, stopNodes, cacheStartMode, 
+            gridsCnt);
 
         TestSuite addedSuite;
 
         if (testedNodeCnt > 1)
-            addedSuite = IgniteConfigPermutationsTestSuite.createMultiNodeTestSuite(
-                (Class<? extends IgniteCacheConfigPermutationsAbstractTest>)cls, testCfg, testedNodeCnt, withClients);
+            addedSuite = IgniteConfigVariationsTestSuite.createMultiNodeTestSuite(
+                (Class<? extends IgniteCacheConfigVariationsAbstractTest>)cls, testCfg, testedNodeCnt, withClients);
         else
-            addedSuite = new IgniteConfigPermutationsTestSuite(cls, testCfg);
+            addedSuite = new IgniteConfigVariationsTestSuite(cls, testCfg);
 
         return addedSuite;
     }
@@ -206,7 +205,7 @@ public class ConfigPermutationsTestSuiteBuilder {
     /**
      * @return {@code this} for chaining.
      */
-    public ConfigPermutationsTestSuiteBuilder withClients() {
+    public ConfigVariationsTestSuiteBuilder withClients() {
         if (testedNodeCnt < 2)
             throw new IllegalStateException("Tested node count should be more than 1: " + testedNodeCnt);
 
@@ -219,7 +218,7 @@ public class ConfigPermutationsTestSuiteBuilder {
      * @param testedNodeCnt Tested node count.
      * @return {@code this} for chaining.
      */
-    public ConfigPermutationsTestSuiteBuilder testedNodesCount(int testedNodeCnt) {
+    public ConfigVariationsTestSuiteBuilder testedNodesCount(int testedNodeCnt) {
         this.testedNodeCnt = testedNodeCnt;
 
         return this;
@@ -229,7 +228,7 @@ public class ConfigPermutationsTestSuiteBuilder {
      * @param cnt Count.
      * @return {@code this} for chaining.
      */
-    public ConfigPermutationsTestSuiteBuilder gridsCount(int cnt) {
+    public ConfigVariationsTestSuiteBuilder gridsCount(int cnt) {
         assert cnt > 0;
 
         gridsCnt = cnt;
@@ -241,8 +240,8 @@ public class ConfigPermutationsTestSuiteBuilder {
      * @param igniteParams New ignite params.
      * @return {@code this} for chaining.
      */
-    public ConfigPermutationsTestSuiteBuilder igniteParams(
-        ConfigurationParameter<IgniteConfiguration>[][] igniteParams) {
+    public ConfigVariationsTestSuiteBuilder igniteParams(
+        ConfigParameter<IgniteConfiguration>[][] igniteParams) {
         this.igniteParams = igniteParams;
 
         return this;
@@ -252,7 +251,7 @@ public class ConfigPermutationsTestSuiteBuilder {
      * @param cacheParams New cache params.
      * @return {@code this} for chaining.
      */
-    public ConfigPermutationsTestSuiteBuilder cacheParams(ConfigurationParameter<CacheConfiguration>[][] cacheParams) {
+    public ConfigVariationsTestSuiteBuilder cacheParams(ConfigParameter<CacheConfiguration>[][] cacheParams) {
         this.cacheParams = cacheParams;
 
         return this;
@@ -263,8 +262,8 @@ public class ConfigPermutationsTestSuiteBuilder {
      *
      * @return {@code this} for chaining.
      */
-    public ConfigPermutationsTestSuiteBuilder withBasicCacheParams() {
-        cacheParams = ConfigurationPermutations.cacheBasicSet();
+    public ConfigVariationsTestSuiteBuilder withBasicCacheParams() {
+        cacheParams = ConfigVariations.cacheBasicSet();
         backups = 1;
 
         return this;
@@ -274,7 +273,7 @@ public class ConfigPermutationsTestSuiteBuilder {
      * @param backups Backups.
      * @return {@code this} for chaining.
      */
-    public ConfigPermutationsTestSuiteBuilder backups(int backups) {
+    public ConfigVariationsTestSuiteBuilder backups(int backups) {
         assert backups > 0 : backups;
 
         this.backups = backups;
@@ -286,7 +285,7 @@ public class ConfigPermutationsTestSuiteBuilder {
      * @param singleIgniteParam Param.
      * @return {@code this} for chaining.
      */
-    public ConfigPermutationsTestSuiteBuilder specifyIgniteParam(int... singleIgniteParam) {
+    public ConfigVariationsTestSuiteBuilder specifyIgniteParam(int... singleIgniteParam) {
         specificIgniteParam = singleIgniteParam;
 
         return this;
@@ -296,7 +295,7 @@ public class ConfigPermutationsTestSuiteBuilder {
      * @param singleParam Param.
      * @return {@code this} for chaining.
      */
-    public ConfigPermutationsTestSuiteBuilder specifyCacheParam(int... singleParam) {
+    public ConfigVariationsTestSuiteBuilder specifyCacheParam(int... singleParam) {
         specificCacheParam = singleParam;
 
         return this;
@@ -306,7 +305,7 @@ public class ConfigPermutationsTestSuiteBuilder {
      * @param filters Ignite configuration filters.
      * @return {@code this} for chaining.
      */
-    public ConfigPermutationsTestSuiteBuilder withIgniteConfigFilters(IgnitePredicate<IgniteConfiguration>... filters) {
+    public ConfigVariationsTestSuiteBuilder withIgniteConfigFilters(IgnitePredicate<IgniteConfiguration>... filters) {
         igniteCfgFilters = filters;
 
         return this;
@@ -316,7 +315,7 @@ public class ConfigPermutationsTestSuiteBuilder {
      * @param filters Ignite configuration filters.
      * @return {@code this} for chaining.
      */
-    public ConfigPermutationsTestSuiteBuilder withCacheConfigFilters(IgnitePredicate<CacheConfiguration>... filters) {
+    public ConfigVariationsTestSuiteBuilder withCacheConfigFilters(IgnitePredicate<CacheConfiguration>... filters) {
         cacheCfgFilters = filters;
 
         return this;
@@ -325,7 +324,7 @@ public class ConfigPermutationsTestSuiteBuilder {
     /**
      *
      */
-    private static class OneElementPermutationsIterator extends PermutationsIterator {
+    private static class OneElementVariationsIterator extends VariationsIterator {
         /** */
         private int[] elem;
 
@@ -335,7 +334,7 @@ public class ConfigPermutationsTestSuiteBuilder {
         /**
          * @param elem Element.
          */
-        OneElementPermutationsIterator(int[] elem, Object[][] params) {
+        OneElementVariationsIterator(int[] elem, Object[][] params) {
             super(params);
 
             this.elem = elem;

@@ -15,18 +15,16 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.testframework;
+package org.apache.ignite.testframework.configvariations;
 
 import org.apache.ignite.internal.util.typedef.internal.A;
-import org.apache.ignite.testframework.config.CacheStartMode;
-import org.apache.ignite.testframework.config.ConfigurationFactory;
 
 /**
  * Immutable tests configuration.
  */
-public class TestsConfiguration {
+public class VariationsTestsConfig {
     /** */
-    private final ConfigurationFactory factory;
+    private final ConfigFactory factory;
 
     /** */
     private final String desc;
@@ -58,11 +56,13 @@ public class TestsConfiguration {
      * @param stopNodes Stope nodes.
      * @param gridCnt Grdi count.
      */
-    public TestsConfiguration(ConfigurationFactory factory,
+    public VariationsTestsConfig(
+        ConfigFactory factory,
         String desc,
         boolean stopNodes,
         CacheStartMode cacheStartMode,
-        int gridCnt) {
+        int gridCnt
+    ) {
         this(factory, desc, stopNodes, true, true, cacheStartMode, gridCnt, 0, false);
     }
 
@@ -72,7 +72,8 @@ public class TestsConfiguration {
      * @param stopNodes Stope nodes.
      * @param gridCnt Grdi count.
      */
-    public TestsConfiguration(ConfigurationFactory factory,
+    public VariationsTestsConfig(
+        ConfigFactory factory,
         String desc,
         boolean stopNodes,
         boolean startCache,
@@ -80,7 +81,8 @@ public class TestsConfiguration {
         CacheStartMode cacheStartMode,
         int gridCnt,
         int testedNodeIdx,
-        boolean withClients) {
+        boolean withClients
+    ) {
         A.ensure(gridCnt >= 1, "Grids count cannot be less then 1.");
 
         this.factory = factory;
@@ -97,7 +99,7 @@ public class TestsConfiguration {
     /**
      * @return Configuration factory.
      */
-    public ConfigurationFactory configurationFactory() {
+    public ConfigFactory configurationFactory() {
         return factory;
     }
 

@@ -28,13 +28,13 @@ import org.apache.ignite.Ignition;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.testframework.TestsConfiguration;
+import org.apache.ignite.testframework.configvariations.VariationsTestsConfig;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 /**
- * Common abstract test for Ignite tests based on configurations permutations.
+ * Common abstract test for Ignite tests based on configurations variations.
  */
-public abstract class IgniteConfigPermutationsAbstractTest extends GridCommonAbstractTest {
+public abstract class IgniteConfigVariationsAbstractTest extends GridCommonAbstractTest {
     /** */
     protected static final int SERVER_NODE_IDX = 0;
 
@@ -45,10 +45,10 @@ public abstract class IgniteConfigPermutationsAbstractTest extends GridCommonAbs
     protected int testedNodeIdx;
 
     /** */
-    private static final File workDir = new File(U.getIgniteHome() + File.separator + "workOfConfigPermutationsTests");
+    private static final File workDir = new File(U.getIgniteHome() + File.separator + "workOfConfigVariationsTests");
 
     /** */
-    protected TestsConfiguration testsCfg;
+    protected VariationsTestsConfig testsCfg;
 
     /** */
     protected volatile DataMode dataMode;
@@ -56,7 +56,7 @@ public abstract class IgniteConfigPermutationsAbstractTest extends GridCommonAbs
     /**
      * @param testsCfg Tests configuration.
      */
-    public void setTestsConfiguration(TestsConfiguration testsCfg) {
+    public void setTestsConfiguration(VariationsTestsConfig testsCfg) {
         assert this.testsCfg == null : "Test config must be set only once [oldTestCfg=" + this.testsCfg
             + ", newTestCfg=" + testsCfg + "]";
 

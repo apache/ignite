@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.testframework.config;
+package org.apache.ignite.testframework.configvariations;
 
 import java.util.Collection;
 import javax.cache.Cache;
@@ -44,129 +44,124 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.configuration.TopologyValidator;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
-import org.apache.ignite.internal.processors.cache.IgniteCacheConfigPermutationsAbstractTest;
 import org.apache.ignite.marshaller.optimized.OptimizedMarshaller;
 import org.apache.ignite.spi.swapspace.inmemory.GridTestSwapSpaceSpi;
+import org.apache.ignite.testframework.junits.IgniteCacheConfigVariationsAbstractTest;
 
 import static org.apache.ignite.internal.util.lang.GridFunc.asArray;
-import static org.apache.ignite.testframework.config.Parameters.booleanParameters;
-import static org.apache.ignite.testframework.config.Parameters.complexParameter;
-import static org.apache.ignite.testframework.config.Parameters.enumParameters;
-import static org.apache.ignite.testframework.config.Parameters.factory;
-import static org.apache.ignite.testframework.config.Parameters.objectParameters;
-import static org.apache.ignite.testframework.config.Parameters.parameter;
 
 /**
- * Cache configuration permutations.
+ * Cache configuration variations.
  */
-@SuppressWarnings("serial") public class ConfigurationPermutations {
+@SuppressWarnings("serial")
+public class ConfigVariations {
     /** */
-    public static final ConfigurationParameter<Object> EVICTION_PARAM = complexParameter(
-        parameter("setEvictionPolicy", factory(FifoEvictionPolicy.class)),
-        parameter("setEvictionFilter", factory(NoopEvictionFilter.class))
+    private static final ConfigParameter<Object> EVICTION_PARAM = Parameters.complexParameter(
+        Parameters.parameter("setEvictionPolicy", Parameters.factory(FifoEvictionPolicy.class)),
+        Parameters.parameter("setEvictionFilter", Parameters.factory(NoopEvictionFilter.class))
     );
 
     /** */
-    public static final ConfigurationParameter<Object> CACHE_STORE_PARAM = complexParameter(
-        parameter("setCacheStoreFactory", factory(IgniteCacheConfigPermutationsAbstractTest.TestStoreFactory.class)),
-        parameter("setReadThrough", true),
-        parameter("setWriteThrough", true),
-        parameter("setCacheStoreSessionListenerFactories", noopCacheStoreSessionListenerFactory())
+    private static final ConfigParameter<Object> CACHE_STORE_PARAM = Parameters.complexParameter(
+        Parameters.parameter("setCacheStoreFactory", Parameters.factory(IgniteCacheConfigVariationsAbstractTest.TestStoreFactory.class)),
+        Parameters.parameter("setReadThrough", true),
+        Parameters.parameter("setWriteThrough", true),
+        Parameters.parameter("setCacheStoreSessionListenerFactories", noopCacheStoreSessionListenerFactory())
     );
 
     /** */
-    public static final ConfigurationParameter<Object> SIMPLE_CACHE_STORE_PARAM = complexParameter(
-        parameter("setCacheStoreFactory", factory(IgniteCacheConfigPermutationsAbstractTest.TestStoreFactory.class)),
-        parameter("setReadThrough", true),
-        parameter("setWriteThrough", true)
+    private static final ConfigParameter<Object> SIMPLE_CACHE_STORE_PARAM = Parameters.complexParameter(
+        Parameters.parameter("setCacheStoreFactory", Parameters.factory(IgniteCacheConfigVariationsAbstractTest.TestStoreFactory.class)),
+        Parameters.parameter("setReadThrough", true),
+        Parameters.parameter("setWriteThrough", true)
     );
 
     /** */
-    public static final ConfigurationParameter<Object> REBALANCING_PARAM = complexParameter(
-        parameter("setRebalanceBatchSize", 2028 * 1024),
-        parameter("setRebalanceBatchesPrefetchCount", 5L),
-        parameter("setRebalanceThreadPoolSize", 5),
-        parameter("setRebalanceTimeout", CacheConfiguration.DFLT_REBALANCE_TIMEOUT * 2),
-        parameter("setRebalanceDelay", 1000L)
+    private static final ConfigParameter<Object> REBALANCING_PARAM = Parameters.complexParameter(
+        Parameters.parameter("setRebalanceBatchSize", 2028 * 1024),
+        Parameters.parameter("setRebalanceBatchesPrefetchCount", 5L),
+        Parameters.parameter("setRebalanceThreadPoolSize", 5),
+        Parameters.parameter("setRebalanceTimeout", CacheConfiguration.DFLT_REBALANCE_TIMEOUT * 2),
+        Parameters.parameter("setRebalanceDelay", 1000L)
     );
 
     /** */
-    public static final ConfigurationParameter<Object> ONHEAP_TIERED_MEMORY_PARAM =
-        parameter("setMemoryMode", CacheMemoryMode.ONHEAP_TIERED);
+    private static final ConfigParameter<Object> ONHEAP_TIERED_MEMORY_PARAM =
+        Parameters.parameter("setMemoryMode", CacheMemoryMode.ONHEAP_TIERED);
 
     /** */
-    public static final ConfigurationParameter<Object> OFFHEAP_TIERED_MEMORY_PARAM =
-        parameter("setMemoryMode", CacheMemoryMode.OFFHEAP_TIERED);
+    private static final ConfigParameter<Object> OFFHEAP_TIERED_MEMORY_PARAM =
+        Parameters.parameter("setMemoryMode", CacheMemoryMode.OFFHEAP_TIERED);
 
     /** */
-    public static final ConfigurationParameter<Object> OFFHEAP_VALUES_MEMORY_PARAM =
-        parameter("setMemoryMode", CacheMemoryMode.OFFHEAP_VALUES);
+    private static final ConfigParameter<Object> OFFHEAP_VALUES_MEMORY_PARAM =
+        Parameters.parameter("setMemoryMode", CacheMemoryMode.OFFHEAP_VALUES);
 
     /** */
-    public static final ConfigurationParameter<Object> OFFHEAP_ENABLED =
-        parameter("setOffHeapMaxMemory", 10 * 1024 * 1024L);
+    private static final ConfigParameter<Object> OFFHEAP_ENABLED =
+        Parameters.parameter("setOffHeapMaxMemory", 10 * 1024 * 1024L);
 
     /** */
     @SuppressWarnings("unchecked")
-    private static final ConfigurationParameter<IgniteConfiguration>[][] BASIC_IGNITE_SET = new ConfigurationParameter[][] {
-        objectParameters("setMarshaller", factory(BinaryMarshaller.class), optimizedMarshallerFactory()),
-        booleanParameters("setPeerClassLoadingEnabled"),
-        objectParameters("setSwapSpaceSpi", factory(GridTestSwapSpaceSpi.class)),
+    private static final ConfigParameter<IgniteConfiguration>[][] BASIC_IGNITE_SET = new ConfigParameter[][] {
+        Parameters.objectParameters("setMarshaller", Parameters.factory(BinaryMarshaller.class), optimizedMarshallerFactory()),
+        Parameters.booleanParameters("setPeerClassLoadingEnabled"),
+        Parameters.objectParameters("setSwapSpaceSpi", Parameters.factory(GridTestSwapSpaceSpi.class)),
     };
 
     /** */
     @SuppressWarnings("unchecked")
-    public static final ConfigurationParameter<CacheConfiguration>[][] BASIC_SET = new ConfigurationParameter[][] {
-        objectParameters("setCacheMode", CacheMode.REPLICATED, CacheMode.PARTITIONED),
-        enumParameters("setAtomicityMode", CacheAtomicityMode.class),
-        enumParameters("setMemoryMode", CacheMemoryMode.class),
+    private static final ConfigParameter<CacheConfiguration>[][] BASIC_CACHE_SET = new ConfigParameter[][] {
+        Parameters.objectParameters("setCacheMode", CacheMode.REPLICATED, CacheMode.PARTITIONED),
+        Parameters.enumParameters("setAtomicityMode", CacheAtomicityMode.class),
+        Parameters.enumParameters("setMemoryMode", CacheMemoryMode.class),
         // Set default parameters.
-        objectParameters("setLoadPreviousValue", true),
-        objectParameters("setSwapEnabled", true),
+        Parameters.objectParameters("setLoadPreviousValue", true),
+        Parameters.objectParameters("setSwapEnabled", true),
         asArray(SIMPLE_CACHE_STORE_PARAM),
-        objectParameters("setWriteSynchronizationMode", CacheWriteSynchronizationMode.FULL_SYNC),
-        objectParameters("setAtomicWriteOrderMode", CacheAtomicWriteOrderMode.PRIMARY),
-        objectParameters("setStartSize", 1024),
+        Parameters.objectParameters("setWriteSynchronizationMode", CacheWriteSynchronizationMode.FULL_SYNC),
+        Parameters.objectParameters("setAtomicWriteOrderMode", CacheAtomicWriteOrderMode.PRIMARY),
+        Parameters.objectParameters("setStartSize", 1024),
     };
 
     /** */
     @SuppressWarnings("unchecked")
-    public static final ConfigurationParameter<CacheConfiguration>[][] DEFAULT_SET = new ConfigurationParameter[][] {
-        enumParameters("setCacheMode", CacheMode.class),
-        enumParameters("setAtomicityMode", CacheAtomicityMode.class),
+    private static final ConfigParameter<CacheConfiguration>[][] FULL_CACHE_SET = new ConfigParameter[][] {
+        Parameters.enumParameters("setCacheMode", CacheMode.class),
+        Parameters.enumParameters("setAtomicityMode", CacheAtomicityMode.class),
         asArray(ONHEAP_TIERED_MEMORY_PARAM,
-            complexParameter(ONHEAP_TIERED_MEMORY_PARAM, OFFHEAP_ENABLED),
-            complexParameter(OFFHEAP_TIERED_MEMORY_PARAM, OFFHEAP_ENABLED),
-            complexParameter(OFFHEAP_VALUES_MEMORY_PARAM, OFFHEAP_ENABLED)
+            Parameters.complexParameter(ONHEAP_TIERED_MEMORY_PARAM, OFFHEAP_ENABLED),
+            Parameters.complexParameter(OFFHEAP_TIERED_MEMORY_PARAM, OFFHEAP_ENABLED),
+            Parameters.complexParameter(OFFHEAP_VALUES_MEMORY_PARAM, OFFHEAP_ENABLED)
         ),
-        booleanParameters("setLoadPreviousValue"),
-        booleanParameters("setReadFromBackup"),
-        booleanParameters("setStoreKeepBinary"),
-        objectParameters("setRebalanceMode", CacheRebalanceMode.SYNC, CacheRebalanceMode.ASYNC),
-        booleanParameters("setSwapEnabled"),
-        booleanParameters("setCopyOnRead"),
-        objectParameters(true, "setNearConfiguration", nearCacheConfigurationFactory()),
+        Parameters.booleanParameters("setLoadPreviousValue"),
+        Parameters.booleanParameters("setReadFromBackup"),
+        Parameters.booleanParameters("setStoreKeepBinary"),
+        Parameters.objectParameters("setRebalanceMode", CacheRebalanceMode.SYNC, CacheRebalanceMode.ASYNC),
+        Parameters.booleanParameters("setSwapEnabled"),
+        Parameters.booleanParameters("setCopyOnRead"),
+        Parameters.objectParameters(true, "setNearConfiguration", nearCacheConfigurationFactory()),
         asArray(null,
-            complexParameter(
+            Parameters.complexParameter(
                 EVICTION_PARAM,
                 CACHE_STORE_PARAM,
                 REBALANCING_PARAM,
-                parameter("setAffinity", factory(FairAffinityFunction.class)),
-                parameter("setInterceptor", factory(NoopInterceptor.class)),
-                parameter("setTopologyValidator", factory(NoopTopologyValidator.class)),
-                parameter("addCacheEntryListenerConfiguration", factory(EmptyCacheEntryListenerConfiguration.class))
+                Parameters.parameter("setAffinity", Parameters.factory(FairAffinityFunction.class)),
+                Parameters.parameter("setInterceptor", Parameters.factory(NoopInterceptor.class)),
+                Parameters.parameter("setTopologyValidator", Parameters.factory(NoopTopologyValidator.class)),
+                Parameters.parameter("addCacheEntryListenerConfiguration", Parameters.factory(EmptyCacheEntryListenerConfiguration.class))
             )
         ),
         // Set default parameters.
-        objectParameters("setWriteSynchronizationMode", CacheWriteSynchronizationMode.FULL_SYNC),
-        objectParameters("setAtomicWriteOrderMode", CacheAtomicWriteOrderMode.PRIMARY),
-        objectParameters("setStartSize", 1024),
+        Parameters.objectParameters("setWriteSynchronizationMode", CacheWriteSynchronizationMode.FULL_SYNC),
+        Parameters.objectParameters("setAtomicWriteOrderMode", CacheAtomicWriteOrderMode.PRIMARY),
+        Parameters.objectParameters("setStartSize", 1024),
     };
 
     /**
      * Private constructor.
      */
-    private ConfigurationPermutations() {
+    private ConfigVariations() {
         // No-op.
     }
 
@@ -197,23 +192,23 @@ import static org.apache.ignite.testframework.config.Parameters.parameter;
     }
 
     /**
-     * @return Default matrix of availiable permutations.
+     * @return Default matrix of availiable variations.
      */
-    public static ConfigurationParameter<CacheConfiguration>[][] cacheBasicSet() {
-        return BASIC_SET;
+    public static ConfigParameter<CacheConfiguration>[][] cacheBasicSet() {
+        return BASIC_CACHE_SET;
     }
 
     /**
-     * @return Default matrix of availiable permutations.
+     * @return Full matrix of availiable variations.
      */
-    public static ConfigurationParameter<CacheConfiguration>[][] cacheDefaultSet() {
-        return DEFAULT_SET;
+    public static ConfigParameter<CacheConfiguration>[][] cacheFullSet() {
+        return FULL_CACHE_SET;
     }
 
     /**
-     * @return Default matrix of availiable permutations.
+     * @return Default matrix of availiable variations.
      */
-    public static ConfigurationParameter<IgniteConfiguration>[][] igniteBasicSet() {
+    public static ConfigParameter<IgniteConfiguration>[][] igniteBasicSet() {
         return BASIC_IGNITE_SET;
     }
 

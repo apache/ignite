@@ -15,27 +15,27 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.testframework;
+package org.apache.ignite.testframework.configvariations;
 
 import junit.framework.Test;
 import junit.framework.TestResult;
 import junit.framework.TestSuite;
-import org.apache.ignite.internal.processors.cache.IgniteCacheConfigPermutationsAbstractTest;
-import org.apache.ignite.testframework.junits.IgniteConfigPermutationsAbstractTest;
+import org.apache.ignite.testframework.junits.IgniteCacheConfigVariationsAbstractTest;
+import org.apache.ignite.testframework.junits.IgniteConfigVariationsAbstractTest;
 
 /**
- * Configuration permutations test suite.
+ * Configuration variations test suite.
  */
-public class IgniteConfigPermutationsTestSuite extends TestSuite {
+public class IgniteConfigVariationsTestSuite extends TestSuite {
     /** */
-    protected final TestsConfiguration cfg;
+    protected final VariationsTestsConfig cfg;
 
     /**
      * @param cls Test class.
      * @param cfg Configuration.
      */
-    public IgniteConfigPermutationsTestSuite(Class<? extends IgniteConfigPermutationsAbstractTest> cls,
-        TestsConfiguration cfg) {
+    public IgniteConfigVariationsTestSuite(Class<? extends IgniteConfigVariationsAbstractTest> cls,
+        VariationsTestsConfig cfg) {
         super(cls);
 
         this.cfg = cfg;
@@ -46,8 +46,8 @@ public class IgniteConfigPermutationsTestSuite extends TestSuite {
      * @param cfg Configuration.
      * @param testedNodeCnt Count of tested nodes.
      */
-    public static TestSuite createMultiNodeTestSuite(Class<? extends IgniteCacheConfigPermutationsAbstractTest> cls,
-        TestsConfiguration cfg, int testedNodeCnt, boolean withClients) {
+    public static TestSuite createMultiNodeTestSuite(Class<? extends IgniteCacheConfigVariationsAbstractTest> cls,
+        VariationsTestsConfig cfg, int testedNodeCnt, boolean withClients) {
         TestSuite suite = new TestSuite();
 
         if (cfg.gridCount() < testedNodeCnt)
@@ -59,10 +59,10 @@ public class IgniteConfigPermutationsTestSuite extends TestSuite {
             boolean startCache = i == 0;
             boolean stopCache = i + 1 == testedNodeCnt;
 
-            TestsConfiguration cfg0 = new TestsConfiguration(cfg.configurationFactory(), cfg.description(),
+            VariationsTestsConfig cfg0 = new VariationsTestsConfig(cfg.configurationFactory(), cfg.description(),
                 stopNodes, startCache, stopCache, cfg.cacheStartMode(), cfg.gridCount(), i, withClients);
 
-            suite.addTest(new IgniteConfigPermutationsTestSuite(cls, cfg0));
+            suite.addTest(new IgniteConfigVariationsTestSuite(cls, cfg0));
         }
 
         return suite;
@@ -70,8 +70,8 @@ public class IgniteConfigPermutationsTestSuite extends TestSuite {
 
     /** {@inheritDoc} */
     @Override public void runTest(Test test, TestResult res) {
-        if (test instanceof IgniteConfigPermutationsAbstractTest)
-            ((IgniteConfigPermutationsAbstractTest)test).setTestsConfiguration(cfg);
+        if (test instanceof IgniteConfigVariationsAbstractTest)
+            ((IgniteConfigVariationsAbstractTest)test).setTestsConfiguration(cfg);
 
         super.runTest(test, res);
     }

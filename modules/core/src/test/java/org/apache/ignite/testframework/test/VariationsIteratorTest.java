@@ -21,12 +21,12 @@ import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
 import junit.framework.TestCase;
-import org.apache.ignite.testframework.config.PermutationsIterator;
+import org.apache.ignite.testframework.configvariations.VariationsIterator;
 
 /**
  * Test start iterator.
  */
-public class PermutationsIteratorTest extends TestCase {
+public class VariationsIteratorTest extends TestCase {
     /**
      * @throws Exception If failed.
      */
@@ -135,7 +135,7 @@ public class PermutationsIteratorTest extends TestCase {
 
         int step = 0;
 
-        for (PermutationsIterator it = new PermutationsIterator(arr); it.hasNext(); ) {
+        for (VariationsIterator it = new VariationsIterator(arr); it.hasNext(); ) {
             int[] state = it.next();
 
             System.out.println(Arrays.toString(state));

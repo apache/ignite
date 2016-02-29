@@ -23,33 +23,33 @@ import junit.framework.TestSuite;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.lang.IgnitePredicate;
-import org.apache.ignite.testframework.config.ConfigPermutationsTestSuiteBuilder;
-import org.apache.ignite.testframework.junits.IgniteConfigPermutationsAbstractTest;
+import org.apache.ignite.testframework.configvariations.ConfigVariationsTestSuiteBuilder;
+import org.apache.ignite.testframework.junits.IgniteConfigVariationsAbstractTest;
 
 /**
  *
  */
-public class ConfigPermutationsTestSuiteBuilderTest extends TestCase {
+public class ConfigVariationsTestSuiteBuilderTest extends TestCase {
     /**
      * @throws Exception If failed.
      */
     public void testDefaults() throws Exception {
-        TestSuite dfltSuite = new ConfigPermutationsTestSuiteBuilder("testSuite", OneTestCase.class).build();
+        TestSuite dfltSuite = new ConfigVariationsTestSuiteBuilder("testSuite", OneTestCase.class).build();
 
         assertEquals(4, dfltSuite.countTestCases());
 
-        TestSuite dfltCacheSuite = new ConfigPermutationsTestSuiteBuilder("testSuite", OneTestCase.class)
+        TestSuite dfltCacheSuite = new ConfigVariationsTestSuiteBuilder("testSuite", OneTestCase.class)
             .withBasicCacheParams().build();
 
         assertEquals(4 * 12, dfltCacheSuite.countTestCases());
 
         // With clients.
-        dfltSuite = new ConfigPermutationsTestSuiteBuilder("testSuite", OneTestCase.class)
+        dfltSuite = new ConfigVariationsTestSuiteBuilder("testSuite", OneTestCase.class)
             .testedNodesCount(2).withClients().build();
 
         assertEquals(4 * 2, dfltSuite.countTestCases());
 
-        dfltCacheSuite = new ConfigPermutationsTestSuiteBuilder("testSuite", OneTestCase.class)
+        dfltCacheSuite = new ConfigVariationsTestSuiteBuilder("testSuite", OneTestCase.class)
             .withBasicCacheParams().testedNodesCount(3).withClients().build();
 
         assertEquals(4 * 12 * 3, dfltCacheSuite.countTestCases());
@@ -60,11 +60,11 @@ public class ConfigPermutationsTestSuiteBuilderTest extends TestCase {
      */
     @SuppressWarnings("serial")
     public void testIgniteConfigFilter() throws Exception {
-        TestSuite dfltSuite = new ConfigPermutationsTestSuiteBuilder("testSuite", OneTestCase.class).build();
+        TestSuite dfltSuite = new ConfigVariationsTestSuiteBuilder("testSuite", OneTestCase.class).build();
 
         final AtomicInteger cnt = new AtomicInteger();
 
-        TestSuite filteredSuite = new ConfigPermutationsTestSuiteBuilder("testSuite", OneTestCase.class)
+        TestSuite filteredSuite = new ConfigVariationsTestSuiteBuilder("testSuite", OneTestCase.class)
             .withIgniteConfigFilters(new IgnitePredicate<IgniteConfiguration>() {
                 @Override public boolean apply(IgniteConfiguration configuration) {
                     return cnt.getAndIncrement() % 2 == 0;
@@ -80,13 +80,13 @@ public class ConfigPermutationsTestSuiteBuilderTest extends TestCase {
      */
     @SuppressWarnings("serial")
     public void testCacheConfigFilter() throws Exception {
-        TestSuite dfltSuite = new ConfigPermutationsTestSuiteBuilder("testSuite", OneTestCase.class)
+        TestSuite dfltSuite = new ConfigVariationsTestSuiteBuilder("testSuite", OneTestCase.class)
             .withBasicCacheParams()
             .build();
 
         final AtomicInteger cnt = new AtomicInteger();
 
-        TestSuite filteredSuite = new ConfigPermutationsTestSuiteBuilder("testSuite", OneTestCase.class)
+        TestSuite filteredSuite = new ConfigVariationsTestSuiteBuilder("testSuite", OneTestCase.class)
             .withBasicCacheParams()
             .withCacheConfigFilters(new IgnitePredicate<CacheConfiguration>() {
                 @Override public boolean apply(CacheConfiguration configuration) {
@@ -101,7 +101,7 @@ public class ConfigPermutationsTestSuiteBuilderTest extends TestCase {
     /**
      *
      */
-    private static class OneTestCase extends IgniteConfigPermutationsAbstractTest {
+    private static class OneTestCase extends IgniteConfigVariationsAbstractTest {
         /**
          * @throws Exception If failed.
          */

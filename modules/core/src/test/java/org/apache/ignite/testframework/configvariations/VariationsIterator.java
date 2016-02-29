@@ -15,15 +15,15 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.testframework.config;
+package org.apache.ignite.testframework.configvariations;
 
 import java.util.Arrays;
 import java.util.Iterator;
 
 /**
- * State iterator.
+ * Variations iterator.
  */
-public class PermutationsIterator implements Iterator<int[]> {
+public class VariationsIterator implements Iterator<int[]> {
     /** */
     private final Object[][] params;
 
@@ -42,7 +42,7 @@ public class PermutationsIterator implements Iterator<int[]> {
     /**
      * @param params Paramethers.
      */
-    public PermutationsIterator(Object[][] params) {
+    public VariationsIterator(Object[][] params) {
         assert params != null;
         assert params.length > 0;
 

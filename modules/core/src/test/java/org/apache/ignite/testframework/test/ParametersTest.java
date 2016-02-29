@@ -22,8 +22,8 @@ import java.util.Set;
 import junit.framework.TestCase;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.testframework.config.ConfigurationParameter;
-import org.apache.ignite.testframework.config.Parameters;
+import org.apache.ignite.testframework.configvariations.ConfigParameter;
+import org.apache.ignite.testframework.configvariations.Parameters;
 
 /**
  * Test.
@@ -32,14 +32,14 @@ public class ParametersTest extends TestCase {
     /**
      * @throws Exception If failed.
      */
-    public void testEnumVariants() throws Exception {
-        ConfigurationParameter<CacheConfiguration>[] modes = Parameters.enumParameters("setCacheMode", CacheMode.class);
+    public void testEnumVariations() throws Exception {
+        ConfigParameter<CacheConfiguration>[] modes = Parameters.enumParameters("setCacheMode", CacheMode.class);
 
         assertEquals(CacheMode.values().length, modes.length);
 
         Set<CacheMode> res = new HashSet<>();
 
-        for (ConfigurationParameter<CacheConfiguration> modeApplier : modes) {
+        for (ConfigParameter<CacheConfiguration> modeApplier : modes) {
             CacheConfiguration cfg = new CacheConfiguration();
 
             modeApplier.apply(cfg);
@@ -58,8 +58,8 @@ public class ParametersTest extends TestCase {
      * @throws Exception If failed.
      */
     @SuppressWarnings("unchecked")
-    public void testEnumVariantsWithNull() throws Exception {
-        ConfigurationParameter<CacheConfiguration>[] cfgParam =
+    public void testEnumVariationsWithNull() throws Exception {
+        ConfigParameter<CacheConfiguration>[] cfgParam =
             Parameters.enumParameters(true, "setCacheMode", CacheMode.class);
 
         assertEquals(CacheMode.values().length + 1, cfgParam.length);
@@ -69,7 +69,7 @@ public class ParametersTest extends TestCase {
         Set<CacheMode> set = new HashSet<>();
 
         for (int i = 1; i < cfgParam.length; i++) {
-            ConfigurationParameter<CacheConfiguration> modeApplier = cfgParam[i];
+            ConfigParameter<CacheConfiguration> modeApplier = cfgParam[i];
 
             CacheConfiguration cfg = new CacheConfiguration();
 
