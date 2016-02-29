@@ -18,6 +18,7 @@
 namespace Apache.Ignite.Core.Tests.Compute
 {
     using System;
+    using System.IO;
 
     /// <summary>
     /// Compute API test with compact footers disabled.
@@ -29,10 +30,28 @@ namespace Apache.Ignite.Core.Tests.Compute
         /// </summary>
         protected override Tuple<string, string, string> GetConfigs()
         {
+            var baseConfigs = base.GetConfigs();
+
             return Tuple.Create(
-                "config\\compute\\compute-grid1.xml",
-                "config\\compute\\compute-grid2.xml",
-                "config\\compute\\compute-grid3.xml");
+                ReplaceFooterSetting(baseConfigs.Item1),
+                ReplaceFooterSetting(baseConfigs.Item2),
+                ReplaceFooterSetting(baseConfigs.Item3));
+        }
+
+        /// <summary>
+        /// Replaces the footer setting.
+        /// </summary>
+        private static string ReplaceFooterSetting(string path)
+        {
+            var text = File.ReadAllText(path).Replace(
+                "property name=\"compactFooter\" value=\"true\"",
+                "property name=\"compactFooter\" value=\"false\"");
+
+            path += "_fullFooter";
+
+            File.WriteAllText(path, text);
+
+            return path;
         }
     }
 }
