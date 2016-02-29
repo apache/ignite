@@ -65,6 +65,8 @@ namespace Apache.Ignite.Core.Impl.Binary
             if (cfg == null)
                 cfg = new BinaryConfiguration();
 
+            CompactFooter = cfg.CompactFooter;
+
             if (cfg.TypeConfigurations == null)
                 cfg.TypeConfigurations = new List<BinaryTypeConfiguration>();
 
@@ -108,10 +110,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// <summary>
         /// Gets the compact footer flag.
         /// </summary>
-        public bool CompactFooter
-        {
-            get { return _cfg.CompactFooter; }
-        }
+        public bool CompactFooter { get; set; }
 
         /// <summary>
         /// Marshal object.

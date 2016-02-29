@@ -33,6 +33,9 @@ namespace Apache.Ignite.Core.Binary
         /// </summary>
         public const bool DefaultCompactFooter = true;
 
+        /** Footer setting. */
+        private bool? _compactFooter;
+
         /// <summary>
         /// Initializes a new instance of the <see cref="BinaryConfiguration"/> class.
         /// </summary>
@@ -115,6 +118,18 @@ namespace Apache.Ignite.Core.Binary
         /// sources (e.g.cache store which stores data in binary form, data center replication, etc.). 
         /// Otherwise binary objects without any associated metadata could could not be deserialized.
         /// </summary>
-        public bool CompactFooter { get; set; }
+        public bool CompactFooter
+        {
+            get { return _compactFooter ?? DefaultCompactFooter; }
+            set { _compactFooter = value; }
+        }
+
+        /// <summary>
+        /// Gets the compact footer internal nullable value.
+        /// </summary>
+        internal bool? CompactFooterInternal
+        {
+            get { return _compactFooter; }
+        }
     }
 }
