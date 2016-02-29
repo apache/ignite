@@ -334,7 +334,7 @@ namespace Apache.Ignite.Core.Tests.Compute
 
             Assert.AreEqual(topVer + 1, _grid1.GetCluster().TopologyVersion);
 
-            _grid3 = Ignition.Start(Configuration("config\\compute\\compute-grid3.xml"));
+            _grid3 = Ignition.Start(Configuration(GetConfigs().Item3));
 
             Assert.AreEqual(topVer + 2, _grid1.GetCluster().TopologyVersion);
         }
@@ -375,7 +375,7 @@ namespace Apache.Ignite.Core.Tests.Compute
             }
             finally 
             {
-                _grid2 = Ignition.Start(Configuration("config\\compute\\compute-grid2.xml"));
+                _grid2 = Ignition.Start(Configuration(GetConfigs().Item2));
             }
         }
 
@@ -407,7 +407,7 @@ namespace Apache.Ignite.Core.Tests.Compute
 
             Assert.IsTrue(nodes.Count == 2);
 
-            _grid2 = Ignition.Start(Configuration("config\\compute\\compute-grid2.xml"));
+            _grid2 = Ignition.Start(Configuration(GetConfigs().Item2));
 
             nodes = _grid1.GetCluster().GetNodes();
 
