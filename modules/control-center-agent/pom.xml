@@ -33,6 +33,10 @@
     <artifactId>ignite-control-center-agent</artifactId>
     <version>1.5.0.final-SNAPSHOT</version>
 
+    <properties>
+        <maven.build.timestamp.format>yyMMddHHmmss</maven.build.timestamp.format>
+    </properties>
+
     <dependencies>
         <dependency>
             <groupId>io.socket</groupId>

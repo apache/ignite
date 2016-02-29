@@ -46,7 +46,7 @@ module.exports.factory = function(nconf, fs) {
 
     return {
         agent: {
-            file: 'ignite-web-agent-1.5.0.final',
+            dists: 'serve/agent_dists',
             port: _normalizePort(nconf.get('agent-server:port') || 3001),
             SSLOptions: nconf.get('agent-server:ssl') && {
                 key: fs.readFileSync(nconf.get('agent-server:key')),

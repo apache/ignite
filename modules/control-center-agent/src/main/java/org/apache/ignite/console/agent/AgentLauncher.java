@@ -28,8 +28,11 @@ import java.io.IOException;
 import java.net.ConnectException;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.net.URL;
 import java.util.Arrays;
 import java.util.concurrent.CountDownLatch;
+import java.util.jar.Attributes;
+import java.util.jar.Manifest;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLHandshakeException;
 import javax.net.ssl.TrustManager;
@@ -228,7 +231,22 @@ public class AgentLauncher {
 
                         try {
                             authMsg.put("token", cfg.token());
-                            authMsg.put("relDate", cfg.relDate());
+
+                            String clsName = AgentLauncher.class.getSimpleName() + ".class";
+
+                            String clsPath = AgentLauncher.class.getResource(clsName).toString();
+
+                            if (clsPath.startsWith("jar")) {
+                                String manifestPath = clsPath.substring(0, clsPath.lastIndexOf("!") + 1) +
+                                    "/META-INF/MANIFEST.MF";
+
+                                Manifest manifest = new Manifest(new URL(manifestPath).openStream());
+
+                                Attributes attr = manifest.getMainAttributes();
+
+                                authMsg.put("ver", attr.getValue("Implementation-Version"));
+                                authMsg.put("ts", attr.getValue("Build-Time"));
+                            }
 
                             client.emit("agent:auth", authMsg, new Ack() {
                                 @Override public void call(Object... args) {
@@ -243,7 +261,7 @@ public class AgentLauncher {
                                 }
                             });
                         }
-                        catch (JSONException e) {
+                        catch (JSONException | IOException e) {
                             log.error("Failed to construct authentication message", e);
 
                             client.close();

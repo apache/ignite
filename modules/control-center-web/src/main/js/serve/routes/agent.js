@@ -21,7 +21,7 @@
 
 module.exports = {
     implements: 'agent-routes',
-    inject: ['require(lodash)', 'require(express)', 'require(apache-ignite)', 'require(fs)', 'require(jszip)', 'settings', 'agent']
+    inject: ['require(lodash)', 'require(express)', 'require(fs)', 'require(jszip)', 'require(apache-ignite)', 'settings', 'agent']
 };
 
 /**
@@ -34,7 +34,7 @@ module.exports = {
  * @param {AgentManager} agentMgr
  * @returns {Promise}
  */
-module.exports.factory = function(_, express, apacheIgnite, fs, JSZip, settings, agentMgr) {
+module.exports.factory = function(_, express, fs, JSZip, apacheIgnite, settings, agentMgr) {
     return new Promise((resolveFactory) => {
         const router = new express.Router();
 
@@ -67,43 +67,40 @@ module.exports.factory = function(_, express, apacheIgnite, fs, JSZip, settings,
 
         /* Get grid topology. */
         router.get('/download/zip', (req, res) => {
-            const agentFld = settings.agent.file;
-            const agentZip = agentFld + '.zip';
-            const agentPathZip = 'public/agent/' + agentFld + '.zip';
+            const latest = agentMgr.supportedAgents.latest;
 
-            fs.stat(agentPathZip, (err, stats) => {
-                if (err)
+            if (_.isEmpty(latest))
+                return res.status(500).send('Missing agent zip on server. Please ask webmaster to upload agent zip!');
+
+            const agentFld = latest.fileName.substr(0, latest.fileName.length - 4);
+            const agentZip = latest.fileName;
+            const agentPathZip = latest.filePath;
+
+            // Read a zip file.
+            fs.readFile(agentPathZip, (errFs, data) => {
+                if (errFs)
                     return res.download(agentPathZip, agentZip);
 
-                // Read a zip file.
-                fs.readFile(agentPathZip, (errFs, data) => {
-                    if (errFs)
-                        return res.download(agentPathZip, agentZip);
+                const zip = new JSZip(data);
 
-                    const zip = new JSZip(data);
+                const prop = [];
 
-                    const prop = [];
+                const host = req.hostname.match(/:/g) ? req.hostname.slice(0, req.hostname.indexOf(':')) : req.hostname;
 
-                    const host = req.hostname.match(/:/g) ? req.hostname.slice(0, req.hostname.indexOf(':')) : req.hostname;
+                prop.push('token=' + req.user.token);
+                prop.push('server-uri=wss://' + host + ':' + settings.agent.port);
+                prop.push('#Uncomment following options if needed:');
+                prop.push('#node-uri=http://localhost:8080');
+                prop.push('#driver-folder=./jdbc-drivers');
 
-                    prop.push('token=' + req.user.token);
-                    prop.push('server-uri=wss://' + host + ':' + settings.agent.port);
-                    prop.push('#Uncomment following options if needed:');
-                    prop.push('#node-uri=http://localhost:8080');
-                    prop.push('#driver-folder=./jdbc-drivers');
-                    prop.push('');
-                    prop.push('#Note: Do not change this auto generated line');
-                    prop.push('rel-date=' + stats.birthtime.getTime());
+                zip.file(agentFld + '/default.properties', prop.join('\n'));
 
-                    zip.file(agentFld + '/default.properties', prop.join('\n'));
+                const buffer = zip.generate({type: 'nodebuffer', platform: 'UNIX'});
 
-                    const buffer = zip.generate({type: 'nodebuffer', platform: 'UNIX'});
+                // Set the archive name.
+                res.attachment(agentZip);
 
-                    // Set the archive name.
-                    res.attachment(agentZip);
-
-                    res.send(buffer);
-                });
+                res.send(buffer);
             });
         });
 

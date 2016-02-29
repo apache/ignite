@@ -21,18 +21,21 @@
 
 module.exports = {
     implements: 'agent',
-    inject: ['require(lodash)', 'require(fs)', 'require(socket.io)', 'require(apache-ignite)', 'mongo']
+    inject: ['require(lodash)', 'require(fs)', 'require(path)', 'require(jszip)', 'require(socket.io)', 'require(apache-ignite)', 'settings', 'mongo']
 };
 
 /**
  * @param _
  * @param fs
+ * @param path
+ * @param JSZip
  * @param socketio
  * @param apacheIgnite
+ * @param settings
  * @param mongo
  * @returns {AgentManager}
  */
-module.exports.factory = function(_, fs, socketio, apacheIgnite, mongo) {
+module.exports.factory = function(_, fs, path, JSZip, socketio, apacheIgnite, settings, mongo) {
     /**
      * Creates an instance of server for Ignite.
      */
@@ -100,16 +103,6 @@ module.exports.factory = function(_, fs, socketio, apacheIgnite, mongo) {
             });
 
             this._wsSocket.on('agent:auth', (msg, cb) => self._processAuth(msg, cb));
-
-            this._wsSocket.on('message', (msgStr) => {
-                const msg = JSON.parse(msgStr);
-
-                self['_rmt' + msg.type](msg);
-            });
-
-            this._reqCounter = 0;
-
-            this._cbMap = {};
         }
 
         /**
@@ -264,33 +257,32 @@ module.exports.factory = function(_, fs, socketio, apacheIgnite, mongo) {
         _processAuth(data, cb) {
             const self = this;
 
-            fs.stat('public/agent/ignite-web-agent-1.5.0.final.zip', (errFs, stats) => {
-                let relDate = 0;
+            if (!_.isEmpty(this._manager.supportedAgents)) {
+                const ver = data.ver;
+                const bt = data.bt;
 
-                if (!errFs)
-                    relDate = stats.birthtime.getTime();
+                if (_.isEmpty(ver) || _.isEmpty(ts) || _.isEmpty(this._manager.supportedAgents[ver]) ||
+                    this._manager.supportedAgents[ver].buildTime > bt)
+                    return cb('You are using an older version of the agent. Please reload agent archive');
+            }
 
-                if ((data.relDate || 0) < relDate)
-                    cb('You are using an older version of the agent. Please reload agent archive');
+            mongo.Account.findOne({token: data.token}, (err, account) => {
+                // TODO IGNITE-1379 send error to web master.
+                if (err)
+                    cb('Failed to authorize user');
+                else if (!account)
+                    cb('Invalid token, user not found');
+                else {
+                    self._user = account;
 
-                mongo.Account.findOne({token: data.token}, (err, account) => {
-                    // TODO IGNITE-1379 send error to web master.
-                    if (err)
-                        cb('Failed to authorize user');
-                    else if (!account)
-                        cb('Invalid token, user not found');
-                    else {
-                        self._user = account;
+                    self._manager._addAgent(account._id, self);
 
-                        self._manager._addAgent(account._id, self);
+                    self._cluster = new apacheIgnite.Ignite(new AgentServer(self));
 
-                        self._cluster = new apacheIgnite.Ignite(new AgentServer(self));
+                    self._demo = new apacheIgnite.Ignite(new AgentServer(self, true));
 
-                        self._demo = new apacheIgnite.Ignite(new AgentServer(self, true));
-
-                        cb();
-                    }
-                });
+                    cb();
+                }
             });
         }
 
@@ -311,6 +303,63 @@ module.exports.factory = function(_, fs, socketio, apacheIgnite, mongo) {
              * @type {Object.<ObjectId, Array.<Agent>>}
              */
             this._agents = {};
+
+            const agentArchives = fs.readdirSync(settings.agent.dists)
+                .filter((file) => path.extname(file) === '.zip');
+
+            /**
+             * @type {Object.<String, String>}
+             */
+            this.supportedAgents = {};
+
+            for (const archive of agentArchives) {
+                const filePath = path.join(settings.agent.dists, archive);
+
+                const zip = new JSZip(fs.readFileSync(filePath));
+
+                const jarPath = _.find(_.keys(zip.files), (file) => path.extname(file) === '.jar');
+
+                const jar = new JSZip(zip.files[jarPath].asNodeBuffer());
+
+                const manifest = jar.files['META-INF/MANIFEST.MF']
+                    .asText()
+                    .trim()
+                    .split(/\s*\n+\s*/)
+                    .map((line, r) => {
+                        r = line.split(/\s*:\s*/);
+
+                        this[r[0]] = r[1];
+
+                        return this;
+                    }, {})[0];
+
+                const ver = manifest['Implementation-Version'];
+
+                if (ver)
+                    this.supportedAgents[ver] = {
+                        fileName: archive,
+                        filePath,
+                        buildTime: manifest['Build-Time']
+                    };
+            }
+
+            const latest = _.first(Object.keys(this.supportedAgents).sort((a, b) => {
+                const aParts = a.split('.');
+                const bParts = b.split('.');
+
+                for (var i = 0; i < aParts.length; ++i) {
+                    if (bParts.length == i)
+                        return 1;
+
+                    if (aParts[i] == aParts[i])
+                        continue;
+
+                    return aParts[i] > bParts[i] ? 1 : -1;
+                }
+            }));
+
+            if (latest)
+                this.supportedAgents.latest = this.supportedAgents[latest];
         }
 
         /**

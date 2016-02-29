@@ -46,7 +46,7 @@ module.exports.factory = function(nodemailer, settings) {
             };
 
             if (transporter.service === '' || transporter.auth.user === '' || transporter.auth.pass === '')
-                throw new Error('Failed to send email. SMTP server is not configured . Please ask webmaster to setup SMTP server!');
+                throw new Error('Failed to send email. SMTP server is not configured. Please ask webmaster to setup SMTP server!');
 
             const mailer = nodemailer.createTransport(transporter);
 
