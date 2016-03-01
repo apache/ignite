@@ -922,7 +922,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
 
             Assert.Throws<CacheException>(() => cache.AsCacheQueryable());
 
-            var names = cache.AsCacheQueryable("Person").Select(x => x.Value.Name).ToArray();
+            var names = cache.AsCacheQueryable(false, "Person").Select(x => x.Value.Name).ToArray();
 
             Assert.AreEqual(PersonCount, names.Length);
 

@@ -40,12 +40,13 @@ namespace Apache.Ignite.Linq.Impl
 
         /** */
         private readonly string _tableName;
-        
+
         /// <summary>
         /// Initializes a new instance of the <see cref="CacheFieldsQueryProvider"/> class.
         /// </summary>
         public CacheFieldsQueryProvider(IQueryParser queryParser, IQueryExecutor executor, IIgnite ignite, 
-            CacheConfiguration cacheConfiguration, string tableName, Type cacheValueType) : base(queryParser, executor)
+            CacheConfiguration cacheConfiguration, string tableName, Type cacheValueType) 
+            : base(queryParser, executor)
         {
             Debug.Assert(ignite != null);
             Debug.Assert(cacheConfiguration != null);

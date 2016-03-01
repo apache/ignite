@@ -43,15 +43,20 @@ namespace Apache.Ignite.Linq.Impl
         private static readonly CopyOnWriteConcurrentDictionary<ConstructorInfo, object> CtorCache =
             new CopyOnWriteConcurrentDictionary<ConstructorInfo, object>();
 
+        /** */
+        private readonly bool _local;
+
         /// <summary>
         /// Initializes a new instance of the <see cref="CacheFieldsQueryExecutor" /> class.
         /// </summary>
         /// <param name="cache">The executor function.</param>
-        public CacheFieldsQueryExecutor(ICacheInternal cache)
+        /// <param name="local">Local flag.</param>
+        public CacheFieldsQueryExecutor(ICacheInternal cache, bool local)
         {
             Debug.Assert(cache != null);
 
             _cache = cache;
+            _local = local;
         }
 
         /** <inheritdoc /> */
@@ -79,7 +84,7 @@ namespace Apache.Ignite.Linq.Impl
             Debug.WriteLine("\nFields Query: {0} | {1}", queryData.QueryText,
                 string.Join(", ", queryData.Parameters.Select(x => x == null ? "null" : x.ToString())));
 
-            var query = new SqlFieldsQuery(queryData.QueryText, queryData.Parameters.ToArray());
+            var query = new SqlFieldsQuery(queryData.QueryText, _local, queryData.Parameters.ToArray());
 
             var selector = GetResultSelector<T>(queryModel.SelectClause.Selector);
 
@@ -102,7 +107,7 @@ namespace Apache.Ignite.Linq.Impl
             var selector = GetResultSelector<T>(queryModel.SelectClause.Selector);
 
             if (queryCaller == null)
-                return args => _cache.QueryFields(new SqlFieldsQuery(queryText, args), selector);
+                return args => _cache.QueryFields(new SqlFieldsQuery(queryText, _local, args), selector);
 
             // Compiled query is a delegate with query parameters
             // Delegate parameters order and query parameters order may differ
@@ -123,10 +128,10 @@ namespace Apache.Ignite.Linq.Impl
 
             // Check if user param order is already correct
             if (indices.SequenceEqual(Enumerable.Range(0, indices.Length)))
-                return args => _cache.QueryFields(new SqlFieldsQuery(queryText, args), selector);
+                return args => _cache.QueryFields(new SqlFieldsQuery(queryText, _local, args), selector);
 
             // Return delegate with reorder
-            return args => _cache.QueryFields(new SqlFieldsQuery(queryText,
+            return args => _cache.QueryFields(new SqlFieldsQuery(queryText, _local,
                 args.Select((x, i) => args[indices[i]]).ToArray()), selector);
         }
 
