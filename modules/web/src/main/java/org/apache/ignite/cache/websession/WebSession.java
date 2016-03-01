@@ -45,6 +45,9 @@ class WebSession implements HttpSession, Externalizable {
     /** */
     private static final long serialVersionUID = 0L;
 
+    /** Flag indicating if the session is valid. */
+    private volatile boolean isValid = true;
+
     /** Empty session context. */
     private static final HttpSessionContext EMPTY_SES_CTX = new HttpSessionContext() {
         @Nullable @Override public HttpSession getSession(String id) {
@@ -152,6 +155,15 @@ class WebSession implements HttpSession, Externalizable {
     }
 
     /**
+     * Checks if the session is valid.
+     *
+     * @return True is valid, otherwise false.
+     */
+    protected boolean isValid() {
+        return this.isValid;
+    }
+
+    /**
      * Resets updates list.
      */
     public void resetUpdates() {
@@ -181,11 +193,17 @@ class WebSession implements HttpSession, Externalizable {
 
     /** {@inheritDoc} */
     @Override public long getCreationTime() {
+        if (!isValid)
+            throw new IllegalStateException("Call on invalidated session!");
+
         return createTime;
     }
 
     /** {@inheritDoc} */
     @Override public long getLastAccessedTime() {
+        if (!isValid)
+            throw new IllegalStateException("Call on invalidated session!");
+
         return accessTime;
     }
 
@@ -201,26 +219,38 @@ class WebSession implements HttpSession, Externalizable {
 
     /** {@inheritDoc} */
     @Override public Object getAttribute(String name) {
+        if (!isValid)
+            throw new IllegalStateException("Call on invalidated session!");
+
         return attrs.get(name);
     }
 
     /** {@inheritDoc} */
     @Override public Object getValue(String name) {
-        return attrs.get(name);
+        return getAttribute(name);
     }
 
     /** {@inheritDoc} */
     @Override public Enumeration<String> getAttributeNames() {
+        if (!isValid)
+            throw new IllegalStateException("Call on invalidated session!");
+
         return Collections.enumeration(attrs.keySet());
     }
 
     /** {@inheritDoc} */
     @Override public String[] getValueNames() {
+        if (!isValid)
+            throw new IllegalStateException("Call on invalidated session!");
+
         return attrs.keySet().toArray(new String[attrs.size()]);
     }
 
     /** {@inheritDoc} */
     @Override public void setAttribute(String name, Object val) {
+        if (!isValid)
+            throw new IllegalStateException("Call on invalidated session!");
+
         attrs.put(name, val);
 
         if (updates != null)
@@ -234,6 +264,9 @@ class WebSession implements HttpSession, Externalizable {
 
     /** {@inheritDoc} */
     @Override public void removeAttribute(String name) {
+        if (!isValid)
+            throw new IllegalStateException("Call on invalidated session!");
+
         attrs.remove(name);
 
         if (updates != null)
@@ -247,11 +280,16 @@ class WebSession implements HttpSession, Externalizable {
 
     /** {@inheritDoc} */
     @Override public void invalidate() {
+        if (!isValid)
+            throw new IllegalStateException("Call on invalidated session!");
+
         attrs.clear();
 
         updates = null;
 
         lsnr.destroySession(id);
+
+        isValid = false;
     }
 
     /**
@@ -263,6 +301,9 @@ class WebSession implements HttpSession, Externalizable {
 
     /** {@inheritDoc} */
     @Override public boolean isNew() {
+        if (!isValid)
+            throw new IllegalStateException("Call on invalidated session!");
+
         return isNew;
     }
 
@@ -273,6 +314,7 @@ class WebSession implements HttpSession, Externalizable {
 
     /** {@inheritDoc} */
     @Override public void writeExternal(ObjectOutput out) throws IOException {
+        out.writeBoolean(isValid);
         U.writeString(out, id);
         out.writeLong(createTime);
         out.writeLong(accessTime);
@@ -282,6 +324,7 @@ class WebSession implements HttpSession, Externalizable {
 
     /** {@inheritDoc} */
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
+        isValid = in.readBoolean();
         id = U.readString(in);
         createTime = in.readLong();
         accessTime = in.readLong();
