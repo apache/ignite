@@ -926,7 +926,6 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
             Assert.AreEqual(count, qry.ToArray().Length);
             Assert.AreEqual(10, qry.Where(x => x.Key < 10).ToArray().Length);
             Assert.AreEqual(1, qry.Count(x => x.Value.Contains("99")));
-
         }
 
         /// <summary>
@@ -947,7 +946,8 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
             Assert.AreEqual(count, cache.AsCacheQueryable(false).ToArray().Length);
 
             // Local query returns only some of the records
-            Assert.AreEqual(count/2, cache.AsCacheQueryable(true).ToArray().Length);
+            Assert.Less(count/2, cache.AsCacheQueryable(true).ToArray().Length);
+            Assert.Greater(count, cache.AsCacheQueryable(true).ToArray().Length);
         }
 
         /// <summary>
