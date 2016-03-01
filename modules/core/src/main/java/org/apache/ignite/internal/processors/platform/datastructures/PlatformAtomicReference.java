@@ -132,7 +132,12 @@ public class PlatformAtomicReference extends PlatformAbstractTarget {
 
             Object res = atomicRef.compareAndSetAndGet(val, cmp);
 
-            writer.writeObject(res);
+            if (cmp == res)
+                writer.writeBoolean(true);
+            else {
+                writer.writeBoolean(false);
+                writer.writeObject(res);
+            }
         }
         else
             super.processInStreamOutStream(type, reader, writer);

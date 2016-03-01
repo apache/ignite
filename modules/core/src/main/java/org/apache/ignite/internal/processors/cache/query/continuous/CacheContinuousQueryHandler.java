@@ -152,7 +152,7 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
     private AffinityTopologyVersion initTopVer;
 
     /** */
-    private transient boolean ignoreClassNotFound;
+    private transient boolean ignoreClsNotFound;
 
     /**
      * Required by {@link Externalizable}.
@@ -192,7 +192,7 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
         boolean skipPrimaryCheck,
         boolean locCache,
         boolean keepBinary,
-        boolean ignoreClassNotFound) {
+        boolean ignoreClsNotFound) {
         assert topic != null;
         assert locLsnr != null;
 
@@ -209,7 +209,7 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
         this.skipPrimaryCheck = skipPrimaryCheck;
         this.locCache = locCache;
         this.keepBinary = keepBinary;
-        this.ignoreClassNotFound = ignoreClassNotFound;
+        this.ignoreClsNotFound = ignoreClsNotFound;
 
         cacheId = CU.cacheId(cacheName);
     }
@@ -593,7 +593,7 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
                 entries0.addAll(handleEvent(ctx, e));
             }
             catch (IgniteCheckedException ex) {
-                if (ignoreClassNotFound)
+                if (ignoreClsNotFound)
                     assert internal;
                 else
                     U.error(ctx.log(getClass()), "Failed to unmarshal entry.", ex);
@@ -997,7 +997,7 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
                         nodes.addAll(ctx.discovery().cacheAffinityNodes(cctx.name(), topVer));
 
                     for (ClusterNode node : nodes) {
-                        if (!node.isLocal()) {
+                        if (!node.isLocal() && node.version().compareTo(CacheContinuousQueryBatchAck.SINCE_VER) >= 0) {
                             try {
                                 cctx.io().send(node, msg, GridIoPolicy.SYSTEM_POOL);
                             }
@@ -1244,7 +1244,7 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
             if (dep == null)
                 throw new IgniteDeploymentCheckedException("Failed to obtain deployment for class: " + clsName);
 
-            return ctx.config().getMarshaller().unmarshal(bytes, dep.classLoader());
+            return ctx.config().getMarshaller().unmarshal(bytes, U.resolveClassLoader(dep.classLoader(), ctx.config()));
         }
 
         /** {@inheritDoc} */

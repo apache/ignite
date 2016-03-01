@@ -44,6 +44,7 @@ public interface GridCacheDrManager extends GridCacheManager {
      * @param expireTime Expire time.
      * @param ver Version.
      * @param drType Replication type.
+     * @param topVer Topology version.
      * @throws IgniteCheckedException If failed.
      */
     public void replicate(KeyCacheObject key,
@@ -51,7 +52,8 @@ public interface GridCacheDrManager extends GridCacheManager {
         long ttl,
         long expireTime,
         GridCacheVersion ver,
-        GridDrType drType)throws IgniteCheckedException;
+        GridDrType drType,
+        AffinityTopologyVersion topVer)throws IgniteCheckedException;
 
     /**
      * Process partitions "before exchange" event.

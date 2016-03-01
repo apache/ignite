@@ -1203,7 +1203,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
             update(val, expireTime, ttl, newVer, true);
 
-            drReplicate(drType, val, newVer);
+            drReplicate(drType, val, newVer, topVer);
 
             recordNodeId(affNodeId, topVer);
 
@@ -1391,7 +1391,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
             if (updateCntr != null && updateCntr != 0)
                 updateCntr0 = updateCntr;
 
-            drReplicate(drType, null, newVer);
+            drReplicate(drType, null, newVer, topVer);
 
             if (metrics && cctx.cache().configuration().isStatisticsEnabled())
                 cctx.cache().metrics0().onRemove();
@@ -2359,7 +2359,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                 if (updateCntr != null)
                     updateCntr0 = updateCntr;
 
-                drReplicate(drType, updated, newVer);
+                drReplicate(drType, updated, newVer, topVer);
 
                 recordNodeId(affNodeId, topVer);
 
@@ -2457,7 +2457,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                 if (updateCntr != null)
                     updateCntr0 = updateCntr;
 
-                drReplicate(drType, null, newVer);
+                drReplicate(drType, null, newVer, topVer);
 
                 if (evt) {
                     CacheObject evtOld = null;
@@ -2600,12 +2600,13 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
      * @param drType DR type.
      * @param val Value.
      * @param ver Version.
+     * @param topVer Topology version.
      * @throws IgniteCheckedException In case of exception.
      */
-    private void drReplicate(GridDrType drType, @Nullable CacheObject val, GridCacheVersion ver)
+    private void drReplicate(GridDrType drType, @Nullable CacheObject val, GridCacheVersion ver, AffinityTopologyVersion topVer)
         throws IgniteCheckedException {
         if (cctx.isDrEnabled() && drType != DR_NONE && !isInternal())
-            cctx.dr().replicate(key, val, rawTtl(), rawExpireTime(), ver.conflictVersion(), drType);
+            cctx.dr().replicate(key, val, rawTtl(), rawExpireTime(), ver.conflictVersion(), drType, topVer);
     }
 
     /**
@@ -3275,7 +3276,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                 if (!preload)
                     updateCntr = nextPartCounter(topVer);
 
-                drReplicate(drType, val, ver);
+                drReplicate(drType, val, ver, topVer);
 
                 if (!skipQryNtf) {
                     cctx.continuousQueries().onEntryUpdated(

@@ -71,6 +71,12 @@ public class TcpDiscoverySharedFsIpFinder extends TcpDiscoveryIpFinderAdapter {
     /** Delimiter to use between address and port tokens in file names. */
     public static final String DELIM = "#";
 
+    /** IPv6 colon delimiter. */
+    private static final String COLON_DELIM = ":";
+
+    /** IPv6 colon substitute. */
+    private static final String COLON_SUBST = "_";
+
     /** Grid logger. */
     @LoggerResource
     private IgniteLogger log;
@@ -198,7 +204,7 @@ public class TcpDiscoverySharedFsIpFinder extends TcpDiscoveryIpFinderAdapter {
                     try {
                         int port = Integer.parseInt(portStr);
 
-                        addr = new InetSocketAddress(addrStr, port);
+                        addr = new InetSocketAddress(denormalizeAddress(addrStr), port);
                     }
                     catch (IllegalArgumentException e) {
                         U.error(log, "Failed to parse file entry: " + fileName, e);
@@ -240,7 +246,8 @@ public class TcpDiscoverySharedFsIpFinder extends TcpDiscoveryIpFinderAdapter {
             for (InetSocketAddress addr : addrs) {
                 File file = new File(folder, name(addr));
 
-                file.delete();
+                if (!file.delete())
+                    throw new IgniteSpiException("Failed to delete file " + file.getName());
             }
         }
         catch (SecurityException e) {
@@ -259,11 +266,31 @@ public class TcpDiscoverySharedFsIpFinder extends TcpDiscoveryIpFinderAdapter {
 
         SB sb = new SB();
 
-        sb.a(addr.getAddress().getHostAddress())
+        sb.a(normalizeAddress(addr.getAddress().getHostAddress()))
             .a(DELIM)
             .a(addr.getPort());
 
         return sb.toString();
+    }
+
+    /**
+     * Normalizes the host address by substituting colon delimiter with underscore.
+     *
+     * @param hostAddress Host address.
+     * @return Normalized host address that can be safely used in file names.
+     */
+    private String normalizeAddress(String hostAddress){
+        return hostAddress.replaceAll(COLON_DELIM, COLON_SUBST);
+    }
+
+    /**
+     * Reverts changes done with {@link TcpDiscoverySharedFsIpFinder#normalizeAddress}.
+     *
+     * @param hostAddress Host address.
+     * @return Standard host address.
+     */
+    private String denormalizeAddress(String hostAddress){
+        return hostAddress.replaceAll(COLON_SUBST, COLON_DELIM);
     }
 
     /** {@inheritDoc} */

@@ -1560,7 +1560,7 @@ public class BinaryUtils {
         ByteArrayInputStream input = new ByteArrayInputStream(in.array(), in.position(), len);
 
         try {
-            return ctx.optimizedMarsh().unmarshal(input, clsLdr);
+            return ctx.optimizedMarsh().unmarshal(input, U.resolveClassLoader(clsLdr, ctx.configuration()));
         }
         catch (IgniteCheckedException e) {
             throw new BinaryObjectException("Failed to unmarshal object with optimized marshaller", e);
