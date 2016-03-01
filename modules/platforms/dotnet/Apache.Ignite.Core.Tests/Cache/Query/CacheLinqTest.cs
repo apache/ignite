@@ -925,7 +925,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
             // Test
             Assert.AreEqual(count, qry.ToArray().Length);
             Assert.AreEqual(10, qry.Where(x => x.Key < 10).ToArray().Length);
-            Assert.AreEqual(10, qry.Count(x => x.Value.Contains("99")));
+            Assert.AreEqual(1, qry.Count(x => x.Value.Contains("99")));
 
         }
 
