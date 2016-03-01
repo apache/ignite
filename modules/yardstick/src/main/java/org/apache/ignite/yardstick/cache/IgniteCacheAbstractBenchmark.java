@@ -17,9 +17,18 @@
 
 package org.apache.ignite.yardstick.cache;
 
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.cache.affinity.Affinity;
+import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.internal.util.typedef.T2;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.yardstick.IgniteAbstractBenchmark;
 import org.yardstickframework.BenchmarkConfiguration;
 import org.yardstickframework.BenchmarkUtils;
@@ -42,6 +51,51 @@ public abstract class IgniteCacheAbstractBenchmark<K, V> extends IgniteAbstractB
         super.setUp(cfg);
 
         cache = cache();
+
+        if (args.printPartitionStatistics()) {
+            Map<ClusterNode, T2<List<Integer>, List<Integer>>> parts = new HashMap<>();
+
+            for (ClusterNode node : ignite().cluster().nodes())
+                parts.put(node,
+                    new T2<List<Integer>, List<Integer>>(new ArrayList<Integer>(), new ArrayList<Integer>()));
+
+            U.sleep(5000);
+
+            Affinity<Object> aff = ignite().affinity(cache.getName());
+
+            for (int p = 0; p < aff.partitions(); p++) {
+                Collection<ClusterNode> nodes = aff.mapPartitionToPrimaryAndBackups(p);
+
+                boolean primary = true;
+
+                for (ClusterNode node : nodes) {
+                    if (primary) {
+                        parts.get(node).get1().add(p);
+
+                        primary = false;
+                    }
+                    else
+                        parts.get(node).get2().add(p);
+                }
+            }
+
+            BenchmarkUtils.println(cfg, "Partition stats. [cacheName: "+ cache.getName() +", topVer: "
+                + ignite().cluster().topologyVersion() + "]");
+            BenchmarkUtils.println(cfg, "(Node id,  Number of Primary, Percent, Number of Backup, Percent, Total, Percent)");
+
+            for (Map.Entry<ClusterNode, T2<List<Integer>, List<Integer>>> e : parts.entrySet()) {
+                List<Integer> primary = e.getValue().get1();
+                List<Integer> backup = e.getValue().get2();
+
+                BenchmarkUtils.println(cfg, e.getKey().id() + "  "
+                    + primary.size() + "  " + primary.size() * 1. /aff.partitions() + "  "
+                    + backup.size() + "  "
+                    + backup.size() * 1. / (aff.partitions() * (args.backups() == 0 ? 1 : args.backups())) + "  "
+                    + (primary.size() + backup.size()) + "  "
+                    + (primary.size() + backup.size() * 1.) / (aff.partitions() * args.backups() + aff.partitions())
+                );
+            }
+        }
     }
 
     /**
