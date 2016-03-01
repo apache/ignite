@@ -34,4 +34,9 @@ public class GridCacheReplicatedPreloadOffHeapSelfTest extends GridCacheReplicat
 
         return cacheCfg;
     }
+
+    /** {@inheritDoc} */
+    @Override public void testDeployment() throws Exception {
+        super.testDeployment();
+    }
 }
