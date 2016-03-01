@@ -162,6 +162,7 @@
     <ClCompile Include="..\..\src\diagnostic\diagnosable_adapter.cpp" />
     <ClCompile Include="..\..\src\diagnostic\diagnostic_record.cpp" />
     <ClCompile Include="..\..\src\diagnostic\diagnostic_record_storage.cpp" />
+    <ClCompile Include="..\..\src\entry_points.cpp" />
     <ClCompile Include="..\..\src\environment.cpp" />
     <ClCompile Include="..\..\src\meta\column_meta.cpp" />
     <ClCompile Include="..\..\src\meta\table_meta.cpp" />
@@ -183,6 +184,7 @@
     <None Include="module.def" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="..\..\include\ignite\odbc.h" />
     <ClInclude Include="..\..\include\ignite\odbc\app\application_data_buffer.h" />
     <ClInclude Include="..\..\include\ignite\odbc\app\parameter.h" />
     <ClInclude Include="..\..\include\ignite\odbc\column.h" />
