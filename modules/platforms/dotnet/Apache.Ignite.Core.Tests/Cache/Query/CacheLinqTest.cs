@@ -35,6 +35,8 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Cache;
     using Apache.Ignite.Core.Cache.Configuration;
+    using Apache.Ignite.Core.Discovery.Tcp;
+    using Apache.Ignite.Core.Discovery.Tcp.Static;
     using Apache.Ignite.Linq;
     using NUnit.Framework;
 
@@ -75,13 +77,8 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
             if (_runDbConsole)
                 Environment.SetEnvironmentVariable("IGNITE_H2_DEBUG_CONSOLE", "true");
 
-            Ignition.Start(new IgniteConfiguration
-            {
-                JvmClasspath = TestUtils.CreateTestClasspath(),
-                JvmOptions = TestUtils.TestJavaOptions(),
-                BinaryConfiguration = new BinaryConfiguration(typeof (Person),
-                    typeof (Organization), typeof (Address), typeof (Role), typeof (RoleKey), typeof(Numerics))
-            });
+            Ignition.Start(GetConfig());
+            Ignition.Start(GetConfig("grid2"));
 
             // Populate caches
             var cache = GetPersonCache();
@@ -116,6 +113,28 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
             roleCache[new RoleKey(1, 101)] = new Role {Name = "Role_1", Date = StartDateTime};
             roleCache[new RoleKey(2, 102)] = new Role {Name = "Role_2", Date = StartDateTime.AddYears(1)};
             roleCache[new RoleKey(3, 103)] = new Role {Name = null, Date = StartDateTime.AddYears(2)};
+        }
+
+        /// <summary>
+        /// Gets the configuration.
+        /// </summary>
+        private static IgniteConfiguration GetConfig(string gridName = null)
+        {
+            return new IgniteConfiguration
+            {
+                JvmClasspath = TestUtils.CreateTestClasspath(),
+                JvmOptions = TestUtils.TestJavaOptions(),
+                BinaryConfiguration = new BinaryConfiguration(typeof(Person),
+                    typeof(Organization), typeof(Address), typeof(Role), typeof(RoleKey), typeof(Numerics)),
+                DiscoverySpi = new TcpDiscoverySpi
+                {
+                    IpFinder = new TcpDiscoveryStaticIpFinder
+                    {
+                        Endpoints = new[] { "127.0.0.1:47500", "127.0.0.1:47501" }
+                    }
+                },
+                GridName = gridName
+            };
         }
 
         /// <summary>
@@ -976,7 +995,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
                             new QueryAlias("Address.AliasTest", "Addr_AliasTest")
                         }
                     },
-                    new QueryEntity(typeof (int), typeof (Organization))));
+                    new QueryEntity(typeof (int), typeof (Organization))) {CacheMode = CacheMode.Partitioned});
         }
 
         /// <summary>
@@ -986,7 +1005,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         {
             return Ignition.GetIgnite()
                 .GetOrCreateCache<RoleKey, Role>(new CacheConfiguration(RoleCacheName,
-                    new QueryEntity(typeof(RoleKey), typeof(Role))));
+                    new QueryEntity(typeof (RoleKey), typeof (Role))) {CacheMode = CacheMode.Partitioned});
         }
 
         /// <summary>
@@ -996,7 +1015,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         {
             return Ignition.GetIgnite()
                 .GetOrCreateCache<int, Person>(new CacheConfiguration(PersonSecondCacheName,
-                    new QueryEntity(typeof(int), typeof(Person))));
+                    new QueryEntity(typeof (int), typeof (Person))) {CacheMode = CacheMode.Partitioned});
         }
 
         /// <summary>
