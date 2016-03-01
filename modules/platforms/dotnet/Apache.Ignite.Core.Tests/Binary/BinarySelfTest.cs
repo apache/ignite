@@ -729,13 +729,17 @@ namespace Apache.Ignite.Core.Tests.Binary
         [Test]
         public void TestPrimitiveFieldsReflective([Values(false, true)] bool raw)
         {
+            var serializer = new BinaryReflectiveSerializer(raw);
+
+            Assert.AreEqual(raw, serializer.RawMode);
+
             var marsh = new Marshaller(new BinaryConfiguration
             {
                 TypeConfigurations = new[]
                 {
                     new BinaryTypeConfiguration(typeof (PrimitiveFieldType))
                     {
-                        Serializer = new BinaryReflectiveSerializer(raw)
+                        Serializer = serializer
                     }
                 }
             });
