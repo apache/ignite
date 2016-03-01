@@ -180,7 +180,7 @@ public class WebSessionSelfTest extends GridCommonAbstractTest {
 
                 assertFalse(sesId.equals("null"));
 
-                assertTrue(latch.await(1, TimeUnit.SECONDS));
+                assertTrue(latch.await(10, TimeUnit.SECONDS));
 
                 IgniteCache<String, HttpSession> cache = ignite.cache(getCacheName());
 
@@ -393,14 +393,10 @@ public class WebSessionSelfTest extends GridCommonAbstractTest {
             throws ServletException, IOException {
             HttpSession ses = req.getSession();
 
-            String sesId = "";
-
             assert ses != null;
 
             if (req.getPathInfo().equals("/invalidated")) {
-                sesId = ses.getId();
-
-                X.println(">>>", "Created session: " + sesId, ">>>");
+                X.println(">>>", "Created session: " + ses.getId(), ">>>");
 
                 ses.invalidate();
 
@@ -408,8 +404,6 @@ public class WebSessionSelfTest extends GridCommonAbstractTest {
             }
             else if (req.getPathInfo().equals("/valid")) {
                 X.println(">>>", "Created session: " + ses.getId(), ">>>");
-
-                assert !ses.getId().equals(sesId);
 
                 ses.setAttribute("key10", "val10");
             }
