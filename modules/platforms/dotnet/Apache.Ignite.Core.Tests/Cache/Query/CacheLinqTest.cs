@@ -904,11 +904,25 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
             Assert.AreEqual(new[] {3, 4}, qry8(0, 1, 2, 5, 6, 7, 8, 9).ToArray());
         }
 
+        /// <summary>
+        /// Tests the local query.
+        /// </summary>
         [Test]
         public void TestLocalQuery()
         {
-            Assert.AreEqual(PersonCount, GetPersonCache().AsCacheQueryable(false).Count());
-            Assert.AreEqual(PersonCount / 2, GetPersonCache().AsCacheQueryable(true).Count());
+            // Create partitioned cache
+            var cache =
+                Ignition.GetIgnite().GetOrCreateCache<int, int>(new CacheConfiguration("partCache", typeof (int)));
+
+            // Populate
+            const int count = 100;
+            cache.PutAll(Enumerable.Range(0, count).ToDictionary(x => x, x => x));
+
+            // Non-local query returns all records
+            Assert.AreEqual(count, cache.AsCacheQueryable(false).ToArray().Length);
+
+            // Local query returns only some of the records
+            Assert.AreEqual(count/2, cache.AsCacheQueryable(true).ToArray().Length);
         }
 
         /// <summary>
