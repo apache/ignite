@@ -898,16 +898,17 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
 
             Assert.AreEqual(cache.Name, query.CacheName);
             Assert.AreEqual(cache.Ignite, query.Ignite);
-            Assert.AreEqual("SQL Query [Text=select _T0._key, _T0._val from \"\".Person as _T0 " +
-                            "where (_T0._key > ?), Parameters=10]", query.ToTraceString());
+
+            var fq = query.GetFieldsQuery();
+            Assert.AreEqual("select _T0._key, _T0._val from \"\".Person as _T0 where (_T0._key > ?)", fq.Sql);
+            Assert.AreEqual(new[] {10}, fq.Arguments);
 
             // Check fields query
             var fieldsQuery = (ICacheQueryable) cache.AsCacheQueryable().Select(x => x.Value.Name);
 
             Assert.AreEqual(cache.Name, fieldsQuery.CacheName);
             Assert.AreEqual(cache.Ignite, fieldsQuery.Ignite);
-            Assert.AreEqual("SQL Query [Text=select _T0.Name from \"\".Person as _T0, Parameters=]",
-                fieldsQuery.ToTraceString());
+            Assert.AreEqual("select _T0.Name from \"\".Person as _T0", fieldsQuery.GetFieldsQuery().Sql);
         }
 
         /// <summary>

@@ -19,7 +19,7 @@ namespace Apache.Ignite.Linq
 {
     using System;
     using Apache.Ignite.Core;
-    using Apache.Ignite.Core.Cache.Configuration;
+    using Apache.Ignite.Core.Cache.Query;
 
     /// <summary>
     /// Common interface for cache queryables.
@@ -40,10 +40,10 @@ namespace Apache.Ignite.Linq
         IIgnite Ignite { get; }
 
         /// <summary>
-        /// Returns the commands to execute against the data source.
+        /// Returns fields query that represents current queryable.
         /// </summary>
-        /// <returns>Commands to execute against the data source.</returns>
-        string ToTraceString();
+        /// <returns>Fields query that represents current queryable.</returns>
+        SqlFieldsQuery GetFieldsQuery();
 
         /// <summary>
         /// Gets the type of the element.
