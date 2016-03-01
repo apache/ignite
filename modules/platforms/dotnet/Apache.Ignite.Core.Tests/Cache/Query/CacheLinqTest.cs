@@ -1002,7 +1002,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
                             new QueryAlias("Address.AliasTest", "Addr_AliasTest")
                         }
                     },
-                    new QueryEntity(typeof (int), typeof (Organization))) {CacheMode = CacheMode.Partitioned});
+                    new QueryEntity(typeof (int), typeof (Organization))) {CacheMode = CacheMode.Replicated});
         }
 
         /// <summary>
@@ -1012,7 +1012,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         {
             return Ignition.GetIgnite()
                 .GetOrCreateCache<RoleKey, Role>(new CacheConfiguration(RoleCacheName,
-                    new QueryEntity(typeof (RoleKey), typeof (Role))) {CacheMode = CacheMode.Partitioned});
+                    new QueryEntity(typeof (RoleKey), typeof (Role))) {CacheMode = CacheMode.Replicated});
         }
 
         /// <summary>
@@ -1022,7 +1022,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         {
             return Ignition.GetIgnite()
                 .GetOrCreateCache<int, Person>(new CacheConfiguration(PersonSecondCacheName,
-                    new QueryEntity(typeof (int), typeof (Person))) {CacheMode = CacheMode.Partitioned});
+                    new QueryEntity(typeof (int), typeof (Person))) {CacheMode = CacheMode.Replicated});
         }
 
         /// <summary>
