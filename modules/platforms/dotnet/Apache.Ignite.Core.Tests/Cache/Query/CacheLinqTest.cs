@@ -905,6 +905,31 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         }
 
         /// <summary>
+        /// Tests the cache of primitive types.
+        /// </summary>
+        [Test]
+        public void TestPrimitiveCache()
+        {
+            // Create partitioned cache
+            var cache =
+                Ignition.GetIgnite()
+                    .GetOrCreateCache<int, string>(new CacheConfiguration("primitiveCache",
+                        new QueryEntity(typeof (int), typeof (string))) {CacheMode = CacheMode.Replicated});
+
+            var qry = cache.AsCacheQueryable();
+
+            // Populate
+            const int count = 100;
+            cache.PutAll(Enumerable.Range(0, count).ToDictionary(x => x, x => x.ToString()));
+
+            // Test
+            Assert.AreEqual(count, qry.ToArray().Length);
+            Assert.AreEqual(10, qry.Where(x => x.Key < 10).ToArray().Length);
+            Assert.AreEqual(10, qry.Count(x => x.Value.Contains("99")));
+
+        }
+
+        /// <summary>
         /// Tests the local query.
         /// </summary>
         [Test]
