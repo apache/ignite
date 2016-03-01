@@ -21,6 +21,7 @@ import junit.framework.TestSuite;
 import org.apache.ignite.internal.processors.cache.CacheLocalQueryMetricsSelfTest;
 import org.apache.ignite.internal.processors.cache.CachePartitionedQueryMetricsDistributedSelfTest;
 import org.apache.ignite.internal.processors.cache.CachePartitionedQueryMetricsLocalSelfTest;
+import org.apache.ignite.internal.processors.cache.CacheQueryNewClientSelfTest;
 import org.apache.ignite.internal.processors.cache.CacheQueryOffheapEvictDataLostTest;
 import org.apache.ignite.internal.processors.cache.CacheReplicatedQueryMetricsDistributedSelfTest;
 import org.apache.ignite.internal.processors.cache.CacheReplicatedQueryMetricsLocalSelfTest;
@@ -252,9 +253,12 @@ public class IgniteCacheQuerySelfTestSuite extends TestSuite {
         suite.addTestSuite(CacheReplicatedQueryMetricsDistributedSelfTest.class);
         suite.addTestSuite(CacheReplicatedQueryMetricsLocalSelfTest.class);
 
-        //Unmarshallig query test.
+        // Unmarshalling query test.
         suite.addTestSuite(IgniteCacheP2pUnmarshallingQueryErrorTest.class);
         suite.addTestSuite(IgniteCacheNoClassQuerySelfTest.class);
+
+        // Other.
+        suite.addTestSuite(CacheQueryNewClientSelfTest.class);
 
         return suite;
     }
