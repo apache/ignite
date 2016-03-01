@@ -65,7 +65,6 @@ import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.P1;
 import org.apache.ignite.internal.util.typedef.X;
-import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiInClosure;
 import org.apache.ignite.lang.IgnitePredicate;
@@ -653,7 +652,7 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
             cctx.mvcc().contextReset();
 
             // Unwind eviction notifications.
-            CU.unwindEvicts(cctx);
+//            CU.unwindEvicts(cctx);
         }
     }
 
