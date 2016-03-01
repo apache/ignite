@@ -74,7 +74,7 @@ namespace Apache.Ignite.Core.Impl.DataStructures
                     writer.WriteObject(value);
                     writer.WriteObject(comparand);
                 },
-                stream => Marshaller.StartUnmarshal(stream).Deserialize<T>());
+                stream => stream.ReadBool() ? comparand : Marshaller.StartUnmarshal(stream).Deserialize<T>());
         }
 
         /** <inheritDoc /> */

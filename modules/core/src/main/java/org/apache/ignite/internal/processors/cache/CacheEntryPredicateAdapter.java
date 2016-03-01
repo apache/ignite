@@ -29,6 +29,9 @@ import org.jetbrains.annotations.Nullable;
  */
 public abstract class CacheEntryPredicateAdapter implements CacheEntryPredicate {
     /** */
+    private static final long serialVersionUID = 4647110502545358709L;
+
+    /** */
     protected transient boolean locked;
 
     /** {@inheritDoc} */
@@ -93,5 +96,10 @@ public abstract class CacheEntryPredicateAdapter implements CacheEntryPredicate 
         catch (IgniteCheckedException e) {
             throw new IgniteException(e);
         }
+    }
+
+    /** {@inheritDoc} */
+    @Override public void onAckReceived() {
+        // No-op.
     }
 }

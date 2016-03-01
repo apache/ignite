@@ -117,6 +117,7 @@ import org.apache.ignite.spi.IgniteSpiCloseableIterator;
 import org.apache.ignite.spi.indexing.IndexingQueryFilter;
 import org.h2.api.JavaObjectSerializer;
 import org.h2.command.CommandInterface;
+import org.h2.constant.ErrorCode;
 import org.h2.constant.SysProperties;
 import org.h2.index.Index;
 import org.h2.index.SpatialIndex;
@@ -917,7 +918,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
     /**
      * Executes regular query.
-     * Note that SQL query can not refer to table alias, so use full table name instead.
      *
      * @param spaceName Space name.
      * @param qry Query.
@@ -1035,13 +1035,31 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         else {
             PreparedStatement stmt;
 
-            try {
-                // Do not cache this statement because the whole two step query object will be cached later on.
-                stmt = prepareStatement(c, sqlQry, false);
+            boolean cachesCreated = false;
+
+            while (true) {
+                try {
+                    // Do not cache this statement because the whole two step query object will be cached later on.
+                    stmt = prepareStatement(c, sqlQry, false);
+
+                    break;
+                }
+                catch (SQLException e) {
+                    if (!cachesCreated && e.getErrorCode() == ErrorCode.SCHEMA_NOT_FOUND_1) {
+                        try {
+                            ctx.cache().createMissingCaches();
+                        }
+                        catch (IgniteCheckedException e1) {
+                            throw new CacheException("Failed to create missing caches.", e);
+                        }
+
+                        cachesCreated = true;
+                    }
+                    else
+                        throw new CacheException("Failed to parse query: " + sqlQry, e);
+                }
             }
-            catch (SQLException e) {
-                throw new CacheException("Failed to parse query: " + sqlQry, e);
-            }
+
             try {
                 try {
                     bindParameters(stmt, F.asList(qry.getArgs()));
@@ -1112,16 +1130,29 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         String from = " ";
 
         qry = qry.trim();
+
         String upper = qry.toUpperCase();
 
         if (upper.startsWith("SELECT")) {
             qry = qry.substring(6).trim();
 
-            if (!qry.startsWith("*"))
-                throw new IgniteCheckedException("Only queries starting with 'SELECT *' are supported or " +
-                    "use SqlFieldsQuery instead: " + qry0);
+            final int star = qry.indexOf('*');
 
-            qry = qry.substring(1).trim();
+            if (star == 0)
+                qry = qry.substring(1).trim();
+            else if (star > 0) {
+                if (F.eq('.', qry.charAt(star - 1))) {
+                    t = qry.substring(0, star - 1);
+
+                    qry = qry.substring(star + 1).trim();
+                }
+                else
+                    throw new IgniteCheckedException("Invalid query (missing alias before asterisk): " + qry0);
+            }
+            else
+                throw new IgniteCheckedException("Only queries starting with 'SELECT *' and 'SELECT alias.*' " +
+                    "are supported (rewrite your query or use SqlFieldsQuery instead): " + qry0);
+
             upper = qry.toUpperCase();
         }
 
@@ -1488,7 +1519,9 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                 }
 
                 @Override public Object deserialize(byte[] bytes) throws Exception {
-                    return marshaller.unmarshal(bytes, null);
+                    ClassLoader clsLdr = ctx != null ? U.resolveClassLoader(ctx.config()) : null;
+
+                    return marshaller.unmarshal(bytes, clsLdr);
                 }
             };
     }

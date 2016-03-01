@@ -352,6 +352,9 @@ namespace ignite
             JniMethod M_PLATFORM_CALLBACK_UTILS_EXTENSION_CALLBACK_IN_LONG_OUT_LONG = JniMethod("extensionCallbackInLongOutLong", "(JIJ)J", true);
             JniMethod M_PLATFORM_CALLBACK_UTILS_EXTENSION_CALLBACK_IN_LONG_LONG_OUT_LONG = JniMethod("extensionCallbackInLongLongOutLong", "(JIJJ)J", true);
 
+            JniMethod M_PLATFORM_CALLBACK_UTILS_ON_CLIENT_DISCONNECTED = JniMethod("onClientDisconnected", "(J)V", true);
+            JniMethod M_PLATFORM_CALLBACK_UTILS_ON_CLIENT_RECONNECTED = JniMethod("onClientReconnected", "(JZ)V", true);
+
             const char* C_PLATFORM_UTILS = "org/apache/ignite/internal/processors/platform/utils/PlatformUtils";
             JniMethod M_PLATFORM_UTILS_REALLOC = JniMethod("reallocate", "(JI)V", true);
             JniMethod M_PLATFORM_UTILS_ERR_DATA = JniMethod("errorData", "(Ljava/lang/Throwable;)[B", true);
@@ -808,7 +811,7 @@ namespace ignite
 
             void RegisterNatives(JNIEnv* env) {
                 {
-					JNINativeMethod methods[52];
+					JNINativeMethod methods[54];
 
                     int idx = 0;
 
@@ -881,6 +884,9 @@ namespace ignite
 
                     AddNativeMethod(methods + idx++, M_PLATFORM_CALLBACK_UTILS_EXTENSION_CALLBACK_IN_LONG_OUT_LONG, reinterpret_cast<void*>(JniExtensionCallbackInLongOutLong));
                     AddNativeMethod(methods + idx++, M_PLATFORM_CALLBACK_UTILS_EXTENSION_CALLBACK_IN_LONG_LONG_OUT_LONG, reinterpret_cast<void*>(JniExtensionCallbackInLongLongOutLong));
+
+                    AddNativeMethod(methods + idx++, M_PLATFORM_CALLBACK_UTILS_ON_CLIENT_DISCONNECTED, reinterpret_cast<void*>(JniOnClientDisconnected));
+                    AddNativeMethod(methods + idx++, M_PLATFORM_CALLBACK_UTILS_ON_CLIENT_RECONNECTED, reinterpret_cast<void*>(JniOnClientReconnected));
 
                     jint res = env->RegisterNatives(FindClass(env, C_PLATFORM_CALLBACK_UTILS), methods, idx);
 
@@ -1160,7 +1166,7 @@ namespace ignite
                 return LocalToGlobal(env, cache);
             }
 
-            jobject JniContext::ProcessorCacheFromConfig0(jobject obj, long memPtr, jmethodID mthd, JniErrorInfo* errInfo)
+            jobject JniContext::ProcessorCacheFromConfig0(jobject obj, long long memPtr, jmethodID mthd, JniErrorInfo* errInfo)
             {
                 JNIEnv* env = Attach();
 
@@ -1215,20 +1221,20 @@ namespace ignite
                 ExceptionCheck(env, errInfo);
             }
 
-            jobject JniContext::ProcessorCreateCacheFromConfig(jobject obj, long memPtr) {
+            jobject JniContext::ProcessorCreateCacheFromConfig(jobject obj, long long memPtr) {
                 return ProcessorCreateCacheFromConfig(obj, memPtr, NULL);
             }
 
-            jobject JniContext::ProcessorCreateCacheFromConfig(jobject obj, long memPtr, JniErrorInfo* errInfo)
+            jobject JniContext::ProcessorCreateCacheFromConfig(jobject obj, long long memPtr, JniErrorInfo* errInfo)
             {
                 return ProcessorCacheFromConfig0(obj, memPtr, jvm->GetMembers().m_PlatformProcessor_createCacheFromConfig, errInfo);
             }
 
-            jobject JniContext::ProcessorGetOrCreateCacheFromConfig(jobject obj, long memPtr) {
+            jobject JniContext::ProcessorGetOrCreateCacheFromConfig(jobject obj, long long memPtr) {
                 return ProcessorGetOrCreateCacheFromConfig(obj, memPtr, NULL);
             }
 
-            jobject JniContext::ProcessorGetOrCreateCacheFromConfig(jobject obj, long memPtr, JniErrorInfo* errInfo)
+            jobject JniContext::ProcessorGetOrCreateCacheFromConfig(jobject obj, long long memPtr, JniErrorInfo* errInfo)
             {
                 return ProcessorCacheFromConfig0(obj, memPtr, jvm->GetMembers().m_PlatformProcessor_getOrCreateCacheFromConfig, errInfo);
             }
@@ -1373,7 +1379,7 @@ namespace ignite
                 return LocalToGlobal(env, res);
             }
 
-            void JniContext::ProcessorGetIgniteConfiguration(jobject obj, long memPtr)
+            void JniContext::ProcessorGetIgniteConfiguration(jobject obj, long long memPtr)
             {
                 JNIEnv* env = Attach();
 
@@ -2715,6 +2721,14 @@ namespace ignite
 
             JNIEXPORT jlong JNICALL JniExtensionCallbackInLongLongOutLong(JNIEnv *env, jclass cls, jlong envPtr, jint typ, jlong arg1, jlong arg2) {
                 IGNITE_SAFE_FUNC(env, envPtr, ExtensionCallbackInLongLongOutLongHandler, extensionCallbackInLongLongOutLong, typ, arg1, arg2);
+            }
+            
+            JNIEXPORT void JNICALL JniOnClientDisconnected(JNIEnv *env, jclass cls, jlong envPtr) {
+                IGNITE_SAFE_PROC_NO_ARG(env, envPtr, OnClientDisconnectedHandler, onClientDisconnected);
+            }
+
+            JNIEXPORT void JNICALL JniOnClientReconnected(JNIEnv *env, jclass cls, jlong envPtr, jboolean clusterRestarted) {
+                IGNITE_SAFE_PROC(env, envPtr, OnClientReconnectedHandler, onClientReconnected, clusterRestarted);
             }
         }
     }

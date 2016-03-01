@@ -28,7 +28,6 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.internal.GridDirectCollection;
 import org.apache.ignite.internal.GridDirectTransient;
-import org.apache.ignite.internal.IgniteCodeGeneratingFail;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
@@ -50,7 +49,6 @@ import org.jetbrains.annotations.Nullable;
 /**
  * Lite dht cache backup update request.
  */
-@IgniteCodeGeneratingFail // Need add 'cleanup' call in 'writeTo' method.
 public class GridDhtAtomicUpdateRequest extends GridCacheMessage implements GridCacheDeployable {
     /** */
     private static final long serialVersionUID = 0L;
@@ -861,8 +859,6 @@ public class GridDhtAtomicUpdateRequest extends GridCacheMessage implements Grid
 
         }
 
-        cleanup();
-
         return true;
     }
 
@@ -1062,6 +1058,11 @@ public class GridDhtAtomicUpdateRequest extends GridCacheMessage implements Grid
         return reader.afterMessageRead(GridDhtAtomicUpdateRequest.class);
     }
 
+    /** {@inheritDoc} */
+    @Override public void onAckReceived() {
+        cleanup();
+    }
+
     /**
      * Cleanup values not needed after message was sent.
      */
@@ -1071,8 +1072,9 @@ public class GridDhtAtomicUpdateRequest extends GridCacheMessage implements Grid
 
         // Do not keep values if they are not needed for continuous query notification.
         if (locPrevVals == null) {
-           vals = null;
-           locPrevVals = null;
+            keys = null;
+            vals = null;
+            locPrevVals = null;
         }
     }
 

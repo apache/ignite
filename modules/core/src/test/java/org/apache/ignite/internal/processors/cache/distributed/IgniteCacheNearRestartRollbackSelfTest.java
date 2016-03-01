@@ -71,6 +71,7 @@ public class IgniteCacheNearRestartRollbackSelfTest extends GridCommonAbstractTe
         TcpDiscoverySpi discoSpi = new TcpDiscoverySpi();
 
         discoSpi.setIpFinder(IP_FINDER);
+        discoSpi.setMaxMissedClientHeartbeats(50);
 
         cfg.setDiscoverySpi(discoSpi);
 
@@ -153,16 +154,16 @@ public class IgniteCacheNearRestartRollbackSelfTest extends GridCommonAbstractTe
                 }
             });
 
-            int currentValue = 0;
+            int currVal = 0;
             boolean invoke = false;
 
             while (!fut.isDone()) {
-                updateCache(tester, currentValue, invoke, false, keys);
+                updateCache(tester, currVal, invoke, false, keys);
 
-                updateCache(tester, currentValue + 1, invoke, true, keys);
+                updateCache(tester, currVal + 1, invoke, true, keys);
 
                 invoke = !invoke;
-                currentValue++;
+                currVal++;
 
                 synchronized (lastUpdateTs) {
                     lastUpdateTs.set(System.currentTimeMillis());
@@ -180,14 +181,14 @@ public class IgniteCacheNearRestartRollbackSelfTest extends GridCommonAbstractTe
      * Updates the cache or rollback the update.
      *
      * @param ignite Ignite instance to use.
-     * @param newValue the new value to put to the entries
+     * @param newVal the new value to put to the entries
      * @param invoke whether to use invokeAll() or putAll()
      * @param rollback whether to rollback the changes or commit
      * @param keys Collection of keys to update.
      */
     private void updateCache(
         Ignite ignite,
-        int newValue,
+        int newVal,
         boolean invoke,
         boolean rollback,
         Set<Integer> keys
@@ -197,7 +198,7 @@ public class IgniteCacheNearRestartRollbackSelfTest extends GridCommonAbstractTe
         if (rollback) {
             while (true) {
                 try (Transaction tx = ignite.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
-                    updateEntries(cache, newValue, invoke, keys);
+                    updateEntries(cache, newVal, invoke, keys);
 
                     tx.rollback();
 
@@ -223,29 +224,30 @@ public class IgniteCacheNearRestartRollbackSelfTest extends GridCommonAbstractTe
             }
         }
         else
-            updateEntries(cache, newValue, invoke, keys);
+            updateEntries(cache, newVal, invoke, keys);
     }
 
     /**
      * Update the cache using either invokeAll() or putAll().
      *
      * @param cache the cache
-     * @param newValue the new value to put to the entries
+     * @param newVal the new value to put to the entries
      * @param invoke whether to use invokeAll() or putAll()
+     * @param keys Keys to update.
      */
     private void updateEntries(
         Cache<Integer, Integer> cache,
-        int newValue,
+        int newVal,
         boolean invoke,
         Set<Integer> keys
     ) {
         if (invoke)
-            cache.invokeAll(keys, new IntegerSetValue(newValue));
+            cache.invokeAll(keys, new IntegerSetValue(newVal));
         else {
             final Map<Integer, Integer> entries = new HashMap<>(ENTRY_COUNT);
 
             for (final Integer key : keys)
-                entries.put(key, newValue);
+                entries.put(key, newVal);
 
             cache.putAll(entries);
         }
@@ -256,19 +258,19 @@ public class IgniteCacheNearRestartRollbackSelfTest extends GridCommonAbstractTe
      */
     private static class IntegerSetValue implements EntryProcessor<Integer, Integer, Boolean>, Serializable {
         /** */
-        private final int newValue;
+        private final int newVal;
 
         /**
-         * @param newValue New value.
+         * @param newVal New value.
          */
-        private IntegerSetValue(final int newValue) {
-            this.newValue = newValue;
+        private IntegerSetValue(final int newVal) {
+            this.newVal = newVal;
         }
 
         /** {@inheritDoc} */
         @Override public Boolean process(MutableEntry<Integer, Integer> entry, Object... arguments)
             throws EntryProcessorException {
-            entry.setValue(newValue);
+            entry.setValue(newVal);
 
             return Boolean.TRUE;
         }

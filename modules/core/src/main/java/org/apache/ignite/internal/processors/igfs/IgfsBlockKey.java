@@ -107,6 +107,11 @@ public final class IgfsBlockKey implements Message, Externalizable, Comparable<I
     }
 
     /** {@inheritDoc} */
+    @Override public void onAckReceived() {
+        // No-op.
+    }
+
+    /** {@inheritDoc} */
     @Override public int compareTo(@NotNull IgfsBlockKey o) {
         int res = fileId.compareTo(o.fileId);
 
