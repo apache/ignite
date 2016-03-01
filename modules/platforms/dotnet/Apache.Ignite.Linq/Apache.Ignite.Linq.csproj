@@ -81,7 +81,6 @@
     <Compile Include="Impl\CacheQueryExpressionVisitor.cs" />
     <Compile Include="Impl\CacheQueryModelVisitor.cs" />
     <Compile Include="Impl\CacheQueryParser.cs" />
-    <Compile Include="Impl\CacheQueryProxy.cs" />
     <Compile Include="Impl\ICacheQueryableInternal.cs" />
     <Compile Include="Impl\ICacheQueryProxy.cs" />
     <Compile Include="Impl\MethodVisitor.cs" />

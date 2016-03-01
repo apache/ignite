@@ -37,7 +37,7 @@ namespace Apache.Ignite.Linq.Impl
     internal class CacheFieldsQueryExecutor : IQueryExecutor
     {
         /** */
-        private readonly ICacheQueryProxy _cache;
+        private readonly ICacheInternal _cache;
 
         /** */
         private static readonly CopyOnWriteConcurrentDictionary<ConstructorInfo, object> CtorCache =
@@ -47,7 +47,7 @@ namespace Apache.Ignite.Linq.Impl
         /// Initializes a new instance of the <see cref="CacheFieldsQueryExecutor" /> class.
         /// </summary>
         /// <param name="cache">The executor function.</param>
-        public CacheFieldsQueryExecutor(ICacheQueryProxy cache)
+        public CacheFieldsQueryExecutor(ICacheInternal cache)
         {
             Debug.Assert(cache != null);
 

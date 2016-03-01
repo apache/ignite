@@ -15,37 +15,26 @@
  * limitations under the License.
  */
 
-namespace Apache.Ignite.Linq.Impl
+namespace Apache.Ignite.Core.Impl.Cache
 {
     using System;
-    using System.Diagnostics;
     using Apache.Ignite.Core.Binary;
-    using Apache.Ignite.Core.Cache;
     using Apache.Ignite.Core.Cache.Query;
 
     /// <summary>
-    /// Cache proxy for queries.
+    /// Extended Cache interface for internal needs.
     /// </summary>
-    internal class CacheQueryProxy<TKey, TValue> : ICacheQueryProxy
+    public interface ICacheInternal
     {
-        /** */
-        private readonly ICache<TKey, TValue> _cache;
-
         /// <summary>
-        /// Initializes a new instance of the <see cref="CacheQueryProxy{TKey, TVal}"/> class.
+        /// Queries separate entry fields.
         /// </summary>
-        /// <param name="cache">The cache.</param>
-        public CacheQueryProxy(ICache<TKey, TValue> cache)
-        {
-            Debug.Assert(cache != null);
-
-            _cache = cache;
-        }
-
-        /** <inheritdoc /> */
-        public IQueryCursor<T> QueryFields<T>(SqlFieldsQuery qry, Func<IBinaryRawReader, int, T> readerFunc)
-        {
-            return _cache.QueryFields(qry, readerFunc);
-        }
+        /// <typeparam name="T">Type of the result.</typeparam>
+        /// <param name="qry">SQL fields query.</param>
+        /// <param name="readerFunc">Reader function, takes raw reader and field count, returns typed result.</param>
+        /// <returns>
+        /// Cursor.
+        /// </returns>
+        IQueryCursor<T> QueryFields<T>(SqlFieldsQuery qry, Func<IBinaryRawReader, int, T> readerFunc);
     }
 }

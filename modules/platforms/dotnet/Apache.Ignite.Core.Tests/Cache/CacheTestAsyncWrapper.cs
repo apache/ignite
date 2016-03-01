@@ -22,7 +22,6 @@ namespace Apache.Ignite.Core.Tests.Cache
     using System.Collections.Generic;
     using System.Diagnostics;
     using System.Threading.Tasks;
-    using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Cache;
     using Apache.Ignite.Core.Cache.Configuration;
     using Apache.Ignite.Core.Cache.Expiry;
@@ -442,12 +441,6 @@ namespace Apache.Ignite.Core.Tests.Cache
         public IQueryCursor<IList> QueryFields(SqlFieldsQuery qry)
         {
             return _cache.QueryFields(qry);
-        }
-
-        /** <inheritDoc /> */
-        public IQueryCursor<T> QueryFields<T>(SqlFieldsQuery qry, Func<IBinaryRawReader, int, T> readerFunc)
-        {
-            return _cache.QueryFields(qry, readerFunc);
         }
 
         /** <inheritDoc /> */

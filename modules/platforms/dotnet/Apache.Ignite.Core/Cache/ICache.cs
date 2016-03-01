@@ -22,7 +22,6 @@ namespace Apache.Ignite.Core.Cache
     using System.Collections.Generic;
     using System.Diagnostics.CodeAnalysis;
     using System.Threading.Tasks;
-    using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Cache.Configuration;
     using Apache.Ignite.Core.Cache.Expiry;
     using Apache.Ignite.Core.Cache.Query;
@@ -685,17 +684,6 @@ namespace Apache.Ignite.Core.Cache
         /// <param name="qry">SQL fields query.</param>
         /// <returns>Cursor.</returns>
         IQueryCursor<IList> QueryFields(SqlFieldsQuery qry);
-
-        /// <summary>
-        /// Queries separate entry fields.
-        /// </summary>
-        /// <typeparam name="T">Type of the result.</typeparam>
-        /// <param name="qry">SQL fields query.</param>
-        /// <param name="readerFunc">Reader function, takes raw reader and field count, returns typed result.</param>
-        /// <returns>
-        /// Cursor.
-        /// </returns>
-        IQueryCursor<T> QueryFields<T>(SqlFieldsQuery qry, Func<IBinaryRawReader, int, T> readerFunc);
 
         /// <summary>
         /// Start continuous query execution.

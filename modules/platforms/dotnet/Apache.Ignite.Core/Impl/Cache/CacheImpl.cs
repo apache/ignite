@@ -41,7 +41,7 @@ namespace Apache.Ignite.Core.Impl.Cache
     /// Native cache wrapper.
     /// </summary>
     [SuppressMessage("Microsoft.Design", "CA1001:TypesThatOwnDisposableFieldsShouldBeDisposable")]
-    internal class CacheImpl<TK, TV> : PlatformTarget, ICache<TK, TV>
+    internal class CacheImpl<TK, TV> : PlatformTarget, ICache<TK, TV>, ICacheInternal
     {
         /** Duration: unchanged. */
         private const long DurUnchanged = -2;
