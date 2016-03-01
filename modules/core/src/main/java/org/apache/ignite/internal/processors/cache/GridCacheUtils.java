@@ -90,6 +90,7 @@ import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteReducer;
 import org.apache.ignite.lifecycle.LifecycleAware;
 import org.apache.ignite.plugin.CachePluginConfiguration;
+import org.apache.ignite.spi.swapspace.noop.NoopSwapSpaceSpi;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
@@ -282,6 +283,10 @@ public class GridCacheUtils {
             return "Cache extended entry to key converter.";
         }
     };
+
+    /** NoopSwapSpaceSpi used attribute. */
+    private static final String NOOP_SWAP_SPACE_SPI_ATTR_NAME = U.spiAttribute(new NoopSwapSpaceSpi(),
+        IgniteNodeAttributes.ATTR_SPI_CLASS);
 
     /**
      * Ensure singleton.
@@ -1835,5 +1840,15 @@ public class GridCacheUtils {
         }
 
         return res;
+    }
+
+    /**
+     * Checks if swap is enabled on node.
+     *
+     * @param node Node
+     * @return {@code true} if swap is enabled, {@code false} otherwise.
+     */
+    public static boolean isSwapEnabled(ClusterNode node) {
+        return !node.attributes().containsKey(NOOP_SWAP_SPACE_SPI_ATTR_NAME);
     }
 }
