@@ -968,6 +968,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
             Assert.AreEqual("select _T0._key, _T0._val from \"\".Person as _T0 where (_T0._key > ?)", fq.Sql);
             Assert.AreEqual(new[] {10}, fq.Arguments);
             Assert.IsTrue(fq.Local);
+            Assert.AreEqual(PersonCount - 11, cache.QueryFields(fq).GetAll().Count);
 
             // Check fields query
             var fieldsQuery = (ICacheQueryable) cache.AsCacheQueryable().Select(x => x.Value.Name);
