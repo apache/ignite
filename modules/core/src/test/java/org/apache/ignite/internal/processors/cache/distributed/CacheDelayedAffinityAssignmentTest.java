@@ -58,7 +58,7 @@ public class CacheDelayedAffinityAssignmentTest extends GridCommonAbstractTest {
     @Override protected void beforeTestsStarted() throws Exception {
         super.beforeTestsStarted();
 
-        startGridsMultiThreaded(NODES);
+       // startGridsMultiThreaded(NODES);
     }
 
     /** {@inheritDoc} */
@@ -72,32 +72,40 @@ public class CacheDelayedAffinityAssignmentTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testDelayedAffinityAssignment() throws Exception {
-        final CacheConfiguration ccfg = new CacheConfiguration();
+        startGrid(0);
+        startGrid(1);
 
-        ignite(0).createCache(ccfg);
+        log.info("Done");
 
-        for (int i = 0; i < NODES; i++) {
-            Ignite ignite = ignite(i);
+        Thread.sleep(60_000);
 
-            TestRecordingCommunicationSpi spi =
-                (TestRecordingCommunicationSpi)ignite.configuration().getCommunicationSpi();
-
-            spi.blockMessages(new IgnitePredicate<GridIoMessage>() {
-                @Override public boolean apply(GridIoMessage ioMsg) {
-                    if (!ioMsg.message().getClass().equals(GridDhtPartitionSupplyMessageV2.class))
-                        return false;
-
-                    GridDhtPartitionSupplyMessageV2 msg = (GridDhtPartitionSupplyMessageV2)ioMsg.message();
-
-                    return msg.cacheId() == CU.cacheId(ccfg.getName());
-                }
-            });
-        }
-
-        startGrid(NODES);
-
-        Ignite ignite = ignite(0);
-
-        Affinity aff = ignite.affinity(ccfg.getName());
+        //ignite(0).createCache(new CacheConfiguration<Object, Object>());
+//        final CacheConfiguration ccfg = new CacheConfiguration();
+//
+//        ignite(0).createCache(ccfg);
+//
+//        for (int i = 0; i < NODES; i++) {
+//            Ignite ignite = ignite(i);
+//
+//            TestRecordingCommunicationSpi spi =
+//                (TestRecordingCommunicationSpi)ignite.configuration().getCommunicationSpi();
+//
+//            spi.blockMessages(new IgnitePredicate<GridIoMessage>() {
+//                @Override public boolean apply(GridIoMessage ioMsg) {
+//                    if (!ioMsg.message().getClass().equals(GridDhtPartitionSupplyMessageV2.class))
+//                        return false;
+//
+//                    GridDhtPartitionSupplyMessageV2 msg = (GridDhtPartitionSupplyMessageV2)ioMsg.message();
+//
+//                    return msg.cacheId() == CU.cacheId(ccfg.getName());
+//                }
+//            });
+//        }
+//
+//        startGrid(NODES);
+//
+//        Ignite ignite = ignite(0);
+//
+//        Affinity aff = ignite.affinity(ccfg.getName());
     }
 }

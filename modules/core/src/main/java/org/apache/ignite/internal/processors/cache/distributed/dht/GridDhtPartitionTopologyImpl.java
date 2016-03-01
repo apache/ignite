@@ -404,7 +404,7 @@ class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
             }
 
             if (node2part != null && node2part.valid())
-                checkEvictions(updateSeq);
+                checkEvictions(updateSeq, aff);
 
             updateRebalanceVersion(aff);
 
@@ -960,7 +960,7 @@ class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
 
             part2node = p2n;
 
-            boolean changed = checkEvictions(updateSeq);
+            boolean changed = checkEvictions(updateSeq, null);
 
             updateRebalanceVersion(null);
 
@@ -979,7 +979,9 @@ class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
     /** {@inheritDoc} */
     @SuppressWarnings({"MismatchedQueryAndUpdateOfCollection"})
     @Nullable @Override public GridDhtPartitionMap2 update(@Nullable GridDhtPartitionExchangeId exchId,
-        GridDhtPartitionMap2 parts, @Nullable Map<Integer, Long> cntrMap) {
+        GridDhtPartitionMap2 parts,
+        @Nullable Map<Integer, Long> cntrMap,
+        boolean affReady) {
         if (log.isDebugEnabled())
             log.debug("Updating single partition map [exchId=" + exchId + ", parts=" + mapString(parts) + ']');
 
@@ -1073,9 +1075,11 @@ class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
                 }
             }
 
-            changed |= checkEvictions(updateSeq);
+            if (affReady) {
+                changed |= checkEvictions(updateSeq, null);
 
-            updateRebalanceVersion(null);
+                updateRebalanceVersion(null);
+            }
 
             consistencyCheck();
 
@@ -1093,7 +1097,10 @@ class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
      * @param updateSeq Update sequence.
      * @return Checks if any of the local partitions need to be evicted.
      */
-    private boolean checkEvictions(long updateSeq) {
+    private boolean checkEvictions(long updateSeq, List<List<ClusterNode>> aff) {
+        if (aff == null)
+            aff = cctx.affinity().assignments(topVer);
+
         assert lock.isWriteLockedByCurrentThread();
 
         boolean changed = false;
@@ -1106,7 +1113,7 @@ class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
             if (state.active()) {
                 int p = part.id();
 
-                List<ClusterNode> affNodes = cctx.affinity().nodes(p, topVer);
+                List<ClusterNode> affNodes = aff.get(p);
 
                 if (!affNodes.contains(cctx.localNode())) {
                     Collection<UUID> nodeIds = F.nodeIds(nodes(p, topVer, OWNING));

@@ -21,7 +21,9 @@ import java.io.Externalizable;
 import java.nio.ByteBuffer;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.GridDirectTransient;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
@@ -61,6 +63,13 @@ public class GridDhtPartitionsFullMessage extends GridDhtPartitionsAbstractMessa
     /** Topology version. */
     private AffinityTopologyVersion topVer;
 
+    /** */
+    @GridDirectTransient
+    private Map<Integer, List<List<UUID>>> affAssignment;
+
+    /** */
+    private byte[] affAssignmentBytes;
+
     /**
      * Required by {@link Externalizable}.
      */
@@ -81,6 +90,20 @@ public class GridDhtPartitionsFullMessage extends GridDhtPartitionsAbstractMessa
         assert id == null || topVer.equals(id.topologyVersion());
 
         this.topVer = topVer;
+    }
+
+    /**
+     * @param affAssignment Affinity assignments.
+     */
+    public void affinityAssignment(Map<Integer, List<List<UUID>>> affAssignment) {
+        this.affAssignment = affAssignment;
+    }
+
+    /**
+     * @return Affinity assignment.
+     */
+    @Nullable public Map<Integer, List<List<UUID>>> affinityAssignment() {
+        return affAssignment;
     }
 
     /**
@@ -137,6 +160,9 @@ public class GridDhtPartitionsFullMessage extends GridDhtPartitionsAbstractMessa
 
         if (partCntrs != null && partCntrsBytes == null)
             partCntrsBytes = ctx.marshaller().marshal(partCntrs);
+
+        if (affAssignment != null && affAssignmentBytes == null)
+            affAssignmentBytes = ctx.marshaller().marshal(affAssignment);
     }
 
     /**
@@ -168,6 +194,9 @@ public class GridDhtPartitionsFullMessage extends GridDhtPartitionsAbstractMessa
 
         if (partCntrs == null)
             partCntrs = new HashMap<>();
+
+        if (affAssignmentBytes != null && affAssignment == null)
+            affAssignment = ctx.marshaller().unmarshal(affAssignmentBytes, U.resolveClassLoader(ldr, ctx.gridConfig()));
     }
 
     /** {@inheritDoc} */
@@ -186,18 +215,24 @@ public class GridDhtPartitionsFullMessage extends GridDhtPartitionsAbstractMessa
 
         switch (writer.state()) {
             case 5:
-                if (!writer.writeByteArray("partCntrsBytes", partCntrsBytes))
+                if (!writer.writeByteArray("affAssignmentBytes", affAssignmentBytes))
                     return false;
 
                 writer.incrementState();
 
             case 6:
-                if (!writer.writeByteArray("partsBytes", partsBytes))
+                if (!writer.writeByteArray("partCntrsBytes", partCntrsBytes))
                     return false;
 
                 writer.incrementState();
 
             case 7:
+                if (!writer.writeByteArray("partsBytes", partsBytes))
+                    return false;
+
+                writer.incrementState();
+
+            case 8:
                 if (!writer.writeMessage("topVer", topVer))
                     return false;
 
@@ -220,7 +255,7 @@ public class GridDhtPartitionsFullMessage extends GridDhtPartitionsAbstractMessa
 
         switch (reader.state()) {
             case 5:
-                partCntrsBytes = reader.readByteArray("partCntrsBytes");
+                affAssignmentBytes = reader.readByteArray("affAssignmentBytes");
 
                 if (!reader.isLastRead())
                     return false;
@@ -228,7 +263,7 @@ public class GridDhtPartitionsFullMessage extends GridDhtPartitionsAbstractMessa
                 reader.incrementState();
 
             case 6:
-                partsBytes = reader.readByteArray("partsBytes");
+                partCntrsBytes = reader.readByteArray("partCntrsBytes");
 
                 if (!reader.isLastRead())
                     return false;
@@ -236,6 +271,14 @@ public class GridDhtPartitionsFullMessage extends GridDhtPartitionsAbstractMessa
                 reader.incrementState();
 
             case 7:
+                partsBytes = reader.readByteArray("partsBytes");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+            case 8:
                 topVer = reader.readMessage("topVer");
 
                 if (!reader.isLastRead())
@@ -255,7 +298,7 @@ public class GridDhtPartitionsFullMessage extends GridDhtPartitionsAbstractMessa
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 8;
+        return 9;
     }
 
     /** {@inheritDoc} */

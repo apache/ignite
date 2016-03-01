@@ -631,7 +631,8 @@ public class GridClientPartitionTopology implements GridDhtPartitionTopology {
     @SuppressWarnings({"MismatchedQueryAndUpdateOfCollection"})
     @Nullable @Override public GridDhtPartitionMap2 update(@Nullable GridDhtPartitionExchangeId exchId,
         GridDhtPartitionMap2 parts,
-        Map<Integer, Long> cntrMap) {
+        Map<Integer, Long> cntrMap,
+        boolean affReady) {
         if (log.isDebugEnabled())
             log.debug("Updating single partition map [exchId=" + exchId + ", parts=" + mapString(parts) + ']');
 

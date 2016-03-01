@@ -52,6 +52,9 @@ public class GridCacheAffinityManager extends GridCacheManagerAdapter {
     /** Affinity cached function. */
     private GridAffinityAssignmentCache aff;
 
+    /** */
+    private List<List<ClusterNode>> pendingAssignment;
+
     /** {@inheritDoc} */
     @Override public void start0() throws IgniteCheckedException {
         aff = new GridAffinityAssignmentCache(cctx, cctx.namex(), cctx.config().getAffinity(),
@@ -177,6 +180,14 @@ public class GridCacheAffinityManager extends GridCacheManagerAdapter {
         assert !cctx.isLocal();
 
         return aff.calculate(topVer, discoEvt);
+    }
+
+    public void pendingAssignment(List<List<ClusterNode>> assignment) {
+        pendingAssignment = assignment;
+    }
+
+    public List<List<ClusterNode>> pendingAssignment() {
+        return pendingAssignment;
     }
 
     /**

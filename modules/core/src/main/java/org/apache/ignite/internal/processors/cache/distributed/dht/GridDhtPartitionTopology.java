@@ -218,7 +218,8 @@ public interface GridDhtPartitionTopology {
      */
     @Nullable public GridDhtPartitionMap2 update(@Nullable GridDhtPartitionExchangeId exchId,
         GridDhtPartitionMap2 parts,
-        @Nullable Map<Integer, Long> cntrMap);
+        @Nullable Map<Integer, Long> cntrMap,
+        boolean affReady);
 
     /**
      * @return Partition update counters.

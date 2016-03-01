@@ -1472,6 +1472,17 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
     }
 
     /**
+     * Gets node from history for given topology version.
+     *
+     * @param topVer Topology version.
+     * @param id Node ID.
+     * @return Node.
+     */
+    public ClusterNode node(AffinityTopologyVersion topVer, UUID id) {
+        return resolveDiscoCache(null, topVer).node(id);
+    }
+
+    /**
      * Gets cache nodes for cache with given name.
      *
      * @param cacheName Cache name.
