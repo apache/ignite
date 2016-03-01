@@ -240,6 +240,9 @@ namespace Apache.Ignite.Core.Impl.Binary
             }
         }
 
+        /// <summary>
+        /// Gets the field ids.
+        /// </summary>
         private static int[] GetFieldIds(BinaryObjectHeader hdr, BinaryObjectSchema schema, Marshaller marsh)
         {
             var fieldIds = schema.Get(hdr.SchemaId);
