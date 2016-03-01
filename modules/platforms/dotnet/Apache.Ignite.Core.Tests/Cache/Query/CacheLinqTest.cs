@@ -322,7 +322,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
             Assert.AreEqual(0, ints.Min());
             Assert.AreEqual(PersonCount - 1, ints.Max());
             Assert.AreEqual(ints.ToArray().Sum(), ints.Sum());
-            Assert.AreEqual(ints.ToArray().Average(), ints.Average());
+            Assert.AreEqual((int)ints.ToArray().Average(), (int)ints.Average());
 
             var dupInts = ints.Select(x => x/10);  // duplicate values
             CollectionAssert.AreEquivalent(dupInts.ToArray().Distinct().ToArray(), dupInts.Distinct().ToArray());
