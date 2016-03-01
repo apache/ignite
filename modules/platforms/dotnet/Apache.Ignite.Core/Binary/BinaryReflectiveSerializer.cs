@@ -49,20 +49,20 @@ namespace Apache.Ignite.Core.Binary
         private readonly IDictionary<Type, Descriptor> _types = new Dictionary<Type, Descriptor>();
 
         /** Raw mode flag. */
-        private readonly bool _serializeRaw;
+        private readonly bool _rawMode;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="BinaryReflectiveSerializer"/> class.
         /// </summary>
-        /// <param name="serializeRaw">
+        /// <param name="rawMode">
         /// If set to <c>true</c>, enables raw mode serialization.
         /// <para />
         /// Raw mode does not include field names, improving performance and memory usage.
         /// However, queries do not support raw objects.
         /// </param>
-        public BinaryReflectiveSerializer(bool serializeRaw)
+        public BinaryReflectiveSerializer(bool rawMode)
         {
-            _serializeRaw = serializeRaw;
+            _rawMode = rawMode;
         }
 
         /// <summary>
@@ -71,9 +71,9 @@ namespace Apache.Ignite.Core.Binary
         /// Raw mode does not include field names, improving performance and memory usage.
         /// However, queries do not support raw objects.
         /// </summary>
-        public bool SerializeRaw
+        public bool RawMode
         {
-            get { return _serializeRaw; }
+            get { return _rawMode; }
         }
 
         /// <summary>
@@ -154,7 +154,7 @@ namespace Apache.Ignite.Core.Binary
 
             fields.Sort(Compare);
 
-            Descriptor desc = new Descriptor(fields, _serializeRaw);
+            Descriptor desc = new Descriptor(fields, _rawMode);
 
             _types[type] = desc;
         }
