@@ -63,8 +63,8 @@ $generatorJava.setterName = function (propName, setterName) {
 };
 
 // Add constructor argument
-$generatorJava.constructorArg = function (obj, propName, notFirst, opt) {
-    var v = obj ? obj[propName] : undefined;
+$generatorJava.constructorArg = function (obj, propName, dflt, notFirst, opt) {
+    var v = (obj ? obj[propName] : undefined) || dflt;
 
     if ($commonUtils.isDefinedAndNotEmpty(v))
         return (notFirst ? ', ' : '') + $generatorJava.toJavaCode(v);
@@ -555,43 +555,43 @@ $generatorJava.clusterGeneral = function (cluster, clientNearCfg, res) {
                         switch (kind) {
                             case 'ExponentialBackoff':
                                 res.line(finderVar + '.setRetryPolicy(new ' + res.importClass('org.apache.curator.retry.ExponentialBackoffRetry') + '(' +
-                                    $generatorJava.constructorArg(retryPolicy, 'baseSleepTimeMs') +
-                                    $generatorJava.constructorArg(retryPolicy, 'maxRetries', true) +
-                                    $generatorJava.constructorArg(retryPolicy, 'maxSleepMs', true, true) + '));');
+                                    $generatorJava.constructorArg(retryPolicy, 'baseSleepTimeMs', 1000) +
+                                    $generatorJava.constructorArg(retryPolicy, 'maxRetries', 10, true) +
+                                    $generatorJava.constructorArg(retryPolicy, 'maxSleepMs', undefined, true, true) + '));');
 
                                 break;
 
                             case 'BoundedExponentialBackoff':
                                 res.line(finderVar + '.setRetryPolicy(new ' + res.importClass('org.apache.curator.retry.BoundedExponentialBackoffRetry') + '(' +
-                                    $generatorJava.constructorArg(retryPolicy, 'baseSleepTimeMs') +
-                                    $generatorJava.constructorArg(retryPolicy, 'maxSleepTimeMs', true) +
-                                    $generatorJava.constructorArg(retryPolicy, 'maxRetries', true) + '));');
+                                    $generatorJava.constructorArg(retryPolicy, 'baseSleepTimeMs', 1000) +
+                                    $generatorJava.constructorArg(retryPolicy, 'maxSleepTimeMs', 2147483647, true) +
+                                    $generatorJava.constructorArg(retryPolicy, 'maxRetries', 10, true) + '));');
 
                                 break;
 
                             case 'UntilElapsed':
                                 res.line(finderVar + '.setRetryPolicy(new ' + res.importClass('org.apache.curator.retry.RetryUntilElapsed') + '(' +
-                                    $generatorJava.constructorArg(retryPolicy, 'maxElapsedTimeMs') +
-                                    $generatorJava.constructorArg(retryPolicy, 'sleepMsBetweenRetries', true) + '));');
+                                    $generatorJava.constructorArg(retryPolicy, 'maxElapsedTimeMs', 60000) +
+                                    $generatorJava.constructorArg(retryPolicy, 'sleepMsBetweenRetries', 1000, true) + '));');
 
                                 break;
 
                             case 'NTimes':
                                 res.line(finderVar + '.setRetryPolicy(new ' + res.importClass('org.apache.curator.retry.RetryNTimes') + '(' +
-                                    $generatorJava.constructorArg(retryPolicy, 'n') +
-                                    $generatorJava.constructorArg(retryPolicy, 'sleepMsBetweenRetries', true) + '));');
+                                    $generatorJava.constructorArg(retryPolicy, 'n', 10) +
+                                    $generatorJava.constructorArg(retryPolicy, 'sleepMsBetweenRetries', 1000, true) + '));');
 
                                 break;
 
                             case 'OneTime':
                                 res.line(finderVar + '.setRetryPolicy(new ' + res.importClass('org.apache.curator.retry.RetryOneTime') + '(' +
-                                    $generatorJava.constructorArg(retryPolicy, 'sleepMsBetweenRetry') + '));');
+                                    $generatorJava.constructorArg(retryPolicy, 'sleepMsBetweenRetry', 1000) + '));');
 
                                 break;
 
                             case 'Forever':
                                 res.line(finderVar + '.setRetryPolicy(new ' + res.importClass('org.apache.curator.retry.RetryForever') + '(' +
-                                    $generatorJava.constructorArg(retryPolicy, 'retryIntervalMs') + '));');
+                                    $generatorJava.constructorArg(retryPolicy, 'retryIntervalMs', 1000) + '));');
 
                                 break;
 
@@ -2383,9 +2383,9 @@ $generatorJava.igfsSecondFS = function(igfs, varName, res) {
 
         res.line(varName + '.setSecondaryFileSystem(new ' +
             res.importClass('org.apache.ignite.hadoop.fs.IgniteHadoopIgfsSecondaryFileSystem') + '(' +
-                $generatorJava.constructorArg(secondFs, 'uri') +
-                (cfgDefined || nameDefined ? $generatorJava.constructorArg(secondFs, 'cfgPath', true) : '') +
-                $generatorJava.constructorArg(secondFs, 'userName', true, true) +
+                $generatorJava.constructorArg(secondFs, 'uri', undefined) +
+                (cfgDefined || nameDefined ? $generatorJava.constructorArg(secondFs, 'cfgPath', undefined, true) : '') +
+                $generatorJava.constructorArg(secondFs, 'userName', undefined, true, true) +
             '));');
 
         res.needEmptyLine = true;

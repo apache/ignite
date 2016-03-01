@@ -27,8 +27,8 @@ $generatorXml.escape = function (s) {
 };
 
 // Add constructor argument
-$generatorXml.constructorArg = function (res, ix, obj, propName, opt) {
-    var v = obj ? obj[propName] : undefined;
+$generatorXml.constructorArg = function (res, ix, obj, propName, dflt, opt) {
+    var v = (obj ? obj[propName] : undefined) || dflt;
 
     if ($commonUtils.isDefinedAndNotEmpty(v))
         res.line('<constructor-arg ' + (ix >= 0 ? 'index="' + ix + '" ' : '') + 'value="' + v + '"/>');
@@ -401,48 +401,48 @@ $generatorXml.clusterGeneral = function (cluster, res) {
                         switch (kind) {
                             case 'ExponentialBackoff':
                                 res.startBlock('<bean class="org.apache.curator.retry.ExponentialBackoffRetry">');
-                                $generatorXml.constructorArg(res, 0, retryPolicy, 'baseSleepTimeMs');
-                                $generatorXml.constructorArg(res, 1, retryPolicy, 'maxRetries');
-                                $generatorXml.constructorArg(res, 2, retryPolicy, 'maxSleepMs', true);
+                                $generatorXml.constructorArg(res, 0, retryPolicy, 'baseSleepTimeMs', 1000);
+                                $generatorXml.constructorArg(res, 1, retryPolicy, 'maxRetries', 10);
+                                $generatorXml.constructorArg(res, 2, retryPolicy, 'maxSleepMs', undefined, true);
                                 res.endBlock('</bean>');
 
                                 break;
 
                             case 'BoundedExponentialBackoff':
                                 res.startBlock('<bean class="org.apache.curator.retry.BoundedExponentialBackoffRetry">');
-                                $generatorXml.constructorArg(res, 0, retryPolicy, 'baseSleepTimeMs');
-                                $generatorXml.constructorArg(res, 1, retryPolicy, 'maxSleepTimeMs');
-                                $generatorXml.constructorArg(res, 2, retryPolicy, 'maxRetries');
+                                $generatorXml.constructorArg(res, 0, retryPolicy, 'baseSleepTimeMs', 1000);
+                                $generatorXml.constructorArg(res, 1, retryPolicy, 'maxSleepTimeMs', 2147483647);
+                                $generatorXml.constructorArg(res, 2, retryPolicy, 'maxRetries', 10);
                                 res.endBlock('</bean>');
 
                                 break;
 
                             case 'UntilElapsed':
                                 res.startBlock('<bean class="org.apache.curator.retry.RetryUntilElapsed">');
-                                $generatorXml.constructorArg(res, 0, retryPolicy, 'maxElapsedTimeMs');
-                                $generatorXml.constructorArg(res, 1, retryPolicy, 'sleepMsBetweenRetries');
+                                $generatorXml.constructorArg(res, 0, retryPolicy, 'maxElapsedTimeMs', 60000);
+                                $generatorXml.constructorArg(res, 1, retryPolicy, 'sleepMsBetweenRetries', 1000);
                                 res.endBlock('</bean>');
 
                                 break;
 
                             case 'NTimes':
                                 res.startBlock('<bean class="org.apache.curator.retry.RetryNTimes">');
-                                $generatorXml.constructorArg(res, 0, retryPolicy, 'n');
-                                $generatorXml.constructorArg(res, 1, retryPolicy, 'sleepMsBetweenRetries');
+                                $generatorXml.constructorArg(res, 0, retryPolicy, 'n', 10);
+                                $generatorXml.constructorArg(res, 1, retryPolicy, 'sleepMsBetweenRetries', 1000);
                                 res.endBlock('</bean>');
 
                                 break;
 
                             case 'OneTime':
                                 res.startBlock('<bean class="org.apache.curator.retry.RetryOneTime">');
-                                $generatorXml.constructorArg(res, 0, retryPolicy, 'sleepMsBetweenRetry');
+                                $generatorXml.constructorArg(res, 0, retryPolicy, 'sleepMsBetweenRetry', 1000);
                                 res.endBlock('</bean>');
 
                                 break;
 
                             case 'Forever':
                                 res.startBlock('<bean class="org.apache.curator.retry.RetryForever">');
-                                $generatorXml.constructorArg(res, 0, retryPolicy, 'retryIntervalMs');
+                                $generatorXml.constructorArg(res, 0, retryPolicy, 'retryIntervalMs', 1000);
                                 res.endBlock('</bean>');
 
                                 break;
@@ -1530,7 +1530,7 @@ $generatorXml.igfsSecondFS = function(igfs, res) {
         if (cfgDefined || nameDefined)
             $generatorXml.constructorArg(res, 1, secondFs, 'cfgPath');
 
-        $generatorXml.constructorArg(res, 2, secondFs, 'userName', true);
+        $generatorXml.constructorArg(res, 2, secondFs, 'userName', undefined, true);
 
         res.endBlock('</bean>');
         res.endBlock('</property>');
