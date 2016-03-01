@@ -318,9 +318,7 @@ namespace Apache.Ignite.Core.Cache.Configuration
                     if (parentPropName != null)
                         columnName = parentPropName + "." + columnName;
 
-                    fields.Add(attr.TypeName != null
-                        ? new QueryField(columnName, attr.TypeName)
-                        : new QueryField(columnName, memberInfo.Value));
+                    fields.Add(new QueryField(columnName, memberInfo.Value));
 
                     if (attr.IsIndexed)
                         indexes.Add(new QueryIndexEx(columnName, attr.IsDescending, QueryIndexType.Sorted,

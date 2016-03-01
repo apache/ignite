@@ -56,11 +56,5 @@ namespace Apache.Ignite.Core.Cache.Configuration
         [SuppressMessage("Microsoft.Performance", "CA1819:PropertiesShouldNotReturnArrays", 
             Justification = "Attribute initializers do not allow collections")]
         public string[] IndexGroups { get; set; }
-
-        /// <summary>
-        /// Gets or sets the Java type name.
-        /// When null, the type will be inferred from attribute target.
-        /// </summary>
-        public string TypeName { get; set; }
     }
 }
