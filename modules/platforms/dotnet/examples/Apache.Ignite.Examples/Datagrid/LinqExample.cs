@@ -94,12 +94,13 @@ namespace Apache.Ignite.Examples.Datagrid
         {
             const int zip = 94109;
 
-            var qry = cache.AsCacheQueryable().Where(emp => emp.Value.Address.Zip == zip);
+            IQueryable<ICacheEntry<EmployeeKey, Employee>> qry = 
+                cache.AsCacheQueryable().Where(emp => emp.Value.Address.Zip == zip);
 
             Console.WriteLine();
             Console.WriteLine(">>> Employees with zipcode " + zip + ":");
 
-            foreach (var entry in qry)
+            foreach (ICacheEntry<EmployeeKey, Employee> entry in qry)
                 Console.WriteLine(">>>    " + entry.Value);
         }
 
@@ -113,10 +114,10 @@ namespace Apache.Ignite.Examples.Datagrid
         {
             const string orgName = "Apache";
 
-            var employees = employeeCache.AsCacheQueryable();
-            var organizations = organizationCache.AsCacheQueryable();
+            IQueryable<ICacheEntry<EmployeeKey, Employee>> employees = employeeCache.AsCacheQueryable();
+            IQueryable<ICacheEntry<int, Organization>> organizations = organizationCache.AsCacheQueryable();
 
-            var qry = 
+            IQueryable<ICacheEntry<EmployeeKey, Employee>> qry = 
                 from employee in employees
                 from organization in organizations
                 where employee.Key.OrganizationId == organization.Key && organization.Value.Name == orgName
@@ -126,7 +127,7 @@ namespace Apache.Ignite.Examples.Datagrid
             Console.WriteLine();
             Console.WriteLine(">>> Employees working for " + orgName + ":");
 
-            foreach (var entry in qry)
+            foreach (ICacheEntry<EmployeeKey, Employee> entry in qry)
                 Console.WriteLine(">>>     " + entry.Value);
         }
 

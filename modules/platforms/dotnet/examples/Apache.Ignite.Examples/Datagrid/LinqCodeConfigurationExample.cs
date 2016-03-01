@@ -74,12 +74,12 @@ namespace Apache.Ignite.Examples.Datagrid
         {
             const int zip = 94109;
 
-            var qry = cache.AsCacheQueryable().Where(emp => emp.Value.Zip == zip);
+            IQueryable<ICacheEntry<int, Person>> qry = cache.AsCacheQueryable().Where(emp => emp.Value.Zip == zip);
 
             Console.WriteLine();
             Console.WriteLine(">>> Employees with zipcode " + zip + ":");
 
-            foreach (var entry in qry)
+            foreach (ICacheEntry<int, Person> entry in qry)
                 Console.WriteLine(">>>    " + entry.Value);
         }
 
