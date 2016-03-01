@@ -304,7 +304,7 @@ namespace Apache.Ignite.Linq.Impl
         /// <summary>
         /// Gets the name of the field from a member expression.
         /// </summary>
-        private static string GetFieldName(MemberExpression expression, ICacheQueryable queryable)
+        private static string GetFieldName(MemberExpression expression, ICacheQueryableInternal queryable)
         {
             var fieldName = GetMemberFieldName(expression.Member);
 

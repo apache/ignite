@@ -18,6 +18,7 @@
 namespace Apache.Ignite.Linq.Impl
 {
     using System;
+    using Apache.Ignite.Core.Cache.Configuration;
     using Apache.Ignite.Core.Cache.Query;
     using Remotion.Linq;
 
@@ -26,6 +27,14 @@ namespace Apache.Ignite.Linq.Impl
     /// </summary>
     internal interface ICacheQueryableInternal : ICacheQueryable
     {
+        /// <summary>
+        /// Gets the configuration of the cache that is associated with this query.
+        /// </summary>
+        /// <value>
+        /// The configuration of the cache.
+        /// </value>
+        CacheConfiguration CacheConfiguration { get; }
+
         /// <summary>
         /// Gets the name of the table.
         /// </summary>

@@ -49,6 +49,12 @@ namespace Apache.Ignite.Linq.Impl
         }
 
         /** <inheritdoc /> */
+        public string CacheName
+        {
+            get { return CacheConfiguration.Name; }
+        }
+
+        /** <inheritdoc /> */
         public IIgnite Ignite
         {
             get { return CacheQueryProvider.Ignite; }

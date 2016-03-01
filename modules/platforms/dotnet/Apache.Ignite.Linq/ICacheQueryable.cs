@@ -27,12 +27,12 @@ namespace Apache.Ignite.Linq
     public interface ICacheQueryable
     {
         /// <summary>
-        /// Gets the configuration of the cache that is associated with this query.
+        /// Gets the name of the cache that is associated with this query.
         /// </summary>
         /// <value>
-        /// The configuration of the cache.
+        /// The name of the cache.
         /// </value>
-        CacheConfiguration CacheConfiguration { get; }
+        string CacheName { get; }
 
         /// <summary>
         /// Gets the Ignite instance associated with this query.
