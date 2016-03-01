@@ -59,6 +59,14 @@ namespace Apache.Ignite.Linq.Impl
             _local = local;
         }
 
+        /// <summary>
+        /// Gets the local flag.
+        /// </summary>
+        public bool Local
+        {
+            get { return _local; }
+        }
+
         /** <inheritdoc /> */
         public T ExecuteScalar<T>(QueryModel queryModel)
         {
