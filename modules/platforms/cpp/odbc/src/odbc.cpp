@@ -92,7 +92,9 @@ namespace ignite
         using ignite::odbc::Connection;
         using ignite::odbc::config::ConnectionInfo;
 
-        LOG_MSG("SQLGetInfo called: %d (%s)\n", infoType, ConnectionInfo::InfoTypeToString(infoType));
+        LOG_MSG("SQLGetInfo called: %d (%s), %p, %d, %p\n",
+                infoType, ConnectionInfo::InfoTypeToString(infoType),
+                infoValue, infoValueMax, length);
 
         Connection *connection = reinterpret_cast<Connection*>(conn);
 
@@ -1318,7 +1320,8 @@ namespace ignite
 
         environment->GetAttribute(attr, outBuffer);
 
-        *valueResLen = static_cast<SQLSMALLINT>(outResLen);
+        if (valueResLen)
+            *valueResLen = static_cast<SQLSMALLINT>(outResLen);
 
         return environment->GetDiagnosticRecords().GetReturnCode();
     }

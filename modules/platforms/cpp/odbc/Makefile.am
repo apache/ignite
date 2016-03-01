@@ -40,6 +40,7 @@ COMMON_SRC = os/linux/src/system/socket_client.cpp        \
              src/meta/column_meta.cpp                     \
              src/meta/table_meta.cpp                      \
              src/odbc.cpp                                 \
+             src/entry_points.cpp                         \
              src/query/column_metadata_query.cpp          \
              src/query/data_query.cpp                     \
              src/query/foreign_keys_query.cpp             \
