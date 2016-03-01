@@ -26,6 +26,7 @@ namespace Apache.Ignite.Linq.Impl
     using System.Linq;
     using System.Linq.Expressions;
     using System.Reflection;
+    using Apache.Ignite.Core.Cache;
     using Apache.Ignite.Core.Cache.Configuration;
     using Apache.Ignite.Core.Impl.Common;
     using Remotion.Linq.Clauses;
@@ -344,6 +345,8 @@ namespace Apache.Ignite.Linq.Impl
         /// <summary>
         /// Gets the name of the member field.
         /// </summary>
+        [SuppressMessage("Microsoft.Globalization", "CA1308:NormalizeStringsToUppercase", 
+            Justification = "Not applicable.")]
         private static string GetMemberFieldName(MemberInfo member)
         {
             string fieldName;
@@ -353,6 +356,12 @@ namespace Apache.Ignite.Linq.Impl
 
             return FieldNameMap.GetOrAdd(member, m =>
             {
+                // Special case: _key, _val
+                if (m.DeclaringType != null &&
+                    m.DeclaringType.IsGenericType &&
+                    m.DeclaringType.GetGenericTypeDefinition() == typeof (ICacheEntry<,>))
+                    return "_" + m.Name.ToLowerInvariant().Substring(0, 3);
+
                 var queryFieldAttr = m.GetCustomAttributes(true)
                     .OfType<QuerySqlFieldAttribute>().FirstOrDefault();
 
