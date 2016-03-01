@@ -904,6 +904,13 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
             Assert.AreEqual(new[] {3, 4}, qry8(0, 1, 2, 5, 6, 7, 8, 9).ToArray());
         }
 
+        [Test]
+        public void TestLocalQuery()
+        {
+            Assert.AreEqual(PersonCount, GetPersonCache().AsCacheQueryable(false).Count());
+            Assert.AreEqual(PersonCount / 2, GetPersonCache().AsCacheQueryable(true).Count());
+        }
+
         /// <summary>
         /// Tests the introspection.
         /// </summary>
