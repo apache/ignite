@@ -70,13 +70,13 @@ namespace Apache.Ignite.Examples.Datagrid
                 var organizationCache = ignite.GetCache<int, Organization>(null);
 
                 // Run SQL query example.
-                SqlQueryExample(employeeCache);
+                QueryExample(employeeCache);
 
                 // Run SQL query with join example.
-                SqlJoinQueryExample(employeeCache, organizationCache);
+                JoinQueryExample(employeeCache, organizationCache);
 
                 // Run SQL fields query example.
-                SqlFieldsQueryExample(employeeCache);
+                FieldsQueryExample(employeeCache);
 
                 Console.WriteLine();
             }
@@ -90,7 +90,7 @@ namespace Apache.Ignite.Examples.Datagrid
         /// Queries employees that have provided ZIP code in address.
         /// </summary>
         /// <param name="cache">Cache.</param>
-        private static void SqlQueryExample(ICache<EmployeeKey, Employee> cache)
+        private static void QueryExample(ICache<EmployeeKey, Employee> cache)
         {
             const int zip = 94109;
 
@@ -108,7 +108,7 @@ namespace Apache.Ignite.Examples.Datagrid
         /// </summary>
         /// <param name="employeeCache">Employee cache.</param>
         /// <param name="organizationCache">Organization cache.</param>
-        private static void SqlJoinQueryExample(ICache<EmployeeKey, Employee> employeeCache, 
+        private static void JoinQueryExample(ICache<EmployeeKey, Employee> employeeCache, 
             ICache<int, Organization> organizationCache)
         {
             const string orgName = "Apache";
@@ -134,7 +134,7 @@ namespace Apache.Ignite.Examples.Datagrid
         /// Queries names and salaries for all employees.
         /// </summary>
         /// <param name="cache">Cache.</param>
-        private static void SqlFieldsQueryExample(ICache<EmployeeKey, Employee> cache)
+        private static void FieldsQueryExample(ICache<EmployeeKey, Employee> cache)
         {
             var qry = cache.AsCacheQueryable().Select(entry => new {entry.Value.Name, entry.Value.Salary});
 
