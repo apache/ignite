@@ -28,7 +28,7 @@ namespace Apache.Ignite.Core.Binary
     /// <para />
     /// Note that Java platform stores dates as a difference between current time 
     /// and predefined absolute UTC date. Therefore, this difference is always the 
-    /// same for all time zones. .Net, in contrast, stores dates as a difference 
+    /// same for all time zones. .NET, in contrast, stores dates as a difference 
     /// between current time and some predefined date relative to the current time 
     /// zone. It means that this difference will be different as you change time zones. 
     /// To overcome this discrepancy Ignite always converts .Net date to UTC form 
@@ -39,7 +39,7 @@ namespace Apache.Ignite.Core.Binary
     /// local date in any field/property, it will be implicitly converted to UTC
     /// form after the first serialization-deserialization cycle. 
     /// </summary>
-    internal class BinaryReflectiveSerializer : IBinarySerializer
+    public sealed class BinaryReflectiveSerializer : IBinarySerializer
     {
         /** Cached binding flags. */
         private const BindingFlags Flags = BindingFlags.Instance | BindingFlags.Public | 
