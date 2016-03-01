@@ -1073,16 +1073,17 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
             localResultFunc = localResultFunc ?? (x => x);
 
             // Calculate result locally, using real method invocation
-            var expected = query.ToArray().AsQueryable().Select(exp).Select(localResultFunc).ToArray();
+            var expected = query.ToArray().AsQueryable().Select(exp).Select(localResultFunc).OrderBy(x => x).ToArray();
 
             // Perform SQL query
-            var actual = query.Select(exp).ToArray().ToArray();
+            var actual = query.Select(exp).ToArray().OrderBy(x => x).ToArray();
 
             // Compare results
             CollectionAssert.AreEqual(expected, actual, new NumericComparer());
 
             // Perform intermediate anonymous type conversion to check type projection
-            actual = query.Select(exp).Select(x => new {Foo = x}).ToArray().Select(x => x.Foo).ToArray();
+            actual = query.Select(exp).Select(x => new {Foo = x}).ToArray().Select(x => x.Foo)
+                .OrderBy(x => x).ToArray();
 
             // Compare results
             CollectionAssert.AreEqual(expected, actual, new NumericComparer());
