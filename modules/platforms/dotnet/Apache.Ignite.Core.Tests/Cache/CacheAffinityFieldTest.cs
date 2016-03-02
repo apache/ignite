@@ -122,7 +122,12 @@ namespace Apache.Ignite.Core.Tests.Cache
         [Test]
         public void TestAffinityKeyClass()
         {
+            // Check meta
+            Assert.AreEqual("affKey",
+                _cache1.Ignite.GetBinary().GetBinaryType(typeof (AffinityKey)).AffinityKeyFieldName);
+
             // TODO
+            // Check Java interop?
         }
 
         /// <summary>
