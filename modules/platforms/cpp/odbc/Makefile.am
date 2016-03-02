@@ -49,6 +49,7 @@ COMMON_SRC = os/linux/src/system/socket_client.cpp        \
              src/query/type_info_query.cpp                \
              src/result_page.cpp                          \
              src/row.cpp                                  \
+             src/column.cpp                               \
              src/statement.cpp                            \
              src/type_traits.cpp                          \
              src/utility.cpp
