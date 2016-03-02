@@ -580,7 +580,7 @@ public class GridDhtCacheEntry extends GridDistributedCacheEntry {
                 clearIndex(prev);
 
                 // Give to GC.
-                update(null, 0L, 0L, ver);
+                update(null, 0L, 0L, ver, true);
 
                 if (swap) {
                     releaseSwap();

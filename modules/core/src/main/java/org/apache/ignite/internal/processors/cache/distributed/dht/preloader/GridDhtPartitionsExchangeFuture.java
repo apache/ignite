@@ -46,6 +46,7 @@ import org.apache.ignite.internal.IgniteFutureTimeoutCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
+import org.apache.ignite.internal.events.DiscoveryCustomEvent;
 import org.apache.ignite.internal.managers.discovery.GridDiscoveryTopologySnapshot;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.DynamicCacheChangeRequest;
@@ -569,6 +570,9 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
                             }
                             else
                                 cacheCtx.affinity().clientEventTopologyChange(discoEvt, exchId.topologyVersion());
+
+                            if (!exchId.isJoined())
+                                cacheCtx.preloader().unwindUndeploys();
                         }
 
                         if (exchId.isLeft())
@@ -845,8 +849,9 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
                     // Partition release future is done so we can flush the write-behind store.
                     cacheCtx.store().forceFlush();
 
-                    // Process queued undeploys prior to sending/spreading map.
-                    cacheCtx.preloader().unwindUndeploys();
+                    if (!exchId.isJoined())
+                        // Process queued undeploys prior to sending/spreading map.
+                        cacheCtx.preloader().unwindUndeploys();
 
                     GridDhtPartitionTopology top = cacheCtx.topology();
 
@@ -1127,6 +1132,11 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
                 for (GridCacheContext cacheCtx : cctx.cacheContexts())
                     cacheCtx.config().getAffinity().removeNode(exchId.nodeId());
             }
+
+            reqs = null;
+
+            if (discoEvt instanceof DiscoveryCustomEvent)
+                ((DiscoveryCustomEvent)discoEvt).customMessage(null);
 
             return true;
         }

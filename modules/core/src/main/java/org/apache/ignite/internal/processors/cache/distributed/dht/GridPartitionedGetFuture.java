@@ -21,6 +21,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicReference;
@@ -234,15 +235,16 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
         Map<ClusterNode, LinkedHashMap<KeyCacheObject, Boolean>> mapped,
         AffinityTopologyVersion topVer
     ) {
-        if (CU.affinityNodes(cctx, topVer).isEmpty()) {
+        Collection<ClusterNode> cacheNodes = CU.affinityNodes(cctx, topVer);
+
+        if (cacheNodes.isEmpty()) {
             onDone(new ClusterTopologyServerNotFoundException("Failed to map keys for cache " +
                 "(all partition nodes left the grid) [topVer=" + topVer + ", cache=" + cctx.name() + ']'));
 
             return;
         }
 
-        Map<ClusterNode, LinkedHashMap<KeyCacheObject, Boolean>> mappings =
-            U.newHashMap(CU.affinityNodes(cctx, topVer).size());
+        Map<ClusterNode, LinkedHashMap<KeyCacheObject, Boolean>> mappings = U.newHashMap(cacheNodes.size());
 
         final int keysSize = keys.size();
 
@@ -374,135 +376,157 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
         AffinityTopologyVersion topVer,
         Map<ClusterNode, LinkedHashMap<KeyCacheObject, Boolean>> mapped
     ) {
-        GridDhtCacheAdapter<K, V> colocated = cache();
+        int part = cctx.affinity().partition(key);
 
-        boolean remote = false;
+        List<ClusterNode> affNodes = cctx.affinity().nodes(part, topVer);
 
-        // Allow to get cached value from the local node.
-        boolean allowLocRead = (cctx.affinityNode() && !forcePrimary) ||
-                cctx.affinity().primary(cctx.localNode(), key, topVer);
+        if (affNodes.isEmpty()) {
+            onDone(serverNotFoundError(topVer));
+
+            return false;
+        }
+
+        boolean fastLocGet = (!forcePrimary || affNodes.get(0).isLocal()) &&
+            cctx.allowFastLocalRead(part, affNodes, topVer);
+
+        if (fastLocGet && localGet(key, part, locVals))
+            return false;
+
+        ClusterNode node = affinityNode(affNodes);
+
+        if (node == null) {
+            onDone(serverNotFoundError(topVer));
+
+            return false;
+        }
+
+        boolean remote = !node.isLocal();
+
+        LinkedHashMap<KeyCacheObject, Boolean> keys = mapped.get(node);
+
+        if (keys != null && keys.containsKey(key)) {
+            if (REMAP_CNT_UPD.incrementAndGet(this) > MAX_REMAP_CNT) {
+                onDone(new ClusterTopologyCheckedException("Failed to remap key to a new node after " +
+                    MAX_REMAP_CNT + " attempts (key got remapped to the same node) [key=" + key + ", node=" +
+                    U.toShortString(node) + ", mappings=" + mapped + ']'));
+
+                return false;
+            }
+        }
+
+        LinkedHashMap<KeyCacheObject, Boolean> old = mappings.get(node);
+
+        if (old == null)
+            mappings.put(node, old = new LinkedHashMap<>(3, 1f));
+
+        old.put(key, false);
+
+        return remote;
+    }
+
+    /**
+     * @param key Key.
+     * @param part Partition.
+     * @param locVals Local values.
+     * @return {@code True} if there is no need to further search value.
+     */
+    private boolean localGet(KeyCacheObject key, int part, Map<K, V> locVals) {
+        assert cctx.affinityNode() : this;
+
+        GridDhtCacheAdapter<K, V> cache = cache();
 
         while (true) {
             GridCacheEntryEx entry;
 
             try {
-                if (allowLocRead) {
-                    try {
-                        entry = colocated.context().isSwapOrOffheapEnabled() ? colocated.entryEx(key) :
-                            colocated.peekEx(key);
+                entry = cache.context().isSwapOrOffheapEnabled() ? cache.entryEx(key) : cache.peekEx(key);
 
-                        // If our DHT cache do has value, then we peek it.
-                        if (entry != null) {
-                            boolean isNew = entry.isNewLocked();
+                // If our DHT cache do has value, then we peek it.
+                if (entry != null) {
+                    boolean isNew = entry.isNewLocked();
 
-                            CacheObject v = null;
-                            GridCacheVersion ver = null;
+                    CacheObject v = null;
+                    GridCacheVersion ver = null;
 
-                            if (needVer) {
-                                T2<CacheObject, GridCacheVersion> res = entry.innerGetVersioned(
-                                    null,
-                                    /*swap*/true,
-                                    /*unmarshal*/true,
-                                    /**update-metrics*/false,
-                                    /*event*/!skipVals,
-                                    subjId,
-                                    null,
-                                    taskName,
-                                    expiryPlc,
-                                    !deserializeBinary);
+                    if (needVer) {
+                        T2<CacheObject, GridCacheVersion> res = entry.innerGetVersioned(
+                            null,
+                            /*swap*/true,
+                            /*unmarshal*/true,
+                            /**update-metrics*/false,
+                            /*event*/!skipVals,
+                            subjId,
+                            null,
+                            taskName,
+                            expiryPlc,
+                            !deserializeBinary);
 
-                                if (res != null) {
-                                    v = res.get1();
-                                    ver = res.get2();
-                                }
-                            }
-                            else {
-                                v = entry.innerGet(null,
-                                    /*swap*/true,
-                                    /*read-through*/false,
-                                    /*fail-fast*/true,
-                                    /*unmarshal*/true,
-                                    /**update-metrics*/false,
-                                    /*event*/!skipVals,
-                                    /*temporary*/false,
-                                    subjId,
-                                    null,
-                                    taskName,
-                                    expiryPlc,
-                                    !deserializeBinary);
-                            }
-
-                            colocated.context().evicts().touch(entry, topVer);
-
-                            // Entry was not in memory or in swap, so we remove it from cache.
-                            if (v == null) {
-                                if (isNew && entry.markObsoleteIfEmpty(ver))
-                                    colocated.removeIfObsolete(key);
-                            }
-                            else {
-                                if (needVer)
-                                    versionedResult(locVals, key, v, ver);
-                                else
-                                    cctx.addResult(locVals,
-                                        key,
-                                        v,
-                                        skipVals,
-                                        keepCacheObjects,
-                                        deserializeBinary,
-                                        true);
-
-                                return false;
-                            }
+                        if (res != null) {
+                            v = res.get1();
+                            ver = res.get2();
                         }
                     }
-                    catch (GridDhtInvalidPartitionException ignored) {
-                        // No-op.
+                    else {
+                        v = entry.innerGet(null,
+                            /*swap*/true,
+                            /*read-through*/false,
+                            /*fail-fast*/true,
+                            /*unmarshal*/true,
+                            /**update-metrics*/false,
+                            /*event*/!skipVals,
+                            /*temporary*/false,
+                            subjId,
+                            null,
+                            taskName,
+                            expiryPlc,
+                            !deserializeBinary);
+                    }
+
+                    cache.context().evicts().touch(entry, topVer);
+
+                    // Entry was not in memory or in swap, so we remove it from cache.
+                    if (v == null) {
+                        if (isNew && entry.markObsoleteIfEmpty(ver))
+                            cache.removeIfObsolete(key);
+                    }
+                    else {
+                        cctx.addResult(locVals,
+                            key,
+                            v,
+                            skipVals,
+                            keepCacheObjects,
+                            deserializeBinary,
+                            true,
+                            ver);
+
+                        return true;
                     }
                 }
 
-                ClusterNode node = affinityNode(key, topVer);
+                boolean topStable = cctx.isReplicated() || topVer.equals(cctx.topology().topologyVersion());
 
-                if (node == null) {
-                    onDone(new ClusterTopologyServerNotFoundException("Failed to map keys for cache " +
-                        "(all partition nodes left the grid)."));
+                // Entry not found, do not continue search if topology did not change and there is no store.
+                if (!cctx.readThroughConfigured() && (topStable || partitionOwned(part))) {
+                    if (!skipVals && cctx.config().isStatisticsEnabled())
+                        cache.metrics0().onRead(false);
 
-                    return false;
+                    return true;
                 }
 
-                remote = !node.isLocal();
-
-                LinkedHashMap<KeyCacheObject, Boolean> keys = mapped.get(node);
-
-                if (keys != null && keys.containsKey(key)) {
-                    if (remapCnt.incrementAndGet() > MAX_REMAP_CNT) {
-                        onDone(new ClusterTopologyCheckedException("Failed to remap key to a new node after " +
-                            MAX_REMAP_CNT + " attempts (key got remapped to the same node) [key=" + key + ", node=" +
-                            U.toShortString(node) + ", mappings=" + mapped + ']'));
-
-                        return false;
-                    }
-                }
-
-                LinkedHashMap<KeyCacheObject, Boolean> old = mappings.get(node);
-
-                if (old == null)
-                    mappings.put(node, old = new LinkedHashMap<>(3, 1f));
-
-                old.put(key, false);
-
-                break;
-            }
-            catch (IgniteCheckedException e) {
-                onDone(e);
-
-                break;
+                return false;
             }
             catch (GridCacheEntryRemovedException ignored) {
                 // No-op, will retry.
             }
-        }
+            catch (GridDhtInvalidPartitionException ignored) {
+                return false;
+            }
+            catch (IgniteCheckedException e) {
+                onDone(e);
 
-        return remote;
+                return true;
+            }
+        }
     }
 
     /**
@@ -525,17 +549,14 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
             for (GridCacheEntryInfo info : infos) {
                 assert skipVals == (info.value() == null);
 
-                if (needVer)
-                    versionedResult(map, info.key(), info.value(), info.version());
-                else {
-                    cctx.addResult(map,
-                        info.key(),
-                        info.value(),
-                        skipVals,
-                        keepCacheObjects,
-                        deserializeBinary,
-                        false);
-                }
+                cctx.addResult(map,
+                    info.key(),
+                    info.value(),
+                    skipVals,
+                    keepCacheObjects,
+                    deserializeBinary,
+                    false,
+                    needVer ? info.version() : null);
             }
 
             return map;

@@ -21,8 +21,10 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
-import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
+
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.internal.cluster.ClusterTopologyServerNotFoundException;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheFuture;
@@ -38,6 +40,7 @@ import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_NEAR_GET_MAX_REMAPS;
 import static org.apache.ignite.IgniteSystemProperties.getInteger;
+import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionState.OWNING;
 
 /**
  *
@@ -49,6 +52,10 @@ public abstract class CacheDistributedGetFutureAdapter<K, V> extends GridCompoun
 
     /** Maximum number of attempts to remap key to the same primary node. */
     protected static final int MAX_REMAP_CNT = getInteger(IGNITE_NEAR_GET_MAX_REMAPS, DFLT_MAX_REMAP_CNT);
+
+    /** Remap count updater. */
+    protected static final AtomicIntegerFieldUpdater<CacheDistributedGetFutureAdapter> REMAP_CNT_UPD =
+        AtomicIntegerFieldUpdater.newUpdater(CacheDistributedGetFutureAdapter.class, "remapCnt");
 
     /** Context. */
     protected final GridCacheContext<K, V> cctx;
@@ -69,7 +76,8 @@ public abstract class CacheDistributedGetFutureAdapter<K, V> extends GridCompoun
     protected boolean trackable;
 
     /** Remap count. */
-    protected AtomicInteger remapCnt = new AtomicInteger();
+    @SuppressWarnings("UnusedDeclaration")
+    protected volatile int remapCnt;
 
     /** Subject ID. */
     protected UUID subjId;
@@ -124,7 +132,7 @@ public abstract class CacheDistributedGetFutureAdapter<K, V> extends GridCompoun
         boolean needVer,
         boolean keepCacheObjects
     ) {
-        super(cctx.kernalContext(), CU.<K, V>mapsReducer(keys.size()));
+        super(CU.<K, V>mapsReducer(keys.size()));
 
         assert !F.isEmpty(keys);
 
@@ -145,31 +153,13 @@ public abstract class CacheDistributedGetFutureAdapter<K, V> extends GridCompoun
     }
 
     /**
-     * @param map Result map.
-     * @param key Key.
-     * @param val Value.
-     * @param ver Version.
-     */
-    @SuppressWarnings("unchecked")
-    protected final void versionedResult(Map map, KeyCacheObject key, Object val, GridCacheVersion ver) {
-        assert needVer;
-        assert skipVals || val != null;
-        assert ver != null;
-
-        map.put(key, new T2<>(skipVals ? true : val, ver));
-    }
-
-    /**
      * Affinity node to send get request to.
      *
-     * @param key Key to get.
-     * @param topVer Topology version.
+     * @param affNodes All affinity nodes.
      * @return Affinity node to get key from.
      */
-    protected final ClusterNode affinityNode(KeyCacheObject key, AffinityTopologyVersion topVer) {
+    protected final ClusterNode affinityNode(List<ClusterNode> affNodes) {
         if (!canRemap) {
-            List<ClusterNode> affNodes = cctx.affinity().nodes(key, topVer);
-
             for (ClusterNode node : affNodes) {
                 if (cctx.discovery().alive(node))
                     return node;
@@ -178,6 +168,23 @@ public abstract class CacheDistributedGetFutureAdapter<K, V> extends GridCompoun
             return null;
         }
         else
-            return cctx.affinity().primary(key, topVer);
+            return affNodes.get(0);
+    }
+
+    /**
+     * @param part Partition.
+     * @return {@code True} if partition is in owned state.
+     */
+    protected final boolean partitionOwned(int part) {
+        return cctx.topology().partitionState(cctx.localNodeId(), part) == OWNING;
+    }
+
+    /**
+     * @param topVer Topology version.
+     * @return Exception.
+     */
+    protected final ClusterTopologyServerNotFoundException serverNotFoundError(AffinityTopologyVersion topVer) {
+        return new ClusterTopologyServerNotFoundException("Failed to map keys for cache " +
+            "(all partition nodes left the grid) [topVer=" + topVer + ", cache=" + cctx.name() + ']');
     }
 }

@@ -36,6 +36,7 @@ import org.apache.ignite.internal.managers.communication.GridMessageListener;
 import org.apache.ignite.internal.managers.deployment.GridDeploymentInfo;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.distributed.dht.CacheGetFuture;
+import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtAffinityAssignmentRequest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLockRequest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLockResponse;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxPrepareRequest;
@@ -122,6 +123,28 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
             IgniteInternalFuture<?> fut = null;
 
             if (cacheMsg.partitionExchangeMessage()) {
+                if (cacheMsg instanceof GridDhtAffinityAssignmentRequest) {
+                    assert cacheMsg.topologyVersion() != null : cacheMsg;
+
+                    AffinityTopologyVersion startTopVer = new AffinityTopologyVersion(cctx.localNode().order());
+
+                    assert cacheMsg.topologyVersion().compareTo(startTopVer) > 0 :
+                        "Invalid affinity request [startTopVer=" + startTopVer + ", msg=" + cacheMsg + ']';
+
+                    // Need to wait for initial exchange to avoid race between cache start and affinity request.
+                    fut = cctx.exchange().affinityReadyFuture(startTopVer);
+
+                    if (fut != null && !fut.isDone()) {
+                        cctx.kernalContext().closure().runLocalSafe(new Runnable() {
+                            @Override public void run() {
+                                lsnr.onMessage(nodeId, cacheMsg);
+                            }
+                        });
+
+                        return;
+                    }
+                }
+
                 long locTopVer = cctx.discovery().topologyVersion();
                 long rmtTopVer = cacheMsg.topologyVersion().topologyVersion();
 

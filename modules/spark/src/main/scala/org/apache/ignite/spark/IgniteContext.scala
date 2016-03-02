@@ -20,7 +20,7 @@ package org.apache.ignite.spark
 
 import org.apache.ignite.internal.IgnitionEx
 import org.apache.ignite.internal.util.IgniteUtils
-import org.apache.ignite.{IgniteSystemProperties, Ignition, Ignite}
+import org.apache.ignite._
 import org.apache.ignite.configuration.{CacheConfiguration, IgniteConfiguration}
 import org.apache.spark.{Logging, SparkContext}
 import org.apache.spark.sql.SQLContext
@@ -146,14 +146,19 @@ class IgniteContext[K, V](
             Ignition.ignite(igniteCfg.getGridName)
         }
         catch {
-            case e: Exception ⇒
+            case e: IgniteIllegalStateException ⇒
                 try {
                     igniteCfg.setClientMode(client || driver)
 
                     Ignition.start(igniteCfg)
                 }
                 catch {
-                    case e: Exception ⇒ Ignition.ignite(igniteCfg.getGridName)
+                    case e: IgniteException ⇒ {
+                        logError("Failed to start Ignite client. Will try to use an existing instance with name: "
+                            + igniteCfg.getGridName, e)
+
+                        Ignition.ignite(igniteCfg.getGridName)
+                    }
                 }
         }
     }

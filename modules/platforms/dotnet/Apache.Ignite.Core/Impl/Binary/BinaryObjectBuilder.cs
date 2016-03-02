@@ -352,38 +352,35 @@ namespace Apache.Ignite.Core.Impl.Binary
         /** <inheritDoc /> */
         public IBinaryObject Build()
         {
-            BinaryHeapStream inStream = new BinaryHeapStream(_obj.Data);
-
-            inStream.Seek(_obj.Offset, SeekOrigin.Begin);
-
             // Assume that resulting length will be no less than header + [fields_cnt] * 12;
             int estimatedCapacity = BinaryObjectHeader.Size + (_vals == null ? 0 : _vals.Count*12);
 
-            BinaryHeapStream outStream = new BinaryHeapStream(estimatedCapacity);
+            using (var outStream = new BinaryHeapStream(estimatedCapacity))
+            {
+                BinaryWriter writer = _binary.Marshaller.StartMarshal(outStream);
 
-            BinaryWriter writer = _binary.Marshaller.StartMarshal(outStream);
+                writer.SetBuilder(this);
 
-            writer.SetBuilder(this);
-
-            // All related builders will work in this context with this writer.
-            _parent._ctx = new Context(writer);
+                // All related builders will work in this context with this writer.
+                _parent._ctx = new Context(writer);
             
-            try
-            {
-                // Write.
-                writer.Write(this);
+                try
+                {
+                    // Write.
+                    writer.Write(this);
                 
-                // Process metadata.
-                _binary.Marshaller.FinishMarshal(writer);
+                    // Process metadata.
+                    _binary.Marshaller.FinishMarshal(writer);
 
-                // Create binary object once metadata is processed.
-                return new BinaryObject(_binary.Marshaller, outStream.InternalArray, 0, 
-                    BinaryObjectHeader.Read(outStream, 0));
-            }
-            finally
-            {
-                // Cleanup.
-                _parent._ctx.Closed = true;
+                    // Create binary object once metadata is processed.
+                    return new BinaryObject(_binary.Marshaller, outStream.InternalArray, 0, 
+                        BinaryObjectHeader.Read(outStream, 0));
+                }
+                finally
+                {
+                    // Cleanup.
+                    _parent._ctx.Closed = true;
+                }
             }
         }
 
@@ -783,12 +780,13 @@ namespace Apache.Ignite.Core.Impl.Binary
         internal void ProcessBinary(IBinaryStream outStream, BinaryObject port)
         {
             // Special case: writing binary object with correct inversions.
-            BinaryHeapStream inStream = new BinaryHeapStream(port.Data);
+            using (var inStream = new BinaryHeapStream(port.Data))
+            {
+                inStream.Seek(port.Offset, SeekOrigin.Begin);
 
-            inStream.Seek(port.Offset, SeekOrigin.Begin);
-
-            // Use fresh context to ensure correct binary inversion.
-            Mutate0(new Context(), inStream, outStream, false, 0, EmptyVals);
+                // Use fresh context to ensure correct binary inversion.
+                Mutate0(new Context(), inStream, outStream, false, 0, EmptyVals);
+            }
         }
 
         /// <summary>
@@ -798,18 +796,19 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// <param name="builder">Builder.</param>
         internal void ProcessBuilder(IBinaryStream outStream, BinaryObjectBuilder builder)
         {
-            BinaryHeapStream inStream = new BinaryHeapStream(builder._obj.Data);
+            using (var inStream = new BinaryHeapStream(builder._obj.Data))
+            {
+                inStream.Seek(builder._obj.Offset, SeekOrigin.Begin);
 
-            inStream.Seek(builder._obj.Offset, SeekOrigin.Begin);
+                // Builder parent context might be null only in one case: if we never met this group of
+                // builders before. In this case we set context to their parent and track it. Context
+                // cleanup will be performed at the very end of build process.
+                if (builder._parent._ctx == null || builder._parent._ctx.Closed)
+                    builder._parent._ctx = new Context(_parent._ctx);
 
-            // Builder parent context might be null only in one case: if we never met this group of
-            // builders before. In this case we set context to their parent and track it. Context
-            // cleanup will be performed at the very end of build process.
-            if (builder._parent._ctx == null || builder._parent._ctx.Closed)
-                builder._parent._ctx = new Context(_parent._ctx);
-
-            builder.Mutate(inStream, outStream as BinaryHeapStream, builder._desc,
+                builder.Mutate(inStream, (BinaryHeapStream) outStream, builder._desc,
                     builder._hashCode, builder._vals);
+            }
         }
 
         /// <summary>

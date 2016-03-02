@@ -162,6 +162,7 @@ public class CacheBinaryAutoStoreExample {
                 System.out.println(">>> Loaded cache entries: " + cache.size());
             }
             finally {
+                // Distributed cache could be removed from cluster only by #destroyCache() call.
                 ignite.destroyCache(CACHE_NAME);
             }
         }

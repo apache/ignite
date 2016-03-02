@@ -192,10 +192,8 @@ namespace Apache.Ignite.Core.Impl.Cache.Query.Continuous
         {
             lock (this)
             {
-                if (_disposed)
+                if (_disposed || _nativeQry == null)
                     return;
-
-                Debug.Assert(_nativeQry != null);
 
                 try
                 {

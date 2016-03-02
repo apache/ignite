@@ -44,13 +44,13 @@ import org.jetbrains.annotations.Nullable;
  * </pre>
  * </p>
  *
- * If you need to modify nested binary object you can get builder for nested object using
+ * If you need to modify nested binary object you can get an instance of a builder for nested binary object using
  * {@link #getField(String)}, changes made on nested builder will affect parent object,
  * for example:
  *
  * <pre name=code class=java>
  * BinaryObjectBuilder personBuilder = grid.binary().createBuilder(personBinaryObj);
- * BinaryObjectBuilder addressBuilder = personBuilder.setField("address");
+ * BinaryObjectBuilder addressBuilder = personBuilder.getField("address");
  *
  * addressBuilder.setField("city", "New York");
  *
@@ -66,7 +66,7 @@ import org.jetbrains.annotations.Nullable;
 public interface BinaryObjectBuilder {
     /**
      * Returns value assigned to the specified field.
-     * If the value is a binary object instance of {@code BinaryObjectBuilder} will be returned,
+     * If the value is a binary object then an instance of {@code BinaryObjectBuilder} will be returned,
      * which can be modified.
      * <p>
      * Collections and maps returned from this method are modifiable.

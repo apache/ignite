@@ -537,6 +537,7 @@ namespace Apache.Ignite.Core.Impl.Datastream
                     if (_batch != null)
                         _batch.Send(this, PlcCancelClose);
                 }
+                // ReSharper disable once EmptyGeneralCatchClause
                 catch (Exception)
                 {
                     // Finalizers should never throw
@@ -544,9 +545,9 @@ namespace Apache.Ignite.Core.Impl.Datastream
 
                 Marshaller.Ignite.HandleRegistry.Release(_hnd, true);
                 Marshaller.Ignite.HandleRegistry.Release(_rcvHnd, true);
-
-                base.Dispose(false);
             }
+
+            base.Dispose(false);
         }
 
         /** <inheritDoc /> */

@@ -126,6 +126,7 @@ public class CacheAutoStoreExample {
             System.out.println();
             System.out.println(">>> Cache auto store example started...");
 
+            // Auto-close cache at the end of the example.
             try (IgniteCache<Long, Person> cache = ignite.getOrCreateCache(cacheConfiguration())) {
                 try (Transaction tx = ignite.transactions().txStart()) {
                     Person val = cache.get(id);
@@ -168,6 +169,10 @@ public class CacheAutoStoreExample {
                 cache.loadCache(null);
 
                 System.out.println(">>> Loaded cache entries: " + cache.size());
+            }
+            finally {
+                // Distributed cache could be removed from cluster only by #destroyCache() call.
+                ignite.destroyCache(CACHE_NAME);
             }
         }
     }

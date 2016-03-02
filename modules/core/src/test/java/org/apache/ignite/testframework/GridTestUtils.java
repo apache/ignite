@@ -93,6 +93,7 @@ import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.spi.swapspace.inmemory.GridTestSwapSpaceSpi;
@@ -586,6 +587,32 @@ public final class GridTestUtils {
     }
 
     /**
+     * @param call Closure that receives thread index.
+     * @param threadNum Number of threads.
+     * @param threadName Thread names.
+     * @return Execution time in milliseconds.
+     * @throws Exception If failed.
+     */
+    public static long runMultiThreaded(final IgniteInClosure<Integer> call, int threadNum, String threadName)
+        throws Exception {
+        List<Callable<?>> calls = new ArrayList<>(threadNum);
+
+        for (int i = 0; i < threadNum; i++) {
+            final int idx = i;
+
+            calls.add(new Callable<Void>() {
+                @Override public Void call() throws Exception {
+                    call.apply(idx);
+
+                    return null;
+                }
+            });
+        }
+
+        return runMultiThreaded(calls, threadName);
+    }
+
+    /**
      * Runs callable object in specified number of threads.
      *
      * @param call Callable.
@@ -621,10 +648,11 @@ public final class GridTestUtils {
         });
 
         // Compound future, that adds cancel() support to execution future.
-        GridCompoundFuture<Long, Long> compFut = new GridCompoundFuture<>();
+        GridCompoundFuture<Long, Long> compFut = new GridCompoundFuture<>(F.sumLongReducer());
 
-        compFut.addAll(cancelFut, runFut);
-        compFut.reducer(F.sumLongReducer());
+        compFut.add(cancelFut);
+        compFut.add(runFut);
+
         compFut.markInitialized();
 
         cancelFut.onDone();

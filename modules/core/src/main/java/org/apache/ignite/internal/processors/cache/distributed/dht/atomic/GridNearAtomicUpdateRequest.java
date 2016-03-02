@@ -44,6 +44,7 @@ import org.apache.ignite.internal.util.GridLongList;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
@@ -158,6 +159,10 @@ public class GridNearAtomicUpdateRequest extends GridCacheMessage implements Gri
     @GridDirectTransient
     private GridNearAtomicUpdateResponse res;
 
+    /** Maximum possible size of inner collections. */
+    @GridDirectTransient
+    private int initSize;
+
     /**
      * Empty constructor required by {@link Externalizable}.
      */
@@ -184,8 +189,10 @@ public class GridNearAtomicUpdateRequest extends GridCacheMessage implements Gri
      * @param subjId Subject ID.
      * @param taskNameHash Task name hash code.
      * @param skipStore Skip write-through to a persistent storage.
+     * @param keepBinary Keep binary flag.
      * @param clientReq Client node request flag.
      * @param addDepInfo Deployment info flag.
+     * @param maxEntryCnt Maximum entries count.
      */
     public GridNearAtomicUpdateRequest(
         int cacheId,
@@ -206,7 +213,8 @@ public class GridNearAtomicUpdateRequest extends GridCacheMessage implements Gri
         boolean skipStore,
         boolean keepBinary,
         boolean clientReq,
-        boolean addDepInfo
+        boolean addDepInfo,
+        int maxEntryCnt
     ) {
         assert futVer != null;
 
@@ -231,7 +239,13 @@ public class GridNearAtomicUpdateRequest extends GridCacheMessage implements Gri
         this.clientReq = clientReq;
         this.addDepInfo = addDepInfo;
 
-        keys = new ArrayList<>();
+        // By default ArrayList expands to array of 10 elements on first add. We cannot guess how many entries
+        // will be added to request because of unknown affinity distribution. However, we DO KNOW how many keys
+        // participate in request. As such, we know upper bound of all collections in request. If this bound is lower
+        // than 10, we use it.
+        initSize = Math.min(maxEntryCnt, 10);
+
+        keys = new ArrayList<>(initSize);
     }
 
     /** {@inheritDoc} */
@@ -379,7 +393,7 @@ public class GridNearAtomicUpdateRequest extends GridCacheMessage implements Gri
 
         if (entryProcessor != null) {
             if (entryProcessors == null)
-                entryProcessors = new ArrayList<>();
+                entryProcessors = new ArrayList<>(initSize);
 
             entryProcessors.add(entryProcessor);
         }
@@ -387,7 +401,7 @@ public class GridNearAtomicUpdateRequest extends GridCacheMessage implements Gri
             assert val instanceof CacheObject : val;
 
             if (vals == null)
-                vals = new ArrayList<>();
+                vals = new ArrayList<>(initSize);
 
             vals.add((CacheObject)val);
         }
@@ -397,7 +411,7 @@ public class GridNearAtomicUpdateRequest extends GridCacheMessage implements Gri
         // In case there is no conflict, do not create the list.
         if (conflictVer != null) {
             if (conflictVers == null) {
-                conflictVers = new ArrayList<>();
+                conflictVers = new ArrayList<>(initSize);
 
                 for (int i = 0; i < keys.size() - 1; i++)
                     conflictVers.add(null);
@@ -593,7 +607,7 @@ public class GridNearAtomicUpdateRequest extends GridCacheMessage implements Gri
                 filter = null;
         }
 
-        if (expiryPlc != null)
+        if (expiryPlc != null && expiryPlcBytes == null)
             expiryPlcBytes = CU.marshal(cctx, new IgniteExternalizableExpiryPolicy(expiryPlc));
 
         if (op == TRANSFORM) {
@@ -601,9 +615,11 @@ public class GridNearAtomicUpdateRequest extends GridCacheMessage implements Gri
             if (!addDepInfo && ctx.deploymentEnabled())
                 addDepInfo = true;
 
-            entryProcessorsBytes = marshalCollection(entryProcessors, cctx);
+            if (entryProcessorsBytes == null)
+                entryProcessorsBytes = marshalCollection(entryProcessors, cctx);
 
-            invokeArgsBytes = marshalInvokeArguments(invokeArgs, cctx);
+            if (invokeArgsBytes == null)
+                invokeArgsBytes = marshalInvokeArguments(invokeArgs, cctx);
         }
         else
             prepareMarshalCacheObjects(vals, cctx);
@@ -617,8 +633,13 @@ public class GridNearAtomicUpdateRequest extends GridCacheMessage implements Gri
 
         finishUnmarshalCacheObjects(keys, cctx, ldr);
 
-        if (op == TRANSFORM)
-            entryProcessors = unmarshalCollection(entryProcessorsBytes, ctx, ldr);
+        if (op == TRANSFORM) {
+            if (entryProcessors == null)
+                entryProcessors = unmarshalCollection(entryProcessorsBytes, ctx, ldr);
+
+            if (invokeArgs == null)
+                invokeArgs = unmarshalInvokeArguments(invokeArgsBytes, ctx, ldr);
+        }
         else
             finishUnmarshalCacheObjects(vals, cctx, ldr);
 
@@ -629,10 +650,8 @@ public class GridNearAtomicUpdateRequest extends GridCacheMessage implements Gri
             }
         }
 
-        invokeArgs = unmarshalInvokeArguments(invokeArgsBytes, ctx, ldr);
-
-        if (expiryPlcBytes != null)
-            expiryPlc = ctx.marshaller().unmarshal(expiryPlcBytes, ldr);
+        if (expiryPlcBytes != null && expiryPlc == null)
+            expiryPlc = ctx.marshaller().unmarshal(expiryPlcBytes, U.resolveClassLoader(ldr, ctx.gridConfig()));
     }
 
     /** {@inheritDoc} */
@@ -1004,6 +1023,22 @@ public class GridNearAtomicUpdateRequest extends GridCacheMessage implements Gri
         }
 
         return reader.afterMessageRead(GridNearAtomicUpdateRequest.class);
+    }
+
+    /**
+     * Cleanup values.
+     *
+     * @param clearKeys If {@code true} clears keys.
+     */
+    public void cleanup(boolean clearKeys) {
+        vals = null;
+        entryProcessors = null;
+        entryProcessorsBytes = null;
+        invokeArgs = null;
+        invokeArgsBytes = null;
+
+        if (clearKeys)
+            keys = null;
     }
 
     /** {@inheritDoc} */
