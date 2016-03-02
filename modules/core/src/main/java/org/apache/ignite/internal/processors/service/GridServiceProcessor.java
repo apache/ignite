@@ -685,7 +685,7 @@ public class GridServiceProcessor extends GridProcessorAdapter {
             if (ctx != null) {
                 if (!svcItf.isAssignableFrom(ctx.service().getClass()))
                     throw new IgniteException("Service does not implement specified interface [svcItf=" +
-                        svcItf.getSimpleName() + ", svcCls=" + ctx.service().getClass() + ']');
+                        svcItf.getName() + ", svcCls=" + ctx.service().getClass().getName() + ']');
 
                 return (T)ctx.service();
             }
