@@ -22,6 +22,7 @@ namespace Apache.Ignite.Core.Impl.Binary
     using System.Diagnostics;
     using System.Linq;
     using Apache.Ignite.Core.Binary;
+    using Apache.Ignite.Core.Cache.Affinity;
     using Apache.Ignite.Core.Impl.Binary.IO;
     using Apache.Ignite.Core.Impl.Binary.Metadata;
     using Apache.Ignite.Core.Impl.Cache;
@@ -434,8 +435,10 @@ namespace Apache.Ignite.Core.Impl.Binary
                             "Configuration value: IsEnum={0}, actual type: IsEnum={1}",
                             typeCfg.IsEnum, type.IsEnum));
 
+                var affKeyFld = typeCfg.AffinityKeyFieldName ?? GetAffinityKeyFieldNameFromAttribute(type);
+
                 AddType(type, typeId, typeName, true, keepDeserialized, nameMapper, idMapper, serializer,
-                    typeCfg.AffinityKeyFieldName, type.IsEnum);
+                    affKeyFld, type.IsEnum);
             }
             else
             {
@@ -447,6 +450,26 @@ namespace Apache.Ignite.Core.Impl.Binary
                 AddType(null, typeId, typeName, true, keepDeserialized, nameMapper, idMapper, null,
                     typeCfg.AffinityKeyFieldName, typeCfg.IsEnum);
             }
+        }
+
+        /// <summary>
+        /// Gets the affinity key field name from attribute.
+        /// </summary>
+        private static string GetAffinityKeyFieldNameFromAttribute(Type type)
+        {
+            var res = type.GetMembers()
+                .Where(x => x.GetCustomAttributes(false).OfType<AffinityKeyMappedAttribute>().Any())
+                .Select(x => x.Name).ToArray();
+
+            if (res.Length > 1)
+            {
+                throw new BinaryObjectException(
+                    string.Format("Multiple '{0}' attributes found on type '{1}'. " +
+                                  "There can be only one affinity field.",
+                        typeof (AffinityKeyMappedAttribute).Name, type));
+            }
+
+            return res.SingleOrDefault();
         }
 
         /// <summary>
