@@ -5523,8 +5523,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
 
         IgniteEvents evts = ignite.events(ignite.cluster());
 
-        evts.localListen(lsnr, EventType.EVT_CACHE_OBJECT_READ);
-
+        UUID opId = evts.remoteListen(lsnr, null, EventType.EVT_CACHE_OBJECT_READ);
         try {
             String key = UUID.randomUUID().toString();
 
@@ -5584,7 +5583,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
             } while (true);
         }
         finally {
-            evts.stopLocalListen(lsnr, EventType.EVT_CACHE_OBJECT_READ);
+            evts.stopRemoteListen(opId);
         }
     }
 
@@ -6051,12 +6050,12 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
     /**
      *
      */
-    public static class CacheEventListener implements IgnitePredicate<CacheEvent> {
+    public static class CacheEventListener implements IgniteBiPredicate<UUID, CacheEvent> {
         /** */
         public final LinkedBlockingQueue<CacheEvent> evts = new LinkedBlockingQueue<>();
 
         /** {@inheritDoc} */
-        @Override public boolean apply(CacheEvent evt) {
+        @Override public boolean apply(UUID uuid, CacheEvent evt) {
             evts.add(evt);
 
             return true;

@@ -27,6 +27,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.atomic.AtomicReference;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.managers.deployment.GridDeployment;
 import org.apache.ignite.internal.util.GridLeanIdentitySet;
@@ -36,11 +37,16 @@ import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.resources.CacheNameResource;
+import org.apache.ignite.resources.CacheStoreSessionResource;
 import org.apache.ignite.resources.IgniteInstanceResource;
+import org.apache.ignite.resources.JobContextResource;
+import org.apache.ignite.resources.LoadBalancerResource;
 import org.apache.ignite.resources.LoggerResource;
 import org.apache.ignite.resources.ServiceResource;
 import org.apache.ignite.resources.SpringApplicationContextResource;
 import org.apache.ignite.resources.SpringResource;
+import org.apache.ignite.resources.TaskContinuousMapperResource;
+import org.apache.ignite.resources.TaskSessionResource;
 import org.jetbrains.annotations.Nullable;
 import org.jsr166.ConcurrentHashMap8;
 
@@ -55,11 +61,7 @@ public class GridResourceIoc {
         new ConcurrentHashMap8<>();
 
     /** Class descriptors cache. */
-    private final ConcurrentMap<Class<?>, ClassDescriptor> clsDescs = new ConcurrentHashMap8<>();
-
-    /** */
-    private final ConcurrentMap<Class<?>, Class<? extends Annotation>[]> annCache =
-        new ConcurrentHashMap8<>();
+    private AtomicReference<Map<Class<?>, ClassDescriptor>> clsDescs = new AtomicReference<>();
 
     /**
      * @param ldr Class loader.
@@ -68,8 +70,23 @@ public class GridResourceIoc {
         Set<Class<?>> clss = taskMap.remove(ldr);
 
         if (clss != null) {
-            clsDescs.keySet().removeAll(clss);
-            annCache.keySet().removeAll(clss);
+            //clsDescs.keySet().removeAll(clss);
+            Map<Class<?>, ClassDescriptor> newMap, oldMap;
+
+            do {
+                oldMap = clsDescs.get();
+
+                if (oldMap == null)
+                    break;
+
+                newMap = new HashMap<>(oldMap.size() - clss.size());
+
+                for (Map.Entry<Class<?>, ClassDescriptor> entry : oldMap.entrySet()) {
+                    if (!clss.contains(entry.getKey()))
+                        newMap.put(entry.getKey(), entry.getValue());
+                }
+            }
+            while (!clsDescs.compareAndSet(oldMap, newMap));
         }
     }
 
@@ -78,8 +95,8 @@ public class GridResourceIoc {
      */
     void undeployAll() {
         taskMap.clear();
-        clsDescs.clear();
-        annCache.clear();
+
+        clsDescs.set(null);
     }
 
     /**
@@ -108,17 +125,44 @@ public class GridResourceIoc {
      * @param cls Class.
      */
     ClassDescriptor descriptor(@Nullable GridDeployment dep, Class<?> cls) {
-        ClassDescriptor res = clsDescs.get(cls);
+//        ClassDescriptor res = clsDescs.get(cls);
+//
+//        if (res == null) {
+//            if (dep != null) {
+//                Set<Class<?>> classes = F.addIfAbsent(taskMap, dep.classLoader(), F.<Class<?>>newCSet());
+//
+//                classes.add(cls);
+//            }
+//
+//            res = F.addIfAbsent(clsDescs, cls, new ClassDescriptor(cls));
+//        }
+//
+//        return res;
+        Map<Class<?>, ClassDescriptor> newMap, oldMap;
+        ClassDescriptor res, newDesc = null;
 
-        if (res == null) {
+        do {
+            oldMap = clsDescs.get();
+
+            if (oldMap != null && (res = oldMap.get(cls)) != null)
+                break;
+
             if (dep != null) {
                 Set<Class<?>> classes = F.addIfAbsent(taskMap, dep.classLoader(), F.<Class<?>>newCSet());
 
                 classes.add(cls);
+
+                dep = null;
             }
 
-            res = F.addIfAbsent(clsDescs, cls, new ClassDescriptor(cls));
+            if (oldMap == null)
+                newMap = new HashMap<>();
+            else
+                (newMap = new HashMap<>(oldMap.size() + 1)).putAll(oldMap);
+
+            newMap.put(cls, res = newDesc == null ? (newDesc = new ClassDescriptor(cls)) : newDesc);
         }
+        while (!clsDescs.compareAndSet(oldMap, newMap));
 
         return res;
     }
@@ -179,40 +223,7 @@ public class GridResourceIoc {
         assert target != null;
         assert annSet != null;
 
-        return descriptor(dep, target.getClass()).isAnnotated(annSet);
-    }
-
-    /**
-     * @param dep Deployment.
-     * @param target Target.
-     * @param annClss Annotations.
-     * @return Filtered set of annotations that present in target.
-     */
-    @SuppressWarnings({"SuspiciousToArrayCall", "unchecked"})
-    Class<? extends Annotation>[] filter(
-        @Nullable GridDeployment dep, Object target,
-        Collection<Class<? extends Annotation>> annClss) {
-        assert target != null;
-        assert annClss != null && !annClss.isEmpty();
-
-        Class<?> cls = target.getClass();
-
-        Class<? extends Annotation>[] res = annCache.get(cls);
-
-        if (res == null) {
-            Collection<Class<? extends Annotation>> res0 = new ArrayList<>();
-
-            for (Class<? extends Annotation> annCls : annClss) {
-                if (isAnnotationPresent(target, annCls, dep))
-                    res0.add(annCls);
-            }
-
-            res = res0.toArray(new Class[res0.size()]);
-
-            annCache.putIfAbsent(cls, res);
-        }
-
-        return res;
+        return descriptor(dep, target.getClass()).isAnnotated(annSet) != 0;
     }
 
     /**
@@ -235,7 +246,9 @@ public class GridResourceIoc {
     /** {@inheritDoc} */
     public void printMemoryStats() {
         X.println(">>>   taskMapSize: " + taskMap.size());
-        X.println(">>>   classDescriptorsCacheSize: " + clsDescs.size());
+
+        Map<Class<?>, ClassDescriptor> map = clsDescs.get();
+        X.println(">>>   classDescriptorsCacheSize: " + (map == null ? 0 : map.size()) );
     }
 
     /**
@@ -371,8 +384,9 @@ public class GridResourceIoc {
          * @param set Set.
          * @return {@code True} if any annotation is presented.
          */
-        boolean isAnnotated(AnnotationSet set) {
-            return recursiveFields.length > 0 || (containsAnnSets != null && containsAnnSets[set.ordinal()] != 0);
+        int isAnnotated(AnnotationSet set) {
+            return recursiveFields.length > 0 ? ~(-1 << set.annotations.length) :
+                    (containsAnnSets == null ? 0 : containsAnnSets[set.ordinal()]);
         }
 
         /**
@@ -457,13 +471,14 @@ public class GridResourceIoc {
          */
         public boolean inject(Object target,
             ResourceAnnotation ann,
-            GridResourceInjector injector)
+            GridResourceInjector injector,
+            @Nullable GridDeployment dep,
+            @Nullable Class<?> depCls)
             throws IgniteCheckedException
         {
-            return annArr != null && annArr[ann.ordinal()] != null &&
-                    injectInternal(target, ann.clazz, annArr[ann.ordinal()], injector, null, null, null);
+            return injectInternal(target, ann.clazz, annArr == null ? null : annArr[ann.ordinal()],
+                                                                            injector, dep, depCls, null);
         }
-
     }
 
     /**
@@ -486,8 +501,22 @@ public class GridResourceIoc {
         LOGGER(LoggerResource.class),
 
         /** */
-        SERVICE(ServiceResource.class);
+        SERVICE(ServiceResource.class),
 
+        /** */
+        TASK_SESSION(TaskSessionResource.class),
+
+        /** */
+        LOAD_BALANCER(LoadBalancerResource.class),
+
+        /** */
+        TASK_CONTINUOUS_MAPPER(TaskContinuousMapperResource.class),
+
+        /** */
+        JOB_CONTEXT(JobContextResource.class),
+
+        /** */
+        CACHE_STORE_SESSION(CacheStoreSessionResource.class);
 
         /** */
         public final Class<? extends Annotation> clazz;
@@ -506,8 +535,42 @@ public class GridResourceIoc {
     public enum AnnotationSet {
 
         /** */
+        GENERIC(new ResourceAnnotation[] {
+            ResourceAnnotation.SPRING_APPLICATION_CONTEXT,
+            ResourceAnnotation.SPRING,
+            ResourceAnnotation.IGNITE_INSTANCE,
+            ResourceAnnotation.LOGGER,
+            ResourceAnnotation.SERVICE
+        }),
+
+        /** */
         ENTRY_PROCESSOR(new ResourceAnnotation[] {
             ResourceAnnotation.CACHE_NAME,
+
+            ResourceAnnotation.SPRING_APPLICATION_CONTEXT,
+            ResourceAnnotation.SPRING,
+            ResourceAnnotation.IGNITE_INSTANCE,
+            ResourceAnnotation.LOGGER,
+            ResourceAnnotation.SERVICE
+        }),
+
+        /** */
+        TASK(new ResourceAnnotation[] {
+            ResourceAnnotation.TASK_SESSION,
+            ResourceAnnotation.LOAD_BALANCER,
+            ResourceAnnotation.TASK_CONTINUOUS_MAPPER,
+
+            ResourceAnnotation.SPRING_APPLICATION_CONTEXT,
+            ResourceAnnotation.SPRING,
+            ResourceAnnotation.IGNITE_INSTANCE,
+            ResourceAnnotation.LOGGER,
+            ResourceAnnotation.SERVICE
+        }),
+
+        /** */
+        JOB(new ResourceAnnotation[] {
+            ResourceAnnotation.TASK_SESSION,
+            ResourceAnnotation.JOB_CONTEXT,
 
             ResourceAnnotation.SPRING_APPLICATION_CONTEXT,
             ResourceAnnotation.SPRING,
@@ -523,6 +586,8 @@ public class GridResourceIoc {
          * @param annotations Annotations.
          */
         AnnotationSet(ResourceAnnotation[] annotations) {
+            assert annotations.length < 32;
+
             this.annotations = annotations;
         }
     }
