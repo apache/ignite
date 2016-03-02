@@ -90,6 +90,7 @@ import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteReducer;
 import org.apache.ignite.lifecycle.LifecycleAware;
 import org.apache.ignite.plugin.CachePluginConfiguration;
+import org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoveryNode;
 import org.apache.ignite.spi.swapspace.noop.NoopSwapSpaceSpi;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
@@ -1649,6 +1650,18 @@ public class GridCacheUtils {
      * @return {@code True} if given node is client node (has flag {@link IgniteConfiguration#isClientMode()} set).
      */
     public static boolean clientNode(ClusterNode node) {
+        if (node instanceof TcpDiscoveryNode)
+            return ((TcpDiscoveryNode)node).isCacheClient();
+        else
+            return clientNodeDirect(node);
+    }
+
+    /**
+     * @param node Node.
+     * @return {@code True} if given node is client node (has flag {@link IgniteConfiguration#isClientMode()} set).
+     */
+    @SuppressWarnings("ConstantConditions")
+    public static boolean clientNodeDirect(ClusterNode node) {
         Boolean clientModeAttr = node.attribute(IgniteNodeAttributes.ATTR_CLIENT_MODE);
 
         assert clientModeAttr != null : node;
