@@ -17,6 +17,7 @@
 
 namespace Apache.Ignite.Core.Tests.Cache
 {
+    using System.Linq;
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Cache;
     using Apache.Ignite.Core.Cache.Affinity;
@@ -80,6 +81,43 @@ namespace Apache.Ignite.Core.Tests.Cache
             }
         }
 
+        /// <summary>
+        /// Tests that keys are located properly in cache partitions.
+        /// </summary>
+        [Test]
+        public void TestKeyLocation()
+        {
+            var aff = _cache1.Ignite.GetAffinity(_cache1.Name);
+
+            foreach (var cache in new[] {_cache1, _cache2})
+            {
+                cache.RemoveAll();
+
+                var localNode = cache.Ignite.GetCluster().GetLocalNode();
+
+                var localKeys = Enumerable.Range(1, int.MaxValue)
+                    .Where(x => aff.MapKeyToNode(x).Id == localNode.Id).Take(100).ToArray();
+
+
+                for (int index = 0; index < localKeys.Length; index++)
+                {
+                    var cacheKey = new CacheKey {Key = index, AffinityKey = localKeys[index]};
+
+                    cache.Put(cacheKey, index.ToString());
+
+                    // Verify that key is stored locally accroding to AffinityKeyFieldName
+                    Assert.AreEqual(index.ToString(), cache.LocalPeek(cacheKey, CachePeekMode.Primary));
+
+                    // Other cache does not have this key locally
+                    var otherCache = cache == _cache1 ? _cache2 : _cache1;
+                    Assert.IsNull(otherCache.LocalPeek(cacheKey, CachePeekMode.All));
+                }
+            }
+        }
+
+        /// <summary>
+        /// Tests the <see cref="AffinityKey"/> class.
+        /// </summary>
         [Test]
         public void TestAffinityKeyClass()
         {
