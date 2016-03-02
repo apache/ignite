@@ -20,12 +20,16 @@ package org.apache.ignite.internal.processors.cache;
 import javax.cache.processor.EntryProcessor;
 import javax.cache.processor.MutableEntry;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMemoryMode;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
+import org.apache.ignite.internal.binary.BinaryEnumObjectImpl;
+import org.apache.ignite.internal.binary.BinaryMarshaller;
+import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
@@ -184,42 +188,52 @@ public abstract class CacheEnumOperationsAbstractTest extends GridCommonAbstract
         assertTrue(cache.putIfAbsent(key, TestEnum.VAL1));
 
         assertEquals(TestEnum.VAL1, cache.get(key));
+        assertBinaryEnum(cache, key, TestEnum.VAL1);
 
         assertFalse(cache.putIfAbsent(key, TestEnum.VAL2));
 
         assertEquals(TestEnum.VAL1, cache.get(key));
+        assertBinaryEnum(cache, key, TestEnum.VAL1);
 
         assertTrue(cache.replace(key, TestEnum.VAL2));
 
         assertEquals(TestEnum.VAL2, cache.get(key));
+        assertBinaryEnum(cache, key, TestEnum.VAL2);
 
         assertFalse(cache.replace(key, TestEnum.VAL1, TestEnum.VAL3));
 
         assertEquals(TestEnum.VAL2, cache.get(key));
+        assertBinaryEnum(cache, key, TestEnum.VAL2);
 
         assertTrue(cache.replace(key, TestEnum.VAL2, TestEnum.VAL3));
 
         assertEquals(TestEnum.VAL3, cache.get(key));
+        assertBinaryEnum(cache, key, TestEnum.VAL3);
 
         assertEquals(TestEnum.VAL3, cache.getAndPut(key, TestEnum.VAL1));
 
         assertEquals(TestEnum.VAL1, cache.get(key));
+        assertBinaryEnum(cache, key, TestEnum.VAL1);
 
         assertEquals(TestEnum.VAL1, cache.invoke(key, new EnumProcessor(TestEnum.VAL2, TestEnum.VAL1)));
 
         assertEquals(TestEnum.VAL2, cache.get(key));
+        assertBinaryEnum(cache, key, TestEnum.VAL2);
 
         assertEquals(TestEnum.VAL2, cache.getAndReplace(key, TestEnum.VAL3));
 
         assertEquals(TestEnum.VAL3, cache.get(key));
+        assertBinaryEnum(cache, key, TestEnum.VAL3);
 
         assertEquals(TestEnum.VAL3, cache.getAndPutIfAbsent(key, TestEnum.VAL1));
 
         assertEquals(TestEnum.VAL3, cache.get(key));
+        assertBinaryEnum(cache, key, TestEnum.VAL3);
 
         cache.put(key, TestEnum.VAL1);
 
         assertEquals(TestEnum.VAL1, cache.get(key));
+        assertBinaryEnum(cache, key, TestEnum.VAL1);
 
         assertEquals(TestEnum.VAL1, cache.getAndRemove(key));
 
@@ -230,6 +244,24 @@ public abstract class CacheEnumOperationsAbstractTest extends GridCommonAbstract
         assertNull(cache.getAndPutIfAbsent(key, TestEnum.VAL1));
 
         assertEquals(TestEnum.VAL1, cache.get(key));
+        assertBinaryEnum(cache, key, TestEnum.VAL1);
+    }
+
+    /**
+     * @param cache Cache.
+     * @param key Key.
+     * @param expVal Expected value.
+     */
+    private static void assertBinaryEnum(IgniteCache<Object, Object> cache, int key, TestEnum expVal) {
+        Marshaller marsh = ((IgniteCacheProxy)cache).context().marshaller();
+
+        if (marsh instanceof BinaryMarshaller) {
+            BinaryObject enumObj = (BinaryObject)cache.withKeepBinary().get(key);
+
+            assertEquals(expVal.ordinal(), enumObj.enumOrdinal());
+            assertTrue(enumObj.type().isEnum());
+            assertTrue(enumObj instanceof BinaryEnumObjectImpl);
+        }
     }
 
     /**
