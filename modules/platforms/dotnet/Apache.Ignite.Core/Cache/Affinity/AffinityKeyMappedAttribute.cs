@@ -20,11 +20,23 @@ namespace Apache.Ignite.Core.Cache.Affinity
     using System;
 
     /// <summary>
-    /// TODO
+    /// Specifies cache key field to be used to determine a node on which given cache key will be stored.
+    /// Only one field or property can be marked with this attribute.
+    /// <para />
+    /// One of the major use cases for this attribute is the routing of grid computations
+    /// to the nodes where the data for this computation is cached, the concept otherwise known as 
+    /// Colocation Of Computations And Data.
+    /// <para />
+    /// For example, if a Person object is always accessed together with a Company object for which this person 
+    /// is an employee, then for better performance and scalability it makes sense to colocate Person objects 
+    /// together with their Company object when storing them in cache. 
+    /// To achieve that, cache key used to cache Person objects should have a field or property marked with
+    /// <see cref="AffinityKeyMappedAttribute"/> attribute, which will provide the value of 
+    /// the company key for which that person works.
     /// </summary>
     [AttributeUsage(AttributeTargets.Field | AttributeTargets.Property)]
     public sealed class AffinityKeyMappedAttribute : Attribute
     {
-        // TODO
+        // No-op.
     }
 }
