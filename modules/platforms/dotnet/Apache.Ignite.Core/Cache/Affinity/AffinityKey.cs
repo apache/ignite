@@ -18,12 +18,14 @@
 namespace Apache.Ignite.Core.Cache.Affinity
 {
     using System;
+    using Apache.Ignite.Core.Binary;
+    using Apache.Ignite.Core.Impl.Binary;
 
     /// <summary>
     /// Optional wrapper for cache keys to provide support for custom affinity mapping.
     /// The value returned by <see cref="Affinity"/> will be used for key-to-node affinity.
     /// </summary>
-    public struct AffinityKey : IEquatable<AffinityKey>
+    public struct AffinityKey : IEquatable<AffinityKey>, IBinaryWriteAware
     {
         /** User key. */
         private readonly object _key;
@@ -53,6 +55,26 @@ namespace Apache.Ignite.Core.Cache.Affinity
         }
 
         /// <summary>
+        /// Initializes a new instance of the <see cref="AffinityKey"/> struct.
+        /// </summary>
+        /// <param name="reader">The reader.</param>
+        internal AffinityKey(IBinaryReader reader)
+        {
+            _key = reader.ReadObject<object>("key");
+            _affinity = reader.ReadObject<object>("affKey");
+        }
+
+        /// <summary>
+        /// Writes this object to the given writer.
+        /// </summary>
+        /// <param name="writer">Writer.</param>
+        public void WriteBinary(IBinaryWriter writer)
+        {
+            writer.WriteObject("key", _key);
+            writer.WriteObject("affKey", _affinity);
+        }
+
+        /// <summary>
         /// Gets the key.
         /// </summary>
         public object Key
@@ -63,7 +85,6 @@ namespace Apache.Ignite.Core.Cache.Affinity
         /// <summary>
         /// Gets the affinity key.
         /// </summary>
-        [AffinityKeyMapped]
         public object Affinity
         {
             get { return _affinity ?? _key; }
