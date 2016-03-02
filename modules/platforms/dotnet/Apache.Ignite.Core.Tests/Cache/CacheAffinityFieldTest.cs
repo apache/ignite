@@ -31,10 +31,10 @@ namespace Apache.Ignite.Core.Tests.Cache
     public class CacheAffinityFieldTest
     {
         /** */
-        private ICache<CacheKey, string> _cache1;
+        private ICache<object, string> _cache1;
 
         /** */
-        private ICache<CacheKey, string> _cache2;
+        private ICache<object, string> _cache2;
 
         /// <summary>
         /// Fixture set up.
@@ -45,11 +45,11 @@ namespace Apache.Ignite.Core.Tests.Cache
             var grid1 = Ignition.Start(GetConfig());
             var grid2 = Ignition.Start(GetConfig("grid2"));
 
-            _cache1 = grid1.CreateCache<CacheKey, string>(new CacheConfiguration
+            _cache1 = grid1.CreateCache<object, string>(new CacheConfiguration
             {
                 CacheMode = CacheMode.Partitioned
             });
-            _cache2 = grid2.GetCache<CacheKey, string>(null);
+            _cache2 = grid2.GetCache<object, string>(null);
         }
 
         /// <summary>
@@ -67,6 +67,12 @@ namespace Apache.Ignite.Core.Tests.Cache
         [Test]
         public void TestMetadata()
         {
+            // Put keys to update meta
+            _cache1.Put(new CacheKey(), string.Empty);
+            _cache1.Put(new CacheKeyAttr(), string.Empty);
+            _cache1.Put(new CacheKeyAttrOverride(), string.Empty);
+
+            // Verify
             foreach (var type in new[] { typeof(CacheKey) , typeof(CacheKeyAttr), typeof(CacheKeyAttrOverride)})
             {
                 Assert.AreEqual("AffinityKey", _cache1.Ignite.GetBinary().GetBinaryType(type).AffinityKeyFieldName);
