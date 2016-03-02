@@ -73,6 +73,9 @@ public class BinaryClassDescriptor {
     /** Apache Ignite base package name. */
     private static final String OAI_PKG = "org.apache.ignite";
 
+    /** JSR166 backport. */
+    private static final String JSR166_PKG = "org.jsr166";
+
     /** */
     @GridToStringExclude
     private final BinaryContext ctx;
@@ -195,7 +198,8 @@ public class BinaryClassDescriptor {
                 mode = serializer != null ? BinaryWriteMode.BINARY : BinaryUtils.mode(cls);
         }
 
-        if (useOptMarshaller && userType && !cls.getName().startsWith(OAI_PKG) && !U.isJdk(cls)) {
+        if (useOptMarshaller && userType && !cls.getName().startsWith(OAI_PKG) && !cls.getName().startsWith(JSR166_PKG)
+            && !U.isJdk(cls)) {
             U.warn(ctx.log(), "Class \"" + cls.getName() + "\" cannot be serialized using " +
                 BinaryMarshaller.class.getSimpleName() + " because it either implements Externalizable interface " +
                 "or have writeObject/readObject methods. " + OptimizedMarshaller.class.getSimpleName() + " will be " +
