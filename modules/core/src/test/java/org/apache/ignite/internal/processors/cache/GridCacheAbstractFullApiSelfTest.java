@@ -5492,23 +5492,20 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
         doTransformResourceInjection(ignite, cache);
 
         if (txEnabled()) {
-            try {
-                doTransformResourceInjection(ignite, cache);
+            doTransformResourceInjection(ignite, cache);
 
-                for (TransactionConcurrency concurrency : TransactionConcurrency.values()) {
-                    for (TransactionIsolation isolation : TransactionIsolation.values()) {
-                        IgniteTransactions txs = ignite.transactions();
+            for (TransactionConcurrency concurrency : TransactionConcurrency.values()) {
+                for (TransactionIsolation isolation : TransactionIsolation.values()) {
+                    IgniteTransactions txs = ignite.transactions();
 
-                        try (Transaction tx = txs.txStart(concurrency, isolation)) {
-                            doTransformResourceInjection(ignite, cache);
+                    try (Transaction tx = txs.txStart(concurrency, isolation)) {
+                        log.info("Start transaction: " + concurrency + ", " + isolation);
 
-                            tx.commit();
-                        }
+                        doTransformResourceInjection(ignite, cache);
+
+                        tx.commit();
                     }
                 }
-            }
-            finally {
-                cache.destroy();
             }
         }
     }
@@ -5549,9 +5546,15 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
 
                 evt = lsnr.evts.poll(wait, TimeUnit.MILLISECONDS);
 
-                log.info("Received: " + evt);
-            } while (evt == null || !(Objects.equals(key, evt.key()) &&
-                    Objects.equals(ResourceInjectionEntryProcessor.class.getName(), evt.closureClassName())));
+                if (evt != null && Objects.equals(key, evt.key())) {
+                    String recv = evt.closureClassName();
+
+                    boolean res = (recv == null && lsnr.evts.isEmpty()) ||
+                                        ResourceInjectionEntryProcessor.class.getName().equals(recv);
+                    if (res)
+                        break;
+                }
+            } while (true);
 
             Set<String> keys = new HashSet<>(Arrays.asList(UUID.randomUUID().toString(),
                 UUID.randomUUID().toString(), UUID.randomUUID().toString(),
@@ -5575,10 +5578,16 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
 
                 evt = lsnr.evts.poll(wait, TimeUnit.MILLISECONDS);
 
-                if (evt != null && keys.contains(evt.key()) &&
-                    Objects.equals(ResourceInjectionEntryProcessor.class.getName(), evt.closureClassName())) {
-                    keys.remove(evt.key());
-                    break;
+                if (evt != null && keys.contains(evt.<String>key())) {
+                    String recv = evt.closureClassName();
+
+                    keys.remove(evt.<String>key());
+
+                    boolean res = (recv == null && lsnr.evts.isEmpty()) ||
+                        ResourceInjectionEntryProcessor.class.getName().equals(recv);
+
+                    if (res && keys.isEmpty())
+                        break;
                 }
             } while (true);
         }
@@ -6050,12 +6059,19 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
     /**
      *
      */
-    public static class CacheEventListener implements IgniteBiPredicate<UUID, CacheEvent> {
+    public static class CacheEventListener implements IgniteBiPredicate<UUID, CacheEvent>, IgnitePredicate<CacheEvent> {
         /** */
         public final LinkedBlockingQueue<CacheEvent> evts = new LinkedBlockingQueue<>();
 
         /** {@inheritDoc} */
         @Override public boolean apply(UUID uuid, CacheEvent evt) {
+            evts.add(evt);
+
+            return true;
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean apply(CacheEvent evt) {
             evts.add(evt);
 
             return true;
