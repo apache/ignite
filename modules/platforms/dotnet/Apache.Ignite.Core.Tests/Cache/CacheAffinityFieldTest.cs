@@ -17,6 +17,7 @@
 
 namespace Apache.Ignite.Core.Tests.Cache
 {
+    using System.Collections.Generic;
     using System.Linq;
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Cache;
@@ -110,7 +111,7 @@ namespace Apache.Ignite.Core.Tests.Cache
 
                     // Other cache does not have this key locally
                     var otherCache = cache == _cache1 ? _cache2 : _cache1;
-                    Assert.IsNull(otherCache.LocalPeek(cacheKey, CachePeekMode.All));
+                    Assert.Throws<KeyNotFoundException>(() => otherCache.LocalPeek(cacheKey, CachePeekMode.All));
                 }
             }
         }
