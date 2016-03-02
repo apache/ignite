@@ -20,6 +20,7 @@ namespace Apache.Ignite.Core.Cache.Affinity
     using System;
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Impl.Binary;
+    using Apache.Ignite.Core.Impl.Common;
 
     /// <summary>
     /// Optional wrapper for cache keys to provide support for custom affinity mapping.
@@ -70,6 +71,8 @@ namespace Apache.Ignite.Core.Cache.Affinity
         /// <param name="writer">Writer.</param>
         public void WriteBinary(IBinaryWriter writer)
         {
+            IgniteArgumentCheck.NotNull(writer, "writer");
+
             writer.WriteObject("key", _key);
             writer.WriteObject("affKey", _affinity);
         }
