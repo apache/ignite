@@ -80,6 +80,12 @@ namespace Apache.Ignite.Core.Tests.Cache
             }
         }
 
+        [Test]
+        public void TestAffinityKeyClass()
+        {
+            // TODO
+        }
+
         /// <summary>
         /// Gets the configuration.
         /// </summary>

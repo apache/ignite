@@ -18,10 +18,14 @@
 namespace Apache.Ignite.Core.Cache.Affinity
 {
     using System;
+    using Apache.Ignite.Core.Binary;
 
     /// <summary>
     /// Specifies cache key field to be used to determine a node on which given cache key will be stored.
     /// Only one field or property can be marked with this attribute.
+    /// <para />
+    /// This attribute is an alternative to <see cref="BinaryTypeConfiguration.AffinityKeyFieldName"/> setting.
+    /// This attribute has lower priority than <see cref="BinaryTypeConfiguration.AffinityKeyFieldName"/> setting.
     /// <para />
     /// One of the major use cases for this attribute is the routing of grid computations
     /// to the nodes where the data for this computation is cached, the concept otherwise known as 
