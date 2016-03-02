@@ -17,6 +17,7 @@
 
 namespace Apache.Ignite.Core.Tests.Cache
 {
+    using System;
     using System.Collections.Generic;
     using System.Linq;
     using Apache.Ignite.Core.Binary;
@@ -88,9 +89,33 @@ namespace Apache.Ignite.Core.Tests.Cache
         [Test]
         public void TestKeyLocation()
         {
+            TestKeyLocation0((key, affKey) => new CacheKey {Key = key, AffinityKey = affKey});
+            TestKeyLocation0((key, affKey) => new CacheKeyAttr {Key = key, AffinityKey = affKey});
+            TestKeyLocation0((key, affKey) => new CacheKeyAttrOverride {Key = key, AffinityKey = affKey});
+        }
+
+        /// <summary>
+        /// Tests the <see cref="AffinityKey"/> class.
+        /// </summary>
+        [Test]
+        public void TestAffinityKeyClass()
+        {
+            // Check location
+            TestKeyLocation0((key, affKey) => new AffinityKey(key, affKey));
+
+            // Check meta
+            Assert.AreEqual("affKey",
+                _cache1.Ignite.GetBinary().GetBinaryType(typeof (AffinityKey)).AffinityKeyFieldName);
+        }
+
+        /// <summary>
+        /// Tests the key location.
+        /// </summary>
+        private void TestKeyLocation0<T>(Func<int, int, T> ctor)
+        {
             var aff = _cache1.Ignite.GetAffinity(_cache1.Name);
 
-            foreach (var cache in new[] {_cache1, _cache2})
+            foreach (var cache in new[] { _cache1, _cache2 })
             {
                 cache.RemoveAll();
 
@@ -99,10 +124,9 @@ namespace Apache.Ignite.Core.Tests.Cache
                 var localKeys = Enumerable.Range(1, int.MaxValue)
                     .Where(x => aff.MapKeyToNode(x).Id == localNode.Id).Take(100).ToArray();
 
-
                 for (int index = 0; index < localKeys.Length; index++)
                 {
-                    var cacheKey = new CacheKey {Key = index, AffinityKey = localKeys[index]};
+                    var cacheKey = ctor(index, localKeys[index]);
 
                     cache.Put(cacheKey, index.ToString());
 
@@ -114,20 +138,6 @@ namespace Apache.Ignite.Core.Tests.Cache
                     Assert.Throws<KeyNotFoundException>(() => otherCache.LocalPeek(cacheKey, CachePeekMode.All));
                 }
             }
-        }
-
-        /// <summary>
-        /// Tests the <see cref="AffinityKey"/> class.
-        /// </summary>
-        [Test]
-        public void TestAffinityKeyClass()
-        {
-            // Check meta
-            Assert.AreEqual("affKey",
-                _cache1.Ignite.GetBinary().GetBinaryType(typeof (AffinityKey)).AffinityKeyFieldName);
-
-            // TODO
-            // Check Java interop?
         }
 
         /// <summary>
