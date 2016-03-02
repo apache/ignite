@@ -15,20 +15,21 @@
  * limitations under the License.
  */
 
-import templateLogo from './logo.jade!';
+const template = `<label class='title'>{{::title.text}}</label>`;
 
-export default ['igniteLogo', ['IgniteLogo', (IgniteLogo) => {
+export default ['igniteHeaderTitle', ['IgniteBranding', (branding) => {
     function controller() {
         const ctrl = this;
 
-        ctrl.url = IgniteLogo.url;
+        ctrl.text = branding.headerText;
     }
 
     return {
         restrict: 'E',
-        template: templateLogo,
+        template,
         controller,
-        controllerAs: 'logo',
+        controllerAs: 'title',
         replace: true
     };
 }]];
+

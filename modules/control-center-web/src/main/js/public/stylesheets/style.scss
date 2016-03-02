@@ -95,6 +95,10 @@ hr {
     font-size: 22px;
 }
 
+.theme-line .footer {
+    text-align: center;
+}
+
 ul.navbar-nav, .sidebar-nav {
     li.active > a {
         color: $link-color;

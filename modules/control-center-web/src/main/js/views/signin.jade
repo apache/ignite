@@ -24,9 +24,9 @@ header#header.header
     table.container
         tr
             td.col-xs-3.col-sm-3.col-md-2
-                ignite-logo
+                ignite-header-logo
             td
-                ignite-title
+                ignite-header-title
 
 .container.body-container
     .main-content(ng-controller='auth')
@@ -34,7 +34,7 @@ header#header.header
             .signin-greedy
                 .col-xs-12.col-md-6
                     form(name='form' novalidate)
-                        .modal-body.row(style='padding-bottom: 10px; margin: 0')
+                        .modal-body.row(style='padding: 0 0 10px 0; margin: 0')
                             .settings-row(ng-if='action == "signup"')
                                 h3.login-header Sign Up
                             .settings-row(ng-if='action == "signin"')
@@ -89,11 +89,7 @@ header#header.header
                                 button#login.btn.btn-primary(ng-click='auth(action, user_info)' ng-disabled='form.$invalid') Sign In
 
                     .col-xs-12.col-md-11.home-panel
-                        p Web Console is an interactive management tool which allows to:
-                        ul
-                            li Create and download cluster configurations
-                            li Automatically import domain model from any RDBMS
-                            li Connect to cluster and run SQL analytics on it
+                        ignite-features
                 .col-xs-12.col-md-6
                     #carousel.carousel.slide
                         // Indicators

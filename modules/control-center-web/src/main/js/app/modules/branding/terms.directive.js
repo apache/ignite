@@ -15,12 +15,11 @@
  * limitations under the License.
  */
 
-export default ['igniteTerms', ['IgniteTerms', (IgniteTerms) => {
+export default ['igniteTerms', ['IgniteBranding', (branding) => {
     function controller() {
         const ctrl = this;
 
-        ctrl.footerRows = IgniteTerms.footerRows;
-        ctrl.termsState = IgniteTerms.termsState;
+        ctrl.termsState = branding.termsState;
     }
 
     return {

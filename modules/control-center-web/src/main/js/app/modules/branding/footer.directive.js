@@ -15,27 +15,20 @@
  * limitations under the License.
  */
 
-export default ['IgniteTerms', [function() {
-    let _rows = [
-        'Apache Ignite Web Console',
-        '© 2016 The Apache Software Foundation.',
-        'Apache, Apache Ignite, the Apache feather and the Apache Ignite logo are trademarks of The Apache Software Foundation.'
-    ];
+const template = `<div class='footer' ng-bind-html='footer.html'></div>`;
 
-    let _state;
+export default ['igniteFooter', ['IgniteBranding', (branding) => {
+    function controller() {
+        const ctrl = this;
 
-    this.footerRows = function(rows) {
-        _rows = rows;
+        ctrl.html = branding.footerHtml;
+    }
+
+    return {
+        restrict: 'E',
+        template,
+        controller,
+        controllerAs: 'footer',
+        replace: true
     };
-
-    this.termsState = function(state) {
-        _state = state;
-    };
-
-    this.$get = [function() {
-        return {
-            footerRows: _rows,
-            termsState: _state
-        };
-    }];
 }]];

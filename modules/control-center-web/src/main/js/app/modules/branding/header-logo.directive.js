@@ -15,28 +15,20 @@
  * limitations under the License.
  */
 
-export default ['IgniteLogo', [function() {
-    let poweredBy = false;
+import template from './header-logo.jade!';
 
-    let url = '/images/ignite-logo.png';
+export default ['igniteHeaderLogo', ['IgniteBranding', (branding) => {
+    function controller() {
+        const ctrl = this;
 
-    let title = 'Management console for Apache Ignite';
+        ctrl.url = branding.headerLogo;
+    }
 
-    this.url = (_url) => {
-        url = _url;
-
-        poweredBy = true;
+    return {
+        restrict: 'E',
+        template,
+        controller,
+        controllerAs: 'logo',
+        replace: true
     };
-
-    this.title = (_title) => {
-        title = _title;
-    };
-
-    this.$get = [() => {
-        return {
-            url,
-            poweredBy,
-            title
-        };
-    }];
 }]];
