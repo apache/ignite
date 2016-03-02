@@ -18,27 +18,24 @@
 package org.apache.ignite.testsuites;
 
 import junit.framework.TestSuite;
-import org.apache.ignite.spi.swapspace.file.GridFileSwapCompactionSelfTest;
-import org.apache.ignite.spi.swapspace.file.GridFileSwapSpaceSpiSelfTest;
-import org.apache.ignite.spi.swapspace.noop.GridNoopSwapSpaceSpiSelfTest;
-import org.apache.ignite.spi.swapspace.GridSwapSpaceSpiConsistencySelfTest;
+import org.apache.ignite.internal.processors.cache.IgniteCacheConfigVariationsFullApiTest;
+import org.apache.ignite.testframework.configvariations.ConfigVariationsTestSuiteBuilder;
 
 /**
- *
+ * Test suite for cache API.
  */
-public class IgniteSpiSwapSpaceSelfTestSuite {
+public class IgniteCacheBasicConfigVariationsFullApiTestSuite extends TestSuite {
     /**
-     * @return Checkpoint test suite.
+     * @return Cache API test suite.
      * @throws Exception If failed.
      */
     public static TestSuite suite() throws Exception {
-        TestSuite suite = new TestSuite("Ignite Public Swap Space Test Suite");
-
-        suite.addTest(new TestSuite(GridFileSwapCompactionSelfTest.class));
-        suite.addTest(new TestSuite(GridFileSwapSpaceSpiSelfTest.class));
-        suite.addTest(new TestSuite(GridNoopSwapSpaceSpiSelfTest.class));
-        suite.addTest(new TestSuite(GridSwapSpaceSpiConsistencySelfTest.class));
-
-        return suite;
+        return new ConfigVariationsTestSuiteBuilder(
+            "Cache New Full API Test Suite",
+            IgniteCacheConfigVariationsFullApiTest.class)
+            .withBasicCacheParams()
+            .gridsCount(5).backups(1)
+            .testedNodesCount(3).withClients()
+            .build();
     }
 }
