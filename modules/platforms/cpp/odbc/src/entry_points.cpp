@@ -428,7 +428,7 @@ SQLRETURN SQL_API SQLError(SQLHENV      env,
                            SQLSMALLINT* msgResLen)
 {
     LOG_MSG("SQLError called\n");
-    return(SQL_NO_DATA_FOUND);
+    return SQL_ERROR;
 }
 
 SQLRETURN SQL_API SQLGetCursorName(SQLHSTMT     stmt,
@@ -453,14 +453,6 @@ SQLRETURN SQL_API SQLGetConnectOption(SQLHDBC       conn,
                                       SQLPOINTER    value)
 {
     LOG_MSG("SQLGetConnectOption called\n");
-    return SQL_SUCCESS;
-}
-
-SQLRETURN SQL_API SQLGetFunctions(SQLHDBC       conn,
-                                  SQLUSMALLINT  funcId,
-                                  SQLUSMALLINT* supported)
-{
-    LOG_MSG("SQLGetFunctions called\n");
     return SQL_SUCCESS;
 }
 
