@@ -78,7 +78,7 @@ namespace Apache.Ignite.Core.Impl.Binary
             AddSystemTypes();
 
             // 2. Define user types.
-            var dfltSerializer = cfg.DefaultSerializer == null ? new BinaryReflectiveSerializer(false) : null;
+            var dfltSerializer = cfg.DefaultSerializer == null ? new BinaryReflectiveSerializer() : null;
 
             var typeResolver = new TypeResolver();
 

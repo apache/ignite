@@ -729,7 +729,7 @@ namespace Apache.Ignite.Core.Tests.Binary
         [Test]
         public void TestPrimitiveFieldsReflective([Values(false, true)] bool raw)
         {
-            var serializer = new BinaryReflectiveSerializer(raw);
+            var serializer = new BinaryReflectiveSerializer {RawMode = raw};
 
             Assert.AreEqual(raw, serializer.RawMode);
 
@@ -942,11 +942,11 @@ namespace Apache.Ignite.Core.Tests.Binary
                     {
                         new BinaryTypeConfiguration(typeof (EnumType))
                         {
-                            Serializer = new BinaryReflectiveSerializer(raw)
+                            Serializer = new BinaryReflectiveSerializer {RawMode = raw}
                         },
                         new BinaryTypeConfiguration(typeof (TestEnum))
                         {
-                            Serializer = new BinaryReflectiveSerializer(raw)
+                            Serializer = new BinaryReflectiveSerializer {RawMode = raw}
                         }
                     }
                 });
@@ -1002,11 +1002,11 @@ namespace Apache.Ignite.Core.Tests.Binary
                 {
                     new BinaryTypeConfiguration(typeof (CollectionsType))
                     {
-                        Serializer = new BinaryReflectiveSerializer(raw)
+                        Serializer = new BinaryReflectiveSerializer {RawMode = raw}
                     },
                     new BinaryTypeConfiguration(typeof (InnerObjectType))
                     {
-                        Serializer = new BinaryReflectiveSerializer(raw)
+                        Serializer = new BinaryReflectiveSerializer {RawMode = raw}
                     }
                 }
             });
@@ -1077,11 +1077,11 @@ namespace Apache.Ignite.Core.Tests.Binary
                 {
                     new BinaryTypeConfiguration(typeof (OuterObjectType))
                     {
-                        Serializer = new BinaryReflectiveSerializer(raw)
+                        Serializer = new BinaryReflectiveSerializer {RawMode = raw}
                     },
                     new BinaryTypeConfiguration(typeof (InnerObjectType))
                     {
-                        Serializer = new BinaryReflectiveSerializer(raw)
+                        Serializer = new BinaryReflectiveSerializer {RawMode = raw}
                     }
                 }
             });
@@ -1099,7 +1099,7 @@ namespace Apache.Ignite.Core.Tests.Binary
                     {
                         new BinaryTypeConfiguration(typeof (ReflectiveStruct))
                         {
-                            Serializer = new BinaryReflectiveSerializer(raw)
+                            Serializer = new BinaryReflectiveSerializer {RawMode = raw}
                         }
                     }
             });
