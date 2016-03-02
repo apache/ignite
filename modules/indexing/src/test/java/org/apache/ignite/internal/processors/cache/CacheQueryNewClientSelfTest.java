@@ -54,39 +54,46 @@ public class CacheQueryNewClientSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testQueryFromNewClient() throws Exception {
-        Ignite server = startGrid("server");
+        Ignite srv = startGrid("server");
 
-        IgniteCache<Integer, Integer> cache1 = server.createCache(new CacheConfiguration<Integer, Integer>().
-            setName("cache1").setIndexedTypes(Integer.class, Integer.class));
-        IgniteCache<Integer, Integer> cache2 = server.createCache(new CacheConfiguration<Integer, Integer>().
-            setName("cache2").setIndexedTypes(Integer.class, Integer.class));
+        for (int iter = 0; iter < 2; iter++) {
+            log.info("Iteration: " + iter);
 
-        for (int i = 0; i < 10; i++) {
-            cache1.put(i, i);
-            cache2.put(i, i);
+            IgniteCache<Integer, Integer> cache1 = srv.createCache(new CacheConfiguration<Integer, Integer>().
+                setName("cache1").setIndexedTypes(Integer.class, Integer.class));
+            IgniteCache<Integer, Integer> cache2 = srv.createCache(new CacheConfiguration<Integer, Integer>().
+                setName("cache2").setIndexedTypes(Integer.class, Integer.class));
+
+            for (int i = 0; i < 10; i++) {
+                cache1.put(i, i);
+                cache2.put(i, i);
+            }
+
+            Ignition.setClientMode(true);
+
+            Ignite client = (iter == 0) ? startGrid("client") : grid("client");
+
+            IgniteCache<Integer, Integer> cache = client.cache("cache1");
+
+            List<List<?>> res = cache.query(new SqlFieldsQuery(
+                "select i1._val, i2._val from Integer i1 cross join \"cache2\".Integer i2")).getAll();
+
+            assertEquals(100, res.size());
+
+            srv.destroyCache(cache1.getName());
+            srv.destroyCache(cache2.getName());
         }
-
-        Ignition.setClientMode(true);
-
-        Ignite client = startGrid("client");
-
-        IgniteCache<Integer, Integer> cache = client.cache("cache1");
-
-        List<List<?>> res = cache.query(new SqlFieldsQuery(
-            "select i1._val, i2._val from Integer i1 cross join \"cache2\".Integer i2")).getAll();
-
-        assertEquals(100, res.size());
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testQueryFromNewClientCustomSchemaName() throws Exception {
-        Ignite server = startGrid("server");
+        Ignite srv = startGrid("server");
 
-        IgniteCache<Integer, Integer> cache1 = server.createCache(new CacheConfiguration<Integer, Integer>().
+        IgniteCache<Integer, Integer> cache1 = srv.createCache(new CacheConfiguration<Integer, Integer>().
             setName("cache1").setSqlSchema("cache1_sql").setIndexedTypes(Integer.class, Integer.class));
-        IgniteCache<Integer, Integer> cache2 = server.createCache(new CacheConfiguration<Integer, Integer>().
+        IgniteCache<Integer, Integer> cache2 = srv.createCache(new CacheConfiguration<Integer, Integer>().
             setName("cache2").setSqlSchema("cache2_sql").setIndexedTypes(Integer.class, Integer.class));
 
         for (int i = 0; i < 10; i++) {
