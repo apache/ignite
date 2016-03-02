@@ -93,7 +93,7 @@ namespace Apache.Ignite.Core.Tests.Cache
                             AffinityKeyFieldName = "AffinityKey"
                         },
                         new BinaryTypeConfiguration(typeof(CacheKeyAttr)),
-                        new BinaryTypeConfiguration(typeof (CacheKey))
+                        new BinaryTypeConfiguration(typeof (CacheKeyAttrOverride))
                         {
                             AffinityKeyFieldName = "AffinityKey"
                         }
