@@ -1529,8 +1529,8 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
 
         checkSize(F.asSet("key1", "key2"));
 
-        assert jcache().get("key1") == 10;
-        assert jcache().get("key2") == 11;
+        assert (Integer)jcache().get("key1") == 10;
+        assert (Integer)jcache().get("key2") == 11;
     }
 
     /**
@@ -4113,7 +4113,7 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
             try (Transaction ignored = transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
                 jcache().put("key", 1);
 
-                assert jcache().get("key") == 1;
+                assert (Integer)jcache().get("key") == 1;
             }
         }
     }
@@ -4126,7 +4126,7 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
             try (Transaction ignored = transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
                 jcache().put("key", 1);
 
-                assert jcache().getAndPut("key", 2) == 1;
+                assert (Integer)jcache().getAndPut("key", 2) == 1;
             }
         }
     }
@@ -4151,8 +4151,8 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
         }
 
         assert map.size() == 2;
-        assert map.get("key1") == 1;
-        assert map.get("key2") == 2;
+        assert (Integer)map.get("key1") == 1;
+        assert (Integer)map.get("key2") == 2;
     }
 
     /**
