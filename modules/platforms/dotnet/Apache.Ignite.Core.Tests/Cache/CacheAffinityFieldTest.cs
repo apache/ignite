@@ -82,6 +82,8 @@ namespace Apache.Ignite.Core.Tests.Cache
             return new IgniteConfiguration
             {
                 GridName = gridName,
+                JvmClasspath = TestUtils.CreateTestClasspath(),
+                JvmOptions = TestUtils.TestJavaOptions(),
                 BinaryConfiguration = new BinaryConfiguration
                 {
                     TypeConfigurations = new[]
