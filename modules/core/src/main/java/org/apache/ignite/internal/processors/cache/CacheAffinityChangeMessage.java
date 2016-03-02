@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache;
 
+import java.util.UUID;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -33,28 +34,11 @@ public class CacheAffinityChangeMessage implements DiscoveryCustomMessage {
     /** */
     private AffinityTopologyVersion topVer;
 
-    /** */
-    private transient boolean exchangeNeeded = true;
-
     /**
      * @param topVer Topology version.
      */
     public CacheAffinityChangeMessage(AffinityTopologyVersion topVer) {
         this.topVer = topVer;
-    }
-
-    /**
-     * @return {@code True} if request should trigger partition exchange.
-     */
-    public boolean exchangeNeeded() {
-        return exchangeNeeded;
-    }
-
-    /**
-     * @param exchangeNeeded {@code True} if request should trigger partition exchange.
-     */
-    public void exchangeNeeded(boolean exchangeNeeded) {
-        this.exchangeNeeded = exchangeNeeded;
     }
 
     /**

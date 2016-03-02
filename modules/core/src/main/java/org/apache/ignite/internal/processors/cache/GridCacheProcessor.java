@@ -2439,7 +2439,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     }
 
     /**
-     * Callback invoked from discovery thread when discovery custom message  is received.
+     * Callback invoked from discovery thread when discovery custom message is received.
      *
      * @param msg Customer message.
      * @param topVer Current topology version.
@@ -2447,7 +2447,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      */
     public boolean onCustomEvent(DiscoveryCustomMessage msg,
         AffinityTopologyVersion topVer) {
-        return msg instanceof DynamicCacheChangeBatch && onCacheChangeRequested((DynamicCacheChangeBatch) msg, topVer);
+        return (msg instanceof CacheAffinityChangeMessage) ||
+            msg instanceof DynamicCacheChangeBatch && onCacheChangeRequested((DynamicCacheChangeBatch) msg, topVer);
     }
 
     /**

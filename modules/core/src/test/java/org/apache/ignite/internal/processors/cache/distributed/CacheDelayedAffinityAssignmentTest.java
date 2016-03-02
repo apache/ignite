@@ -18,9 +18,13 @@
 package org.apache.ignite.internal.processors.cache.distributed;
 
 import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.affinity.Affinity;
+import org.apache.ignite.cache.affinity.fair.FairAffinityFunction;
+import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.IgniteNodeAttributes;
 import org.apache.ignite.internal.TestRecordingCommunicationSpi;
 import org.apache.ignite.internal.managers.communication.GridIoMessage;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionSupplyMessageV2;
@@ -41,6 +45,9 @@ public class CacheDelayedAffinityAssignmentTest extends GridCommonAbstractTest {
     /** */
     private static final int NODES = 4;
 
+    /** */
+    private boolean client;
+
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
@@ -50,6 +57,8 @@ public class CacheDelayedAffinityAssignmentTest extends GridCommonAbstractTest {
         cfg.setCommunicationSpi(commSpi);
 
         ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(ipFinder);
+
+        cfg.setClientMode(client);
 
         return cfg;
     }
@@ -68,16 +77,84 @@ public class CacheDelayedAffinityAssignmentTest extends GridCommonAbstractTest {
         stopAllGrids();
     }
 
+    static class CachePredicate implements IgnitePredicate<ClusterNode> {
+        @Override public boolean apply(ClusterNode clusterNode) {
+            String name = clusterNode.attribute(IgniteNodeAttributes.ATTR_GRID_NAME).toString();
+
+            return !name.endsWith("0");
+        }
+    }
     /**
      * @throws Exception If failed.
      */
-    public void testDelayedAffinityAssignment() throws Exception {
+    public void testDelayedAffinityAssignment1() throws Exception {
         startGrid(0);
+
+        CacheConfiguration ccfg = new CacheConfiguration();
+        //ccfg.setNodeFilter(new CachePredicate());
+        ccfg.setAffinity(new FairAffinityFunction());
+
+        ignite(0).createCache(ccfg);
+
         startGrid(1);
 
-        log.info("Done");
+        IgniteCache cache = ignite(1).cache(null);
 
-        Thread.sleep(60_000);
+        for (int i = 0 ; i < 100; i++) {
+            cache.put(1, 1);
+
+            assertNotNull(cache.get(1));
+        }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testDelayedAffinityAssignment2() throws Exception {
+        startGrid(0);
+
+        CacheConfiguration ccfg = new CacheConfiguration();
+        ccfg.setNodeFilter(new CachePredicate());
+
+        ignite(0).createCache(ccfg);
+
+        startGrid(1);
+
+//        client = true;
+//
+//        Ignite client = startGrid(2);
+//
+//        IgniteCache cache = client.cache(null);
+//
+//        for (int i = 0; i < 100; i++) {
+//            cache.put(1, 1);
+//
+//            assertNotNull(cache.get(1));
+//        }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testDelayedAffinityAssignment3() throws Exception {
+        startGrid(0);
+
+        ignite(0).createCache(new CacheConfiguration<>());
+
+        startGrid(1);
+
+        client = true;
+
+        Ignite client = startGrid(2);
+
+        IgniteCache cache = client.cache(null);
+
+        for (int i = 0 ; i < 100; i++) {
+            cache.put(1, 1);
+
+            assertNotNull(cache.get(1));
+        }
+
 
         //ignite(0).createCache(new CacheConfiguration<Object, Object>());
 //        final CacheConfiguration ccfg = new CacheConfiguration();

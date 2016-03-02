@@ -376,7 +376,7 @@ public class GridCacheSharedContext<K, V> {
     /**
      * @return Topology manager.
      */
-    public CacheTopologyManager topology() {
+    public CacheTopologyManager<K, V> topology() {
         return topMgr;
     }
 
