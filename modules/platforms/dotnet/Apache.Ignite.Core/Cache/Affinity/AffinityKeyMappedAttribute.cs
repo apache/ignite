@@ -23,7 +23,7 @@ namespace Apache.Ignite.Core.Cache.Affinity
     /// TODO
     /// </summary>
     [AttributeUsage(AttributeTargets.Field | AttributeTargets.Property)]
-    public sealed class AffinityKeyMapped : Attribute
+    public sealed class AffinityKeyMappedAttribute : Attribute
     {
         // TODO
     }
