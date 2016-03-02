@@ -20,7 +20,8 @@ namespace Apache.Ignite.Core.Cache.Affinity
     using System;
 
     /// <summary>
-    /// TODO
+    /// Optional wrapper for cache keys to provide support for custom affinity mapping.
+    /// The value returned by <see cref="Affinity"/> will be used for key-to-node affinity.
     /// </summary>
     public struct AffinityKey : IEquatable<AffinityKey>
     {
