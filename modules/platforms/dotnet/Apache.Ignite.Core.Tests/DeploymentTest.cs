@@ -88,8 +88,7 @@ namespace Apache.Ignite.Core.Tests
 
             try
             {
-                VerifyNodeStarted(exePath
-                    );
+                VerifyNodeStarted(exePath);
             }
             finally 
             {
