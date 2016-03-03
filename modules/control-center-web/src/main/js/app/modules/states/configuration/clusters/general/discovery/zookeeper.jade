@@ -23,7 +23,7 @@ div
                 | Curator:
             ignite-form-field-tooltip
                 | The Curator framework in use #[br]
-                | By default generates curator of org.apache.curator.framework.imps.CuratorFrameworkImpl.CuratorFrameworkImpl
+                | By default generates curator of org.apache.curator. framework.imps.CuratorFrameworkImpl
                 | class with configured connect string, retry policy, and default session and connection timeouts
             ignite-form-field-java-class(
                 data-id='curator'
@@ -55,8 +55,8 @@ div
                     li Max number of times - retries a max number of times
                     li Only once - retries only once
                     li Always allow retry - retries infinitely
-                    li Default - exponential backoff retry policy with configured base sleep time equal to 1000ms and max retry count equal to 10
                     li Custom - custom retry policy implementation
+                    li Default - exponential backoff retry policy with configured base sleep time equal to 1000ms and max retry count equal to 10
             ignite-form-field-dropdown(
                 data-id='retryPolicy'
                 data-name='retryPolicy'
