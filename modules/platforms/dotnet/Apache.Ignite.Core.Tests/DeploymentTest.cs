@@ -58,7 +58,7 @@ namespace Apache.Ignite.Core.Tests
             var classpath = string.Join(";", Directory.GetFiles(folder).Select(Path.GetFileName));
 
             // Copy .NET binaries
-            foreach (var asm in new[] {typeof (IgniteRunner).Assembly, typeof (Ignition).Assembly})
+            foreach (var asm in new[] {typeof (IgniteRunner).Assembly, typeof (Ignition).Assembly, GetType().Assembly})
                 File.Copy(asm.Location, Path.Combine(folder, Path.GetFileName(asm.Location)));
 
             // Copy config
