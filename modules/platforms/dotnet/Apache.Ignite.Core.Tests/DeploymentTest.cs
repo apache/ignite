@@ -22,6 +22,7 @@ namespace Apache.Ignite.Core.Tests
     using System.Diagnostics;
     using System.IO;
     using System.Linq;
+    using Apache.Ignite.Core.Compute;
     using Apache.Ignite.Core.Impl.Common;
     using NUnit.Framework;
 
@@ -87,15 +88,8 @@ namespace Apache.Ignite.Core.Tests
 
             try
             {
-                using (var ignite = Ignition.Start(new IgniteConfiguration
-                {
-                    SpringConfigUrl = "config\\compute\\compute-grid1.xml",
-                    JvmClasspath = TestUtils.CreateTestClasspath(),
-                    JvmOptions = TestUtils.TestJavaOptions()
-                }))
-                {
-                    Assert.IsTrue(ignite.WaitTopology(2));
-                }
+                VerifyNodeStarted(exePath
+                    );
             }
             finally 
             {
@@ -114,6 +108,26 @@ namespace Apache.Ignite.Core.Tests
                             return false;
                         }
                     }, 1000), "Failed to remove temp directory: " + folder);
+            }
+        }
+
+        /// <summary>
+        /// Verifies that custom-deployed node has started.
+        /// </summary>
+        private static void VerifyNodeStarted(string exePath)
+        {
+            using (var ignite = Ignition.Start(new IgniteConfiguration
+            {
+                SpringConfigUrl = "config\\compute\\compute-grid1.xml",
+                JvmClasspath = TestUtils.CreateTestClasspath(),
+                JvmOptions = TestUtils.TestJavaOptions()
+            }))
+            {
+                Assert.IsTrue(ignite.WaitTopology(2));
+
+                var remoteProcPath = ignite.GetCluster().ForRemotes().GetCompute().Call(new ProcessPathFunc());
+
+                Assert.AreEqual(exePath, remoteProcPath);
             }
         }
 
@@ -145,6 +159,19 @@ namespace Apache.Ignite.Core.Tests
             }
 
             throw new InvalidOperationException();
+        }
+
+        /// <summary>
+        /// Function that returns process path.
+        /// </summary>
+        [Serializable]
+        private class ProcessPathFunc : IComputeFunc<string>
+        {
+            /** <inheritdoc /> */
+            public string Invoke()
+            {
+                return typeof(IgniteRunner).Assembly.Location;
+            }
         }
     }
 }
