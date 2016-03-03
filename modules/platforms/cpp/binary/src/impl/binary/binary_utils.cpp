@@ -15,6 +15,8 @@
  * limitations under the License.
  */
 
+#include <time.h>
+
 #include "ignite/impl/interop/interop.h"
 #include "ignite/impl/binary/binary_utils.h"
 
@@ -231,6 +233,84 @@ namespace ignite
             {
                 stream->WriteInt32(len);
                 stream->WriteInt8Array(reinterpret_cast<const int8_t*>(val), len);
+            }
+
+            time_t BinaryUtils::DateToCTime(const Date& date)
+            {
+                return static_cast<time_t>(date.GetSeconds());
+            }
+
+            time_t BinaryUtils::TimestampToCTime(const Timestamp& ts)
+            {
+                return static_cast<time_t>(ts.GetSeconds());
+            }
+
+            bool BinaryUtils::DateToCTm(const Date& date, tm& ctime)
+            {
+                time_t tmt = DateToCTime(date);
+
+                return gmtime_r(&tmt, &ctime) != NULL;
+            }
+
+            bool BinaryUtils::TimestampToCTm(const Timestamp& ts, tm& ctime)
+            {
+                time_t tmt = TimestampToCTime(ts);
+
+                return gmtime_r(&tmt, &ctime) != NULL;
+            }
+
+            Date BinaryUtils::CTimeToDate(time_t ctime)
+            {
+                return Date(ctime * 1000);
+            }
+
+            Timestamp BinaryUtils::CTimeToTimestamp(time_t ctime, int32_t ns)
+            {
+                return Timestamp(ctime, ns);
+            }
+
+            Date BinaryUtils::CTmToDate(const tm& ctime)
+            {
+                tm tmc = ctime;
+
+                return CTimeToDate(timegm(&tmc));
+            }
+
+            Timestamp BinaryUtils::CTmToTimestamp(const tm& ctime, int32_t ns)
+            {
+                tm tmc = ctime;
+
+                return CTimeToTimestamp(timegm(&tmc), ns);
+            }
+
+            Date BinaryUtils::MakeDate(int year, int month, int day, int hour,
+                int min, int sec)
+            {
+                tm date = { 0 };
+
+                date.tm_year = year - 1900;
+                date.tm_mon = month - 1;
+                date.tm_mday = day;
+                date.tm_hour = hour;
+                date.tm_min = min;
+                date.tm_sec = sec;
+
+                return CTmToDate(date);
+            }
+
+            Timestamp BinaryUtils::MakeTimestamp(int year, int month, int day,
+                int hour, int min, int sec, long ns)
+            {
+                tm date = { 0 };
+
+                date.tm_year = year - 1900;
+                date.tm_mon = month - 1;
+                date.tm_mday = day;
+                date.tm_hour = hour;
+                date.tm_min = min;
+                date.tm_sec = sec;
+
+                return CTmToTimestamp(date, ns);
             }
         }
     }

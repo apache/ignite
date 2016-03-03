@@ -370,6 +370,103 @@ namespace ignite
                  * @param len Length.
                  */
                 static void WriteString(interop::InteropOutputStream* stream, const char* val, const int32_t len);
+
+                /**
+                 * Convert Date type to standard C type time_t.
+                 *
+                 * @param date Date type value.
+                 * @return Corresponding value of time_t.
+                 */
+                static time_t DateToCTime(const Date& date);
+
+                /**
+                 * Convert Timestamp type to standard C type time_t.
+                 *
+                 * @param ts Timestamp type value.
+                 * @return Corresponding value of time_t.
+                 */
+                static time_t TimestampToCTime(const Timestamp& ts);
+
+                /**
+                 * Convert Date type to standard C type time_t.
+                 *
+                 * @param date Date type value.
+                 * @param ctime Corresponding value of struct tm.
+                 * @return True on success.
+                 */
+                static bool DateToCTm(const Date& date, tm& ctime);
+
+                /**
+                 * Convert Timestamp type to standard C type struct tm.
+                 *
+                 * @param ts Timestamp type value.
+                 * @param ctime Corresponding value of struct tm.
+                 * @return True on success.
+                 */
+                static bool TimestampToCTm(const Timestamp& ts, tm& ctime);
+
+                /**
+                 * Convert standard C type time_t to Date struct tm.
+                 *
+                 * @param ctime Standard C type time_t.
+                 * @return Corresponding value of Date.
+                 */
+                static Date CTimeToDate(time_t ctime);
+
+                /**
+                 * Convert standard C type time_t to Timestamp type.
+                 *
+                 * @param ctime Standard C type time_t.
+                 * @param ns Nanoseconds second fraction.
+                 * @return Corresponding value of Timestamp.
+                 */
+                static Timestamp CTimeToTimestamp(time_t ctime, int32_t ns);
+
+                /**
+                 * Convert standard C type struct tm to Date type.
+                 *
+                 * @param ctime Standard C type struct tm.
+                 * @return Corresponding value of Date.
+                 */
+                static Date CTmToDate(const tm& ctime);
+
+                /**
+                 * Convert standard C type struct tm to Timestamp type.
+                 *
+                 * @param ctime Standard C type struct tm.
+                 * @param ns Nanoseconds second fraction.
+                 * @return Corresponding value of Timestamp.
+                 */
+                static Timestamp CTmToTimestamp(const tm& ctime, int32_t ns);
+
+                /**
+                 * Make Date in human understandable way.
+                 *
+                 * @param year Year.
+                 * @param month Month.
+                 * @param day Day.
+                 * @param hour Hour.
+                 * @param min Min.
+                 * @param sec Sec.
+                 * @return Date.
+                 */
+                static Date MakeDate(int year = 1900, int month = 1,
+                    int day = 1, int hour = 0, int min = 0, int sec = 0);
+
+                /**
+                 * Make Date in human understandable way.
+                 *
+                 * @param year Year.
+                 * @param month Month.
+                 * @param day Day.
+                 * @param hour Hour.
+                 * @param min Minute.
+                 * @param sec Second.
+                 * @param ns Nanosecond.
+                 * @return Timestamp.
+                 */
+                static Timestamp MakeTimestamp(int year = 1900, int month = 1,
+                    int day = 1, int hour = 0, int min = 0, int sec = 0, long ns = 0);
             };
         }
     }

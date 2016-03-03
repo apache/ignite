@@ -40,6 +40,8 @@ using namespace ignite::cache;
 using namespace ignite::cache::query;
 using namespace ignite::common::utils;
 
+using ignite::impl::binary::BinaryUtils;
+
 /**
  * Person class for query tests.
  */
@@ -520,61 +522,6 @@ void CheckMultipleGetAll(Cursor& cur, int key1, const std::string& name1,
     }
 }
 
-/**
- * Make Date in human understandable way.
- *
- * @param year Year.
- * @param month Month.
- * @param day Day.
- * @param hour Hour.
- * @param min Min.
- * @param sec Sec.
- * @return Date.
- */
-Date MakeDate(int year = 1900, int month = 1, int day = 1, int hour = 0, int min = 0, int sec = 0)
-{
-    tm date;
-
-    date.tm_year = year - 1900;
-    date.tm_mon = month - 1;
-    date.tm_mday = day;
-    date.tm_hour = hour;
-    date.tm_min = min;
-    date.tm_sec = sec;
-
-    time_t ct = mktime(&date);
-
-    return Date(ct * 1000);
-}
-
-/**
- * Make Date in human understandable way.
- *
- * @param year Year.
- * @param month Month.
- * @param day Day.
- * @param hour Hour.
- * @param min Minute.
- * @param sec Second.
- * @param ns Nanosecond.
- * @return Timestamp.
- */
-Timestamp MakeTimestamp(int year = 1900, int month = 1, int day = 1, int hour = 0, int min = 0, int sec = 0, long ns = 0)
-{
-    tm date;
-
-    date.tm_year = year - 1900;
-    date.tm_mon = month - 1;
-    date.tm_mday = day;
-    date.tm_hour = hour;
-    date.tm_min = min;
-    date.tm_sec = sec;
-
-    time_t ct = mktime(&date);
-
-    return Timestamp(ct, ns);
-}
-
 BOOST_FIXTURE_TEST_SUITE(CacheQueryTestSuite, CacheQueryTestSuiteFixture)
 
 /**
@@ -594,8 +541,8 @@ BOOST_AUTO_TEST_CASE(TestSqlQuery)
     CheckEmptyGetAll(cursor);
 
     // Test simple query.
-    cache.Put(1, QueryPerson("A1", 10, MakeDate(1990, 03, 18), MakeTimestamp(2016, 02, 10, 17, 39, 34, 579304685)));
-    cache.Put(2, QueryPerson("A2", 20, MakeDate(1989, 10, 26), MakeTimestamp(2016, 02, 10, 17, 39, 35, 678403201)));
+    cache.Put(1, QueryPerson("A1", 10, BinaryUtils::MakeDate(1990, 03, 18), BinaryUtils::MakeTimestamp(2016, 02, 10, 17, 39, 34, 579304685)));
+    cache.Put(2, QueryPerson("A2", 20, BinaryUtils::MakeDate(1989, 10, 26), BinaryUtils::MakeTimestamp(2016, 02, 10, 17, 39, 35, 678403201)));
     
     cursor = cache.Query(qry);
     CheckSingle(cursor, 1, "A1", 10);
@@ -650,8 +597,8 @@ BOOST_AUTO_TEST_CASE(TestTextQuery)
     CheckEmptyGetAll(cursor);
 
     // Test simple query.
-    cache.Put(1, QueryPerson("A1", 10, MakeDate(1990, 03, 18), MakeTimestamp(2016, 02, 10, 17, 39, 34, 579304685)));
-    cache.Put(2, QueryPerson("A2", 20, MakeDate(1989, 10, 26), MakeTimestamp(2016, 02, 10, 17, 39, 35, 678403201)));
+    cache.Put(1, QueryPerson("A1", 10, BinaryUtils::MakeDate(1990, 03, 18), BinaryUtils::MakeTimestamp(2016, 02, 10, 17, 39, 34, 579304685)));
+    cache.Put(2, QueryPerson("A2", 20, BinaryUtils::MakeDate(1989, 10, 26), BinaryUtils::MakeTimestamp(2016, 02, 10, 17, 39, 35, 678403201)));
 
     cursor = cache.Query(qry);
     CheckSingle(cursor, 1, "A1", 10);
@@ -696,7 +643,7 @@ BOOST_AUTO_TEST_CASE(TestScanQuery)
     CheckEmptyGetAll(cursor);
 
     // Test simple query.
-    cache.Put(1, QueryPerson("A1", 10, MakeDate(1990, 03, 18), MakeTimestamp(2016, 02, 10, 17, 39, 34, 579304685)));
+    cache.Put(1, QueryPerson("A1", 10, BinaryUtils::MakeDate(1990, 03, 18), BinaryUtils::MakeTimestamp(2016, 02, 10, 17, 39, 34, 579304685)));
 
     cursor = cache.Query(qry);
     CheckSingle(cursor, 1, "A1", 10);
@@ -705,7 +652,7 @@ BOOST_AUTO_TEST_CASE(TestScanQuery)
     CheckSingleGetAll(cursor, 1, "A1", 10);
 
     // Test query returning multiple entries.
-    cache.Put(2, QueryPerson("A2", 20, MakeDate(1989, 10, 26), MakeTimestamp(2016, 02, 10, 17, 39, 35, 678403201)));
+    cache.Put(2, QueryPerson("A2", 20, BinaryUtils::MakeDate(1989, 10, 26), BinaryUtils::MakeTimestamp(2016, 02, 10, 17, 39, 35, 678403201)));
 
     cursor = cache.Query(qry);
     CheckMultiple(cursor, 1, "A1", 10, 2, "A2", 20);
@@ -731,7 +678,7 @@ BOOST_AUTO_TEST_CASE(TestScanQueryPartitioned)
 
         stream << "A" << i;
 
-        cache.Put(i, QueryPerson(stream.str(), i * 10, MakeDate(1970 + i), MakeTimestamp(2016, 1, 1, i / 60, i % 60)));
+        cache.Put(i, QueryPerson(stream.str(), i * 10, BinaryUtils::MakeDate(1970 + i), BinaryUtils::MakeTimestamp(2016, 1, 1, i / 60, i % 60)));
     }
 
     // Iterate over all partitions and collect data.
@@ -778,7 +725,7 @@ BOOST_AUTO_TEST_CASE(TestFieldsQuerySingle)
     CheckEmpty(cursor);
     
     // Test simple query.
-    cache.Put(1, QueryPerson("A1", 10, MakeDate(1990, 03, 18), MakeTimestamp(2016, 02, 10, 17, 39, 34, 579304685)));
+    cache.Put(1, QueryPerson("A1", 10, BinaryUtils::MakeDate(1990, 03, 18), BinaryUtils::MakeTimestamp(2016, 02, 10, 17, 39, 34, 579304685)));
 
     cursor = cache.Query(qry);
 
@@ -823,7 +770,7 @@ BOOST_AUTO_TEST_CASE(TestFieldsQueryExceptions)
     CheckEmpty(cursor);
 
     // Test simple query.
-    cache.Put(1, QueryPerson("A1", 10, MakeDate(1990, 03, 18), MakeTimestamp(2016, 02, 10, 17, 39, 34, 579304685)));
+    cache.Put(1, QueryPerson("A1", 10, BinaryUtils::MakeDate(1990, 03, 18), BinaryUtils::MakeTimestamp(2016, 02, 10, 17, 39, 34, 579304685)));
 
     cursor = cache.Query(qry);
 
@@ -868,8 +815,8 @@ BOOST_AUTO_TEST_CASE(TestFieldsQueryTwo)
     CheckEmpty(cursor);
 
     // Test simple query.
-    cache.Put(1, QueryPerson("A1", 10, MakeDate(1990, 03, 18), MakeTimestamp(2016, 02, 10, 17, 39, 34, 579304685)));
-    cache.Put(2, QueryPerson("A2", 20, MakeDate(1989, 10, 26), MakeTimestamp(2016, 02, 10, 17, 39, 35, 678403201)));
+    cache.Put(1, QueryPerson("A1", 10, BinaryUtils::MakeDate(1990, 03, 18), BinaryUtils::MakeTimestamp(2016, 02, 10, 17, 39, 34, 579304685)));
+    cache.Put(2, QueryPerson("A2", 20, BinaryUtils::MakeDate(1989, 10, 26), BinaryUtils::MakeTimestamp(2016, 02, 10, 17, 39, 35, 678403201)));
 
     cursor = cache.Query(qry);
 
@@ -938,7 +885,7 @@ BOOST_AUTO_TEST_CASE(TestFieldsQuerySeveral)
 
         stream << "A" << i;
 
-        cache.Put(i, QueryPerson(stream.str(), i * 10, MakeDate(1970 + i), MakeTimestamp(2016, 1, 1, i / 60, i % 60)));
+        cache.Put(i, QueryPerson(stream.str(), i * 10, BinaryUtils::MakeDate(1970 + i), BinaryUtils::MakeTimestamp(2016, 1, 1, i / 60, i % 60)));
     }
 
     cursor = cache.Query(qry);
@@ -1001,7 +948,7 @@ BOOST_AUTO_TEST_CASE(TestFieldsQueryDate)
 
         stream << "A" << i;
 
-        cache.Put(i, QueryPerson(stream.str(), i * 10, MakeDate(1980 + i), MakeTimestamp(2016, 1, 1, i / 60, i % 60)));
+        cache.Put(i, QueryPerson(stream.str(), i * 10, BinaryUtils::MakeDate(1980 + i), BinaryUtils::MakeTimestamp(2016, 1, 1, i / 60, i % 60)));
     }
 
     cursor = cache.Query(qry);
@@ -1023,9 +970,9 @@ BOOST_AUTO_TEST_CASE(TestFieldsQueryDate)
         Date birthday = row.GetNext<Date>(error);
         BOOST_REQUIRE(error.GetCode() == IgniteError::IGNITE_SUCCESS);
 
-        BOOST_CHECK(birthday == MakeDate(1980 + resultSetSize));
+        BOOST_CHECK(birthday == BinaryUtils::MakeDate(1980 + resultSetSize));
 
-        BOOST_CHECK(birthday < MakeDate(1990, 1, 1));
+        BOOST_CHECK(birthday < BinaryUtils::MakeDate(1990, 1, 1));
 
         BOOST_REQUIRE(!row.HasNext());
 
@@ -1059,7 +1006,7 @@ BOOST_AUTO_TEST_CASE(TestFieldsQueryTimestamp)
 
         stream << "A" << i;
 
-        cache.Put(i, QueryPerson(stream.str(), i * 10, MakeDate(1980 + i), MakeTimestamp(2016, 1, 1, i / 60, i % 60)));
+        cache.Put(i, QueryPerson(stream.str(), i * 10, BinaryUtils::MakeDate(1980 + i), BinaryUtils::MakeTimestamp(2016, 1, 1, i / 60, i % 60)));
     }
 
     cursor = cache.Query(qry);
@@ -1081,9 +1028,9 @@ BOOST_AUTO_TEST_CASE(TestFieldsQueryTimestamp)
         Timestamp recordCreated = row.GetNext<Timestamp>(error);
         BOOST_REQUIRE(error.GetCode() == IgniteError::IGNITE_SUCCESS);
 
-        BOOST_CHECK(recordCreated == MakeTimestamp(2016, 1, 1, 0, resultSetSize % 60, 0));
+        BOOST_CHECK(recordCreated == BinaryUtils::MakeTimestamp(2016, 1, 1, 0, resultSetSize % 60, 0));
 
-        BOOST_CHECK(recordCreated < MakeTimestamp(2016, 1, 1, 1, 0, 0));
+        BOOST_CHECK(recordCreated < BinaryUtils::MakeTimestamp(2016, 1, 1, 1, 0, 0));
 
         BOOST_REQUIRE(!row.HasNext());
 
