@@ -75,28 +75,28 @@ namespace Apache.Ignite.Core.Impl
             Exs["org.apache.ignite.internal.IgniteClientDisconnectedCheckedException"] = (i, m, e, s) => new ClientDisconnectedException(m, e, i.GetCluster().ClientReconnectTask);
 
             // Cluster exceptions.
-            Exs["org.apache.ignite.cluster.ClusterGroupEmptyException"] = (i, m, e, s) => new ClusterGroupEmptyException(m, s, e);
-            Exs["org.apache.ignite.cluster.ClusterTopologyException"] = (i, m, e, s) => new ClusterTopologyException(m, s, e);
+            Exs["org.apache.ignite.cluster.ClusterGroupEmptyException"] = (i, m, e, s) => new ClusterGroupEmptyException(m, e, s);
+            Exs["org.apache.ignite.cluster.ClusterTopologyException"] = (i, m, e, s) => new ClusterTopologyException(m, e, s);
 
             // Compute exceptions.
-            Exs["org.apache.ignite.compute.ComputeExecutionRejectedException"] = (i, m, e, s) => new ComputeExecutionRejectedException(m, s, e);
-            Exs["org.apache.ignite.compute.ComputeJobFailoverException"] = (i, m, e, s) => new ComputeJobFailoverException(m, s, e);
+            Exs["org.apache.ignite.compute.ComputeExecutionRejectedException"] = (i, m, e, s) => new ComputeExecutionRejectedException(m, e, s);
+            Exs["org.apache.ignite.compute.ComputeJobFailoverException"] = (i, m, e, s) => new ComputeJobFailoverException(m, e, s);
             Exs["org.apache.ignite.compute.ComputeTaskCancelledException"] = (i, m, e, s) => new ComputeTaskCancelledException(m, e);
             Exs["org.apache.ignite.compute.ComputeTaskTimeoutException"] = (i, m, e, s) => new ComputeTaskTimeoutException(m, e);
-            Exs["org.apache.ignite.compute.ComputeUserUndeclaredException"] = (i, m, e, s) => new ComputeUserUndeclaredException(m, s, e);
+            Exs["org.apache.ignite.compute.ComputeUserUndeclaredException"] = (i, m, e, s) => new ComputeUserUndeclaredException(m, e, s);
 
             // Cache exceptions.
-            Exs["javax.cache.CacheException"] = (i, m, e, s) => new CacheException(m, s, e);
-            Exs["javax.cache.integration.CacheLoaderException"] = (i, m, e, s) => new CacheStoreException(m, s, e);
-            Exs["javax.cache.integration.CacheWriterException"] = (i, m, e, s) => new CacheStoreException(m, s, e);
-            Exs["javax.cache.processor.EntryProcessorException"] = (i, m, e, s) => new CacheEntryProcessorException(m, s, e);
-            Exs["org.apache.ignite.cache.CacheAtomicUpdateTimeoutException"] = (i, m, e, s) => new CacheAtomicUpdateTimeoutException(m, s, e);
+            Exs["javax.cache.CacheException"] = (i, m, e, s) => new CacheException(m, e, s);
+            Exs["javax.cache.integration.CacheLoaderException"] = (i, m, e, s) => new CacheStoreException(m, e, s);
+            Exs["javax.cache.integration.CacheWriterException"] = (i, m, e, s) => new CacheStoreException(m, e, s);
+            Exs["javax.cache.processor.EntryProcessorException"] = (i, m, e, s) => new CacheEntryProcessorException(m, e, s);
+            Exs["org.apache.ignite.cache.CacheAtomicUpdateTimeoutException"] = (i, m, e, s) => new CacheAtomicUpdateTimeoutException(m, e, s);
 
             // Transaction exceptions.
-            Exs["org.apache.ignite.transactions.TransactionOptimisticException"] = (i, m, e, s) => new TransactionOptimisticException(m, s, e);
-            Exs["org.apache.ignite.transactions.TransactionTimeoutException"] = (i, m, e, s) => new TransactionTimeoutException(m, s, e);
-            Exs["org.apache.ignite.transactions.TransactionRollbackException"] = (i, m, e, s) => new TransactionRollbackException(m, s, e);
-            Exs["org.apache.ignite.transactions.TransactionHeuristicException"] = (i, m, e, s) => new TransactionHeuristicException(m, s, e);
+            Exs["org.apache.ignite.transactions.TransactionOptimisticException"] = (i, m, e, s) => new TransactionOptimisticException(m, e, s);
+            Exs["org.apache.ignite.transactions.TransactionTimeoutException"] = (i, m, e, s) => new TransactionTimeoutException(m, e, s);
+            Exs["org.apache.ignite.transactions.TransactionRollbackException"] = (i, m, e, s) => new TransactionRollbackException(m, e, s);
+            Exs["org.apache.ignite.transactions.TransactionHeuristicException"] = (i, m, e, s) => new TransactionHeuristicException(m, e, s);
 
             // Security exceptions.
             Exs["org.apache.ignite.IgniteAuthenticationException"] = (i, m, e, s) => new SecurityException(m, e);

@@ -58,9 +58,9 @@ namespace Apache.Ignite.Core.Cache
         /// Initializes a new instance of the <see cref="CacheException"/> class.
         /// </summary>
         /// <param name="message">The message.</param>
-        /// <param name="javaStackTrace">The Java stack trace.</param>
         /// <param name="cause">The cause.</param>
-        public CacheException(string message, string javaStackTrace, Exception cause) 
+        /// <param name="javaStackTrace">The Java stack trace.</param>
+        public CacheException(string message, Exception cause, string javaStackTrace) 
             : base(message, cause, javaStackTrace)
         {
             // No-op.

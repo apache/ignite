@@ -59,9 +59,9 @@ namespace Apache.Ignite.Core.Compute
         /// Initializes a new instance of the <see cref="ComputeExecutionRejectedException"/> class.
         /// </summary>
         /// <param name="message">The message.</param>
-        /// <param name="javaStackTrace">The Java stack trace.</param>
         /// <param name="cause">The cause.</param>
-        public ComputeExecutionRejectedException(string message, string javaStackTrace, Exception cause) 
+        /// <param name="javaStackTrace">The Java stack trace.</param>
+        public ComputeExecutionRejectedException(string message, Exception cause, string javaStackTrace) 
             : base(message, cause, javaStackTrace)
         {
             // No-op.
