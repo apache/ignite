@@ -75,20 +75,20 @@ namespace Apache.Ignite.Core.Impl
             Exs["org.apache.ignite.internal.IgniteClientDisconnectedCheckedException"] = (i, m, e, s) => new ClientDisconnectedException(m, e, i.GetCluster().ClientReconnectTask);
 
             // Cluster exceptions.
-            Exs["org.apache.ignite.cluster.ClusterGroupEmptyException"] = (i, m, e, s) => new ClusterGroupEmptyException(m, e);
-            Exs["org.apache.ignite.cluster.ClusterTopologyException"] = (i, m, e, s) => new ClusterTopologyException(m, e);
+            Exs["org.apache.ignite.cluster.ClusterGroupEmptyException"] = (i, m, e, s) => new ClusterGroupEmptyException(m, s, e);
+            Exs["org.apache.ignite.cluster.ClusterTopologyException"] = (i, m, e, s) => new ClusterTopologyException(m, s, e);
 
             // Compute exceptions.
-            Exs["org.apache.ignite.compute.ComputeExecutionRejectedException"] = (i, m, e, s) => new ComputeExecutionRejectedException(m, e);
-            Exs["org.apache.ignite.compute.ComputeJobFailoverException"] = (i, m, e, s) => new ComputeJobFailoverException(m, e);
+            Exs["org.apache.ignite.compute.ComputeExecutionRejectedException"] = (i, m, e, s) => new ComputeExecutionRejectedException(m, s, e);
+            Exs["org.apache.ignite.compute.ComputeJobFailoverException"] = (i, m, e, s) => new ComputeJobFailoverException(m, s, e);
             Exs["org.apache.ignite.compute.ComputeTaskCancelledException"] = (i, m, e, s) => new ComputeTaskCancelledException(m, e);
             Exs["org.apache.ignite.compute.ComputeTaskTimeoutException"] = (i, m, e, s) => new ComputeTaskTimeoutException(m, e);
             Exs["org.apache.ignite.compute.ComputeUserUndeclaredException"] = (i, m, e, s) => new ComputeUserUndeclaredException(m, e);
 
             // Cache exceptions.
-            Exs["javax.cache.CacheException"] = (i, m, e, s) => new CacheException(m, e);
-            Exs["javax.cache.integration.CacheLoaderException"] = (i, m, e, s) => new CacheStoreException(m, e);
-            Exs["javax.cache.integration.CacheWriterException"] = (i, m, e, s) => new CacheStoreException(m, e);
+            Exs["javax.cache.CacheException"] = (i, m, e, s) => new CacheException(m, s, e);
+            Exs["javax.cache.integration.CacheLoaderException"] = (i, m, e, s) => new CacheStoreException(m, s, e);
+            Exs["javax.cache.integration.CacheWriterException"] = (i, m, e, s) => new CacheStoreException(m, s, e);
             Exs["javax.cache.processor.EntryProcessorException"] = (i, m, e, s) => new CacheEntryProcessorException(m, e);
             Exs["org.apache.ignite.cache.CacheAtomicUpdateTimeoutException"] = (i, m, e, s) => new CacheAtomicUpdateTimeoutException(m, e);
 
