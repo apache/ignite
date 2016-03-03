@@ -25,8 +25,6 @@ namespace Apache.Ignite.Core.Tests.Cache
     using Apache.Ignite.Core.Cache;
     using Apache.Ignite.Core.Cache.Affinity;
     using Apache.Ignite.Core.Cache.Configuration;
-    using Apache.Ignite.Core.Discovery.Tcp;
-    using Apache.Ignite.Core.Discovery.Tcp.Static;
     using Apache.Ignite.Core.Tests.Compute;
     using NUnit.Framework;
 
@@ -60,7 +58,7 @@ namespace Apache.Ignite.Core.Tests.Cache
         /// <summary>
         /// Fixture tear down.
         /// </summary>
-        [TestFixtureSetUp]
+        [TestFixtureTearDown]
         public void FixtureTearDown()
         {
             Ignition.StopAll(true);
