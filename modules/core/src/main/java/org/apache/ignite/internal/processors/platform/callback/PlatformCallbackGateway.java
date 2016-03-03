@@ -426,13 +426,13 @@ public class PlatformCallbackGateway {
      * @param ptr Receiver native pointer.
      * @param cache Cache object.
      * @param memPtr Stream pointer.
-     * @param keepPortable Portable flag.
+     * @param keepBinary Binary flag.
      */
-    public void dataStreamerStreamReceiverInvoke(long ptr, Object cache, long memPtr, boolean keepPortable) {
+    public void dataStreamerStreamReceiverInvoke(long ptr, Object cache, long memPtr, boolean keepBinary) {
         enter();
 
         try {
-            PlatformCallbackUtils.dataStreamerStreamReceiverInvoke(envPtr, ptr, cache, memPtr, keepPortable);
+            PlatformCallbackUtils.dataStreamerStreamReceiverInvoke(envPtr, ptr, cache, memPtr, keepBinary);
         }
         finally {
             leave();
@@ -904,6 +904,36 @@ public class PlatformCallbackGateway {
 
         try {
             return PlatformCallbackUtils.extensionCallbackInLongLongOutLong(envPtr, typ, arg1, arg2);
+        }
+        finally {
+            leave();
+        }
+    }
+
+    /**
+     * Notifies platform about client disconnect.
+     */
+    public void onClientDisconnected() {
+        enter();
+
+        try {
+            PlatformCallbackUtils.onClientDisconnected(envPtr);
+        }
+        finally {
+            leave();
+        }
+    }
+
+    /**
+     * Notifies platform about client reconnect.
+     *
+     * @param clusterRestarted Cluster restarted flag.
+     */
+    public void onClientReconnected(boolean clusterRestarted) {
+        enter();
+
+        try {
+            PlatformCallbackUtils.onClientReconnected(envPtr, clusterRestarted);
         }
         finally {
             leave();

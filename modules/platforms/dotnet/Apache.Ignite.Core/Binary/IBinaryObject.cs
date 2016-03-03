@@ -63,5 +63,13 @@ namespace Apache.Ignite.Core.Binary
         /// The value of underlying enum in int form.
         /// </value>
         int EnumValue { get; }
+
+        /// <summary>
+        /// Creates a new <see cref="IBinaryObjectBuilder"/> based on this object.
+        /// <para />
+        /// This is equivalent to <see cref="IBinary.GetBuilder(IBinaryObject)"/>.
+        /// </summary>
+        /// <returns>New <see cref="IBinaryObjectBuilder"/> based on this object.</returns>
+        IBinaryObjectBuilder ToBuilder();
     }
 }

@@ -15,6 +15,11 @@
  * limitations under the License.
  */
 
+/**
+ * @file
+ * Includes all binary API headers.
+ */
+
 #ifndef _IGNITE_BINARY
 #define _IGNITE_BINARY
 

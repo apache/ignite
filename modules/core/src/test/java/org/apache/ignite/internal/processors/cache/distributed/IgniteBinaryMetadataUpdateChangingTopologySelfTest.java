@@ -25,10 +25,12 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.Callable;
+import javax.cache.processor.MutableEntry;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cache.CacheAtomicityMode;
+import org.apache.ignite.cache.CacheEntryProcessor;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -48,7 +50,6 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.jetbrains.annotations.Nullable;
 
 /**
  * Tests specific scenario when binary metadata should be updated from a system thread
@@ -105,7 +106,7 @@ public class IgniteBinaryMetadataUpdateChangingTopologySelfTest extends GridComm
 
         IgniteCache<Object, Object> cache = ignite(0).cache("cache").withAsync();
 
-        cache.putAll(F.asMap(key1, "val1", key2, new TestValue()));
+        cache.putAll(F.asMap(key1, "val1", key2, new TestValue1()));
 
         try {
             Thread.sleep(500);
@@ -118,7 +119,46 @@ public class IgniteBinaryMetadataUpdateChangingTopologySelfTest extends GridComm
                 }
             });
 
+            Thread.sleep(1000);
+
+            spi.stopBlock();
+
+            cache.future().get();
+
+            fut.get();
+        }
+        finally {
+            stopGrid(4);
+        }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testNoDeadlockInvoke() throws Exception {
+        int key1 = primaryKey(ignite(1).cache("cache"));
+        int key2 = primaryKey(ignite(2).cache("cache"));
+
+        TestCommunicationSpi spi = (TestCommunicationSpi)ignite(1).configuration().getCommunicationSpi();
+
+        spi.blockMessages(GridNearTxPrepareResponse.class, ignite(0).cluster().localNode().id());
+
+        IgniteCache<Object, Object> cache = ignite(0).cache("cache").withAsync();
+
+        cache.invokeAll(F.asSet(key1, key2), new TestEntryProcessor());
+
+        try {
             Thread.sleep(500);
+
+            IgniteInternalFuture<Void> fut = GridTestUtils.runAsync(new Callable<Void>() {
+                @Override public Void call() throws Exception {
+                    startGrid(4);
+
+                    return null;
+                }
+            });
+
+            Thread.sleep(1000);
 
             spi.stopBlock();
 
@@ -145,22 +185,13 @@ public class IgniteBinaryMetadataUpdateChangingTopologySelfTest extends GridComm
         /** */
         private Map<Class<?>, Set<UUID>> blockCls = new HashMap<>();
 
-        /** */
-        private Class<?> recordCls;
-
-        /** */
-        private List<Object> recordedMsgs = new ArrayList<>();
-
         /** {@inheritDoc} */
-        @Override public void sendMessage(ClusterNode node, Message msg, IgniteInClosure<IgniteException> ackClosure)
+        @Override public void sendMessage(ClusterNode node, Message msg, IgniteInClosure<IgniteException> ackC)
             throws IgniteSpiException {
             if (msg instanceof GridIoMessage) {
                 Object msg0 = ((GridIoMessage)msg).message();
 
                 synchronized (this) {
-                    if (recordCls != null && msg0.getClass().equals(recordCls))
-                        recordedMsgs.add(msg0);
-
                     Set<UUID> blockNodes = blockCls.get(msg0.getClass());
 
                     if (F.contains(blockNodes, node.id())) {
@@ -174,29 +205,7 @@ public class IgniteBinaryMetadataUpdateChangingTopologySelfTest extends GridComm
                 }
             }
 
-            super.sendMessage(node, msg, ackClosure);
-        }
-
-        /**
-         * @param recordCls Message class to record.
-         */
-        void record(@Nullable Class<?> recordCls) {
-            synchronized (this) {
-                this.recordCls = recordCls;
-            }
-        }
-
-        /**
-         * @return Recorded messages.
-         */
-        List<Object> recordedMessages() {
-            synchronized (this) {
-                List<Object> msgs = recordedMsgs;
-
-                recordedMsgs = new ArrayList<>();
-
-                return msgs;
-            }
+            super.sendMessage(node, msg, ackC);
         }
 
         /**
@@ -238,7 +247,30 @@ public class IgniteBinaryMetadataUpdateChangingTopologySelfTest extends GridComm
         }
     }
 
-    private static class TestValue {
+    /**
+     *
+     */
+    static class TestEntryProcessor implements CacheEntryProcessor<Object, Object, Object> {
+        /** {@inheritDoc} */
+        @Override public Object process(MutableEntry<Object, Object> e, Object... arguments) {
+            e.setValue(new TestValue2());
+
+            return null;
+        }
+    }
+
+    /**
+     *
+     */
+    private static class TestValue1 {
+        /** Field1. */
+        private String field1;
+    }
+
+    /**
+     *
+     */
+    private static class TestValue2 {
         /** Field1. */
         private String field1;
     }

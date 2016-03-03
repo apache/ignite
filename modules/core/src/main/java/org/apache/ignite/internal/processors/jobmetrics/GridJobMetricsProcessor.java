@@ -108,7 +108,13 @@ public class GridJobMetricsProcessor extends GridProcessorAdapter {
      * Resets metrics.
      */
     public void reset() {
+        InternalMetrics prevMetrics = metrics;
+
         metrics = new InternalMetrics();
+
+        // Preserve totalIdleTime, because it is used for busy / idle time calculations.
+        if (prevMetrics != null)
+            metrics.totalIdleTime = prevMetrics.totalIdleTime;
     }
 
     /**

@@ -62,6 +62,9 @@ public class DataStreamProcessor<K, V> extends GridProcessorAdapter {
     /** Marshaller. */
     private final Marshaller marsh;
 
+    /** */
+    private byte[] marshErrBytes;
+
     /**
      * @param ctx Kernal context.
      */
@@ -85,6 +88,9 @@ public class DataStreamProcessor<K, V> extends GridProcessorAdapter {
     @Override public void start() throws IgniteCheckedException {
         if (ctx.config().isDaemon())
             return;
+
+        marshErrBytes = marsh.marshal(new IgniteCheckedException("Failed to marshal response error, " +
+            "see node log for details."));
 
         flusher = new IgniteThread(new GridWorker(ctx.gridName(), "grid-data-loader-flusher", log) {
             @Override protected void body() throws InterruptedException {
@@ -228,7 +234,7 @@ public class DataStreamProcessor<K, V> extends GridProcessorAdapter {
             Object topic;
 
             try {
-                topic = marsh.unmarshal(req.responseTopicBytes(), null);
+                topic = marsh.unmarshal(req.responseTopicBytes(), U.resolveClassLoader(null, ctx.config()));
             }
             catch (IgniteCheckedException e) {
                 U.error(log, "Failed to unmarshal topic from request: " + req, e);
@@ -268,7 +274,7 @@ public class DataStreamProcessor<K, V> extends GridProcessorAdapter {
             StreamReceiver<K, V> updater;
 
             try {
-                updater = marsh.unmarshal(req.updaterBytes(), clsLdr);
+                updater = marsh.unmarshal(req.updaterBytes(), U.resolveClassLoader(clsLdr, ctx.config()));
 
                 if (updater != null)
                     ctx.resource().injectGeneric(updater);
@@ -324,10 +330,10 @@ public class DataStreamProcessor<K, V> extends GridProcessorAdapter {
         try {
             errBytes = err != null ? marsh.marshal(err) : null;
         }
-        catch (IgniteCheckedException e) {
-            U.error(log, "Failed to marshal message.", e);
+        catch (Exception e) {
+            U.error(log, "Failed to marshal error [err=" + err + ", marshErr=" + e + ']', e);
 
-            return;
+            errBytes = marshErrBytes;
         }
 
         DataStreamerResponse res = new DataStreamerResponse(reqId, errBytes, forceLocDep);

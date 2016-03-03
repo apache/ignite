@@ -90,7 +90,7 @@ public class GridCacheTxRecoveryFuture extends GridCompoundIdentityFuture<Boolea
          UUID failedNodeId,
         Map<UUID, Collection<UUID>> txNodes)
     {
-        super(cctx.kernalContext(), CU.boolReducer());
+        super(CU.boolReducer());
 
         this.cctx = cctx;
         this.tx = tx;

@@ -15,6 +15,11 @@
  * limitations under the License.
  */
 
+/**
+ * @file
+ * Declares ignite::IgniteConfiguration class.
+ */
+
 #ifndef _IGNITE_CONFIGURATION
 #define _IGNITE_CONFIGURATION
 

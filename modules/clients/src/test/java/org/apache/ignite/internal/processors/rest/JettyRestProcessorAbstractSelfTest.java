@@ -35,6 +35,7 @@ import java.util.regex.Pattern;
 import net.sf.json.JSONNull;
 import net.sf.json.JSONObject;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.cache.query.SqlQuery;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
@@ -45,7 +46,6 @@ import org.apache.ignite.internal.processors.cache.query.GridCacheSqlIndexMetada
 import org.apache.ignite.internal.processors.cache.query.GridCacheSqlMetadata;
 import org.apache.ignite.internal.processors.rest.handlers.GridRestCommandHandler;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.util.typedef.P1;
 import org.apache.ignite.lang.IgniteBiPredicate;
@@ -1054,11 +1054,28 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
             assertEquals(JSONNull.getInstance(), node.get("attributes"));
             assertEquals(JSONNull.getInstance(), node.get("metrics"));
 
-            assertEquals("PARTITIONED", node.get("defaultCacheMode"));
+            Collection<Map> caches = (Collection)node.get("caches");
 
-            Map caches = (Map)node.get("caches");
+            Collection<IgniteCacheProxy<?, ?>> publicCaches = grid(0).context().cache().publicCaches();
 
-            assertEquals(F.asMap("person", "PARTITIONED"), caches);
+            assertNotNull(caches);
+            assertEquals(publicCaches.size(), caches.size());
+
+            for (Map cache : caches) {
+                final String cacheName = cache.get("name").equals("") ? null : (String)cache.get("name");
+
+                IgniteCacheProxy<?, ?> publicCache = F.find(publicCaches, null, new P1<IgniteCacheProxy<?, ?>>() {
+                    @Override public boolean apply(IgniteCacheProxy<?, ?> c) {
+                        return F.eq(c.getName(), cacheName);
+                    }
+                });
+
+                assertNotNull(publicCache);
+
+                CacheMode cacheMode = CacheMode.valueOf((String)cache.get("mode"));
+
+                assertEquals(publicCache.getConfiguration(CacheConfiguration.class).getCacheMode(),cacheMode);
+            }
         }
     }
 

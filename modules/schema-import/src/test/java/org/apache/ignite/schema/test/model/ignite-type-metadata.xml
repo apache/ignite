@@ -314,6 +314,148 @@
                         </list>
                     </property>
                 </bean>
+                <bean class="org.apache.ignite.cache.store.jdbc.JdbcType">
+                    <property name="databaseSchema" value="TESTSCHEMA"/>
+                    <property name="databaseTable" value="TST"/>
+                    <property name="keyType" value="org.apache.ignite.schema.test.model.TstKey"/>
+                    <property name="valueType" value="org.apache.ignite.schema.test.model.Tst"/>
+                    <property name="keyFields">
+                        <list>
+                            <bean class="org.apache.ignite.cache.store.jdbc.JdbcTypeField">
+                                <property name="databaseFieldType">
+                                    <util:constant static-field="java.sql.Types.INTEGER"/>
+                                </property>
+                                <property name="databaseFieldName" value="PK"/>
+                                <property name="javaFieldType" value="int"/>
+                                <property name="javaFieldName" value="pk"/>
+                            </bean>
+                        </list>
+                    </property>
+                    <property name="valueFields">
+                        <list>
+                            <bean class="org.apache.ignite.cache.store.jdbc.JdbcTypeField">
+                                <property name="databaseFieldType">
+                                    <util:constant static-field="java.sql.Types.INTEGER"/>
+                                </property>
+                                <property name="databaseFieldName" value="PK"/>
+                                <property name="javaFieldType" value="int"/>
+                                <property name="javaFieldName" value="pk"/>
+                            </bean>
+                            <bean class="org.apache.ignite.cache.store.jdbc.JdbcTypeField">
+                                <property name="databaseFieldType">
+                                    <util:constant static-field="java.sql.Types.BOOLEAN"/>
+                                </property>
+                                <property name="databaseFieldName" value="BOOLCOL"/>
+                                <property name="javaFieldType" value="boolean"/>
+                                <property name="javaFieldName" value="boolcol"/>
+                            </bean>
+                            <bean class="org.apache.ignite.cache.store.jdbc.JdbcTypeField">
+                                <property name="databaseFieldType">
+                                    <util:constant static-field="java.sql.Types.TINYINT"/>
+                                </property>
+                                <property name="databaseFieldName" value="BYTECOL"/>
+                                <property name="javaFieldType" value="byte"/>
+                                <property name="javaFieldName" value="bytecol"/>
+                            </bean>
+                            <bean class="org.apache.ignite.cache.store.jdbc.JdbcTypeField">
+                                <property name="databaseFieldType">
+                                    <util:constant static-field="java.sql.Types.SMALLINT"/>
+                                </property>
+                                <property name="databaseFieldName" value="SHORTCOL"/>
+                                <property name="javaFieldType" value="short"/>
+                                <property name="javaFieldName" value="shortcol"/>
+                            </bean>
+                            <bean class="org.apache.ignite.cache.store.jdbc.JdbcTypeField">
+                                <property name="databaseFieldType">
+                                    <util:constant static-field="java.sql.Types.INTEGER"/>
+                                </property>
+                                <property name="databaseFieldName" value="INTCOL"/>
+                                <property name="javaFieldType" value="int"/>
+                                <property name="javaFieldName" value="intcol"/>
+                            </bean>
+                            <bean class="org.apache.ignite.cache.store.jdbc.JdbcTypeField">
+                                <property name="databaseFieldType">
+                                    <util:constant static-field="java.sql.Types.BIGINT"/>
+                                </property>
+                                <property name="databaseFieldName" value="LONGCOL"/>
+                                <property name="javaFieldType" value="long"/>
+                                <property name="javaFieldName" value="longcol"/>
+                            </bean>
+                            <bean class="org.apache.ignite.cache.store.jdbc.JdbcTypeField">
+                                <property name="databaseFieldType">
+                                    <util:constant static-field="java.sql.Types.REAL"/>
+                                </property>
+                                <property name="databaseFieldName" value="FLOATCOL"/>
+                                <property name="javaFieldType" value="float"/>
+                                <property name="javaFieldName" value="floatcol"/>
+                            </bean>
+                            <bean class="org.apache.ignite.cache.store.jdbc.JdbcTypeField">
+                                <property name="databaseFieldType">
+                                    <util:constant static-field="java.sql.Types.DOUBLE"/>
+                                </property>
+                                <property name="databaseFieldName" value="DOUBLECOL"/>
+                                <property name="javaFieldType" value="double"/>
+                                <property name="javaFieldName" value="doublecol"/>
+                            </bean>
+                            <bean class="org.apache.ignite.cache.store.jdbc.JdbcTypeField">
+                                <property name="databaseFieldType">
+                                    <util:constant static-field="java.sql.Types.DOUBLE"/>
+                                </property>
+                                <property name="databaseFieldName" value="DOUBLECOL2"/>
+                                <property name="javaFieldType" value="double"/>
+                                <property name="javaFieldName" value="doublecol2"/>
+                            </bean>
+                            <bean class="org.apache.ignite.cache.store.jdbc.JdbcTypeField">
+                                <property name="databaseFieldType">
+                                    <util:constant static-field="java.sql.Types.DECIMAL"/>
+                                </property>
+                                <property name="databaseFieldName" value="BIGDECIMALCOL"/>
+                                <property name="javaFieldType" value="java.math.BigDecimal"/>
+                                <property name="javaFieldName" value="bigdecimalcol"/>
+                            </bean>
+                            <bean class="org.apache.ignite.cache.store.jdbc.JdbcTypeField">
+                                <property name="databaseFieldType">
+                                    <util:constant static-field="java.sql.Types.VARCHAR"/>
+                                </property>
+                                <property name="databaseFieldName" value="STRCOL"/>
+                                <property name="javaFieldType" value="java.lang.String"/>
+                                <property name="javaFieldName" value="strcol"/>
+                            </bean>
+                            <bean class="org.apache.ignite.cache.store.jdbc.JdbcTypeField">
+                                <property name="databaseFieldType">
+                                    <util:constant static-field="java.sql.Types.DATE"/>
+                                </property>
+                                <property name="databaseFieldName" value="DATECOL"/>
+                                <property name="javaFieldType" value="java.sql.Date"/>
+                                <property name="javaFieldName" value="datecol"/>
+                            </bean>
+                            <bean class="org.apache.ignite.cache.store.jdbc.JdbcTypeField">
+                                <property name="databaseFieldType">
+                                    <util:constant static-field="java.sql.Types.TIME"/>
+                                </property>
+                                <property name="databaseFieldName" value="TIMECOL"/>
+                                <property name="javaFieldType" value="java.sql.Time"/>
+                                <property name="javaFieldName" value="timecol"/>
+                            </bean>
+                            <bean class="org.apache.ignite.cache.store.jdbc.JdbcTypeField">
+                                <property name="databaseFieldType">
+                                    <util:constant static-field="java.sql.Types.TIMESTAMP"/>
+                                </property>
+                                <property name="databaseFieldName" value="TSCOL"/>
+                                <property name="javaFieldType" value="java.sql.Timestamp"/>
+                                <property name="javaFieldName" value="tscol"/>
+                            </bean>
+                            <bean class="org.apache.ignite.cache.store.jdbc.JdbcTypeField">
+                                <property name="databaseFieldType">
+                                    <util:constant static-field="java.sql.Types.VARBINARY"/>
+                                </property>
+                                <property name="databaseFieldName" value="ARRCOL"/>
+                                <property name="javaFieldType" value="java.lang.Object"/>
+                                <property name="javaFieldName" value="arrcol"/>
+                            </bean>
+                        </list>
+                    </property>
+                </bean>
             </list>
         </property>
     </bean>
@@ -381,6 +523,44 @@
             <list>
                 <bean class="org.apache.ignite.cache.QueryIndex">
                     <property name="name" value="PRIMARY_KEY_D"/>
+                    <property name="indexType">
+                        <util:constant static-field="org.apache.ignite.cache.QueryIndexType.SORTED"/>
+                    </property>
+                    <property name="fields">
+                        <map>
+                            <entry key="PK" value="true"/>
+                        </map>
+                    </property>
+                </bean>
+            </list>
+        </property>
+    </bean>
+    <bean class="org.apache.ignite.cache.QueryEntity">
+        <property name="keyType" value="org.apache.ignite.schema.test.model.TstKey"/>
+        <property name="valueType" value="org.apache.ignite.schema.test.model.Tst"/>
+        <property name="fields">
+            <util:map map-class="java.util.LinkedHashMap">
+                <entry key="pk" value="int"/>
+                <entry key="boolcol" value="boolean"/>
+                <entry key="bytecol" value="byte"/>
+                <entry key="shortcol" value="short"/>
+                <entry key="intcol" value="int"/>
+                <entry key="longcol" value="long"/>
+                <entry key="floatcol" value="float"/>
+                <entry key="doublecol" value="double"/>
+                <entry key="doublecol2" value="double"/>
+                <entry key="bigdecimalcol" value="java.math.BigDecimal"/>
+                <entry key="strcol" value="java.lang.String"/>
+                <entry key="datecol" value="java.sql.Date"/>
+                <entry key="timecol" value="java.sql.Time"/>
+                <entry key="tscol" value="java.sql.Timestamp"/>
+                <entry key="arrcol" value="java.lang.Object"/>
+            </util:map>
+        </property>
+        <property name="indexes">
+            <list>
+                <bean class="org.apache.ignite.cache.QueryIndex">
+                    <property name="name" value="PRIMARY_KEY_1"/>
                     <property name="indexType">
                         <util:constant static-field="org.apache.ignite.cache.QueryIndexType.SORTED"/>
                     </property>

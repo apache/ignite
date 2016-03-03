@@ -321,7 +321,14 @@ public class IgniteClientReconnectQueriesTest extends IgniteClientReconnectAbstr
 
         QueryCursor<Cache.Entry<Integer, Person>> qryCursor2 = clnCache.query(scanQry);
 
-        assertEquals(setPart ? 1 : 3, qryCursor2.getAll().size());
+        List<Cache.Entry<Integer, Person>> entries = qryCursor2.getAll();
+
+        assertEquals(setPart ? 1 : 3, entries.size());
+
+        for (Cache.Entry<Integer, Person> entry : entries) {
+            assertEquals(Integer.class, entry.getKey().getClass());
+            assertEquals(Person.class, entry.getValue().getClass());
+        }
     }
 
     /**

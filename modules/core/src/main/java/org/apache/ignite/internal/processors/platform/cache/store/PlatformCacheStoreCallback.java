@@ -17,7 +17,7 @@
 
 package org.apache.ignite.internal.processors.platform.cache.store;
 
-import org.apache.ignite.internal.portable.BinaryRawReaderEx;
+import org.apache.ignite.internal.binary.BinaryRawReaderEx;
 import org.apache.ignite.internal.processors.platform.PlatformContext;
 import org.apache.ignite.internal.processors.platform.memory.PlatformMemory;
 

@@ -18,6 +18,7 @@
 package org.apache.ignite.examples;
 
 import org.apache.ignite.examples.datagrid.CacheAffinityExample;
+import org.apache.ignite.examples.datagrid.CacheEntryProcessorExample;
 import org.apache.ignite.examples.datagrid.CacheApiExample;
 import org.apache.ignite.examples.datagrid.CacheContinuousQueryExample;
 import org.apache.ignite.examples.datagrid.CacheDataStreamerExample;
@@ -25,14 +26,13 @@ import org.apache.ignite.examples.datagrid.CachePutGetExample;
 import org.apache.ignite.examples.datagrid.CacheQueryExample;
 import org.apache.ignite.examples.datagrid.CacheTransactionExample;
 import org.apache.ignite.examples.datagrid.starschema.CacheStarSchemaExample;
-import org.apache.ignite.examples.datagrid.store.dummy.CacheDummyStoreExample;
 import org.apache.ignite.examples.datastructures.IgniteAtomicLongExample;
 import org.apache.ignite.examples.datastructures.IgniteAtomicReferenceExample;
 import org.apache.ignite.examples.datastructures.IgniteAtomicSequenceExample;
 import org.apache.ignite.examples.datastructures.IgniteAtomicStampedExample;
 import org.apache.ignite.examples.datastructures.IgniteCountDownLatchExample;
-import org.apache.ignite.examples.datastructures.IgniteSemaphoreExample;
 import org.apache.ignite.examples.datastructures.IgniteQueueExample;
+import org.apache.ignite.examples.datastructures.IgniteSemaphoreExample;
 import org.apache.ignite.examples.datastructures.IgniteSetExample;
 import org.apache.ignite.testframework.junits.common.GridAbstractExamplesTest;
 
@@ -45,6 +45,13 @@ public class CacheExamplesSelfTest extends GridAbstractExamplesTest {
      */
     public void testCacheAffinityExample() throws Exception {
         CacheAffinityExample.main(EMPTY_ARGS);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testCacheEntryProcessorExample() throws Exception {
+        CacheEntryProcessorExample.main(EMPTY_ARGS);
     }
 
     /**
@@ -101,13 +108,6 @@ public class CacheExamplesSelfTest extends GridAbstractExamplesTest {
      */
     public void testCacheSetExample() throws Exception {
         IgniteSetExample.main(EMPTY_ARGS);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testCacheDummyStoreExample() throws Exception {
-        CacheDummyStoreExample.main(EMPTY_ARGS);
     }
 
     /**

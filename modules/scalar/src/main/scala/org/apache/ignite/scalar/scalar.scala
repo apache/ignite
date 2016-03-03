@@ -275,7 +275,7 @@ object scalar extends ScalarConversions {
         Option(Ignition.ignite.cache(cacheName))
 
     /**
-     * Creates cache cache with specified parameters in default grid.
+     * Creates cache with specified parameters in default grid.
      *
      * @param cacheName Name of the cache to get.
      */
@@ -288,6 +288,15 @@ object scalar extends ScalarConversions {
         cfg.setIndexedTypes(indexedTypes:_*)
 
         Ignition.ignite.createCache(cfg)
+    }
+
+    /**
+      * Destroy cache with specified name.
+      *
+      * @param cacheName Name of the cache to destroy.
+      */
+    @inline def destroyCache$(@Nullable cacheName: String) = {
+        Ignition.ignite.destroyCache(cacheName)
     }
 
     /**

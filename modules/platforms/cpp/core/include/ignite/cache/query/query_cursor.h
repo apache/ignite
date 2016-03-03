@@ -15,6 +15,11 @@
  * limitations under the License.
  */
 
+/**
+ * @file
+ * Declares ignite::cache::query::QueryCursor class template.
+ */
+
 #ifndef _IGNITE_CACHE_QUERY_CURSOR
 #define _IGNITE_CACHE_QUERY_CURSOR
 

@@ -34,6 +34,9 @@ public interface CacheObject extends Message {
     /** */
     public static final byte TYPE_BINARY = 100;
 
+    /** */
+    public static final byte TYPE_BINARY_ENUM = 101;
+
     /**
      * @param ctx Context.
      * @param cpy If {@code true} need to copy value.

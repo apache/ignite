@@ -223,10 +223,10 @@ public class PlatformCallbackUtils {
      * @param ptr Receiver native pointer.
      * @param cache Cache object.
      * @param memPtr Stream pointer.
-     * @param keepPortable Portable flag.
+     * @param keepBinary Binary flag.
      */
     static native void dataStreamerStreamReceiverInvoke(long envPtr, long ptr, Object cache, long memPtr,
-        boolean keepPortable);
+        boolean keepBinary);
 
     /**
      * Notify future with byte result.
@@ -442,7 +442,6 @@ public class PlatformCallbackUtils {
     static native void serviceCancel(long envPtr, long svcPtr, long memPtr);
 
     /**
-     /**
      * Invokes service method.
      *
      * @param envPtr Environment pointer.
@@ -480,6 +479,21 @@ public class PlatformCallbackUtils {
      * @return Long result.
      */
     static native long extensionCallbackInLongLongOutLong(long envPtr, int typ, long arg1, long arg2);
+
+    /**
+     * Notifies platform about client disconnect.
+     *
+     * @param envPtr Environment pointer.
+     */
+    static native void onClientDisconnected(long envPtr);
+
+    /**
+     * Notifies platform about client reconnect.
+     *
+     * @param envPtr Environment pointer.
+     * @param clusterRestarted Cluster restarted flag.
+     */
+    static native void onClientReconnected(long envPtr, boolean clusterRestarted);
 
     /**
      * Private constructor.

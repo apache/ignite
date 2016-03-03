@@ -61,10 +61,10 @@ public class PlatformDotNetConfiguration implements PlatformConfiguration {
     }
 
     /**
-     * @param portableCfg Configuration.
+     * @param binaryCfg Configuration.
      */
-    public void setBinaryConfiguration(PlatformDotNetBinaryConfiguration portableCfg) {
-        this.binaryCfg = portableCfg;
+    public void setBinaryConfiguration(PlatformDotNetBinaryConfiguration binaryCfg) {
+        this.binaryCfg = binaryCfg;
     }
 
     /**

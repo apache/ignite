@@ -91,9 +91,6 @@ public class GridCacheSharedContext<K, V> {
     /** Tx metrics. */
     private volatile TransactionMetricsAdapter txMetrics;
 
-    /** Preloaders start future. */
-    private IgniteInternalFuture<Object> preloadersStartFut;
-
     /** Store session listeners. */
     private Collection<CacheStoreSessionListener> storeSesLsnrs;
 
@@ -569,6 +566,21 @@ public class GridCacheSharedContext<K, V> {
         }
 
         return null;
+    }
+
+    /**
+     * @param ignore Transaction to ignore.
+     * @return Not null topology version if current thread holds lock preventing topology change.
+     */
+    @Nullable public AffinityTopologyVersion lockedTopologyVersion(IgniteInternalTx ignore) {
+        long threadId = Thread.currentThread().getId();
+
+        AffinityTopologyVersion topVer = txMgr.lockedTopologyVersion(threadId, ignore);
+
+        if (topVer == null)
+            topVer = mvccMgr.lastExplicitLockTopologyVersion(threadId);
+
+        return topVer;
     }
 
     /**

@@ -20,6 +20,7 @@ package org.apache.ignite.internal.visor.util;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileFilter;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.net.InetAddress;
@@ -36,6 +37,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.SortedMap;
@@ -100,6 +102,9 @@ public class VisorTaskUtils {
 
     /** Log files count limit */
     public static final int LOG_FILES_COUNT_LIMIT = 5000;
+
+    /** */
+    private static final int DFLT_BUFFER_SIZE = 4096;
 
     /** Only task event types that Visor should collect. */
     public static final int[] VISOR_TASK_EVTS = {
@@ -558,7 +563,7 @@ public class VisorTaskUtils {
         try (RandomAccessFile raf = new RandomAccessFile(f, "r")) {
             FileChannel ch = raf.getChannel();
 
-            ByteBuffer buf = ByteBuffer.allocate(4096);
+            ByteBuffer buf = ByteBuffer.allocate(DFLT_BUFFER_SIZE);
 
             ch.read(buf);
 
@@ -823,6 +828,85 @@ public class VisorTaskUtils {
     }
 
     /**
+     * Start local node in terminal.
+     *
+     * @param log Logger.
+     * @param cfgPath Path to node configuration to start with.
+     * @param nodesToStart Number of nodes to start.
+     * @param quite If {@code true} then start node in quiet mode.
+     * @param envVars Optional map with environment variables.
+     * @return List of started processes.
+     * @throws IOException If failed to start.
+     */
+    public static List<Process> startLocalNode(@Nullable IgniteLogger log, String cfgPath, int nodesToStart,
+        boolean quite, Map<String, String> envVars) throws IOException {
+        String quitePar = quite ? "" : "-v";
+
+        String cmdFile = new File("bin", U.isWindows() ? "ignite.bat" : "ignite.sh").getPath();
+
+        File cmdFilePath = U.resolveIgnitePath(cmdFile);
+
+        if (cmdFilePath == null || !cmdFilePath.exists())
+            throw new FileNotFoundException(String.format("File not found: %s", cmdFile));
+
+        String ignite = cmdFilePath.getCanonicalPath();
+
+        File nodesCfgPath = U.resolveIgnitePath(cfgPath);
+
+        if (nodesCfgPath == null || !nodesCfgPath.exists())
+            throw new FileNotFoundException(String.format("File not found: %s", cfgPath));
+
+        String nodeCfg = nodesCfgPath.getCanonicalPath();
+
+        log(log, String.format("Starting %s local %s with '%s' config", nodesToStart, nodesToStart > 1 ? "nodes" : "node", nodeCfg));
+
+        List<Process> run = new ArrayList<>();
+
+        try {
+            for (int i = 0; i < nodesToStart; i++) {
+                if (U.isMacOs()) {
+                    StringBuilder envs = new StringBuilder();
+
+                    Map<String, String> macEnv = new HashMap<>(System.getenv());
+
+                    if (envVars != null) {
+                        for (Map.Entry<String, String> ent : envVars.entrySet())
+                            if (macEnv.containsKey(ent.getKey())) {
+                                String old = macEnv.get(ent.getKey());
+
+                                if (old == null || old.isEmpty())
+                                    macEnv.put(ent.getKey(), ent.getValue());
+                                else
+                                    macEnv.put(ent.getKey(), old + ':' + ent.getValue());
+                            }
+                            else
+                                macEnv.put(ent.getKey(), ent.getValue());
+                    }
+
+                    for (Map.Entry<String, String> entry : macEnv.entrySet()) {
+                        String val = entry.getValue();
+
+                        if (val.indexOf(';') < 0 && val.indexOf('\'') < 0)
+                            envs.append(String.format("export %s='%s'; ",
+                                    entry.getKey(), val.replace('\n', ' ').replace("'", "\'")));
+                    }
+
+                    run.add(openInConsole(envs.toString(), ignite, quitePar, nodeCfg));
+                } else
+                    run.add(openInConsole(null, envVars, ignite, quitePar, nodeCfg));
+            }
+
+            return run;
+        }
+        catch (Exception e) {
+            for (Process proc: run)
+                proc.destroy();
+
+            throw e;
+        }
+    }
+
+    /**
      * Run command in separated console.
      *
      * @param args A string array containing the program and its arguments.
@@ -839,9 +923,22 @@ public class VisorTaskUtils {
      * @param workFolder Work folder for command.
      * @param args A string array containing the program and its arguments.
      * @return Started process.
+     * @throws IOException in case of error.
+     */
+    public static Process openInConsole(@Nullable File workFolder, String... args) throws IOException {
+        return openInConsole(workFolder, null, args);
+    }
+
+    /**
+     * Run command in separated console.
+     *
+     * @param workFolder Work folder for command.
+     * @param envVars Optional map with environment variables.
+     * @param args A string array containing the program and its arguments.
+     * @return Started process.
      * @throws IOException If failed to start process.
      */
-    public static Process openInConsole(@Nullable File workFolder, String... args)
+    public static Process openInConsole(@Nullable File workFolder, Map<String, String> envVars, String... args)
         throws IOException {
         String[] commands = args;
 
@@ -862,6 +959,23 @@ public class VisorTaskUtils {
         if (workFolder != null)
             pb.directory(workFolder);
 
+        if (envVars != null) {
+            String sep = U.isWindows() ? ";" : ":";
+
+            Map<String, String> goalVars = pb.environment();
+
+            for (Map.Entry<String, String> var: envVars.entrySet()) {
+                String envVar = goalVars.get(var.getKey());
+
+                if (envVar == null || envVar.isEmpty())
+                    envVar = var.getValue();
+                else
+                    envVar += sep + var.getValue();
+
+                goalVars.put(var.getKey(), envVar);
+            }
+        }
+
         return pb.start();
     }
 
@@ -873,7 +987,7 @@ public class VisorTaskUtils {
      * @throws IOException If failed.
      */
     public static byte[] zipBytes(byte[] input) throws IOException {
-        return zipBytes(input, 4096);
+        return zipBytes(input, DFLT_BUFFER_SIZE);
     }
 
     /**

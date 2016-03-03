@@ -15,6 +15,11 @@
  * limitations under the License.
  */
 
+/**
+ * @file
+ * Declares specific binary constatants
+ */
+
 #ifndef _IGNITE_BINARY_CONSTS
 #define _IGNITE_BINARY_CONSTS
 
@@ -52,17 +57,7 @@ namespace ignite
             /**
              * Linked hash set. Maps to LinkedHashSet in Java.
              */
-            IGNITE_COLLECTION_LINKED_HASH_SET = 4,
-
-            /**
-             * Tree set. Maps to TreeSet in Java.
-             */
-            IGNITE_COLLECTION_TREE_SET = 5,
-
-            /**
-             * Concurrent skip list set. Maps to ConcurrentSkipListSet in Java.
-             */
-            IGNITE_COLLECTION_CONCURRENT_SKIP_LIST_SET = 6
+            IGNITE_COLLECTION_LINKED_HASH_SET = 4
         };
 
         /**
@@ -83,22 +78,7 @@ namespace ignite
             /**
              * Linked hash map. Maps to LinkedHashMap in Java.
              */
-            IGNITE_MAP_LINKED_HASH_MAP = 2,
-
-            /**
-             * Tree map. Maps to TreeMap in Java.
-             */
-            IGNITE_MAP_TREE_MAP = 3,
-            
-            /**
-             * Concurrent hash map. Maps to ConcurrentHashMap in Java.
-             */
-            IGNITE_MAP_CONCURRENT_HASH_MAP = 4,
-            
-            /**
-             * Properties map. Maps to Properties in Java.
-             */
-            IGNITE_MAP_PROPERTIES_MAP = 5
+            IGNITE_MAP_LINKED_HASH_MAP = 2
         };
     }
 }

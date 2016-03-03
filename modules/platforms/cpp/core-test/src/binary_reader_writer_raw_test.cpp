@@ -1496,7 +1496,7 @@ BOOST_AUTO_TEST_CASE(TestCollectionEmpty)
 
 BOOST_AUTO_TEST_CASE(TestCollectionEmptyTyped)
 {
-    CollectionType typ = IGNITE_COLLECTION_CONCURRENT_SKIP_LIST_SET;
+    CollectionType typ = IGNITE_COLLECTION_LINKED_HASH_SET;
 
     CheckRawCollectionEmpty(&typ);
 }
@@ -1508,7 +1508,7 @@ BOOST_AUTO_TEST_CASE(TestCollection)
 
 BOOST_AUTO_TEST_CASE(TestCollectionTyped)
 {
-    CollectionType typ = IGNITE_COLLECTION_CONCURRENT_SKIP_LIST_SET;
+    CollectionType typ = IGNITE_COLLECTION_LINKED_HASH_SET;
 
     CheckRawCollection(&typ);
 }
@@ -1520,7 +1520,7 @@ BOOST_AUTO_TEST_CASE(TestCollectionIterators)
 
 BOOST_AUTO_TEST_CASE(TestCollectionIteratorsTyped)
 {
-    CollectionType typ = IGNITE_COLLECTION_CONCURRENT_SKIP_LIST_SET;
+    CollectionType typ = IGNITE_COLLECTION_LINKED_HASH_SET;
 
     CheckRawCollectionIterators(&typ);
 }
@@ -1573,7 +1573,7 @@ BOOST_AUTO_TEST_CASE(TestMapEmpty)
 
 BOOST_AUTO_TEST_CASE(TestMapEmptyTyped)
 {
-    MapType typ = IGNITE_MAP_CONCURRENT_HASH_MAP;
+    MapType typ = IGNITE_MAP_LINKED_HASH_MAP;
 
     CheckRawMapEmpty(&typ);
 }
@@ -1585,7 +1585,7 @@ BOOST_AUTO_TEST_CASE(TestMap)
 
 BOOST_AUTO_TEST_CASE(TestMapTyped)
 {
-    MapType typ = IGNITE_MAP_CONCURRENT_HASH_MAP;
+    MapType typ = IGNITE_MAP_LINKED_HASH_MAP;
 
     CheckRawMap(&typ);
 }

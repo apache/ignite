@@ -142,9 +142,11 @@ public class PlatformIgnition {
      * @return Configuration.
      */
     private static IgniteConfiguration configuration(@Nullable String springCfgPath) {
+        if (springCfgPath == null)
+            return new IgniteConfiguration();
+
         try {
-            URL url = springCfgPath == null ? U.resolveIgniteUrl(IgnitionEx.DFLT_CFG) :
-                U.resolveSpringUrl(springCfgPath);
+            URL url = U.resolveSpringUrl(springCfgPath);
 
             IgniteBiTuple<IgniteConfiguration, GridSpringResourceContext> t = IgnitionEx.loadConfiguration(url);
 

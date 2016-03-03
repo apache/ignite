@@ -199,7 +199,7 @@ public class GridQueryParsingTest extends GridCommonAbstractTest {
 
         checkQuery("select p.name, ? from Person p where name regexp ? and p.old < ?");
 
-        checkQuery("select count(*) as a from Person");
+        checkQuery("select count(*) as a from Person having a > 10");
         checkQuery("select count(*) as a, count(p.*), count(p.name) from Person p");
         checkQuery("select count(distinct p.name) from Person p");
         checkQuery("select name, count(*) cnt from Person group by name order by cnt desc limit 10");
@@ -316,12 +316,7 @@ public class GridQueryParsingTest extends GridCommonAbstractTest {
 
         GridSqlQueryParser ses = new GridSqlQueryParser();
 
-        String res;
-
-        if (prepared instanceof Query)
-            res = ses.parse((Query) prepared).getSQL();
-        else
-            throw new UnsupportedOperationException();
+        String res = ses.parse(prepared).getSQL();
 
         System.out.println(normalizeSql(res));
 

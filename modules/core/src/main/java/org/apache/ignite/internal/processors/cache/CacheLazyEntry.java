@@ -43,31 +43,33 @@ public class CacheLazyEntry<K, V> implements Cache.Entry<K, V> {
     @GridToStringInclude
     protected V val;
 
-    /** Keep portable flag. */
-    private boolean keepPortable;
+    /** Keep binary flag. */
+    private boolean keepBinary;
 
     /**
      * @param cctx Cache context.
      * @param keyObj Key cache object.
      * @param valObj Cache object value.
+     * @param keepBinary Keep binary flag.
      */
-    public CacheLazyEntry(GridCacheContext cctx, KeyCacheObject keyObj, CacheObject valObj, boolean keepPortable) {
+    public CacheLazyEntry(GridCacheContext cctx, KeyCacheObject keyObj, CacheObject valObj, boolean keepBinary) {
         this.cctx = cctx;
         this.keyObj = keyObj;
         this.valObj = valObj;
-        this.keepPortable = keepPortable;
+        this.keepBinary = keepBinary;
     }
 
     /**
      * @param keyObj Key cache object.
      * @param val Value.
+     * @param keepBinary Keep binary flag.
      * @param cctx Cache context.
      */
-    public CacheLazyEntry(GridCacheContext cctx, KeyCacheObject keyObj, V val, boolean keepPortable) {
+    public CacheLazyEntry(GridCacheContext cctx, KeyCacheObject keyObj, V val, boolean keepBinary) {
         this.cctx = cctx;
         this.keyObj = keyObj;
         this.val = val;
-        this.keepPortable = keepPortable;
+        this.keepBinary = keepBinary;
     }
 
     /**
@@ -75,35 +77,47 @@ public class CacheLazyEntry<K, V> implements Cache.Entry<K, V> {
      * @param keyObj Key cache object.
      * @param key Key value.
      * @param valObj Cache object
+     * @param keepBinary Keep binary flag.
      * @param val Cache value.
      */
-    public CacheLazyEntry(GridCacheContext<K, V> ctx, 
+    public CacheLazyEntry(GridCacheContext<K, V> ctx,
         KeyCacheObject keyObj,
         K key,
         CacheObject valObj,
         V val,
-        boolean keepPortable
+        boolean keepBinary
     ) {
         this.cctx = ctx;
         this.keyObj = keyObj;
         this.key = key;
         this.valObj = valObj;
         this.val = val;
-        this.keepPortable = keepPortable;
+        this.keepBinary = keepBinary;
     }
 
     /** {@inheritDoc} */
     @Override public K getKey() {
         if (key == null)
-            key = (K)cctx.unwrapPortableIfNeeded(keyObj, keepPortable);
+            key = (K)cctx.unwrapBinaryIfNeeded(keyObj, keepBinary);
 
         return key;
     }
 
     /** {@inheritDoc} */
     @Override public V getValue() {
+        return getValue(keepBinary);
+    }
+
+    /**
+     * Returns the value stored in the cache when this entry was created.
+     *
+     * @param keepBinary Flag to keep binary if needed.
+     * @return the value corresponding to this entry
+     */
+    @SuppressWarnings("unchecked")
+    public V getValue(boolean keepBinary) {
         if (val == null)
-            val = (V)cctx.unwrapPortableIfNeeded(valObj, keepPortable, false);
+            val = (V)cctx.unwrapBinaryIfNeeded(valObj, keepBinary, true);
 
         return val;
     }

@@ -15,6 +15,11 @@
  * limitations under the License.
  */
 
+/**
+ * @file
+ * Declares ignite::cache::query::QueryFieldsRow class.
+ */
+
 #ifndef _IGNITE_CACHE_QUERY_FIELDS_ROW
 #define _IGNITE_CACHE_QUERY_FIELDS_ROW
 
@@ -104,7 +109,7 @@ namespace ignite
                 {
                     IgniteError err;
 
-                    QueryFieldsRow res = GetNext<T>(err);
+                    T res = GetNext<T>(err);
 
                     IgniteError::ThrowIfNeeded(err);
 

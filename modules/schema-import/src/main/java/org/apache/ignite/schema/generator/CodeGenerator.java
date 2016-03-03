@@ -584,8 +584,8 @@ public class CodeGenerator {
         Collection<String> src = new ArrayList<>(256);
 
         header(src, pkg, "java.sql.*;java.util.*;" +
-                "org.apache.ignite.cache.*;org.apache.ignite.cache.store.jdbc.*;" +
-                "org.apache.ignite.configuration.*",
+            "org.apache.ignite.cache.*;org.apache.ignite.cache.store.jdbc.*;" +
+            "org.apache.ignite.configuration.*",
             "CacheConfig", "CacheConfig");
 
         // Generate methods for each type in order to avoid compiler error "java: code too large".
@@ -594,10 +594,11 @@ public class CodeGenerator {
             String valClsName = pojo.valueClassName();
 
             add1(src, "/**");
-            add1(src, "* Create JDBC type for " + tbl + ".");
-            add1(src, "*");
-            add1(src, "* @param cacheName Cache name.");
-            add1(src, "*/");
+            add1(src, " * Create JDBC type for " + tbl + ".");
+            add1(src, " *");
+            add1(src, " * @param cacheName Cache name.");
+            add1(src, " * @return Configured JDBC type.");
+            add1(src, " */");
             add1(src, "private static JdbcType jdbcType" + valClsName + "(String cacheName) {");
 
             add2(src, "JdbcType jdbcType = new JdbcType();");
@@ -605,8 +606,11 @@ public class CodeGenerator {
 
             add2(src, "jdbcType.setCacheName(cacheName);");
 
-            // Database info.
-            add2(src, "jdbcType.setDatabaseSchema(\"" + pojo.schema() + "\");");
+            // Database schema.
+            if (pojo.schema() != null)
+                add2(src, "jdbcType.setDatabaseSchema(\"" + pojo.schema() + "\");");
+
+            // Database table.
             add2(src, "jdbcType.setDatabaseTable(\"" + tbl + "\");");
 
             // Java info.
@@ -632,8 +636,10 @@ public class CodeGenerator {
             add0(src, "");
 
             add1(src, "/**");
-            add1(src, "* Create SQL Query descriptor for " + tbl + ".");
-            add1(src, "*/");
+            add1(src, " * Create SQL Query descriptor for " + tbl + ".");
+            add1(src, " *");
+            add1(src, " * @return Configured query entity.");
+            add1(src, " */");
             add1(src, "private static QueryEntity queryEntity" + valClsName + "() {");
 
             // Query entity.
@@ -711,11 +717,12 @@ public class CodeGenerator {
         }
 
         add1(src, "/**");
-        add1(src, "* Configure cache.");
-        add1(src, "*");
-        add1(src, "* @param cacheName Cache name.");
-        add1(src, "* @param storeFactory Cache store factory.");
-        add1(src, "*/");
+        add1(src, " * Configure cache.");
+        add1(src, " *");
+        add1(src, " * @param cacheName Cache name.");
+        add1(src, " * @param storeFactory Cache store factory.");
+        add1(src, " * @return Cache configuration.");
+        add1(src, " */");
         add1(src, "public static <K, V> CacheConfiguration<K, V> cache(String cacheName," +
             " CacheJdbcPojoStoreFactory<K, V> storeFactory) {");
         add2(src, "if (storeFactory == null)");

@@ -15,6 +15,11 @@
  * limitations under the License.
  */
 
+/**
+ * @file
+ * Declares ignite::cache::Cache class.
+ */
+
 #ifndef _IGNITE_CACHE
 #define _IGNITE_CACHE
 
@@ -1083,7 +1088,7 @@ namespace ignite
                 return query::QueryCursor<K, V>(cursorImpl);
             }
 
-            /*
+            /**
              * Perform text query.
              *
              * @param qry Query.
@@ -1100,7 +1105,7 @@ namespace ignite
                 return res;
             }
 
-            /*
+            /**
              * Perform text query.
              *
              * @param qry Query.
@@ -1114,7 +1119,7 @@ namespace ignite
                 return query::QueryCursor<K, V>(cursorImpl);
             }
 
-            /*
+            /**
              * Perform scan query.
              *
              * @param qry Query.
@@ -1131,7 +1136,7 @@ namespace ignite
                 return res;
             }
 
-            /*
+            /**
              * Perform scan query.
              *
              * @param qry Query.
@@ -1145,7 +1150,7 @@ namespace ignite
                 return query::QueryCursor<K, V>(cursorImpl);
             }
 
-            /*
+            /**
              * Perform sql fields query.
              *
              * @param qry Query.
@@ -1162,7 +1167,7 @@ namespace ignite
                 return res;
             }
 
-            /*
+            /**
              * Perform sql fields query.
              *
              * @param qry Query.

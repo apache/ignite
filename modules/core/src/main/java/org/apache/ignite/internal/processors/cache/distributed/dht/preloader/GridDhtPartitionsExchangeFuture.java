@@ -46,6 +46,7 @@ import org.apache.ignite.internal.IgniteFutureTimeoutCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
+import org.apache.ignite.internal.events.DiscoveryCustomEvent;
 import org.apache.ignite.internal.managers.discovery.GridDiscoveryTopologySnapshot;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.DynamicCacheChangeRequest;
@@ -329,6 +330,19 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
      * @return {@code True} if cache was added during this exchange.
      */
     public boolean isCacheAdded(int cacheId, AffinityTopologyVersion topVer) {
+        if (cacheStarted(cacheId))
+            return true;
+
+        GridCacheContext<?, ?> cacheCtx = cctx.cacheContext(cacheId);
+
+        return cacheCtx != null && F.eq(cacheCtx.startTopologyVersion(), topVer);
+    }
+
+    /**
+     * @param cacheId Cache ID.
+     * @return {@code True} if non-client cache was added during this exchange.
+     */
+    private boolean cacheStarted(int cacheId) {
         if (!F.isEmpty(reqs)) {
             for (DynamicCacheChangeRequest req : reqs) {
                 if (req.start() && !req.clientStartOnly()) {
@@ -338,9 +352,7 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
             }
         }
 
-        GridCacheContext<?, ?> cacheCtx = cctx.cacheContext(cacheId);
-
-        return cacheCtx != null && F.eq(cacheCtx.startTopologyVersion(), topVer);
+        return false;
     }
 
     /**
@@ -419,7 +431,8 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
         // If local node did not initiate exchange or local node is the only cache node in grid.
         Collection<ClusterNode> affNodes = CU.affinityNodes(cacheCtx, exchId.topologyVersion());
 
-        return !exchId.nodeId().equals(cctx.localNodeId()) ||
+        return cacheStarted(cacheCtx.cacheId()) ||
+            !exchId.nodeId().equals(cctx.localNodeId()) ||
             (affNodes.size() == 1 && affNodes.contains(cctx.localNode()));
     }
 
@@ -557,6 +570,9 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
                             }
                             else
                                 cacheCtx.affinity().clientEventTopologyChange(discoEvt, exchId.topologyVersion());
+
+                            if (!exchId.isJoined())
+                                cacheCtx.preloader().unwindUndeploys();
                         }
 
                         if (exchId.isLeft())
@@ -833,8 +849,9 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
                     // Partition release future is done so we can flush the write-behind store.
                     cacheCtx.store().forceFlush();
 
-                    // Process queued undeploys prior to sending/spreading map.
-                    cacheCtx.preloader().unwindUndeploys();
+                    if (!exchId.isJoined())
+                        // Process queued undeploys prior to sending/spreading map.
+                        cacheCtx.preloader().unwindUndeploys();
 
                     GridDhtPartitionTopology top = cacheCtx.topology();
 
@@ -910,8 +927,8 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
      *
      */
     private void dumpPendingObjects() {
-        U.warn(log, "Failed to wait for partition release future. Dumping pending objects that might be the cause: " +
-            cctx.localNodeId());
+        U.warn(log, "Failed to wait for partition release future [topVer=" + topologyVersion() +
+            ", node=" + cctx.localNodeId() + "]. Dumping pending objects that might be the cause: ");
 
         cctx.exchange().dumpPendingObjects();
     }
@@ -1115,6 +1132,11 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
                 for (GridCacheContext cacheCtx : cctx.cacheContexts())
                     cacheCtx.config().getAffinity().removeNode(exchId.nodeId());
             }
+
+            reqs = null;
+
+            if (discoEvt instanceof DiscoveryCustomEvent)
+                ((DiscoveryCustomEvent)discoEvt).customMessage(null);
 
             return true;
         }

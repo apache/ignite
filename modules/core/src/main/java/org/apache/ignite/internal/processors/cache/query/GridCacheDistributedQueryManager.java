@@ -273,7 +273,7 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
                 req.className(),
                 req.clause(),
                 req.includeMetaData(),
-                req.keepPortable(),
+                req.keepBinary(),
                 req.subjectId(),
                 req.taskHash()
             );
@@ -566,11 +566,12 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
                 qry.query().includeBackups(),
                 qry.arguments(),
                 false,
-                qry.query().keepPortable(),
+                qry.query().keepBinary(),
                 qry.query().subjectId(),
                 qry.query().taskHash(),
                 queryTopologyVersion(),
-                cctx.deploymentEnabled());
+                // Force deployment anyway if scan query is used.
+                cctx.deploymentEnabled() || (qry.query().scanFilter() != null && cctx.gridDeploy().enabled()));
 
             addQueryFuture(req.id(), fut);
 
@@ -612,11 +613,12 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
                 qry.includeBackups(),
                 fut.fields(),
                 all,
-                qry.keepPortable(),
+                qry.keepBinary(),
                 qry.subjectId(),
                 qry.taskHash(),
                 queryTopologyVersion(),
-                cctx.deploymentEnabled());
+                // Force deployment anyway if scan query is used.
+                cctx.deploymentEnabled() || (qry.scanFilter() != null && cctx.gridDeploy().enabled()));
 
             sendRequest(fut, req, nodes);
         }
@@ -679,7 +681,7 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
                 qry.query().includeBackups(),
                 qry.arguments(),
                 qry.query().includeMetadata(),
-                qry.query().keepPortable(),
+                qry.query().keepBinary(),
                 qry.query().subjectId(),
                 qry.query().taskHash(),
                 queryTopologyVersion(),

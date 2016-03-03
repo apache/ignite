@@ -39,8 +39,8 @@
 :: )
 :: in other scripts to parse common command lines parameters.
 
-set convertArgsCmd="%JAVA_HOME%\bin\java.exe" -cp %CP% org.apache.ignite.startup.cmdline.CommandLineTransformer %*
-for /f "usebackq tokens=*" %%i in (`%convertArgsCmd%`) do set reformattedArgs=%%i
+set convertArgsCmd="!JAVA_HOME!\bin\java.exe" -cp %CP% org.apache.ignite.startup.cmdline.CommandLineTransformer %*
+for /f "usebackq tokens=*" %%i in (`!convertArgsCmd!`) do set reformattedArgs=%%i
 
 for %%i in (%reformattedArgs%) do (
     if "%%i" == "CommandLineTransformerError" exit /b 1

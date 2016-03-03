@@ -51,9 +51,6 @@ import static org.apache.ignite.cache.CacheMemoryMode.OFFHEAP_VALUES;
  *
  */
 public class IgniteCacheObjectProcessorImpl extends GridProcessorAdapter implements IgniteCacheObjectProcessor {
-    /** */
-    private static final sun.misc.Unsafe UNSAFE = GridUnsafe.unsafe();
-
     /** Immutable classes. */
     private static final Collection<Class<?>> IMMUTABLE_CLS = new HashSet<>();
 
@@ -107,7 +104,8 @@ public class IgniteCacheObjectProcessorImpl extends GridProcessorAdapter impleme
     @Override public Object unmarshal(CacheObjectContext ctx, byte[] bytes, ClassLoader clsLdr)
         throws IgniteCheckedException
     {
-        return ctx.kernalContext().cache().context().marshaller().unmarshal(bytes, clsLdr);
+        return ctx.kernalContext().cache().context().marshaller().unmarshal(bytes, U.resolveClassLoader(clsLdr,
+            ctx.kernalContext().config()));
     }
 
     /** {@inheritDoc} */
@@ -138,9 +136,9 @@ public class IgniteCacheObjectProcessorImpl extends GridProcessorAdapter impleme
     {
         assert valPtr != 0;
 
-        int size = UNSAFE.getInt(valPtr);
+        int size = GridUnsafe.getInt(valPtr);
 
-        byte type = UNSAFE.getByte(valPtr + 4);
+        byte type = GridUnsafe.getByte(valPtr + 4);
 
         byte[] bytes = U.copyMemory(valPtr + 5, size);
 
@@ -219,7 +217,7 @@ public class IgniteCacheObjectProcessorImpl extends GridProcessorAdapter impleme
             ccfg.getAffinityMapper() != null ? ccfg.getAffinityMapper() : new GridCacheDefaultAffinityKeyMapper(),
             ccfg.isCopyOnRead() && memMode != OFFHEAP_VALUES,
             storeVal,
-            ctx.config().isPeerClassLoadingEnabled() && !isPortableEnabled(ccfg));
+            ctx.config().isPeerClassLoadingEnabled() && !isBinaryEnabled(ccfg));
 
         ctx.resource().injectGeneric(res.defaultAffMapper());
 
@@ -250,12 +248,12 @@ public class IgniteCacheObjectProcessorImpl extends GridProcessorAdapter impleme
     }
 
     /** {@inheritDoc} */
-    @Override public boolean isPortableObject(Object obj) {
+    @Override public boolean isBinaryObject(Object obj) {
         return false;
     }
 
     /** {@inheritDoc} */
-    @Override public boolean isPortableEnabled(CacheConfiguration<?, ?> ccfg) {
+    @Override public boolean isBinaryEnabled(CacheConfiguration<?, ?> ccfg) {
         return false;
     }
 
@@ -305,7 +303,7 @@ public class IgniteCacheObjectProcessorImpl extends GridProcessorAdapter impleme
                     ClassLoader ldr = ctx.p2pEnabled() ?
                         IgniteUtils.detectClassLoader(IgniteUtils.detectClass(this.val)) : U.gridClassLoader();
 
-                     Object val = ctx.processor().unmarshal(ctx, valBytes, ldr);
+                    Object val = ctx.processor().unmarshal(ctx, valBytes, ldr);
 
                     return new KeyCacheObjectImpl(val, valBytes);
                 }

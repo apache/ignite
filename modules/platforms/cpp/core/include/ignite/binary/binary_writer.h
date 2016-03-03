@@ -15,6 +15,11 @@
  * limitations under the License.
  */
 
+/**
+ * @file
+ * Declares ignite::binary::BinaryWriter class.
+ */
+
 #ifndef _IGNITE_BINARY_WRITER
 #define _IGNITE_BINARY_WRITER
 

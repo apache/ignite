@@ -44,7 +44,7 @@ public class NoOpBinary implements IgniteBinary {
     }
 
     /** {@inheritDoc} */
-    @Override public BinaryObjectBuilder builder(BinaryObject portableObj) throws BinaryObjectException {
+    @Override public BinaryObjectBuilder builder(BinaryObject binaryObj) throws BinaryObjectException {
         throw unsupported();
     }
 

@@ -15,6 +15,11 @@
  * limitations under the License.
  */
 
+/**
+ * @file
+ * Declares ignite::IgniteError class.
+ */
+
 #ifndef _IGNITE_ERROR
 #define _IGNITE_ERROR
 

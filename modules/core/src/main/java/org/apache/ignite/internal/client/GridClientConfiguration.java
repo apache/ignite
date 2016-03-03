@@ -615,7 +615,7 @@ public class GridClientConfiguration {
      * Options, that can be used out-of-the-box:
      * <ul>
      *     <li>{@link GridClientOptimizedMarshaller} (default) - Ignite's optimized marshaller.</li>
-     *     <li>{@code GridClientPortableMarshaller} - Marshaller that supports portable objects.</li>
+     *     <li>{@code GridClientBinaryMarshaller} - Marshaller that supports binary objects.</li>
      *     <li>{@link org.apache.ignite.internal.client.marshaller.jdk.GridClientJdkMarshaller} - JDK marshaller (not recommended).</li>
      * </ul>
      *

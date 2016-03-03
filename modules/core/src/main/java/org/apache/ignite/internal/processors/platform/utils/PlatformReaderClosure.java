@@ -17,7 +17,7 @@
 
 package org.apache.ignite.internal.processors.platform.utils;
 
-import org.apache.ignite.internal.portable.BinaryRawReaderEx;
+import org.apache.ignite.internal.binary.BinaryRawReaderEx;
 
 /**
  * Reader closure.

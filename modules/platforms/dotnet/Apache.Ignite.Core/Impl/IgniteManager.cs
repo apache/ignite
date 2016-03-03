@@ -50,7 +50,7 @@ namespace Apache.Ignite.Core.Impl
         private static JvmConfiguration _jvmCfg;
 
         /** Memory manager. */
-        private static PlatformMemoryManager _mem;
+        private static readonly PlatformMemoryManager Mem = new PlatformMemoryManager(1024);
 
         /// <summary>
         /// Create JVM.
@@ -86,7 +86,6 @@ namespace Apache.Ignite.Core.Impl
                 {
                     _ctx = ctx;
                     _jvmCfg = jvmCfg;
-                    _mem = new PlatformMemoryManager(1024);
                 }
             }
         }
@@ -96,7 +95,7 @@ namespace Apache.Ignite.Core.Impl
         /// </summary>
         internal static PlatformMemoryManager Memory
         {
-            get { return _mem; }
+            get { return Mem; }
         }
 
         /// <summary>

@@ -27,12 +27,13 @@ import javax.management.MBeanServer;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.internal.portable.BinaryCachingMetadataHandler;
-import org.apache.ignite.internal.portable.BinaryMarshaller;
-import org.apache.ignite.internal.portable.PortableContext;
+import org.apache.ignite.internal.binary.BinaryCachingMetadataHandler;
+import org.apache.ignite.internal.binary.BinaryMarshaller;
+import org.apache.ignite.internal.binary.BinaryContext;
 import org.apache.ignite.internal.processors.resource.GridResourceProcessor;
 import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.logger.NullLogger;
 import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.marshaller.MarshallerContextTestImpl;
 import org.apache.ignite.marshaller.optimized.OptimizedMarshaller;
@@ -264,9 +265,10 @@ public class IgniteTestResources {
         marsh.setContext(new MarshallerContextTestImpl());
 
         if (marsh instanceof BinaryMarshaller) {
-            PortableContext ctx = new PortableContext(BinaryCachingMetadataHandler.create(), new IgniteConfiguration());
+            BinaryContext ctx =
+                new BinaryContext(BinaryCachingMetadataHandler.create(), new IgniteConfiguration(), new NullLogger());
 
-            IgniteUtils.invoke(BinaryMarshaller.class, marsh, "setPortableContext", ctx, new IgniteConfiguration());
+            IgniteUtils.invoke(BinaryMarshaller.class, marsh, "setBinaryContext", ctx, new IgniteConfiguration());
         }
 
         return marsh;

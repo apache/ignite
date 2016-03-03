@@ -803,6 +803,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// <param name="val">Enum value.</param>
         public void WriteEnum<T>(T val)
         {
+            // ReSharper disable once CompareNonConstrainedGenericWithNull
             if (val == null)
                 WriteNullField();
             else
@@ -879,6 +880,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         {
             WriteFieldId(fieldName, BinaryUtils.TypeObject);
 
+            // ReSharper disable once CompareNonConstrainedGenericWithNull
             if (val == null)
                 WriteNullField();
             else
@@ -1051,6 +1053,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         public void Write<T>(T obj)
         {
             // Handle special case for null.
+            // ReSharper disable once CompareNonConstrainedGenericWithNull
             if (obj == null)
             {
                 _stream.WriteByte(BinaryUtils.HdrNull);

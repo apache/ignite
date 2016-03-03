@@ -36,7 +36,7 @@
 
 <!--
         <property name="marshaller">
-            <bean class="org.apache.ignite.internal.portable.api.PortableMarshaller"/>
+            <bean class="org.apache.ignite.internal.binary.BinaryMarshaller"/>
         </property>
 -->
 

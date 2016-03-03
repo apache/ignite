@@ -205,7 +205,7 @@ namespace Apache.Ignite.Core.Binary
         /// <param name="factory">Factory.</param>
         /// <param name="adder">Adder.</param>
         /// <returns>Collection.</returns>
-        ICollection ReadCollection(CollectionFactory factory, CollectionAdder adder);
+        ICollection ReadCollection(Func<int, ICollection> factory, Action<ICollection, object> adder);
 
         /// <summary>
         /// Read dictionary. 
@@ -218,6 +218,6 @@ namespace Apache.Ignite.Core.Binary
         /// </summary>
         /// <param name="factory">Factory.</param>
         /// <returns>Dictionary.</returns>
-        IDictionary ReadDictionary(DictionaryFactory factory);
+        IDictionary ReadDictionary(Func<int, IDictionary> factory);
     }
 }

@@ -134,13 +134,6 @@ public class GridNioRecoveryDescriptor {
     }
 
     /**
-     * @return Received messages count.
-     */
-    public long receivedCount() {
-        return rcvCnt;
-    }
-
-    /**
      * @return Maximum size of unacknowledged messages queue.
      */
     public int queueLimit() {
@@ -186,6 +179,8 @@ public class GridNioRecoveryDescriptor {
 
             if (fut.ackClosure() != null)
                 fut.ackClosure().apply(null);
+
+            fut.onAckReceived();
 
             acked++;
         }

@@ -264,7 +264,7 @@ public class GridNearTxPrepareResponse extends GridDistributedTxPrepareResponse 
     @Override public void prepareMarshal(GridCacheSharedContext ctx) throws IgniteCheckedException {
         super.prepareMarshal(ctx);
 
-        if (ownedVals != null) {
+        if (ownedVals != null && ownedValKeys == null) {
             ownedValKeys = ownedVals.keySet();
 
             ownedValVals = ownedVals.values();
@@ -287,7 +287,7 @@ public class GridNearTxPrepareResponse extends GridDistributedTxPrepareResponse 
         }
 
         if (filterFailedKeys != null) {
-            for (IgniteTxKey key :filterFailedKeys) {
+            for (IgniteTxKey key : filterFailedKeys) {
                 GridCacheContext cctx = ctx.cacheContext(key.cacheId());
 
                 key.prepareMarshal(cctx);

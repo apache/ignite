@@ -214,6 +214,9 @@ public interface Ignite extends AutoCloseable {
      * <p>
      * If local node is an affinity node, this method will return the instance of started cache.
      * Otherwise, it will create a client cache on local node.
+     * <p>
+     * If a cache with the same name already exists in the grid, an exception will be thrown regardless
+     * whether the given configuration matches the configuration of the existing cache or not.
      *
      * @param cacheCfg Cache configuration to use.
      * @return Instance of started cache.
@@ -225,6 +228,8 @@ public interface Ignite extends AutoCloseable {
      * <p>
      * If local node is an affinity node, this method will return the instance of started cache.
      * Otherwise, it will create a client cache on local node.
+     * <p>
+     * If a cache with the same name already exists in the grid, an exception will be thrown.
      *
      * @param cacheName Cache name.
      * @return Instance of started cache.
@@ -233,6 +238,10 @@ public interface Ignite extends AutoCloseable {
 
     /**
      * Gets existing cache with the given name or creates new one with the given configuration.
+     * <p>
+     * If a cache with the same name already exist, this method will not check that the given
+     * configuration matches the configuration of existing cache and will return an instance
+     * of the existing cache.
      *
      * @param cacheCfg Cache configuration to use.
      * @return Existing or newly created cache.
@@ -259,6 +268,9 @@ public interface Ignite extends AutoCloseable {
      * <p>
      * If local node is an affinity node, this method will return the instance of started cache.
      * Otherwise, it will create a near cache with the given configuration on local node.
+     * <p>
+     * If a cache with the same name already exists in the grid, an exception will be thrown regardless
+     * whether the given configuration matches the configuration of the existing cache or not.
      *
      * @param cacheCfg Cache configuration to use.
      * @param nearCfg Near cache configuration to use on local node in case it is not an
@@ -270,6 +282,13 @@ public interface Ignite extends AutoCloseable {
 
     /**
      * Gets existing cache with the given cache configuration or creates one if it does not exist.
+     * <p>
+     * If a cache with the same name already exist, this method will not check that the given
+     * configuration matches the configuration of existing cache and will return an instance
+     * of the existing cache.
+     * <p>
+     * If local node is not an affinity node and a client cache without near cache has been already started
+     * on this node, an exception will be thrown.
      *
      * @param cacheCfg Cache configuration.
      * @param nearCfg Near cache configuration for client.

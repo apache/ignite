@@ -105,6 +105,7 @@ public abstract class IgniteClientReconnectAbstractTest extends GridCommonAbstra
     }
 
     /**
+     * @param log Logger.
      * @param latch Latch.
      * @throws Exception If failed.
      */

@@ -17,8 +17,11 @@
 
 namespace Apache.Ignite.Core.Binary
 {
+    using System;
     using System.Collections.Generic;
     using System.Diagnostics.CodeAnalysis;
+    using System.Linq;
+    using Apache.Ignite.Core.Impl.Common;
 
     /// <summary>
     /// Binary type configuration.
@@ -26,7 +29,7 @@ namespace Apache.Ignite.Core.Binary
     public class BinaryConfiguration
     {
         /// <summary>
-        /// Constructor.
+        /// Initializes a new instance of the <see cref="BinaryConfiguration"/> class.
         /// </summary>
         public BinaryConfiguration()
         {
@@ -34,25 +37,32 @@ namespace Apache.Ignite.Core.Binary
         }
 
         /// <summary>
-        /// Copying constructor.
+        /// Initializes a new instance of the <see cref="BinaryConfiguration" /> class.
         /// </summary>
-        /// <param name="cfg">Configuration to copy.</param>
+        /// <param name="cfg">The binary configuration to copy.</param>
         public BinaryConfiguration(BinaryConfiguration cfg)
         {
+            IgniteArgumentCheck.NotNull(cfg, "cfg");
+
             DefaultIdMapper = cfg.DefaultIdMapper;
             DefaultNameMapper = cfg.DefaultNameMapper;
             DefaultKeepDeserialized = cfg.DefaultKeepDeserialized;
             DefaultSerializer = cfg.DefaultSerializer;
 
-            Types = cfg.Types != null ? new List<string>(cfg.Types) : null;
+            TypeConfigurations = cfg.TypeConfigurations == null
+                ? null
+                : cfg.TypeConfigurations.Select(x => new BinaryTypeConfiguration(x)).ToList();
 
-            if (cfg.TypeConfigurations != null)
-            {
-                TypeConfigurations = new List<BinaryTypeConfiguration>(cfg.TypeConfigurations.Count);
+            Types = cfg.Types == null ? null : cfg.Types.ToList();
+        }
 
-                foreach (BinaryTypeConfiguration typeCfg in cfg.TypeConfigurations)
-                    TypeConfigurations.Add(new BinaryTypeConfiguration(typeCfg));
-            }
+        /// <summary>
+        /// Initializes a new instance of the <see cref="BinaryConfiguration"/> class.
+        /// </summary>
+        /// <param name="binaryTypes">Binary types to register.</param>
+        public BinaryConfiguration(params Type[] binaryTypes)
+        {
+            TypeConfigurations = binaryTypes.Select(t => new BinaryTypeConfiguration(t)).ToList();
         }
 
         /// <summary>

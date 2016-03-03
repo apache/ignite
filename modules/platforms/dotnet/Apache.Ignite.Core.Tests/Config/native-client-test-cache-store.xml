@@ -41,7 +41,7 @@
                     <property name="atomicityMode" value="TRANSACTIONAL"/>
                     <property name="writeThrough" value="true"/>
                     <property name="readThrough" value="true"/>
-                    <property name="keepBinaryInStore" value="true"/>
+                    <property name="storeKeepBinary" value="true"/>
 
                     <property name="cacheStoreFactory">
                         <bean class="org.apache.ignite.platform.dotnet.PlatformDotNetCacheStoreFactory">
@@ -56,7 +56,7 @@
                     <property name="atomicityMode" value="TRANSACTIONAL"/>
                     <property name="writeThrough" value="true"/>
                     <property name="readThrough" value="true"/>
-                    <property name="keepBinaryInStore" value="false"/>
+                    <property name="storeKeepBinary" value="false"/>
 
                     <property name="cacheStoreFactory">
                         <bean class="org.apache.ignite.platform.dotnet.PlatformDotNetCacheStoreFactory">
@@ -71,7 +71,7 @@
                     <property name="atomicityMode" value="TRANSACTIONAL"/>
                     <property name="writeThrough" value="true"/>
                     <property name="readThrough" value="true"/>
-                    <property name="keepBinaryInStore" value="false"/>
+                    <property name="storeKeepBinary" value="false"/>
 
                     <property name="cacheStoreFactory">
                         <bean class="org.apache.ignite.platform.dotnet.PlatformDotNetCacheStoreFactory">

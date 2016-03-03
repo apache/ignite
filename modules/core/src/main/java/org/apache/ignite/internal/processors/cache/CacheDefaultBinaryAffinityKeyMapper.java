@@ -21,7 +21,7 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.internal.IgniteKernal;
-import org.apache.ignite.internal.processors.cache.portable.CacheObjectBinaryProcessorImpl;
+import org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
@@ -37,10 +37,10 @@ public class CacheDefaultBinaryAffinityKeyMapper extends GridCacheDefaultAffinit
     /** {@inheritDoc} */
     @Override public Object affinityKey(Object key) {
         try {
-            key = proc.toPortable(key);
+            key = proc.toBinary(key);
         }
         catch (IgniteException e) {
-            U.error(log, "Failed to marshal key to portable: " + key, e);
+            U.error(log, "Failed to marshal key to binary: " + key, e);
         }
 
         if (key instanceof BinaryObject)

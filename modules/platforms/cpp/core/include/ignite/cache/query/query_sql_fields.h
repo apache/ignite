@@ -15,6 +15,11 @@
  * limitations under the License.
  */
 
+/**
+ * @file
+ * Declares ignite::cache::query::SqlFieldsQuery class.
+ */
+
 #ifndef _IGNITE_CACHE_QUERY_SQL_FIELDS
 #define _IGNITE_CACHE_QUERY_SQL_FIELDS
 

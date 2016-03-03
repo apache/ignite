@@ -73,6 +73,9 @@ import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static org.apache.ignite.cache.CacheAtomicWriteOrderMode.CLOCK;
+import static org.apache.ignite.cache.CacheAtomicWriteOrderMode.PRIMARY;
+import static org.apache.ignite.cache.CacheAtomicWriteOrderMode.values;
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
@@ -169,6 +172,7 @@ public class IgniteClientReconnectCacheTest extends IgniteClientReconnectAbstrac
 
         ccfg.setWriteSynchronizationMode(FULL_SYNC);
         ccfg.setName("nearCache");
+        ccfg.setAtomicWriteOrderMode(PRIMARY);
 
         final IgniteCache<Object, Object> nearCache = client.getOrCreateCache(ccfg, new NearCacheConfiguration<>());
 
@@ -693,7 +697,7 @@ public class IgniteClientReconnectCacheTest extends IgniteClientReconnectAbstrac
         IgniteInternalFuture<Boolean> fut = GridTestUtils.runAsync(new Callable<Boolean>() {
             @Override public Boolean call() throws Exception {
                 try {
-                    Ignition.start(getConfiguration(getTestGridName(SRV_CNT)));
+                    Ignition.start(optimize(getConfiguration(getTestGridName(SRV_CNT))));
 
                     fail();
 
@@ -724,7 +728,13 @@ public class IgniteClientReconnectCacheTest extends IgniteClientReconnectAbstrac
         TestTcpDiscoverySpi srvSpi = spi(srv);
 
         try {
-            assertTrue(joinLatch.await(5000, MILLISECONDS));
+            if (!joinLatch.await(10_000, MILLISECONDS)) {
+                log.error("Failed to wait for join event, will dump threads.");
+
+                U.dumpThreads(log);
+
+                fail("Failed to wait for join event.");
+            }
 
             U.sleep(1000);
 
@@ -780,8 +790,7 @@ public class IgniteClientReconnectCacheTest extends IgniteClientReconnectAbstrac
 
         for (CacheAtomicityMode atomicityMode : CacheAtomicityMode.values()) {
             CacheAtomicWriteOrderMode[] writeOrders =
-                atomicityMode == ATOMIC ? CacheAtomicWriteOrderMode.values() :
-                new CacheAtomicWriteOrderMode[]{CacheAtomicWriteOrderMode.CLOCK};
+                atomicityMode == ATOMIC ? values() : new CacheAtomicWriteOrderMode[]{CLOCK};
 
             for (CacheAtomicWriteOrderMode writeOrder : writeOrders) {
                 for (CacheWriteSynchronizationMode syncMode : CacheWriteSynchronizationMode.values()) {
@@ -1079,7 +1088,7 @@ public class IgniteClientReconnectCacheTest extends IgniteClientReconnectAbstrac
 
         clientMode = true;
 
-        final int CLIENTS = 2;
+        final int CLIENTS = 5;
 
         List<Ignite> clients = new ArrayList<>();
 
@@ -1094,12 +1103,14 @@ public class IgniteClientReconnectCacheTest extends IgniteClientReconnectAbstrac
         int nodes = SRV_CNT + CLIENTS;
         int srvNodes = SRV_CNT;
 
-        for (int iter = 0; iter < 3; iter++) {
+        for (int iter = 0; iter < 5; iter++) {
             log.info("Iteration: " + iter);
 
             reconnectClientNodes(log, clients, grid(0), null);
 
-            for (Ignite client : clients) {
+            final int expNodes = CLIENTS + srvNodes;
+
+            for (final Ignite client : clients) {
                 IgniteCache<Object, Object> cache = client.cache(null);
 
                 assertNotNull(cache);
@@ -1107,6 +1118,14 @@ public class IgniteClientReconnectCacheTest extends IgniteClientReconnectAbstrac
                 cache.put(client.name(), 1);
 
                 assertEquals(1, cache.get(client.name()));
+
+                GridTestUtils.waitForCondition(new GridAbsPredicate() {
+                    @Override public boolean apply() {
+                        ClusterGroup grp = client.cluster().forCacheNodes(null);
+
+                        return grp.nodes().size() == expNodes;
+                    }
+                }, 5000);
 
                 ClusterGroup grp = client.cluster().forCacheNodes(null);
 
@@ -1118,7 +1137,15 @@ public class IgniteClientReconnectCacheTest extends IgniteClientReconnectAbstrac
             }
 
             for (int i = 0; i < nodes; i++) {
-                Ignite ignite = grid(i);
+                final Ignite ignite = grid(i);
+
+                GridTestUtils.waitForCondition(new GridAbsPredicate() {
+                    @Override public boolean apply() {
+                        ClusterGroup grp = ignite.cluster().forCacheNodes(null);
+
+                        return grp.nodes().size() == expNodes;
+                    }
+                }, 5000);
 
                 ClusterGroup grp = ignite.cluster().forCacheNodes(null);
 

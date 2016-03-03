@@ -20,12 +20,12 @@ package org.apache.ignite.testsuites;
 import junit.framework.TestSuite;
 import org.apache.ignite.examples.BasicExamplesMultiNodeSelfTest;
 import org.apache.ignite.examples.BasicExamplesSelfTest;
-import org.apache.ignite.examples.CacheClientPortableExampleTest;
+import org.apache.ignite.examples.CacheClientBinaryExampleTest;
 import org.apache.ignite.examples.CacheExamplesMultiNodeSelfTest;
 import org.apache.ignite.examples.CacheExamplesSelfTest;
 import org.apache.ignite.examples.CheckpointExamplesSelfTest;
 import org.apache.ignite.examples.ClusterGroupExampleSelfTest;
-import org.apache.ignite.examples.ComputeClientPortableExampleTest;
+import org.apache.ignite.examples.ComputeClientBinaryExampleTest;
 import org.apache.ignite.examples.ContinuationExamplesMultiNodeSelfTest;
 import org.apache.ignite.examples.ContinuationExamplesSelfTest;
 import org.apache.ignite.examples.ContinuousMapperExamplesMultiNodeSelfTest;
@@ -44,9 +44,6 @@ import org.apache.ignite.examples.MonteCarloExamplesSelfTest;
 import org.apache.ignite.examples.SpringBeanExamplesSelfTest;
 import org.apache.ignite.examples.TaskExamplesMultiNodeSelfTest;
 import org.apache.ignite.examples.TaskExamplesSelfTest;
-import org.apache.ignite.testframework.GridTestUtils;
-
-import static org.apache.ignite.IgniteSystemProperties.IGNITE_OVERRIDE_MCAST_GRP;
 
 /**
  * Examples test suite.
@@ -91,9 +88,9 @@ public class IgniteExamplesSelfTestSuite extends TestSuite {
         suite.addTest(new TestSuite(MemcacheRestExamplesMultiNodeSelfTest.class));
         suite.addTest(new TestSuite(MonteCarloExamplesMultiNodeSelfTest.class));
 
-        // Portable.
-        suite.addTest(new TestSuite(CacheClientPortableExampleTest.class));
-        suite.addTest(new TestSuite(ComputeClientPortableExampleTest.class));
+        // Binary.
+        suite.addTest(new TestSuite(CacheClientBinaryExampleTest.class));
+        suite.addTest(new TestSuite(ComputeClientBinaryExampleTest.class));
 
         return suite;
     }

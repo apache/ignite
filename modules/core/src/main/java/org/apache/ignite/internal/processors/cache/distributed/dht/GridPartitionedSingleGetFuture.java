@@ -46,6 +46,7 @@ import org.apache.ignite.internal.processors.cache.distributed.near.GridNearSing
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearSingleGetResponse;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
+import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.CIX1;
 import org.apache.ignite.internal.util.typedef.F;
@@ -56,6 +57,8 @@ import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.jetbrains.annotations.Nullable;
+
+import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionState.OWNING;
 
 /**
  *
@@ -101,8 +104,8 @@ public class GridPartitionedSingleGetFuture extends GridFutureAdapter<Object> im
     /** Task name. */
     private final String taskName;
 
-    /** Whether to deserialize portable objects. */
-    private boolean deserializePortable;
+    /** Whether to deserialize binary objects. */
+    private boolean deserializeBinary;
 
     /** Skip values flag. */
     private boolean skipVals;
@@ -120,6 +123,7 @@ public class GridPartitionedSingleGetFuture extends GridFutureAdapter<Object> im
     private final boolean keepCacheObjects;
 
     /** */
+    @GridToStringInclude
     private ClusterNode node;
 
     /**
@@ -130,7 +134,7 @@ public class GridPartitionedSingleGetFuture extends GridFutureAdapter<Object> im
      * @param forcePrimary If {@code true} then will force network trip to primary node even if called on backup node.
      * @param subjId Subject ID.
      * @param taskName Task name.
-     * @param deserializePortable Deserialize portable flag.
+     * @param deserializeBinary Deserialize binary flag.
      * @param expiryPlc Expiry policy.
      * @param skipVals Skip values flag.
      * @param canRemap Flag indicating whether future can be remapped on a newer topology version.
@@ -145,7 +149,7 @@ public class GridPartitionedSingleGetFuture extends GridFutureAdapter<Object> im
         boolean forcePrimary,
         @Nullable UUID subjId,
         String taskName,
-        boolean deserializePortable,
+        boolean deserializeBinary,
         @Nullable IgniteCacheExpiryPolicy expiryPlc,
         boolean skipVals,
         boolean canRemap,
@@ -154,13 +158,21 @@ public class GridPartitionedSingleGetFuture extends GridFutureAdapter<Object> im
     ) {
         assert key != null;
 
+        AffinityTopologyVersion lockedTopVer = cctx.shared().lockedTopologyVersion(null);
+
+        if (lockedTopVer != null) {
+            topVer = lockedTopVer;
+
+            canRemap = false;
+        }
+
         this.cctx = cctx;
         this.key = key;
         this.readThrough = readThrough;
         this.forcePrimary = forcePrimary;
         this.subjId = subjId;
         this.taskName = taskName;
-        this.deserializePortable = deserializePortable;
+        this.deserializeBinary = deserializeBinary;
         this.expiryPlc = expiryPlc;
         this.skipVals = skipVals;
         this.canRemap = canRemap;
@@ -189,8 +201,6 @@ public class GridPartitionedSingleGetFuture extends GridFutureAdapter<Object> im
      */
     @SuppressWarnings("unchecked")
     private void map(AffinityTopologyVersion topVer) {
-        this.topVer = topVer;
-
         ClusterNode node = mapKeyToNode(topVer);
 
         if (node == null) {
@@ -248,6 +258,9 @@ public class GridPartitionedSingleGetFuture extends GridFutureAdapter<Object> im
         }
         else {
             synchronized (this) {
+                assert this.node == null;
+
+                this.topVer = topVer;
                 this.node = node;
             }
 
@@ -308,105 +321,140 @@ public class GridPartitionedSingleGetFuture extends GridFutureAdapter<Object> im
      * @return Primary node or {@code null} if future was completed.
      */
     @Nullable private ClusterNode mapKeyToNode(AffinityTopologyVersion topVer) {
-        ClusterNode primary = affinityNode(key, topVer);
+        int part = cctx.affinity().partition(key);
 
-        if (primary == null) {
-            onDone(new ClusterTopologyServerNotFoundException("Failed to map keys for cache " +
-                "(all partition nodes left the grid) [topVer=" + topVer + ", cache=" + cctx.name() + ']'));
+        List<ClusterNode> affNodes = cctx.affinity().nodes(part, topVer);
+
+        if (affNodes.isEmpty()) {
+            onDone(serverNotFoundError(topVer));
 
             return null;
         }
 
-        boolean allowLocRead = (cctx.affinityNode() && !forcePrimary) || primary.isLocal();
+        boolean fastLocGet = (!forcePrimary || affNodes.get(0).isLocal()) &&
+            cctx.allowFastLocalRead(part, affNodes, topVer);
 
-        if (allowLocRead) {
-            GridDhtCacheAdapter colocated = cctx.dht();
+        if (fastLocGet && localGet(topVer, part))
+            return null;
 
-            while (true) {
-                GridCacheEntryEx entry = null;
+        ClusterNode affNode = affinityNode(affNodes);
 
-                try {
-                    entry = colocated.context().isSwapOrOffheapEnabled() ? colocated.entryEx(key) :
-                        colocated.peekEx(key);
+        if (affNode == null) {
+            onDone(serverNotFoundError(topVer));
 
-                    // If our DHT cache do has value, then we peek it.
-                    if (entry != null) {
-                        boolean isNew = entry.isNewLocked();
-
-                        CacheObject v = null;
-                        GridCacheVersion ver = null;
-
-                        if (needVer) {
-                            T2<CacheObject, GridCacheVersion> res = entry.innerGetVersioned(
-                                null,
-                                /*swap*/true,
-                                /*unmarshal*/true,
-                                /**update-metrics*/false,
-                                /*event*/!skipVals,
-                                subjId,
-                                null,
-                                taskName,
-                                expiryPlc,
-                                true);
-
-                            if (res != null) {
-                                v = res.get1();
-                                ver = res.get2();
-                            }
-                        }
-                        else {
-                            v = entry.innerGet(null,
-                                /*swap*/true,
-                                /*read-through*/false,
-                                /*fail-fast*/true,
-                                /*unmarshal*/true,
-                                /**update-metrics*/false,
-                                /*event*/!skipVals,
-                                /*temporary*/false,
-                                subjId,
-                                null,
-                                taskName,
-                                expiryPlc,
-                                true);
-                        }
-
-                        colocated.context().evicts().touch(entry, topVer);
-
-                        // Entry was not in memory or in swap, so we remove it from cache.
-                        if (v == null) {
-                            if (isNew && entry.markObsoleteIfEmpty(ver))
-                                colocated.removeIfObsolete(key);
-                        }
-                        else {
-                            if (!skipVals && cctx.config().isStatisticsEnabled())
-                                cctx.cache().metrics0().onRead(true);
-
-                            if (!skipVals)
-                                setResult(v, ver);
-                            else
-                                setSkipValueResult(true, ver);
-
-                            return null;
-                        }
-                    }
-
-                    break;
-                }
-                catch (GridDhtInvalidPartitionException ignored) {
-                    break;
-                }
-                catch (IgniteCheckedException e) {
-                    onDone(e);
-
-                    return null;
-                }
-                catch (GridCacheEntryRemovedException ignored) {
-                    // No-op, will retry.
-                }
-            }
+            return null;
         }
 
-        return primary;
+        return affNode;
+    }
+
+    /**
+     * @param topVer Topology version.
+     * @param part Partition.
+     * @return {@code True} if future completed.
+     */
+    private boolean localGet(AffinityTopologyVersion topVer, int part) {
+        assert cctx.affinityNode() : this;
+
+        GridDhtCacheAdapter colocated = cctx.dht();
+
+        while (true) {
+            GridCacheEntryEx entry;
+
+            try {
+                entry = colocated.context().isSwapOrOffheapEnabled() ? colocated.entryEx(key) :
+                    colocated.peekEx(key);
+
+                // If our DHT cache do has value, then we peek it.
+                if (entry != null) {
+                    boolean isNew = entry.isNewLocked();
+
+                    CacheObject v = null;
+                    GridCacheVersion ver = null;
+
+                    if (needVer) {
+                        T2<CacheObject, GridCacheVersion> res = entry.innerGetVersioned(
+                            null,
+                            /*swap*/true,
+                            /*unmarshal*/true,
+                            /**update-metrics*/false,
+                            /*event*/!skipVals,
+                            subjId,
+                            null,
+                            taskName,
+                            expiryPlc,
+                            true);
+
+                        if (res != null) {
+                            v = res.get1();
+                            ver = res.get2();
+                        }
+                    }
+                    else {
+                        v = entry.innerGet(null,
+                            /*swap*/true,
+                            /*read-through*/false,
+                            /*fail-fast*/true,
+                            /*unmarshal*/true,
+                            /**update-metrics*/false,
+                            /*event*/!skipVals,
+                            /*temporary*/false,
+                            subjId,
+                            null,
+                            taskName,
+                            expiryPlc,
+                            true);
+                    }
+
+                    colocated.context().evicts().touch(entry, topVer);
+
+                    // Entry was not in memory or in swap, so we remove it from cache.
+                    if (v == null) {
+                        if (isNew && entry.markObsoleteIfEmpty(ver))
+                            colocated.removeIfObsolete(key);
+                    }
+                    else {
+                        if (!skipVals && cctx.config().isStatisticsEnabled())
+                            cctx.cache().metrics0().onRead(true);
+
+                        if (!skipVals)
+                            setResult(v, ver);
+                        else
+                            setSkipValueResult(true, ver);
+
+                        return true;
+                    }
+                }
+
+                boolean topStable = cctx.isReplicated() || topVer.equals(cctx.topology().topologyVersion());
+
+                // Entry not found, complete future with null result if topology did not change and there is no store.
+                if (!cctx.readThroughConfigured() && (topStable || partitionOwned(part))) {
+                    if (!skipVals && cctx.config().isStatisticsEnabled())
+                        colocated.metrics0().onRead(false);
+
+                    if (skipVals)
+                        setSkipValueResult(false, null);
+                    else
+                        setResult(null, null);
+
+                    return true;
+                }
+
+                return false;
+            }
+            catch (GridCacheEntryRemovedException ignored) {
+                // No-op, will retry.
+            }
+            catch (GridDhtInvalidPartitionException ignored) {
+                return false;
+            }
+            catch (IgniteCheckedException e) {
+                onDone(e);
+
+                return true;
+            }
+        }
     }
 
     /**
@@ -414,7 +462,8 @@ public class GridPartitionedSingleGetFuture extends GridFutureAdapter<Object> im
      * @param res Result.
      */
     public void onResult(UUID nodeId, GridNearSingleGetResponse res) {
-        if (!processResponse(nodeId) || !checkError(res.error(), res.invalidPartitions(), res.topologyVersion()))
+        if (!processResponse(nodeId) ||
+            !checkError(res.error(), res.invalidPartitions(), res.topologyVersion(), nodeId))
             return;
 
         Message res0 = res.result();
@@ -449,7 +498,7 @@ public class GridPartitionedSingleGetFuture extends GridFutureAdapter<Object> im
      */
     @Override public void onResult(UUID nodeId, GridNearGetResponse res) {
         if (!processResponse(nodeId) ||
-            !checkError(res.error(), !F.isEmpty(res.invalidPartitions()), res.topologyVersion()))
+            !checkError(res.error(), !F.isEmpty(res.invalidPartitions()), res.topologyVersion(), nodeId))
             return;
 
         Collection<GridCacheEntryInfo> infos = res.entries();
@@ -479,10 +528,13 @@ public class GridPartitionedSingleGetFuture extends GridFutureAdapter<Object> im
      * @param err Error.
      * @param invalidParts Invalid partitions error flag.
      * @param rmtTopVer Received topology version.
+     * @param nodeId Node ID.
+     * @return {@code True} if should process received response.
      */
     private boolean checkError(@Nullable IgniteCheckedException err,
         boolean invalidParts,
-        AffinityTopologyVersion rmtTopVer) {
+        AffinityTopologyVersion rmtTopVer,
+        UUID nodeId) {
         if (err != null) {
             onDone(err);
 
@@ -497,7 +549,7 @@ public class GridPartitionedSingleGetFuture extends GridFutureAdapter<Object> im
                 onDone(new IgniteCheckedException("Failed to process invalid partitions response (remote node reported " +
                     "invalid partitions but remote topology version does not differ from local) " +
                     "[topVer=" + topVer + ", rmtTopVer=" + rmtTopVer + ", part=" + cctx.affinity().partition(key) +
-                    ", nodeId=" + node.id() + ']'));
+                    ", nodeId=" + nodeId + ']'));
 
                 return false;
             }
@@ -573,20 +625,13 @@ public class GridPartitionedSingleGetFuture extends GridFutureAdapter<Object> im
             assert !skipVals;
 
             if (val != null) {
-                if (needVer) {
-                    assert ver != null;
+                if (!keepCacheObjects) {
+                    Object res = cctx.unwrapBinaryIfNeeded(val, !deserializeBinary);
 
-                    onDone(new T2<>(val, ver));
+                    onDone(needVer ? new T2<>(res, ver) : res);
                 }
-                else {
-                    if (!keepCacheObjects) {
-                        Object res = cctx.unwrapPortableIfNeeded(val, !deserializePortable && !skipVals);
-
-                        onDone(res);
-                    }
-                    else
-                        onDone(val);
-                }
+                else
+                    onDone(needVer ? new T2<>(val, ver) : val);
             }
             else
                 onDone(null);
@@ -597,16 +642,30 @@ public class GridPartitionedSingleGetFuture extends GridFutureAdapter<Object> im
     }
 
     /**
+     * @param part Partition.
+     * @return {@code True} if partition is in owned state.
+     */
+    private boolean partitionOwned(int part) {
+        return cctx.topology().partitionState(cctx.localNodeId(), part) == OWNING;
+    }
+
+    /**
+     * @param topVer Topology version.
+     * @return Exception.
+     */
+    private ClusterTopologyServerNotFoundException serverNotFoundError(AffinityTopologyVersion topVer) {
+        return new ClusterTopologyServerNotFoundException("Failed to map keys for cache " +
+            "(all partition nodes left the grid) [topVer=" + topVer + ", cache=" + cctx.name() + ']');
+    }
+
+    /**
      * Affinity node to send get request to.
      *
-     * @param key Key to get.
-     * @param topVer Topology version.
+     * @param affNodes All affinity nodes.
      * @return Affinity node to get key from.
      */
-    private ClusterNode affinityNode(KeyCacheObject key, AffinityTopologyVersion topVer) {
+    @Nullable private ClusterNode affinityNode(List<ClusterNode> affNodes) {
         if (!canRemap) {
-            List<ClusterNode> affNodes = cctx.affinity().nodes(key, topVer);
-
             for (ClusterNode node : affNodes) {
                 if (cctx.discovery().alive(node))
                     return node;
@@ -615,7 +674,7 @@ public class GridPartitionedSingleGetFuture extends GridFutureAdapter<Object> im
             return null;
         }
         else
-            return cctx.affinity().primary(key, topVer);
+            return affNodes.get(0);
     }
 
     /** {@inheritDoc} */

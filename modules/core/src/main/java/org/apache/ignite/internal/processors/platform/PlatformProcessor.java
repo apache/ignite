@@ -90,6 +90,32 @@ public interface PlatformProcessor extends GridProcessor {
     public PlatformTarget getOrCreateCache(@Nullable String name) throws IgniteCheckedException;
 
     /**
+     * Create cache.
+     *
+     * @param memPtr Stream with cache config.
+     * @return Cache.
+     * @throws IgniteCheckedException If failed.
+     */
+    public PlatformTarget createCacheFromConfig(long memPtr) throws IgniteCheckedException;
+
+    /**
+     * Get or create cache.
+     *
+     * @param memPtr Stream with cache config.
+     * @return Cache.
+     * @throws IgniteCheckedException If failed.
+     */
+    public PlatformTarget getOrCreateCacheFromConfig(long memPtr) throws IgniteCheckedException;
+
+    /**
+     * Destroy dynamically created cache.
+     *
+     * @param name Cache name.
+     * @throws IgniteCheckedException If failed.
+     */
+    public void destroyCache(@Nullable String name) throws IgniteCheckedException;
+
+    /**
      * Get affinity.
      *
      * @param name Cache name.
@@ -102,11 +128,11 @@ public interface PlatformProcessor extends GridProcessor {
      * Get data streamer.
      *
      * @param cacheName Cache name.
-     * @param keepPortable Portable flag.
+     * @param keepBinary Binary flag.
      * @return Data streamer.
      * @throws IgniteCheckedException If failed.
      */
-    public PlatformTarget dataStreamer(@Nullable String cacheName, boolean keepPortable) throws IgniteCheckedException;
+    public PlatformTarget dataStreamer(@Nullable String cacheName, boolean keepBinary) throws IgniteCheckedException;
 
     /**
      * Get transactions.
@@ -166,10 +192,10 @@ public interface PlatformProcessor extends GridProcessor {
      * Register cache store.
      *
      * @param store Store.
-     * @param convertPortable Convert portable flag.
+     * @param convertBinary Convert binary flag.
      * @throws IgniteCheckedException If failed.
      */
-    public void registerStore(PlatformCacheStore store, boolean convertPortable) throws IgniteCheckedException;
+    public void registerStore(PlatformCacheStore store, boolean convertBinary) throws IgniteCheckedException;
 
     /**
      * Get or create AtomicLong.
@@ -180,4 +206,31 @@ public interface PlatformProcessor extends GridProcessor {
      * @throws IgniteException
      */
     public PlatformTarget atomicLong(String name, long initVal, boolean create) throws IgniteException;
+
+    /**
+     * Get or create AtomicSequence.
+     * @param name Name.
+     * @param initVal Initial value.
+     * @param create Create flag.
+     * @return Platform atomic long.
+     * @throws IgniteException
+     */
+    public PlatformTarget atomicSequence(String name, long initVal, boolean create) throws IgniteException;
+
+    /**
+     * Get or create AtomicReference.
+     * @param name Name.
+     * @param memPtr Pointer to a stream with initial value. 0 for null initial value.
+     * @param create Create flag.
+     * @return Platform atomic long.
+     * @throws IgniteException
+     */
+    public PlatformTarget atomicReference(String name, long memPtr, boolean create) throws IgniteException;
+
+    /**
+     * Gets the configuration of the current Ignite instance.
+     *
+     * @param memPtr Stream to write data to.
+     */
+    public void getIgniteConfiguration(long memPtr);
 }

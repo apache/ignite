@@ -22,8 +22,8 @@ import java.util.Arrays;
 import java.util.Collection;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.Ignition;
-import org.apache.ignite.examples.model.binary.Address;
-import org.apache.ignite.examples.model.binary.Employee;
+import org.apache.ignite.examples.model.Address;
+import org.apache.ignite.examples.model.Employee;
 import org.apache.ignite.binary.BinaryObject;
 
 /**
@@ -34,8 +34,8 @@ import org.apache.ignite.binary.BinaryObject;
  * Since these objects are never deserialized on remote nodes, classes are not required on classpath
  * of these nodes.
  * <p>
- * Remote nodes should always be started with special configuration file which
- * enables the binary marshaller: {@code 'ignite.{sh|bat} examples/config/binary/example-ignite-binary.xml'}.
+ * Remote nodes should always be started with the following command:
+ * {@code 'ignite.{sh|bat} examples/config/example-ignite.xml'}.
  * <p>
  * Alternatively you can run {@link org.apache.ignite.examples.ExampleNodeStartup} in another JVM which will
  * start a node with {@code examples/config/example-ignite.xml} configuration.

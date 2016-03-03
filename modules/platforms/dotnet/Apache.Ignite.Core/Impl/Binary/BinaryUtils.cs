@@ -19,7 +19,6 @@ namespace Apache.Ignite.Core.Impl.Binary
 {
     using System;
     using System.Collections;
-    using System.Collections.Concurrent;
     using System.Collections.Generic;
     using System.Diagnostics;
     using System.Diagnostics.CodeAnalysis;
@@ -133,10 +132,7 @@ namespace Apache.Ignite.Core.Impl.Binary
 
         /** Type: map. */
         public const byte TypeDictionary = 25;
-
-        /** Type: map entry. */
-        public const byte TypeMapEntry = 26;
-
+        
         /** Type: binary object. */
         public const byte TypeBinary = 27;
 
@@ -199,34 +195,13 @@ namespace Apache.Ignite.Core.Impl.Binary
 
         /** Collection: linked list. */
         public const byte CollectionLinkedList = 2;
-
-        /** Collection: hash set. */
-        public const byte CollectionHashSet = 3;
-
-        /** Collection: hash set. */
-        public const byte CollectionLinkedHashSet = 4;
-
-        /** Collection: sorted set. */
-        public const byte CollectionSortedSet = 5;
-
-        /** Collection: concurrent bag. */
-        public const byte CollectionConcurrentBag = 6;
-
+        
         /** Map: custom. */
         public const byte MapCustom = 0;
 
         /** Map: hash map. */
         public const byte MapHashMap = 1;
-
-        /** Map: linked hash map. */
-        public const byte MapLinkedHashMap = 2;
-
-        /** Map: sorted map. */
-        public const byte MapSortedMap = 3;
-
-        /** Map: concurrent hash map. */
-        public const byte MapConcurrentHashMap = 4;
-
+        
         /** Byte "0". */
         public const byte ByteZero = 0;
 
@@ -252,15 +227,14 @@ namespace Apache.Ignite.Core.Impl.Binary
         private static readonly long JavaDateTicks = new DateTime(1970, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc).Ticks;
         
         /** Bindig flags for static search. */
-        private static BindingFlags _bindFlagsStatic = 
-            BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic;
+        private const BindingFlags BindFlagsStatic = BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic;
 
         /** Default poratble marshaller. */
         private static readonly Marshaller Marsh = new Marshaller(null);
 
         /** Method: ReadArray. */
         public static readonly MethodInfo MtdhReadArray =
-            typeof(BinaryUtils).GetMethod("ReadArray", _bindFlagsStatic);
+            typeof(BinaryUtils).GetMethod("ReadArray", BindFlagsStatic);
 
         /** Cached UTF8 encoding. */
         private static readonly Encoding Utf8 = Encoding.UTF8;
@@ -268,6 +242,17 @@ namespace Apache.Ignite.Core.Impl.Binary
         /** Cached generic array read funcs. */
         private static readonly CopyOnWriteConcurrentDictionary<Type, Func<BinaryReader, bool, object>>
             ArrayReaders = new CopyOnWriteConcurrentDictionary<Type, Func<BinaryReader, bool, object>>();
+
+        /** Flag indicating whether Guid struct is sequential in current runtime. */
+        private static readonly bool IsGuidSequential = GetIsGuidSequential();
+
+        /** Guid writer. */
+        public static readonly Action<Guid, IBinaryStream> WriteGuid = IsGuidSequential
+            ? (Action<Guid, IBinaryStream>)WriteGuidFast : WriteGuidSlow;
+
+        /** Guid reader. */
+        public static readonly Func<IBinaryStream, Guid?> ReadGuid = IsGuidSequential
+            ? (Func<IBinaryStream, Guid?>)ReadGuidFast : ReadGuidSlow;
 
         /// <summary>
         /// Default marshaller.
@@ -926,12 +911,33 @@ namespace Apache.Ignite.Core.Impl.Binary
             return vals;
         }
 
-        /**
-         * <summary>Write GUID.</summary>
-         * <param name="val">GUID.</param>
-         * <param name="stream">Stream.</param>
-         */
-        public static unsafe void WriteGuid(Guid val, IBinaryStream stream)
+        /// <summary>
+        /// Gets a value indicating whether <see cref="Guid"/> fields are stored sequentially in memory.
+        /// </summary>
+        /// <returns></returns>
+        private static unsafe bool GetIsGuidSequential()
+        {
+            // Check that bitwise conversion returns correct result
+            var guid = Guid.NewGuid();
+
+            var bytes = guid.ToByteArray();
+
+            var bytes0 = (byte*) &guid;
+
+            for (var i = 0; i < bytes.Length; i++)
+                if (bytes[i] != bytes0[i])
+                    return false;
+
+            return true;
+        }
+
+        /// <summary>
+        /// Writes a guid with bitwise conversion, assuming that <see cref="Guid"/> 
+        /// is laid out in memory sequentially and without gaps between fields.
+        /// </summary>
+        /// <param name="val">The value.</param>
+        /// <param name="stream">The stream.</param>
+        public static unsafe void WriteGuidFast(Guid val, IBinaryStream stream)
         {
             var jguid = new JavaGuid(val);
 
@@ -939,13 +945,47 @@ namespace Apache.Ignite.Core.Impl.Binary
 
             stream.Write((byte*) ptr, 16);
         }
-        
-        /**
-         * <summary>Read GUID.</summary>
-         * <param name="stream">Stream.</param>
-         * <returns>GUID</returns>
-         */
-        public static unsafe Guid? ReadGuid(IBinaryStream stream)
+
+        /// <summary>
+        /// Writes a guid byte by byte.
+        /// </summary>
+        /// <param name="val">The value.</param>
+        /// <param name="stream">The stream.</param>
+        public static unsafe void WriteGuidSlow(Guid val, IBinaryStream stream)
+        {
+            var bytes = val.ToByteArray();
+            byte* jBytes = stackalloc byte[16];
+
+            jBytes[0] = bytes[6]; // c1
+            jBytes[1] = bytes[7]; // c2
+
+            jBytes[2] = bytes[4]; // b1
+            jBytes[3] = bytes[5]; // b2
+
+            jBytes[4] = bytes[0]; // a1
+            jBytes[5] = bytes[1]; // a2
+            jBytes[6] = bytes[2]; // a3
+            jBytes[7] = bytes[3]; // a4
+
+            jBytes[8] = bytes[15]; // k
+            jBytes[9] = bytes[14]; // j
+            jBytes[10] = bytes[13]; // i
+            jBytes[11] = bytes[12]; // h
+            jBytes[12] = bytes[11]; // g
+            jBytes[13] = bytes[10]; // f
+            jBytes[14] = bytes[9]; // e
+            jBytes[15] = bytes[8]; // d
+            
+            stream.Write(jBytes, 16);
+        }
+
+        /// <summary>
+        /// Reads a guid with bitwise conversion, assuming that <see cref="Guid"/> 
+        /// is laid out in memory sequentially and without gaps between fields.
+        /// </summary>
+        /// <param name="stream">The stream.</param>
+        /// <returns>Guid.</returns>
+        public static unsafe Guid? ReadGuidFast(IBinaryStream stream)
         {
             JavaGuid jguid;
 
@@ -957,7 +997,43 @@ namespace Apache.Ignite.Core.Impl.Binary
 
             return *(Guid*) (&dotnetGuid);
         }
-        
+
+        /// <summary>
+        /// Reads a guid byte by byte.
+        /// </summary>
+        /// <param name="stream">The stream.</param>
+        /// <returns>Guid.</returns>
+        public static unsafe Guid? ReadGuidSlow(IBinaryStream stream)
+        {
+            byte* jBytes = stackalloc byte[16];
+
+            stream.Read(jBytes, 16);
+
+            var bytes = new byte[16];
+
+            bytes[0] = jBytes[4]; // a1
+            bytes[1] = jBytes[5]; // a2
+            bytes[2] = jBytes[6]; // a3
+            bytes[3] = jBytes[7]; // a4
+
+            bytes[4] = jBytes[2]; // b1
+            bytes[5] = jBytes[3]; // b2
+
+            bytes[6] = jBytes[0]; // c1
+            bytes[7] = jBytes[1]; // c2
+
+            bytes[8] = jBytes[15]; // d
+            bytes[9] = jBytes[14]; // e
+            bytes[10] = jBytes[13]; // f
+            bytes[11] = jBytes[12]; // g
+            bytes[12] = jBytes[11]; // h
+            bytes[13] = jBytes[10]; // i
+            bytes[14] = jBytes[9]; // j
+            bytes[15] = jBytes[8]; // k
+
+            return new Guid(bytes);
+        }
+
         /// <summary>
         /// Write GUID array.
         /// </summary>
@@ -1096,10 +1172,6 @@ namespace Apache.Ignite.Core.Impl.Binary
                     colType = CollectionArrayList;
                 else if (genType == typeof (LinkedList<>))
                     colType = CollectionLinkedList;
-                else if (genType == typeof (SortedSet<>))
-                    colType = CollectionSortedSet;
-                else if (genType == typeof (ConcurrentBag<>))
-                    colType = CollectionConcurrentBag;
                 else
                     colType = CollectionCustom;
             }
@@ -1133,7 +1205,7 @@ namespace Apache.Ignite.Core.Impl.Binary
          * <returns>Collection.</returns>
          */
         public static ICollection ReadCollection(BinaryReader ctx,
-            CollectionFactory factory, CollectionAdder adder)
+            Func<int, ICollection> factory, Action<ICollection, object> adder)
         {
             IBinaryStream stream = ctx.Stream;
 
@@ -1147,10 +1219,6 @@ namespace Apache.Ignite.Core.Impl.Binary
             {
                 if (colType == CollectionLinkedList)
                     res = new LinkedList<object>();
-                else if (colType == CollectionSortedSet)
-                    res = new SortedSet<object>();
-                else if (colType == CollectionConcurrentBag)
-                    res = new ConcurrentBag<object>();
                 else
                     res = new ArrayList(len);
             }
@@ -1158,7 +1226,7 @@ namespace Apache.Ignite.Core.Impl.Binary
                 res = factory.Invoke(len);
 
             if (adder == null)
-                adder = (col, elem) => { ((ArrayList) col).Add(elem); };
+                adder = (col, elem) => ((ArrayList) col).Add(elem);
 
             for (int i = 0; i < len; i++)
                 adder.Invoke(res, ctx.Deserialize<object>());
@@ -1181,14 +1249,7 @@ namespace Apache.Ignite.Core.Impl.Binary
             {
                 var genType = valType.GetGenericTypeDefinition();
 
-                if (genType == typeof (Dictionary<,>))
-                    dictType = MapHashMap;
-                else if (genType == typeof (SortedDictionary<,>))
-                    dictType = MapSortedMap;
-                else if (genType == typeof (ConcurrentDictionary<,>))
-                    dictType = MapConcurrentHashMap;
-                else
-                    dictType = MapCustom;
+                dictType = genType == typeof (Dictionary<,>) ? MapHashMap : MapCustom;
             }
             else
                 dictType = valType == typeof (Hashtable) ? MapHashMap : MapCustom;
@@ -1221,29 +1282,16 @@ namespace Apache.Ignite.Core.Impl.Binary
          * <param name="factory">Factory delegate.</param>
          * <returns>Dictionary.</returns>
          */
-        public static IDictionary ReadDictionary(BinaryReader ctx,
-            DictionaryFactory factory)
+        public static IDictionary ReadDictionary(BinaryReader ctx, Func<int, IDictionary> factory)
         {
             IBinaryStream stream = ctx.Stream;
 
             int len = stream.ReadInt();
 
-            byte colType = ctx.Stream.ReadByte();
+            // Skip dictionary type as we can do nothing with it here.
+            ctx.Stream.ReadByte();
 
-            IDictionary res;
-
-            if (factory == null)
-            {
-                if (colType == MapSortedMap)
-                    res = new SortedDictionary<object, object>();
-                else if (colType == MapConcurrentHashMap)
-                    res = new ConcurrentDictionary<object, object>(Environment.ProcessorCount, len);
-                else
-                    res = new Hashtable(len);
-            }
-            else
-                res = factory.Invoke(len);
-
+            var res = factory == null ? new Hashtable(len) : factory.Invoke(len);
 
             for (int i = 0; i < len; i++)
             {
@@ -1254,30 +1302,6 @@ namespace Apache.Ignite.Core.Impl.Binary
             }
 
             return res;
-        }
-
-        /**
-         * <summary>Write map entry.</summary>
-         * <param name="ctx">Write context.</param>
-         * <param name="val">Value.</param>
-         */
-        public static void WriteMapEntry(BinaryWriter ctx, DictionaryEntry val)
-        {
-            ctx.Write(val.Key);
-            ctx.Write(val.Value);
-        }
-
-        /**
-         * <summary>Read map entry.</summary>
-         * <param name="ctx">Context.</param>
-         * <returns>Map entry.</returns>
-         */
-        public static DictionaryEntry ReadMapEntry(BinaryReader ctx)
-        {
-            object key = ctx.Deserialize<object>();
-            object val = ctx.Deserialize<object>();
-
-            return new DictionaryEntry(key, val);
         }
 
         /**
@@ -1634,7 +1658,7 @@ namespace Apache.Ignite.Core.Impl.Binary
 
             err = reader.ReadBoolean()
                 ? reader.ReadObject<object>()
-                : ExceptionUtils.GetException(reader.ReadString(), reader.ReadString(), reader.ReadString());
+                : ExceptionUtils.GetException(reader.Marshaller.Ignite, reader.ReadString(), reader.ReadString(), reader.ReadString());
 
             return null;
         }
@@ -1767,7 +1791,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         private struct GuidAccessor
         {
             public readonly ulong ABC;
-            public readonly ulong DEGHIJK;
+            public readonly ulong DEFGHIJK;
 
             /// <summary>
             /// Initializes a new instance of the <see cref="GuidAccessor"/> struct.
@@ -1777,21 +1801,28 @@ namespace Apache.Ignite.Core.Impl.Binary
             {
                 var l = val.CBA;
 
-                ABC = ((l >> 32) & 0x00000000FFFFFFFF) | ((l << 48) & 0xFFFF000000000000) |
-                      ((l << 16) & 0x0000FFFF00000000);
+                if (BitConverter.IsLittleEndian)
+                    ABC = ((l >> 32) & 0x00000000FFFFFFFF) | ((l << 48) & 0xFFFF000000000000) |
+                          ((l << 16) & 0x0000FFFF00000000);
+                else
+                    ABC = ((l << 32) & 0xFFFFFFFF00000000) | ((l >> 48) & 0x000000000000FFFF) |
+                          ((l >> 16) & 0x00000000FFFF0000);
 
-                DEGHIJK = ReverseByteOrder(val.KJIHGED);
+                // This is valid in any endianness (symmetrical)
+                DEFGHIJK = ReverseByteOrder(val.KJIHGFED);
             }
         }
 
         /// <summary>
         /// Struct with Java-style Guid memory layout.
         /// </summary>
-        [StructLayout(LayoutKind.Sequential, Pack = 0)]
+        [StructLayout(LayoutKind.Explicit)]
         private struct JavaGuid
         {
-            public readonly ulong CBA;
-            public readonly ulong KJIHGED;
+            [FieldOffset(0)] public readonly ulong CBA;
+            [FieldOffset(8)] public readonly ulong KJIHGFED;
+            [SuppressMessage("Microsoft.Performance", "CA1823:AvoidUnusedPrivateFields")]
+            [FieldOffset(0)] public unsafe fixed byte Bytes [16];
 
             /// <summary>
             /// Initializes a new instance of the <see cref="JavaGuid"/> struct.
@@ -1799,17 +1830,22 @@ namespace Apache.Ignite.Core.Impl.Binary
             /// <param name="val">The value.</param>
             public unsafe JavaGuid(Guid val)
             {
-                // .Net returns bytes in the following order: _a(4), _b(2), _c(2), _d, _e, _g, _h, _i, _j, _k.
+                // .Net returns bytes in the following order: _a(4), _b(2), _c(2), _d, _e, _f, _g, _h, _i, _j, _k.
                 // And _a, _b and _c are always in little endian format irrespective of system configuration.
-                // To be compliant with Java we rearrange them as follows: _c, _b_, a_, _k, _j, _i, _h, _g, _e, _d.
+                // To be compliant with Java we rearrange them as follows: _c, _b_, a_, _k, _j, _i, _h, _g, _f, _e, _d.
                 var accessor = *((GuidAccessor*)&val);
 
                 var l = accessor.ABC;
 
-                CBA = ((l << 32) & 0xFFFFFFFF00000000) | ((l >> 48) & 0x000000000000FFFF) |
-                      ((l >> 16) & 0x00000000FFFF0000);
+                if (BitConverter.IsLittleEndian)
+                    CBA = ((l << 32) & 0xFFFFFFFF00000000) | ((l >> 48) & 0x000000000000FFFF) |
+                          ((l >> 16) & 0x00000000FFFF0000);
+                else
+                    CBA = ((l >> 32) & 0x00000000FFFFFFFF) | ((l << 48) & 0xFFFF000000000000) |
+                          ((l << 16) & 0x0000FFFF00000000);
 
-                KJIHGED = ReverseByteOrder(accessor.DEGHIJK);
+                // This is valid in any endianness (symmetrical)
+                KJIHGFED = ReverseByteOrder(accessor.DEFGHIJK);
             }
         }
     }

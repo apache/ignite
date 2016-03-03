@@ -251,7 +251,7 @@ public class GridDistributedLockRequest extends GridDistributedBaseMessage {
     }
 
     /**
-     * @return Keep portable.
+     * @return Keep binary.
      */
     public boolean keepBinary() {
         return (flags & KEEP_BINARY_FLAG_MASK) != 0;

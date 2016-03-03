@@ -17,46 +17,107 @@
 
 package org.apache.ignite.examples.model;
 
+import java.sql.Timestamp;
+import java.util.concurrent.atomic.AtomicLong;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
 
-import java.io.Serializable;
-import java.util.Random;
-
 /**
- * Organization class.
+ * This class represents organization object.
  */
-public class Organization implements Serializable {
+public class Organization {
     /** */
-    private static final Random RND = new Random();
+    private static final AtomicLong ID_GEN = new AtomicLong();
 
     /** Organization ID (indexed). */
     @QuerySqlField(index = true)
-    public Long id;
+    private Long id;
 
     /** Organization name (indexed). */
     @QuerySqlField(index = true)
-    public String name;
+    private String name;
+
+    /** Address. */
+    private Address addr;
+
+    /** Type. */
+    private OrganizationType type;
+
+    /** Last update time. */
+    private Timestamp lastUpdated;
 
     /**
-     * Default empty constructor.
+     * Required for binary deserialization.
      */
     public Organization() {
         // No-op.
     }
 
     /**
-     * Create organization.
-     *
      * @param name Organization name.
      */
     public Organization(String name) {
-        id = RND.nextLong();
+        id = ID_GEN.incrementAndGet();
 
         this.name = name;
     }
 
+    /**
+     * @param name Name.
+     * @param addr Address.
+     * @param type Type.
+     * @param lastUpdated Last update time.
+     */
+    public Organization(String name, Address addr, OrganizationType type, Timestamp lastUpdated) {
+        id = ID_GEN.incrementAndGet();
+
+        this.name = name;
+        this.addr = addr;
+        this.type = type;
+
+        this.lastUpdated = lastUpdated;
+    }
+
+    /**
+     * @return Organization ID.
+     */
+    public Long id() {
+        return id;
+    }
+
+    /**
+     * @return Name.
+     */
+    public String name() {
+        return name;
+    }
+
+    /**
+     * @return Address.
+     */
+    public Address address() {
+        return addr;
+    }
+
+    /**
+     * @return Type.
+     */
+    public OrganizationType type() {
+        return type;
+    }
+
+    /**
+     * @return Last update time.
+     */
+    public Timestamp lastUpdated() {
+        return lastUpdated;
+    }
+
     /** {@inheritDoc} */
     @Override public String toString() {
-        return "Organization [id=" + id + ", name=" + name + ']';
+        return "Organization [id=" + id +
+            ", name=" + name +
+            ", address=" + addr +
+            ", type=" + type +
+            ", lastUpdated=" + lastUpdated + ']';
     }
 }

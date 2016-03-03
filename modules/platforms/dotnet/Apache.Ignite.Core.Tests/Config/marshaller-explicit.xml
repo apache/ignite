@@ -32,7 +32,7 @@
         </property>
 
         <property name="marshaller">
-            <bean class="org.apache.ignite.internal.portable.BinaryMarshaller"/>
+            <bean class="org.apache.ignite.internal.binary.BinaryMarshaller"/>
         </property>
 
         <property name="discoverySpi">

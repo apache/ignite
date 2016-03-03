@@ -95,5 +95,8 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
 
         internal void* extensionCbInLongOutLong;
         internal void* extensionCbInLongLongOutLong;
+
+        internal void* onClientDisconnected;
+        internal void* ocClientReconnected;
     }
 }

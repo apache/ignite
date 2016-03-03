@@ -121,7 +121,7 @@ public class IgniteCachePutAllRestartTest extends GridCommonAbstractTest {
 
                     iter++;
 
-                    if (iter % 10 == 0)
+                    if (iter % 1000 == 0)
                         log.info("Iteration: " + iter);
                 }
 

@@ -17,6 +17,8 @@
 
 #include "ignite/common/concurrent_os.h"
 
+#pragma intrinsic(_InterlockedCompareExchange64)
+
 namespace ignite
 {
     namespace common
@@ -103,17 +105,39 @@ namespace ignite
 
             int64_t Atomics::CompareAndSet64Val(int64_t* ptr, int64_t expVal, int64_t newVal)
             {
-                return InterlockedCompareExchange64(reinterpret_cast<LONG64*>(ptr), newVal, expVal);
+                return _InterlockedCompareExchange64(reinterpret_cast<LONG64*>(ptr), newVal, expVal);
             }
 
             int64_t Atomics::IncrementAndGet64(int64_t* ptr)
             {
+#ifdef _WIN64
                 return InterlockedIncrement64(reinterpret_cast<LONG64*>(ptr));
+#else 
+                while (true)
+                {
+                    int64_t expVal = *ptr;
+                    int64_t newVal = expVal + 1;
+
+                    if (CompareAndSet64(ptr, expVal, newVal))
+                        return newVal;
+                }
+#endif
             }
 
             int64_t Atomics::DecrementAndGet64(int64_t* ptr)
             {
+#ifdef _WIN64
                 return InterlockedDecrement64(reinterpret_cast<LONG64*>(ptr));
+#else 
+                while (true)
+                {
+                    int64_t expVal = *ptr;
+                    int64_t newVal = expVal - 1;
+
+                    if (CompareAndSet64(ptr, expVal, newVal))
+                        return newVal;
+                }
+#endif
             }
             
             bool ThreadLocal::OnProcessAttach()

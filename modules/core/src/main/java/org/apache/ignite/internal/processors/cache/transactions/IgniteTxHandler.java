@@ -721,14 +721,12 @@ public class IgniteTxHandler {
 
             IgniteInternalFuture<IgniteInternalTx> res = null;
 
-            if (tx != null) {
-                IgniteInternalFuture<IgniteInternalTx> rollbackFut = tx.rollbackAsync();
+            IgniteInternalFuture<IgniteInternalTx> rollbackFut = tx.rollbackAsync();
 
-                // Only for error logging.
-                rollbackFut.listen(CU.errorLogger(log));
+            // Only for error logging.
+            rollbackFut.listen(CU.errorLogger(log));
 
-                res = rollbackFut;
-            }
+            res = rollbackFut;
 
             if (e instanceof Error)
                 throw (Error)e;
@@ -875,7 +873,19 @@ public class IgniteTxHandler {
             log.debug("Processing dht tx finish request [nodeId=" + nodeId + ", req=" + req + ']');
 
         if (req.checkCommitted()) {
-            sendReply(nodeId, req, !ctx.tm().addRolledbackTx(null, req.version()));
+            boolean committed = req.waitRemoteTransactions() || !ctx.tm().addRolledbackTx(null, req.version());
+
+            if (!committed || !req.syncCommit())
+                sendReply(nodeId, req, committed);
+            else {
+                IgniteInternalFuture<?> fut = ctx.tm().remoteTxFinishFuture(req.version());
+
+                fut.listen(new CI1<IgniteInternalFuture<?>>() {
+                    @Override public void apply(IgniteInternalFuture<?> fut) {
+                        sendReply(nodeId, req, true);
+                    }
+                });
+            }
 
             return;
         }
@@ -1044,7 +1054,7 @@ public class IgniteTxHandler {
      * @param committed {@code True} if transaction committed on this node.
      */
     protected void sendReply(UUID nodeId, GridDhtTxFinishRequest req, boolean committed) {
-        if (req.replyRequired()) {
+        if (req.replyRequired() || req.checkCommitted()) {
             GridDhtTxFinishResponse res = new GridDhtTxFinishResponse(req.version(), req.futureId(), req.miniId());
 
             if (req.checkCommitted()) {

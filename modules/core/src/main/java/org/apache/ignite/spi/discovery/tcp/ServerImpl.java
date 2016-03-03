@@ -66,6 +66,7 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.IgniteFutureTimeoutCheckedException;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.IgniteNodeAttributes;
+import org.apache.ignite.internal.IgnitionEx;
 import org.apache.ignite.internal.events.DiscoveryCustomEvent;
 import org.apache.ignite.internal.processors.security.SecurityContext;
 import org.apache.ignite.internal.util.GridBoundedLinkedHashSet;
@@ -312,7 +313,7 @@ class ServerImpl extends TcpDiscoveryImpl {
         else {
             if (F.isEmpty(spi.ipFinder.getRegisteredAddresses()))
                 throw new IgniteSpiException("Non-shared IP finder must have IP addresses specified in " +
-                    "GridTcpDiscoveryIpFinder.getRegisteredAddresses() configuration property " +
+                    "TcpDiscoveryIpFinder.getRegisteredAddresses() configuration property " +
                     "(specify list of IP addresses in configuration).");
 
             ipFinderHasLocAddr = spi.ipFinderHasLocalAddress();
@@ -1721,12 +1722,11 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                         if (res == null) {
                             try {
-                                res = pingNode(addr, null, null).get1() != null;
+                                res = pingNode(addr, null, null) != null;
                             }
                             catch (IgniteCheckedException e) {
                                 if (log.isDebugEnabled())
-                                    log.debug("Failed to ping node [addr=" + addr +
-                                        ", err=" + e.getMessage() + ']');
+                                    log.debug("Failed to ping node [addr=" + addr + ", err=" + e.getMessage() + ']');
 
                                 res = false;
                             }
@@ -2024,7 +2024,7 @@ class ServerImpl extends TcpDiscoveryImpl {
             private boolean skipMsg = discardId != null;
 
             /** Skip custom messages flag. */
-            private boolean skipCustomMsg;
+            private boolean skipCustomMsg = customDiscardId != null;
 
             /** Internal iterator. */
             private Iterator<TcpDiscoveryAbstractMessage> msgIt = msgs.iterator();
@@ -2165,22 +2165,22 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                     if (ignite != null) {
                         U.error(log, "TcpDiscoverSpi's message worker thread failed abnormally. " +
-                            "Stopping the grid in order to prevent cluster wide instability.", e);
+                            "Stopping the node in order to prevent cluster wide instability.", e);
 
                         new Thread(new Runnable() {
                             @Override public void run() {
                                 try {
-                                    ignite.close();
+                                    IgnitionEx.stop(ignite.name(), true, true);
 
-                                    U.log(log, "Stopped the grid successfully in response to TcpDiscoverySpi's " +
+                                    U.log(log, "Stopped the node successfully in response to TcpDiscoverySpi's " +
                                         "message worker thread abnormal termination.");
                                 }
                                 catch (Throwable e) {
-                                    U.error(log, "Failed to stop the grid in response to TcpDiscoverySpi's " +
+                                    U.error(log, "Failed to stop the node in response to TcpDiscoverySpi's " +
                                         "message worker thread abnormal termination.", e);
                                 }
                             }
-                        }).start();
+                        }, "node-stop-thread").start();
                     }
                 }
 
@@ -2325,7 +2325,8 @@ class ServerImpl extends TcpDiscoveryImpl {
                         if (marshalledMsg == null)
                             marshalledMsg = spi.marsh.marshal(msg);
 
-                        msgClone = spi.marsh.unmarshal(marshalledMsg, null);
+                        msgClone = spi.marsh.unmarshal(marshalledMsg,
+                            U.resolveClassLoader(spi.ignite().configuration()));
                     }
                     catch (IgniteCheckedException e) {
                         U.error(log, "Failed to marshal message: " + msg, e);
@@ -2351,7 +2352,7 @@ class ServerImpl extends TcpDiscoveryImpl {
 
             assert ring.hasRemoteNodes();
 
-            for (IgniteInClosure<TcpDiscoveryAbstractMessage> msgLsnr : spi.sendMsgLsnrs)
+            for (IgniteInClosure<TcpDiscoveryAbstractMessage> msgLsnr : spi.sndMsgLsnrs)
                 msgLsnr.apply(msg);
 
             sendMessageToClients(msg);
@@ -3227,7 +3228,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                 boolean rmtMarshCompactFooterBool = rmtMarshCompactFooter != null ? rmtMarshCompactFooter : false;
 
                 if (locMarshCompactFooterBool != rmtMarshCompactFooterBool) {
-                    String errMsg = "Local node's portable marshaller \"compactFooter\" property differs from " +
+                    String errMsg = "Local node's binary marshaller \"compactFooter\" property differs from " +
                         "the same property on remote node (make sure all nodes in topology have the same value " +
                         "of \"compactFooter\" property) [locMarshallerCompactFooter=" + locMarshCompactFooterBool +
                         ", rmtMarshallerCompactFooter=" + rmtMarshCompactFooterBool +
@@ -3242,7 +3243,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                         log.debug(errMsg);
 
                     try {
-                        String sndMsg = "Local node's portable marshaller \"compactFooter\" property differs from " +
+                        String sndMsg = "Local node's binary marshaller \"compactFooter\" property differs from " +
                             "the same property on remote node (make sure all nodes in topology have the same value " +
                             "of \"compactFooter\" property) [locMarshallerCompactFooter=" + rmtMarshCompactFooterBool +
                             ", rmtMarshallerCompactFooter=" + locMarshCompactFooterBool +
@@ -3545,7 +3546,7 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                             SecurityContext coordSubj = spi.marsh.unmarshal(
                                 node.<byte[]>attribute(IgniteNodeAttributes.ATTR_SECURITY_SUBJECT),
-                                U.gridClassLoader());
+                                U.resolveClassLoader(spi.ignite().configuration()));
 
                             if (!permissionsEqual(coordSubj.subject().permissions(), subj.subject().permissions())) {
                                 // Node has not pass authentication.
@@ -3600,7 +3601,8 @@ class ServerImpl extends TcpDiscoveryImpl {
                     Map<Integer, byte[]> data = msg.newNodeDiscoveryData();
 
                     if (data != null)
-                        spi.onExchange(node.id(), node.id(), data, U.gridClassLoader());
+                        spi.onExchange(node.id(), node.id(), data,
+                            U.resolveClassLoader(spi.ignite().configuration()));
 
                     msg.addDiscoveryData(locNodeId, spi.collectExchangeData(node.id()));
 
@@ -3679,7 +3681,8 @@ class ServerImpl extends TcpDiscoveryImpl {
                 // Notify outside of synchronized block.
                 if (dataMap != null) {
                     for (Map.Entry<UUID, Map<Integer, byte[]>> entry : dataMap.entrySet())
-                        spi.onExchange(node.id(), entry.getKey(), entry.getValue(), U.gridClassLoader());
+                        spi.onExchange(node.id(), entry.getKey(), entry.getValue(),
+                            U.resolveClassLoader(spi.ignite().configuration()));
                 }
 
                 processMessageFailedNodes(msg);
@@ -4595,6 +4598,8 @@ class ServerImpl extends TcpDiscoveryImpl {
                         else
                             processCustomMessage(msg);
                     }
+
+                    msg.message(null, msg.messageBytes());
                 }
                 else {
                     addMessage(new TcpDiscoveryDiscardMessage(getLocalNodeId(), msg.id(), true));
@@ -4604,7 +4609,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                     DiscoverySpiCustomMessage msgObj = null;
 
                     try {
-                        msgObj = msg.message(spi.marsh);
+                        msgObj = msg.message(spi.marsh, U.resolveClassLoader(spi.ignite().configuration()));
                     }
                     catch (Throwable e) {
                         U.error(log, "Failed to unmarshal discovery custom message.", e);
@@ -4652,6 +4657,9 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                     notifyDiscoveryListener(msg);
                 }
+
+                if (msg.verified())
+                    msg.message(null, msg.messageBytes());
 
                 if (sendMessageToRemotes(msg))
                     sendMessageAcrossRing(msg);
@@ -4727,7 +4735,8 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                 if (node != null) {
                     try {
-                        DiscoverySpiCustomMessage msgObj = msg.message(spi.marsh);
+                        DiscoverySpiCustomMessage msgObj = msg.message(spi.marsh,
+                            U.resolveClassLoader(spi.ignite().configuration()));
 
                         lsnr.onDiscovery(DiscoveryCustomEvent.EVT_DISCOVERY_CUSTOM_EVT,
                             msg.topologyVersion(),
@@ -4848,7 +4857,7 @@ class ServerImpl extends TcpDiscoveryImpl {
             for (port = spi.locPort; port < spi.locPort + spi.locPortRange; port++) {
                 try {
                     if (spi.isSslEnabled())
-                        srvrSock = spi.sslSrvSocketFactory.createServerSocket(port, 0, spi.locHost);
+                        srvrSock = spi.sslSrvSockFactory.createServerSocket(port, 0, spi.locHost);
                     else
                         srvrSock = new ServerSocket(port, 0, spi.locHost);
 
@@ -5173,7 +5182,8 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                 while (!isInterrupted()) {
                     try {
-                        TcpDiscoveryAbstractMessage msg = spi.marsh.unmarshal(in, U.gridClassLoader());
+                        TcpDiscoveryAbstractMessage msg = spi.marsh.unmarshal(in,
+                            U.resolveClassLoader(spi.ignite().configuration()));
 
                         msg.senderNodeId(nodeId);
 

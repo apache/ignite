@@ -17,23 +17,28 @@
 
 package org.apache.ignite.internal.processors.platform.compute;
 
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteCompute;
+import org.apache.ignite.binary.BinaryObject;
+import org.apache.ignite.compute.ComputeTaskFuture;
+import org.apache.ignite.internal.IgniteComputeImpl;
+import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.binary.BinaryObjectImpl;
+import org.apache.ignite.internal.binary.BinaryRawReaderEx;
+import org.apache.ignite.internal.binary.BinaryRawWriterEx;
+import org.apache.ignite.internal.processors.platform.PlatformAbstractTarget;
+import org.apache.ignite.internal.processors.platform.PlatformContext;
+import org.apache.ignite.internal.processors.platform.utils.PlatformFutureUtils;
+import org.apache.ignite.internal.processors.platform.utils.PlatformListenable;
+import org.apache.ignite.internal.util.future.IgniteFutureImpl;
+import org.apache.ignite.lang.IgniteClosure;
+import org.apache.ignite.lang.IgniteInClosure;
+
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.UUID;
-import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.IgniteCompute;
-import org.apache.ignite.internal.IgniteComputeImpl;
-import org.apache.ignite.internal.IgniteInternalFuture;
-import org.apache.ignite.internal.portable.BinaryObjectImpl;
-import org.apache.ignite.internal.portable.BinaryRawReaderEx;
-import org.apache.ignite.internal.portable.BinaryRawWriterEx;
-import org.apache.ignite.internal.processors.platform.PlatformAbstractTarget;
-import org.apache.ignite.internal.processors.platform.PlatformContext;
-import org.apache.ignite.internal.util.typedef.C1;
-import org.apache.ignite.lang.IgniteFuture;
-import org.apache.ignite.lang.IgniteInClosure;
-import org.apache.ignite.binary.BinaryObject;
+import java.util.concurrent.TimeUnit;
 
 import static org.apache.ignite.internal.processors.task.GridTaskThreadContextKey.TC_SUBGRID;
 
@@ -61,7 +66,7 @@ public class PlatformCompute extends PlatformAbstractTarget {
     private final IgniteComputeImpl compute;
 
     /** Future for previous asynchronous operation. */
-    protected ThreadLocal<IgniteFuture<?>> curFut = new ThreadLocal<>();
+    protected ThreadLocal<IgniteInternalFuture> curFut = new ThreadLocal<>();
     /**
      * Constructor.
      *
@@ -75,36 +80,31 @@ public class PlatformCompute extends PlatformAbstractTarget {
     }
 
     /** {@inheritDoc} */
-    @Override protected long processInStreamOutLong(int type, BinaryRawReaderEx reader) throws IgniteCheckedException {
+    @Override protected Object processInStreamOutObject(int type, BinaryRawReaderEx reader)
+        throws IgniteCheckedException {
         switch (type) {
             case OP_UNICAST:
-                processClosures(reader.readLong(), reader, false, false);
-
-                return TRUE;
+                return processClosures(reader.readLong(), reader, false, false);
 
             case OP_BROADCAST:
-                processClosures(reader.readLong(), reader, true, false);
-
-                return TRUE;
+                return processClosures(reader.readLong(), reader, true, false);
 
             case OP_AFFINITY:
-                processClosures(reader.readLong(), reader, false, true);
-
-                return TRUE;
+                return processClosures(reader.readLong(), reader, false, true);
 
             default:
-                return super.processInStreamOutLong(type, reader);
+                return super.processInStreamOutObject(type, reader);
         }
     }
 
     /**
      * Process closure execution request.
-     *
-     * @param taskPtr Task pointer.
+     *  @param taskPtr Task pointer.
      * @param reader Reader.
      * @param broadcast broadcast flag.
      */
-    private void processClosures(long taskPtr, BinaryRawReaderEx reader, boolean broadcast, boolean affinity) {
+    private PlatformListenable processClosures(long taskPtr, BinaryRawReaderEx reader, boolean broadcast,
+        boolean affinity) {
         PlatformAbstractTask task;
 
         int size = reader.readInt();
@@ -155,7 +155,7 @@ public class PlatformCompute extends PlatformAbstractTarget {
 
         platformCtx.kernalContext().task().setThreadContext(TC_SUBGRID, compute.clusterGroup().nodes());
 
-        executeNative0(task);
+        return executeNative0(task);
     }
 
     /**
@@ -194,10 +194,10 @@ public class PlatformCompute extends PlatformAbstractTarget {
      * @param taskPtr Pointer to the task.
      * @param topVer Topology version.
      */
-    public void executeNative(long taskPtr, long topVer) {
+    public PlatformListenable executeNative(long taskPtr, long topVer) {
         final PlatformFullTask task = new PlatformFullTask(platformCtx, compute, taskPtr, topVer);
 
-        executeNative0(task);
+        return executeNative0(task);
     }
 
     /**
@@ -217,8 +217,8 @@ public class PlatformCompute extends PlatformAbstractTarget {
     }
 
     /** <inheritDoc /> */
-    @Override protected IgniteFuture currentFuture() throws IgniteCheckedException {
-        IgniteFuture<?> fut = curFut.get();
+    @Override protected IgniteInternalFuture currentFuture() throws IgniteCheckedException {
+        IgniteInternalFuture fut = curFut.get();
 
         if (fut == null)
             throw new IllegalStateException("Asynchronous operation not started.");
@@ -231,7 +231,7 @@ public class PlatformCompute extends PlatformAbstractTarget {
      *
      * @param task Task.
      */
-    private void executeNative0(final PlatformAbstractTask task) {
+    private PlatformListenable executeNative0(final PlatformAbstractTask task) {
         IgniteInternalFuture fut = compute.executeAsync(task, null);
 
         fut.listen(new IgniteInClosure<IgniteInternalFuture>() {
@@ -248,6 +248,8 @@ public class PlatformCompute extends PlatformAbstractTarget {
                 }
             }
         });
+
+        return PlatformFutureUtils.getListenable(fut);
     }
 
     /**
@@ -258,7 +260,7 @@ public class PlatformCompute extends PlatformAbstractTarget {
      */
     protected Object executeJavaTask(BinaryRawReaderEx reader, boolean async) {
         String taskName = reader.readString();
-        boolean keepPortable = reader.readBoolean();
+        boolean keepBinary = reader.readBoolean();
         Object arg = reader.readObjectDetached();
 
         Collection<UUID> nodeIds = readNodeIds(reader);
@@ -268,33 +270,27 @@ public class PlatformCompute extends PlatformAbstractTarget {
         if (async)
             compute0 = compute0.withAsync();
 
-        if (!keepPortable && arg instanceof BinaryObjectImpl)
+        if (!keepBinary && arg instanceof BinaryObjectImpl)
             arg = ((BinaryObject)arg).deserialize();
 
         Object res = compute0.execute(taskName, arg);
 
         if (async) {
-            curFut.set(compute0.future().chain(new C1<IgniteFuture, Object>() {
-                private static final long serialVersionUID = 0L;
-
-                @Override public Object apply(IgniteFuture fut) {
-                    return toPortable(fut.get());
-                }
-            }));
+            curFut.set(new ComputeConvertingFuture(compute0.future()));
 
             return null;
         }
         else
-            return toPortable(res);
+            return toBinary(res);
     }
 
     /**
-     * Convert object to portable form.
+     * Convert object to binary form.
      *
      * @param src Source object.
      * @return Result.
      */
-    private Object toPortable(Object src) {
+    private Object toBinary(Object src) {
         return platformCtx.kernalContext().grid().binary().toBinary(src);
     }
 
@@ -328,5 +324,103 @@ public class PlatformCompute extends PlatformAbstractTarget {
     protected IgniteCompute computeForTask(Collection<UUID> nodeIds) {
         return nodeIds == null ? compute :
             platformCtx.kernalContext().grid().compute(compute.clusterGroup().forNodeIds(nodeIds));
+    }
+
+    /**
+     * Wraps ComputeTaskFuture as IgniteInternalFuture.
+     */
+    protected class ComputeConvertingFuture implements IgniteInternalFuture {
+        /** */
+        private final IgniteInternalFuture fut;
+
+        /**
+         * Ctor.
+         *
+         * @param fut Future to wrap.
+         */
+        public ComputeConvertingFuture(ComputeTaskFuture fut) {
+            this.fut = ((IgniteFutureImpl)fut).internalFuture();
+        }
+
+        /** {@inheritDoc} */
+        @Override public Object get() throws IgniteCheckedException {
+            return convertResult(fut.get());
+        }
+
+        /** {@inheritDoc} */
+        @Override public Object get(long timeout) throws IgniteCheckedException {
+            return convertResult(fut.get(timeout));
+        }
+
+        /** {@inheritDoc} */
+        @Override public Object get(long timeout, TimeUnit unit) throws IgniteCheckedException {
+            return convertResult(fut.get(timeout, unit));
+        }
+
+        /** {@inheritDoc} */
+        @Override public Object getUninterruptibly() throws IgniteCheckedException {
+            return convertResult(fut.get());
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean cancel() throws IgniteCheckedException {
+            return fut.cancel();
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean isDone() {
+            return fut.isDone();
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean isCancelled() {
+            return fut.isCancelled();
+        }
+
+        /** {@inheritDoc} */
+        @Override public long startTime() {
+            return fut.startTime();
+        }
+
+        /** {@inheritDoc} */
+        @Override public long duration() {
+            return fut.duration();
+        }
+
+        /** {@inheritDoc} */
+        @Override public void listen(final IgniteInClosure lsnr) {
+            fut.listen(new IgniteInClosure<IgniteInternalFuture>() {
+                private static final long serialVersionUID = 0L;
+
+                @Override public void apply(IgniteInternalFuture fut0) {
+                    lsnr.apply(ComputeConvertingFuture.this);
+                }
+            });
+        }
+
+        /** {@inheritDoc} */
+        @Override public IgniteInternalFuture chain(IgniteClosure doneCb) {
+            throw new UnsupportedOperationException("Chain operation is not supported.");
+        }
+
+        /** {@inheritDoc} */
+        @Override public Throwable error() {
+            return fut.error();
+        }
+
+        /** {@inheritDoc} */
+        @Override public Object result() {
+            return convertResult(fut.result());
+        }
+
+        /**
+         * Converts future result.
+         *
+         * @param obj Object to convert.
+         * @return Result.
+         */
+        protected Object convertResult(Object obj) {
+            return toBinary(obj);
+        }
     }
 }

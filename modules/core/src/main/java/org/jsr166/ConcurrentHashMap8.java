@@ -3263,7 +3263,7 @@ public class ConcurrentHashMap8<K, V>
     }
 
     /**
-     * Returns exportable snapshot entry for the given key and value
+     * Returns exbinary snapshot entry for the given key and value
      * when write-through can't or shouldn't be used.
      */
     static <K,V> AbstractMap.SimpleEntry<K,V> entryFor(K k, V v) {

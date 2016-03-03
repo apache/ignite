@@ -127,6 +127,12 @@ public class GridNearCacheEntry extends GridDistributedCacheEntry {
                 }
             }
 
+            if (cctx.affinity().backup(cctx.localNode(), part, topVer)) {
+                this.topVer = -1L;
+
+                return false;
+            }
+
             this.topVer = topVer.topologyVersion();
 
             return true;
@@ -160,7 +166,7 @@ public class GridNearCacheEntry extends GridDistributedCacheEntry {
 
                             if (isNew() || !valid(topVer)) {
                                 // Version does not change for load ops.
-                                update(e.value(), e.expireTime(), e.ttl(), e.isNew() ? ver : e.version());
+                                update(e.value(), e.expireTime(), e.ttl(), e.isNew() ? ver : e.version(), true);
 
                                 if (cctx.deferredDelete() && !isNew() && !isInternal()) {
                                     boolean deleted = val == null;
@@ -344,7 +350,8 @@ public class GridNearCacheEntry extends GridDistributedCacheEntry {
             null,
             false,
             /*skip store*/false,
-            /*can remap*/true
+            /*can remap*/true,
+            false
         ).get().get(keyValue(false));
     }
 
@@ -395,7 +402,7 @@ public class GridNearCacheEntry extends GridDistributedCacheEntry {
                 if (this.dhtVer == null || this.dhtVer.compareTo(dhtVer) < 0) {
                     primaryNode(primaryNodeId, topVer);
 
-                    update(val, expireTime, ttl, ver);
+                    update(val, expireTime, ttl, ver, true);
 
                     if (cctx.deferredDelete() && !isInternal()) {
                         boolean deleted = val == null;

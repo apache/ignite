@@ -41,6 +41,8 @@ import org.apache.ignite.internal.managers.communication.GridIoManager;
 import org.apache.ignite.internal.managers.communication.GridIoMessageFactory;
 import org.apache.ignite.internal.managers.communication.GridMessageListener;
 import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
+import org.apache.ignite.internal.processors.timeout.GridSpiTimeoutObject;
+import org.apache.ignite.internal.processors.timeout.GridTimeoutProcessor;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.plugin.extensions.communication.MessageFactory;
@@ -88,6 +90,16 @@ public class GridSpiTestContext implements IgniteSpiContext {
 
     /** */
     private MessageFactory factory;
+
+    /** */
+    private GridTimeoutProcessor timeoutProcessor;
+
+    /**
+     * @param timeoutProcessor Timeout processor.
+     */
+    public void timeoutProcessor(GridTimeoutProcessor timeoutProcessor) {
+        this.timeoutProcessor = timeoutProcessor;
+    }
 
     /** {@inheritDoc} */
     @Override public Collection<ClusterNode> remoteNodes() {
@@ -530,12 +542,14 @@ public class GridSpiTestContext implements IgniteSpiContext {
 
     /** {@inheritDoc} */
     @Override public void addTimeoutObject(IgniteSpiTimeoutObject obj) {
-        // No-op.
+        if (timeoutProcessor != null)
+            timeoutProcessor.addTimeoutObject(new GridSpiTimeoutObject(obj));
     }
 
     /** {@inheritDoc} */
     @Override public void removeTimeoutObject(IgniteSpiTimeoutObject obj) {
-        // No-op.
+        if (timeoutProcessor != null)
+            timeoutProcessor.removeTimeoutObject(new GridSpiTimeoutObject(obj));
     }
 
     /**

@@ -19,7 +19,7 @@ package org.apache.ignite.internal.processors.platform.cache.query;
 
 import java.util.Iterator;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.internal.portable.BinaryRawWriterEx;
+import org.apache.ignite.internal.binary.BinaryRawWriterEx;
 import org.apache.ignite.internal.processors.cache.query.QueryCursorEx;
 import org.apache.ignite.internal.processors.platform.PlatformAbstractTarget;
 import org.apache.ignite.internal.processors.platform.PlatformContext;

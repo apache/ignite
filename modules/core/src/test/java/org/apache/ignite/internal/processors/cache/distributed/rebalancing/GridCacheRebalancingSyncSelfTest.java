@@ -35,6 +35,7 @@ import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
+import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 /**
@@ -140,8 +141,9 @@ public class GridCacheRebalancingSyncSelfTest extends GridCommonAbstractTest {
      */
     protected void generateData(Ignite ignite, String name, int from, int iter) {
         for (int i = from; i < from + TEST_SIZE; i++) {
-            if (i % (TEST_SIZE / 10) == 0)
-                log.info("Prepared " + i * 100 / (TEST_SIZE) + "% entries (" + TEST_SIZE + ").");
+            if ((i + 1) % (TEST_SIZE / 10) == 0)
+                log.info("Prepared " + (i + 1) * 100 / (TEST_SIZE) + "% entries. [count=" + TEST_SIZE +
+                    ", iteration=" + iter + ", cache=" + name + "]");
 
             ignite.cache(name).put(i, i + name.hashCode() + iter);
         }
@@ -167,12 +169,20 @@ public class GridCacheRebalancingSyncSelfTest extends GridCommonAbstractTest {
      */
     protected void checkData(Ignite ignite, String name, int from, int iter) {
         for (int i = from; i < from + TEST_SIZE; i++) {
-            if (i % (TEST_SIZE / 10) == 0)
-                log.info("<" + name + "> Checked " + i * 100 / (TEST_SIZE) + "% entries (" + TEST_SIZE + ").");
+            if ((i + 1) % (TEST_SIZE / 10) == 0)
+                log.info("<" + name + "> Checked " + (i + 1) * 100 / (TEST_SIZE) + "% entries. [count=" + TEST_SIZE +
+                    ", iteration=" + iter + ", cache=" + name + "]");
 
             assert ignite.cache(name).get(i) != null && ignite.cache(name).get(i).equals(i + name.hashCode() + iter) :
                 i + " value " + (i + name.hashCode() + iter) + " does not match (" + ignite.cache(name).get(i) + ")";
         }
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void beforeTest() throws Exception {
+        super.beforeTest();
+
+        GridTestUtils.runGC(); // Clean heap before rebalancing.
     }
 
     /**
@@ -346,7 +356,7 @@ public class GridCacheRebalancingSyncSelfTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected long getTestTimeout() {
-        return 5 * 60_000;
+        return 10 * 60_000;
     }
 
     /**

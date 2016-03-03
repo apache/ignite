@@ -22,6 +22,7 @@ import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
+import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.jetbrains.annotations.Nullable;
@@ -46,6 +47,7 @@ public class SecurityCredentials implements Externalizable {
     private static final long serialVersionUID = 0L;
 
     /** Login. */
+    @GridToStringInclude
     private Object login;
 
     /** Password. */
