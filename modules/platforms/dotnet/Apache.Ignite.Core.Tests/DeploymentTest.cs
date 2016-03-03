@@ -15,6 +15,7 @@
  * limitations under the License.
  */
 
+#pragma warning disable 618
 namespace Apache.Ignite.Core.Tests
 {
     using System;
@@ -55,9 +56,44 @@ namespace Apache.Ignite.Core.Tests
             var classpath = string.Join(";", Directory.GetFiles(folder));
 
             // Copy .NET binaries
+            foreach (var asm in new[] {typeof (IgniteRunner).Assembly, typeof (Ignition).Assembly})
+                File.Copy(asm.Location, Path.Combine(folder, Path.GetFileName(asm.Location)));
+
+            // Copy config
+            var springPath = Path.GetFullPath("config\\compute\\compute-grid2.xml");
+            var springFile = Path.GetFileName(springPath);
+            File.Copy(springPath, Path.Combine(folder, springFile));
+
             // Start a node and make sure it works properly
+            var exePath = Path.Combine(folder, "Apache.Ignite.exe");
+
+            var args = "-springConfigUrl=" + springFile +
+                       " -jvmClasspath=" + classpath;
+
+            var proc = System.Diagnostics.Process.Start(exePath, args);
+            Assert.IsNotNull(proc);
+
+            try
+            {
+                using (var ignite = Ignition.Start(new IgniteConfiguration
+                {
+                    SpringConfigUrl = "config\\compute\\compute-grid1.xml",
+                    JvmClasspath = TestUtils.CreateTestClasspath(),
+                    JvmOptions = TestUtils.TestJavaOptions()
+                }))
+                {
+                    Assert.IsTrue(ignite.WaitTopology(2));
+                }
+            }
+            finally 
+            {
+                proc.Kill();
+            }
         }
 
+        /// <summary>
+        /// Gets the temporary folder.
+        /// </summary>
         private static string GetTempFolder()
         {
             const string prefix = "ig-test-";
@@ -74,10 +110,9 @@ namespace Apache.Ignite.Core.Tests
                     }
                     catch (Exception)
                     {
-                        continue;
+                        // Ignore
                     }
                 }
-
             }
 
             throw new InvalidOperationException();
