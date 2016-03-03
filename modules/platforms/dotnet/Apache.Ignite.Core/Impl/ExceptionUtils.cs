@@ -69,8 +69,8 @@ namespace Apache.Ignite.Core.Impl
             Exs["java.lang.InterruptedException"] = (i, m, e, s) => new ThreadInterruptedException(m, e);
 
             // Generic Ignite exceptions.
-            Exs["org.apache.ignite.IgniteException"] = (i, m, e, s) => new IgniteException(m, s, e);
-            Exs["org.apache.ignite.IgniteCheckedException"] = (i, m, e, s) => new IgniteException(m, s, e);
+            Exs["org.apache.ignite.IgniteException"] = (i, m, e, s) => new IgniteException(m, e, s);
+            Exs["org.apache.ignite.IgniteCheckedException"] = (i, m, e, s) => new IgniteException(m, e, s);
             Exs["org.apache.ignite.IgniteClientDisconnectedException"] = (i, m, e, s) => new ClientDisconnectedException(m, e, i.GetCluster().ClientReconnectTask);
             Exs["org.apache.ignite.internal.IgniteClientDisconnectedCheckedException"] = (i, m, e, s) => new ClientDisconnectedException(m, e, i.GetCluster().ClientReconnectTask);
 

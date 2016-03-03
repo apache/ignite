@@ -62,7 +62,7 @@ namespace Apache.Ignite.Core.Compute
         /// <param name="javaStackTrace">The Java stack trace.</param>
         /// <param name="cause">The cause.</param>
         public ComputeExecutionRejectedException(string message, string javaStackTrace, Exception cause) 
-            : base(message, javaStackTrace, cause)
+            : base(message, cause, javaStackTrace)
         {
             // No-op.
         }

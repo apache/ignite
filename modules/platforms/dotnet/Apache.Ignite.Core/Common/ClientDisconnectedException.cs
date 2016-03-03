@@ -69,7 +69,7 @@ namespace Apache.Ignite.Core.Common
         /// <param name="cause">The cause.</param>
         /// <param name="clientReconnectTask">The client reconnect task.</param>
         public ClientDisconnectedException(string message, Exception cause, Task<bool> clientReconnectTask) 
-            : base(message, null, cause)
+            : base(message, cause, null)
         {
             _clientReconnectTask = clientReconnectTask;
         }

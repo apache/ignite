@@ -61,7 +61,7 @@ namespace Apache.Ignite.Core.Cache
         /// <param name="javaStackTrace">The Java stack trace.</param>
         /// <param name="cause">The cause.</param>
         public CacheException(string message, string javaStackTrace, Exception cause) 
-            : base(message, javaStackTrace, cause)
+            : base(message, cause, javaStackTrace)
         {
             // No-op.
         }

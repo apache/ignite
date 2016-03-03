@@ -53,11 +53,10 @@ namespace Apache.Ignite.Core.Common
         /// Initializes a new instance of the <see cref="IgniteException" /> class.
         /// </summary>
         /// <param name="message">The message.</param>
-        /// <param name="javaStackTrace">The Java stack trace.</param>
         /// <param name="cause">The cause.</param>
-        public IgniteException(string message, string javaStackTrace, Exception cause) : base(message, cause)
+        public IgniteException(string message, Exception cause) : base(message, cause)
         {
-            _javaStackTrace = javaStackTrace;
+            // No-op.
         }
 
         /// <summary>
@@ -65,9 +64,10 @@ namespace Apache.Ignite.Core.Common
         /// </summary>
         /// <param name="message">The message.</param>
         /// <param name="cause">The cause.</param>
-        public IgniteException(string message, Exception cause) : base(message, cause)
+        /// <param name="javaStackTrace">The Java stack trace.</param>
+        public IgniteException(string message, Exception cause, string javaStackTrace) : base(message, cause)
         {
-            // No-op.
+            _javaStackTrace = javaStackTrace;
         }
 
         /// <summary>
