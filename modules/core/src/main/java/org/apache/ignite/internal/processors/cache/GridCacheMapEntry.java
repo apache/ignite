@@ -1185,8 +1185,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
             assert expireTime >= 0 : expireTime;
 
             // Detach value before index update.
-            if (cctx.name().indexOf("meta") < 0)
-                val = cctx.kernalContext().cacheObjects().prepareForCache(val, cctx);
+            val = cctx.kernalContext().cacheObjects().prepareForCache(val, cctx);
 
             // Update index inside synchronization since it can be updated
             // in load methods without actually holding entry lock.
