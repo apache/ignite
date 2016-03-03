@@ -21,12 +21,12 @@
 namespace Apache.Ignite.Core.Tests
 {
     using System;
-    using System.Diagnostics;
     using System.IO;
     using System.Linq;
     using Apache.Ignite.Core.Compute;
     using Apache.Ignite.Core.Impl.Common;
     using Apache.Ignite.Core.Resource;
+    using Apache.Ignite.Core.Tests.Process;
     using NUnit.Framework;
 
     /// <summary>
@@ -72,19 +72,14 @@ namespace Apache.Ignite.Core.Tests
             // Start a node and make sure it works properly
             var exePath = Path.Combine(folder, "Apache.Ignite.exe");
 
-            var args = "-springConfigUrl=" + springFile +
-                       " -jvmClasspath=" + classpath +
-                       " -J-ea" +
-                       " -J-Xcheck:jni" +
-                       " -J-Xms512m" +
-                       " -J-Xmx512m";
-
-            var proc = System.Diagnostics.Process.Start(new ProcessStartInfo(exePath)
+            var proc = IgniteProcess.Start(exePath, null, args: new[]
             {
-                Arguments = args,
-                WorkingDirectory = folder,
-                CreateNoWindow = true,
-                UseShellExecute = false,
+                "-springConfigUrl=" + springFile,
+                "-jvmClasspath=" + classpath,
+                "-J-ea",
+                "-J-Xcheck:jni",
+                "-J-Xms512m",
+                "-J-Xmx512m"
             });
 
             Assert.IsNotNull(proc);
