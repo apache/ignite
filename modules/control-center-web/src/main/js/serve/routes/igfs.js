@@ -88,7 +88,8 @@ module.exports.factory = function(_, express, mongo) {
                         })
                         .then(() => res.send(igfsId))
                         .catch((err) => mongo.handleError(res, err));
-                });
+                })
+                .catch((err) => mongo.handleError(res, err));
         });
 
         /**

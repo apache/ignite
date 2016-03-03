@@ -112,7 +112,8 @@ module.exports.factory = function(_, express, mongo) {
                         .then(() => mongo.Igfs.update({_id: {$nin: igfss}}, {$pull: {clusters: clusterId}}, {multi: true}).exec())
                         .then(() => res.send(clusterId))
                         .catch((err) => mongo.handleError(res, err));
-                });
+                })
+                .catch((err) => mongo.handleError(res, err));
         });
 
         /**

@@ -97,7 +97,8 @@ module.exports.factory = function(_, express, mongo) {
                         .then(() => mongo.DomainModel.update({_id: {$in: domains}}, {$addToSet: {caches: cacheId}}, {multi: true}).exec())
                         .then(() => res.send(cacheId))
                         .catch((err) => mongo.handleError(res, err));
-                });
+                })
+                .catch((err) => mongo.handleError(res, err));
         });
 
         /**
