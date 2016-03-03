@@ -238,7 +238,7 @@
       "github:akuznetsov-gridgain/angular-strap@fix-1852-2.3.6": {
         "main": "dist/angular-strap.tpl",
         "dependencies": {
-          "angular": "github:angular/bower-angular@^1.5.0",
+          "angular": "jspm:angular@^1",
           "angular-animate": "github:angular/bower-angular-animate@^1.5.0",
           "angular-motion": "github:mgcrea/angular-motion@^0.4.3",
           "angular-sanitize": "github:angular/bower-angular-sanitize@^1.5.0"

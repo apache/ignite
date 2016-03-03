@@ -17,9 +17,8 @@
 
 var consoleModule = angular.module('ignite-web-console',
     [
-        'smart-table', 'treeControl', 'darthwade.dwLoading', 'ui.grid', 'ui.grid.autoResize', 'ui.grid.exporter', 'nvd3', 'dndLists',
         /* ignite:modules */
-        , 'ignite-console'
+        'ignite-console'
         /* endignite */
         /* ignite:plugins */
         /* endignite */

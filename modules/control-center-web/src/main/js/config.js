@@ -41,7 +41,7 @@ System.config({
     "blob": "github:eligrey/Blob.js@master",
     "bootstrap": "github:twbs/bootstrap@3.3.6",
     "bootstrap-carousel": "github:twbs/bootstrap@3.3.6",
-    "clean-css": "npm:clean-css@3.4.9",
+    "clean-css": "npm:clean-css@3.4.10",
     "core-js": "npm:core-js@1.2.6",
     "css": "github:systemjs/plugin-css@0.1.20",
     "file-saver": "github:eligrey/FileSaver.js@master",
@@ -57,6 +57,7 @@ System.config({
     "socket.io-client": "github:socketio/socket.io-client@1.4.5",
     "spinjs": "github:fgnass/spin.js@2.3.2",
     "github:akuznetsov-gridgain/angular-strap@fix-1852-2.3.6": {
+      "angular": "github:angular/bower-angular@1.5.0",
       "angular-animate": "github:angular/bower-angular-animate@1.5.0",
       "angular-motion": "github:mgcrea/angular-motion@0.4.3",
       "angular-sanitize": "github:angular/bower-angular-sanitize@1.5.0"
@@ -169,7 +170,7 @@ System.config({
     "npm:align-text@0.1.4": {
       "kind-of": "npm:kind-of@3.0.2",
       "longest": "npm:longest@1.0.1",
-      "repeat-string": "npm:repeat-string@1.5.2"
+      "repeat-string": "npm:repeat-string@1.5.4"
     },
     "npm:amdefine@1.0.0": {
       "fs": "github:jspm/nodelibs-fs@0.1.2",
@@ -201,7 +202,7 @@ System.config({
       "align-text": "npm:align-text@0.1.4",
       "lazy-cache": "npm:lazy-cache@1.0.3"
     },
-    "npm:clean-css@3.4.9": {
+    "npm:clean-css@3.4.10": {
       "buffer": "github:jspm/nodelibs-buffer@0.1.0",
       "commander": "npm:commander@2.8.1",
       "fs": "github:jspm/nodelibs-fs@0.1.2",
@@ -273,7 +274,7 @@ System.config({
     "npm:jade@1.11.0": {
       "buffer": "github:jspm/nodelibs-buffer@0.1.0",
       "character-parser": "npm:character-parser@1.2.1",
-      "clean-css": "npm:clean-css@3.4.9",
+      "clean-css": "npm:clean-css@3.4.10",
       "commander": "npm:commander@2.6.0",
       "constantinople": "npm:constantinople@3.0.2",
       "jstransformer": "npm:jstransformer@0.0.2",

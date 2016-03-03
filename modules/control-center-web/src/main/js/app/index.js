@@ -31,18 +31,18 @@ window.angular = angular;
 window.pdfMake = pdfMake;
 
 import 'angular-socket-io';
+import 'angular-retina';
 import 'angular-ui-router';
 import 'angular-ui-router-metatags';
 import 'angular-animate';
-import 'angular-sanitize';
-import 'angular-ui-grid';
 import 'angular-loading';
+import 'angular-sanitize';
+import 'angular-strap';
+import 'angular-smart-table';
+import 'angular-ui-grid';
 import 'angular-drag-and-drop-lists';
 import 'angular-nvd3';
-import 'angular-retina';
-import 'angular-strap';
 import 'angular-tree-control';
-import 'angular-smart-table';
 
 import 'bootstrap-carousel';
 import 'file-saver';
@@ -117,6 +117,14 @@ angular
     'ngAnimate',
     'ngSanitize',
     'mgcrea.ngStrap',
+    'smart-table',
+    'treeControl',
+    'darthwade.dwLoading',
+    'ui.grid',
+    'ui.grid.autoResize',
+    'ui.grid.exporter',
+    'nvd3',
+    'dndLists',
     // Base modules.
     'ignite-console.user',
     'ignite-console.branding',
