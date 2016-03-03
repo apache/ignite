@@ -1832,11 +1832,13 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
 
                 long accessTtl = expiryPlc != null ? CU.toTtl(expiryPlc.getExpiryForAccess()) : CU.TTL_NOT_CHANGED;
 
+                boolean retVal = cacheCtx.name().indexOf("meta") < 0;
+
                 IgniteInternalFuture<Boolean> fut = cacheCtx.cache().txLockAsync(lockKeys,
                     lockTimeout(),
                     this,
                     true,
-                    true,
+                    retVal, /* retval */
                     isolation,
                     isInvalidate(),
                     accessTtl);
