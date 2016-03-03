@@ -821,21 +821,6 @@ public class GridCacheUtils {
 
     /**
      * @param nodes Nodes.
-     * @param locId Local node ID.
-     * @return Local node if it is in the list of nodes, or primary node.
-     */
-    public static ClusterNode localOrPrimary(Iterable<ClusterNode> nodes, UUID locId) {
-        assert !F.isEmpty(nodes);
-
-        for (ClusterNode n : nodes)
-            if (n.id().equals(locId))
-                return n;
-
-        return F.first(nodes);
-    }
-
-    /**
-     * @param nodes Nodes.
      * @return Backup nodes.
      */
     public static Collection<ClusterNode> backups(Collection<ClusterNode> nodes) {
@@ -843,38 +828,6 @@ public class GridCacheUtils {
             return Collections.emptyList();
 
         return F.view(nodes, F.notEqualTo(F.first(nodes)));
-    }
-
-    /**
-     * @param mappings Mappings.
-     * @param k map key.
-     * @return Either current list value or newly created one.
-     */
-    public static <K, V> Collection<V> getOrSet(Map<K, List<V>> mappings, K k) {
-        List<V> vals = mappings.get(k);
-
-        if (vals == null)
-            mappings.put(k, vals = new LinkedList<>());
-
-        return vals;
-    }
-
-    /**
-     * @param mappings Mappings.
-     * @param k map key.
-     * @return Either current list value or newly created one.
-     */
-    public static <K, V> Collection<V> getOrSet(ConcurrentMap<K, Collection<V>> mappings, K k) {
-        Collection<V> vals = mappings.get(k);
-
-        if (vals == null) {
-            Collection<V> old = mappings.putIfAbsent(k, vals = new ConcurrentLinkedDeque8<>());
-
-            if (old != null)
-                vals = old;
-        }
-
-        return vals;
     }
 
     /**
@@ -903,20 +856,6 @@ public class GridCacheUtils {
                 return "Error logger [excludes=" + Arrays.toString(excl) + ']';
             }
         };
-    }
-
-    /**
-     * @param t Exception to check.
-     * @return {@code true} if caused by lock timeout.
-     */
-    public static boolean isLockTimeout(Throwable t) {
-        if (t == null)
-            return false;
-
-        while (t instanceof IgniteCheckedException || t instanceof IgniteException)
-            t = t.getCause();
-
-        return t instanceof GridCacheLockTimeoutException;
     }
 
     /**

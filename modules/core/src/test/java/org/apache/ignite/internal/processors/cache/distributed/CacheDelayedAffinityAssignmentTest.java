@@ -84,6 +84,14 @@ public class CacheDelayedAffinityAssignmentTest extends GridCommonAbstractTest {
             return !name.endsWith("0");
         }
     }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testDelayedAffinityAssignment0() throws Exception {
+        startGrid(0);
+    }
+
     /**
      * @throws Exception If failed.
      */

@@ -100,6 +100,13 @@ public class GridDhtAssignmentFetchFuture extends GridFutureAdapter<List<List<Cl
     }
 
     /**
+     * @return Context.
+     */
+    public GridCacheContext context() {
+        return ctx;
+    }
+
+    /**
      * @param node Node.
      * @param res Response.
      */

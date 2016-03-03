@@ -184,7 +184,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                         assert cctx.discovery().node(n.id()) == null;
 
                         for (GridDhtPartitionsExchangeFuture f : exchFuts.values())
-                            f.onNodeLeft(n.id());
+                            f.onNodeLeft(n);
                     }
 
                     assert
@@ -237,9 +237,13 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                     else if (customEvt.customMessage() instanceof CacheAffinityChangeMessage) {
                         CacheAffinityChangeMessage msg = (CacheAffinityChangeMessage)customEvt.customMessage();
 
-                        exchId = exchangeId(n.id(), affinityTopologyVersion(e), e.type());
+                        if (msg.exchangeId() == null) {
+                            exchId = exchangeId(n.id(), affinityTopologyVersion(e), e.type());
 
-                        exchFut = exchangeFuture(exchId, e, null, msg);
+                            exchFut = exchangeFuture(exchId, e, null, msg);
+                        }
+                        else
+                            exchangeFuture(msg.exchangeId(), null, null, null).onAffinityChange(customEvt.node(), msg);
                     }
                 }
 
@@ -826,7 +830,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                 fut.cacheChangeRequests(reqs);
 
             if (affChangeMsg != null)
-                fut.affinittChangeMessage(affChangeMsg);
+                fut.affinityChangeMessage(affChangeMsg);
         }
 
         if (discoEvt != null)

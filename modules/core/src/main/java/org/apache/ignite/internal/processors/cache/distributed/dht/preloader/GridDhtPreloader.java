@@ -267,13 +267,10 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override public void updateLastExchangeFuture(GridDhtPartitionsExchangeFuture lastFut) {
-        demander.updateLastExchangeFuture(lastFut);
-    }
+    @Override public void onTopologyChanged(GridDhtPartitionsExchangeFuture lastFut) {
+        supplier.onTopologyChanged(lastFut.topologyVersion());
 
-    /** {@inheritDoc} */
-    @Override public void onTopologyChanged(AffinityTopologyVersion topVer) {
-        supplier.onTopologyChanged(topVer);
+        demander.updateLastExchangeFuture(lastFut);
     }
 
     /** {@inheritDoc} */

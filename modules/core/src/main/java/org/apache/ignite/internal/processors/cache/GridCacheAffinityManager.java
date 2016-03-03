@@ -261,8 +261,8 @@ public class GridCacheAffinityManager extends GridCacheManagerAdapter {
     /**
      * Get affinity assignment for the given topology version.
      *
-     * @param topVer Toplogy version.
-     * @return Affinity affignment.
+     * @param topVer Topology version.
+     * @return Affinity assignment.
      */
     public GridAffinityAssignment assignment(AffinityTopologyVersion topVer) {
         if (cctx.isLocal())

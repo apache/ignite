@@ -1458,7 +1458,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
      * @return Collection of cache nodes.
      */
     public Collection<ClusterNode> nodes(long topVer) {
-        return resolveDiscoCache(null, new AffinityTopologyVersion(topVer)).allNodes();
+        return nodes(new AffinityTopologyVersion(topVer));
     }
 
     /**
@@ -1469,6 +1469,14 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
      */
     public Collection<ClusterNode> nodes(AffinityTopologyVersion topVer) {
         return resolveDiscoCache(null, topVer).allNodes();
+    }
+
+    /**
+     * @param topVer Topology version.
+     * @return All server nodes for given topology version.
+     */
+    public List<ClusterNode> serverNodes(AffinityTopologyVersion topVer) {
+        return resolveDiscoCache(null, topVer).srvNodes;
     }
 
     /**
@@ -2417,6 +2425,9 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
         /** All nodes. */
         private final List<ClusterNode> allNodes;
 
+        /** All server nodes. */
+        private final List<ClusterNode> srvNodes;
+
         /** All nodes with at least one cache configured. */
         @GridToStringInclude
         private final Collection<ClusterNode> allNodesWithCaches;
@@ -2523,8 +2534,13 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
 
             Set<String> nearEnabledSet = new HashSet<>();
 
+            List<ClusterNode> srvNodes = new ArrayList<>();
+
             for (ClusterNode node : allNodes) {
                 assert node.order() != 0 : "Invalid node order [locNode=" + loc + ", node=" + node + ']';
+
+                if (!node.isDaemon() && !CU.clientNode(node))
+                    srvNodes.add(node);
 
                 if (node.order() > maxOrder0)
                     maxOrder0 = node.order();
@@ -2591,6 +2607,8 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                 nodes.add(node);
             }
 
+            Collections.sort(srvNodes, CU.nodeComparator(true));
+
             // Need second iteration to add this node to all previous node versions.
             for (ClusterNode node : allNodes) {
                 IgniteProductVersion nodeVer = U.productVersion(node);
@@ -2611,6 +2629,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
             allNodesWithCaches = Collections.unmodifiableCollection(nodesWithCaches);
             this.rmtNodesWithCaches = Collections.unmodifiableCollection(rmtNodesWithCaches);
             nearEnabledCaches = Collections.unmodifiableSet(nearEnabledSet);
+            this.srvNodes = Collections.unmodifiableList(srvNodes);
 
             daemonNodes = Collections.unmodifiableList(new ArrayList<>(
                 F.view(F.concat(false, loc, rmts), F0.not(daemonFilter))));

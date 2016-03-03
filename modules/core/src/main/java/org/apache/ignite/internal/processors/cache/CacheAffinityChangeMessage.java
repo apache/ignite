@@ -17,9 +17,12 @@
 
 package org.apache.ignite.internal.processors.cache;
 
+import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionExchangeId;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.Nullable;
@@ -34,11 +37,45 @@ public class CacheAffinityChangeMessage implements DiscoveryCustomMessage {
     /** */
     private AffinityTopologyVersion topVer;
 
+    /** */
+    private GridDhtPartitionExchangeId exchId;
+
+    /** */
+    private Map<Integer, Map<Integer, List<UUID>>> affChange;
+
     /**
      * @param topVer Topology version.
      */
     public CacheAffinityChangeMessage(AffinityTopologyVersion topVer) {
         this.topVer = topVer;
+    }
+
+    /**
+     * @param exchId Exchange ID.
+     */
+    public CacheAffinityChangeMessage(GridDhtPartitionExchangeId exchId) {
+        this.exchId = exchId;
+    }
+
+    /**
+     * @param affChange Affinity change.
+     */
+    public void affinityChange(Map<Integer, Map<Integer, List<UUID>>> affChange) {
+        this.affChange = affChange;
+    }
+
+    /**
+     * @return Affinity assignment.
+     */
+    @Nullable public Map<Integer, Map<Integer, List<UUID>>> affinityChange() {
+        return affChange;
+    }
+
+    /**
+     * @return Exchange version.
+     */
+    @Nullable public GridDhtPartitionExchangeId exchangeId() {
+        return exchId;
     }
 
     /**
