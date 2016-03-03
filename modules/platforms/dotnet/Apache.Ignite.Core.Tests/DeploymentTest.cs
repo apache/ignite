@@ -19,6 +19,8 @@ namespace Apache.Ignite.Core.Tests
 {
     using System;
     using System.IO;
+    using System.Linq;
+    using Apache.Ignite.Core.Impl.Common;
     using NUnit.Framework;
 
     /// <summary>
@@ -32,13 +34,28 @@ namespace Apache.Ignite.Core.Tests
         [Test]
         public void TestCustomDeployment()
         {
-            // 1. Create temp folder
+            // Create temp folder
             var folder = GetTempFolder();
 
+            // Copy jars
+            var home = IgniteHome.Resolve(null);
 
-            // 2. Copy jars 
-            // 3. Copy .NET binaries
-            // 4. Start a node and make sure it works properly
+            var jarNames = new[] {@"\ignite-core-", @"\cache-api-1.0.0.jar", @"\ignite-indexing\", @"\ignite-spring\" };
+
+            var jars = Directory.GetFiles(home, "*.jar", SearchOption.AllDirectories)
+                .Where(jarPath => jarNames.Any(jarPath.Contains)).ToArray();
+
+            Assert.Greater(jars.Length, 3);
+
+            foreach (var jar in jars)
+                // ReSharper disable once AssignNullToNotNullAttribute
+                File.Copy(jar, Path.Combine(folder, Path.GetFileName(jar)));
+
+            // Build classpath
+            var classpath = string.Join(";", Directory.GetFiles(folder));
+
+            // Copy .NET binaries
+            // Start a node and make sure it works properly
         }
 
         private static string GetTempFolder()
