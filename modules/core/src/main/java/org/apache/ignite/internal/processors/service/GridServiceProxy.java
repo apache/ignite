@@ -130,9 +130,9 @@ public class GridServiceProxy<T> implements Serializable {
     @SuppressWarnings("BusyWait")
     public Object invokeMethod(final Method mtd, final Object[] args) {
         if (U.isHashCodeMethod(mtd))
-            return System.identityHashCode(this);
+            return System.identityHashCode(proxy);
         else if (U.isEqualsMethod(mtd))
-            return this == args[0];
+            return proxy == args[0];
         else if (U.isToStringMethod(mtd))
             return GridServiceProxy.class.getSimpleName() + " [name=" + name + ", sticky=" + sticky + ']';
 
