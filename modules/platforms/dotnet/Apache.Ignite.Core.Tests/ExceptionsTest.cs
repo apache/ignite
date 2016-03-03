@@ -15,6 +15,7 @@
  * limitations under the License.
  */
 
+#pragma warning disable 618
 namespace Apache.Ignite.Core.Tests 
 {
     using System;
@@ -26,7 +27,6 @@ namespace Apache.Ignite.Core.Tests
     using Apache.Ignite.Core.Cache;
     using Apache.Ignite.Core.Cluster;
     using Apache.Ignite.Core.Common;
-    using Apache.Ignite.Core.Impl;
     using NUnit.Framework;
 
     /// <summary>
@@ -203,6 +203,8 @@ namespace Apache.Ignite.Core.Tests
                         // Do a lot of puts so that one fails during Ignite stop
                         for (var i = 0; i < 1000000; i++)
                         {
+                            // ReSharper disable once AccessToDisposedClosure
+                            // ReSharper disable once AccessToModifiedClosure
                             var dict = Enumerable.Range(1, 100).ToDictionary(k => keyFunc(k, grid), k => i);
 
                             if (async)
