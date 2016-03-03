@@ -102,7 +102,6 @@ module.exports.factory = (_, express, mongo) => {
                         })
                         .then(() => _updateCacheStore(cacheStoreChanges));
                 })
-                .catch((err) => mongo.handleError(res, err));
         };
 
         const _save = (domains, res) => {
