@@ -76,6 +76,7 @@ import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl;
+import org.apache.ignite.internal.processors.cache.database.IgniteCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.datastructures.CacheDataStructuresManager;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCache;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCacheAdapter;
@@ -1030,8 +1031,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     private void startCache(GridCacheAdapter<?, ?> cache) throws IgniteCheckedException {
         GridCacheContext<?, ?> cacheCtx = cache.context();
 
-        ctx.plugins().onBeforeCacheStart(cacheCtx);
-
         ctx.query().onCacheStart(cacheCtx);
         ctx.continuous().onCacheStart(cacheCtx);
 
@@ -1118,8 +1117,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         ctx.kernalContext().query().onCacheStop(ctx);
         ctx.kernalContext().continuous().onCacheStop(ctx);
-
-        ctx.kernalContext().plugins().onAfterCacheStop(ctx);
 
         U.stopLifecycleAware(log, lifecycleAwares(cache.configuration(), ctx.store().configuredStore()));
 
@@ -1304,6 +1301,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             dataStructuresMgr,
             ttlMgr,
             drMgr,
+            null, // TODO ignite-db
             rslvrMgr,
             pluginMgr,
             affMgr
@@ -1433,6 +1431,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                 dataStructuresMgr,
                 ttlMgr,
                 drMgr,
+                null, // TODO ignite-db
                 rslvrMgr,
                 pluginMgr,
                 affMgr
@@ -1788,6 +1787,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         GridCacheVersionManager verMgr = new GridCacheVersionManager();
         GridCacheDeploymentManager depMgr = new GridCacheDeploymentManager();
         GridCachePartitionExchangeManager exchMgr = new GridCachePartitionExchangeManager();
+        IgniteCacheDatabaseSharedManager dbMgr = new IgniteCacheDatabaseSharedManager();
         GridCacheIoManager ioMgr = new GridCacheIoManager();
 
         CacheJtaManagerAdapter jta = JTA.createOptional();
@@ -1797,6 +1797,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             tm,
             verMgr,
             mvccMgr,
+            dbMgr,
             depMgr,
             exchMgr,
             ioMgr,

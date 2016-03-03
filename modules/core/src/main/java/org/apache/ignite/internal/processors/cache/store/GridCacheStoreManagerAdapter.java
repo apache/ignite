@@ -255,11 +255,6 @@ public abstract class GridCacheStoreManagerAdapter extends GridCacheManagerAdapt
     }
 
     /** {@inheritDoc} */
-    @Override public boolean isDatabaseEnabled() {
-        return false;
-    }
-
-    /** {@inheritDoc} */
     @Override public CacheStore<?, ?> configuredStore() {
         return cfgStore;
     }

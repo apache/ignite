@@ -129,16 +129,6 @@ public interface PluginProvider<C extends PluginConfiguration> {
     public void receiveDiscoveryData(UUID nodeId, Serializable data);
 
     /**
-     * @param cctx Cache context.
-     */
-    public void onBeforeCacheStart(GridCacheContext cctx);
-
-    /**
-     * @param cctx Cache context.
-     */
-    public void onAfterCacheStop(GridCacheContext cctx);
-
-    /**
      * Validates that new node can join grid topology, this method is called on coordinator
      * node before new node joins topology.
      *

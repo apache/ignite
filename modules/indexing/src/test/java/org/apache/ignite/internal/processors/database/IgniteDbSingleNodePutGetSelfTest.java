@@ -1,0 +1,500 @@
+/*
+ *  Copyright (C) GridGain Systems. All Rights Reserved.
+ *  _________        _____ __________________        _____
+ *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
+ *  _  / __  __  ___/__  / _  __  / _  / __  _  __ `/__  / __  __ \
+ *  / /_/ /  _  /    _  /  / /_/ /  / /_/ /  / /_/ / _  /  _  / / /
+ *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
+ */
+
+package org.apache.ignite.internal.processors.database;
+
+import java.io.Serializable;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Random;
+import java.util.concurrent.Callable;
+import javax.cache.CacheException;
+import org.apache.ignite.IgniteCache;
+import org.apache.ignite.cache.CacheAtomicityMode;
+import org.apache.ignite.cache.CacheRebalanceMode;
+import org.apache.ignite.cache.CacheWriteSynchronizationMode;
+import org.apache.ignite.cache.query.SqlFieldsQuery;
+import org.apache.ignite.cache.query.annotations.QuerySqlField;
+import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
+import org.apache.ignite.internal.util.GridRandom;
+import org.apache.ignite.internal.util.typedef.PA;
+import org.apache.ignite.internal.util.typedef.X;
+import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
+import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.apache.ignite.configuration.DatabaseConfiguration;
+
+/**
+ *
+ */
+public class IgniteDbSingleNodePutGetSelfTest extends GridCommonAbstractTest {
+    /** */
+    private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
+
+    /**
+     * @return Grid count.
+     */
+    protected int gridCount() {
+        return 1;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(gridName);
+
+        DatabaseConfiguration dbCfg = new DatabaseConfiguration();
+
+        dbCfg.setConcurrencyLevel(Runtime.getRuntime().availableProcessors() * 4);
+
+        dbCfg.setPageSize(256);
+
+        dbCfg.setPageCacheSize(100 * 1024 * 1024);
+
+        cfg.setDatabaseConfiguration(dbCfg);
+
+        CacheConfiguration ccfg = new CacheConfiguration();
+
+        ccfg.setIndexedTypes(Integer.class, DbValue.class);
+
+        ccfg.setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL);
+
+        ccfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
+
+        ccfg.setRebalanceMode(CacheRebalanceMode.SYNC);
+
+        cfg.setCacheConfiguration(ccfg);
+
+        TcpDiscoverySpi discoSpi = new TcpDiscoverySpi();
+
+        discoSpi.setIpFinder(IP_FINDER);
+
+        cfg.setDiscoverySpi(discoSpi);
+
+        cfg.setMarshaller(null);
+
+        return cfg;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void beforeTest() throws Exception {
+        startGrids(gridCount());
+
+        awaitPartitionMapExchange();
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void afterTest() throws Exception {
+        stopAllGrids();
+    }
+
+    /**
+     * @throws Exception if failed.
+     */
+    public void testPutGetSimple() throws Exception {
+        IgniteEx ig = grid(0);
+
+        IgniteCache<Integer, DbValue> cache = ig.cache(null);
+
+        GridCacheAdapter<Object, Object> internalCache = ig.context().cache().internalCache();
+
+        int k0 = 0;
+        DbValue v0 = new DbValue(0, "value-0", 0L);
+
+        cache.put(k0, v0);
+
+        checkEmpty(internalCache, k0);
+
+        assertEquals(v0, cache.get(k0));
+
+        checkEmpty(internalCache, k0);
+
+        assertEquals(v0, cache.get(k0));
+
+        checkEmpty(internalCache, k0);
+    }
+
+    /**
+     * @throws Exception if failed.
+     */
+    public void testPutGetOverwrite() throws Exception {
+        IgniteEx ig = grid(0);
+
+        final IgniteCache<Integer, DbValue> cache = ig.cache(null);
+
+        GridCacheAdapter<Object, Object> internalCache = ig.context().cache().internalCache();
+
+        final int k0 = 0;
+        DbValue v0 = new DbValue(0, "value-0", 0L);
+
+        cache.put(k0, v0);
+
+        checkEmpty(internalCache, k0);
+
+        assertEquals(v0, cache.get(k0));
+
+        checkEmpty(internalCache, k0);
+
+        DbValue v1 = new DbValue(1, "value-1", 1L);
+
+        cache.put(k0, v1);
+
+        checkEmpty(internalCache, k0);
+
+        assertEquals(v1, cache.get(k0));
+
+        GridTestUtils.assertThrowsInherited(log, new Callable<Object>() {
+            /** {@inheritDoc} */
+            @Override public Object call() throws Exception {
+                cache.put(k0, new DbValue(1, "longer-value-1", 1L));
+
+                return null;
+            }
+        }, CacheException.class, null);
+    }
+
+    /**
+     * @throws Exception if failed.
+     */
+    public void testOverwriteNormalSizeAfterSmallerSize() throws Exception {
+        IgniteEx ig = grid(0);
+
+        final IgniteCache<Integer, DbValue> cache = ig.cache(null);
+
+        GridCacheAdapter<Object, Object> internalCache = ig.context().cache().internalCache();
+
+        String[] vals = new String[] {"long-long-long-value", "short-value"};
+        final int k0 = 0;
+
+        for (int i = 0; i < 10; i++) {
+            DbValue v0 = new DbValue(i, vals[i % vals.length], i);
+
+            info("Update.... " + i);
+
+            cache.put(k0, v0);
+
+            checkEmpty(internalCache, k0);
+
+            assertEquals(v0, cache.get(k0));
+        }
+    }
+
+    /**
+     * @throws Exception if failed.
+     */
+    public void testPutDoesNotTriggerRead() throws Exception {
+        IgniteEx ig = grid(0);
+
+        final IgniteCache<Integer, DbValue> cache = ig.cache(null);
+
+        cache.put(0, new DbValue(0, "test-value-0", 0));
+    }
+
+    /**
+     * @throws Exception if failed.
+     */
+    public void testPutGetMultipleObjects() throws Exception {
+        IgniteEx ig = grid(0);
+
+        final IgniteCache<Integer, DbValue> cache = ig.cache(null);
+
+        GridCacheAdapter<Object, Object> internalCache = ig.context().cache().internalCache();
+
+        int cnt = 20_000;
+
+        X.println("Put start");
+
+        for (int i = 0; i < cnt; i++) {
+            DbValue v0 = new DbValue(i, "test-value", i);
+
+//            if (i % 1000 == 0)
+//                X.println(" --> " + i);
+
+            cache.put(i, v0);
+
+            checkEmpty(internalCache, i);
+
+            assertEquals(v0, cache.get(i));
+        }
+
+        X.println("Get start");
+
+        for (int i = 0; i < cnt; i++) {
+            DbValue v0 = new DbValue(i, "test-value", i);
+
+            checkEmpty(internalCache, i);
+
+//            X.println(" <-- " + i);
+
+            assertEquals(v0, cache.get(i));
+        }
+
+        awaitPartitionMapExchange();
+
+        X.println("Query start");
+
+        assertEquals(cnt, cache.query(new SqlFieldsQuery("select null from dbvalue")).getAll().size());
+
+        List<List<?>> res = cache.query(new SqlFieldsQuery("select ival, _val from dbvalue where ival < ?")
+            .setArgs(10_000)).getAll();
+
+        assertEquals(10_000, res.size());
+
+        for (int i = 0; i < 10_000; i++) {
+            List<?> row = res.get(i);
+
+            assertEquals(2, row.size());
+            assertEquals(i, row.get(0));
+
+            assertEquals(new DbValue(i, "test-value", i), row.get(1));
+        }
+
+        assertEquals(1, cache.query(new SqlFieldsQuery("select lval from dbvalue where ival = 7899")).getAll().size());
+        assertEquals(5000, cache.query(new SqlFieldsQuery("select lval from dbvalue where ival >= 5000 and ival < 10000"))
+            .getAll().size());
+    }
+
+
+
+    /**
+     * @throws Exception if failed.
+     */
+    public void testPutGetRandomUniqueMultipleObjects() throws Exception {
+        IgniteEx ig = grid(0);
+
+        final IgniteCache<Integer, DbValue> cache = ig.cache(null);
+
+        GridCacheAdapter<Object, Object> internalCache = ig.context().cache().internalCache();
+
+        int cnt = 100_000;
+
+        Random rnd = new GridRandom();
+
+        int[] keys = generateUniqueRandomKeys(cnt, rnd);
+
+        X.println("Put start");
+
+        for (int i : keys) {
+            DbValue v0 = new DbValue(i, "test-value", i);
+
+//            if (i % 100 == 0)
+//                X.println(" --> " + i);
+
+            cache.put(i, v0);
+
+            checkEmpty(internalCache, i);
+
+            assertEquals(v0, cache.get(i));
+//            for (int j : keys) {
+//                if (j == i)
+//                    break;
+//
+//                assertEquals( i + ", " + j, new DbValue(j, "test-value", j), cache.get(j));
+//            }
+        }
+
+        X.println("Get start");
+
+        for (int i = 0; i < cnt; i++) {
+            DbValue v0 = new DbValue(i, "test-value", i);
+
+            checkEmpty(internalCache, i);
+
+//            X.println(" <-- " + i);
+
+            assertEquals(v0, cache.get(i));
+        }
+    }
+
+    /** */
+    private static int[] generateUniqueRandomKeys(int cnt, Random rnd) {
+        int[] keys = new int[cnt];
+
+        for (int i = 0; i < cnt; i++)
+            keys[i] = i;
+
+        for (int i = 0; i < cnt; i++) {
+            int a = rnd.nextInt(cnt);
+            int b = rnd.nextInt(cnt);
+
+            int k = keys[a];
+            keys[a] = keys[b];
+            keys[b] = k;
+        }
+
+        return keys;
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testPutPrimaryUniqueSecondaryDuplicates() throws Exception {
+        IgniteEx ig = grid(0);
+
+        final IgniteCache<Integer, DbValue> cache = ig.cache(null);
+
+        GridCacheAdapter<Object, Object> internalCache = ig.context().cache().internalCache();
+
+        int cnt = 100_000;
+
+        Random rnd = new GridRandom();
+
+        Map<Integer, DbValue> map = new HashMap<>();
+
+        int[] keys = generateUniqueRandomKeys(cnt, rnd);
+
+        X.println("Put start");
+
+        for (int i : keys) {
+            DbValue v0 = new DbValue(rnd.nextInt(30), "test-value", i);
+
+//            X.println(" --> " + i);
+
+            cache.put(i, v0);
+            map.put(i, v0);
+
+            checkEmpty(internalCache, i);
+
+            assertEquals(v0, cache.get(i));
+        }
+
+        X.println("Get start");
+
+        for (int i = 0; i < cnt; i++) {
+            DbValue v0 = map.get(i);
+
+            checkEmpty(internalCache, i);
+
+//            X.println(" <-- " + i);
+
+            assertEquals(v0, cache.get(i));
+        }
+    }
+
+    /**
+     * @throws Exception if failed.
+     */
+    public void testPutGetRandomNonUniqueMultipleObjects() throws Exception {
+        IgniteEx ig = grid(0);
+
+        final IgniteCache<Integer, DbValue> cache = ig.cache(null);
+
+        GridCacheAdapter<Object, Object> internalCache = ig.context().cache().internalCache();
+
+        int cnt = 100_000;
+
+        Random rnd = new GridRandom();
+
+        Map<Integer, DbValue> map = new HashMap<>();
+
+        X.println("Put start");
+
+        for (int a = 0; a < cnt; a++) {
+            int i = rnd.nextInt();
+            int k = rnd.nextInt(cnt);
+
+            DbValue v0 = new DbValue(k, "test-value", i);
+
+//            if (a % 100 == 0)
+//                X.println(" --> " + k + " = " + i);
+
+            map.put(k, v0);
+            cache.put(k, v0);
+
+            checkEmpty(internalCache, k);
+
+            assertEquals(v0, cache.get(k));
+//            for (Map.Entry<Integer,DbValue> entry : map.entrySet())
+//                assertEquals(entry.getValue(), cache.get(entry.getKey()));
+        }
+
+        X.println("Get start: " + map.size());
+
+        for (int i : map.keySet()) {
+            checkEmpty(internalCache, i);
+
+//            X.println(" <-- " + i);
+
+            assertEquals(map.get(i), cache.get(i));
+        }
+    }
+
+    private void checkEmpty(final GridCacheAdapter internalCache, final int key) throws Exception {
+        GridTestUtils.waitForCondition(new PA() {
+            @Override public boolean apply() {
+                return internalCache.peekEx(key) == null;
+            }
+        }, 5000);
+
+        assertNull(internalCache.peekEx(key));
+    }
+
+    /**
+     *
+     */
+    private static class DbValue implements Serializable {
+        /** */
+        @QuerySqlField(index = true)
+        private int iVal;
+
+        /** */
+        @QuerySqlField
+        private String sVal;
+
+        /** */
+        @QuerySqlField
+        private long lVal;
+
+        /**
+         * @param iVal Integer value.
+         * @param sVal String value.
+         * @param lVal Long value.
+         */
+        public DbValue(int iVal, String sVal, long lVal) {
+            this.iVal = iVal;
+            this.sVal = sVal;
+            this.lVal = lVal;
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean equals(Object o) {
+            if (this == o)
+                return true;
+
+            if (o == null || getClass() != o.getClass())
+                return false;
+
+            DbValue dbValue = (DbValue)o;
+
+            return iVal == dbValue.iVal && lVal == dbValue.lVal &&
+                !(sVal != null ? !sVal.equals(dbValue.sVal) : dbValue.sVal != null);
+        }
+
+        /** {@inheritDoc} */
+        @Override public int hashCode() {
+            int res = iVal;
+
+            res = 31 * res + (sVal != null ? sVal.hashCode() : 0);
+            res = 31 * res + (int)(lVal ^ (lVal >>> 32));
+
+            return res;
+        }
+
+        /** {@inheritDoc} */
+        @Override public String toString() {
+            return S.toString(DbValue.class, this);
+        }
+    }
+}

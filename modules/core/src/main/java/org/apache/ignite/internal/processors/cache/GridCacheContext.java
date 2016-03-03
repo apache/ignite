@@ -56,6 +56,7 @@ import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
 import org.apache.ignite.internal.managers.eventstorage.GridEventStorageManager;
 import org.apache.ignite.internal.managers.swapspace.GridSwapSpaceManager;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.processors.cache.database.IgniteCacheDatabaseManager;
 import org.apache.ignite.internal.processors.cache.datastructures.CacheDataStructuresManager;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCacheAdapter;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCacheEntry;
@@ -177,6 +178,9 @@ public class GridCacheContext<K, V> implements Externalizable {
     /** Replication manager. */
     private GridCacheDrManager drMgr;
 
+    /** Database manager. */
+    private IgniteCacheDatabaseManager dbMgr;
+
     /** Conflict resolver manager. */
     private CacheConflictResolutionManager rslvrMgr;
 
@@ -296,6 +300,7 @@ public class GridCacheContext<K, V> implements Externalizable {
         CacheDataStructuresManager dataStructuresMgr,
         GridCacheTtlManager ttlMgr,
         GridCacheDrManager drMgr,
+        IgniteCacheDatabaseManager dbMgr,
         CacheConflictResolutionManager<K, V> rslvrMgr,
         CachePluginManager pluginMgr,
         GridCacheAffinityManager affMgr
@@ -337,6 +342,7 @@ public class GridCacheContext<K, V> implements Externalizable {
         this.dataStructuresMgr = add(dataStructuresMgr);
         this.ttlMgr = add(ttlMgr);
         this.drMgr = add(drMgr);
+        this.dbMgr = add(dbMgr);
         this.rslvrMgr = add(rslvrMgr);
         this.pluginMgr = add(pluginMgr);
         this.affMgr = add(affMgr);
@@ -1067,6 +1073,13 @@ public class GridCacheContext<K, V> implements Externalizable {
     }
 
     /**
+     * @return Database manager.
+     */
+    public <T extends IgniteCacheDatabaseManager> T database() {
+        return (T)dbMgr;
+    }
+
+    /**
      * @return TTL manager.
      */
     public GridCacheTtlManager ttl() {
@@ -1432,7 +1445,7 @@ public class GridCacheContext<K, V> implements Externalizable {
      * @return If database is enabled.
      */
     public boolean isDatabaseEnabled() {
-        return storeMgr.isDatabaseEnabled();
+        return sharedCtx.database().enabled();
     }
 
     /**

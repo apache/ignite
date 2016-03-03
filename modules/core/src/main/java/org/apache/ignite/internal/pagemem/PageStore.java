@@ -15,32 +15,14 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.query.h2;
-
-import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
-import org.h2.index.Index;
-import org.h2.table.IndexColumn;
+package org.apache.ignite.internal.pagemem;
 
 /**
- *
+ * Persistent store of pages.
  */
-public interface IgniteH2QueryIndexProvider {
-    /**
-     * @param name Index name.
-     * @param tbl Table to create index for.
-     * @param pk Primary key index flag.
-     * @param keyCol Key column index.
-     * @param valCol Value column index.
-     * @param cols Index columns.
-     * @return Created index.
-     */
-    public Index createIndex(
-        int cacheId,
-        String name,
-        GridH2Table tbl,
-        boolean pk,
-        int keyCol,
-        int valCol,
-        IndexColumn... cols) throws IgniteCheckedException;
+public interface PageStore extends PageIdAllocator {
+
+    public void read(Page page);
+
+    public void write(Page page);
 }

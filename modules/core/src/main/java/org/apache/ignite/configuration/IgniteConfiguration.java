@@ -438,6 +438,9 @@ public class IgniteConfiguration {
     /** */
     private BinaryConfiguration binaryCfg;
 
+    /** Database configuration. */
+    private DatabaseConfiguration dbCfg;
+
     /**
      * Creates valid grid configuration with all default values.
      */
@@ -474,6 +477,7 @@ public class IgniteConfiguration {
         atomicCfg = cfg.getAtomicConfiguration();
         binaryCfg = cfg.getBinaryConfiguration();
         daemon = cfg.isDaemon();
+        dbCfg = cfg.getDatabaseConfiguration();
         cacheCfg = cfg.getCacheConfiguration();
         cacheKeyCfg = cfg.getCacheKeyConfiguration();
         cacheSanityCheckEnabled = cfg.isCacheSanityCheckEnabled();
@@ -2024,6 +2028,27 @@ public class IgniteConfiguration {
      */
     public IgniteConfiguration setBinaryConfiguration(BinaryConfiguration binaryCfg) {
         this.binaryCfg = binaryCfg;
+
+        return this;
+    }
+
+    /**
+     * Gets database configuration.
+     *
+     * @return Database configuration.
+     */
+    public DatabaseConfiguration getDatabaseConfiguration() {
+        return dbCfg;
+    }
+
+    /**
+     * Sets database configuration.
+     *
+     * @param dbCfg Database configuration.
+     * @return {@code this} for chaining.
+     */
+    public IgniteConfiguration setDatabaseConfiguration(DatabaseConfiguration dbCfg) {
+        this.dbCfg = dbCfg;
 
         return this;
     }

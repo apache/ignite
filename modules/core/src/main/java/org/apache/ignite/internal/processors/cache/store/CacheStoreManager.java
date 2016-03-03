@@ -51,11 +51,6 @@ public interface CacheStoreManager extends GridCacheManager {
     public boolean configured();
 
     /**
-     * @return {@code True} if database is enabled.
-     */
-    public boolean isDatabaseEnabled();
-
-    /**
      * @return Wrapped store.
      */
     public CacheStore<Object, Object> store();

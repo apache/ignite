@@ -75,6 +75,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.QueryCursorImpl;
+import org.apache.ignite.internal.processors.cache.database.IgniteCacheH2DatabaseManager;
 import org.apache.ignite.internal.processors.cache.query.GridCacheTwoStepQuery;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.query.GridQueryFieldMetadata;
@@ -244,9 +245,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
     /** */
     private GridReduceQueryExecutor rdcQryExec;
-
-    /** Index provider. */
-    private IgniteH2QueryIndexProvider idxProvider;
 
     /** space name -> schema name */
     private final Map<String, String> space2schema = new ConcurrentHashMap8<>();
@@ -1505,8 +1503,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             rdcQryExec.start(ctx, this);
         }
 
-        idxProvider = ctx.plugins().createComponent(IgniteH2QueryIndexProvider.class);
-
         // TODO https://issues.apache.org/jira/browse/IGNITE-2139
         // registerMBean(gridName, this, GridH2IndexingSpiMBean.class);
     }
@@ -2059,10 +2055,13 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             IndexColumn... cols
         ) {
             try {
-                if (idxProvider != null)
-                    return idxProvider.createIndex(cacheId, name, tbl, pk, keyCol, valCol, cols);
+                if (ctx.cache().context().database().enabled()) {
+                    IgniteCacheH2DatabaseManager dbMgr = ctx.cache().context().cacheContext(cacheId).database();
 
-                return new GridH2TreeIndex(name, tbl, pk, keyCol, valCol, cols);
+                    return dbMgr.createIndex(name, tbl, pk, keyCol, valCol, cols);
+                }
+                else
+                    return new GridH2TreeIndex(name, tbl, pk, keyCol, valCol, cols);
             }
             catch (IgniteCheckedException e) {
                 throw new IgniteException(e);
