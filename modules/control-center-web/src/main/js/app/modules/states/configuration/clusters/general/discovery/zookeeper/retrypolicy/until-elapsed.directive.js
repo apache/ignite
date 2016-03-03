@@ -15,16 +15,13 @@
  * limitations under the License.
  */
 
-export default ['igniteTerms', ['IgniteBranding', (branding) => {
-    function controller() {
-        const ctrl = this;
+import template from './until-elapsed.jade!';
 
-        ctrl.termsState = branding.termsState;
-    }
-
+export default ['igniteConfigurationClustersGeneralDiscoveryZookeeperUntilElapsed', [() => {
     return {
-        restrict: 'A',
-        controller,
-        controllerAs: 'terms'
+        scope: true,
+        restrict: 'E',
+        template,
+        replace: true
     };
 }]];

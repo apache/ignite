@@ -101,8 +101,10 @@ export default ['igniteUiAceXml', ['GeneratorXml', (generator) => {
             scope.$watch('cfg', (data) => ctrl.data = render(data), true);
         }
 
+        const noDeepWatch = !(typeof attrs.noDeepWatch !== 'undefined');
+
         // Setup watchers.
-        scope.$watch('cluster', (data) => ctrl.data = render(data), true);
+        scope.$watch('cluster', (data) => ctrl.data = render(data), noDeepWatch);
     };
 
     return {

@@ -27,10 +27,8 @@ angular
     .state('settings.profile', {
         url: '/profile',
         templateUrl: '/settings/profile.html',
-        resolve: {
-            $title: () => {
-                return 'User profile';
-            }
+        metaTags: {
+            title: 'User profile'
         }
     });
 }]);

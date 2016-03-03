@@ -35,10 +35,8 @@ angular
         data: {
             loading: 'Loading notebook screen...'
         },
-        resolve: {
-            $title: () => {
-                return 'Query notebook';
-            }
+        metaTags: {
+            title: 'Query notebook'
         }
     })
     .state('base.sql.demo', {
@@ -47,10 +45,8 @@ angular
         data: {
             loading: 'Enable SQL demo...'
         },
-        resolve: {
-            $title: () => {
-                return 'SQL demo';
-            }
+        metaTags: {
+            title: 'SQL demo'
         }
     });
 }]);

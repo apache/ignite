@@ -26,6 +26,19 @@ $generatorXml.escape = function (s) {
     return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 };
 
+// Add constructor argument
+$generatorXml.constructorArg = function (res, ix, obj, propName, dflt, opt) {
+    var v = (obj ? obj[propName] : undefined) || dflt;
+
+    if ($commonUtils.isDefinedAndNotEmpty(v))
+        res.line('<constructor-arg ' + (ix >= 0 ? 'index="' + ix + '" ' : '') + 'value="' + v + '"/>');
+    else if (!opt) {
+        res.startBlock('<constructor-arg ' + (ix >= 0 ? 'index="' + ix + '"' : '') + '>');
+        res.line('<null/>');
+        res.endBlock('</constructor-arg>');
+    }
+};
+
 // Add XML element.
 $generatorXml.element = function (res, tag, attr1, val1, attr2, val2) {
     var elem = '<' + tag;
@@ -359,6 +372,95 @@ $generatorXml.clusterGeneral = function (cluster, res) {
 
                 if (d.SharedFs) {
                     $generatorXml.property(res, d.SharedFs, 'path');
+                }
+
+                res.endBlock('</bean>');
+
+                break;
+
+            case 'ZooKeeper':
+                res.startBlock('<bean class="org.apache.ignite.spi.discovery.tcp.ipfinder.zk.TcpDiscoveryZookeeperIpFinder">');
+
+                if (d.ZooKeeper) {
+                    if ($commonUtils.isDefinedAndNotEmpty(d.ZooKeeper.curator)) {
+                        res.startBlock('<property name="curator">');
+                        res.line('<bean class="' + d.ZooKeeper.curator + '"/>');
+                        res.endBlock('</property>');
+                    }
+
+                    $generatorXml.property(res, d.ZooKeeper, 'zkConnectionString');
+
+                    if (d.ZooKeeper.retryPolicy && d.ZooKeeper.retryPolicy.kind) {
+                        var kind = d.ZooKeeper.retryPolicy.kind;
+                        var retryPolicy = d.ZooKeeper.retryPolicy[kind];
+                        var customClassDefined = retryPolicy && $commonUtils.isDefinedAndNotEmpty(retryPolicy.className);
+
+                        if (kind !== 'Custom' || customClassDefined)
+                            res.startBlock('<property name="retryPolicy">');
+
+                        switch (kind) {
+                            case 'ExponentialBackoff':
+                                res.startBlock('<bean class="org.apache.curator.retry.ExponentialBackoffRetry">');
+                                $generatorXml.constructorArg(res, 0, retryPolicy, 'baseSleepTimeMs', 1000);
+                                $generatorXml.constructorArg(res, 1, retryPolicy, 'maxRetries', 10);
+                                $generatorXml.constructorArg(res, 2, retryPolicy, 'maxSleepMs', undefined, true);
+                                res.endBlock('</bean>');
+
+                                break;
+
+                            case 'BoundedExponentialBackoff':
+                                res.startBlock('<bean class="org.apache.curator.retry.BoundedExponentialBackoffRetry">');
+                                $generatorXml.constructorArg(res, 0, retryPolicy, 'baseSleepTimeMs', 1000);
+                                $generatorXml.constructorArg(res, 1, retryPolicy, 'maxSleepTimeMs', 2147483647);
+                                $generatorXml.constructorArg(res, 2, retryPolicy, 'maxRetries', 10);
+                                res.endBlock('</bean>');
+
+                                break;
+
+                            case 'UntilElapsed':
+                                res.startBlock('<bean class="org.apache.curator.retry.RetryUntilElapsed">');
+                                $generatorXml.constructorArg(res, 0, retryPolicy, 'maxElapsedTimeMs', 60000);
+                                $generatorXml.constructorArg(res, 1, retryPolicy, 'sleepMsBetweenRetries', 1000);
+                                res.endBlock('</bean>');
+
+                                break;
+
+                            case 'NTimes':
+                                res.startBlock('<bean class="org.apache.curator.retry.RetryNTimes">');
+                                $generatorXml.constructorArg(res, 0, retryPolicy, 'n', 10);
+                                $generatorXml.constructorArg(res, 1, retryPolicy, 'sleepMsBetweenRetries', 1000);
+                                res.endBlock('</bean>');
+
+                                break;
+
+                            case 'OneTime':
+                                res.startBlock('<bean class="org.apache.curator.retry.RetryOneTime">');
+                                $generatorXml.constructorArg(res, 0, retryPolicy, 'sleepMsBetweenRetry', 1000);
+                                res.endBlock('</bean>');
+
+                                break;
+
+                            case 'Forever':
+                                res.startBlock('<bean class="org.apache.curator.retry.RetryForever">');
+                                $generatorXml.constructorArg(res, 0, retryPolicy, 'retryIntervalMs', 1000);
+                                res.endBlock('</bean>');
+
+                                break;
+
+                            case 'Custom':
+                                if (customClassDefined)
+                                    res.line('<bean class="' + retryPolicy.className + '"/>');
+
+                                break;
+                        }
+
+                        if (kind !== 'Custom' || customClassDefined)
+                            res.endBlock('</property>');
+                    }
+
+                    $generatorXml.property(res, d.ZooKeeper, 'basePath', null, '/services');
+                    $generatorXml.property(res, d.ZooKeeper, 'serviceName', null, 'ignite');
+                    $generatorXml.property(res, d.ZooKeeper, 'allowDuplicateRegistrations', null, false);
                 }
 
                 res.endBlock('</bean>');
@@ -971,7 +1073,7 @@ $generatorXml.cacheRebalance = function(cache, res) {
     if (cache.igfsAffinnityGroupSize) {
         res.startBlock('<property name="affinityMapper">');
         res.startBlock('<bean class="org.apache.ignite.igfs.IgfsGroupDataBlocksKeyMapper">');
-        res.line('<constructor-arg value="' + cache.igfsAffinnityGroupSize + '"/>');
+        $generatorXml.constructorArg(res, -1, cache, 'igfsAffinnityGroupSize');
         res.endBlock('</bean>');
         res.endBlock('</property>');
     }
@@ -1423,26 +1525,12 @@ $generatorXml.igfsSecondFS = function(igfs, res) {
         var nameDefined = $commonUtils.isDefinedAndNotEmpty(secondFs.userName);
         var cfgDefined = $commonUtils.isDefinedAndNotEmpty(secondFs.cfgPath);
 
-        if ($commonUtils.isDefinedAndNotEmpty(secondFs.uri))
-            res.line('<constructor-arg index="0" value="' + secondFs.uri + '"/>');
-        else {
-            res.startBlock('<constructor-arg index="0">');
-            res.line('<null/>');
-            res.endBlock('</constructor-arg>');
-        }
+        $generatorXml.constructorArg(res, 0, secondFs, 'uri');
 
-        if (cfgDefined || nameDefined) {
-            if (cfgDefined)
-                res.line('<constructor-arg index="1" value="' + secondFs.cfgPath + '"/>');
-            else {
-                res.startBlock('<constructor-arg index="1">');
-                res.line('<null/>');
-                res.endBlock('</constructor-arg>');
-            }
-        }
+        if (cfgDefined || nameDefined)
+            $generatorXml.constructorArg(res, 1, secondFs, 'cfgPath');
 
-        if ($commonUtils.isDefinedAndNotEmpty(secondFs.userName))
-            res.line('<constructor-arg index="2" value="' + secondFs.userName + '"/>');
+        $generatorXml.constructorArg(res, 2, secondFs, 'userName', undefined, true);
 
         res.endBlock('</bean>');
         res.endBlock('</property>');

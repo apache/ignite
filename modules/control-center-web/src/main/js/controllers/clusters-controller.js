@@ -62,13 +62,14 @@ consoleModule.controller('clustersController', function ($http, $timeout, $scope
         var showPopoverMessage = $common.showPopoverMessage;
 
         $scope.discoveries = [
-            {value: 'Vm', label: 'static IPs'},
-            {value: 'Multicast', label: 'multicast'},
+            {value: 'Vm', label: 'Static IPs'},
+            {value: 'Multicast', label: 'Multicast'},
             {value: 'S3', label: 'AWS S3'},
-            {value: 'Cloud', label: 'apache jclouds'},
-            {value: 'GoogleStorage', label: 'google cloud storage'},
+            {value: 'Cloud', label: 'Apache jclouds'},
+            {value: 'GoogleStorage', label: 'Google cloud storage'},
             {value: 'Jdbc', label: 'JDBC'},
-            {value: 'SharedFs', label: 'shared filesystem'}
+            {value: 'SharedFs', label: 'Shared filesystem'},
+            {value: 'ZooKeeper', label: 'Apache ZooKeeper'}
         ];
 
         $scope.swapSpaceSpis = [

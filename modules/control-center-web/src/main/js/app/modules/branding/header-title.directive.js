@@ -15,16 +15,21 @@
  * limitations under the License.
  */
 
-export default ['igniteTerms', ['IgniteBranding', (branding) => {
+const template = `<label class='title'>{{::title.text}}</label>`;
+
+export default ['igniteHeaderTitle', ['IgniteBranding', (branding) => {
     function controller() {
         const ctrl = this;
 
-        ctrl.termsState = branding.termsState;
+        ctrl.text = branding.headerText;
     }
 
     return {
-        restrict: 'A',
+        restrict: 'E',
+        template,
         controller,
-        controllerAs: 'terms'
+        controllerAs: 'title',
+        replace: true
     };
 }]];
+

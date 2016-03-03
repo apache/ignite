@@ -15,20 +15,20 @@
  * limitations under the License.
  */
 
-const templateTitle = `<label class= 'title'>{{::title.text}}</label>`;
+const template = `<div class='features' ng-bind-html='features.html'></div>`;
 
-export default ['igniteTitle', ['IgniteLogo', (IgniteLogo) => {
+export default ['igniteFeatures', ['IgniteBranding', (branding) => {
     function controller() {
         const ctrl = this;
 
-        ctrl.text = IgniteLogo.title;
+        ctrl.html = branding.featuresHtml;
     }
 
     return {
         restrict: 'E',
-        template: templateTitle,
+        template,
         controller,
-        controllerAs: 'title',
+        controllerAs: 'features',
         replace: true
     };
 }]];

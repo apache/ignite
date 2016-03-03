@@ -17,11 +17,11 @@
 
 import templatePoweredByApache from './powered-by-apache.jade!';
 
-export default ['ignitePoweredByApache', ['IgniteLogo', (IgniteLogo) => {
+export default ['ignitePoweredByApache', ['IgniteBranding', (branding) => {
     function controller() {
         const ctrl = this;
 
-        ctrl.show = IgniteLogo.poweredBy;
+        ctrl.show = branding.showIgniteLogo;
     }
 
     return {

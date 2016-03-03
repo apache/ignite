@@ -46,6 +46,15 @@ import generalDiscoveryMulticast from './configuration/clusters/general/discover
 import generalDiscoveryS3 from './configuration/clusters/general/discovery/s3.directive';
 import generalDiscoveryShared from './configuration/clusters/general/discovery/shared.directive';
 import generalDiscoveryVm from './configuration/clusters/general/discovery/vm.directive';
+import generalDiscoveryZookeeper from './configuration/clusters/general/discovery/zookeeper.directive';
+
+import generalDiscoveryZookeeperRetryExponential from './configuration/clusters/general/discovery/zookeeper/retrypolicy/exponential-backoff.directive';
+import generalDiscoveryZookeeperRetryBoundedExponential from './configuration/clusters/general/discovery/zookeeper/retrypolicy/bounded-exponential-backoff.directive';
+import generalDiscoveryZookeeperRetryUntilElapsed from './configuration/clusters/general/discovery/zookeeper/retrypolicy/until-elapsed.directive';
+import generalDiscoveryZookeeperRetryNTimes from './configuration/clusters/general/discovery/zookeeper/retrypolicy/n-times.directive';
+import generalDiscoveryZookeeperRetryOneTime from './configuration/clusters/general/discovery/zookeeper/retrypolicy/one-time.directive';
+import generalDiscoveryZookeeperRetryForever from './configuration/clusters/general/discovery/zookeeper/retrypolicy/forever.directive';
+import generalDiscoveryZookeeperRetryCustom from './configuration/clusters/general/discovery/zookeeper/retrypolicy/custom.directive';
 
 angular
 .module('ignite-console.states.configuration', [
@@ -76,6 +85,14 @@ angular
 .directive(...generalDiscoveryS3)
 .directive(...generalDiscoveryShared)
 .directive(...generalDiscoveryVm)
+.directive(...generalDiscoveryZookeeper)
+.directive(...generalDiscoveryZookeeperRetryExponential)
+.directive(...generalDiscoveryZookeeperRetryBoundedExponential)
+.directive(...generalDiscoveryZookeeperRetryUntilElapsed)
+.directive(...generalDiscoveryZookeeperRetryNTimes)
+.directive(...generalDiscoveryZookeeperRetryOneTime)
+.directive(...generalDiscoveryZookeeperRetryForever)
+.directive(...generalDiscoveryZookeeperRetryCustom)
 // Services.
 .service(...ConfigurationSummaryResource)
 .config(['$stateProvider', function($stateProvider) {
@@ -94,10 +111,8 @@ angular
         data: {
             loading: 'Loading clusters screen...'
         },
-        resolve: {
-            $title: () => {
-                return 'Configure Clusters';
-            }
+        metaTags: {
+            title: 'Configure Clusters'
         }
     })
     .state('base.configuration.caches', {
@@ -109,10 +124,8 @@ angular
         data: {
             loading: 'Loading caches screen...'
         },
-        resolve: {
-            $title: () => {
-                return 'Configure Caches';
-            }
+        metaTags: {
+            title: 'Configure Caches'
         }
     })
     .state('base.configuration.domains', {
@@ -124,10 +137,8 @@ angular
         data: {
             loading: 'Loading domain models screen...'
         },
-        resolve: {
-            $title: () => {
-                return 'Configure Domain Model';
-            }
+        metaTags: {
+            title: 'Configure Domain Model'
         }
     })
     .state('base.configuration.igfs', {
@@ -139,10 +150,8 @@ angular
         data: {
             loading: 'Loading IGFS screen...'
         },
-        resolve: {
-            $title: () => {
-                return 'Configure IGFS';
-            }
+        metaTags: {
+            title: 'Configure IGFS'
         }
     })
     .state('base.configuration.summary', {
@@ -153,10 +162,8 @@ angular
         data: {
             loading: 'Loading summary screen...'
         },
-        resolve: {
-            $title: () => {
-                return 'Configurations Summary';
-            }
+        metaTags: {
+            title: 'Configurations Summary'
         }
     });
 }]);

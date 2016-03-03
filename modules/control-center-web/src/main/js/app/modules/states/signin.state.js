@@ -29,16 +29,14 @@ angular
     .state('signin', {
         url: '/signin',
         templateUrl: '/signin.html',
-        resolve: {
-            $title: () => {
-                return 'Sign In';
-            }
+        metaTags: {
+            title: 'Management Tool and Configuration Wizard for Apache Ignite'
         }
     });
 }])
-.run(['$rootScope', '$state', 'Auth', 'IgniteTerms', function($root, $state, Auth, IgniteTerms) {
+.run(['$rootScope', '$state', 'Auth', 'IgniteBranding', function($root, $state, Auth, branding) {
     $root.$on('$stateChangeStart', function(event, toState) {
-        if (toState.name === IgniteTerms.termsState)
+        if (toState.name === branding.termsState)
             return;
 
         if (!Auth.authorized && (toState.name !== 'signin' && !_.startsWith(toState.name, 'password.'))) {

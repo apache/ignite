@@ -176,6 +176,9 @@ $generatorPom.pom = function (cluster, igniteVersion, mvnRepositories, res) {
     addDependency('org.apache.ignite', 'ignite-indexing', igniteVersion);
     addDependency('org.apache.ignite', 'ignite-rest-http', igniteVersion);
 
+    if (cluster.discovery.kind === 'ZooKeeper')
+        addDependency('org.apache.ignite', 'ignite-zookeeper', igniteVersion);
+
     if (_.find(cluster.igfss, function (igfs) { return igfs.secondaryFileSystemEnabled; }))
         addDependency('org.apache.ignite', 'ignite-hadoop', igniteVersion);
 

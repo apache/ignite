@@ -15,20 +15,13 @@
  * limitations under the License.
  */
 
-import templateLogo from './logo.jade!';
+import template from './exponential-backoff.jade!';
 
-export default ['igniteLogo', ['IgniteLogo', (IgniteLogo) => {
-    function controller() {
-        const ctrl = this;
-
-        ctrl.url = IgniteLogo.url;
-    }
-
+export default ['igniteConfigurationClustersGeneralDiscoveryZookeeperExponential', [() => {
     return {
+        scope: true,
         restrict: 'E',
-        template: templateLogo,
-        controller,
-        controllerAs: 'logo',
+        template,
         replace: true
     };
 }]];

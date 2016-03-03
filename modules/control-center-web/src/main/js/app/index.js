@@ -32,7 +32,7 @@ window.pdfMake = pdfMake;
 
 import 'angular-socket-io';
 import 'angular-ui-router';
-import 'angular-ui-router-title';
+import 'angular-ui-router-metatags';
 import 'angular-animate';
 import 'angular-sanitize';
 import 'angular-ui-grid';
@@ -106,11 +106,12 @@ import AgentManager from './services/AgentManager.service';
 
 // Filters.
 import hasPojo from './filters/hasPojo/hasPojo.filter';
+import byName from './filters/byName/byName.filter';
 
 angular
 .module('ignite-console', [
     'ui.router',
-    'ui.router.title',
+    'ui.router.metatags',
     'ngRetina',
     'btford.socket-io',
     'ngAnimate',
@@ -158,7 +159,8 @@ angular
 // Providers.
 // Filters.
 .filter(...hasPojo)
-.config(['$stateProvider', '$locationProvider', '$urlRouterProvider', function($stateProvider, $locationProvider, $urlRouterProvider) {
+.filter(...byName)
+.config(['$stateProvider', '$locationProvider', '$urlRouterProvider', ($stateProvider, $locationProvider, $urlRouterProvider) => {
     // Set up the states.
     $stateProvider
         .state('base', {
@@ -176,11 +178,18 @@ angular
 
     $locationProvider.html5Mode(true);
 }])
+.config(['UIRouterMetatagsProvider', (UIRouterMetatagsProvider) => {
+    UIRouterMetatagsProvider
+        .setTitleSuffix(' – Apache Ignite Web Console')
+        .setDefaultDescription('The Apache Ignite Web Console is an interactive management tool and configuration wizard for Apache Ignite which walks you through the creation of configuration files. Try the tool now.');
+}])
 .run(['$rootScope', ($root) => {
     $root._ = _;
 }])
-.run(['$rootScope', '$state', 'Auth', 'User', 'AgentManager', ($root, $state, Auth, User, agentMgr) => {
+.run(['$rootScope', '$state', 'MetaTags', 'Auth', 'User', 'AgentManager', ($root, $state, $meta, Auth, User, agentMgr) => {
     $root.$state = $state;
+
+    $root.$meta = $meta;
 
     if (Auth.authorized) {
         User.read()

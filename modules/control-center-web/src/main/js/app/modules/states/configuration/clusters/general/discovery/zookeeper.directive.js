@@ -15,16 +15,13 @@
  * limitations under the License.
  */
 
-export default ['igniteTerms', ['IgniteBranding', (branding) => {
-    function controller() {
-        const ctrl = this;
+import template from './zookeeper.jade!';
 
-        ctrl.termsState = branding.termsState;
-    }
-
+export default ['igniteConfigurationClustersGeneralDiscoveryZookeeper', [() => {
     return {
-        restrict: 'A',
-        controller,
-        controllerAs: 'terms'
+        scope: true,
+        restrict: 'E',
+        template,
+        replace: true
     };
 }]];

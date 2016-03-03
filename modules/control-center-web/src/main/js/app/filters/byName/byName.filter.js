@@ -15,16 +15,9 @@
  * limitations under the License.
  */
 
-export default ['igniteTerms', ['IgniteBranding', (branding) => {
-    function controller() {
-        const ctrl = this;
+export default ['byName', [() => (arr, search) => {
+    if (!(arr && arr.length) || !search)
+        return arr;
 
-        ctrl.termsState = branding.termsState;
-    }
-
-    return {
-        restrict: 'A',
-        controller,
-        controllerAs: 'terms'
-    };
+    return _.filter(arr, ({ name }) => name.indexOf(search) >= 0);
 }]];

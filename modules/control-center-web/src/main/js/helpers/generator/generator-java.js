@@ -62,6 +62,18 @@ $generatorJava.setterName = function (propName, setterName) {
     return setterName ? setterName : $commonUtils.toJavaName('set', propName);
 };
 
+// Add constructor argument
+$generatorJava.constructorArg = function (obj, propName, dflt, notFirst, opt) {
+    var v = (obj ? obj[propName] : undefined) || dflt;
+
+    if ($commonUtils.isDefinedAndNotEmpty(v))
+        return (notFirst ? ', ' : '') + $generatorJava.toJavaCode(v);
+    else if (!opt)
+        return notFirst ? ', null' : 'null';
+    else
+        return '';
+};
+
 /**
  * Add variable declaration.
  *
@@ -522,6 +534,81 @@ $generatorJava.clusterGeneral = function (cluster, clientNearCfg, res) {
             case 'SharedFs':
                 $generatorJava.beanProperty(res, 'discovery', d.SharedFs, 'ipFinder', 'ipFinder',
                     'org.apache.ignite.spi.discovery.tcp.ipfinder.sharedfs.TcpDiscoverySharedFsIpFinder', {path: null}, true);
+
+                break;
+
+            case 'ZooKeeper':
+                var finderVar = 'ipFinder';
+
+                $generatorJava.declareVariable(res, 'ipFinder', 'org.apache.ignite.spi.discovery.tcp.ipfinder.zk.TcpDiscoveryZookeeperIpFinder');
+
+                if (d.ZooKeeper) {
+                    if ($commonUtils.isDefinedAndNotEmpty(d.ZooKeeper.curator))
+                        res.line(finderVar + '.setCurator(new ' + res.importClass(d.ZooKeeper.curator) + '());');
+
+                    $generatorJava.property(res, finderVar, d.ZooKeeper, 'zkConnectionString');
+
+                    if (d.ZooKeeper.retryPolicy && d.ZooKeeper.retryPolicy.kind) {
+                        var kind = d.ZooKeeper.retryPolicy.kind;
+                        var retryPolicy = d.ZooKeeper.retryPolicy[kind];
+
+                        switch (kind) {
+                            case 'ExponentialBackoff':
+                                res.line(finderVar + '.setRetryPolicy(new ' + res.importClass('org.apache.curator.retry.ExponentialBackoffRetry') + '(' +
+                                    $generatorJava.constructorArg(retryPolicy, 'baseSleepTimeMs', 1000) +
+                                    $generatorJava.constructorArg(retryPolicy, 'maxRetries', 10, true) +
+                                    $generatorJava.constructorArg(retryPolicy, 'maxSleepMs', undefined, true, true) + '));');
+
+                                break;
+
+                            case 'BoundedExponentialBackoff':
+                                res.line(finderVar + '.setRetryPolicy(new ' + res.importClass('org.apache.curator.retry.BoundedExponentialBackoffRetry') + '(' +
+                                    $generatorJava.constructorArg(retryPolicy, 'baseSleepTimeMs', 1000) +
+                                    $generatorJava.constructorArg(retryPolicy, 'maxSleepTimeMs', 2147483647, true) +
+                                    $generatorJava.constructorArg(retryPolicy, 'maxRetries', 10, true) + '));');
+
+                                break;
+
+                            case 'UntilElapsed':
+                                res.line(finderVar + '.setRetryPolicy(new ' + res.importClass('org.apache.curator.retry.RetryUntilElapsed') + '(' +
+                                    $generatorJava.constructorArg(retryPolicy, 'maxElapsedTimeMs', 60000) +
+                                    $generatorJava.constructorArg(retryPolicy, 'sleepMsBetweenRetries', 1000, true) + '));');
+
+                                break;
+
+                            case 'NTimes':
+                                res.line(finderVar + '.setRetryPolicy(new ' + res.importClass('org.apache.curator.retry.RetryNTimes') + '(' +
+                                    $generatorJava.constructorArg(retryPolicy, 'n', 10) +
+                                    $generatorJava.constructorArg(retryPolicy, 'sleepMsBetweenRetries', 1000, true) + '));');
+
+                                break;
+
+                            case 'OneTime':
+                                res.line(finderVar + '.setRetryPolicy(new ' + res.importClass('org.apache.curator.retry.RetryOneTime') + '(' +
+                                    $generatorJava.constructorArg(retryPolicy, 'sleepMsBetweenRetry', 1000) + '));');
+
+                                break;
+
+                            case 'Forever':
+                                res.line(finderVar + '.setRetryPolicy(new ' + res.importClass('org.apache.curator.retry.RetryForever') + '(' +
+                                    $generatorJava.constructorArg(retryPolicy, 'retryIntervalMs', 1000) + '));');
+
+                                break;
+
+                            case 'Custom':
+                                if (retryPolicy && $commonUtils.isDefinedAndNotEmpty(retryPolicy.className))
+                                    res.line(finderVar + '.setRetryPolicy(new ' + res.importClass(retryPolicy.className) + '());');
+
+                                break;
+                        }
+                    }
+
+                    $generatorJava.property(res, finderVar, d.ZooKeeper, 'basePath', null, null, '/services');
+                    $generatorJava.property(res, finderVar, d.ZooKeeper, 'serviceName', null, null, 'ignite');
+                    $generatorJava.property(res, finderVar, d.ZooKeeper, 'allowDuplicateRegistrations', null, null, false);
+                }
+
+                res.line('discovery.setIpFinder(ipFinder);');
 
                 break;
 
@@ -2291,15 +2378,14 @@ $generatorJava.igfsSecondFS = function(igfs, varName, res) {
     if (igfs.secondaryFileSystemEnabled) {
         var secondFs = igfs.secondaryFileSystem || {};
 
-        var uriDefined = $commonUtils.isDefinedAndNotEmpty(secondFs.uri);
         var nameDefined = $commonUtils.isDefinedAndNotEmpty(secondFs.userName);
         var cfgDefined = $commonUtils.isDefinedAndNotEmpty(secondFs.cfgPath);
 
         res.line(varName + '.setSecondaryFileSystem(new ' +
             res.importClass('org.apache.ignite.hadoop.fs.IgniteHadoopIgfsSecondaryFileSystem') + '(' +
-                (uriDefined ? '"' + secondFs.uri + '"' : 'null') +
-                (cfgDefined || nameDefined ? (cfgDefined ? ', "' + secondFs.cfgPath + '"' : ', null') : '') +
-                (nameDefined ? ', "' + secondFs.userName + '"' : '') +
+                $generatorJava.constructorArg(secondFs, 'uri', undefined) +
+                (cfgDefined || nameDefined ? $generatorJava.constructorArg(secondFs, 'cfgPath', undefined, true) : '') +
+                $generatorJava.constructorArg(secondFs, 'userName', undefined, true, true) +
             '));');
 
         res.needEmptyLine = true;

@@ -15,6 +15,7 @@
  * limitations under the License.
  */
 
+import _ from 'lodash';
 import JSZip from 'jszip';
 
 export default [
@@ -26,6 +27,14 @@ export default [
 
         Resource.read().then(({clusters}) => {
             $scope.clusters = clusters;
+            $scope.clustersMap = {};
+            $scope.clustersView = _.map(clusters, (item) => {
+                const { _id, name } = item;
+
+                $scope.clustersMap[_id] = item;
+
+                return { _id, name };
+            });
 
             $loading.finish('loading');
 
@@ -81,6 +90,14 @@ export default [
             ]
         };
 
+        const resourcesFolder = {
+            type: 'folder',
+            name: 'resources',
+            children: [
+                { type: 'file', name: 'secret.properties' }
+            ]
+        };
+
         const javaFolder = {
             type: 'folder',
             name: 'java',
@@ -99,6 +116,12 @@ export default [
         const clnCfg = { type: 'file', name: 'client.xml' };
 
         const srvCfg = { type: 'file', name: 'server.xml' };
+
+        const mainFolder = {
+            type: 'folder',
+            name: 'main',
+            children: [javaFolder]
+        };
 
         const projectStructureRoot = {
             type: 'folder',
@@ -119,13 +142,7 @@ export default [
                 {
                     type: 'folder',
                     name: 'src',
-                    children: [
-                        {
-                            type: 'folder',
-                            name: 'main',
-                            children: [javaFolder]
-                        }
-                    ]
+                    children: [mainFolder]
                 },
                 { type: 'file', name: '.dockerignore' },
                 { type: 'file', name: 'Dockerfile' },
@@ -186,6 +203,8 @@ export default [
             if (!cluster)
                 return;
 
+            cluster = $scope.clustersMap[cluster._id];
+
             ctrl.cluster = cluster;
 
             $scope.cluster = cluster;
@@ -194,7 +213,11 @@ export default [
 
             sessionStorage.summarySelectedId = $scope.clusters.indexOf(cluster);
 
+            mainFolder.children = [javaFolder];
             javaFolder.children = [javaConfigFolder, javaStartupFolder];
+
+            if ($generatorCommon.secretPropertiesNeeded(cluster))
+                mainFolder.children.push(resourcesFolder);
 
             if ($generatorCommon.dataForExampleConfigured(cluster))
                 javaFolder.children.push(exampleFolder);
@@ -222,15 +245,18 @@ export default [
             srvCfg.name = cluster.name + '-server.xml';
         };
 
-        const updateTab = (cluster) => {
+        $scope.$watch('cluster', (cluster) => {
             if (!cluster)
                 return;
 
             if (!$filter('hasPojo')(cluster) && $scope.tabsClient.activeTab === 3)
                 $scope.tabsClient.activeTab = 0;
-        };
+        });
 
-        $scope.$watch('cluster', updateTab);
+        $scope.$watch('cluster._id', () => {
+            $scope.tabsClient.init = [];
+            $scope.tabsServer.init = [];
+        });
 
         // TODO IGNITE-2114: implemented as independent logic for download.
         $scope.downloadConfiguration = function() {
@@ -238,6 +264,12 @@ export default [
             const clientNearCfg = cluster.clientNearCfg;
 
             const zip = new JSZip();
+
+            if (!ctrl.data)
+                ctrl.data = {};
+
+            if (!ctrl.data.docker)
+                ctrl.data.docker = $generatorDocker.clusterDocker(cluster, 'latest');
 
             zip.file('Dockerfile', ctrl.data.docker);
             zip.file('.dockerignore', $generatorDocker.ignoreFile());
@@ -275,6 +307,9 @@ export default [
 
             zip.file('README.txt', $generatorReadme.readme().asString());
             zip.file('jdbc-drivers/README.txt', $generatorReadme.readmeJdbc().asString());
+
+            if (!ctrl.data.pojos)
+                ctrl.data.pojos = $generatorJava.pojos(cluster.caches);
 
             for (const pojo of ctrl.data.pojos) {
                 if (pojo.keyClass && JavaTypes.nonBuiltInClass(pojo.keyType))

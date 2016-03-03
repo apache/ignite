@@ -95,6 +95,10 @@ hr {
     font-size: 22px;
 }
 
+.theme-line .footer {
+    text-align: center;
+}
+
 ul.navbar-nav, .sidebar-nav {
     li.active > a {
         color: $link-color;
@@ -393,7 +397,7 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 .details-row {
-    padding: 0 10px;
+    padding: 0 5px;
 }
 
 .details-row, .settings-row {

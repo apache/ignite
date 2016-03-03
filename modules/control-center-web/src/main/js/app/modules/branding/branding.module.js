@@ -17,22 +17,24 @@
 
 import angular from 'angular';
 
-import IgniteLogo from './Logo.provider';
-import IgniteTerms from './Terms.provider';
+import IgniteBranding from './branding.provider';
 
-import ignitePoweredByApache from './powered-by-apache.directive';
-import igniteLogo from './logo.directive';
-import igniteTitle from './title.directive';
+import igniteHeaderLogo from './header-logo.directive';
+import igniteHeaderTitle from './header-title.directive';
 import igniteTerms from './terms.directive';
+import igniteFeatures from './features.directive';
+import igniteFooter from './footer.directive';
+import ignitePoweredByApache from './powered-by-apache.directive';
 
 angular
 .module('ignite-console.branding', [
 
 ])
-.provider(...IgniteLogo)
-.provider(...IgniteTerms)
+.provider(...IgniteBranding)
 .directive(...ignitePoweredByApache)
-.directive(...igniteLogo)
-.directive(...igniteTitle)
-.directive(...igniteTerms);
+.directive(...igniteHeaderLogo)
+.directive(...igniteHeaderTitle)
+.directive(...igniteTerms)
+.directive(...igniteFeatures)
+.directive(...igniteFooter);
 
