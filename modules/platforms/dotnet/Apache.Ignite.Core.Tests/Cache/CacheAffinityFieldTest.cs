@@ -27,6 +27,7 @@ namespace Apache.Ignite.Core.Tests.Cache
     using Apache.Ignite.Core.Cache.Configuration;
     using Apache.Ignite.Core.Discovery.Tcp;
     using Apache.Ignite.Core.Discovery.Tcp.Static;
+    using Apache.Ignite.Core.Tests.Compute;
     using NUnit.Framework;
 
     /// <summary>
@@ -107,6 +108,18 @@ namespace Apache.Ignite.Core.Tests.Cache
             // Check meta
             Assert.AreEqual("affKey",
                 _cache1.Ignite.GetBinary().GetBinaryType(typeof (AffinityKey)).AffinityKeyFieldName);
+        }
+
+        /// <summary>
+        /// Tests <see cref="AffinityKey"/> class interoperability.
+        /// </summary>
+        [Test]
+        public void TestInterop()
+        {
+            var affKey = _cache1.Ignite.GetCompute()
+                .ExecuteJavaTask<AffinityKey>(ComputeApiTest.EchoTask, ComputeApiTest.EchoTypeAffinityKey);
+
+            Assert.AreEqual("interopAffinityKey", affKey.Key);
         }
 
         /// <summary>

@@ -37,7 +37,7 @@ namespace Apache.Ignite.Core.Tests.Compute
     public class ComputeApiTest
     {
         /** Echo task name. */
-        private const string EchoTask = "org.apache.ignite.platform.PlatformComputeEchoTask";
+        public const string EchoTask = "org.apache.ignite.platform.PlatformComputeEchoTask";
 
         /** Binary argument task name. */
         private const string BinaryArgTask = "org.apache.ignite.platform.PlatformComputeBinarizableArgTask";
@@ -107,6 +107,9 @@ namespace Apache.Ignite.Core.Tests.Compute
 
         /** Type: enum field. */
         private const int EchoTypeEnumField = 18;
+
+        /** Type: affinity key. */
+        public const int EchoTypeAffinityKey = 19;
 
         /** First node. */
         private IIgnite _grid1;
