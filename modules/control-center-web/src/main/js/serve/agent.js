@@ -95,14 +95,14 @@ module.exports.factory = function(_, fs, path, JSZip, socketio, apacheIgnite, se
              * @type {socketIo.Socket}
              * @private
              */
-            this._wsSocket = _wsSrv;
+            this._wsAgents = _wsSrv;
 
-            this._wsSocket.on('disconnect', () => {
+            this._wsAgents.on('disconnect', () => {
                 if (self._user)
                     self._manager._removeAgent(self._user._id, self);
             });
 
-            this._wsSocket.on('agent:auth', (msg, cb) => self._processAuth(msg, cb));
+            this._wsAgents.on('agent:auth', (msg, cb) => self._processAuth(msg, cb));
         }
 
         /**
@@ -237,14 +237,14 @@ module.exports.factory = function(_, fs, path, JSZip, socketio, apacheIgnite, se
          * @param {?Function} callback on finish
          */
         _emit(event, data, callback) {
-            if (!this._wsSocket.connected) {
+            if (!this._wsAgents.connected) {
                 if (callback)
                     callback('org.apache.ignite.agent.AgentException: Connection is closed');
 
                 return;
             }
 
-            this._wsSocket.emit(event, data, callback);
+            this._wsAgents.emit(event, data, callback);
         }
 
         /**
@@ -261,7 +261,7 @@ module.exports.factory = function(_, fs, path, JSZip, socketio, apacheIgnite, se
                 const ver = data.ver;
                 const bt = data.bt;
 
-                if (_.isEmpty(ver) || _.isEmpty(ts) || _.isEmpty(this._manager.supportedAgents[ver]) ||
+                if (_.isEmpty(ver) || _.isEmpty(bt) || _.isEmpty(this._manager.supportedAgents[ver]) ||
                     this._manager.supportedAgents[ver].buildTime > bt)
                     return cb('You are using an older version of the agent. Please reload agent archive');
             }
@@ -304,6 +304,11 @@ module.exports.factory = function(_, fs, path, JSZip, socketio, apacheIgnite, se
              */
             this._agents = {};
 
+            /**
+             * @type {Object.<ObjectId, Array.<Socket>>}
+             */
+            this._users = {};
+
             const agentArchives = fs.readdirSync(settings.agent.dists)
                 .filter((file) => path.extname(file) === '.zip');
 
@@ -312,12 +317,14 @@ module.exports.factory = function(_, fs, path, JSZip, socketio, apacheIgnite, se
              */
             this.supportedAgents = {};
 
+            const jarFilter = (file) => path.extname(file) === '.jar';
+
             for (const archive of agentArchives) {
                 const filePath = path.join(settings.agent.dists, archive);
 
                 const zip = new JSZip(fs.readFileSync(filePath));
 
-                const jarPath = _.find(_.keys(zip.files), (file) => path.extname(file) === '.jar');
+                const jarPath = _.find(_.keys(zip.files), jarFilter);
 
                 const jar = new JSZip(zip.files[jarPath].asNodeBuffer());
 
@@ -335,23 +342,24 @@ module.exports.factory = function(_, fs, path, JSZip, socketio, apacheIgnite, se
 
                 const ver = manifest['Implementation-Version'];
 
-                if (ver)
+                if (ver) {
                     this.supportedAgents[ver] = {
                         fileName: archive,
                         filePath,
                         buildTime: manifest['Build-Time']
                     };
+                }
             }
 
             const latest = _.first(Object.keys(this.supportedAgents).sort((a, b) => {
                 const aParts = a.split('.');
                 const bParts = b.split('.');
 
-                for (var i = 0; i < aParts.length; ++i) {
-                    if (bParts.length == i)
+                for (let i = 0; i < aParts.length; ++i) {
+                    if (bParts.length === i)
                         return 1;
 
-                    if (aParts[i] == aParts[i])
+                    if (aParts[i] === aParts[i])
                         continue;
 
                     return aParts[i] > bParts[i] ? 1 : -1;
@@ -374,11 +382,40 @@ module.exports.factory = function(_, fs, path, JSZip, socketio, apacheIgnite, se
             /**
              * @type {WebSocketServer}
              */
-            this._wsSocket = socketio(this._server);
+            this._wsAgents = socketio(this._server);
 
             const self = this;
 
-            this._wsSocket.on('connection', (_wsSrv) => new Agent(_wsSrv, self));
+            this._wsAgents.on('connection', (_wsSrv) => new Agent(_wsSrv, self));
+        }
+
+        /**
+         * @param {ObjectId} userId
+         * @param {Socket} user
+         * @returns {int} connected agent count.
+         */
+        addAgentListener(userId, user) {
+            let users = this._users[userId];
+
+            if (!users)
+                this._users[userId] = users = [];
+
+            users.push(user);
+
+            const agents = this._agents[userId];
+
+            return agents ? agents.length : 0;
+        }
+
+        /**
+         * @param {ObjectId} userId
+         * @param {Socket} user
+         * @returns {int} connected agent count.
+         */
+        removeAgentListener(userId, user) {
+            const users = this._users[userId];
+
+            _.remove(users, (_user) => _user === user);
         }
 
         /**
@@ -421,6 +458,10 @@ module.exports.factory = function(_, fs, path, JSZip, socketio, apacheIgnite, se
             const agents = this._agents[userId];
 
             _.remove(agents, (_agent) => _agent === agent);
+
+            const users = this._users[userId];
+
+            _.forEach(users, (user) => user.emit('agent:count', {count: agents.length}));
         }
 
         /**
@@ -428,12 +469,16 @@ module.exports.factory = function(_, fs, path, JSZip, socketio, apacheIgnite, se
          * @param {Agent} agent
          */
         _addAgent(userId, agent) {
-            const agents = this._agents[userId];
+            let agents = this._agents[userId];
 
-            if (agents)
-                return agents.push(agent);
+            if (!agents)
+                this._agents[userId] = agents = [];
 
-            this._agents[userId] = [agent];
+            agents.push(agent);
+
+            const users = this._users[userId];
+
+            _.forEach(users, (user) => user.emit('agent:count', {count: agents.length}));
         }
     }
 

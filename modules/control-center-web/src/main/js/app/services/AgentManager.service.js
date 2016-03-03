@@ -15,20 +15,119 @@
  * limitations under the License.
  */
 
-export default ['AgentManager', ['socketFactory', (socketFactory) => {
-    const socket = socketFactory();
+export default ['AgentManager', ['socketFactory', '$rootScope', '$q', '$state', '$modal', (socketFactory, $root, $q, $state, $modal) => {
+    const scope = $root.$new();
 
-    socket.on('agent:connected', (data) => {
-        console.log('agent:connected', data);
+    // Pre-fetch modal dialogs.
+    const downloadAgentModal = $modal({
+        scope,
+        templateUrl: '/templates/agent-download.html',
+        show: false,
+        backdrop: 'static'
     });
 
-    socket.on('agent:disconnected', (err) => {
-        console.log('agent:disconnected', err);
-    });
+    const _modalHide = downloadAgentModal.hide;
+
+    /**
+     * Special dialog hide function.
+     */
+    downloadAgentModal.hide = () => {
+        //$common.hideAlert();
+
+        _modalHide();
+    };
+
+    /**
+     * Close dialog and go by specified link.
+     */
+    scope.back = () => {
+        downloadAgentModal.hide();
+
+        if (scope.backState)
+            $state.go(scope.backState);
+    };
+
+    scope.downloadAgent = () => {
+        const lnk = document.createElement('a');
+
+        lnk.setAttribute('href', '/api/v1/agent/download/zip');
+        lnk.setAttribute('target', '_self');
+        lnk.setAttribute('download', null);
+        lnk.style.display = 'none';
+
+        document.body.appendChild(lnk);
+
+        lnk.click();
+
+        document.body.removeChild(lnk);
+    };
+
+    scope.hasAgents = true;
+    scope.showModal = false;
+
+    let agentLatch = null;
+
+    const _checkModal = () => {
+        if (!scope.hasAgents && scope.showModal)
+            downloadAgentModal.$promise.then(downloadAgentModal.show);
+        else if ((scope.hasAgents || !scope.showModal) && downloadAgentModal.$isShown)
+            downloadAgentModal.hide();
+    };
 
     return {
-        listenAgents() {
-            socket.emit('agent:ping');
+        init() {
+            const socket = socketFactory({});
+
+            socket.on('agent:count', ({count}) => {
+                console.log('agent:count', count);
+
+                scope.hasAgents = count > 0;
+
+                _checkModal();
+
+                if (scope.hasAgents && agentLatch) {
+                    agentLatch.resolve();
+
+                    agentLatch = null;
+                }
+            });
+
+            socket.on('disconnect', () => {
+                console.log('agent:disconnect');
+
+                scope.hasAgents = false;
+
+                _checkModal();
+            });
+
+            $root.$on('$stateChangeStart', () => {
+                scope.showModal = false;
+            });
+        },
+        startAgentWatch(back) {
+            scope.backState = back.state;
+            scope.backText = back.text;
+
+            scope.agentGoal = back.goal;
+
+            scope.showModal = true;
+
+            _checkModal();
+
+            if (scope.hasAgents)
+                return $q.when();
+
+            agentLatch = $q.defer();
+
+            return agentLatch.promise;
+        },
+        emit(event, ...args) {
+
+        },
+        stopAgentWatch() {
+            scope.showModal = false;
+
+            _checkModal();
         }
     };
 }]];

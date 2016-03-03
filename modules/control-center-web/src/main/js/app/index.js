@@ -112,6 +112,10 @@ angular
     'ui.router',
     'ui.router.title',
     'ngRetina',
+    'btford.socket-io',
+    'ngAnimate',
+    'ngSanitize',
+    'mgcrea.ngStrap',
     // Base modules.
     'ignite-console.user',
     'ignite-console.branding',
@@ -181,7 +185,7 @@ angular
     if (Auth.authorized) {
         User.read()
             .then((user) => $root.$broadcast('user', user))
-            .then(() => agentMgr.listenAgents());
+            .then(() => agentMgr.init());
     }
 }])
 .run(['$rootScope', ($root) => {

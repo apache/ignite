@@ -17,7 +17,7 @@
 
 // Controller for Domain model screen.
 consoleModule.controller('domainsController', function ($filter, $http, $timeout, $state, $scope, $controller, $modal,
-    $common, $focus, $confirm, $confirmBatch, $clone, $table, $preview, $loading, $unsavedChangesGuard, $agentDownload) {
+    $common, $focus, $confirm, $confirmBatch, $clone, $table, $preview, $loading, $unsavedChangesGuard, $agentDownload, AgentManager) {
         $unsavedChangesGuard.install($scope);
 
         // Initialize the super class and extend it.
@@ -426,7 +426,9 @@ consoleModule.controller('domainsController', function ($filter, $http, $timeout
         var hideImportDomain = importDomainModal.hide;
 
         importDomainModal.hide = function () {
-            $agentDownload.stopAwaitAgent();
+            //$agentDownload.stopAwaitAgent();
+
+            AgentManager.stopAgentWatch();
 
             hideImportDomain();
         };
@@ -457,85 +459,88 @@ consoleModule.controller('domainsController', function ($filter, $http, $timeout
 
                 $scope.importDomain.loadingOptions = LOADING_JDBC_DRIVERS;
 
-                $agentDownload.awaitAgent(function (result, onSuccess, onException) {
-                    importDomainModal.$promise.then(importDomainModal.show);
+                AgentManager.startAgentWatch({
+                        state: 'base.configuration.domains',
+                        text: 'Back to Domain models',
+                        goal: 'import domain model from database schema'
+                    })
+                    .then(function() {
+                        importDomainModal.$promise.then(importDomainModal.show);
 
-                    // Get available JDBC drivers via agent.
-                    if ($scope.importDomain.action === 'drivers') {
-                        $loading.start('importDomainFromDb');
+                        // Get available JDBC drivers via agent.
+                        if ($scope.importDomain.action === 'drivers') {
+                            $loading.start('importDomainFromDb');
 
-                        $scope.jdbcDriverJars = [];
-                        $scope.ui.selectedJdbcDriverJar = {};
+                            $scope.jdbcDriverJars = [];
+                            $scope.ui.selectedJdbcDriverJar = {};
 
-                        $http.post('/api/v1/agent/drivers')
-                            .success(function (drivers) {
-                                onSuccess();
-
-                                if ($scope.importDomain.demo) {
-                                    $scope.ui.packageNamePrev = $scope.ui.packageName;
-                                    $scope.ui.packageName = 'model';
-                                }
-                                else if ($scope.ui.packageNamePrev) {
-                                    $scope.ui.packageName = $scope.ui.packageNamePrev;
-                                    $scope.ui.packageNamePrev = null;
-                                }
-
-                                if (drivers && drivers.length > 0) {
-                                    drivers = _.sortBy(drivers, 'jdbcDriverJar');
-
+                            $http.post('/api/v1/agent/drivers')
+                                .success(function (drivers) {
                                     if ($scope.importDomain.demo) {
-                                        var _h2DrvJar = _.find(drivers, function (drv) {
-                                            return drv.jdbcDriverJar.startsWith('h2');
-                                        });
+                                        $scope.ui.packageNamePrev = $scope.ui.packageName;
+                                        $scope.ui.packageName = 'model';
+                                    }
+                                    else if ($scope.ui.packageNamePrev) {
+                                        $scope.ui.packageName = $scope.ui.packageNamePrev;
+                                        $scope.ui.packageNamePrev = null;
+                                    }
 
-                                        if (_h2DrvJar) {
-                                            $scope.demoConnection.db = 'H2';
-                                            $scope.demoConnection.jdbcDriverJar = _h2DrvJar.jdbcDriverJar;
+                                    if (drivers && drivers.length > 0) {
+                                        drivers = _.sortBy(drivers, 'jdbcDriverJar');
+
+                                        if ($scope.importDomain.demo) {
+                                            var _h2DrvJar = _.find(drivers, function (drv) {
+                                                return drv.jdbcDriverJar.startsWith('h2');
+                                            });
+
+                                            if (_h2DrvJar) {
+                                                $scope.demoConnection.db = 'H2';
+                                                $scope.demoConnection.jdbcDriverJar = _h2DrvJar.jdbcDriverJar;
+                                            }
+                                            else {
+                                                $scope.demoConnection.db = 'General';
+                                                $scope.importDomain.button = 'Cancel';
+                                            }
                                         }
                                         else {
-                                            $scope.demoConnection.db = 'General';
-                                            $scope.importDomain.button = 'Cancel';
+                                            drivers.forEach(function (drv) {
+                                                $scope.jdbcDriverJars.push({
+                                                    label: drv.jdbcDriverJar,
+                                                    value: {
+                                                        jdbcDriverJar: drv.jdbcDriverJar,
+                                                        jdbcDriverClass: drv.jdbcDriverCls
+                                                    }
+                                                });
+                                            });
+
+                                            $scope.ui.selectedJdbcDriverJar = $scope.jdbcDriverJars[0].value;
                                         }
-                                    }
-                                    else {
-                                        drivers.forEach(function (drv) {
-                                            $scope.jdbcDriverJars.push({
-                                                label: drv.jdbcDriverJar,
-                                                value: {
-                                                    jdbcDriverJar: drv.jdbcDriverJar,
-                                                    jdbcDriverClass: drv.jdbcDriverCls
-                                                }
+
+                                        $common.confirmUnsavedChanges($scope.ui.isDirty(), function () {
+                                            importDomainModal.$promise.then(function () {
+                                                $scope.importDomain.action = 'connect';
+                                                $scope.importDomain.tables = [];
+                                                $scope.importDomain.loadingOptions = LOADING_SCHEMAS;
+
+                                                $focus('jdbcUrl');
                                             });
                                         });
-
-                                        $scope.ui.selectedJdbcDriverJar = $scope.jdbcDriverJars[0].value;
                                     }
+                                    else {
+                                        $scope.importDomain.jdbcDriversNotFound = true;
+                                        $scope.importDomain.button = 'Cancel';
+                                    }
+                                })
+                                .error(function (errMsg, status) {
+                                    onException(errMsg, status);
+                                })
+                                .finally(function () {
+                                    $scope.importDomain.info = INFO_CONNECT_TO_DB;
 
-                                    $common.confirmUnsavedChanges($scope.ui.isDirty(), function () {
-                                        importDomainModal.$promise.then(function () {
-                                            $scope.importDomain.action = 'connect';
-                                            $scope.importDomain.tables = [];
-                                            $scope.importDomain.loadingOptions = LOADING_SCHEMAS;
-
-                                            $focus('jdbcUrl');
-                                        });
-                                    });
-                                }
-                                else {
-                                    $scope.importDomain.jdbcDriversNotFound = true;
-                                    $scope.importDomain.button = 'Cancel';
-                                }
-                            })
-                            .error(function (errMsg, status) {
-                                onException(errMsg, status);
-                            })
-                            .finally(function () {
-                                $scope.importDomain.info = INFO_CONNECT_TO_DB;
-
-                                $loading.finish('importDomainFromDb');
-                            });
-                    }
-                });
+                                    $loading.finish('importDomainFromDb');
+                                });
+                        }
+                    });
             });
         };
 

@@ -21,10 +21,10 @@
 
 module.exports = {
     implements: 'io',
-    inject: ['require(socket.io)', 'configure']
+    inject: ['require(socket.io)', 'agent', 'configure']
 };
 
-module.exports.factory = (socketio, configure) => {
+module.exports.factory = (socketio, agentMgr, configure) => {
     return {
         listen: (server) => {
             const io = socketio(server);
@@ -32,15 +32,16 @@ module.exports.factory = (socketio, configure) => {
             configure.socketio(io);
 
             io.sockets.on('connection', (socket) => {
-                socket.on('agent:ping', () => {
-                    const user = socket.client.request.user;
+                const user = socket.client.request.user;
 
-                    console.log('agent:ping', user);
-                });
+                const count = agentMgr.addAgentListener(user._id, socket);
 
-                socket.emit('agent:connected', {data: 'success'});
-                socket.emit('agent:disconnected', {data: 'error'});
+                socket.emit('agent:count', {count});
             });
+
+            io.sockets.on('disconnect', (socket) =>
+                agentMgr.removeAgentListener(socket.client.request.user._id, socket)
+            );
         }
     };
 };

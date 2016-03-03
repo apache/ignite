@@ -17,7 +17,7 @@
 
 var consoleModule = angular.module('ignite-web-console',
     [
-        'ngAnimate', 'ngSanitize', 'mgcrea.ngStrap', 'smart-table', 'treeControl', 'darthwade.dwLoading', 'ui.grid', 'ui.grid.autoResize', 'ui.grid.exporter', 'nvd3', 'dndLists', 'btford.socket-io',
+        'smart-table', 'treeControl', 'darthwade.dwLoading', 'ui.grid', 'ui.grid.autoResize', 'ui.grid.exporter', 'nvd3', 'dndLists',
         /* ignite:modules */
         , 'ignite-console'
         /* endignite */
@@ -2067,10 +2067,8 @@ consoleModule.controller('auth', ['$scope', '$focus', 'Auth', 'IgniteCountries',
 
 // Download agent controller.
 consoleModule.service('$agentDownload', [
-    '$http', '$interval', '$rootScope', '$state', '$modal', '$loading', '$common', 'socketFactory',
-        function ($http, $interval, $rootScope, $state, $modal, $loading, $common, socketFactory) {
-
-        var socket = socketFactory({});
+    '$http', '$interval', '$rootScope', '$state', '$modal', '$loading', '$common',
+        function ($http, $interval, $rootScope, $state, $modal, $loading, $common) {
 
         var scope = $rootScope.$new();
 
@@ -2239,7 +2237,7 @@ consoleModule.service('$agentDownload', [
              *
              * @param success Function to execute by timer when agent available.
              */
-            awaitAgent: function (success) {
+            startAgentListener: function (success) {
                 _modal.check = {
                     url: '/api/v1/agent/ping',
                     cb: success
