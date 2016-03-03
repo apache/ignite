@@ -72,7 +72,7 @@ namespace Apache.Ignite.Core.Tests
             // Start a node and make sure it works properly
             var exePath = Path.Combine(folder, "Apache.Ignite.exe");
 
-            var proc = IgniteProcess.Start(exePath, null, args: new[]
+            var proc = IgniteProcess.Start(exePath, string.Empty, args: new[]
             {
                 "-springConfigUrl=" + springFile,
                 "-jvmClasspath=" + classpath,

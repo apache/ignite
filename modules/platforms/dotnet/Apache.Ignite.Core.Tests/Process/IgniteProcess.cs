@@ -179,7 +179,7 @@ namespace Apache.Ignite.Core.Tests.Process
                 RedirectStandardError = true
             };
 
-            if (!string.IsNullOrEmpty(ggHome))
+            if (ggHome != null)
                 procStart.EnvironmentVariables[IgniteHome.EnvIgniteHome] = ggHome;
 
             procStart.EnvironmentVariables[Classpath.EnvIgniteNativeTestClasspath] = "true";
