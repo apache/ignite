@@ -62,6 +62,16 @@ namespace Apache.Ignite.Core.Compute
         /// Initializes a new instance of the <see cref="ComputeJobFailoverException"/> class.
         /// </summary>
         /// <param name="message">The message.</param>
+        /// <param name="cause">The cause.</param>
+        public ComputeJobFailoverException(string message, Exception cause) : base(message, cause)
+        {
+            // No-op.
+        }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="ComputeJobFailoverException"/> class.
+        /// </summary>
+        /// <param name="message">The message.</param>
         /// <param name="javaStackTrace">The Java stack trace.</param>
         /// <param name="cause">The cause.</param>
         public ComputeJobFailoverException(string message, string javaStackTrace, Exception cause) 
