@@ -23,8 +23,7 @@ var common_options = {
 };
 
 var html_targets = [
-    './build/*.html',
-    './build/**/*.html'
+    './build/index.html'
 ];
 
 var js_targets = [
