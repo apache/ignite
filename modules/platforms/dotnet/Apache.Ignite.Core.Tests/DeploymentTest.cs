@@ -17,12 +17,53 @@
 
 namespace Apache.Ignite.Core.Tests
 {
+    using System;
+    using System.IO;
+    using NUnit.Framework;
+
     /// <summary>
     /// Tests custom JAR deployment, classpath and IgniteHome logic.
     /// </summary>
     public class DeploymentTest
     {
-        // TODO: Can we skip IgniteHome resolve if ClassPath is specified? 
-        // No, we can't, because of additional classpath use case.
+        /// <summary>
+        /// Tests the custom deployment where IGNITE_HOME can't be resolved, and there is a user-defined classpath.
+        /// </summary>
+        [Test]
+        public void TestCustomDeployment()
+        {
+            // 1. Create temp folder
+            var folder = GetTempFolder();
+
+
+            // 2. Copy jars 
+            // 3. Copy .NET binaries
+            // 4. Start a node and make sure it works properly
+        }
+
+        private static string GetTempFolder()
+        {
+            const string prefix = "ig-test-";
+            var temp = Path.GetTempPath();
+
+            for (int i = 0; i < int.MaxValue; i++)
+            {
+                {
+                    try
+                    {
+                        var path = Path.Combine(temp, prefix, i.ToString());
+
+                        return Directory.CreateDirectory(path).FullName;
+                    }
+                    catch (Exception)
+                    {
+                        continue;
+                    }
+                }
+
+            }
+
+            throw new InvalidOperationException();
+        }
     }
 }
