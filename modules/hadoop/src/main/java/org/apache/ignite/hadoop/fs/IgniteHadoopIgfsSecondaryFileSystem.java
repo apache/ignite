@@ -351,9 +351,10 @@ public class IgniteHadoopIgfsSecondaryFileSystem implements IgfsSecondaryFileSys
             Collection<IgfsFile> res = new ArrayList<>(statuses.length);
 
             for (FileStatus status : statuses) {
-                IgfsFileInfo fsInfo = status.isDirectory() ? new IgfsFileInfo(true, properties(status)) :
-                    new IgfsFileInfo((int)status.getBlockSize(), status.getLen(), null, null, false,
-                    properties(status));
+                IgfsFileInfo fsInfo = status.isDirectory() ?
+                    new IgfsFileInfo(true, properties(status), status.getAccessTime(), status.getModificationTime()) :
+                    new IgfsFileInfo((int)status.getBlockSize(), status.getLen(), null, null, false, properties(status),
+                        status.getAccessTime(), status.getModificationTime());
 
                 res.add(new IgfsFileImpl(new IgfsPath(path, status.getPath().getName()), fsInfo, 1));
             }
