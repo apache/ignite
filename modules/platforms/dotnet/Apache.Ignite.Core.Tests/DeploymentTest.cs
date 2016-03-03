@@ -19,6 +19,7 @@
 namespace Apache.Ignite.Core.Tests
 {
     using System;
+    using System.Diagnostics;
     using System.IO;
     using System.Linq;
     using Apache.Ignite.Core.Impl.Common;
@@ -53,7 +54,7 @@ namespace Apache.Ignite.Core.Tests
                 File.Copy(jar, Path.Combine(folder, Path.GetFileName(jar)), true);
 
             // Build classpath
-            var classpath = string.Join(";", Directory.GetFiles(folder));
+            var classpath = string.Join(";", Directory.GetFiles(folder).Select(Path.GetFileName));
 
             // Copy .NET binaries
             foreach (var asm in new[] {typeof (IgniteRunner).Assembly, typeof (Ignition).Assembly})
@@ -68,9 +69,19 @@ namespace Apache.Ignite.Core.Tests
             var exePath = Path.Combine(folder, "Apache.Ignite.exe");
 
             var args = "-springConfigUrl=" + springFile +
-                       " -jvmClasspath=" + classpath;
+                       " -jvmClasspath=" + classpath +
+                       " -J-ea" +
+                       " -J-Xcheck:jni" +
+                       " -J-Xms512m" +
+                       " -J-Xmx512m" +
+                       " -J-DIGNITE_QUIET=false";
 
-            var proc = System.Diagnostics.Process.Start(exePath, args);
+            var proc = System.Diagnostics.Process.Start(new ProcessStartInfo(exePath)
+            {
+                Arguments = args,
+                WorkingDirectory = folder
+            });
+
             Assert.IsNotNull(proc);
 
             try
@@ -105,7 +116,7 @@ namespace Apache.Ignite.Core.Tests
                 {
                     try
                     {
-                        var path = Path.Combine(temp, prefix, i.ToString());
+                        var path = Path.Combine(temp, prefix + i);
 
                         if (Directory.Exists(path))
                             Directory.Delete(path, true);
