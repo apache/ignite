@@ -159,11 +159,9 @@ namespace Apache.Ignite.Core.Tests.Cache
         /// </summary>
         private static IgniteConfiguration GetConfig(string gridName = null)
         {
-            return new IgniteConfiguration
+            return new IgniteConfiguration(TestUtils.GetTestConfiguration())
             {
                 GridName = gridName,
-                JvmClasspath = TestUtils.CreateTestClasspath(),
-                JvmOptions = TestUtils.TestJavaOptions(),
                 BinaryConfiguration = new BinaryConfiguration
                 {
                     TypeConfigurations = new[]
@@ -179,13 +177,6 @@ namespace Apache.Ignite.Core.Tests.Cache
                         }
                     }
                 },
-                DiscoverySpi = new TcpDiscoverySpi
-                {
-                    IpFinder = new TcpDiscoveryStaticIpFinder
-                    {
-                        Endpoints = new[] {"127.0.0.1:47500", "127.0.0.1:47501"}
-                    }
-                }
             };
         }
 
