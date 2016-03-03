@@ -30,8 +30,6 @@ window.require = ace.require; // TODO Should be removed after full refactoring t
 window.angular = angular;
 window.pdfMake = pdfMake;
 
-import 'angular-socket-io';
-import 'angular-retina';
 import 'angular-ui-router';
 import 'angular-ui-router-metatags';
 import 'angular-animate';
@@ -43,6 +41,8 @@ import 'angular-ui-grid';
 import 'angular-drag-and-drop-lists';
 import 'angular-nvd3';
 import 'angular-tree-control';
+import 'angular-socket-io';
+import 'angular-retina';
 
 import 'bootstrap-carousel';
 import 'file-saver';
