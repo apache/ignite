@@ -18,19 +18,48 @@
 import template from './form-field-java-class.jade!';
 
 export default ['igniteFormFieldJavaClass', ['IgniteFormGUID', (guid) => {
-    const link = (scope, el, attrs, [form, label]) => {
+    const link = (scope, el, attrs, [ngModel, form, label]) => {
         const {id, name} = scope;
-        const field = form[name];
-
-        scope.form = form;
-        scope.field = field;
-        scope.label = label;
 
         label.for = scope.id = id || guid();
 
+        scope.form = form;
+        scope.label = label;
+        scope.ngModel = ngModel;
         scope.$watch('required', (required) => {
             label.required = required || false;
         });
+
+        form.$defaults = form.$defaults || {};
+        form.$defaults[name] = _.cloneDeep(scope.value);
+
+        const setAsDefault = () => {
+            if (!form.$pristine) return;
+
+            form.$defaults = form.$defaults || {};
+            form.$defaults[name] = _.cloneDeep(scope.value);
+        };
+
+        scope.$watch(() => form.$pristine, setAsDefault);
+        scope.$watch('value', setAsDefault);
+
+        scope.ngChange = function() {
+            ngModel.$setViewValue(scope.value);
+
+            if (JSON.stringify(scope.value) !== JSON.stringify(form.$defaults[name]))
+                ngModel.$setDirty();
+            else
+                ngModel.$setPristine();
+
+            if (ngModel.$valid)
+                el.find('input').addClass('ng-valid').removeClass('ng-invalid');
+            else
+                el.find('input').removeClass('ng-valid').addClass('ng-invalid');
+        };
+
+        ngModel.$render = function() {
+            scope.value = ngModel.$modelValue;
+        };
     };
 
     return {
@@ -38,11 +67,10 @@ export default ['igniteFormFieldJavaClass', ['IgniteFormGUID', (guid) => {
         scope: {
             id: '@',
             name: '@',
+            placeholder: '@',
             required: '=ngRequired',
             disabled: '=ngDisabled',
-            unique: '=igniteUnique',
 
-            ngModel: '=',
             ngBlur: '&',
 
             autofocus: '=igniteFormFieldInputAutofocus'
@@ -51,6 +79,6 @@ export default ['igniteFormFieldJavaClass', ['IgniteFormGUID', (guid) => {
         template,
         replace: true,
         transclude: true,
-        require: ['^form', '?^igniteFormField']
+        require: ['ngModel', '^form', '?^igniteFormField']
     };
 }]];

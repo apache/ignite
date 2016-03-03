@@ -16,38 +16,42 @@
 
 mixin feedback(error, message)
     i.fa.fa-exclamation-triangle.form-control-feedback(
-        ng-if='!form[name].$pristine && form[name].$error.#{error}'
+        ng-if='!form[name+"JavaClass"].$pristine && form[name+"JavaClass"].$error.#{error}'
         bs-tooltip='"{{ label.name }} #{message}"'
         ignite-error='#{error}'
         ignite-error-message='{{ label.name }} #{message}'
     )
 
-div
-    ignite-form-field-input-text(
-        data-id='{{ id }}'
-        data-name='{{ name }}'
-        data-placeholder='Enter fully qualified class name'
+.input-tip
+    input.form-control(
+        id='{{ id }}'
+        name='{{ name }}JavaClass'
+        placeholder='Enter fully qualified class name'
+        type='text'
 
-        data-ng-model='ngModel'
+        data-ng-model='value'
+        data-ng-blur='ngBlur()'
+        data-ng-change='ngChange()'
         data-ng-required='required || false'
         data-ng-disabled='disabled || false'
+        data-ng-model-options='{debounce: 150}'
 
         data-java-keywords='true'
         data-java-identifier='true'
         data-java-package-specified='true'
         data-java-built-in-class='true'
-        
-        data-ignite-unique='unique'
-        data-ignite-form-field-input-autofocus='autofocus || false '
+
+        data-ignite-form-field-input-autofocus='autofocus || false'
 
         on-enter='onEnter()'
         on-escape='onEscape()'
-        data-ng-blur='ngBlur()'
     )
-        span(ng-transclude)
 
-        +feedback('javaPackageSpecified', 'does not have package specified')
-        +feedback('javaBuiltInClass', 'should not be the Java built-in class')
-        +feedback('javaKeywords', 'could not contains reserved Java keyword')
-        +feedback('javaIdentifier', 'is invalid Java identifier')
-        +feedback('required', 'could not be empty')
+    span(ng-transclude='')
+
+    +feedback('javaPackageSpecified', 'does not have package specified')
+    +feedback('javaBuiltInClass', 'should not be the Java built-in class')
+    +feedback('javaKeywords', 'could not contains reserved Java keyword')
+    +feedback('javaIdentifier', 'is invalid Java identifier')
+
+    +feedback('required', 'could not be empty!')
