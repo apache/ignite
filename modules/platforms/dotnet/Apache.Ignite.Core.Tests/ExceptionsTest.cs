@@ -64,7 +64,8 @@ namespace Apache.Ignite.Core.Tests
 
             var e = Assert.Throws<ClusterGroupEmptyException>(() => grid.GetCluster().ForRemotes().GetMetrics());
 
-            Assert.IsNotNullOrEmpty(e.JavaStackTrace);
+            Assert.IsTrue(e.JavaStackTrace.StartsWith(
+                    "class org.apache.ignite.cluster.ClusterGroupEmptyException: Cluster group is empty."));
 
             grid.Dispose();
 

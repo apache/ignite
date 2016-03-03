@@ -46,16 +46,6 @@ namespace Apache.Ignite.Core.Cache.Store
         /// <summary>
         /// Initializes a new instance of the <see cref="CacheStoreException"/> class.
         /// </summary>
-        /// <param name="message">The message that describes the error.</param>
-        /// <param name="javaStackTrace">The Java stack trace.</param>
-        public CacheStoreException(string message, string javaStackTrace) : base(message, javaStackTrace)
-        {
-            // No-op.
-        }
-
-        /// <summary>
-        /// Initializes a new instance of the <see cref="CacheStoreException"/> class.
-        /// </summary>
         /// <param name="message">The message.</param>
         /// <param name="cause">The cause.</param>
         public CacheStoreException(string message, Exception cause) : base(message, cause)

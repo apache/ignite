@@ -58,16 +58,6 @@ namespace Apache.Ignite.Core.Transactions
         /// <summary>
         /// Initializes a new instance of the <see cref="TransactionRollbackException"/> class.
         /// </summary>
-        /// <param name="message">The message that describes the error.</param>
-        /// <param name="javaStackTrace">The Java stack trace.</param>
-        public TransactionRollbackException(string message, string javaStackTrace) : base(message, javaStackTrace)
-        {
-            // No-op.
-        }
-
-        /// <summary>
-        /// Initializes a new instance of the <see cref="TransactionRollbackException"/> class.
-        /// </summary>
         /// <param name="message">The message.</param>
         /// <param name="cause">The cause.</param>
         public TransactionRollbackException(string message, Exception cause) : base(message, cause)

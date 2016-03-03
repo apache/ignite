@@ -47,16 +47,6 @@ namespace Apache.Ignite.Core.Cluster
         /// <summary>
         /// Initializes a new instance of the <see cref="ClusterTopologyException"/> class.
         /// </summary>
-        /// <param name="message">The message that describes the error.</param>
-        /// <param name="javaStackTrace">The Java stack trace.</param>
-        public ClusterTopologyException(string message, string javaStackTrace) : base(message, javaStackTrace)
-        {
-            // No-op.
-        }
-
-        /// <summary>
-        /// Initializes a new instance of the <see cref="ClusterTopologyException"/> class.
-        /// </summary>
         /// <param name="message">The message.</param>
         /// <param name="cause">The cause.</param>
         public ClusterTopologyException(string message, Exception cause) : base(message, cause)

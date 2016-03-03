@@ -59,16 +59,6 @@ namespace Apache.Ignite.Core.Transactions
         /// <summary>
         /// Initializes a new instance of the <see cref="TransactionTimeoutException"/> class.
         /// </summary>
-        /// <param name="message">The message that describes the error.</param>
-        /// <param name="javaStackTrace">The Java stack trace.</param>
-        public TransactionTimeoutException(string message, string javaStackTrace) : base(message, javaStackTrace)
-        {
-            // No-op.
-        }
-
-        /// <summary>
-        /// Initializes a new instance of the <see cref="TransactionTimeoutException"/> class.
-        /// </summary>
         /// <param name="message">The message.</param>
         /// <param name="cause">The cause.</param>
         public TransactionTimeoutException(string message, Exception cause) : base(message, cause)

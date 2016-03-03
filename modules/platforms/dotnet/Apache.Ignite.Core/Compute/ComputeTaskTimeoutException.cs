@@ -47,16 +47,6 @@ namespace Apache.Ignite.Core.Compute
         /// <summary>
         /// Initializes a new instance of the <see cref="ComputeTaskTimeoutException"/> class.
         /// </summary>
-        /// <param name="message">The message that describes the error.</param>
-        /// <param name="javaStackTrace">The Java stack trace.</param>
-        public ComputeTaskTimeoutException(string message, string javaStackTrace) : base(message, javaStackTrace)
-        {
-            // No-op.
-        }
-
-        /// <summary>
-        /// Initializes a new instance of the <see cref="ComputeTaskTimeoutException"/> class.
-        /// </summary>
         /// <param name="info">Serialization information.</param>
         /// <param name="ctx">Streaming context.</param>
         protected ComputeTaskTimeoutException(SerializationInfo info, StreamingContext ctx) : base(info, ctx)

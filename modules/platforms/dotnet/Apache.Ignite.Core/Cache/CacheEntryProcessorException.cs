@@ -48,16 +48,6 @@ namespace Apache.Ignite.Core.Cache
         /// <summary>
         /// Initializes a new instance of the <see cref="CacheEntryProcessorException"/> class.
         /// </summary>
-        /// <param name="message">The message that describes the error.</param>
-        /// <param name="javaStackTrace">The Java stack trace.</param>
-        public CacheEntryProcessorException(string message, string javaStackTrace) : base(message, javaStackTrace)
-        {
-            // No-op.
-        }
-
-        /// <summary>
-        /// Initializes a new instance of the <see cref="CacheEntryProcessorException"/> class.
-        /// </summary>
         /// <param name="message">The message.</param>
         /// <param name="cause">The cause.</param>
         public CacheEntryProcessorException(string message, Exception cause) : base(message, cause)
