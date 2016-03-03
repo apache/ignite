@@ -39,6 +39,7 @@ import org.apache.ignite.services.ServiceConfiguration;
 import org.apache.ignite.services.ServiceDescriptor;
 
 import java.lang.reflect.Method;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.HashMap;
@@ -390,7 +391,7 @@ public class PlatformServices extends PlatformAbstractTarget {
 
             Method[] allMethods = clazz.getMethods();
 
-            ArrayList<Method> methods = new ArrayList<>(allMethods.length);
+            List<Method> methods = new ArrayList<>(allMethods.length);
 
             // Filter by name and param count
             for (Method m : allMethods)
@@ -400,7 +401,7 @@ public class PlatformServices extends PlatformAbstractTarget {
             if (methods.size() == 1)
                 return methods.get(0);
 
-            if (methods.size() == 0)
+            if (methods.isEmpty())
                 throw new NoSuchMethodException("Could not find proxy method '" + mthdName + "' in class " + clazz);
 
             // Filter by param types
@@ -411,7 +412,7 @@ public class PlatformServices extends PlatformAbstractTarget {
             if (methods.size() == 1)
                 return methods.get(0);
 
-            if (methods.size() == 0)
+            if (methods.isEmpty())
                 throw new NoSuchMethodException("Could not find proxy method '" + mthdName + "' in class " + clazz);
 
             throw new NoSuchMethodException("Ambiguous proxy method '" + mthdName + "' in class " + clazz);
