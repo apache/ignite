@@ -29,7 +29,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.locks.ReentrantReadWriteLock;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cluster.ClusterNode;
@@ -44,6 +43,7 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.Gri
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsExchangeFuture;
 import org.apache.ignite.internal.util.F0;
 import org.apache.ignite.internal.util.GridAtomicLong;
+import org.apache.ignite.internal.util.StripedCompositeReadWriteLock;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
@@ -101,7 +101,7 @@ class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
     private final GridAtomicLong updateSeq = new GridAtomicLong(1);
 
     /** Lock. */
-    private final ReentrantReadWriteLock lock = new ReentrantReadWriteLock();
+    private final StripedCompositeReadWriteLock lock = new StripedCompositeReadWriteLock(16);
 
     /** Partition update counter. */
     private Map<Integer, Long> cntrMap = new HashMap<>();
@@ -1093,8 +1093,6 @@ class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
      * @return Checks if any of the local partitions need to be evicted.
      */
     private boolean checkEvictions(long updateSeq) {
-        assert lock.isWriteLockedByCurrentThread();
-
         boolean changed = false;
 
         UUID locId = cctx.nodeId();
@@ -1169,7 +1167,6 @@ class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
      */
     @SuppressWarnings({"MismatchedQueryAndUpdateOfCollection"})
     private void updateLocal(int p, UUID nodeId, GridDhtPartitionState state, long updateSeq) {
-        assert lock.isWriteLockedByCurrentThread();
         assert nodeId.equals(cctx.nodeId());
 
         // In case if node joins, get topology at the time of joining node.
@@ -1223,7 +1220,6 @@ class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
      */
     private void removeNode(UUID nodeId) {
         assert nodeId != null;
-        assert lock.writeLock().isHeldByCurrentThread();
 
         ClusterNode oldest = CU.oldestAliveCacheServerNode(cctx.shared(), topVer);
 
@@ -1288,8 +1284,6 @@ class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
 
     /** {@inheritDoc} */
     @Override public void onEvicted(GridDhtLocalPartition part, boolean updateSeq) {
-        assert updateSeq || lock.isWriteLockedByCurrentThread();
-
         lock.writeLock().lock();
 
         try {
@@ -1425,8 +1419,6 @@ class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
      */
     private void consistencyCheck() {
         if (CONSISTENCY_CHECK) {
-            assert lock.writeLock().isHeldByCurrentThread();
-
             if (node2part == null)
                 return;
 

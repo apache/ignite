@@ -65,6 +65,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Binary\BinaryReflectiveSerializer.cs" />
     <Compile Include="Binary\Package-Info.cs" />
     <Compile Include="Cache\CacheAtomicUpdateTimeoutException.cs" />
     <Compile Include="Cache\CacheEntryProcessorException.cs" />
@@ -328,7 +329,6 @@
     <Compile Include="Impl\Binary\BinaryReaderHandleDictionary.cs" />
     <Compile Include="Impl\Binary\BinaryReader.cs" />
     <Compile Include="Impl\Binary\BinaryReflectiveActions.cs" />
-    <Compile Include="Impl\Binary\BinaryReflectiveSerializer.cs" />
     <Compile Include="Impl\Binary\Binary.cs" />
     <Compile Include="Impl\Binary\Structure\BinaryStructureTracker.cs" />
     <Compile Include="Impl\Binary\BinarySurrogateTypeDescriptor.cs" />
