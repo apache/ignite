@@ -31,10 +31,16 @@ angular
     })
     .state('password.reset', {
         url: '/reset?{token}',
-        templateUrl: '/reset.html'
+        templateUrl: '/reset.html',
+        metaTags: {
+            title: 'Reset password'
+        }
     })
     .state('password.send', {
         url: '/send',
-        templateUrl: '/reset.html'
+        templateUrl: '/reset.html',
+        metaTags: {
+            title: 'Password Send'
+        }
     });
 }]);

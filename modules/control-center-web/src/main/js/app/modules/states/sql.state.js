@@ -35,10 +35,8 @@ angular
         data: {
             loading: 'Loading notebook screen...'
         },
-        resolve: {
-            $title: ['IgniteBranding', (branding) => {
-                return 'Query notebook' + branding.titleSuffix;
-            }]
+        metaTags: {
+            title: 'Query notebook'
         }
     })
     .state('base.sql.demo', {
@@ -47,10 +45,8 @@ angular
         data: {
             loading: 'Enable SQL demo...'
         },
-        resolve: {
-            $title: ['IgniteBranding', (branding) => {
-                return 'SQL demo' + branding.titleSuffix;
-            }]
+        metaTags: {
+            title: 'SQL demo'
         }
     });
 }]);

@@ -29,10 +29,8 @@ angular
     .state('signin', {
         url: '/signin',
         templateUrl: '/signin.html',
-        resolve: {
-            $title: ['IgniteBranding', (branding) => {
-                return 'Management Tool and Configuration Wizard for Apache Ignite' + branding.titleSuffix;
-            }]
+        metaTags: {
+            title: 'Management Tool and Configuration Wizard for Apache Ignite'
         }
     });
 }])

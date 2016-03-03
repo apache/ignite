@@ -27,10 +27,8 @@ angular
     .state('settings.admin', {
         url: '/admin',
         templateUrl: '/settings/admin.html',
-        resolve: {
-            $title: ['IgniteBranding', (branding) => {
-                return 'List of registered users' + branding.titleSuffix;
-            }]
+        metaTags: {
+            title: 'List of registered users'
         }
     });
 }]);

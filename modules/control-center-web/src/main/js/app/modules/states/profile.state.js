@@ -27,10 +27,8 @@ angular
     .state('settings.profile', {
         url: '/profile',
         templateUrl: '/settings/profile.html',
-        resolve: {
-            $title: ['IgniteBranding', (branding) => {
-                return 'User profile' + branding.titleSuffix;
-            }]
+        metaTags: {
+            title: 'User profile'
         }
     });
 }]);

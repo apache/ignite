@@ -83,7 +83,7 @@
       "angular-tree-control": "github:wix/angular-tree-control@^0.2.23",
       "angular-ui-grid": "github:angular-ui/bower-ui-grid@^3.0.7",
       "angular-ui-router": "github:angular-ui/ui-router@^0.2.15",
-      "angular-ui-router-title": "github:nonplus/angular-ui-router-title@^0.0.4",
+      "angular-ui-router-metatags": "github:tinusn/ui-router-metatags@^1.0.3",
       "blob": "github:eligrey/Blob.js@master",
       "bootstrap-carousel": "github:twbs/bootstrap@^3.3.6",
       "css": "github:systemjs/plugin-css@^0.1.20",

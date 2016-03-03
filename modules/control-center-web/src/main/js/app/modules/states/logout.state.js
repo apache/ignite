@@ -28,6 +28,9 @@ angular
         url: '/logout',
         controller: ['Auth', function(Auth) {
             Auth.logout();
-        }]
+        }],
+        metaTags: {
+            title: 'Logout'
+        }
     });
 }]);

@@ -33,6 +33,7 @@ System.config({
     "angular-ui-ace": "github:angular-ui/ui-ace@0.2.3",
     "angular-ui-grid": "github:angular-ui/bower-ui-grid@3.1.1",
     "angular-ui-router": "github:angular-ui/ui-router@0.2.18",
+    "angular-ui-router-metatags": "github:tinusn/ui-router-metatags@1.0.3",
     "angular-ui-router-title": "github:nonplus/angular-ui-router-title@0.0.4",
     "babel": "npm:babel-core@5.8.35",
     "babel-runtime": "npm:babel-runtime@5.8.35",
