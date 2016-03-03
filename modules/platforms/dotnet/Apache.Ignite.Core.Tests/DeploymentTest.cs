@@ -50,7 +50,7 @@ namespace Apache.Ignite.Core.Tests
 
             foreach (var jar in jars)
                 // ReSharper disable once AssignNullToNotNullAttribute
-                File.Copy(jar, Path.Combine(folder, Path.GetFileName(jar)));
+                File.Copy(jar, Path.Combine(folder, Path.GetFileName(jar)), true);
 
             // Build classpath
             var classpath = string.Join(";", Directory.GetFiles(folder));
@@ -88,6 +88,7 @@ namespace Apache.Ignite.Core.Tests
             finally 
             {
                 proc.Kill();
+                Directory.Delete(folder, true);
             }
         }
 
@@ -105,6 +106,9 @@ namespace Apache.Ignite.Core.Tests
                     try
                     {
                         var path = Path.Combine(temp, prefix, i.ToString());
+
+                        if (Directory.Exists(path))
+                            Directory.Delete(path, true);
 
                         return Directory.CreateDirectory(path).FullName;
                     }
