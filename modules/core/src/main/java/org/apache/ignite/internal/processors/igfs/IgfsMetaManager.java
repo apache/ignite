@@ -43,6 +43,7 @@ import javax.cache.processor.EntryProcessor;
 import javax.cache.processor.EntryProcessorException;
 import javax.cache.processor.EntryProcessorResult;
 import javax.cache.processor.MutableEntry;
+
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteInterruptedException;
@@ -847,7 +848,7 @@ public class IgfsMetaManager extends IgfsManager {
         if (!id2InfoPrj.putIfAbsent(fileId, newFileInfo))
             throw fsException("Failed to add file details into cache: " + newFileInfo);
 
-        id2InfoPrj.invoke(parentId, new UpdateListing(fileName, new IgfsListingEntry(newFileInfo), false));
+        id2InfoPrj.invoke(parentId, new ListingAdd(fileName, new IgfsListingEntry(newFileInfo)));
 
         return null;
     }
@@ -956,8 +957,8 @@ public class IgfsMetaManager extends IgfsManager {
                     // 8. Actual move: remove from source parent and add to destination target.
                     IgfsListingEntry entry = srcTargetInfo.listing().get(srcName);
 
-                    id2InfoPrj.invoke(srcTargetId, new UpdateListing(srcName, entry, true));
-                    id2InfoPrj.invoke(dstTargetId, new UpdateListing(dstName, entry, false));
+                    id2InfoPrj.invoke(srcTargetId, new ListingRemove(srcName, entry.fileId()));
+                    id2InfoPrj.invoke(dstTargetId, new ListingAdd(dstName, entry));
 
                     tx.commit();
 
@@ -1093,10 +1094,10 @@ public class IgfsMetaManager extends IgfsManager {
                 ", destParentId=" + destParentId + ", destEntry=" + destEntry + ']'));
 
         // Remove listing entry from the source parent listing.
-        id2InfoPrj.invoke(srcParentId, new UpdateListing(srcFileName, srcEntry, true));
+        id2InfoPrj.invoke(srcParentId, new ListingRemove(srcFileName, srcEntry.fileId()));
 
         // Add listing entry into the destination parent listing.
-        id2InfoPrj.invoke(destParentId, new UpdateListing(destFileName, srcEntry, false));
+        id2InfoPrj.invoke(destParentId, new ListingAdd(destFileName, srcEntry));
     }
 
     /**
@@ -1134,8 +1135,8 @@ public class IgfsMetaManager extends IgfsManager {
                     id2InfoPrj.put(newInfo.id(), newInfo);
 
                     // Add new info to trash listing.
-                    id2InfoPrj.invoke(TRASH_ID, new UpdateListing(newInfo.id().toString(),
-                        new IgfsListingEntry(newInfo), false));
+                    id2InfoPrj.invoke(TRASH_ID, new ListingAdd(newInfo.id().toString(),
+                        new IgfsListingEntry(newInfo)));
 
                     // Remove listing entries from root.
                     // Note that root directory properties and other attributes are preserved:
@@ -1233,10 +1234,10 @@ public class IgfsMetaManager extends IgfsManager {
 
                     assert victimId.equals(srcEntry.fileId());
 
-                    id2InfoPrj.invoke(srcParentId, new UpdateListing(srcFileName, srcEntry, true));
+                    id2InfoPrj.invoke(srcParentId, new ListingRemove(srcFileName, srcEntry.fileId()));
 
                     // Add listing entry into the destination parent listing.
-                    id2InfoPrj.invoke(TRASH_ID, new UpdateListing(destFileName, srcEntry, false));
+                    id2InfoPrj.invoke(TRASH_ID, new ListingAdd(destFileName, srcEntry));
 
                     if (victimInfo.isFile())
                         // Update a file info of the removed file with a file path,
@@ -1313,12 +1314,12 @@ public class IgfsMetaManager extends IgfsManager {
                 id2InfoPrj.getAndPut(newInfo.id(), newInfo);
 
                 // Add new info to trash listing.
-                id2InfoPrj.invoke(TRASH_ID, new UpdateListing(newInfo.id().toString(),
-                    new IgfsListingEntry(newInfo), false));
+                id2InfoPrj.invoke(TRASH_ID, new ListingAdd(newInfo.id().toString(),
+                    new IgfsListingEntry(newInfo)));
 
                 // Remove listing entries from root.
                 for (Map.Entry<String, IgfsListingEntry> entry : transferListing.entrySet())
-                    id2InfoPrj.invoke(ROOT_ID, new UpdateListing(entry.getKey(), entry.getValue(), true));
+                    id2InfoPrj.invoke(ROOT_ID, new ListingRemove(entry.getKey(), entry.getValue().fileId()));
 
                 resId = newInfo.id();
             }
@@ -1468,7 +1469,7 @@ public class IgfsMetaManager extends IgfsManager {
                         IgfsListingEntry listingEntry = parentInfo.listing().get(name);
 
                         if (listingEntry != null)
-                            id2InfoPrj.invoke(parentId, new UpdateListing(name, listingEntry, true));
+                            id2InfoPrj.invoke(parentId, new ListingRemove(name, listingEntry.fileId()));
 
                         IgfsFileInfo deleted = id2InfoPrj.getAndRemove(id);
 
@@ -1599,7 +1600,7 @@ public class IgfsMetaManager extends IgfsManager {
 
                 assert id2InfoPrj.get(parentId) != null;
 
-                id2InfoPrj.invoke(parentId, new UpdateListing(fileName, entry, false));
+                id2InfoPrj.invoke(parentId, new ListingAdd(fileName, entry));
             }
 
             return newInfo;
@@ -2009,9 +2010,9 @@ public class IgfsMetaManager extends IgfsManager {
                                 id2InfoPrj.put(newInfo.id(), newInfo); // Put the new one.
 
                                 id2InfoPrj.invoke(parentInfo.id(),
-                                    new UpdateListing(path.name(), parentInfo.listing().get(path.name()), true));
+                                    new ListingRemove(path.name(), parentInfo.listing().get(path.name()).fileId()));
                                 id2InfoPrj.invoke(parentInfo.id(),
-                                    new UpdateListing(path.name(), new IgfsListingEntry(newInfo), false));
+                                    new ListingAdd(path.name(), new IgfsListingEntry(newInfo)));
 
                                 IgniteInternalFuture<?> delFut = igfsCtx.data().delete(oldInfo);
                             }
@@ -3213,10 +3214,82 @@ public class IgfsMetaManager extends IgfsManager {
     }
 
     /**
+     * Remove entry from directory listing.
+     */
+    @GridInternal
+    private static final class ListingRemove implements EntryProcessor<IgniteUuid, IgfsFileInfo, Void>,
+        Externalizable {
+        /** */
+        private static final long serialVersionUID = 0L;
+
+        /** File name. */
+        private String fileName;
+
+        /** Expected ID. */
+        private IgniteUuid fileId;
+
+        /**
+         * Default constructor.
+         */
+        public ListingRemove() {
+            // No-op.
+        }
+
+        /**
+         * Constructor.
+         *
+         * @param fileName File name.
+         * @param fileId File ID.
+         */
+        public ListingRemove(String fileName, IgniteUuid fileId) {
+            this.fileName = fileName;
+            this.fileId = fileId;
+        }
+
+        /** {@inheritDoc} */
+        @Override public Void process(MutableEntry<IgniteUuid, IgfsFileInfo> e, Object... args)
+            throws EntryProcessorException {
+            IgfsFileInfo fileInfo = e.getValue();
+
+            assert fileInfo != null;
+            assert fileInfo.isDirectory();
+
+            Map<String, IgfsListingEntry> listing = new HashMap<>(fileInfo.listing());
+
+            listing.putAll(fileInfo.listing());
+
+            IgfsListingEntry oldEntry = listing.get(fileName);
+
+            if (oldEntry == null || !oldEntry.fileId().equals(fileId))
+                throw new IgniteException("Directory listing doesn't contain expected file" +
+                    " [listing=" + listing + ", fileName=" + fileName + "]");
+
+            // Modify listing in-place.
+            listing.remove(fileName);
+
+            e.setValue(new IgfsFileInfo(listing, fileInfo));
+
+            return null;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void writeExternal(ObjectOutput out) throws IOException {
+            U.writeString(out, fileName);
+            U.writeGridUuid(out, fileId);
+        }
+
+        /** {@inheritDoc} */
+        @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
+            fileName = U.readString(in);
+            fileId = U.readGridUuid(in);
+        }
+    }
+
+    /**
      * Update directory listing closure.
      */
     @GridInternal
-    private static final class UpdateListing implements EntryProcessor<IgniteUuid, IgfsFileInfo, Void>,
+    private static final class ListingAdd implements EntryProcessor<IgniteUuid, IgfsFileInfo, Void>,
         Externalizable {
         /** */
         private static final long serialVersionUID = 0L;
@@ -3227,30 +3300,25 @@ public class IgfsMetaManager extends IgfsManager {
         /** File ID.*/
         private IgfsListingEntry entry;
 
-        /** Update operation: remove entry from listing if {@code true} or add entry to listing if {@code false}. */
-        private boolean rmv;
-
         /**
          * Constructs update directory listing closure.
          *
          * @param fileName File name to add into parent listing.
          * @param entry Listing entry to add or remove.
-         * @param rmv Remove entry from listing if {@code true} or add entry to listing if {@code false}.
          */
-        private UpdateListing(String fileName, IgfsListingEntry entry, boolean rmv) {
+        private ListingAdd(String fileName, IgfsListingEntry entry) {
             assert fileName != null;
             assert entry != null;
 
             this.fileName = fileName;
             this.entry = entry;
-            this.rmv = rmv;
         }
 
         /**
          * Empty constructor required for {@link Externalizable}.
          *
          */
-        public UpdateListing() {
+        public ListingAdd() {
             // No-op.
         }
 
@@ -3261,30 +3329,15 @@ public class IgfsMetaManager extends IgfsManager {
             assert fileInfo != null : "File info not found for the child: " + entry.fileId();
             assert fileInfo.isDirectory();
 
-            Map<String, IgfsListingEntry> listing =
-                U.newHashMap(fileInfo.listing().size() + (rmv ? 0 : 1));
+            Map<String, IgfsListingEntry> listing = new HashMap<>(fileInfo.listing());
 
-            listing.putAll(fileInfo.listing());
+            // Modify listing in-place.
+            IgfsListingEntry oldEntry = listing.put(fileName, entry);
 
-            if (rmv) {
-                IgfsListingEntry oldEntry = listing.get(fileName);
-
-                if (oldEntry == null || !oldEntry.fileId().equals(entry.fileId()))
-                    throw new IgniteException("Directory listing doesn't contain expected file" +
-                        " [listing=" + listing + ", fileName=" + fileName + ", entry=" + entry + ']');
-
-                // Modify listing in-place.
-                listing.remove(fileName);
-            }
-            else {
-                // Modify listing in-place.
-                IgfsListingEntry oldEntry = listing.put(fileName, entry);
-
-                if (oldEntry != null && !oldEntry.fileId().equals(entry.fileId()))
-                    throw new IgniteException("Directory listing contains unexpected file" +
-                        " [listing=" + listing + ", fileName=" + fileName + ", entry=" + entry +
-                        ", oldEntry=" + oldEntry + ']');
-            }
+            if (oldEntry != null && !oldEntry.fileId().equals(entry.fileId()))
+                throw new IgniteException("Directory listing contains unexpected file" +
+                    " [listing=" + listing + ", fileName=" + fileName + ", entry=" + entry +
+                    ", oldEntry=" + oldEntry + ']');
 
             e.setValue(new IgfsFileInfo(listing, fileInfo));
 
@@ -3295,19 +3348,17 @@ public class IgfsMetaManager extends IgfsManager {
         @Override public void writeExternal(ObjectOutput out) throws IOException {
             U.writeString(out, fileName);
             out.writeObject(entry);
-            out.writeBoolean(rmv);
         }
 
         /** {@inheritDoc} */
         @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
             fileName = U.readString(in);
             entry = (IgfsListingEntry)in.readObject();
-            rmv = in.readBoolean();
         }
 
         /** {@inheritDoc} */
         @Override public String toString() {
-            return S.toString(UpdateListing.class, this);
+            return S.toString(ListingAdd.class, this);
         }
     }
 
@@ -3482,11 +3533,11 @@ public class IgfsMetaManager extends IgfsManager {
 
                                         assert deletedEntry != null;
 
-                                        id2InfoPrj.invoke(parentId, new UpdateListing(name, deletedEntry, true));
+                                        id2InfoPrj.invoke(parentId, new ListingRemove(name, deletedEntry.fileId()));
 
                                         // Add listing entry into the destination parent listing.
-                                        id2InfoPrj.invoke(TRASH_ID, new UpdateListing(
-                                                lowermostExistingInfo.id().toString(), deletedEntry, false));
+                                        id2InfoPrj.invoke(TRASH_ID, new ListingAdd(
+                                                lowermostExistingInfo.id().toString(), deletedEntry));
 
                                         // Update a file info of the removed file with a file path,
                                         // which will be used by delete worker for event notifications.
@@ -3505,7 +3556,7 @@ public class IgfsMetaManager extends IgfsManager {
                                         assert put;
 
                                         id2InfoPrj.invoke(parentId,
-                                                new UpdateListing(name, new IgfsListingEntry(newFileInfo), false));
+                                                new ListingAdd(name, new IgfsListingEntry(newFileInfo)));
 
                                         IgniteBiTuple<IgfsFileInfo, IgniteUuid> t2 = new T2<>(newFileInfo, parentId);
 
@@ -3679,8 +3730,7 @@ public class IgfsMetaManager extends IgfsManager {
                 throws IgniteCheckedException {
             assert childInfo != null;
 
-            id2InfoPrj.invoke(lowermostExistingId,
-                    new UpdateListing(childName, new IgfsListingEntry(childInfo), false));
+            id2InfoPrj.invoke(lowermostExistingId, new ListingAdd(childName, new IgfsListingEntry(childInfo)));
         }
 
         /**
