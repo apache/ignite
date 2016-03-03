@@ -480,7 +480,7 @@ public class IgfsMetaManager extends IgfsManager {
                 assert validTxState(false);
                 assert fileId != null;
 
-                IgniteInternalTx tx = metaCache.txStartEx(PESSIMISTIC, REPEATABLE_READ);
+                IgniteInternalTx tx = startTx();
 
                 try {
                     // Lock file ID for this transaction.
@@ -494,7 +494,7 @@ public class IgfsMetaManager extends IgfsManager {
 
                     IgfsFileInfo newInfo = lockInfo(oldInfo, isDeleteLock);
 
-                    boolean put = metaCache.replace(fileId, oldInfo, newInfo);
+                    boolean put = id2InfoPrj.replace(fileId, oldInfo, newInfo);
 
                     assert put : "Value was not stored in cache [fileId=" + fileId + ", newInfo=" + newInfo + ']';
 
@@ -571,7 +571,7 @@ public class IgfsMetaManager extends IgfsManager {
                 final boolean interrupted = Thread.interrupted();
 
                 try {
-                    IgfsUtils.doInTransactionWithRetries(metaCache, new IgniteOutClosureX<Void>() {
+                    IgfsUtils.doInTransactionWithRetries(id2InfoPrj, new IgniteOutClosureX<Void>() {
                         @Override public Void applyx() throws IgniteCheckedException {
                             assert validTxState(true);
 
@@ -591,7 +591,7 @@ public class IgfsMetaManager extends IgfsManager {
 
                             IgfsFileInfo newInfo = new IgfsFileInfo(oldInfo, null, modificationTime);
 
-                            boolean put = metaCache.put(fileId, newInfo);
+                            boolean put = id2InfoPrj.put(fileId, newInfo);
 
                             assert put : "Value was not stored in cache [fileId=" + fileId + ", newInfo=" + newInfo
                                     + ']';
@@ -847,8 +847,6 @@ public class IgfsMetaManager extends IgfsManager {
         if (!id2InfoPrj.putIfAbsent(fileId, newFileInfo))
             throw fsException("Failed to add file details into cache: " + newFileInfo);
 
-        assert metaCache.get(parentId) != null;
-
         id2InfoPrj.invoke(parentId, new UpdateListing(fileName, new IgfsListingEntry(newFileInfo), false));
 
         return null;
@@ -890,7 +888,7 @@ public class IgfsMetaManager extends IgfsManager {
                 }
 
                 // 2. Start transaction.
-                IgniteInternalTx tx = metaCache.txStartEx(PESSIMISTIC, REPEATABLE_READ);
+                IgniteInternalTx tx = startTx();
 
                 try {
                     // 3. Obtain the locks.
@@ -1094,9 +1092,6 @@ public class IgfsMetaManager extends IgfsManager {
                 " directory (file already exists) [fileId=" + fileId + ", destFileName=" + destFileName +
                 ", destParentId=" + destParentId + ", destEntry=" + destEntry + ']'));
 
-        assert metaCache.get(srcParentId) != null;
-        assert metaCache.get(destParentId) != null;
-
         // Remove listing entry from the source parent listing.
         id2InfoPrj.invoke(srcParentId, new UpdateListing(srcFileName, srcEntry, true));
 
@@ -1116,7 +1111,7 @@ public class IgfsMetaManager extends IgfsManager {
             try {
                 assert validTxState(false);
 
-                final IgniteInternalTx tx = metaCache.txStartEx(PESSIMISTIC, REPEATABLE_READ);
+                final IgniteInternalTx tx = startTx();
 
                 try {
                     // NB: We may lock root because its id is less than any other id:
@@ -1197,7 +1192,7 @@ public class IgfsMetaManager extends IgfsManager {
                 boolean added = allIds.add(TRASH_ID);
                 assert added;
 
-                final IgniteInternalTx tx = metaCache.txStartEx(PESSIMISTIC, REPEATABLE_READ);
+                final IgniteInternalTx tx = startTx();
 
                 try {
                     final Map<IgniteUuid, IgfsFileInfo> infoMap = lockIds(allIds);
@@ -1360,7 +1355,7 @@ public class IgfsMetaManager extends IgfsManager {
                 assert listing != null;
                 assert validTxState(false);
 
-                IgniteInternalTx tx = metaCache.txStartEx(PESSIMISTIC, REPEATABLE_READ);
+                IgniteInternalTx tx = startTx();
 
                 try {
                     Collection<IgniteUuid> res = new HashSet<>();
@@ -1449,7 +1444,7 @@ public class IgfsMetaManager extends IgfsManager {
             try {
                 assert validTxState(false);
 
-                IgniteInternalTx tx = metaCache.txStartEx(PESSIMISTIC, REPEATABLE_READ);
+                IgniteInternalTx tx = startTx();
 
                 try {
                     boolean res = false;
@@ -1630,7 +1625,7 @@ public class IgfsMetaManager extends IgfsManager {
             try {
                 assert validTxState(false);
 
-                IgniteInternalTx tx = metaCache.txStartEx(PESSIMISTIC, REPEATABLE_READ);
+                IgniteInternalTx tx = startTx();
 
                 try {
                     IgfsFileInfo info = updatePropertiesNonTx(parentId, fileId, fileName, props);
@@ -1700,8 +1695,7 @@ public class IgfsMetaManager extends IgfsManager {
                 if (log.isDebugEnabled())
                     log.debug("Update file info [fileId=" + fileId + ", c=" + c + ']');
 
-                IgniteInternalTx tx = metaCache.isLockedByThread(fileId) ? null : metaCache.txStartEx(PESSIMISTIC,
-                    REPEATABLE_READ);
+                IgniteInternalTx tx = id2InfoPrj.isLockedByThread(fileId) ? null : startTx();
 
                 try {
                     // Lock file ID for this transaction.
@@ -1724,7 +1718,7 @@ public class IgfsMetaManager extends IgfsManager {
                         throw fsException("Failed to update file info (file types differ)" +
                             " [oldInfo=" + oldInfo + ", newInfo=" + newInfo + ", c=" + c + ']');
 
-                    boolean b = metaCache.replace(fileId, oldInfo, newInfo);
+                    boolean b = id2InfoPrj.replace(fileId, oldInfo, newInfo);
 
                     assert b : "Inconsistent transaction state [oldInfo=" + oldInfo + ", newInfo=" + newInfo +
                         ", c=" + c + ']';
@@ -1771,7 +1765,7 @@ public class IgfsMetaManager extends IgfsManager {
                     b = new DirectoryChainBuilder(path, props, props);
 
                     // Start TX.
-                    IgniteInternalTx tx = metaCache.txStartEx(PESSIMISTIC, REPEATABLE_READ);
+                    IgniteInternalTx tx = startTx();
 
                     try {
                         final Map<IgniteUuid, IgfsFileInfo> lockedInfos = lockIds(b.idSet);
@@ -1856,7 +1850,7 @@ public class IgfsMetaManager extends IgfsManager {
             try {
                 validTxState(false);
 
-                IgniteInternalTx tx = metaCache.txStartEx(PESSIMISTIC, REPEATABLE_READ);
+                IgniteInternalTx tx = startTx();
 
                 try {
                     Object prev = val != null ? metaCache.getAndPut(sampling, val) : metaCache.getAndRemove(sampling);
@@ -2120,7 +2114,7 @@ public class IgfsMetaManager extends IgfsManager {
 
                             assert lockedInfo != null; // We checked the lock above.
 
-                            boolean put = metaCache.put(info.id(), lockedInfo);
+                            boolean put = id2InfoPrj.put(info.id(), lockedInfo);
 
                             assert put;
 
@@ -2707,7 +2701,7 @@ public class IgfsMetaManager extends IgfsManager {
                 pathIds.add(fileIds(path));
 
             // Start pessimistic.
-            IgniteInternalTx tx = metaCache.txStartEx(PESSIMISTIC, REPEATABLE_READ);
+            IgniteInternalTx tx = startTx();
 
             try {
                 // Lock the very first existing parents and possibly the leaf as well.
@@ -2909,13 +2903,22 @@ public class IgfsMetaManager extends IgfsManager {
      * @return Transaction state is correct.
      */
     private boolean validTxState(boolean inTx) {
-        boolean txState = inTx == (metaCache.tx() != null);
+        boolean txState = inTx == (id2InfoPrj.tx() != null);
 
         assert txState : (inTx ? "Method cannot be called outside transaction " :
-            "Method cannot be called in transaction ") + "[tx=" + metaCache.tx() + ", threadId=" +
+            "Method cannot be called in transaction ") + "[tx=" + id2InfoPrj.tx() + ", threadId=" +
             Thread.currentThread().getId() + ']';
 
         return txState;
+    }
+
+    /**
+     * Start transaction on meta cache.
+     *
+     * @return Transaction.
+     */
+    private IgniteInternalTx startTx() {
+        return metaCache.txStartEx(PESSIMISTIC, REPEATABLE_READ);
     }
 
     /**
@@ -2935,7 +2938,7 @@ public class IgfsMetaManager extends IgfsManager {
                 assert validTxState(false);
 
                 // Start pessimistic transaction.
-                IgniteInternalTx tx = metaCache.txStartEx(PESSIMISTIC, REPEATABLE_READ);
+                IgniteInternalTx tx = startTx();
 
                 try {
                     Map<IgniteUuid, IgfsFileInfo> infoMap = lockIds(fileId, parentId);
@@ -3401,7 +3404,7 @@ public class IgfsMetaManager extends IgfsManager {
                     };
 
                     // Start Tx:
-                    IgniteInternalTx tx = metaCache.txStartEx(PESSIMISTIC, REPEATABLE_READ);
+                    IgniteInternalTx tx = startTx();
 
                     try {
                         if (overwrite)
