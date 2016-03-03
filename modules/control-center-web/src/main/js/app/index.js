@@ -101,8 +101,8 @@ import IgniteCountries from './services/Countries/Countries.service';
 // Providers
 
 // Filters.
-import hasPojo from './filters/hasPojo/hasPojo.filter';
-import byName from './filters/byName/byName.filter';
+import hasPojo from './filters/hasPojo.filter';
+import byName from './filters/byName.filter';
 
 angular
 .module('ignite-console', [
