@@ -73,13 +73,14 @@ namespace Apache.Ignite.Core.Tests
                        " -J-ea" +
                        " -J-Xcheck:jni" +
                        " -J-Xms512m" +
-                       " -J-Xmx512m" +
-                       " -J-DIGNITE_QUIET=false";
+                       " -J-Xmx512m";
 
             var proc = System.Diagnostics.Process.Start(new ProcessStartInfo(exePath)
             {
                 Arguments = args,
-                WorkingDirectory = folder
+                WorkingDirectory = folder,
+                CreateNoWindow = true,
+                UseShellExecute = false,
             });
 
             Assert.IsNotNull(proc);
@@ -99,7 +100,20 @@ namespace Apache.Ignite.Core.Tests
             finally 
             {
                 proc.Kill();
-                Directory.Delete(folder, true);
+
+                Assert.IsTrue(
+                    TestUtils.WaitForCondition(() =>
+                    {
+                        try
+                        {
+                            Directory.Delete(folder, true);
+                            return true;
+                        }
+                        catch (Exception)
+                        {
+                            return false;
+                        }
+                    }, 1000), "Failed to remove temp directory: " + folder);
             }
         }
 
