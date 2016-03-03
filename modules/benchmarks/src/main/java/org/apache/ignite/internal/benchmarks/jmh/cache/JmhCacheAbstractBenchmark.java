@@ -17,6 +17,8 @@
 
 package org.apache.ignite.internal.benchmarks.jmh.cache;
 
+import java.io.PrintWriter;
+import java.util.Map;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.Ignition;
@@ -126,7 +128,54 @@ public class JmhCacheAbstractBenchmark extends JmhAbstractBenchmark {
      */
     @TearDown
     public void tearDown() throws Exception {
+//        System.out.println("TOTAL: " + DirectByteBufferStreamImplV2.TOTAL.longValue());
+//        System.out.println("AVG: " + (DirectByteBufferStreamImplV2.TOTAL.longValue() / DirectByteBufferStreamImplV2.COUNT.longValue()));
+//        System.out.println("LAST: " + DirectByteBufferStreamImplV2.LAST.longValue());
+
+//        PrintWriter pw = new PrintWriter("D:/sample.txt");
+//
+//        try {
+//            printTimeMetrics("NEAR MSG", pw, GridCacheIoManager.SAMPLING_DATA_NEAR_SND, GridCacheIoManager.SAMPLING_DATA_NEAR_RCV);
+//            printTimeMetrics("NEAR FUT", pw, GridNearAtomicUpdateFuture.NEAR_FUT_START, GridNearAtomicUpdateFuture.NEAR_FUT_FINISH);
+//            printTimeMetrics("NEAR PROC", pw, GridDhtAtomicCache.NEAR_PROC_START, GridDhtAtomicCache.NEAR_PROC_FINISH);
+//            printTimeMetrics("NEAR MSG MARSH", pw, DirectByteBufferStreamImplV2.NEAR_MSG_MARSHALLED_START, DirectByteBufferStreamImplV2.NEAR_MSG_MARSHALLED_FINISH);
+//            printTimeMetrics("NEAR REQ MSG PREP SENT", pw, GridCacheIoManager.SAMPLING_DATA_NEAR_SND, GridNearAtomicUpdateRequest.SENT);
+//            printTimeMetrics("NEAR REQ MSG RCVD PROC", pw, GridNearAtomicUpdateRequest.RECEIVED, GridDhtAtomicCache.NEAR_PROC_START);
+//            printTimeMetrics("NEAR RESP MSG PREP SENT", pw, GridDhtAtomicCache.NEAR_PROC_FINISH, GridNearAtomicUpdateResponse.SENT);
+//            printTimeMetrics("NEAR RESP MSG RCVD PROC", pw, GridNearAtomicUpdateResponse.RECEIVED, GridCacheIoManager.SAMPLING_DATA_NEAR_RCV);
+//            printTimeMetrics("DHT MSG", pw, GridCacheIoManager.SAMPLING_DATA_DHT_SND, GridCacheIoManager.SAMPLING_DATA_DHT_RCV);
+//        }
+//        finally {
+//            pw.close();
+//        }
+
         Ignition.stopAll(true);
+    }
+
+    private void printTimeMetrics(String marker, PrintWriter pw, Map<String, Long> start,
+        Map<String, Long> finish) throws Exception {
+        long totalTime = 0;
+        long totalMsgs = 0;
+
+        for (String k : start.keySet()) {
+            Long sndTime = start.get(k);
+            Long rcvTime = finish.get(k);
+            if (sndTime != null && rcvTime != null) {
+                pw.append(marker + " [" + k + "] " + sndTime + " " + rcvTime + " " + (rcvTime - sndTime) + "\n");
+                totalTime += (rcvTime - sndTime);
+                totalMsgs++;
+            }
+        }
+
+        if (totalMsgs == 0) {
+            System.out.println("No recorded sample data for " + marker);
+            return;
+        }
+
+        System.out.println(marker + " AVG TIME: " + (totalTime / totalMsgs));
+        pw.append(marker + " AVG TIME: " + (totalTime / totalMsgs));
+        System.out.println(marker + " SAMPLE SIZE: " + totalMsgs);
+        pw.append(marker + " SAMPLE SIZE: " + totalMsgs);
     }
 
     /**

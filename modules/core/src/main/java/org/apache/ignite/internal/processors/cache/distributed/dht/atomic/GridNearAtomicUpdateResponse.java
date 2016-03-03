@@ -21,9 +21,12 @@ import java.io.Externalizable;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.ConcurrentMap;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.GridDirectCollection;
 import org.apache.ignite.internal.GridDirectTransient;
@@ -43,6 +46,7 @@ import org.apache.ignite.plugin.extensions.communication.MessageCollectionItemTy
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 import org.jetbrains.annotations.Nullable;
+import org.jsr166.ConcurrentHashMap8;
 
 /**
  * DHT atomic cache near update response.
@@ -54,12 +58,32 @@ public class GridNearAtomicUpdateResponse extends GridCacheMessage implements Gr
     /** Cache message index. */
     public static final int CACHE_MSG_IDX = nextIndexId();
 
+    public static final ThreadLocal<Set<Long>> FUT_VERS = new ThreadLocal<Set<Long>>() {
+        @Override protected Set<Long> initialValue() {
+            return new HashSet<>();
+        }
+    };
+
+    public static final ThreadLocal<Long> RECEIVED_TIMESTAMP = new ThreadLocal<Long>() {
+        @Override protected Long initialValue() {
+            return 0L;
+        }
+    };
+
+    public static final ConcurrentMap<String, Long> SENT = new ConcurrentHashMap8<>();
+    public static final ConcurrentMap<String, Long> RECEIVED = new ConcurrentHashMap8<>();
+
+    public static final int SAMPLE_MOD = 100;
+
+    @GridDirectTransient
+    public volatile transient long receivedTimestamp;
+
     /** Node ID this reply should be sent to. */
     @GridDirectTransient
     private UUID nodeId;
 
     /** Future version. */
-    private GridCacheVersion futVer;
+    private long futVer;
 
     /** Update error. */
     @GridDirectTransient
@@ -117,8 +141,8 @@ public class GridNearAtomicUpdateResponse extends GridCacheMessage implements Gr
      * @param futVer Future version.
      * @param addDepInfo Deployment info flag.
      */
-    public GridNearAtomicUpdateResponse(int cacheId, UUID nodeId, GridCacheVersion futVer, boolean addDepInfo) {
-        assert futVer != null;
+    public GridNearAtomicUpdateResponse(int cacheId, UUID nodeId, long futVer, boolean addDepInfo) {
+//        assert futVer != null;
 
         this.cacheId = cacheId;
         this.nodeId = nodeId;
@@ -148,7 +172,7 @@ public class GridNearAtomicUpdateResponse extends GridCacheMessage implements Gr
     /**
      * @return Future version.
      */
-    public GridCacheVersion futureVersion() {
+    public long futureVersion() {
         return futVer;
     }
 
@@ -157,7 +181,7 @@ public class GridNearAtomicUpdateResponse extends GridCacheMessage implements Gr
      *
      * @param err Error.
      */
-    public void error(IgniteCheckedException err){
+    public void error(IgniteCheckedException err) {
         this.err = err;
     }
 
@@ -321,9 +345,9 @@ public class GridNearAtomicUpdateResponse extends GridCacheMessage implements Gr
     /**
      * @return Indexes of keys for which values were generated on primary node.
      */
-   @Nullable public List<Integer> nearValuesIndexes() {
+    @Nullable public List<Integer> nearValuesIndexes() {
         return nearValsIdxs;
-   }
+    }
 
     /**
      * @param idx Index.
@@ -462,7 +486,7 @@ public class GridNearAtomicUpdateResponse extends GridCacheMessage implements Gr
                 writer.incrementState();
 
             case 5:
-                if (!writer.writeMessage("futVer", futVer))
+                if (!writer.writeLong("futVer", futVer))
                     return false;
 
                 writer.incrementState();
@@ -517,6 +541,8 @@ public class GridNearAtomicUpdateResponse extends GridCacheMessage implements Gr
 
         }
 
+        FUT_VERS.get().add(futVer);
+
         return true;
     }
 
@@ -548,7 +574,7 @@ public class GridNearAtomicUpdateResponse extends GridCacheMessage implements Gr
                 reader.incrementState();
 
             case 5:
-                futVer = reader.readMessage("futVer");
+                futVer = reader.readLong("futVer");
 
                 if (!reader.isLastRead())
                     return false;
@@ -619,6 +645,10 @@ public class GridNearAtomicUpdateResponse extends GridCacheMessage implements Gr
 
                 reader.incrementState();
 
+        }
+
+        if (futVer != 0 && futVer % SAMPLE_MOD == 0) {
+            receivedTimestamp = RECEIVED_TIMESTAMP.get();
         }
 
         return reader.afterMessageRead(GridNearAtomicUpdateResponse.class);

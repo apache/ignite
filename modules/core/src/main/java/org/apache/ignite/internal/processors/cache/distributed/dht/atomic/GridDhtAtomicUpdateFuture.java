@@ -17,13 +17,13 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.dht.atomic;
 
+import javax.cache.processor.EntryProcessor;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicReference;
-import javax.cache.processor.EntryProcessor;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
@@ -69,7 +69,7 @@ public class GridDhtAtomicUpdateFuture extends GridFutureAdapter<Void>
     private final GridCacheContext cctx;
 
     /** Future version. */
-    private final GridCacheVersion futVer;
+    private final long futVer;
 
     /** Write version. */
     private final GridCacheVersion writeVer;
@@ -124,7 +124,7 @@ public class GridDhtAtomicUpdateFuture extends GridFutureAdapter<Void>
         this.cctx = cctx;
         this.writeVer = writeVer;
 
-        futVer = cctx.versions().next(updateReq.topologyVersion());
+        futVer = cctx.versions().nextLong(updateReq.topologyVersion());
         this.updateReq = updateReq;
         this.completionCb = completionCb;
         this.updateRes = updateRes;
@@ -149,11 +149,11 @@ public class GridDhtAtomicUpdateFuture extends GridFutureAdapter<Void>
 
     /** {@inheritDoc} */
     @Override public IgniteUuid futureId() {
-        return futVer.asGridUuid();
+        return new IgniteUuid(cctx.kernalContext().localNodeId(), futVer);
     }
 
     /** {@inheritDoc} */
-    @Override public GridCacheVersion version() {
+    @Override public long version() {
         return futVer;
     }
 

@@ -52,6 +52,7 @@ import org.apache.ignite.internal.managers.GridManagerAdapter;
 import org.apache.ignite.internal.managers.deployment.GridDeployment;
 import org.apache.ignite.internal.managers.eventstorage.GridEventStorageManager;
 import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
+import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridNearAtomicUpdateRequest;
 import org.apache.ignite.internal.processors.platform.message.PlatformMessageFilter;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutObject;
 import org.apache.ignite.internal.util.GridBoundedConcurrentLinkedHashSet;
@@ -82,18 +83,9 @@ import org.jetbrains.annotations.Nullable;
 import org.jsr166.ConcurrentHashMap8;
 import org.jsr166.ConcurrentLinkedDeque8;
 
-import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
-import static org.apache.ignite.events.EventType.EVT_NODE_JOINED;
-import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
+import static org.apache.ignite.events.EventType.*;
 import static org.apache.ignite.internal.GridTopic.TOPIC_COMM_USER;
-import static org.apache.ignite.internal.managers.communication.GridIoPolicy.AFFINITY_POOL;
-import static org.apache.ignite.internal.managers.communication.GridIoPolicy.MANAGEMENT_POOL;
-import static org.apache.ignite.internal.managers.communication.GridIoPolicy.MARSH_CACHE_POOL;
-import static org.apache.ignite.internal.managers.communication.GridIoPolicy.P2P_POOL;
-import static org.apache.ignite.internal.managers.communication.GridIoPolicy.PUBLIC_POOL;
-import static org.apache.ignite.internal.managers.communication.GridIoPolicy.SYSTEM_POOL;
-import static org.apache.ignite.internal.managers.communication.GridIoPolicy.UTILITY_CACHE_POOL;
-import static org.apache.ignite.internal.managers.communication.GridIoPolicy.isReservedGridIoPolicy;
+import static org.apache.ignite.internal.managers.communication.GridIoPolicy.*;
 import static org.apache.ignite.internal.util.nio.GridNioBackPressureControl.threadProcessingMessage;
 import static org.jsr166.ConcurrentLinkedHashMap.QueuePolicy.PER_SEGMENT_Q_OPTIMIZED_RMV;
 
@@ -631,8 +623,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
                 case MANAGEMENT_POOL:
                 case AFFINITY_POOL:
                 case UTILITY_CACHE_POOL:
-                case MARSH_CACHE_POOL:
-                {
+                case MARSH_CACHE_POOL: {
                     if (msg.isOrdered())
                         processOrderedMessage(nodeId, msg, plc, msgC);
                     else
@@ -782,6 +773,14 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
                 try {
                     threadProcessingMessage(true);
 
+                    if (msg.message() instanceof GridNearAtomicUpdateRequest) {
+                        long futVer = ((GridNearAtomicUpdateRequest)msg.message()).futureVersion();
+                        if (futVer != 0 && futVer % GridNearAtomicUpdateRequest.SAMPLE_MOD == 0) {
+                            String k = ctx.localNodeId() + " : " + futVer;
+                            GridNearAtomicUpdateRequest.PROC_STARTED.putIfAbsent(k, System.nanoTime());
+                        }
+                    }
+
                     processRegularMessage0(msg, nodeId);
                 }
                 finally {
@@ -792,6 +791,13 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
             }
         };
 
+        if (msg.message() instanceof GridNearAtomicUpdateRequest) {
+            long futVer = ((GridNearAtomicUpdateRequest)msg.message()).futureVersion();
+            if (futVer != 0 && futVer % GridNearAtomicUpdateRequest.SAMPLE_MOD == 0) {
+                String k = ctx.localNodeId() + " : " + futVer;
+                GridNearAtomicUpdateRequest.SUBMITTED.putIfAbsent(k, System.nanoTime());
+            }
+        }
         try {
             pool(plc).execute(c);
         }
@@ -1301,7 +1307,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
         send(node, topic, (byte)-1, msg, plc, true, timeout, skipOnTimeout, ackC);
     }
 
-     /**
+    /**
      * Sends a peer deployable user message.
      *
      * @param nodes Destination nodes.
@@ -1536,7 +1542,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
 
         GridMessageListener lsnrs;
 
-        for (;;) {
+        for (; ; ) {
             lsnrs = lsnrMap.putIfAbsent(topic, lsnr);
 
             if (lsnrs == null) {
@@ -1649,7 +1655,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
                 msgSets = map.values();
         }
         else {
-            for (;;) {
+            for (; ; ) {
                 GridMessageListener lsnrs = lsnrMap.get(topic);
 
                 // If removing listener before subscription happened.
@@ -1713,8 +1719,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
         if (rmv && log.isDebugEnabled())
             log.debug("Removed message listener [topic=" + topic + ", lsnr=" + lsnr + ']');
 
-        if (lsnr instanceof ArrayListener)
-        {
+        if (lsnr instanceof ArrayListener) {
             for (GridMessageListener childLsnr : ((ArrayListener)lsnr).arr)
                 closeListener(childLsnr);
         }
@@ -1917,7 +1922,8 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
         }
 
         /** {@inheritDoc} */
-        @SuppressWarnings({"SynchronizationOnLocalVariableOrMethodParameter", "ConstantConditions",
+        @SuppressWarnings({
+            "SynchronizationOnLocalVariableOrMethodParameter", "ConstantConditions",
             "OverlyStrongTypeCast"})
         @Override public void onMessage(UUID nodeId, Object msg) {
             if (!(msg instanceof GridIoUserMessage)) {

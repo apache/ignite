@@ -17,6 +17,8 @@
 
 package org.apache.ignite.internal;
 
+import javax.management.JMException;
+import javax.management.ObjectName;
 import java.io.Externalizable;
 import java.io.File;
 import java.io.IOException;
@@ -25,6 +27,7 @@ import java.io.InvalidObjectException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import java.io.ObjectStreamException;
+import java.io.PrintWriter;
 import java.io.Serializable;
 import java.lang.management.ManagementFactory;
 import java.lang.management.RuntimeMXBean;
@@ -45,8 +48,6 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
-import javax.management.JMException;
-import javax.management.ObjectName;
 import org.apache.ignite.IgniteAtomicLong;
 import org.apache.ignite.IgniteAtomicReference;
 import org.apache.ignite.IgniteAtomicSequence;
@@ -85,6 +86,7 @@ import org.apache.ignite.internal.binary.BinaryEnumCache;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.cluster.ClusterGroupAdapter;
 import org.apache.ignite.internal.cluster.IgniteClusterEx;
+import org.apache.ignite.internal.direct.stream.v2.DirectByteBufferStreamImplV2;
 import org.apache.ignite.internal.managers.GridManager;
 import org.apache.ignite.internal.managers.checkpoint.GridCheckpointManager;
 import org.apache.ignite.internal.managers.collision.GridCollisionManager;
@@ -100,11 +102,16 @@ import org.apache.ignite.internal.processors.GridProcessor;
 import org.apache.ignite.internal.processors.affinity.GridAffinityProcessor;
 import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
+import org.apache.ignite.internal.processors.cache.GridCacheIoManager;
 import org.apache.ignite.internal.processors.cache.GridCacheProcessor;
 import org.apache.ignite.internal.processors.cache.GridCacheUtilityKey;
 import org.apache.ignite.internal.processors.cache.IgniteCacheProxy;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
 import org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl;
+import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridDhtAtomicCache;
+import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridNearAtomicUpdateFuture;
+import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridNearAtomicUpdateRequest;
+import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridNearAtomicUpdateResponse;
 import org.apache.ignite.internal.processors.cacheobject.IgniteCacheObjectProcessor;
 import org.apache.ignite.internal.processors.clock.GridClockSyncProcessor;
 import org.apache.ignite.internal.processors.closure.GridClosureProcessor;
@@ -168,54 +175,11 @@ import org.apache.ignite.spi.IgniteSpiVersionCheckException;
 import org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoveryNode;
 import org.jetbrains.annotations.Nullable;
 
-import static org.apache.ignite.IgniteSystemProperties.IGNITE_CONFIG_URL;
-import static org.apache.ignite.IgniteSystemProperties.IGNITE_DAEMON;
-import static org.apache.ignite.IgniteSystemProperties.IGNITE_NO_ASCII;
-import static org.apache.ignite.IgniteSystemProperties.IGNITE_OPTIMIZED_MARSHALLER_USE_DEFAULT_SUID;
-import static org.apache.ignite.IgniteSystemProperties.IGNITE_SKIP_CONFIGURATION_CONSISTENCY_CHECK;
-import static org.apache.ignite.IgniteSystemProperties.IGNITE_STARVATION_CHECK_INTERVAL;
-import static org.apache.ignite.IgniteSystemProperties.IGNITE_SUCCESS_FILE;
-import static org.apache.ignite.IgniteSystemProperties.getBoolean;
-import static org.apache.ignite.IgniteSystemProperties.snapshot;
-import static org.apache.ignite.internal.GridKernalState.DISCONNECTED;
-import static org.apache.ignite.internal.GridKernalState.STARTED;
-import static org.apache.ignite.internal.GridKernalState.STARTING;
-import static org.apache.ignite.internal.GridKernalState.STOPPED;
-import static org.apache.ignite.internal.GridKernalState.STOPPING;
-import static org.apache.ignite.internal.IgniteComponentType.IGFS;
-import static org.apache.ignite.internal.IgniteComponentType.IGFS_HELPER;
-import static org.apache.ignite.internal.IgniteComponentType.SCHEDULE;
-import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_BUILD_DATE;
-import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_BUILD_VER;
-import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_CLIENT_MODE;
-import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_CONSISTENCY_CHECK_SKIPPED;
-import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_DAEMON;
-import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_DEPLOYMENT_MODE;
-import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_GRID_NAME;
-import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_IPS;
-import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_JIT_NAME;
-import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_JMX_PORT;
-import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_JVM_ARGS;
-import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_JVM_PID;
-import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_LANG_RUNTIME;
-import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_MACS;
-import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_MARSHALLER;
-import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_MARSHALLER_COMPACT_FOOTER;
-import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_MARSHALLER_USE_DFLT_SUID;
-import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_NODE_CONSISTENT_ID;
-import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_PEER_CLASSLOADING;
-import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_PHY_RAM;
-import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_PREFIX;
-import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_RESTART_ENABLED;
-import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_REST_PORT_RANGE;
-import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_SPI_CLASS;
-import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_USER_NAME;
-import static org.apache.ignite.internal.IgniteVersionUtils.ACK_VER_STR;
-import static org.apache.ignite.internal.IgniteVersionUtils.BUILD_TSTAMP_STR;
-import static org.apache.ignite.internal.IgniteVersionUtils.COPYRIGHT;
-import static org.apache.ignite.internal.IgniteVersionUtils.REV_HASH_STR;
-import static org.apache.ignite.internal.IgniteVersionUtils.VER;
-import static org.apache.ignite.internal.IgniteVersionUtils.VER_STR;
+import static org.apache.ignite.IgniteSystemProperties.*;
+import static org.apache.ignite.internal.GridKernalState.*;
+import static org.apache.ignite.internal.IgniteComponentType.*;
+import static org.apache.ignite.internal.IgniteNodeAttributes.*;
+import static org.apache.ignite.internal.IgniteVersionUtils.*;
 import static org.apache.ignite.lifecycle.LifecycleEventType.AFTER_NODE_START;
 import static org.apache.ignite.lifecycle.LifecycleEventType.BEFORE_NODE_START;
 
@@ -372,7 +336,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
 
     /** {@inheritDoc} */
     @Override public final IgniteEvents events(ClusterGroup grp) {
-        return ((ClusterGroupAdapter) grp).events();
+        return ((ClusterGroupAdapter)grp).events();
     }
 
     /** {@inheritDoc} */
@@ -635,6 +599,30 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
         }
     }
 
+    private static void printTimeMetrics(String marker, PrintWriter pw, Map<String, Long> start,
+        Map<String, Long> finish) throws Exception {
+        long totalTime = 0;
+        long totalMsgs = 0;
+
+        for (String k : start.keySet()) {
+            Long sndTime = start.get(k);
+            Long rcvTime = finish.get(k);
+            if (sndTime != null && rcvTime != null) {
+                pw.append(marker + " [" + k + "] " + sndTime + " " + rcvTime + " " + (rcvTime - sndTime) + "\n");
+                totalTime += (rcvTime - sndTime);
+                totalMsgs++;
+            }
+        }
+
+        if (totalMsgs == 0) {
+            pw.append("No recorded sample data for " + marker + "\n");
+            return;
+        }
+
+        pw.append(marker + " AVG TIME: " + (totalTime / totalMsgs) + "\n");
+        pw.append(marker + " SAMPLE SIZE: " + totalMsgs + "\n");
+    }
+
     /**
      * @param cfg Configuration to use.
      * @param utilityCachePool Utility cache pool.
@@ -658,13 +646,44 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
         ExecutorService igfsExecSvc,
         ExecutorService restExecSvc,
         GridAbsClosure errHnd)
-        throws IgniteCheckedException
-    {
+        throws IgniteCheckedException {
         gw.compareAndSet(null, new GridKernalGatewayImpl(cfg.getGridName()));
 
         GridKernalGateway gw = this.gw.get();
 
         gw.writeLock();
+
+        Runnable runnable = new Runnable() {
+            @Override public void run() {
+                while (true) {
+                    try {
+                        U.sleep(60000L);
+                        String filename = "timesample-" + getLocalNodeId() + ".txt";
+                        try (PrintWriter pw = new PrintWriter(filename)) {
+                            printTimeMetrics("NEAR MSG", pw, GridCacheIoManager.SAMPLING_DATA_NEAR_SND, GridCacheIoManager.SAMPLING_DATA_NEAR_RCV);
+                            printTimeMetrics("NEAR FUT", pw, GridNearAtomicUpdateFuture.NEAR_FUT_START, GridNearAtomicUpdateFuture.NEAR_FUT_FINISH);
+                            printTimeMetrics("NEAR PROC", pw, GridDhtAtomicCache.NEAR_PROC_START, GridDhtAtomicCache.NEAR_PROC_FINISH);
+                            printTimeMetrics("NEAR MSG MARSH", pw, DirectByteBufferStreamImplV2.NEAR_MSG_MARSHALLED_START, DirectByteBufferStreamImplV2.NEAR_MSG_MARSHALLED_FINISH);
+                            printTimeMetrics("NEAR REQ MSG PREP SENT", pw, GridCacheIoManager.SAMPLING_DATA_NEAR_SND, GridNearAtomicUpdateRequest.SENT);
+                            printTimeMetrics("NEAR REQ MSG RCVD PROC", pw, GridNearAtomicUpdateRequest.RECEIVED, GridDhtAtomicCache.NEAR_PROC_START);
+                            printTimeMetrics("NEAR REQ MSG RCVD SUBMIT", pw, GridNearAtomicUpdateRequest.RECEIVED, GridNearAtomicUpdateRequest.SUBMITTED);
+                            printTimeMetrics("NEAR REQ MSG SUBMIT PROC", pw, GridNearAtomicUpdateRequest.SUBMITTED, GridDhtAtomicCache.NEAR_PROC_START);
+                            printTimeMetrics("NEAR REQ MSG SUBMIT PROCSTART", pw, GridNearAtomicUpdateRequest.SUBMITTED, GridNearAtomicUpdateRequest.PROC_STARTED);
+                            printTimeMetrics("NEAR RESP MSG PREP SENT", pw, GridDhtAtomicCache.NEAR_PROC_FINISH, GridNearAtomicUpdateResponse.SENT);
+                            printTimeMetrics("NEAR RESP MSG RCVD PROC", pw, GridNearAtomicUpdateResponse.RECEIVED, GridCacheIoManager.SAMPLING_DATA_NEAR_RCV);
+                            printTimeMetrics("DHT MSG", pw, GridCacheIoManager.SAMPLING_DATA_DHT_SND, GridCacheIoManager.SAMPLING_DATA_DHT_RCV);
+                        }
+                    }
+                    catch (Exception e) {
+                        throw new RuntimeException(e);
+                    }
+                }
+            }
+        };
+
+        Thread thread = new Thread(runnable);
+        thread.setDaemon(true);
+        thread.start();
 
         try {
             switch (gw.getState()) {
@@ -858,7 +877,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
             startProcessor((GridProcessor)IGFS.create(ctx, F.isEmpty(cfg.getFileSystemConfiguration())));
             startProcessor(new GridContinuousProcessor(ctx));
             startProcessor((GridProcessor)(cfg.isPeerClassLoadingEnabled() ?
-                IgniteComponentType.HADOOP.create(ctx, true): // No-op when peer class loading is enabled.
+                IgniteComponentType.HADOOP.create(ctx, true) : // No-op when peer class loading is enabled.
                 IgniteComponentType.HADOOP.createIfInClassPath(ctx, cfg.getHadoopConfiguration() != null)));
             startProcessor(new GridServiceProcessor(ctx));
             startProcessor(new DataStructuresProcessor(ctx));
@@ -1483,7 +1502,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
                 mgr.start();
         }
         catch (IgniteCheckedException e) {
-            U.error(log, "Failed to start manager: " + mgr , e);
+            U.error(log, "Failed to start manager: " + mgr, e);
 
             throw new IgniteCheckedException("Failed to start manager: " + mgr, e);
         }
@@ -1818,7 +1837,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
 
             // Callback component in reverse order while kernal is still functional
             // if called in the same thread, at least.
-            for (ListIterator<GridComponent> it = comps.listIterator(comps.size()); it.hasPrevious();) {
+            for (ListIterator<GridComponent> it = comps.listIterator(comps.size()); it.hasPrevious(); ) {
                 GridComponent comp = it.previous();
 
                 try {
@@ -1891,7 +1910,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
                 errOnStop = false;
 
             // Stop components in reverse order.
-            for (ListIterator<GridComponent> it = comps.listIterator(comps.size()); it.hasPrevious();) {
+            for (ListIterator<GridComponent> it = comps.listIterator(comps.size()); it.hasPrevious(); ) {
                 GridComponent comp = it.previous();
 
                 try {
@@ -2145,11 +2164,11 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
             throw new IgniteCheckedException("Rebalance thread pool size minimal allowed value is 1. " +
                 "Change IgniteConfiguration.rebalanceThreadPoolSize property before next start.");
 
-        for (CacheConfiguration ccfg : cfg.getCacheConfiguration()){
+        for (CacheConfiguration ccfg : cfg.getCacheConfiguration()) {
             if (ccfg.getRebalanceBatchesPrefetchCount() < 1)
                 throw new IgniteCheckedException("Rebalance batches prefetch count minimal allowed value is 1. " +
                     "Change CacheConfiguration.rebalanceBatchesPrefetchCount property before next start. " +
-                    "[cache="+ccfg.getName()+"]");
+                    "[cache=" + ccfg.getName() + "]");
         }
     }
 
@@ -2756,7 +2775,8 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<IgniteInternalCache<?, ?>> cachesx(IgnitePredicate<? super IgniteInternalCache<?, ?>>[] p) {
+    @Override public Collection<IgniteInternalCache<?, ?>> cachesx(
+        IgnitePredicate<? super IgniteInternalCache<?, ?>>[] p) {
         guard();
 
         try {
@@ -2783,7 +2803,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
     @Override public IgniteFileSystem fileSystem(String name) {
         guard();
 
-        try{
+        try {
             IgniteFileSystem fs = ctx.igfs().igfs(name);
 
             if (fs == null)
@@ -2921,8 +2941,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
     /** {@inheritDoc} */
     @Nullable @Override public <T> IgniteAtomicReference<T> atomicReference(String name,
         @Nullable T initVal,
-        boolean create)
-    {
+        boolean create) {
         guard();
 
         try {
@@ -2995,8 +3014,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
     /** {@inheritDoc} */
     @Nullable @Override public <T> IgniteQueue<T> queue(String name,
         int cap,
-        CollectionConfiguration cfg)
-    {
+        CollectionConfiguration cfg) {
         guard();
 
         try {
@@ -3012,8 +3030,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
 
     /** {@inheritDoc} */
     @Nullable @Override public <T> IgniteSet<T> set(String name,
-        CollectionConfiguration cfg)
-    {
+        CollectionConfiguration cfg) {
         guard();
 
         try {
@@ -3067,7 +3084,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
 
         List<GridComponent> comps = ctx.components();
 
-        for (ListIterator<GridComponent> it = comps.listIterator(comps.size()); it.hasPrevious();) {
+        for (ListIterator<GridComponent> it = comps.listIterator(comps.size()); it.hasPrevious(); ) {
             GridComponent comp = it.previous();
 
             try {

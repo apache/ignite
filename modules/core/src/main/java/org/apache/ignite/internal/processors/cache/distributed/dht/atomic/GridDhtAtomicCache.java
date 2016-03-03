@@ -17,6 +17,9 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.dht.atomic;
 
+import javax.cache.expiry.ExpiryPolicy;
+import javax.cache.processor.EntryProcessor;
+import javax.cache.processor.EntryProcessorResult;
 import java.io.Externalizable;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -32,9 +35,6 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
-import javax.cache.expiry.ExpiryPolicy;
-import javax.cache.processor.EntryProcessor;
-import javax.cache.processor.EntryProcessorResult;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cluster.ClusterNode;
@@ -114,13 +114,9 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_ATOMIC_DEFERRED_AC
 import static org.apache.ignite.cache.CacheAtomicWriteOrderMode.CLOCK;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_ASYNC;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
-import static org.apache.ignite.internal.processors.cache.GridCacheOperation.DELETE;
-import static org.apache.ignite.internal.processors.cache.GridCacheOperation.TRANSFORM;
-import static org.apache.ignite.internal.processors.cache.GridCacheOperation.UPDATE;
+import static org.apache.ignite.internal.processors.cache.GridCacheOperation.*;
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.isNearEnabled;
-import static org.apache.ignite.internal.processors.dr.GridDrType.DR_BACKUP;
-import static org.apache.ignite.internal.processors.dr.GridDrType.DR_NONE;
-import static org.apache.ignite.internal.processors.dr.GridDrType.DR_PRIMARY;
+import static org.apache.ignite.internal.processors.dr.GridDrType.*;
 
 /**
  * Non-transactional partitioned cache.
@@ -147,6 +143,11 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
     /** */
     private GridNearAtomicCache<K, V> near;
+
+    public static final ConcurrentMap<String, Long> NEAR_PROC_START = new ConcurrentHashMap8<>();
+    public static final ConcurrentMap<String, Long> NEAR_PROC_FINISH = new ConcurrentHashMap8<>();
+
+    public static final int SAMPLING_MOD = 1000;
 
     /**
      * Empty constructor required by {@link Externalizable}.
@@ -2757,6 +2758,11 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
         if (log.isDebugEnabled())
             log.debug("Processing near atomic update request [nodeId=" + nodeId + ", req=" + req + ']');
 
+        if (req.futureVersion() != 0 && req.futureVersion() % SAMPLING_MOD == 0) {
+            String k = ctx.kernalContext().localNodeId() + " : " + req.futureVersion();
+            NEAR_PROC_START.putIfAbsent(k, System.nanoTime());
+        }
+
         req.nodeId(ctx.localNodeId());
 
         updateAllAsyncInternal(nodeId, req, updateReplyClos);
@@ -2931,7 +2937,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
      * @param nodeId Node ID to send message to.
      * @param ver Version to ack.
      */
-    private void sendDeferredUpdateResponse(UUID nodeId, GridCacheVersion ver) {
+    private void sendDeferredUpdateResponse(UUID nodeId, long ver) {
         while (true) {
             DeferredResponseBuffer buf = pendingResponses.get(nodeId);
 
@@ -2983,7 +2989,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
         if (log.isDebugEnabled())
             log.debug("Processing deferred dht atomic update response [nodeId=" + nodeId + ", res=" + res + ']');
 
-        for (GridCacheVersion ver : res.futureVersions()) {
+        for (long ver : res.futureVersions()) {
             GridDhtAtomicUpdateFuture updateFut = (GridDhtAtomicUpdateFuture)ctx.mvcc().atomicFuture(ver);
 
             if (updateFut != null)
@@ -2999,6 +3005,11 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
      * @param res Near update response.
      */
     private void sendNearUpdateReply(UUID nodeId, GridNearAtomicUpdateResponse res) {
+        if (res.futureVersion() != 0 && res.futureVersion() % SAMPLING_MOD == 0) {
+            String k = ctx.kernalContext().localNodeId() + " : " + res.futureVersion();
+            NEAR_PROC_FINISH.putIfAbsent(k, System.nanoTime());
+        }
+
         try {
             ctx.io().send(nodeId, res, ctx.ioPolicy());
         }
@@ -3175,7 +3186,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
         private AtomicBoolean guard = new AtomicBoolean(false);
 
         /** Response versions. */
-        private ConcurrentLinkedDeque8<GridCacheVersion> respVers = new ConcurrentLinkedDeque8<>();
+        private ConcurrentLinkedDeque8<Long> respVers = new ConcurrentLinkedDeque8<>();
 
         /** Node ID. */
         private final UUID nodeId;
@@ -3231,7 +3242,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
          * @param ver Version to send.
          * @return {@code True} if response was handled, {@code false} if this buffer is filled and cannot be used.
          */
-        public boolean addResponse(GridCacheVersion ver) {
+        public boolean addResponse(long ver) {
             readLock().lock();
 
             boolean snd = false;
